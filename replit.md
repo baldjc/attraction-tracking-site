@@ -62,6 +62,7 @@ src/app/
   member/
     scores/page.tsx           — Member dashboard: score, trend chart, 16-principle breakdown, learning path, audit history
     audits/[auditId]/page.tsx — Member-facing audit report
+    script-review/page.tsx    — Script Review tool: paste script → Claude scores 16 principles → show results → optionally save; shows history with delete; baseline comparison if available
   api/
     audits/route.ts           — GET list (admin)
     audits/run/route.ts       — POST to start audit job (async)
@@ -76,6 +77,9 @@ src/app/
     sync/route.ts             — POST GHL → DB sync
     qa-prep/route.ts          — GET Q&A call prep data (celebrate/address/common gaps/per-member)
     cron/monthly/route.ts     — GET external cron trigger (requires CRON_SECRET header)
+    script-review/route.ts    — POST (Claude analysis, returns unsaved result), GET (member history)
+    script-review/save/       — POST save a review to DB
+    script-review/[reviewId]/ — GET single review, DELETE
 ```
 
 ## Audit Engine
@@ -85,6 +89,8 @@ src/app/
 - Monthly audits compare vs baseline + last month
 - Job states: `queued → downloading → analysing → generating → complete/failed`
 - Default scoring prompt stored in `app_settings` table, editable via Settings page
+- `SCRIPT_REVIEW_PROMPT` in `audit-engine.ts` — specialized prompt for script/transcript analysis; scores Show Don't Tell on written visual cues; sets Consistency to 5 (N/A for single script); returns `whats_working`, `three_improvements`, `quick_win`
+- `ScriptReview` DB model stores: userId, videoTitle, scriptText, scores (Json), overallScore, reportContent (Json)
 
 ## Deduplication
 - Chris Troke has 25+ duplicate GHL records — sync deduplicates by email

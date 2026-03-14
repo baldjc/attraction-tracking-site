@@ -59,12 +59,27 @@ model User {
   createdAt              DateTime    @default(now())
   updatedAt              DateTime    @updatedAt
 
-  audits    Audit[]
-  auditJobs AuditJob[]
-  campaigns Campaign[]
-  links     TrackingLink[]
+  audits        Audit[]
+  auditJobs     AuditJob[]
+  campaigns     Campaign[]
+  links         TrackingLink[]
+  scriptReviews ScriptReview[]
 
   @@map("users")
+}
+
+model ScriptReview {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  videoTitle    String
+  scriptText    String
+  scores        Json
+  overallScore  Float
+  reportContent Json
+  createdAt     DateTime @default(now())
+
+  @@map("script_reviews")
 }
 
 model Audit {
