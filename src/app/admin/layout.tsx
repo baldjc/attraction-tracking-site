@@ -18,13 +18,15 @@ export default async function AdminLayout({
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-[#f1f1ef]">
       <Sidebar
         role="admin"
         userName={session.user.name || session.user.email || "Admin"}
       />
-      <main className="lg:pl-64">
-        <div className="p-6 lg:p-8">{children}</div>
+      <main className="lg:pl-[260px]">
+        <div className="pt-14 lg:pt-0">
+          <div className="p-6 lg:p-8">{children}</div>
+        </div>
       </main>
     </div>
   );

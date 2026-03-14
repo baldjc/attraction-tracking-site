@@ -74,7 +74,7 @@ export default function MembersPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-[#1e2a38]">Members</h1>
+          <h1 className="text-2xl font-bold text-[#1e2a38]">Foundations Members</h1>
           <p className="text-[#1e2a38]/60 mt-1">
             {members.length} Foundations Member{members.length !== 1 ? "s" : ""}
           </p>
