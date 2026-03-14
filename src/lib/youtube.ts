@@ -32,19 +32,31 @@ export function parseDuration(iso: string): number {
   return h * 3600 + m * 60 + s;
 }
 
+// Detect if a string looks like a YouTube channel ID (UC followed by 22 base64 chars)
+function isChannelId(handle: string): boolean {
+  const stripped = handle.startsWith("@") ? handle.slice(1) : handle;
+  return /^UC[\w-]{22}$/.test(stripped);
+}
+
 export async function getChannelInfo(handle: string): Promise<ChannelInfo> {
-  const cleanHandle = handle.startsWith("@") ? handle : `@${handle}`;
-  const url = `${YT_BASE}/channels?part=snippet,brandingSettings,contentDetails&forHandle=${encodeURIComponent(cleanHandle)}&key=${YT_API_KEY}`;
+  const stripped = handle.startsWith("@") ? handle.slice(1) : handle;
+
+  // Choose the right lookup parameter
+  const param = isChannelId(handle)
+    ? `id=${encodeURIComponent(stripped)}`
+    : `forHandle=${encodeURIComponent(handle.startsWith("@") ? handle : `@${handle}`)}`;
+
+  const url = `${YT_BASE}/channels?part=snippet,brandingSettings,contentDetails&${param}&key=${YT_API_KEY}`;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`YouTube channels API error: ${res.status}`);
   const data = await res.json();
   const ch = data.items?.[0];
-  if (!ch) throw new Error(`Channel not found for handle: ${cleanHandle}`);
+  if (!ch) throw new Error(`Channel not found for: ${handle}`);
 
   return {
     channelId: ch.id,
     title: ch.snippet.title,
-    handle: cleanHandle,
+    handle: handle.startsWith("@") ? handle : `@${handle}`,
     bannerUrl: ch.brandingSettings?.image?.bannerExternalUrl ?? null,
     uploadsPlaylistId: ch.contentDetails.relatedPlaylists.uploads,
   };
