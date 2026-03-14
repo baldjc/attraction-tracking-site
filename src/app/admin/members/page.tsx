@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { ArrowPathIcon, UserPlusIcon } from "@heroicons/react/24/outline";
 
 interface Member {
@@ -184,14 +185,12 @@ export default function MembersPage() {
                     className="hover:bg-gray-50 cursor-pointer transition-colors"
                   >
                     <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-2 h-2 bg-green-500 rounded-full" />
-                        <div>
-                          <p className="font-medium text-[#1e2a38]">
-                            {m.fullName || "—"}
-                          </p>
-                        </div>
-                      </div>
+                      <Link href={`/admin/members/${m.id}`} className="flex items-center gap-3">
+                        <div className="w-2 h-2 bg-green-500 rounded-full shrink-0" />
+                        <span className="font-medium text-[#1e2a38] hover:text-[#3dc3ff] transition-colors">
+                          {m.fullName || "—"}
+                        </span>
+                      </Link>
                     </td>
                     <td className="px-6 py-4 text-sm text-[#1e2a38]/70">
                       {m.youtubeHandle ? (

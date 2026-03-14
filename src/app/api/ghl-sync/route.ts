@@ -6,6 +6,23 @@ import bcrypt from "bcryptjs";
 
 export const maxDuration = 60;
 
+function toTitleCase(str: string): string {
+  return str
+    .split(" ")
+    .map((word) =>
+      word
+        .split("-")
+        .map((part) =>
+          part
+            .split("'")
+            .map((seg) => seg.charAt(0).toUpperCase() + seg.slice(1).toLowerCase())
+            .join("'")
+        )
+        .join("-")
+    )
+    .join(" ");
+}
+
 export async function POST() {
   const session = await auth();
   if (!session?.user || (session.user as any).role !== "admin") {
@@ -57,9 +74,8 @@ export async function POST() {
         }
       }
 
-      const fullName = [contact.firstName, contact.lastName]
-        .filter(Boolean)
-        .join(" ") || null;
+      const rawName = [contact.firstName, contact.lastName].filter(Boolean).join(" ");
+      const fullName = rawName ? toTitleCase(rawName) : null;
 
       const existing = await prisma.user.findUnique({
         where: { email: contact.email },

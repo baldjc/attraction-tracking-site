@@ -18,77 +18,20 @@ export interface GHLContact {
 
 export async function fetchContactsByTag(tag: string): Promise<GHLContact[]> {
   const allContacts: GHLContact[] = [];
-
-  // --- Try POST /contacts/search with tag filter first ---
-  try {
-    let page = 1;
-    let hasMore = true;
-    let totalFetched = 0;
-    let pageCount = 0;
-
-    while (hasMore && pageCount < 50) {
-      const body: Record<string, unknown> = {
-        locationId: getLocationId(),
-        pageSize: 100,
-        filters: [{ field: "tags", operator: "contains", value: tag }],
-        page,
-      };
-
-      const res = await fetch(`${GHL_BASE_URL}/contacts/search`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${getApiKey()}`,
-          Version: "2021-07-28",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(body),
-      });
-
-      if (!res.ok) {
-        throw new Error(`Search endpoint returned ${res.status}`);
-      }
-
-      const data = await res.json();
-      const contacts: GHLContact[] = data.contacts ?? [];
-      totalFetched += contacts.length;
-      pageCount++;
-
-      allContacts.push(...contacts);
-
-      console.log(
-        `[GHL Search] page ${pageCount}: got ${contacts.length} contacts (total so far: ${totalFetched})`
-      );
-
-      if (!data.nextPage || contacts.length < 100) {
-        hasMore = false;
-      } else {
-        page = data.nextPage;
-      }
-    }
-
-    console.log(
-      `[GHL Search] Done. Pages: ${pageCount}, Total fetched: ${totalFetched}, Matched tag: ${allContacts.length}`
-    );
-
-    return allContacts;
-  } catch (searchErr) {
-    console.warn("[GHL Search] Search endpoint failed, falling back to GET /contacts/:", searchErr);
-  }
-
-  // --- Fallback: GET /contacts/ with cursor pagination ---
-  const fallbackContacts: GHLContact[] = [];
-  let startAfterId: string | null = null;
+  const limit = 100;
+  // Use the last contact's ID from each page as the cursor (not meta.startAfterId which loops)
+  let lastContactId: string | null = null;
   let pageCount = 0;
   let totalFetched = 0;
-  const MAX_PAGES = 50;
+  const MAX_PAGES = 25; // 25 × 100 = 2,500 contacts max
 
   while (pageCount < MAX_PAGES) {
     const params = new URLSearchParams({
       locationId: getLocationId(),
-      limit: "100",
+      limit: String(limit),
     });
-    if (startAfterId) {
-      params.set("startAfterId", startAfterId);
+    if (lastContactId) {
+      params.set("startAfterId", lastContactId);
     }
 
     const res = await fetch(`${GHL_BASE_URL}/contacts/?${params.toString()}`, {
@@ -111,24 +54,26 @@ export async function fetchContactsByTag(tag: string): Promise<GHLContact[]> {
     const tagged = contacts.filter(
       (c) => c.tags?.some((t) => t.toLowerCase() === tag.toLowerCase())
     );
-    fallbackContacts.push(...tagged);
+    allContacts.push(...tagged);
 
     console.log(
-      `[GHL Fallback] page ${pageCount}: fetched ${contacts.length}, tagged ${tagged.length} (matched so far: ${fallbackContacts.length})`
+      `[GHL] page ${pageCount}: fetched ${contacts.length}, tagged ${tagged.length} (matched so far: ${allContacts.length}, total fetched: ${totalFetched})`
     );
 
-    if (contacts.length < 100 || !data.meta?.startAfterId) {
+    // Stop when last page reached (fewer than limit returned)
+    if (contacts.length < limit) {
       break;
     }
 
-    startAfterId = data.meta.startAfterId;
+    // Use the last contact's ID as the next cursor
+    lastContactId = contacts[contacts.length - 1].id;
   }
 
   console.log(
-    `[GHL Fallback] Done. Pages: ${pageCount}, Total fetched: ${totalFetched}, Matched tag: ${fallbackContacts.length}`
+    `[GHL] Done — pages: ${pageCount}, total fetched: ${totalFetched}, matched tag "${tag}": ${allContacts.length}`
   );
 
-  return fallbackContacts;
+  return allContacts;
 }
 
 export function getCustomFieldValue(
