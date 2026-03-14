@@ -19,27 +19,25 @@ export interface GHLContact {
 export async function fetchContactsByTag(tag: string): Promise<GHLContact[]> {
   const allContacts: GHLContact[] = [];
   const limit = 100;
-  // Use the last contact's ID from each page as the cursor (not meta.startAfterId which loops)
-  let lastContactId: string | null = null;
   let pageCount = 0;
   let totalFetched = 0;
-  const MAX_PAGES = 25; // 25 × 100 = 2,500 contacts max
+  const MAX_PAGES = 25;
 
-  while (pageCount < MAX_PAGES) {
-    const params = new URLSearchParams({
-      locationId: getLocationId(),
-      limit: String(limit),
-    });
-    if (lastContactId) {
-      params.set("startAfterId", lastContactId);
-    }
+  // First request — no cursor
+  let nextUrl: string | null =
+    `${GHL_BASE_URL}/contacts/?locationId=${getLocationId()}&limit=${limit}`;
 
-    const res = await fetch(`${GHL_BASE_URL}/contacts/?${params.toString()}`, {
+  while (nextUrl && pageCount < MAX_PAGES) {
+    console.log(`[GHL page ${pageCount + 1}] GET ${nextUrl}`);
+
+    const res = await fetch(nextUrl, {
       headers: {
         Authorization: `Bearer ${getApiKey()}`,
         Version: "2021-07-28",
       },
     });
+
+    console.log(`[GHL page ${pageCount + 1}] status: ${res.status}`);
 
     if (!res.ok) {
       const body = await res.text();
@@ -48,29 +46,30 @@ export async function fetchContactsByTag(tag: string): Promise<GHLContact[]> {
 
     const data = await res.json();
     const contacts: GHLContact[] = data.contacts ?? [];
-    totalFetched += contacts.length;
-    pageCount++;
+
+    console.log(`[GHL page ${pageCount + 1}] contacts: ${contacts.length}, meta.nextPageUrl: ${data.meta?.nextPageUrl ?? "null"}`);
 
     const tagged = contacts.filter(
       (c) => c.tags?.some((t) => t.toLowerCase() === tag.toLowerCase())
     );
+
+    console.log(`[GHL page ${pageCount + 1}] matched tag: ${tagged.length}`);
+
     allContacts.push(...tagged);
+    totalFetched += contacts.length;
+    pageCount++;
 
-    console.log(
-      `[GHL] page ${pageCount}: fetched ${contacts.length}, tagged ${tagged.length} (matched so far: ${allContacts.length}, total fetched: ${totalFetched})`
-    );
+    // Use GHL's own nextPageUrl — it includes both startAfter + startAfterId
+    nextUrl = data.meta?.nextPageUrl ?? null;
 
-    // Stop when last page reached (fewer than limit returned)
+    // Safety: if fewer contacts than limit, we're on the last page
     if (contacts.length < limit) {
-      break;
+      nextUrl = null;
     }
-
-    // Use the last contact's ID as the next cursor
-    lastContactId = contacts[contacts.length - 1].id;
   }
 
   console.log(
-    `[GHL] Done — pages: ${pageCount}, total fetched: ${totalFetched}, matched tag "${tag}": ${allContacts.length}`
+    `[GHL] DONE — pages: ${pageCount}, total fetched: ${totalFetched}, matched "${tag}": ${allContacts.length}`
   );
 
   return allContacts;
