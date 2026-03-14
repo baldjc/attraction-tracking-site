@@ -160,6 +160,32 @@ export default function MemberDetailPage() {
     fetchMember();
   }, [fetchMember]);
 
+  function isRawChannelId(handle: string | null | undefined): boolean {
+    if (!handle) return false;
+    const stripped = handle.startsWith("@") ? handle.slice(1) : handle;
+    return /^UC[\w-]{22}$/.test(stripped);
+  }
+
+  useEffect(() => {
+    if (!member) return;
+    if (member.youtubeChannelName) return;
+    const handle = member.youtubeHandle;
+    if (!isRawChannelId(handle)) return;
+    const channelId = handle.startsWith("@") ? handle.slice(1) : handle;
+    fetch(`/api/youtube/resolve-channel?channelId=${encodeURIComponent(channelId)}`)
+      .then((r) => r.json())
+      .then(async (data) => {
+        if (!data.title) return;
+        await fetch(`/api/members/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ youtubeChannelName: data.title }),
+        });
+        setMember((prev: any) => prev ? { ...prev, youtubeChannelName: data.title } : prev);
+      })
+      .catch(() => {});
+  }, [member?.id, member?.youtubeChannelName, member?.youtubeHandle, id]);
+
   async function handleSaveEdit() {
     setSaving(true);
     await fetch(`/api/members/${id}`, {
@@ -390,10 +416,13 @@ export default function MemberDetailPage() {
                 {member.fullName || member.email}
               </h1>
               <div className="flex items-center gap-3 mt-1 flex-wrap">
-                {(member.youtubeChannelName || member.youtubeHandle) && (
+                {(member.youtubeChannelName || (member.youtubeHandle && !isRawChannelId(member.youtubeHandle))) && (
                   <span className="text-white/70 text-sm">
                     {member.youtubeChannelName || member.youtubeHandle}
                   </span>
+                )}
+                {!member.youtubeChannelName && isRawChannelId(member.youtubeHandle) && (
+                  <span className="text-white/40 text-xs italic">Resolving channel name…</span>
                 )}
                 <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${tierColors(member.serviceTier).badge}`}>
                   {tierLabel(member.serviceTier)}
@@ -546,10 +575,12 @@ export default function MemberDetailPage() {
                     {member.youtubeChannelUrl ? (
                       <a href={member.youtubeChannelUrl} target="_blank" rel="noopener noreferrer" className="text-[#3dc3ff] hover:underline flex items-center gap-1">
                         {member.youtubeChannelName
-                          ? member.youtubeHandle && !/^UC[\w-]{22}$/.test(member.youtubeHandle.replace(/^@/, ""))
-                            ? `${member.youtubeChannelName} (${member.youtubeHandle})`
-                            : member.youtubeChannelName
-                          : member.youtubeHandle ?? member.youtubeChannelUrl}
+                          ? (member.youtubeHandle && !isRawChannelId(member.youtubeHandle)
+                              ? `${member.youtubeChannelName} (${member.youtubeHandle})`
+                              : member.youtubeChannelName)
+                          : (!isRawChannelId(member.youtubeHandle)
+                              ? (member.youtubeHandle ?? member.youtubeChannelUrl)
+                              : member.youtubeChannelUrl)}
                         <ArrowTopRightOnSquareIcon className="w-3.5 h-3.5 shrink-0" />
                       </a>
                     ) : <span className="text-gray-400">—</span>}
