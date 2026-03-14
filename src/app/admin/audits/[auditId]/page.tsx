@@ -388,9 +388,13 @@ export default function AuditReportPage() {
           <h2 className="text-base font-semibold text-[#1e2a38] mb-4">Videos Analysed</h2>
           <div className="space-y-4">
             {videos.map((v: any, i: number) => {
-              const breakdown = report?.video_breakdowns?.find(
-                (b: any) => b.title === v.title || b.video_id === v.videoId
-              );
+              const breakdown =
+                report?.video_breakdowns?.[i] ??
+                report?.video_breakdowns?.find(
+                  (b: any) =>
+                    b.video_id === v.videoId ||
+                    b.title?.trim().toLowerCase() === v.title?.trim().toLowerCase()
+                );
               const dimScores = breakdown?.dimension_scores as {
                 channel_strategy?: number;
                 content_impact?: number;
