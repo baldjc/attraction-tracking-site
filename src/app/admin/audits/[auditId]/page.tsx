@@ -391,10 +391,31 @@ export default function AuditReportPage() {
               const breakdown = report?.video_breakdowns?.find(
                 (b: any) => b.title === v.title || b.video_id === v.videoId
               );
-              const strong = breakdown?.opening_analysis || breakdown?.insights_analysis || breakdown?.connection_analysis;
-              const improve = [breakdown?.opening_analysis, breakdown?.insights_analysis, breakdown?.connection_analysis]
-                .filter(Boolean)
-                .find((t: string) => t !== strong);
+              const dimScores = breakdown?.dimension_scores as {
+                channel_strategy?: number;
+                content_impact?: number;
+                viewer_connection?: number;
+                lead_generation?: number;
+              } | undefined;
+              const strong = breakdown?.strength || breakdown?.opening_analysis;
+              const improve = breakdown?.improvement ||
+                [breakdown?.insights_analysis, breakdown?.connection_analysis].filter(Boolean)[0];
+
+              function dimBadge(score: number | undefined, label: string) {
+                if (score == null) return null;
+                const bg =
+                  score >= 7
+                    ? "bg-[#e8f7ff] text-[#0ea5d9]"
+                    : score >= 5
+                    ? "bg-[#fef3c7] text-amber-700"
+                    : "bg-[#ffe5ea] text-[#cc0029]";
+                return (
+                  <span key={label} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${bg}`}>
+                    {label} {score.toFixed(1)}
+                  </span>
+                );
+              }
+
               return (
                 <div key={i} className="border border-gray-100 rounded-lg p-4">
                   <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
@@ -413,6 +434,14 @@ export default function AuditReportPage() {
                   </div>
                   {!v.hadTranscript && (
                     <p className="text-xs text-amber-500 mb-1">(no transcript available)</p>
+                  )}
+                  {dimScores && (
+                    <div className="flex flex-wrap gap-1.5 mt-2 mb-2">
+                      {dimBadge(dimScores.channel_strategy, "🎯 Strategy")}
+                      {dimBadge(dimScores.content_impact, "🎬 Content")}
+                      {dimBadge(dimScores.viewer_connection, "🤝 Connection")}
+                      {dimBadge(dimScores.lead_generation, "📈 Lead Gen")}
+                    </div>
                   )}
                   {strong && (
                     <p className="text-xs text-[#1e2a38]/70 mt-1">

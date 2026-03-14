@@ -61,14 +61,30 @@ Return ONLY valid JSON in this exact structure, nothing else:
   "video_breakdowns": [
     {
       "title": "Video title here",
+      "video_id": "youtubeVideoId",
       "opening_analysis": "Analysis of opening hook and first 60 seconds",
       "insights_analysis": "Analysis of the revelations and unique perspective",
-      "connection_analysis": "Analysis of emotional resonance and trust-building"
+      "connection_analysis": "Analysis of emotional resonance and trust-building",
+      "strength": "One sentence on what this video does well",
+      "improvement": "One sentence on the biggest gap in this video",
+      "dimension_scores": {
+        "channel_strategy": 6.5,
+        "content_impact": 5.2,
+        "viewer_connection": 4.8,
+        "lead_generation": 2.0
+      }
     }
   ]
 }
 
-The overall_score MUST equal the sum of all 16 scores divided by 16. Show your work in the evidence fields.`;
+The overall_score MUST equal the sum of all 16 scores divided by 16. Show your work in the evidence fields.
+
+For each video in video_breakdowns, calculate dimension_scores as follows:
+- channel_strategy = average of (avatar_clarity + themes_over_topics + consistency)
+- content_impact = average of (arc_attention + arc_revelation + approve_the_click + title_frameworks + show_dont_tell + curiosity_bridges)
+- viewer_connection = average of (connection_language + values_peppering + story_proof + grade_5_language)
+- lead_generation = average of (lead_magnet_system + binge_architecture)
+Use the OVERALL channel scores (not per-video) for these averages — they reflect the channel's pattern observed across all videos analysed.`;
 
 export interface AuditScores {
   avatar_clarity: { score: number; evidence: string };

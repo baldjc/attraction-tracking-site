@@ -315,6 +315,18 @@ export default function MemberDetailPage() {
       type: a.auditType,
     }));
 
+  const videoAuditData = [...(member.audits ?? [])]
+    .filter((a: any) => a.auditType === "single_video" && a.overallScore != null)
+    .reverse()
+    .map((a: any) => ({
+      date: new Date(a.createdAt).toLocaleDateString("en-CA", {
+        month: "short",
+        day: "numeric",
+      }),
+      score: Number(a.overallScore?.toFixed(1)),
+      title: (a.videosAnalysed as any)?.[0]?.title ?? "Single Video",
+    }));
+
   function extractScore(raw: any, key: string): number | null {
     if (!raw || typeof raw !== "object") return null;
     const val = raw[key];
@@ -689,53 +701,99 @@ export default function MemberDetailPage() {
             )}
           </div>
 
-          {/* SCORE TREND */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-            <h2 className="text-base font-semibold text-[#1e2a38] mb-4">Score Trend</h2>
-            {chartData.length === 0 ? (
-              <p className="text-sm text-[#1e2a38]/50 text-center py-8">
-                Scores will appear after the first audit.
-              </p>
-            ) : chartData.length === 1 ? (
-              <div>
-                <ResponsiveContainer width="100%" height={160}>
+          {/* SCORE TREND — two charts */}
+          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm space-y-6">
+
+            {/* Chart 1: Channel Score Trend (baseline + monthly only) */}
+            <div>
+              <h2 className="text-base font-semibold text-[#1e2a38] mb-3">Channel Score Trend</h2>
+              {chartData.length === 0 ? (
+                <p className="text-sm text-[#1e2a38]/50 text-center py-6">
+                  Scores will appear after the first audit.
+                </p>
+              ) : chartData.length === 1 ? (
+                <div>
+                  <ResponsiveContainer width="100%" height={150}>
+                    <LineChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                      <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                      <YAxis domain={[0, 10]} tick={{ fontSize: 11 }} />
+                      <ReferenceDot
+                        x={chartData[0].date}
+                        y={chartData[0].score}
+                        r={5}
+                        fill="#3dc3ff"
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                  <p className="text-xs text-[#1e2a38]/40 text-center mt-2">
+                    More data points will appear after monthly audits.
+                  </p>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height={180}>
                   <LineChart data={chartData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                     <XAxis dataKey="date" tick={{ fontSize: 11 }} />
                     <YAxis domain={[0, 10]} tick={{ fontSize: 11 }} />
-                    <ReferenceDot
-                      x={chartData[0].date}
-                      y={chartData[0].score}
-                      r={5}
-                      fill="#3dc3ff"
+                    <Tooltip
+                      formatter={(val: number) => [val.toFixed(1), "Score"]}
+                      contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="score"
+                      stroke="#3dc3ff"
+                      strokeWidth={2.5}
+                      dot={{ r: 4, fill: "#3dc3ff" }}
+                      activeDot={{ r: 6 }}
                     />
                   </LineChart>
                 </ResponsiveContainer>
-                <p className="text-xs text-[#1e2a38]/40 text-center mt-2">
-                  More data points will appear after monthly audits.
+              )}
+            </div>
+
+            <div className="border-t border-gray-100" />
+
+            {/* Chart 2: Video Audit Scores (single_video only) */}
+            <div>
+              <h2 className="text-base font-semibold text-[#1e2a38] mb-1">Video Audit Scores</h2>
+              <p className="text-xs text-[#1e2a38]/40 mb-3">Individual video scores — expect variation above and below the channel baseline.</p>
+              {videoAuditData.length === 0 ? (
+                <p className="text-sm text-[#1e2a38]/50 text-center py-6">
+                  No video audits yet.
                 </p>
-              </div>
-            ) : (
-              <ResponsiveContainer width="100%" height={200}>
-                <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-                  <YAxis domain={[0, 10]} tick={{ fontSize: 11 }} />
-                  <Tooltip
-                    formatter={(val: number) => [val.toFixed(1), "Score"]}
-                    contentStyle={{ fontSize: 12, borderRadius: 8 }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="score"
-                    stroke="#3dc3ff"
-                    strokeWidth={2.5}
-                    dot={{ r: 4, fill: "#3dc3ff" }}
-                    activeDot={{ r: 6 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            )}
+              ) : (
+                <ResponsiveContainer width="100%" height={180}>
+                  <LineChart data={videoAuditData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                    <YAxis domain={[0, 10]} tick={{ fontSize: 11 }} />
+                    <Tooltip
+                      content={({ active, payload }: any) => {
+                        if (!active || !payload?.length) return null;
+                        const d = payload[0].payload;
+                        return (
+                          <div className="bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm text-xs max-w-[220px]">
+                            <p className="font-semibold text-[#1e2a38] mb-0.5">{d.title}</p>
+                            <p className="text-[#1e2a38]/60">{d.date} · Score: <span className="font-bold text-[#1e2a38]">{d.score.toFixed(1)}</span></p>
+                          </div>
+                        );
+                      }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="score"
+                      stroke="#94a3b8"
+                      strokeWidth={2}
+                      strokeDasharray="4 3"
+                      dot={{ r: 4, fill: "#94a3b8", stroke: "#fff", strokeWidth: 1.5 }}
+                      activeDot={{ r: 6, fill: "#64748b" }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
+            </div>
           </div>
 
           {/* 16-PRINCIPLE BREAKDOWN */}
