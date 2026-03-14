@@ -29,3 +29,8 @@ outputType = "webview"
 [[ports]]
 localPort = 5000
 externalPort = 80
+
+[userenv]
+
+[userenv.shared]
+GHL_LOCATION_ID = "vEIiKAjpBkCDrabeDre7"

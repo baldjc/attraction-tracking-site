@@ -1,0 +1,33 @@
+  Add a "Sync from GHL" feature to the Members page. Here's exactly how it should work:                          
+                                                                                                                                         
+  SYNC BUTTON:                                                                                                                           
+  Add a "Sync from GHL" button at the top of the Members page next to any existing buttons. Use a refresh/sync icon. Show "Syncing..."   
+  with a spinner while running.                                                                                                        
+                                                                                                                 
+  API ENDPOINT - POST /api/ghl-sync:
+  This endpoint pulls contacts from GoHighLevel that have the tag "foundations - weekly coaching".
+
+  GHL API details:
+  - Base URL: https://services.leadconnectorhq.com
+  - API Key: stored in env var GHL_API_KEY
+  - Location ID: stored in env var GHL_LOCATION_ID (value: vEIiKAjpBkCDrabeDre7)
+  - Headers: Authorization: Bearer {GHL_API_KEY}, Version: 2021-07-28
+
+  Steps:
+  1. Fetch contacts: GET https://services.leadconnectorhq.com/contacts/?locationId={GHL_LOCATION_ID}&limit=100
+  2. Paginate through all results
+  3. Filter contacts where tags array contains "foundations - weekly coaching" (case-insensitive match)
+  4. For each matching contact:
+     - Extract: email, firstName, lastName, contact ID
+     - Extract YouTube channel URL from custom field ID "AE8we7U1ZSApVL9vUP07"
+     - Parse the YouTube handle from the URL (extract @handle format)
+     - If a user with that email already exists in our DB: update their info if GHL has newer data
+     - If not: create a new user with role "foundations_member", tier "foundations", and a temporary password
+  5. Return { created: X, updated: Y, skipped: Z }
+
+  After sync completes, show a success message like "Synced: 3 new, 2 updated, 7 unchanged" and refresh the members table.
+
+  Make sure the sync endpoint is admin-only (check the user's role in the session).
+
+  This wires up the real GHL connection. You'll need to make sure GHL_API_KEY and GHL_LOCATION_ID are in your Replit Secrets first — do
+  you have those set?
