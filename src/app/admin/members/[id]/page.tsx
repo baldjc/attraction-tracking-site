@@ -29,8 +29,8 @@ const SERVICE_TIERS = [
   { value: "foundations", label: "Foundations" },
   { value: "editing_2", label: "Editing 2" },
   { value: "editing_4", label: "Editing 4" },
-  { value: "scaling_2", label: "Scaling 2" },
-  { value: "scaling_4", label: "Scaling 4" },
+  { value: "mastery_2", label: "Mastery 2" },
+  { value: "mastery_4", label: "Mastery 4" },
 ];
 
 const DIMENSIONS = [
@@ -101,8 +101,9 @@ export default function MemberDetailPage() {
   const [notesSaving, setNotesSaving] = useState(false);
   const [notesUpdated, setNotesUpdated] = useState<string | null>(null);
 
-  // Audit dropdown + job polling
-  const [auditOpen, setAuditOpen] = useState(false);
+  // Audit dropdown + job polling (separate state for header vs sidebar)
+  const [auditOpenHeader, setAuditOpenHeader] = useState(false);
+  const [auditOpenSidebar, setAuditOpenSidebar] = useState(false);
   const [jobId, setJobId] = useState<string | null>(null);
   const [jobStatus, setJobStatus] = useState<string>("");
   const [jobMessage, setJobMessage] = useState<string>("");
@@ -147,7 +148,8 @@ export default function MemberDetailPage() {
   }
 
   async function runAudit(auditType: string) {
-    setAuditOpen(false);
+    setAuditOpenHeader(false);
+    setAuditOpenSidebar(false);
     setJobId(null);
     setJobStatus("queued");
     setJobMessage("Queued — waiting to start…");
@@ -418,6 +420,16 @@ export default function MemberDetailPage() {
                         >
                           {member.ghlContactId}
                         </a>
+                      ) : key === "youtubeChannelUrl" && member.youtubeChannelUrl ? (
+                        <a
+                          href={member.youtubeChannelUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[#3dc3ff] hover:underline flex items-center gap-1"
+                        >
+                          {member.youtubeChannelUrl}
+                          <ArrowTopRightOnSquareIcon className="w-3.5 h-3.5 shrink-0" />
+                        </a>
                       ) : (
                         (member as any)[key] || <span className="text-gray-400">—</span>
                       )}
@@ -426,9 +438,9 @@ export default function MemberDetailPage() {
                 </div>
               ))}
 
-              {/* Service Tier */}
+              {/* Membership Level */}
               <div className="flex flex-col sm:flex-row sm:items-center gap-1">
-                <span className="text-[#1e2a38]/50 w-40 shrink-0">Service Tier</span>
+                <span className="text-[#1e2a38]/50 w-40 shrink-0">Membership Level</span>
                 {editing ? (
                   <select
                     value={editFields.serviceTier ?? "foundations"}
@@ -456,13 +468,13 @@ export default function MemberDetailPage() {
               <h2 className="text-base font-semibold text-[#1e2a38]">Audit History</h2>
               <div className="relative">
                 <button
-                  onClick={() => setAuditOpen((o) => !o)}
+                  onClick={() => setAuditOpenHeader((o) => !o)}
                   className="flex items-center gap-1.5 bg-[#3dc3ff] hover:bg-[#2bb3ef] text-white text-sm font-semibold px-3 py-2 rounded-lg transition-colors"
                 >
                   Run Audit
                   <ChevronDownIcon className="w-4 h-4" />
                 </button>
-                {auditOpen && (
+                {auditOpenHeader && (
                   <div className="absolute right-0 mt-1 w-44 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
                     {[
                       { label: "Baseline", value: "baseline" },
@@ -769,13 +781,13 @@ export default function MemberDetailPage() {
               {/* Run Audit */}
               <div className="relative">
                 <button
-                  onClick={() => setAuditOpen((o) => !o)}
+                  onClick={() => setAuditOpenSidebar((o) => !o)}
                   className="w-full flex items-center justify-between bg-[#3dc3ff] hover:bg-[#2bb3ef] text-white text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors"
                 >
                   Run Audit
                   <ChevronDownIcon className="w-4 h-4" />
                 </button>
-                {auditOpen && (
+                {auditOpenSidebar && (
                   <div className="absolute left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
                     {[
                       { label: "Baseline", value: "baseline" },

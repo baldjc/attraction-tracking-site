@@ -76,8 +76,8 @@ export default function MembersPage() {
     foundations: "Foundations",
     editing_2: "Editing 2",
     editing_4: "Editing 4",
-    scaling_2: "Scaling 2",
-    scaling_4: "Scaling 4",
+    mastery_2: "Mastery 2",
+    mastery_4: "Mastery 4",
   };
 
   return (

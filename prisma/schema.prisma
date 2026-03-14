@@ -16,8 +16,8 @@ enum ServiceTier {
   foundations
   editing_2
   editing_4
-  scaling_2
-  scaling_4
+  mastery_2
+  mastery_4
 }
 
 enum AuditType {
