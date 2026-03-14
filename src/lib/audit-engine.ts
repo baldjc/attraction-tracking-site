@@ -225,9 +225,18 @@ export interface AuditResult {
   one_sentence_diagnosis: string;
   video_breakdowns?: Array<{
     title: string;
+    video_id?: string;
     opening_analysis: string;
     insights_analysis: string;
     connection_analysis: string;
+    strength?: string;
+    improvement?: string;
+    dimension_scores?: {
+      channel_strategy: number;
+      content_impact: number;
+      viewer_connection: number;
+      lead_generation: number;
+    };
   }>;
   phase_report?: {
     opening: { score: number; analysis: string; strengths: string[]; gaps: string[] };
@@ -275,7 +284,8 @@ CRITICAL INSTRUCTIONS:
 - You MUST respond with ONLY a valid JSON object. No markdown, no code fences, no explanation text before or after the JSON.
 - Use EXACTLY this structure — the key "scores" must contain an object where each principle key maps to { "score": number, "evidence": string }.
 - Do NOT use alternative structures like "audit_results" or separate "evidence" objects. Use the exact format shown in the system prompt.
-- Your entire response must be parseable by JSON.parse() with no pre-processing.`;
+- Your entire response must be parseable by JSON.parse() with no pre-processing.
+- The "video_breakdowns" array is MANDATORY. You MUST include one entry for EVERY one of the ${videos.length} videos listed above. Do NOT omit this field. Each entry needs: title, video_id, opening_analysis, insights_analysis, connection_analysis, strength, improvement, and dimension_scores.`;
 
   const response = await client.messages.create({
     model: "claude-sonnet-4-20250514",
@@ -289,6 +299,7 @@ CRITICAL INSTRUCTIONS:
 
   console.log("[audit-engine] Claude stop_reason:", response.stop_reason);
   console.log("[audit-engine] Response length (chars):", text.length);
+  console.log("[audit-engine] RAW CLAUDE RESPONSE:\n" + text);
 
   // Strip code fences if Claude wrapped the JSON
   const stripped = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "");
@@ -307,6 +318,13 @@ CRITICAL INSTRUCTIONS:
     console.error("[audit-engine] JSON parse failed:", parseErr.message);
     console.error("[audit-engine] Raw JSON (first 500 chars):", jsonMatch[0].slice(0, 500));
     throw new Error(`Claude response was not valid JSON: ${parseErr.message}`);
+  }
+
+  console.log("[audit-engine] Parsed result keys:", Object.keys(result).join(", "));
+  console.log("[audit-engine] video_breakdowns count:", result.video_breakdowns?.length ?? "MISSING");
+  if (result.video_breakdowns?.length) {
+    console.log("[audit-engine] video_breakdowns[0] keys:", Object.keys(result.video_breakdowns[0]).join(", "));
+    console.log("[audit-engine] video_breakdowns[0]:", JSON.stringify(result.video_breakdowns[0], null, 2));
   }
 
   // Normalize alternative format Claude sometimes returns:

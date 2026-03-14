@@ -103,7 +103,15 @@ export default function AuditReportPage() {
   useEffect(() => {
     fetch(`/api/audits/${auditId}`)
       .then((r) => r.json())
-      .then((d) => { setAudit(d.audit); setLoading(false); });
+      .then((d) => {
+        const a = d.audit;
+        setAudit(a);
+        setLoading(false);
+        const report = a?.reportContent as any;
+        console.log("[audit-report] reportContent keys:", Object.keys(report ?? {}).join(", "));
+        console.log("[audit-report] video_breakdowns:", JSON.stringify(report?.video_breakdowns ?? "MISSING"));
+        console.log("[audit-report] videosAnalysed count:", (a?.videosAnalysed as any[])?.length ?? 0);
+      });
   }, [auditId]);
 
   if (loading) return <div className="flex items-center justify-center h-64 text-[#1e2a38]/40">Loading report…</div>;
@@ -386,6 +394,11 @@ export default function AuditReportPage() {
       {videos.length > 0 && (
         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
           <h2 className="text-base font-semibold text-[#1e2a38] mb-4">Videos Analysed</h2>
+          {!report?.video_breakdowns?.length && (
+            <div className="mb-4 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-700">
+              Per-video analysis unavailable for this audit. Delete this audit and run a fresh one to see dimension scores, strengths, and improvements per video.
+            </div>
+          )}
           <div className="space-y-4">
             {videos.map((v: any, i: number) => {
               const breakdown =
