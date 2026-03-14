@@ -30,3 +30,30 @@ export async function GET(
 
   return NextResponse.json({ audit });
 }
+
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ auditId: string }> }
+) {
+  const session = await auth();
+  if (!session?.user || (session.user as any).role !== "admin") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { auditId } = await params;
+
+  const audit = await prisma.audit.findUnique({ where: { id: auditId } });
+  if (!audit) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  // Also clean up any audit jobs pointing at this audit
+  await prisma.auditJob.updateMany({
+    where: { auditId },
+    data: { auditId: null },
+  });
+
+  await prisma.audit.delete({ where: { id: auditId } });
+
+  return NextResponse.json({ success: true });
+}

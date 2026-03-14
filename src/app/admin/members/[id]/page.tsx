@@ -104,6 +104,10 @@ export default function MemberDetailPage() {
   const [editFields, setEditFields] = useState<any>({});
   const [saving, setSaving] = useState(false);
 
+  // Audit deletion
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [deletingAuditId, setDeletingAuditId] = useState<string | null>(null);
+
   // Quick tier change
   const [quickTier, setQuickTier] = useState<string>("");
   const [tierSaving, setTierSaving] = useState(false);
@@ -172,6 +176,14 @@ export default function MemberDetailPage() {
     setTierSaving(false);
     setTierSaved(true);
     setTimeout(() => setTierSaved(false), 2000);
+  }
+
+  async function handleDeleteAudit(auditId: string) {
+    setDeletingAuditId(auditId);
+    await fetch(`/api/audits/${auditId}`, { method: "DELETE" });
+    setConfirmDeleteId(null);
+    setDeletingAuditId(null);
+    await fetchMember();
   }
 
   async function runAudit(auditType: string) {
@@ -561,18 +573,10 @@ export default function MemberDetailPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-100">
-                      <th className="text-left py-2 pr-4 text-xs font-semibold text-[#1e2a38]/50 uppercase tracking-wider">
-                        Date
-                      </th>
-                      <th className="text-left py-2 pr-4 text-xs font-semibold text-[#1e2a38]/50 uppercase tracking-wider">
-                        Type
-                      </th>
-                      <th className="text-left py-2 pr-4 text-xs font-semibold text-[#1e2a38]/50 uppercase tracking-wider">
-                        Score
-                      </th>
-                      <th className="text-right py-2 text-xs font-semibold text-[#1e2a38]/50 uppercase tracking-wider">
-                        Report
-                      </th>
+                      <th className="text-left py-2 pr-4 text-xs font-semibold text-[#1e2a38]/50 uppercase tracking-wider">Date</th>
+                      <th className="text-left py-2 pr-4 text-xs font-semibold text-[#1e2a38]/50 uppercase tracking-wider">Type</th>
+                      <th className="text-left py-2 pr-4 text-xs font-semibold text-[#1e2a38]/50 uppercase tracking-wider">Score</th>
+                      <th className="text-right py-2 text-xs font-semibold text-[#1e2a38]/50 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -584,9 +588,7 @@ export default function MemberDetailPage() {
                         </td>
                         <td className="py-3 pr-4">
                           {audit.overallScore != null ? (
-                            <span
-                              className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${scoreBg(audit.overallScore)}`}
-                            >
+                            <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${scoreBg(audit.overallScore)}`}>
                               {audit.overallScore.toFixed(1)}
                             </span>
                           ) : (
@@ -594,12 +596,39 @@ export default function MemberDetailPage() {
                           )}
                         </td>
                         <td className="py-3 text-right">
-                          <Link
-                            href={`/admin/audits/${audit.id}`}
-                            className="text-[#3dc3ff] hover:underline text-xs"
-                          >
-                            View Report →
-                          </Link>
+                          {confirmDeleteId === audit.id ? (
+                            <span className="inline-flex items-center gap-2">
+                              <span className="text-xs text-[#1e2a38]/50">Delete?</span>
+                              <button
+                                onClick={() => handleDeleteAudit(audit.id)}
+                                disabled={deletingAuditId === audit.id}
+                                className="text-xs text-[#ff0033] font-semibold hover:underline"
+                              >
+                                {deletingAuditId === audit.id ? "Deleting…" : "Yes"}
+                              </button>
+                              <button
+                                onClick={() => setConfirmDeleteId(null)}
+                                className="text-xs text-gray-400 hover:text-gray-600"
+                              >
+                                No
+                              </button>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-3">
+                              <Link
+                                href={`/admin/audits/${audit.id}`}
+                                className="text-[#3dc3ff] hover:underline text-xs"
+                              >
+                                View →
+                              </Link>
+                              <button
+                                onClick={() => setConfirmDeleteId(audit.id)}
+                                className="text-xs text-gray-300 hover:text-[#ff0033] transition-colors"
+                              >
+                                Delete
+                              </button>
+                            </span>
+                          )}
                         </td>
                       </tr>
                     ))}
