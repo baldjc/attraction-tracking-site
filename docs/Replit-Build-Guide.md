@@ -21,7 +21,7 @@
 |-------|----------------|----------------|
 | Database | External PostgreSQL (Neon/Railway) | Use **Replit's built-in PostgreSQL** (available in the Database panel) |
 | yt-dlp for transcripts | Command-line yt-dlp | **Won't work on Replit** — use YouTube Data API v3 for metadata + a transcript API (youtube-transcript-api npm package or equivalent) |
-| Redis for job queue | BullMQ + Redis | Use **Replit's built-in key-value store** or a simple in-memory queue (fine for your scale of ~12 students) |
+| Redis for job queue | BullMQ + Redis | Use **Replit's built-in key-value store** or a simple in-memory queue (fine for your scale of ~12 members) |
 | Deployment | Vercel/Railway | **Replit auto-deploys** — just click Deploy |
 | Custom domains | Manual DNS config | Configure in Replit's domain settings after deploy |
 | File system | Persistent | Replit has an **ephemeral file system** — don't save transcripts to disk, process them in memory |
@@ -55,12 +55,27 @@ FALLBACK_URL=https://attractionbyvideo.com
 
 ---
 
+## Important Terminology & Auth Rules
+
+**Roles:**
+- **Admin** — Jared. Full access. Only admin account.
+- **Foundations Member** — a member/client. Use "Foundations Member" in the UI, and `foundations_member` in code. Never call them "student" in the UI.
+
+**Authentication rules:**
+- **No self-registration.** Only admin can create Foundations Member accounts.
+- **Admin login:** email + password (standard credentials).
+- **Foundations Member login (future):** magic link only (enter email → receive login link → click → logged in). No passwords for members.
+- **FOR NOW during development:** use email + password for all roles so we can test easily. The magic link system will be enabled later before launch.
+- **Bulk invite (future):** admin clicks "Invite All Members" → every Foundations Member gets an email with their magic link login. This is the go-live moment. Do NOT enable until Jared explicitly says so.
+
+---
+
 ## Phase 1: Foundation — Auth, Database, Layout
 
 ### What This Phase Builds
 - PostgreSQL database with all core tables
-- NextAuth.js authentication (email/password)
-- Admin and student roles
+- NextAuth.js authentication (email/password for now, magic link for members later)
+- Admin and Foundations Member roles
 - App shell with sidebar navigation
 - Basic page routing
 
@@ -69,10 +84,16 @@ FALLBACK_URL=https://attractionbyvideo.com
 ```
 Build a Next.js 14+ app with TypeScript and Tailwind CSS. This is a platform called "Attraction by Video" for managing YouTube channel audits and link tracking.
 
+IMPORTANT TERMINOLOGY:
+- The two roles are "admin" and "foundations_member" (NOT "student")
+- In the UI, display "Foundations Member" (not "student")
+- There is NO self-registration. Only admin can create accounts.
+- For now, use email + password login for all roles (we'll add magic link login for members later)
+
 DATABASE SETUP:
 Use Prisma ORM with PostgreSQL. Create these tables:
 
-1. users — id (UUID), email (unique), full_name, password_hash, email_verified (bool), role (enum: admin/student), ghl_contact_id, youtube_channel_url, youtube_handle, service_tier (enum: foundations/editing_2/editing_4/scaling_2/scaling_4), created_at, updated_at
+1. users — id (UUID), email (unique), full_name, password_hash (nullable — will be null when magic link is enabled), magic_link_enabled (bool, default false), email_verified (bool), role (enum: admin/foundations_member), ghl_contact_id, youtube_channel_url, youtube_handle, service_tier (enum: foundations/editing_2/editing_4/scaling_2/scaling_4), invited_at (nullable timestamp), last_login_at (nullable timestamp), created_at, updated_at
 
 2. audits — id (UUID), student_id (FK to users), audit_type (enum: lead/baseline/monthly/single_video), overall_score (decimal), scores (JSON — 16 principle scores), report_content (JSON — full report data), videos_analysed (JSON), notion_page_id, notion_page_url, report_month, created_at
 
@@ -91,7 +112,7 @@ Add appropriate indexes on foreign keys and frequently queried columns.
 AUTHENTICATION:
 Use NextAuth.js v5 with credentials provider (email + password). Hash passwords with bcrypt.
 - Pre-seed an admin account: email from ADMIN_EMAIL env var, role = 'admin'
-- Student accounts are created by admin (not self-registration)
+- Foundations Member accounts are created by admin (not self-registration)
 - On first run, if no admin exists, create one with a temporary password and log it to the console
 
 COLOUR PALETTE:
@@ -103,8 +124,8 @@ COLOUR PALETTE:
 LAYOUT:
 - Login page at /login
 - After login, show a left sidebar navigation
-- Admin sidebar: Dashboard, Students, Audits, Q&A Prep, Campaigns, Analytics, Settings
-- Student sidebar: My Scores, My Links, Resources, Settings
+- Admin sidebar: Dashboard, Members, Audits, Q&A Prep, Campaigns, Analytics, Settings
+- Foundations Member sidebar: My Scores, My Links, Resources, Settings
 - Each nav item should have an appropriate icon
 - Sidebar should be collapsible on mobile
 - All pages should be mobile-responsive
@@ -125,20 +146,20 @@ The app should be clean, modern, and professional. Use the colour palette consis
 
 ---
 
-## Phase 2: Student Management (Admin)
+## Phase 2: Member Management (Admin)
 
 ### What This Phase Builds
-- Admin can add/edit/view students
-- Student list with key info
-- GHL contact lookup on student creation
+- Admin can add/edit/view Foundations Members
+- Member list with key info
+- GHL contact lookup on member creation
 
 ### Replit Agent Prompt — Phase 2
 
 ```
-Add student management to the admin dashboard. This builds on the existing app.
+Add member management to the admin dashboard. This builds on the existing app.
 
-ADMIN > STUDENTS PAGE (/admin/students):
-Show a table of all students with columns:
+ADMIN > MEMBERS PAGE (/admin/members):
+Show a table of all members with columns:
 - Name
 - YouTube Handle
 - Current Score (from most recent audit, or "—" if no audits yet)
@@ -147,9 +168,9 @@ Show a table of all students with columns:
 - Status indicator (green dot = active)
 
 Add a search/filter bar above the table.
-Clicking a student row opens their detail page.
+Clicking a member row opens their detail page.
 
-ADD STUDENT BUTTON:
+ADD MEMBER BUTTON:
 Opens a modal/form with fields:
 - Email (required)
 - Full Name (required)
@@ -157,29 +178,29 @@ Opens a modal/form with fields:
 - Service Tier (dropdown: Foundations, Editing 2, Editing 4, Scaling 2, Scaling 4)
 
 On submit:
-1. Create the user in the database with role = 'student' and a random temporary password
+1. Create the user in the database with role = 'foundations_member' and a random temporary password
 2. Try to look up the contact in GoHighLevel:
    - GET https://services.leadconnectorhq.com/contacts/?query={email}&locationId={GHL_LOCATION_ID}
    - Headers: Authorization: Bearer {GHL_API_KEY}, Version: 2021-07-28
    - If found, save the GHL contact ID to the user record
-3. Show success message with the student's temporary password (admin shares it with them)
+3. Show success message with the member's temporary password (admin shares it with them)
 
-STUDENT DETAIL PAGE (/admin/students/[id]):
-Show all the student's info plus:
+MEMBER DETAIL PAGE (/admin/members/[id]):
+Show all the member's info plus:
 - Audit history (table: Date, Type, Score — linked to report pages we'll build later)
 - "Run Audit" dropdown button (Baseline, Monthly, Single Video) — these will be wired up in Phase 4
-- Edit student info button
+- Edit member info button
 
-IMPORTANT: All student queries must filter by the user's role. Students can only see their own data. Admin can see all students. Enforce this in API routes with middleware.
+IMPORTANT: All member queries must filter by the user's role. Members can only see their own data. Admin can see all members. Enforce this in API routes with middleware.
 ```
 
 ### How to Test Phase 2
-- [ ] Students page shows the table (empty at first)
-- [ ] Can add a new student with all fields
+- [ ] Members page shows the table (empty at first)
+- [ ] Can add a new member with all fields
 - [ ] GHL lookup runs (check network tab — OK if it fails due to no matching contact)
-- [ ] Student appears in the list after creation
-- [ ] Student detail page loads with correct info
-- [ ] Edit student works
+- [ ] Member appears in the list after creation
+- [ ] Member detail page loads with correct info
+- [ ] Edit member works
 
 ---
 
@@ -190,13 +211,13 @@ IMPORTANT: All student queries must filter by the user's role. Students can only
 - Click tracking with Google Ads parameter capture
 - Conversion tracking endpoint
 - Admin campaign management
-- Student link management
+- Member link management
 - Analytics dashboards for both roles
 
 ### Replit Agent Prompt — Phase 3
 
 ```
-Build the link tracking system. Two use cases: admin campaign tracking (Google Ads) and student lead magnet tracking.
+Build the link tracking system. Two use cases: admin campaign tracking (Google Ads) and member lead magnet tracking.
 
 REDIRECT ENDPOINT — GET /api/r/[shortCode]:
 This is the most critical endpoint. It must be FAST.
@@ -207,7 +228,7 @@ This is the most critical endpoint. It must be FAST.
 5. Determine destination URL:
    - If request has ?dest= parameter, use that (Google Ads tracking template)
    - Otherwise use the link's stored destination_url
-6. Append ?_atc={clickId} to the destination URL (for cross-domain student tracking)
+6. Append ?_atc={clickId} to the destination URL (for cross-domain member tracking)
 7. Return 302 redirect IMMEDIATELY
 8. Log click data ASYNCHRONOUSLY after the redirect is sent (timestamp, IP, user agent, referrer, Google Ads params: cid, agid, kw, dev, net, mt from query string)
 
@@ -215,14 +236,14 @@ CONVERSION ENDPOINT — POST /api/conversions:
 - Accepts { click_id, type } (type defaults to 'EMAIL_SIGNUP')
 - Creates a conversion record linked to the click
 - Returns 200 OK
-- Add CORS headers to allow cross-origin requests (students' domains will call this)
+- Add CORS headers to allow cross-origin requests (members' domains will call this)
 
 ADMIN > CAMPAIGNS PAGE (/admin/campaigns):
 - List all campaigns with name, total clicks, total conversions, conversion rate
 - Create Campaign button (name, description)
 - Click into campaign → see its tracking links
 
-TRACKING LINK CREATION (for admin within a campaign, or for students on their own page):
+TRACKING LINK CREATION (for admin within a campaign, or for members on their own page):
 - Fields: Name, Destination URL, Video Title (optional), Lead Magnet Name (optional)
 - Auto-generate an 8-character alphanumeric short code
 - Show the generated tracking URL: https://{TRACKING_DOMAIN}/r/{shortCode}
@@ -238,7 +259,7 @@ ADMIN ANALYTICS (/admin/campaigns/analytics):
 - Top tracking links by clicks
 - Recent clicks table with timestamp, referrer, and Google Ads data columns
 
-STUDENT > MY LINKS PAGE (/student/links):
+MEMBER > MY LINKS PAGE (/member/links):
 - List of their tracking links with clicks, conversions, conversion rate
 - Create Link button (same form but no campaign association)
 - Performance by video (if video_title was set)
@@ -247,7 +268,7 @@ STUDENT > MY LINKS PAGE (/student/links):
 - Clicks/conversions over time (line chart)
 
 CONVERSION TRACKING SNIPPETS:
-When a student creates a tracking link, show them two code snippets to copy:
+When a member creates a tracking link, show them two code snippets to copy:
 
 Landing page snippet:
 <script>
@@ -283,7 +304,7 @@ Score colours for analytics:
 - [ ] Click is recorded in the database
 - [ ] Conversion endpoint works (test with curl/Postman)
 - [ ] Admin analytics show click data
-- [ ] Student link management works
+- [ ] Member link management works
 - [ ] Google Ads tracking template generates correctly
 - [ ] Conversion snippets display with correct domain
 
@@ -326,7 +347,7 @@ YOUTUBE DATA FETCHING:
 
 AI SCORING ENGINE:
 Create an API route POST /api/audits/run that:
-1. Accepts: { studentId (optional), auditType, channelUrl/handle, email (for leads), name (for leads), videoId (for single video audits) }
+1. Accepts: { memberId (optional), auditType, channelUrl/handle, email (for leads), name (for leads), videoId (for single video audits) }
 2. Creates an audit_job record with status 'queued'
 3. Returns the job ID immediately
 4. Processes the job asynchronously (use a simple async function — no Redis needed for your scale):
@@ -501,14 +522,14 @@ JOB STATUS ENDPOINT — GET /api/audits/jobs/[jobId]:
 
 ADMIN AUDIT CONTROLS (wire up the buttons from Phase 2):
 - "Run Lead Audit" → modal: enter email + YouTube channel URL/handle
-- "Run Baseline Audit" → selects from student list
-- "Run Monthly Audit" → selects from student list
-- "Run Single Video Audit" → selects student, then shows their recent videos to pick one
-- "Run All Monthly Audits" → one button that queues all active students sequentially
+- "Run Baseline Audit" → selects from member list
+- "Run Monthly Audit" → selects from member list
+- "Run Single Video Audit" → selects member, then shows their recent videos to pick one
+- "Run All Monthly Audits" → one button that queues all active members sequentially
 
 Show a progress indicator while audits run:
 - "Downloading transcripts..." → "Analysing with AI..." → "Generating report..." → "Complete!"
-- For bulk audits: "3/12 students complete..."
+- For bulk audits: "3/12 members complete..."
 
 SCORE COLOUR CODING (use throughout the app):
 - 7.0+ → Green background
@@ -533,13 +554,13 @@ Store the AI scoring prompt as a configurable text field in the Settings page so
 
 ### What This Phase Builds
 - Branded report pages for all 4 audit types
-- Student dashboard showing scores and trends
+- Member dashboard showing scores and trends
 - Score trend charts
 
 ### Replit Agent Prompt — Phase 5
 
 ```
-Build the audit report display pages and student score dashboard.
+Build the audit report display pages and member score dashboard.
 
 4 REPORT TYPES — each gets a branded, polished page:
 
@@ -568,7 +589,7 @@ Layout (top to bottom):
 12. Footer: "Prepared for {Name} by Jared Chamberlain ~ Founder of Attraction by Video"
 
 TYPE 2: BASELINE AUDIT (/reports/baseline/[auditId])
-Login required (student or admin).
+Login required (member or admin).
 Layout:
 1. Channel banner
 2. "Attraction by Video — Baseline Audit" header callout
@@ -617,7 +638,7 @@ Layout:
 9. One-sentence coaching summary
 10. Footer
 
-STUDENT DASHBOARD — MY SCORES (/student/scores):
+MEMBER DASHBOARD — MY SCORES (/member/scores):
 - Big prominent current overall score (colour-coded)
 - Score trend line chart (Recharts) — overall score over time (baseline → monthly audits)
 - 16-principle breakdown — current scores with colour coding, showing Δ from baseline
@@ -636,10 +657,10 @@ All report pages must be:
 - [ ] Run a lead audit → view the report page → verify all 12 sections render
 - [ ] Run a baseline audit → verify 16-principle scorecard
 - [ ] Score colours display correctly (green/yellow/red)
-- [ ] Student dashboard shows score trend chart
+- [ ] Member dashboard shows score trend chart
 - [ ] Report pages look good on mobile
 - [ ] Lead report page is accessible without login
-- [ ] Student/baseline/monthly reports require login
+- [ ] Member/baseline/monthly reports require login
 
 ---
 
@@ -734,28 +755,28 @@ Build the admin analytics pages and Q&A prep feature.
 
 ADMIN DASHBOARD (/admin):
 Overview cards at the top:
-- Total Active Students (count)
-- Average Score (across all students' latest audits)
+- Total Active Members (count)
+- Average Score (across all members' latest audits)
 - Audits Run This Month
 - Total Tracking Link Clicks (last 30 days)
 
 Alerts section:
-- Students who haven't posted a new video in 2+ weeks (compare audit dates)
-- Students whose scores dropped from last month
-- Students approaching end of Foundations (week 4 — based on account creation date)
+- Members who haven't posted a new video in 2+ weeks (compare audit dates)
+- Members whose scores dropped from last month
+- Members approaching end of Foundations (week 4 — based on account creation date)
 
 COHORT ANALYTICS (/admin/analytics):
 - Average score improvement over first 90 days (line chart by cohort month)
-- Score distribution across all students (histogram)
-- Student count by service tier (pie chart)
+- Score distribution across all members (histogram)
+- Member count by service tier (pie chart)
 - Upgrade rates: Foundations → Editing → Scaling (if trackable from tier changes)
 
 REVENUE DASHBOARD (/admin/analytics/revenue):
-- MRR by tier (table: Tier | # Students | Monthly Rate | Subtotal)
+- MRR by tier (table: Tier | # Members | Monthly Rate | Subtotal)
   - Use these rates: Foundations $499, Editing 2 $999, Editing 4 $1,499 or $2,049, Scaling 2 $1,883, Scaling 4 $2,633
-  - Calculate from current student count per tier
+  - Calculate from current member count per tier
 - Total MRR
-- Note: "Based on current student tiers. For exact figures, check Skool + Stripe."
+- Note: "Based on current member tiers. For exact figures, check Skool + Stripe."
 
 CAMPAIGN ROI (/admin/analytics/campaigns):
 - Per campaign: clicks, conversions, conversion rate
@@ -765,10 +786,10 @@ CAMPAIGN ROI (/admin/analytics/campaigns):
 
 Q&A CALL PREP (/admin/qa-prep):
 Auto-generate an agenda for the next Thursday Q&A call (1:30 PM MST) based on recent audits:
-- Section 1: "Celebrate" — students who improved this month and on which principles
-- Section 2: "Address" — students who are stuck and on which principles
-- Section 3: "Suggested Topics" — most common gaps across all students (which principles are weakest overall)
-- Section 4: "Per-Student Notes" — for each student with a recent audit, show 1–2 bullet points for Jared to reference during the call (specific video timestamps, specific principles to discuss)
+- Section 1: "Celebrate" — members who improved this month and on which principles
+- Section 2: "Address" — members who are stuck and on which principles
+- Section 3: "Suggested Topics" — most common gaps across all members (which principles are weakest overall)
+- Section 4: "Per-Member Notes" — for each member with a recent audit, show 1–2 bullet points for Jared to reference during the call (specific video timestamps, specific principles to discuss)
 
 Add a "Regenerate" button and a date picker to generate prep for a specific week.
 
@@ -777,9 +798,9 @@ Use Recharts for all charts. Keep the design clean and consistent with the rest 
 
 ### How to Test Phase 7
 - [ ] Admin dashboard shows overview cards with correct counts
-- [ ] Alerts flag students correctly
+- [ ] Alerts flag members correctly
 - [ ] Cohort analytics charts render
-- [ ] Revenue dashboard calculates MRR from student tiers
+- [ ] Revenue dashboard calculates MRR from member tiers
 - [ ] Q&A prep generates sensible content from audit data
 - [ ] All charts are responsive on mobile
 
@@ -788,8 +809,8 @@ Use Recharts for all charts. Keep the design clean and consistent with the rest 
 ## Phase 8: Polish & Settings
 
 ### What This Phase Builds
-- Settings pages for admin and students
-- Student resources page
+- Settings pages for admin and members
+- Member resources page
 - Notification system
 - Final polish
 
@@ -801,15 +822,15 @@ Final phase — polish, settings, and remaining features.
 ADMIN SETTINGS (/admin/settings):
 - AI Scoring Prompt: editable text area with the Claude scoring prompt (stored in a settings table in the DB)
 - Default email templates: editable templates for audit delivery emails
-- GHL sync: button to manually trigger a GHL contact sync (pull all contacts with "foundations - weekly coaching" tag, create/update student accounts)
-- Danger zone: reset password for any student
+- GHL sync: button to manually trigger a GHL contact sync (pull all contacts with "foundations - weekly coaching" tag, create/update Foundations Member accounts)
+- Danger zone: reset password for any member
 
-STUDENT SETTINGS (/student/settings):
+MEMBER SETTINGS (/member/settings):
 - Update password
 - Update email (with verification)
 - View their YouTube channel URL (read-only, set by admin)
 
-STUDENT RESOURCES (/student/resources):
+MEMBER RESOURCES (/member/resources):
 - Links section:
   - Skool Community: link to Skool
   - Avatar Architect GPT: link to the custom GPT
@@ -818,8 +839,8 @@ STUDENT RESOURCES (/student/resources):
 - Next Q&A call: show "Next Q&A: Thursday {date} at 1:30 PM MST" calculated from current date
 
 NOTIFICATIONS:
-- When Jared runs an audit for a student, show a notification dot on "My Scores" in the student sidebar
-- "New monthly audit available" banner at the top of the student dashboard
+- When Jared runs an audit for a member, show a notification dot on "My Scores" in the member sidebar
+- "New monthly audit available" banner at the top of the member dashboard
 - "Score improved!" highlight when principles go up (compare to previous audit)
 - Store notification state in the database (read/unread)
 
@@ -829,11 +850,11 @@ POLISH:
 - Ensure all forms have proper validation and error messages
 - Add a 404 page
 - Add proper page titles and meta tags
-- Ensure the login page redirects to the correct dashboard based on role (admin → /admin, student → /student/scores)
+- Ensure the login page redirects to the correct dashboard based on role (admin → /admin, member → /member/scores)
 - Add a simple logo/brand mark in the sidebar header (text "ABV" in the brand font/colour is fine)
 
 SEED DATA:
-Create a seed script that populates the database with the 12 existing students and their baseline scores for demo/testing:
+Create a seed script that populates the database with the 12 existing members and their baseline scores for demo/testing:
 
 | Handle | Creator | Score |
 |--------|---------|-------|
@@ -850,14 +871,14 @@ Create a seed script that populates the database with the 12 existing students a
 | @julierothrealestateteam | Julie Roth | 5.3 |
 | @thehoustonagent | Andrew Lake | 5.3 |
 
-Set all as role 'student', tier 'foundations', with temporary passwords.
+Set all as role 'foundations_member', tier 'foundations', with temporary passwords.
 ```
 
 ### How to Test Phase 8
 - [ ] Admin settings page saves and loads the AI prompt
-- [ ] Student resources page shows links
+- [ ] Member resources page shows links
 - [ ] Notifications appear after running an audit
-- [ ] Seed data populates correctly — 12 students visible
+- [ ] Seed data populates correctly — 12 members visible
 - [ ] Login redirects to correct dashboard
 - [ ] Empty states show on new accounts
 - [ ] Loading states work throughout the app
