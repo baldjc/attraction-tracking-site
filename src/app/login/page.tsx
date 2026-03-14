@@ -35,8 +35,12 @@ export default function LoginPage() {
     <div className="min-h-screen bg-[#f1f1ef] flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-[#1e2a38]">ABV</h1>
-          <p className="text-[#1e2a38]/60 mt-2">Attraction by Video</p>
+          <img
+            src="/logo-icon.png"
+            alt="Attraction by Video"
+            className="h-20 w-20 rounded-2xl object-cover mx-auto mb-3"
+          />
+          <p className="text-[#1e2a38]/60 text-sm">Attraction by Video</p>
         </div>
 
         <form

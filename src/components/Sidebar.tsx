@@ -64,10 +64,13 @@ export default function Sidebar({ role, userName }: SidebarProps) {
 
   const sidebarInner = (
     <div className="flex flex-col h-full">
-      <div className="px-6 py-5 border-b border-white/10 flex-shrink-0">
+      <div className="px-4 py-4 border-b border-white/10 flex-shrink-0">
         <Link href={role === "admin" ? "/admin" : "/member/scores"} className="block">
-          <span className="text-2xl font-extrabold text-[#3dc3ff] tracking-tight">ABV</span>
-          <p className="text-xs text-white/40 mt-0.5">Attraction by Video</p>
+          <img
+            src="/logo-icon.png"
+            alt="Attraction by Video"
+            className="h-12 w-12 rounded-xl object-cover"
+          />
         </Link>
       </div>
 
@@ -121,7 +124,7 @@ export default function Sidebar({ role, userName }: SidebarProps) {
         >
           <Bars3Icon className="w-6 h-6" />
         </button>
-        <span className="text-[#3dc3ff] font-extrabold text-xl tracking-tight">ABV</span>
+        <img src="/logo-icon.png" alt="Attraction by Video" className="h-8 w-8 rounded-lg object-cover" />
       </div>
 
       {/* Mobile overlay */}
