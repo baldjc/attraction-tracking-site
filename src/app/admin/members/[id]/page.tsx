@@ -104,6 +104,11 @@ export default function MemberDetailPage() {
   const [editFields, setEditFields] = useState<any>({});
   const [saving, setSaving] = useState(false);
 
+  // Quick tier change
+  const [quickTier, setQuickTier] = useState<string>("");
+  const [tierSaving, setTierSaving] = useState(false);
+  const [tierSaved, setTierSaved] = useState(false);
+
   // Notes state
   const [notes, setNotes] = useState("");
   const [notesSaving, setNotesSaving] = useState(false);
@@ -122,6 +127,7 @@ export default function MemberDetailPage() {
     const res = await fetch(`/api/members/${id}`);
     const data = await res.json();
     setMember(data.member);
+    setQuickTier(data.member?.serviceTier ?? "foundations");
     setNotes(data.member?.coachingNotes ?? "");
     setNotesUpdated(data.member?.coachingNotesUpdatedAt ?? null);
     setLoading(false);
@@ -153,6 +159,19 @@ export default function MemberDetailPage() {
     const data = await res.json();
     setNotesUpdated(data.member?.coachingNotesUpdatedAt ?? null);
     setNotesSaving(false);
+  }
+
+  async function handleQuickTierSave() {
+    setTierSaving(true);
+    await fetch(`/api/members/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ serviceTier: quickTier }),
+    });
+    await fetchMember();
+    setTierSaving(false);
+    setTierSaved(true);
+    setTimeout(() => setTierSaved(false), 2000);
   }
 
   async function runAudit(auditType: string) {
@@ -818,6 +837,33 @@ export default function MemberDetailPage() {
 
         {/* RIGHT SIDEBAR — QUICK ACTIONS */}
         <div className="space-y-4">
+          {/* Membership Level — always-visible quick selector */}
+          <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+            <h2 className="text-sm font-semibold text-[#1e2a38] mb-3">Membership Level</h2>
+            <select
+              value={quickTier}
+              onChange={(e) => { setQuickTier(e.target.value); setTierSaved(false); }}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-[#1e2a38] focus:outline-none focus:ring-2 focus:ring-[#3dc3ff]/30 mb-2"
+            >
+              {SERVICE_TIERS.map((t) => (
+                <option key={t.value} value={t.value}>{t.label}</option>
+              ))}
+            </select>
+            <button
+              onClick={handleQuickTierSave}
+              disabled={tierSaving || quickTier === member.serviceTier}
+              className={`w-full text-sm font-semibold px-4 py-2 rounded-lg transition-colors ${
+                tierSaved
+                  ? "bg-green-100 text-green-700"
+                  : quickTier === member.serviceTier
+                  ? "bg-gray-100 text-gray-400 cursor-default"
+                  : "bg-[#1e2a38] hover:bg-[#2a3a4a] text-white"
+              }`}
+            >
+              {tierSaved ? "✓ Saved" : tierSaving ? "Saving…" : "Save Tier"}
+            </button>
+          </div>
+
           <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm sticky top-6">
             <h2 className="text-sm font-semibold text-[#1e2a38] mb-4">Quick Actions</h2>
             <div className="space-y-2">
