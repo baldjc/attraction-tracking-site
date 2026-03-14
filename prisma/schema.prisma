@@ -159,6 +159,15 @@ model Click {
   @@map("clicks")
 }
 
+model AppSetting {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@map("app_settings")
+}
+
 model Conversion {
   id        String   @id @default(uuid())
   clickId   String   @unique

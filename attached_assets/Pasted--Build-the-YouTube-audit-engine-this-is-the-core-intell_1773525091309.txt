@@ -1,0 +1,254 @@
+  Build the YouTube audit engine — this is the core intelligence of the platform. There are 3 audit types for members: Baseline, Monthly,
+   and Single Video.
+
+  IMPORTANT CONTEXT:
+  - Environment variables YOUTUBE_API_KEY and ANTHROPIC_API_KEY should already be in Replit Secrets
+  - We CANNOT use yt-dlp on Replit — use YouTube Data API v3 and the "youtube-transcript" npm package instead
+
+  ---
+
+  ## STEP 1: YouTube Data Fetching (src/lib/youtube.ts)
+
+  Create a YouTube data service:
+
+  1. **Channel info:**
+     - GET
+  https://www.googleapis.com/youtube/v3/channels?part=snippet,brandingSettings,contentDetails&forHandle={handle}&key={YOUTUBE_API_KEY}
+     - Extract: channel banner URL from brandingSettings.image.bannerExternalUrl
+     - Extract: uploads playlist ID from contentDetails.relatedPlaylists.uploads
+
+  2. **Video list (get latest 5 long-form):**
+     - GET
+  https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId={uploadsPlaylistId}&maxResults=15&key={YOUTUBE_API_KEY}
+     - Then for each video: GET
+  https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&id={videoId}&key={YOUTUBE_API_KEY}
+     - Filter OUT Shorts (duration < 60 seconds — parse ISO 8601 duration from contentDetails.duration)
+     - Take the 5 most recent long-form videos
+     - For each video, collect: title, duration, upload date, view count, video ID
+
+  3. **Transcripts:**
+     - npm install youtube-transcript
+     - import { YoutubeTranscript } from 'youtube-transcript'
+     - const transcript = await YoutubeTranscript.fetchTranscript(videoId)
+     - Join segments into plain text with approximate timestamps
+     - If transcript fails for a video, note it but continue — score based on available data
+
+  ---
+
+  ## STEP 2: AI Scoring Engine (src/lib/audit-engine.ts)
+
+  Create the scoring engine that sends transcripts to Claude for analysis.
+
+  Use the Anthropic SDK: npm install @anthropic-ai/sdk
+
+  The scoring prompt scores against 16 principles (0-10 each):
+
+  1. Avatar Clarity — Is there ONE clear audience?
+  2. Themes Over Topics — Are there 2-4 repeatable content themes?
+  3. ARC Attention — How strong are the opening hooks?
+  4. ARC Revelation — Are there genuine, unique insights?
+  5. ARC Connection — Is there emotional resonance and trust?
+  6. Title Frameworks — Do titles use proven click patterns?
+  7. Approve the Click — Do first 30 seconds match the title promise?
+  8. Lead Magnet System — Is there a free resource mentioned 3x per video?
+  9. Curiosity Bridges — Do transitions pull viewers forward?
+  10. Show Don't Tell — Are there visual proof elements?
+  11. Values Peppering — Does the viewer learn about the person beyond real estate?
+  12. Connection Language — Are there phrases that make the avatar feel spoken to?
+  13. Story Proof — Are there client stories with names, situations, stakes, outcomes?
+  14. Grade 5 Language — Could a 10-year-old follow along?
+  15. Binge Architecture — Are there cross-references to other videos?
+  16. Consistency — How regular is the publishing schedule?
+
+  Store the AI scoring prompt as a configurable text field in a settings table in the database (seed it with the default prompt). Load it
+   from the database when running audits so it can be refined from the Settings page without code changes.
+
+  Send to Claude (model: claude-sonnet-4-20250514) with the scoring prompt as system message, and the transcripts + video metadata as
+  user message.
+
+  Claude must return a JSON response with this structure:
+  {
+    "scores": {
+      "avatar_clarity": { "score": 5.5, "evidence": "..." },
+      "themes_over_topics": { "score": 4.0, "evidence": "..." },
+      "arc_attention": { "score": 0.0, "evidence": "..." },
+      "arc_revelation": { "score": 0.0, "evidence": "..." },
+      "arc_connection": { "score": 0.0, "evidence": "..." },
+      "title_frameworks": { "score": 0.0, "evidence": "..." },
+      "approve_the_click": { "score": 0.0, "evidence": "..." },
+      "lead_magnet_system": { "score": 0.0, "evidence": "..." },
+      "curiosity_bridges": { "score": 0.0, "evidence": "..." },
+      "show_dont_tell": { "score": 0.0, "evidence": "..." },
+      "values_peppering": { "score": 0.0, "evidence": "..." },
+      "connection_language": { "score": 0.0, "evidence": "..." },
+      "story_proof": { "score": 0.0, "evidence": "..." },
+      "grade_5_language": { "score": 0.0, "evidence": "..." },
+      "binge_architecture": { "score": 0.0, "evidence": "..." },
+      "consistency": { "score": 0.0, "evidence": "..." }
+    },
+    "overall_score": 4.8,
+    "strengths": ["...", "...", "..."],
+    "biggest_gaps": ["...", "...", "..."],
+    "video_breakdowns": [
+      {
+        "title": "Video Title",
+        "opening_analysis": "...",
+        "insights_analysis": "...",
+        "connection_analysis": "..."
+      }
+    ]
+  }
+
+  Overall score = sum of all 16 scores / 16. Always show the calculation explicitly.
+
+  Score colour coding used throughout:
+  - 7.0+ → green
+  - 5.0–6.9 → yellow/amber
+  - Below 5.0 → red
+
+  ---
+
+  ## STEP 3: Audit Job Processing (src/app/api/audits/run/route.ts)
+
+  Create POST /api/audits/run that:
+  1. Accepts: { memberId, auditType: "baseline" | "monthly" | "single_video", videoId?: string }
+  2. Creates an audit_job record with status "queued"
+  3. Returns the job ID immediately
+  4. Processes asynchronously:
+
+  Job steps:
+  a. Status → "downloading" — fetch channel data (banner, video list)
+  b. For baseline: fetch transcripts for 5 most recent long-form videos
+  c. For monthly: fetch transcripts for videos published SINCE the last audit date. If fewer than 2 new videos, return error: "Not enough
+   new content for a meaningful monthly audit"
+  d. For single_video: fetch transcript for the specified video only
+  e. Status → "analysing" — send to Claude scoring engine
+  f. Status → "generating" — build report content
+  g. Save audit record to database with all 16 scores, overall score, report content JSON, videos analysed
+  h. For monthly: also store baseline scores and previous month scores in the report_content JSON for comparison
+  i. Status → "complete"
+  j. If any step fails: status → "failed" with error message
+
+  Job status endpoint: GET /api/audits/jobs/[jobId]
+  - Returns current status, progress message, and audit_id when complete
+  - Frontend polls every 5 seconds
+
+  ---
+
+  ## STEP 4: Audit Controls on Member Detail Page
+
+  On the member detail page (/admin/members/[id]), wire up the "Run Audit" dropdown:
+
+  - **Run Baseline** — immediately queues a baseline audit using the member's YouTube handle. Only available if member has a YouTube
+  handle set.
+  - **Run Monthly** — queues a monthly audit. Pulls baseline + last month scores for comparison. Show error if no baseline exists yet.
+  - **Run Single Video** — shows a modal listing the member's 5 most recent long-form videos (fetched from YouTube API). Admin picks one,
+   then it queues.
+  - **Run All Monthly Audits** (on the Audits list page) — one button that queues monthly audits for ALL active members sequentially.
+  Shows progress: "3/22 members complete..."
+
+  Show a progress indicator while audits run:
+  - "Downloading transcripts..." → "Analysing with AI..." → "Generating report..." → "Complete! View Report"
+
+  ---
+
+  ## STEP 5: Report Display Pages
+
+  Build 3 report page types. These should be polished, branded, and match the app's colour palette.
+
+  ### BASELINE REPORT (/admin/audits/[auditId] with type=baseline)
+  Login required (admin or the member themselves).
+
+  Layout:
+  1. YouTube channel banner (full width)
+  2. Blue callout: "Attraction by Video — Baseline Audit" with @handle
+  3. Overall score callout (colour-coded): "Your Attraction Score: X.X / 10"
+  4. Full 16-principle scorecard table: Principle | Score (colour-coded)
+  5. Videos analysed table: Title | Duration | Date | Views
+  6. Video-by-video breakdown — for each video: Opening analysis, Insights analysis, Connection analysis (from Claude's video_breakdowns)
+  7. Learning Path — principles below 7 mapped to lessons:
+     Avatar Clarity → 1.1 + 1.2, Themes → 1.3, Lead Magnet → 1.4, Values Peppering → 2.1, Connection Language → 2.2, ARC Attention → 2.5
+  + 2.5a + 3.2, ARC Revelation → 2.5, ARC Connection → 2.2 + 2.5, Curiosity Bridges → 2.5, Story Proof → 2.5, Show Don't Tell → 3.3,
+  Approve the Click → 4.1 + 2.5, Title Frameworks → 4.2, Binge Architecture → 1.3, Grade 5 Language → N/A, Consistency → 1.3 + 2.4
+  8. Q&A Topics (flagged items for coaching calls — always flag: Lead Magnet, Avatar, Connection Language, Approve the Click, Curiosity
+  Bridges)
+  9. What's Working — 3-4 strengths with evidence
+  10. One-Sentence Diagnosis: "{Name} has {strength} — but {core gap}."
+  11. Three Biggest Gaps with Current vs Improved examples
+  12. Footer: "Prepared for {Name} by Jared Chamberlain ~ Founder of Attraction by Video"
+
+  ### MONTHLY REPORT (/admin/audits/[auditId] with type=monthly)
+  Login required.
+
+  Layout:
+  1. Blue callout with month/year
+  2. Channel banner
+  3. Progress summary callout: This month score, Δ from baseline, Δ from last month (with arrows ↑↓→)
+  4. Score comparison table: 16 principles × Baseline | Last Month | This Month | Δ Baseline columns
+     - Green cell: improved 1+ from baseline
+     - Yellow cell: improved 0.5
+     - Red cell: declined from baseline
+  5. What Improved This Month — specific principles with video evidence
+  6. Videos analysed this month (table)
+  7. Video-by-video breakdown
+  8. Remaining Gaps — principles still below 7, ordered by priority
+  9. Updated Learning Path (removes lessons for principles at 7+)
+  10. What's Working (maintained + new strengths)
+  11. Purple callout: one-sentence coaching summary
+  12. Footer
+
+  ### SINGLE VIDEO REPORT (/admin/audits/[auditId] with type=single_video)
+  Login required.
+
+  Layout:
+  1. Channel banner
+  2. Blue callout: "Attraction by Video — Single Video Audit"
+  3. Score callout: "Video Attraction Score: X.X / 10" with video title, duration, date
+  4. Scorecard table: Principle | Baseline | This Video | Δ (colour-coded deltas)
+  5. Video Deep Dive organised by PHASE (not principle-by-principle):
+     - **Opening (0:00–~1:00):** ARC Attention + Approve the Click + Lead Magnet first mention
+     - **Body:** ARC Revelation + Show Don't Tell + Curiosity Bridges
+     - **Connection & Voice:** ARC Connection + Connection Language + Values Peppering + Story Proof + Grade 5 Language
+     - **Channel Strategy:** Avatar Clarity + Themes + Binge Architecture + Consistency + Lead Magnet full assessment
+  6. What's Working — green callout with timestamps
+  7. Three Ideas for Improvement — each with: principle, score, what happened (with timestamp), what to do instead (with rewrite
+  example), Foundations lesson reference
+  8. Quick Wins callout (yellow): one immediately actionable thing
+  9. Q&A Prep callout (blue): 2-3 topics with what to bring to the call
+  10. Purple callout: one-sentence coaching summary
+  11. Footer
+
+  ---
+
+  ## STEP 6: Member Dashboard — My Scores (/member/scores)
+
+  When a member logs in and views My Scores:
+  - Big prominent current overall score (colour-coded)
+  - Score trend line chart (Recharts) — overall score over time across all audits
+  - 16-principle breakdown — current scores with colour coding and Δ from baseline
+  - Click any principle → expandable showing that principle's evidence text
+  - Learning Path — lessons to revisit for principles below 7
+  - Audit history list — all their reports with links (Type, Date, Score)
+
+  ---
+
+  ## STEP 7: Admin Audits Page (/admin/audits)
+
+  Show all audits across all members:
+  - Table: Date | Member | Audit Type | Score (colour-coded) | Status | Action (View)
+  - Filter by: audit type, member, date range
+  - "Run All Monthly Audits" button — queues all members sequentially
+  - Active jobs section showing currently running audits with progress
+
+  ---
+
+  ## STEP 8: Settings — AI Prompt Editor
+
+  On the admin Settings page, add:
+  - "AI Scoring Prompt" — large text area showing the current Claude system prompt
+  - Save button that updates the settings table
+  - "Reset to Default" button
+  - Note: "Changes take effect on the next audit run"
+
+  Use the app's colour palette consistently: #f1f1ef backgrounds, #3dc3ff primary, #ff0033 alerts, #1e2a38 text. Use Recharts for charts.
+   Make everything mobile-responsive.

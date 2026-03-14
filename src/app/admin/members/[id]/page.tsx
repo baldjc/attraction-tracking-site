@@ -101,8 +101,12 @@ export default function MemberDetailPage() {
   const [notesSaving, setNotesSaving] = useState(false);
   const [notesUpdated, setNotesUpdated] = useState<string | null>(null);
 
-  // Audit dropdown
+  // Audit dropdown + job polling
   const [auditOpen, setAuditOpen] = useState(false);
+  const [jobId, setJobId] = useState<string | null>(null);
+  const [jobStatus, setJobStatus] = useState<string>("");
+  const [jobMessage, setJobMessage] = useState<string>("");
+  const [jobError, setJobError] = useState<string | null>(null);
 
   const fetchMember = useCallback(async () => {
     setLoading(true);
@@ -141,6 +145,54 @@ export default function MemberDetailPage() {
     setNotesUpdated(data.member?.coachingNotesUpdatedAt ?? null);
     setNotesSaving(false);
   }
+
+  async function runAudit(auditType: string) {
+    setAuditOpen(false);
+    setJobId(null);
+    setJobStatus("queued");
+    setJobMessage("Queued — waiting to start…");
+    setJobError(null);
+
+    const res = await fetch("/api/audits/run", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ memberId: id, auditType }),
+    });
+
+    if (!res.ok) {
+      const d = await res.json();
+      setJobStatus("failed");
+      setJobError(d.error ?? "Failed to start audit");
+      return;
+    }
+
+    const { jobId: newJobId } = await res.json();
+    setJobId(newJobId);
+  }
+
+  // Poll job status
+  useEffect(() => {
+    if (!jobId) return;
+    const TERMINAL = ["complete", "failed"];
+    if (TERMINAL.includes(jobStatus)) return;
+
+    const interval = setInterval(async () => {
+      const res = await fetch(`/api/audits/jobs/${jobId}`);
+      const data = await res.json();
+      setJobStatus(data.status);
+      setJobMessage(data.message ?? "");
+      if (data.status === "failed") {
+        setJobError(data.errorMessage ?? "Audit failed");
+        clearInterval(interval);
+      }
+      if (data.status === "complete") {
+        clearInterval(interval);
+        fetchMember();
+      }
+    }, 2500);
+
+    return () => clearInterval(interval);
+  }, [jobId, jobStatus, fetchMember]);
 
   if (loading) {
     return (
@@ -198,6 +250,31 @@ export default function MemberDetailPage() {
         <ArrowLeftIcon className="w-4 h-4" />
         Back to Members
       </Link>
+
+      {/* AUDIT JOB STATUS BANNER */}
+      {jobStatus && (
+        <div className={`rounded-xl px-5 py-3.5 flex items-center justify-between gap-4 ${
+          jobStatus === "complete" ? "bg-green-50 border border-green-200" :
+          jobStatus === "failed" ? "bg-red-50 border border-[#ff0033]/20" :
+          "bg-[#3dc3ff]/10 border border-[#3dc3ff]/30"
+        }`}>
+          <div className="flex items-center gap-3">
+            {!["complete", "failed"].includes(jobStatus) && (
+              <div className="w-4 h-4 border-2 border-[#3dc3ff] border-t-transparent rounded-full animate-spin shrink-0" />
+            )}
+            {jobStatus === "complete" && <span className="text-green-600 text-lg">✓</span>}
+            {jobStatus === "failed" && <span className="text-[#ff0033] text-lg">✕</span>}
+            <span className={`text-sm font-medium ${
+              jobStatus === "complete" ? "text-green-700" :
+              jobStatus === "failed" ? "text-[#ff0033]" :
+              "text-[#1e2a38]"
+            }`}>
+              {jobStatus === "failed" ? (jobError ?? "Audit failed") : jobMessage}
+            </span>
+          </div>
+          <button onClick={() => { setJobId(null); setJobStatus(""); setJobMessage(""); setJobError(null); }} className="text-xs text-[#1e2a38]/40 hover:text-[#1e2a38]">Dismiss</button>
+        </div>
+      )}
 
       {/* HEADER BANNER */}
       <div className="relative rounded-2xl overflow-hidden">
@@ -387,13 +464,17 @@ export default function MemberDetailPage() {
                 </button>
                 {auditOpen && (
                   <div className="absolute right-0 mt-1 w-44 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-                    {["Baseline", "Monthly", "Single Video"].map((type) => (
+                    {[
+                      { label: "Baseline", value: "baseline" },
+                      { label: "Monthly", value: "monthly" },
+                      { label: "Single Video", value: "single_video" },
+                    ].map(({ label, value }) => (
                       <button
-                        key={type}
-                        onClick={() => setAuditOpen(false)}
+                        key={value}
+                        onClick={() => runAudit(value)}
                         className="w-full text-left px-4 py-2.5 text-sm text-[#1e2a38] hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg"
                       >
-                        {type}
+                        {label}
                       </button>
                     ))}
                   </div>
@@ -443,18 +524,12 @@ export default function MemberDetailPage() {
                           )}
                         </td>
                         <td className="py-3 text-right">
-                          {audit.notionPageUrl ? (
-                            <a
-                              href={audit.notionPageUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-[#3dc3ff] hover:underline text-xs"
-                            >
-                              View Report
-                            </a>
-                          ) : (
-                            <span className="text-gray-400 text-xs">—</span>
-                          )}
+                          <Link
+                            href={`/admin/audits/${audit.id}`}
+                            className="text-[#3dc3ff] hover:underline text-xs"
+                          >
+                            View Report →
+                          </Link>
                         </td>
                       </tr>
                     ))}
@@ -702,13 +777,17 @@ export default function MemberDetailPage() {
                 </button>
                 {auditOpen && (
                   <div className="absolute left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-                    {["Baseline", "Monthly", "Single Video"].map((type) => (
+                    {[
+                      { label: "Baseline", value: "baseline" },
+                      { label: "Monthly", value: "monthly" },
+                      { label: "Single Video", value: "single_video" },
+                    ].map(({ label, value }) => (
                       <button
-                        key={type}
-                        onClick={() => setAuditOpen(false)}
+                        key={value}
+                        onClick={() => runAudit(value)}
                         className="w-full text-left px-4 py-2.5 text-sm text-[#1e2a38] hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg"
                       >
-                        {type}
+                        {label}
                       </button>
                     ))}
                   </div>

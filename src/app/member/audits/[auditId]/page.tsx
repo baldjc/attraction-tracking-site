@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
 import Link from "next/link";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { ArrowLeftIcon, ArrowTopRightOnSquareIcon } from "@heroicons/react/24/outline";
 
 const PRINCIPLE_LABELS: Record<string, string> = {
   avatar_clarity: "Avatar Clarity",
@@ -58,75 +59,62 @@ function fmt(date: string) {
   return new Date(date).toLocaleDateString("en-CA", { year: "numeric", month: "short", day: "numeric" });
 }
 
-export default function MemberScoresPage() {
-  const [data, setData] = useState<any>(null);
+function fmtDuration(secs: number) {
+  const m = Math.floor(secs / 60);
+  const s = secs % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+export default function MemberAuditReportPage() {
+  const { auditId } = useParams<{ auditId: string }>();
+  const [audit, setAudit] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/member/scores")
+    fetch(`/api/audits/${auditId}`)
       .then((r) => r.json())
-      .then((d) => { setData(d); setLoading(false); });
-  }, []);
+      .then((d) => { setAudit(d.audit); setLoading(false); });
+  }, [auditId]);
 
-  if (loading) return <div className="flex items-center justify-center h-64 text-[#1e2a38]/40">Loading your scores…</div>;
+  if (loading) return <div className="flex items-center justify-center h-64 text-[#1e2a38]/40">Loading report…</div>;
+  if (!audit) return <div className="text-center py-20 text-[#1e2a38]/50">Report not found.</div>;
 
-  if (!data?.latestAudit) {
-    return (
-      <div className="max-w-2xl">
-        <h1 className="text-2xl font-bold text-[#1e2a38] mb-2">My Scores</h1>
-        <div className="bg-[#3dc3ff]/10 border border-[#3dc3ff]/30 rounded-xl p-8 text-center">
-          <p className="text-[#1e2a38] font-medium mb-2">No audits yet</p>
-          <p className="text-[#1e2a38]/60 text-sm">Your Attraction Scores will appear here after your first audit is completed by your coach.</p>
-        </div>
-      </div>
-    );
-  }
+  const report = audit.reportContent as any;
+  const scores = audit.scores as any;
+  const videos = (audit.videosAnalysed as any[]) ?? [];
+  const baselineScores = report?.baselineScores as any;
 
-  const { latestAudit, baselineAudit, audits } = data;
-  const scores = latestAudit.scores as any;
-  const baselineScores = (baselineAudit?.scores as any) ?? null;
-
-  const chartData = [...(audits ?? [])]
-    .reverse()
-    .filter((a: any) => a.overallScore != null)
-    .map((a: any) => ({
-      date: new Date(a.createdAt).toLocaleDateString("en-CA", { month: "short", day: "numeric" }),
-      score: Number(a.overallScore?.toFixed(1)),
-    }));
+  const typeLabel = audit.auditType === "baseline" ? "Baseline Audit"
+    : audit.auditType === "monthly" ? "Monthly Audit"
+    : "Single Video Audit";
 
   const gaps = Object.entries(scores).filter(([, v]: [string, any]) => v.score < 7);
 
   return (
     <div className="max-w-3xl space-y-6">
-      <h1 className="text-2xl font-bold text-[#1e2a38]">My Scores</h1>
+      <Link href="/member/scores" className="inline-flex items-center gap-1.5 text-sm text-[#1e2a38]/50 hover:text-[#1e2a38]">
+        <ArrowLeftIcon className="w-4 h-4" />
+        Back to My Scores
+      </Link>
 
-      {/* Overall Score */}
-      <div className={`rounded-xl p-8 text-center ${scoreBg(latestAudit.overallScore)}`}>
-        <p className="text-sm font-semibold uppercase tracking-wider mb-2 opacity-70">Current Attraction Score</p>
-        <p className={`text-7xl font-black ${scoreText(latestAudit.overallScore)}`}>
-          {latestAudit.overallScore?.toFixed(1)}
-        </p>
-        <p className="text-lg font-medium mt-1 opacity-70">/ 10</p>
+      {/* Header */}
+      <div className="bg-[#3dc3ff]/10 border border-[#3dc3ff]/30 rounded-xl p-6">
+        <p className="text-xs font-semibold text-[#3dc3ff] uppercase tracking-wider mb-1">Attraction by Video — {typeLabel}</p>
+        <p className="text-sm text-[#1e2a38]/50">{fmt(audit.createdAt)}</p>
       </div>
 
-      {/* Score Trend */}
-      {chartData.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-          <h2 className="text-base font-semibold text-[#1e2a38] mb-4">Score Over Time</h2>
-          <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-              <YAxis domain={[0, 10]} tick={{ fontSize: 11 }} />
-              <Tooltip formatter={(val: number) => [val.toFixed(1), "Score"]} contentStyle={{ fontSize: 12, borderRadius: 8 }} />
-              <Line type="monotone" dataKey="score" stroke="#3dc3ff" strokeWidth={2.5} dot={{ r: 4, fill: "#3dc3ff" }} activeDot={{ r: 6 }} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      )}
+      {/* Score */}
+      <div className={`rounded-xl p-8 text-center ${scoreBg(audit.overallScore)}`}>
+        <p className="text-sm font-semibold uppercase tracking-wider mb-2 opacity-70">Your Attraction Score</p>
+        <p className={`text-7xl font-black ${scoreText(audit.overallScore)}`}>{audit.overallScore?.toFixed(1)}</p>
+        <p className="text-lg font-medium mt-1 opacity-70">/ 10</p>
+        {report?.one_sentence_diagnosis && (
+          <p className="mt-4 text-sm italic opacity-80 max-w-lg mx-auto">"{report.one_sentence_diagnosis}"</p>
+        )}
+      </div>
 
-      {/* 16-Principle Breakdown */}
+      {/* Scores */}
       <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
         <h2 className="text-base font-semibold text-[#1e2a38] mb-4">16-Principle Breakdown</h2>
         <div className="space-y-1">
@@ -164,11 +152,39 @@ export default function MemberScoresPage() {
         </div>
       </div>
 
+      {/* Strengths */}
+      {report?.strengths?.length > 0 && (
+        <div className="bg-green-50 border border-green-200 rounded-xl p-6">
+          <h2 className="text-base font-semibold text-green-800 mb-3">✅ What&apos;s Working</h2>
+          <ul className="space-y-2">
+            {report.strengths.map((s: string, i: number) => (
+              <li key={i} className="text-sm text-green-700 flex items-start gap-2">
+                <span className="mt-0.5">•</span>{s}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Gaps */}
+      {report?.biggest_gaps?.length > 0 && (
+        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+          <h2 className="text-base font-semibold text-[#1e2a38] mb-3">🎯 Three Biggest Gaps</h2>
+          <ul className="space-y-3">
+            {report.biggest_gaps.map((g: string, i: number) => (
+              <li key={i} className="flex items-start gap-3">
+                <span className="bg-[#ff0033]/10 text-[#ff0033] text-xs font-bold px-2 py-0.5 rounded-full shrink-0 mt-0.5">{i + 1}</span>
+                <span className="text-sm text-[#1e2a38]/80">{g}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {/* Learning Path */}
       {gaps.length > 0 && (
         <div className="bg-[#3dc3ff]/10 border border-[#3dc3ff]/30 rounded-xl p-6">
           <h2 className="text-base font-semibold text-[#1e2a38] mb-3">📚 Your Learning Path</h2>
-          <p className="text-sm text-[#1e2a38]/60 mb-3">Revisit these lessons to address your gaps:</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {gaps.map(([key, val]: [string, any]) => (
               <div key={key} className="flex items-center justify-between bg-white rounded-lg px-3 py-2">
@@ -183,29 +199,26 @@ export default function MemberScoresPage() {
         </div>
       )}
 
-      {/* Audit History */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-        <h2 className="text-base font-semibold text-[#1e2a38] mb-4">Audit History</h2>
-        <div className="space-y-2">
-          {audits.map((a: any) => (
-            <div key={a.id} className="flex items-center justify-between py-2.5 border-b border-gray-50 last:border-0">
-              <div>
-                <span className="text-sm font-medium text-[#1e2a38] capitalize">{a.auditType.replace("_", " ")}</span>
-                <span className="text-xs text-[#1e2a38]/50 ml-2">{fmt(a.createdAt)}</span>
-              </div>
-              <div className="flex items-center gap-3">
-                {a.overallScore != null && (
-                  <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${scoreBg(a.overallScore)}`}>
-                    {a.overallScore.toFixed(1)}
-                  </span>
-                )}
-                <Link href={`/member/audits/${a.id}`} className="text-xs text-[#3dc3ff] hover:underline">
-                  View →
-                </Link>
-              </div>
-            </div>
-          ))}
+      {/* Videos */}
+      {videos.length > 0 && (
+        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+          <h2 className="text-base font-semibold text-[#1e2a38] mb-4">Videos Analysed</h2>
+          <ul className="space-y-2">
+            {videos.map((v: any, i: number) => (
+              <li key={i} className="flex items-center justify-between">
+                <a href={`https://youtube.com/watch?v=${v.videoId}`} target="_blank" rel="noopener noreferrer" className="text-sm text-[#3dc3ff] hover:underline flex items-center gap-1">
+                  {v.title}
+                  <ArrowTopRightOnSquareIcon className="w-3 h-3 shrink-0" />
+                </a>
+                <span className="text-xs text-[#1e2a38]/50">{fmtDuration(v.durationSeconds)}</span>
+              </li>
+            ))}
+          </ul>
         </div>
+      )}
+
+      <div className="text-center py-6 text-sm text-[#1e2a38]/40 border-t border-gray-200">
+        Prepared by Jared Chamberlain ~ Founder of Attraction by Video
       </div>
     </div>
   );
