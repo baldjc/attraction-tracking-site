@@ -13,7 +13,19 @@ export async function POST() {
   }
 
   try {
-    const contacts = await fetchContactsByTag("foundations - weekly coaching");
+    const rawContacts = await fetchContactsByTag("foundations - weekly coaching");
+
+    // Deduplicate by email — keep the first occurrence (most recently created in GHL order)
+    const seenEmails = new Set<string>();
+    const contacts = rawContacts.filter((c) => {
+      if (!c.email) return false;
+      const key = c.email.toLowerCase();
+      if (seenEmails.has(key)) return false;
+      seenEmails.add(key);
+      return true;
+    });
+
+    console.log(`[GHL Sync] ${rawContacts.length} raw contacts → ${contacts.length} after dedup`);
 
     let created = 0;
     let updated = 0;
