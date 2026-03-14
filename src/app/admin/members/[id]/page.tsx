@@ -34,29 +34,41 @@ const SERVICE_TIERS = [
   { value: "mastery_4", label: "Mastery 4" },
 ];
 
+const PRINCIPLE_LABELS: Record<string, string> = {
+  avatar_clarity: "Avatar Clarity",
+  themes_over_topics: "Themes Over Topics",
+  arc_attention: "ARC Attention",
+  arc_revelation: "ARC Revelation",
+  arc_connection: "ARC Connection",
+  title_frameworks: "Title Frameworks",
+  approve_the_click: "Approve the Click",
+  lead_magnet_system: "Lead Magnet System",
+  curiosity_bridges: "Curiosity Bridges",
+  show_dont_tell: "Show Don't Tell",
+  values_peppering: "Values Peppering",
+  connection_language: "Connection Language",
+  story_proof: "Story Proof",
+  grade_5_language: "Grade 5 Language",
+  binge_architecture: "Binge Architecture",
+  consistency: "Consistency",
+};
+
 const DIMENSIONS = [
   {
     label: "🎯 Channel Strategy",
-    principles: ["Avatar Clarity", "Themes Over Topics", "Consistency"],
+    keys: ["avatar_clarity", "themes_over_topics", "consistency"],
   },
   {
     label: "🎬 Content Impact",
-    principles: [
-      "ARC Attention",
-      "ARC Revelation",
-      "Approve the Click",
-      "Title Frameworks",
-      "Show Don't Tell",
-      "Curiosity Bridges",
-    ],
+    keys: ["arc_attention", "arc_revelation", "approve_the_click", "title_frameworks", "show_dont_tell", "curiosity_bridges"],
   },
   {
     label: "🤝 Viewer Connection",
-    principles: ["Connection Language", "Values Peppering", "Story Proof"],
+    keys: ["connection_language", "values_peppering", "story_proof", "grade_5_language"],
   },
   {
     label: "📈 Lead Generation",
-    principles: ["Lead Magnet System", "Binge Architecture"],
+    keys: ["lead_magnet_system", "binge_architecture"],
   },
 ];
 
@@ -283,12 +295,15 @@ export default function MemberDetailPage() {
     );
   }
 
-  const latestAudit = member.audits?.[0] ?? null;
-  const baselineAudit = [...(member.audits ?? [])].reverse().find(
+  const officialAudits = (member.audits ?? []).filter(
+    (a: any) => a.auditType === "baseline" || a.auditType === "monthly"
+  );
+  const latestAudit = officialAudits[0] ?? null;
+  const baselineAudit = [...officialAudits].reverse().find(
     (a: any) => a.auditType === "baseline"
   );
 
-  const chartData = [...(member.audits ?? [])]
+  const chartData = [...officialAudits]
     .reverse()
     .filter((a: any) => a.overallScore != null)
     .map((a: any) => ({
@@ -300,15 +315,22 @@ export default function MemberDetailPage() {
       type: a.auditType,
     }));
 
-  const latestScores: Record<string, number> =
-    typeof latestAudit?.scores === "object" && latestAudit?.scores
-      ? (latestAudit.scores as any)
-      : {};
+  function extractScore(raw: any, key: string): number | null {
+    if (!raw || typeof raw !== "object") return null;
+    const val = raw[key];
+    if (val == null) return null;
+    if (typeof val === "number") return val;
+    if (typeof val === "object" && typeof val.score === "number") return val.score;
+    return null;
+  }
 
-  const baselineScores: Record<string, number> =
-    typeof baselineAudit?.scores === "object" && baselineAudit?.scores
-      ? (baselineAudit.scores as any)
-      : {};
+  const rawLatestScores = typeof latestAudit?.scores === "object" && latestAudit?.scores
+    ? (latestAudit.scores as any)
+    : null;
+
+  const rawBaselineScores = typeof baselineAudit?.scores === "object" && baselineAudit?.scores
+    ? (baselineAudit.scores as any)
+    : null;
 
   return (
     <div className="max-w-5xl space-y-6">
@@ -728,9 +750,9 @@ export default function MemberDetailPage() {
             ) : (
               <div className="space-y-6">
                 {DIMENSIONS.map((dim) => {
-                  const dimScores = dim.principles
-                    .map((p) => latestScores[p])
-                    .filter((s) => s != null);
+                  const dimScores = dim.keys
+                    .map((k) => extractScore(rawLatestScores, k))
+                    .filter((s): s is number => s != null);
                   const dimAvg =
                     dimScores.length > 0
                       ? dimScores.reduce((a, b) => a + b, 0) / dimScores.length
@@ -763,9 +785,10 @@ export default function MemberDetailPage() {
                           </tr>
                         </thead>
                         <tbody>
-                          {dim.principles.map((principle) => {
-                            const score = latestScores[principle];
-                            const base = baselineScores[principle];
+                          {dim.keys.map((key) => {
+                            const score = extractScore(rawLatestScores, key);
+                            const base = extractScore(rawBaselineScores, key);
+                            const principle = PRINCIPLE_LABELS[key] ?? key;
                             const delta =
                               score != null && base != null ? score - base : null;
                             return (

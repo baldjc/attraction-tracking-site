@@ -14,6 +14,7 @@ export async function GET() {
     include: {
       _count: { select: { audits: true } },
       audits: {
+        where: { auditType: { in: ["baseline", "monthly"] } },
         orderBy: { createdAt: "desc" },
         take: 1,
         select: { overallScore: true, createdAt: true },
