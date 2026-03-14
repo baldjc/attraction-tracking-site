@@ -382,7 +382,7 @@ export default function MemberDetailPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* LEFT COLUMN */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-6 order-2 lg:order-1">
           {/* MEMBER INFO CARD */}
           <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
             <div className="flex items-center justify-between mb-4">
@@ -836,7 +836,7 @@ export default function MemberDetailPage() {
         </div>
 
         {/* RIGHT SIDEBAR — QUICK ACTIONS */}
-        <div className="space-y-4">
+        <div className="space-y-4 order-1 lg:order-2">
           {/* Membership Level — always-visible quick selector */}
           <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
             <h2 className="text-sm font-semibold text-[#1e2a38] mb-3">Membership Level</h2>
