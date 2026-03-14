@@ -53,15 +53,35 @@ const DIMENSIONS = [
 ];
 
 function scoreBg(score: number) {
-  if (score >= 7) return "bg-green-100 text-green-700";
-  if (score >= 5) return "bg-yellow-100 text-yellow-700";
-  return "bg-red-100 text-[#ff0033]";
+  if (score >= 7) return "bg-[#e8f7ff] text-[#3dc3ff]";
+  if (score >= 5) return "bg-[#fef3c7] text-[#f59e0b]";
+  return "bg-[#ffe5ea] text-[#ff0033]";
 }
 
 function scoreText(score: number) {
-  if (score >= 7) return "text-green-600";
-  if (score >= 5) return "text-yellow-600";
+  if (score >= 7) return "text-[#3dc3ff]";
+  if (score >= 5) return "text-[#f59e0b]";
   return "text-[#ff0033]";
+}
+
+function scoreBgBlock(score: number) {
+  if (score >= 7) return "bg-[#e8f7ff] border border-[#3dc3ff]/30";
+  if (score >= 5) return "bg-[#fef3c7] border border-[#f59e0b]/30";
+  return "bg-[#ffe5ea] border border-[#ff0033]/30";
+}
+
+function deltaColor(delta: number) {
+  if (delta > 0) return "text-[#3dc3ff]";
+  if (delta < 0) return "text-[#ff0033]";
+  return "text-gray-400";
+}
+
+function deltaCellBg(delta: number | null) {
+  if (delta == null) return "";
+  if (delta >= 1) return "bg-[#e8f7ff]";
+  if (delta >= 0.5) return "bg-[#fef3c7]";
+  if (delta < 0) return "bg-[#ffe5ea]";
+  return "";
 }
 
 function fmt(date: string) {
@@ -121,17 +141,21 @@ export default function AuditReportPage() {
       <div className="bg-[#3dc3ff]/10 border border-[#3dc3ff]/30 rounded-xl p-6">
         <p className="text-xs font-semibold text-[#3dc3ff] uppercase tracking-wider mb-1">Attraction by Video — {typeLabel}</p>
         <h1 className="text-2xl font-bold text-[#1e2a38]">{member?.fullName ?? member?.email}</h1>
-        {member?.youtubeHandle && <p className="text-[#1e2a38]/60 mt-1">{member.youtubeHandle}</p>}
+        {(member?.youtubeChannelName || channelInfo?.title || member?.youtubeHandle) && (
+          <p className="text-[#1e2a38]/60 mt-1">
+            {member?.youtubeChannelName || channelInfo?.title || member?.youtubeHandle}
+          </p>
+        )}
         <p className="text-sm text-[#1e2a38]/50 mt-1">{fmt(audit.createdAt)}</p>
       </div>
 
       {/* Overall Score */}
-      <div className={`rounded-xl p-6 text-center ${scoreBg(audit.overallScore)}`}>
-        <p className="text-sm font-semibold uppercase tracking-wider mb-2 opacity-70">Your Attraction Score</p>
-        <p className={`text-6xl font-black ${scoreText(audit.overallScore)}`}>{audit.overallScore?.toFixed(1)}</p>
-        <p className="text-lg font-medium mt-1 opacity-70">/ 10</p>
+      <div className={`rounded-xl p-8 text-center ${scoreBgBlock(audit.overallScore)}`}>
+        <p className="text-sm font-semibold uppercase tracking-wider mb-2 text-[#1e2a38]/60">Your Attraction Score</p>
+        <p className={`text-7xl font-black ${scoreText(audit.overallScore)}`}>{audit.overallScore?.toFixed(1)}</p>
+        <p className="text-lg font-medium mt-1 text-[#1e2a38]/50">/ 10</p>
         {report?.one_sentence_diagnosis && (
-          <p className="mt-4 text-sm italic opacity-80 max-w-lg mx-auto">"{report.one_sentence_diagnosis}"</p>
+          <p className="mt-4 text-sm italic text-[#1e2a38]/70 max-w-lg mx-auto">"{report.one_sentence_diagnosis}"</p>
         )}
       </div>
 
@@ -150,7 +174,7 @@ export default function AuditReportPage() {
               return (
                 <div>
                   <p className="text-xs text-[#1e2a38]/50 uppercase tracking-wider mb-1">Δ Baseline</p>
-                  <p className={`text-3xl font-bold ${delta > 0 ? "text-green-600" : delta < 0 ? "text-[#ff0033]" : "text-gray-400"}`}>
+                  <p className={`text-3xl font-bold ${deltaColor(delta)}`}>
                     {delta > 0 ? "↑" : delta < 0 ? "↓" : "→"}{Math.abs(delta).toFixed(1)}
                   </p>
                 </div>
@@ -162,7 +186,7 @@ export default function AuditReportPage() {
               return (
                 <div>
                   <p className="text-xs text-[#1e2a38]/50 uppercase tracking-wider mb-1">Δ Last Month</p>
-                  <p className={`text-3xl font-bold ${delta > 0 ? "text-green-600" : delta < 0 ? "text-[#ff0033]" : "text-gray-400"}`}>
+                  <p className={`text-3xl font-bold ${deltaColor(delta)}`}>
                     {delta > 0 ? "↑" : delta < 0 ? "↓" : "→"}{Math.abs(delta).toFixed(1)}
                   </p>
                 </div>
@@ -194,11 +218,9 @@ export default function AuditReportPage() {
                   const last = lastMonthScores?.[key]?.score;
                   const curr = val.score;
                   const delta = base != null ? curr - base : null;
-                  const cellBg = delta != null
-                    ? delta >= 1 ? "bg-green-50" : delta >= 0.5 ? "bg-yellow-50" : delta < 0 ? "bg-red-50" : ""
-                    : "";
+                  const rowBg = deltaCellBg(delta);
                   return (
-                    <tr key={key} className={`border-b border-gray-50 last:border-0 ${cellBg}`}>
+                    <tr key={key} className={`border-b border-gray-50 last:border-0 ${rowBg}`}>
                       <td className="py-2 pr-3 text-[#1e2a38]">{PRINCIPLE_LABELS[key] ?? key}</td>
                       <td className="py-2 px-2 text-center">
                         {base != null ? <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${scoreBg(base)}`}>{base.toFixed(1)}</span> : "—"}
@@ -212,7 +234,7 @@ export default function AuditReportPage() {
                         <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${scoreBg(curr)}`}>{curr.toFixed(1)}</span>
                       </td>
                       <td className="py-2 px-2 text-center text-xs font-bold">
-                        {delta == null ? "—" : delta > 0 ? <span className="text-green-600">+{delta.toFixed(1)}</span> : delta < 0 ? <span className="text-[#ff0033]">{delta.toFixed(1)}</span> : <span className="text-gray-400">0.0</span>}
+                        {delta == null ? "—" : delta > 0 ? <span className={deltaColor(delta)}>+{delta.toFixed(1)}</span> : delta < 0 ? <span className={deltaColor(delta)}>{delta.toFixed(1)}</span> : <span className="text-gray-400">0.0</span>}
                       </td>
                     </tr>
                   );
@@ -224,7 +246,7 @@ export default function AuditReportPage() {
           <div className="space-y-4">
             {DIMENSIONS.map((dim) => (
               <div key={dim.label}>
-                <h3 className="text-xs font-semibold text-[#1e2a38]/50 uppercase tracking-wider mb-2">{dim.label}</h3>
+                <h3 className="text-sm font-bold text-[#1e2a38] uppercase tracking-wide mb-2 pt-1">{dim.label}</h3>
                 <div className="space-y-1">
                   {dim.keys.filter((k) => scores[k]).map((key) => {
                     const val = scores[key];
@@ -260,32 +282,47 @@ export default function AuditReportPage() {
       {videos.length > 0 && (
         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
           <h2 className="text-base font-semibold text-[#1e2a38] mb-4">Videos Analysed</h2>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-100">
-                  {["Title", "Duration", "Date", "Views"].map((h) => (
-                    <th key={h} className="text-left py-2 pr-4 text-xs font-semibold text-[#1e2a38]/50 uppercase tracking-wider">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {videos.map((v: any, i: number) => (
-                  <tr key={i} className="border-b border-gray-50 last:border-0">
-                    <td className="py-2 pr-4">
-                      <a href={`https://youtube.com/watch?v=${v.videoId}`} target="_blank" rel="noopener noreferrer" className="text-[#3dc3ff] hover:underline flex items-center gap-1">
-                        {v.title}
-                        <ArrowTopRightOnSquareIcon className="w-3 h-3 inline shrink-0" />
-                      </a>
-                      {!v.hadTranscript && <span className="text-xs text-amber-500 ml-1">(no transcript)</span>}
-                    </td>
-                    <td className="py-2 pr-4 text-[#1e2a38]/60">{fmtDuration(v.durationSeconds)}</td>
-                    <td className="py-2 pr-4 text-[#1e2a38]/60">{fmt(v.uploadDate)}</td>
-                    <td className="py-2 text-[#1e2a38]/60">{v.viewCount?.toLocaleString()}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="space-y-4">
+            {videos.map((v: any, i: number) => {
+              const breakdown = report?.video_breakdowns?.find(
+                (b: any) => b.title === v.title || b.video_id === v.videoId
+              );
+              const strong = breakdown?.opening_analysis || breakdown?.insights_analysis || breakdown?.connection_analysis;
+              const improve = [breakdown?.opening_analysis, breakdown?.insights_analysis, breakdown?.connection_analysis]
+                .filter(Boolean)
+                .find((t: string) => t !== strong);
+              return (
+                <div key={i} className="border border-gray-100 rounded-lg p-4">
+                  <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
+                    <a
+                      href={`https://youtube.com/watch?v=${v.videoId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm font-semibold text-[#3dc3ff] hover:underline flex items-center gap-1"
+                    >
+                      {v.title}
+                      <ArrowTopRightOnSquareIcon className="w-3 h-3 shrink-0" />
+                    </a>
+                    <span className="text-xs text-[#1e2a38]/40 whitespace-nowrap">
+                      {fmtDuration(v.durationSeconds)} · {fmt(v.uploadDate)} · {v.viewCount?.toLocaleString()} views
+                    </span>
+                  </div>
+                  {!v.hadTranscript && (
+                    <p className="text-xs text-amber-500 mb-1">(no transcript available)</p>
+                  )}
+                  {strong && (
+                    <p className="text-xs text-[#1e2a38]/70 mt-1">
+                      <span className="mr-1">✅</span>{strong}
+                    </p>
+                  )}
+                  {improve && (
+                    <p className="text-xs text-[#1e2a38]/70 mt-1">
+                      <span className="mr-1">⚠️</span>{improve}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

@@ -14,7 +14,7 @@ export async function GET(
   const { auditId } = await params;
   const audit = await prisma.audit.findUnique({
     where: { id: auditId },
-    include: { user: { select: { id: true, fullName: true, email: true, youtubeHandle: true, youtubeChannelUrl: true } } },
+    include: { user: { select: { id: true, fullName: true, email: true, youtubeHandle: true, youtubeChannelUrl: true, youtubeChannelName: true } } },
   });
 
   if (!audit) {

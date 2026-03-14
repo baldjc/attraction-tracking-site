@@ -1,0 +1,21 @@
+  Three tweaks on the audit report page:                                                                                                 
+                                                                                                                                         
+  1. **On-brand colour coding** — The current greens and yellows don't match the Attraction brand. Use these instead:                    
+     - High scores (7.0+): Use the brand primary blue (#3dc3ff) with a light blue background (#e8f7ff)                                   
+     - Mid scores (5.0–6.9): Use a warm amber (#f59e0b) with light amber background (#fef3c7)                                            
+     - Low scores (below 5.0): Use the brand crimson (#ff0033) with light red background (#ffe5ea)
+     - The overall score callout should use the same scheme — blue background for 7+, amber for 5-6.9, red for below 5
+     Apply this everywhere scores appear: the scorecard, the overall score display, delta indicators, etc.
+
+  2. **Channel name under member name** — On the audit report header, below "Jared Test" it currently shows "@UC8cdI58o5qIfOeAw2TQ4xYA"
+  which is the raw channel ID. It should show the YouTube channel NAME instead (e.g., "Calgary Real Estate" or whatever the channel's
+  actual name is). Pull this from the youtube_channel_name field on the user record. If that field isn't populated yet, fall back to the
+  handle, but prefer the channel name.
+
+  3. **Videos Analysed section — add brief feedback per video** — In the "Videos Analysed" table/list, for each video add 1-2 sentences:
+  one on what was strong about that video and one on what could be improved. Pull this from the video_breakdowns data in the audit's
+  report_content JSON (the opening_analysis, insights_analysis, connection_analysis fields). Show it as a brief summary below each video
+  title in the list — something like:
+     > "5 Things to Know Before Moving to Calgary" — 12:34 — Mar 10, 2026
+     > ✅ Strong data-driven insights with neighbourhood-specific details
+     > ⚠️  Opening took 45 seconds before addressing the title promise
