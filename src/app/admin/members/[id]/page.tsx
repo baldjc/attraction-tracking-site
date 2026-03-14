@@ -11,6 +11,7 @@ import {
   ArrowTopRightOnSquareIcon,
   EnvelopeIcon,
   ChevronDownIcon,
+  PhoneIcon,
 } from "@heroicons/react/24/outline";
 import {
   LineChart,
@@ -58,6 +59,13 @@ const DIMENSIONS = [
     principles: ["Lead Magnet System", "Binge Architecture"],
   },
 ];
+
+function tierColors(tier: string) {
+  if (tier === "foundations") return { badge: "bg-[#3dc3ff]/20 text-[#3dc3ff]", dot: "#3dc3ff" };
+  if (tier === "editing_2" || tier === "editing_4") return { badge: "bg-amber-100 text-amber-700", dot: "#f59e0b" };
+  if (tier === "mastery_2" || tier === "mastery_4") return { badge: "bg-purple-100 text-purple-700", dot: "#7c3aed" };
+  return { badge: "bg-gray-100 text-gray-500", dot: "#9ca3af" };
+}
 
 function scoreColor(score: number | null | undefined) {
   if (score == null) return "text-gray-400";
@@ -288,10 +296,16 @@ export default function MemberDetailPage() {
                 {member.fullName || member.email}
               </h1>
               <div className="flex items-center gap-3 mt-1 flex-wrap">
-                {member.youtubeHandle && (
-                  <span className="text-white/70 text-sm">{member.youtubeHandle}</span>
+                {(member.youtubeChannelName || member.youtubeHandle) && (
+                  <span className="text-white/70 text-sm">
+                    {member.youtubeChannelName
+                      ? member.youtubeHandle && !/^UC[\w-]{22}$/.test(member.youtubeHandle.replace(/^@/, ""))
+                        ? `${member.youtubeChannelName} (${member.youtubeHandle})`
+                        : member.youtubeChannelName
+                      : member.youtubeHandle}
+                  </span>
                 )}
-                <span className="bg-white/20 text-white text-xs font-semibold px-2.5 py-0.5 rounded-full">
+                <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${tierColors(member.serviceTier).badge}`}>
                   {tierLabel(member.serviceTier)}
                 </span>
               </div>
@@ -360,8 +374,10 @@ export default function MemberDetailPage() {
                     setEditFields({
                       fullName: member.fullName ?? "",
                       email: member.email ?? "",
+                      phone: member.phone ?? "",
                       youtubeChannelUrl: member.youtubeChannelUrl ?? "",
                       youtubeHandle: member.youtubeHandle ?? "",
+                      youtubeChannelName: member.youtubeChannelName ?? "",
                       serviceTier: member.serviceTier ?? "foundations",
                       ghlContactId: member.ghlContactId ?? "",
                     });
@@ -392,51 +408,80 @@ export default function MemberDetailPage() {
             </div>
 
             <div className="space-y-3 text-sm">
-              {[
-                { label: "Full Name", key: "fullName" },
-                { label: "Email", key: "email" },
-                { label: "YouTube URL", key: "youtubeChannelUrl" },
-                { label: "YouTube Handle", key: "youtubeHandle" },
-                { label: "GHL Contact ID", key: "ghlContactId" },
-              ].map(({ label, key }) => (
-                <div key={key} className="flex flex-col sm:flex-row sm:items-center gap-1">
-                  <span className="text-[#1e2a38]/50 w-40 shrink-0">{label}</span>
-                  {editing ? (
-                    <input
-                      value={editFields[key] ?? ""}
-                      onChange={(e) =>
-                        setEditFields((f: any) => ({ ...f, [key]: e.target.value }))
-                      }
-                      className="flex-1 border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#3dc3ff]/30"
-                    />
-                  ) : (
-                    <span className="text-[#1e2a38] break-all">
-                      {key === "ghlContactId" && member.ghlContactId ? (
-                        <a
-                          href={`https://app.gohighlevel.com/v2/location/${GHL_LOCATION_ID}/contacts/detail/${member.ghlContactId}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-[#3dc3ff] hover:underline"
-                        >
-                          {member.ghlContactId}
-                        </a>
-                      ) : key === "youtubeChannelUrl" && member.youtubeChannelUrl ? (
-                        <a
-                          href={member.youtubeChannelUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-[#3dc3ff] hover:underline flex items-center gap-1"
-                        >
-                          {member.youtubeChannelUrl}
-                          <ArrowTopRightOnSquareIcon className="w-3.5 h-3.5 shrink-0" />
-                        </a>
-                      ) : (
-                        (member as any)[key] || <span className="text-gray-400">—</span>
-                      )}
-                    </span>
-                  )}
-                </div>
-              ))}
+              {/* Full Name */}
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1">
+                <span className="text-[#1e2a38]/50 w-40 shrink-0">Full Name</span>
+                {editing ? (
+                  <input value={editFields.fullName ?? ""} onChange={(e) => setEditFields((f: any) => ({ ...f, fullName: e.target.value }))} className="flex-1 border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#3dc3ff]/30" />
+                ) : (
+                  <span className="text-[#1e2a38]">{member.fullName || <span className="text-gray-400">—</span>}</span>
+                )}
+              </div>
+
+              {/* Email */}
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1">
+                <span className="text-[#1e2a38]/50 w-40 shrink-0">Email</span>
+                {editing ? (
+                  <input value={editFields.email ?? ""} onChange={(e) => setEditFields((f: any) => ({ ...f, email: e.target.value }))} className="flex-1 border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#3dc3ff]/30" />
+                ) : (
+                  <span className="text-[#1e2a38]">{member.email || <span className="text-gray-400">—</span>}</span>
+                )}
+              </div>
+
+              {/* Phone */}
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1">
+                <span className="text-[#1e2a38]/50 w-40 shrink-0">Phone</span>
+                {editing ? (
+                  <input value={editFields.phone ?? ""} onChange={(e) => setEditFields((f: any) => ({ ...f, phone: e.target.value }))} className="flex-1 border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#3dc3ff]/30" placeholder="+1 555 000 0000" />
+                ) : (
+                  <span className="text-[#1e2a38]">
+                    {member.phone ? (
+                      <a href={`tel:${member.phone}`} className="text-[#3dc3ff] hover:underline">{member.phone}</a>
+                    ) : <span className="text-gray-400">—</span>}
+                  </span>
+                )}
+              </div>
+
+              {/* YouTube Channel */}
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1">
+                <span className="text-[#1e2a38]/50 w-40 shrink-0">YouTube Channel</span>
+                {editing ? (
+                  <div className="flex-1 space-y-1.5">
+                    <input value={editFields.youtubeChannelUrl ?? ""} onChange={(e) => setEditFields((f: any) => ({ ...f, youtubeChannelUrl: e.target.value }))} className="w-full border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#3dc3ff]/30" placeholder="YouTube URL" />
+                    <input value={editFields.youtubeHandle ?? ""} onChange={(e) => setEditFields((f: any) => ({ ...f, youtubeHandle: e.target.value }))} className="w-full border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#3dc3ff]/30" placeholder="Handle (@channel)" />
+                    <input value={editFields.youtubeChannelName ?? ""} onChange={(e) => setEditFields((f: any) => ({ ...f, youtubeChannelName: e.target.value }))} className="w-full border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#3dc3ff]/30" placeholder="Channel name" />
+                  </div>
+                ) : (
+                  <span className="text-[#1e2a38] break-all">
+                    {member.youtubeChannelUrl ? (
+                      <a href={member.youtubeChannelUrl} target="_blank" rel="noopener noreferrer" className="text-[#3dc3ff] hover:underline flex items-center gap-1">
+                        {member.youtubeChannelName
+                          ? member.youtubeHandle && !/^UC[\w-]{22}$/.test(member.youtubeHandle.replace(/^@/, ""))
+                            ? `${member.youtubeChannelName} (${member.youtubeHandle})`
+                            : member.youtubeChannelName
+                          : member.youtubeHandle ?? member.youtubeChannelUrl}
+                        <ArrowTopRightOnSquareIcon className="w-3.5 h-3.5 shrink-0" />
+                      </a>
+                    ) : <span className="text-gray-400">—</span>}
+                  </span>
+                )}
+              </div>
+
+              {/* GHL Contact ID */}
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1">
+                <span className="text-[#1e2a38]/50 w-40 shrink-0">GHL Contact ID</span>
+                {editing ? (
+                  <input value={editFields.ghlContactId ?? ""} onChange={(e) => setEditFields((f: any) => ({ ...f, ghlContactId: e.target.value }))} className="flex-1 border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#3dc3ff]/30" />
+                ) : (
+                  <span className="text-[#1e2a38] break-all">
+                    {member.ghlContactId ? (
+                      <a href={`https://app.gohighlevel.com/v2/location/${GHL_LOCATION_ID}/contacts/detail/${member.ghlContactId}`} target="_blank" rel="noopener noreferrer" className="text-[#3dc3ff] hover:underline">
+                        {member.ghlContactId}
+                      </a>
+                    ) : <span className="text-gray-400">—</span>}
+                  </span>
+                )}
+              </div>
 
               {/* Membership Level */}
               <div className="flex flex-col sm:flex-row sm:items-center gap-1">
@@ -444,19 +489,17 @@ export default function MemberDetailPage() {
                 {editing ? (
                   <select
                     value={editFields.serviceTier ?? "foundations"}
-                    onChange={(e) =>
-                      setEditFields((f: any) => ({ ...f, serviceTier: e.target.value }))
-                    }
+                    onChange={(e) => setEditFields((f: any) => ({ ...f, serviceTier: e.target.value }))}
                     className="border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#3dc3ff]/30"
                   >
                     {SERVICE_TIERS.map((t) => (
-                      <option key={t.value} value={t.value}>
-                        {t.label}
-                      </option>
+                      <option key={t.value} value={t.value}>{t.label}</option>
                     ))}
                   </select>
                 ) : (
-                  <span className="text-[#1e2a38]">{tierLabel(member.serviceTier)}</span>
+                  <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold ${tierColors(member.serviceTier).badge}`}>
+                    {tierLabel(member.serviceTier)}
+                  </span>
                 )}
               </div>
             </div>
@@ -825,6 +868,16 @@ export default function MemberDetailPage() {
                 <EnvelopeIcon className="w-4 h-4 text-[#3dc3ff]" />
                 Email Member
               </a>
+
+              {member.phone && (
+                <a
+                  href={`tel:${member.phone}`}
+                  className="w-full flex items-center gap-2 border border-gray-200 hover:bg-gray-50 text-[#1e2a38] text-sm font-medium px-4 py-2.5 rounded-lg transition-colors"
+                >
+                  <PhoneIcon className="w-4 h-4 text-[#3dc3ff]" />
+                  Call Member
+                </a>
+              )}
 
               {member.ghlContactId && (
                 <a

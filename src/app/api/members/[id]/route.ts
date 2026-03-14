@@ -52,8 +52,10 @@ export async function PATCH(
   const allowed = [
     "fullName",
     "email",
+    "phone",
     "youtubeChannelUrl",
     "youtubeHandle",
+    "youtubeChannelName",
     "serviceTier",
     "ghlContactId",
   ];

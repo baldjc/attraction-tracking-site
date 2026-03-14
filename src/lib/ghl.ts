@@ -12,6 +12,7 @@ export interface GHLContact {
   firstName?: string;
   lastName?: string;
   email?: string;
+  phone?: string;
   tags?: string[];
   customFields?: Array<{ id: string; value: string }>;
 }

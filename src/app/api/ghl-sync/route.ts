@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { fetchContactsByTag, getCustomFieldValue, GHL_FIELDS } from "@/lib/ghl";
+import { getChannelInfo } from "@/lib/youtube";
 import bcrypt from "bcryptjs";
 
 export const maxDuration = 60;
@@ -23,6 +24,15 @@ function toTitleCase(str: string): string {
     .join(" ");
 }
 
+async function lookupChannelName(handle: string): Promise<string | null> {
+  try {
+    const info = await getChannelInfo(handle);
+    return info.title ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function POST() {
   const session = await auth();
   if (!session?.user || (session.user as any).role !== "admin") {
@@ -32,7 +42,7 @@ export async function POST() {
   try {
     const rawContacts = await fetchContactsByTag("foundations - weekly coaching");
 
-    // Deduplicate by email — keep the first occurrence (most recently created in GHL order)
+    // Deduplicate by email — keep first occurrence
     const seenEmails = new Set<string>();
     const contacts = rawContacts.filter((c) => {
       if (!c.email) return false;
@@ -42,23 +52,19 @@ export async function POST() {
       return true;
     });
 
-    console.log(`[GHL Sync] ${rawContacts.length} raw contacts → ${contacts.length} after dedup`);
+    console.log(`[GHL Sync] ${rawContacts.length} raw → ${contacts.length} after dedup`);
 
     let created = 0;
     let updated = 0;
     let skipped = 0;
-
-    // Track all emails seen in GHL
     const ghlEmails = new Set<string>();
 
     for (const contact of contacts) {
-      if (!contact.email) {
-        skipped++;
-        continue;
-      }
+      if (!contact.email) { skipped++; continue; }
 
       ghlEmails.add(contact.email.toLowerCase());
 
+      // YouTube URL + handle extraction
       const youtubeUrl = getCustomFieldValue(contact, GHL_FIELDS.YOUTUBE_CHANNEL_URL);
       let youtubeHandle: string | null = null;
       if (youtubeUrl) {
@@ -76,31 +82,28 @@ export async function POST() {
 
       const rawName = [contact.firstName, contact.lastName].filter(Boolean).join(" ");
       const fullName = rawName ? toTitleCase(rawName) : null;
+      const phone = contact.phone?.trim() || null;
 
-      const existing = await prisma.user.findUnique({
-        where: { email: contact.email },
-      });
+      const existing = await prisma.user.findUnique({ where: { email: contact.email } });
 
       if (existing) {
         const updates: Record<string, any> = {};
-        if (contact.id && contact.id !== existing.ghlContactId) {
-          updates.ghlContactId = contact.id;
-        }
-        if (fullName && fullName !== existing.fullName) {
-          updates.fullName = fullName;
-        }
-        if (youtubeUrl && youtubeUrl !== existing.youtubeChannelUrl) {
-          updates.youtubeChannelUrl = youtubeUrl;
-        }
-        if (youtubeHandle && youtubeHandle !== existing.youtubeHandle) {
-          updates.youtubeHandle = youtubeHandle;
+
+        if (contact.id && contact.id !== existing.ghlContactId) updates.ghlContactId = contact.id;
+        if (fullName && fullName !== existing.fullName) updates.fullName = fullName;
+        if (youtubeUrl && youtubeUrl !== existing.youtubeChannelUrl) updates.youtubeChannelUrl = youtubeUrl;
+        if (youtubeHandle && youtubeHandle !== existing.youtubeHandle) updates.youtubeHandle = youtubeHandle;
+        if (phone && phone !== existing.phone) updates.phone = phone;
+
+        // Look up channel name if we have a handle but no channel name yet
+        const handleForLookup = youtubeHandle ?? existing.youtubeHandle;
+        if (handleForLookup && !existing.youtubeChannelName) {
+          const channelName = await lookupChannelName(handleForLookup);
+          if (channelName) updates.youtubeChannelName = channelName;
         }
 
         if (Object.keys(updates).length > 0) {
-          await prisma.user.update({
-            where: { email: contact.email },
-            data: updates,
-          });
+          await prisma.user.update({ where: { email: contact.email }, data: updates });
           updated++;
         } else {
           skipped++;
@@ -109,6 +112,12 @@ export async function POST() {
         const tempPassword = "member-" + Math.random().toString(36).slice(2, 10);
         const hash = await bcrypt.hash(tempPassword, 12);
 
+        // Look up channel name for new members
+        let youtubeChannelName: string | null = null;
+        if (youtubeHandle) {
+          youtubeChannelName = await lookupChannelName(youtubeHandle);
+        }
+
         await prisma.user.create({
           data: {
             email: contact.email,
@@ -116,8 +125,10 @@ export async function POST() {
             passwordHash: hash,
             role: "foundations_member",
             ghlContactId: contact.id,
+            phone,
             youtubeChannelUrl: youtubeUrl || null,
             youtubeHandle,
+            youtubeChannelName,
             serviceTier: "foundations",
           },
         });
@@ -125,7 +136,7 @@ export async function POST() {
       }
     }
 
-    // Detect members in DB who are no longer in GHL (lost the tag)
+    // Detect members no longer in GHL
     const allDbMembers = await prisma.user.findMany({
       where: { role: "foundations_member" },
       select: { email: true, fullName: true },
@@ -135,19 +146,9 @@ export async function POST() {
       .filter((m) => !ghlEmails.has(m.email.toLowerCase()))
       .map((m) => ({ email: m.email, name: m.fullName || m.email }));
 
-    return NextResponse.json({
-      success: true,
-      total: contacts.length,
-      created,
-      updated,
-      skipped,
-      flaggedInactive,
-    });
+    return NextResponse.json({ success: true, total: contacts.length, created, updated, skipped, flaggedInactive });
   } catch (error: any) {
     console.error("GHL sync error:", error);
-    return NextResponse.json(
-      { error: "Sync failed", details: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Sync failed", details: error.message }, { status: 500 });
   }
 }

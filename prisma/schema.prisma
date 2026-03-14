@@ -44,10 +44,12 @@ model User {
   magicLinkEnabled  Boolean     @default(false)
   emailVerified     Boolean     @default(false)
   role              UserRole    @default(foundations_member)
-  ghlContactId      String?
-  youtubeChannelUrl String?
-  youtubeHandle     String?
-  serviceTier       ServiceTier @default(foundations)
+  ghlContactId        String?
+  phone               String?
+  youtubeChannelUrl   String?
+  youtubeHandle       String?
+  youtubeChannelName  String?
+  serviceTier         ServiceTier @default(foundations)
   slackUserId       String?
   skoolProfile      String?
   coachingNotes          String?
