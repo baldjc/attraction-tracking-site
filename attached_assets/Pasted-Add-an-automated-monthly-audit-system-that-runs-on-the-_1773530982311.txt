@@ -1,0 +1,26 @@
+Add an automated monthly audit system that runs on the 1st of every month.                                                             
+                                                                                                                                         
+  1. **Create a cron/scheduled endpoint** — POST /api/audits/run-all-monthly
+     - Queries all members who have a YouTube handle or channel URL set                                                                  
+     - Skips any member who doesn't have a baseline audit yet (they need a baseline first)
+     - Skips any member who has no new long-form videos since their last audit
+     - Queues monthly audits for all eligible members, processing them sequentially (not all at once — to avoid API rate limits)
+     - Logs progress: "Processing 1/18... 2/18..." etc.
+     - Returns a summary: { total_eligible, audits_queued, skipped_no_baseline, skipped_no_new_videos }
+
+  2. **Schedule it to run on the 1st of each month** — Use a cron job. On Replit, you can use the built-in cron feature or set up a
+  simple interval check:
+     - Create a lightweight cron endpoint that checks if it's the 1st of the month and if the monthly run hasn't already happened this
+  month
+     - Store a "last_monthly_run" date in the settings table to prevent duplicate runs
+     - The cron should trigger at midnight MST (Mountain Standard Time — Calgary timezone, UTC-7) on the 1st
+
+  3. **Add a manual trigger on the admin dashboard** — Add a "Run All Monthly Audits" button on the admin Audits page that calls the same
+   endpoint. Show a confirmation dialog: "This will queue monthly audits for all eligible members. Continue?" Show progress while
+  running: "3/18 complete..."
+
+  4. **Rate limiting** — Process members one at a time with a short delay between each (5-10 seconds) to avoid hitting YouTube API and
+  Claude API rate limits. If one member's audit fails, log the error and continue to the next — don't stop the whole batch.
+
+  5. **Notification/log** — After all audits complete, store a summary in the database: date, how many ran, how many skipped, any
+  failures. Show this on the admin dashboard: "Last monthly run: March 1, 2026 — 18 audits completed, 4 skipped (no new videos)"

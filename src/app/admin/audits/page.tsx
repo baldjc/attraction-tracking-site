@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { ArrowPathIcon } from "@heroicons/react/24/outline";
+import { ArrowPathIcon, PlayIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
 
 interface AuditRow {
   id: string;
@@ -10,6 +10,26 @@ interface AuditRow {
   overallScore: number | null;
   createdAt: string;
   user: { id: string; fullName: string | null; email: string } | null;
+}
+
+interface BatchStatus {
+  status: "running" | "complete" | "idle";
+  current: number;
+  total: number;
+  started?: string;
+  completed?: string;
+  results?: Array<{ memberId: string; memberName: string; status: string; reason?: string }>;
+}
+
+interface LastRun {
+  date: string;
+  yearMonth: string;
+  total_eligible: number;
+  audits_queued: number;
+  skipped_no_baseline: number;
+  skipped_no_new_videos: number;
+  skipped_no_youtube: number;
+  failures: number;
 }
 
 function scoreBg(score: number | null) {
@@ -23,13 +43,46 @@ function fmt(date: string) {
   return new Date(date).toLocaleDateString("en-CA", { year: "numeric", month: "short", day: "numeric" });
 }
 
+function fmtDateTime(date: string) {
+  return new Date(date).toLocaleString("en-CA", {
+    year: "numeric", month: "short", day: "numeric",
+    hour: "2-digit", minute: "2-digit",
+  });
+}
+
 export default function AuditsPage() {
   const [audits, setAudits] = useState<AuditRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [typeFilter, setTypeFilter] = useState("");
   const [search, setSearch] = useState("");
+  const [batchStatus, setBatchStatus] = useState<BatchStatus | null>(null);
+  const [lastRun, setLastRun] = useState<LastRun | null>(null);
+  const [launching, setLaunching] = useState(false);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  useEffect(() => { fetchAudits(); }, []);
+  useEffect(() => {
+    fetchAudits();
+    fetchBatchStatus();
+  }, []);
+
+  // Poll for batch progress while running
+  useEffect(() => {
+    if (batchStatus?.status === "running") {
+      if (!pollRef.current) {
+        pollRef.current = setInterval(fetchBatchStatus, 3000);
+      }
+    } else {
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+        // Refresh audit list when batch completes
+        if (batchStatus?.status === "complete") fetchAudits();
+      }
+    }
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, [batchStatus?.status]);
 
   async function fetchAudits() {
     setLoading(true);
@@ -37,6 +90,31 @@ export default function AuditsPage() {
     const data = await res.json();
     setAudits(data.audits ?? []);
     setLoading(false);
+  }
+
+  async function fetchBatchStatus() {
+    try {
+      const res = await fetch("/api/audits/run-all-monthly");
+      const data = await res.json();
+      setBatchStatus(data.batchStatus);
+      setLastRun(data.lastRun);
+    } catch { }
+  }
+
+  async function handleRunAllMonthly() {
+    if (!confirm("This will queue monthly audits for all eligible members. Each member takes ~30–60 seconds. Continue?")) return;
+    setLaunching(true);
+    try {
+      const res = await fetch("/api/audits/run-all-monthly", { method: "POST" });
+      const data = await res.json();
+      if (data.error) {
+        alert(data.error);
+      } else {
+        await fetchBatchStatus();
+      }
+    } finally {
+      setLaunching(false);
+    }
   }
 
   const filtered = audits
@@ -47,14 +125,82 @@ export default function AuditsPage() {
       return name.includes(search.toLowerCase());
     });
 
+  const isRunning = batchStatus?.status === "running";
+
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-[#1e2a38]">Audits</h1>
           <p className="text-[#1e2a38]/60 mt-1">{audits.length} total audit{audits.length !== 1 ? "s" : ""}</p>
         </div>
+        <button
+          onClick={handleRunAllMonthly}
+          disabled={launching || isRunning}
+          className="flex items-center gap-2 bg-[#1e2a38] hover:bg-[#2a3a50] disabled:opacity-50 text-white px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors shrink-0"
+        >
+          <PlayIcon className={`w-4 h-4 ${isRunning ? "animate-pulse" : ""}`} />
+          {isRunning ? `Running… ${batchStatus.current}/${batchStatus.total}` : launching ? "Starting…" : "Run All Monthly Audits"}
+        </button>
       </div>
+
+      {/* Batch progress */}
+      {isRunning && (
+        <div className="mb-4 bg-white border border-[#3dc3ff]/30 rounded-xl p-4 shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm font-semibold text-[#1e2a38]">Monthly batch in progress…</p>
+            <p className="text-sm text-[#1e2a38]/50">{batchStatus.current} / {batchStatus.total} members</p>
+          </div>
+          <div className="w-full bg-gray-100 rounded-full h-2 mb-3">
+            <div
+              className="bg-[#3dc3ff] h-2 rounded-full transition-all duration-500"
+              style={{ width: `${batchStatus.total > 0 ? (batchStatus.current / batchStatus.total) * 100 : 0}%` }}
+            />
+          </div>
+          {batchStatus.results && batchStatus.results.length > 0 && (
+            <div className="space-y-1 max-h-48 overflow-y-auto">
+              {batchStatus.results.slice().reverse().map((r, i) => (
+                <div key={i} className="flex items-center gap-2 text-xs">
+                  <span className={
+                    r.status === "success" ? "text-green-600" :
+                    r.status === "failed" ? "text-[#ff0033]" : "text-[#1e2a38]/40"
+                  }>
+                    {r.status === "success" ? "✓" : r.status === "failed" ? "✗" : "–"}
+                  </span>
+                  <span className="text-[#1e2a38]">{r.memberName}</span>
+                  {r.reason && <span className="text-[#1e2a38]/40">({r.reason})</span>}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Last run summary */}
+      {!isRunning && batchStatus?.status === "complete" && batchStatus.completed && (
+        <div className="mb-4 bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+          <div className="flex items-center gap-2 mb-1">
+            <CheckCircleIcon className="w-4 h-4 text-green-500 shrink-0" />
+            <p className="text-sm font-semibold text-[#1e2a38]">Last batch complete</p>
+            <p className="text-xs text-[#1e2a38]/40 ml-auto">{fmtDateTime(batchStatus.completed)}</p>
+          </div>
+          <p className="text-xs text-[#1e2a38]/60">
+            {batchStatus.results?.filter(r => r.status === "success").length ?? 0} audits completed ·{" "}
+            {batchStatus.results?.filter(r => r.status === "skipped").length ?? 0} skipped ·{" "}
+            {batchStatus.results?.filter(r => r.status === "failed").length ?? 0} failed
+          </p>
+        </div>
+      )}
+
+      {/* Last monthly run from DB */}
+      {lastRun && !isRunning && !(batchStatus?.status === "complete") && (
+        <div className="mb-4 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-xs text-[#1e2a38]/60">
+          <span className="font-medium text-[#1e2a38]">Last monthly run:</span>{" "}
+          {fmtDateTime(lastRun.date)} —{" "}
+          {lastRun.audits_queued} audits completed, {lastRun.skipped_no_new_videos + lastRun.skipped_no_baseline + (lastRun.skipped_no_youtube ?? 0)} skipped
+          {lastRun.failures > 0 && `, ${lastRun.failures} failed`}
+        </div>
+      )}
 
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
         <input
