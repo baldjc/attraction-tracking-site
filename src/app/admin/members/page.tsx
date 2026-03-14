@@ -24,6 +24,7 @@ export default function MembersPage() {
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<string | null>(null);
+  const [flaggedInactive, setFlaggedInactive] = useState<{ email: string; name: string }[]>([]);
   const [search, setSearch] = useState("");
 
   useEffect(() => {
@@ -41,13 +42,21 @@ export default function MembersPage() {
   async function handleSync() {
     setSyncing(true);
     setSyncResult(null);
+    setFlaggedInactive([]);
     try {
       const res = await fetch("/api/ghl-sync", { method: "POST" });
       const data = await res.json();
-      setSyncResult(
-        `Synced: ${data.created} new, ${data.updated} updated, ${data.skipped} unchanged`
-      );
-      fetchMembers();
+      if (data.error) {
+        setSyncResult(`Error: ${data.error}${data.details ? ` — ${data.details}` : ""}`);
+      } else {
+        setSyncResult(
+          `Synced: ${data.created} new, ${data.updated} updated, ${data.skipped} unchanged`
+        );
+        if (data.flaggedInactive?.length > 0) {
+          setFlaggedInactive(data.flaggedInactive);
+        }
+        fetchMembers();
+      }
     } catch (err) {
       setSyncResult("Sync failed. Check your GHL API key.");
     }
@@ -92,8 +101,32 @@ export default function MembersPage() {
       </div>
 
       {syncResult && (
-        <div className="mb-4 bg-[#3dc3ff]/10 text-[#1e2a38] text-sm px-4 py-3 rounded-lg">
+        <div
+          className={`mb-4 text-sm px-4 py-3 rounded-lg ${
+            syncResult.startsWith("Error") || syncResult.startsWith("Sync failed")
+              ? "bg-[#ff0033]/10 text-[#ff0033]"
+              : "bg-[#3dc3ff]/10 text-[#1e2a38]"
+          }`}
+        >
           {syncResult}
+        </div>
+      )}
+
+      {flaggedInactive.length > 0 && (
+        <div className="mb-4 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
+          <p className="text-sm font-semibold text-amber-800 mb-2">
+            ⚠️ These members no longer have the &ldquo;foundations - weekly coaching&rdquo; tag in GHL:
+          </p>
+          <ul className="space-y-1">
+            {flaggedInactive.map((m) => (
+              <li key={m.email} className="text-sm text-amber-700">
+                {m.name} <span className="text-amber-500">({m.email})</span>
+              </li>
+            ))}
+          </ul>
+          <p className="text-xs text-amber-600 mt-2">
+            These members have NOT been removed. You can manually decide what to do with them.
+          </p>
         </div>
       )}
 

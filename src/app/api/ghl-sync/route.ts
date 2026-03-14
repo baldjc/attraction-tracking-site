@@ -17,11 +17,16 @@ export async function POST() {
     let updated = 0;
     let skipped = 0;
 
+    // Track all emails seen in GHL
+    const ghlEmails = new Set<string>();
+
     for (const contact of contacts) {
       if (!contact.email) {
         skipped++;
         continue;
       }
+
+      ghlEmails.add(contact.email.toLowerCase());
 
       const youtubeUrl = getCustomFieldValue(contact, GHL_FIELDS.YOUTUBE_CHANNEL_URL);
       let youtubeHandle: string | null = null;
@@ -47,7 +52,6 @@ export async function POST() {
       });
 
       if (existing) {
-        // Update if GHL has newer data
         const updates: Record<string, any> = {};
         if (contact.id && contact.id !== existing.ghlContactId) {
           updates.ghlContactId = contact.id;
@@ -72,7 +76,6 @@ export async function POST() {
           skipped++;
         }
       } else {
-        // Create new member
         const tempPassword = "member-" + Math.random().toString(36).slice(2, 10);
         const hash = await bcrypt.hash(tempPassword, 12);
 
@@ -92,12 +95,23 @@ export async function POST() {
       }
     }
 
+    // Detect members in DB who are no longer in GHL (lost the tag)
+    const allDbMembers = await prisma.user.findMany({
+      where: { role: "foundations_member" },
+      select: { email: true, fullName: true },
+    });
+
+    const flaggedInactive = allDbMembers
+      .filter((m) => !ghlEmails.has(m.email.toLowerCase()))
+      .map((m) => ({ email: m.email, name: m.fullName || m.email }));
+
     return NextResponse.json({
       success: true,
       total: contacts.length,
       created,
       updated,
       skipped,
+      flaggedInactive,
     });
   } catch (error: any) {
     console.error("GHL sync error:", error);
