@@ -132,7 +132,13 @@ VIDEOS ANALYSED (${videos.length} long-form videos):
 
 ${videoContent}
 
-Score this channel across all 16 principles. Base scores on actual evidence from the transcripts and video metadata above.`;
+Score this channel across all 16 principles. Base scores on actual evidence from the transcripts and video metadata above.
+
+CRITICAL INSTRUCTIONS:
+- You MUST respond with ONLY a valid JSON object. No markdown, no code fences, no explanation text before or after the JSON.
+- Use EXACTLY this structure — the key "scores" must contain an object where each principle key maps to { "score": number, "evidence": string }.
+- Do NOT use alternative structures like "audit_results" or separate "evidence" objects. Use the exact format shown in the system prompt.
+- Your entire response must be parseable by JSON.parse() with no pre-processing.`;
 
   const response = await client.messages.create({
     model: "claude-sonnet-4-20250514",
@@ -166,9 +172,30 @@ Score this channel across all 16 principles. Base scores on actual evidence from
     throw new Error(`Claude response was not valid JSON: ${parseErr.message}`);
   }
 
+  // Normalize alternative format Claude sometimes returns:
+  // { audit_results: { key: score }, evidence: { key: text } }
+  // → { scores: { key: { score, evidence } } }
+  if (!result.scores && (result as any).audit_results) {
+    console.warn("[audit-engine] Claude used alternative format (audit_results). Normalizing...");
+    const altResult = result as any;
+    const normalized: any = {};
+    for (const key of Object.keys(altResult.audit_results)) {
+      normalized[key] = {
+        score: Number(altResult.audit_results[key]),
+        evidence: altResult.evidence?.[key] ?? "",
+      };
+    }
+    result.scores = normalized;
+    // Carry over other fields if present
+    if (!result.strengths && altResult.strengths) result.strengths = altResult.strengths;
+    if (!result.biggest_gaps && altResult.biggest_gaps) result.biggest_gaps = altResult.biggest_gaps;
+    if (!result.one_sentence_diagnosis && altResult.one_sentence_diagnosis) result.one_sentence_diagnosis = altResult.one_sentence_diagnosis;
+    if (!result.video_breakdowns && altResult.video_breakdowns) result.video_breakdowns = altResult.video_breakdowns;
+  }
+
   if (!result.scores || typeof result.scores !== "object") {
     console.error("[audit-engine] Missing or null scores. Full result:", JSON.stringify(result).slice(0, 500));
-    throw new Error("Claude response was missing the 'scores' field. The response may have been truncated.");
+    throw new Error("Claude returned an unexpected JSON structure — 'scores' field is missing. Check server logs.");
   }
 
   // Recalculate overall score server-side to ensure accuracy
