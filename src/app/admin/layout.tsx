@@ -19,13 +19,15 @@ export default async function AdminLayout({
 
   return (
     <div className="min-h-screen bg-[#f1f1ef]">
-      <Sidebar
-        role="admin"
-        userName={session.user.name || session.user.email || "Admin"}
-      />
-      <main className="lg:pl-[260px]">
-        <div className="pt-14 lg:pt-0">
-          <div className="p-6 lg:p-8">{children}</div>
+      <div className="print:hidden">
+        <Sidebar
+          role="admin"
+          userName={session.user.name || session.user.email || "Admin"}
+        />
+      </div>
+      <main className="lg:pl-[260px] print:pl-0">
+        <div className="pt-14 lg:pt-0 print:pt-0">
+          <div className="p-6 lg:p-8 print:p-0">{children}</div>
         </div>
       </main>
     </div>

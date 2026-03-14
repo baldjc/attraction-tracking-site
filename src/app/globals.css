@@ -24,3 +24,59 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* ── Print Styles ─────────────────────────────────────── */
+@media print {
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .no-print,
+  nav,
+  aside,
+  [data-sidebar],
+  [data-no-print] {
+    display: none !important;
+  }
+
+  body {
+    background: #fff !important;
+    color: #1e2a38 !important;
+    font-size: 11pt;
+  }
+
+  .print-full-width {
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 12pt !important;
+  }
+
+  .print-page-break {
+    page-break-before: always;
+  }
+
+  .print-avoid-break {
+    page-break-inside: avoid;
+  }
+
+  .print-header::before {
+    content: "";
+    display: block;
+    text-align: center;
+    font-size: 14pt;
+    font-weight: bold;
+    color: #1e2a38;
+    margin-bottom: 8pt;
+  }
+
+  @page {
+    margin: 1.5cm;
+    @bottom-center {
+      content: "Prepared by Jared Chamberlain \2022 Founder of Attraction by Video";
+      font-size: 9pt;
+      color: #888;
+    }
+  }
+}

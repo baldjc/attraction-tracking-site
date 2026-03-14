@@ -54,8 +54,11 @@ src/app/
     members/page.tsx          — Members list with search/filter
     members/[id]/page.tsx     — Member detail: info, audit history, Run Audit with job polling, score trend, 16-principle breakdown, tracking links, coaching notes, quick actions
     audits/page.tsx           — All audits list with type filter
-    audits/[auditId]/page.tsx — Full audit report: banner, score, progress comparison, 16-principle scorecard (with baseline delta), video breakdowns, strengths/gaps, learning path, Q&A topics
+    audits/[auditId]/page.tsx — Full audit report: diagnosis callout, score, progress, 16-principle scorecard, videos with per-video dimension scores, what's working (rich), three biggest gaps (with current/improved examples), learning path table with priority, Q&A coaching prompts, footer. Share + Print buttons.
+    qa-prep/page.tsx          — Q&A Call Prep: next Thursday date, Celebrate/Address/Common Gaps/Per-Member sections, Copy to Clipboard button
     settings/page.tsx         — AI prompt editor (editable textarea, save/reset)
+  reports/
+    [auditId]/page.tsx        — Shareable member-facing report (same content, accessible to member themselves or admin, no sidebar)
   member/
     scores/page.tsx           — Member dashboard: score, trend chart, 16-principle breakdown, learning path, audit history
     audits/[auditId]/page.tsx — Member-facing audit report
@@ -63,17 +66,20 @@ src/app/
     audits/route.ts           — GET list (admin)
     audits/run/route.ts       — POST to start audit job (async)
     audits/jobs/[jobId]/      — GET job status (polling)
-    audits/[auditId]/         — GET audit report
+    audits/[auditId]/         — GET audit report (admin or own-member access)
+    audits/run-all-monthly/   — POST start batch, GET status (admin)
     settings/route.ts         — GET/PATCH AI prompt
     members/[id]/route.ts     — GET/PATCH member
     members/[id]/notes/       — PATCH coaching notes
     members/[id]/videos/      — GET latest YouTube videos for member
     member/scores/route.ts    — GET current member's audit history
     sync/route.ts             — POST GHL → DB sync
+    qa-prep/route.ts          — GET Q&A call prep data (celebrate/address/common gaps/per-member)
+    cron/monthly/route.ts     — GET external cron trigger (requires CRON_SECRET header)
 ```
 
 ## Audit Engine
-- Claude claude-sonnet-4-20250514, 4096 max tokens
+- Claude claude-sonnet-4-20250514, 8192 max tokens
 - 16 principles scored 0–10 with evidence text
 - Three audit types: `baseline`, `monthly`, `single_video`
 - Monthly audits compare vs baseline + last month

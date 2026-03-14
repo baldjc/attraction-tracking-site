@@ -55,9 +55,35 @@ Return ONLY valid JSON in this exact structure, nothing else:
     "consistency": { "score": 6.0, "evidence": "..." }
   },
   "overall_score": 4.5,
-  "strengths": ["Specific strength 1", "Specific strength 2", "Specific strength 3"],
-  "biggest_gaps": ["Specific gap 1 with evidence", "Specific gap 2 with evidence", "Specific gap 3 with evidence"],
-  "one_sentence_diagnosis": "{Name} has {strength} — but {core gap}.",
+  "one_sentence_diagnosis": "{Name} has {genuine strength} — but {core gap that explains why the channel isn't converting}.",
+  "whats_working": [
+    { "strength": "Specific genuine strength with evidence from the videos", "evidence": "Exact quote or example from transcript" },
+    { "strength": "Specific genuine strength 2", "evidence": "Quote or example" },
+    { "strength": "Specific genuine strength 3", "evidence": "Quote or example" }
+  ],
+  "three_biggest_gaps": [
+    {
+      "principle": "Lead Magnet System",
+      "score": 2.0,
+      "description": "2-3 sentences describing the gap with specific evidence from the videos",
+      "current_example": "Exact quote from a transcript showing the current approach",
+      "improved_example": "Rewritten version of the same moment using Attraction principles"
+    },
+    {
+      "principle": "Avatar Clarity",
+      "score": 3.5,
+      "description": "...",
+      "current_example": "...",
+      "improved_example": "..."
+    },
+    {
+      "principle": "ARC Attention",
+      "score": 4.0,
+      "description": "...",
+      "current_example": "...",
+      "improved_example": "..."
+    }
+  ],
   "video_breakdowns": [
     {
       "title": "Video title here",
@@ -220,9 +246,17 @@ Return ONLY valid JSON in this EXACT structure, nothing else — no markdown, no
 export interface AuditResult {
   scores: AuditScores;
   overall_score: number;
-  strengths: string[];
-  biggest_gaps: string[];
-  one_sentence_diagnosis: string;
+  strengths?: string[];
+  biggest_gaps?: string[];
+  one_sentence_diagnosis?: string;
+  whats_working?: Array<{ strength: string; evidence: string }>;
+  three_biggest_gaps?: Array<{
+    principle: string;
+    score: number;
+    description: string;
+    current_example: string;
+    improved_example: string;
+  }>;
   video_breakdowns?: Array<{
     title: string;
     video_id?: string;

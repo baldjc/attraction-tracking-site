@@ -1,9 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeftIcon, ArrowTopRightOnSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
+import {
+  ArrowLeftIcon,
+  ArrowTopRightOnSquareIcon,
+  TrashIcon,
+  ClipboardDocumentIcon,
+  PrinterIcon,
+} from "@heroicons/react/24/outline";
 
 const PRINCIPLE_LABELS: Record<string, string> = {
   avatar_clarity: "Avatar Clarity",
@@ -39,11 +45,25 @@ const LEARNING_PATH: Record<string, string> = {
   approve_the_click: "Lessons 4.1 + 2.5",
   title_frameworks: "Lesson 4.2",
   binge_architecture: "Lesson 1.3",
-  grade_5_language: "N/A",
+  grade_5_language: "N/A (practice-based)",
   consistency: "Lessons 1.3 + 2.4",
 };
 
-const QA_FLAGS = ["lead_magnet_system", "avatar_clarity", "connection_language", "approve_the_click", "curiosity_bridges"];
+const QA_ALWAYS: Record<string, string> = {
+  lead_magnet_system: "Bring your lead magnet draft for feedback",
+  avatar_clarity: "Bring your napkin test for review",
+  connection_language: "Bring your next script for review",
+  approve_the_click: "Bring your next 3 title/hook combos",
+  curiosity_bridges: "Bring a recent script — we'll rewrite transitions live",
+};
+
+const QA_IF_LOW: Record<string, string> = {
+  arc_attention: "Bring your most recent opening",
+  arc_revelation: "Bring one insight — we'll Value Loop it",
+  values_peppering: "Share 5 personal values/interests",
+  story_proof: "Bring a client story to structure",
+  title_frameworks: "Bring your next 5 title ideas",
+};
 
 const DIMENSIONS = [
   { label: "🎯 Channel Strategy", keys: ["avatar_clarity", "themes_over_topics", "consistency"] },
@@ -53,74 +73,89 @@ const DIMENSIONS = [
 ];
 
 function scoreBg(score: number) {
-  if (score >= 7) return "bg-[#e8f7ff] text-[#3dc3ff]";
-  if (score >= 5) return "bg-[#fef3c7] text-[#f59e0b]";
-  return "bg-[#ffe5ea] text-[#ff0033]";
-}
-
-function scoreText(score: number) {
-  if (score >= 7) return "text-[#3dc3ff]";
-  if (score >= 5) return "text-[#f59e0b]";
-  return "text-[#ff0033]";
+  if (score >= 7) return "bg-[#e8f7ff] text-[#0ea5d9]";
+  if (score >= 5) return "bg-[#fef3c7] text-amber-700";
+  return "bg-[#ffe5ea] text-[#cc0029]";
 }
 
 function scoreBgBlock(score: number) {
-  if (score >= 7) return "bg-[#e8f7ff] border border-[#3dc3ff]/30";
-  if (score >= 5) return "bg-[#fef3c7] border border-[#f59e0b]/30";
-  return "bg-[#ffe5ea] border border-[#ff0033]/30";
+  if (score >= 7) return "bg-[#e8f7ff]";
+  if (score >= 5) return "bg-[#fef3c7]";
+  return "bg-[#ffe5ea]";
 }
 
-function deltaColor(delta: number) {
-  if (delta > 0) return "text-[#3dc3ff]";
-  if (delta < 0) return "text-[#ff0033]";
+function scoreText(score: number) {
+  if (score >= 7) return "text-[#0ea5d9]";
+  if (score >= 5) return "text-amber-600";
+  return "text-[#cc0029]";
+}
+
+function deltaColor(d: number) {
+  if (d > 0) return "text-green-600";
+  if (d < 0) return "text-[#cc0029]";
   return "text-gray-400";
 }
 
-function deltaCellBg(delta: number | null) {
-  if (delta == null) return "";
-  if (delta >= 1) return "bg-[#e8f7ff]";
-  if (delta >= 0.5) return "bg-[#fef3c7]";
-  if (delta < 0) return "bg-[#ffe5ea]";
+function deltaCellBg(d: number | null) {
+  if (d == null) return "";
+  if (d > 1) return "bg-green-50";
+  if (d < -1) return "bg-red-50";
   return "";
 }
 
-function fmt(date: string) {
-  return new Date(date).toLocaleDateString("en-CA", { year: "numeric", month: "short", day: "numeric" });
+function priority(score: number) {
+  if (score < 4) return { label: "Critical", cls: "bg-[#ffe5ea] text-[#cc0029]" };
+  if (score < 6.5) return { label: "Improvement Area", cls: "bg-[#fef3c7] text-amber-700" };
+  return { label: "Fine-Tuning", cls: "bg-[#e8f7ff] text-[#0ea5d9]" };
+}
+
+function fmt(d: any) {
+  if (!d) return "";
+  return new Date(d).toLocaleDateString("en-CA", { year: "numeric", month: "long", day: "numeric" });
 }
 
 function fmtDuration(secs: number) {
   const m = Math.floor(secs / 60);
   const s = secs % 60;
-  return `${m}:${s.toString().padStart(2, "0")}`;
+  return `${m}:${String(s).padStart(2, "0")}`;
 }
 
 export default function AuditReportPage() {
-  const { auditId } = useParams<{ auditId: string }>();
+  const params = useParams();
   const router = useRouter();
+  const auditId = params.auditId as string;
+
   const [audit, setAudit] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [expandedPrinciple, setExpandedPrinciple] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetch(`/api/audits/${auditId}`)
-      .then((r) => r.json())
-      .then((d) => {
-        const a = d.audit;
-        setAudit(a);
-        setLoading(false);
-        const report = a?.reportContent as any;
-        console.log("[audit-report] reportContent keys:", Object.keys(report ?? {}).join(", "));
-        console.log("[audit-report] video_breakdowns:", JSON.stringify(report?.video_breakdowns ?? "MISSING"));
-        console.log("[audit-report] videosAnalysed count:", (a?.videosAnalysed as any[])?.length ?? 0);
-      });
+  const load = useCallback(async () => {
+    const res = await fetch(`/api/audits/${auditId}`);
+    if (res.ok) setAudit(await res.json());
+    setLoading(false);
   }, [auditId]);
+
+  useEffect(() => { load(); }, [load]);
 
   async function handleDelete() {
     if (!confirm("Delete this audit? This cannot be undone.")) return;
     setDeleting(true);
     await fetch(`/api/audits/${auditId}`, { method: "DELETE" });
     router.push(audit?.user?.id ? `/admin/members/${audit.user.id}` : "/admin/members");
+  }
+
+  function handleCopyLink() {
+    const url = `${window.location.origin}/reports/${auditId}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
+  function handlePrint() {
+    window.print();
   }
 
   if (loading) return <div className="flex items-center justify-center h-64 text-[#1e2a38]/40">Loading report…</div>;
@@ -134,6 +169,7 @@ export default function AuditReportPage() {
   const lastMonthScores = report?.lastMonthScores as any;
   const channelInfo = report?.channelInfo;
   const isSingleVideo = audit.auditType === "single_video";
+  const isMonthly = audit.auditType === "monthly";
   const singleVideoTitle = isSingleVideo ? (videos[0]?.title ?? null) : null;
   const phaseReport = report?.phase_report as any;
 
@@ -141,35 +177,94 @@ export default function AuditReportPage() {
     : audit.auditType === "monthly" ? "Monthly Audit"
     : "Single Video Audit";
 
+  const whatsWorking: Array<{ strength: string; evidence: string }> =
+    report?.whats_working?.length > 0
+      ? report.whats_working
+      : (report?.strengths ?? []).map((s: string) => ({ strength: s, evidence: "" }));
+
+  const biggestGaps: Array<{ principle: string; score: number; description: string; current_example: string; improved_example: string }> =
+    report?.three_biggest_gaps?.length > 0
+      ? report.three_biggest_gaps
+      : (report?.biggest_gaps ?? []).map((g: string, i: number) => ({
+          principle: `Gap ${i + 1}`,
+          score: 0,
+          description: g,
+          current_example: "",
+          improved_example: "",
+        }));
+
+  const learningGaps = Object.entries(scores)
+    .filter(([, v]: [string, any]) => v.score < 7)
+    .sort(([, a]: [string, any], [, b]: [string, any]) => a.score - b.score);
+
+  const qaItems: Array<{ key: string; prompt: string; score: number }> = [];
+  for (const key of Object.keys(QA_ALWAYS)) {
+    if (scores[key]) qaItems.push({ key, prompt: QA_ALWAYS[key], score: scores[key].score });
+  }
+  for (const key of Object.keys(QA_IF_LOW)) {
+    if (scores[key] && scores[key].score >= 4 && scores[key].score <= 6) {
+      qaItems.push({ key, prompt: QA_IF_LOW[key], score: scores[key].score });
+    }
+  }
+
   return (
-    <div className="max-w-4xl space-y-6">
-      <div className="flex items-center justify-between">
-        <Link href={`/admin/members/${member?.id}`} className="inline-flex items-center gap-1.5 text-sm text-[#1e2a38]/50 hover:text-[#1e2a38]">
+    <div className="max-w-4xl space-y-6 print-full-width" id="audit-report">
+
+      {/* Top navigation — hidden on print */}
+      <div className="flex items-center justify-between no-print">
+        <Link
+          href={`/admin/members/${member?.id}`}
+          className="inline-flex items-center gap-1.5 text-sm text-[#1e2a38]/50 hover:text-[#1e2a38]"
+        >
           <ArrowLeftIcon className="w-4 h-4" />
           Back to {member?.fullName ?? "Member"}
         </Link>
-        <button
-          onClick={handleDelete}
-          disabled={deleting}
-          className="inline-flex items-center gap-1.5 text-sm text-[#ff0033]/60 hover:text-[#ff0033] disabled:opacity-40 transition-colors"
-        >
-          <TrashIcon className="w-4 h-4" />
-          {deleting ? "Deleting…" : "Delete audit"}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleCopyLink}
+            className="inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-[#1e2a38]/70 transition-colors"
+          >
+            <ClipboardDocumentIcon className="w-4 h-4" />
+            {copied ? "Copied!" : "Share Report"}
+          </button>
+          <button
+            onClick={handlePrint}
+            className="inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-[#1e2a38]/70 transition-colors"
+          >
+            <PrinterIcon className="w-4 h-4" />
+            Print / PDF
+          </button>
+          <button
+            onClick={handleDelete}
+            disabled={deleting}
+            className="inline-flex items-center gap-1.5 text-sm text-[#ff0033]/60 hover:text-[#ff0033] disabled:opacity-40 transition-colors"
+          >
+            <TrashIcon className="w-4 h-4" />
+            {deleting ? "Deleting…" : "Delete"}
+          </button>
+        </div>
+      </div>
+
+      {/* Print-only logo header */}
+      <div className="hidden print:block text-center py-4 border-b border-gray-200 mb-2">
+        <p className="text-lg font-black text-[#1e2a38] tracking-tight">Attraction by Video</p>
+        <p className="text-xs text-[#1e2a38]/50">YouTube Channel Audit Report</p>
       </div>
 
       {/* Banner */}
       {channelInfo?.bannerUrl ? (
-        <div className="w-full h-32 rounded-xl overflow-hidden">
+        <div className="w-full h-32 rounded-xl overflow-hidden print-avoid-break">
           <img src={channelInfo.bannerUrl} alt="Channel banner" className="w-full h-full object-cover" />
         </div>
       ) : (
-        <div className="h-32 rounded-xl bg-gradient-to-r from-[#1e2a38] via-[#2c4a6e] to-[#3dc3ff]" />
+        <div className="h-28 rounded-xl bg-gradient-to-r from-[#1e2a38] via-[#2c4a6e] to-[#3dc3ff] print-avoid-break" />
       )}
 
       {/* Header callout */}
-      <div className="bg-[#3dc3ff]/10 border border-[#3dc3ff]/30 rounded-xl p-6">
-        <p className="text-xs font-semibold text-[#3dc3ff] uppercase tracking-wider mb-1">Attraction by Video — {typeLabel}</p>
+      <div className="bg-[#3dc3ff]/10 border border-[#3dc3ff]/30 rounded-xl p-6 print-avoid-break">
+        <p className="text-xs font-semibold text-[#3dc3ff] uppercase tracking-wider mb-1">
+          Attraction by Video — {typeLabel}
+        </p>
         <h1 className="text-2xl font-bold text-[#1e2a38]">{member?.fullName ?? member?.email}</h1>
         {isSingleVideo && singleVideoTitle ? (
           <p className="text-[#1e2a38]/80 font-medium mt-1">"{singleVideoTitle}"</p>
@@ -183,19 +278,30 @@ export default function AuditReportPage() {
         <p className="text-sm text-[#1e2a38]/50 mt-1">{fmt(audit.createdAt)}</p>
       </div>
 
+      {/* One-Sentence Diagnosis callout */}
+      {report?.one_sentence_diagnosis && (
+        <div className="bg-[#1e2a38] rounded-xl p-5 print-avoid-break">
+          <p className="text-xs font-semibold text-[#3dc3ff] uppercase tracking-wider mb-2">Diagnosis</p>
+          <p className="text-base font-medium text-white leading-relaxed italic">
+            "{report.one_sentence_diagnosis}"
+          </p>
+        </div>
+      )}
+
       {/* Overall Score */}
-      <div className={`rounded-xl p-8 text-center ${scoreBgBlock(audit.overallScore)}`}>
-        <p className="text-sm font-semibold uppercase tracking-wider mb-2 text-[#1e2a38]/60">Your Attraction Score</p>
-        <p className={`text-7xl font-black ${scoreText(audit.overallScore)}`}>{audit.overallScore?.toFixed(1)}</p>
+      <div className={`rounded-xl p-8 text-center print-avoid-break ${scoreBgBlock(audit.overallScore)}`}>
+        <p className="text-sm font-semibold uppercase tracking-wider mb-2 text-[#1e2a38]/60">
+          {isSingleVideo ? "Video Attraction Score" : "Channel Attraction Score"}
+        </p>
+        <p className={`text-7xl font-black ${scoreText(audit.overallScore)}`}>
+          {audit.overallScore?.toFixed(1)}
+        </p>
         <p className="text-lg font-medium mt-1 text-[#1e2a38]/50">/ 10</p>
-        {report?.one_sentence_diagnosis && (
-          <p className="mt-4 text-sm italic text-[#1e2a38]/70 max-w-lg mx-auto">"{report.one_sentence_diagnosis}"</p>
-        )}
       </div>
 
       {/* Single Video: Phase Report */}
       {isSingleVideo && phaseReport && (
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm print-page-break">
           <h2 className="text-base font-semibold text-[#1e2a38] mb-5">Video Phase Analysis</h2>
           <div className="space-y-5">
             {[
@@ -207,7 +313,7 @@ export default function AuditReportPage() {
               const phase = phaseReport[key];
               if (!phase) return null;
               return (
-                <div key={key} className="border border-gray-100 rounded-xl p-5">
+                <div key={key} className="border border-gray-100 rounded-xl p-5 print-avoid-break">
                   <div className="flex items-start justify-between gap-4 mb-3">
                     <div>
                       <h3 className="font-bold text-[#1e2a38] text-sm">{label}</h3>
@@ -253,7 +359,7 @@ export default function AuditReportPage() {
           <h2 className="text-base font-semibold text-[#1e2a38] mb-5">💡 Three Ideas for Improvement</h2>
           <div className="space-y-5">
             {report.three_improvements.map((item: any, i: number) => (
-              <div key={i} className="border-l-4 border-[#3dc3ff] pl-4">
+              <div key={i} className="border-l-4 border-[#3dc3ff] pl-4 print-avoid-break">
                 <p className="text-xs font-bold text-[#3dc3ff] uppercase tracking-wider mb-2">{i + 1}. {item.principle}</p>
                 <div className="space-y-2">
                   <div className="bg-[#ffe5ea] rounded-lg px-3 py-2">
@@ -276,24 +382,20 @@ export default function AuditReportPage() {
 
       {/* Single Video: Quick Wins */}
       {isSingleVideo && report?.quick_wins?.length > 0 && (
-        <div className="bg-[#e8f7ff] border border-[#3dc3ff]/30 rounded-xl p-6">
-          <h2 className="text-base font-semibold text-[#1e2a38] mb-3">⚡ Quick Wins</h2>
-          <p className="text-xs text-[#1e2a38]/50 mb-3">Implement these in your next video</p>
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 print-avoid-break">
+          <h2 className="text-base font-semibold text-amber-800 mb-3">⚡ Quick Win for Next Video</h2>
           <ul className="space-y-2">
-            {report.quick_wins.map((win: string, i: number) => (
-              <li key={i} className="flex items-start gap-2 text-sm text-[#1e2a38]/80">
-                <span className="text-[#3dc3ff] font-bold mt-0.5 shrink-0">{i + 1}.</span>
-                {win}
-              </li>
+            {report.quick_wins.slice(0, 1).map((win: string, i: number) => (
+              <li key={i} className="text-sm text-amber-900 leading-relaxed">{win}</li>
             ))}
           </ul>
         </div>
       )}
 
       {/* Monthly progress summary */}
-      {audit.auditType === "monthly" && baselineScores && (
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-          <h2 className="text-base font-semibold text-[#1e2a38] mb-4">Progress Summary</h2>
+      {isMonthly && baselineScores && (
+        <div className="bg-[#3dc3ff]/10 border border-[#3dc3ff]/30 rounded-xl p-6 print-avoid-break">
+          <h2 className="text-base font-semibold text-[#1e2a38] mb-4">📊 Progress Summary</h2>
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
               <p className="text-xs text-[#1e2a38]/50 uppercase tracking-wider mb-1">This Month</p>
@@ -328,10 +430,10 @@ export default function AuditReportPage() {
       )}
 
       {/* 16-Principle Scorecard */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+      <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm print-page-break print-avoid-break">
         <h2 className="text-base font-semibold text-[#1e2a38] mb-4">16-Principle Scorecard</h2>
 
-        {audit.auditType === "monthly" && baselineScores ? (
+        {isMonthly && baselineScores ? (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -391,7 +493,7 @@ export default function AuditReportPage() {
                           <span className="text-sm text-[#1e2a38]">{PRINCIPLE_LABELS[key]}</span>
                           <div className="flex items-center gap-2">
                             <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${scoreBg(val.score)}`}>{val.score.toFixed(1)}</span>
-                            <span className="text-[#1e2a38]/30 text-xs">{isOpen ? "▲" : "▼"}</span>
+                            <span className="text-[#1e2a38]/30 text-xs no-print">{isOpen ? "▲" : "▼"}</span>
                           </div>
                         </button>
                         {isOpen && val.evidence && (
@@ -411,11 +513,11 @@ export default function AuditReportPage() {
 
       {/* Videos Analysed */}
       {videos.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm print-page-break">
           <h2 className="text-base font-semibold text-[#1e2a38] mb-4">Videos Analysed</h2>
           {!report?.video_breakdowns?.length && (
             <div className="mb-4 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-700">
-              Per-video analysis unavailable for this audit. Delete this audit and run a fresh one to see dimension scores, strengths, and improvements per video.
+              Per-video analysis unavailable for this audit. Delete and re-run to see dimension scores, strengths, and improvements per video.
             </div>
           )}
           <div className="space-y-4">
@@ -433,8 +535,8 @@ export default function AuditReportPage() {
                 viewer_connection?: number;
                 lead_generation?: number;
               } | undefined;
-              const strong = breakdown?.strength || breakdown?.opening_analysis;
-              const improve = breakdown?.improvement ||
+              const strong = breakdown?.strength ?? breakdown?.opening_analysis;
+              const improve = breakdown?.improvement ??
                 [breakdown?.insights_analysis, breakdown?.connection_analysis].filter(Boolean)[0];
 
               function dimBadge(score: number | undefined, label: string) {
@@ -453,7 +555,7 @@ export default function AuditReportPage() {
               }
 
               return (
-                <div key={i} className="border border-gray-100 rounded-lg p-4">
+                <div key={i} className="border border-gray-100 rounded-lg p-4 print-avoid-break">
                   <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
                     <a
                       href={`https://youtube.com/watch?v=${v.videoId}`}
@@ -462,7 +564,7 @@ export default function AuditReportPage() {
                       className="text-sm font-semibold text-[#3dc3ff] hover:underline flex items-center gap-1"
                     >
                       {v.title}
-                      <ArrowTopRightOnSquareIcon className="w-3 h-3 shrink-0" />
+                      <ArrowTopRightOnSquareIcon className="w-3 h-3 shrink-0 no-print" />
                     </a>
                     <span className="text-xs text-[#1e2a38]/40 whitespace-nowrap">
                       {fmtDuration(v.durationSeconds)} · {fmt(v.uploadDate)} · {v.viewCount?.toLocaleString()} views
@@ -496,13 +598,13 @@ export default function AuditReportPage() {
         </div>
       )}
 
-      {/* Video Breakdowns */}
-      {report?.video_breakdowns?.length > 0 && (
+      {/* Video-by-Video Deep Dive (when video_breakdowns have detailed analysis) */}
+      {report?.video_breakdowns?.some((v: any) => v.opening_analysis || v.insights_analysis) && (
         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-          <h2 className="text-base font-semibold text-[#1e2a38] mb-4">Video-by-Video Breakdown</h2>
+          <h2 className="text-base font-semibold text-[#1e2a38] mb-4">🔍 Video Deep Dive</h2>
           <div className="space-y-6">
             {report.video_breakdowns.map((v: any, i: number) => (
-              <div key={i} className="border-l-4 border-[#3dc3ff] pl-4">
+              <div key={i} className="border-l-4 border-[#3dc3ff] pl-4 print-avoid-break">
                 <h3 className="font-semibold text-[#1e2a38] mb-3">"{v.title}"</h3>
                 {[
                   { label: "Opening", text: v.opening_analysis },
@@ -521,88 +623,132 @@ export default function AuditReportPage() {
       )}
 
       {/* What's Working */}
-      {report?.strengths?.length > 0 && (
-        <div className="bg-green-50 border border-green-200 rounded-xl p-6">
+      {whatsWorking.length > 0 && (
+        <div className="bg-green-50 border border-green-200 rounded-xl p-6 print-page-break print-avoid-break">
           <h2 className="text-base font-semibold text-green-800 mb-3">✅ What&apos;s Working</h2>
-          <ul className="space-y-2">
-            {report.strengths.map((s: string, i: number) => (
-              <li key={i} className="text-sm text-green-700 flex items-start gap-2">
-                <span className="mt-0.5 text-green-500">•</span>{s}
-              </li>
+          <div className="space-y-3">
+            {whatsWorking.map((item, i) => (
+              <div key={i} className="flex items-start gap-3">
+                <span className="mt-1 text-green-500 shrink-0">•</span>
+                <div>
+                  <p className="text-sm text-green-800 font-medium">{item.strength}</p>
+                  {item.evidence && (
+                    <p className="text-xs text-green-700/70 mt-0.5 italic">"{item.evidence}"</p>
+                  )}
+                </div>
+              </div>
             ))}
-          </ul>
+          </div>
         </div>
       )}
 
-      {/* Biggest Gaps */}
-      {report?.biggest_gaps?.length > 0 && (
+      {/* Three Biggest Gaps */}
+      {biggestGaps.length > 0 && (
         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-          <h2 className="text-base font-semibold text-[#1e2a38] mb-3">🎯 Three Biggest Gaps</h2>
-          <ul className="space-y-3">
-            {report.biggest_gaps.map((g: string, i: number) => (
-              <li key={i} className="flex items-start gap-3">
-                <span className="bg-[#ff0033]/10 text-[#ff0033] text-xs font-bold px-2 py-0.5 rounded-full shrink-0 mt-0.5">{i + 1}</span>
-                <span className="text-sm text-[#1e2a38]/80">{g}</span>
-              </li>
+          <h2 className="text-base font-semibold text-[#1e2a38] mb-4">🎯 Three Biggest Gaps</h2>
+          <div className="space-y-5">
+            {biggestGaps.map((gap, i) => (
+              <div key={i} className="border-l-4 border-[#ff0033] pl-4 print-avoid-break">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="bg-[#ff0033]/10 text-[#ff0033] text-xs font-bold px-2 py-0.5 rounded-full">{i + 1}</span>
+                  <span className="text-sm font-bold text-[#1e2a38]">{gap.principle}</span>
+                  {gap.score > 0 && (
+                    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${scoreBg(gap.score)}`}>
+                      {gap.score.toFixed(1)}
+                    </span>
+                  )}
+                </div>
+                <p className="text-sm text-[#1e2a38]/80 mb-3 leading-relaxed">{gap.description}</p>
+                {gap.current_example && (
+                  <div className="space-y-2">
+                    <div className="bg-[#ffe5ea] rounded-lg px-3 py-2">
+                      <p className="text-xs font-semibold text-[#ff0033] mb-1">Current</p>
+                      <p className="text-xs text-[#1e2a38]/80 italic">"{gap.current_example}"</p>
+                    </div>
+                    {gap.improved_example && (
+                      <div className="bg-[#e8f7ff] rounded-lg px-3 py-2">
+                        <p className="text-xs font-semibold text-[#3dc3ff] mb-1">Improved</p>
+                        <p className="text-xs text-[#1e2a38]/80 italic">"{gap.improved_example}"</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             ))}
-          </ul>
+          </div>
         </div>
       )}
 
       {/* Learning Path */}
+      {learningGaps.length > 0 && (
+        <div className="bg-[#3dc3ff]/10 border border-[#3dc3ff]/30 rounded-xl p-6 print-page-break">
+          <h2 className="text-base font-semibold text-[#1e2a38] mb-1">📚 Learning Path</h2>
+          <p className="text-xs text-[#1e2a38]/50 mb-4">Principles below 7 — sorted by priority</p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-[#3dc3ff]/20">
+                  <th className="text-left py-2 pr-3 text-xs font-semibold text-[#1e2a38]/50 uppercase tracking-wider">Principle</th>
+                  <th className="text-center py-2 px-2 text-xs font-semibold text-[#1e2a38]/50 uppercase tracking-wider">Score</th>
+                  <th className="text-left py-2 px-2 text-xs font-semibold text-[#1e2a38]/50 uppercase tracking-wider">Lesson</th>
+                  <th className="text-center py-2 pl-2 text-xs font-semibold text-[#1e2a38]/50 uppercase tracking-wider">Priority</th>
+                </tr>
+              </thead>
+              <tbody>
+                {learningGaps.map(([key, val]: [string, any]) => {
+                  const p = priority(val.score);
+                  return (
+                    <tr key={key} className="border-b border-[#3dc3ff]/10 last:border-0">
+                      <td className="py-2 pr-3 text-[#1e2a38] font-medium">{PRINCIPLE_LABELS[key]}</td>
+                      <td className="py-2 px-2 text-center">
+                        <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${scoreBg(val.score)}`}>
+                          {val.score.toFixed(1)}
+                        </span>
+                      </td>
+                      <td className="py-2 px-2 text-xs text-[#1e2a38]/70">{LEARNING_PATH[key]}</td>
+                      <td className="py-2 pl-2 text-center">
+                        <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${p.cls}`}>
+                          {p.label}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Q&A Topics */}
       {(() => {
-        const gaps = Object.entries(scores).filter(([, v]: [string, any]) => v.score < 7);
-        if (gaps.length === 0) return null;
+        const allItems = isSingleVideo && report?.qa_prep?.length > 0
+          ? report.qa_prep.map((q: string) => ({ key: "", prompt: q, score: 0 }))
+          : qaItems;
+        if (allItems.length === 0) return null;
         return (
-          <div className="bg-[#3dc3ff]/10 border border-[#3dc3ff]/30 rounded-xl p-6">
-            <h2 className="text-base font-semibold text-[#1e2a38] mb-3">📚 Learning Path</h2>
-            <p className="text-sm text-[#1e2a38]/60 mb-3">Focus on these lessons to address your gaps:</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {gaps.map(([key, val]: [string, any]) => (
-                <div key={key} className="flex items-center justify-between bg-white rounded-lg px-3 py-2">
-                  <span className="text-sm text-[#1e2a38]">{PRINCIPLE_LABELS[key]}</span>
-                  <span className="text-xs text-[#3dc3ff] font-semibold">{LEARNING_PATH[key]}</span>
+          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm print-avoid-break">
+            <h2 className="text-base font-semibold text-[#1e2a38] mb-1">❓ Q&amp;A Topics for Coaching Call</h2>
+            <p className="text-xs text-[#1e2a38]/50 mb-4">Things to bring or prepare before the next call</p>
+            <div className="space-y-2">
+              {allItems.map((item: any, i: number) => (
+                <div key={i} className="flex items-start gap-3 py-2 border-b border-gray-50 last:border-0">
+                  <span className="w-2 h-2 rounded-full bg-[#3dc3ff] mt-1.5 shrink-0" />
+                  <div className="flex-1">
+                    {item.key && (
+                      <span className="text-xs font-semibold text-[#1e2a38]/50 uppercase tracking-wide mr-2">
+                        {PRINCIPLE_LABELS[item.key]}
+                        {item.score > 0 && ` (${item.score.toFixed(1)})`}:
+                      </span>
+                    )}
+                    <span className="text-sm text-[#1e2a38]/80">{item.prompt}</span>
+                  </div>
                 </div>
               ))}
             </div>
           </div>
         );
       })()}
-
-      {/* Q&A Topics */}
-      {isSingleVideo && report?.qa_prep?.length > 0 ? (
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-          <h2 className="text-base font-semibold text-[#1e2a38] mb-3">❓ Q&amp;A Prep for Coaching Call</h2>
-          <ul className="space-y-2">
-            {report.qa_prep.map((q: string, i: number) => (
-              <li key={i} className="flex items-start gap-3">
-                <span className="w-2 h-2 rounded-full bg-[#3dc3ff] mt-1.5 shrink-0" />
-                <span className="text-sm text-[#1e2a38]/80">{q}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : (
-        (() => {
-          const qaItems = QA_FLAGS.filter((k) => scores[k]);
-          return (
-            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-              <h2 className="text-base font-semibold text-[#1e2a38] mb-3">❓ Q&amp;A Topics for Coaching Call</h2>
-              <ul className="space-y-2">
-                {qaItems.map((key) => (
-                  <li key={key} className="flex items-start gap-3">
-                    <span className="w-2 h-2 rounded-full bg-[#3dc3ff] mt-1.5 shrink-0" />
-                    <div>
-                      <span className="text-sm font-medium text-[#1e2a38]">{PRINCIPLE_LABELS[key]}</span>
-                      <span className="text-xs text-[#1e2a38]/50 ml-2">(score: {scores[key]?.score?.toFixed(1)})</span>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          );
-        })()
-      )}
 
       {/* Footer */}
       <div className="text-center py-6 text-sm text-[#1e2a38]/40 border-t border-gray-200">
