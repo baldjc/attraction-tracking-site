@@ -136,7 +136,7 @@ Score this channel across all 16 principles. Base scores on actual evidence from
 
   const response = await client.messages.create({
     model: "claude-sonnet-4-20250514",
-    max_tokens: 4096,
+    max_tokens: 8192,
     system: systemPrompt,
     messages: [{ role: "user", content: userMessage }],
   });
@@ -144,16 +144,35 @@ Score this channel across all 16 principles. Base scores on actual evidence from
   const text =
     response.content.find((b) => b.type === "text")?.text ?? "";
 
-  // Extract JSON from response
-  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  console.log("[audit-engine] Claude stop_reason:", response.stop_reason);
+  console.log("[audit-engine] Response length (chars):", text.length);
+
+  // Strip code fences if Claude wrapped the JSON
+  const stripped = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "");
+
+  // Extract the outermost JSON object
+  const jsonMatch = stripped.match(/\{[\s\S]*\}/);
   if (!jsonMatch) {
-    throw new Error("Claude returned no valid JSON");
+    console.error("[audit-engine] Raw response:", text.slice(0, 500));
+    throw new Error("Claude returned no valid JSON. Check server logs for the raw response.");
   }
 
-  const result: AuditResult = JSON.parse(jsonMatch[0]);
+  let result: AuditResult;
+  try {
+    result = JSON.parse(jsonMatch[0]);
+  } catch (parseErr: any) {
+    console.error("[audit-engine] JSON parse failed:", parseErr.message);
+    console.error("[audit-engine] Raw JSON (first 500 chars):", jsonMatch[0].slice(0, 500));
+    throw new Error(`Claude response was not valid JSON: ${parseErr.message}`);
+  }
+
+  if (!result.scores || typeof result.scores !== "object") {
+    console.error("[audit-engine] Missing or null scores. Full result:", JSON.stringify(result).slice(0, 500));
+    throw new Error("Claude response was missing the 'scores' field. The response may have been truncated.");
+  }
 
   // Recalculate overall score server-side to ensure accuracy
-  const scoreValues = Object.values(result.scores).map((s) => s.score);
+  const scoreValues = Object.values(result.scores).map((s) => (s as any).score as number);
   result.overall_score =
     Math.round((scoreValues.reduce((a, b) => a + b, 0) / scoreValues.length) * 10) / 10;
 

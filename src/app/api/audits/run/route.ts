@@ -22,11 +22,30 @@ async function processAuditJob(jobId: string) {
       data: { status: "downloading" },
     });
 
-    if (!member.youtubeHandle) {
-      throw new Error("Member has no YouTube handle set");
+    // Resolve the YouTube identifier — prefer handle, fall back to extracting from URL
+    let youtubeIdentifier = member.youtubeHandle;
+
+    if (!youtubeIdentifier && member.youtubeChannelUrl) {
+      const url = member.youtubeChannelUrl;
+      // Try to extract handle or channel ID from the URL
+      const handleMatch = url.match(/@[\w-]+/);
+      if (handleMatch) {
+        youtubeIdentifier = handleMatch[0];
+      } else {
+        const parts = url.replace(/\/$/, "").split("/");
+        const last = parts[parts.length - 1];
+        if (last && last !== "youtube.com") {
+          youtubeIdentifier = last.startsWith("@") ? last : last.startsWith("UC") ? last : `@${last}`;
+        }
+      }
     }
 
-    const channelInfo = await getChannelInfo(member.youtubeHandle);
+    if (!youtubeIdentifier) {
+      throw new Error("Member has no YouTube handle or channel URL set. Add one in Member Info first.");
+    }
+
+    console.log(`[audit job ${jobId}] Using YouTube identifier: ${youtubeIdentifier}`);
+    const channelInfo = await getChannelInfo(youtubeIdentifier);
 
     let sinceDate: Date | undefined;
     if (job.auditType === "monthly") {

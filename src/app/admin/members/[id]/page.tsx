@@ -317,11 +317,7 @@ export default function MemberDetailPage() {
               <div className="flex items-center gap-3 mt-1 flex-wrap">
                 {(member.youtubeChannelName || member.youtubeHandle) && (
                   <span className="text-white/70 text-sm">
-                    {member.youtubeChannelName
-                      ? member.youtubeHandle && !/^UC[\w-]{22}$/.test(member.youtubeHandle.replace(/^@/, ""))
-                        ? `${member.youtubeChannelName} (${member.youtubeHandle})`
-                        : member.youtubeChannelName
-                      : member.youtubeHandle}
+                    {member.youtubeChannelName || member.youtubeHandle}
                   </span>
                 )}
                 <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${tierColors(member.serviceTier).badge}`}>
