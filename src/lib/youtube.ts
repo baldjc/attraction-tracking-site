@@ -123,6 +123,28 @@ export async function getTranscript(videoId: string): Promise<string | null> {
   }
 }
 
+export async function getVideoById(videoId: string): Promise<VideoWithTranscript | null> {
+  const url = `${YT_BASE}/videos?part=snippet,contentDetails,statistics&id=${videoId}&key=${YT_API_KEY}`;
+  const res = await fetch(url);
+  if (!res.ok) return null;
+  const data = await res.json();
+  const v = data.items?.[0];
+  if (!v) return null;
+
+  const durationSec = parseDuration(v.contentDetails?.duration ?? "PT0S");
+  const transcript = await getTranscript(videoId);
+
+  return {
+    videoId: v.id,
+    title: v.snippet?.title ?? "",
+    duration: v.contentDetails?.duration ?? "",
+    durationSeconds: durationSec,
+    uploadDate: v.snippet?.publishedAt ?? "",
+    viewCount: parseInt(v.statistics?.viewCount ?? "0"),
+    transcript,
+  };
+}
+
 export async function getVideosWithTranscripts(
   uploadsPlaylistId: string,
   count = 5,

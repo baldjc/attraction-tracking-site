@@ -116,6 +116,9 @@ export default function AuditReportPage() {
   const baselineScores = report?.baselineScores as any;
   const lastMonthScores = report?.lastMonthScores as any;
   const channelInfo = report?.channelInfo;
+  const isSingleVideo = audit.auditType === "single_video";
+  const singleVideoTitle = isSingleVideo ? (videos[0]?.title ?? null) : null;
+  const phaseReport = report?.phase_report as any;
 
   const typeLabel = audit.auditType === "baseline" ? "Baseline Audit"
     : audit.auditType === "monthly" ? "Monthly Audit"
@@ -141,10 +144,14 @@ export default function AuditReportPage() {
       <div className="bg-[#3dc3ff]/10 border border-[#3dc3ff]/30 rounded-xl p-6">
         <p className="text-xs font-semibold text-[#3dc3ff] uppercase tracking-wider mb-1">Attraction by Video — {typeLabel}</p>
         <h1 className="text-2xl font-bold text-[#1e2a38]">{member?.fullName ?? member?.email}</h1>
-        {(member?.youtubeChannelName || channelInfo?.title || member?.youtubeHandle) && (
-          <p className="text-[#1e2a38]/60 mt-1">
-            {member?.youtubeChannelName || channelInfo?.title || member?.youtubeHandle}
-          </p>
+        {isSingleVideo && singleVideoTitle ? (
+          <p className="text-[#1e2a38]/80 font-medium mt-1">"{singleVideoTitle}"</p>
+        ) : (
+          (member?.youtubeChannelName || channelInfo?.title || member?.youtubeHandle) && (
+            <p className="text-[#1e2a38]/60 mt-1">
+              {member?.youtubeChannelName || channelInfo?.title || member?.youtubeHandle}
+            </p>
+          )
         )}
         <p className="text-sm text-[#1e2a38]/50 mt-1">{fmt(audit.createdAt)}</p>
       </div>
@@ -158,6 +165,103 @@ export default function AuditReportPage() {
           <p className="mt-4 text-sm italic text-[#1e2a38]/70 max-w-lg mx-auto">"{report.one_sentence_diagnosis}"</p>
         )}
       </div>
+
+      {/* Single Video: Phase Report */}
+      {isSingleVideo && phaseReport && (
+        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+          <h2 className="text-base font-semibold text-[#1e2a38] mb-5">Video Phase Analysis</h2>
+          <div className="space-y-5">
+            {[
+              { key: "opening", label: "🎬 Opening", description: "First 60–90 seconds" },
+              { key: "body", label: "📖 Body", description: "Main content & insights" },
+              { key: "connection_and_voice", label: "🤝 Connection & Voice", description: "Emotional resonance & personality" },
+              { key: "channel_strategy", label: "📈 Channel Strategy", description: "Title, lead magnet & binge hooks" },
+            ].map(({ key, label, description }) => {
+              const phase = phaseReport[key];
+              if (!phase) return null;
+              return (
+                <div key={key} className="border border-gray-100 rounded-xl p-5">
+                  <div className="flex items-start justify-between gap-4 mb-3">
+                    <div>
+                      <h3 className="font-bold text-[#1e2a38] text-sm">{label}</h3>
+                      <p className="text-xs text-[#1e2a38]/40">{description}</p>
+                    </div>
+                    {phase.score != null && (
+                      <span className={`inline-block px-3 py-1 rounded-full text-sm font-bold shrink-0 ${scoreBg(phase.score)}`}>
+                        {Number(phase.score).toFixed(1)}
+                      </span>
+                    )}
+                  </div>
+                  {phase.analysis && (
+                    <p className="text-sm text-[#1e2a38]/80 mb-3 leading-relaxed">{phase.analysis}</p>
+                  )}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {phase.strengths?.length > 0 && (
+                      <div className="bg-[#e8f7ff] rounded-lg p-3">
+                        <p className="text-xs font-semibold text-[#3dc3ff] uppercase tracking-wider mb-1.5">✅ Strong</p>
+                        {phase.strengths.map((s: string, i: number) => (
+                          <p key={i} className="text-xs text-[#1e2a38]/70">{s}</p>
+                        ))}
+                      </div>
+                    )}
+                    {phase.gaps?.length > 0 && (
+                      <div className="bg-[#ffe5ea] rounded-lg p-3">
+                        <p className="text-xs font-semibold text-[#ff0033] uppercase tracking-wider mb-1.5">⚠️ Gap</p>
+                        {phase.gaps.map((g: string, i: number) => (
+                          <p key={i} className="text-xs text-[#1e2a38]/70">{g}</p>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Single Video: Three Improvements */}
+      {isSingleVideo && report?.three_improvements?.length > 0 && (
+        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+          <h2 className="text-base font-semibold text-[#1e2a38] mb-5">💡 Three Ideas for Improvement</h2>
+          <div className="space-y-5">
+            {report.three_improvements.map((item: any, i: number) => (
+              <div key={i} className="border-l-4 border-[#3dc3ff] pl-4">
+                <p className="text-xs font-bold text-[#3dc3ff] uppercase tracking-wider mb-2">{i + 1}. {item.principle}</p>
+                <div className="space-y-2">
+                  <div className="bg-[#ffe5ea] rounded-lg px-3 py-2">
+                    <p className="text-xs font-semibold text-[#ff0033] mb-1">Current</p>
+                    <p className="text-xs text-[#1e2a38]/80 italic">"{item.current}"</p>
+                  </div>
+                  <div className="bg-[#e8f7ff] rounded-lg px-3 py-2">
+                    <p className="text-xs font-semibold text-[#3dc3ff] mb-1">Improved</p>
+                    <p className="text-xs text-[#1e2a38]/80 italic">"{item.improved}"</p>
+                  </div>
+                  {item.why && (
+                    <p className="text-xs text-[#1e2a38]/60 italic">{item.why}</p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Single Video: Quick Wins */}
+      {isSingleVideo && report?.quick_wins?.length > 0 && (
+        <div className="bg-[#e8f7ff] border border-[#3dc3ff]/30 rounded-xl p-6">
+          <h2 className="text-base font-semibold text-[#1e2a38] mb-3">⚡ Quick Wins</h2>
+          <p className="text-xs text-[#1e2a38]/50 mb-3">Implement these in your next video</p>
+          <ul className="space-y-2">
+            {report.quick_wins.map((win: string, i: number) => (
+              <li key={i} className="flex items-start gap-2 text-sm text-[#1e2a38]/80">
+                <span className="text-[#3dc3ff] font-bold mt-0.5 shrink-0">{i + 1}.</span>
+                {win}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* Monthly progress summary */}
       {audit.auditType === "monthly" && baselineScores && (
@@ -401,25 +505,39 @@ export default function AuditReportPage() {
       })()}
 
       {/* Q&A Topics */}
-      {(() => {
-        const qaItems = QA_FLAGS.filter((k) => scores[k]);
-        return (
-          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-            <h2 className="text-base font-semibold text-[#1e2a38] mb-3">❓ Q&amp;A Topics for Coaching Call</h2>
-            <ul className="space-y-2">
-              {qaItems.map((key) => (
-                <li key={key} className="flex items-start gap-3">
-                  <span className="w-2 h-2 rounded-full bg-[#3dc3ff] mt-1.5 shrink-0" />
-                  <div>
-                    <span className="text-sm font-medium text-[#1e2a38]">{PRINCIPLE_LABELS[key]}</span>
-                    <span className="text-xs text-[#1e2a38]/50 ml-2">(score: {scores[key]?.score?.toFixed(1)})</span>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-        );
-      })()}
+      {isSingleVideo && report?.qa_prep?.length > 0 ? (
+        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+          <h2 className="text-base font-semibold text-[#1e2a38] mb-3">❓ Q&amp;A Prep for Coaching Call</h2>
+          <ul className="space-y-2">
+            {report.qa_prep.map((q: string, i: number) => (
+              <li key={i} className="flex items-start gap-3">
+                <span className="w-2 h-2 rounded-full bg-[#3dc3ff] mt-1.5 shrink-0" />
+                <span className="text-sm text-[#1e2a38]/80">{q}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : (
+        (() => {
+          const qaItems = QA_FLAGS.filter((k) => scores[k]);
+          return (
+            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+              <h2 className="text-base font-semibold text-[#1e2a38] mb-3">❓ Q&amp;A Topics for Coaching Call</h2>
+              <ul className="space-y-2">
+                {qaItems.map((key) => (
+                  <li key={key} className="flex items-start gap-3">
+                    <span className="w-2 h-2 rounded-full bg-[#3dc3ff] mt-1.5 shrink-0" />
+                    <div>
+                      <span className="text-sm font-medium text-[#1e2a38]">{PRINCIPLE_LABELS[key]}</span>
+                      <span className="text-xs text-[#1e2a38]/50 ml-2">(score: {scores[key]?.score?.toFixed(1)})</span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          );
+        })()
+      )}
 
       {/* Footer */}
       <div className="text-center py-6 text-sm text-[#1e2a38]/40 border-t border-gray-200">

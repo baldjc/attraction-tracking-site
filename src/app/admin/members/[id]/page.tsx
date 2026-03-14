@@ -126,6 +126,13 @@ export default function MemberDetailPage() {
   const [jobMessage, setJobMessage] = useState<string>("");
   const [jobError, setJobError] = useState<string | null>(null);
 
+  // Single video selection modal
+  const [showVideoModal, setShowVideoModal] = useState(false);
+  const [videoModalLoading, setVideoModalLoading] = useState(false);
+  const [videoModalVideos, setVideoModalVideos] = useState<any[]>([]);
+  const [videoModalError, setVideoModalError] = useState<string | null>(null);
+  const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
+
   const fetchMember = useCallback(async () => {
     setLoading(true);
     const res = await fetch(`/api/members/${id}`);
@@ -186,7 +193,7 @@ export default function MemberDetailPage() {
     await fetchMember();
   }
 
-  async function runAudit(auditType: string) {
+  async function runAudit(auditType: string, videoId?: string) {
     setAuditOpenHeader(false);
     setAuditOpenSidebar(false);
     setJobId(null);
@@ -197,7 +204,7 @@ export default function MemberDetailPage() {
     const res = await fetch("/api/audits/run", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ memberId: id, auditType }),
+      body: JSON.stringify({ memberId: id, auditType, ...(videoId ? { videoId } : {}) }),
     });
 
     if (!res.ok) {
@@ -234,6 +241,28 @@ export default function MemberDetailPage() {
 
     return () => clearInterval(interval);
   }, [jobId, jobStatus, fetchMember]);
+
+  async function openVideoModal() {
+    setAuditOpenHeader(false);
+    setAuditOpenSidebar(false);
+    setShowVideoModal(true);
+    setVideoModalLoading(true);
+    setVideoModalError(null);
+    setVideoModalVideos([]);
+    setSelectedVideoId(null);
+
+    const res = await fetch(`/api/youtube/channel-videos?memberId=${id}`);
+    const data = await res.json();
+
+    if (!res.ok || !data.videos?.length) {
+      setVideoModalError(data.error ?? "Could not fetch videos — check that this member has a valid YouTube channel set");
+      setVideoModalLoading(false);
+      return;
+    }
+
+    setVideoModalVideos(data.videos);
+    setVideoModalLoading(false);
+  }
 
   if (loading) {
     return (
@@ -553,7 +582,7 @@ export default function MemberDetailPage() {
                     ].map(({ label, value }) => (
                       <button
                         key={value}
-                        onClick={() => runAudit(value)}
+                        onClick={() => value === "single_video" ? openVideoModal() : runAudit(value)}
                         className="w-full text-left px-4 py-2.5 text-sm text-[#1e2a38] hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg"
                       >
                         {label}
@@ -910,7 +939,7 @@ export default function MemberDetailPage() {
                     ].map(({ label, value }) => (
                       <button
                         key={value}
-                        onClick={() => runAudit(value)}
+                        onClick={() => value === "single_video" ? openVideoModal() : runAudit(value)}
                         className="w-full text-left px-4 py-2.5 text-sm text-[#1e2a38] hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg"
                       >
                         {label}
@@ -965,6 +994,91 @@ export default function MemberDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Single Video Selection Modal */}
+      {showVideoModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <div>
+                <h2 className="text-base font-bold text-[#1e2a38]">Select a Video to Audit</h2>
+                <p className="text-xs text-[#1e2a38]/50 mt-0.5">Choose from {member.fullName}&apos;s 10 most recent long-form videos</p>
+              </div>
+              <button onClick={() => setShowVideoModal(false)} className="text-[#1e2a38]/40 hover:text-[#1e2a38] transition-colors">
+                <XMarkIcon className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="overflow-y-auto flex-1 p-4">
+              {videoModalLoading && (
+                <div className="flex flex-col items-center justify-center h-48 gap-3">
+                  <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-200 border-t-[#3dc3ff]" />
+                  <p className="text-sm text-[#1e2a38]/50">Fetching videos…</p>
+                </div>
+              )}
+              {videoModalError && (
+                <div className="bg-[#ffe5ea] border border-[#ff0033]/20 text-[#ff0033] rounded-lg p-4 text-sm">
+                  {videoModalError}
+                </div>
+              )}
+              {!videoModalLoading && !videoModalError && (
+                <div className="space-y-2">
+                  {videoModalVideos.map((v: any) => (
+                    <button
+                      key={v.videoId}
+                      onClick={() => setSelectedVideoId(v.videoId)}
+                      className={`w-full flex items-center gap-3 p-3 rounded-lg border-2 text-left transition-colors ${
+                        selectedVideoId === v.videoId
+                          ? "border-[#3dc3ff] bg-[#e8f7ff]"
+                          : "border-gray-100 hover:border-gray-200 hover:bg-gray-50"
+                      }`}
+                    >
+                      <img
+                        src={v.thumbnailUrl}
+                        alt=""
+                        className="w-24 h-14 rounded object-cover shrink-0 bg-gray-100"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-[#1e2a38] line-clamp-2 leading-snug">{v.title}</p>
+                        <p className="text-xs text-[#1e2a38]/50 mt-1">
+                          {v.durationFormatted} · {new Date(v.uploadDate).toLocaleDateString("en-CA", { year: "numeric", month: "short", day: "numeric" })} · {v.viewCount?.toLocaleString()} views
+                        </p>
+                      </div>
+                      {selectedVideoId === v.videoId && (
+                        <CheckIcon className="w-5 h-5 text-[#3dc3ff] shrink-0" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between gap-3">
+              <p className="text-xs text-[#1e2a38]/40">
+                {selectedVideoId ? "Video selected — ready to audit" : "Click a video to select it"}
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowVideoModal(false)}
+                  className="px-4 py-2 text-sm font-medium text-[#1e2a38] hover:bg-gray-50 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    setShowVideoModal(false);
+                    runAudit("single_video", selectedVideoId!);
+                  }}
+                  disabled={!selectedVideoId}
+                  className="px-4 py-2 text-sm font-semibold bg-[#3dc3ff] hover:bg-[#2bb3ef] text-white rounded-lg disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  Run Audit
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import { getChannelInfo, getVideosWithTranscripts } from "@/lib/youtube";
-import { runAuditWithClaude, DEFAULT_SCORING_PROMPT } from "@/lib/audit-engine";
+import { getChannelInfo, getVideosWithTranscripts, getVideoById } from "@/lib/youtube";
+import { runAuditWithClaude, DEFAULT_SCORING_PROMPT, SINGLE_VIDEO_SCORING_PROMPT } from "@/lib/audit-engine";
 
 export const maxDuration = 60;
 
-async function processAuditJob(jobId: string) {
+async function processAuditJob(jobId: string, selectedVideoId?: string) {
   const job = await prisma.auditJob.findUnique({
     where: { id: jobId },
     include: { user: true },
@@ -22,56 +22,79 @@ async function processAuditJob(jobId: string) {
       data: { status: "downloading" },
     });
 
-    // Resolve the YouTube identifier — prefer handle, fall back to extracting from URL
-    let youtubeIdentifier = member.youtubeHandle;
+    let channelInfo: Awaited<ReturnType<typeof getChannelInfo>> | null = null;
+    let videos: Awaited<ReturnType<typeof getVideoById>>[] = [];
 
-    if (!youtubeIdentifier && member.youtubeChannelUrl) {
-      const url = member.youtubeChannelUrl;
-      // Try to extract handle or channel ID from the URL
-      const handleMatch = url.match(/@[\w-]+/);
-      if (handleMatch) {
-        youtubeIdentifier = handleMatch[0];
-      } else {
+    if (job.auditType === "single_video" && selectedVideoId) {
+      // Fetch only the selected video
+      console.log(`[audit job ${jobId}] Single video mode — fetching videoId: ${selectedVideoId}`);
+      const video = await getVideoById(selectedVideoId);
+      if (!video) throw new Error("Could not fetch the selected video from YouTube.");
+      videos = [video];
+      // Still get channel info for banner/title
+      const youtubeIdentifier = member.youtubeHandle || (() => {
+        if (!member.youtubeChannelUrl) return null;
+        const url = member.youtubeChannelUrl;
+        const handleMatch = url.match(/@[\w-]+/);
+        if (handleMatch) return handleMatch[0];
         const parts = url.replace(/\/$/, "").split("/");
         const last = parts[parts.length - 1];
-        if (last && last !== "youtube.com") {
-          youtubeIdentifier = last.startsWith("@") ? last : last.startsWith("UC") ? last : `@${last}`;
+        return last && last !== "youtube.com" ? (last.startsWith("@") || last.startsWith("UC") ? last : `@${last}`) : null;
+      })();
+      if (youtubeIdentifier) {
+        try { channelInfo = await getChannelInfo(youtubeIdentifier); } catch { /* optional */ }
+      }
+    } else {
+      // Resolve the YouTube identifier — prefer handle, fall back to extracting from URL
+      let youtubeIdentifier = member.youtubeHandle;
+
+      if (!youtubeIdentifier && member.youtubeChannelUrl) {
+        const url = member.youtubeChannelUrl;
+        const handleMatch = url.match(/@[\w-]+/);
+        if (handleMatch) {
+          youtubeIdentifier = handleMatch[0];
+        } else {
+          const parts = url.replace(/\/$/, "").split("/");
+          const last = parts[parts.length - 1];
+          if (last && last !== "youtube.com") {
+            youtubeIdentifier = last.startsWith("@") ? last : last.startsWith("UC") ? last : `@${last}`;
+          }
         }
       }
-    }
 
-    if (!youtubeIdentifier) {
-      throw new Error("Member has no YouTube handle or channel URL set. Add one in Member Info first.");
-    }
-
-    console.log(`[audit job ${jobId}] Using YouTube identifier: ${youtubeIdentifier}`);
-    const channelInfo = await getChannelInfo(youtubeIdentifier);
-
-    let sinceDate: Date | undefined;
-    if (job.auditType === "monthly") {
-      const lastAudit = await prisma.audit.findFirst({
-        where: { userId: member.id },
-        orderBy: { createdAt: "desc" },
-      });
-      if (!lastAudit) {
-        throw new Error("No baseline audit found. Run a Baseline audit first.");
+      if (!youtubeIdentifier) {
+        throw new Error("Member has no YouTube handle or channel URL set. Add one in Member Info first.");
       }
-      sinceDate = lastAudit.createdAt;
-    }
 
-    const videoCount = job.auditType === "single_video" ? 1 : 5;
-    const videos = await getVideosWithTranscripts(
-      channelInfo.uploadsPlaylistId,
-      videoCount,
-      sinceDate
-    );
+      console.log(`[audit job ${jobId}] Using YouTube identifier: ${youtubeIdentifier}`);
+      channelInfo = await getChannelInfo(youtubeIdentifier);
 
-    if (job.auditType === "monthly" && videos.length < 2) {
-      throw new Error("Not enough new content for a meaningful monthly audit (fewer than 2 new videos)");
-    }
+      let sinceDate: Date | undefined;
+      if (job.auditType === "monthly") {
+        const lastAudit = await prisma.audit.findFirst({
+          where: { userId: member.id },
+          orderBy: { createdAt: "desc" },
+        });
+        if (!lastAudit) {
+          throw new Error("No baseline audit found. Run a Baseline audit first.");
+        }
+        sinceDate = lastAudit.createdAt;
+      }
 
-    if (videos.length === 0) {
-      throw new Error("No videos found on this channel");
+      const videoCount = 5;
+      videos = await getVideosWithTranscripts(
+        channelInfo.uploadsPlaylistId,
+        videoCount,
+        sinceDate
+      );
+
+      if (job.auditType === "monthly" && videos.length < 2) {
+        throw new Error("Not enough new content for a meaningful monthly audit (fewer than 2 new videos)");
+      }
+
+      if (videos.length === 0) {
+        throw new Error("No videos found on this channel");
+      }
     }
 
     // Step 2: analysing
@@ -83,10 +106,12 @@ async function processAuditJob(jobId: string) {
     const setting = await prisma.appSetting.findUnique({
       where: { key: "audit_prompt" },
     });
-    const systemPrompt = setting?.value ?? DEFAULT_SCORING_PROMPT;
+    const systemPrompt = job.auditType === "single_video"
+      ? SINGLE_VIDEO_SCORING_PROMPT
+      : (setting?.value ?? DEFAULT_SCORING_PROMPT);
 
     const auditResult = await runAuditWithClaude(
-      videos,
+      videos.filter(Boolean) as any,
       member.fullName ?? member.email,
       systemPrompt
     );
@@ -97,23 +122,7 @@ async function processAuditJob(jobId: string) {
       data: { status: "generating" },
     });
 
-    // Build baseline comparison for monthly audits
-    let baselineScores = null;
-    let lastMonthScores = null;
-    if (job.auditType === "monthly") {
-      const baseline = await prisma.audit.findFirst({
-        where: { userId: member.id, auditType: "baseline" },
-        orderBy: { createdAt: "asc" },
-      });
-      const lastMonth = await prisma.audit.findFirst({
-        where: { userId: member.id, auditType: "monthly" },
-        orderBy: { createdAt: "desc" },
-      });
-      baselineScores = (baseline?.scores as any) ?? null;
-      lastMonthScores = (lastMonth?.scores as any) ?? null;
-    }
-
-    const videosAnalysed = videos.map((v) => ({
+    const videosAnalysed = (videos.filter(Boolean) as NonNullable<(typeof videos)[number]>[]).map((v) => ({
       videoId: v.videoId,
       title: v.title,
       duration: v.duration,
@@ -122,6 +131,24 @@ async function processAuditJob(jobId: string) {
       viewCount: v.viewCount,
       hadTranscript: v.transcript !== null,
     }));
+
+    // Build comparison scores
+    let baselineScores = null;
+    let lastMonthScores = null;
+    if (job.auditType === "monthly" || job.auditType === "single_video") {
+      const baseline = await prisma.audit.findFirst({
+        where: { userId: member.id, auditType: "baseline" },
+        orderBy: { createdAt: "asc" },
+      });
+      baselineScores = (baseline?.scores as any) ?? null;
+    }
+    if (job.auditType === "monthly") {
+      const lastMonth = await prisma.audit.findFirst({
+        where: { userId: member.id, auditType: "monthly" },
+        orderBy: { createdAt: "desc" },
+      });
+      lastMonthScores = (lastMonth?.scores as any) ?? null;
+    }
 
     // Save audit record
     const audit = await prisma.audit.create({
@@ -132,13 +159,13 @@ async function processAuditJob(jobId: string) {
         scores: auditResult.scores as any,
         reportContent: {
           ...auditResult,
-          channelInfo: {
+          channelInfo: channelInfo ? {
             title: channelInfo.title,
             handle: channelInfo.handle,
             bannerUrl: channelInfo.bannerUrl,
-          },
+          } : null,
           baselineScores,
-          lastMonthScores,
+          lastMonthScores: null,
         } as any,
         videosAnalysed: videosAnalysed as any,
       },
@@ -164,7 +191,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { memberId, auditType } = await req.json();
+  const { memberId, auditType, videoId } = await req.json();
 
   if (!memberId || !auditType) {
     return NextResponse.json({ error: "memberId and auditType required" }, { status: 400 });
@@ -184,7 +211,7 @@ export async function POST(req: NextRequest) {
   });
 
   // Fire and forget — process async
-  processAuditJob(job.id).catch(console.error);
+  processAuditJob(job.id, videoId ?? undefined).catch(console.error);
 
   return NextResponse.json({ jobId: job.id });
 }

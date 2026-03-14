@@ -89,18 +89,139 @@ export interface AuditScores {
   consistency: { score: number; evidence: string };
 }
 
+export const SINGLE_VIDEO_SCORING_PROMPT = `You are the Attraction by Video audit engine. You score a SINGLE YouTube video for a real estate agent against 16 principles of audience attraction. Analyse the provided transcript and metadata, then return a detailed, phase-organised report.
+
+SCORING PRINCIPLES (score each 0–10):
+1. avatar_clarity — Is there ONE clear audience persona?
+2. themes_over_topics — Does the video fit into a repeatable content theme?
+3. arc_attention — How strong is the opening hook? Pattern interrupt? Reason to keep watching?
+4. arc_revelation — Genuine unique insights the viewer couldn't find elsewhere?
+5. arc_connection — Emotional resonance and trust-building?
+6. title_frameworks — Does the title use proven click-worthy patterns?
+7. approve_the_click — Do the first 30 seconds deliver on the title's promise?
+8. lead_magnet_system — Is a free resource mentioned? Clear lead capture?
+9. curiosity_bridges — Do transitions pull viewers forward? Open loops, teases?
+10. show_dont_tell — Visual proof, examples, demonstrations?
+11. values_peppering — Does the viewer learn who the creator is beyond real estate?
+12. connection_language — Direct phrases that speak to the avatar specifically?
+13. story_proof — Client stories with names, situations, stakes, outcomes?
+14. grade_5_language — Conversational, jargon-free, simple?
+15. binge_architecture — Cross-references to other videos?
+16. consistency — (score 5 by default for single videos — cannot assess consistency from one video)
+
+SCORING GUIDELINES:
+- 8–10: Excellent. Clear evidence of mastery.
+- 6–7: Good. Present but inconsistent.
+- 4–5: Developing. Present occasionally.
+- 2–3: Weak. Rarely present or poorly executed.
+- 0–1: Absent.
+
+Be rigorous and honest. Do NOT inflate scores. Use exact quotes from the transcript as evidence.
+
+Return ONLY valid JSON in this EXACT structure, nothing else — no markdown, no code fences:
+
+{
+  "scores": {
+    "avatar_clarity": { "score": 5.5, "evidence": "Exact quote or observation" },
+    "themes_over_topics": { "score": 4.0, "evidence": "..." },
+    "arc_attention": { "score": 6.0, "evidence": "..." },
+    "arc_revelation": { "score": 3.5, "evidence": "..." },
+    "arc_connection": { "score": 4.5, "evidence": "..." },
+    "title_frameworks": { "score": 5.0, "evidence": "..." },
+    "approve_the_click": { "score": 6.0, "evidence": "..." },
+    "lead_magnet_system": { "score": 2.0, "evidence": "..." },
+    "curiosity_bridges": { "score": 3.0, "evidence": "..." },
+    "show_dont_tell": { "score": 4.0, "evidence": "..." },
+    "values_peppering": { "score": 3.5, "evidence": "..." },
+    "connection_language": { "score": 4.0, "evidence": "..." },
+    "story_proof": { "score": 5.0, "evidence": "..." },
+    "grade_5_language": { "score": 7.0, "evidence": "..." },
+    "binge_architecture": { "score": 1.5, "evidence": "..." },
+    "consistency": { "score": 5.0, "evidence": "Single video — consistency assessed at channel level" }
+  },
+  "overall_score": 4.5,
+  "one_sentence_diagnosis": "{Name} uses {strength} — but {core gap} holds this video back.",
+  "strengths": ["Specific strength 1 with evidence", "Specific strength 2", "Specific strength 3"],
+  "biggest_gaps": ["Specific gap 1", "Specific gap 2", "Specific gap 3"],
+  "phase_report": {
+    "opening": {
+      "score": 5.5,
+      "analysis": "3-4 sentences analysing the first 60-90 seconds. Reference exact transcript moments.",
+      "strengths": ["One specific strength from the opening"],
+      "gaps": ["One specific gap with a timestamp reference"]
+    },
+    "body": {
+      "score": 6.0,
+      "analysis": "3-4 sentences analysing the main content — insights, structure, pacing, evidence.",
+      "strengths": ["One specific strength"],
+      "gaps": ["One specific gap"]
+    },
+    "connection_and_voice": {
+      "score": 4.5,
+      "analysis": "3-4 sentences on emotional resonance, personality, language, story use.",
+      "strengths": ["One specific strength"],
+      "gaps": ["One specific gap"]
+    },
+    "channel_strategy": {
+      "score": 5.0,
+      "analysis": "3-4 sentences on title, thumbnail alignment, lead magnet, binge-watching hooks.",
+      "strengths": ["One specific strength"],
+      "gaps": ["One specific gap"]
+    }
+  },
+  "three_improvements": [
+    {
+      "principle": "ARC Attention",
+      "current": "Exact quote from the transcript showing the current approach",
+      "improved": "Rewritten version of the same moment using Attraction principles",
+      "why": "1-2 sentences on why this change matters for viewer retention"
+    },
+    {
+      "principle": "Lead Magnet System",
+      "current": "...",
+      "improved": "...",
+      "why": "..."
+    },
+    {
+      "principle": "Connection Language",
+      "current": "...",
+      "improved": "...",
+      "why": "..."
+    }
+  ],
+  "quick_wins": [
+    "Specific, actionable quick win 1 — something that can be implemented in the next video",
+    "Specific quick win 2",
+    "Specific quick win 3"
+  ],
+  "qa_prep": [
+    "Coaching question 1 — phrased as a question Jared would ask on a call?",
+    "Coaching question 2?",
+    "Coaching question 3?"
+  ]
+}`;
+
 export interface AuditResult {
   scores: AuditScores;
   overall_score: number;
   strengths: string[];
   biggest_gaps: string[];
   one_sentence_diagnosis: string;
-  video_breakdowns: Array<{
+  video_breakdowns?: Array<{
     title: string;
     opening_analysis: string;
     insights_analysis: string;
     connection_analysis: string;
   }>;
+  phase_report?: {
+    opening: { score: number; analysis: string; strengths: string[]; gaps: string[] };
+    body: { score: number; analysis: string; strengths: string[]; gaps: string[] };
+    connection_and_voice: { score: number; analysis: string; strengths: string[]; gaps: string[] };
+    channel_strategy: { score: number; analysis: string; strengths: string[]; gaps: string[] };
+  };
+  three_improvements?: Array<{ principle: string; current: string; improved: string; why: string }>;
+  quick_wins?: string[];
+  qa_prep?: string[];
 }
 
 export async function runAuditWithClaude(
