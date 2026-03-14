@@ -1,0 +1,168 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  admin
+  foundations_member
+}
+
+enum ServiceTier {
+  foundations
+  editing_2
+  editing_4
+  scaling_2
+  scaling_4
+}
+
+enum AuditType {
+  lead
+  baseline
+  monthly
+  single_video
+}
+
+enum JobStatus {
+  queued
+  downloading
+  analysing
+  generating
+  complete
+  failed
+}
+
+model User {
+  id                String      @id @default(uuid())
+  email             String      @unique
+  fullName          String?
+  passwordHash      String?
+  magicLinkEnabled  Boolean     @default(false)
+  emailVerified     Boolean     @default(false)
+  role              UserRole    @default(foundations_member)
+  ghlContactId      String?
+  youtubeChannelUrl String?
+  youtubeHandle     String?
+  serviceTier       ServiceTier @default(foundations)
+  slackUserId       String?
+  skoolProfile      String?
+  invitedAt         DateTime?
+  lastLoginAt       DateTime?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  audits    Audit[]
+  auditJobs AuditJob[]
+  campaigns Campaign[]
+  links     TrackingLink[]
+
+  @@map("users")
+}
+
+model Audit {
+  id             String    @id @default(uuid())
+  userId         String?
+  user           User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  auditType      AuditType
+  overallScore   Float?
+  scores         Json
+  reportContent  Json
+  videosAnalysed Json?
+  notionPageId   String?
+  notionPageUrl  String?
+  reportMonth    String?
+  createdAt      DateTime  @default(now())
+
+  auditJob AuditJob?
+
+  @@index([userId])
+  @@index([auditType])
+  @@map("audits")
+}
+
+model AuditJob {
+  id           String    @id @default(uuid())
+  auditType    AuditType
+  userId       String?
+  user         User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status       JobStatus @default(queued)
+  errorMessage String?
+  auditId      String?   @unique
+  audit        Audit?    @relation(fields: [auditId], references: [id])
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@map("audit_jobs")
+}
+
+model Campaign {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  links TrackingLink[]
+
+  @@index([userId])
+  @@map("campaigns")
+}
+
+model TrackingLink {
+  id              String    @id @default(uuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  campaignId      String?
+  campaign        Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  name            String
+  destinationUrl  String
+  shortCode       String    @unique
+  videoTitle      String?
+  leadMagnetName  String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  clicks Click[]
+
+  @@index([shortCode])
+  @@index([userId])
+  @@map("tracking_links")
+}
+
+model Click {
+  id           String       @id @default(uuid())
+  linkId       String
+  link         TrackingLink @relation(fields: [linkId], references: [id], onDelete: Cascade)
+  timestamp    DateTime     @default(now())
+  ipAddress    String?
+  userAgent    String?
+  referrer     String?
+  gCampaignId  String?
+  gAdGroupId   String?
+  gKeyword     String?
+  gDevice      String?
+  gNetwork     String?
+  gMatchType   String?
+
+  conversion Conversion?
+
+  @@index([linkId])
+  @@index([timestamp])
+  @@map("clicks")
+}
+
+model Conversion {
+  id        String   @id @default(uuid())
+  clickId   String   @unique
+  click     Click    @relation(fields: [clickId], references: [id], onDelete: Cascade)
+  type      String   @default("EMAIL_SIGNUP")
+  timestamp DateTime @default(now())
+
+  @@map("conversions")
+}
