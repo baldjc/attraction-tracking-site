@@ -37,10 +37,14 @@ export default function LoginPage() {
         <div className="text-center mb-8">
           <img
             src="/logo-icon.png"
-            alt="Attraction by Video"
-            className="h-20 w-20 rounded-2xl object-cover mx-auto mb-3"
+            alt=""
+            className="h-16 w-16 rounded-2xl object-cover mx-auto mb-4"
           />
-          <p className="text-[#1e2a38]/60 text-sm">Attraction by Video</p>
+          <img
+            src="/logo-transparent.png"
+            alt="Attraction by Video"
+            className="h-10 w-auto object-contain mx-auto"
+          />
         </div>
 
         <form
