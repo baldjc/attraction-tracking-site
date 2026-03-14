@@ -4,6 +4,8 @@ import prisma from "@/lib/prisma";
 import { fetchContactsByTag, getCustomFieldValue, GHL_FIELDS } from "@/lib/ghl";
 import bcrypt from "bcryptjs";
 
+export const maxDuration = 60;
+
 export async function POST() {
   const session = await auth();
   if (!session?.user || (session.user as any).role !== "admin") {

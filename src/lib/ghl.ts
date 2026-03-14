@@ -1,8 +1,13 @@
 const GHL_BASE_URL = "https://services.leadconnectorhq.com";
-const GHL_API_KEY = process.env.GHL_API_KEY!;
-const GHL_LOCATION_ID = process.env.GHL_LOCATION_ID!;
 
-interface GHLContact {
+function getApiKey() {
+  return process.env.GHL_API_KEY!;
+}
+function getLocationId() {
+  return process.env.GHL_LOCATION_ID!;
+}
+
+export interface GHLContact {
   id: string;
   firstName?: string;
   lastName?: string;
@@ -13,47 +18,68 @@ interface GHLContact {
 
 interface GHLContactsResponse {
   contacts: GHLContact[];
-  meta?: { total: number; nextPageUrl?: string; startAfterId?: string; startAfter?: number };
+  meta?: {
+    total?: number;
+    nextPageUrl?: string;
+    startAfterId?: string;
+    startAfter?: number;
+  };
 }
 
 export async function fetchContactsByTag(tag: string): Promise<GHLContact[]> {
   const allContacts: GHLContact[] = [];
-  let hasMore = true;
-  let offset = 0;
   const limit = 100;
+  let startAfterId: string | null = null;
+  let pageCount = 0;
+  const MAX_PAGES = 50; // safety cap — 5,000 contacts max
 
-  while (hasMore) {
-    const url = `${GHL_BASE_URL}/contacts/?locationId=${GHL_LOCATION_ID}&limit=${limit}&query=&startAfter=${offset}`;
-    const res = await fetch(url, {
+  while (pageCount < MAX_PAGES) {
+    const params = new URLSearchParams({
+      locationId: getLocationId(),
+      limit: String(limit),
+    });
+    if (startAfterId) {
+      params.set("startAfterId", startAfterId);
+    }
+
+    const res = await fetch(`${GHL_BASE_URL}/contacts/?${params.toString()}`, {
       headers: {
-        Authorization: `Bearer ${GHL_API_KEY}`,
+        Authorization: `Bearer ${getApiKey()}`,
         Version: "2021-07-28",
       },
     });
 
     if (!res.ok) {
-      throw new Error(`GHL API error: ${res.status} ${res.statusText}`);
+      const body = await res.text();
+      throw new Error(`GHL API error: ${res.status} ${res.statusText} — ${body}`);
     }
 
     const data: GHLContactsResponse = await res.json();
-    const tagged = data.contacts.filter(
-      (c) => c.tags && c.tags.some((t) => t.toLowerCase() === tag.toLowerCase())
+    const contacts = data.contacts ?? [];
+
+    const tagged = contacts.filter(
+      (c) => c.tags?.some((t) => t.toLowerCase() === tag.toLowerCase())
     );
     allContacts.push(...tagged);
 
-    if (data.contacts.length < limit) {
-      hasMore = false;
-    } else {
-      offset += limit;
+    pageCount++;
+
+    // Stop if fewer than limit returned (last page) or no cursor to continue
+    if (contacts.length < limit || !data.meta?.startAfterId) {
+      break;
     }
+
+    startAfterId = data.meta.startAfterId;
   }
 
   return allContacts;
 }
 
-export function getCustomFieldValue(contact: GHLContact, fieldId: string): string | undefined {
-  const field = contact.customFields?.find((f) => f.id === fieldId);
-  return field?.value;
+export function getCustomFieldValue(
+  contact: GHLContact,
+  fieldId: string
+): string | undefined {
+  return contact.customFields?.find((f) => f.id === fieldId)?.value;
 }
 
 // GHL Custom Field IDs
