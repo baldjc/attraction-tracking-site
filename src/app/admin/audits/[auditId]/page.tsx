@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeftIcon, ArrowTopRightOnSquareIcon } from "@heroicons/react/24/outline";
+import { ArrowLeftIcon, ArrowTopRightOnSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
 
 const PRINCIPLE_LABELS: Record<string, string> = {
   avatar_clarity: "Avatar Clarity",
@@ -96,8 +96,10 @@ function fmtDuration(secs: number) {
 
 export default function AuditReportPage() {
   const { auditId } = useParams<{ auditId: string }>();
+  const router = useRouter();
   const [audit, setAudit] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState(false);
   const [expandedPrinciple, setExpandedPrinciple] = useState<string | null>(null);
 
   useEffect(() => {
@@ -113,6 +115,13 @@ export default function AuditReportPage() {
         console.log("[audit-report] videosAnalysed count:", (a?.videosAnalysed as any[])?.length ?? 0);
       });
   }, [auditId]);
+
+  async function handleDelete() {
+    if (!confirm("Delete this audit? This cannot be undone.")) return;
+    setDeleting(true);
+    await fetch(`/api/audits/${auditId}`, { method: "DELETE" });
+    router.push(audit?.user?.id ? `/admin/members/${audit.user.id}` : "/admin/members");
+  }
 
   if (loading) return <div className="flex items-center justify-center h-64 text-[#1e2a38]/40">Loading report…</div>;
   if (!audit) return <div className="text-center py-20 text-[#1e2a38]/50">Report not found.</div>;
@@ -134,10 +143,20 @@ export default function AuditReportPage() {
 
   return (
     <div className="max-w-4xl space-y-6">
-      <Link href={`/admin/members/${member?.id}`} className="inline-flex items-center gap-1.5 text-sm text-[#1e2a38]/50 hover:text-[#1e2a38]">
-        <ArrowLeftIcon className="w-4 h-4" />
-        Back to {member?.fullName ?? "Member"}
-      </Link>
+      <div className="flex items-center justify-between">
+        <Link href={`/admin/members/${member?.id}`} className="inline-flex items-center gap-1.5 text-sm text-[#1e2a38]/50 hover:text-[#1e2a38]">
+          <ArrowLeftIcon className="w-4 h-4" />
+          Back to {member?.fullName ?? "Member"}
+        </Link>
+        <button
+          onClick={handleDelete}
+          disabled={deleting}
+          className="inline-flex items-center gap-1.5 text-sm text-[#ff0033]/60 hover:text-[#ff0033] disabled:opacity-40 transition-colors"
+        >
+          <TrashIcon className="w-4 h-4" />
+          {deleting ? "Deleting…" : "Delete audit"}
+        </button>
+      </div>
 
       {/* Banner */}
       {channelInfo?.bannerUrl ? (

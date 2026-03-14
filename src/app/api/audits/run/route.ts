@@ -88,8 +88,8 @@ async function processAuditJob(jobId: string, selectedVideoId?: string) {
         sinceDate
       );
 
-      if (job.auditType === "monthly" && videos.length < 2) {
-        throw new Error("Not enough new content for a meaningful monthly audit (fewer than 2 new videos)");
+      if (job.auditType === "monthly" && videos.length < 1) {
+        throw new Error("Not enough new content for a meaningful monthly audit (no new videos found)");
       }
 
       if (videos.length === 0) {
