@@ -21,15 +21,20 @@ interface Props {
 export default function AIToolsHub({ basePath }: Props) {
   const [avatar, setAvatar] = useState<AvatarData | null>(null);
   const [lastScript, setLastScript] = useState<SavedScript | null>(null);
+  const [lastReview, setLastReview] = useState<SavedScript | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const scriptReviewHref = basePath.replace("/ai-tools", "") + "/script-review";
 
   useEffect(() => {
     Promise.all([
       fetch("/api/member/avatar").then((r) => r.json()).catch(() => ({})),
       fetch("/api/ai-tools/saved-scripts").then((r) => r.json()).catch(() => ({ scripts: [] })),
-    ]).then(([av, sc]) => {
+      fetch("/api/script-review").then((r) => r.json()).catch(() => ({ reviews: [] })),
+    ]).then(([av, sc, sr]) => {
       setAvatar(av);
       setLastScript(sc.scripts?.[0] ?? null);
+      setLastReview(sr.reviews?.[0] ?? null);
       setLoading(false);
     });
   }, []);
@@ -77,6 +82,16 @@ export default function AIToolsHub({ basePath }: Props) {
         : avatarStatus,
       badge: avatar?.avatarName ? "green" : "amber",
     },
+    {
+      href: scriptReviewHref,
+      icon: "📋",
+      title: "Script Review",
+      description: "Paste a script or transcript — get scored on all 16 Attraction principles",
+      extra: lastReview
+        ? `Last review: ${new Date(lastReview.createdAt).toLocaleDateString()}`
+        : "No reviews yet — paste any script to get started",
+      badge: "blue",
+    },
   ];
 
   return (
@@ -114,7 +129,7 @@ export default function AIToolsHub({ basePath }: Props) {
                   {tool.title}
                 </h2>
                 <p className="text-sm text-[#1e2a38]/60 mt-1">{tool.description}</p>
-                <p className={`text-xs mt-3 font-medium ${tool.badge === "green" ? "text-[#3dc3ff]" : "text-amber-600"}`}>
+                <p className={`text-xs mt-3 font-medium ${tool.badge === "green" ? "text-[#3dc3ff]" : tool.badge === "blue" ? "text-[#1e2a38]/50" : "text-amber-600"}`}>
                   {tool.extra}
                 </p>
               </div>

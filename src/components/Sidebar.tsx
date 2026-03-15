@@ -40,7 +40,6 @@ const adminLinks = [
 
 const memberLinks = [
   { href: "/member/scores", label: "My Scores", icon: StarIcon },
-  { href: "/member/script-review", label: "Script Review", icon: PencilSquareIcon },
   { href: "/member/ai-tools", label: "AI Tools", icon: SparklesIcon },
   { href: "/member/links", label: "My Links", icon: LinkIcon },
   { href: "/member/resources", label: "Resources", icon: BookOpenIcon },
