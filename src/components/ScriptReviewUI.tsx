@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { ArrowPathIcon, CheckIcon, BookmarkSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { ArrowPathIcon, CheckIcon, BookmarkSquareIcon, TrashIcon, UserCircleIcon } from "@heroicons/react/24/outline";
 
 const PRINCIPLE_LABELS: Record<string, string> = {
   avatar_clarity: "Avatar Clarity",
@@ -102,8 +102,16 @@ interface ReviewResult {
   };
 }
 
+interface MemberOption {
+  id: string;
+  fullName: string | null;
+  email: string;
+  youtubeHandle: string | null;
+}
+
 interface Props {
   fetchBaseline?: boolean;
+  isAdmin?: boolean;
 }
 
 function ResultDisplay({ r, baselineScores }: { r: ReviewResult; baselineScores: any }) {
@@ -263,7 +271,7 @@ function ResultDisplay({ r, baselineScores }: { r: ReviewResult; baselineScores:
   );
 }
 
-export default function ScriptReviewUI({ fetchBaseline = false }: Props) {
+export default function ScriptReviewUI({ fetchBaseline = false, isAdmin = false }: Props) {
   const [videoTitle, setVideoTitle] = useState("");
   const [scriptText, setScriptText] = useState("");
   const [loading, setLoading] = useState(false);
@@ -278,6 +286,12 @@ export default function ScriptReviewUI({ fetchBaseline = false }: Props) {
   const [baselineScores, setBaselineScores] = useState<any | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
+  const [adminMode, setAdminMode] = useState<"self" | "member">("self");
+  const [members, setMembers] = useState<MemberOption[]>([]);
+  const [membersLoading, setMembersLoading] = useState(false);
+  const [selectedMemberId, setSelectedMemberId] = useState<string>("");
+  const [memberBaseline, setMemberBaseline] = useState<any | null>(null);
+  const [memberBaselineLoading, setMemberBaselineLoading] = useState(false);
   const loadHistory = useCallback(async () => {
     const res = await fetch("/api/script-review");
     if (res.ok) {
@@ -296,10 +310,55 @@ export default function ScriptReviewUI({ fetchBaseline = false }: Props) {
     }
   }, [fetchBaseline]);
 
+  const loadMembers = useCallback(async () => {
+    if (!isAdmin) return;
+    setMembersLoading(true);
+    const res = await fetch("/api/members");
+    if (res.ok) {
+      const data = await res.json();
+      setMembers(data.members ?? []);
+    }
+    setMembersLoading(false);
+  }, [isAdmin]);
+
+  const loadMemberBaseline = useCallback(async (userId: string) => {
+    if (!userId) { setMemberBaseline(null); return; }
+    setMemberBaselineLoading(true);
+    const res = await fetch(`/api/admin/member-scores/${userId}`);
+    if (res.ok) {
+      const data = await res.json();
+      setMemberBaseline(data.baseline?.scores ?? null);
+    }
+    setMemberBaselineLoading(false);
+  }, []);
+
   useEffect(() => {
     loadHistory();
     loadBaseline();
   }, [loadHistory, loadBaseline]);
+
+  useEffect(() => {
+    if (isAdmin && adminMode === "member" && members.length === 0) {
+      loadMembers();
+    }
+  }, [isAdmin, adminMode, members.length, loadMembers]);
+
+  async function handleModeToggle(mode: "self" | "member") {
+    setAdminMode(mode);
+    setSelectedMemberId("");
+    setMemberBaseline(null);
+    if (mode === "member" && members.length === 0) loadMembers();
+  }
+
+  async function handleMemberSelect(userId: string) {
+    setSelectedMemberId(userId);
+    setMemberBaseline(null);
+    if (userId) loadMemberBaseline(userId);
+  }
+
+  const activeBaselineScores = isAdmin
+    ? (adminMode === "member" ? memberBaseline : null)
+    : baselineScores;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -388,6 +447,66 @@ export default function ScriptReviewUI({ fetchBaseline = false }: Props) {
           Paste a script or transcript to score it against the 16 Attraction principles before recording.
         </p>
       </div>
+
+      {isAdmin && (
+        <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm space-y-3">
+          <p className="text-xs font-semibold text-[#1e2a38]/50 uppercase tracking-wider">Comparison Mode</p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => handleModeToggle("self")}
+              className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium border transition-colors ${
+                adminMode === "self"
+                  ? "bg-[#1e2a38] text-white border-[#1e2a38]"
+                  : "bg-white text-[#1e2a38]/60 border-gray-200 hover:border-gray-300"
+              }`}
+            >
+              No comparison
+            </button>
+            <button
+              type="button"
+              onClick={() => handleModeToggle("member")}
+              className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium border transition-colors flex items-center justify-center gap-1.5 ${
+                adminMode === "member"
+                  ? "bg-[#3dc3ff] text-white border-[#3dc3ff]"
+                  : "bg-white text-[#1e2a38]/60 border-gray-200 hover:border-gray-300"
+              }`}
+            >
+              <UserCircleIcon className="w-4 h-4" />
+              Compare to member
+            </button>
+          </div>
+          {adminMode === "member" && (
+            <div>
+              {membersLoading ? (
+                <p className="text-xs text-[#1e2a38]/40 py-2">Loading members…</p>
+              ) : (
+                <select
+                  value={selectedMemberId}
+                  onChange={(e) => handleMemberSelect(e.target.value)}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-[#1e2a38] focus:outline-none focus:ring-2 focus:ring-[#3dc3ff]/40"
+                >
+                  <option value="">— Select a member —</option>
+                  {members.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.fullName ?? m.email}{m.youtubeHandle ? ` (@${m.youtubeHandle})` : ""}
+                    </option>
+                  ))}
+                </select>
+              )}
+              {selectedMemberId && (
+                <p className="text-xs mt-1.5 text-[#1e2a38]/50">
+                  {memberBaselineLoading
+                    ? "Loading baseline…"
+                    : memberBaseline
+                    ? "✓ Baseline loaded — comparison column will appear in results"
+                    : "No baseline audit found for this member"}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm space-y-4">
         <div>
@@ -479,7 +598,7 @@ export default function ScriptReviewUI({ fetchBaseline = false }: Props) {
               </button>
             )}
           </div>
-          <ResultDisplay r={activeResult} baselineScores={baselineScores} />
+          <ResultDisplay r={activeResult} baselineScores={activeBaselineScores} />
         </div>
       )}
 
