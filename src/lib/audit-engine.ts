@@ -3,9 +3,11 @@ import type { VideoWithTranscript } from "./youtube";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
-export const DEFAULT_SCORING_PROMPT = `You are the Attraction by Video audit engine. You score YouTube channels used by real estate agents against 16 principles of audience attraction. Your job is to analyse the provided video transcripts and metadata, then return precise, evidence-based scores.
+// ============================================================
+// SHARED RUBRIC — update once, applies to ALL three prompts
+// ============================================================
 
-SCORING PRINCIPLES (score each 0–10):
+const SHARED_PRINCIPLES_1_TO_15 = `SCORING PRINCIPLES (score each 0–10):
 
 1. avatar_clarity — Is there ONE clear audience persona? Does every video speak to the same person with the same pain points and aspirations?
 2. themes_over_topics — Are there 2–4 repeatable content themes rather than random one-off topic videos?
@@ -21,17 +23,233 @@ SCORING PRINCIPLES (score each 0–10):
 12. connection_language — Are there phrases that make the avatar feel directly spoken to? "If you're a first-time buyer in Calgary..."
 13. story_proof — Are there client stories with names, situations, stakes, and outcomes? Not just "I helped a client."
 14. grade_5_language — Could a 10-year-old follow along? Is jargon explained? Is the language conversational and simple?
-15. binge_architecture — TWO components: (1) Avatar consistency — do all videos serve the same person? This is the FOUNDATION. (2) Cross-references with a specific reason to watch the next video. Component 1 is more important than Component 2.
-16. consistency — Calculated mathematically from upload dates. Compute the average gap in days between consecutive uploads and apply the lookup table in calibration rule #11.
+15. binge_architecture — TWO components: (1) Avatar consistency — do all videos serve the same person? This is the FOUNDATION. (2) Cross-references with a specific reason to watch the next video. Component 1 is more important than Component 2.`;
 
-SCORING GUIDELINES:
+const SHARED_SCORING_GUIDELINES = `SCORING GUIDELINES:
 - 8–10: Excellent. Clear evidence of mastery. Multiple strong examples.
 - 6–7: Good. Present but inconsistent. Could be stronger.
 - 4–5: Developing. Present occasionally but not a system.
 - 2–3: Weak. Rarely present or poorly executed.
 - 0–1: Absent. Not present in the content analysed.
 
-Be rigorous and honest. Do NOT inflate scores. Most channels score 3–6 on most principles initially.
+Be rigorous and honest. Do NOT inflate scores. Most channels score 3–6 on most principles initially.`;
+
+const SHARED_CALIBRATION_RULES = `CALIBRATION RULES — READ CAREFULLY:
+
+1. CONTENT FORMAT AWARENESS: Some videos are market updates or data presentations. These naturally have different characteristics than topic-driven or story-driven content. Score what IS present, not what the format doesn't lend itself to. A market update with data-driven hooks should not be penalised for not having emotional storytelling hooks — score the hook quality for what it is.
+
+2. SCORING STRICTNESS: Use the FULL 0-10 range with decimals. Do NOT cluster scores in the 5-8 range. A genuinely strong principle should score 8.5-9.5. A genuinely weak one should score 1-3. The average real estate YouTube channel scores 3-5 overall. A channel actively applying proven frameworks should score 7-9 on the principles they're applying well.
+
+3. EVIDENCE REQUIREMENT: Every score MUST cite a specific quote, timestamp, or observable moment from the transcripts. Saying 'could be stronger emotionally' without citing what WAS said is not valid evidence. Quote the actual opening words. Count the actual lead magnet mentions. Name the actual client stories (or note their specific absence).
+
+4. CONSISTENCY ACROSS CHANNELS: If you score Channel A's opening at 7 because it 'creates intrigue,' you cannot score Channel B's opening at 6 when it also creates intrigue through a different mechanism (like data contrast). Score the EFFECT on the viewer, not adherence to one specific format.
+
+5. THEMES OVER TOPICS — CALIBRATION:
+
+A "theme" is a recurring content TYPE that serves the same avatar consistently — it is NOT a rigid content pillar taxonomy. Market updates, buyer guides, area spotlights, investment analysis, new build warnings, and neighbourhood comparisons can ALL be themes for a "local real estate buyer" avatar. Variety in content type is fine. What matters is: do all videos serve the SAME person?
+
+Score 8–10 when:
+- All 5 videos clearly speak to the same target viewer (same pain points, same aspirations)
+- There are 2–4 recognisable recurring content categories, even if specific topics vary
+- The channel has a consistent voice and purpose
+
+Score 5–7 when:
+- Most content serves the same avatar but 1–2 videos are off-brand or serve a different audience
+- Content categories exist but feel inconsistent
+
+Score 2–4 when:
+- Videos visibly serve different audiences (e.g. first-time buyers in one video, investors in another, agents in another)
+- No discernible recurring structure
+
+CALIBRATION RULES FOR THEMES:
+- Multiple "market update" episodes = that IS a theme. Do NOT call market updates "one-off topics."
+- Multiple "buyer education" episodes = that IS a theme.
+- "New build guide" + "market update" + "buyer tips" = 3 themes. If they all serve the same Calgary buyer avatar, this is 8–10.
+- NEVER score below 7 when all 5 videos clearly target the same avatar, even if they cover different specific topics.
+- NEVER penalise a channel for topic-level variation within a consistent avatar focus.
+
+6. LEAD MAGNET SCORING — BE STRICT AND READ THIS CAREFULLY:
+
+A lead magnet is a FREE RESOURCE that provides value with no commitment required — a guide, checklist, quiz, template, calculator, video series, etc. The viewer gets something useful immediately.
+
+The following are NOT lead magnets — they are sales CTAs and score as if no lead magnet exists:
+- 'Book a discovery call'
+- 'Schedule a strategy session'
+- 'Book a free consultation'
+- 'DM me for help'
+- 'Contact us today'
+- 'Book a meeting with me'
+- 'Reach out to us'
+- 'Let's chat'
+- Any variation of booking a call, meeting, or conversation
+
+If the ONLY call to action in a video is to book a call or contact the creator, Lead Magnet System scores 0-1. It does not matter how many times they say it — a sales CTA repeated 3 times is still not a lead magnet system. A discovery call is a SALES conversation, not a value-first resource.
+
+Scoring guide:
+   0-1: No lead magnet at all, or only 'book a call' / 'contact me' CTAs
+   2-3: Mentions a vague free resource once but it's unclear what it is or how to get it
+   3-4: Has a lead magnet but mentions it only once, usually at the end
+   5-6: Has a clear lead magnet, mentions it 1-2 times per video
+   7-8: 3x system in most videos (opening, mid, close) with natural integration and a compelling free resource
+   9-10: Strategic system with different lead magnets for different content themes, mentioned 3x consistently with natural, non-salesy integration
+
+7. CURIOSITY BRIDGES — BROADER THAN AND/BUT/THEREFORE:
+   A curiosity bridge is ANY sentence that pulls the viewer forward, making them want to keep watching. "And/But/Therefore" is one pattern but NOT the only one. Score ALL forward-pulling language.
+
+   Examples of valid curiosity bridges (all count equally):
+   - "If you think that was good, you'll love this next part"
+   - "And this next point is even more important"
+   - "Which brings me to the mistake that catches even the most organised families off guard"
+   - "But here's what most people miss..."
+   - "Now here's where it gets really interesting"
+   - "But that's not even the biggest issue"
+   - Teasing a later point: "I'll get to the biggest one in a minute, but first..."
+
+   What is NOT a bridge: flat mechanical transitions — "Next up...", "Moving on...", "Let's talk about...", "Number three is..."
+
+   Scoring guide:
+   0-2: No forward-pulling language. Abrupt topic changes.
+   3-4: Only flat transitions like "next up", "moving on" — no curiosity built
+   5-6: Some curiosity-building moments but inconsistent
+   7-8: Regular curiosity bridges pulling viewer forward through most sections
+   9-10: Nearly every transition creates anticipation. Viewer feels compelled to stay.
+
+   IMPORTANT: Do NOT limit your assessment to "And/But/Therefore" only. A sentence like "which brings me to the mistake that catches even the most organised families off guard" IS a strong curiosity bridge — score it as such. You MUST quote specific bridge phrases from the transcript as evidence.
+
+8. VALUES PEPPERING — THIS IS NOT ABOUT CREATOR HOBBIES:
+
+   Values Peppering is about making the VIEWER feel seen — emotional awareness, connection language that validates the viewer's experience, sharing what the team values, how they work, and what they stand for as a business.
+
+   Look for: empathy statements, emotional awareness of the viewer's situation, mentions of team values or business philosophy, how they approach client relationships, what matters to them professionally. Phrases like "We believe every family deserves to feel confident", "I know how stressful this feels", "Our team's whole approach is built around..."
+
+   DO NOT score based on the creator's hobbies, family stories, or personal interests. That is NOT what this principle measures.
+
+   Scoring guide:
+   0-2: Zero emotional awareness. No team or business values. Generic information channel.
+   3-4: Rare moments of viewer empathy or business values. Maybe one mention across all videos.
+   5-6: Some emotional awareness. Acknowledges viewer's situation occasionally.
+   7-8: Regular emotional awareness. Viewer feels seen. Business values come through naturally.
+   9-10: Deep emotional awareness throughout. Viewer feels understood. Team values and business philosophy woven naturally throughout. Viewer trusts this person's values before meeting them.
+
+   Evidence: Quote moments where the creator shows emotional awareness of the viewer, mentions team or business values, or makes the viewer feel seen. NOT about personal hobbies.
+
+9. STORY PROOF — REAL ESTATE CONFIDENTIALITY AWARE:
+   In real estate, agents CANNOT share client names, addresses, or exact prices due to professional confidentiality. Anonymised stories ARE the professional standard — score based on whether a narrative structure is present, not how much personal detail is shared.
+
+   | Score | Description |
+   |-------|-------------|
+   | 0–2 | Zero client stories. No social proof. All theory, no evidence. |
+   | 3–4 | Only vague hand-waving — "I've helped clients who felt this way" — with no narrative structure whatsoever. |
+   | 5–6 | One story with some structure, or multiple vague mentions without a clear situation → challenge → outcome arc. |
+   | 7–8 | Client stories with clear narrative arc (situation → challenge → outcome) even if details are anonymised. |
+   | 9–10 | Rich storytelling. Multiple proof stories per video, each with a full narrative arc. |
+
+   CALIBRATION:
+   - A story with anonymised details but clear narrative structure = 7–8, NOT 5–6
+   - "A family who sold fast and couldn't find a home in time, leading to a double move" = strong story proof (7–8)
+   - Names are NOT required. The presence of situation → challenge → outcome IS required for 7+.
+   - Only score 3–4 when there is NO actual story — just vague references like "my clients love this area"
+   - "I've had clients who felt the same way" with no story = 1–2
+
+10. ARC ATTENTION — SCORE THE ACTUAL OPENING:
+   Quote the EXACT first sentence of every video. Then assess:
+   - Does it create tension, stakes, or curiosity within 20-25 seconds?
+   - Does it approve the click (match the title promise)?
+   - Which intro pattern does it use: Authority, Problem/Contradiction, Revelation, Story, Empathy, Stakes, or Confirmation?
+   - Or does it use no pattern (generic 'hey guys, welcome back')?
+
+   A data-driven opening like 'there's a big difference between what the headlines say and what's actually happening' IS a hook — it's a Contradiction pattern. Score it as such. Don't penalise it for not being emotional if it creates genuine curiosity.
+
+   OPENING CALIBRATION RULES — do not invent stricter timing than this:
+   - Lead magnet mentioned within first 20 seconds = perfect timing (contributes to 9–10)
+   - Hook landing within 15–20 seconds = excellent. There is NO "5 second rule." Do NOT require hooks to land in 5 seconds.
+   - Into revelation content by :25–30 = textbook perfect opening — score 9–10
+   - "What most people get wrong" is a strong problem hook pattern — do not suggest it needs to come faster if it lands naturally within 15–20 seconds
+   - Score ARC Attention 9–10 when ALL elements are present and land by :30: hook creates tension/curiosity, title promise confirmed, lead magnet mentioned, content has begun
+   - The opening window is 20–30 seconds for a complete sequence. Never penalise an opening for imagined timing issues when the structure is working.
+   - When assessing the opening: are all elements present and landing by :30? If yes, this is a 9–10 opening regardless of whether individual elements land at :05 or :15. A well-structured problem hook that takes 15 seconds to set up is NOT "too slow" — it is doing its job. Only penalise openings where elements are MISSING or land AFTER :30.
+
+11. BINGE ARCHITECTURE — TWO COMPONENTS, BOTH MATTER:
+
+   COMPONENT 1 — Avatar consistency across videos (MORE IMPORTANT):
+   Are all videos serving the same avatar? A channel where every video speaks to the same person creates natural binge behaviour — the viewer sees the next video and thinks "that's for me too." This is the FOUNDATION of binge architecture. Without it, cross-references don't matter.
+
+   COMPONENT 2 — Cross-references and end-of-video direction:
+   Does the creator reference other videos during content? At the end, do they clearly mention a SPECIFIC next video and what the viewer will GET from watching it?
+   Generic "check out my other videos" = weak.
+   "Watch my video on the 5 neighbourhoods most people overlook — I walk you through exactly why they're undervalued" = strong.
+
+   Scoring guide:
+   0-2: Videos serve different audiences. No cross-references. Each video is an island for a different person.
+   3-4: Videos loosely target same audience but no cross-references. OR: cross-references exist but videos serve scattered audiences.
+   5-6: Videos mostly serve same avatar. Occasional cross-references but generic ("check out this video" with no context).
+   7-8: All videos clearly serve same avatar. Some contextual cross-references. End cards or verbal mentions of related videos with a reason to watch.
+   9-10: All videos serve same avatar — obvious binge path. Contextual cross-references during content. End of video clearly directs to a specific next video with a compelling reason to watch.
+
+   Evidence structure: (1) Do all videos serve the same avatar? List who each video speaks to. (2) Count and quote cross-references. (3) Assess end-of-video direction — is it specific with a reason to watch, or generic?
+
+12. CONSISTENCY — MANDATORY MATHEMATICAL CALCULATION:
+
+MANDATORY: You MUST calculate this mathematically. Do NOT estimate, guess, or judge by feel.
+
+Step 1: List every video's upload date in chronological order.
+Step 2: Calculate the gap in days between each consecutive pair of uploads.
+Step 3: Calculate the average gap (sum of all gaps ÷ number of gaps).
+Step 4: Apply this lookup table:
+
+Average gap ≤7 days = score 10
+Average gap 8–10 days = score 8
+Average gap 11–14 days = score 5
+Average gap 15–21 days = score 3
+Average gap 22–30 days = score 2
+Average gap 31+ days = score 1
+
+Step 5: Show your math in the evidence field using this format:
+"Upload dates: Mar 1, Mar 8, Mar 15, Mar 22. Gaps: 7, 7, 7 days. Average gap: 7 days. Score: 10"
+
+IMPORTANT for monthly audits with 3–4 videos: A weekly publisher posting 4 times in 4 weeks produces gaps of 7, 7, 7 days — average 7 days = score 10. This is EXPECTED and correct. Do NOT penalise for having fewer videos in the window. Example: 3 videos posted weekly = gaps of 7, 7 = average 7 = score 10.
+
+CRITICAL: Any Consistency score without explicitly shown math (dates → gaps → average) is wrong. You MUST show the calculation every time.
+
+13. TITLE FRAMEWORKS — CALIBRATION RULES:
+   Titles should create a CURIOSITY GAP — they should NOT give away the unique insight. The insight is the revelation delivered inside the video. A title that reveals the answer kills the reason to click.
+
+   GOOD: "Why Calgary's Market Is About to Shift" (creates curiosity — drives the click)
+   BAD: "Calgary's Market Is Shifting Because of X Policy" (gave away the answer)
+
+   Score titles on these 4 criteria:
+   1. Does it use a proven framework? (numbers, Why/How/What, Don't X Until You Y, [Audience] mistakes, etc.)
+   2. Does it create a curiosity gap?
+   3. Does it target the right audience?
+   4. Would it stop a scroll?
+   YES to all four = 8–10. YES to three = 7–8. Never penalise a title for "not being specific enough about the unique insight" — that specificity belongs INSIDE the video, not in the title.
+
+14. SHOW DON'T TELL — TRANSCRIPT-ESTIMATED ONLY:
+
+Since you are analysing transcripts, not video footage, you cannot see visual elements. Score ONLY based on verbal references to visuals in the transcript.
+
+What to look for: Verbal cues that reference visual elements — mentions of charts, maps, screen shares, B-roll, walkthroughs, iPad drawings, overlays, diagrams. Phrases like "as you can see," "look at this," "here's what that looks like," "let me show you," "on screen right now."
+
+| Score | Description |
+|-------|-------------|
+| 0–2 | No verbal references to any visual elements. |
+| 3–4 | Rare verbal references to visuals (1–2 mentions across all videos). |
+| 5–6 | Some verbal references but inconsistent. |
+| 7–8 | Regular verbal references to visual elements throughout transcripts. |
+| 9–10 | Abundant verbal cues to visuals throughout all transcripts. |
+
+Evidence to cite: Quote specific verbal cues that reference visual elements. Note: this is a transcript estimate only. Show Don't Tell is NOT included in the weighted Attraction Score.`;
+
+// ============================================================
+// DEFAULT SCORING PROMPT — channel-level audit (baseline + monthly)
+// ============================================================
+
+export const DEFAULT_SCORING_PROMPT = `You are the Attraction by Video audit engine. You score YouTube channels used by real estate agents against 16 principles of audience attraction. Your job is to analyse the provided video transcripts and metadata, then return precise, evidence-based scores.
+
+${SHARED_PRINCIPLES_1_TO_15}
+16. consistency — Calculated mathematically from upload dates. See calibration rule #12.
+
+${SHARED_SCORING_GUIDELINES}
 
 Return ONLY valid JSON in this exact structure, nothing else:
 
@@ -112,211 +330,7 @@ For each video in video_breakdowns, calculate dimension_scores as follows:
 - lead_generation = average of (lead_magnet_system + binge_architecture)
 Use the OVERALL channel scores (not per-video) for these averages — they reflect the channel's pattern observed across all videos analysed.
 
-CALIBRATION RULES — READ CAREFULLY:
-
-1. CONTENT FORMAT AWARENESS: Some videos are market updates or data presentations. These naturally have different characteristics than topic-driven or story-driven content. Score what IS present, not what the format doesn't lend itself to. A market update with data-driven hooks should not be penalised for not having emotional storytelling hooks — score the hook quality for what it is.
-
-2. SCORING STRICTNESS: Use the FULL 0-10 range with decimals. Do NOT cluster scores in the 5-8 range. A genuinely strong principle should score 8.5-9.5. A genuinely weak one should score 1-3. The average real estate YouTube channel scores 3-5 overall. A channel actively applying proven frameworks should score 7-9 on the principles they're applying well.
-
-3. EVIDENCE REQUIREMENT: Every score MUST cite a specific quote, timestamp, or observable moment from the transcripts. Saying 'could be stronger emotionally' without citing what WAS said is not valid evidence. Quote the actual opening words. Count the actual lead magnet mentions. Name the actual client stories (or note their specific absence).
-
-4. CONSISTENCY ACROSS CHANNELS: If you score Channel A's opening at 7 because it 'creates intrigue,' you cannot score Channel B's opening at 6 when it also creates intrigue through a different mechanism (like data contrast). Score the EFFECT on the viewer, not adherence to one specific format.
-
-5. THEMES OVER TOPICS — CALIBRATION:
-
-A "theme" is a recurring content TYPE that serves the same avatar consistently — it is NOT a rigid content pillar taxonomy. Market updates, buyer guides, area spotlights, investment analysis, new build warnings, and neighbourhood comparisons can ALL be themes for a "local real estate buyer" avatar. Variety in content type is fine. What matters is: do all videos serve the SAME person?
-
-Score 8–10 when:
-- All 5 videos clearly speak to the same target viewer (same pain points, same aspirations)
-- There are 2–4 recognisable recurring content categories, even if specific topics vary
-- The channel has a consistent voice and purpose
-
-Score 5–7 when:
-- Most content serves the same avatar but 1–2 videos are off-brand or serve a different audience
-- Content categories exist but feel inconsistent
-
-Score 2–4 when:
-- Videos visibly serve different audiences (e.g. first-time buyers in one video, investors in another, agents in another)
-- No discernible recurring structure
-
-CALIBRATION RULES FOR THEMES:
-- Multiple "market update" episodes = that IS a theme. Do NOT call market updates "one-off topics."
-- Multiple "buyer education" episodes = that IS a theme.
-- "New build guide" + "market update" + "buyer tips" = 3 themes. If they all serve the same Calgary buyer avatar, this is 8–10.
-- NEVER score below 7 when all 5 videos clearly target the same avatar, even if they cover different specific topics.
-- NEVER penalise a channel for topic-level variation within a consistent avatar focus.
-
-6. LEAD MAGNET SCORING — BE STRICT AND READ THIS CAREFULLY:
-
-A lead magnet is a FREE RESOURCE that provides value with no commitment required — a guide, checklist, quiz, template, calculator, video series, etc. The viewer gets something useful immediately.
-
-The following are NOT lead magnets — they are sales CTAs and score as if no lead magnet exists:
-- 'Book a discovery call'
-- 'Schedule a strategy session'
-- 'Book a free consultation'
-- 'DM me for help'
-- 'Contact us today'
-- 'Book a meeting with me'
-- 'Reach out to us'
-- 'Let's chat'
-- Any variation of booking a call, meeting, or conversation
-
-If the ONLY call to action in a video is to book a call or contact the creator, Lead Magnet System scores 0-1. It does not matter how many times they say it — a sales CTA repeated 3 times is still not a lead magnet system. A discovery call is a SALES conversation, not a value-first resource.
-
-Scoring guide:
-   0-1: No lead magnet at all, or only 'book a call' / 'contact me' CTAs
-   2-3: Mentions a vague free resource once but it's unclear what it is or how to get it
-   3-4: Has a lead magnet but mentions it only once, usually at the end
-   5-6: Has a clear lead magnet, mentions it 1-2 times per video
-   7-8: 3x system in most videos (opening, mid, close) with natural integration and a compelling free resource
-   9-10: Strategic system with different lead magnets for different content themes, mentioned 3x consistently with natural, non-salesy integration
-
-6. CURIOSITY BRIDGES — BROADER THAN AND/BUT/THEREFORE:
-   A curiosity bridge is ANY sentence that pulls the viewer forward, making them want to keep watching. "And/But/Therefore" is one pattern but NOT the only one. Score ALL forward-pulling language.
-
-   Examples of valid curiosity bridges (all count equally):
-   - "If you think that was good, you'll love this next part"
-   - "And this next point is even more important"
-   - "Which brings me to the mistake that catches even the most organised families off guard"
-   - "But here's what most people miss..."
-   - "Now here's where it gets really interesting"
-   - "But that's not even the biggest issue"
-   - Teasing a later point: "I'll get to the biggest one in a minute, but first..."
-
-   What is NOT a bridge: flat mechanical transitions — "Next up...", "Moving on...", "Let's talk about...", "Number three is..."
-
-   Scoring guide:
-   0-2: No forward-pulling language. Abrupt topic changes.
-   3-4: Only flat transitions like "next up", "moving on" — no curiosity built
-   5-6: Some curiosity-building moments but inconsistent
-   7-8: Regular curiosity bridges pulling viewer forward through most sections
-   9-10: Nearly every transition creates anticipation. Viewer feels compelled to stay.
-
-   IMPORTANT: Do NOT limit your assessment to "And/But/Therefore" only. A sentence like "which brings me to the mistake that catches even the most organised families off guard" IS a strong curiosity bridge — score it as such. You MUST quote specific bridge phrases from the transcript as evidence.
-
-7. VALUES PEPPERING — THIS IS NOT ABOUT CREATOR HOBBIES:
-
-   Values Peppering is about making the VIEWER feel seen — emotional awareness, connection language that validates the viewer's experience, sharing what the team values, how they work, and what they stand for as a business.
-
-   Look for: empathy statements, emotional awareness of the viewer's situation, mentions of team values or business philosophy, how they approach client relationships, what matters to them professionally. Phrases like "We believe every family deserves to feel confident", "I know how stressful this feels", "Our team's whole approach is built around..."
-
-   DO NOT score based on the creator's hobbies, family stories, or personal interests. That is NOT what this principle measures.
-
-   Scoring guide:
-   0-2: Zero emotional awareness. No team or business values. Generic information channel.
-   3-4: Rare moments of viewer empathy or business values. Maybe one mention across all videos.
-   5-6: Some emotional awareness. Acknowledges viewer's situation occasionally.
-   7-8: Regular emotional awareness. Viewer feels seen. Business values come through naturally.
-   9-10: Deep emotional awareness throughout. Viewer feels understood. Team values and business philosophy woven naturally throughout. Viewer trusts this person's values before meeting them.
-
-   Evidence: Quote moments where the creator shows emotional awareness of the viewer, mentions team or business values, or makes the viewer feel seen. NOT about personal hobbies.
-
-8. STORY PROOF — REAL ESTATE CONFIDENTIALITY AWARE:
-   In real estate, agents CANNOT share client names, addresses, or exact prices due to professional confidentiality. Anonymised stories ARE the professional standard — score based on whether a narrative structure is present, not how much personal detail is shared.
-
-   | Score | Description |
-   |-------|-------------|
-   | 0–2 | Zero client stories. No social proof. All theory, no evidence. |
-   | 3–4 | Only vague hand-waving — "I've helped clients who felt this way" — with no narrative structure whatsoever. |
-   | 5–6 | One story with some structure, or multiple vague mentions without a clear situation → challenge → outcome arc. |
-   | 7–8 | Client stories with clear narrative arc (situation → challenge → outcome) even if details are anonymised. |
-   | 9–10 | Rich storytelling. Multiple proof stories per video, each with a full narrative arc. |
-
-   CALIBRATION:
-   - A story with anonymised details but clear narrative structure = 7–8, NOT 5–6
-   - "A family who sold fast and couldn't find a home in time, leading to a double move" = strong story proof (7–8)
-   - Names are NOT required. The presence of situation → challenge → outcome IS required for 7+.
-   - Only score 3–4 when there is NO actual story — just vague references like "my clients love this area"
-   - "I've had clients who felt the same way" with no story = 1–2
-
-9. ARC ATTENTION — SCORE THE ACTUAL OPENING:
-   Quote the EXACT first sentence of every video. Then assess:
-   - Does it create tension, stakes, or curiosity within 20-25 seconds?
-   - Does it approve the click (match the title promise)?
-   - Which intro pattern does it use: Authority, Problem/Contradiction, Revelation, Story, Empathy, Stakes, or Confirmation?
-   - Or does it use no pattern (generic 'hey guys, welcome back')?
-
-   A data-driven opening like 'there's a big difference between what the headlines say and what's actually happening' IS a hook — it's a Contradiction pattern. Score it as such. Don't penalise it for not being emotional if it creates genuine curiosity.
-
-   OPENING CALIBRATION RULES — do not invent stricter timing than this:
-   - Lead magnet mentioned within first 20 seconds = perfect timing (contributes to 9–10)
-   - Hook landing within 15–20 seconds = excellent. There is NO "5 second rule." Do NOT require hooks to land in 5 seconds.
-   - Into revelation content by :25–30 = textbook perfect opening — score 9–10
-   - "What most people get wrong" is a strong problem hook pattern — do not suggest it needs to come faster if it lands naturally within 15–20 seconds
-   - Score ARC Attention 9–10 when ALL elements are present and land by :30: hook creates tension/curiosity, title promise confirmed, lead magnet mentioned, content has begun
-   - The opening window is 20–30 seconds for a complete sequence. Never penalise an opening for imagined timing issues when the structure is working.
-   - When assessing the opening: are all elements present and landing by :30? If yes, this is a 9–10 opening regardless of whether individual elements land at :05 or :15. A well-structured problem hook that takes 15 seconds to set up is NOT "too slow" — it is doing its job. Only penalise openings where elements are MISSING or land AFTER :30.
-
-10. BINGE ARCHITECTURE — TWO COMPONENTS, BOTH MATTER:
-
-   COMPONENT 1 — Avatar consistency across videos (MORE IMPORTANT):
-   Are all videos serving the same avatar? A channel where every video speaks to the same person creates natural binge behaviour — the viewer sees the next video and thinks "that's for me too." This is the FOUNDATION of binge architecture. Without it, cross-references don't matter.
-
-   COMPONENT 2 — Cross-references and end-of-video direction:
-   Does the creator reference other videos during content? At the end, do they clearly mention a SPECIFIC next video and what the viewer will GET from watching it?
-   Generic "check out my other videos" = weak.
-   "Watch my video on the 5 neighbourhoods most people overlook — I walk you through exactly why they're undervalued" = strong.
-
-   Scoring guide:
-   0-2: Videos serve different audiences. No cross-references. Each video is an island for a different person.
-   3-4: Videos loosely target same audience but no cross-references. OR: cross-references exist but videos serve scattered audiences.
-   5-6: Videos mostly serve same avatar. Occasional cross-references but generic ("check out this video" with no context).
-   7-8: All videos clearly serve same avatar. Some contextual cross-references. End cards or verbal mentions of related videos with a reason to watch.
-   9-10: All videos serve same avatar — obvious binge path. Contextual cross-references during content. End of video clearly directs to a specific next video with a compelling reason to watch.
-
-   Evidence structure: (1) Do all videos serve the same avatar? List who each video speaks to. (2) Count and quote cross-references. (3) Assess end-of-video direction — is it specific with a reason to watch, or generic?
-
-11. CONSISTENCY — MANDATORY MATHEMATICAL CALCULATION:
-
-MANDATORY: You MUST calculate this mathematically. Do NOT estimate, guess, or judge by feel.
-
-Step 1: List every video's upload date in chronological order.
-Step 2: Calculate the gap in days between each consecutive pair of uploads.
-Step 3: Calculate the average gap (sum of all gaps ÷ number of gaps).
-Step 4: Apply this lookup table:
-
-Average gap ≤7 days = score 10
-Average gap 8–10 days = score 8
-Average gap 11–14 days = score 5
-Average gap 15–21 days = score 3
-Average gap 22–30 days = score 2
-Average gap 31+ days = score 1
-
-Step 5: Show your math in the evidence field using this format:
-"Upload dates: Mar 1, Mar 8, Mar 15, Mar 22. Gaps: 7, 7, 7 days. Average gap: 7 days. Score: 10"
-
-IMPORTANT for monthly audits with 3–4 videos: A weekly publisher posting 4 times in 4 weeks produces gaps of 7, 7, 7 days — average 7 days = score 10. This is EXPECTED and correct. Do NOT penalise for having fewer videos in the window. Example: 3 videos posted weekly = gaps of 7, 7 = average 7 = score 10.
-
-CRITICAL: Any Consistency score without explicitly shown math (dates → gaps → average) is wrong. You MUST show the calculation every time.
-
-12. TITLE FRAMEWORKS — CALIBRATION RULES:
-   Titles should create a CURIOSITY GAP — they should NOT give away the unique insight. The insight is the revelation delivered inside the video. A title that reveals the answer kills the reason to click.
-
-   GOOD: "Why Calgary's Market Is About to Shift" (creates curiosity — drives the click)
-   BAD: "Calgary's Market Is Shifting Because of X Policy" (gave away the answer)
-
-   Score titles on these 4 criteria:
-   1. Does it use a proven framework? (numbers, Why/How/What, Don't X Until You Y, [Audience] mistakes, etc.)
-   2. Does it create a curiosity gap?
-   3. Does it target the right audience?
-   4. Would it stop a scroll?
-   YES to all four = 8–10. YES to three = 7–8. Never penalise a title for "not being specific enough about the unique insight" — that specificity belongs INSIDE the video, not in the title.
-
-13. SHOW DON'T TELL — TRANSCRIPT-ESTIMATED ONLY:
-
-Since you are analysing transcripts, not video footage, you cannot see visual elements. Score ONLY based on verbal references to visuals in the transcript.
-
-What to look for: Verbal cues that reference visual elements — mentions of charts, maps, screen shares, B-roll, walkthroughs, iPad drawings, overlays, diagrams. Phrases like "as you can see," "look at this," "here's what that looks like," "let me show you," "on screen right now."
-
-| Score | Description |
-|-------|-------------|
-| 0–2 | No verbal references to any visual elements. |
-| 3–4 | Rare verbal references to visuals (1–2 mentions across all videos). |
-| 5–6 | Some verbal references but inconsistent. |
-| 7–8 | Regular verbal references to visual elements throughout transcripts. |
-| 9–10 | Abundant verbal cues to visuals throughout all transcripts. |
-
-Evidence to cite: Quote specific verbal cues that reference visual elements. Note: this is a transcript estimate only. Show Don't Tell is NOT included in the weighted Attraction Score.
+${SHARED_CALIBRATION_RULES}
 
 WEIGHTED SCORING:
 
@@ -346,87 +360,19 @@ CONSISTENCY SCORING IS NON-NEGOTIABLE:
 - A score of 8 for a weekly publisher is WRONG. A score of 9 for a weekly publisher is WRONG. Only 10 is correct.
 - If you return any score other than 10 for a channel with an average gap of ≤7 days, you have made an error.`;
 
-export interface AuditScores {
-  avatar_clarity: { score: number; evidence: string };
-  themes_over_topics: { score: number; evidence: string };
-  arc_attention: { score: number; evidence: string };
-  arc_revelation: { score: number; evidence: string };
-  arc_connection: { score: number; evidence: string };
-  title_frameworks: { score: number; evidence: string };
-  approve_the_click: { score: number; evidence: string };
-  lead_magnet_system: { score: number; evidence: string };
-  curiosity_bridges: { score: number; evidence: string };
-  show_dont_tell: { score: number; evidence: string };
-  values_peppering: { score: number; evidence: string };
-  connection_language: { score: number; evidence: string };
-  story_proof: { score: number; evidence: string };
-  grade_5_language: { score: number; evidence: string };
-  binge_architecture: { score: number; evidence: string };
-  consistency: { score: number; evidence: string };
-}
+// ============================================================
+// SINGLE VIDEO SCORING PROMPT — single video audit
+// ============================================================
 
 export const SINGLE_VIDEO_SCORING_PROMPT = `You are the Attraction by Video audit engine. You score a SINGLE YouTube video for a real estate agent against 16 principles of audience attraction. Analyse the provided transcript and metadata, then return a detailed, phase-organised report.
 
-SCORING PRINCIPLES (score each 0–10):
-1. avatar_clarity — Is there ONE clear audience persona?
-2. themes_over_topics — Does the video fit into a repeatable content theme?
-3. arc_attention — How strong is the opening hook? Pattern interrupt? Reason to keep watching?
-4. arc_revelation — Genuine unique insights the viewer couldn't find elsewhere?
-5. arc_connection — Emotional resonance and trust-building?
-6. title_frameworks — Does the title use proven click-worthy patterns?
-7. approve_the_click — Do the first 30 seconds deliver on the title's promise?
-8. lead_magnet_system — Is a free resource mentioned? Clear lead capture?
-9. curiosity_bridges — Do transitions pull viewers forward? Open loops, teases?
-10. show_dont_tell — Visual proof, examples, demonstrations?
-11. values_peppering — Does the creator show emotional awareness of the viewer's experience? Empathy, team values, business philosophy. NOT about creator hobbies — about making the VIEWER feel seen.
-12. connection_language — Direct phrases that speak to the avatar specifically?
-13. story_proof — Client stories with names, situations, stakes, outcomes?
-14. grade_5_language — Conversational, jargon-free, simple?
-15. binge_architecture — (1) Does this video clearly speak to the same avatar as the channel? (2) Cross-references to other videos with a specific reason to watch?
+${SHARED_PRINCIPLES_1_TO_15}
 16. consistency — N/A for single video audits. Do NOT score this principle. Return null for the score in the JSON.
 
-SCORING GUIDELINES:
-- 8–10: Excellent. Clear evidence of mastery.
-- 6–7: Good. Present but inconsistent.
-- 4–5: Developing. Present occasionally.
-- 2–3: Weak. Rarely present or poorly executed.
-- 0–1: Absent.
-
-Be rigorous and honest. Do NOT inflate scores. Use exact quotes from the transcript as evidence.
+${SHARED_SCORING_GUIDELINES}
 
 MEMBER AVATAR PROFILE (use for Themes Over Topics scoring):
 {{AVATAR_PROFILE}}
-
-SINGLE VIDEO CALIBRATION RULES — READ CAREFULLY:
-
-1. THEMES OVER TOPICS — AVATAR ALIGNMENT (single video context):
-   For a single video, score Themes Over Topics based on AVATAR ALIGNMENT — is this video clearly speaking to the member's avatar throughout? Use the avatar profile above as your reference. If no avatar profile is provided, infer the intended avatar from the video content.
-   | Score | Description |
-   |-------|-------------|
-   | 10 | Video clearly speaks to the avatar and addresses that person all the way through |
-   | 7–8 | Mostly on-avatar but drifts slightly or briefly addresses a secondary audience |
-   | 5–6 | Tries to talk to a few different people, diluting the avatar focus |
-   | 3–4 | Loosely related to the avatar but not clearly speaking to them |
-   | 0–2 | Not speaking to the avatar at all — wrong audience entirely |
-
-2. CONSISTENCY — MUST BE NULL:
-   Consistency is a channel-level metric (publishing cadence over time). It CANNOT be assessed from a single video. You MUST return null for the score and "N/A — channel-level metric, cannot assess from a single video" as evidence. This principle is excluded from the Video Attraction Score — the score is calculated over the remaining 15 principles.
-
-3. OPENING CALIBRATION RULES — do not invent stricter timing than this:
-   - Lead magnet mentioned within first 20 seconds = perfect timing
-   - Hook landing within 15–20 seconds = excellent. There is NO "5 second rule."
-   - Into revelation content by :25–30 = textbook perfect opening — score 9–10
-   - Score ARC Attention 9–10 when ALL elements are present and land by :30
-   - Never penalise an opening for imagined timing issues when the structure is working.
-   - A well-structured problem hook that takes 15 seconds to set up is NOT "too slow" — only penalise openings where elements are MISSING or land AFTER :30.
-
-4. TITLE FRAMEWORKS — titles create curiosity, NOT give away the insight:
-   GOOD: "Why Calgary's Market Is About to Shift" (creates curiosity)
-   BAD: "Calgary's Market Is Shifting Because of X Policy" (gave away the answer)
-   Score 8–10 when the title uses a proven framework AND creates a curiosity gap. Never penalise a title for "not being specific enough about the unique insight" — the insight lives inside the video, not in the title.
-
-5. STORY PROOF — real estate confidentiality:
-   Agents cannot share client names or addresses. Anonymised stories with a clear situation → challenge → outcome arc = 7–8. Only score 3–4 when there is NO story at all — just vague references like "my clients love this area."
 
 Return ONLY valid JSON in this EXACT structure, nothing else — no markdown, no code fences:
 
@@ -509,7 +455,28 @@ Return ONLY valid JSON in this EXACT structure, nothing else — no markdown, no
     "Coaching question 2?",
     "Coaching question 3?"
   ]
-}`;
+}
+
+${SHARED_CALIBRATION_RULES}
+
+SINGLE VIDEO OVERRIDES — these take precedence over the shared rules above where they conflict:
+
+1. THEMES OVER TOPICS — AVATAR ALIGNMENT (single video context):
+   For a single video, score Themes Over Topics based on AVATAR ALIGNMENT — is this video clearly speaking to the member's avatar throughout? Use the avatar profile above as your reference. If no avatar profile is provided, infer the intended avatar from the video content.
+   | Score | Description |
+   |-------|-------------|
+   | 10 | Video clearly speaks to the avatar and addresses that person all the way through |
+   | 7–8 | Mostly on-avatar but drifts slightly or briefly addresses a secondary audience |
+   | 5–6 | Tries to talk to a few different people, diluting the avatar focus |
+   | 3–4 | Loosely related to the avatar but not clearly speaking to them |
+   | 0–2 | Not speaking to the avatar at all — wrong audience entirely |
+
+2. CONSISTENCY — MUST BE NULL:
+   Consistency is a channel-level metric (publishing cadence over time). It CANNOT be assessed from a single video. You MUST return null for the score and "N/A — channel-level metric, cannot assess from a single video" as evidence. This principle is excluded from the Video Attraction Score — the score is calculated over the remaining 15 principles.`;
+
+// ============================================================
+// SCRIPT REVIEW PROMPT — pre-recording script feedback
+// ============================================================
 
 export const SCRIPT_REVIEW_PROMPT = `You are the Attraction by Video audit engine. You are reviewing a SCRIPT or TRANSCRIPT written by a real estate coach or agent BEFORE recording. Your job is to score it against 16 Attraction principles and give specific, actionable feedback based on the actual text provided.
 
@@ -518,30 +485,10 @@ IMPORTANT CONTEXT:
 - Be encouraging but honest. Most scripts score 3–6 initially — that's normal and expected.
 - Reference exact lines from the script as evidence. Do NOT use generic feedback.
 
-SCORING PRINCIPLES (score each 0–10):
-1. avatar_clarity — Is there ONE clear audience persona? Does the script speak to a specific person?
-2. themes_over_topics — Does this topic fit into a repeatable content theme?
-3. arc_attention — How strong is the opening hook? Does it create a pattern interrupt and give a reason to keep watching?
-4. arc_revelation — Is there a genuine unique insight the viewer couldn't find elsewhere? Does the creator have a distinct POV?
-5. arc_connection — Is there emotional resonance and trust-building? Does the viewer feel understood?
-6. title_frameworks — Does the suggested title use proven click-worthy patterns?
-7. approve_the_click — Do the first few lines deliver on the title's promise?
-8. lead_magnet_system — Is a free resource mentioned? Is there a clear lead capture mechanism written in?
-9. curiosity_bridges — Do transitions pull the reader forward? Are there open loops and reason-to-stay moments?
-10. show_dont_tell — Are there visual cues written in (e.g., "[show chart]", "as you'll see on screen", B-roll references, examples)? Score based on what's written — not what's filmed.
-11. values_peppering — Does the script show emotional awareness of the viewer's experience? Empathy statements, team values, business philosophy. NOT about creator hobbies — about making the VIEWER feel seen and understood.
-12. connection_language — Are there phrases that make the avatar feel directly spoken to?
-13. story_proof — Are there client stories with names, situations, stakes, and outcomes?
-14. grade_5_language — Is the language conversational and jargon-free? Could a 10-year-old follow along?
-15. binge_architecture — (1) Does this script clearly speak to one consistent avatar? (2) Are there mentions of or cross-references to other videos with a specific reason to watch?
-16. consistency — Score this 5 by default. Cannot assess consistency from a single script.
+${SHARED_PRINCIPLES_1_TO_15}
+16. consistency — Score this 5 by default. Cannot assess publishing cadence from a single script.
 
-SCORING GUIDELINES:
-- 8–10: Excellent. Clear evidence of mastery in the text.
-- 6–7: Good. Present but could be stronger.
-- 4–5: Developing. Attempted but not fully executed.
-- 2–3: Weak. Barely present in this script.
-- 0–1: Absent. Not in the script at all.
+${SHARED_SCORING_GUIDELINES}
 
 Return ONLY valid JSON in this EXACT structure, nothing else — no markdown, no code fences:
 
@@ -600,7 +547,82 @@ Return ONLY valid JSON in this EXACT structure, nothing else — no markdown, no
   "quick_win": "One specific, immediately actionable thing to add or change before recording — must be concrete and reference their actual script content"
 }
 
+${SHARED_CALIBRATION_RULES}
+
+SCRIPT REVIEW NOTES — apply these on top of the shared calibration rules:
+- Consistency: always return score 5 with evidence "Single script — consistency cannot be assessed from one script."
+- Show Don't Tell: score based on visual cues WRITTEN into the script (e.g. "[show chart]", "as you'll see on screen", B-roll directions, "[demonstrate this on whiteboard]") — score what's written, not what might be filmed.
+- Binge Architecture: for a script, score based on (1) does it clearly speak to one consistent avatar throughout? and (2) does it reference or set up other videos with a reason to watch?
+
 You MUST respond with ONLY a valid JSON object. No markdown, no code fences, no explanation text before or after the JSON. Your entire response must be parseable by JSON.parse() with no pre-processing.`;
+
+// ============================================================
+// INTERFACES
+// ============================================================
+
+export interface AuditScores {
+  avatar_clarity: { score: number; evidence: string };
+  themes_over_topics: { score: number; evidence: string };
+  arc_attention: { score: number; evidence: string };
+  arc_revelation: { score: number; evidence: string };
+  arc_connection: { score: number; evidence: string };
+  title_frameworks: { score: number; evidence: string };
+  approve_the_click: { score: number; evidence: string };
+  lead_magnet_system: { score: number; evidence: string };
+  curiosity_bridges: { score: number; evidence: string };
+  show_dont_tell: { score: number; evidence: string };
+  values_peppering: { score: number; evidence: string };
+  connection_language: { score: number; evidence: string };
+  story_proof: { score: number; evidence: string };
+  grade_5_language: { score: number; evidence: string };
+  binge_architecture: { score: number; evidence: string };
+  consistency: { score: number; evidence: string };
+}
+
+export interface AuditResult {
+  scores: AuditScores;
+  overall_score: number;
+  raw_average?: number;
+  strengths?: string[];
+  biggest_gaps?: string[];
+  one_sentence_diagnosis?: string;
+  whats_working?: Array<{ strength: string; evidence: string }>;
+  three_biggest_gaps?: Array<{
+    principle: string;
+    score: number;
+    description: string;
+    current_example: string;
+    improved_example: string;
+  }>;
+  video_breakdowns?: Array<{
+    title: string;
+    video_id?: string;
+    opening_analysis: string;
+    insights_analysis: string;
+    connection_analysis: string;
+    strength?: string;
+    improvement?: string;
+    dimension_scores?: {
+      channel_strategy: number;
+      content_impact: number;
+      viewer_connection: number;
+      lead_generation: number;
+    };
+  }>;
+  phase_report?: {
+    opening: { score: number; analysis: string; strengths: string[]; gaps: string[] };
+    body: { score: number; analysis: string; strengths: string[]; gaps: string[] };
+    connection_and_voice: { score: number; analysis: string; strengths: string[]; gaps: string[] };
+    channel_strategy: { score: number; analysis: string; strengths: string[]; gaps: string[] };
+  };
+  three_improvements?: Array<{ principle: string; current: string; improved: string; why: string }>;
+  quick_wins?: string[];
+  qa_prep?: string[];
+}
+
+// ============================================================
+// SCORE CALCULATION
+// ============================================================
 
 export function calculateConsistencyFromVideos(videos: { uploadDate: string }[]): { score: number; evidence: string } {
   const dated = videos
@@ -720,46 +742,9 @@ export function calculateSingleVideoScores(scores: Record<string, { score: numbe
   return { attractionScore, rawAverage };
 }
 
-export interface AuditResult {
-  scores: AuditScores;
-  overall_score: number;
-  raw_average?: number;
-  strengths?: string[];
-  biggest_gaps?: string[];
-  one_sentence_diagnosis?: string;
-  whats_working?: Array<{ strength: string; evidence: string }>;
-  three_biggest_gaps?: Array<{
-    principle: string;
-    score: number;
-    description: string;
-    current_example: string;
-    improved_example: string;
-  }>;
-  video_breakdowns?: Array<{
-    title: string;
-    video_id?: string;
-    opening_analysis: string;
-    insights_analysis: string;
-    connection_analysis: string;
-    strength?: string;
-    improvement?: string;
-    dimension_scores?: {
-      channel_strategy: number;
-      content_impact: number;
-      viewer_connection: number;
-      lead_generation: number;
-    };
-  }>;
-  phase_report?: {
-    opening: { score: number; analysis: string; strengths: string[]; gaps: string[] };
-    body: { score: number; analysis: string; strengths: string[]; gaps: string[] };
-    connection_and_voice: { score: number; analysis: string; strengths: string[]; gaps: string[] };
-    channel_strategy: { score: number; analysis: string; strengths: string[]; gaps: string[] };
-  };
-  three_improvements?: Array<{ principle: string; current: string; improved: string; why: string }>;
-  quick_wins?: string[];
-  qa_prep?: string[];
-}
+// ============================================================
+// CLAUDE API RUNNER
+// ============================================================
 
 export async function runAuditWithClaude(
   videos: VideoWithTranscript[],
@@ -854,7 +839,6 @@ CRITICAL INSTRUCTIONS:
       };
     }
     result.scores = normalized;
-    // Carry over other fields if present
     if (!result.strengths && altResult.strengths) result.strengths = altResult.strengths;
     if (!result.biggest_gaps && altResult.biggest_gaps) result.biggest_gaps = altResult.biggest_gaps;
     if (!result.one_sentence_diagnosis && altResult.one_sentence_diagnosis) result.one_sentence_diagnosis = altResult.one_sentence_diagnosis;
