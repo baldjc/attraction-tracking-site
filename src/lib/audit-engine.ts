@@ -122,7 +122,31 @@ CALIBRATION RULES — READ CAREFULLY:
 
 4. CONSISTENCY ACROSS CHANNELS: If you score Channel A's opening at 7 because it 'creates intrigue,' you cannot score Channel B's opening at 6 when it also creates intrigue through a different mechanism (like data contrast). Score the EFFECT on the viewer, not adherence to one specific format.
 
-5. LEAD MAGNET SCORING — BE STRICT AND READ THIS CAREFULLY:
+5. THEMES OVER TOPICS — CALIBRATION:
+
+A "theme" is a recurring content TYPE that serves the same avatar consistently — it is NOT a rigid content pillar taxonomy. Market updates, buyer guides, area spotlights, investment analysis, new build warnings, and neighbourhood comparisons can ALL be themes for a "local real estate buyer" avatar. Variety in content type is fine. What matters is: do all videos serve the SAME person?
+
+Score 8–10 when:
+- All 5 videos clearly speak to the same target viewer (same pain points, same aspirations)
+- There are 2–4 recognisable recurring content categories, even if specific topics vary
+- The channel has a consistent voice and purpose
+
+Score 5–7 when:
+- Most content serves the same avatar but 1–2 videos are off-brand or serve a different audience
+- Content categories exist but feel inconsistent
+
+Score 2–4 when:
+- Videos visibly serve different audiences (e.g. first-time buyers in one video, investors in another, agents in another)
+- No discernible recurring structure
+
+CALIBRATION RULES FOR THEMES:
+- Multiple "market update" episodes = that IS a theme. Do NOT call market updates "one-off topics."
+- Multiple "buyer education" episodes = that IS a theme.
+- "New build guide" + "market update" + "buyer tips" = 3 themes. If they all serve the same Calgary buyer avatar, this is 8–10.
+- NEVER score below 7 when all 5 videos clearly target the same avatar, even if they cover different specific topics.
+- NEVER penalise a channel for topic-level variation within a consistent avatar focus.
+
+6. LEAD MAGNET SCORING — BE STRICT AND READ THIS CAREFULLY:
 
 A lead magnet is a FREE RESOURCE that provides value with no commitment required — a guide, checklist, quiz, template, calculator, video series, etc. The viewer gets something useful immediately.
 
@@ -565,6 +589,44 @@ Return ONLY valid JSON in this EXACT structure, nothing else — no markdown, no
 
 You MUST respond with ONLY a valid JSON object. No markdown, no code fences, no explanation text before or after the JSON. Your entire response must be parseable by JSON.parse() with no pre-processing.`;
 
+export function calculateConsistencyFromVideos(videos: { uploadDate: string }[]): { score: number; evidence: string } {
+  const dated = videos
+    .filter(v => v.uploadDate)
+    .map(v => new Date(v.uploadDate))
+    .sort((a, b) => a.getTime() - b.getTime());
+
+  if (dated.length < 2) {
+    return {
+      score: 5,
+      evidence: `Only ${dated.length} video available — insufficient data to calculate upload cadence. Defaulting to 5.`,
+    };
+  }
+
+  const gaps: number[] = [];
+  for (let i = 1; i < dated.length; i++) {
+    const gapMs = dated[i].getTime() - dated[i - 1].getTime();
+    const gapDays = gapMs / (1000 * 60 * 60 * 24);
+    gaps.push(Math.round(gapDays * 10) / 10);
+  }
+
+  const avgGap = gaps.reduce((sum, g) => sum + g, 0) / gaps.length;
+
+  let score: number;
+  if (avgGap <= 7) score = 10;
+  else if (avgGap <= 10) score = 8;
+  else if (avgGap <= 14) score = 5;
+  else if (avgGap <= 21) score = 3;
+  else if (avgGap <= 30) score = 2;
+  else score = 1;
+
+  const fmt = (d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const dateStrings = dated.map(fmt).join(", ");
+  const gapStrings = gaps.map(g => Math.round(g)).join(", ");
+  const evidence = `Upload dates: ${dateStrings}. Gaps: ${gapStrings} days. Average gap: ${avgGap.toFixed(1)} days. Score: ${score}`;
+
+  return { score, evidence };
+}
+
 export const WEIGHTED_SCORE_WEIGHTS: Record<string, number> = {
   lead_magnet_system: 3,
   avatar_clarity: 3,
@@ -789,6 +851,13 @@ CRITICAL INSTRUCTIONS:
   if (!result.scores || typeof result.scores !== "object") {
     console.error("[audit-engine] Missing or null scores. Full result:", JSON.stringify(result).slice(0, 500));
     throw new Error("Claude returned an unexpected JSON structure — 'scores' field is missing. Check server logs.");
+  }
+
+  // Override consistency with server-calculated value (prevents AI date arithmetic errors)
+  if (!isSingleVideo && result.scores && result.scores.consistency !== undefined) {
+    const serverConsistency = calculateConsistencyFromVideos(videos);
+    result.scores.consistency = serverConsistency;
+    console.log(`[audit-engine] Consistency overridden server-side: ${serverConsistency.score} (${serverConsistency.evidence})`);
   }
 
   // Recalculate scores server-side using weighted formula to ensure accuracy
