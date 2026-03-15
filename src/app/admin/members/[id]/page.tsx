@@ -451,40 +451,37 @@ export default function MemberDetailPage() {
       )}
 
       {/* HEADER BANNER */}
-      <div className="relative rounded-2xl overflow-hidden">
-        <div className="h-40 bg-gradient-to-r from-[#1e2a38] via-[#2c4a6e] to-[#3dc3ff]" />
-        <div className="absolute inset-0 flex flex-col justify-end p-6">
-          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
-            <div>
-              <h1 className="text-2xl font-bold text-white">
-                {member.fullName || member.email}
-              </h1>
-              <div className="flex items-center gap-3 mt-1 flex-wrap">
-                {(member.youtubeChannelName || (member.youtubeHandle && !isRawChannelId(member.youtubeHandle))) && (
-                  <span className="text-white/70 text-sm">
-                    {member.youtubeChannelName || member.youtubeHandle}
-                  </span>
-                )}
-                {!member.youtubeChannelName && isRawChannelId(member.youtubeHandle) && (
-                  <span className="text-white/40 text-xs italic">Resolving channel name…</span>
-                )}
-                <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${tierColors(member.serviceTier).badge}`}>
-                  {tierLabel(member.serviceTier)}
+      <div className="rounded-2xl overflow-hidden bg-gradient-to-r from-[#1e2a38] via-[#2c4a6e] to-[#3dc3ff] p-6 pt-10">
+        <div className="flex flex-col gap-3">
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold text-white leading-snug break-words">
+              {member.fullName || member.email}
+            </h1>
+            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+              {(member.youtubeChannelName || (member.youtubeHandle && !isRawChannelId(member.youtubeHandle))) && (
+                <span className="text-white/70 text-sm break-words">
+                  {member.youtubeChannelName || member.youtubeHandle}
                 </span>
-              </div>
+              )}
+              {!member.youtubeChannelName && isRawChannelId(member.youtubeHandle) && (
+                <span className="text-white/40 text-xs italic">Resolving channel name…</span>
+              )}
+              <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full shrink-0 ${tierColors(member.serviceTier).badge}`}>
+                {tierLabel(member.serviceTier)}
+              </span>
             </div>
-            {member.youtubeChannelUrl && (
-              <a
-                href={member.youtubeChannelUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 bg-white text-[#1e2a38] text-sm font-semibold px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors shrink-0"
-              >
-                <ArrowTopRightOnSquareIcon className="w-4 h-4" />
-                View Channel
-              </a>
-            )}
           </div>
+          {member.youtubeChannelUrl && (
+            <a
+              href={member.youtubeChannelUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 bg-white text-[#1e2a38] text-sm font-semibold px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors self-start"
+            >
+              <ArrowTopRightOnSquareIcon className="w-4 h-4" />
+              View Channel
+            </a>
+          )}
         </div>
       </div>
 
