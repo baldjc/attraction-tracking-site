@@ -250,6 +250,18 @@ model TitleAnalysis {
   @@map("title_analyses")
 }
 
+model LoginOtp {
+  id        String    @id @default(uuid())
+  email     String
+  codeHash  String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([email])
+  @@map("login_otps")
+}
+
 model AIToolConversation {
   id            String      @id @default(uuid())
   userId        String
