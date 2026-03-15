@@ -1,5 +1,5 @@
 import prisma from "@/lib/prisma";
-import { getChannelInfo, getVideosWithTranscripts, getVideoById } from "@/lib/youtube";
+import { getChannelInfo, getVideosWithTranscripts, getVideoById, getLatestLongFormVideos } from "@/lib/youtube";
 import { runAuditWithClaude, DEFAULT_SCORING_PROMPT, SINGLE_VIDEO_SCORING_PROMPT } from "@/lib/audit-engine";
 
 export async function processAuditJob(jobId: string, selectedVideoId?: string) {
@@ -57,22 +57,24 @@ export async function processAuditJob(jobId: string, selectedVideoId?: string) {
       console.log(`[audit job ${jobId}] Using YouTube identifier: ${youtubeIdentifier}`);
       channelInfo = await getChannelInfo(youtubeIdentifier);
 
-      let sinceDate: Date | undefined;
       if (job.auditType === "monthly") {
         const lastAudit = await prisma.audit.findFirst({
           where: { userId: member.id },
           orderBy: { createdAt: "desc" },
         });
         if (!lastAudit) throw new Error("No baseline audit found. Run a Baseline audit first.");
-        sinceDate = lastAudit.createdAt;
+
+        // Gate check: does the channel have at least 1 new video since last audit?
+        const sinceDate = lastAudit.createdAt;
+        const newCheck = await getLatestLongFormVideos(channelInfo.uploadsPlaylistId, 1, sinceDate);
+        if (newCheck.length === 0) {
+          throw new Error("No new videos since last audit — skipping monthly audit");
+        }
       }
 
-      const videoCount = 5;
-      videos = await getVideosWithTranscripts(channelInfo.uploadsPlaylistId, videoCount, sinceDate);
+      // Always fetch the last 5 videos for scoring (gives full Consistency + pattern data)
+      videos = await getVideosWithTranscripts(channelInfo.uploadsPlaylistId, 5);
 
-      if (job.auditType === "monthly" && videos.length < 1) {
-        throw new Error("Not enough new content for a meaningful monthly audit (no new videos found)");
-      }
       if (videos.length === 0) throw new Error("No videos found on this channel");
     }
 

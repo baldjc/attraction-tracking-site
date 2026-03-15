@@ -1,0 +1,327 @@
+# URGENT: Scoring Fixes Not Working — Implementation Guide V2
+
+> **Date:** March 15, 2026
+> **Problem:** The scoring calibration changes from V1 were applied to the UI labels but NOT to the actual Claude API scoring prompt or the score calculation code. Consistency is still scoring 1.0 for a weekly publisher (should be 10) and Show Don't Tell may still be included in the weighted score.
+
+---
+
+## WHERE THE CHANGES NEED TO HAPPEN
+
+There are **3 separate places** that need changes. If you only change the UI, the scores won't change. All 3 must be updated:
+
+1. **The scoring prompt string** — the actual text sent to the Claude API when running an audit. This is where the AI reads the rubric. If the rubric text doesn't change here, the AI will keep scoring wrong.
+
+2. **The score calculation code** — the server-side code that takes the 16 raw scores from the AI response and calculates the weighted overall score. This is where Show Don't Tell needs to be excluded.
+
+3. **The UI/report display** — labels, formatting, N/A states. (Some of this was already done.)
+
+**Find the scoring prompt by searching your code for one of these strings:**
+- `"You are an expert YouTube channel analyst"`
+- `"Score each principle"`
+- `"the 16 Attraction by Video principles"`
+- `"consistency"` within a long prompt string
+- Look in your audit API route (likely `/api/audits/` or similar) or a separate file like `scoring-prompt.ts`, `audit-engine.ts`, or `prompt-templates.ts`
+
+**Find the score calculation by searching for:**
+- `/ 28` or `/ 16` (the old denominators)
+- `weighted` in server-side code
+- The function that processes the Claude API response and saves to the database
+
+---
+
+## Fix 1: Consistency — CHANGE THE PROMPT TEXT
+
+**Find the Consistency rubric inside the scoring prompt string** and REPLACE it with:
+
+```
+16. Consistency (0–10)
+
+MANDATORY: You MUST calculate this mathematically. Do NOT estimate or guess.
+
+Step 1: List every video's upload date.
+Step 2: Calculate the gap in days between each consecutive upload.
+Step 3: Calculate the average gap.
+Step 4: Use this lookup table:
+
+Average gap ≤7 days = score 10
+Average gap 8–10 days = score 8
+Average gap 11–14 days = score 5
+Average gap 15–21 days = score 3
+Average gap 22–30 days = score 2
+Average gap 31+ days = score 1
+
+Step 5: Show your math in the evidence field. Example:
+"Upload dates: Mar 1, Mar 8, Mar 15, Mar 22. Gaps: 7, 7, 7 days. Average gap: 7 days. Score: 10"
+
+For monthly audits with 3–4 videos: 4 videos in 4 weeks = 7-day average gap = 10.
+3 videos in 4 weeks = ~9-day average gap = 8. This is normal for a monthly window.
+```
+
+**Also add this line to the SCORING RULES section of the prompt** (near where it says things like "Each principle scored 0.0 to 10.0"):
+
+```
+- CRITICAL: For Consistency, you MUST show the upload dates, calculate the average gap in days, and use the lookup table. Any Consistency score without shown math is wrong.
+```
+
+---
+
+## Fix 2: Show Don't Tell — CHANGE THE CALCULATION CODE
+
+### 2a. Update the prompt text
+
+**Find the Show Don't Tell rubric inside the scoring prompt string** and REPLACE it with:
+
+```
+10. Show Don't Tell (0–10) — TRANSCRIPT-ESTIMATED ONLY, NOT INCLUDED IN OVERALL SCORE
+
+IMPORTANT: You are reading transcripts, not watching videos. You CANNOT see visuals.
+Score based ONLY on verbal cues in the transcript that reference visual elements.
+
+Look for phrases like: "as you can see," "look at this," "here's what that looks like,"
+"let me show you," "on screen right now," "this chart shows," "watch this."
+
+0–2 = No verbal references to visual elements in any transcript
+3–4 = Rare verbal references (1–2 total)
+5–6 = Some verbal references but inconsistent
+7–8 = Regular verbal references to visuals throughout
+9–10 = Abundant verbal cues to visuals in all transcripts
+
+This score is for display only. It does NOT count toward the overall Attraction Score.
+```
+
+### 2b. Update the weighted score calculation code
+
+**Find the code that calculates the weighted overall score.** It currently looks something like this:
+
+```javascript
+// OLD CODE (something like this)
+const weights = {
+  lead_magnet_system: 3,
+  avatar_clarity: 3,
+  binge_architecture: 3,
+  arc_attention: 2,
+  approve_the_click: 2,
+  connection_language: 2,
+  title_frameworks: 2,
+  arc_revelation: 2,
+  story_proof: 2,
+  themes_over_topics: 1,
+  consistency: 1,
+  show_dont_tell: 1,  // ← REMOVE THIS or set to 0
+  curiosity_bridges: 1,
+  values_peppering: 1,
+  grade5_language: 1,
+  arc_connection: 1,
+};
+const denominator = 28; // ← CHANGE TO 27
+```
+
+**Change to:**
+
+```javascript
+// NEW CODE
+const weights = {
+  lead_magnet_system: 3,
+  avatar_clarity: 3,
+  binge_architecture: 3,
+  arc_attention: 2,
+  approve_the_click: 2,
+  connection_language: 2,
+  title_frameworks: 2,
+  arc_revelation: 2,
+  story_proof: 2,
+  themes_over_topics: 1,
+  consistency: 1,
+  show_dont_tell: 0,  // ← EXCLUDED — transcript can't assess visuals
+  curiosity_bridges: 1,
+  values_peppering: 1,
+  grade5_language: 1,
+  arc_connection: 1,
+};
+const denominator = 27; // ← Changed from 28
+```
+
+### 2c. Update Content Impact dimension (used in lead audit reports)
+
+**Find where Content Impact is calculated:**
+
+Old: `Content Impact = average(ARC Attention, ARC Revelation, Approve the Click, Title Frameworks, Show Don't Tell, Curiosity Bridges)` — divided by 6
+
+New: `Content Impact = average(ARC Attention, ARC Revelation, Approve the Click, Title Frameworks, Curiosity Bridges)` — divided by **5** (Show Don't Tell removed)
+
+---
+
+## Fix 3: Opening Calibration — ADD TO PROMPT TEXT
+
+**Find the ARC Attention rubric in the scoring prompt** and ADD this block right after it:
+
+```
+OPENING CALIBRATION RULES — READ CAREFULLY:
+- Lead magnet mentioned within first 20 seconds = perfect timing (score 9–10)
+- Hook landing within 15–20 seconds = excellent. There is NO "5 second rule."
+- Into revelation content by :25–30 = textbook perfect opening = score 9–10
+- "What most people get wrong" is a STRONG hook pattern — never say it needs to come faster
+- Score 9–10 when ALL elements land by :30 (hook, title confirmation, lead magnet, content starts)
+- The opening window is 20–30 seconds. Never invent stricter timing.
+```
+
+---
+
+## Fix 4: Title Frameworks Calibration — ADD TO PROMPT TEXT
+
+**Find the Title Frameworks rubric in the scoring prompt** and ADD this block right after it:
+
+```
+TITLE CALIBRATION RULES:
+- Titles create CURIOSITY, they do NOT give away the unique insight. The insight is the
+  revelation inside the video. A title that gives away the answer kills the click.
+  GOOD: "Why Calgary's Market Is About to Shift" (curiosity gap)
+  BAD: "Calgary's Market Is Shifting Because of X Policy" (answer given away)
+- Never penalise a title for "not being specific enough about the insight"
+- Score 8–10 when a title: (1) uses a proven framework, (2) creates a curiosity gap,
+  (3) targets the right audience, (4) would stop a scroll
+```
+
+---
+
+## Fix 5: Story Proof Calibration — REPLACE IN PROMPT TEXT
+
+**Find the Story Proof rubric in the scoring prompt** and REPLACE it with:
+
+```
+13. Story Proof (0–10)
+
+IMPORTANT: In real estate, agents CANNOT share personal client details (names, addresses,
+exact prices) due to confidentiality. Stories SHOULD be vague on personal details — that is
+professional and correct, NOT a weakness.
+
+Score based on whether stories are PRESENT and have narrative structure
+(situation → challenge → outcome), NOT on how much personal detail is shared.
+
+0–2 = Zero client stories. No social proof at all.
+3–4 = Generic references only — "my clients" with no narrative arc
+5–6 = One story with some structure, or multiple mentions without clear arcs
+7–8 = Stories with clear narrative (situation → challenge → outcome), even if anonymised
+9–10 = Multiple proof stories with clear arcs
+
+CALIBRATION:
+- "A family who sold fast and couldn't find a home in time" = 7–8 (clear narrative arc)
+- Anonymised details + clear structure = 7–8, NOT 5–6
+- Only score 3–4 when there's no story at all — just "my clients love this area"
+```
+
+---
+
+## Fix 6: Single Video Audits — CHANGE PROMPT + CALCULATION
+
+### 6a. Exclude Consistency from single video audits
+
+**In the single video audit prompt** (the additional instructions added for single video type), add:
+
+```
+- Do NOT score Consistency for single video audits. Consistency is a channel-level metric
+  (publishing cadence over time) that cannot be assessed from one video.
+  Set Consistency to null/N/A and exclude it from the Video Attraction Score.
+  Calculate the Video Attraction Score by dividing by 15, not 16.
+```
+
+**In the single video score calculation code**, skip Consistency and divide by 15.
+
+**In the scorecard UI for single video audits**, show Consistency as "N/A" with greyed-out styling.
+
+### 6b. Reframe Themes Over Topics for single video audits
+
+**In the single video audit prompt**, add:
+
+```
+- For Themes Over Topics: score based on AVATAR ALIGNMENT, not channel theme variety.
+  Pull the member's saved avatar profile. Is this video clearly speaking to that person?
+  10 = Speaks to the avatar and talks to that person all the way through
+  7–8 = Mostly on-avatar, drifts slightly
+  5–6 = Tries to talk to a few different people
+  3–4 = Loosely related to avatar
+  0–2 = Not speaking to the avatar at all
+```
+
+**The system must pass the member's avatar profile (from their database record) into the single video audit prompt.** If no avatar is saved, pass the member's most recent baseline or monthly audit scores as context instead.
+
+---
+
+## Fix 7: Monthly Audits — Always Pull Last 5 Videos, Not Just New Ones
+
+### The Problem
+Monthly audits currently only pull videos published since the last audit. If a member published 2 new videos in a month, the AI only sees 2 videos — not enough to judge Consistency, Themes, Binge Architecture, or any pattern-based principle. This is why Consistency scores are wrong (1–2 videos gives almost no upload date data).
+
+### How Monthly Audits Should Work
+
+**Step 1: Check eligibility**
+- Look up the date of the member's most recent audit (baseline or monthly)
+- Check if the member has published **at least 1 new video** since that date
+- If NO new videos → **skip this member** (don't run the audit). Show a message like "No new content since last audit" in the audit queue
+- If YES → proceed to Step 2
+
+**Step 2: Pull the last 5 videos**
+- Pull the member's **5 most recent long-form videos** (same as a baseline audit)
+- NOT just the videos since the last audit — always the last 5
+- This gives the AI enough data to assess patterns (Consistency, Themes, Binge Architecture, etc.)
+
+**Step 3: Score normally**
+- Send all 5 videos to the Claude API with the monthly audit prompt
+- The monthly prompt already includes baseline scores for comparison — that's fine
+- The AI scores the current state of the channel based on the most recent 5 videos
+
+### Why This Is Better
+- Consistency: 5 videos with upload dates = accurate cadence calculation
+- Themes: 5 videos shows whether content pillars are being maintained
+- Binge Architecture: 5 videos shows cross-referencing patterns
+- The "at least 1 new video" gate prevents re-auditing when nothing has changed
+- This matches how a human coach would assess — look at the latest work, not just the delta
+
+### What to Change in Code
+
+**Find the monthly audit video fetching logic** (likely in the audit engine or a YouTube data service). It currently does something like:
+
+```javascript
+// OLD: Only fetch videos after last audit date
+const videos = await getVideosAfterDate(channelId, lastAuditDate);
+```
+
+**Change to:**
+
+```javascript
+// NEW: Check for new content, then always fetch last 5
+const lastAuditDate = await getLastAuditDate(memberId);
+const latestVideo = await getLatestVideo(channelId);
+
+// Gate: at least 1 new video since last audit
+if (latestVideo.publishDate <= lastAuditDate) {
+  // Skip — no new content
+  return { status: 'skipped', reason: 'No new videos since last audit' };
+}
+
+// Always pull last 5 videos regardless of audit date
+const videos = await getLatestVideos(channelId, 5);
+```
+
+**For the "Run All Monthly Audits" batch button:**
+- Skip members with no new videos (don't create a failed/empty audit)
+- Show which members were skipped and why in the batch progress UI
+
+---
+
+## HOW TO VERIFY THE FIXES WORK
+
+After making changes, run a monthly audit on Jared's channel (@chamberlaingroup or whichever handle). Check:
+
+1. **Consistency** — Jared posts weekly. Score MUST be 10. Evidence MUST show upload dates and calculated average gap. If it's anything other than 10, the prompt text wasn't updated.
+2. **Show Don't Tell** — Should show "(est.)" label. The overall weighted score should NOT change if you adjust Show Don't Tell up or down (because its weight is 0).
+3. **Overall score** — Should be calculated with denominator 27, not 28.
+
+Then run a single video audit and check:
+4. **Consistency** — Should show "N/A", not a number
+5. **Video score** — Should divide by 15, not 16
+6. **Themes Over Topics** — Evidence should reference the member's avatar
+
+**For the monthly audit video pull:**
+7. **Video count** — Should always be 5 (the last 5 videos), not just videos since last audit
+8. **Skip gate** — If a member has no new videos since last audit, they should be skipped (not scored with stale data)

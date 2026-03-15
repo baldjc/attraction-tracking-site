@@ -1,5 +1,5 @@
 import prisma from "@/lib/prisma";
-import { getChannelInfo, getVideosWithTranscripts } from "@/lib/youtube";
+import { getChannelInfo, getLatestLongFormVideos } from "@/lib/youtube";
 import { processAuditJob } from "@/lib/process-audit-job";
 
 const DELAY_MS = 8000; // 8 seconds between members to avoid rate limits
@@ -93,19 +93,19 @@ export async function runMonthlyBatch() {
     const sinceDate = lastAudit?.createdAt;
 
     try {
-      // Quick check: does the channel have any new videos?
+      // Lightweight gate check: does the channel have at least 1 new long-form video since last audit?
       const channelInfo = await getChannelInfo(youtubeIdentifier);
-      const newVideos = await getVideosWithTranscripts(channelInfo.uploadsPlaylistId, 5, sinceDate);
+      const newCheck = await getLatestLongFormVideos(channelInfo.uploadsPlaylistId, 1, sinceDate);
 
-      if (newVideos.length === 0) {
+      if (newCheck.length === 0) {
         console.log(`[batch-monthly] Skipping ${memberName} — no new videos since last audit`);
         results.push({ memberId: member.id, memberName, status: "skipped", reason: "no new videos" });
         skipped_no_new_videos++;
         continue;
       }
 
-      // Create job and process
-      console.log(`[batch-monthly] Queuing monthly audit for ${memberName} (${newVideos.length} new videos)`);
+      // Create job and process — processAuditJob will fetch the last 5 videos for scoring
+      console.log(`[batch-monthly] Queuing monthly audit for ${memberName} (has new content)`);
       const job = await prisma.auditJob.create({
         data: { auditType: "monthly", userId: member.id, status: "queued" },
       });
