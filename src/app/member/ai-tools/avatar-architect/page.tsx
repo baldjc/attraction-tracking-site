@@ -32,6 +32,96 @@ interface SavedAvatar {
   updatedAt?: string;
 }
 
+// ─── Lightweight Markdown Renderer ────────────────────────────────────────────
+function renderInline(text: string): React.ReactNode[] {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return <strong key={i}>{part.slice(2, -2)}</strong>;
+    }
+    return part;
+  });
+}
+
+function MarkdownBlock({ content }: { content: string }) {
+  const lines = content.split("\n");
+  const nodes: React.ReactNode[] = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i];
+    const trimmed = line.trim();
+
+    if (!trimmed || trimmed === "") {
+      i++;
+      continue;
+    }
+
+    if (/^---+$/.test(trimmed)) {
+      nodes.push(<hr key={i} className="my-3 border-[#1e2a38]/10" />);
+      i++;
+      continue;
+    }
+
+    if (trimmed.startsWith("### ")) {
+      nodes.push(
+        <h3 key={i} className="text-xs font-bold text-[#1e2a38]/50 uppercase tracking-wider mt-4 mb-1">
+          {renderInline(trimmed.slice(4))}
+        </h3>
+      );
+      i++;
+      continue;
+    }
+
+    if (trimmed.startsWith("## ")) {
+      nodes.push(
+        <h2 key={i} className="text-sm font-bold text-[#1e2a38] mt-5 mb-1.5">
+          {renderInline(trimmed.slice(3))}
+        </h2>
+      );
+      i++;
+      continue;
+    }
+
+    if (trimmed.startsWith("# ")) {
+      nodes.push(
+        <h1 key={i} className="text-base font-bold text-[#1e2a38] mt-2 mb-2">
+          {renderInline(trimmed.slice(2))}
+        </h1>
+      );
+      i++;
+      continue;
+    }
+
+    if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
+      const listItems: React.ReactNode[] = [];
+      while (i < lines.length && (lines[i].trim().startsWith("- ") || lines[i].trim().startsWith("* "))) {
+        listItems.push(
+          <li key={i} className="text-sm text-[#1e2a38]/80 leading-relaxed">
+            {renderInline(lines[i].trim().slice(2))}
+          </li>
+        );
+        i++;
+      }
+      nodes.push(
+        <ul key={`ul-${i}`} className="list-disc list-inside space-y-0.5 my-1.5 ml-1">
+          {listItems}
+        </ul>
+      );
+      continue;
+    }
+
+    nodes.push(
+      <p key={i} className="text-sm text-[#1e2a38]/80 leading-relaxed my-1.5">
+        {renderInline(trimmed)}
+      </p>
+    );
+    i++;
+  }
+
+  return <div>{nodes}</div>;
+}
+
 // ─── Inline Avatar Profile Card ───────────────────────────────────────────────
 function AvatarProfileCard({
   avatar,
@@ -156,12 +246,10 @@ function AvatarProfileCard({
 
             {avatar.avatarSummary && (
               <div>
-                <p className="text-xs font-semibold text-[#1e2a38]/40 uppercase tracking-wider mb-1">
+                <p className="text-xs font-semibold text-[#1e2a38]/40 uppercase tracking-wider mb-2">
                   Summary
                 </p>
-                <p className="text-sm text-[#1e2a38]/70 leading-relaxed">
-                  {avatar.avatarSummary}
-                </p>
+                <MarkdownBlock content={avatar.avatarSummary} />
               </div>
             )}
 
