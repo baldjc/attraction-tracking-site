@@ -1,0 +1,45 @@
+1. Exclude Show Don't Tell from the Learning Path section on ALL audit reports (single video, monthly, baseline). It's 
+  transcript-estimated and excluded from the weighted score — it should never appear as a gap to work on or show a priority     
+  level.
+                                                                                                                                
+  2. Refactor src/lib/audit-engine.ts so that SINGLE_VIDEO_SCORING_PROMPT and SCRIPT_REVIEW_PROMPT share the same scoring rubric
+   and calibration rules as DEFAULT_SCORING_PROMPT instead of maintaining separate condensed copies. Extract all 16 principle
+  descriptions and all calibration rules into a shared constant (e.g. SHARED_SCORING_RUBRIC), then all three prompts compose
+  from it. The only differences per audit type should be:
+  - Single video: Consistency = null/N/A, Themes = avatar alignment using member's avatar profile, output format is phase-based
+  - Script review: Consistency = 5 default, output format matches script feedback structure
+  - This way when we update a scoring rule, it updates everywhere automatically
+
+  3. In src/lib/audit-engine.ts, find calibration rule #6 "CURIOSITY BRIDGES" in DEFAULT_SCORING_PROMPT and replace with:
+
+  6. CURIOSITY BRIDGES — BROADER THAN AND/BUT/THEREFORE:
+     A curiosity bridge is ANY sentence that pulls the viewer forward, making them want to keep watching. "And/But/Therefore" is
+   one pattern but NOT the only one. Score ALL forward-pulling language.
+
+     Examples of valid curiosity bridges (all count equally):
+     - "If you think that was good, you'll love this next part"
+     - "And this next point is even more important"
+     - "Which brings me to the mistake that catches even the most organised families offguard"
+     - "But here's what most people miss..."
+     - "Now here's where it gets really interesting"
+     - "But that's not even the biggest issue"
+     - Teasing a later point: "I'll get to the biggest one in a minute, but first..."
+
+     What is NOT a bridge: flat mechanical transitions — "Next up...", "Moving on...", "Let's talk about...", "Number three
+  is..."
+
+     Scoring guide:
+     0-2: No forward-pulling language. Abrupt topic changes.
+     3-4: Only flat transitions like "next up", "moving on" — no curiosity built
+     5-6: Some curiosity-building moments but inconsistent
+     7-8: Regular curiosity bridges pulling viewer forward through most sections
+     9-10: Nearly every transition creates anticipation. Viewer feels compelled to stay.
+
+     IMPORTANT: Do NOT limit your assessment to "And/But/Therefore" only. A sentence like "which brings me to the mistake that
+  catches even the most organised families offguard" IS a strong curiosity bridge — score it as such.
+
+  4. The audit report layout needs a redesign for desktop and tablet. Right now it's mobile-stacked — big coloured blocks, huge
+  score section with yellow background, lots of vertical space wasted. On anything wider than a phone it looks stretched and
+  unprofessional. Redesign the report layout so it's compact and clean on desktop (score + diagnosis side-by-side, tighter
+  section spacing, less padding on the score block) while still looking good on mobile. This applies to all audit report types —
+   single video, monthly, and baseline.

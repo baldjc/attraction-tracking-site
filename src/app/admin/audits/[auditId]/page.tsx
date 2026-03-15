@@ -201,7 +201,7 @@ export default function AuditReportPage() {
         }));
 
   const learningGaps = Object.entries(scores)
-    .filter(([, v]: [string, any]) => v.score != null && v.score < 7)
+    .filter(([key, v]: [string, any]) => key !== "show_dont_tell" && v.score != null && v.score < 7)
     .sort(([, a]: [string, any], [, b]: [string, any]) => (a.score ?? 0) - (b.score ?? 0));
 
   const qaItems: Array<{ key: string; prompt: string; score: number }> = [];
@@ -215,7 +215,7 @@ export default function AuditReportPage() {
   }
 
   return (
-    <div className="max-w-4xl space-y-6 print-full-width" id="audit-report">
+    <div className="max-w-4xl space-y-4 md:space-y-5 print-full-width" id="audit-report">
 
       {/* Top navigation — hidden on print */}
       <div className="flex items-center justify-between no-print">
@@ -285,27 +285,27 @@ export default function AuditReportPage() {
         <p className="text-sm text-[#1e2a38]/50 mt-1">{fmt(audit.createdAt)}</p>
       </div>
 
-      {/* One-Sentence Diagnosis callout */}
-      {report?.one_sentence_diagnosis && (
-        <div className="bg-[#1e2a38] rounded-xl p-5 print-avoid-break">
-          <p className="text-xs font-semibold text-[#3dc3ff] uppercase tracking-wider mb-2">Diagnosis</p>
-          <p className="text-base font-medium text-white leading-relaxed italic">
-            "{report.one_sentence_diagnosis}"
+      {/* Score + Diagnosis — side-by-side on desktop */}
+      <div className="flex flex-col md:flex-row gap-4 print-avoid-break">
+        <div className={`rounded-xl p-5 text-center md:w-44 shrink-0 ${scoreBgBlock(audit.overallScore)}`}>
+          <p className="text-xs font-semibold uppercase tracking-wider mb-1 text-[#1e2a38]/60">
+            {isSingleVideo ? "Video Score" : "Channel Score"}
           </p>
+          <p className={`text-6xl font-black ${scoreText(audit.overallScore)}`}>
+            {audit.overallScore?.toFixed(1)}
+          </p>
+          <p className="text-sm font-medium mt-0.5 text-[#1e2a38]/50">/ 10</p>
+          {report?.raw_average != null && (
+            <p className="text-xs text-[#1e2a38]/40 mt-1.5">Raw avg: {Number(report.raw_average).toFixed(1)}</p>
+          )}
         </div>
-      )}
-
-      {/* Overall Score */}
-      <div className={`rounded-xl p-8 text-center print-avoid-break ${scoreBgBlock(audit.overallScore)}`}>
-        <p className="text-sm font-semibold uppercase tracking-wider mb-2 text-[#1e2a38]/60">
-          {isSingleVideo ? "Video Attraction Score" : "Channel Attraction Score"}
-        </p>
-        <p className={`text-7xl font-black ${scoreText(audit.overallScore)}`}>
-          {audit.overallScore?.toFixed(1)}
-        </p>
-        <p className="text-lg font-medium mt-1 text-[#1e2a38]/50">/ 10</p>
-        {report?.raw_average != null && (
-          <p className="text-xs text-[#1e2a38]/40 mt-2">Raw Average: {Number(report.raw_average).toFixed(1)} / 10</p>
+        {report?.one_sentence_diagnosis && (
+          <div className="bg-[#1e2a38] rounded-xl p-5 flex-1 flex flex-col justify-center">
+            <p className="text-xs font-semibold text-[#3dc3ff] uppercase tracking-wider mb-2">Diagnosis</p>
+            <p className="text-base font-medium text-white leading-relaxed italic">
+              "{report.one_sentence_diagnosis}"
+            </p>
+          </div>
         )}
       </div>
 

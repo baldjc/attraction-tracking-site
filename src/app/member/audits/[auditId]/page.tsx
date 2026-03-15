@@ -92,32 +92,32 @@ export default function MemberAuditReportPage() {
     : audit.auditType === "monthly" ? "Monthly Audit"
     : "Single Video Audit";
 
-  const gaps = Object.entries(scores).filter(([, v]: [string, any]) => v.score < 7);
+  const gaps = Object.entries(scores).filter(([key, v]: [string, any]) => key !== "show_dont_tell" && v.score != null && v.score < 7);
 
   return (
-    <div className="max-w-3xl space-y-6">
+    <div className="max-w-3xl space-y-4 md:space-y-5">
       <Link href="/member/scores" className="inline-flex items-center gap-1.5 text-sm text-[#1e2a38]/50 hover:text-[#1e2a38]">
         <ArrowLeftIcon className="w-4 h-4" />
         Back to My Scores
       </Link>
 
-      {/* Header */}
-      <div className="bg-[#3dc3ff]/10 border border-[#3dc3ff]/30 rounded-xl p-6">
-        <p className="text-xs font-semibold text-[#3dc3ff] uppercase tracking-wider mb-1">Attraction by Video — {typeLabel}</p>
-        <p className="text-sm text-[#1e2a38]/50">{fmt(audit.createdAt)}</p>
-      </div>
-
-      {/* Score */}
-      <div className={`rounded-xl p-8 text-center ${scoreBg(audit.overallScore)}`}>
-        <p className="text-sm font-semibold uppercase tracking-wider mb-2 opacity-70">Your Attraction Score</p>
-        <p className={`text-7xl font-black ${scoreText(audit.overallScore)}`}>{audit.overallScore?.toFixed(1)}</p>
-        <p className="text-lg font-medium mt-1 opacity-70">/ 10</p>
-        {report?.raw_average != null && (
-          <p className="text-xs opacity-50 mt-2">Raw Average: {Number(report.raw_average).toFixed(1)} / 10</p>
-        )}
-        {report?.one_sentence_diagnosis && (
-          <p className="mt-4 text-sm italic opacity-80 max-w-lg mx-auto">"{report.one_sentence_diagnosis}"</p>
-        )}
+      {/* Score + Header — side-by-side on desktop */}
+      <div className="flex flex-col md:flex-row gap-4">
+        <div className={`rounded-xl p-4 md:p-5 text-center md:w-44 shrink-0 ${scoreBg(audit.overallScore)}`}>
+          <p className="text-xs font-semibold uppercase tracking-wider mb-1 opacity-70">Attraction Score</p>
+          <p className={`text-5xl md:text-6xl font-black ${scoreText(audit.overallScore)}`}>{audit.overallScore?.toFixed(1)}</p>
+          <p className="text-sm font-medium mt-0.5 opacity-50">/ 10</p>
+          {report?.raw_average != null && (
+            <p className="text-xs opacity-40 mt-1">Avg: {Number(report.raw_average).toFixed(1)}</p>
+          )}
+        </div>
+        <div className="bg-[#3dc3ff]/10 border border-[#3dc3ff]/30 rounded-xl p-4 md:p-5 flex-1 flex flex-col justify-center">
+          <p className="text-xs font-semibold text-[#3dc3ff] uppercase tracking-wider mb-1">Attraction by Video — {typeLabel}</p>
+          <p className="text-sm text-[#1e2a38]/50 mb-2">{fmt(audit.createdAt)}</p>
+          {report?.one_sentence_diagnosis && (
+            <p className="text-sm italic text-[#1e2a38]/80">"{report.one_sentence_diagnosis}"</p>
+          )}
+        </div>
       </div>
 
       {/* Scores */}

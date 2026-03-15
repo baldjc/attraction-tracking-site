@@ -95,19 +95,19 @@ export default function MemberScoresPage() {
       score: Number(a.overallScore?.toFixed(1)),
     }));
 
-  const gaps = Object.entries(scores).filter(([, v]: [string, any]) => v.score < 7);
+  const gaps = Object.entries(scores).filter(([key, v]: [string, any]) => key !== "show_dont_tell" && v.score != null && v.score < 7);
 
   return (
-    <div className="max-w-3xl space-y-6">
+    <div className="max-w-3xl space-y-4 md:space-y-5">
       <h1 className="text-2xl font-bold text-[#1e2a38]">My Scores</h1>
 
       {/* Overall Score */}
-      <div className={`rounded-xl p-8 text-center ${scoreBg(latestAudit.overallScore)}`}>
-        <p className="text-sm font-semibold uppercase tracking-wider mb-2 opacity-70">Current Attraction Score</p>
-        <p className={`text-7xl font-black ${scoreText(latestAudit.overallScore)}`}>
+      <div className={`rounded-xl p-5 text-center ${scoreBg(latestAudit.overallScore)}`}>
+        <p className="text-xs font-semibold uppercase tracking-wider mb-1 opacity-70">Current Attraction Score</p>
+        <p className={`text-5xl md:text-6xl font-black ${scoreText(latestAudit.overallScore)}`}>
           {latestAudit.overallScore?.toFixed(1)}
         </p>
-        <p className="text-lg font-medium mt-1 opacity-70">/ 10</p>
+        <p className="text-sm font-medium mt-0.5 opacity-50">/ 10</p>
       </div>
 
       {/* Score Trend */}
