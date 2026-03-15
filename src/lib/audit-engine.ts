@@ -171,15 +171,28 @@ Scoring guide:
    7-8: 3x system in most videos (opening, mid, close) with natural integration and a compelling free resource
    9-10: Strategic system with different lead magnets for different content themes, mentioned 3x consistently with natural, non-salesy integration
 
-6. CURIOSITY BRIDGES — REQUIRE SPECIFIC EVIDENCE:
-   You MUST quote specific transition phrases from the transcript. Do not give a score of 7+ without citing at least 3 actual bridge phrases used across the videos.
+6. CURIOSITY BRIDGES — BROADER THAN AND/BUT/THEREFORE:
+   A curiosity bridge is ANY sentence that pulls the viewer forward, making them want to keep watching. "And/But/Therefore" is one pattern but NOT the only one. Score ALL forward-pulling language.
+
+   Examples of valid curiosity bridges (all count equally):
+   - "If you think that was good, you'll love this next part"
+   - "And this next point is even more important"
+   - "Which brings me to the mistake that catches even the most organised families off guard"
+   - "But here's what most people miss..."
+   - "Now here's where it gets really interesting"
+   - "But that's not even the biggest issue"
+   - Teasing a later point: "I'll get to the biggest one in a minute, but first..."
+
+   What is NOT a bridge: flat mechanical transitions — "Next up...", "Moving on...", "Let's talk about...", "Number three is..."
 
    Scoring guide:
-   0-2: No transitions, abrupt topic changes, or just silence between sections
-   3-4: Only uses flat transitions like 'next up...', 'let's talk about...', 'moving on...'
-   5-6: Occasional decent transitions but mostly mechanical
-   7-8: Regular use of curiosity-building phrases like 'but here's where it gets interesting...', 'and that's just the beginning...', 'but wait until you see...'
-   9-10: Masterful And/But/Therefore momentum between every section
+   0-2: No forward-pulling language. Abrupt topic changes.
+   3-4: Only flat transitions like "next up", "moving on" — no curiosity built
+   5-6: Some curiosity-building moments but inconsistent
+   7-8: Regular curiosity bridges pulling viewer forward through most sections
+   9-10: Nearly every transition creates anticipation. Viewer feels compelled to stay.
+
+   IMPORTANT: Do NOT limit your assessment to "And/But/Therefore" only. A sentence like "which brings me to the mistake that catches even the most organised families off guard" IS a strong curiosity bridge — score it as such. You MUST quote specific bridge phrases from the transcript as evidence.
 
 7. VALUES PEPPERING — THIS IS NOT ABOUT CREATOR HOBBIES:
 
