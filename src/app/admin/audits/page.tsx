@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
-import { ArrowPathIcon, PlayIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
+import { ArrowPathIcon, PlayIcon, CheckCircleIcon, XCircleIcon } from "@heroicons/react/24/outline";
 
 interface AuditRow {
   id: string;
@@ -39,6 +39,16 @@ interface BaselineLastRun {
   failures: number;
 }
 
+interface ActiveJob {
+  id: string;
+  status: string;
+  auditType: string;
+  message: string;
+  createdAt: string;
+  updatedAt: string;
+  user: { id: string; fullName: string | null; email: string } | null;
+}
+
 function scoreBg(score: number | null) {
   if (score == null) return "bg-gray-100 text-gray-500";
   if (score >= 7) return "bg-green-100 text-green-700";
@@ -57,6 +67,15 @@ function fmtDateTime(date: string) {
   });
 }
 
+function elapsedLabel(createdAt: string) {
+  const secs = Math.floor((Date.now() - new Date(createdAt).getTime()) / 1000);
+  if (secs < 60) return `${secs}s`;
+  const mins = Math.floor(secs / 60);
+  return `${mins}m ${secs % 60}s`;
+}
+
+const ACTIVE_STATUSES = ["queued", "downloading", "analysing", "generating"];
+
 export default function AuditsPage() {
   const [audits, setAudits] = useState<AuditRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -72,11 +91,38 @@ export default function AuditsPage() {
   const [baselineLaunching, setBaselineLaunching] = useState(false);
   const baselinePollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const [activeJobs, setActiveJobs] = useState<ActiveJob[]>([]);
+  const [cancellingJobId, setCancellingJobId] = useState<string | null>(null);
+  const activeJobsPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [, forceUpdate] = useState(0);
+
   useEffect(() => {
     fetchAudits();
     fetchBatchStatus();
     fetchBaselineBatchStatus();
+    fetchActiveJobs();
   }, []);
+
+  // Poll active jobs while any exist
+  useEffect(() => {
+    if (activeJobs.length > 0) {
+      if (!activeJobsPollRef.current) {
+        activeJobsPollRef.current = setInterval(() => {
+          fetchActiveJobs();
+          forceUpdate((n) => n + 1); // re-render to update elapsed timers
+        }, 3000);
+      }
+    } else {
+      if (activeJobsPollRef.current) {
+        clearInterval(activeJobsPollRef.current);
+        activeJobsPollRef.current = null;
+        fetchAudits();
+      }
+    }
+    return () => {
+      if (activeJobsPollRef.current) clearInterval(activeJobsPollRef.current);
+    };
+  }, [activeJobs.length]);
 
   // Poll for monthly batch progress while running
   useEffect(() => {
@@ -140,6 +186,38 @@ export default function AuditsPage() {
     } catch { }
   }
 
+  async function dismissMonthlyBatch() {
+    try {
+      await fetch("/api/audits/run-all-monthly", { method: "DELETE" });
+      setBatchStatus(null);
+    } catch { }
+  }
+
+  async function dismissBaselineBatch() {
+    try {
+      await fetch("/api/audits/run-all-baseline", { method: "DELETE" });
+      setBaselineBatchStatus(null);
+    } catch { }
+  }
+
+  const fetchActiveJobs = useCallback(async () => {
+    try {
+      const res = await fetch("/api/audits/active-jobs");
+      const data = await res.json();
+      setActiveJobs((data.jobs ?? []).filter((j: ActiveJob) => ACTIVE_STATUSES.includes(j.status)));
+    } catch { }
+  }, []);
+
+  async function handleCancelJob(jobId: string) {
+    setCancellingJobId(jobId);
+    try {
+      await fetch(`/api/audits/jobs/${jobId}/cancel`, { method: "POST" });
+      await fetchActiveJobs();
+    } finally {
+      setCancellingJobId(null);
+    }
+  }
+
   async function handleRunAllMonthly() {
     if (!confirm("This will queue monthly audits for all eligible members. Each member takes ~30–60 seconds. Continue?")) return;
     setLaunching(true);
@@ -150,6 +228,7 @@ export default function AuditsPage() {
         alert(data.error);
       } else {
         await fetchBatchStatus();
+        await fetchActiveJobs();
       }
     } finally {
       setLaunching(false);
@@ -168,6 +247,7 @@ export default function AuditsPage() {
         alert(data.message ?? "No eligible members found.");
       } else {
         await fetchBaselineBatchStatus();
+        await fetchActiveJobs();
       }
     } finally {
       setBaselineLaunching(false);
@@ -212,12 +292,72 @@ export default function AuditsPage() {
         </div>
       </div>
 
+      {/* Active Jobs section */}
+      {activeJobs.length > 0 && (
+        <div className="mb-5 bg-white border border-[#3dc3ff]/30 rounded-xl shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-[#3dc3ff]/20 bg-[#e8f7ff]/40">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-[#3dc3ff] animate-pulse" />
+              <span className="text-sm font-semibold text-[#1e2a38]">
+                {activeJobs.length} Audit{activeJobs.length !== 1 ? "s" : ""} In Progress
+              </span>
+            </div>
+            <button
+              onClick={fetchActiveJobs}
+              className="text-xs text-[#1e2a38]/50 hover:text-[#1e2a38] flex items-center gap-1"
+            >
+              <ArrowPathIcon className="w-3 h-3" /> Refresh
+            </button>
+          </div>
+          <div className="divide-y divide-gray-100">
+            {activeJobs.map((job) => (
+              <div key={job.id} className="flex items-center gap-4 px-4 py-3">
+                <div className="w-4 h-4 border-2 border-[#3dc3ff] border-t-transparent rounded-full animate-spin shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {job.user ? (
+                      <Link
+                        href={`/admin/members/${job.user.id}`}
+                        className="text-sm font-medium text-[#3dc3ff] hover:underline truncate"
+                      >
+                        {job.user.fullName ?? job.user.email}
+                      </Link>
+                    ) : (
+                      <span className="text-sm font-medium text-[#1e2a38]/60">Unknown member</span>
+                    )}
+                    <span className="text-xs px-1.5 py-0.5 rounded bg-[#1e2a38]/10 text-[#1e2a38]/60 capitalize shrink-0">
+                      {job.auditType.replace("_", " ")}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-xs text-[#1e2a38]/50">{job.message}</span>
+                    <span className="text-xs text-[#1e2a38]/30">·</span>
+                    <span className="text-xs text-[#1e2a38]/40">{elapsedLabel(job.createdAt)}</span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleCancelJob(job.id)}
+                  disabled={cancellingJobId === job.id}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-red-50 text-[#ff0033] hover:bg-red-100 disabled:opacity-50 transition-colors shrink-0"
+                >
+                  <XCircleIcon className="w-3.5 h-3.5" />
+                  {cancellingJobId === job.id ? "Cancelling…" : "Cancel"}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Batch progress */}
       {isRunning && (
         <div className="mb-4 bg-white border border-[#3dc3ff]/30 rounded-xl p-4 shadow-sm">
           <div className="flex items-center justify-between mb-2">
             <p className="text-sm font-semibold text-[#1e2a38]">Monthly batch in progress…</p>
-            <p className="text-sm text-[#1e2a38]/50">{batchStatus.current} / {batchStatus.total} members</p>
+            <div className="flex items-center gap-3">
+              <p className="text-sm text-[#1e2a38]/50">{batchStatus.current} / {batchStatus.total} members</p>
+              <button onClick={dismissMonthlyBatch} className="text-xs text-[#1e2a38]/40 hover:text-[#ff0033] transition-colors" title="Dismiss">✕</button>
+            </div>
           </div>
           <div className="w-full bg-gray-100 rounded-full h-2 mb-3">
             <div
@@ -275,7 +415,10 @@ export default function AuditsPage() {
         <div className="mb-4 bg-white border border-[#3dc3ff]/30 rounded-xl p-4 shadow-sm">
           <div className="flex items-center justify-between mb-2">
             <p className="text-sm font-semibold text-[#1e2a38]">Baseline batch in progress…</p>
-            <p className="text-sm text-[#1e2a38]/50">{baselineBatchStatus!.current} / {baselineBatchStatus!.total} members</p>
+            <div className="flex items-center gap-3">
+              <p className="text-sm text-[#1e2a38]/50">{baselineBatchStatus!.current} / {baselineBatchStatus!.total} members</p>
+              <button onClick={dismissBaselineBatch} className="text-xs text-[#1e2a38]/40 hover:text-[#ff0033] transition-colors" title="Dismiss">✕</button>
+            </div>
           </div>
           <div className="w-full bg-gray-100 rounded-full h-2 mb-3">
             <div
@@ -341,7 +484,10 @@ export default function AuditsPage() {
           <option value="monthly">Monthly</option>
           <option value="single_video">Single Video</option>
         </select>
-        <button onClick={fetchAudits} className="flex items-center gap-2 px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-[#1e2a38] hover:bg-gray-50">
+        <button
+          onClick={() => { fetchAudits(); fetchBatchStatus(); fetchBaselineBatchStatus(); fetchActiveJobs(); }}
+          className="flex items-center gap-2 px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-[#1e2a38] hover:bg-gray-50"
+        >
           <ArrowPathIcon className="w-4 h-4" /> Refresh
         </button>
       </div>
