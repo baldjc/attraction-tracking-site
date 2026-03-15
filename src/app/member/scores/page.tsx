@@ -42,13 +42,15 @@ const LEARNING_PATH: Record<string, string> = {
   consistency: "Lessons 1.3 + 2.4",
 };
 
-function scoreBg(score: number) {
+function scoreBg(score: number | null) {
+  if (score == null) return "bg-gray-100 text-gray-400";
   if (score >= 7) return "bg-green-100 text-green-700";
   if (score >= 5) return "bg-yellow-100 text-yellow-700";
   return "bg-red-100 text-[#ff0033]";
 }
 
-function scoreText(score: number) {
+function scoreText(score: number | null) {
+  if (score == null) return "text-gray-400";
   if (score >= 7) return "text-green-600";
   if (score >= 5) return "text-yellow-600";
   return "text-[#ff0033]";
@@ -132,7 +134,7 @@ export default function MemberScoresPage() {
         <div className="space-y-1">
           {Object.entries(scores).map(([key, val]: [string, any]) => {
             const base = baselineScores?.[key]?.score;
-            const delta = base != null ? val.score - base : null;
+            const delta = base != null && val.score != null ? val.score - base : null;
             const isOpen = expanded === key;
             return (
               <div key={key}>
@@ -148,7 +150,7 @@ export default function MemberScoresPage() {
                       </span>
                     )}
                     <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${scoreBg(val.score)}`}>
-                      {val.score.toFixed(1)}
+                      {val.score != null ? val.score.toFixed(1) : "—"}
                     </span>
                     <span className="text-[#1e2a38]/30 text-xs">{isOpen ? "▲" : "▼"}</span>
                   </div>
