@@ -187,6 +187,18 @@ Scoring guide:
 
    A data-driven opening like 'there's a big difference between what the headlines say and what's actually happening' IS a hook — it's a Contradiction pattern. Score it as such. Don't penalise it for not being emotional if it creates genuine curiosity.
 
+10. BINGE ARCHITECTURE — UPDATED SCORING:
+
+   The key differentiator is CONTEXT. A cross-reference with a reason to watch is worth far more than a generic 'check out this video.'
+
+   0-2: No references to other videos at all, or just 'subscribe' with no next-video suggestion
+   3-4: Generic references like 'check out this video' or 'watch this one' with no context about WHY
+   5-6: Occasional contextual references — at least one video includes a sentence explaining why the viewer should watch the next video, connected to what they just learned. Example: 'In this video I break down the 3 neighbourhoods where prices actually dropped'
+   7-8: Most videos end with a contextual recommendation that creates a specific reason to watch the next video. The viewer thinks 'I need to see that too.' Theme-based linking visible. End screens used intentionally.
+   9-10: Intentional viewing sequences across the channel. Every video feeds into the next. Series structure, playlist references, and mid-video cross-references that feel natural. Viewers regularly watch 3+ videos per session.
+
+   IMPORTANT: If the creator provides even ONE sentence of context about WHY the viewer should watch the referenced video (not just pointing to it), that is significantly better than a bare link. Score the QUALITY of the cross-reference, not just the quantity.
+
 WEIGHTED SCORING:
 
 Calculate TWO scores:
