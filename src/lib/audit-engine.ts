@@ -217,30 +217,28 @@ Scoring guide:
 
    IMPORTANT: If the creator provides even ONE sentence of context about WHY the viewer should watch the referenced video (not just pointing to it), that is significantly better than a bare link. Score the QUALITY of the cross-reference, not just the quantity.
 
-11. CONSISTENCY — CALCULATE MATHEMATICALLY, DO NOT GUESS:
+11. CONSISTENCY — MANDATORY MATHEMATICAL CALCULATION:
 
-You MUST calculate Consistency from upload dates — do not estimate or use intuition about cadence.
+MANDATORY: You MUST calculate this mathematically. Do NOT estimate, guess, or judge by feel.
 
-How to calculate:
-1. List all upload dates for the videos analysed, in chronological order.
-2. Calculate the gap in days between each consecutive pair.
-3. Calculate the average gap across all gaps.
-4. Apply this lookup table:
+Step 1: List every video's upload date in chronological order.
+Step 2: Calculate the gap in days between each consecutive pair of uploads.
+Step 3: Calculate the average gap (sum of all gaps ÷ number of gaps).
+Step 4: Apply this lookup table:
 
-| Avg gap (days) | Score |
-|----------------|-------|
-| ≤7 (weekly or more often) | 10 |
-| 8–10 | 8 |
-| 11–14 (biweekly) | 5 |
-| 15–21 | 3 |
-| 22–30 | 2 |
-| 31+ | 1 |
+Average gap ≤7 days = score 10
+Average gap 8–10 days = score 8
+Average gap 11–14 days = score 5
+Average gap 15–21 days = score 3
+Average gap 22–30 days = score 2
+Average gap 31+ days = score 1
 
-For monthly audits with 3–4 videos: This is EXPECTED for a weekly publisher in a 4-week window. Do not penalise. Example: 4 videos in 28 days = 9.3-day avg gap = score 8. 3 videos in 28 days ≈ 14-day avg gap = score 5 — but note this is minimum-sample and may underrepresent true cadence.
+Step 5: Show your math in the evidence field using this format:
+"Upload dates: Mar 1, Mar 8, Mar 15, Mar 22. Gaps: 7, 7, 7 days. Average gap: 7 days. Score: 10"
 
-Evidence to cite: List each upload date. State the gap between each pair. State the calculated average gap in days. Show the math explicitly.
+IMPORTANT for monthly audits with 3–4 videos: A weekly publisher posting 4 times in 4 weeks produces gaps of 7, 7, 7 days — average 7 days = score 10. This is EXPECTED and correct. Do NOT penalise for having fewer videos in the window. Example: 3 videos posted weekly = gaps of 7, 7 = average 7 = score 10.
 
-- For Consistency: you MUST calculate the average gap between upload dates in days and use the lookup table. Do not estimate cadence — do the math.
+CRITICAL: Any Consistency score without explicitly shown math (dates → gaps → average) is wrong. You MUST show the calculation every time.
 
 12. TITLE FRAMEWORKS — CALIBRATION RULES:
    Titles should create a CURIOSITY GAP — they should NOT give away the unique insight. The insight is the revelation delivered inside the video. A title that reveals the answer kills the reason to click.
@@ -285,7 +283,11 @@ Calculate TWO scores:
 
    Formula: Sum of (each score × its weight) ÷ 27 = Attraction Score (overall_score)
 
-Report "raw_average" as the unweighted average and "overall_score" as the weighted Attraction Score.`;
+Report "raw_average" as the unweighted average and "overall_score" as the weighted Attraction Score.
+
+CRITICAL SCORING REMINDER:
+- For Consistency: you MUST show upload dates, calculate gaps, state average, then apply the lookup table. Any Consistency score without this math is wrong.
+- For Show Don't Tell: score ONLY from verbal cues in the transcript. Do NOT guess at visuals you cannot see. This score does NOT affect overall_score.`;
 
 export interface AuditScores {
   avatar_clarity: { score: number; evidence: string };
@@ -350,8 +352,8 @@ SINGLE VIDEO CALIBRATION RULES — READ CAREFULLY:
    | 3–4 | Loosely related to the avatar but not clearly speaking to them |
    | 0–2 | Not speaking to the avatar at all — wrong audience entirely |
 
-2. CONSISTENCY — N/A:
-   Consistency is a channel-level metric requiring multiple upload dates. Do not attempt to score it from a single video. Return null for the score and "N/A — channel-level metric, cannot assess from a single video" as evidence.
+2. CONSISTENCY — MUST BE NULL:
+   Consistency is a channel-level metric (publishing cadence over time). It CANNOT be assessed from a single video. You MUST return null for the score and "N/A — channel-level metric, cannot assess from a single video" as evidence. This principle is excluded from the Video Attraction Score — the score is calculated over the remaining 15 principles.
 
 3. OPENING CALIBRATION RULES — do not invent stricter timing than this:
    - Lead magnet mentioned within first 20 seconds = perfect timing
