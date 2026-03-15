@@ -126,6 +126,7 @@ export async function processAuditJob(jobId: string, selectedVideoId?: string) {
         scores: auditResult.scores as any,
         reportContent: {
           ...auditResult,
+          raw_average: auditResult.raw_average,
           channelInfo: channelInfo ? {
             title: channelInfo.title,
             handle: channelInfo.handle,

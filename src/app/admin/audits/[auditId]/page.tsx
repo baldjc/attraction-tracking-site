@@ -303,6 +303,9 @@ export default function AuditReportPage() {
           {audit.overallScore?.toFixed(1)}
         </p>
         <p className="text-lg font-medium mt-1 text-[#1e2a38]/50">/ 10</p>
+        {report?.raw_average != null && (
+          <p className="text-xs text-[#1e2a38]/40 mt-2">Raw Average: {Number(report.raw_average).toFixed(1)} / 10</p>
+        )}
       </div>
 
       {/* Single Video: Phase Report */}

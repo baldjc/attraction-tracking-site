@@ -112,6 +112,9 @@ export default function MemberAuditReportPage() {
         <p className="text-sm font-semibold uppercase tracking-wider mb-2 opacity-70">Your Attraction Score</p>
         <p className={`text-7xl font-black ${scoreText(audit.overallScore)}`}>{audit.overallScore?.toFixed(1)}</p>
         <p className="text-lg font-medium mt-1 opacity-70">/ 10</p>
+        {report?.raw_average != null && (
+          <p className="text-xs opacity-50 mt-2">Raw Average: {Number(report.raw_average).toFixed(1)} / 10</p>
+        )}
         {report?.one_sentence_diagnosis && (
           <p className="mt-4 text-sm italic opacity-80 max-w-lg mx-auto">"{report.one_sentence_diagnosis}"</p>
         )}

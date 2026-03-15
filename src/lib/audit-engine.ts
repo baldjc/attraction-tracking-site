@@ -100,17 +100,107 @@ Return ONLY valid JSON in this exact structure, nothing else:
         "lead_generation": 2.0
       }
     }
-  ]
+  ],
+  "raw_average": 4.2,
+  "overall_score": 4.5
 }
-
-The overall_score MUST equal the sum of all 16 scores divided by 16. Show your work in the evidence fields.
 
 For each video in video_breakdowns, calculate dimension_scores as follows:
 - channel_strategy = average of (avatar_clarity + themes_over_topics + consistency)
 - content_impact = average of (arc_attention + arc_revelation + approve_the_click + title_frameworks + show_dont_tell + curiosity_bridges)
 - viewer_connection = average of (connection_language + values_peppering + story_proof + grade_5_language)
 - lead_generation = average of (lead_magnet_system + binge_architecture)
-Use the OVERALL channel scores (not per-video) for these averages — they reflect the channel's pattern observed across all videos analysed.`;
+Use the OVERALL channel scores (not per-video) for these averages — they reflect the channel's pattern observed across all videos analysed.
+
+CALIBRATION RULES — READ CAREFULLY:
+
+1. CONTENT FORMAT AWARENESS: Some videos are market updates or data presentations. These naturally have different characteristics than topic-driven or story-driven content. Score what IS present, not what the format doesn't lend itself to. A market update with data-driven hooks should not be penalised for not having emotional storytelling hooks — score the hook quality for what it is.
+
+2. SCORING STRICTNESS: Use the FULL 0-10 range with decimals. Do NOT cluster scores in the 5-8 range. A genuinely strong principle should score 8.5-9.5. A genuinely weak one should score 1-3. The average real estate YouTube channel scores 3-5 overall. A channel actively applying proven frameworks should score 7-9 on the principles they're applying well.
+
+3. EVIDENCE REQUIREMENT: Every score MUST cite a specific quote, timestamp, or observable moment from the transcripts. Saying 'could be stronger emotionally' without citing what WAS said is not valid evidence. Quote the actual opening words. Count the actual lead magnet mentions. Name the actual client stories (or note their specific absence).
+
+4. CONSISTENCY ACROSS CHANNELS: If you score Channel A's opening at 7 because it 'creates intrigue,' you cannot score Channel B's opening at 6 when it also creates intrigue through a different mechanism (like data contrast). Score the EFFECT on the viewer, not adherence to one specific format.
+
+5. LEAD MAGNET SCORING — BE STRICT AND READ THIS CAREFULLY:
+
+A lead magnet is a FREE RESOURCE that provides value with no commitment required — a guide, checklist, quiz, template, calculator, video series, etc. The viewer gets something useful immediately.
+
+The following are NOT lead magnets — they are sales CTAs and score as if no lead magnet exists:
+- 'Book a discovery call'
+- 'Schedule a strategy session'
+- 'Book a free consultation'
+- 'DM me for help'
+- 'Contact us today'
+- 'Book a meeting with me'
+- 'Reach out to us'
+- 'Let's chat'
+- Any variation of booking a call, meeting, or conversation
+
+If the ONLY call to action in a video is to book a call or contact the creator, Lead Magnet System scores 0-1. It does not matter how many times they say it — a sales CTA repeated 3 times is still not a lead magnet system. A discovery call is a SALES conversation, not a value-first resource.
+
+Scoring guide:
+   0-1: No lead magnet at all, or only 'book a call' / 'contact me' CTAs
+   2-3: Mentions a vague free resource once but it's unclear what it is or how to get it
+   3-4: Has a lead magnet but mentions it only once, usually at the end
+   5-6: Has a clear lead magnet, mentions it 1-2 times per video
+   7-8: 3x system in most videos (opening, mid, close) with natural integration and a compelling free resource
+   9-10: Strategic system with different lead magnets for different content themes, mentioned 3x consistently with natural, non-salesy integration
+
+6. CURIOSITY BRIDGES — REQUIRE SPECIFIC EVIDENCE:
+   You MUST quote specific transition phrases from the transcript. Do not give a score of 7+ without citing at least 3 actual bridge phrases used across the videos.
+
+   Scoring guide:
+   0-2: No transitions, abrupt topic changes, or just silence between sections
+   3-4: Only uses flat transitions like 'next up...', 'let's talk about...', 'moving on...'
+   5-6: Occasional decent transitions but mostly mechanical
+   7-8: Regular use of curiosity-building phrases like 'but here's where it gets interesting...', 'and that's just the beginning...', 'but wait until you see...'
+   9-10: Masterful And/But/Therefore momentum between every section
+
+7. VALUES PEPPERING — LOOK HARDER:
+   Personal values include: mentioning family, hobbies, local spots, lifestyle preferences, personal opinions beyond the topic, humour, self-deprecation, references to personal experiences outside of work. These can be brief — even one sentence counts.
+
+   Count EVERY instance across ALL videos. Most creators do this more than the AI initially recognises. Search the transcripts carefully for any personal detail that reveals who this person is beyond their job.
+
+   Scoring guide:
+   0-2: Across all 5 videos, the viewer learns literally nothing personal about the creator
+   3-4: 1-2 personal mentions total across all videos
+   5-6: A few personal moments but inconsistent
+   7-8: Natural drops of personality in most videos (2-3 per video)
+   9-10: Personality woven throughout every video — viewer feels like they know this person
+
+8. STORY PROOF — REQUIRE SPECIFICS:
+   A client story must have specifics to score well: a name (or anonymised detail), a situation, stakes, and a resolution.
+
+   'I've had clients who felt the same way' is NOT story proof — it's a vague reference (scores 1-2).
+   'I worked with a family last month who...' with no specific details is weak story proof (scores 3-4).
+   'Sarah and Marcus were terrified of carrying two mortgages. We timed their sale and purchase to close same-day — they moved with zero overlap and saved $12,000 in carrying costs' IS story proof (scores 7-9).
+
+   Count and quote every client story across all 5 videos. Note which have names/specifics and which are vague.
+
+9. ARC ATTENTION — SCORE THE ACTUAL OPENING:
+   Quote the EXACT first sentence of every video. Then assess:
+   - Does it create tension, stakes, or curiosity within 20-25 seconds?
+   - Does it approve the click (match the title promise)?
+   - Which intro pattern does it use: Authority, Problem/Contradiction, Revelation, Story, Empathy, Stakes, or Confirmation?
+   - Or does it use no pattern (generic 'hey guys, welcome back')?
+
+   A data-driven opening like 'there's a big difference between what the headlines say and what's actually happening' IS a hook — it's a Contradiction pattern. Score it as such. Don't penalise it for not being emotional if it creates genuine curiosity.
+
+WEIGHTED SCORING:
+
+Calculate TWO scores:
+
+1. Raw Average: Sum of all 16 principle scores ÷ 16
+
+2. Attraction Score (WEIGHTED — this is the PRIMARY score reported as overall_score):
+   - 3x weight: lead_magnet_system, avatar_clarity, binge_architecture
+   - 2x weight: arc_attention, approve_the_click, connection_language, title_frameworks, arc_revelation, story_proof
+   - 1x weight: themes_over_topics, consistency, show_dont_tell, curiosity_bridges, values_peppering, grade_5_language, arc_connection
+
+   Formula: Sum of (each score × its weight) ÷ 28 = Attraction Score (overall_score)
+
+Report "raw_average" as the unweighted average and "overall_score" as the weighted Attraction Score.`;
 
 export interface AuditScores {
   avatar_clarity: { score: number; evidence: string };
@@ -334,9 +424,48 @@ Return ONLY valid JSON in this EXACT structure, nothing else — no markdown, no
 
 You MUST respond with ONLY a valid JSON object. No markdown, no code fences, no explanation text before or after the JSON. Your entire response must be parseable by JSON.parse() with no pre-processing.`;
 
+export const WEIGHTED_SCORE_WEIGHTS: Record<string, number> = {
+  lead_magnet_system: 3,
+  avatar_clarity: 3,
+  binge_architecture: 3,
+  arc_attention: 2,
+  approve_the_click: 2,
+  connection_language: 2,
+  title_frameworks: 2,
+  arc_revelation: 2,
+  story_proof: 2,
+  themes_over_topics: 1,
+  consistency: 1,
+  show_dont_tell: 1,
+  curiosity_bridges: 1,
+  values_peppering: 1,
+  grade_5_language: 1,
+  arc_connection: 1,
+};
+const TOTAL_WEIGHT = 28;
+
+export function calculateWeightedScores(scores: Record<string, { score: number }>): {
+  attractionScore: number;
+  rawAverage: number;
+} {
+  let weightedSum = 0;
+  let rawSum = 0;
+  let rawCount = 0;
+  for (const [principle, weight] of Object.entries(WEIGHTED_SCORE_WEIGHTS)) {
+    const score = scores[principle]?.score ?? 0;
+    weightedSum += score * weight;
+    rawSum += score;
+    rawCount++;
+  }
+  const attractionScore = Math.round((weightedSum / TOTAL_WEIGHT) * 10) / 10;
+  const rawAverage = Math.round((rawSum / rawCount) * 10) / 10;
+  return { attractionScore, rawAverage };
+}
+
 export interface AuditResult {
   scores: AuditScores;
   overall_score: number;
+  raw_average?: number;
   strengths?: string[];
   biggest_gaps?: string[];
   one_sentence_diagnosis?: string;
@@ -478,10 +607,10 @@ CRITICAL INSTRUCTIONS:
     throw new Error("Claude returned an unexpected JSON structure — 'scores' field is missing. Check server logs.");
   }
 
-  // Recalculate overall score server-side to ensure accuracy
-  const scoreValues = Object.values(result.scores).map((s) => (s as any).score as number);
-  result.overall_score =
-    Math.round((scoreValues.reduce((a, b) => a + b, 0) / scoreValues.length) * 10) / 10;
+  // Recalculate scores server-side using weighted formula to ensure accuracy
+  const { attractionScore, rawAverage } = calculateWeightedScores(result.scores as any);
+  result.overall_score = attractionScore;
+  result.raw_average = rawAverage;
 
   return result;
 }

@@ -88,9 +88,17 @@ src/app/
 - Three audit types: `baseline`, `monthly`, `single_video`
 - Monthly audits compare vs baseline + last month
 - Job states: `queued → downloading → analysing → generating → complete/failed`
-- Default scoring prompt stored in `app_settings` table, editable via Settings page
+- Default scoring prompt stored in `app_settings` table, editable via Settings page; falls back to `DEFAULT_SCORING_PROMPT` if no DB row exists
+- **Weighted scoring**: `overallScore` = Attraction Score (weighted), `raw_average` stored in `reportContent.raw_average`
+  - 3x weight: lead_magnet_system, avatar_clarity, binge_architecture
+  - 2x weight: arc_attention, approve_the_click, connection_language, title_frameworks, arc_revelation, story_proof
+  - 1x weight: themes_over_topics, consistency, show_dont_tell, curiosity_bridges, values_peppering, grade_5_language, arc_connection
+  - Formula: Sum(score × weight) ÷ 28 = Attraction Score; Raw Average = Sum ÷ 16
+  - `calculateWeightedScores()` exported from `audit-engine.ts`; applied server-side after Claude returns scores
+- **Calibration rules** added to prompt: format awareness, scoring strictness, evidence requirement, lead magnet strictness (discovery calls = 0-1), curiosity bridges (require 3 quoted phrases for 7+), values peppering, story proof specificity, ARC attention opening pattern
 - `SCRIPT_REVIEW_PROMPT` in `audit-engine.ts` — specialized prompt for script/transcript analysis; scores Show Don't Tell on written visual cues; sets Consistency to 5 (N/A for single script); returns `whats_working`, `three_improvements`, `quick_win`
 - `ScriptReview` DB model stores: userId, videoTitle, scriptText, scores (Json), overallScore, reportContent (Json)
+- Report pages show: big Attraction Score + "Raw Average: X.X / 10" in small text below (admin, shared, member views)
 
 ## Deduplication
 - Chris Troke has 25+ duplicate GHL records — sync deduplicates by email
