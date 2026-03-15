@@ -201,8 +201,8 @@ export default function AuditReportPage() {
         }));
 
   const learningGaps = Object.entries(scores)
-    .filter(([, v]: [string, any]) => v.score < 7)
-    .sort(([, a]: [string, any], [, b]: [string, any]) => a.score - b.score);
+    .filter(([, v]: [string, any]) => v.score != null && v.score < 7)
+    .sort(([, a]: [string, any], [, b]: [string, any]) => (a.score ?? 0) - (b.score ?? 0));
 
   const qaItems: Array<{ key: string; prompt: string; score: number }> = [];
   for (const key of Object.keys(QA_ALWAYS)) {
