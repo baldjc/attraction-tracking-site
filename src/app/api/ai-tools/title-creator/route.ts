@@ -116,6 +116,9 @@ For each category, generate 2-3 title options. Return your response as JSON in t
 
 ONLY return valid JSON. No markdown, no code fences, no extra text.`;
 
+  const customSetting = await prisma.appSetting.findUnique({ where: { key: "title_creator_prompt" } });
+  const finalPrompt = customSetting?.value ?? systemPrompt;
+
   const chatMessages = messages && messages.length > 0
     ? messages
     : [{ role: "user" as const, content: `Generate title options for this video topic: ${topic}${selectedTheme ? `\nContent theme: ${selectedTheme}` : ""}` }];
@@ -123,7 +126,7 @@ ONLY return valid JSON. No markdown, no code fences, no extra text.`;
   const response = await client.messages.create({
     model: "claude-sonnet-4-20250514",
     max_tokens: 4096,
-    system: systemPrompt,
+    system: finalPrompt,
     messages: chatMessages,
   });
 

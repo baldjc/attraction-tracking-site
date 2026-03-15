@@ -2,6 +2,8 @@
 
 import { useState, useRef } from "react";
 import { PhotoIcon } from "@heroicons/react/24/outline";
+import PromptEditor from "@/components/ai-tools/PromptEditor";
+import RecentConversations from "@/components/ai-tools/RecentConversations";
 
 interface AnalysisResult {
   thumbnail: {
@@ -130,6 +132,8 @@ export default function TitleThumbnailAnalyzerPage() {
 
   return (
     <div>
+      <PromptEditor toolKey="title_thumbnail_analyzer_prompt" defaultPrompt="" placeholders={[]} />
+      <RecentConversations toolType="title_thumbnail_analyzer" />
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-[#1e2a38]">Title & Thumbnail Analyzer</h1>
         <p className="text-[#1e2a38]/60 mt-1">Score your title and thumbnail against Attraction principles before you publish</p>

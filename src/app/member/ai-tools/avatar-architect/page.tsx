@@ -2,6 +2,8 @@
 
 import { useState, useRef, useEffect } from "react";
 import { PaperAirplaneIcon, ArrowPathIcon, ClipboardDocumentIcon, CheckIcon } from "@heroicons/react/24/outline";
+import PromptEditor from "@/components/ai-tools/PromptEditor";
+import RecentConversations from "@/components/ai-tools/RecentConversations";
 
 interface Message {
   role: "user" | "assistant";
@@ -26,6 +28,8 @@ export default function AvatarArchitectPage() {
   const [saved, setSaved] = useState(false);
   const [copied, setCopied] = useState(false);
   const [confirmReplace, setConfirmReplace] = useState(false);
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [refreshCounter, setRefreshCounter] = useState(0);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -98,6 +102,34 @@ export default function AvatarArchitectPage() {
         contentThemes: detectedAvatar.content_themes,
       }),
     });
+
+    // Save conversation to history
+    try {
+      if (conversationId) {
+        await fetch(`/api/ai-tools/conversations/${conversationId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ messages }),
+        });
+      } else {
+        const res = await fetch("/api/ai-tools/conversations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            toolType: "avatar_architect",
+            title: detectedAvatar.avatar_name ?? "Avatar Session",
+            messages,
+            metadata: { avatarName: detectedAvatar.avatar_name },
+          }),
+        });
+        const data = await res.json();
+        setConversationId(data.id ?? null);
+        setRefreshCounter((n) => n + 1);
+      }
+    } catch {
+      // Conversation saving is best-effort
+    }
+
     setSaving(false);
     setSaved(true);
     setConfirmReplace(false);
@@ -120,23 +152,34 @@ export default function AvatarArchitectPage() {
 
   if (!started) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-        <span className="text-6xl mb-6">🎯</span>
-        <h1 className="text-2xl font-bold text-[#1e2a38] mb-3">Avatar Architect</h1>
-        <p className="text-[#1e2a38]/60 max-w-md mb-8">
-          A guided coaching conversation that builds your ideal client avatar — the ONE person your entire YouTube channel speaks to.
-        </p>
-        {existingAvatar?.avatarName && (
-          <p className="text-sm text-[#3dc3ff] mb-4">
-            You have an existing avatar saved: <strong>{existingAvatar.avatarName}</strong>
+      <div className="max-w-xl mx-auto">
+        <PromptEditor
+          toolKey="avatar_architect_prompt"
+          defaultPrompt=""
+          placeholders={[]}
+        />
+        <RecentConversations
+          toolType="avatar_architect"
+          refreshTrigger={refreshCounter}
+        />
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <span className="text-6xl mb-6">🎯</span>
+          <h1 className="text-2xl font-bold text-[#1e2a38] mb-3">Avatar Architect</h1>
+          <p className="text-[#1e2a38]/60 max-w-md mb-8">
+            A guided coaching conversation that builds your ideal client avatar — the ONE person your entire YouTube channel speaks to.
           </p>
-        )}
-        <button
-          onClick={startSession}
-          className="bg-[#3dc3ff] text-white px-8 py-3 rounded-xl font-semibold hover:bg-[#3dc3ff]/90 transition-colors"
-        >
-          {existingAvatar?.avatarName ? "Start New Session" : "Start Building My Avatar"}
-        </button>
+          {existingAvatar?.avatarName && (
+            <p className="text-sm text-[#3dc3ff] mb-4">
+              You have an existing avatar saved: <strong>{existingAvatar.avatarName}</strong>
+            </p>
+          )}
+          <button
+            onClick={startSession}
+            className="bg-[#3dc3ff] text-white px-8 py-3 rounded-xl font-semibold hover:bg-[#3dc3ff]/90 transition-colors"
+          >
+            {existingAvatar?.avatarName ? "Start New Session" : "Start Building My Avatar"}
+          </button>
+        </div>
       </div>
     );
   }

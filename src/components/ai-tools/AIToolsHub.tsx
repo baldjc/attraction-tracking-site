@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 
 interface AvatarData {
   avatarName?: string | null;
@@ -19,12 +20,14 @@ interface Props {
 }
 
 export default function AIToolsHub({ basePath }: Props) {
+  const { data: session } = useSession();
+  const isAdmin = (session?.user as any)?.role === "admin";
   const [avatar, setAvatar] = useState<AvatarData | null>(null);
   const [lastScript, setLastScript] = useState<SavedScript | null>(null);
   const [lastReview, setLastReview] = useState<SavedScript | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const scriptReviewHref = basePath.replace("/ai-tools", "") + "/script-review";
+  const scriptReviewHref = `${basePath}/script-review`;
 
   useEffect(() => {
     Promise.all([
@@ -86,7 +89,7 @@ export default function AIToolsHub({ basePath }: Props) {
       href: scriptReviewHref,
       icon: "📋",
       title: "Script Review",
-      description: "Paste a script or transcript — get scored on all 16 Attraction principles",
+      description: "Paste a script or transcript — get scored on 15 Attraction principles with visual suggestions",
       extra: lastReview
         ? `Last review: ${new Date(lastReview.createdAt).toLocaleDateString()}`
         : "No reviews yet — paste any script to get started",
@@ -96,11 +99,22 @@ export default function AIToolsHub({ basePath }: Props) {
 
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-[#1e2a38]">AI Tools</h1>
-        <p className="text-[#1e2a38]/60 mt-1">
-          AI-powered tools built around the Attraction by Video framework. {!avatar?.avatarName && "Build your avatar first for personalised results."}
-        </p>
+      <div className="mb-8 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-[#1e2a38]">AI Tools</h1>
+          <p className="text-[#1e2a38]/60 mt-1">
+            AI-powered tools built around the Attraction by Video framework.{" "}
+            {!avatar?.avatarName && "Build your avatar first for personalised results."}
+          </p>
+        </div>
+        {isAdmin && (
+          <Link
+            href={`${basePath}/usage`}
+            className="shrink-0 text-xs text-[#1e2a38]/50 hover:text-[#3dc3ff] border border-gray-200 px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap"
+          >
+            📊 Usage
+          </Link>
+        )}
       </div>
 
       {!loading && !avatar?.avatarName && (

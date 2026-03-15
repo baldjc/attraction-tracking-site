@@ -41,7 +41,7 @@ Full-stack Next.js 16 platform for YouTube channel audits, GHL member sync, link
 
 ## Key Files
 ```
-prisma/schema.prisma         — DB schema: User (+ avatarProfile/Name/Summary/contentThemes), Audit, AuditJob, AppSetting, TrackingLink, Click, ScriptReview, SavedScript, SavedTitle, TitleAnalysis
+prisma/schema.prisma         — DB schema: User (+ avatarProfile/Name/Summary/contentThemes/aiToolConversations), Audit, AuditJob, AppSetting, TrackingLink, Click, ScriptReview, SavedScript, SavedTitle, TitleAnalysis, AIToolConversation (+ AIToolType enum)
 src/lib/
   ghl.ts                     — GHL sync with nextPageUrl pagination + title case normalization
   youtube.ts                 — YouTube API: channel info, playlist, transcripts
@@ -58,29 +58,37 @@ src/app/
     audits/page.tsx           — All audits list with Run All Baseline + Run All Monthly buttons
     audits/[auditId]/page.tsx — Full audit report with share/print
     qa-prep/page.tsx          — Q&A Call Prep
-    script-review/page.tsx    — Admin script review with member comparison mode
-    settings/page.tsx         — AI prompt editor
+    script-review/page.tsx    — Redirects → /admin/ai-tools/script-review
+    settings/page.tsx         — AI prompt editor (audit scoring prompt)
+    ai-tools/script-review/page.tsx — New chat-based Script Review (15 principles + visual_suggestions + coaching chat)
+    ai-tools/usage/page.tsx   — AI Tools Usage analytics: summary cards, tool breakdown, member activity, recent feed
   member/
     scores/page.tsx           — Member dashboard: score, trend chart, 16-principle breakdown
-    script-review/page.tsx    — Script Review tool
+    script-review/page.tsx    — Redirects → /member/ai-tools/script-review
     settings/page.tsx         — Settings with Avatar Profile section (view/edit/paste)
-    ai-tools/page.tsx         — AI Tools Hub: 4 tool cards with avatar status
-    ai-tools/avatar-architect/page.tsx — Chat-style AI coaching to build ideal client avatar
-    ai-tools/title-creator/page.tsx    — Title generator: 6 framework categories, star/refine/save
-    ai-tools/title-thumbnail-analyzer/page.tsx — Title+thumbnail scoring (3 gauges + Attraction scores)
-    ai-tools/arc-script-builder/page.tsx — 6-step ARC Method script wizard
+    ai-tools/page.tsx         — AI Tools Hub: 5 tool cards with avatar status + admin Usage link
+    ai-tools/avatar-architect/page.tsx — Chat-style AI coaching to build ideal client avatar (+ PromptEditor + RecentConversations)
+    ai-tools/title-creator/page.tsx    — Title generator: 6 framework categories, star/refine/save (+ PromptEditor + RecentConversations)
+    ai-tools/title-thumbnail-analyzer/page.tsx — Title+thumbnail scoring (+ PromptEditor + RecentConversations)
+    ai-tools/arc-script-builder/page.tsx — 6-step ARC Method script wizard (+ PromptEditor + RecentConversations)
+    ai-tools/script-review/page.tsx — Chat-based Script Review: paste script → scorecard (15 principles + visual suggestions) → coaching chat
   api/
     member/avatar/            — GET/PUT user avatar profile, themes, summary
-    ai-tools/avatar-architect/ — POST multi-turn chat with Avatar Architect Claude agent
-    ai-tools/title-creator/   — POST generate titles using 6 framework categories
-    ai-tools/title-thumbnail-analyzer/ — POST vision + title analysis (saves TitleAnalysis record)
+    ai-tools/avatar-architect/ — POST multi-turn chat; checks avatar_architect_prompt AppSetting; saves conversation on avatar save
+    ai-tools/title-creator/   — POST generate titles; checks title_creator_prompt AppSetting
+    ai-tools/title-thumbnail-analyzer/ — POST vision + title analysis; checks title_thumbnail_analyzer_prompt AppSetting
     ai-tools/arc-script-builder/ — POST step-by-step ARC script generation
+    ai-tools/script-review/  — POST: first call returns JSON scorecard (no show_dont_tell, adds visual_suggestions + ARC breakdown); subsequent calls return coaching chat; saves AIToolConversation; injects avatar context
+    ai-tools/conversations/   — POST create / GET list (filter by toolType, last 20, auto-purge 30d)
+    ai-tools/conversations/[id]/ — GET / PATCH / DELETE individual conversation
+    ai-tools/conversations/[id]/download/ — GET markdown download (increments downloadCount)
     ai-tools/save-script/     — POST save SavedScript
     ai-tools/saved-scripts/   — GET list member's saved scripts
     ai-tools/save-title/      — POST save SavedTitle
     ai-tools/saved-titles/    — GET list member's saved titles
     admin/member-tools-usage/[userId]/ — GET scripts count, analyses count, last activity
     admin/impersonate/        — POST (set cookie) / DELETE (clear cookie) for admin member impersonation
+    settings/                 — GET/PATCH/DELETE generic key-based AppSetting; returns prompt defaults for known keys
     audits/..., members/..., script-review/..., sync/..., qa-prep/... (see previous)
 ```
 

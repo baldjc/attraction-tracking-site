@@ -27,6 +27,14 @@ enum AuditType {
   single_video
 }
 
+enum AIToolType {
+  avatar_architect
+  title_creator
+  title_thumbnail_analyzer
+  arc_script_builder
+  script_review
+}
+
 enum JobStatus {
   queued
   downloading
@@ -64,14 +72,15 @@ model User {
   avatarSummary   String?
   contentThemes   Json?
 
-  audits         Audit[]
-  auditJobs      AuditJob[]
-  campaigns      Campaign[]
-  links          TrackingLink[]
-  scriptReviews  ScriptReview[]
-  savedScripts   SavedScript[]
-  savedTitles    SavedTitle[]
-  titleAnalyses  TitleAnalysis[]
+  audits               Audit[]
+  auditJobs            AuditJob[]
+  campaigns            Campaign[]
+  links                TrackingLink[]
+  scriptReviews        ScriptReview[]
+  savedScripts         SavedScript[]
+  savedTitles          SavedTitle[]
+  titleAnalyses        TitleAnalysis[]
+  aiToolConversations  AIToolConversation[]
 
   @@map("users")
 }
@@ -239,4 +248,22 @@ model TitleAnalysis {
 
   @@index([userId])
   @@map("title_analyses")
+}
+
+model AIToolConversation {
+  id            String      @id @default(uuid())
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  toolType      AIToolType
+  title         String
+  messages      Json
+  metadata      Json?
+  downloadCount Int         @default(0)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([userId])
+  @@index([toolType])
+  @@index([createdAt])
+  @@map("ai_tool_conversations")
 }

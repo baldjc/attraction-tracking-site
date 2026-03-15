@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { StarIcon as StarOutline } from "@heroicons/react/24/outline";
 import { StarIcon as StarSolid, CheckIcon } from "@heroicons/react/24/solid";
+import PromptEditor from "@/components/ai-tools/PromptEditor";
+import RecentConversations from "@/components/ai-tools/RecentConversations";
 
 interface TitleItem {
   title: string;
@@ -125,6 +127,8 @@ export default function TitleCreatorPage() {
 
   return (
     <div>
+      <PromptEditor toolKey="title_creator_prompt" defaultPrompt="" placeholders={[]} />
+      <RecentConversations toolType="title_creator" />
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-[#1e2a38]">Title Creator</h1>
         <p className="text-[#1e2a38]/60 mt-1">

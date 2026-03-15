@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { resolveUserFromSession } from "@/lib/session-utils";
+import prisma from "@/lib/prisma";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
@@ -96,10 +97,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Missing messages" }, { status: 400 });
   }
 
+  const setting = await prisma.appSetting.findUnique({ where: { key: "avatar_architect_prompt" } });
+  const systemPrompt = setting?.value ?? SYSTEM_PROMPT;
+
   const response = await client.messages.create({
     model: "claude-sonnet-4-20250514",
     max_tokens: 4096,
-    system: SYSTEM_PROMPT,
+    system: systemPrompt,
     messages,
   });
 

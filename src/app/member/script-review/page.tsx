@@ -1,5 +1,5 @@
-import ScriptReviewUI from "@/components/ScriptReviewUI";
+import { redirect } from "next/navigation";
 
-export default function MemberScriptReviewPage() {
-  return <ScriptReviewUI fetchBaseline={true} />;
+export default function MemberScriptReviewRedirect() {
+  redirect("/member/ai-tools/script-review");
 }

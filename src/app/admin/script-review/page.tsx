@@ -1,5 +1,5 @@
-import ScriptReviewUI from "@/components/ScriptReviewUI";
+import { redirect } from "next/navigation";
 
-export default function AdminScriptReviewPage() {
-  return <ScriptReviewUI isAdmin={true} />;
+export default function AdminScriptReviewRedirect() {
+  redirect("/admin/ai-tools/script-review");
 }

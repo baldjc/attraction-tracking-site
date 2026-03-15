@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { CheckIcon, ArrowLeftIcon, ClipboardDocumentIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
+import PromptEditor from "@/components/ai-tools/PromptEditor";
+import RecentConversations from "@/components/ai-tools/RecentConversations";
 
 interface AvatarData {
   avatarName?: string;
@@ -207,6 +209,8 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
 
   return (
     <div>
+      <PromptEditor toolKey="arc_script_builder_prompt" defaultPrompt="" placeholders={[]} />
+      <RecentConversations toolType="arc_script_builder" />
       <div className="mb-6 flex items-center gap-3">
         <Link href={basePath} className="p-1.5 rounded-lg hover:bg-[#1e2a38]/10 transition-colors">
           <ArrowLeftIcon className="w-5 h-5 text-[#1e2a38]/50" />

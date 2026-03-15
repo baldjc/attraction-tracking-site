@@ -116,10 +116,13 @@ Return ONLY valid JSON in this exact structure:
       ]
     : `Analyse this title (no thumbnail provided — analyse title only).\n\nTitle: "${title}"\n\nFor thumbnail fields, return score: 0 and note that no image was provided. Provide your full analysis as JSON.`;
 
+  const customSetting = await prisma.appSetting.findUnique({ where: { key: "title_thumbnail_analyzer_prompt" } });
+  const finalSystemPrompt = customSetting?.value ?? systemPrompt;
+
   const response = await client.messages.create({
     model: "claude-sonnet-4-20250514",
     max_tokens: 4096,
-    system: systemPrompt,
+    system: finalSystemPrompt,
     messages: [{ role: "user", content: userContent }],
   });
 
