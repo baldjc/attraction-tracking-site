@@ -40,7 +40,8 @@ function AvatarProfileCard({
   avatar: SavedAvatar;
   onChange: (updated: SavedAvatar) => void;
 }) {
-  const [editing, setEditing] = useState(false);
+  const isEmpty = !avatar.avatarName;
+  const [editing, setEditing] = useState(isEmpty);
   const [name, setName] = useState(avatar.avatarName ?? "");
   const [summary, setSummary] = useState(avatar.avatarSummary ?? "");
   const [themes, setThemes] = useState<string[]>(
@@ -122,7 +123,7 @@ function AvatarProfileCard({
         <div className="flex items-center gap-2">
           <span className="text-base">🎯</span>
           <span className="text-xs font-semibold text-[#3dc3ff] uppercase tracking-wider">
-            Your Current Avatar
+            {isEmpty ? "Save Your Avatar" : "Your Current Avatar"}
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -258,15 +259,17 @@ function AvatarProfileCard({
                 disabled={saving}
                 className="px-4 py-2 bg-[#3dc3ff] text-white text-xs font-semibold rounded-lg hover:bg-[#3dc3ff]/90 disabled:opacity-50 transition-colors"
               >
-                {saving ? "Saving…" : "Save Changes"}
+                {saving ? "Saving…" : isEmpty ? "Save Avatar" : "Save Changes"}
               </button>
-              <button
-                onClick={cancelEdit}
-                disabled={saving}
-                className="px-4 py-2 border border-gray-200 text-[#1e2a38]/60 text-xs font-semibold rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                Cancel
-              </button>
+              {!isEmpty && (
+                <button
+                  onClick={cancelEdit}
+                  disabled={saving}
+                  className="px-4 py-2 border border-gray-200 text-[#1e2a38]/60 text-xs font-semibold rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -427,9 +430,9 @@ export default function AvatarArchitectPage() {
         <PromptEditor toolKey="avatar_architect_prompt" defaultPrompt="" placeholders={[]} />
         <RecentConversations toolType="avatar_architect" refreshTrigger={refreshCounter} />
 
-        {/* Current avatar card */}
-        {!avatarLoading && savedAvatar?.avatarName && (
-          <AvatarProfileCard avatar={savedAvatar} onChange={setSavedAvatar} />
+        {/* Avatar card — always shown once loading is done */}
+        {!avatarLoading && (
+          <AvatarProfileCard avatar={savedAvatar ?? {}} onChange={setSavedAvatar} />
         )}
 
         {/* Main CTA */}
@@ -439,7 +442,7 @@ export default function AvatarArchitectPage() {
           <p className="text-[#1e2a38]/60 max-w-md mb-8">
             {savedAvatar?.avatarName
               ? "Start a new coaching session to refine or replace your current avatar."
-              : "A guided coaching conversation that builds your ideal client avatar — the ONE person your entire YouTube channel speaks to."}
+              : "Use the guided AI coaching session to build your avatar — or enter the details manually above."}
           </p>
           <button
             onClick={startSession}
