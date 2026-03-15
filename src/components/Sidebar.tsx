@@ -30,6 +30,7 @@ const adminLinks = [
   { href: "/admin/members", label: "Foundations Members", icon: UsersIcon },
   { href: "/admin/audits", label: "Audits", icon: ClipboardDocumentListIcon },
   { href: "/admin/qa-prep", label: "Q&A Prep", icon: ChatBubbleLeftRightIcon },
+  { href: "/admin/script-review", label: "Script Review", icon: PencilSquareIcon },
   { href: "/admin/campaigns", label: "Campaigns", icon: LinkIcon },
   { href: "/admin/analytics", label: "Analytics", icon: ChartBarIcon },
   { href: "/admin/settings", label: "Settings", icon: Cog6ToothIcon },
