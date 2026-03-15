@@ -22,7 +22,7 @@ export async function checkAndTimeoutJob(job: {
 
 export async function timeoutAllStuckJobs() {
   const stuckJobs = await prisma.auditJob.findMany({
-    where: { status: { in: STUCK_STATUSES } },
+    where: { status: { in: STUCK_STATUSES as any[] } },
   });
   for (const job of stuckJobs) {
     await checkAndTimeoutJob(job);

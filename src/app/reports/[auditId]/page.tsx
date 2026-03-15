@@ -272,7 +272,7 @@ export default function SharedReportPage() {
 
         {/* Monthly summary */}
         {isMonthly && baselineScores && (() => {
-          const baseAvg = Object.values(baselineScores).reduce((a: any, b: any) => a + b.score, 0) / Object.keys(baselineScores).length;
+          const baseAvg = (Object.values(baselineScores) as Array<{ score: number }>).reduce((a, b) => a + b.score, 0) / Object.keys(baselineScores).length;
           const delta = audit.overallScore - baseAvg;
           return (
             <div className="bg-[#3dc3ff]/10 border border-[#3dc3ff]/30 rounded-xl p-5 text-center">

@@ -19,7 +19,7 @@ export async function GET(_req: NextRequest) {
   }
 
   const jobs = await prisma.auditJob.findMany({
-    where: { status: { in: ACTIVE_STATUSES } },
+    where: { status: { in: ACTIVE_STATUSES as any[] } },
     include: { user: { select: { id: true, fullName: true, email: true } } },
     orderBy: { createdAt: "asc" },
   });
@@ -28,14 +28,14 @@ export async function GET(_req: NextRequest) {
     jobs.map(async (job) => {
       const checked = await checkAndTimeoutJob(job);
       return {
-        id: checked.id,
+        id: job.id,
         status: checked.status,
-        auditType: checked.auditType,
+        auditType: job.auditType,
         message: STATUS_MESSAGES[checked.status] ?? checked.status,
-        createdAt: checked.createdAt,
+        createdAt: job.createdAt,
         updatedAt: checked.updatedAt,
-        errorMessage: (checked as typeof job).errorMessage ?? null,
-        user: (job as typeof job).user ?? null,
+        errorMessage: job.errorMessage ?? null,
+        user: job.user ?? null,
       };
     })
   );

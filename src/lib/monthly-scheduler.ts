@@ -1,4 +1,5 @@
 import prisma from "@/lib/prisma";
+import { UserRole } from "@/generated/prisma/client";
 import { runMonthlyBatch } from "@/lib/batch-monthly";
 
 let schedulerStarted = false;
@@ -36,7 +37,7 @@ export function scheduleMonthlyCheck() {
 
       const members = await prisma.user.findMany({
         where: {
-          role: "member",
+          role: { not: UserRole.admin },
           OR: [{ youtubeHandle: { not: null } }, { youtubeChannelUrl: { not: null } }],
         },
         select: { id: true },

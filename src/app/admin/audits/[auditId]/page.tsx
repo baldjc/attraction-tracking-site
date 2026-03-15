@@ -412,7 +412,7 @@ export default function AuditReportPage() {
               <p className={`text-3xl font-bold ${scoreText(audit.overallScore)}`}>{audit.overallScore?.toFixed(1)}</p>
             </div>
             {baselineScores && (() => {
-              const baseAvg = Object.values(baselineScores).reduce((a: any, b: any) => a + b.score, 0) / Object.keys(baselineScores).length;
+              const baseAvg = (Object.values(baselineScores) as Array<{ score: number }>).reduce((a, b) => a + b.score, 0) / Object.keys(baselineScores).length;
               const delta = audit.overallScore - baseAvg;
               return (
                 <div>
@@ -424,7 +424,7 @@ export default function AuditReportPage() {
               );
             })()}
             {lastMonthScores && (() => {
-              const lastAvg = Object.values(lastMonthScores).reduce((a: any, b: any) => a + b.score, 0) / Object.keys(lastMonthScores).length;
+              const lastAvg = (Object.values(lastMonthScores) as Array<{ score: number }>).reduce((a, b) => a + b.score, 0) / Object.keys(lastMonthScores).length;
               const delta = audit.overallScore - lastAvg;
               return (
                 <div>

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { UserRole } from "@/generated/prisma/client";
 import { runMonthlyBatch } from "@/lib/batch-monthly";
 
 export const maxDuration = 60;
@@ -19,7 +20,7 @@ export async function POST(req: NextRequest) {
     const status = JSON.parse(existing.value) as any;
     if (status.status === "running") {
       // Verify there are actually active jobs before blocking
-      const activeCount = await prisma.auditJob.count({ where: { status: { in: ACTIVE_STATUSES } } });
+      const activeCount = await prisma.auditJob.count({ where: { status: { in: ACTIVE_STATUSES as any[] } } });
       if (activeCount > 0) {
         return NextResponse.json({ error: "A batch run is already in progress." }, { status: 409 });
       }
@@ -29,7 +30,7 @@ export async function POST(req: NextRequest) {
   // Count eligible members to return immediately
   const members = await prisma.user.findMany({
     where: {
-      role: "member",
+      role: { not: UserRole.admin },
       OR: [
         { youtubeHandle: { not: null } },
         { youtubeChannelUrl: { not: null } },
@@ -68,7 +69,7 @@ export async function GET() {
 
   // Auto-correct stale "running" status: if no active jobs exist, mark as complete
   if (batchStatus?.status === "running") {
-    const activeCount = await prisma.auditJob.count({ where: { status: { in: ACTIVE_STATUSES } } });
+    const activeCount = await prisma.auditJob.count({ where: { status: { in: ACTIVE_STATUSES as any[] } } });
     if (activeCount === 0) {
       batchStatus = {
         ...batchStatus,

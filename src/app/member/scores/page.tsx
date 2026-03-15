@@ -121,7 +121,7 @@ export default function MemberScoresPage() {
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
               <XAxis dataKey="date" tick={{ fontSize: 11 }} />
               <YAxis domain={[0, 10]} tick={{ fontSize: 11 }} />
-              <Tooltip formatter={(val: number) => [val.toFixed(1), "Score"]} contentStyle={{ fontSize: 12, borderRadius: 8 }} />
+              <Tooltip formatter={(val) => [typeof val === "number" ? val.toFixed(1) : String(val ?? ""), "Score"]} contentStyle={{ fontSize: 12, borderRadius: 8 }} />
               <Line type="monotone" dataKey="score" stroke="#3dc3ff" strokeWidth={2.5} dot={{ r: 4, fill: "#3dc3ff" }} activeDot={{ r: 6 }} />
             </LineChart>
           </ResponsiveContainer>

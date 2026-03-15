@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { UserRole } from "@/generated/prisma/client";
 import { runMonthlyBatch } from "@/lib/batch-monthly";
 
 export const maxDuration = 60;
@@ -40,7 +41,7 @@ export async function GET(req: NextRequest) {
 
   const members = await prisma.user.findMany({
     where: {
-      role: "member",
+      role: { not: UserRole.admin },
       OR: [{ youtubeHandle: { not: null } }, { youtubeChannelUrl: { not: null } }],
     },
     select: { id: true },

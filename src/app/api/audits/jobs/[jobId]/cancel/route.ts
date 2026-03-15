@@ -25,7 +25,7 @@ export async function POST(
 
   const updated = await prisma.auditJob.update({
     where: { id: jobId },
-    data: { status: "cancelled", errorMessage: "Cancelled by user" },
+    data: { status: "cancelled" as any, errorMessage: "Cancelled by user" },
   });
 
   return NextResponse.json({ jobId: updated.id, status: updated.status });

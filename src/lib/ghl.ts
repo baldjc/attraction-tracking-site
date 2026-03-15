@@ -32,7 +32,7 @@ export async function fetchContactsByTag(tag: string): Promise<GHLContact[]> {
   while (nextUrl && pageCount < MAX_PAGES) {
     console.log(`[GHL page ${pageCount + 1}] GET ${nextUrl}`);
 
-    const res = await fetch(nextUrl, {
+    const res: Response = await fetch(nextUrl, {
       headers: {
         Authorization: `Bearer ${getApiKey()}`,
         Version: "2021-07-28",
@@ -46,7 +46,7 @@ export async function fetchContactsByTag(tag: string): Promise<GHLContact[]> {
       throw new Error(`GHL API error: ${res.status} ${res.statusText} — ${body}`);
     }
 
-    const data = await res.json();
+    const data: any = await res.json();
     const contacts: GHLContact[] = data.contacts ?? [];
 
     console.log(`[GHL page ${pageCount + 1}] contacts: ${contacts.length}, meta.nextPageUrl: ${data.meta?.nextPageUrl ?? "null"}`);

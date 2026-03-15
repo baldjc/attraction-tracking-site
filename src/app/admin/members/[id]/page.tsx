@@ -828,7 +828,7 @@ export default function MemberDetailPage() {
                     <XAxis dataKey="date" tick={{ fontSize: 11 }} />
                     <YAxis domain={[0, 10]} tick={{ fontSize: 11 }} />
                     <Tooltip
-                      formatter={(val: number) => [val.toFixed(1), "Score"]}
+                      formatter={(val) => [typeof val === "number" ? val.toFixed(1) : String(val ?? ""), "Score"]}
                       contentStyle={{ fontSize: 12, borderRadius: 8 }}
                     />
                     <Line

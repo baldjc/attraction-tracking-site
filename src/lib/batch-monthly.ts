@@ -1,4 +1,5 @@
 import prisma from "@/lib/prisma";
+import { UserRole } from "@/generated/prisma/client";
 import { getChannelInfo, getLatestLongFormVideos } from "@/lib/youtube";
 import { processAuditJob } from "@/lib/process-audit-job";
 
@@ -40,7 +41,7 @@ export async function runMonthlyBatch() {
 
   const members = await prisma.user.findMany({
     where: {
-      role: "member",
+      role: { not: UserRole.admin },
       OR: [
         { youtubeHandle: { not: null } },
         { youtubeChannelUrl: { not: null } },

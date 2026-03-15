@@ -29,12 +29,12 @@ export async function GET(
     return NextResponse.json({ error: "Job not found" }, { status: 404 });
   }
 
-  job = await checkAndTimeoutJob(job);
+  const checked = await checkAndTimeoutJob(job);
 
   return NextResponse.json({
-    jobId: job.id,
-    status: job.status,
-    message: STATUS_MESSAGES[job.status] ?? job.status,
+    jobId: checked.id,
+    status: checked.status,
+    message: STATUS_MESSAGES[checked.status] ?? checked.status,
     auditId: job.auditId ?? null,
     errorMessage: job.errorMessage ?? null,
   });
