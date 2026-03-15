@@ -138,6 +138,14 @@ export default function MemberDetailPage() {
   const [jobMessage, setJobMessage] = useState<string>("");
   const [jobError, setJobError] = useState<string | null>(null);
 
+  // Avatar profile admin editing
+  const [avatarText, setAvatarText] = useState("");
+  const [avatarSaving, setAvatarSaving] = useState(false);
+  const [avatarSaved, setAvatarSaved] = useState(false);
+  const [toolsUsage, setToolsUsage] = useState<{
+    scriptsCount: number; analysesCount: number; lastActivity: string | null;
+  } | null>(null);
+
   // Single video selection modal
   const [showVideoModal, setShowVideoModal] = useState(false);
   const [videoModalLoading, setVideoModalLoading] = useState(false);
@@ -159,6 +167,42 @@ export default function MemberDetailPage() {
   useEffect(() => {
     fetchMember();
   }, [fetchMember]);
+
+  useEffect(() => {
+    if (!member?.id) return;
+    // Populate avatar text from member data
+    if (member.avatarProfile) {
+      try {
+        setAvatarText(typeof member.avatarProfile === "string"
+          ? member.avatarProfile
+          : JSON.stringify(member.avatarProfile, null, 2));
+      } catch { setAvatarText(""); }
+    } else {
+      setAvatarText("");
+    }
+    // Fetch AI tools usage counts
+    fetch(`/api/admin/member-tools-usage/${member.id}`)
+      .then((r) => r.json())
+      .then((data) => setToolsUsage(data))
+      .catch(() => {});
+  }, [member?.id, member?.avatarProfile]);
+
+  async function handleSaveAdminAvatar() {
+    if (!member?.id) return;
+    setAvatarSaving(true);
+    setAvatarSaved(false);
+    let parsed: unknown = avatarText;
+    try { parsed = JSON.parse(avatarText); } catch { /* save as string */ }
+    await fetch(`/api/members/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ avatarProfile: parsed }),
+    });
+    await fetchMember();
+    setAvatarSaving(false);
+    setAvatarSaved(true);
+    setTimeout(() => setAvatarSaved(false), 3000);
+  }
 
   function isRawChannelId(handle: string | null | undefined): boolean {
     if (!handle) return false;
@@ -999,6 +1043,51 @@ export default function MemberDetailPage() {
               {notesSaving ? "Saving…" : "Save Notes"}
             </button>
           </div>
+
+          {/* Avatar Profile */}
+          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-semibold text-[#1e2a38]">Avatar Profile</h2>
+              {member?.avatarName && (
+                <span className="text-xs text-[#3dc3ff] bg-[#3dc3ff]/10 px-2.5 py-1 rounded-full font-medium">
+                  {member.avatarName}
+                </span>
+              )}
+            </div>
+            {!member?.avatarProfile ? (
+              <p className="text-sm text-[#1e2a38]/40 mb-3">No avatar saved for this member yet.</p>
+            ) : (
+              <>
+                {member.avatarSummary && (
+                  <p className="text-sm text-[#1e2a38]/70 mb-3 leading-relaxed">{member.avatarSummary}</p>
+                )}
+                {Array.isArray(member.contentThemes) && member.contentThemes.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mb-4">
+                    {(member.contentThemes as string[]).map((t: string) => (
+                      <span key={t} className="text-xs bg-[#3dc3ff]/10 text-[#3dc3ff] px-2.5 py-1 rounded-full font-medium">{t}</span>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+            <textarea
+              value={avatarText}
+              onChange={(e) => setAvatarText(e.target.value)}
+              rows={6}
+              placeholder="No avatar document saved. You can paste or edit one here."
+              className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-[#1e2a38] font-mono focus:outline-none focus:ring-2 focus:ring-[#3dc3ff]/30 resize-none"
+            />
+            <div className="flex items-center justify-between mt-2">
+              {avatarSaved && <span className="text-xs text-green-600 font-medium">✓ Saved</span>}
+              <button
+                onClick={handleSaveAdminAvatar}
+                disabled={avatarSaving || !avatarText.trim()}
+                className="ml-auto bg-[#1e2a38] hover:bg-[#2a3a4e] disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+              >
+                {avatarSaving ? "Saving…" : "Save Avatar"}
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* RIGHT SIDEBAR — QUICK ACTIONS */}
@@ -1028,6 +1117,38 @@ export default function MemberDetailPage() {
             >
               {tierSaved ? "✓ Saved" : tierSaving ? "Saving…" : "Save Tier"}
             </button>
+          </div>
+
+          {/* AI Tools Usage */}
+          <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+            <h2 className="text-sm font-semibold text-[#1e2a38] mb-3">AI Tools Usage</h2>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-[#1e2a38]/50">Avatar saved</span>
+                <span className={`text-xs font-semibold ${member?.avatarName ? "text-green-600" : "text-[#1e2a38]/30"}`}>
+                  {member?.avatarName ? `✓ ${member.avatarName}` : "None"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-[#1e2a38]/50">Scripts built</span>
+                <span className="text-xs font-semibold text-[#1e2a38]">{toolsUsage?.scriptsCount ?? "—"}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-[#1e2a38]/50">Title analyses</span>
+                <span className="text-xs font-semibold text-[#1e2a38]">{toolsUsage?.analysesCount ?? "—"}</span>
+              </div>
+              {toolsUsage?.lastActivity && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-[#1e2a38]/50">Last active</span>
+                  <span className="text-xs font-semibold text-[#1e2a38]">
+                    {new Date(toolsUsage.lastActivity).toLocaleDateString()}
+                  </span>
+                </div>
+              )}
+              {!member?.avatarName && !toolsUsage?.scriptsCount && (
+                <p className="text-xs text-[#1e2a38]/30 italic pt-1">No AI tool activity yet</p>
+              )}
+            </div>
           </div>
 
           <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm sticky top-6">

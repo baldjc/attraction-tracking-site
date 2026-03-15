@@ -58,6 +58,10 @@ export async function PATCH(
     "youtubeChannelName",
     "serviceTier",
     "ghlContactId",
+    "avatarProfile",
+    "avatarName",
+    "avatarSummary",
+    "contentThemes",
   ];
   const updates: Record<string, unknown> = {};
   for (const key of allowed) {
