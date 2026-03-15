@@ -2,6 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
+async function resolveUserId(session: any): Promise<string | null> {
+  const sessionId = (session.user as any).id as string | undefined;
+  const sessionEmail = session.user.email as string | undefined;
+  let dbUser = sessionId
+    ? await prisma.user.findUnique({ where: { id: sessionId }, select: { id: true } })
+    : null;
+  if (!dbUser && sessionEmail) {
+    dbUser = await prisma.user.findUnique({ where: { email: sessionEmail }, select: { id: true } });
+  }
+  return dbUser?.id ?? null;
+}
+
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ reviewId: string }> }
@@ -10,7 +22,8 @@ export async function GET(
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const userId = (session.user as any).id;
+  const userId = await resolveUserId(session);
+  if (!userId) return NextResponse.json({ error: "User not found" }, { status: 400 });
   const { reviewId } = await params;
 
   const review = await prisma.scriptReview.findUnique({
@@ -35,7 +48,8 @@ export async function DELETE(
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const userId = (session.user as any).id;
+  const userId = await resolveUserId(session);
+  if (!userId) return NextResponse.json({ error: "User not found" }, { status: 400 });
   const { reviewId } = await params;
 
   const review = await prisma.scriptReview.findUnique({ where: { id: reviewId } });
