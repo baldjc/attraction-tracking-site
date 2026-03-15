@@ -721,8 +721,27 @@ export default function MemberDetailPage() {
                     {member.audits.map((audit: any) => (
                       <tr key={audit.id} className="border-b border-gray-50 last:border-0">
                         <td className="py-3 pr-4 text-[#1e2a38]/70">{fmt(audit.createdAt)}</td>
-                        <td className="py-3 pr-4 capitalize text-[#1e2a38]">
-                          {audit.auditType.replace("_", " ")}
+                        <td className="py-3 pr-4 text-[#1e2a38]">
+                          {audit.auditType === "single_video" ? (() => {
+                            const vid = (audit.videosAnalysed as any)?.[0];
+                            const videoId = vid?.videoId;
+                            const title = vid?.title ?? "Single Video";
+                            const truncated = title.length > 50 ? title.slice(0, 50) + "…" : title;
+                            return (
+                              <div className="flex items-center gap-2">
+                                {videoId && (
+                                  <img
+                                    src={`https://img.youtube.com/vi/${videoId}/mqdefault.jpg`}
+                                    alt=""
+                                    className="w-12 h-[34px] rounded object-cover shrink-0"
+                                  />
+                                )}
+                                <span className="text-sm leading-tight">{truncated}</span>
+                              </div>
+                            );
+                          })() : (
+                            <span className="capitalize">{audit.auditType.replace("_", " ")}</span>
+                          )}
                         </td>
                         <td className="py-3 pr-4">
                           {audit.overallScore != null ? (
