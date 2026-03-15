@@ -218,76 +218,67 @@ export default function MembersPage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      {/* Mobile list */}
+      <div className="md:hidden bg-white rounded-xl shadow-sm border border-gray-200 divide-y divide-gray-100">
+        {loading ? (
+          <div className="px-4 py-10 text-center text-[#1e2a38]/40 text-sm">Loading...</div>
+        ) : filtered.length === 0 ? (
+          <div className="px-4 py-10 text-center text-[#1e2a38]/40 text-sm">
+            {members.length === 0 ? 'No members yet. Sync from GHL to import.' : "No members match your search."}
+          </div>
+        ) : (
+          filtered.map((m) => (
+            <Link key={m.id} href={`/admin/members/${m.id}`} className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-1.5 h-1.5 bg-green-500 rounded-full shrink-0" />
+                <span className="font-medium text-[#1e2a38] text-sm truncate">{m.fullName || "—"}</span>
+                <span className="shrink-0">{tierBadge(m.serviceTier)}</span>
+              </div>
+              <span className="text-xs font-semibold text-[#1e2a38]/50 shrink-0 ml-2">
+                {m.latestAuditScore != null ? `${m.latestAuditScore.toFixed(1)}` : "—"}
+              </span>
+            </Link>
+          ))
+        )}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden md:block bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
-                <th className="text-left px-6 py-3 text-xs font-semibold text-[#1e2a38]/60 uppercase tracking-wider">
-                  Name
-                </th>
-                <th className="text-left px-6 py-3 text-xs font-semibold text-[#1e2a38]/60 uppercase tracking-wider">
-                  YouTube
-                </th>
-                <th className="text-left px-6 py-3 text-xs font-semibold text-[#1e2a38]/60 uppercase tracking-wider">
-                  Tier
-                </th>
-                <th className="text-left px-6 py-3 text-xs font-semibold text-[#1e2a38]/60 uppercase tracking-wider">
-                  Score
-                </th>
-                <th className="text-left px-6 py-3 text-xs font-semibold text-[#1e2a38]/60 uppercase tracking-wider">
-                  Email
-                </th>
+                <th className="text-left px-6 py-3 text-xs font-semibold text-[#1e2a38]/60 uppercase tracking-wider">Name</th>
+                <th className="text-left px-6 py-3 text-xs font-semibold text-[#1e2a38]/60 uppercase tracking-wider">YouTube</th>
+                <th className="text-left px-6 py-3 text-xs font-semibold text-[#1e2a38]/60 uppercase tracking-wider">Tier</th>
+                <th className="text-left px-6 py-3 text-xs font-semibold text-[#1e2a38]/60 uppercase tracking-wider">Score</th>
+                <th className="text-left px-6 py-3 text-xs font-semibold text-[#1e2a38]/60 uppercase tracking-wider">Email</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {loading ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-[#1e2a38]/40">
-                    Loading...
-                  </td>
-                </tr>
+                <tr><td colSpan={5} className="px-6 py-12 text-center text-[#1e2a38]/40">Loading...</td></tr>
               ) : filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-[#1e2a38]/40">
-                    {members.length === 0
-                      ? 'No members yet. Click "Sync from GHL" to import.'
-                      : "No members match your search."}
-                  </td>
-                </tr>
+                <tr><td colSpan={5} className="px-6 py-12 text-center text-[#1e2a38]/40">
+                  {members.length === 0 ? 'No members yet. Click "Sync from GHL" to import.' : "No members match your search."}
+                </td></tr>
               ) : (
                 filtered.map((m) => (
-                  <tr
-                    key={m.id}
-                    className="hover:bg-gray-50 cursor-pointer transition-colors"
-                  >
+                  <tr key={m.id} className="hover:bg-gray-50 cursor-pointer transition-colors">
                     <td className="px-6 py-4">
                       <Link href={`/admin/members/${m.id}`} className="flex items-center gap-3">
                         <div className="w-2 h-2 bg-green-500 rounded-full shrink-0" />
-                        <span className="font-medium text-[#1e2a38] hover:text-[#3dc3ff] transition-colors">
-                          {m.fullName || "—"}
-                        </span>
+                        <span className="font-medium text-[#1e2a38] hover:text-[#3dc3ff] transition-colors">{m.fullName || "—"}</span>
                       </Link>
                     </td>
                     <td className="px-6 py-4 text-sm text-[#1e2a38]/70">
                       {m.youtubeHandle ? (
-                        <a
-                          href={`https://youtube.com/${m.youtubeHandle}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-[#3dc3ff] hover:underline"
-                        >
-                          {m.youtubeHandle}
-                        </a>
-                      ) : (
-                        "—"
-                      )}
+                        <a href={`https://youtube.com/${m.youtubeHandle}`} target="_blank" rel="noopener noreferrer" className="text-[#3dc3ff] hover:underline">{m.youtubeHandle}</a>
+                      ) : "—"}
                     </td>
                     <td className="px-6 py-4">{tierBadge(m.serviceTier)}</td>
                     <td className="px-6 py-4 text-sm text-[#1e2a38]/70">
-                      {m.latestAuditScore != null
-                        ? `${m.latestAuditScore.toFixed(1)}/10`
-                        : "—"}
+                      {m.latestAuditScore != null ? `${m.latestAuditScore.toFixed(1)}/10` : "—"}
                     </td>
                     <td className="px-6 py-4 text-sm text-[#1e2a38]/70">{m.email}</td>
                   </tr>

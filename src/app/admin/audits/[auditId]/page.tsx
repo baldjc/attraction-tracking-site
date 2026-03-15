@@ -446,50 +446,56 @@ export default function AuditReportPage() {
         {!hasScores ? (
           <p className="text-sm text-[#1e2a38]/50 italic">Score data unavailable for this audit. The report content may have been saved in an older format — check the browser console for the raw keys.</p>
         ) : isMonthly && baselineScores ? (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-100">
-                  <th className="text-left py-2 pr-3 text-xs font-semibold text-[#1e2a38]/50 uppercase tracking-wider">Principle</th>
-                  <th className="text-center py-2 px-2 text-xs font-semibold text-[#1e2a38]/50 uppercase tracking-wider">Baseline</th>
-                  {lastMonthScores && <th className="text-center py-2 px-2 text-xs font-semibold text-[#1e2a38]/50 uppercase tracking-wider">Last Month</th>}
-                  <th className="text-center py-2 px-2 text-xs font-semibold text-[#1e2a38]/50 uppercase tracking-wider">This Month</th>
-                  <th className="text-center py-2 px-2 text-xs font-semibold text-[#1e2a38]/50 uppercase tracking-wider">Δ Baseline</th>
-                </tr>
-              </thead>
-              <tbody>
-                {Object.entries(scores).map(([key, val]: [string, any]) => {
-                  const base = baselineScores?.[key]?.score;
-                  const last = lastMonthScores?.[key]?.score;
-                  const curr = val.score;
-                  const isNA = curr == null;
-                  const delta = !isNA && base != null ? curr - base : null;
-                  const rowBg = deltaCellBg(delta);
-                  return (
-                    <tr key={key} className={`border-b border-gray-50 last:border-0 ${rowBg}`}>
-                      <td className={`py-2 pr-3 ${isNA ? "text-[#1e2a38]/40" : "text-[#1e2a38]"}`}>{PRINCIPLE_LABELS[key] ?? key}</td>
-                      <td className="py-2 px-2 text-center">
-                        {base != null ? <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${scoreBg(base)}`}>{base.toFixed(1)}</span> : "—"}
-                      </td>
-                      {lastMonthScores && (
-                        <td className="py-2 px-2 text-center">
-                          {last != null ? <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${scoreBg(last)}`}>{last.toFixed(1)}</span> : "—"}
-                        </td>
-                      )}
-                      <td className="py-2 px-2 text-center">
-                        {isNA
-                          ? <span className="inline-block px-2 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-400">N/A</span>
-                          : <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${scoreBg(curr)}`}>{curr.toFixed(1)}</span>
-                        }
-                      </td>
-                      <td className="py-2 px-2 text-center text-xs font-bold">
-                        {isNA ? <span className="text-gray-400">—</span> : delta == null ? "—" : delta > 0 ? <span className={deltaColor(delta)}>+{delta.toFixed(1)}</span> : delta < 0 ? <span className={deltaColor(delta)}>{delta.toFixed(1)}</span> : <span className="text-gray-400">0.0</span>}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          <div className="space-y-0.5">
+            {/* Column headers */}
+            <div className="flex items-center gap-2 pb-2 border-b border-gray-100 px-3">
+              <span className="flex-1 text-xs font-semibold text-[#1e2a38]/50 uppercase tracking-wider">Principle</span>
+              <span className="w-14 text-center text-xs font-semibold text-[#1e2a38]/50 uppercase tracking-wider">Base</span>
+              {lastMonthScores && <span className="w-14 text-center text-xs font-semibold text-[#1e2a38]/50 uppercase tracking-wider">Last</span>}
+              <span className="w-14 text-center text-xs font-semibold text-[#1e2a38]/50 uppercase tracking-wider">Now</span>
+              <span className="w-10 text-center text-xs font-semibold text-[#1e2a38]/50 uppercase tracking-wider">Δ</span>
+              <span className="w-4" />
+            </div>
+            {Object.entries(scores).map(([key, val]: [string, any]) => {
+              const base = baselineScores?.[key]?.score;
+              const last = lastMonthScores?.[key]?.score;
+              const curr = val.score;
+              const isNA = curr == null;
+              const delta = !isNA && base != null ? curr - base : null;
+              const isOpen = expandedPrinciple === key;
+              return (
+                <div key={key} className={`rounded-lg ${deltaCellBg(delta)}`}>
+                  <button
+                    onClick={() => setExpandedPrinciple(isOpen ? null : key)}
+                    className="w-full flex items-center gap-2 py-2.5 px-3 hover:bg-black/5 transition-colors rounded-lg text-left"
+                  >
+                    <span className={`flex-1 text-sm ${isNA ? "text-[#1e2a38]/40" : "text-[#1e2a38]"}`}>{PRINCIPLE_LABELS[key] ?? key}</span>
+                    <span className="w-14 text-center">
+                      {base != null ? <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${scoreBg(base)}`}>{base.toFixed(1)}</span> : <span className="text-[#1e2a38]/30 text-xs">—</span>}
+                    </span>
+                    {lastMonthScores && (
+                      <span className="w-14 text-center">
+                        {last != null ? <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${scoreBg(last)}`}>{last.toFixed(1)}</span> : <span className="text-[#1e2a38]/30 text-xs">—</span>}
+                      </span>
+                    )}
+                    <span className="w-14 text-center">
+                      {isNA
+                        ? <span className="inline-block px-2 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-400">N/A</span>
+                        : <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${scoreBg(curr)}`}>{curr.toFixed(1)}</span>}
+                    </span>
+                    <span className="w-10 text-center text-xs font-bold">
+                      {isNA ? <span className="text-gray-400">—</span> : delta == null ? <span className="text-gray-400">—</span> : delta > 0 ? <span className={deltaColor(delta)}>+{delta.toFixed(1)}</span> : delta < 0 ? <span className={deltaColor(delta)}>{delta.toFixed(1)}</span> : <span className="text-gray-400">0.0</span>}
+                    </span>
+                    <span className="w-4 text-[#1e2a38]/30 text-xs no-print">{isOpen ? "▲" : "▼"}</span>
+                  </button>
+                  {isOpen && val.evidence && (
+                    <div className="mx-3 mb-2 px-3 py-2 bg-white/70 rounded-lg text-xs text-[#1e2a38]/70 italic">
+                      {val.evidence}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         ) : (
           <div className="space-y-4">
