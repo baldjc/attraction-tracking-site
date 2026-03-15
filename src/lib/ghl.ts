@@ -15,6 +15,7 @@ export interface GHLContact {
   phone?: string;
   tags?: string[];
   customFields?: Array<{ id: string; value: string }>;
+  dateAdded?: string;
 }
 
 export async function fetchContactsByTag(tag: string): Promise<GHLContact[]> {

@@ -86,6 +86,9 @@ export async function POST() {
 
       const existing = await prisma.user.findUnique({ where: { email: contact.email } });
 
+      // Parse GHL dateAdded as the member's program start date
+      const ghlDateAdded = contact.dateAdded ? new Date(contact.dateAdded) : null;
+
       if (existing) {
         const updates: Record<string, any> = {};
 
@@ -94,6 +97,8 @@ export async function POST() {
         if (youtubeUrl && youtubeUrl !== existing.youtubeChannelUrl) updates.youtubeChannelUrl = youtubeUrl;
         if (youtubeHandle && youtubeHandle !== existing.youtubeHandle) updates.youtubeHandle = youtubeHandle;
         if (phone && phone !== existing.phone) updates.phone = phone;
+        // Backfill invitedAt from GHL dateAdded if not already set
+        if (ghlDateAdded && !existing.invitedAt) updates.invitedAt = ghlDateAdded;
 
         // Look up channel name if we have a handle but no channel name yet
         const handleForLookup = youtubeHandle ?? existing.youtubeHandle;
@@ -130,6 +135,7 @@ export async function POST() {
             youtubeHandle,
             youtubeChannelName,
             serviceTier: "foundations",
+            invitedAt: ghlDateAdded,
           },
         });
         created++;

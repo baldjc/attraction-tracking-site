@@ -499,7 +499,7 @@ export default function MemberDetailPage() {
             colored: true,
             score: latestAudit?.overallScore,
           },
-          { label: "Member Since", value: fmt(member.createdAt) },
+          { label: "Member Since", value: fmt(member.invitedAt ?? member.createdAt) },
           { label: "Last Audit", value: fmt(latestAudit?.createdAt) },
           {
             label: "Total Audits",
