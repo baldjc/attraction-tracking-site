@@ -14,7 +14,7 @@ const PRINCIPLE_LABELS: Record<string, string> = {
   approve_the_click: "Approve the Click",
   lead_magnet_system: "Lead Magnet System",
   curiosity_bridges: "Curiosity Bridges",
-  show_dont_tell: "Show Don't Tell",
+  show_dont_tell: "Show Don't Tell (est.)",
   values_peppering: "Values Peppering",
   connection_language: "Connection Language",
   story_proof: "Story Proof",

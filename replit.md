@@ -94,10 +94,11 @@ src/app/
 - **Weighted scoring**: `overallScore` = Attraction Score (weighted), `raw_average` stored in `reportContent.raw_average`
   - 3x weight: lead_magnet_system, avatar_clarity, binge_architecture
   - 2x weight: arc_attention, approve_the_click, connection_language, title_frameworks, arc_revelation, story_proof
-  - 1x weight: themes_over_topics, consistency, show_dont_tell, curiosity_bridges, values_peppering, grade_5_language, arc_connection
-  - Formula: Sum(score × weight) ÷ 28 = Attraction Score; Raw Average = Sum ÷ 16
+  - 1x weight: themes_over_topics, consistency, curiosity_bridges, values_peppering, grade_5_language, arc_connection
+  - 0x weight: show_dont_tell (scored and shown but excluded — transcript-estimated only)
+  - Formula: Sum(score × weight) ÷ 27 = Attraction Score; Raw Average = Sum of all 16 ÷ 16
   - `calculateWeightedScores()` exported from `audit-engine.ts`; applied server-side after Claude returns scores
-- **Calibration rules** added to prompt: format awareness, scoring strictness, evidence requirement, lead magnet strictness (discovery calls = 0-1), curiosity bridges (require 3 quoted phrases for 7+), values peppering, story proof specificity, ARC attention opening pattern
+- **Calibration rules** in prompt (12 total): format awareness, scoring strictness, evidence requirement, lead magnet strictness, curiosity bridges, values peppering, story proof specificity, ARC attention opening pattern, binge architecture context quality, Consistency (rule #11 — mathematical from upload dates with lookup table), Show Don't Tell (rule #12 — transcript verbal cues only)
 - `SCRIPT_REVIEW_PROMPT` in `audit-engine.ts` — specialized prompt for script/transcript analysis; scores Show Don't Tell on written visual cues; sets Consistency to 5 (N/A for single script); returns `whats_working`, `three_improvements`, `quick_win`
 - `ScriptReview` DB model stores: userId, videoTitle, scriptText, scores (Json), overallScore, reportContent (Json)
 - Report pages show: big Attraction Score + "Raw Average: X.X / 10" in small text below (admin, shared, member views)

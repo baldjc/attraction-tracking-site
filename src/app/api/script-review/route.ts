@@ -84,7 +84,7 @@ CRITICAL: You MUST respond with ONLY a valid JSON object. No markdown, no code f
 
   const DIMENSION_KEYS = {
     channel_strategy: ["avatar_clarity", "themes_over_topics", "consistency"],
-    content_impact: ["arc_attention", "arc_revelation", "arc_connection", "title_frameworks", "approve_the_click", "curiosity_bridges", "show_dont_tell"],
+    content_impact: ["arc_attention", "arc_revelation", "arc_connection", "title_frameworks", "approve_the_click", "curiosity_bridges"],
     viewer_connection: ["connection_language", "values_peppering", "story_proof", "grade_5_language"],
     lead_generation: ["lead_magnet_system", "binge_architecture"],
   };

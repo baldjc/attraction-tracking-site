@@ -16,13 +16,13 @@ SCORING PRINCIPLES (score each 0–10):
 7. approve_the_click — Do the first 30 seconds deliver on the title's promise? Is there alignment between thumbnail/title and content?
 8. lead_magnet_system — Is there a free resource mentioned at least 3x per video? Is there a clear lead capture mechanism?
 9. curiosity_bridges — Do transitions pull viewers forward? Are there open loops, teases, and reason-to-stay moments?
-10. show_dont_tell — Are there visual proof elements, screen shares, b-roll, examples, or demonstrations? Not just talking-head?
+10. show_dont_tell — Verbal cues in the transcript that reference visual elements (charts, maps, screen shares, B-roll, walkthroughs). TRANSCRIPT-ESTIMATED — not included in the weighted Attraction Score.
 11. values_peppering — Does the viewer learn who the creator is beyond real estate? Hobbies, family, beliefs, personality?
 12. connection_language — Are there phrases that make the avatar feel directly spoken to? "If you're a first-time buyer in Calgary..."
 13. story_proof — Are there client stories with names, situations, stakes, and outcomes? Not just "I helped a client."
 14. grade_5_language — Could a 10-year-old follow along? Is jargon explained? Is the language conversational and simple?
 15. binge_architecture — Are there cross-references to other videos? "In my next video..." or "Check out my video on X..."
-16. consistency — How regular is the publishing schedule based on upload dates? Weekly = high, sporadic = low.
+16. consistency — Calculated mathematically from upload dates. Compute the average gap in days between consecutive uploads and apply the lookup table in calibration rule #11.
 
 SCORING GUIDELINES:
 - 8–10: Excellent. Clear evidence of mastery. Multiple strong examples.
@@ -107,7 +107,7 @@ Return ONLY valid JSON in this exact structure, nothing else:
 
 For each video in video_breakdowns, calculate dimension_scores as follows:
 - channel_strategy = average of (avatar_clarity + themes_over_topics + consistency)
-- content_impact = average of (arc_attention + arc_revelation + approve_the_click + title_frameworks + show_dont_tell + curiosity_bridges)
+- content_impact = average of (arc_attention + arc_revelation + approve_the_click + title_frameworks + curiosity_bridges) — show_dont_tell is excluded (transcript-estimated)
 - viewer_connection = average of (connection_language + values_peppering + story_proof + grade_5_language)
 - lead_generation = average of (lead_magnet_system + binge_architecture)
 Use the OVERALL channel scores (not per-video) for these averages — they reflect the channel's pattern observed across all videos analysed.
@@ -199,6 +199,47 @@ Scoring guide:
 
    IMPORTANT: If the creator provides even ONE sentence of context about WHY the viewer should watch the referenced video (not just pointing to it), that is significantly better than a bare link. Score the QUALITY of the cross-reference, not just the quantity.
 
+11. CONSISTENCY — CALCULATE MATHEMATICALLY, DO NOT GUESS:
+
+You MUST calculate Consistency from upload dates — do not estimate or use intuition about cadence.
+
+How to calculate:
+1. List all upload dates for the videos analysed, in chronological order.
+2. Calculate the gap in days between each consecutive pair.
+3. Calculate the average gap across all gaps.
+4. Apply this lookup table:
+
+| Avg gap (days) | Score |
+|----------------|-------|
+| ≤7 (weekly or more often) | 10 |
+| 8–10 | 8 |
+| 11–14 (biweekly) | 5 |
+| 15–21 | 3 |
+| 22–30 | 2 |
+| 31+ | 1 |
+
+For monthly audits with 3–4 videos: This is EXPECTED for a weekly publisher in a 4-week window. Do not penalise. Example: 4 videos in 28 days = 9.3-day avg gap = score 8. 3 videos in 28 days ≈ 14-day avg gap = score 5 — but note this is minimum-sample and may underrepresent true cadence.
+
+Evidence to cite: List each upload date. State the gap between each pair. State the calculated average gap in days. Show the math explicitly.
+
+- For Consistency: you MUST calculate the average gap between upload dates in days and use the lookup table. Do not estimate cadence — do the math.
+
+12. SHOW DON'T TELL — TRANSCRIPT-ESTIMATED ONLY:
+
+Since you are analysing transcripts, not video footage, you cannot see visual elements. Score ONLY based on verbal references to visuals in the transcript.
+
+What to look for: Verbal cues that reference visual elements — mentions of charts, maps, screen shares, B-roll, walkthroughs, iPad drawings, overlays, diagrams. Phrases like "as you can see," "look at this," "here's what that looks like," "let me show you," "on screen right now."
+
+| Score | Description |
+|-------|-------------|
+| 0–2 | No verbal references to any visual elements. |
+| 3–4 | Rare verbal references to visuals (1–2 mentions across all videos). |
+| 5–6 | Some verbal references but inconsistent. |
+| 7–8 | Regular verbal references to visual elements throughout transcripts. |
+| 9–10 | Abundant verbal cues to visuals throughout all transcripts. |
+
+Evidence to cite: Quote specific verbal cues that reference visual elements. Note: this is a transcript estimate only. Show Don't Tell is NOT included in the weighted Attraction Score.
+
 WEIGHTED SCORING:
 
 Calculate TWO scores:
@@ -208,9 +249,10 @@ Calculate TWO scores:
 2. Attraction Score (WEIGHTED — this is the PRIMARY score reported as overall_score):
    - 3x weight: lead_magnet_system, avatar_clarity, binge_architecture
    - 2x weight: arc_attention, approve_the_click, connection_language, title_frameworks, arc_revelation, story_proof
-   - 1x weight: themes_over_topics, consistency, show_dont_tell, curiosity_bridges, values_peppering, grade_5_language, arc_connection
+   - 1x weight: themes_over_topics, consistency, curiosity_bridges, values_peppering, grade_5_language, arc_connection
+   - 0x weight: show_dont_tell (still scored and displayed, but NOT included — transcript-estimated only)
 
-   Formula: Sum of (each score × its weight) ÷ 28 = Attraction Score (overall_score)
+   Formula: Sum of (each score × its weight) ÷ 27 = Attraction Score (overall_score)
 
 Report "raw_average" as the unweighted average and "overall_score" as the weighted Attraction Score.`;
 
@@ -448,13 +490,13 @@ export const WEIGHTED_SCORE_WEIGHTS: Record<string, number> = {
   story_proof: 2,
   themes_over_topics: 1,
   consistency: 1,
-  show_dont_tell: 1,
+  show_dont_tell: 0,
   curiosity_bridges: 1,
   values_peppering: 1,
   grade_5_language: 1,
   arc_connection: 1,
 };
-const TOTAL_WEIGHT = 28;
+const TOTAL_WEIGHT = 27;
 
 export function calculateWeightedScores(scores: Record<string, { score: number }>): {
   attractionScore: number;

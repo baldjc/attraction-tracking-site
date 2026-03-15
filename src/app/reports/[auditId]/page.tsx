@@ -14,7 +14,7 @@ const PRINCIPLE_LABELS: Record<string, string> = {
   approve_the_click: "Approve the Click",
   lead_magnet_system: "Lead Magnet System",
   curiosity_bridges: "Curiosity Bridges",
-  show_dont_tell: "Show Don't Tell",
+  show_dont_tell: "Show Don't Tell (est.)",
   values_peppering: "Values Peppering",
   connection_language: "Connection Language",
   story_proof: "Story Proof",
@@ -60,7 +60,8 @@ const QA_IF_LOW: Record<string, string> = {
 
 const DIMENSIONS = [
   { label: "🎯 Channel Strategy", keys: ["avatar_clarity", "themes_over_topics", "consistency"] },
-  { label: "🎬 Content Impact", keys: ["arc_attention", "arc_revelation", "arc_connection", "title_frameworks", "approve_the_click", "curiosity_bridges", "show_dont_tell"] },
+  { label: "🎬 Content Impact", keys: ["arc_attention", "arc_revelation", "arc_connection", "title_frameworks", "approve_the_click", "curiosity_bridges"] },
+  { label: "📊 Transcript Estimated", keys: ["show_dont_tell"] },
   { label: "🤝 Viewer Connection", keys: ["connection_language", "values_peppering", "story_proof", "grade_5_language"] },
   { label: "📈 Lead Generation", keys: ["lead_magnet_system", "binge_architecture"] },
 ];

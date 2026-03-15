@@ -60,7 +60,7 @@ const DIMENSIONS = [
   },
   {
     label: "🎬 Content Impact",
-    keys: ["arc_attention", "arc_revelation", "approve_the_click", "title_frameworks", "show_dont_tell", "curiosity_bridges"],
+    keys: ["arc_attention", "arc_revelation", "approve_the_click", "title_frameworks", "curiosity_bridges"],
   },
   {
     label: "🤝 Viewer Connection",
