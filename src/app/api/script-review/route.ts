@@ -42,36 +42,42 @@ Video title: "${videoTitle}"
 SCRIPT:
 ${scriptText}
 
-Return valid JSON only — no markdown, no code fences. The "three_improvements" must include EXACT quotes from the script above, not generic advice.`;
+CRITICAL: You MUST respond with ONLY a valid JSON object. No markdown, no code fences, no explanation text before or after the JSON. The "three_improvements" must include EXACT quotes from the script above, not generic advice.`;
 
   console.log(`[script-review] Starting analysis for ${memberName}: "${videoTitle}"`);
 
   const response = await client.messages.create({
     model: "claude-sonnet-4-20250514",
-    max_tokens: 8192,
+    max_tokens: 8000,
     system: SCRIPT_REVIEW_PROMPT,
     messages: [{ role: "user", content: userMessage }],
   });
 
-  const rawText = response.content[0].type === "text" ? response.content[0].text : "";
-  console.log(`[script-review] Raw response length: ${rawText.length}, stop_reason: ${response.stop_reason}`);
+  const rawText = response.content.find((b) => b.type === "text")?.text ?? "";
+  console.log("[script-review] Claude stop_reason:", response.stop_reason);
+  console.log("[script-review] Response length (chars):", rawText.length);
+  console.log("[script-review] Raw response (first 500 chars):", rawText.slice(0, 500));
+
+  // Strip code fences — same approach as audit engine
+  const stripped = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "");
+
+  // Extract outermost JSON object
+  const jsonMatch = stripped.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) {
+    console.error("[script-review] No JSON object found in response. Full response:", rawText.slice(0, 1000));
+    return NextResponse.json({ error: "Failed to parse AI response. Please try again." }, { status: 500 });
+  }
 
   let parsed: any;
   try {
-    const cleaned = rawText.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
-    parsed = JSON.parse(cleaned);
-  } catch {
-    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      console.error("[script-review] Failed to parse JSON:", rawText.substring(0, 500));
-      return NextResponse.json({ error: "Failed to parse AI response. Please try again." }, { status: 500 });
-    }
-    try {
-      parsed = JSON.parse(jsonMatch[0]);
-    } catch {
-      return NextResponse.json({ error: "Failed to parse AI response. Please try again." }, { status: 500 });
-    }
+    parsed = JSON.parse(jsonMatch[0]);
+  } catch (parseErr: any) {
+    console.error("[script-review] JSON parse failed:", parseErr.message);
+    console.error("[script-review] Raw JSON (first 500 chars):", jsonMatch[0].slice(0, 500));
+    return NextResponse.json({ error: "Failed to parse AI response. Please try again." }, { status: 500 });
   }
+
+  console.log("[script-review] Parsed result keys:", Object.keys(parsed).join(", "));
 
   const scores = parsed.scores ?? {};
   const overallScore = parsed.overall_score ?? calcOverall(scores);

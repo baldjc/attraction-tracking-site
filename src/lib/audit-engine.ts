@@ -330,7 +330,9 @@ Return ONLY valid JSON in this EXACT structure, nothing else — no markdown, no
     }
   ],
   "quick_win": "One specific, immediately actionable thing to add or change before recording — must be concrete and reference their actual script content"
-}`;
+}
+
+You MUST respond with ONLY a valid JSON object. No markdown, no code fences, no explanation text before or after the JSON. Your entire response must be parseable by JSON.parse() with no pre-processing.`;
 
 export interface AuditResult {
   scores: AuditScores;
