@@ -123,16 +123,10 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const sessionId = (session.user as any).id as string | undefined;
-  const sessionEmail = session.user.email;
-  let dbUser = sessionId
-    ? await prisma.user.findUnique({ where: { id: sessionId }, select: { id: true } })
-    : null;
-  if (!dbUser && sessionEmail) {
-    dbUser = await prisma.user.findUnique({ where: { email: sessionEmail }, select: { id: true } });
-  }
-  if (!dbUser) return NextResponse.json({ reviews: [] });
-  const userId = dbUser.id;
+  const { resolveUserFromSession } = await import("@/lib/session-utils");
+  const resolved = await resolveUserFromSession();
+  if (!resolved) return NextResponse.json({ reviews: [] });
+  const userId = resolved.id;
 
   const reviews = await prisma.scriptReview.findMany({
     where: { userId },

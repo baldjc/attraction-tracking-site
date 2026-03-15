@@ -48,7 +48,8 @@ src/lib/
   audit-engine.ts            — Claude AI scoring + DEFAULT_SCORING_PROMPT + SCRIPT_REVIEW_PROMPT + AuditResult types
   auth.ts                    — NextAuth config
   prisma.ts                  — Prisma client singleton
-  session-utils.ts           — resolveUserFromSession() — resolves DB user by session ID or email fallback
+  session-utils.ts           — resolveUserFromSession() — resolves DB user; if admin has impersonate cookie, returns impersonated member
+  impersonate-constants.ts   — IMPERSONATE_COOKIE ("abv-impersonate-id") + IMPERSONATE_LS_KEY ("abv_impersonate") — client-safe constants
 
 src/app/
   admin/
@@ -79,6 +80,7 @@ src/app/
     ai-tools/save-title/      — POST save SavedTitle
     ai-tools/saved-titles/    — GET list member's saved titles
     admin/member-tools-usage/[userId]/ — GET scripts count, analyses count, last activity
+    admin/impersonate/        — POST (set cookie) / DELETE (clear cookie) for admin member impersonation
     audits/..., members/..., script-review/..., sync/..., qa-prep/... (see previous)
 ```
 

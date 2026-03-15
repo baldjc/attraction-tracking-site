@@ -9,8 +9,7 @@ import {
   ChartBarIcon,
   EyeIcon,
 } from "@heroicons/react/24/outline";
-
-const VIEW_AS_KEY = "abv_view_mode";
+import MemberPickerModal from "@/components/admin/MemberPickerModal";
 
 interface DashboardStats {
   totalMembers: number;
@@ -21,6 +20,7 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState<string | null>(null);
+  const [showMemberPicker, setShowMemberPicker] = useState(false);
 
   useEffect(() => {
     fetch("/api/members")
@@ -36,11 +36,6 @@ export default function AdminDashboard() {
       })
       .catch(() => setStats({ totalMembers: 0, totalAudits: 0 }));
   }, []);
-
-  function handleViewAsMember() {
-    try { localStorage.setItem(VIEW_AS_KEY, "member"); } catch { }
-    window.location.href = "/member/scores";
-  }
 
   async function handleSync() {
     setSyncing(true);
@@ -195,17 +190,21 @@ export default function AdminDashboard() {
             View as Member
           </h3>
           <p className="text-sm text-amber-700">
-            Switch to the member view to see the platform exactly as your members do — your scores, AI tools, and links.
+            Pick any member to see the platform exactly as they do — their scores, AI tools, and links.
           </p>
         </div>
         <button
-          onClick={handleViewAsMember}
+          onClick={() => setShowMemberPicker(true)}
           className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors shrink-0"
         >
           <EyeIcon className="w-4 h-4" />
-          Enter Member View
+          Choose Member…
         </button>
       </div>
+
+      {showMemberPicker && (
+        <MemberPickerModal onClose={() => setShowMemberPicker(false)} />
+      )}
     </div>
   );
 }

@@ -20,8 +20,12 @@ import {
   SparklesIcon,
   ArrowLeftIcon,
   EyeIcon,
+  ChevronDownIcon,
+  MagnifyingGlassIcon,
+  UserCircleIcon,
 } from "@heroicons/react/24/outline";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { IMPERSONATE_LS_KEY } from "@/lib/impersonate-constants";
 
 interface SidebarProps {
   role: string;
@@ -48,19 +52,114 @@ const memberLinks = [
   { href: "/member/settings", label: "Settings", icon: Cog6ToothIcon },
 ];
 
-const VIEW_AS_KEY = "abv_view_mode";
+interface ImpersonateState {
+  memberId: string;
+  memberName: string;
+}
+
+interface MemberOption {
+  id: string;
+  fullName: string | null;
+  email: string;
+}
+
+function SwitchMemberDropdown({
+  current,
+  onSelect,
+  onClose,
+}: {
+  current: ImpersonateState;
+  onSelect: (m: MemberOption) => void;
+  onClose: () => void;
+}) {
+  const [members, setMembers] = useState<MemberOption[]>([]);
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    fetch("/api/members")
+      .then((r) => r.json())
+      .then((d) => setMembers(d.members ?? []))
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    function onClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+    }
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, [onClose]);
+
+  const filtered = members.filter((m) => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return (m.fullName ?? "").toLowerCase().includes(q) || m.email.toLowerCase().includes(q);
+  });
+
+  return (
+    <div
+      ref={ref}
+      className="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 overflow-hidden"
+    >
+      <div className="p-2 border-b border-gray-100">
+        <div className="relative">
+          <MagnifyingGlassIcon className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400" />
+          <input
+            autoFocus
+            type="text"
+            placeholder="Search members…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-6 pr-2 py-1.5 text-xs border border-gray-200 rounded-lg outline-none focus:ring-1 focus:ring-[#3dc3ff]"
+          />
+        </div>
+      </div>
+      <ul className="max-h-56 overflow-y-auto divide-y divide-gray-50">
+        {loading ? (
+          <li className="px-3 py-4 text-xs text-center text-gray-400">Loading…</li>
+        ) : filtered.length === 0 ? (
+          <li className="px-3 py-4 text-xs text-center text-gray-400">No members found</li>
+        ) : filtered.map((m) => {
+          const name = m.fullName ?? m.email;
+          const isCurrent = m.id === current.memberId;
+          return (
+            <li key={m.id}>
+              <button
+                onClick={() => onSelect(m)}
+                className={`w-full flex items-center gap-2 px-3 py-2.5 text-left hover:bg-[#3dc3ff]/5 transition-colors ${isCurrent ? "bg-amber-50" : ""}`}
+              >
+                <UserCircleIcon className="w-4 h-4 text-gray-400 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-[#1e2a38] truncate">{name}</p>
+                  {m.fullName && <p className="text-[10px] text-gray-400 truncate">{m.email}</p>}
+                </div>
+                {isCurrent && <span className="text-[10px] text-amber-600 font-semibold shrink-0">Current</span>}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
 
 export default function Sidebar({ role, userName }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [viewAsMode, setViewAsMode] = useState<string | null>(null);
+  const [impersonate, setImpersonate] = useState<ImpersonateState | null>(null);
+  const [showSwitch, setShowSwitch] = useState(false);
 
-  // Read view mode from localStorage on mount and pathname change
   useEffect(() => {
     try {
-      setViewAsMode(localStorage.getItem(VIEW_AS_KEY));
-    } catch { }
+      const raw = localStorage.getItem(IMPERSONATE_LS_KEY);
+      setImpersonate(raw ? JSON.parse(raw) : null);
+    } catch {
+      setImpersonate(null);
+    }
+    setShowSwitch(false);
   }, [pathname]);
 
   useEffect(() => {
@@ -72,13 +171,10 @@ export default function Sidebar({ role, userName }: SidebarProps) {
     return () => { document.body.style.overflow = ""; };
   }, [mobileOpen]);
 
-  // When admin is on a member path with viewAsMode=member, show member nav
   const isAdminOnMemberView =
-    role === "admin" &&
-    viewAsMode === "member" &&
-    !pathname.startsWith("/admin");
+    role === "admin" && !!impersonate && !pathname.startsWith("/admin");
 
-  const links = (role === "admin" && !isAdminOnMemberView) ? adminLinks : memberLinks;
+  const links = isAdminOnMemberView ? memberLinks : role === "admin" ? adminLinks : memberLinks;
 
   function isActive(href: string) {
     if (href === "/admin" || href === "/member/scores") {
@@ -87,38 +183,71 @@ export default function Sidebar({ role, userName }: SidebarProps) {
     return pathname.startsWith(href);
   }
 
-  function exitMemberView() {
-    try { localStorage.removeItem(VIEW_AS_KEY); } catch { }
-    setViewAsMode(null);
+  async function exitImpersonation() {
+    try {
+      await fetch("/api/admin/impersonate", { method: "DELETE" });
+      localStorage.removeItem(IMPERSONATE_LS_KEY);
+    } catch { }
+    setImpersonate(null);
     router.push("/admin");
+  }
+
+  async function handleSwitchMember(member: MemberOption) {
+    setShowSwitch(false);
+    try {
+      const res = await fetch("/api/admin/impersonate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ memberId: member.id }),
+      });
+      if (!res.ok) return;
+      const memberName = member.fullName ?? member.email;
+      localStorage.setItem(IMPERSONATE_LS_KEY, JSON.stringify({ memberId: member.id, memberName }));
+      setImpersonate({ memberId: member.id, memberName });
+      window.location.href = "/member/scores";
+    } catch { }
   }
 
   const sidebarInner = (
     <div className="flex flex-col h-full">
-      {/* "Viewing as Member" banner */}
-      {isAdminOnMemberView && (
-        <div className="bg-amber-500 px-4 py-2.5 flex items-center justify-between gap-2 flex-shrink-0">
-          <div className="flex items-center gap-2">
-            <EyeIcon className="w-4 h-4 text-amber-900 shrink-0" />
-            <span className="text-xs font-semibold text-amber-900">Member View</span>
+      {/* Impersonation banner */}
+      {isAdminOnMemberView && impersonate && (
+        <div className="bg-amber-500 px-3 pt-2.5 pb-2 flex-shrink-0 relative">
+          <div className="flex items-center justify-between gap-1 mb-1.5">
+            <div className="flex items-center gap-1.5">
+              <EyeIcon className="w-3.5 h-3.5 text-amber-900 shrink-0" />
+              <span className="text-[11px] font-bold text-amber-900 uppercase tracking-wide">Member View</span>
+            </div>
+            <button
+              onClick={exitImpersonation}
+              className="flex items-center gap-1 text-[11px] font-semibold text-amber-900 hover:text-white transition-colors whitespace-nowrap"
+            >
+              <ArrowLeftIcon className="w-3 h-3" /> Exit
+            </button>
           </div>
-          <button
-            onClick={exitMemberView}
-            className="flex items-center gap-1 text-xs font-semibold text-amber-900 hover:text-white transition-colors whitespace-nowrap"
-          >
-            <ArrowLeftIcon className="w-3 h-3" />
-            Back to Admin
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => setShowSwitch((s) => !s)}
+              className="flex items-center gap-1.5 w-full text-left bg-amber-600/30 hover:bg-amber-600/50 rounded-lg px-2.5 py-1.5 transition-colors"
+            >
+              <UserCircleIcon className="w-3.5 h-3.5 text-amber-900 shrink-0" />
+              <span className="text-xs font-semibold text-amber-900 flex-1 truncate">{impersonate.memberName}</span>
+              <ChevronDownIcon className={`w-3 h-3 text-amber-900 shrink-0 transition-transform ${showSwitch ? "rotate-180" : ""}`} />
+            </button>
+            {showSwitch && (
+              <SwitchMemberDropdown
+                current={impersonate}
+                onSelect={handleSwitchMember}
+                onClose={() => setShowSwitch(false)}
+              />
+            )}
+          </div>
         </div>
       )}
 
       <div className="px-4 py-4 border-b border-white/10 flex-shrink-0">
-        <Link href={role === "admin" && !isAdminOnMemberView ? "/admin" : "/member/scores"} className="flex items-center gap-3">
-          <img
-            src="/logo-icon.png"
-            alt=""
-            className="h-10 w-10 rounded-xl object-cover shrink-0"
-          />
+        <Link href={isAdminOnMemberView ? "/member/scores" : role === "admin" ? "/admin" : "/member/scores"} className="flex items-center gap-3">
+          <img src="/logo-icon.png" alt="" className="h-10 w-10 rounded-xl object-cover shrink-0" />
           <img
             src="/logo-transparent.png"
             alt="Attraction by Video"
@@ -180,12 +309,12 @@ export default function Sidebar({ role, userName }: SidebarProps) {
         </button>
         <img src="/logo-icon.png" alt="" className="h-8 w-8 rounded-lg object-cover" />
         <img src="/logo-transparent.png" alt="Attraction by Video" className="h-6 w-auto object-contain" style={{ filter: "brightness(0) invert(1)" }} />
-        {isAdminOnMemberView && (
+        {isAdminOnMemberView && impersonate && (
           <button
-            onClick={exitMemberView}
+            onClick={exitImpersonation}
             className="ml-auto flex items-center gap-1 bg-amber-500 text-amber-900 text-xs font-semibold px-3 py-1.5 rounded-lg"
           >
-            <ArrowLeftIcon className="w-3 h-3" /> Admin
+            <ArrowLeftIcon className="w-3 h-3" /> Exit
           </button>
         )}
       </div>
