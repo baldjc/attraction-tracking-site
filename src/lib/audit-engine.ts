@@ -17,11 +17,11 @@ SCORING PRINCIPLES (score each 0–10):
 8. lead_magnet_system — Is there a free resource mentioned at least 3x per video? Is there a clear lead capture mechanism?
 9. curiosity_bridges — Do transitions pull viewers forward? Are there open loops, teases, and reason-to-stay moments?
 10. show_dont_tell — Verbal cues in the transcript that reference visual elements (charts, maps, screen shares, B-roll, walkthroughs). TRANSCRIPT-ESTIMATED — not included in the weighted Attraction Score.
-11. values_peppering — Does the viewer learn who the creator is beyond real estate? Hobbies, family, beliefs, personality?
+11. values_peppering — Does the creator show emotional awareness of the viewer's experience? Empathy statements, team values, business philosophy. NOT about creator hobbies — about making the VIEWER feel seen and understood.
 12. connection_language — Are there phrases that make the avatar feel directly spoken to? "If you're a first-time buyer in Calgary..."
 13. story_proof — Are there client stories with names, situations, stakes, and outcomes? Not just "I helped a client."
 14. grade_5_language — Could a 10-year-old follow along? Is jargon explained? Is the language conversational and simple?
-15. binge_architecture — Are there cross-references to other videos? "In my next video..." or "Check out my video on X..."
+15. binge_architecture — TWO components: (1) Avatar consistency — do all videos serve the same person? This is the FOUNDATION. (2) Cross-references with a specific reason to watch the next video. Component 1 is more important than Component 2.
 16. consistency — Calculated mathematically from upload dates. Compute the average gap in days between consecutive uploads and apply the lookup table in calibration rule #11.
 
 SCORING GUIDELINES:
@@ -157,17 +157,22 @@ Scoring guide:
    7-8: Regular use of curiosity-building phrases like 'but here's where it gets interesting...', 'and that's just the beginning...', 'but wait until you see...'
    9-10: Masterful And/But/Therefore momentum between every section
 
-7. VALUES PEPPERING — LOOK HARDER:
-   Personal values include: mentioning family, hobbies, local spots, lifestyle preferences, personal opinions beyond the topic, humour, self-deprecation, references to personal experiences outside of work. These can be brief — even one sentence counts.
+7. VALUES PEPPERING — THIS IS NOT ABOUT CREATOR HOBBIES:
 
-   Count EVERY instance across ALL videos. Most creators do this more than the AI initially recognises. Search the transcripts carefully for any personal detail that reveals who this person is beyond their job.
+   Values Peppering is about making the VIEWER feel seen — emotional awareness, connection language that validates the viewer's experience, sharing what the team values, how they work, and what they stand for as a business.
+
+   Look for: empathy statements, emotional awareness of the viewer's situation, mentions of team values or business philosophy, how they approach client relationships, what matters to them professionally. Phrases like "We believe every family deserves to feel confident", "I know how stressful this feels", "Our team's whole approach is built around..."
+
+   DO NOT score based on the creator's hobbies, family stories, or personal interests. That is NOT what this principle measures.
 
    Scoring guide:
-   0-2: Across all 5 videos, the viewer learns literally nothing personal about the creator
-   3-4: 1-2 personal mentions total across all videos
-   5-6: A few personal moments but inconsistent
-   7-8: Natural drops of personality in most videos (2-3 per video)
-   9-10: Personality woven throughout every video — viewer feels like they know this person
+   0-2: Zero emotional awareness. No team or business values. Generic information channel.
+   3-4: Rare moments of viewer empathy or business values. Maybe one mention across all videos.
+   5-6: Some emotional awareness. Acknowledges viewer's situation occasionally.
+   7-8: Regular emotional awareness. Viewer feels seen. Business values come through naturally.
+   9-10: Deep emotional awareness throughout. Viewer feels understood. Team values and business philosophy woven naturally throughout. Viewer trusts this person's values before meeting them.
+
+   Evidence: Quote moments where the creator shows emotional awareness of the viewer, mentions team or business values, or makes the viewer feel seen. NOT about personal hobbies.
 
 8. STORY PROOF — REAL ESTATE CONFIDENTIALITY AWARE:
    In real estate, agents CANNOT share client names, addresses, or exact prices due to professional confidentiality. Anonymised stories ARE the professional standard — score based on whether a narrative structure is present, not how much personal detail is shared.
@@ -205,17 +210,24 @@ Scoring guide:
    - The opening window is 20–30 seconds for a complete sequence. Never penalise an opening for imagined timing issues when the structure is working.
    - When assessing the opening: are all elements present and landing by :30? If yes, this is a 9–10 opening regardless of whether individual elements land at :05 or :15. A well-structured problem hook that takes 15 seconds to set up is NOT "too slow" — it is doing its job. Only penalise openings where elements are MISSING or land AFTER :30.
 
-10. BINGE ARCHITECTURE — UPDATED SCORING:
+10. BINGE ARCHITECTURE — TWO COMPONENTS, BOTH MATTER:
 
-   The key differentiator is CONTEXT. A cross-reference with a reason to watch is worth far more than a generic 'check out this video.'
+   COMPONENT 1 — Avatar consistency across videos (MORE IMPORTANT):
+   Are all videos serving the same avatar? A channel where every video speaks to the same person creates natural binge behaviour — the viewer sees the next video and thinks "that's for me too." This is the FOUNDATION of binge architecture. Without it, cross-references don't matter.
 
-   0-2: No references to other videos at all, or just 'subscribe' with no next-video suggestion
-   3-4: Generic references like 'check out this video' or 'watch this one' with no context about WHY
-   5-6: Occasional contextual references — at least one video includes a sentence explaining why the viewer should watch the next video, connected to what they just learned. Example: 'In this video I break down the 3 neighbourhoods where prices actually dropped'
-   7-8: Most videos end with a contextual recommendation that creates a specific reason to watch the next video. The viewer thinks 'I need to see that too.' Theme-based linking visible. End screens used intentionally.
-   9-10: Intentional viewing sequences across the channel. Every video feeds into the next. Series structure, playlist references, and mid-video cross-references that feel natural. Viewers regularly watch 3+ videos per session.
+   COMPONENT 2 — Cross-references and end-of-video direction:
+   Does the creator reference other videos during content? At the end, do they clearly mention a SPECIFIC next video and what the viewer will GET from watching it?
+   Generic "check out my other videos" = weak.
+   "Watch my video on the 5 neighbourhoods most people overlook — I walk you through exactly why they're undervalued" = strong.
 
-   IMPORTANT: If the creator provides even ONE sentence of context about WHY the viewer should watch the referenced video (not just pointing to it), that is significantly better than a bare link. Score the QUALITY of the cross-reference, not just the quantity.
+   Scoring guide:
+   0-2: Videos serve different audiences. No cross-references. Each video is an island for a different person.
+   3-4: Videos loosely target same audience but no cross-references. OR: cross-references exist but videos serve scattered audiences.
+   5-6: Videos mostly serve same avatar. Occasional cross-references but generic ("check out this video" with no context).
+   7-8: All videos clearly serve same avatar. Some contextual cross-references. End cards or verbal mentions of related videos with a reason to watch.
+   9-10: All videos serve same avatar — obvious binge path. Contextual cross-references during content. End of video clearly directs to a specific next video with a compelling reason to watch.
+
+   Evidence structure: (1) Do all videos serve the same avatar? List who each video speaks to. (2) Count and quote cross-references. (3) Assess end-of-video direction — is it specific with a reason to watch, or generic?
 
 11. CONSISTENCY — MANDATORY MATHEMATICAL CALCULATION:
 
@@ -287,7 +299,15 @@ Report "raw_average" as the unweighted average and "overall_score" as the weight
 
 CRITICAL SCORING REMINDER:
 - For Consistency: you MUST show upload dates, calculate gaps, state average, then apply the lookup table. Any Consistency score without this math is wrong.
-- For Show Don't Tell: score ONLY from verbal cues in the transcript. Do NOT guess at visuals you cannot see. This score does NOT affect overall_score.`;
+- For Show Don't Tell: score ONLY from verbal cues in the transcript. Do NOT guess at visuals you cannot see. This score does NOT affect overall_score.
+
+CONSISTENCY SCORING IS NON-NEGOTIABLE:
+- Calculate the average gap between upload dates in days. Use EXACT dates from the video metadata provided.
+- If the average gap is 7 days or less, the score is 10. Period. Not 8, not 9. TEN.
+- Do NOT round the gap up. Do NOT add subjective judgment. Do NOT adjust for "perceived" effort. Use the lookup table exactly as written.
+- Weekly publishing (≤7 day average gap) = 10. Always. Every time. No exceptions.
+- A score of 8 for a weekly publisher is WRONG. A score of 9 for a weekly publisher is WRONG. Only 10 is correct.
+- If you return any score other than 10 for a channel with an average gap of ≤7 days, you have made an error.`;
 
 export interface AuditScores {
   avatar_clarity: { score: number; evidence: string };
@@ -321,11 +341,11 @@ SCORING PRINCIPLES (score each 0–10):
 8. lead_magnet_system — Is a free resource mentioned? Clear lead capture?
 9. curiosity_bridges — Do transitions pull viewers forward? Open loops, teases?
 10. show_dont_tell — Visual proof, examples, demonstrations?
-11. values_peppering — Does the viewer learn who the creator is beyond real estate?
+11. values_peppering — Does the creator show emotional awareness of the viewer's experience? Empathy, team values, business philosophy. NOT about creator hobbies — about making the VIEWER feel seen.
 12. connection_language — Direct phrases that speak to the avatar specifically?
 13. story_proof — Client stories with names, situations, stakes, outcomes?
 14. grade_5_language — Conversational, jargon-free, simple?
-15. binge_architecture — Cross-references to other videos?
+15. binge_architecture — (1) Does this video clearly speak to the same avatar as the channel? (2) Cross-references to other videos with a specific reason to watch?
 16. consistency — N/A for single video audits. Do NOT score this principle. Return null for the score in the JSON.
 
 SCORING GUIDELINES:
@@ -472,11 +492,11 @@ SCORING PRINCIPLES (score each 0–10):
 8. lead_magnet_system — Is a free resource mentioned? Is there a clear lead capture mechanism written in?
 9. curiosity_bridges — Do transitions pull the reader forward? Are there open loops and reason-to-stay moments?
 10. show_dont_tell — Are there visual cues written in (e.g., "[show chart]", "as you'll see on screen", B-roll references, examples)? Score based on what's written — not what's filmed.
-11. values_peppering — Does the script reveal who the creator is beyond real estate? Hobbies, family, beliefs, personality?
+11. values_peppering — Does the script show emotional awareness of the viewer's experience? Empathy statements, team values, business philosophy. NOT about creator hobbies — about making the VIEWER feel seen and understood.
 12. connection_language — Are there phrases that make the avatar feel directly spoken to?
 13. story_proof — Are there client stories with names, situations, stakes, and outcomes?
 14. grade_5_language — Is the language conversational and jargon-free? Could a 10-year-old follow along?
-15. binge_architecture — Are there mentions of or cross-references to other videos or content?
+15. binge_architecture — (1) Does this script clearly speak to one consistent avatar? (2) Are there mentions of or cross-references to other videos with a specific reason to watch?
 16. consistency — Score this 5 by default. Cannot assess consistency from a single script.
 
 SCORING GUIDELINES:
