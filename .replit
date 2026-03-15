@@ -34,6 +34,7 @@ externalPort = 80
 
 [userenv.shared]
 GHL_LOCATION_ID = "vEIiKAjpBkCDrabeDre7"
+FROM_EMAIL = "Attraction by Video <noreply@attractionbyvideo.com>"
 
 [nix]
 channel = "stable-25_05"

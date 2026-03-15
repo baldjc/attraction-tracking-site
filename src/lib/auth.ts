@@ -6,26 +6,38 @@ import prisma from "./prisma";
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
     Credentials({
-      name: "credentials",
+      name: "otp",
       credentials: {
         email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" },
+        code: { label: "Code", type: "text" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null;
+        if (!credentials?.email || !credentials?.code) return null;
 
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email as string },
+        const email = (credentials.email as string).trim().toLowerCase();
+        const code = (credentials.code as string).trim();
+
+        const user = await prisma.user.findUnique({ where: { email } });
+        if (!user) return null;
+
+        const recent = await prisma.loginOtp.findFirst({
+          where: {
+            email,
+            usedAt: null,
+            expiresAt: { gt: new Date() },
+          },
+          orderBy: { createdAt: "desc" },
         });
 
-        if (!user || !user.passwordHash) return null;
+        if (!recent) return null;
 
-        const isValid = await bcrypt.compare(
-          credentials.password as string,
-          user.passwordHash
-        );
+        const valid = await bcrypt.compare(code, recent.codeHash);
+        if (!valid) return null;
 
-        if (!isValid) return null;
+        await prisma.loginOtp.update({
+          where: { id: recent.id },
+          data: { usedAt: new Date() },
+        });
 
         await prisma.user.update({
           where: { id: user.id },
