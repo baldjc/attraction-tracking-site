@@ -32,6 +32,13 @@ interface LastRun {
   failures: number;
 }
 
+interface BaselineLastRun {
+  date: string;
+  total_eligible: number;
+  generated: number;
+  failures: number;
+}
+
 function scoreBg(score: number | null) {
   if (score == null) return "bg-gray-100 text-gray-500";
   if (score >= 7) return "bg-green-100 text-green-700";
@@ -60,12 +67,18 @@ export default function AuditsPage() {
   const [launching, setLaunching] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const [baselineBatchStatus, setBaselineBatchStatus] = useState<BatchStatus | null>(null);
+  const [baselineLastRun, setBaselineLastRun] = useState<BaselineLastRun | null>(null);
+  const [baselineLaunching, setBaselineLaunching] = useState(false);
+  const baselinePollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   useEffect(() => {
     fetchAudits();
     fetchBatchStatus();
+    fetchBaselineBatchStatus();
   }, []);
 
-  // Poll for batch progress while running
+  // Poll for monthly batch progress while running
   useEffect(() => {
     if (batchStatus?.status === "running") {
       if (!pollRef.current) {
@@ -75,7 +88,6 @@ export default function AuditsPage() {
       if (pollRef.current) {
         clearInterval(pollRef.current);
         pollRef.current = null;
-        // Refresh audit list when batch completes
         if (batchStatus?.status === "complete") fetchAudits();
       }
     }
@@ -83,6 +95,24 @@ export default function AuditsPage() {
       if (pollRef.current) clearInterval(pollRef.current);
     };
   }, [batchStatus?.status]);
+
+  // Poll for baseline batch progress while running
+  useEffect(() => {
+    if (baselineBatchStatus?.status === "running") {
+      if (!baselinePollRef.current) {
+        baselinePollRef.current = setInterval(fetchBaselineBatchStatus, 3000);
+      }
+    } else {
+      if (baselinePollRef.current) {
+        clearInterval(baselinePollRef.current);
+        baselinePollRef.current = null;
+        if (baselineBatchStatus?.status === "complete") fetchAudits();
+      }
+    }
+    return () => {
+      if (baselinePollRef.current) clearInterval(baselinePollRef.current);
+    };
+  }, [baselineBatchStatus?.status]);
 
   async function fetchAudits() {
     setLoading(true);
@@ -98,6 +128,15 @@ export default function AuditsPage() {
       const data = await res.json();
       setBatchStatus(data.batchStatus);
       setLastRun(data.lastRun);
+    } catch { }
+  }
+
+  async function fetchBaselineBatchStatus() {
+    try {
+      const res = await fetch("/api/audits/run-all-baseline");
+      const data = await res.json();
+      setBaselineBatchStatus(data.batchStatus);
+      setBaselineLastRun(data.lastRun);
     } catch { }
   }
 
@@ -117,6 +156,24 @@ export default function AuditsPage() {
     }
   }
 
+  async function handleRunAllBaseline() {
+    if (!confirm("This will queue baseline audits for all members who don't have one yet and have a YouTube channel set. Continue?")) return;
+    setBaselineLaunching(true);
+    try {
+      const res = await fetch("/api/audits/run-all-baseline", { method: "POST" });
+      const data = await res.json();
+      if (data.error) {
+        alert(data.error);
+      } else if (!data.started) {
+        alert(data.message ?? "No eligible members found.");
+      } else {
+        await fetchBaselineBatchStatus();
+      }
+    } finally {
+      setBaselineLaunching(false);
+    }
+  }
+
   const filtered = audits
     .filter((a) => !typeFilter || a.auditType === typeFilter)
     .filter((a) => {
@@ -126,6 +183,7 @@ export default function AuditsPage() {
     });
 
   const isRunning = batchStatus?.status === "running";
+  const isBaselineRunning = baselineBatchStatus?.status === "running";
 
   return (
     <div>
@@ -134,14 +192,24 @@ export default function AuditsPage() {
           <h1 className="text-2xl font-bold text-[#1e2a38]">Audits</h1>
           <p className="text-[#1e2a38]/60 mt-1">{audits.length} total audit{audits.length !== 1 ? "s" : ""}</p>
         </div>
-        <button
-          onClick={handleRunAllMonthly}
-          disabled={launching || isRunning}
-          className="flex items-center gap-2 bg-[#1e2a38] hover:bg-[#2a3a50] disabled:opacity-50 text-white px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors shrink-0"
-        >
-          <PlayIcon className={`w-4 h-4 ${isRunning ? "animate-pulse" : ""}`} />
-          {isRunning ? `Running… ${batchStatus.current}/${batchStatus.total}` : launching ? "Starting…" : "Run All Monthly Audits"}
-        </button>
+        <div className="flex flex-wrap gap-2 shrink-0">
+          <button
+            onClick={handleRunAllBaseline}
+            disabled={baselineLaunching || isBaselineRunning || isRunning}
+            className="flex items-center gap-2 bg-[#3dc3ff] hover:bg-[#2ab0ec] disabled:opacity-50 text-white px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors"
+          >
+            <PlayIcon className={`w-4 h-4 ${isBaselineRunning ? "animate-pulse" : ""}`} />
+            {isBaselineRunning ? `Running… ${baselineBatchStatus!.current}/${baselineBatchStatus!.total}` : baselineLaunching ? "Starting…" : "Run All Baseline Audits"}
+          </button>
+          <button
+            onClick={handleRunAllMonthly}
+            disabled={launching || isRunning || isBaselineRunning}
+            className="flex items-center gap-2 bg-[#1e2a38] hover:bg-[#2a3a50] disabled:opacity-50 text-white px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors"
+          >
+            <PlayIcon className={`w-4 h-4 ${isRunning ? "animate-pulse" : ""}`} />
+            {isRunning ? `Running… ${batchStatus!.current}/${batchStatus!.total}` : launching ? "Starting…" : "Run All Monthly Audits"}
+          </button>
+        </div>
       </div>
 
       {/* Batch progress */}
@@ -176,12 +244,12 @@ export default function AuditsPage() {
         </div>
       )}
 
-      {/* Last run summary */}
+      {/* Monthly batch summary */}
       {!isRunning && batchStatus?.status === "complete" && batchStatus.completed && (
         <div className="mb-4 bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
           <div className="flex items-center gap-2 mb-1">
             <CheckCircleIcon className="w-4 h-4 text-green-500 shrink-0" />
-            <p className="text-sm font-semibold text-[#1e2a38]">Last batch complete</p>
+            <p className="text-sm font-semibold text-[#1e2a38]">Last monthly batch complete</p>
             <p className="text-xs text-[#1e2a38]/40 ml-auto">{fmtDateTime(batchStatus.completed)}</p>
           </div>
           <p className="text-xs text-[#1e2a38]/60">
@@ -199,6 +267,59 @@ export default function AuditsPage() {
           {fmtDateTime(lastRun.date)} —{" "}
           {lastRun.audits_queued} audits completed, {lastRun.skipped_no_new_videos + lastRun.skipped_no_baseline + (lastRun.skipped_no_youtube ?? 0)} skipped
           {lastRun.failures > 0 && `, ${lastRun.failures} failed`}
+        </div>
+      )}
+
+      {/* Baseline batch progress */}
+      {isBaselineRunning && (
+        <div className="mb-4 bg-white border border-[#3dc3ff]/30 rounded-xl p-4 shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm font-semibold text-[#1e2a38]">Baseline batch in progress…</p>
+            <p className="text-sm text-[#1e2a38]/50">{baselineBatchStatus!.current} / {baselineBatchStatus!.total} members</p>
+          </div>
+          <div className="w-full bg-gray-100 rounded-full h-2 mb-3">
+            <div
+              className="bg-[#3dc3ff] h-2 rounded-full transition-all duration-500"
+              style={{ width: `${baselineBatchStatus!.total > 0 ? (baselineBatchStatus!.current / baselineBatchStatus!.total) * 100 : 0}%` }}
+            />
+          </div>
+          {baselineBatchStatus!.results && baselineBatchStatus!.results.length > 0 && (
+            <div className="space-y-1 max-h-48 overflow-y-auto">
+              {baselineBatchStatus!.results.slice().reverse().map((r, i) => (
+                <div key={i} className="flex items-center gap-2 text-xs">
+                  <span className={r.status === "success" ? "text-green-600" : r.status === "failed" ? "text-[#ff0033]" : "text-[#1e2a38]/40"}>
+                    {r.status === "success" ? "✓" : r.status === "failed" ? "✗" : "–"}
+                  </span>
+                  <span className="text-[#1e2a38]">{r.memberName}</span>
+                  {r.reason && <span className="text-[#1e2a38]/40">({r.reason})</span>}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Baseline batch summary */}
+      {!isBaselineRunning && baselineBatchStatus?.status === "complete" && baselineBatchStatus.completed && (
+        <div className="mb-4 bg-white border border-[#3dc3ff]/20 rounded-xl p-4 shadow-sm">
+          <div className="flex items-center gap-2 mb-1">
+            <CheckCircleIcon className="w-4 h-4 text-[#3dc3ff] shrink-0" />
+            <p className="text-sm font-semibold text-[#1e2a38]">Baseline batch complete</p>
+            <p className="text-xs text-[#1e2a38]/40 ml-auto">{fmtDateTime(baselineBatchStatus.completed)}</p>
+          </div>
+          <p className="text-xs text-[#1e2a38]/60">
+            {baselineBatchStatus.results?.filter(r => r.status === "success").length ?? 0} new baselines generated ·{" "}
+            {baselineBatchStatus.results?.filter(r => r.status === "failed").length ?? 0} failed
+          </p>
+        </div>
+      )}
+
+      {/* Last baseline run from DB */}
+      {baselineLastRun && !isBaselineRunning && !(baselineBatchStatus?.status === "complete") && (
+        <div className="mb-4 px-4 py-3 bg-[#e8f7ff]/60 border border-[#3dc3ff]/20 rounded-xl text-xs text-[#1e2a38]/60">
+          <span className="font-medium text-[#1e2a38]">Last baseline run:</span>{" "}
+          {fmtDateTime(baselineLastRun.date)} — {baselineLastRun.generated} baseline{baselineLastRun.generated !== 1 ? "s" : ""} generated
+          {baselineLastRun.failures > 0 && `, ${baselineLastRun.failures} failed`}
         </div>
       )}
 
