@@ -462,11 +462,12 @@ export default function AuditReportPage() {
                   const base = baselineScores?.[key]?.score;
                   const last = lastMonthScores?.[key]?.score;
                   const curr = val.score;
-                  const delta = base != null ? curr - base : null;
+                  const isNA = curr == null;
+                  const delta = !isNA && base != null ? curr - base : null;
                   const rowBg = deltaCellBg(delta);
                   return (
                     <tr key={key} className={`border-b border-gray-50 last:border-0 ${rowBg}`}>
-                      <td className="py-2 pr-3 text-[#1e2a38]">{PRINCIPLE_LABELS[key] ?? key}</td>
+                      <td className={`py-2 pr-3 ${isNA ? "text-[#1e2a38]/40" : "text-[#1e2a38]"}`}>{PRINCIPLE_LABELS[key] ?? key}</td>
                       <td className="py-2 px-2 text-center">
                         {base != null ? <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${scoreBg(base)}`}>{base.toFixed(1)}</span> : "—"}
                       </td>
@@ -476,10 +477,13 @@ export default function AuditReportPage() {
                         </td>
                       )}
                       <td className="py-2 px-2 text-center">
-                        <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${scoreBg(curr)}`}>{curr.toFixed(1)}</span>
+                        {isNA
+                          ? <span className="inline-block px-2 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-400">N/A</span>
+                          : <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${scoreBg(curr)}`}>{curr.toFixed(1)}</span>
+                        }
                       </td>
                       <td className="py-2 px-2 text-center text-xs font-bold">
-                        {delta == null ? "—" : delta > 0 ? <span className={deltaColor(delta)}>+{delta.toFixed(1)}</span> : delta < 0 ? <span className={deltaColor(delta)}>{delta.toFixed(1)}</span> : <span className="text-gray-400">0.0</span>}
+                        {isNA ? <span className="text-gray-400">—</span> : delta == null ? "—" : delta > 0 ? <span className={deltaColor(delta)}>+{delta.toFixed(1)}</span> : delta < 0 ? <span className={deltaColor(delta)}>{delta.toFixed(1)}</span> : <span className="text-gray-400">0.0</span>}
                       </td>
                     </tr>
                   );
@@ -496,15 +500,19 @@ export default function AuditReportPage() {
                   {dim.keys.filter((k) => scores[k]).map((key) => {
                     const val = scores[key];
                     const isOpen = expandedPrinciple === key;
+                    const isNA = val.score == null;
                     return (
                       <div key={key}>
                         <button
                           onClick={() => setExpandedPrinciple(isOpen ? null : key)}
                           className="w-full flex items-center justify-between py-2 px-3 rounded-lg hover:bg-gray-50 transition-colors"
                         >
-                          <span className="text-sm text-[#1e2a38]">{PRINCIPLE_LABELS[key]}</span>
+                          <span className={`text-sm ${isNA ? "text-[#1e2a38]/40" : "text-[#1e2a38]"}`}>{PRINCIPLE_LABELS[key]}</span>
                           <div className="flex items-center gap-2">
-                            <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${scoreBg(val.score)}`}>{val.score.toFixed(1)}</span>
+                            {isNA
+                              ? <span className="inline-block px-2 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-400">N/A</span>
+                              : <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${scoreBg(val.score)}`}>{val.score.toFixed(1)}</span>
+                            }
                             <span className="text-[#1e2a38]/30 text-xs no-print">{isOpen ? "▲" : "▼"}</span>
                           </div>
                         </button>

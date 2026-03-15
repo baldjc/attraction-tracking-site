@@ -128,8 +128,9 @@ export default function MemberAuditReportPage() {
         ) : (
         <div className="space-y-1">
           {Object.entries(scores).map(([key, val]: [string, any]) => {
+            const isNA = val.score == null;
             const base = baselineScores?.[key]?.score;
-            const delta = base != null ? val.score - base : null;
+            const delta = !isNA && base != null ? val.score - base : null;
             const isOpen = expanded === key;
             return (
               <div key={key}>
@@ -137,15 +138,15 @@ export default function MemberAuditReportPage() {
                   onClick={() => setExpanded(isOpen ? null : key)}
                   className="w-full flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-gray-50 transition-colors"
                 >
-                  <span className="text-sm text-[#1e2a38] text-left">{PRINCIPLE_LABELS[key] ?? key}</span>
+                  <span className={`text-sm text-left ${isNA ? "text-[#1e2a38]/40" : "text-[#1e2a38]"}`}>{PRINCIPLE_LABELS[key] ?? key}</span>
                   <div className="flex items-center gap-2 shrink-0">
-                    {delta != null && (
+                    {!isNA && delta != null && (
                       <span className={`text-xs font-semibold ${delta > 0 ? "text-green-600" : delta < 0 ? "text-[#ff0033]" : "text-gray-400"}`}>
                         {delta > 0 ? `+${delta.toFixed(1)}` : delta.toFixed(1)}
                       </span>
                     )}
-                    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${scoreBg(val.score)}`}>
-                      {val.score.toFixed(1)}
+                    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${isNA ? "bg-gray-100 text-gray-400" : scoreBg(val.score)}`}>
+                      {isNA ? "N/A" : val.score.toFixed(1)}
                     </span>
                     <span className="text-[#1e2a38]/30 text-xs">{isOpen ? "▲" : "▼"}</span>
                   </div>

@@ -169,14 +169,23 @@ Scoring guide:
    7-8: Natural drops of personality in most videos (2-3 per video)
    9-10: Personality woven throughout every video — viewer feels like they know this person
 
-8. STORY PROOF — REQUIRE SPECIFICS:
-   A client story must have specifics to score well: a name (or anonymised detail), a situation, stakes, and a resolution.
+8. STORY PROOF — REAL ESTATE CONFIDENTIALITY AWARE:
+   In real estate, agents CANNOT share client names, addresses, or exact prices due to professional confidentiality. Anonymised stories ARE the professional standard — score based on whether a narrative structure is present, not how much personal detail is shared.
 
-   'I've had clients who felt the same way' is NOT story proof — it's a vague reference (scores 1-2).
-   'I worked with a family last month who...' with no specific details is weak story proof (scores 3-4).
-   'Sarah and Marcus were terrified of carrying two mortgages. We timed their sale and purchase to close same-day — they moved with zero overlap and saved $12,000 in carrying costs' IS story proof (scores 7-9).
+   | Score | Description |
+   |-------|-------------|
+   | 0–2 | Zero client stories. No social proof. All theory, no evidence. |
+   | 3–4 | Only vague hand-waving — "I've helped clients who felt this way" — with no narrative structure whatsoever. |
+   | 5–6 | One story with some structure, or multiple vague mentions without a clear situation → challenge → outcome arc. |
+   | 7–8 | Client stories with clear narrative arc (situation → challenge → outcome) even if details are anonymised. |
+   | 9–10 | Rich storytelling. Multiple proof stories per video, each with a full narrative arc. |
 
-   Count and quote every client story across all 5 videos. Note which have names/specifics and which are vague.
+   CALIBRATION:
+   - A story with anonymised details but clear narrative structure = 7–8, NOT 5–6
+   - "A family who sold fast and couldn't find a home in time, leading to a double move" = strong story proof (7–8)
+   - Names are NOT required. The presence of situation → challenge → outcome IS required for 7+.
+   - Only score 3–4 when there is NO actual story — just vague references like "my clients love this area"
+   - "I've had clients who felt the same way" with no story = 1–2
 
 9. ARC ATTENTION — SCORE THE ACTUAL OPENING:
    Quote the EXACT first sentence of every video. Then assess:
@@ -186,6 +195,15 @@ Scoring guide:
    - Or does it use no pattern (generic 'hey guys, welcome back')?
 
    A data-driven opening like 'there's a big difference between what the headlines say and what's actually happening' IS a hook — it's a Contradiction pattern. Score it as such. Don't penalise it for not being emotional if it creates genuine curiosity.
+
+   OPENING CALIBRATION RULES — do not invent stricter timing than this:
+   - Lead magnet mentioned within first 20 seconds = perfect timing (contributes to 9–10)
+   - Hook landing within 15–20 seconds = excellent. There is NO "5 second rule." Do NOT require hooks to land in 5 seconds.
+   - Into revelation content by :25–30 = textbook perfect opening — score 9–10
+   - "What most people get wrong" is a strong problem hook pattern — do not suggest it needs to come faster if it lands naturally within 15–20 seconds
+   - Score ARC Attention 9–10 when ALL elements are present and land by :30: hook creates tension/curiosity, title promise confirmed, lead magnet mentioned, content has begun
+   - The opening window is 20–30 seconds for a complete sequence. Never penalise an opening for imagined timing issues when the structure is working.
+   - When assessing the opening: are all elements present and landing by :30? If yes, this is a 9–10 opening regardless of whether individual elements land at :05 or :15. A well-structured problem hook that takes 15 seconds to set up is NOT "too slow" — it is doing its job. Only penalise openings where elements are MISSING or land AFTER :30.
 
 10. BINGE ARCHITECTURE — UPDATED SCORING:
 
@@ -224,7 +242,20 @@ Evidence to cite: List each upload date. State the gap between each pair. State 
 
 - For Consistency: you MUST calculate the average gap between upload dates in days and use the lookup table. Do not estimate cadence — do the math.
 
-12. SHOW DON'T TELL — TRANSCRIPT-ESTIMATED ONLY:
+12. TITLE FRAMEWORKS — CALIBRATION RULES:
+   Titles should create a CURIOSITY GAP — they should NOT give away the unique insight. The insight is the revelation delivered inside the video. A title that reveals the answer kills the reason to click.
+
+   GOOD: "Why Calgary's Market Is About to Shift" (creates curiosity — drives the click)
+   BAD: "Calgary's Market Is Shifting Because of X Policy" (gave away the answer)
+
+   Score titles on these 4 criteria:
+   1. Does it use a proven framework? (numbers, Why/How/What, Don't X Until You Y, [Audience] mistakes, etc.)
+   2. Does it create a curiosity gap?
+   3. Does it target the right audience?
+   4. Would it stop a scroll?
+   YES to all four = 8–10. YES to three = 7–8. Never penalise a title for "not being specific enough about the unique insight" — that specificity belongs INSIDE the video, not in the title.
+
+13. SHOW DON'T TELL — TRANSCRIPT-ESTIMATED ONLY:
 
 Since you are analysing transcripts, not video footage, you cannot see visual elements. Score ONLY based on verbal references to visuals in the transcript.
 
@@ -293,7 +324,7 @@ SCORING PRINCIPLES (score each 0–10):
 13. story_proof — Client stories with names, situations, stakes, outcomes?
 14. grade_5_language — Conversational, jargon-free, simple?
 15. binge_architecture — Cross-references to other videos?
-16. consistency — (score 5 by default for single videos — cannot assess consistency from one video)
+16. consistency — N/A for single video audits. Do NOT score this principle. Return null for the score in the JSON.
 
 SCORING GUIDELINES:
 - 8–10: Excellent. Clear evidence of mastery.
@@ -303,6 +334,40 @@ SCORING GUIDELINES:
 - 0–1: Absent.
 
 Be rigorous and honest. Do NOT inflate scores. Use exact quotes from the transcript as evidence.
+
+MEMBER AVATAR PROFILE (use for Themes Over Topics scoring):
+{{AVATAR_PROFILE}}
+
+SINGLE VIDEO CALIBRATION RULES — READ CAREFULLY:
+
+1. THEMES OVER TOPICS — AVATAR ALIGNMENT (single video context):
+   For a single video, score Themes Over Topics based on AVATAR ALIGNMENT — is this video clearly speaking to the member's avatar throughout? Use the avatar profile above as your reference. If no avatar profile is provided, infer the intended avatar from the video content.
+   | Score | Description |
+   |-------|-------------|
+   | 10 | Video clearly speaks to the avatar and addresses that person all the way through |
+   | 7–8 | Mostly on-avatar but drifts slightly or briefly addresses a secondary audience |
+   | 5–6 | Tries to talk to a few different people, diluting the avatar focus |
+   | 3–4 | Loosely related to the avatar but not clearly speaking to them |
+   | 0–2 | Not speaking to the avatar at all — wrong audience entirely |
+
+2. CONSISTENCY — N/A:
+   Consistency is a channel-level metric requiring multiple upload dates. Do not attempt to score it from a single video. Return null for the score and "N/A — channel-level metric, cannot assess from a single video" as evidence.
+
+3. OPENING CALIBRATION RULES — do not invent stricter timing than this:
+   - Lead magnet mentioned within first 20 seconds = perfect timing
+   - Hook landing within 15–20 seconds = excellent. There is NO "5 second rule."
+   - Into revelation content by :25–30 = textbook perfect opening — score 9–10
+   - Score ARC Attention 9–10 when ALL elements are present and land by :30
+   - Never penalise an opening for imagined timing issues when the structure is working.
+   - A well-structured problem hook that takes 15 seconds to set up is NOT "too slow" — only penalise openings where elements are MISSING or land AFTER :30.
+
+4. TITLE FRAMEWORKS — titles create curiosity, NOT give away the insight:
+   GOOD: "Why Calgary's Market Is About to Shift" (creates curiosity)
+   BAD: "Calgary's Market Is Shifting Because of X Policy" (gave away the answer)
+   Score 8–10 when the title uses a proven framework AND creates a curiosity gap. Never penalise a title for "not being specific enough about the unique insight" — the insight lives inside the video, not in the title.
+
+5. STORY PROOF — real estate confidentiality:
+   Agents cannot share client names or addresses. Anonymised stories with a clear situation → challenge → outcome arc = 7–8. Only score 3–4 when there is NO story at all — just vague references like "my clients love this area."
 
 Return ONLY valid JSON in this EXACT structure, nothing else — no markdown, no code fences:
 
@@ -323,7 +388,7 @@ Return ONLY valid JSON in this EXACT structure, nothing else — no markdown, no
     "story_proof": { "score": 5.0, "evidence": "..." },
     "grade_5_language": { "score": 7.0, "evidence": "..." },
     "binge_architecture": { "score": 1.5, "evidence": "..." },
-    "consistency": { "score": 5.0, "evidence": "Single video — consistency assessed at channel level" }
+    "consistency": { "score": null, "evidence": "N/A — channel-level metric, cannot assess from a single video" }
   },
   "overall_score": 4.5,
   "one_sentence_diagnosis": "{Name} uses {strength} — but {core gap} holds this video back.",
@@ -516,6 +581,48 @@ export function calculateWeightedScores(scores: Record<string, { score: number }
   return { attractionScore, rawAverage };
 }
 
+export const SINGLE_VIDEO_SCORE_WEIGHTS: Record<string, number> = {
+  lead_magnet_system: 3,
+  avatar_clarity: 3,
+  binge_architecture: 3,
+  arc_attention: 2,
+  approve_the_click: 2,
+  connection_language: 2,
+  title_frameworks: 2,
+  arc_revelation: 2,
+  story_proof: 2,
+  themes_over_topics: 1,
+  curiosity_bridges: 1,
+  values_peppering: 1,
+  grade_5_language: 1,
+  arc_connection: 1,
+  show_dont_tell: 0,
+  consistency: 0,
+};
+const SINGLE_VIDEO_TOTAL_WEIGHT = 26;
+
+export function calculateSingleVideoScores(scores: Record<string, { score: number | null }>): {
+  attractionScore: number;
+  rawAverage: number;
+} {
+  let weightedSum = 0;
+  let rawSum = 0;
+  let rawCount = 0;
+  for (const [principle, weight] of Object.entries(SINGLE_VIDEO_SCORE_WEIGHTS)) {
+    if (principle === "consistency") continue;
+    const scoreVal = scores[principle]?.score;
+    if (scoreVal == null) continue;
+    if (weight > 0) {
+      weightedSum += scoreVal * weight;
+    }
+    rawSum += scoreVal;
+    rawCount++;
+  }
+  const attractionScore = Math.round((weightedSum / SINGLE_VIDEO_TOTAL_WEIGHT) * 10) / 10;
+  const rawAverage = rawCount > 0 ? Math.round((rawSum / rawCount) * 10) / 10 : 0;
+  return { attractionScore, rawAverage };
+}
+
 export interface AuditResult {
   scores: AuditScores;
   overall_score: number;
@@ -560,7 +667,8 @@ export interface AuditResult {
 export async function runAuditWithClaude(
   videos: VideoWithTranscript[],
   memberName: string,
-  systemPrompt: string
+  systemPrompt: string,
+  isSingleVideo = false
 ): Promise<AuditResult> {
   const videoContent = videos
     .map((v, i) => {
@@ -662,7 +770,9 @@ CRITICAL INSTRUCTIONS:
   }
 
   // Recalculate scores server-side using weighted formula to ensure accuracy
-  const { attractionScore, rawAverage } = calculateWeightedScores(result.scores as any);
+  const { attractionScore, rawAverage } = isSingleVideo
+    ? calculateSingleVideoScores(result.scores as any)
+    : calculateWeightedScores(result.scores as any);
   result.overall_score = attractionScore;
   result.raw_average = rawAverage;
 

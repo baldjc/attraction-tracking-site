@@ -299,12 +299,14 @@ export default function SharedReportPage() {
                 <div className="space-y-1">
                   {dim.keys.filter((k) => scores[k]).map((key) => {
                     const val = scores[key];
+                    const isNA = val.score == null;
                     return (
                       <div key={key} className="flex items-center justify-between py-1.5 px-3 rounded-lg">
-                        <span className="text-sm text-[#1e2a38]">{PRINCIPLE_LABELS[key]}</span>
-                        <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${scoreBg(val.score)}`}>
-                          {val.score.toFixed(1)}
-                        </span>
+                        <span className={`text-sm ${isNA ? "text-[#1e2a38]/40" : "text-[#1e2a38]"}`}>{PRINCIPLE_LABELS[key]}</span>
+                        {isNA
+                          ? <span className="inline-block px-2 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-400">N/A</span>
+                          : <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${scoreBg(val.score)}`}>{val.score.toFixed(1)}</span>
+                        }
                       </div>
                     );
                   })}

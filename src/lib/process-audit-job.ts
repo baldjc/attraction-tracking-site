@@ -79,14 +79,23 @@ export async function processAuditJob(jobId: string, selectedVideoId?: string) {
     await prisma.auditJob.update({ where: { id: jobId }, data: { status: "analysing" } });
 
     const setting = await prisma.appSetting.findUnique({ where: { key: "audit_prompt" } });
-    const systemPrompt = job.auditType === "single_video"
-      ? SINGLE_VIDEO_SCORING_PROMPT
-      : (setting?.value ?? DEFAULT_SCORING_PROMPT);
+    const isSingleVideo = job.auditType === "single_video";
+
+    let systemPrompt: string;
+    if (isSingleVideo) {
+      const avatarText = (member as any).avatarSummary
+        || ((member as any).avatarProfile ? JSON.stringify((member as any).avatarProfile, null, 2) : null)
+        || "No avatar profile saved for this member — infer the intended avatar from the video content.";
+      systemPrompt = SINGLE_VIDEO_SCORING_PROMPT.replace("{{AVATAR_PROFILE}}", avatarText);
+    } else {
+      systemPrompt = setting?.value ?? DEFAULT_SCORING_PROMPT;
+    }
 
     const auditResult = await runAuditWithClaude(
       videos.filter(Boolean) as any,
       member.fullName ?? member.email,
-      systemPrompt
+      systemPrompt,
+      isSingleVideo
     );
 
     await prisma.auditJob.update({ where: { id: jobId }, data: { status: "generating" } });
