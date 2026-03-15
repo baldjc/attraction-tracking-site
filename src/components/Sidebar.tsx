@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 import {
   HomeIcon,
@@ -18,6 +18,8 @@ import {
   XMarkIcon,
   PencilSquareIcon,
   SparklesIcon,
+  ArrowLeftIcon,
+  EyeIcon,
 } from "@heroicons/react/24/outline";
 import { useState, useEffect } from "react";
 
@@ -46,10 +48,20 @@ const memberLinks = [
   { href: "/member/settings", label: "Settings", icon: Cog6ToothIcon },
 ];
 
+const VIEW_AS_KEY = "abv_view_mode";
+
 export default function Sidebar({ role, userName }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const links = role === "admin" ? adminLinks : memberLinks;
+  const [viewAsMode, setViewAsMode] = useState<string | null>(null);
+
+  // Read view mode from localStorage on mount and pathname change
+  useEffect(() => {
+    try {
+      setViewAsMode(localStorage.getItem(VIEW_AS_KEY));
+    } catch { }
+  }, [pathname]);
 
   useEffect(() => {
     setMobileOpen(false);
@@ -60,6 +72,14 @@ export default function Sidebar({ role, userName }: SidebarProps) {
     return () => { document.body.style.overflow = ""; };
   }, [mobileOpen]);
 
+  // When admin is on a member path with viewAsMode=member, show member nav
+  const isAdminOnMemberView =
+    role === "admin" &&
+    viewAsMode === "member" &&
+    !pathname.startsWith("/admin");
+
+  const links = (role === "admin" && !isAdminOnMemberView) ? adminLinks : memberLinks;
+
   function isActive(href: string) {
     if (href === "/admin" || href === "/member/scores") {
       return pathname === href;
@@ -67,10 +87,33 @@ export default function Sidebar({ role, userName }: SidebarProps) {
     return pathname.startsWith(href);
   }
 
+  function exitMemberView() {
+    try { localStorage.removeItem(VIEW_AS_KEY); } catch { }
+    setViewAsMode(null);
+    router.push("/admin");
+  }
+
   const sidebarInner = (
     <div className="flex flex-col h-full">
+      {/* "Viewing as Member" banner */}
+      {isAdminOnMemberView && (
+        <div className="bg-amber-500 px-4 py-2.5 flex items-center justify-between gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <EyeIcon className="w-4 h-4 text-amber-900 shrink-0" />
+            <span className="text-xs font-semibold text-amber-900">Member View</span>
+          </div>
+          <button
+            onClick={exitMemberView}
+            className="flex items-center gap-1 text-xs font-semibold text-amber-900 hover:text-white transition-colors whitespace-nowrap"
+          >
+            <ArrowLeftIcon className="w-3 h-3" />
+            Back to Admin
+          </button>
+        </div>
+      )}
+
       <div className="px-4 py-4 border-b border-white/10 flex-shrink-0">
-        <Link href={role === "admin" ? "/admin" : "/member/scores"} className="flex items-center gap-3">
+        <Link href={role === "admin" && !isAdminOnMemberView ? "/admin" : "/member/scores"} className="flex items-center gap-3">
           <img
             src="/logo-icon.png"
             alt=""
@@ -110,7 +153,7 @@ export default function Sidebar({ role, userName }: SidebarProps) {
         <div className="px-3 py-2 mb-1">
           <p className="text-sm font-semibold text-white truncate">{userName}</p>
           <p className="text-xs text-white/40 mt-0.5">
-            {role === "admin" ? "Admin" : "Foundations Member"}
+            {isAdminOnMemberView ? "Foundations Member" : role === "admin" ? "Admin" : "Foundations Member"}
           </p>
         </div>
         <button
@@ -137,6 +180,14 @@ export default function Sidebar({ role, userName }: SidebarProps) {
         </button>
         <img src="/logo-icon.png" alt="" className="h-8 w-8 rounded-lg object-cover" />
         <img src="/logo-transparent.png" alt="Attraction by Video" className="h-6 w-auto object-contain" style={{ filter: "brightness(0) invert(1)" }} />
+        {isAdminOnMemberView && (
+          <button
+            onClick={exitMemberView}
+            className="ml-auto flex items-center gap-1 bg-amber-500 text-amber-900 text-xs font-semibold px-3 py-1.5 rounded-lg"
+          >
+            <ArrowLeftIcon className="w-3 h-3" /> Admin
+          </button>
+        )}
       </div>
 
       {/* Mobile overlay */}
