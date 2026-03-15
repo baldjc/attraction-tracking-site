@@ -133,7 +133,10 @@ export default function AuditReportPage() {
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/audits/${auditId}`);
-    if (res.ok) setAudit(await res.json());
+    if (res.ok) {
+      const d = await res.json();
+      setAudit(d.audit ?? d);
+    }
     setLoading(false);
   }, [auditId]);
 
@@ -162,7 +165,10 @@ export default function AuditReportPage() {
   if (!audit) return <div className="text-center py-20 text-[#1e2a38]/50">Report not found.</div>;
 
   const report = audit.reportContent as any;
-  const scores = audit.scores as any;
+  console.log("[AuditReport] reportContent keys:", report ? Object.keys(report) : "null/undefined", "| audit.scores:", audit.scores);
+  const rawScores = audit.scores ?? report?.audit_results ?? report?.scores ?? null;
+  const scores = (rawScores ?? {}) as Record<string, { score: number; evidence?: string }>;
+  const hasScores = Object.keys(scores).length > 0;
   const videos = (audit.videosAnalysed as any[]) ?? [];
   const member = audit.user;
   const baselineScores = report?.baselineScores as any;
@@ -433,7 +439,9 @@ export default function AuditReportPage() {
       <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm print-page-break print-avoid-break">
         <h2 className="text-base font-semibold text-[#1e2a38] mb-4">16-Principle Scorecard</h2>
 
-        {isMonthly && baselineScores ? (
+        {!hasScores ? (
+          <p className="text-sm text-[#1e2a38]/50 italic">Score data unavailable for this audit. The report content may have been saved in an older format — check the browser console for the raw keys.</p>
+        ) : isMonthly && baselineScores ? (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>

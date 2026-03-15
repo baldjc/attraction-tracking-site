@@ -116,7 +116,8 @@ export default function SharedReportPage() {
       setLoading(false);
       return;
     }
-    setAudit(await res.json());
+    const d = await res.json();
+    setAudit(d.audit ?? d);
     setLoading(false);
   }, [auditId]);
 
@@ -140,7 +141,10 @@ export default function SharedReportPage() {
   if (!audit) return null;
 
   const report = audit.reportContent as any;
-  const scores = audit.scores as any;
+  console.log("[SharedReport] reportContent keys:", report ? Object.keys(report) : "null/undefined", "| audit.scores:", audit.scores);
+  const rawScores = audit.scores ?? report?.audit_results ?? report?.scores ?? null;
+  const scores = (rawScores ?? {}) as Record<string, { score: number; evidence?: string }>;
+  const hasScores = Object.keys(scores).length > 0;
   const videos = (audit.videosAnalysed as any[]) ?? [];
   const member = audit.user;
   const baselineScores = report?.baselineScores as any;
@@ -281,6 +285,9 @@ export default function SharedReportPage() {
         {/* Scorecard */}
         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
           <h2 className="text-base font-semibold text-[#1e2a38] mb-4">16-Principle Scorecard</h2>
+          {!hasScores ? (
+            <p className="text-sm text-[#1e2a38]/50 italic">Score data unavailable for this audit.</p>
+          ) : (
           <div className="space-y-4">
             {DIMENSIONS.map((dim) => (
               <div key={dim.label}>
@@ -301,6 +308,7 @@ export default function SharedReportPage() {
               </div>
             ))}
           </div>
+          )}
         </div>
 
         {/* Videos Analysed */}
