@@ -15,8 +15,64 @@ interface SavedScript {
   createdAt: string;
 }
 
+interface UsageData {
+  percentUsed: number;
+  cap: string;
+  totalCost: string;
+  remaining: string;
+  breakdown: Record<string, string>;
+  resetsAt: string;
+}
+
 interface Props {
   basePath: string;
+}
+
+const TOOL_LABELS: Record<string, string> = {
+  arc_script_builder: "ARC Script Builder",
+  avatar_architect: "Avatar Architect",
+  title_creator: "Title Creator",
+  title_thumbnail_analyzer: "Title & Thumbnail Analyzer",
+  script_review: "Script Review",
+};
+
+function UsageCard({ usage }: { usage: UsageData }) {
+  const pct = Math.min(100, usage.percentUsed);
+  const barColor = pct >= 90 ? "bg-red-500" : pct >= 75 ? "bg-amber-400" : "bg-[#3dc3ff]";
+  const textColor = pct >= 90 ? "text-red-600" : pct >= 75 ? "text-amber-600" : "text-[#3dc3ff]";
+
+  const breakdownEntries = Object.entries(usage.breakdown).filter(([, v]) => parseFloat(v) > 0);
+
+  return (
+    <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-5 space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="font-semibold text-[#1e2a38] text-sm">My AI Usage</h3>
+        <span className={`text-xs font-semibold ${textColor}`}>{Math.round(pct)}%</span>
+      </div>
+
+      <div>
+        <div className="h-2 bg-[#1e2a38]/10 rounded-full overflow-hidden">
+          <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${pct}%` }} />
+        </div>
+        <p className="text-xs text-[#1e2a38]/50 mt-2">
+          ${parseFloat(usage.totalCost).toFixed(2)} used / ${parseFloat(usage.cap).toFixed(2)} limit
+        </p>
+      </div>
+
+      {breakdownEntries.length > 0 && (
+        <div className="space-y-1 pt-1 border-t border-[#1e2a38]/5">
+          {breakdownEntries.map(([tool, cost]) => (
+            <div key={tool} className="flex items-center justify-between">
+              <span className="text-xs text-[#1e2a38]/60">{TOOL_LABELS[tool] ?? tool}</span>
+              <span className="text-xs text-[#1e2a38]/50">${parseFloat(cost).toFixed(4)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <p className="text-xs text-[#1e2a38]/40">Resets {usage.resetsAt}</p>
+    </div>
+  );
 }
 
 export default function AIToolsHub({ basePath }: Props) {
@@ -26,6 +82,7 @@ export default function AIToolsHub({ basePath }: Props) {
   const [lastScript, setLastScript] = useState<SavedScript | null>(null);
   const [lastReview, setLastReview] = useState<SavedScript | null>(null);
   const [loading, setLoading] = useState(true);
+  const [usage, setUsage] = useState<UsageData | null>(null);
 
   const scriptReviewHref = `${basePath}/script-review`;
 
@@ -34,10 +91,12 @@ export default function AIToolsHub({ basePath }: Props) {
       fetch("/api/member/avatar").then((r) => r.json()).catch(() => ({})),
       fetch("/api/ai-tools/saved-scripts").then((r) => r.json()).catch(() => ({ scripts: [] })),
       fetch("/api/script-review").then((r) => r.json()).catch(() => ({ reviews: [] })),
-    ]).then(([av, sc, sr]) => {
+      fetch("/api/ai-tools/usage/me").then((r) => r.json()).catch(() => null),
+    ]).then(([av, sc, sr, us]) => {
       setAvatar(av);
       setLastScript(sc.scripts?.[0] ?? null);
       setLastReview(sr.reviews?.[0] ?? null);
+      if (us && us.percentUsed > 0) setUsage(us);
       setLoading(false);
     });
   }, []);
@@ -117,6 +176,25 @@ export default function AIToolsHub({ basePath }: Props) {
         )}
       </div>
 
+      {!loading && usage && (usage.percentUsed >= 50) && (
+        <div className={`mb-5 flex items-start gap-3 border rounded-xl p-4 ${
+          usage.percentUsed >= 90
+            ? "bg-red-50 border-red-200"
+            : usage.percentUsed >= 75
+            ? "bg-amber-50 border-amber-200"
+            : "bg-blue-50 border-blue-200"
+        }`}>
+          <span className="text-lg">{usage.percentUsed >= 90 ? "🚫" : usage.percentUsed >= 75 ? "⚠️" : "ℹ️"}</span>
+          <p className={`text-sm ${
+            usage.percentUsed >= 90 ? "text-red-700" : usage.percentUsed >= 75 ? "text-amber-700" : "text-blue-700"
+          }`}>
+            {usage.percentUsed >= 100
+              ? `You've reached your monthly AI usage limit. Resets ${usage.resetsAt}.`
+              : `You've used ${Math.round(usage.percentUsed)}% of your monthly AI budget. Resets ${usage.resetsAt}.`}
+          </p>
+        </div>
+      )}
+
       {!loading && !avatar?.avatarName && (
         <div className="mb-6 flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl p-4">
           <span className="text-xl">💡</span>
@@ -126,6 +204,12 @@ export default function AIToolsHub({ basePath }: Props) {
               All tools work best when they know who you're speaking to. Build your avatar once and every tool uses it automatically.
             </p>
           </div>
+        </div>
+      )}
+
+      {!loading && usage && (
+        <div className="mb-6">
+          <UsageCard usage={usage} />
         </div>
       )}
 

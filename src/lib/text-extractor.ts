@@ -6,7 +6,9 @@ export async function extractText(buffer: Buffer, filename: string): Promise<str
 
   if (ext === "pdf") {
     // Dynamic import to avoid issues with pdf-parse's require-time side effects
-    const pdfParse = (await import("pdf-parse")).default;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const pdfParseModule: any = await import("pdf-parse");
+    const pdfParse = pdfParseModule.default ?? pdfParseModule;
     const result = await pdfParse(buffer);
     const text = result.text?.trim() ?? "";
     if (!text) {

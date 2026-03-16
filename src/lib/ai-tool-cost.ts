@@ -65,8 +65,12 @@ export async function getMonthlyUsage(userId: string): Promise<{
   if (user?.aiToolsMonthlyCapOverride != null) {
     cap = new Decimal(user.aiToolsMonthlyCapOverride.toString());
   } else {
-    const setting = await prisma.appSetting.findUnique({ where: { key: "ai_tools_monthly_cap" } });
-    if (setting) cap = new Decimal(setting.value);
+    const setting = await prisma.appSetting.upsert({
+      where: { key: "ai_tools_monthly_cap" },
+      update: {},
+      create: { key: "ai_tools_monthly_cap", value: DEFAULT_MONTHLY_CAP.toFixed(2) },
+    });
+    cap = new Decimal(setting.value);
   }
 
   const diff = cap.sub(totalCost);
@@ -98,6 +102,6 @@ export async function logUsage(
 ): Promise<void> {
   const costUsd = calculateCost(inputTokens, outputTokens);
   await prisma.aIToolUsage.create({
-    data: { userId, toolType, inputTokens, outputTokens, costUsd, conversationId },
+    data: { userId, toolType, inputTokens, outputTokens, costUsd: costUsd.toString(), conversationId },
   });
 }
