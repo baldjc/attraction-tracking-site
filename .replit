@@ -35,6 +35,8 @@ externalPort = 80
 [userenv.shared]
 GHL_LOCATION_ID = "vEIiKAjpBkCDrabeDre7"
 FROM_EMAIL = "Attraction by Video <noreply@attractionbyvideo.com>"
+AUTH_TRUST_HOST = "true"
+AUTH_URL = "https://attraction-tracking-site.replit.app"
 
 [nix]
 channel = "stable-25_05"
