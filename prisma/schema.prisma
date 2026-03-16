@@ -72,6 +72,8 @@ model User {
   avatarSummary   String?
   contentThemes   Json?
 
+  aiToolsMonthlyCapOverride  Decimal? @db.Decimal(10, 2)
+
   audits               Audit[]
   auditJobs            AuditJob[]
   campaigns            Campaign[]
@@ -81,6 +83,7 @@ model User {
   savedTitles          SavedTitle[]
   titleAnalyses        TitleAnalysis[]
   aiToolConversations  AIToolConversation[]
+  aiToolUsage          AIToolUsage[]
 
   @@map("users")
 }
@@ -260,6 +263,22 @@ model LoginOtp {
 
   @@index([email])
   @@map("login_otps")
+}
+
+model AIToolUsage {
+  id             String   @id @default(uuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  toolType       String
+  inputTokens    Int
+  outputTokens   Int
+  costUsd        Decimal  @db.Decimal(10, 6)
+  conversationId String?
+  createdAt      DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("ai_tool_usage")
 }
 
 model AIToolConversation {

@@ -1,0 +1,107 @@
+We're redesigning the ARC Script Builder from a 6-step wizard into a two-phase chat interface. This is Part 1 of 3 — database changes, cost cap system, and file upload.
+
+=== CHANGE 1: ADD AIToolUsage TABLE ===
+
+Add a new Prisma model for tracking AI tool API costs:
+
+model AIToolUsage {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  toolType        String
+  inputTokens     Int
+  outputTokens    Int
+  costUsd         Decimal  @db.Decimal(10, 6)
+  conversationId  String?
+  createdAt       DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("ai_tool_usage")
+}
+
+Also add to the User model:
+- aiToolsMonthlyCapOverride  Decimal? @db.Decimal(10, 2)
+- aiToolUsage AIToolUsage[] (relation)
+
+Run prisma migrate after adding this.
+
+
+=== CHANGE 2: COST CAP UTILITY ===
+
+Create src/lib/ai-tool-cost.ts with these exports:
+
+1. calculateCost(inputTokens: number, outputTokens: number): Decimal
+   - Uses Sonnet pricing: $3/M input, $12/M output
+   - Returns Decimal for precision
+
+2. getMonthlyUsage(userId: string): Promise<{ totalCost, cap, remaining, percentUsed, breakdown }>
+   - Aggregates AIToolUsage for the current calendar month
+   - Gets the cap from: user's aiToolsMonthlyCapOverride → AppSetting "ai_tools_monthly_cap" → default $15.00
+   - Admin users (role === "admin") are exempt — returns 999999 remaining
+   - breakdown is an object mapping toolType → total cost
+
+3. checkCostCap(userId: string): Promise<{ allowed, percentUsed, resetsAt }>
+   - Returns allowed: false if remaining <= 0
+   - resetsAt is the 1st of next month as YYYY-MM-DD
+
+4. logUsage(userId, toolType, inputTokens, outputTokens, conversationId?): Promise<void>
+   - Creates an AIToolUsage record with the calculated cost
+
+
+=== CHANGE 3: USAGE API ENDPOINTS ===
+
+1. GET /api/ai-tools/usage/me
+   - Auth: any logged-in user
+   - Returns: { totalCost, cap, remaining, percentUsed, breakdown (by tool), resetsAt }
+   - Uses getMonthlyUsage()
+
+2. GET /api/ai-tools/usage
+   - Auth: admin only
+   - Returns: { memberUsage (array of per-user objects with name, email, role, tools breakdown, total), toolBreakdown (per-tool: uses count, uniqueMembers count, lastUsed), totalCost }
+   - Queries AIToolUsage for current month, aggregates by user and by tool
+
+
+=== CHANGE 4: TEXT EXTRACTION UTILITY ===
+
+Create src/lib/text-extractor.ts:
+
+export async function extractText(buffer: Buffer, filename: string): Promise<string>
+
+- PDF: use pdf-parse package. If no text extracted (scanned PDF), throw Error("SCANNED_PDF:filename")
+- DOCX: use mammoth package (.extractRawText)
+- TXT/MD: buffer.toString("utf-8")
+- Other: throw Error("UNSUPPORTED_FORMAT:filename")
+
+Install: npm install pdf-parse mammoth
+
+
+=== CHANGE 5: FILE UPLOAD ENDPOINT ===
+
+Create POST /api/ai-tools/arc-script-builder/upload
+
+- Auth: resolveUserFromSession()
+- Accepts multipart FormData with "files" field (multiple files)
+- Validates: max 3 files, max 10MB each, allowed extensions: pdf, docx, txt, md
+- For each file: reads into Buffer (in memory, no disk), calls extractText()
+- Returns: { results: [{ filename, text?, error? }] }
+
+Error messages:
+- Scanned PDF: "This PDF appears to be a scanned image. Try copying and pasting the content instead."
+- Unreadable: "Couldn't read this file. Try pasting the text directly instead."
+- Too large: "File exceeds 10MB limit"
+- Wrong type: "Unsupported file type: .xxx"
+
+Files are processed entirely in memory — no disk writes (important for Replit).
+
+
+=== HOW TO TEST PART 1 ===
+
+- [ ] AIToolUsage table exists after migration
+- [ ] User model has aiToolsMonthlyCapOverride field
+- [ ] GET /api/ai-tools/usage/me returns usage data (should be all zeros initially)
+- [ ] GET /api/ai-tools/usage returns admin data (admin only)
+- [ ] POST /api/ai-tools/arc-script-builder/upload accepts files and returns extracted text
+- [ ] Upload rejects files over 10MB, wrong types, more than 3 files
+- [ ] PDF, DOCX, TXT, and MD files all extract correctly
+```
