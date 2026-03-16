@@ -2,7 +2,7 @@ import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-const FROM_EMAIL = process.env.FROM_EMAIL ?? "Attraction by Video <noreply@attractionbyvideo.com>";
+const FROM_EMAIL = process.env.FROM_EMAIL ?? "Attraction by Video <onboarding@resend.dev>";
 
 export async function sendLoginCode(to: string, code: string, name?: string | null) {
   const greeting = name ? `Hi ${name.split(" ")[0]},` : "Hi,";
