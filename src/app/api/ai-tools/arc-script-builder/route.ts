@@ -102,8 +102,9 @@ async function buildSystemPrompt(userId: string, researchSummary: string): Promi
     prisma.appSetting.findUnique({ where: { key: "prompt_arc_script_builder" } }),
   ]);
 
-  const avatarText = dbUser?.avatarProfile
-    ? JSON.stringify({ name: dbUser.avatarName, summary: dbUser.avatarSummary, profile: dbUser.avatarProfile })
+  const hasAvatar = !!(dbUser?.avatarName || dbUser?.avatarProfile);
+  const avatarText = hasAvatar
+    ? JSON.stringify({ name: dbUser!.avatarName, summary: dbUser!.avatarSummary, profile: dbUser!.avatarProfile })
     : "No avatar saved — remind the member to build their avatar first.";
   const themes = dbUser?.contentThemes ? JSON.stringify(dbUser.contentThemes) : "No themes saved.";
   const scores = latestAudit?.scores ? JSON.stringify(latestAudit.scores) : "No baseline scores yet.";
