@@ -107,9 +107,31 @@ export async function getLatestLongFormVideos(
 }
 
 export async function getTranscript(videoId: string): Promise<string | null> {
+  const apiKey = process.env.SUPADATA_API_KEY;
+  if (!apiKey) {
+    console.warn("[transcript] SUPADATA_API_KEY not set");
+    return null;
+  }
+
   try {
-    const { YoutubeTranscript } = await import("youtube-transcript");
-    const segments = await YoutubeTranscript.fetchTranscript(videoId);
+    const res = await fetch(
+      `https://api.supadata.ai/v1/youtube/transcript?videoId=${encodeURIComponent(videoId)}&lang=en`,
+      { headers: { "x-api-key": apiKey } }
+    );
+
+    if (res.status === 206) {
+      console.warn(`[transcript] No transcript available for ${videoId}`);
+      return null;
+    }
+    if (!res.ok) {
+      console.warn(`[transcript] Supadata API error ${res.status} for ${videoId}`);
+      return null;
+    }
+
+    const data = await res.json();
+    const segments = data.content;
+    if (!Array.isArray(segments) || segments.length === 0) return null;
+
     return segments
       .map((seg: any) => {
         const mins = Math.floor(seg.offset / 60000);
