@@ -65,11 +65,13 @@ export async function sendLoginCode(to: string, code: string, name?: string | nu
   if (error) {
     console.error("[email] Failed to send login code:", error);
 
-    // Fall back to console log in all environments while Resend domain is unverified.
-    // Check deployment logs to retrieve the code in production.
-    console.warn(
-      `\n${"=".repeat(60)}\n[LOGIN CODE] Email failed — use this code to sign in:\n\n  Email: ${to}\n  Code:  ${code}\n${"=".repeat(60)}\n`
-    );
-    return;
+    if (process.env.NODE_ENV !== "production") {
+      console.warn(
+        `\n${"=".repeat(60)}\n[DEV LOGIN CODE] Email failed — use this code to sign in:\n\n  Email: ${to}\n  Code:  ${code}\n${"=".repeat(60)}\n`
+      );
+      return;
+    }
+
+    throw new Error("Failed to send email");
   }
 }
