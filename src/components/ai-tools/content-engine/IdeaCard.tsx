@@ -60,6 +60,7 @@ export default function IdeaCard({ idea, theme, onSaved, savedId }: Props) {
         theme,
         framework: idea.framework,
         whyItWorks: idea.whyItWorks,
+        ...(localSavedId ? { ideaId: localSavedId } : {}),
       })
     );
     const base = pathname.startsWith("/admin") ? "/admin" : "/member";

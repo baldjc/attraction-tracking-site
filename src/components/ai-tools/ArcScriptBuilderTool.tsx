@@ -29,6 +29,7 @@ interface PrefillData {
   theme?: string;
   framework?: string | null;
   whyItWorks?: string | null;
+  ideaId?: string;
 }
 
 interface IntroPattern {
@@ -531,6 +532,13 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
       if (!res.ok) throw new Error("Save failed");
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
+      if (prefillData?.ideaId) {
+        fetch("/api/ai-tools/content-engine/delete-idea", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: prefillData.ideaId }),
+        }).catch(() => {});
+      }
     } catch {
       setSaveError("Failed to save. Please try again.");
     }
