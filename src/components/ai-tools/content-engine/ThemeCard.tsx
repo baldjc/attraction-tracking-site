@@ -22,16 +22,24 @@ interface SavedIdea {
 
 interface Props {
   theme: ContentTheme | string;
+  index: number;
   onGoDeeper: (theme: ContentTheme | string) => void;
 }
 
-function themeObj(t: ContentTheme | string): ContentTheme {
-  if (typeof t === "string") return { name: t, emoji: null, colour: "#3dc3ff", coreStress: null };
-  return t;
+const FALLBACK_EMOJIS = ["🎯", "⚡", "🔥", "🌿", "💡", "💎", "🌊", "🚀"];
+const FALLBACK_COLOURS = ["#3B82F6", "#F59E0B", "#EF4444", "#10B981", "#8B5CF6", "#EC4899", "#06B6D4", "#F97316"];
+
+function themeObj(t: ContentTheme | string, index: number): ContentTheme {
+  const fallbackEmoji = FALLBACK_EMOJIS[index % FALLBACK_EMOJIS.length];
+  const fallbackColour = FALLBACK_COLOURS[index % FALLBACK_COLOURS.length];
+  if (typeof t === "string") {
+    return { name: t, emoji: fallbackEmoji, colour: fallbackColour, coreStress: null };
+  }
+  return { ...t, emoji: t.emoji ?? fallbackEmoji, colour: t.colour ?? fallbackColour };
 }
 
-export default function ThemeCard({ theme, onGoDeeper }: Props) {
-  const t = themeObj(theme);
+export default function ThemeCard({ theme, index, onGoDeeper }: Props) {
+  const t = themeObj(theme, index);
   const colour = t.colour ?? "#3dc3ff";
 
   const [expanded, setExpanded] = useState(false);

@@ -25,7 +25,7 @@ export default function ThemeDashboard({ themes, niche, city, hasImported, impor
   const hasOldFormat = themes.some((t) => {
     if (typeof t === "string") return true;
     const obj = t as ContentTheme;
-    return !obj.emoji && !obj.coreStress;
+    return !obj.colour;
   });
 
   const themeName = (t: ContentTheme | string) => (typeof t === "string" ? t : t.name);
@@ -116,6 +116,7 @@ export default function ThemeDashboard({ themes, niche, city, hasImported, impor
           <ThemeCard
             key={i}
             theme={t}
+            index={i}
             onGoDeeper={(theme) => setChatTheme(theme)}
           />
         ))}

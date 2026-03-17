@@ -23,14 +23,22 @@ export async function GET() {
 }
 
 const PALETTE = ["#3B82F6", "#F59E0B", "#EF4444", "#10B981", "#8B5CF6", "#EC4899", "#06B6D4", "#F97316"];
+const DEFAULT_EMOJIS = ["🎯", "⚡", "🔥", "🌿", "💡", "💎", "🌊", "🚀"];
 
 function normalizeThemes(themes: unknown): object[] | null {
   if (!Array.isArray(themes)) return null;
   return themes.map((t, i) => {
+    const colour = PALETTE[i % PALETTE.length];
+    const emoji = DEFAULT_EMOJIS[i % DEFAULT_EMOJIS.length];
     if (typeof t === "string") {
-      return { name: t, coreStress: null, emoji: null, colour: PALETTE[i % PALETTE.length] };
+      return { name: t, coreStress: null, emoji, colour };
     }
-    return t as object;
+    const obj = t as Record<string, unknown>;
+    return {
+      ...obj,
+      colour: obj.colour ?? colour,
+      emoji: obj.emoji ?? emoji,
+    };
   });
 }
 
