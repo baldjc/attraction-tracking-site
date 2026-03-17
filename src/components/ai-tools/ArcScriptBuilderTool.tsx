@@ -207,6 +207,7 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
   const [insightAnswers, setInsightAnswers] = useState<Record<number, Record<string, string>>>({});
   const [savedTalkingPoints, setSavedTalkingPoints] = useState<TalkingPointCard[]>([]);
   const [selectedTalkingPointIds, setSelectedTalkingPointIds] = useState<Set<string>>(new Set());
+  const [editingField, setEditingField] = useState<string | null>(null);
 
   // Step 5: Final
   const [finalData, setFinalData] = useState<any>(null);
@@ -1014,26 +1015,58 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
                     <p className="font-semibold text-[#1e2a38] text-sm">{slot.label}</p>
                   </div>
                   <div className="space-y-3">
-                    {(["what", "why", "when", "story", "connection"] as const).map((field) => (
-                      <div key={field}>
-                        <label className="block text-xs font-semibold text-[#1e2a38]/50 uppercase tracking-wider mb-1">
-                          {field === "connection" ? "What this means" : field.charAt(0).toUpperCase() + field.slice(1)}
-                        </label>
-                        <p className="text-xs text-[#1e2a38]/40 italic mb-1">{slot.prompts[field]}</p>
-                        <textarea
-                          rows={field === "story" ? 3 : 2}
-                          value={insightAnswers[slot.slot]?.[field] ?? ""}
-                          onChange={(e) => {
-                            setInsightAnswers((prev) => ({
-                              ...prev,
-                              [slot.slot]: { ...(prev[slot.slot] ?? {}), [field]: e.target.value },
-                            }));
-                          }}
-                          placeholder="Your answer…"
-                          className="w-full border border-[#1e2a38]/10 rounded-lg px-3 py-2 text-sm text-[#1e2a38] placeholder-[#1e2a38]/25 focus:outline-none focus:border-[#3dc3ff] resize-none"
-                        />
-                      </div>
-                    ))}
+                    {(["what", "why", "when", "story", "connection"] as const).map((field) => {
+                      const editKey = `${slot.slot}-${field}`;
+                      const isEditing = editingField === editKey;
+                      const value = insightAnswers[slot.slot]?.[field] ?? "";
+                      const fieldLabel = field === "connection" ? "What this means" : field.charAt(0).toUpperCase() + field.slice(1);
+                      return (
+                        <div key={field}>
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="text-xs font-semibold text-[#1e2a38]/50 uppercase tracking-wider">
+                              {fieldLabel}
+                            </label>
+                            {!isEditing && (
+                              <span className="text-[10px] text-[#1e2a38]/25 select-none">click to edit</span>
+                            )}
+                          </div>
+                          {isEditing ? (
+                            <>
+                              {slot.prompts[field] && (
+                                <p className="text-xs text-[#1e2a38]/40 italic mb-1">{slot.prompts[field]}</p>
+                              )}
+                              <textarea
+                                autoFocus
+                                rows={field === "story" ? 4 : 2}
+                                value={value}
+                                onChange={(e) => {
+                                  setInsightAnswers((prev) => ({
+                                    ...prev,
+                                    [slot.slot]: { ...(prev[slot.slot] ?? {}), [field]: e.target.value },
+                                  }));
+                                }}
+                                onBlur={() => setEditingField(null)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Escape") setEditingField(null);
+                                }}
+                                className="w-full border border-[#3dc3ff] rounded-lg px-3 py-2 text-sm text-[#1e2a38] focus:outline-none resize-none"
+                              />
+                            </>
+                          ) : (
+                            <div
+                              onClick={() => setEditingField(editKey)}
+                              className="cursor-text rounded-lg px-3 py-2 text-sm text-[#1e2a38] leading-relaxed min-h-[40px] hover:bg-[#3dc3ff]/5 hover:ring-1 hover:ring-[#3dc3ff]/20 transition-all"
+                            >
+                              {value ? (
+                                <span className="whitespace-pre-wrap">{value}</span>
+                              ) : (
+                                <span className="text-[#1e2a38]/25 italic">Click to add…</span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               ))}
