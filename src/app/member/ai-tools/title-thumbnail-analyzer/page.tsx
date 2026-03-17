@@ -286,6 +286,7 @@ export default function TitleThumbnailAnalyzerPage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState("");
+  const [refreshCounter, setRefreshCounter] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -329,6 +330,27 @@ export default function TitleThumbnailAnalyzerPage() {
     const data = await res.json();
     if (data.result) {
       setResult(data.result);
+      // Save analysis as a conversation for 30-day history
+      fetch("/api/ai-tools/conversations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          toolType: "title_thumbnail_analyzer",
+          title: title.trim(),
+          messages: [
+            {
+              role: "assistant",
+              content: `Analysis complete. Combined score: ${data.result.combined?.score ?? "—"}/20. Title score: ${data.result.title?.score ?? "—"}/20. Thumbnail score: ${data.result.thumbnail?.score ?? "—"}/20.`,
+            },
+          ],
+          metadata: {
+            overallScore: data.result.combined?.score != null ? data.result.combined.score / 2 : null,
+            titleScore: data.result.title?.score ?? null,
+            thumbnailScore: data.result.thumbnail?.score ?? null,
+            combinedRaw: data.result.combined?.score ?? null,
+          },
+        }),
+      }).then(() => setRefreshCounter((n) => n + 1)).catch(() => {});
     } else {
       setError("Analysis failed. Please try again.");
     }
@@ -348,7 +370,12 @@ export default function TitleThumbnailAnalyzerPage() {
   return (
     <div>
       <PromptEditor toolKey="title_thumbnail_analyzer_prompt" defaultPrompt="" placeholders={[]} />
-      <RecentConversations toolType="title_thumbnail_analyzer" />
+      <RecentConversations
+        toolType="title_thumbnail_analyzer"
+        label="Recent Analyses"
+        emptyLabel="No analyses saved in the last 30 days."
+        refreshTrigger={refreshCounter}
+      />
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-[#1e2a38]">Title & Thumbnail Analyzer</h1>
         <p className="text-[#1e2a38]/60 mt-1">
