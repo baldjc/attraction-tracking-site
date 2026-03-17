@@ -28,20 +28,83 @@ export const KEYWORD_KITS: Record<string, Array<{ keyword: string; priority: str
 };
 
 export function buildFrameworkLibrary(year: number): string {
-  return `
-Proven YouTube Framework Patterns (use hook score in brackets to guide selection):
-- "Do NOT [Activity] Until You Watch This" [Hook: 98]
-- "99% of [Audience] Regret Doing This" [Hook: 96]
-- "The REALITY of [Activity] in ${year}" [Hook: 94]
-- "[Number] Signs [Situation]" [Hook: 92]
-- "What Nobody Tells You About [Activity]" [Hook: 95]
-- "STOP [Activity] Before You Make This Mistake" [Hook: 93]
-- "[Entity] Just Shifted — Here's What It Means" [Hook: 90]
-- "If You [Situation], Watch This" [Hook: 91]
-- "The Biggest Mistake [Audience] Make Right Now" [Hook: 92]
-- "99% of [Audience] Don't Know This" [Hook: 94]
-- "Is It Still Worth [Activity] in ${year}?" [Hook: 89]
-`.trim();
+  return `You have 50+ frameworks available. Use a DIFFERENT framework for each idea in a batch. Never use the same framework twice in one generation. Prioritize variety — if you used "99% of [Audience]" in idea 1, you cannot use it again in ideas 2-5.
+
+PROVEN YOUTUBE FRAMEWORKS — rotate through all categories:
+
+MISTAKES, MYTHS & WARNINGS:
+1. [Topic] & The Biggest Mistake You're Making
+2. This is Why 99% of [Audience] Don't [Achieve Goal]
+3. What [Authority Figures] DON'T Tell You About [Topic]
+4. [Number] Brutal Truths About [Topic] That [Audience] Learn Too Late
+5. How [Bad Actors] Pick Their Victims (Avoid These Mistakes!)
+6. The [Number] Most Dangerous [Things] in [Your Niche]
+7. STOP Doing This When [Activity]
+8. You're in a [Bad Situation] and You Don't Even Know It
+9. If You Hear [Authority Figure] Say This… RUN!
+10. These Types of [Entities] ALWAYS [Negative Outcome]
+
+HOW-TO & EDUCATION:
+11. [Number] Things I Wish I Knew Before [Activity]
+12. The NEW Way To [Achieve Goal] in ${year}
+13. [Number] Tips NOBODY Tells You (but are EASY to do)
+14. How I [Activity] [With Proof of Credibility]
+15. How To Train Yourself To [Achieve Goal]
+16. One Trick to [Activity] Every Day with Ease
+17. Do This Once & Watch [Desirable Result]
+18. [Authority Figure's] Advice For Beginners
+19. I Stopped [Problem] Once I Knew This
+20. The [Number] Methods People Use to [Achieve Goal]
+
+LISTS & RANKINGS:
+21. [Number] Signs Your [Journey] Is Going Well
+22. [Number] Habits of [Secretly Successful] People
+23. Top [Number] [Niche] Trends That Will Define the Future
+24. [Number] [Time] Habits That [Achieve Goal]
+25. The [Number] [Entities] Every [Professional] Needs to Know
+26. [Number] MUST-TRY [Things] for Beginners
+27. [Number] Reasons Why [Possession] Explodes After [Milestone]
+28. [Number] Things I Did to Stop [Problem]
+29. I Tried [Large Number]. These [Small Number] Worked Best
+30. [Authority Figure] Ranks Best/Worst [Entities]
+
+COMPARISONS & TESTS:
+31. I Tested [Option A] vs [Option B] — Which Is Better?
+32. What's the Difference Between [A], [B], and [C]?
+33. Is It Still Worth [Activity] in ${year}?
+34. Why [Underdog] Crushes Every Other [Option]
+35. Could This [New Thing] Replace [Old Thing]?
+36. [Aspirational Action] and Now I Regret It. Here's Why…
+37. Why Do [Authority Figures] Ignore [Popular Solution]?
+38. I Did [Activity] for [Long Time]. Did It Work?
+
+TIMELY & NEWS:
+39. The REALITY of [Topic] in ${year}
+40. New [Rules/Changes] for ${year} You MUST Know
+41. The Future of [Niche] — ${year} Trends You Need to Know
+42. [Topic] Just Got the CRAZIEST Update!
+43. Why [Common Thing] Has Become Impossible
+44. Something Is About to Happen in [Place/Industry]
+45. [Things] That Died in ${year}
+46. [Niche] Advice for a World After [Big Change]
+
+STORY & CURIOSITY:
+47. If You [Experience Problem], Watch This
+48. Why Everything Changes If You [Specific Situation]
+49. You're Not [Behind] — Why Everyone SEEMS [Ahead]
+50. They Said It Couldn't Be Done… But I Did It Anyway
+51. What Happens to [Things] That Never [Expected Action]?
+52. If You're [Positive Trait] But [Struggle], Watch This
+53. Why Do Some [Things] Just [Work] So Well?
+54. [Entity] Can't Believe What Happened
+55. This [Simple Thing] Will Change [Your Niche]
+56. Everyone's Saying the Same Thing About [Trending Topic]
+
+POWER WORDS to use in titles:
+- Curiosity: Secret, Hidden, Truth, Actually, Really, Nobody tells you
+- Negativity: Mistake, Wrong, Worst, Dangerous, Trap, Avoid, Stop, Never
+- Desire: Best, Easy, Fast, Free, Simple, Proven, Ultimate
+- Urgency: Now, Today, ${year}, Before it's too late, Must know`.trim();
 }
 
 export function buildBatchSystemPrompt(opts: {
@@ -107,7 +170,9 @@ OUTPUT FORMAT:
       "talkingPoints": [
         "Capacity panic — life is already full, adding a major transaction feels impossible without everything else falling apart",
         "Disruption fear — life is good right now, what if chasing better actually breaks something that's working",
-        "Timing doubt — is this the right time or are you forcing something that should wait another year"
+        "Timing doubt — is this the right time or are you forcing something that should wait another year",
+        "Partner misalignment — you think you're on the same page but you haven't actually had the real conversation yet",
+        "Permission guilt — you already have a nice home, do you actually need this or are you just being greedy"
       ],
       "framework": "Do NOT [Activity] Until You Watch This",
       "whyItWorks": "Speaks directly to the fear that this process will take over a life they've carefully built — the title creates urgency while the content validates their hesitation."
