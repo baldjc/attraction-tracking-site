@@ -179,6 +179,7 @@ const FINAL_PROMPT = (p: {
   title: string; topic: string; uniqueAngle: string;
   selectedOpening: string; selectedBridge: string; leadMagnetLine: string;
   credibility: string; insights: string; values: string; interests: string;
+  nextVideoTitle: string; nextVideoWhy: string;
 }) => `VIDEO DETAILS:
 Title: ${p.title}
 Topic: ${p.topic}
@@ -198,6 +199,11 @@ ${p.insights}
 VALUES TO PEPPER IN: ${p.values}
 PERSONAL INTERESTS: ${p.interests}
 
+NEXT VIDEO PUSH:
+${p.nextVideoTitle
+  ? `Next video title: ${p.nextVideoTitle}\nWhy it matters now: ${p.nextVideoWhy || "(not provided)"}`
+  : "(not provided — write a generic sign-off without a next-video push)"}
+
 === YOUR TASK ===
 
 Assemble the complete ARC Method script outline. This is the final deliverable — a full video outline the creator can use to film.
@@ -213,7 +219,20 @@ Assemble the complete ARC Method script outline. This is the final deliverable �
 7. 5 curiosity bridges using And → But → Therefore transitions between sections
 8. Visual prompt suggestions for each major section
 9. Lead magnet mention #2 (at ~2/3 point, tied to a point just made)
-10. Closing with lead magnet mention #3 and call to connection
+10. Closing: lead magnet mention #3 + next video bridge + sign-off
+
+=== CLOSING INSTRUCTIONS ===
+
+If a next video is provided, the closing MUST follow this exact pattern:
+1. Bridge sentence — connect the current video's final insight directly to the next video topic (not generic; use the specific idea just covered)
+2. Tease — use the "why it matters now" to frame the next video as a natural continuation of the viewer's thought, not a plug
+3. Lead magnet mention #3 — weave the lead magnet reference in naturally
+4. Sign-off — brief, warm, conversational
+
+Example tone (not a template — adapt to the actual content):
+"The reality is, [insight from this video]. If you've ever wondered about [next video topic], you'll want to watch this next video where I unpack [specific angle from nextVideoWhy]. Grab the [lead magnet] in the description — and we'll see you in that video."
+
+Write this as natural spoken dialogue, Grade 5 reading level.
 
 === RULES ===
 
@@ -222,6 +241,7 @@ Assemble the complete ARC Method script outline. This is the final deliverable �
 - NO "how to implement" in any insight
 - Connection phrases must be written INTO the dialogue, not listed as notes
 - Visual prompts should be specific and actionable
+- Closing must use the next video title specifically — never say "check out my other videos" or "see you next time"
 
 === FINAL SCRIPT CHECKLIST ===
 
@@ -252,7 +272,7 @@ Return ONLY valid JSON. No markdown, no explanation, just the JSON object:
       }
     ],
     "lead_magnet_2": "Second mention (~2/3 through), tied to a specific point",
-    "closing": "Closing text with lead magnet #3 and call to connection",
+    "closing": "Closing text: bridge to next video → next video tease → lead magnet #3 → sign-off, all as spoken dialogue",
     "visual_prompts": ["Additional visual suggestions not tied to specific insights"],
     "connection_phrases": [
       { "phrase": "The exact phrase as spoken dialogue", "placement": "Where in the script" }
@@ -480,6 +500,8 @@ async function handleFinal(userId: string, body: any): Promise<NextResponse> {
     insights: body.insights ?? "",
     values: body.values ?? "",
     interests: body.interests ?? "",
+    nextVideoTitle: body.nextVideoTitle ?? "",
+    nextVideoWhy: body.nextVideoWhy ?? "",
   });
 
   const response = await client.messages.create({

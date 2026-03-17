@@ -208,6 +208,8 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
   const [savedTalkingPoints, setSavedTalkingPoints] = useState<TalkingPointCard[]>([]);
   const [selectedTalkingPointIds, setSelectedTalkingPointIds] = useState<Set<string>>(new Set());
   const [editingField, setEditingField] = useState<string | null>(null);
+  const [nextVideoTitle, setNextVideoTitle] = useState("");
+  const [nextVideoWhy, setNextVideoWhy] = useState("");
 
   // Step 5: Final
   const [finalData, setFinalData] = useState<any>(null);
@@ -446,6 +448,8 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
         insights: insightsText,
         values: "",
         interests: "",
+        nextVideoTitle,
+        nextVideoWhy,
       });
       setFinalData(result);
       setRetentionSuggestions(result.retention_suggestions ?? []);
@@ -1070,6 +1074,41 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+
+          {insightSlots.length > 0 && (
+            <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-5 space-y-4">
+              <div>
+                <p className="text-sm font-semibold text-[#1e2a38] mb-0.5">Next Video Push</p>
+                <p className="text-xs text-[#1e2a38]/50">
+                  The AI will write a bridge that flows naturally from this video into your next one — not a generic "check out my other video."
+                </p>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-[#1e2a38]/50 uppercase tracking-wider mb-1">
+                  What video are you pushing viewers to next?
+                </label>
+                <input
+                  type="text"
+                  value={nextVideoTitle}
+                  onChange={(e) => setNextVideoTitle(e.target.value)}
+                  placeholder="e.g. Why renting out your home if it doesn't sell is riskier than you think"
+                  className="w-full border border-[#1e2a38]/10 rounded-lg px-3 py-2 text-sm text-[#1e2a38] placeholder-[#1e2a38]/25 focus:outline-none focus:border-[#3dc3ff] transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-[#1e2a38]/50 uppercase tracking-wider mb-1">
+                  Why should they watch it? (1–2 sentences)
+                </label>
+                <textarea
+                  rows={2}
+                  value={nextVideoWhy}
+                  onChange={(e) => setNextVideoWhy(e.target.value)}
+                  placeholder="e.g. Because most sellers think holding makes them safe — this video unpacks why that plan has changed."
+                  className="w-full border border-[#1e2a38]/10 rounded-lg px-3 py-2 text-sm text-[#1e2a38] placeholder-[#1e2a38]/25 focus:outline-none focus:border-[#3dc3ff] resize-none transition-colors"
+                />
+              </div>
             </div>
           )}
 
