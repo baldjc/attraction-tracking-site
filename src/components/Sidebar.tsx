@@ -27,9 +27,17 @@ import {
 import { useState, useEffect, useRef } from "react";
 import { IMPERSONATE_LS_KEY } from "@/lib/impersonate-constants";
 
+interface FeatureFlags {
+  campaigns?: boolean;
+  ai_tools?: boolean;
+  resources?: boolean;
+  [key: string]: boolean | undefined;
+}
+
 interface SidebarProps {
   role: string;
   userName: string;
+  featureFlags?: FeatureFlags | null;
 }
 
 const adminLinks = [
@@ -44,12 +52,12 @@ const adminLinks = [
 ];
 
 const memberLinks = [
-  { href: "/member/scores", label: "My Scores", icon: StarIcon },
-  { href: "/member/ai-tools", label: "AI Tools", icon: SparklesIcon },
-  { href: "/member/campaigns", label: "Campaigns", icon: LinkIcon },
-  { href: "/member/conversions", label: "Conversions", icon: ChartBarIcon },
-  { href: "/member/resources", label: "Resources", icon: BookOpenIcon },
-  { href: "/member/settings", label: "Settings", icon: Cog6ToothIcon },
+  { href: "/member/scores", label: "My Scores", icon: StarIcon, featureKey: null },
+  { href: "/member/ai-tools", label: "AI Tools", icon: SparklesIcon, featureKey: "ai_tools" },
+  { href: "/member/campaigns", label: "Campaigns", icon: LinkIcon, featureKey: "campaigns" },
+  { href: "/member/conversions", label: "Conversions", icon: ChartBarIcon, featureKey: "campaigns" },
+  { href: "/member/resources", label: "Resources", icon: BookOpenIcon, featureKey: "resources" },
+  { href: "/member/settings", label: "Settings", icon: Cog6ToothIcon, featureKey: null },
 ];
 
 interface ImpersonateState {
@@ -145,7 +153,7 @@ function SwitchMemberDropdown({
   );
 }
 
-export default function Sidebar({ role, userName }: SidebarProps) {
+export default function Sidebar({ role, userName, featureFlags }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -174,7 +182,18 @@ export default function Sidebar({ role, userName }: SidebarProps) {
   const isAdminOnMemberView =
     role === "admin" && !!impersonate && !pathname.startsWith("/admin");
 
-  const links = isAdminOnMemberView ? memberLinks : role === "admin" ? adminLinks : memberLinks;
+  const baseMemberLinks = isAdminOnMemberView
+    ? memberLinks
+    : memberLinks.filter((link) => {
+        if (!link.featureKey || !featureFlags) return true;
+        return featureFlags[link.featureKey] !== false;
+      });
+
+  const links = isAdminOnMemberView
+    ? baseMemberLinks
+    : role === "admin"
+    ? adminLinks
+    : baseMemberLinks;
 
   function isActive(href: string) {
     if (href === "/admin" || href === "/member/scores") {

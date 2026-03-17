@@ -23,6 +23,7 @@ export default async function AdminLayout({
         <Sidebar
           role="admin"
           userName={session.user.name || session.user.email || "Admin"}
+          featureFlags={null}
         />
       </div>
       <main className="lg:pl-[260px] print:pl-0">

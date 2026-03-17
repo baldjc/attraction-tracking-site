@@ -24,8 +24,18 @@ interface UsageData {
   resetsAt: string;
 }
 
+interface FeatureFlags {
+  tool_avatar_architect?: boolean;
+  tool_content_engine?: boolean;
+  tool_arc_script_builder?: boolean;
+  tool_title_analyzer?: boolean;
+  tool_script_review?: boolean;
+  [key: string]: boolean | undefined;
+}
+
 interface Props {
   basePath: string;
+  featureFlags?: FeatureFlags | null;
 }
 
 const TOOL_LABELS: Record<string, string> = {
@@ -80,7 +90,7 @@ function UsageCard({ usage }: { usage: UsageData }) {
   );
 }
 
-export default function AIToolsHub({ basePath }: Props) {
+export default function AIToolsHub({ basePath, featureFlags }: Props) {
   const { data: session } = useSession();
   const isAdmin = (session?.user as any)?.role === "admin";
   const [avatar, setAvatar] = useState<AvatarData | null>(null);
@@ -115,9 +125,10 @@ export default function AIToolsHub({ basePath }: Props) {
     ? `Using avatar: ${avatar.avatarName}`
     : "No avatar — build one first for best results";
 
-  const tools = [
+  const allTools = [
     {
       href: `${basePath}/avatar-architect`,
+      featureKey: "tool_avatar_architect",
       icon: "🎯",
       title: "Avatar Architect",
       description: "Build your ideal client avatar through a guided coaching conversation",
@@ -128,6 +139,7 @@ export default function AIToolsHub({ basePath }: Props) {
     },
     {
       href: `${basePath}/content-engine`,
+      featureKey: "tool_content_engine",
       icon: "🚀",
       title: "Content Engine",
       description: "Generate video ideas with titles, talking points, and strategy — organized by your content themes",
@@ -140,6 +152,7 @@ export default function AIToolsHub({ basePath }: Props) {
     },
     {
       href: `${basePath}/title-thumbnail-analyzer`,
+      featureKey: "tool_title_analyzer",
       icon: "🔍",
       title: "Title & Thumbnail Analyzer",
       description: "Score your title and thumbnail combination before you publish",
@@ -148,6 +161,7 @@ export default function AIToolsHub({ basePath }: Props) {
     },
     {
       href: `${basePath}/arc-script-builder`,
+      featureKey: "tool_arc_script_builder",
       icon: "🎬",
       title: "ARC Script Builder",
       description: "Build a complete video script outline using the ARC Method",
@@ -158,6 +172,7 @@ export default function AIToolsHub({ basePath }: Props) {
     },
     {
       href: scriptReviewHref,
+      featureKey: "tool_script_review",
       icon: "📋",
       title: "Script Review",
       description: "Paste a script or transcript — get scored on 15 Attraction principles with visual suggestions",
@@ -167,6 +182,10 @@ export default function AIToolsHub({ basePath }: Props) {
       badge: "blue",
     },
   ];
+
+  const tools = featureFlags
+    ? allTools.filter((t) => featureFlags[t.featureKey] !== false)
+    : allTools;
 
   return (
     <div>

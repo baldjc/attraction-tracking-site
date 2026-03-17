@@ -43,6 +43,7 @@ Full-stack Next.js 16 platform for YouTube channel audits, GHL member sync, link
 ```
 prisma/schema.prisma         — DB schema: User (+ avatarProfile/Name/Summary/contentThemes/niche/city/thankYouPageUrl), Audit, AuditJob, AppSetting, Campaign (+ SourceType enum, destinationUrl, sourceType, deletedAt), TrackingLink (refCode unique, youtubeVideoId/Url/Thumbnail, deletedAt), Click (trackingLinkId, refCode, sessionId, city/province/country), PageView, Lead, ScriptReview, SavedScript, SavedTitle, SavedIdea, TitleAnalysis, AIToolConversation (AIToolType enum: replaced title_creator → content_engine)
 src/lib/
+  feature-flags.ts           — FeatureFlags interface + getFeatureFlags() (reads AppSetting "feature_visibility"); flags: campaigns, ai_tools, resources, tool_avatar_architect, tool_content_engine, tool_arc_script_builder, tool_title_analyzer, tool_script_review; all default true; admins bypass all flags
   ghl.ts                     — GHL sync with nextPageUrl pagination + title case normalization
   youtube.ts                 — YouTube API: channel info, playlist, transcripts
   audit-engine.ts            — Claude AI scoring + DEFAULT_SCORING_PROMPT + SCRIPT_REVIEW_PROMPT + AuditResult types
@@ -91,6 +92,7 @@ src/app/
     ai-tools/saved-scripts/   — GET list member's saved scripts
     admin/member-tools-usage/[userId]/ — GET scripts count, analyses count, last activity
     admin/impersonate/        — POST (set cookie) / DELETE (clear cookie) for admin member impersonation
+    admin/feature-visibility/ — GET/PUT toggle feature flags stored in AppSetting "feature_visibility" (JSON)
     settings/                 — GET/PATCH/DELETE generic key-based AppSetting; returns prompt defaults for known keys
     audits/..., members/..., script-review/..., sync/..., qa-prep/... (see previous)
 ```
