@@ -175,6 +175,126 @@ function getNichePlaceholders(niche: string | null) {
   };
 }
 
+// ─── Standalone formatter ─────────────────────────────────────────────────────
+// Takes the raw finalData result + title and returns a fully-formatted markdown
+// string. Used by handleCopy, handleSave, and the auto-save conversation payload.
+
+const CHECKLIST_LABELS: Record<string, string> = {
+  opening_length_ok: "Opening length OK",
+  opening_approves_click: "Opening approves the click",
+  expertise_bridge_after_lead_magnet: "Expertise bridge placed after lead magnet",
+  credibility_natural: "Credibility signal feels natural",
+  lead_magnet_3_times: "Lead magnet mentioned 3 times",
+  value_loops_correct: "Value loops (WHAT / WHY / WHEN / STORY / CONNECTION) correct",
+  no_how_to_implement: "No 'how to implement' content (value gap maintained)",
+  connection_phrases_4_5: "4–5 connection phrases included",
+  values_peppered: "Values / interests peppered throughout",
+  curiosity_bridges: "Curiosity bridges between sections",
+  grade_5_language: "Grade-5 reading level language",
+  visual_prompts_identified: "Visual prompts identified",
+};
+
+function buildFullScriptMarkdown(finalData: any, title: string): string {
+  if (!finalData?.script_outline) return "";
+  const s = finalData.script_outline;
+  const lines: string[] = [];
+
+  lines.push(`# ARC Script: ${title}`, "");
+
+  // OPENING
+  if (s.opening) {
+    lines.push("## OPENING", "", s.opening, "");
+  }
+
+  // CREDIBILITY
+  if (s.credibility) {
+    lines.push("## CREDIBILITY SIGNAL", "", s.credibility, "");
+  }
+
+  // LEAD MAGNET #1
+  if (s.lead_magnet_1) {
+    lines.push("## LEAD MAGNET — Mention #1", "", s.lead_magnet_1, "");
+  }
+
+  // INSIGHTS
+  if (s.insights?.length) {
+    s.insights.forEach((ins: any, i: number) => {
+      lines.push(`## INSIGHT ${i + 1}`, "");
+      if (ins.what) lines.push(`**WHAT:** ${ins.what}`, "");
+      if (ins.why) lines.push(`**WHY:** ${ins.why}`, "");
+      if (ins.when) lines.push(`**WHEN:** ${ins.when}`, "");
+      if (ins.story) lines.push(`**STORY / PROOF:** ${ins.story}`, "");
+      if (ins.connection) lines.push(`**WHAT THIS MEANS:** ${ins.connection}`, "");
+      if (ins.curiosity_bridge) lines.push(`**CURIOSITY BRIDGE:** ${ins.curiosity_bridge}`, "");
+      if (ins.visual_prompt) lines.push(`> 🎬 Visual: ${ins.visual_prompt}`, "");
+    });
+  }
+
+  // LEAD MAGNET #2
+  if (s.lead_magnet_2) {
+    lines.push("## LEAD MAGNET — Mention #2", "", s.lead_magnet_2, "");
+  }
+
+  // CLOSING
+  if (s.closing) {
+    lines.push("## CLOSING", "", s.closing, "");
+  }
+
+  // CONNECTION PHRASES
+  if (s.connection_phrases?.length) {
+    lines.push("## CONNECTION PHRASES", "");
+    s.connection_phrases.forEach((cp: any) => {
+      const phrase = typeof cp === "string" ? cp : cp.phrase ?? cp;
+      const placement = typeof cp === "object" && cp.placement ? ` *(${cp.placement})*` : "";
+      lines.push(`- "${phrase}"${placement}`);
+    });
+    lines.push("");
+  }
+
+  // VALUES PLACED
+  if (s.values_placed?.length) {
+    lines.push("## VALUES PLACED", "");
+    s.values_placed.forEach((vp: any) => {
+      const val = typeof vp === "string" ? vp : vp.value ?? vp;
+      const placement = typeof vp === "object" && vp.placement ? ` — ${vp.placement}` : "";
+      lines.push(`- ${val}${placement}`);
+    });
+    lines.push("");
+  }
+
+  // VISUAL PROMPTS (global, not tied to specific insight)
+  if (s.visual_prompts?.length) {
+    lines.push("## VISUAL PROMPTS", "");
+    s.visual_prompts.forEach((vp: string) => {
+      lines.push(`- ${vp}`);
+    });
+    lines.push("");
+  }
+
+  // CHECKLIST
+  if (finalData.checklist && Object.keys(finalData.checklist).length) {
+    lines.push("## CHECKLIST", "");
+    for (const [key, val] of Object.entries(finalData.checklist as Record<string, boolean>)) {
+      const label = CHECKLIST_LABELS[key] ?? key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+      lines.push(`- [${val ? "x" : " "}] ${label}`);
+    }
+    lines.push("");
+  }
+
+  // RETENTION SUGGESTIONS
+  if (finalData.retention_suggestions?.length) {
+    lines.push("## RETENTION SUGGESTIONS", "");
+    finalData.retention_suggestions.forEach((rs: any, i: number) => {
+      lines.push(`**${i + 1}. ${rs.location ?? ""}**`);
+      if (rs.issue) lines.push(`Issue: ${rs.issue}`);
+      if (rs.fix) lines.push(`Fix: ${rs.fix}`);
+      lines.push("");
+    });
+  }
+
+  return lines.join("\n");
+}
+
 export default function ArcScriptBuilderTool({ basePath }: Props) {
   const [phase, setPhase] = useState<Phase>("upload");
   const [prefillData, setPrefillData] = useState<PrefillData | null>(null);
@@ -568,16 +688,18 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
       setPhase("done");
 
       // Auto-save to 30-day conversation history
+      const scriptTitle = uploadData?.title || "ARC Script";
+      const fullMarkdown = buildFullScriptMarkdown(result, scriptTitle);
       fetch("/api/ai-tools/conversations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           toolType: "arc_script_builder",
-          title: uploadData?.title || "ARC Script",
+          title: scriptTitle,
           messages: [
             {
               role: "assistant",
-              content: `Script complete: ${uploadData?.title || "ARC Script"}`,
+              content: fullMarkdown,
             },
           ],
           metadata: { videoTitle: uploadData?.title ?? null },
@@ -596,34 +718,14 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
   }
 
   async function handleCopy() {
-    const text = buildFullScriptText();
+    const text = buildFullScriptMarkdown(finalData, uploadData?.title || "");
     await navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
 
   function buildFullScriptText(): string {
-    if (!finalData?.script_outline) return "";
-    const s = finalData.script_outline;
-    const lines: string[] = [];
-    lines.push(`ARC Script: ${uploadData?.title || ""}`, "");
-    lines.push("== OPENING ==", s.opening || "", "");
-    if (s.insights?.length) {
-      s.insights.forEach((ins: any, i: number) => {
-        lines.push(`== INSIGHT ${i + 1} ==`);
-        if (ins.what) lines.push(`WHAT: ${ins.what}`);
-        if (ins.why) lines.push(`WHY: ${ins.why}`);
-        if (ins.when) lines.push(`WHEN: ${ins.when}`);
-        if (ins.story) lines.push(`STORY: ${ins.story}`);
-        if (ins.connection) lines.push(`CONNECTION: ${ins.connection}`);
-        if (ins.curiosity_bridge) lines.push(`BRIDGE: ${ins.curiosity_bridge}`);
-        if (ins.visual_prompt) lines.push(`[VISUAL: ${ins.visual_prompt}]`);
-        lines.push("");
-      });
-    }
-    if (s.lead_magnet_2) lines.push(`== LEAD MAGNET #2 ==`, s.lead_magnet_2, "");
-    if (s.closing) lines.push("== CLOSING ==", s.closing, "");
-    return lines.join("\n");
+    return buildFullScriptMarkdown(finalData, uploadData?.title || "");
   }
 
   async function handleSave() {
