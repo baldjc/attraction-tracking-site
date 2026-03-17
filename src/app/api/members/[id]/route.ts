@@ -22,7 +22,7 @@ export async function GET(
       links: {
         include: {
           clicks: {
-            include: { conversion: true },
+            include: { lead: true },
           },
         },
         orderBy: { createdAt: "desc" },

@@ -1010,7 +1010,7 @@ export default function MemberDetailPage() {
                     {member.links.map((link: any) => {
                       const clicks = link.clicks?.length ?? 0;
                       const conversions = link.clicks?.filter(
-                        (c: any) => c.conversion
+                        (c: any) => c.lead
                       ).length ?? 0;
                       const rate =
                         clicks > 0 ? ((conversions / clicks) * 100).toFixed(1) + "%" : "—";
