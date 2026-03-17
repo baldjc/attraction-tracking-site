@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter, usePathname } from "next/navigation";
 
 export interface Idea {
   title: string;
@@ -19,6 +20,8 @@ interface Props {
 export default function IdeaCard({ idea, theme, onSaved, savedId }: Props) {
   const [saving, setSaving] = useState(false);
   const [localSavedId, setLocalSavedId] = useState<string | null>(savedId ?? null);
+  const router = useRouter();
+  const pathname = usePathname();
 
   const isSaved = !!localSavedId;
 
@@ -46,6 +49,21 @@ export default function IdeaCard({ idea, theme, onSaved, savedId }: Props) {
     } finally {
       setSaving(false);
     }
+  }
+
+  function handleBuildScript() {
+    sessionStorage.setItem(
+      "arc_prefill",
+      JSON.stringify({
+        title: idea.title,
+        talkingPoints: idea.talkingPoints,
+        theme,
+        framework: idea.framework,
+        whyItWorks: idea.whyItWorks,
+      })
+    );
+    const base = pathname.startsWith("/admin") ? "/admin" : "/member";
+    router.push(`${base}/ai-tools/arc-script-builder`);
   }
 
   return (
@@ -97,6 +115,16 @@ export default function IdeaCard({ idea, theme, onSaved, savedId }: Props) {
           {idea.whyItWorks}
         </p>
       )}
+
+      <div className="border-t border-[#1e2a38]/5 pt-2">
+        <button
+          onClick={handleBuildScript}
+          className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-semibold text-[#1e2a38] bg-[#1e2a38]/5 hover:bg-[#3dc3ff]/10 hover:text-[#3dc3ff] rounded-lg transition-colors"
+        >
+          <span>🎬</span>
+          Build Script
+        </button>
+      </div>
     </div>
   );
 }

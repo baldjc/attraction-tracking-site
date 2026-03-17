@@ -15,9 +15,16 @@ interface StartBuildingData {
   researchSummary: string;
 }
 
+interface PrefillData {
+  title: string;
+  talkingPoints: string[];
+}
+
 interface Props {
   onStartBuilding: (data: StartBuildingData) => void;
   cap?: number;
+  prefillData?: PrefillData;
+  onSkip?: () => void;
 }
 
 function formatBytes(bytes: number): string {
@@ -29,9 +36,8 @@ function formatBytes(bytes: number): string {
 function estimatePct(files: File[], pastedText: string, cap: number): string {
   const totalBytes = files.reduce((s, f) => s + f.size, 0) + pastedText.length;
   const estimatedTokens = Math.ceil(totalBytes / 4);
-  // summarize call + 8 chat turns avg ~800 tokens each side
   const totalTokens = estimatedTokens + 8 * 800 * 2;
-  const cost = (totalTokens / 1_000_000) * 9; // blended rate
+  const cost = (totalTokens / 1_000_000) * 9;
   if (cost < 0.005) return "";
   const pct = cap > 0 ? ((cost / cap) * 100).toFixed(1) : null;
   return pct ? `~${pct}% of your monthly allowance (approximate)` : "";
@@ -41,7 +47,7 @@ const ALLOWED_EXTENSIONS = ["pdf", "docx", "txt", "md"];
 const MAX_FILES = 3;
 const MAX_BYTES = 10 * 1024 * 1024;
 
-export default function ArcScriptUploadPhase({ onStartBuilding, cap = 15 }: Props) {
+export default function ArcScriptUploadPhase({ onStartBuilding, cap = 15, prefillData, onSkip }: Props) {
   const [title, setTitle] = useState("");
   const [talkingPoints, setTalkingPoints] = useState("");
   const [pastedNotes, setPastedNotes] = useState("");
@@ -51,6 +57,10 @@ export default function ArcScriptUploadPhase({ onStartBuilding, cap = 15 }: Prop
   const [loading, setLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const isPrefilled = !!prefillData;
+  const effectiveTitle = isPrefilled ? prefillData!.title : title;
+  const effectiveTalkingPoints = isPrefilled ? prefillData!.talkingPoints.join("\n") : talkingPoints;
 
   const costEstimate = estimatePct(
     files.map((f) => f.file),
@@ -93,8 +103,9 @@ export default function ArcScriptUploadPhase({ onStartBuilding, cap = 15 }: Prop
     setFiles((prev) => prev.filter((f) => f.file.name !== name));
   };
 
-  const canStart =
-    title.trim().length > 0 && (files.length > 0 || pastedNotes.trim().length > 0);
+  const canStart = isPrefilled
+    ? (files.length > 0 || pastedNotes.trim().length > 0)
+    : (effectiveTitle.trim().length > 0 && (files.length > 0 || pastedNotes.trim().length > 0));
 
   async function handleStart() {
     if (!canStart || loading) return;
@@ -102,7 +113,6 @@ export default function ArcScriptUploadPhase({ onStartBuilding, cap = 15 }: Prop
     setError("");
 
     try {
-      // Step 1: Upload files (if any)
       let extractedParts: string[] = [];
 
       if (files.length > 0) {
@@ -131,18 +141,21 @@ export default function ArcScriptUploadPhase({ onStartBuilding, cap = 15 }: Prop
         }
       }
 
-      // Combine all research text
       if (pastedNotes.trim()) {
         extractedParts.push(`[Pasted Notes]\n${pastedNotes.trim()}`);
       }
       const researchText = extractedParts.join("\n\n---\n\n");
 
-      // Step 2: Summarize
       setLoadingStep("Summarizing research with AI…");
       const summaryRes = await fetch("/api/ai-tools/arc-script-builder", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ step: "summarize", researchText, title: title.trim(), talkingPoints: talkingPoints.trim() }),
+        body: JSON.stringify({
+          step: "summarize",
+          researchText,
+          title: effectiveTitle.trim(),
+          talkingPoints: effectiveTalkingPoints.trim(),
+        }),
       });
 
       if (summaryRes.status === 429) {
@@ -164,8 +177,8 @@ export default function ArcScriptUploadPhase({ onStartBuilding, cap = 15 }: Prop
 
       const summaryData = await summaryRes.json();
       onStartBuilding({
-        title: title.trim(),
-        talkingPoints: talkingPoints.trim(),
+        title: effectiveTitle.trim(),
+        talkingPoints: effectiveTalkingPoints.trim(),
         researchSummary: summaryData.summary ?? researchText,
       });
     } catch (err) {
@@ -176,41 +189,83 @@ export default function ArcScriptUploadPhase({ onStartBuilding, cap = 15 }: Prop
 
   return (
     <div className="max-w-2xl mx-auto space-y-5">
-      {/* Title */}
-      <div>
-        <label className="block text-sm font-semibold text-[#1e2a38] mb-1.5">
-          What&apos;s your video title? <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="e.g. Why 90% of Real Estate Agents Fail in Year 2"
-          className="w-full border border-[#1e2a38]/20 rounded-xl px-4 py-3 text-sm text-[#1e2a38] placeholder-[#1e2a38]/30 focus:outline-none focus:border-[#3dc3ff] transition-colors"
-        />
-      </div>
+      {/* Prefill banner — shows what idea is being scripted */}
+      {isPrefilled && (
+        <div className="bg-[#3dc3ff]/8 border border-[#3dc3ff]/25 rounded-xl px-4 py-3 space-y-2">
+          <p className="text-xs font-semibold text-[#3dc3ff] uppercase tracking-wider">Building script for</p>
+          <p className="text-sm font-semibold text-[#1e2a38] leading-snug">{prefillData!.title}</p>
+          {prefillData!.talkingPoints.length > 0 && (
+            <ol className="space-y-0.5 mt-1">
+              {prefillData!.talkingPoints.map((pt, i) => (
+                <li key={i} className="flex items-start gap-1.5 text-xs text-[#1e2a38]/60">
+                  <span className="text-[#3dc3ff] font-bold flex-shrink-0">{i + 1}.</span>
+                  <span>{pt}</span>
+                </li>
+              ))}
+            </ol>
+          )}
+        </div>
+      )}
 
-      {/* Talking Points */}
-      <div>
-        <label className="block text-sm font-semibold text-[#1e2a38] mb-1.5">
-          Key talking points{" "}
-          <span className="text-[#1e2a38]/40 font-normal">(optional but encouraged)</span>
-        </label>
-        <textarea
-          value={talkingPoints}
-          onChange={(e) => setTalkingPoints(e.target.value)}
-          placeholder="What insights, tips, or points do you want to cover? One per line is fine."
-          rows={3}
-          className="w-full border border-[#1e2a38]/20 rounded-xl px-4 py-3 text-sm text-[#1e2a38] placeholder-[#1e2a38]/30 resize-none focus:outline-none focus:border-[#3dc3ff] transition-colors"
-        />
-      </div>
+      {/* Title — only shown in normal (non-prefill) mode */}
+      {!isPrefilled && (
+        <div>
+          <label className="block text-sm font-semibold text-[#1e2a38] mb-1.5">
+            What&apos;s your video title? <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="e.g. Why 90% of Real Estate Agents Fail in Year 2"
+            className="w-full border border-[#1e2a38]/20 rounded-xl px-4 py-3 text-sm text-[#1e2a38] placeholder-[#1e2a38]/30 focus:outline-none focus:border-[#3dc3ff] transition-colors"
+          />
+        </div>
+      )}
+
+      {/* Talking Points — only shown in normal mode */}
+      {!isPrefilled && (
+        <div>
+          <label className="block text-sm font-semibold text-[#1e2a38] mb-1.5">
+            Key talking points{" "}
+            <span className="text-[#1e2a38]/40 font-normal">(optional but encouraged)</span>
+          </label>
+          <textarea
+            value={talkingPoints}
+            onChange={(e) => setTalkingPoints(e.target.value)}
+            placeholder="What insights, tips, or points do you want to cover? One per line is fine."
+            rows={3}
+            className="w-full border border-[#1e2a38]/20 rounded-xl px-4 py-3 text-sm text-[#1e2a38] placeholder-[#1e2a38]/30 resize-none focus:outline-none focus:border-[#3dc3ff] transition-colors"
+          />
+        </div>
+      )}
+
+      {/* Research heading for prefill mode */}
+      {isPrefilled && (
+        <div>
+          <p className="text-sm font-semibold text-[#1e2a38] mb-1">
+            Add research{" "}
+            <span className="font-normal text-[#1e2a38]/40">(optional — upload files or paste notes below)</span>
+          </p>
+          <p className="text-xs text-[#1e2a38]/50">
+            Supporting research helps the AI generate more specific, credible script content. You can skip this step if you don&apos;t have anything to add.
+          </p>
+        </div>
+      )}
 
       {/* File Upload Zone */}
       <div>
-        <label className="block text-sm font-semibold text-[#1e2a38] mb-1.5">
-          Upload research files{" "}
-          <span className="text-[#1e2a38]/40 font-normal">(PDF, DOCX, TXT, MD — max 3 files, 10 MB each)</span>
-        </label>
+        {!isPrefilled && (
+          <label className="block text-sm font-semibold text-[#1e2a38] mb-1.5">
+            Upload research files{" "}
+            <span className="text-[#1e2a38]/40 font-normal">(PDF, DOCX, TXT, MD — max 3 files, 10 MB each)</span>
+          </label>
+        )}
+        {isPrefilled && (
+          <label className="block text-xs font-medium text-[#1e2a38]/50 mb-1.5">
+            PDF, DOCX, TXT, or MD — max 3 files, 10 MB each
+          </label>
+        )}
 
         <div
           onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
@@ -263,7 +318,7 @@ export default function ArcScriptUploadPhase({ onStartBuilding, cap = 15 }: Prop
       {/* Research Notes */}
       <div>
         <label className="block text-sm font-semibold text-[#1e2a38] mb-1.5">
-          Paste your research notes{" "}
+          {isPrefilled ? "Paste research notes" : "Paste your research notes"}{" "}
           <span className="text-[#1e2a38]/40 font-normal">(or paste content from scanned PDFs)</span>
         </label>
         <textarea
@@ -287,34 +342,69 @@ export default function ArcScriptUploadPhase({ onStartBuilding, cap = 15 }: Prop
         </div>
       )}
 
-      {/* CTA */}
-      <button
-        onClick={handleStart}
-        disabled={!canStart || loading}
-        className="w-full bg-[#3dc3ff] text-white font-semibold py-3.5 rounded-xl hover:bg-[#3dc3ff]/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
-      >
-        {loading ? (
-          <>
-            <span className="flex gap-1">
-              {[0, 1, 2].map((i) => (
-                <span
-                  key={i}
-                  className="w-1.5 h-1.5 rounded-full bg-white/70 animate-bounce"
-                  style={{ animationDelay: `${i * 0.15}s` }}
-                />
-              ))}
-            </span>
-            {loadingStep || "Working…"}
-          </>
-        ) : (
-          <>Start Building →</>
-        )}
-      </button>
+      {/* CTAs */}
+      {isPrefilled ? (
+        <div className="flex gap-3">
+          <button
+            onClick={onSkip}
+            className="flex-1 py-3 text-sm font-semibold border border-[#1e2a38]/15 text-[#1e2a38]/60 rounded-xl hover:bg-[#1e2a38]/5 transition-colors"
+          >
+            Skip — no research
+          </button>
+          <button
+            onClick={handleStart}
+            disabled={!canStart || loading}
+            className="flex-1 bg-[#3dc3ff] text-white font-semibold py-3 rounded-xl hover:bg-[#3dc3ff]/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+          >
+            {loading ? (
+              <>
+                <span className="flex gap-1">
+                  {[0, 1, 2].map((i) => (
+                    <span
+                      key={i}
+                      className="w-1.5 h-1.5 rounded-full bg-white/70 animate-bounce"
+                      style={{ animationDelay: `${i * 0.15}s` }}
+                    />
+                  ))}
+                </span>
+                {loadingStep || "Working…"}
+              </>
+            ) : (
+              <>Continue with research →</>
+            )}
+          </button>
+        </div>
+      ) : (
+        <>
+          <button
+            onClick={handleStart}
+            disabled={!canStart || loading}
+            className="w-full bg-[#3dc3ff] text-white font-semibold py-3.5 rounded-xl hover:bg-[#3dc3ff]/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+          >
+            {loading ? (
+              <>
+                <span className="flex gap-1">
+                  {[0, 1, 2].map((i) => (
+                    <span
+                      key={i}
+                      className="w-1.5 h-1.5 rounded-full bg-white/70 animate-bounce"
+                      style={{ animationDelay: `${i * 0.15}s` }}
+                    />
+                  ))}
+                </span>
+                {loadingStep || "Working…"}
+              </>
+            ) : (
+              <>Start Building →</>
+            )}
+          </button>
 
-      {!canStart && !loading && (
-        <p className="text-center text-xs text-[#1e2a38]/35">
-          Add a video title and at least one file or some research notes to continue.
-        </p>
+          {!canStart && !loading && (
+            <p className="text-center text-xs text-[#1e2a38]/35">
+              Add a video title and at least one file or some research notes to continue.
+            </p>
+          )}
+        </>
       )}
     </div>
   );

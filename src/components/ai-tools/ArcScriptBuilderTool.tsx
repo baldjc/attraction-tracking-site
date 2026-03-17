@@ -22,6 +22,14 @@ interface UploadData {
   researchSummary: string;
 }
 
+interface PrefillData {
+  title: string;
+  talkingPoints: string[];
+  theme?: string;
+  framework?: string | null;
+  whyItWorks?: string | null;
+}
+
 interface IntroPattern {
   name: string;
   subtype?: string;
@@ -78,7 +86,7 @@ const CHECKLIST_LABELS: ChecklistItem[] = [
   { key: "visual_prompts_identified", label: "Visual prompts identified" },
 ];
 
-type Phase = "upload" | "opening" | "credibility" | "insights" | "final" | "done";
+type Phase = "upload" | "research" | "opening_context" | "opening" | "credibility" | "insights" | "final" | "done";
 
 function UsageBanner({ percentUsed, resetsAt }: { percentUsed: number; resetsAt: string }) {
   if (percentUsed < 50) return null;
@@ -124,6 +132,7 @@ function Spinner() {
 
 export default function ArcScriptBuilderTool({ basePath }: Props) {
   const [phase, setPhase] = useState<Phase>("upload");
+  const [prefillData, setPrefillData] = useState<PrefillData | null>(null);
   const [uploadData, setUploadData] = useState<UploadData | null>(null);
   const [usage, setUsage] = useState<UsageData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -137,7 +146,7 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
   const [selectedPattern, setSelectedPattern] = useState("");
   const [selectedBridge, setSelectedBridge] = useState("");
 
-  // Step 2: Opening form fields
+  // Step 2: Opening form fields (used in both upload phase and opening_context phase)
   const [uniqueAngle, setUniqueAngle] = useState("");
   const [beforeFeeling, setBeforeFeeling] = useState("");
   const [afterFeeling, setAfterFeeling] = useState("");
@@ -159,6 +168,21 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState("");
+
+  // Check for Content Engine prefill on mount
+  useEffect(() => {
+    const raw = sessionStorage.getItem("arc_prefill");
+    if (raw) {
+      sessionStorage.removeItem("arc_prefill");
+      try {
+        const data = JSON.parse(raw) as PrefillData;
+        setPrefillData(data);
+        setPhase("research");
+      } catch {
+        // ignore invalid data
+      }
+    }
+  }, []);
 
   useEffect(() => {
     fetch("/api/ai-tools/usage/me")
@@ -188,7 +212,7 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
     return res.json();
   }
 
-  // ── Step: Upload → Opening generation ──
+  // ── Normal flow: Upload → Opening generation ──
   async function handleStartBuilding(data: UploadData) {
     setUploadData(data);
     setLoading(true);
@@ -200,6 +224,48 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
         uniqueAngle,
         beforeFeeling,
         afterFeeling,
+      });
+      setIntroPatterns(result.intro_patterns ?? []);
+      setExpertiseBridges(result.expertise_bridges ?? []);
+      setHookStarters(result.hook_starters ?? []);
+      setLeadMagnetLine(result.lead_magnet_line ?? "");
+      setPhase("opening");
+    } catch (e: any) {
+      setError(e.message || "Failed to generate opening. Please try again.");
+    }
+    setLoading(false);
+  }
+
+  // ── Prefill flow: Research complete → opening_context ──
+  function handleResearchComplete(data: UploadData) {
+    setUploadData(data);
+    setPhase("opening_context");
+  }
+
+  // ── Prefill flow: Skip research → opening_context ──
+  function handleSkipResearch() {
+    if (!prefillData) return;
+    setUploadData({
+      title: prefillData.title,
+      talkingPoints: prefillData.talkingPoints.join("\n"),
+      researchSummary: "",
+    });
+    setPhase("opening_context");
+  }
+
+  // ── Prefill flow: opening_context → Generate opening ──
+  async function handleGenerateOpening() {
+    if (!uploadData) return;
+    setLoading(true);
+    setError("");
+    try {
+      const result = await callStep("opening", {
+        title: uploadData.title,
+        topic: uploadData.title,
+        uniqueAngle,
+        beforeFeeling,
+        afterFeeling,
+        talkingPoints: prefillData?.talkingPoints.join("\n") || uploadData.talkingPoints || undefined,
       });
       setIntroPatterns(result.intro_patterns ?? []);
       setExpertiseBridges(result.expertise_bridges ?? []);
@@ -274,7 +340,6 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
     setLoading(true);
     setError("");
     try {
-      // Compile insights answers into text
       const insightsText = insightSlots.map((slot) => {
         const a = insightAnswers[slot.slot] ?? {};
         return `Insight ${slot.slot} (${slot.label}):
@@ -360,12 +425,16 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
 
   function handleReset() {
     setPhase("upload");
+    setPrefillData(null);
     setUploadData(null);
     setIntroPatterns([]);
     setExpertiseBridges([]);
     setSelectedPattern("");
     setSelectedBridge("");
     setLeadMagnetLine("");
+    setUniqueAngle("");
+    setBeforeFeeling("");
+    setAfterFeeling("");
     setCredentialInput("");
     setCredibilitySuggestions([]);
     setSelectedCredibility("");
@@ -392,6 +461,8 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
   });
 
   const subtitle = phase === "upload" ? "Upload your research and set up your video details"
+    : phase === "research" ? "Add supporting research (optional)"
+    : phase === "opening_context" ? "Tell the AI about your viewer's journey"
     : phase === "opening" ? "Select your opening pattern and expertise bridge"
     : phase === "credibility" ? "Generate and choose your credibility signal"
     : phase === "insights" ? "Build your insight frameworks"
@@ -417,7 +488,7 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
         </div>
       )}
 
-      {/* ── UPLOAD PHASE ── */}
+      {/* ── UPLOAD PHASE (normal flow) ── */}
       {phase === "upload" && (
         <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-6">
           {isLocked ? (
@@ -470,6 +541,98 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
               </div>
             </>
           )}
+        </div>
+      )}
+
+      {/* ── RESEARCH PHASE (prefill flow) ── */}
+      {phase === "research" && !loading && (
+        <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-6">
+          {isLocked ? (
+            <div className="text-center py-10 space-y-3">
+              <p className="text-4xl">🔒</p>
+              <p className="font-semibold text-[#1e2a38]">Monthly limit reached</p>
+              <p className="text-sm text-[#1e2a38]/60">
+                Your AI usage cap resets on <span className="font-medium">{usage?.resetsAt}</span>.
+              </p>
+            </div>
+          ) : (
+            <ArcScriptUploadPhase
+              onStartBuilding={handleResearchComplete}
+              cap={usage?.cap ? parseFloat(usage.cap) : 15}
+              prefillData={prefillData ?? undefined}
+              onSkip={handleSkipResearch}
+            />
+          )}
+        </div>
+      )}
+
+      {/* ── OPENING CONTEXT PHASE (prefill flow) ── */}
+      {phase === "opening_context" && !loading && (
+        <div className="space-y-5">
+          {/* Title banner */}
+          <div className="bg-[#3dc3ff]/8 border border-[#3dc3ff]/25 rounded-xl px-4 py-3">
+            <p className="text-xs font-semibold text-[#3dc3ff] uppercase tracking-wider mb-0.5">Building script for</p>
+            <p className="text-sm font-semibold text-[#1e2a38]">{uploadData?.title}</p>
+          </div>
+
+          <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-6 space-y-4">
+            <div>
+              <h3 className="font-semibold text-[#1e2a38] mb-1">Opening Context</h3>
+              <p className="text-sm text-[#1e2a38]/50">
+                These details help the AI write an opening that speaks directly to your viewer's situation.
+                All fields are optional but the more you add, the better the output.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-[#1e2a38]/60 mb-1">Unique angle or hook for this video</label>
+              <input
+                type="text"
+                value={uniqueAngle}
+                onChange={(e) => setUniqueAngle(e.target.value)}
+                placeholder="e.g. Most agents get this backwards — here's why"
+                className="w-full border border-[#1e2a38]/15 rounded-lg px-3 py-2 text-sm text-[#1e2a38] focus:outline-none focus:border-[#3dc3ff]"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-[#1e2a38]/60 mb-1">How viewer feels BEFORE watching</label>
+                <input
+                  type="text"
+                  value={beforeFeeling}
+                  onChange={(e) => setBeforeFeeling(e.target.value)}
+                  placeholder="e.g. confused, anxious, overwhelmed"
+                  className="w-full border border-[#1e2a38]/15 rounded-lg px-3 py-2 text-sm text-[#1e2a38] focus:outline-none focus:border-[#3dc3ff]"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-[#1e2a38]/60 mb-1">How viewer feels AFTER watching</label>
+                <input
+                  type="text"
+                  value={afterFeeling}
+                  onChange={(e) => setAfterFeeling(e.target.value)}
+                  placeholder="e.g. confident, clear, ready to act"
+                  className="w-full border border-[#1e2a38]/15 rounded-lg px-3 py-2 text-sm text-[#1e2a38] focus:outline-none focus:border-[#3dc3ff]"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 justify-between pt-2">
+              <button
+                onClick={() => setPhase("research")}
+                className="px-4 py-2 text-sm border border-[#1e2a38]/15 rounded-xl text-[#1e2a38]/60 hover:bg-[#1e2a38]/5 transition-colors"
+              >
+                ← Back
+              </button>
+              <button
+                onClick={handleGenerateOpening}
+                className="px-6 py-2.5 text-sm font-semibold bg-[#3dc3ff] text-white rounded-xl hover:bg-[#3dc3ff]/90 transition-colors"
+              >
+                Generate Opening →
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -594,8 +757,11 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
           )}
 
           <div className="flex gap-3 justify-end">
-            <button onClick={handleReset} className="px-4 py-2 text-sm border border-[#1e2a38]/15 rounded-xl text-[#1e2a38]/60 hover:bg-[#1e2a38]/5 transition-colors">
-              Start Over
+            <button
+              onClick={() => prefillData ? setPhase("opening_context") : handleReset()}
+              className="px-4 py-2 text-sm border border-[#1e2a38]/15 rounded-xl text-[#1e2a38]/60 hover:bg-[#1e2a38]/5 transition-colors"
+            >
+              {prefillData ? "← Back" : "Start Over"}
             </button>
             <button
               onClick={handleOpeningNext}

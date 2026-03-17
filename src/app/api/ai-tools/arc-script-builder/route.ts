@@ -118,12 +118,13 @@ Every completed script must pass these checks:
 const OPENING_PROMPT = (p: {
   topic: string; title: string; uniqueAngle: string;
   beforeFeeling: string; afterFeeling: string;
+  talkingPoints?: string;
 }) => `VIDEO DETAILS:
 Topic: ${p.topic}
 Title: ${p.title}
 Unique angle: ${p.uniqueAngle}
 How viewer feels BEFORE: ${p.beforeFeeling}
-How viewer feels AFTER: ${p.afterFeeling}
+How viewer feels AFTER: ${p.afterFeeling}${p.talkingPoints ? `\nPlanned talking points (the script will cover these):\n${p.talkingPoints}` : ""}
 
 === YOUR TASK ===
 
@@ -463,6 +464,7 @@ async function handleOpening(userId: string, body: any): Promise<NextResponse> {
     uniqueAngle: body.uniqueAngle ?? "",
     beforeFeeling: body.beforeFeeling ?? "",
     afterFeeling: body.afterFeeling ?? "",
+    talkingPoints: body.talkingPoints ?? undefined,
   });
 
   const response = await client.messages.create({
