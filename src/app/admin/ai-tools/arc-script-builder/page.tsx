@@ -14,7 +14,7 @@ export default function AdminArcScriptBuilderPage() {
           { key: "{{MEMBER_CONTEXT}}", description: "Auto-injected block with member avatar, content themes, and baseline scores" },
         ]}
       />
-      <ArcScriptBuilderTool basePath="/admin/ai-tools" />
+      <ArcScriptBuilderTool basePath="/admin/ai-tools" isAdmin={true} />
     </div>
   );
 }

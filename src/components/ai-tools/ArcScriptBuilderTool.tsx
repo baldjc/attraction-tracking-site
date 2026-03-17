@@ -8,6 +8,7 @@ import RecentConversations from "@/components/ai-tools/RecentConversations";
 
 interface Props {
   basePath: string;
+  isAdmin?: boolean;
 }
 
 interface UsageData {
@@ -241,7 +242,7 @@ function buildFullScriptMarkdown(finalData: any, title: string): string {
   return lines.join("\n");
 }
 
-export default function ArcScriptBuilderTool({ basePath }: Props) {
+export default function ArcScriptBuilderTool({ basePath, isAdmin = false }: Props) {
   const [phase, setPhase] = useState<Phase>("upload");
   const [prefillData, setPrefillData] = useState<PrefillData | null>(null);
   const [uploadData, setUploadData] = useState<UploadData | null>(null);
@@ -649,6 +650,31 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
       // Auto-save to 30-day conversation history
       const scriptTitle = uploadData?.title || "ARC Script";
       const fullMarkdown = buildFullScriptMarkdown(result, scriptTitle);
+      const savedMetadata: Record<string, any> = { videoTitle: uploadData?.title ?? null };
+      if (isAdmin) {
+        savedMetadata.inputSnapshot = {
+          videoTitle: uploadData?.title ?? null,
+          talkingPoints: uploadData?.talkingPoints ?? null,
+          conventionalWisdom,
+          uniqueAngle,
+          viewerEmotion,
+          viewerQuestion,
+          viewerFear,
+          viewerHope,
+          credClientsHelped,
+          credSpecificResult,
+          credFrequency,
+          credSurprise,
+          selectedCredibility,
+          clientStory,
+          leadMagnetLine,
+          nextVideoTitle,
+          nextVideoWhy,
+          prefillSource: prefillData
+            ? { title: prefillData.title, theme: prefillData.theme ?? null, ideaId: prefillData.ideaId ?? null }
+            : null,
+        };
+      }
       fetch("/api/ai-tools/conversations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -661,7 +687,7 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
               content: fullMarkdown,
             },
           ],
-          metadata: { videoTitle: uploadData?.title ?? null },
+          metadata: savedMetadata,
         }),
       })
         .then((r) => r.json())
