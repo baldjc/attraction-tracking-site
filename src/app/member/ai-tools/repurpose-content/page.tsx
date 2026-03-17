@@ -2,6 +2,65 @@
 
 import { useState, useEffect, useCallback } from "react";
 
+function markdownToHtml(md: string): string {
+  const lines = md.split("\n");
+  const out: string[] = [];
+  let inUl = false;
+  let inOl = false;
+
+  const inline = (t: string) =>
+    t
+      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+      .replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, "<em>$1</em>");
+
+  const closeList = () => {
+    if (inUl) { out.push("</ul>"); inUl = false; }
+    if (inOl) { out.push("</ol>"); inOl = false; }
+  };
+
+  for (const line of lines) {
+    const t = line.trim();
+    if (t.startsWith("### ")) { closeList(); out.push(`<h3>${inline(t.slice(4))}</h3>`); }
+    else if (t.startsWith("## ")) { closeList(); out.push(`<h2>${inline(t.slice(3))}</h2>`); }
+    else if (t.startsWith("# ")) { closeList(); out.push(`<h1>${inline(t.slice(2))}</h1>`); }
+    else if (t.startsWith("- ")) {
+      if (inOl) { out.push("</ol>"); inOl = false; }
+      if (!inUl) { out.push("<ul>"); inUl = true; }
+      out.push(`<li>${inline(t.slice(2))}</li>`);
+    } else if (/^\d+\.\s/.test(t)) {
+      if (inUl) { out.push("</ul>"); inUl = false; }
+      if (!inOl) { out.push("<ol>"); inOl = true; }
+      out.push(`<li>${inline(t.replace(/^\d+\.\s/, ""))}</li>`);
+    } else if (t === "") {
+      closeList();
+    } else {
+      closeList();
+      out.push(`<p>${inline(t)}</p>`);
+    }
+  }
+  closeList();
+  return out.join("\n");
+}
+
+async function copyRichText(markdown: string, fallbackPlain?: string): Promise<void> {
+  const html = markdownToHtml(markdown);
+  const plain = fallbackPlain ?? markdown;
+  try {
+    await navigator.clipboard.write([
+      new ClipboardItem({
+        "text/html": new Blob([html], { type: "text/html" }),
+        "text/plain": new Blob([plain], { type: "text/plain" }),
+      }),
+    ]);
+  } catch {
+    await navigator.clipboard.writeText(plain);
+  }
+}
+
+async function copyPlainText(text: string): Promise<void> {
+  await navigator.clipboard.writeText(text);
+}
+
 interface RepurposeProfile {
   name: string;
   business: string;
@@ -49,6 +108,13 @@ export default function RepurposeContentPage() {
   const [selectedLinkIndexes, setSelectedLinkIndexes] = useState<number[]>([]);
   const [oneOffLinks, setOneOffLinks] = useState<SavedLink[]>([]);
   const [showLinkManager, setShowLinkManager] = useState(false);
+
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+
+  function triggerCopied(key: string) {
+    setCopiedKey(key);
+    setTimeout(() => setCopiedKey(null), 2000);
+  }
 
   const [loading, setLoading] = useState(false);
   const [newsletterResult, setNewsletterResult] = useState<NewsletterResult | null>(null);
@@ -428,15 +494,20 @@ export default function RepurposeContentPage() {
                               : (output.output as LinkedInResult).full_article)}
                           </pre>
                           <button
-                            onClick={() => {
-                              const text = output.editedOutput || (output.toolType === "newsletter"
+                            onClick={async () => {
+                              const rawText = output.editedOutput || (output.toolType === "newsletter"
                                 ? (() => { const nl = output.output as NewsletterResult; return `Subject: ${nl.subject_line}\nPreview: ${nl.preview_text}\n\n${nl.body}\n\nP.S. ${nl.ps_line}\n\n${nl.sign_off}`; })()
                                 : (output.output as LinkedInResult).full_article);
-                              navigator.clipboard.writeText(text);
+                              if (output.toolType === "linkedin") {
+                                await copyRichText(rawText);
+                              } else {
+                                await copyPlainText(rawText);
+                              }
+                              triggerCopied(`past-${output.id}`);
                             }}
                             className="mt-2 text-xs text-[#3dc3ff] hover:underline"
                           >
-                            Copy to clipboard
+                            {copiedKey === `past-${output.id}` ? "✓ Copied!" : "Copy to clipboard"}
                           </button>
                         </div>
                       )}
@@ -481,7 +552,9 @@ export default function RepurposeContentPage() {
                     <div className="space-y-4">
                       <textarea value={editedNewsletter} onChange={(e) => setEditedNewsletter(e.target.value)} rows={16} className="w-full border border-[#1e2a38]/20 rounded-xl px-4 py-3 text-sm text-[#1e2a38] focus:outline-none focus:border-[#3dc3ff] transition-colors resize-y font-mono" />
                       <div className="flex gap-2">
-                        <button onClick={() => navigator.clipboard.writeText(editedNewsletter)} className="border border-[#1e2a38]/20 text-[#1e2a38] px-4 py-2 rounded-xl text-sm font-semibold hover:bg-[#1e2a38]/5">Copy</button>
+                        <button onClick={async () => { await copyPlainText(editedNewsletter); triggerCopied("newsletter"); }} className="border border-[#1e2a38]/20 text-[#1e2a38] px-4 py-2 rounded-xl text-sm font-semibold hover:bg-[#1e2a38]/5 min-w-[80px]">
+                          {copiedKey === "newsletter" ? "✓ Copied!" : "Copy"}
+                        </button>
                         <button onClick={() => { if (newsletterRecordId) saveEdit(newsletterRecordId, editedNewsletter); }} className="bg-[#3dc3ff] text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-[#3dc3ff]/90">Save Changes</button>
                       </div>
                     </div>
@@ -504,7 +577,9 @@ export default function RepurposeContentPage() {
                     <div className="space-y-4">
                       <textarea value={editedLinkedIn} onChange={(e) => setEditedLinkedIn(e.target.value)} rows={30} className="w-full border border-[#1e2a38]/20 rounded-xl px-4 py-3 text-sm text-[#1e2a38] focus:outline-none focus:border-[#3dc3ff] transition-colors resize-y font-mono" />
                       <div className="flex gap-2">
-                        <button onClick={() => navigator.clipboard.writeText(editedLinkedIn)} className="border border-[#1e2a38]/20 text-[#1e2a38] px-4 py-2 rounded-xl text-sm font-semibold hover:bg-[#1e2a38]/5">Copy</button>
+                        <button onClick={async () => { await copyRichText(editedLinkedIn); triggerCopied("linkedin"); }} className="border border-[#1e2a38]/20 text-[#1e2a38] px-4 py-2 rounded-xl text-sm font-semibold hover:bg-[#1e2a38]/5 min-w-[80px]">
+                          {copiedKey === "linkedin" ? "✓ Copied!" : "Copy"}
+                        </button>
                         <button onClick={() => { if (linkedInRecordId) saveEdit(linkedInRecordId, editedLinkedIn); }} className="bg-[#3dc3ff] text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-[#3dc3ff]/90">Save Changes</button>
                       </div>
                     </div>
