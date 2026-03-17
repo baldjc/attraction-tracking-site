@@ -179,22 +179,9 @@ function getNichePlaceholders(niche: string | null) {
 // Takes the raw finalData result + title and returns a fully-formatted markdown
 // string. Used by handleCopy, handleSave, and the auto-save conversation payload.
 
-const CHECKLIST_LABELS: Record<string, string> = {
-  opening_length_ok: "Opening length OK",
-  opening_approves_click: "Opening approves the click",
-  expertise_bridge_after_lead_magnet: "Expertise bridge placed after lead magnet",
-  credibility_natural: "Credibility signal feels natural",
-  lead_magnet_3_times: "Lead magnet mentioned 3 times",
-  value_loops_correct: "Value loops (WHAT / WHY / WHEN / STORY / CONNECTION) correct",
-  no_how_to_implement: "No 'how to implement' content (value gap maintained)",
-  connection_phrases_4_5: "4–5 connection phrases included",
-  values_peppered: "Values / interests peppered throughout",
-  curiosity_bridges: "Curiosity bridges between sections",
-  grade_5_language: "Grade-5 reading level language",
-  visual_prompts_identified: "Visual prompts identified",
-};
-
 function buildFullScriptMarkdown(finalData: any, title: string): string {
+  // Build a key→label lookup from the existing CHECKLIST_LABELS array
+  const checklistLookup = Object.fromEntries(CHECKLIST_LABELS.map((c) => [c.key, c.label]));
   if (!finalData?.script_outline) return "";
   const s = finalData.script_outline;
   const lines: string[] = [];
@@ -275,7 +262,7 @@ function buildFullScriptMarkdown(finalData: any, title: string): string {
   if (finalData.checklist && Object.keys(finalData.checklist).length) {
     lines.push("## CHECKLIST", "");
     for (const [key, val] of Object.entries(finalData.checklist as Record<string, boolean>)) {
-      const label = CHECKLIST_LABELS[key] ?? key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+      const label = checklistLookup[key] ?? key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
       lines.push(`- [${val ? "x" : " "}] ${label}`);
     }
     lines.push("");
