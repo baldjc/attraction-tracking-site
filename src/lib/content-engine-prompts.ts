@@ -86,7 +86,7 @@ RULES:
 - Keyword stacking: include 2-4 high-performing keywords per title naturally
 - Include city naturally if applicable (do not force it if it sounds unnatural)
 - Broad appeal: multiple viewer types should want to click
-- Talking points: 3-5 specific, direct points in the avatar's own voice addressing their core stresses
+- Talking points: 3-5 short bullet points the creator would actually say on camera. Format each as a 2-3 word label followed by a dash and one sentence explaining the point. Example: "Capacity panic — life is already full, adding a major transaction feels impossible without everything else falling apart." These are NOT sub-headlines or additional titles. They are the actual content of the video — what you would say to the viewer.
 - "Why this works": one line connecting the idea to the avatar's emotional landscape
 - Do NOT repeat any already-saved title
 - Respond ONLY with valid JSON — no markdown, no code fences, no commentary outside the JSON
@@ -96,10 +96,14 @@ OUTPUT FORMAT:
   "theme": "${theme}",
   "ideas": [
     {
-      "title": "The video title here",
-      "talkingPoints": ["Point 1", "Point 2", "Point 3"],
-      "framework": "Framework name used",
-      "whyItWorks": "One line connecting to avatar emotional landscape"
+      "title": "Do NOT Buy a Home in Calgary Until You Watch This",
+      "talkingPoints": [
+        "Capacity panic — life is already full, adding a major transaction feels impossible without everything else falling apart",
+        "Disruption fear — life is good right now, what if chasing better actually breaks something that's working",
+        "Timing doubt — is this the right time or are you forcing something that should wait another year"
+      ],
+      "framework": "Do NOT [Activity] Until You Watch This",
+      "whyItWorks": "Speaks directly to the fear that this process will take over a life they've carefully built — the title creates urgency while the content validates their hesitation."
     }
   ]
 }`;
