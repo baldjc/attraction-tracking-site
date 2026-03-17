@@ -32,7 +32,9 @@ export async function POST(req: NextRequest) {
     take: 50,
   });
 
-  const systemPrompt = buildChatSystemPrompt({
+  const customSetting = await prisma.appSetting.findUnique({ where: { key: "content_engine_prompt" } });
+
+  let systemPrompt = buildChatSystemPrompt({
     avatarProfile: dbUser?.avatarProfile ?? null,
     contentThemes: dbUser?.contentThemes ?? null,
     niche: dbUser?.niche ?? null,
@@ -40,6 +42,10 @@ export async function POST(req: NextRequest) {
     savedTitles: savedIdeas.map((i) => i.title),
     theme,
   });
+
+  if (customSetting?.value?.trim()) {
+    systemPrompt = systemPrompt + "\n\n" + customSetting.value;
+  }
 
   const response = await client.messages.create({
     model: "claude-sonnet-4-20250514",

@@ -9,6 +9,7 @@ import {
   TITLE_CREATOR_PROMPT,
   TITLE_THUMBNAIL_ANALYZER_PROMPT,
 } from "@/lib/audit-engine";
+import { ARC_MASTER_SYSTEM_PROMPT } from "@/lib/arc-script-builder-prompt";
 
 export async function GET(req: NextRequest) {
   const session = await auth();
@@ -27,6 +28,8 @@ export async function GET(req: NextRequest) {
     avatar_architect_prompt: AVATAR_ARCHITECT_PROMPT,
     title_creator_prompt: TITLE_CREATOR_PROMPT,
     title_thumbnail_analyzer_prompt: TITLE_THUMBNAIL_ANALYZER_PROMPT,
+    prompt_arc_script_builder: ARC_MASTER_SYSTEM_PROMPT,
+    content_engine_prompt: "",
   };
 
   const defaultValue = PROMPT_DEFAULTS[key] ?? null;
