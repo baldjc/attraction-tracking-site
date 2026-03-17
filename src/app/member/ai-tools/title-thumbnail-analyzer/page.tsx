@@ -500,7 +500,7 @@ export default function TitleThumbnailAnalyzerPage() {
           </div>
 
           {/* Thumbnail analysis */}
-          {result.thumbnail.observations.length > 0 && (
+          {(result.thumbnail.observations?.length ?? 0) > 0 && (
             <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-6">
               <h2 className="font-semibold text-[#1e2a38] mb-4">Thumbnail Analysis</h2>
               <div className="space-y-3">
@@ -517,7 +517,7 @@ export default function TitleThumbnailAnalyzerPage() {
                     ))}
                   </ul>
                 </div>
-                {result.thumbnail.improvements.length > 0 && (
+                {(result.thumbnail.improvements?.length ?? 0) > 0 && (
                   <div>
                     <p className="text-xs font-semibold text-[#1e2a38]/40 uppercase tracking-wide mb-2">
                       Improvements
@@ -539,7 +539,7 @@ export default function TitleThumbnailAnalyzerPage() {
           {/* Title analysis */}
           <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-6">
             <h2 className="font-semibold text-[#1e2a38] mb-4">Title Analysis</h2>
-            {result.title.observations.length > 0 && (
+            {(result.title.observations?.length ?? 0) > 0 && (
               <div className="mb-4">
                 <p className="text-xs font-semibold text-[#1e2a38]/40 uppercase tracking-wide mb-2">
                   Observations
@@ -554,7 +554,7 @@ export default function TitleThumbnailAnalyzerPage() {
                 </ul>
               </div>
             )}
-            {result.title.alternatives.length > 0 && (
+            {(result.title.alternatives?.length ?? 0) > 0 && (
               <div>
                 <p className="text-xs font-semibold text-[#1e2a38]/40 uppercase tracking-wide mb-2">
                   Improved Alternatives
@@ -591,7 +591,7 @@ export default function TitleThumbnailAnalyzerPage() {
                 </span>
               </div>
               <div className="space-y-3">
-                {result.intro.observations.length > 0 && (
+                {(result.intro.observations?.length ?? 0) > 0 && (
                   <div>
                     <p className="text-xs font-semibold text-[#1e2a38]/40 uppercase tracking-wide mb-2">
                       Observations
@@ -606,7 +606,7 @@ export default function TitleThumbnailAnalyzerPage() {
                     </ul>
                   </div>
                 )}
-                {result.intro.improvements.length > 0 && (
+                {(result.intro.improvements?.length ?? 0) > 0 && (
                   <div>
                     <p className="text-xs font-semibold text-[#1e2a38]/40 uppercase tracking-wide mb-2">
                       Improvements
@@ -641,7 +641,7 @@ export default function TitleThumbnailAnalyzerPage() {
                   : "✗ Avatar unlikely to click"}
               </span>
             </div>
-            {result.combined.observations.length > 0 && (
+            {(result.combined.observations?.length ?? 0) > 0 && (
               <ul className="space-y-1.5 mb-3">
                 {result.combined.observations.map((o, i) => (
                   <li key={i} className="text-sm text-[#1e2a38] flex gap-2">
@@ -651,7 +651,7 @@ export default function TitleThumbnailAnalyzerPage() {
                 ))}
               </ul>
             )}
-            {result.combined.improvements.length > 0 && (
+            {(result.combined.improvements?.length ?? 0) > 0 && (
               <>
                 <p className="text-xs font-semibold text-[#1e2a38]/40 uppercase tracking-wide mb-2">
                   Improvements
