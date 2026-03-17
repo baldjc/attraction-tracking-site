@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import prisma from "@/lib/prisma";
+import { DEFAULT_NEWSLETTER_PROMPT, applyNewsletterTokens } from "@/lib/repurpose-prompts";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -23,68 +24,35 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Transcript exceeds 50,000 character limit" }, { status: 400 });
   }
 
-  const dbUser = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: {
-      avatarProfile: true,
-      repurposeName: true,
-      repurposeBusiness: true,
-      repurposeListSize: true,
-      repurposeVoice: true,
-    },
-  });
+  const [dbUser, promptSetting] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: user.id },
+      select: {
+        avatarProfile: true,
+        repurposeName: true,
+        repurposeBusiness: true,
+        repurposeListSize: true,
+        repurposeVoice: true,
+      },
+    }),
+    prisma.appSetting.findUnique({ where: { key: "repurpose_newsletter_prompt" } }),
+  ]);
 
   const memberName = dbUser?.repurposeName || "the author";
   const businessName = dbUser?.repurposeBusiness || "the business";
   const listSize = dbUser?.repurposeListSize || "";
+  const listSizeText = listSize ? ` of ${listSize}+ subscribers` : "";
   const voiceStyle = VOICE_MAP[dbUser?.repurposeVoice || "direct"] || VOICE_MAP.direct;
   const avatarText = dbUser?.avatarProfile ? JSON.stringify(dbUser.avatarProfile) : "No avatar saved";
 
-  const systemPrompt = `You are an email copywriter for ${businessName}. When given a video transcript, you write a single email newsletter that goes to the subscriber list${listSize ? ` of ${listSize}+ subscribers` : ""}.
-
-## AUDIENCE
-The audience is defined by this avatar profile. These are people who already know and trust ${memberName} from their content. They're not cold — they're warm. Write like ${memberName} is writing to someone who has already watched their videos.
-
-AVATAR:
-${avatarText}
-
-## VOICE
-${voiceStyle}
-
-## RULES — FOLLOW EXACTLY
-
-Every email must include:
-1. A subject line that creates a knowledge gap or leads with a counterintuitive insight
-2. A preview text line (separate from the subject, 60-80 characters) that adds intrigue or completes a thought
-3. An opening line that names what the reader is already thinking or feeling
-4. One central insight from the transcript — not a summary, a revelation
-5. Can include one small section of up to 3 bullet points max, but short thoughts only
-6. One URL placeholder: [INSERT URL]
-7. A P.S. line that functions as a second hook for skimmers
-8. Sign off personally as ${memberName}, not a team signature
-9. Total length: 150-250 words maximum in the body
-
-## NEVER DO
-- Multiple CTAs
-- Bullet-heavy formatting that reads like a report
-- Generic openings like "Hi [Name], here's your market update"
-- Vague subject lines that describe content rather than create curiosity
-- Never use dashes of any kind — including em dashes, en dashes, or hyphens used as pauses. Rewrite any sentence that relies on a dash for rhythm or structure on a new line.
-
-## PROCESS
-Extract the single most surprising or counterintuitive insight from the transcript. Build the email around that one idea. Everything else in the transcript is supporting context — not content to summarise.
-
-## CANADIAN SPELLING
-Always use Canadian spelling (colour, neighbourhood, analyse, etc.)
-
-Return ONLY valid JSON in this exact structure:
-{
-  "subject_line": "the email subject line",
-  "preview_text": "60-80 character preview text",
-  "body": "the full email body (150-250 words, no dashes of any kind)",
-  "ps_line": "P.S. line as a second hook",
-  "sign_off": "${memberName}"
-}`;
+  const promptTemplate = promptSetting?.value || DEFAULT_NEWSLETTER_PROMPT;
+  const systemPrompt = applyNewsletterTokens(promptTemplate, {
+    memberName,
+    businessName,
+    listSizeText,
+    voiceStyle,
+    avatarText,
+  });
 
   const response = await client.messages.create({
     model: "claude-sonnet-4-20250514",

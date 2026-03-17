@@ -10,6 +10,7 @@ import {
   TITLE_THUMBNAIL_ANALYZER_PROMPT,
 } from "@/lib/audit-engine";
 import { ARC_MASTER_SYSTEM_PROMPT } from "@/lib/arc-script-builder-prompt";
+import { DEFAULT_NEWSLETTER_PROMPT, DEFAULT_LINKEDIN_PROMPT } from "@/lib/repurpose-prompts";
 
 export async function GET(req: NextRequest) {
   const session = await auth();
@@ -30,6 +31,8 @@ export async function GET(req: NextRequest) {
     title_thumbnail_analyzer_prompt: TITLE_THUMBNAIL_ANALYZER_PROMPT,
     prompt_arc_script_builder: ARC_MASTER_SYSTEM_PROMPT,
     content_engine_prompt: "",
+    repurpose_newsletter_prompt: DEFAULT_NEWSLETTER_PROMPT,
+    repurpose_linkedin_prompt: DEFAULT_LINKEDIN_PROMPT,
   };
 
   const defaultValue = PROMPT_DEFAULTS[key] ?? null;

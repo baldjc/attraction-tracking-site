@@ -262,7 +262,7 @@ export default function RepurposeContentPage() {
     return (
       <div className="max-w-2xl mx-auto px-4 py-6">
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-[#1e2a38]">Repurpose Content</h1>
+          <h1 className="text-2xl font-bold text-[#1e2a38]">♻️ Repurpose Content</h1>
           <p className="text-[#1e2a38]/60 mt-1">Turn your video transcript into a newsletter and LinkedIn article</p>
         </div>
         <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-6 text-center text-[#1e2a38]/40">
@@ -275,7 +275,7 @@ export default function RepurposeContentPage() {
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-[#1e2a38]">Repurpose Content</h1>
+        <h1 className="text-2xl font-bold text-[#1e2a38]">♻️ Repurpose Content</h1>
         <p className="text-[#1e2a38]/60 mt-1">Turn your video transcript into a newsletter and LinkedIn article</p>
       </div>
 

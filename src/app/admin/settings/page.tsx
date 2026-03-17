@@ -180,6 +180,83 @@ function FeatureVisibilitySection() {
   );
 }
 
+// ─── Generic Prompt Editor ────────────────────────────────────────────────────
+
+function PromptEditorSection({
+  title,
+  description,
+  settingKey,
+  rows = 20,
+}: {
+  title: string;
+  description: string;
+  settingKey: string;
+  rows?: number;
+}) {
+  const [prompt, setPrompt] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    fetch(`/api/settings?key=${settingKey}`)
+      .then((r) => r.json())
+      .then((d) => { setPrompt(d.value ?? ""); setLoading(false); });
+  }, [settingKey]);
+
+  async function handleSave() {
+    setSaving(true);
+    setSaved(false);
+    await fetch("/api/settings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key: settingKey, value: prompt }),
+    });
+    setSaving(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 3000);
+  }
+
+  async function handleReset() {
+    await fetch(`/api/settings?key=${settingKey}`, { method: "DELETE" });
+    const res = await fetch(`/api/settings?key=${settingKey}`);
+    const d = await res.json();
+    setPrompt(d.value ?? "");
+  }
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+      <div className="flex items-center justify-between mb-2">
+        <h2 className="text-base font-semibold text-[#1e2a38]">{title}</h2>
+        <button onClick={handleReset} className="text-xs text-[#1e2a38]/50 hover:text-[#1e2a38] underline">
+          Reset to Default
+        </button>
+      </div>
+      <p className="text-xs text-[#1e2a38]/50 mb-3">{description}</p>
+      {loading ? (
+        <div className="h-64 bg-gray-50 rounded-lg animate-pulse" />
+      ) : (
+        <textarea
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          rows={rows}
+          className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-[#1e2a38] font-mono focus:outline-none focus:ring-2 focus:ring-[#3dc3ff]/30 resize-y"
+        />
+      )}
+      <div className="flex items-center gap-3 mt-3">
+        <button
+          onClick={handleSave}
+          disabled={saving || loading}
+          className="bg-[#3dc3ff] hover:bg-[#2bb3ef] disabled:opacity-50 text-white font-semibold px-5 py-2.5 rounded-lg text-sm transition-colors"
+        >
+          {saving ? "Saving…" : "Save Prompt"}
+        </button>
+        {saved && <span className="text-sm text-green-600 font-medium">✓ Saved</span>}
+      </div>
+    </div>
+  );
+}
+
 // ─── AI Scoring Prompt ────────────────────────────────────────────────────────
 
 function AIScoringPromptSection() {
@@ -260,6 +337,18 @@ export default function SettingsPage() {
       </div>
       <FeatureVisibilitySection />
       <AIScoringPromptSection />
+      <PromptEditorSection
+        title="Repurpose Content — Newsletter Prompt"
+        description={`System prompt used when generating email newsletters. Use these tokens for dynamic values: {{MEMBER_NAME}}, {{BUSINESS_NAME}}, {{LIST_SIZE_TEXT}}, {{VOICE_STYLE}}, {{AVATAR_TEXT}}.`}
+        settingKey="repurpose_newsletter_prompt"
+        rows={28}
+      />
+      <PromptEditorSection
+        title="Repurpose Content — LinkedIn Article Prompt"
+        description={`System prompt used when generating LinkedIn articles. Use these tokens for dynamic values: {{MEMBER_NAME}}, {{BUSINESS_NAME}}, {{VOICE_STYLE}}, {{AVATAR_TEXT}}, {{LINKS_TEXT}}.`}
+        settingKey="repurpose_linkedin_prompt"
+        rows={36}
+      />
     </div>
   );
 }
