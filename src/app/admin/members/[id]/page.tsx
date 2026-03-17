@@ -1019,7 +1019,7 @@ export default function MemberDetailPage() {
                           <td className="py-3 pr-4 text-[#1e2a38]">{link.name}</td>
                           <td className="py-3 pr-4">
                             <span className="text-[#3dc3ff] font-mono text-xs">
-                              /{link.shortCode}
+                              /{link.refCode}
                             </span>
                           </td>
                           <td className="py-3 pr-4 text-[#1e2a38]">{clicks}</td>

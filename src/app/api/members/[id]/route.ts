@@ -19,10 +19,15 @@ export async function GET(
       audits: {
         orderBy: { createdAt: "desc" },
       },
-      links: {
+      campaigns: {
         include: {
-          clicks: {
-            include: { lead: true },
+          links: {
+            include: {
+              clicks: {
+                include: { lead: true },
+              },
+            },
+            orderBy: { createdAt: "desc" },
           },
         },
         orderBy: { createdAt: "desc" },
@@ -34,7 +39,10 @@ export async function GET(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  return NextResponse.json({ member });
+  // Flatten tracking links from all campaigns so the frontend can use member.links directly
+  const links = member.campaigns.flatMap((c) => c.links);
+
+  return NextResponse.json({ member: { ...member, links } });
 }
 
 export async function PATCH(
