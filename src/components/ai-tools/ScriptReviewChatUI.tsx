@@ -5,6 +5,7 @@ import {
   ArrowUpIcon,
   ArrowDownTrayIcon,
   PlusIcon,
+  CheckCircleIcon,
 } from "@heroicons/react/24/solid";
 import RecentConversations from "./RecentConversations";
 import PromptEditor from "./PromptEditor";
@@ -360,6 +361,9 @@ export default function ScriptReviewChatUI({ basePath, noAvatar }: Props) {
         toolType="script_review"
         onLoad={handleLoadConversation}
         refreshTrigger={refreshCounter}
+        label="Recent Script Reviews"
+        emptyLabel="No script reviews saved in the last 30 days."
+        forceOpen={refreshCounter}
       />
 
       {noAvatar && phase === "input" && (
@@ -413,6 +417,10 @@ export default function ScriptReviewChatUI({ basePath, noAvatar }: Props) {
               {videoTitle}
             </h2>
             <div className="flex items-center gap-2 shrink-0">
+              <span className="flex items-center gap-1 text-xs text-green-600 font-medium">
+                <CheckCircleIcon className="w-3.5 h-3.5" />
+                Saved · 30 days
+              </span>
               {conversationId && (
                 <button
                   onClick={handleDownload}

@@ -37,9 +37,12 @@ export async function GET(req: NextRequest) {
 
   const toolType = req.nextUrl.searchParams.get("toolType") ?? undefined;
 
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
   const conversations = await prisma.aIToolConversation.findMany({
     where: {
       userId: user.id,
+      createdAt: { gte: thirtyDaysAgo },
       ...(toolType ? { toolType: toolType as any } : {}),
     },
     orderBy: { updatedAt: "desc" },

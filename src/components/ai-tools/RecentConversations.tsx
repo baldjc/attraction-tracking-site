@@ -23,13 +23,23 @@ interface Props {
   toolType: string;
   onLoad?: (conversation: Conversation) => void;
   refreshTrigger?: number;
+  label?: string;
+  emptyLabel?: string;
+  forceOpen?: number;
 }
 
 function fmt(d: string) {
   return new Date(d).toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" });
 }
 
-export default function RecentConversations({ toolType, onLoad, refreshTrigger }: Props) {
+export default function RecentConversations({
+  toolType,
+  onLoad,
+  refreshTrigger,
+  label = "Recent Conversations",
+  emptyLabel = "No saved conversations yet.",
+  forceOpen,
+}: Props) {
   const [open, setOpen] = useState(false);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(false);
@@ -52,6 +62,12 @@ export default function RecentConversations({ toolType, onLoad, refreshTrigger }
     if (open) load();
   }, [open, load, refreshTrigger]);
 
+  useEffect(() => {
+    if (forceOpen && forceOpen > 0) {
+      setOpen(true);
+    }
+  }, [forceOpen]);
+
   async function handleDownload(id: string, e: React.MouseEvent) {
     e.stopPropagation();
     window.open(`/api/ai-tools/conversations/${id}/download`, "_blank");
@@ -59,7 +75,7 @@ export default function RecentConversations({ toolType, onLoad, refreshTrigger }
 
   async function handleDelete(id: string, e: React.MouseEvent) {
     e.stopPropagation();
-    if (!confirm("Delete this conversation?")) return;
+    if (!confirm("Delete this?")) return;
     setDeletingId(id);
     try {
       await fetch(`/api/ai-tools/conversations/${id}`, { method: "DELETE" });
@@ -81,7 +97,7 @@ export default function RecentConversations({ toolType, onLoad, refreshTrigger }
         <div className="flex items-center gap-2">
           <ChatBubbleLeftRightIcon className="w-4 h-4 text-[#1e2a38]/40" />
           <span className="text-xs font-semibold text-[#1e2a38]/60 uppercase tracking-wider">
-            Recent Conversations
+            {label}
           </span>
           {conversations.length > 0 && (
             <span className="text-xs bg-[#3dc3ff]/10 text-[#3dc3ff] font-semibold px-1.5 py-0.5 rounded-full">
@@ -101,7 +117,7 @@ export default function RecentConversations({ toolType, onLoad, refreshTrigger }
           {loading ? (
             <p className="px-4 py-3 text-xs text-[#1e2a38]/40 animate-pulse">Loading…</p>
           ) : conversations.length === 0 ? (
-            <p className="px-4 py-3 text-xs text-[#1e2a38]/40">No saved conversations yet.</p>
+            <p className="px-4 py-3 text-xs text-[#1e2a38]/40">{emptyLabel}</p>
           ) : (
             <ul className="divide-y divide-gray-50">
               {conversations.map((conv) => (
@@ -120,7 +136,7 @@ export default function RecentConversations({ toolType, onLoad, refreshTrigger }
                     <div className="flex items-center gap-1 shrink-0 ml-2">
                       <button
                         onClick={(e) => handleDownload(conv.id, e)}
-                        title="Download conversation"
+                        title="Download"
                         className="p-1.5 rounded-lg text-[#1e2a38]/30 hover:text-[#3dc3ff] hover:bg-[#3dc3ff]/10 transition-colors"
                       >
                         <ArrowDownTrayIcon className="w-3.5 h-3.5" />
@@ -128,7 +144,7 @@ export default function RecentConversations({ toolType, onLoad, refreshTrigger }
                       <button
                         onClick={(e) => handleDelete(conv.id, e)}
                         disabled={deletingId === conv.id}
-                        title="Delete conversation"
+                        title="Delete"
                         className="p-1.5 rounded-lg text-[#1e2a38]/30 hover:text-[#ff0033] hover:bg-[#ff0033]/10 transition-colors disabled:opacity-40"
                       >
                         <TrashIcon className="w-3.5 h-3.5" />
