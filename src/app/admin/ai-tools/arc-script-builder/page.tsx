@@ -2,22 +2,21 @@
 
 import ArcScriptBuilderTool from "@/components/ai-tools/ArcScriptBuilderTool";
 import PromptEditor from "@/components/ai-tools/PromptEditor";
-import { ARC_SCRIPT_BUILDER_DEFAULT_PROMPT } from "@/lib/arc-script-builder-prompt";
+import { ARC_MASTER_SYSTEM_PROMPT } from "@/lib/arc-script-builder-prompt";
 
 export default function AdminArcScriptBuilderPage() {
   return (
     <>
       <PromptEditor
         toolKey="prompt_arc_script_builder"
-        defaultPrompt={ARC_SCRIPT_BUILDER_DEFAULT_PROMPT}
+        defaultPrompt={ARC_MASTER_SYSTEM_PROMPT}
         placeholders={[
-          { key: "{{MEMBER_AVATAR}}", description: "Member's avatar name, summary and full profile JSON" },
-          { key: "{{CONTENT_THEMES}}", description: "Member's saved content themes" },
-          { key: "{{BASELINE_SCORES}}", description: "Member's latest baseline audit scores" },
-          { key: "{{RESEARCH_SUMMARY}}", description: "Summarised research brief for this video" },
+          { key: "{{MEMBER_CONTEXT}}", description: "Auto-injected block with member avatar, content themes, and baseline scores" },
         ]}
       />
-      <ArcScriptBuilderTool basePath="/admin/ai-tools" />
+      <div className="max-w-2xl mx-auto px-4 py-6">
+        <ArcScriptBuilderTool basePath="/admin/ai-tools" />
+      </div>
     </>
   );
 }
