@@ -86,7 +86,7 @@ RULES:
 - Keyword stacking: include 2-4 high-performing keywords per title naturally
 - Include city naturally if applicable (do not force it if it sounds unnatural)
 - Broad appeal: multiple viewer types should want to click
-- Talking points: 3-5 short bullet points the creator would actually say on camera. Format each as a 2-3 word label followed by a dash and one sentence explaining the point. Example: "Capacity panic — life is already full, adding a major transaction feels impossible without everything else falling apart." These are NOT sub-headlines or additional titles. They are the actual content of the video — what you would say to the viewer.
+- Talking points: exactly 5 short bullet points (never fewer) the creator would actually say on camera. Format each as a 2-3 word label followed by a dash and one sentence explaining the point. Example: "Capacity panic — life is already full, adding a major transaction feels impossible without everything else falling apart." These are NOT sub-headlines or additional titles. They are the actual content of the video — what you would say to the viewer.
 - "Why this works": one line connecting the idea to the avatar's emotional landscape
 - Do NOT repeat any already-saved title
 - Respond ONLY with valid JSON — no markdown, no code fences, no commentary outside the JSON

@@ -85,6 +85,9 @@ export default function IdeaCard({ idea, theme, onSaved, savedId }: Props) {
             </li>
           ))}
         </ol>
+        <p className="text-[10px] text-[#1e2a38]/40 italic mt-1.5">
+          These are starting points — use fewer, combine them, or add your own.
+        </p>
       )}
 
       {idea.whyItWorks && (
