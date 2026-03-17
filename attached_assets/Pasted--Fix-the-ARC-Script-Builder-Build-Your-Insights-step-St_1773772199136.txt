@@ -1,0 +1,124 @@
+  Fix the ARC Script Builder "Build Your Insights" step
+  (Step 3). Three issues need fixing:
+
+  === FIX 1: INSIGHT COUNT OPTIONS ===
+
+  Change the insight count selector from [2, 3, 4, 5] to [3,
+   5, 7]. Odd numbers perform better in listicle-style
+  videos. Default to 5.
+
+  === FIX 2: PULL TALKING POINTS FROM CONTENT ENGINE ===
+
+  When Step 3 loads, fetch the member's saved ideas from the
+   Content Engine that match the current video topic/theme:
+
+  1. Call GET /api/ai-tools/content-engine/saved-ideas (with
+   the selected theme if one was chosen in Step 1, otherwise
+   fetch all)
+  2. Extract the talkingPoints arrays from all matching
+  SavedIdea records
+  3. Also include any talking points the member typed into
+  the Content Engine's idea cards
+
+  Display these as a selectable list of talking point cards
+  at the TOP of Step 3, BEFORE the insight builder fields.
+  Each card shows:
+  - The talking point text (the 2-3 word label + explanation
+   from the Content Engine format)
+  - A checkbox to select/deselect it
+  - The source idea title it came from (subtle, smaller
+  text)
+
+  Pre-select all talking points by default. The member
+  unchecks any they don't want.
+
+  If no Content Engine ideas exist for this topic, show a
+  note: "No saved ideas found for this topic. You can
+  generate some in the Content Engine first, or fill in your
+   insights manually below."
+
+  === FIX 3: AI-GENERATED STARTING POINTS FOR EACH INSIGHT
+  ===
+
+  After the member selects their talking points and clicks
+  "Generate Insights" (or the existing next button), send an
+   API call to the arc-script-builder endpoint with step:
+  "insights" that includes:
+
+  - The selected talking points (from Fix 2)
+  - The member's avatar profile (already available in the
+  API route's contextBlock)
+  - The avatar's content themes and their core stresses
+  - The video title and topic
+
+  Update the API's "insights" step prompt to:
+
+  1. Use the selected talking points as the BASIS for each
+  insight — don't ignore them
+  2. Pull the avatar's stresses and emotional language to
+  inform the "Why" and "What This Means" fields
+  3. Distribute the selected talking points across the
+  insight slots (e.g., if 7 talking points selected and 5
+  insights chosen, combine related points into some slots)
+  4. Pre-fill ALL Value Loop fields (WHAT, WHY, WHEN, STORY,
+   WHAT THIS MEANS) with AI-generated drafts — NOT just
+  guiding questions
+  5. The STORY field should reference the avatar by name and
+   suggest a specific scenario based on the avatar's
+  stresses
+  6. Each field should be editable — the member tweaks the
+  AI's starting point rather than writing from scratch
+
+  The API prompt for the insights step should be updated to
+  something like:
+
+  "You have the member's selected talking points and their
+  avatar profile. For each insight slot, use the talking
+  points as raw material and the avatar's emotional
+  landscape to generate a complete first draft of each Value
+   Loop section. Write in the member's voice —
+  conversational, Grade 5 reading level. The member will
+  edit these, so give them a strong starting point, not a
+  perfect final draft.
+
+  For WHAT: State the insight clearly using the talking
+  point as the core idea.
+  For WHY: Connect it to the avatar's stress/fear — why does
+   this matter emotionally to [avatar name]?
+  For WHEN: Give a specific scenario where this becomes
+  relevant.
+  For STORY: Suggest a client story framework referencing
+  the avatar's situation (the member will replace with their
+   real story).
+  For WHAT THIS MEANS: Connect back to the avatar — what
+  does this change for [avatar name]?"
+
+  Return the same JSON format but with actual content in
+  each field, not guiding questions.
+
+  === FLOW SUMMARY ===
+
+  Step 3 should now work like this:
+  1. Show insight count selector: 3, 5, or 7 (default 5)
+  2. Show selectable talking point cards pulled from Content
+   Engine saved ideas
+  3. Member picks count + selects/deselects talking points
+  4. Clicks "Build Insights →" button
+  5. API generates AI-drafted Value Loops using the selected
+   points + avatar context
+  6. Fields appear PRE-FILLED with AI drafts
+  7. Member edits/tweaks each field
+  8. Clicks next to proceed
+
+  === HOW TO TEST ===
+  - [ ] Insight count options show 3, 5, 7 (not 2, 3, 4, 5)
+  - [ ] Talking points from Content Engine saved ideas
+  appear as selectable cards
+  - [ ] Selecting/deselecting talking points works
+  - [ ] "Build Insights" generates pre-filled Value Loop
+  fields (not blank)
+  - [ ] Each field references the avatar's language and
+  stresses
+  - [ ] Fields are editable after generation
+  - [ ] Works gracefully when no Content Engine ideas exist
+  (shows manual fallback note)

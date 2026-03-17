@@ -121,42 +121,55 @@ Return ONLY valid JSON. No markdown, no explanation, just the JSON object:
 }`;
 
 const INSIGHTS_PROMPT = (p: {
-  title: string; topic: string; insightCount: number;
+  title: string; topic: string; insightCount: number; selectedTalkingPoints: string[];
 }) => `VIDEO: ${p.title}
 TOPIC: ${p.topic}
 Number of insights needed: ${p.insightCount}
 
+MEMBER'S SELECTED TALKING POINTS:
+${p.selectedTalkingPoints.length > 0
+  ? p.selectedTalkingPoints.map((pt, i) => `${i + 1}. ${pt}`).join("\n")
+  : "(none provided — generate insights based on the video topic and avatar context in your system prompt)"}
+
 === YOUR TASK ===
 
-Generate ${p.insightCount} insight slot frameworks using the Enhanced Value Loop structure.
+You have the member's selected talking points and their avatar profile (in your system prompt under MEMBER CONTEXT). For each insight slot, use the talking points as raw material and the avatar's emotional landscape to generate a complete first draft of each Value Loop section.
 
-For each insight slot, provide guiding questions to help the creator fill it in. Do NOT generate the insights themselves — just the structure and prompts that draw out the creator's unique knowledge.
+Write in the member's voice — conversational, Grade 5 reading level. The member will edit these, so give them a strong starting point, not a perfect final draft.
 
 Enhanced Value Loop structure:
-- What it is — the strategic principle or factor most people miss
-- Why it works — the underlying psychology, why this actually matters
-- When it applies — the specific circumstances where this becomes critical
-- Story Proof — 30-60 second example showing the principle in action (personal story, client story, or metaphor)
-- What this means for you — connect back to the viewer's situation (NOT how to implement)
+- WHAT: State the insight clearly using the talking point as the core idea
+- WHY: Connect it to the avatar's stress/fear — why does this matter emotionally to the avatar?
+- WHEN: Give a specific scenario where this becomes relevant for the avatar
+- STORY: Suggest a client story framework referencing the avatar's name and situation (member will replace with their real story)
+- WHAT THIS MEANS (connection): Connect back to the avatar — what does this change for them?
 
 Important:
+- Use the selected talking points as the BASIS for each insight — distribute them across slots (if more talking points than slots, combine related ones into single slots)
 - Order insights: second-best first, best last (save the strongest for the end)
+- Pull from the avatar's name, stresses, and emotional language throughout
 - Each insight should feel like a revelation, not a textbook definition
-- Story proof is critical — this is what makes the insight land
-- "What this means for you" must connect to the viewer's life, NOT give them a how-to
+- Story proof is critical — name the avatar and describe their situation as the story seed
 
 Return ONLY valid JSON. No markdown, no explanation, just the JSON object:
 {
   "insight_slots": [
     {
       "slot": 1,
-      "label": "Strong opener (second-best insight)",
+      "label": "Brief label describing what this insight covers",
       "prompts": {
-        "what": "Question to draw out the what",
-        "why": "Question to draw out the why",
-        "when": "Question to draw out the when",
-        "story": "Prompt for a client story",
-        "connection": "Question for what this means"
+        "what": "Short guiding hint for the WHAT field",
+        "why": "Short guiding hint for the WHY field",
+        "when": "Short guiding hint for the WHEN field",
+        "story": "Short story prompt",
+        "connection": "Short connection hint"
+      },
+      "drafts": {
+        "what": "Full pre-written draft for the WHAT field based on the talking point",
+        "why": "Full pre-written draft for the WHY field referencing the avatar's fears/stresses",
+        "when": "Full pre-written draft for the WHEN field with a specific scenario for the avatar",
+        "story": "Full pre-written story framework draft — name the avatar and describe their situation as the scenario seed",
+        "connection": "Full pre-written draft connecting this insight back to the avatar's life"
       }
     }
   ]
@@ -428,12 +441,13 @@ async function handleInsights(userId: string, body: any): Promise<NextResponse> 
   const userContent = INSIGHTS_PROMPT({
     title: body.title ?? "",
     topic: body.topic ?? body.title ?? "",
-    insightCount: body.insightCount ?? 3,
+    insightCount: body.insightCount ?? 5,
+    selectedTalkingPoints: Array.isArray(body.selectedTalkingPoints) ? body.selectedTalkingPoints : [],
   });
 
   const response = await client.messages.create({
     model: MODEL,
-    max_tokens: 2048,
+    max_tokens: 4096,
     system,
     messages: [{ role: "user", content: userContent }],
   });

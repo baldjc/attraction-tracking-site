@@ -59,6 +59,19 @@ interface InsightSlot {
     story: string;
     connection: string;
   };
+  drafts?: {
+    what: string;
+    why: string;
+    when: string;
+    story: string;
+    connection: string;
+  };
+}
+
+interface TalkingPointCard {
+  id: string;
+  ideaTitle: string;
+  text: string;
 }
 
 interface RetentionSuggestion {
@@ -189,9 +202,12 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
   const [selectedCredibility, setSelectedCredibility] = useState("");
 
   // Step 4: Insights
-  const [insightCount, setInsightCount] = useState(3);
+  const [insightCount, setInsightCount] = useState(5);
   const [insightSlots, setInsightSlots] = useState<InsightSlot[]>([]);
   const [insightAnswers, setInsightAnswers] = useState<Record<number, Record<string, string>>>({});
+  const [savedTalkingPoints, setSavedTalkingPoints] = useState<TalkingPointCard[]>([]);
+  const [selectedTalkingPointIds, setSelectedTalkingPointIds] = useState<Set<string>>(new Set());
+  const [loadingTalkingPoints, setLoadingTalkingPoints] = useState(false);
 
   // Step 5: Final
   const [finalData, setFinalData] = useState<any>(null);
@@ -230,6 +246,49 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
       .then((d) => setNiche(d?.niche ?? null))
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (phase === "insights" && insightSlots.length === 0) {
+      fetchSavedTalkingPoints();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
+
+  async function fetchSavedTalkingPoints() {
+    setLoadingTalkingPoints(true);
+    try {
+      const theme = prefillData?.theme ?? "";
+      const url = theme
+        ? `/api/ai-tools/content-engine/saved-ideas?theme=${encodeURIComponent(theme)}&limit=50`
+        : "/api/ai-tools/content-engine/saved-ideas?limit=50";
+      const res = await fetch(url);
+      const data = await res.json();
+      const cards: TalkingPointCard[] = [];
+      (data.ideas ?? []).forEach((idea: any) => {
+        const points: string[] = Array.isArray(idea.talkingPoints) ? idea.talkingPoints : [];
+        points.forEach((pt, i) => {
+          cards.push({ id: `${idea.id}-${i}`, ideaTitle: idea.title, text: String(pt) });
+        });
+      });
+      setSavedTalkingPoints(cards);
+      setSelectedTalkingPointIds(new Set(cards.map((c) => c.id)));
+    } catch {
+      setSavedTalkingPoints([]);
+    }
+    setLoadingTalkingPoints(false);
+  }
+
+  function toggleTalkingPoint(id: string) {
+    setSelectedTalkingPointIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }
 
   const isLocked = (usage?.percentUsed ?? 0) >= 100;
 
@@ -362,11 +421,17 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
     setLoading(true);
     setError("");
     try {
-      const result = await callStep("insights", { insightCount });
+      const selectedPoints = savedTalkingPoints
+        .filter((c) => selectedTalkingPointIds.has(c.id))
+        .map((c) => c.text);
+      const result = await callStep("insights", {
+        insightCount,
+        selectedTalkingPoints: selectedPoints,
+      });
       setInsightSlots(result.insight_slots ?? []);
       const initial: Record<number, Record<string, string>> = {};
       (result.insight_slots ?? []).forEach((slot: InsightSlot) => {
-        initial[slot.slot] = { what: "", why: "", when: "", story: "", connection: "" };
+        initial[slot.slot] = slot.drafts ?? { what: "", why: "", when: "", story: "", connection: "" };
       });
       setInsightAnswers(initial);
     } catch (e: any) {
@@ -885,31 +950,77 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
           <StepHeader step={3} total={4} label="Build Your Insights" />
 
           {insightSlots.length === 0 ? (
-            <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-5">
-              <p className="text-sm text-[#1e2a38]/70 mb-4">
-                How many insights will this video cover?
-              </p>
-              <div className="flex items-center gap-3 mb-5">
-                {[2, 3, 4, 5].map((n) => (
-                  <button
-                    key={n}
-                    onClick={() => setInsightCount(n)}
-                    className={`w-10 h-10 rounded-xl font-semibold text-sm transition-all ${
-                      insightCount === n
-                        ? "bg-[#3dc3ff] text-white"
-                        : "bg-[#1e2a38]/5 text-[#1e2a38]/60 hover:bg-[#1e2a38]/10"
-                    }`}
-                  >
-                    {n}
-                  </button>
-                ))}
+            <div className="space-y-4">
+              {/* Talking points from Content Engine */}
+              <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-5">
+                <p className="text-sm font-semibold text-[#1e2a38] mb-1">
+                  Talking points from your Content Engine
+                </p>
+                <p className="text-xs text-[#1e2a38]/50 mb-4">
+                  These are pulled from your saved ideas. Uncheck any you don&apos;t want to use.
+                </p>
+                {loadingTalkingPoints ? (
+                  <p className="text-sm text-[#1e2a38]/40 italic">Loading your saved ideas…</p>
+                ) : savedTalkingPoints.length === 0 ? (
+                  <p className="text-sm text-[#1e2a38]/50 italic">
+                    No saved ideas found for this topic. You can generate some in the Content Engine first, or fill in your insights manually below.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {savedTalkingPoints.map((card) => (
+                      <button
+                        key={card.id}
+                        onClick={() => toggleTalkingPoint(card.id)}
+                        className={`w-full text-left flex items-start gap-3 p-3 rounded-xl border transition-all ${
+                          selectedTalkingPointIds.has(card.id)
+                            ? "border-[#3dc3ff] bg-[#3dc3ff]/5"
+                            : "border-[#1e2a38]/10 bg-white hover:bg-[#f1f1ef]"
+                        }`}
+                      >
+                        <div className={`mt-0.5 w-4 h-4 flex-shrink-0 rounded border flex items-center justify-center ${
+                          selectedTalkingPointIds.has(card.id) ? "bg-[#3dc3ff] border-[#3dc3ff]" : "border-[#1e2a38]/30"
+                        }`}>
+                          {selectedTalkingPointIds.has(card.id) && (
+                            <CheckIcon className="w-3 h-3 text-white" />
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-sm text-[#1e2a38] leading-snug">{card.text}</p>
+                          <p className="text-xs text-[#1e2a38]/40 mt-0.5">{card.ideaTitle}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
-              <button
-                onClick={handleGenerateInsights}
-                className="px-5 py-2 text-sm font-semibold bg-[#1e2a38] text-white rounded-xl hover:bg-[#1e2a38]/80 transition-colors"
-              >
-                Generate Insight Frameworks
-              </button>
+
+              {/* Count selector + generate button */}
+              <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-5">
+                <p className="text-sm text-[#1e2a38]/70 mb-4">
+                  How many insights will this video cover?
+                </p>
+                <div className="flex items-center gap-3 mb-5">
+                  {[3, 5, 7].map((n) => (
+                    <button
+                      key={n}
+                      onClick={() => setInsightCount(n)}
+                      className={`w-10 h-10 rounded-xl font-semibold text-sm transition-all ${
+                        insightCount === n
+                          ? "bg-[#3dc3ff] text-white"
+                          : "bg-[#1e2a38]/5 text-[#1e2a38]/60 hover:bg-[#1e2a38]/10"
+                      }`}
+                    >
+                      {n}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={handleGenerateInsights}
+                  className="px-5 py-2 text-sm font-semibold bg-[#1e2a38] text-white rounded-xl hover:bg-[#1e2a38]/80 transition-colors"
+                >
+                  Build Insights →
+                </button>
+              </div>
             </div>
           ) : (
             <div className="space-y-5">
