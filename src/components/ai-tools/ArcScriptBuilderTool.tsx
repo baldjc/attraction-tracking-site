@@ -207,7 +207,6 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
   const [insightAnswers, setInsightAnswers] = useState<Record<number, Record<string, string>>>({});
   const [savedTalkingPoints, setSavedTalkingPoints] = useState<TalkingPointCard[]>([]);
   const [selectedTalkingPointIds, setSelectedTalkingPointIds] = useState<Set<string>>(new Set());
-  const [loadingTalkingPoints, setLoadingTalkingPoints] = useState(false);
 
   // Step 5: Final
   const [finalData, setFinalData] = useState<any>(null);
@@ -248,35 +247,17 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
   }, []);
 
   useEffect(() => {
-    if (phase === "insights" && insightSlots.length === 0) {
-      fetchSavedTalkingPoints();
+    if (phase === "insights" && insightSlots.length === 0 && prefillData) {
+      const cards: TalkingPointCard[] = (prefillData.talkingPoints ?? []).map((pt, i) => ({
+        id: `prefill-${i}`,
+        ideaTitle: prefillData.title,
+        text: String(pt),
+      }));
+      setSavedTalkingPoints(cards);
+      setSelectedTalkingPointIds(new Set(cards.map((c) => c.id)));
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
-
-  async function fetchSavedTalkingPoints() {
-    setLoadingTalkingPoints(true);
-    try {
-      const theme = prefillData?.theme ?? "";
-      const url = theme
-        ? `/api/ai-tools/content-engine/saved-ideas?theme=${encodeURIComponent(theme)}&limit=50`
-        : "/api/ai-tools/content-engine/saved-ideas?limit=50";
-      const res = await fetch(url);
-      const data = await res.json();
-      const cards: TalkingPointCard[] = [];
-      (data.ideas ?? []).forEach((idea: any) => {
-        const points: string[] = Array.isArray(idea.talkingPoints) ? idea.talkingPoints : [];
-        points.forEach((pt, i) => {
-          cards.push({ id: `${idea.id}-${i}`, ideaTitle: idea.title, text: String(pt) });
-        });
-      });
-      setSavedTalkingPoints(cards);
-      setSelectedTalkingPointIds(new Set(cards.map((c) => c.id)));
-    } catch {
-      setSavedTalkingPoints([]);
-    }
-    setLoadingTalkingPoints(false);
-  }
 
   function toggleTalkingPoint(id: string) {
     setSelectedTalkingPointIds((prev) => {
@@ -951,46 +932,46 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
 
           {insightSlots.length === 0 ? (
             <div className="space-y-4">
-              {/* Talking points from Content Engine */}
+              {/* Talking points from the launched Content Engine idea */}
               <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-5">
-                <p className="text-sm font-semibold text-[#1e2a38] mb-1">
-                  Talking points from your Content Engine
-                </p>
-                <p className="text-xs text-[#1e2a38]/50 mb-4">
-                  These are pulled from your saved ideas. Uncheck any you don&apos;t want to use.
-                </p>
-                {loadingTalkingPoints ? (
-                  <p className="text-sm text-[#1e2a38]/40 italic">Loading your saved ideas…</p>
-                ) : savedTalkingPoints.length === 0 ? (
-                  <p className="text-sm text-[#1e2a38]/50 italic">
-                    No saved ideas found for this topic. You can generate some in the Content Engine first, or fill in your insights manually below.
-                  </p>
+                {!prefillData ? (
+                  <>
+                    <p className="text-sm font-semibold text-[#1e2a38] mb-1">Talking points</p>
+                    <p className="text-sm text-[#1e2a38]/50 italic">
+                      Start from a Content Engine idea to get pre-loaded talking points, or fill in your insights manually below.
+                    </p>
+                  </>
                 ) : (
-                  <div className="space-y-2">
-                    {savedTalkingPoints.map((card) => (
-                      <button
-                        key={card.id}
-                        onClick={() => toggleTalkingPoint(card.id)}
-                        className={`w-full text-left flex items-start gap-3 p-3 rounded-xl border transition-all ${
-                          selectedTalkingPointIds.has(card.id)
-                            ? "border-[#3dc3ff] bg-[#3dc3ff]/5"
-                            : "border-[#1e2a38]/10 bg-white hover:bg-[#f1f1ef]"
-                        }`}
-                      >
-                        <div className={`mt-0.5 w-4 h-4 flex-shrink-0 rounded border flex items-center justify-center ${
-                          selectedTalkingPointIds.has(card.id) ? "bg-[#3dc3ff] border-[#3dc3ff]" : "border-[#1e2a38]/30"
-                        }`}>
-                          {selectedTalkingPointIds.has(card.id) && (
-                            <CheckIcon className="w-3 h-3 text-white" />
-                          )}
-                        </div>
-                        <div>
+                  <>
+                    <p className="text-sm font-semibold text-[#1e2a38] mb-0.5">
+                      Talking points
+                    </p>
+                    <p className="text-xs text-[#1e2a38]/40 mb-4">
+                      From: <span className="font-medium text-[#1e2a38]/60">{prefillData.title}</span> — uncheck any you don&apos;t want to use.
+                    </p>
+                    <div className="space-y-2">
+                      {savedTalkingPoints.map((card) => (
+                        <button
+                          key={card.id}
+                          onClick={() => toggleTalkingPoint(card.id)}
+                          className={`w-full text-left flex items-start gap-3 p-3 rounded-xl border transition-all ${
+                            selectedTalkingPointIds.has(card.id)
+                              ? "border-[#3dc3ff] bg-[#3dc3ff]/5"
+                              : "border-[#1e2a38]/10 bg-white hover:bg-[#f1f1ef]"
+                          }`}
+                        >
+                          <div className={`mt-0.5 w-4 h-4 flex-shrink-0 rounded border flex items-center justify-center ${
+                            selectedTalkingPointIds.has(card.id) ? "bg-[#3dc3ff] border-[#3dc3ff]" : "border-[#1e2a38]/30"
+                          }`}>
+                            {selectedTalkingPointIds.has(card.id) && (
+                              <CheckIcon className="w-3 h-3 text-white" />
+                            )}
+                          </div>
                           <p className="text-sm text-[#1e2a38] leading-snug">{card.text}</p>
-                          <p className="text-xs text-[#1e2a38]/40 mt-0.5">{card.ideaTitle}</p>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
+                        </button>
+                      ))}
+                    </div>
+                  </>
                 )}
               </div>
 
