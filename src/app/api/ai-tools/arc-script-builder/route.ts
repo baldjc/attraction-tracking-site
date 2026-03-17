@@ -14,15 +14,24 @@ const MASTER_SYSTEM_PROMPT = ARC_MASTER_SYSTEM_PROMPT;
 
 // ─── Step Prompts ─────────────────────────────────────────────────────────────
 const OPENING_PROMPT = (p: {
-  topic: string; title: string; uniqueAngle: string;
-  beforeFeeling: string; afterFeeling: string;
+  topic: string; title: string;
+  conventionalWisdom: string; uniqueAngle: string;
+  viewerEmotion: string; viewerQuestion: string; viewerFear: string; viewerHope: string;
   talkingPoints?: string;
 }) => `VIDEO DETAILS:
 Topic: ${p.topic}
 Title: ${p.title}
-Unique angle: ${p.uniqueAngle}
-How viewer feels BEFORE: ${p.beforeFeeling}
-How viewer feels AFTER: ${p.afterFeeling}${p.talkingPoints ? `\nPlanned talking points (the script will cover these):\n${p.talkingPoints}` : ""}
+
+WHAT CONVENTIONAL WISDOM SAYS: ${p.conventionalWisdom || "(not provided)"}
+WHAT THE MEMBER BELIEVES INSTEAD: ${p.uniqueAngle || "(not provided)"}
+Write ALL intro patterns from the member's corrective perspective — they are reframing a common misconception.
+
+VIEWER EMOTIONAL STATE:
+- Emotion right now: ${p.viewerEmotion || "(not provided)"}
+- Question they won't say out loud: ${p.viewerQuestion || "(not provided)"}
+- What they're afraid this video might confirm: ${p.viewerFear || "(not provided)"}
+- What they secretly hope this video will tell them: ${p.viewerHope || "(not provided)"}
+Write every opening speaking directly to this internal state — not a general audience.${p.talkingPoints ? `\nPlanned talking points (the script will cover these):\n${p.talkingPoints}` : ""}
 
 === YOUR TASK ===
 
@@ -96,14 +105,22 @@ Return ONLY valid JSON. No markdown, no explanation, just the JSON object:
 }`;
 
 const CREDIBILITY_PROMPT = (p: {
-  title: string; topic: string; credentialInput: string;
+  title: string; topic: string;
+  credClientsHelped: string; credSpecificResult: string; credFrequency: string; credSurprise: string;
 }) => `VIDEO: ${p.title}
 TOPIC: ${p.topic}
-CREDENTIAL INPUT: ${p.credentialInput}
+
+MEMBER'S CREDENTIALS (use EXACTLY as written — do not rephrase or generalize):
+${p.credClientsHelped ? `- Clients/families/businesses helped: ${p.credClientsHelped}` : ""}
+${p.credSpecificResult ? `- Specific result achieved for a client: ${p.credSpecificResult}` : ""}
+${p.credFrequency ? `- How often they do this work: ${p.credFrequency}` : ""}
+${p.credSurprise ? `- Surprising track record fact: ${p.credSurprise}` : ""}
+
+CRITICAL: Use the member's exact numbers, timeframes, and results verbatim. Do NOT substitute with generic language like "years of experience." If they said "22 years," write "22 years." If they said "200+ families," write "200+ families."
 
 === YOUR TASK ===
 
-Based on this credential or proof point, generate 3 natural ways to weave credibility into this specific video.
+Generate 3 natural ways to weave these credentials into this specific video.
 
 Rules:
 - Never sound boastful or salesy
@@ -138,9 +155,24 @@ Return ONLY valid JSON:
 
 const INSIGHTS_PROMPT = (p: {
   title: string; topic: string; insightCount: number; selectedTalkingPoints: string[]; sourceTheme?: string;
+  viewerEmotion: string; viewerQuestion: string; viewerFear: string; viewerHope: string;
+  clientStory: string;
 }) => `VIDEO: ${p.title}
 TOPIC: ${p.topic}${p.sourceTheme ? `\nSOURCE THEME: ${p.sourceTheme} — all insights must connect to this emotional category and the stresses it represents` : ""}
 Number of insights needed: ${p.insightCount}
+
+VIEWER EMOTIONAL STATE:
+- Emotion right now: ${p.viewerEmotion || "(not provided)"}
+- Internal question they won't say out loud: ${p.viewerQuestion || "(not provided)"}
+- What they're afraid this video might confirm: ${p.viewerFear || "(not provided)"}
+- What they secretly hope this video will tell them: ${p.viewerHope || "(not provided)"}
+Write every insight speaking directly to this person's internal state — not a general audience.
+
+MEMBER'S REAL CLIENT STORY:
+${p.clientStory
+  ? `"${p.clientStory}"
+Use this story in the most impactful Value Loop's STORY section. Reference the real name, real details, and real outcome. For other Value Loops, adapt elements of the story or write placeholders.`
+  : "The member hasn't provided a client story. In the STORY section of EVERY Value Loop, write a PLACEHOLDER that says exactly: '[INSERT YOUR REAL CLIENT STORY HERE — a name, a specific situation, what shifted, and what happened]' — do NOT invent a generic story."}
 
 MEMBER'S SELECTED TALKING POINTS:
 ${p.selectedTalkingPoints.length > 0
@@ -157,15 +189,15 @@ Enhanced Value Loop structure:
 - WHAT: State the insight clearly using the talking point as the core idea
 - WHY: Connect it to the avatar's stress/fear — why does this matter emotionally to the avatar?
 - WHEN: Give a specific scenario where this becomes relevant for the avatar
-- STORY: Suggest a client story framework referencing the avatar's name and situation (member will replace with their real story)
+- STORY: Use the real client story or write a clear placeholder (never invent a generic story)
 - WHAT THIS MEANS (connection): Connect back to the avatar — what does this change for them?
 
 Important:
 - Use the selected talking points as the BASIS for each insight — distribute them across slots (if more talking points than slots, combine related ones into single slots)
 - Order insights: second-best first, best last (save the strongest for the end)
 - Pull from the avatar's name, stresses, and emotional language throughout
-- Each insight should feel like a revelation, not a textbook definition
-- Story proof is critical — name the avatar and describe their situation as the story seed
+- Each insight must pass this test: would the viewer say "I've never thought about it that way"? If no — rewrite it.
+- Story proof is critical — use the real story or write the exact placeholder text, never invent
 
 Return ONLY valid JSON. No markdown, no explanation, just the JSON object:
 {
@@ -192,25 +224,46 @@ Return ONLY valid JSON. No markdown, no explanation, just the JSON object:
 }`;
 
 const FINAL_PROMPT = (p: {
-  title: string; topic: string; uniqueAngle: string;
+  title: string; topic: string; conventionalWisdom: string; uniqueAngle: string;
+  viewerEmotion: string; viewerQuestion: string; viewerFear: string; viewerHope: string;
   selectedOpening: string; selectedBridge: string; leadMagnetLine: string;
   credibility: string; insights: string; values: string; interests: string;
   nextVideoTitle: string; nextVideoWhy: string; sourceTheme?: string;
-  credentialInput?: string; nextVideoTranscript?: string;
+  credClientsHelped?: string; credSpecificResult?: string; credFrequency?: string; credSurprise?: string;
+  clientStory?: string; nextVideoTranscript?: string;
 }) => `VIDEO DETAILS:
 Title: ${p.title}
 Topic: ${p.topic}
-Unique angle: ${p.uniqueAngle}${p.sourceTheme ? `\nSource Theme: ${p.sourceTheme} — ensure the script language, examples, and emotional tone align with this theme` : ""}
+Conventional wisdom (what everyone else says): ${p.conventionalWisdom || "(not provided)"}
+Member's unique angle (what they believe instead): ${p.uniqueAngle || "(not provided)"}
+${p.sourceTheme ? `Source Theme: ${p.sourceTheme} — ensure the script language, examples, and emotional tone align with this theme\n` : ""}
+VIEWER EMOTIONAL STATE:
+- Emotion right now: ${p.viewerEmotion || "(not provided)"}
+- Internal question they won't say out loud: ${p.viewerQuestion || "(not provided)"}
+- What they're afraid this video might confirm: ${p.viewerFear || "(not provided)"}
+- What they secretly hope this video will tell them: ${p.viewerHope || "(not provided)"}
+Write every section speaking directly to this internal state.
 
 SELECTED OPENING:
 Intro Pattern: ${p.selectedOpening}
 Expertise Bridge: ${p.selectedBridge}
 Lead Magnet Line: ${p.leadMagnetLine}
 
+MEMBER'S EXACT CREDENTIALS (use verbatim — never rephrase or generalize):
+${p.credClientsHelped ? `- Clients/families helped: ${p.credClientsHelped}` : ""}
+${p.credSpecificResult ? `- Specific result: ${p.credSpecificResult}` : ""}
+${p.credFrequency ? `- How often: ${p.credFrequency}` : ""}
+${p.credSurprise ? `- Surprising track record: ${p.credSurprise}` : ""}
+CREDENTIAL ENFORCEMENT: Use the member's credentials EXACTLY as provided above. If they said "22 years," write "22 years." If they said "200+ families," write "200+ families." The member's specific numbers are non-negotiable — never substitute generic phrases.
+
 CREDIBILITY:
 Selected credibility line: ${p.credibility}
-${p.credentialInput ? `MEMBER'S EXACT CREDENTIAL: "${p.credentialInput}"
-CRITICAL: Use the member's credential EXACTLY as stated above. Their specific numbers, timeframes, and claims must appear verbatim in the script. Do NOT substitute with avatar defaults or change any values.` : ""}
+
+CLIENT STORY:
+${p.clientStory
+  ? `Member's real story: "${p.clientStory}"
+Use this story in the most impactful Value Loop's STORY section — use the real name, specific situation, the moment of shift, and the real outcome. For other Value Loops, adapt elements of the story or write '[INSERT YOUR STORY HERE]' placeholders.`
+  : "No client story provided. Write '[INSERT YOUR REAL CLIENT STORY HERE — a name, a specific situation, what shifted, and what happened]' placeholders in every STORY section. Never invent generic stories."}
 
 INSIGHTS (Value Loops):
 ${p.insights}
@@ -261,6 +314,23 @@ Write this as natural spoken dialogue, Grade 5 reading level.
 - Connection phrases must be written INTO the dialogue, not listed as notes
 - Visual prompts should be specific and actionable
 - Closing must use the next video title specifically — never say "check out my other videos" or "see you next time"
+
+=== QUALITY ENFORCEMENT ===
+
+VALUES PLACEMENT:
+Weave in the member's values naturally — do not turn them into a section or list them explicitly. Each value should appear ONCE, in passing, the way someone would say it in a real conversation. They should feel like personality, not a mission statement.
+
+CURIOSITY BRIDGES:
+For each curiosity bridge between sections, create an information gap the viewer needs to close. The bridge should make the viewer think "wait, what does that mean?" — not "okay, moving on." Do not write summary transitions. Open a door to the next section that the viewer has to walk through.
+
+INSIGHT QUALITY FILTER:
+Before writing each insight, check: would a viewer say "I've never thought about it that way"? If the answer is no — if it's something a basic Google search would return — rewrite it until it earns that reaction. Generic advice disguised as an insight is not acceptable. Each insight must reveal something the viewer didn't know they didn't know.
+
+CLIENT STORIES:
+If the member provided a real client story, use it in the most impactful Value Loop's STORY section. Reference the real name, real details, and real outcome. For other Value Loops, adapt elements of the story or write '[INSERT YOUR STORY HERE]' placeholders — never invent generic stories.
+
+CREDENTIAL ENFORCEMENT:
+Use the member's credentials EXACTLY as provided. If they said "22 years," write "22 years" — not "8 years" or "years of experience." The member's specific numbers are non-negotiable.
 
 === FINAL SCRIPT CHECKLIST ===
 
@@ -417,9 +487,12 @@ async function handleOpening(userId: string, body: any): Promise<NextResponse> {
   const userContent = OPENING_PROMPT({
     topic: body.topic ?? body.title ?? "",
     title: body.title ?? "",
+    conventionalWisdom: body.conventionalWisdom ?? "",
     uniqueAngle: body.uniqueAngle ?? "",
-    beforeFeeling: body.beforeFeeling ?? "",
-    afterFeeling: body.afterFeeling ?? "",
+    viewerEmotion: body.viewerEmotion ?? "",
+    viewerQuestion: body.viewerQuestion ?? "",
+    viewerFear: body.viewerFear ?? "",
+    viewerHope: body.viewerHope ?? "",
     talkingPoints: body.talkingPoints ?? undefined,
   });
 
@@ -450,7 +523,10 @@ async function handleCredibility(userId: string, body: any): Promise<NextRespons
   const userContent = CREDIBILITY_PROMPT({
     title: body.title ?? "",
     topic: body.topic ?? body.title ?? "",
-    credentialInput: body.credentialInput ?? "",
+    credClientsHelped: body.credClientsHelped ?? "",
+    credSpecificResult: body.credSpecificResult ?? "",
+    credFrequency: body.credFrequency ?? "",
+    credSurprise: body.credSurprise ?? "",
   });
 
   const response = await client.messages.create({
@@ -483,6 +559,11 @@ async function handleInsights(userId: string, body: any): Promise<NextResponse> 
     insightCount: body.insightCount ?? 5,
     selectedTalkingPoints: Array.isArray(body.selectedTalkingPoints) ? body.selectedTalkingPoints : [],
     sourceTheme: body.sourceTheme,
+    viewerEmotion: body.viewerEmotion ?? "",
+    viewerQuestion: body.viewerQuestion ?? "",
+    viewerFear: body.viewerFear ?? "",
+    viewerHope: body.viewerHope ?? "",
+    clientStory: body.clientStory ?? "",
   });
 
   const response = await client.messages.create({
@@ -537,7 +618,12 @@ async function handleFinal(userId: string, body: any): Promise<NextResponse> {
   const userContent = FINAL_PROMPT({
     title: body.title ?? "",
     topic: body.topic ?? body.title ?? "",
+    conventionalWisdom: body.conventionalWisdom ?? "",
     uniqueAngle: body.uniqueAngle ?? "",
+    viewerEmotion: body.viewerEmotion ?? "",
+    viewerQuestion: body.viewerQuestion ?? "",
+    viewerFear: body.viewerFear ?? "",
+    viewerHope: body.viewerHope ?? "",
     selectedOpening: body.selectedOpening ?? "",
     selectedBridge: body.selectedBridge ?? "",
     leadMagnetLine: body.leadMagnetLine ?? "",
@@ -548,7 +634,11 @@ async function handleFinal(userId: string, body: any): Promise<NextResponse> {
     nextVideoTitle: body.nextVideoTitle ?? "",
     nextVideoWhy: body.nextVideoWhy ?? "",
     sourceTheme: body.sourceTheme,
-    credentialInput: body.credentialInput,
+    credClientsHelped: body.credClientsHelped,
+    credSpecificResult: body.credSpecificResult,
+    credFrequency: body.credFrequency,
+    credSurprise: body.credSurprise,
+    clientStory: body.clientStory,
     nextVideoTranscript: body.nextVideoTranscript,
   });
 

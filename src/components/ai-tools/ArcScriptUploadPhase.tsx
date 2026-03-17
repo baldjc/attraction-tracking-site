@@ -21,13 +21,19 @@ interface PrefillData {
 }
 
 interface OpeningContextProps {
+  conventionalWisdom: string;
   uniqueAngle: string;
-  beforeFeeling: string;
-  afterFeeling: string;
-  placeholders: { uniqueAngle: string; before: string; after: string };
+  viewerEmotion: string;
+  viewerQuestion: string;
+  viewerFear: string;
+  viewerHope: string;
+  placeholders: { before: string };
+  onConventionalWisdomChange: (v: string) => void;
   onUniqueAngleChange: (v: string) => void;
-  onBeforeFeelingChange: (v: string) => void;
-  onAfterFeelingChange: (v: string) => void;
+  onViewerEmotionChange: (v: string) => void;
+  onViewerQuestionChange: (v: string) => void;
+  onViewerFearChange: (v: string) => void;
+  onViewerHopeChange: (v: string) => void;
 }
 
 interface Props {
@@ -394,34 +400,58 @@ export default function ArcScriptUploadPhase({ onStartBuilding, cap = 15, prefil
                 Opening Context{" "}
                 <span className="text-[#1e2a38]/40 font-normal">(optional but recommended)</span>
               </h3>
-              <div>
-                <label className="block text-xs font-medium text-[#1e2a38]/60 mb-1">Unique angle or hook for this video</label>
-                <input
-                  type="text"
-                  value={openingContext.uniqueAngle}
-                  onChange={(e) => openingContext.onUniqueAngleChange(e.target.value)}
-                  placeholder={openingContext.placeholders.uniqueAngle}
-                  className="w-full bg-white border border-[#1e2a38]/15 rounded-lg px-3 py-2 text-sm text-[#1e2a38] focus:outline-none focus:border-[#3dc3ff]"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
+
+              <div className="space-y-3">
+                <p className="text-xs font-semibold text-[#1e2a38]/40 uppercase tracking-wider">Your Angle</p>
                 <div>
-                  <label className="block text-xs font-medium text-[#1e2a38]/60 mb-1">How viewer feels BEFORE watching</label>
-                  <input
-                    type="text"
-                    value={openingContext.beforeFeeling}
-                    onChange={(e) => openingContext.onBeforeFeelingChange(e.target.value)}
+                  <label className="block text-xs font-medium text-[#1e2a38]/60 mb-1">What does conventional wisdom say about this topic?</label>
+                  <input type="text" value={openingContext.conventionalWisdom}
+                    onChange={(e) => openingContext.onConventionalWisdomChange(e.target.value)}
+                    placeholder="What does everyone else in your industry tell people about this?"
+                    className="w-full bg-white border border-[#1e2a38]/15 rounded-lg px-3 py-2 text-sm text-[#1e2a38] focus:outline-none focus:border-[#3dc3ff]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-[#1e2a38]/60 mb-1">What do YOU believe that's different?</label>
+                  <input type="text" value={openingContext.uniqueAngle}
+                    onChange={(e) => openingContext.onUniqueAngleChange(e.target.value)}
+                    placeholder="What have you seen with real clients that contradicts the standard advice?"
+                    className="w-full bg-white border border-[#1e2a38]/15 rounded-lg px-3 py-2 text-sm text-[#1e2a38] focus:outline-none focus:border-[#3dc3ff]"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <p className="text-xs font-semibold text-[#1e2a38]/40 uppercase tracking-wider">Viewer's Internal State</p>
+                <div>
+                  <label className="block text-xs font-medium text-[#1e2a38]/60 mb-1">What emotion is your viewer feeling right now?</label>
+                  <input type="text" value={openingContext.viewerEmotion}
+                    onChange={(e) => openingContext.onViewerEmotionChange(e.target.value)}
                     placeholder={openingContext.placeholders.before}
                     className="w-full bg-white border border-[#1e2a38]/15 rounded-lg px-3 py-2 text-sm text-[#1e2a38] focus:outline-none focus:border-[#3dc3ff]"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-[#1e2a38]/60 mb-1">How viewer feels AFTER watching</label>
-                  <input
-                    type="text"
-                    value={openingContext.afterFeeling}
-                    onChange={(e) => openingContext.onAfterFeelingChange(e.target.value)}
-                    placeholder={openingContext.placeholders.after}
+                  <label className="block text-xs font-medium text-[#1e2a38]/60 mb-1">What question are they asking themselves that they won't say out loud?</label>
+                  <input type="text" value={openingContext.viewerQuestion}
+                    onChange={(e) => openingContext.onViewerQuestionChange(e.target.value)}
+                    placeholder="e.g. Did we wait too long? Are we being greedy? Can we actually afford this?"
+                    className="w-full bg-white border border-[#1e2a38]/15 rounded-lg px-3 py-2 text-sm text-[#1e2a38] focus:outline-none focus:border-[#3dc3ff]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-[#1e2a38]/60 mb-1">What are they afraid this video might confirm?</label>
+                  <input type="text" value={openingContext.viewerFear}
+                    onChange={(e) => openingContext.onViewerFearChange(e.target.value)}
+                    placeholder="e.g. That they missed their window, that they're not ready"
+                    className="w-full bg-white border border-[#1e2a38]/15 rounded-lg px-3 py-2 text-sm text-[#1e2a38] focus:outline-none focus:border-[#3dc3ff]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-[#1e2a38]/60 mb-1">What do they secretly hope this video will tell them?</label>
+                  <input type="text" value={openingContext.viewerHope}
+                    onChange={(e) => openingContext.onViewerHopeChange(e.target.value)}
+                    placeholder="e.g. That it's not too late, that their situation is normal"
                     className="w-full bg-white border border-[#1e2a38]/15 rounded-lg px-3 py-2 text-sm text-[#1e2a38] focus:outline-none focus:border-[#3dc3ff]"
                   />
                 </div>

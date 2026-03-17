@@ -192,13 +192,22 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
   const [selectedPattern, setSelectedPattern] = useState("");
   const [selectedBridge, setSelectedBridge] = useState("");
 
-  // Step 2: Opening form fields (used in both upload phase and opening_context phase)
+  // Step 2: Opening form fields
+  const [conventionalWisdom, setConventionalWisdom] = useState("");
   const [uniqueAngle, setUniqueAngle] = useState("");
-  const [beforeFeeling, setBeforeFeeling] = useState("");
-  const [afterFeeling, setAfterFeeling] = useState("");
+  const [viewerEmotion, setViewerEmotion] = useState("");
+  const [viewerQuestion, setViewerQuestion] = useState("");
+  const [viewerFear, setViewerFear] = useState("");
+  const [viewerHope, setViewerHope] = useState("");
 
-  // Step 3: Credibility
-  const [credentialInput, setCredentialInput] = useState("");
+  // Step 3: Credibility (4 structured fields)
+  const [credClientsHelped, setCredClientsHelped] = useState("");
+  const [credSpecificResult, setCredSpecificResult] = useState("");
+  const [credFrequency, setCredFrequency] = useState("");
+  const [credSurprise, setCredSurprise] = useState("");
+
+  // Step 4: Client story
+  const [clientStory, setClientStory] = useState("");
   const [credibilitySuggestions, setCredibilitySuggestions] = useState<CredibilitySuggestion[]>([]);
   const [selectedCredibility, setSelectedCredibility] = useState("");
 
@@ -318,9 +327,12 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
       const result = await callStep("opening", {
         title: data.title,
         topic: data.title,
+        conventionalWisdom,
         uniqueAngle,
-        beforeFeeling,
-        afterFeeling,
+        viewerEmotion,
+        viewerQuestion,
+        viewerFear,
+        viewerHope,
       });
       setIntroPatterns(result.intro_patterns ?? []);
       setExpertiseBridges(result.expertise_bridges ?? []);
@@ -359,9 +371,12 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
       const result = await callStep("opening", {
         title: uploadData.title,
         topic: uploadData.title,
+        conventionalWisdom,
         uniqueAngle,
-        beforeFeeling,
-        afterFeeling,
+        viewerEmotion,
+        viewerQuestion,
+        viewerFear,
+        viewerHope,
         talkingPoints: prefillData?.talkingPoints.join("\n") || uploadData.talkingPoints || undefined,
       });
       setIntroPatterns(result.intro_patterns ?? []);
@@ -387,15 +402,19 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
 
   // ── Step: Credibility generation ──
   async function handleGenerateCredibility() {
-    if (!credentialInput.trim()) {
-      setError("Please enter a credential or proof point.");
+    const hasAnyField = credClientsHelped.trim() || credSpecificResult.trim() || credFrequency.trim() || credSurprise.trim();
+    if (!hasAnyField) {
+      setError("Please fill in at least one credential field.");
       return;
     }
     setLoading(true);
     setError("");
     try {
       const result = await callStep("credibility", {
-        credentialInput,
+        credClientsHelped,
+        credSpecificResult,
+        credFrequency,
+        credSurprise,
       });
       setCredibilitySuggestions(result.suggestions ?? []);
     } catch (e: any) {
@@ -481,6 +500,11 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
         insightCount,
         selectedTalkingPoints: selectedPoints,
         sourceTheme: prefillData?.theme,
+        viewerEmotion,
+        viewerQuestion,
+        viewerFear,
+        viewerHope,
+        clientStory,
       });
       setInsightSlots(result.insight_slots ?? []);
       const initial: Record<number, Record<string, string>> = {};
@@ -510,18 +534,27 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
       }).join("\n\n");
 
       console.log("[ARC final step data]", {
-        uniqueAngle, selectedOpening: selectedPattern, selectedBridge, leadMagnetLine,
-        credibility: selectedCredibility, credentialInput, nextVideoTitle, nextVideoWhy,
+        conventionalWisdom, uniqueAngle, selectedOpening: selectedPattern, selectedBridge, leadMagnetLine,
+        credibility: selectedCredibility, credClientsHelped, nextVideoTitle, nextVideoWhy,
         nextVideoTranscript: nextVideoTranscript ? `(${nextVideoTranscript.length} chars)` : "(none)",
         sourceTheme: prefillData?.theme,
       });
       const result = await callStep("final", {
+        conventionalWisdom,
         uniqueAngle,
+        viewerEmotion,
+        viewerQuestion,
+        viewerFear,
+        viewerHope,
         selectedOpening: selectedPattern,
         selectedBridge,
         leadMagnetLine,
         credibility: selectedCredibility,
-        credentialInput,
+        credClientsHelped,
+        credSpecificResult,
+        credFrequency,
+        credSurprise,
+        clientStory,
         insights: insightsText,
         values: "",
         interests: "",
@@ -633,10 +666,17 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
     setSelectedPattern("");
     setSelectedBridge("");
     setLeadMagnetLine("");
+    setConventionalWisdom("");
     setUniqueAngle("");
-    setBeforeFeeling("");
-    setAfterFeeling("");
-    setCredentialInput("");
+    setViewerEmotion("");
+    setViewerQuestion("");
+    setViewerFear("");
+    setViewerHope("");
+    setCredClientsHelped("");
+    setCredSpecificResult("");
+    setCredFrequency("");
+    setCredSurprise("");
+    setClientStory("");
     setCredibilitySuggestions([]);
     setSelectedCredibility("");
     setInsightSlots([]);
@@ -721,13 +761,19 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
             onStartBuilding={handleStartBuilding}
             cap={usage?.cap ? parseFloat(usage.cap) : 15}
             openingContext={{
+              conventionalWisdom,
               uniqueAngle,
-              beforeFeeling,
-              afterFeeling,
-              placeholders,
+              viewerEmotion,
+              viewerQuestion,
+              viewerFear,
+              viewerHope,
+              placeholders: { before: placeholders.before },
+              onConventionalWisdomChange: setConventionalWisdom,
               onUniqueAngleChange: setUniqueAngle,
-              onBeforeFeelingChange: setBeforeFeeling,
-              onAfterFeelingChange: setAfterFeeling,
+              onViewerEmotionChange: setViewerEmotion,
+              onViewerQuestionChange: setViewerQuestion,
+              onViewerFearChange: setViewerFear,
+              onViewerHopeChange: setViewerHope,
             }}
           />
         )
@@ -762,45 +808,68 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
             <p className="text-sm font-semibold text-[#1e2a38]">{uploadData?.title}</p>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-5">
             <div>
               <h3 className="font-semibold text-[#1e2a38] mb-1">Opening Context</h3>
               <p className="text-sm text-[#1e2a38]/50">
-                These details help the AI write an opening that speaks directly to your viewer's situation.
-                All fields are optional but the more you add, the better the output.
+                These details shape every opening pattern, insight, and bridge. All fields optional — but specificity is what makes the script sound like you.
               </p>
             </div>
 
-            <div>
-              <label className="block text-xs font-medium text-[#1e2a38]/60 mb-1">Unique angle or hook for this video</label>
-              <input
-                type="text"
-                value={uniqueAngle}
-                onChange={(e) => setUniqueAngle(e.target.value)}
-                placeholder={placeholders.uniqueAngle}
-                className="w-full bg-white border border-[#1e2a38]/15 rounded-lg px-3 py-2 text-sm text-[#1e2a38] focus:outline-none focus:border-[#3dc3ff]"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
+            {/* Unique angle vs conventional wisdom */}
+            <div className="bg-white border border-[#1e2a38]/10 rounded-xl p-4 space-y-3">
+              <p className="text-xs font-semibold text-[#1e2a38]/50 uppercase tracking-wider">Your Angle</p>
               <div>
-                <label className="block text-xs font-medium text-[#1e2a38]/60 mb-1">How viewer feels BEFORE watching</label>
+                <label className="block text-xs font-medium text-[#1e2a38]/60 mb-1">What does conventional wisdom say about this topic?</label>
                 <input
                   type="text"
-                  value={beforeFeeling}
-                  onChange={(e) => setBeforeFeeling(e.target.value)}
-                  placeholder={placeholders.before}
-                  className="w-full bg-white border border-[#1e2a38]/15 rounded-lg px-3 py-2 text-sm text-[#1e2a38] focus:outline-none focus:border-[#3dc3ff]"
+                  value={conventionalWisdom}
+                  onChange={(e) => setConventionalWisdom(e.target.value)}
+                  placeholder="What does everyone else in your industry tell people about this?"
+                  className="w-full bg-[#f8f8f6] border border-[#1e2a38]/15 rounded-lg px-3 py-2 text-sm text-[#1e2a38] focus:outline-none focus:border-[#3dc3ff]"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-[#1e2a38]/60 mb-1">How viewer feels AFTER watching</label>
+                <label className="block text-xs font-medium text-[#1e2a38]/60 mb-1">What do YOU believe that's different?</label>
                 <input
                   type="text"
-                  value={afterFeeling}
-                  onChange={(e) => setAfterFeeling(e.target.value)}
-                  placeholder={placeholders.after}
-                  className="w-full bg-white border border-[#1e2a38]/15 rounded-lg px-3 py-2 text-sm text-[#1e2a38] focus:outline-none focus:border-[#3dc3ff]"
+                  value={uniqueAngle}
+                  onChange={(e) => setUniqueAngle(e.target.value)}
+                  placeholder="What have you seen with real clients that contradicts the standard advice?"
+                  className="w-full bg-[#f8f8f6] border border-[#1e2a38]/15 rounded-lg px-3 py-2 text-sm text-[#1e2a38] focus:outline-none focus:border-[#3dc3ff]"
+                />
+              </div>
+            </div>
+
+            {/* Viewer emotional state */}
+            <div className="bg-white border border-[#1e2a38]/10 rounded-xl p-4 space-y-3">
+              <p className="text-xs font-semibold text-[#1e2a38]/50 uppercase tracking-wider">Viewer's Internal State</p>
+              <div>
+                <label className="block text-xs font-medium text-[#1e2a38]/60 mb-1">What emotion is your viewer feeling right now?</label>
+                <input type="text" value={viewerEmotion} onChange={(e) => setViewerEmotion(e.target.value)}
+                  placeholder={placeholders.before}
+                  className="w-full bg-[#f8f8f6] border border-[#1e2a38]/15 rounded-lg px-3 py-2 text-sm text-[#1e2a38] focus:outline-none focus:border-[#3dc3ff]"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-[#1e2a38]/60 mb-1">What question are they asking themselves that they won't say out loud?</label>
+                <input type="text" value={viewerQuestion} onChange={(e) => setViewerQuestion(e.target.value)}
+                  placeholder="e.g. Did we wait too long? Are we being greedy? Can we actually afford this?"
+                  className="w-full bg-[#f8f8f6] border border-[#1e2a38]/15 rounded-lg px-3 py-2 text-sm text-[#1e2a38] focus:outline-none focus:border-[#3dc3ff]"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-[#1e2a38]/60 mb-1">What are they afraid this video might confirm?</label>
+                <input type="text" value={viewerFear} onChange={(e) => setViewerFear(e.target.value)}
+                  placeholder="e.g. That they missed their window, that they're not ready, that this will be harder than they thought"
+                  className="w-full bg-[#f8f8f6] border border-[#1e2a38]/15 rounded-lg px-3 py-2 text-sm text-[#1e2a38] focus:outline-none focus:border-[#3dc3ff]"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-[#1e2a38]/60 mb-1">What do they secretly hope this video will tell them?</label>
+                <input type="text" value={viewerHope} onChange={(e) => setViewerHope(e.target.value)}
+                  placeholder="e.g. That it's not too late, that their situation is normal, that there's a clear next step"
+                  className="w-full bg-[#f8f8f6] border border-[#1e2a38]/15 rounded-lg px-3 py-2 text-sm text-[#1e2a38] focus:outline-none focus:border-[#3dc3ff]"
                 />
               </div>
             </div>
@@ -981,21 +1050,55 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
         <div className="space-y-6">
           <StepHeader step={2} total={4} label="Build Your Credibility Signal" />
 
-          <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-5">
-            <p className="text-sm text-[#1e2a38]/70 mb-4">
-              Enter a credential, result, or proof point. AI will generate 3 ways to weave it naturally into your script.
-            </p>
-            <textarea
-              value={credentialInput}
-              onChange={(e) => setCredentialInput(e.target.value)}
-              rows={3}
-              placeholder="e.g. I've helped 150+ families buy homes in Calgary over 8 years, closing $2M last month alone"
-              className="w-full border border-[#1e2a38]/15 rounded-xl px-4 py-3 text-sm text-[#1e2a38] placeholder-[#1e2a38]/30 focus:outline-none focus:border-[#3dc3ff] resize-none"
-            />
+          <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-5 space-y-4">
+            <div>
+              <p className="text-sm text-[#1e2a38]/70 mb-1">Fill in what you know — at least one field required. The AI will use your exact words, not a paraphrase.</p>
+              <p className="text-xs text-[#3dc3ff] font-medium">All numbers and specifics will appear verbatim in your script.</p>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-[#1e2a38]/50 uppercase tracking-wider mb-1">How many clients/families/businesses have you helped?</label>
+              <input
+                type="text"
+                value={credClientsHelped}
+                onChange={(e) => setCredClientsHelped(e.target.value)}
+                placeholder='e.g. "200+ families" or "closed 87 deals last year"'
+                className="w-full border border-[#1e2a38]/15 rounded-lg px-3 py-2.5 text-sm text-[#1e2a38] placeholder-[#1e2a38]/30 focus:outline-none focus:border-[#3dc3ff]"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-[#1e2a38]/50 uppercase tracking-wider mb-1">What's a specific result you've helped someone achieve?</label>
+              <input
+                type="text"
+                value={credSpecificResult}
+                onChange={(e) => setCredSpecificResult(e.target.value)}
+                placeholder='e.g. "Helped a family save $40K by timing their sale right"'
+                className="w-full border border-[#1e2a38]/15 rounded-lg px-3 py-2.5 text-sm text-[#1e2a38] placeholder-[#1e2a38]/30 focus:outline-none focus:border-[#3dc3ff]"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-[#1e2a38]/50 uppercase tracking-wider mb-1">What's a stat about how often you do this work?</label>
+              <input
+                type="text"
+                value={credFrequency}
+                onChange={(e) => setCredFrequency(e.target.value)}
+                placeholder='e.g. "We close a deal every 6 days"'
+                className="w-full border border-[#1e2a38]/15 rounded-lg px-3 py-2.5 text-sm text-[#1e2a38] placeholder-[#1e2a38]/30 focus:outline-none focus:border-[#3dc3ff]"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-[#1e2a38]/50 uppercase tracking-wider mb-1">What would surprise someone about your track record?</label>
+              <input
+                type="text"
+                value={credSurprise}
+                onChange={(e) => setCredSurprise(e.target.value)}
+                placeholder='e.g. "22 years in Calgary real estate, started before the 2008 crash"'
+                className="w-full border border-[#1e2a38]/15 rounded-lg px-3 py-2.5 text-sm text-[#1e2a38] placeholder-[#1e2a38]/30 focus:outline-none focus:border-[#3dc3ff]"
+              />
+            </div>
             <button
               onClick={handleGenerateCredibility}
-              disabled={loading || !credentialInput.trim()}
-              className="mt-3 px-5 py-2 text-sm font-semibold bg-[#1e2a38] text-white rounded-xl hover:bg-[#1e2a38]/80 disabled:opacity-50 transition-colors"
+              disabled={loading || !(credClientsHelped.trim() || credSpecificResult.trim() || credFrequency.trim() || credSurprise.trim())}
+              className="px-5 py-2 text-sm font-semibold bg-[#1e2a38] text-white rounded-xl hover:bg-[#1e2a38]/80 disabled:opacity-50 transition-colors"
             >
               Generate Suggestions
             </button>
@@ -1091,6 +1194,24 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
                       ))}
                     </div>
                   </>
+                )}
+              </div>
+
+              {/* Client story bank */}
+              <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-5">
+                <p className="text-sm font-semibold text-[#1e2a38] mb-0.5">Client Story Bank</p>
+                <p className="text-xs text-[#1e2a38]/50 mb-3">
+                  Include a name (real or changed), a specific situation, a moment where something shifted, and what happened. 3–5 sentences. Leave blank to get placeholder text you can fill in later.
+                </p>
+                <textarea
+                  rows={4}
+                  value={clientStory}
+                  onChange={(e) => setClientStory(e.target.value)}
+                  placeholder={'e.g. Mark and Dana came to us after sitting on the fence for 2 years. Their rent had gone up twice. They thought they needed 20% down. When we showed them the math on 5% down vs waiting, they realized waiting was costing them $800/month in lost equity. They closed 6 weeks later.'}
+                  className="w-full border border-[#1e2a38]/15 rounded-xl px-4 py-3 text-sm text-[#1e2a38] placeholder-[#1e2a38]/25 focus:outline-none focus:border-[#3dc3ff] resize-none"
+                />
+                {!clientStory.trim() && (
+                  <p className="text-xs text-amber-600/70 mt-1.5">If left blank, the AI will write [INSERT YOUR STORY HERE] placeholders — never a made-up generic story.</p>
                 )}
               </div>
 
