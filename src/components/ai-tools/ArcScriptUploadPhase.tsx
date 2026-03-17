@@ -17,6 +17,7 @@ interface StartBuildingData {
 
 interface Props {
   onStartBuilding: (data: StartBuildingData) => void;
+  cap?: number;
 }
 
 function formatBytes(bytes: number): string {
@@ -25,21 +26,22 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function estimateCost(files: File[], pastedText: string): string {
+function estimatePct(files: File[], pastedText: string, cap: number): string {
   const totalBytes = files.reduce((s, f) => s + f.size, 0) + pastedText.length;
   const estimatedTokens = Math.ceil(totalBytes / 4);
   // summarize call + 8 chat turns avg ~800 tokens each side
   const totalTokens = estimatedTokens + 8 * 800 * 2;
   const cost = (totalTokens / 1_000_000) * 9; // blended rate
   if (cost < 0.005) return "";
-  return `~$${cost.toFixed(2)} of your monthly allowance (approximate)`;
+  const pct = cap > 0 ? ((cost / cap) * 100).toFixed(1) : null;
+  return pct ? `~${pct}% of your monthly allowance (approximate)` : "";
 }
 
 const ALLOWED_EXTENSIONS = ["pdf", "docx", "txt", "md"];
 const MAX_FILES = 3;
 const MAX_BYTES = 10 * 1024 * 1024;
 
-export default function ArcScriptUploadPhase({ onStartBuilding }: Props) {
+export default function ArcScriptUploadPhase({ onStartBuilding, cap = 15 }: Props) {
   const [title, setTitle] = useState("");
   const [talkingPoints, setTalkingPoints] = useState("");
   const [pastedNotes, setPastedNotes] = useState("");
@@ -50,9 +52,10 @@ export default function ArcScriptUploadPhase({ onStartBuilding }: Props) {
   const [loadingStep, setLoadingStep] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const costEstimate = estimateCost(
+  const costEstimate = estimatePct(
     files.map((f) => f.file),
-    pastedNotes
+    pastedNotes,
+    cap
   );
 
   const ext = (name: string) => name.split(".").pop()?.toLowerCase() ?? "";

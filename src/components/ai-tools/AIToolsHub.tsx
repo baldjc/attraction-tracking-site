@@ -55,18 +55,23 @@ function UsageCard({ usage }: { usage: UsageData }) {
           <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${pct}%` }} />
         </div>
         <p className="text-xs text-[#1e2a38]/50 mt-2">
-          ${parseFloat(usage.totalCost).toFixed(2)} used / ${parseFloat(usage.cap).toFixed(2)} limit
+          {Math.round(pct)}% of monthly allowance used
         </p>
       </div>
 
       {breakdownEntries.length > 0 && (
         <div className="space-y-1 pt-1 border-t border-[#1e2a38]/5">
-          {breakdownEntries.map(([tool, cost]) => (
-            <div key={tool} className="flex items-center justify-between">
-              <span className="text-xs text-[#1e2a38]/60">{TOOL_LABELS[tool] ?? tool}</span>
-              <span className="text-xs text-[#1e2a38]/50">${parseFloat(cost).toFixed(4)}</span>
-            </div>
-          ))}
+          {breakdownEntries.map(([tool, cost]) => {
+            const toolPct = parseFloat(usage.cap) > 0
+              ? ((parseFloat(cost) / parseFloat(usage.cap)) * 100).toFixed(1)
+              : "0.0";
+            return (
+              <div key={tool} className="flex items-center justify-between">
+                <span className="text-xs text-[#1e2a38]/60">{TOOL_LABELS[tool] ?? tool}</span>
+                <span className="text-xs text-[#1e2a38]/50">{toolPct}%</span>
+              </div>
+            );
+          })}
         </div>
       )}
 

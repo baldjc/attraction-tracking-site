@@ -103,7 +103,7 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
               </p>
             </div>
           ) : (
-            <ArcScriptUploadPhase onStartBuilding={handleStartBuilding} />
+            <ArcScriptUploadPhase onStartBuilding={handleStartBuilding} cap={usage?.cap ? parseFloat(usage.cap) : 15} />
           )}
         </div>
       )}
