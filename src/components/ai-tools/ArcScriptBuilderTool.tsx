@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { ArrowLeftIcon, ArrowPathIcon, CheckIcon, ClipboardDocumentIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import ArcScriptUploadPhase from "@/components/ai-tools/ArcScriptUploadPhase";
+import RecentConversations from "@/components/ai-tools/RecentConversations";
 
 interface Props {
   basePath: string;
@@ -199,6 +200,10 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState("");
+
+  // Conversation history
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [refreshCounter, setRefreshCounter] = useState(0);
 
   // Check for Content Engine prefill on mount
   useEffect(() => {
@@ -398,6 +403,29 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
       setFinalData(result);
       setRetentionSuggestions(result.retention_suggestions ?? []);
       setPhase("done");
+
+      // Auto-save to 30-day conversation history
+      fetch("/api/ai-tools/conversations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          toolType: "arc_script_builder",
+          title: uploadData?.title || "ARC Script",
+          messages: [
+            {
+              role: "assistant",
+              content: `Script complete: ${uploadData?.title || "ARC Script"}`,
+            },
+          ],
+          metadata: { videoTitle: uploadData?.title ?? null },
+        }),
+      })
+        .then((r) => r.json())
+        .then((d) => {
+          if (d?.id) setConversationId(d.id);
+          setRefreshCounter((n) => n + 1);
+        })
+        .catch(() => {});
     } catch (e: any) {
       setError(e.message || "Failed to assemble final script.");
     }
@@ -523,6 +551,16 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
         <div className="mb-4 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700">
           {error}
         </div>
+      )}
+
+      {/* ── RECENT SCRIPTS ── */}
+      {phase === "upload" && (
+        <RecentConversations
+          toolType="arc_script_builder"
+          label="Recent Scripts"
+          emptyLabel="No scripts saved in the last 30 days."
+          refreshTrigger={refreshCounter}
+        />
       )}
 
       {/* ── UPLOAD PHASE (normal flow) ── */}
