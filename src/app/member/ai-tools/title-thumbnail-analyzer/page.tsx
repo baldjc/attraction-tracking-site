@@ -477,27 +477,29 @@ export default function TitleThumbnailAnalyzerPage() {
           <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-6">
             <h2 className="font-semibold text-[#1e2a38] mb-6 text-center">Cognitive Dissonance Scores</h2>
             <div className={`grid gap-4 ${result.intro ? "grid-cols-4" : "grid-cols-3"}`}>
-              <ScoreGauge label="Thumbnail" score={result.thumbnail.score} />
-              <ScoreGauge label="Title" score={result.title.score} />
-              <ScoreGauge label="Combined" score={result.combined.score} />
-              {result.intro && <ScoreGauge label="Intro" score={result.intro.score} />}
+              <ScoreGauge label="Thumbnail" score={result.thumbnail.score ?? 0} />
+              <ScoreGauge label="Title" score={result.title.score ?? 0} />
+              <ScoreGauge label="Combined" score={result.combined.score ?? 0} />
+              {result.intro && <ScoreGauge label="Intro" score={result.intro.score ?? 0} />}
             </div>
           </div>
 
           {/* Attraction principle scores */}
-          <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-6">
-            <h2 className="font-semibold text-[#1e2a38] mb-4">Attraction Principle Scores</h2>
-            <div className="flex flex-wrap gap-2">
-              <ScoreBadge label="Title Frameworks" score={result.title.attraction_scores.title_frameworks} />
-              <ScoreBadge label="Approve the Click" score={result.title.attraction_scores.approve_the_click} />
-              <ScoreBadge label="Avatar Clarity" score={result.title.attraction_scores.avatar_clarity} />
+          {result.title.attraction_scores && (
+            <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-6">
+              <h2 className="font-semibold text-[#1e2a38] mb-4">Attraction Principle Scores</h2>
+              <div className="flex flex-wrap gap-2">
+                <ScoreBadge label="Title Frameworks" score={result.title.attraction_scores.title_frameworks} />
+                <ScoreBadge label="Approve the Click" score={result.title.attraction_scores.approve_the_click} />
+                <ScoreBadge label="Avatar Clarity" score={result.title.attraction_scores.avatar_clarity} />
+              </div>
+              {result.title.framework_used && (
+                <p className="text-sm text-[#1e2a38]/60 mt-3">
+                  Framework detected: <strong>{result.title.framework_used}</strong>
+                </p>
+              )}
             </div>
-            {result.title.framework_used && (
-              <p className="text-sm text-[#1e2a38]/60 mt-3">
-                Framework detected: <strong>{result.title.framework_used}</strong>
-              </p>
-            )}
-          </div>
+          )}
 
           {/* Thumbnail analysis */}
           {(result.thumbnail.observations?.length ?? 0) > 0 && (
