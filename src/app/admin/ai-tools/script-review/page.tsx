@@ -30,7 +30,7 @@ export default async function AdminScriptReviewPage() {
         </Link>
         <h1 className="text-2xl font-bold text-[#1e2a38]">Script Review</h1>
         <p className="text-sm text-[#1e2a38]/60 mt-1">
-          Paste a script and get scored on 15 Attraction principles — then chat to improve it.
+          Paste a script and get scored on 14 Attraction principles — then chat to improve it.
         </p>
       </div>
 

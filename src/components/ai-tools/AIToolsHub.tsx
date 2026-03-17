@@ -175,7 +175,7 @@ export default function AIToolsHub({ basePath, featureFlags }: Props) {
       featureKey: "tool_script_review",
       icon: "📋",
       title: "Script Review",
-      description: "Paste a script or transcript — get scored on 15 Attraction principles with visual suggestions",
+      description: "Paste a script or transcript — get scored on 14 Attraction principles with visual suggestions",
       extra: lastReview
         ? `Last review: ${new Date(lastReview.createdAt).toLocaleDateString()}`
         : "No reviews yet — paste any script to get started",

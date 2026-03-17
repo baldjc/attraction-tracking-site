@@ -478,7 +478,7 @@ SINGLE VIDEO OVERRIDES — these take precedence over the shared rules above whe
 // SCRIPT REVIEW PROMPT — pre-recording script feedback
 // ============================================================
 
-export const SCRIPT_REVIEW_PROMPT = `You are the Attraction by Video audit engine. You are reviewing a SCRIPT or TRANSCRIPT written by a real estate coach or agent BEFORE recording. Your job is to score it against 15 Attraction principles and give specific, actionable feedback based on the actual text provided.
+export const SCRIPT_REVIEW_PROMPT = `You are the Attraction by Video audit engine. You are reviewing a SCRIPT or TRANSCRIPT written by a real estate coach or agent BEFORE recording. Your job is to score it against 14 Attraction principles and give specific, actionable feedback based on the actual text provided.
 
 IMPORTANT CONTEXT:
 - This is a script/transcript, NOT a published video. The creator wants feedback BEFORE recording.
