@@ -24,7 +24,6 @@ const PRINCIPLES: Record<string, string> = {
   story_proof: "Story Proof",
   grade_5_language: "Grade 5 Language",
   binge_architecture: "Binge Architecture",
-  consistency: "Consistency",
 };
 
 function scoreColor(score: number) {

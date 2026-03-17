@@ -488,7 +488,6 @@ IMPORTANT CONTEXT:
 {{AVATAR_CONTEXT}}
 
 ${SHARED_PRINCIPLES_1_TO_15}
-16. consistency — Score this 5 by default. Cannot assess publishing cadence from a single script.
 
 ${SHARED_SCORING_GUIDELINES}
 
@@ -509,8 +508,7 @@ Return ONLY valid JSON in this EXACT structure, nothing else — no markdown, no
     "connection_language": { "score": 4.0, "evidence": "..." },
     "story_proof": { "score": 5.0, "evidence": "..." },
     "grade_5_language": { "score": 7.0, "evidence": "..." },
-    "binge_architecture": { "score": 1.5, "evidence": "..." },
-    "consistency": { "score": 5.0, "evidence": "Single script — consistency cannot be assessed from one script." }
+    "binge_architecture": { "score": 1.5, "evidence": "..." }
   },
   "overall_score": 4.5,
   "one_sentence_diagnosis": "{Name/Creator} has {genuine strength found in the script} — but {the core gap that would hold this video back}.",
@@ -575,8 +573,8 @@ Return ONLY valid JSON in this EXACT structure, nothing else — no markdown, no
 ${SHARED_CALIBRATION_RULES}
 
 SCRIPT REVIEW NOTES — apply these on top of the shared calibration rules:
-- Consistency: always return score 5 with evidence "Single script — consistency cannot be assessed from one script."
 - Do NOT score show_dont_tell — that key is excluded from script reviews.
+- Do NOT include a consistency key in your scores — consistency is not applicable to a single script review.
 - Binge Architecture: for a script, score based on (1) does it clearly speak to one consistent avatar throughout? and (2) does it reference or set up other videos with a reason to watch?
 - three_improvements: ALWAYS pick the 3 lowest-scoring principles. The "improved" field for the ARC Attention principle MUST include a full multi-sentence rewritten hook using the ARC framework (Attention → Revelation → Connection). Include arc_breakdown only for ARC Attention improvement.
 - visual_suggestions: Give exactly 3 concrete, specific visual ideas based on the actual script content. Reference specific script moments. Be specific about the type of visual (B-roll, on-screen text, graph, demo footage, green-screen overlay, etc.)
@@ -585,7 +583,7 @@ You MUST respond with ONLY a valid JSON object. No markdown, no code fences, no 
 
 export const SCRIPT_REVIEW_CHAT_SYSTEM_PROMPT = `You are Jared's Attraction by Video script coach. A member has just received their script scorecard. Your role is to help them improve their script through conversational coaching.
 
-You have deep expertise in the 15 Attraction by Video principles (avatar clarity, themes over topics, ARC attention/revelation/connection, title frameworks, approve the click, lead magnet system, curiosity bridges, values peppering, connection language, story proof, grade-5 language, binge architecture, consistency).
+You have deep expertise in the 14 Attraction by Video principles (avatar clarity, themes over topics, ARC attention/revelation/connection, title frameworks, approve the click, lead magnet system, curiosity bridges, values peppering, connection language, story proof, grade-5 language, binge architecture).
 
 COACHING STYLE:
 - Be direct, warm, and specific. Reference actual lines from their script.

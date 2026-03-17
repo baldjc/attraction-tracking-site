@@ -19,7 +19,6 @@ const PRINCIPLE_LABELS: Record<string, string> = {
   story_proof: "Story Proof",
   grade_5_language: "Grade 5 Language",
   binge_architecture: "Binge Architecture",
-  consistency: "Consistency",
 };
 
 const LEARNING_PATH: Record<string, string> = {
@@ -38,7 +37,6 @@ const LEARNING_PATH: Record<string, string> = {
   title_frameworks: "Lesson 4.2",
   binge_architecture: "Lesson 1.3",
   grade_5_language: "N/A (practice-based)",
-  consistency: "Lessons 1.3 + 2.4",
 };
 
 const DIMENSIONS = [
@@ -52,7 +50,7 @@ const PRINCIPLE_ORDER = [
   "avatar_clarity", "themes_over_topics", "arc_attention", "arc_revelation",
   "arc_connection", "title_frameworks", "approve_the_click", "lead_magnet_system",
   "curiosity_bridges", "show_dont_tell", "values_peppering", "connection_language",
-  "story_proof", "grade_5_language", "binge_architecture", "consistency",
+  "story_proof", "grade_5_language", "binge_architecture",
 ];
 
 function scoreBg(score: number) {

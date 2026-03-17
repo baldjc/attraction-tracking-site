@@ -2,44 +2,134 @@ import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import { TITLE_THUMBNAIL_ANALYZER_PROMPT } from "@/lib/audit-engine";
+import { logUsage } from "@/lib/ai-tool-cost";
 import prisma from "@/lib/prisma";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+
+function extractTitles(text: string): string[] {
+  const lines = text.split("\n");
+  const titles: string[] = [];
+  for (const line of lines) {
+    const match = line.match(/^\s*\d+\.\s+(.{10,150})$/);
+    if (match) {
+      const t = match[1].trim().replace(/^\*+|\*+$/g, "");
+      if (t.length >= 10) titles.push(t);
+    }
+  }
+  return titles;
+}
+
+async function getMemberContext(userId: string) {
+  const dbUser = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { avatarProfile: true },
+  });
+  const latestAudit = await prisma.audit.findFirst({
+    where: { userId, auditType: "baseline" },
+    orderBy: { createdAt: "desc" },
+    select: { scores: true },
+  });
+  const avatarText = dbUser?.avatarProfile
+    ? JSON.stringify(dbUser.avatarProfile)
+    : "No avatar saved";
+  const titleFrameworksScore = latestAudit?.scores
+    ? (latestAudit.scores as any)?.title_frameworks?.score ?? "N/A"
+    : "N/A";
+  return { avatarText, titleFrameworksScore };
+}
 
 export async function POST(req: NextRequest) {
   const user = await resolveUserFromSession();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { title, thumbnailBase64, thumbnailMimeType } = await req.json();
-  if (!title) return NextResponse.json({ error: "Missing title" }, { status: 400 });
+  const body = await req.json();
+  const { action } = body;
 
-  const dbUser = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: { avatarProfile: true },
-  });
+  if (action === "chat") {
+    const { title, analysisResult, messages, introTranscript } = body;
+    const { avatarText, titleFrameworksScore } = await getMemberContext(user.id);
 
-  const latestAudit = await prisma.audit.findFirst({
-    where: { userId: user.id, auditType: "baseline" },
-    orderBy: { createdAt: "desc" },
-    select: { scores: true },
-  });
+    const customSetting = await prisma.appSetting.findUnique({
+      where: { key: "title_thumbnail_analyzer_prompt" },
+    });
+    const basePrompt = customSetting?.value ?? TITLE_THUMBNAIL_ANALYZER_PROMPT;
 
-  const avatarText = dbUser?.avatarProfile
-    ? JSON.stringify(dbUser.avatarProfile)
-    : "No avatar saved";
+    const thumbnailNote =
+      analysisResult?.thumbnail?.score > 0
+        ? "A thumbnail image was provided and analysed."
+        : "No thumbnail was provided.";
 
-  const titleFrameworksScore = latestAudit?.scores
-    ? (latestAudit.scores as any)?.title_frameworks?.score ?? "N/A"
-    : "N/A";
+    const introNote = introTranscript
+      ? `VIDEO INTRO TRANSCRIPT (first ~30-60s):\n${introTranscript}`
+      : "No intro transcript was provided.";
 
-  const memberContext = `MEMBER'S AVATAR:
+    const systemPrompt = `${basePrompt}
+
+You are now in follow-up conversation mode. The member has completed their analysis and wants to go deeper.
+
+ORIGINAL TITLE: "${title}"
+${thumbnailNote}
+${introNote}
+
+FULL ANALYSIS RESULTS:
+${JSON.stringify(analysisResult, null, 2)}
+
+MEMBER AVATAR PROFILE:
 ${avatarText}
 
-MEMBER'S BASELINE TITLE FRAMEWORKS SCORE: ${titleFrameworksScore}`;
+BASELINE TITLE FRAMEWORKS SCORE: ${titleFrameworksScore}
 
-  const customSetting = await prisma.appSetting.findUnique({ where: { key: "title_thumbnail_analyzer_prompt" } });
+Your role: Help the member refine titles, create variations, adapt for different platforms, and answer specific questions about their title, thumbnail, and intro. When you provide a list of title alternatives, number each one clearly (1. Title here) so they can be saved. Keep responses concise and actionable.`;
+
+    const apiMessages: Anthropic.MessageParam[] = messages.map(
+      (m: { role: string; content: string }) => ({
+        role: m.role as "user" | "assistant",
+        content: m.content,
+      })
+    );
+
+    const response = await client.messages.create({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 2048,
+      system: systemPrompt,
+      messages: apiMessages,
+    });
+
+    await logUsage(
+      user.id,
+      "title_thumbnail_analyzer_chat",
+      response.usage.input_tokens,
+      response.usage.output_tokens
+    );
+
+    const reply =
+      response.content[0].type === "text" ? response.content[0].text : "";
+    const titles = extractTitles(reply);
+
+    return NextResponse.json({ reply, titles });
+  }
+
+  const { title, thumbnailBase64, thumbnailMimeType, introTranscript } = body;
+  if (!title) return NextResponse.json({ error: "Missing title" }, { status: 400 });
+
+  const { avatarText, titleFrameworksScore } = await getMemberContext(user.id);
+
+  const memberContext = `MEMBER'S AVATAR:\n${avatarText}\n\nMEMBER'S BASELINE TITLE FRAMEWORKS SCORE: ${titleFrameworksScore}`;
+
+  const customSetting = await prisma.appSetting.findUnique({
+    where: { key: "title_thumbnail_analyzer_prompt" },
+  });
   const basePrompt = customSetting?.value ?? TITLE_THUMBNAIL_ANALYZER_PROMPT;
   const finalSystemPrompt = `${basePrompt}\n\n${memberContext}`;
+
+  const introInstructions = introTranscript
+    ? `\n\nA video intro transcript has also been provided. Additionally evaluate whether this intro "approves the click" — does it deliver on the promise made by the title and thumbnail, and would the viewer feel satisfied they clicked? Include an "intro" key in your JSON response with: {"intro": {"score": <0-20>, "approves_click": <bool>, "observations": ["..."], "improvements": ["..."]}}`
+    : "";
+
+  const analysisText = thumbnailBase64
+    ? `Analyse this title and thumbnail combination.\n\nTitle: "${title}"${introTranscript ? `\n\nVideo intro transcript (first ~30-60 seconds):\n${introTranscript}` : ""}\n\nPlease provide your full analysis as JSON.${introInstructions}`
+    : `Analyse this title${introTranscript ? " and video intro" : ""} (no thumbnail provided — analyse title only).\n\nTitle: "${title}"${introTranscript ? `\n\nVideo intro transcript (first ~30-60 seconds):\n${introTranscript}` : ""}\n\nFor thumbnail fields, return score: 0 and note that no image was provided. Provide your full analysis as JSON.${introInstructions}`;
 
   const userContent: Anthropic.MessageParam["content"] = thumbnailBase64
     ? [
@@ -47,13 +137,18 @@ MEMBER'S BASELINE TITLE FRAMEWORKS SCORE: ${titleFrameworksScore}`;
           type: "image",
           source: {
             type: "base64",
-            media_type: (thumbnailMimeType || "image/jpeg") as "image/jpeg" | "image/png" | "image/webp" | "image/gif",
+            media_type: (thumbnailMimeType ||
+              "image/jpeg") as
+              | "image/jpeg"
+              | "image/png"
+              | "image/webp"
+              | "image/gif",
             data: thumbnailBase64,
           },
         },
-        { type: "text", text: `Analyse this title and thumbnail combination.\n\nTitle: "${title}"\n\nPlease provide your full analysis as JSON.` },
+        { type: "text", text: analysisText },
       ]
-    : `Analyse this title (no thumbnail provided — analyse title only).\n\nTitle: "${title}"\n\nFor thumbnail fields, return score: 0 and note that no image was provided. Provide your full analysis as JSON.`;
+    : analysisText;
 
   const response = await client.messages.create({
     model: "claude-sonnet-4-20250514",
@@ -62,14 +157,23 @@ MEMBER'S BASELINE TITLE FRAMEWORKS SCORE: ${titleFrameworksScore}`;
     messages: [{ role: "user", content: userContent }],
   });
 
-  const rawText = response.content[0].type === "text" ? response.content[0].text : "{}";
-  const cleaned = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "");
+  await logUsage(
+    user.id,
+    "title_thumbnail_analyzer",
+    response.usage.input_tokens,
+    response.usage.output_tokens
+  );
+
+  const rawText =
+    response.content[0].type === "text" ? response.content[0].text : "{}";
+  const cleaned = rawText
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```\s*$/, "");
   const extracted = cleaned.match(/\{[\s\S]*\}/)?.[0] ?? "{}";
 
   try {
     const parsed = JSON.parse(extracted);
 
-    // Save the analysis for tracking
     await prisma.titleAnalysis.create({
       data: {
         userId: user.id,
@@ -80,6 +184,9 @@ MEMBER'S BASELINE TITLE FRAMEWORKS SCORE: ${titleFrameworksScore}`;
 
     return NextResponse.json({ result: parsed });
   } catch {
-    return NextResponse.json({ error: "Failed to parse response", raw: rawText }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to parse response", raw: rawText },
+      { status: 500 }
+    );
   }
 }
