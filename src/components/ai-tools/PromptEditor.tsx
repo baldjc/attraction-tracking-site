@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
 import { useSession } from "next-auth/react";
+import { usePathname } from "next/navigation";
 
 interface PlaceholderDef {
   key: string;
@@ -18,6 +19,7 @@ interface Props {
 export default function PromptEditor({ toolKey, defaultPrompt, placeholders }: Props) {
   const { data: session } = useSession();
   const isAdmin = (session?.user as any)?.role === "admin";
+  const pathname = usePathname();
 
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState("");
@@ -35,7 +37,7 @@ export default function PromptEditor({ toolKey, defaultPrompt, placeholders }: P
       .finally(() => setLoading(false));
   }, [isAdmin, open, toolKey, defaultPrompt, value]);
 
-  if (!isAdmin) return null;
+  if (!isAdmin || !pathname?.startsWith("/admin")) return null;
 
   function showToast(msg: string) {
     setToast(msg);
