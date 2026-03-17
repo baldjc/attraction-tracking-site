@@ -185,6 +185,15 @@ export default function AIToolsHub({ basePath, featureFlags }: Props) {
         : "No reviews yet — paste any script to get started",
       badge: "blue",
     },
+    {
+      href: `${basePath}/repurpose-content`,
+      featureKey: "tool_repurpose_content",
+      icon: "♻️",
+      title: "Repurpose Content",
+      description: "Turn your video transcript into a newsletter and LinkedIn article",
+      extra: "Generate both in one click",
+      badge: "blue" as const,
+    },
   ];
 
   const tools = featureFlags

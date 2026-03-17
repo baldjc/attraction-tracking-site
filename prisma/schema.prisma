@@ -84,6 +84,12 @@ model User {
 
   aiToolsMonthlyCapOverride  Decimal? @db.Decimal(10, 2)
 
+  repurposeName     String?
+  repurposeBusiness String?
+  repurposeListSize String?
+  repurposeVoice    String?
+  savedLinks        Json?
+
   audits               Audit[]
   auditJobs            AuditJob[]
   campaigns            Campaign[]
@@ -94,6 +100,7 @@ model User {
   titleAnalyses        TitleAnalysis[]
   aiToolConversations  AIToolConversation[]
   aiToolUsage          AIToolUsage[]
+  repurposedContent    RepurposedContent[]
 
   @@map("users")
 }
@@ -339,4 +346,18 @@ model AIToolConversation {
   @@index([toolType])
   @@index([createdAt])
   @@map("ai_tool_conversations")
+}
+
+model RepurposedContent {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  videoTitle   String
+  toolType     String
+  output       Json
+  editedOutput String?
+  createdAt    DateTime @default(now())
+
+  @@index([userId, toolType, createdAt])
+  @@map("repurposed_content")
 }

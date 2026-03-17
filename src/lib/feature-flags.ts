@@ -11,6 +11,8 @@ export interface FeatureFlags {
   tool_arc_script_builder: boolean;
   tool_title_analyzer: boolean;
   tool_script_review: boolean;
+  tool_repurpose_content: boolean;
+  [key: string]: boolean;
 }
 
 export type FeatureKey = keyof FeatureFlags;
@@ -24,6 +26,7 @@ export const DEFAULT_FLAGS: FeatureFlags = {
   tool_arc_script_builder: true,
   tool_title_analyzer: true,
   tool_script_review: true,
+  tool_repurpose_content: true,
 };
 
 export async function getFeatureFlags(): Promise<FeatureFlags> {
