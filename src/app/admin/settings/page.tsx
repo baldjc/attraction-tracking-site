@@ -34,6 +34,7 @@ const FEATURE_DEFS = [
       { key: "tool_arc_script_builder", label: "ARC Script Builder", desc: "Video script outline builder" },
       { key: "tool_title_analyzer", label: "Title & Thumbnail Analyzer", desc: "Title/thumbnail scoring" },
       { key: "tool_script_review", label: "Script Review", desc: "Script scoring and feedback" },
+      { key: "tool_repurpose_content", label: "Repurpose Content", desc: "Turn transcripts into newsletters and LinkedIn articles" },
     ],
   },
 ];
