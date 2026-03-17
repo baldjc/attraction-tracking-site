@@ -130,11 +130,42 @@ function Spinner() {
   );
 }
 
+function getNichePlaceholders(niche: string | null) {
+  const n = (niche ?? "").toLowerCase();
+  if (n.includes("real estate") || n.includes("realtor") || n.includes("agent")) {
+    return {
+      uniqueAngle: "e.g. Most agents get this backwards — here's why",
+      before: "e.g. confused, anxious, overwhelmed",
+      after: "e.g. confident, clear, ready to act",
+    };
+  }
+  if (n.includes("financial") || n.includes("advisor") || n.includes("finance") || n.includes("wealth") || n.includes("invest")) {
+    return {
+      uniqueAngle: "e.g. Most advisors miss this completely — here's the truth",
+      before: "e.g. stressed, uncertain, afraid of making a mistake",
+      after: "e.g. in control, informed, ready to take the next step",
+    };
+  }
+  if (n.includes("mortgage") || n.includes("broker") || n.includes("lending") || n.includes("lender")) {
+    return {
+      uniqueAngle: "e.g. Most brokers won't tell you this — but you need to know",
+      before: "e.g. confused by options, worried about rates, unsure who to trust",
+      after: "e.g. clear on their best option, confident in their decision",
+    };
+  }
+  return {
+    uniqueAngle: "e.g. Most people in your space get this wrong — here's why",
+    before: "e.g. confused, frustrated, stuck",
+    after: "e.g. confident, clear, ready to take action",
+  };
+}
+
 export default function ArcScriptBuilderTool({ basePath }: Props) {
   const [phase, setPhase] = useState<Phase>("upload");
   const [prefillData, setPrefillData] = useState<PrefillData | null>(null);
   const [uploadData, setUploadData] = useState<UploadData | null>(null);
   const [usage, setUsage] = useState<UsageData | null>(null);
+  const [niche, setNiche] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -188,6 +219,10 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
     fetch("/api/ai-tools/usage/me")
       .then((r) => r.json())
       .then(setUsage)
+      .catch(() => {});
+    fetch("/api/member/avatar")
+      .then((r) => r.json())
+      .then((d) => setNiche(d?.niche ?? null))
       .catch(() => {});
   }, []);
 
@@ -469,6 +504,8 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
     : phase === "done" ? "Your ARC Script is ready"
     : "Assembling your script…";
 
+  const placeholders = getNichePlaceholders(niche);
+
   return (
     <div>
       <div className="mb-6 flex items-center gap-3">
@@ -512,7 +549,7 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
                     type="text"
                     value={uniqueAngle}
                     onChange={(e) => setUniqueAngle(e.target.value)}
-                    placeholder="e.g. Most agents get this backwards — here's why"
+                    placeholder={placeholders.uniqueAngle}
                     className="w-full border border-[#1e2a38]/15 rounded-lg px-3 py-2 text-sm text-[#1e2a38] focus:outline-none focus:border-[#3dc3ff]"
                   />
                 </div>
@@ -523,7 +560,7 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
                       type="text"
                       value={beforeFeeling}
                       onChange={(e) => setBeforeFeeling(e.target.value)}
-                      placeholder="e.g. confused, anxious, overwhelmed"
+                      placeholder={placeholders.before}
                       className="w-full border border-[#1e2a38]/15 rounded-lg px-3 py-2 text-sm text-[#1e2a38] focus:outline-none focus:border-[#3dc3ff]"
                     />
                   </div>
@@ -533,7 +570,7 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
                       type="text"
                       value={afterFeeling}
                       onChange={(e) => setAfterFeeling(e.target.value)}
-                      placeholder="e.g. confident, clear, ready to act"
+                      placeholder={placeholders.after}
                       className="w-full border border-[#1e2a38]/15 rounded-lg px-3 py-2 text-sm text-[#1e2a38] focus:outline-none focus:border-[#3dc3ff]"
                     />
                   </div>
@@ -590,7 +627,7 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
                 type="text"
                 value={uniqueAngle}
                 onChange={(e) => setUniqueAngle(e.target.value)}
-                placeholder="e.g. Most agents get this backwards — here's why"
+                placeholder={placeholders.uniqueAngle}
                 className="w-full border border-[#1e2a38]/15 rounded-lg px-3 py-2 text-sm text-[#1e2a38] focus:outline-none focus:border-[#3dc3ff]"
               />
             </div>
@@ -602,7 +639,7 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
                   type="text"
                   value={beforeFeeling}
                   onChange={(e) => setBeforeFeeling(e.target.value)}
-                  placeholder="e.g. confused, anxious, overwhelmed"
+                  placeholder={placeholders.before}
                   className="w-full border border-[#1e2a38]/15 rounded-lg px-3 py-2 text-sm text-[#1e2a38] focus:outline-none focus:border-[#3dc3ff]"
                 />
               </div>
@@ -612,7 +649,7 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
                   type="text"
                   value={afterFeeling}
                   onChange={(e) => setAfterFeeling(e.target.value)}
-                  placeholder="e.g. confident, clear, ready to act"
+                  placeholder={placeholders.after}
                   className="w-full border border-[#1e2a38]/15 rounded-lg px-3 py-2 text-sm text-[#1e2a38] focus:outline-none focus:border-[#3dc3ff]"
                 />
               </div>
