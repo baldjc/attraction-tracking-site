@@ -4,7 +4,7 @@ import prisma from "@/lib/prisma";
 import Anthropic from "@anthropic-ai/sdk";
 import { SCRIPT_REVIEW_PROMPT } from "@/lib/audit-engine";
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY_2 || process.env.ANTHROPIC_API_KEY });
+const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 function extractScore(val: any): number {
   if (typeof val === "number") return val;

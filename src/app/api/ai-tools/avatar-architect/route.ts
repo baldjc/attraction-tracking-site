@@ -4,7 +4,7 @@ import { resolveUserFromSession } from "@/lib/session-utils";
 import { AVATAR_ARCHITECT_PROMPT } from "@/lib/audit-engine";
 import prisma from "@/lib/prisma";
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY_2 || process.env.ANTHROPIC_API_KEY });
+const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 export async function POST(req: NextRequest) {
   const user = await resolveUserFromSession();

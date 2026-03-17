@@ -5,7 +5,7 @@ import { logUsage } from "@/lib/ai-tool-cost";
 import { buildChatSystemPrompt } from "@/lib/content-engine-prompts";
 import prisma from "@/lib/prisma";
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY_2 || process.env.ANTHROPIC_API_KEY });
+const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 export async function POST(req: NextRequest) {
   const user = await resolveUserFromSession();
