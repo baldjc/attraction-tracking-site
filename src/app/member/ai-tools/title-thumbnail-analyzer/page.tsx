@@ -29,6 +29,8 @@ interface AnalysisResult {
     avatar_would_click: boolean;
     observations: string[];
     improvements: string[];
+    redundancies?: string[];
+    thumbnail_concepts?: string[];
   };
   intro?: {
     score: number;
@@ -380,7 +382,7 @@ export default function TitleThumbnailAnalyzerPage() {
         </Link>
         <h1 className="text-2xl font-bold text-[#1e2a38]">🔍 Title &amp; Thumbnail Analyzer</h1>
         <p className="text-sm text-[#1e2a38]/60 mt-1">
-          Score your title and thumbnail against Attraction principles before you publish
+          Score your title and thumbnail for cognitive dissonance — the gap that compels the click
         </p>
       </div>
       <PromptEditor toolKey="title_thumbnail_analyzer_prompt" defaultPrompt="" placeholders={[]} />
@@ -625,7 +627,7 @@ export default function TitleThumbnailAnalyzerPage() {
 
           {/* Combined analysis */}
           <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-6">
-            <h2 className="font-semibold text-[#1e2a38] mb-4">Combined Analysis</h2>
+            <h2 className="font-semibold text-[#1e2a38] mb-4">Dissonance Test — Title + Thumbnail</h2>
             <div className="flex items-center gap-2 mb-3">
               <span
                 className={`text-sm font-medium px-3 py-1 rounded-full ${
@@ -654,7 +656,7 @@ export default function TitleThumbnailAnalyzerPage() {
                 <p className="text-xs font-semibold text-[#1e2a38]/40 uppercase tracking-wide mb-2">
                   Improvements
                 </p>
-                <ul className="space-y-1.5">
+                <ul className="space-y-1.5 mb-4">
                   {result.combined.improvements.map((o, i) => (
                     <li key={i} className="text-sm text-[#1e2a38] flex gap-2">
                       <span className="text-amber-500">→</span>
@@ -663,6 +665,39 @@ export default function TitleThumbnailAnalyzerPage() {
                   ))}
                 </ul>
               </>
+            )}
+
+            {/* Redundancies warning */}
+            {result.combined.redundancies && result.combined.redundancies.length > 0 && (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
+                <p className="text-xs font-semibold text-red-700 uppercase tracking-wide mb-2">
+                  ⚠ Redundancies Found — Title &amp; Thumbnail Overlap
+                </p>
+                <ul className="space-y-1">
+                  {result.combined.redundancies.map((r, i) => (
+                    <li key={i} className="text-sm text-red-700 flex gap-2">
+                      <span>⚠</span>
+                      {r}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Thumbnail concepts */}
+            {result.combined.thumbnail_concepts && result.combined.thumbnail_concepts.length > 0 && (
+              <div className="bg-[#3dc3ff]/5 border border-[#3dc3ff]/20 rounded-xl p-4">
+                <p className="text-xs font-semibold text-[#1e2a38]/60 uppercase tracking-wide mb-3">
+                  Thumbnail Concepts That Create Dissonance
+                </p>
+                <div className="space-y-2">
+                  {result.combined.thumbnail_concepts.map((c, i) => (
+                    <div key={i} className="bg-white rounded-lg px-4 py-3 text-sm text-[#1e2a38] leading-relaxed">
+                      {c}
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
 
