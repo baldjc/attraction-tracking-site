@@ -27,11 +27,12 @@ export const KEYWORD_KITS: Record<string, Array<{ keyword: string; priority: str
   ],
 };
 
-export const FRAMEWORK_LIBRARY = `
+export function buildFrameworkLibrary(year: number): string {
+  return `
 Proven YouTube Framework Patterns (use hook score in brackets to guide selection):
 - "Do NOT [Activity] Until You Watch This" [Hook: 98]
 - "99% of [Audience] Regret Doing This" [Hook: 96]
-- "The REALITY of [Activity] in [Current Year]" [Hook: 94]
+- "The REALITY of [Activity] in ${year}" [Hook: 94]
 - "[Number] Signs [Situation]" [Hook: 92]
 - "What Nobody Tells You About [Activity]" [Hook: 95]
 - "STOP [Activity] Before You Make This Mistake" [Hook: 93]
@@ -39,8 +40,9 @@ Proven YouTube Framework Patterns (use hook score in brackets to guide selection
 - "If You [Situation], Watch This" [Hook: 91]
 - "The Biggest Mistake [Audience] Make Right Now" [Hook: 92]
 - "99% of [Audience] Don't Know This" [Hook: 94]
-- "Is It Still Worth [Activity] in [Current Year]?" [Hook: 89]
+- "Is It Still Worth [Activity] in ${year}?" [Hook: 89]
 `.trim();
+}
 
 export function buildBatchSystemPrompt(opts: {
   avatarProfile: unknown;
@@ -51,10 +53,11 @@ export function buildBatchSystemPrompt(opts: {
   theme: string;
 }): string {
   const { avatarProfile, contentThemes, niche, city, savedTitles, theme } = opts;
+  const currentYear = new Date().getFullYear();
 
   const keywordKit = niche && KEYWORD_KITS[niche]
     ? KEYWORD_KITS[niche]
-        .map((k) => `  - "${k.keyword.replace("[CITY]", city ?? "your city").replace("[YEAR]", String(new Date().getFullYear()))}" (${k.priority})`)
+        .map((k) => `  - "${k.keyword.replace("[CITY]", city ?? "your city").replace("[YEAR]", String(currentYear))}" (${k.priority})`)
         .join("\n")
     : "  No keyword kit — identify high-performing YouTube keywords for this niche based on search patterns.";
 
@@ -63,6 +66,8 @@ export function buildBatchSystemPrompt(opts: {
     : "No saved titles yet.";
 
   return `You are an expert YouTube content strategist for Attraction by Video. You generate high-hook video ideas for members based on their ideal client avatar and content themes.
+
+CURRENT YEAR: ${currentYear} — use this exact year in any year-specific titles or frameworks. Never use a past year.
 
 MEMBER AVATAR:
 ${JSON.stringify(avatarProfile, null, 2)}
@@ -76,7 +81,7 @@ MEMBER CITY/MARKET: ${city ?? "not specified"}
 KEYWORD STARTER KIT:
 ${keywordKit}
 
-${FRAMEWORK_LIBRARY}
+${buildFrameworkLibrary(currentYear)}
 
 ${avoidList}
 

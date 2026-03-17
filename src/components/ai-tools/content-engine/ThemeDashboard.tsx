@@ -21,6 +21,9 @@ export default function ThemeDashboard({ themes, niche, city, hasImported, impor
   const [currentCity, setCurrentCity] = useState(city);
   const [generatingAll, setGeneratingAll] = useState(false);
   const [allGenerated, setAllGenerated] = useState<Record<string, Array<unknown>>>({});
+  const [reordering, setReordering] = useState(false);
+  const [orderedThemes, setOrderedThemes] = useState<Array<ContentTheme | string>>(themes);
+  const [savingOrder, setSavingOrder] = useState(false);
 
   const hasOldFormat = themes.some((t) => {
     if (typeof t === "string") return true;
@@ -29,6 +32,33 @@ export default function ThemeDashboard({ themes, niche, city, hasImported, impor
   });
 
   const themeName = (t: ContentTheme | string) => (typeof t === "string" ? t : t.name);
+
+  function moveTheme(index: number, direction: -1 | 1) {
+    const next = [...orderedThemes];
+    const target = index + direction;
+    if (target < 0 || target >= next.length) return;
+    [next[index], next[target]] = [next[target], next[index]];
+    setOrderedThemes(next);
+  }
+
+  async function saveOrder() {
+    setSavingOrder(true);
+    try {
+      await fetch("/api/member/avatar", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contentThemes: orderedThemes }),
+      });
+      setReordering(false);
+    } finally {
+      setSavingOrder(false);
+    }
+  }
+
+  function cancelReorder() {
+    setOrderedThemes(themes);
+    setReordering(false);
+  }
 
   async function handleGenerateAll() {
     setGeneratingAll(true);
@@ -76,20 +106,47 @@ export default function ThemeDashboard({ themes, niche, city, hasImported, impor
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={handleGenerateAll}
-            disabled={generatingAll}
-            className="text-sm bg-[#3dc3ff] hover:bg-[#2bb0ec] text-white font-semibold px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
-          >
-            {generatingAll ? "Generating..." : "Generate All"}
-          </button>
-          <button
-            onClick={() => setShowNicheModal(true)}
-            className="w-9 h-9 rounded-lg border border-[#1e2a38]/20 flex items-center justify-center text-[#1e2a38]/50 hover:text-[#1e2a38] hover:border-[#1e2a38]/40 transition-colors"
-            title="Edit niche settings"
-          >
-            ⚙
-          </button>
+          {reordering ? (
+            <>
+              <button
+                onClick={saveOrder}
+                disabled={savingOrder}
+                className="text-sm bg-[#3dc3ff] hover:bg-[#2bb0ec] text-white font-semibold px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+              >
+                {savingOrder ? "Saving..." : "Save Order"}
+              </button>
+              <button
+                onClick={cancelReorder}
+                className="text-sm border border-[#1e2a38]/20 text-[#1e2a38]/60 hover:text-[#1e2a38] px-4 py-2 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={handleGenerateAll}
+                disabled={generatingAll}
+                className="text-sm bg-[#3dc3ff] hover:bg-[#2bb0ec] text-white font-semibold px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+              >
+                {generatingAll ? "Generating..." : "Generate All"}
+              </button>
+              <button
+                onClick={() => setReordering(true)}
+                className="w-9 h-9 rounded-lg border border-[#1e2a38]/20 flex items-center justify-center text-[#1e2a38]/50 hover:text-[#1e2a38] hover:border-[#1e2a38]/40 transition-colors"
+                title="Reorder themes"
+              >
+                ↕
+              </button>
+              <button
+                onClick={() => setShowNicheModal(true)}
+                className="w-9 h-9 rounded-lg border border-[#1e2a38]/20 flex items-center justify-center text-[#1e2a38]/50 hover:text-[#1e2a38] hover:border-[#1e2a38]/40 transition-colors"
+                title="Edit niche settings"
+              >
+                ⚙
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -111,16 +168,54 @@ export default function ThemeDashboard({ themes, niche, city, hasImported, impor
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
-        {themes.map((t, i) => (
-          <ThemeCard
-            key={i}
-            theme={t}
-            index={i}
-            onGoDeeper={(theme) => setChatTheme(theme)}
-          />
-        ))}
-      </div>
+      {reordering ? (
+        <div className="space-y-3">
+          <p className="text-xs text-[#1e2a38]/40 mb-4">Use the arrows to set the order you want, then click Save Order.</p>
+          {orderedThemes.map((t, i) => {
+            const obj = typeof t === "string" ? null : t as ContentTheme;
+            const name = typeof t === "string" ? t : t.name;
+            const emoji = obj?.emoji ?? "🎯";
+            const colour = obj?.colour ?? "#3dc3ff";
+            return (
+              <div key={i} className="flex items-center gap-3 bg-white rounded-xl border border-[#1e2a38]/10 p-4 shadow-sm">
+                <span className="text-xl flex-shrink-0">{emoji}</span>
+                <div
+                  className="w-1 h-8 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: colour }}
+                />
+                <span className="flex-1 font-medium text-[#1e2a38] text-sm">{name}</span>
+                <div className="flex flex-col gap-1">
+                  <button
+                    onClick={() => moveTheme(i, -1)}
+                    disabled={i === 0}
+                    className="w-7 h-7 rounded-md border border-[#1e2a38]/15 flex items-center justify-center text-[#1e2a38]/50 hover:text-[#1e2a38] hover:border-[#1e2a38]/30 disabled:opacity-20 disabled:cursor-not-allowed transition-colors text-xs"
+                  >
+                    ▲
+                  </button>
+                  <button
+                    onClick={() => moveTheme(i, 1)}
+                    disabled={i === orderedThemes.length - 1}
+                    className="w-7 h-7 rounded-md border border-[#1e2a38]/15 flex items-center justify-center text-[#1e2a38]/50 hover:text-[#1e2a38] hover:border-[#1e2a38]/30 disabled:opacity-20 disabled:cursor-not-allowed transition-colors text-xs"
+                  >
+                    ▼
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
+          {orderedThemes.map((t, i) => (
+            <ThemeCard
+              key={i}
+              theme={t}
+              index={i}
+              onGoDeeper={(theme) => setChatTheme(theme)}
+            />
+          ))}
+        </div>
+      )}
 
       {hasImported && (
         <div className="mt-6 bg-[#f8f8f6] rounded-2xl border border-[#1e2a38]/10 p-5">
