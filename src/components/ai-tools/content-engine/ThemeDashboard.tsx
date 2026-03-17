@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
+import PromptEditor from "@/components/ai-tools/PromptEditor";
 import ThemeCard, { ContentTheme } from "./ThemeCard";
 import ContentEngineChat from "./ContentEngineChat";
 import NicheSetup from "./NicheSetup";
@@ -98,6 +99,7 @@ export default function ThemeDashboard({ themes, niche, city, hasImported, impor
 
   return (
     <div>
+      <PromptEditor toolKey="content_engine_prompt" defaultPrompt="" placeholders={[]} />
       <div className="flex items-center justify-between mb-6">
         <div>
           <Link
