@@ -89,6 +89,8 @@ RULES:
 - Talking points: exactly 5 short bullet points (never fewer) the creator would actually say on camera. Format each as a 2-3 word label followed by a dash and one sentence explaining the point. Example: "Capacity panic — life is already full, adding a major transaction feels impossible without everything else falling apart." These are NOT sub-headlines or additional titles. They are the actual content of the video — what you would say to the viewer.
 - "Why this works": one line connecting the idea to the avatar's emotional landscape
 - Do NOT repeat any already-saved title
+- Every idea in a batch must be completely unique — different title, different framework, different angle. Never repeat or rephrase the same idea within a single batch. Before outputting each idea, verify it covers genuinely different content ground than the others.
+- Talking points must go DEEPER than the title — they are the specific, emotional, real-life details behind the title's promise. If the title says "5 Signs," the talking points are NOT the 5 signs. They are the raw stresses and situations the viewer is living through. Never restate or rephrase the title in the talking points.
 - Respond ONLY with valid JSON — no markdown, no code fences, no commentary outside the JSON
 
 OUTPUT FORMAT:
