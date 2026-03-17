@@ -31,7 +31,7 @@ interface Props {
 const TOOL_LABELS: Record<string, string> = {
   arc_script_builder: "ARC Script Builder",
   avatar_architect: "Avatar Architect",
-  title_creator: "Title Creator",
+  content_engine: "Content Engine",
   title_thumbnail_analyzer: "Title & Thumbnail Analyzer",
   script_review: "Script Review",
 };
@@ -88,6 +88,7 @@ export default function AIToolsHub({ basePath }: Props) {
   const [lastReview, setLastReview] = useState<SavedScript | null>(null);
   const [loading, setLoading] = useState(true);
   const [usage, setUsage] = useState<UsageData | null>(null);
+  const [savedIdeasCount, setSavedIdeasCount] = useState<number | null>(null);
 
   const scriptReviewHref = `${basePath}/script-review`;
 
@@ -97,11 +98,13 @@ export default function AIToolsHub({ basePath }: Props) {
       fetch("/api/ai-tools/saved-scripts").then((r) => r.json()).catch(() => ({ scripts: [] })),
       fetch("/api/script-review").then((r) => r.json()).catch(() => ({ reviews: [] })),
       fetch("/api/ai-tools/usage/me").then((r) => r.json()).catch(() => null),
-    ]).then(([av, sc, sr, us]) => {
+      fetch("/api/ai-tools/content-engine/saved-ideas?limit=1").then((r) => r.json()).catch(() => null),
+    ]).then(([av, sc, sr, us, si]) => {
       setAvatar(av);
       setLastScript(sc.scripts?.[0] ?? null);
       setLastReview(sr.reviews?.[0] ?? null);
       if (us && us.percentUsed > 0) setUsage(us);
+      if (si?.total != null) setSavedIdeasCount(si.total);
       setLoading(false);
     });
   }, []);
@@ -124,11 +127,15 @@ export default function AIToolsHub({ basePath }: Props) {
       badge: avatar?.avatarName ? "green" : "amber",
     },
     {
-      href: `${basePath}/title-creator`,
-      icon: "✍️",
-      title: "Title Creator",
-      description: "Generate proven, high-converting title options for your next video",
-      extra: avatarStatus,
+      href: `${basePath}/content-engine`,
+      icon: "🚀",
+      title: "Content Engine",
+      description: "Generate video ideas with titles, talking points, and strategy — organized by your content themes",
+      extra: loading
+        ? "Loading..."
+        : avatar?.avatarName
+        ? `Using avatar: ${avatar.avatarName}${savedIdeasCount ? ` · ${savedIdeasCount} saved ideas` : ""}`
+        : "No avatar — build one first for best results",
       badge: avatar?.avatarName ? "green" : "amber",
     },
     {

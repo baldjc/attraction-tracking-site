@@ -8,10 +8,30 @@ export async function GET() {
 
   const dbUser = await prisma.user.findUnique({
     where: { id: user.id },
-    select: { avatarProfile: true, avatarName: true, avatarSummary: true, contentThemes: true, updatedAt: true },
+    select: {
+      avatarProfile: true,
+      avatarName: true,
+      avatarSummary: true,
+      contentThemes: true,
+      niche: true,
+      city: true,
+      updatedAt: true,
+    },
   });
 
   return NextResponse.json(dbUser ?? {});
+}
+
+const PALETTE = ["#3B82F6", "#F59E0B", "#EF4444", "#10B981", "#8B5CF6", "#EC4899", "#06B6D4", "#F97316"];
+
+function normalizeThemes(themes: unknown): object[] | null {
+  if (!Array.isArray(themes)) return null;
+  return themes.map((t, i) => {
+    if (typeof t === "string") {
+      return { name: t, coreStress: null, emoji: null, colour: PALETTE[i % PALETTE.length] };
+    }
+    return t as object;
+  });
 }
 
 export async function PUT(req: NextRequest) {
@@ -20,15 +40,26 @@ export async function PUT(req: NextRequest) {
 
   const { avatarProfile, avatarName, avatarSummary, contentThemes } = await req.json();
 
+  const normalized = contentThemes !== undefined ? normalizeThemes(contentThemes) : undefined;
+
   const updated = await prisma.user.update({
     where: { id: user.id },
     data: {
       ...(avatarProfile !== undefined && { avatarProfile }),
       ...(avatarName !== undefined && { avatarName }),
       ...(avatarSummary !== undefined && { avatarSummary }),
-      ...(contentThemes !== undefined && { contentThemes }),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ...(normalized !== undefined && { contentThemes: normalized as any }),
     },
-    select: { avatarProfile: true, avatarName: true, avatarSummary: true, contentThemes: true, updatedAt: true },
+    select: {
+      avatarProfile: true,
+      avatarName: true,
+      avatarSummary: true,
+      contentThemes: true,
+      niche: true,
+      city: true,
+      updatedAt: true,
+    },
   });
 
   return NextResponse.json(updated);

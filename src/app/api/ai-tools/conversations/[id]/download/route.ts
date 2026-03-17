@@ -5,7 +5,7 @@ import prisma from "@/lib/prisma";
 
 const TOOL_NAMES: Record<string, string> = {
   avatar_architect: "Avatar Architect",
-  title_creator: "Title Creator",
+  content_engine: "Content Engine",
   title_thumbnail_analyzer: "Title & Thumbnail Analyser",
   arc_script_builder: "ARC Script Builder",
   script_review: "Script Review",

@@ -29,7 +29,7 @@ enum AuditType {
 
 enum AIToolType {
   avatar_architect
-  title_creator
+  content_engine
   title_thumbnail_analyzer
   arc_script_builder
   script_review
@@ -71,6 +71,8 @@ model User {
   avatarName      String?
   avatarSummary   String?
   contentThemes   Json?
+  niche           String?
+  city            String?
 
   aiToolsMonthlyCapOverride  Decimal? @db.Decimal(10, 2)
 
@@ -81,6 +83,7 @@ model User {
   scriptReviews        ScriptReview[]
   savedScripts         SavedScript[]
   savedTitles          SavedTitle[]
+  savedIdeas           SavedIdea[]
   titleAnalyses        TitleAnalysis[]
   aiToolConversations  AIToolConversation[]
   aiToolUsage          AIToolUsage[]
@@ -239,6 +242,23 @@ model SavedTitle {
 
   @@index([userId])
   @@map("saved_titles")
+}
+
+model SavedIdea {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  theme         String
+  title         String
+  talkingPoints Json
+  framework     String?
+  whyItWorks    String?
+  source        String   @default("batch")
+  createdAt     DateTime @default(now())
+
+  @@index([userId])
+  @@index([userId, theme])
+  @@map("saved_ideas")
 }
 
 model TitleAnalysis {

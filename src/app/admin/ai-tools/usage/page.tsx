@@ -8,7 +8,7 @@ export const metadata = { title: "AI Tools Usage – Admin" };
 
 const TOOL_LABELS: Record<string, string> = {
   avatar_architect: "Avatar Architect",
-  title_creator: "Title Creator",
+  content_engine: "Content Engine",
   title_thumbnail_analyzer: "Title & Thumbnail Analyser",
   arc_script_builder: "ARC Script Builder",
   script_review: "Script Review",
@@ -16,7 +16,7 @@ const TOOL_LABELS: Record<string, string> = {
 
 const TOOL_ICONS: Record<string, string> = {
   avatar_architect: "🎯",
-  title_creator: "✏️",
+  content_engine: "🚀",
   title_thumbnail_analyzer: "🖼️",
   arc_script_builder: "🎬",
   script_review: "📋",

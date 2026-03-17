@@ -1,0 +1,113 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import NicheSetup from "@/components/ai-tools/content-engine/NicheSetup";
+import ThemeDashboard from "@/components/ai-tools/content-engine/ThemeDashboard";
+
+interface AvatarData {
+  avatarName?: string | null;
+  contentThemes?: unknown[] | null;
+  niche?: string | null;
+  city?: string | null;
+}
+
+interface ImportedIdea {
+  id: string;
+  title: string;
+  talkingPoints: string[];
+  framework: string | null;
+  whyItWorks: string | null;
+  source: string;
+  createdAt: string;
+}
+
+type PageState = "loading" | "no-avatar" | "niche-setup" | "dashboard";
+
+export default function ContentEnginePage() {
+  const [state, setState] = useState<PageState>("loading");
+  const [avatarData, setAvatarData] = useState<AvatarData | null>(null);
+  const [importedIdeas, setImportedIdeas] = useState<ImportedIdea[]>([]);
+  const [importedTotal, setImportedTotal] = useState(0);
+
+  useEffect(() => {
+    Promise.all([
+      fetch("/api/member/avatar").then((r) => r.json()).catch(() => ({})),
+      fetch("/api/ai-tools/content-engine/saved-ideas?theme=Imported&limit=50")
+        .then((r) => r.json())
+        .catch(() => ({ ideas: [], total: 0 })),
+    ]).then(([av, imp]) => {
+      setAvatarData(av);
+      setImportedIdeas(imp.ideas ?? []);
+      setImportedTotal(imp.total ?? 0);
+
+      if (!av?.avatarName) {
+        setState("no-avatar");
+      } else if (!av?.niche) {
+        setState("niche-setup");
+      } else {
+        setState("dashboard");
+      }
+    });
+  }, []);
+
+  if (state === "loading") {
+    return (
+      <div className="min-h-screen bg-[#f1f1ef] flex items-center justify-center">
+        <div className="text-[#1e2a38]/40 text-sm animate-pulse">Loading Content Engine...</div>
+      </div>
+    );
+  }
+
+  if (state === "no-avatar") {
+    return (
+      <div className="min-h-screen bg-[#f1f1ef] flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl border border-[#1e2a38]/10 shadow-sm p-8 max-w-sm w-full text-center">
+          <p className="text-3xl mb-4">🎯</p>
+          <h2 className="font-bold text-[#1e2a38] text-lg mb-2">Build your avatar first</h2>
+          <p className="text-sm text-[#1e2a38]/60 mb-6">
+            Your Content Engine needs an avatar to work. Build yours now — it only takes a few minutes and powers every AI tool.
+          </p>
+          <Link
+            href="/member/ai-tools/avatar-architect"
+            className="inline-block bg-[#3dc3ff] hover:bg-[#2bb0ec] text-white font-semibold text-sm px-6 py-2.5 rounded-lg transition-colors"
+          >
+            Build your avatar →
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (state === "niche-setup") {
+    return (
+      <div className="min-h-screen bg-[#f1f1ef] flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <NicheSetup
+            onSaved={(niche, city) => {
+              setAvatarData((prev) => ({ ...prev, niche, city }));
+              setState("dashboard");
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  const themes = (avatarData?.contentThemes ?? []) as Array<unknown>;
+
+  return (
+    <div className="min-h-screen bg-[#f1f1ef]">
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        <ThemeDashboard
+          themes={themes as never}
+          niche={avatarData?.niche ?? null}
+          city={avatarData?.city ?? null}
+          hasImported={importedTotal > 0}
+          importedCount={importedTotal}
+          importedIdeas={importedIdeas}
+        />
+      </div>
+    </div>
+  );
+}

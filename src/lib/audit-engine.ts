@@ -994,10 +994,20 @@ IMPORTANT: When the full avatar document is complete and the member has selected
 {
   "avatar_name": "First name of the avatar",
   "avatar_summary": "One paragraph summary of the avatar",
-  "content_themes": ["Theme 1", "Theme 2", "Theme 3"],
+  "content_themes": [
+    {
+      "name": "Theme Name Here",
+      "coreStress": "One sentence capturing the core emotional tension of this theme, in the avatar's voice.",
+      "emoji": "🌊",
+      "colour": "#3B82F6"
+    }
+  ],
   "full_document": "The complete avatar document as plain text"
 }
-</AVATAR_DATA>`;
+</AVATAR_DATA>
+
+For content_themes, assign each theme a unique emoji that represents its emotional character, and a colour from this palette (assign in order, cycling if needed): ["#3B82F6", "#F59E0B", "#EF4444", "#10B981", "#8B5CF6", "#EC4899", "#06B6D4", "#F97316"]. The coreStress must be a direct, specific quote in the avatar's own words — not a description. Example: "Life is already full, and this process threatens to take over."`;
+
 
 export const TITLE_CREATOR_PROMPT = `You are a YouTube Title Generator for Attraction by Video members. You generate irresistible, curiosity-driven, high-performance video titles using proven frameworks.
 
