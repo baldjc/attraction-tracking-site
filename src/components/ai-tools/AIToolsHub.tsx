@@ -99,6 +99,7 @@ export default function AIToolsHub({ basePath, featureFlags }: Props) {
   const [loading, setLoading] = useState(true);
   const [usage, setUsage] = useState<UsageData | null>(null);
   const [savedIdeasCount, setSavedIdeasCount] = useState<number | null>(null);
+  const [reviewsCount, setReviewsCount] = useState<number | null>(null);
 
   const scriptReviewHref = `${basePath}/script-review`;
 
@@ -106,13 +107,14 @@ export default function AIToolsHub({ basePath, featureFlags }: Props) {
     Promise.all([
       fetch("/api/member/avatar").then((r) => r.json()).catch(() => ({})),
       fetch("/api/ai-tools/saved-scripts").then((r) => r.json()).catch(() => ({ scripts: [] })),
-      fetch("/api/script-review").then((r) => r.json()).catch(() => ({ reviews: [] })),
+      fetch("/api/ai-tools/conversations?toolType=script_review").then((r) => r.json()).catch(() => []),
       fetch("/api/ai-tools/usage/me").then((r) => r.json()).catch(() => null),
       fetch("/api/ai-tools/content-engine/saved-ideas?limit=1").then((r) => r.json()).catch(() => null),
     ]).then(([av, sc, sr, us, si]) => {
       setAvatar(av);
       setLastScript(sc.scripts?.[0] ?? null);
-      setLastReview(sr.reviews?.[0] ?? null);
+      const count = Array.isArray(sr) ? sr.length : (sr?.conversations?.length ?? 0);
+      setReviewsCount(count);
       if (us && us.percentUsed > 0) setUsage(us);
       if (si?.total != null) setSavedIdeasCount(si.total);
       setLoading(false);
@@ -176,8 +178,10 @@ export default function AIToolsHub({ basePath, featureFlags }: Props) {
       icon: "📋",
       title: "Script Review",
       description: "Paste a script or transcript — get scored on 14 Attraction principles with visual suggestions",
-      extra: lastReview
-        ? `Last review: ${new Date(lastReview.createdAt).toLocaleDateString()}`
+      extra: loading
+        ? "Loading..."
+        : reviewsCount
+        ? `${reviewsCount} saved review${reviewsCount === 1 ? "" : "s"} — last 30 days`
         : "No reviews yet — paste any script to get started",
       badge: "blue",
     },
