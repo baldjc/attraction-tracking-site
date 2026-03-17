@@ -52,6 +52,7 @@ export async function GET(req: NextRequest) {
       toolType: true,
       title: true,
       messages: true,
+      metadata: true,
       downloadCount: true,
       createdAt: true,
       updatedAt: true,

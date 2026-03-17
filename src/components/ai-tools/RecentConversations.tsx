@@ -14,6 +14,7 @@ interface Conversation {
   toolType: string;
   title: string;
   messages: any[];
+  metadata?: { overallScore?: number | null } | null;
   downloadCount: number;
   createdAt: string;
   updatedAt: string;
@@ -127,7 +128,20 @@ export default function RecentConversations({
                     onClick={() => onLoad?.(conv)}
                   >
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-[#1e2a38] truncate">{conv.title}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium text-[#1e2a38] truncate">{conv.title}</p>
+                        {conv.metadata?.overallScore != null && (
+                          <span className={`shrink-0 text-xs font-bold px-1.5 py-0.5 rounded-md ${
+                            conv.metadata.overallScore >= 7
+                              ? "bg-green-100 text-green-700"
+                              : conv.metadata.overallScore >= 5
+                              ? "bg-amber-100 text-amber-700"
+                              : "bg-red-100 text-red-700"
+                          }`}>
+                            {Number(conv.metadata.overallScore).toFixed(1)}
+                          </span>
+                        )}
+                      </div>
                       <p className="text-xs text-[#1e2a38]/40 mt-0.5">
                         {fmt(conv.updatedAt)} · {messageCount(conv)} messages
                         {conv.downloadCount > 0 && ` · ${conv.downloadCount} downloads`}
