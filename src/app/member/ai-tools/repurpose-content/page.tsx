@@ -110,10 +110,17 @@ export default function RepurposeContentPage() {
   const [showLinkManager, setShowLinkManager] = useState(false);
 
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [savingKey, setSavingKey] = useState<string | null>(null);
+  const [savedKey, setSavedKey] = useState<string | null>(null);
 
   function triggerCopied(key: string) {
     setCopiedKey(key);
     setTimeout(() => setCopiedKey(null), 2000);
+  }
+
+  function triggerSaved(key: string) {
+    setSavedKey(key);
+    setTimeout(() => setSavedKey(null), 4000);
   }
 
   const [loading, setLoading] = useState(false);
@@ -170,12 +177,15 @@ export default function RepurposeContentPage() {
     });
   }
 
-  async function saveEdit(id: string, editedOutput: string) {
+  async function saveEdit(id: string, editedOutput: string, key: string) {
+    setSavingKey(key);
     await fetch("/api/ai-tools/repurposed-content", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, editedOutput }),
     });
+    setSavingKey(null);
+    triggerSaved(key);
   }
 
   async function generate() {
@@ -551,11 +561,24 @@ export default function RepurposeContentPage() {
                   {newsletterResult && (
                     <div className="space-y-4">
                       <textarea value={editedNewsletter} onChange={(e) => setEditedNewsletter(e.target.value)} rows={16} className="w-full border border-[#1e2a38]/20 rounded-xl px-4 py-3 text-sm text-[#1e2a38] focus:outline-none focus:border-[#3dc3ff] transition-colors resize-y font-mono" />
-                      <div className="flex gap-2">
-                        <button onClick={async () => { await copyPlainText(editedNewsletter); triggerCopied("newsletter"); }} className="border border-[#1e2a38]/20 text-[#1e2a38] px-4 py-2 rounded-xl text-sm font-semibold hover:bg-[#1e2a38]/5 min-w-[80px]">
-                          {copiedKey === "newsletter" ? "✓ Copied!" : "Copy"}
-                        </button>
-                        <button onClick={() => { if (newsletterRecordId) saveEdit(newsletterRecordId, editedNewsletter); }} className="bg-[#3dc3ff] text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-[#3dc3ff]/90">Save Changes</button>
+                      <div className="space-y-2">
+                        <div className="flex gap-2">
+                          <button onClick={async () => { await copyPlainText(editedNewsletter); triggerCopied("newsletter"); }} className="border border-[#1e2a38]/20 text-[#1e2a38] px-4 py-2 rounded-xl text-sm font-semibold hover:bg-[#1e2a38]/5 min-w-[80px]">
+                            {copiedKey === "newsletter" ? "✓ Copied!" : "Copy"}
+                          </button>
+                          <button
+                            onClick={() => { if (newsletterRecordId && savingKey !== "newsletter") saveEdit(newsletterRecordId, editedNewsletter, "newsletter"); }}
+                            disabled={savingKey === "newsletter"}
+                            className="bg-[#3dc3ff] text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-[#3dc3ff]/90 disabled:opacity-60 min-w-[130px] flex items-center justify-center gap-2"
+                          >
+                            {savingKey === "newsletter" ? (
+                              <><span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />Saving…</>
+                            ) : savedKey === "newsletter" ? "✓ Changes Saved" : "Save Changes"}
+                          </button>
+                        </div>
+                        {savedKey === "newsletter" && (
+                          <p className="text-xs text-[#1e2a38]/50">Your edits are saved — ready to copy and paste into your email platform.</p>
+                        )}
                       </div>
                     </div>
                   )}
@@ -576,11 +599,24 @@ export default function RepurposeContentPage() {
                   {linkedInResult && (
                     <div className="space-y-4">
                       <textarea value={editedLinkedIn} onChange={(e) => setEditedLinkedIn(e.target.value)} rows={30} className="w-full border border-[#1e2a38]/20 rounded-xl px-4 py-3 text-sm text-[#1e2a38] focus:outline-none focus:border-[#3dc3ff] transition-colors resize-y font-mono" />
-                      <div className="flex gap-2">
-                        <button onClick={async () => { await copyRichText(editedLinkedIn); triggerCopied("linkedin"); }} className="border border-[#1e2a38]/20 text-[#1e2a38] px-4 py-2 rounded-xl text-sm font-semibold hover:bg-[#1e2a38]/5 min-w-[80px]">
-                          {copiedKey === "linkedin" ? "✓ Copied!" : "Copy"}
-                        </button>
-                        <button onClick={() => { if (linkedInRecordId) saveEdit(linkedInRecordId, editedLinkedIn); }} className="bg-[#3dc3ff] text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-[#3dc3ff]/90">Save Changes</button>
+                      <div className="space-y-2">
+                        <div className="flex gap-2">
+                          <button onClick={async () => { await copyRichText(editedLinkedIn); triggerCopied("linkedin"); }} className="border border-[#1e2a38]/20 text-[#1e2a38] px-4 py-2 rounded-xl text-sm font-semibold hover:bg-[#1e2a38]/5 min-w-[80px]">
+                            {copiedKey === "linkedin" ? "✓ Copied!" : "Copy"}
+                          </button>
+                          <button
+                            onClick={() => { if (linkedInRecordId && savingKey !== "linkedin") saveEdit(linkedInRecordId, editedLinkedIn, "linkedin"); }}
+                            disabled={savingKey === "linkedin"}
+                            className="bg-[#3dc3ff] text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-[#3dc3ff]/90 disabled:opacity-60 min-w-[130px] flex items-center justify-center gap-2"
+                          >
+                            {savingKey === "linkedin" ? (
+                              <><span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />Saving…</>
+                            ) : savedKey === "linkedin" ? "✓ Changes Saved" : "Save Changes"}
+                          </button>
+                        </div>
+                        {savedKey === "linkedin" && (
+                          <p className="text-xs text-[#1e2a38]/50">Your edits are saved — hit Copy to paste directly into LinkedIn.</p>
+                        )}
                       </div>
                     </div>
                   )}
