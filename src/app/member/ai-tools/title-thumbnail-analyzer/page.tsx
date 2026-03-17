@@ -368,7 +368,7 @@ export default function TitleThumbnailAnalyzerPage() {
   }
 
   return (
-    <div>
+    <div className="max-w-2xl mx-auto px-4 py-6">
       <PromptEditor toolKey="title_thumbnail_analyzer_prompt" defaultPrompt="" placeholders={[]} />
       <RecentConversations
         toolType="title_thumbnail_analyzer"
