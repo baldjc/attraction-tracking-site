@@ -1,0 +1,162 @@
+Major upgrade to the ARC Script Builder's AI prompt
+  quality. The current prompts produce generic scripts      
+  because they don't enforce the right inputs or quality
+  standards. Here are the changes:                          
+                  
+  === CHANGE 1: UPGRADE THE CREDIBILITY STEP ===            
+   
+  The current credibility input is a single textarea with a 
+  vague placeholder. Replace with structured prompts that
+  force specificity:                                        
+                  
+  Instead of one textarea, show 4 short input fields:       
+  1. "How many clients/families/businesses have you helped?"
+   (e.g., "200+ families")                                  
+  2. "What's a specific result you've helped someone
+  achieve?" (e.g., "Helped a family save $40K by timing     
+  their sale")    
+  3. "What's a stat about how often you do this work?"      
+  (e.g., "We close a deal every 6 days")                    
+  4. "What would surprise someone about your track record?"
+  (e.g., "22 years in Calgary real estate, started before   
+  the 2008 crash")
+                                                            
+  All fields optional but at least one required. These get  
+  passed as structured data (not a blob) to the AI prompt
+  with the instruction: "Use these credentials EXACTLY as   
+  written. Do not replace with generic language like 'years
+  of experience.' Use specific numbers and results."
+
+  === CHANGE 2: ADD A REAL CLIENT STORY INPUT ===
+
+  Add a new section to Step 3 (Build Your Insights) — a     
+  "Client Story Bank" area that appears before/alongside the
+   Value Loop fields:                                       
+                  
+  1. Show a textarea: "Share a real client story for this   
+  video"
+  2. Helper text: "Include a name (real or changed), a      
+  specific situation, a moment where something shifted, and 
+  what happened. 3-5 sentences."                 
+  3. Example in placeholder: "Mark and Dana came to us after
+   sitting on the fence for 2 years. Their rent had gone up 
+  twice. They thought they needed 20% down. When we showed
+  them the math on 5% down vs waiting, they realized waiting
+   was costing them $800/month in lost equity. They closed 6
+   weeks later."                                 
+  4. If the member leaves it blank, the AI prompt must say:
+  "The member hasn't provided a client story. In the STORY  
+  section of each Value Loop, write a PLACEHOLDER that says
+  '[INSERT YOUR REAL CLIENT STORY HERE — a name, a specific 
+  situation, what shifted, and what happened]' — do NOT
+  invent a generic story."                       
+
+  This is critical — AI-invented stories are the #1 reason  
+  scripts sound fake.
+                                                            
+  === CHANGE 3: DEEPEN THE VIEWER EMOTIONAL STATE INPUTS ===
+                                                 
+  The current "How does your viewer feel BEFORE/AFTER"      
+  fields are too shallow. Replace with:
+                                                            
+  1. "What emotion is your viewer feeling right now?" (keep 
+  this)                                          
+  2. NEW: "What question are they asking themselves that    
+  they won't say out loud?" — placeholder: "e.g., Did we    
+  wait too long? Are we being greedy? Can we actually afford
+   this?"                                                   
+  3. NEW: "What are they afraid this video might confirm?" —
+   placeholder: "e.g., That they missed their window, that  
+  they're not ready, that this will be harder than they
+  thought"                                                  
+  4. NEW: "What do they secretly hope this video will tell
+  them?" — placeholder: "e.g., That it's not too late, that 
+  their situation is normal, that there's a clear next step"
+                                                            
+  These 4 fields replace the before/after textareas. Pass   
+  ALL of them to every AI prompt with: "Write every insight
+  speaking directly to this person's internal state — not a 
+  general audience."
+                                                 
+  === CHANGE 4: FRAME UNIQUE ANGLE AGAINST CONVENTIONAL     
+  WISDOM ===
+                                                            
+  The current "unique approach" textarea doesn't create     
+  enough contrast. Split it into two fields:     
+                                                            
+  1. "What does conventional wisdom say about this topic?" —
+   placeholder: "What does everyone else in your industry
+  tell people about this?"                                  
+  2. "What do YOU believe that's different?" — placeholder:
+  "What have you seen with real clients that contradicts the
+   standard advice?"
+                                                            
+  The AI prompt should include: "The conventional wisdom is:
+   [field 1]. The member's unique angle is: [field 2]. Write
+   ALL insights from the member's perspective — not the     
+  industry standard view. The script should feel like the
+  member is correcting a common misconception."  
+
+  === CHANGE 5: UPGRADE THE AI SYSTEM PROMPT FOR FINAL      
+  GENERATION ===
+                                                            
+  Add these quality enforcement rules to the "final" step   
+  prompt:                                        
+                                                            
+  VALUES PLACEMENT:
+  "Weave in the member's values naturally — do not turn them
+   into a section or list them explicitly. Each value should
+   appear ONCE, in passing, the way someone would say it in
+  a real conversation. They should feel like personality,   
+  not a mission statement."
+                                                 
+  CURIOSITY BRIDGES:                                        
+  "For each curiosity bridge between sections, create an
+  information gap the viewer needs to close. The bridge     
+  should make the viewer think 'wait, what does that mean?'
+  — not 'okay, moving on.' Do not write summary transitions.
+   Open a door to the next section that the viewer has to
+  walk through."                                 
+
+  INSIGHT QUALITY FILTER:                                   
+  "Before writing each insight, check: would a viewer say
+  'I've never thought about it that way'? If the answer is  
+  no — if it's something a basic Google search would return
+  — rewrite it until it earns that reaction. Generic advice 
+  disguised as an insight is not acceptable. Each insight
+  must reveal something the viewer didn't know they didn't
+  know."
+
+  CLIENT STORIES:                                           
+  "If the member provided a real client story, use it in the
+   most impactful Value Loop's STORY section. Reference the 
+  real name, real details, and real outcome. For other Value
+   Loops, adapt elements of the story or write '[INSERT YOUR
+   STORY HERE]' placeholders — never invent generic
+  stories."                                      
+
+  CREDENTIAL ENFORCEMENT:                                   
+  "Use the member's credentials EXACTLY as provided. If they
+   said '22 years,' write '22 years' — not '8 years' or     
+  'years of experience.' The member's specific numbers are
+  non-negotiable."                                          
+                  
+  === HOW TO TEST ===                            
+  - [ ] Credibility step shows 4 structured fields instead
+  of one textarea                                           
+  - [ ] Client story input appears with helper text and
+  placeholder example                                       
+  - [ ] Leaving client story blank produces "[INSERT YOUR
+  STORY]" placeholders, not invented stories                
+  - [ ] Viewer emotional state has 4 fields (emotion,
+  internal question, fear, hope)                            
+  - [ ] Unique angle split into "conventional wisdom" vs
+  "your take"                                               
+  - [ ] Final script uses member's exact credentials (test:
+  enter "22 years" → verify "22 years" in output)           
+  - [ ] Values appear once each, naturally woven — not as a
+  list                                                      
+  - [ ] Curiosity bridges create information gaps, not
+  summary transitions                                       
+  - [ ] Each insight passes the "never thought about it that
+   way" test — no generic advice 

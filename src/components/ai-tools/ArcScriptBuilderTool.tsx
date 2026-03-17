@@ -211,6 +211,19 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
   const [editingField, setEditingField] = useState<string | null>(null);
   const [nextVideoTitle, setNextVideoTitle] = useState("");
   const [nextVideoWhy, setNextVideoWhy] = useState("");
+  const [nextVideoTranscript, setNextVideoTranscript] = useState("");
+  const [nextVideoSelectedId, setNextVideoSelectedId] = useState("");
+
+  // Video picker state
+  const [showVideoPicker, setShowVideoPicker] = useState(false);
+  const [memberVideos, setMemberVideos] = useState<Array<{ videoId: string; title: string; uploadDate: string }>>([]);
+  const [loadingVideos, setLoadingVideos] = useState(false);
+  const [videoPickerError, setVideoPickerError] = useState("");
+  const [videoSearch, setVideoSearch] = useState("");
+  const [loadingTranscript, setLoadingTranscript] = useState(false);
+
+  // Opening: generate more hooks
+  const [loadingMoreHooks, setLoadingMoreHooks] = useState(false);
 
   // Step 5: Final
   const [finalData, setFinalData] = useState<any>(null);
@@ -401,6 +414,61 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
     setPhase("insights");
   }
 
+  // ── Opening: Generate more hooks ──
+  async function handleGenerateMoreHooks() {
+    setLoadingMoreHooks(true);
+    try {
+      const result = await callStep("hooks", {});
+      if (result.hook_starters?.length) {
+        setHookStarters(result.hook_starters);
+      }
+    } catch {
+      // silently fail — hooks are optional
+    }
+    setLoadingMoreHooks(false);
+  }
+
+  // ── Video picker: open and fetch videos ──
+  async function handleOpenVideoPicker() {
+    setShowVideoPicker(true);
+    if (memberVideos.length > 0) return;
+    setLoadingVideos(true);
+    setVideoPickerError("");
+    try {
+      const res = await fetch("/api/member/my-videos");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Could not load videos");
+      setMemberVideos(data.videos ?? []);
+    } catch (e: any) {
+      setVideoPickerError(e.message);
+    }
+    setLoadingVideos(false);
+  }
+
+  async function handleSelectVideo(video: { videoId: string; title: string }) {
+    setNextVideoTitle(video.title);
+    setNextVideoSelectedId(video.videoId);
+    setNextVideoTranscript("");
+    setShowVideoPicker(false);
+    setVideoSearch("");
+    setLoadingTranscript(true);
+    try {
+      const res = await fetch(`/api/youtube/video-transcript?videoId=${video.videoId}`);
+      const data = await res.json();
+      if (data.excerpt) setNextVideoTranscript(data.excerpt);
+    } catch {
+      // transcript is optional — no error shown
+    }
+    setLoadingTranscript(false);
+  }
+
+  function handleClearNextVideo() {
+    setNextVideoTitle("");
+    setNextVideoWhy("");
+    setNextVideoTranscript("");
+    setNextVideoSelectedId("");
+  }
+
   // ── Step: Insights generation ──
   async function handleGenerateInsights() {
     setLoading(true);
@@ -441,17 +509,25 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
 - Connection: ${a.connection || "(not provided)"}`;
       }).join("\n\n");
 
+      console.log("[ARC final step data]", {
+        uniqueAngle, selectedOpening: selectedPattern, selectedBridge, leadMagnetLine,
+        credibility: selectedCredibility, credentialInput, nextVideoTitle, nextVideoWhy,
+        nextVideoTranscript: nextVideoTranscript ? `(${nextVideoTranscript.length} chars)` : "(none)",
+        sourceTheme: prefillData?.theme,
+      });
       const result = await callStep("final", {
         uniqueAngle,
         selectedOpening: selectedPattern,
         selectedBridge,
         leadMagnetLine,
         credibility: selectedCredibility,
+        credentialInput,
         insights: insightsText,
         values: "",
         interests: "",
         nextVideoTitle,
         nextVideoWhy,
+        nextVideoTranscript,
         sourceTheme: prefillData?.theme,
       });
       setFinalData(result);
@@ -553,6 +629,7 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
     setUploadData(null);
     setIntroPatterns([]);
     setExpertiseBridges([]);
+    setHookStarters([]);
     setSelectedPattern("");
     setSelectedBridge("");
     setLeadMagnetLine("");
@@ -564,6 +641,11 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
     setSelectedCredibility("");
     setInsightSlots([]);
     setInsightAnswers({});
+    setNextVideoTitle("");
+    setNextVideoWhy("");
+    setNextVideoTranscript("");
+    setNextVideoSelectedId("");
+    setShowVideoPicker(false);
     setFinalData(null);
     setRetentionSuggestions([]);
     setError("");
@@ -754,18 +836,23 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
         <div className="space-y-6">
           <StepHeader step={1} total={4} label="Choose Your Opening" />
 
-          {/* CONTRADICTION patterns */}
-          {contradictionSubtypes.some((st) => contradictionBySubtype[st]?.length) && (
-            <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-5">
-              <h3 className="font-semibold text-[#1e2a38] mb-1">Contradiction Patterns</h3>
-              <p className="text-xs text-[#1e2a38]/50 mb-4">Start with the opposite of what the viewer expects.</p>
+          {/* ALL patterns + lead magnet + hooks — ONE card */}
+          <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-5 space-y-6">
+            <div>
+              <h3 className="font-semibold text-[#1e2a38] mb-1">Opening Patterns</h3>
+              <p className="text-xs text-[#1e2a38]/50">Pick the opening that fits this video best. Select one to carry through.</p>
+            </div>
+
+            {/* Contradiction patterns */}
+            {contradictionSubtypes.some((st) => contradictionBySubtype[st]?.length) && (
               <div className="space-y-4">
+                <p className="text-xs font-semibold text-[#1e2a38]/40 uppercase tracking-wider">Contradiction</p>
                 {contradictionSubtypes.map((subtype) => {
                   const variants = contradictionBySubtype[subtype];
                   if (!variants?.length) return null;
                   return (
                     <div key={subtype}>
-                      <p className="text-xs font-semibold text-[#1e2a38]/60 uppercase tracking-wider mb-2">{subtype}</p>
+                      <p className="text-xs font-medium text-[#1e2a38]/50 mb-2">{subtype}</p>
                       <div className="space-y-2">
                         {variants.map((p, vi) => (
                           <button
@@ -786,14 +873,12 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
                   );
                 })}
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Other patterns */}
-          {otherPatterns.length > 0 && (
-            <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-5">
-              <h3 className="font-semibold text-[#1e2a38] mb-4">Other Opening Patterns</h3>
-              <div className="space-y-2">
+            {/* Other patterns (Confirmation, Empathy, Stakes) */}
+            {otherPatterns.length > 0 && (
+              <div className="space-y-2 pt-2 border-t border-[#1e2a38]/8">
+                <p className="text-xs font-semibold text-[#1e2a38]/40 uppercase tracking-wider mb-3">Other Openings</p>
                 {otherPatterns.map((p, i) => (
                   <button
                     key={i}
@@ -809,19 +894,44 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
                   </button>
                 ))}
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Lead magnet line */}
-          {leadMagnetLine && (
-            <div className="bg-[#3dc3ff]/5 border border-[#3dc3ff]/20 rounded-2xl p-5">
-              <p className="text-xs font-semibold text-[#3dc3ff] uppercase tracking-wider mb-2">Generated Lead Magnet Line</p>
-              <p className="text-sm text-[#1e2a38]/80 italic">{leadMagnetLine}</p>
-              <p className="text-xs text-[#1e2a38]/40 mt-2">This line goes right after your intro pattern (~4-5 seconds).</p>
-            </div>
-          )}
+            {/* Lead magnet line */}
+            {leadMagnetLine && (
+              <div className="pt-2 border-t border-[#1e2a38]/8">
+                <p className="text-xs font-semibold text-[#3dc3ff] uppercase tracking-wider mb-1.5">Lead Magnet Line</p>
+                <p className="text-sm text-[#1e2a38]/80 italic">{leadMagnetLine}</p>
+                <p className="text-xs text-[#1e2a38]/40 mt-1">Goes right after your intro pattern (~4-5 seconds).</p>
+              </div>
+            )}
 
-          {/* Expertise Bridge picker */}
+            {/* Hook starters */}
+            {hookStarters.length > 0 && (
+              <div className="pt-2 border-t border-[#1e2a38]/8">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-semibold text-[#1e2a38]/40 uppercase tracking-wider">Hook Starter Ideas</p>
+                  <button
+                    onClick={handleGenerateMoreHooks}
+                    disabled={loadingMoreHooks}
+                    className="text-xs text-[#3dc3ff] hover:text-[#2bb0ec] font-medium disabled:opacity-40 transition-colors flex items-center gap-1"
+                  >
+                    {loadingMoreHooks ? (
+                      <><ArrowPathIcon className="w-3 h-3 animate-spin" /> Generating…</>
+                    ) : (
+                      <><ArrowPathIcon className="w-3 h-3" /> Generate More</>
+                    )}
+                  </button>
+                </div>
+                <ul className="space-y-1.5">
+                  {hookStarters.map((h, i) => (
+                    <li key={i} className="text-sm text-[#1e2a38]/70 leading-relaxed">— {h}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+
+          {/* Expertise Bridge picker — separate card */}
           <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-5">
             <h3 className="font-semibold text-[#1e2a38] mb-1">Expertise Bridge</h3>
             <p className="text-xs text-[#1e2a38]/50 mb-4">Goes AFTER the lead magnet — layers your credibility into the first insight naturally.</p>
@@ -848,18 +958,6 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
               ))}
             </div>
           </div>
-
-          {/* Hook starters */}
-          {hookStarters.length > 0 && (
-            <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-5">
-              <p className="text-xs font-semibold text-[#1e2a38]/50 uppercase tracking-wider mb-2">Hook Starter Options</p>
-              <ul className="space-y-1.5">
-                {hookStarters.map((h, i) => (
-                  <li key={i} className="text-sm text-[#1e2a38]/70 leading-relaxed">— {h}</li>
-                ))}
-              </ul>
-            </div>
-          )}
 
           <div className="flex gap-3 justify-end">
             <button
@@ -1101,18 +1199,83 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
                   The AI will write a bridge that flows naturally from this video into your next one — not a generic "check out my other video."
                 </p>
               </div>
+
+              {/* Title field + Choose from my videos */}
               <div>
                 <label className="block text-xs font-semibold text-[#1e2a38]/50 uppercase tracking-wider mb-1">
                   What video are you pushing viewers to next?
                 </label>
-                <input
-                  type="text"
-                  value={nextVideoTitle}
-                  onChange={(e) => setNextVideoTitle(e.target.value)}
-                  placeholder="e.g. Why renting out your home if it doesn't sell is riskier than you think"
-                  className="w-full border border-[#1e2a38]/10 rounded-lg px-3 py-2 text-sm text-[#1e2a38] placeholder-[#1e2a38]/25 focus:outline-none focus:border-[#3dc3ff] transition-colors"
-                />
+                {nextVideoSelectedId ? (
+                  <div className="flex items-center gap-2 bg-[#3dc3ff]/5 border border-[#3dc3ff]/20 rounded-lg px-3 py-2">
+                    <span className="flex-1 text-sm text-[#1e2a38] truncate">{nextVideoTitle}</span>
+                    {loadingTranscript && <span className="text-xs text-[#1e2a38]/40 animate-pulse">Loading transcript…</span>}
+                    <button onClick={handleClearNextVideo} className="text-[#1e2a38]/40 hover:text-[#1e2a38] text-sm flex-shrink-0">✕</button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={nextVideoTitle}
+                      onChange={(e) => setNextVideoTitle(e.target.value)}
+                      placeholder="e.g. Why renting out your home if it doesn't sell is riskier than you think"
+                      className="flex-1 border border-[#1e2a38]/10 rounded-lg px-3 py-2 text-sm text-[#1e2a38] placeholder-[#1e2a38]/25 focus:outline-none focus:border-[#3dc3ff] transition-colors"
+                    />
+                    <button
+                      onClick={handleOpenVideoPicker}
+                      className="flex-shrink-0 text-xs font-medium border border-[#1e2a38]/15 text-[#1e2a38]/60 hover:text-[#3dc3ff] hover:border-[#3dc3ff]/40 px-3 py-2 rounded-lg transition-colors whitespace-nowrap"
+                    >
+                      Choose from my videos
+                    </button>
+                  </div>
+                )}
               </div>
+
+              {/* Video picker panel */}
+              {showVideoPicker && (
+                <div className="border border-[#1e2a38]/10 rounded-xl overflow-hidden">
+                  <div className="flex items-center justify-between px-3 py-2 bg-[#f8f8f6] border-b border-[#1e2a38]/8">
+                    <p className="text-xs font-semibold text-[#1e2a38]/60">Your recent videos</p>
+                    <button onClick={() => setShowVideoPicker(false)} className="text-[#1e2a38]/40 hover:text-[#1e2a38] text-sm">✕</button>
+                  </div>
+                  <div className="p-2">
+                    <input
+                      type="text"
+                      value={videoSearch}
+                      onChange={(e) => setVideoSearch(e.target.value)}
+                      placeholder="Search by title…"
+                      className="w-full border border-[#1e2a38]/10 rounded-lg px-3 py-2 text-sm text-[#1e2a38] placeholder-[#1e2a38]/30 focus:outline-none focus:border-[#3dc3ff] mb-2"
+                    />
+                    {loadingVideos && <p className="text-center text-xs text-[#1e2a38]/40 py-4 animate-pulse">Loading your videos…</p>}
+                    {videoPickerError && <p className="text-center text-xs text-red-500 py-3">{videoPickerError}</p>}
+                    {!loadingVideos && !videoPickerError && memberVideos.length === 0 && (
+                      <p className="text-center text-xs text-[#1e2a38]/40 py-3">No videos found. Make sure your YouTube channel is set in your profile.</p>
+                    )}
+                    <div className="max-h-48 overflow-y-auto space-y-1">
+                      {memberVideos
+                        .filter((v) => !videoSearch || v.title.toLowerCase().includes(videoSearch.toLowerCase()))
+                        .map((v) => (
+                          <button
+                            key={v.videoId}
+                            onClick={() => handleSelectVideo(v)}
+                            className="w-full text-left px-3 py-2 text-sm text-[#1e2a38]/80 hover:bg-[#3dc3ff]/5 hover:text-[#1e2a38] rounded-lg transition-colors truncate"
+                          >
+                            {v.title}
+                          </button>
+                        ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Transcript excerpt (read-only) */}
+              {nextVideoTranscript && (
+                <div className="bg-[#f8f8f6] rounded-lg p-3">
+                  <p className="text-xs font-semibold text-[#1e2a38]/40 uppercase tracking-wider mb-1">Opening transcript (first 30 sec)</p>
+                  <p className="text-xs text-[#1e2a38]/60 leading-relaxed line-clamp-4">{nextVideoTranscript}</p>
+                  <p className="text-[10px] text-[#3dc3ff] mt-1">AI will use this to write a natural bridge into the next video</p>
+                </div>
+              )}
+
               <div>
                 <label className="block text-xs font-semibold text-[#1e2a38]/50 uppercase tracking-wider mb-1">
                   Why should they watch it? (1–2 sentences)

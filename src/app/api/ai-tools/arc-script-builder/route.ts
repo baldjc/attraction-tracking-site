@@ -63,7 +63,7 @@ Each bridge must be specific to this video's topic and avatar, and ~3-5 seconds 
 
 === PART 3: HOOK STARTERS & LEAD MAGNET ===
 
-Generate 2-3 hook starters that genuinely add value (not filler).
+Generate 5-7 hook starter ideas that genuinely add value (not filler). Each should be a different angle or entry point into the topic.
 
 Generate a natural lead magnet mention line (~4-5 seconds): "I've put together a free [resource name] that [brief benefit] — link's in the description." Keep it tight. Do NOT pitch it.
 
@@ -119,6 +119,22 @@ Return ONLY valid JSON. No markdown, no explanation, just the JSON object:
     { "line": "Actual spoken script line", "placement": "Where in the video to use this" }
   ]
 }`;
+
+const HOOKS_PROMPT = (p: {
+  title: string; topic: string;
+}) => `VIDEO: ${p.title}
+TOPIC: ${p.topic}
+
+Generate 5-7 fresh hook starter ideas for this video. A hook starter is a 1-sentence conversational line the presenter can use as an alternative opening hook or mid-video re-engagement point.
+
+Rules:
+- Each hook should be a genuinely different angle (not just rewording the same idea)
+- Grade 5 reading level, conversational
+- Specific to this topic — no generic advice hooks
+- Not rhetorical questions — make them statements or observations that pull the viewer in
+
+Return ONLY valid JSON:
+{"hook_starters": ["Hook 1", "Hook 2", "Hook 3", "Hook 4", "Hook 5"]}`;
 
 const INSIGHTS_PROMPT = (p: {
   title: string; topic: string; insightCount: number; selectedTalkingPoints: string[]; sourceTheme?: string;
@@ -180,6 +196,7 @@ const FINAL_PROMPT = (p: {
   selectedOpening: string; selectedBridge: string; leadMagnetLine: string;
   credibility: string; insights: string; values: string; interests: string;
   nextVideoTitle: string; nextVideoWhy: string; sourceTheme?: string;
+  credentialInput?: string; nextVideoTranscript?: string;
 }) => `VIDEO DETAILS:
 Title: ${p.title}
 Topic: ${p.topic}
@@ -191,7 +208,9 @@ Expertise Bridge: ${p.selectedBridge}
 Lead Magnet Line: ${p.leadMagnetLine}
 
 CREDIBILITY:
-${p.credibility}
+Selected credibility line: ${p.credibility}
+${p.credentialInput ? `MEMBER'S EXACT CREDENTIAL: "${p.credentialInput}"
+CRITICAL: Use the member's credential EXACTLY as stated above. Their specific numbers, timeframes, and claims must appear verbatim in the script. Do NOT substitute with avatar defaults or change any values.` : ""}
 
 INSIGHTS (Value Loops):
 ${p.insights}
@@ -201,7 +220,7 @@ PERSONAL INTERESTS: ${p.interests}
 
 NEXT VIDEO PUSH:
 ${p.nextVideoTitle
-  ? `Next video title: ${p.nextVideoTitle}\nWhy it matters now: ${p.nextVideoWhy || "(not provided)"}`
+  ? `Next video title: ${p.nextVideoTitle}\nWhy it matters now: ${p.nextVideoWhy || "(not provided)"}${p.nextVideoTranscript ? `\nNext video opening (first 30 seconds of transcript): "${p.nextVideoTranscript}"\nUSE THIS TRANSCRIPT: Write the bridge and tease using specific language and ideas from this opening — make the CTA feel like a natural continuation, not a generic plug.` : ""}`
   : "(not provided — write a generic sign-off without a next-video push)"}
 
 === YOUR TASK ===
@@ -485,6 +504,31 @@ async function handleInsights(userId: string, body: any): Promise<NextResponse> 
   }
 }
 
+async function handleHooks(userId: string, body: any): Promise<NextResponse> {
+  const cap = await checkCostCap(userId);
+  if (!cap.allowed) return NextResponse.json({ error: "monthly_cap_reached", resetsAt: cap.resetsAt }, { status: 429 });
+
+  const system = await buildMasterPrompt(userId);
+  const userContent = HOOKS_PROMPT({ title: body.title ?? "", topic: body.topic ?? body.title ?? "" });
+
+  const response = await client.messages.create({
+    model: MODEL,
+    max_tokens: 512,
+    system,
+    messages: [{ role: "user", content: userContent }],
+  });
+
+  const { input_tokens, output_tokens } = response.usage;
+  await logUsage(userId, "arc_script_builder", input_tokens, output_tokens);
+
+  const raw = response.content[0].type === "text" ? response.content[0].text : "{}";
+  try {
+    return NextResponse.json(parseJSON(raw));
+  } catch {
+    return NextResponse.json({ error: "Failed to parse AI response", raw }, { status: 500 });
+  }
+}
+
 async function handleFinal(userId: string, body: any): Promise<NextResponse> {
   const cap = await checkCostCap(userId);
   if (!cap.allowed) return NextResponse.json({ error: "monthly_cap_reached", resetsAt: cap.resetsAt }, { status: 429 });
@@ -504,6 +548,8 @@ async function handleFinal(userId: string, body: any): Promise<NextResponse> {
     nextVideoTitle: body.nextVideoTitle ?? "",
     nextVideoWhy: body.nextVideoWhy ?? "",
     sourceTheme: body.sourceTheme,
+    credentialInput: body.credentialInput,
+    nextVideoTranscript: body.nextVideoTranscript,
   });
 
   const response = await client.messages.create({
@@ -545,6 +591,8 @@ export async function POST(req: NextRequest) {
         return handleCredibility(user.id, body);
       case "insights":
         return handleInsights(user.id, body);
+      case "hooks":
+        return handleHooks(user.id, body);
       case "final":
         return handleFinal(user.id, body);
       default:
