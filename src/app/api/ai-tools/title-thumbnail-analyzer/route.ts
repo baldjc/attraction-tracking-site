@@ -5,7 +5,7 @@ import { TITLE_THUMBNAIL_ANALYZER_PROMPT } from "@/lib/audit-engine";
 import { logUsage } from "@/lib/ai-tool-cost";
 import prisma from "@/lib/prisma";
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY_2 || process.env.ANTHROPIC_API_KEY });
 
 function extractTitles(text: string): string[] {
   const lines = text.split("\n");

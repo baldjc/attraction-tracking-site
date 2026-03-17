@@ -5,7 +5,7 @@ import { checkCostCap, logUsage, getMonthlyUsage } from "@/lib/ai-tool-cost";
 import prisma from "@/lib/prisma";
 import { ARC_MASTER_SYSTEM_PROMPT } from "@/lib/arc-script-builder-prompt";
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY_2 || process.env.ANTHROPIC_API_KEY });
 const MODEL = "claude-sonnet-4-20250514";
 
 // ─── Master System Prompt ─────────────────────────────────────────────────────

@@ -4,7 +4,7 @@ import { SCRIPT_REVIEW_PROMPT, SCRIPT_REVIEW_CHAT_SYSTEM_PROMPT } from "@/lib/au
 import Anthropic from "@anthropic-ai/sdk";
 import prisma from "@/lib/prisma";
 
-const claude = new Anthropic();
+const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY_2 || process.env.ANTHROPIC_API_KEY });
 
 async function getSystemPromptForMode(userId: string, mode: "analysis" | "chat", avatar: string): Promise<string> {
   const key = mode === "analysis" ? "script_review_analysis_prompt" : "script_review_chat_prompt";
