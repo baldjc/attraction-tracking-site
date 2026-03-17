@@ -195,7 +195,7 @@ Enhanced Value Loop structure:
 Important:
 - Use the selected talking points as the BASIS for each insight — distribute them across slots (if more talking points than slots, combine related ones into single slots)
 - Order insights: second-best first, best last (save the strongest for the end)
-- Pull from the avatar's name, stresses, and emotional language throughout
+- Pull from the avatar's stresses, fears, and emotional landscape to inform tone — address the viewer as "you" and "your" throughout, NEVER use the avatar's name in any output
 - Each insight must pass this test: would the viewer say "I've never thought about it that way"? If no — rewrite it.
 - Story proof is critical — use the real story or write the exact placeholder text, never invent
 
@@ -216,7 +216,7 @@ Return ONLY valid JSON. No markdown, no explanation, just the JSON object:
         "what": "Full pre-written draft for the WHAT field based on the talking point",
         "why": "Full pre-written draft for the WHY field referencing the avatar's fears/stresses",
         "when": "Full pre-written draft for the WHEN field with a specific scenario for the avatar",
-        "story": "Full pre-written story framework draft — name the avatar and describe their situation as the scenario seed",
+        "story": "Full pre-written story framework draft — use 'a client' or 'a couple I worked with', NEVER the avatar name; describe a specific real-feeling situation as the scenario seed",
         "connection": "Full pre-written draft connecting this insight back to the avatar's life"
       }
     }
@@ -407,7 +407,10 @@ async function buildMasterPrompt(userId: string): Promise<string> {
   const themes = dbUser?.contentThemes ? JSON.stringify(dbUser.contentThemes) : "No themes saved.";
   const scores = latestAudit?.scores ? JSON.stringify(latestAudit.scores) : "No baseline scores yet.";
 
+  const currentYear = new Date().getFullYear();
   const contextBlock = `=== MEMBER CONTEXT ===
+Current Year: ${currentYear}
+Always reference the current year (${currentYear}) when mentioning dates, market conditions, statistics, or any time-specific content. Never hardcode a year — always use the current year provided here.
 Avatar: ${avatarText}
 Content Themes: ${themes}
 Baseline Scores: ${scores}`;

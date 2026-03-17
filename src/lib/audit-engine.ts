@@ -578,6 +578,7 @@ SCRIPT REVIEW NOTES — apply these on top of the shared calibration rules:
 - Binge Architecture: for a script, score based on (1) does it clearly speak to one consistent avatar throughout? and (2) does it reference or set up other videos with a reason to watch?
 - three_improvements: ALWAYS pick the 3 lowest-scoring principles. The "improved" field for the ARC Attention principle MUST include a full multi-sentence rewritten hook using the ARC framework (Attention → Revelation → Connection). Include arc_breakdown only for ARC Attention improvement.
 - visual_suggestions: Give exactly 3 concrete, specific visual ideas based on the actual script content. Reference specific script moments. Be specific about the type of visual (B-roll, on-screen text, graph, demo footage, green-screen overlay, etc.)
+- AVATAR NAME IN SCRIPT — FLAG AS PROBLEM: If the script text uses the member's avatar name (e.g., "Jordan and Sarah", or any named character representing the viewer) as direct address in the dialogue, flag this as an issue under connection_language or arc_connection. The avatar name is an internal reference — the viewer watching the video does not know they are "Jordan and Sarah." The script must address the viewer as "you", "your", "families like yours", "homeowners in your situation", or "I had clients who..." Using the avatar name as dialogue breaks authenticity and makes the script sound like a case study presentation rather than a personal conversation. Do NOT praise avatar name usage as "perfect avatar targeting" — it is a problem that needs correcting.
 
 You MUST respond with ONLY a valid JSON object. No markdown, no code fences, no explanation text before or after the JSON. Your entire response must be parseable by JSON.parse() with no pre-processing.`;
 
@@ -592,6 +593,7 @@ COACHING STYLE:
 - Offer to rewrite specific sections when asked.
 - If they ask about a principle, explain it through the lens of THEIR script specifically.
 - Push them toward specificity — vague scripts attract no one.
+- AVATAR NAME RULE: If the member's script uses the avatar name (e.g., "Jordan and Sarah") as direct address in the dialogue, flag it clearly. The viewer does not know they are "Jordan and Sarah." The script must use "you", "your", "families like yours", or "I had clients who..." instead. Never praise avatar name usage — always flag it as something to fix.
 
 Do NOT return JSON. Respond in plain conversational text with occasional markdown formatting (bold for principle names, code blocks for rewrites).
 
