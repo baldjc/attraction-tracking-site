@@ -44,6 +44,13 @@ enum JobStatus {
   failed
 }
 
+enum SourceType {
+  YOUTUBE
+  GOOGLE_ADS
+  EMAIL
+  OTHER
+}
+
 model User {
   id                String      @id @default(uuid())
   email             String      @unique
@@ -73,13 +80,13 @@ model User {
   contentThemes   Json?
   niche           String?
   city            String?
+  thankYouPageUrl String?
 
   aiToolsMonthlyCapOverride  Decimal? @db.Decimal(10, 2)
 
   audits               Audit[]
   auditJobs            AuditJob[]
   campaigns            Campaign[]
-  links                TrackingLink[]
   scriptReviews        ScriptReview[]
   savedScripts         SavedScript[]
   savedTitles          SavedTitle[]
@@ -142,13 +149,15 @@ model AuditJob {
 }
 
 model Campaign {
-  id          String   @id @default(uuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name        String
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id             String     @id @default(uuid())
+  userId         String
+  user           User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name           String
+  destinationUrl String
+  sourceType     SourceType @default(YOUTUBE)
+  deletedAt      DateTime?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
 
   links TrackingLink[]
 
@@ -157,46 +166,69 @@ model Campaign {
 }
 
 model TrackingLink {
-  id              String    @id @default(uuid())
-  userId          String
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  campaignId      String?
-  campaign        Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
-  name            String
-  destinationUrl  String
-  shortCode       String    @unique
-  videoTitle      String?
-  leadMagnetName  String?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id                    String    @id @default(uuid())
+  campaignId            String
+  campaign              Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  name                  String
+  refCode               String    @unique
+  youtubeVideoUrl       String?
+  youtubeVideoId        String?
+  youtubeThumbnailUrl   String?
+  youtubeViewCount      Int       @default(0)
+  youtubeViewsUpdatedAt DateTime?
+  deletedAt             DateTime?
+  createdAt             DateTime  @default(now())
 
   clicks Click[]
 
-  @@index([shortCode])
-  @@index([userId])
+  @@index([refCode])
+  @@index([campaignId])
   @@map("tracking_links")
 }
 
 model Click {
-  id           String       @id @default(uuid())
-  linkId       String
-  link         TrackingLink @relation(fields: [linkId], references: [id], onDelete: Cascade)
-  timestamp    DateTime     @default(now())
-  ipAddress    String?
-  userAgent    String?
-  referrer     String?
-  gCampaignId  String?
-  gAdGroupId   String?
-  gKeyword     String?
-  gDevice      String?
-  gNetwork     String?
-  gMatchType   String?
+  id             String       @id @default(uuid())
+  trackingLinkId String
+  link           TrackingLink @relation(fields: [trackingLinkId], references: [id], onDelete: Cascade)
+  refCode        String
+  sessionId      String
+  ipAddress      String?
+  city           String?
+  province       String?
+  country        String?
+  userAgent      String?
+  referrer       String?
+  timestamp      DateTime     @default(now())
 
-  conversion Conversion?
+  pageViews PageView[]
+  lead      Lead?
 
-  @@index([linkId])
+  @@index([trackingLinkId])
+  @@index([refCode])
+  @@index([sessionId])
   @@index([timestamp])
   @@map("clicks")
+}
+
+model PageView {
+  id        String   @id @default(uuid())
+  clickId   String
+  click     Click    @relation(fields: [clickId], references: [id], onDelete: Cascade)
+  pageUrl   String
+  timestamp DateTime @default(now())
+
+  @@index([clickId])
+  @@map("page_views")
+}
+
+model Lead {
+  id        String   @id @default(uuid())
+  clickId   String   @unique
+  click     Click    @relation(fields: [clickId], references: [id], onDelete: Cascade)
+  timestamp DateTime @default(now())
+
+  @@index([clickId])
+  @@map("leads")
 }
 
 model AppSetting {
@@ -206,16 +238,6 @@ model AppSetting {
   updatedAt DateTime @updatedAt
 
   @@map("app_settings")
-}
-
-model Conversion {
-  id        String   @id @default(uuid())
-  clickId   String   @unique
-  click     Click    @relation(fields: [clickId], references: [id], onDelete: Cascade)
-  type      String   @default("EMAIL_SIGNUP")
-  timestamp DateTime @default(now())
-
-  @@map("conversions")
 }
 
 model SavedScript {
@@ -262,12 +284,12 @@ model SavedIdea {
 }
 
 model TitleAnalysis {
-  id        String   @id @default(uuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   videoTitle String
-  scores    Json
-  createdAt DateTime @default(now())
+  scores     Json
+  createdAt  DateTime @default(now())
 
   @@index([userId])
   @@map("title_analyses")

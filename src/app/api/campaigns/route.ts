@@ -1,0 +1,73 @@
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
+import { resolveUserFromSession } from "@/lib/session-utils";
+import prisma from "@/lib/prisma";
+
+export async function GET() {
+  const user = await resolveUserFromSession();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const session = await auth();
+  const role = (session?.user as { role?: string })?.role;
+  const isAdmin = role === "admin";
+
+  const campaigns = await prisma.campaign.findMany({
+    where: {
+      deletedAt: null,
+      ...(isAdmin ? {} : { userId: user.id }),
+    },
+    include: {
+      links: {
+        where: { deletedAt: null },
+        include: {
+          clicks: {
+            include: { lead: true },
+          },
+        },
+      },
+      user: { select: { fullName: true, email: true } },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  const result = campaigns.map((c) => {
+    const allClicks = c.links.flatMap((l) => l.clicks);
+    const totalClicks = allClicks.length;
+    const totalLeads = allClicks.filter((cl) => cl.lead).length;
+    return {
+      id: c.id,
+      name: c.name,
+      destinationUrl: c.destinationUrl,
+      sourceType: c.sourceType,
+      createdAt: c.createdAt,
+      totalClicks,
+      totalLeads,
+      conversionRate: totalClicks > 0 ? Math.round((totalLeads / totalClicks) * 100) : 0,
+      linkCount: c.links.length,
+      member: isAdmin ? c.user : undefined,
+    };
+  });
+
+  return NextResponse.json(result);
+}
+
+export async function POST(req: NextRequest) {
+  const user = await resolveUserFromSession();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { name, destinationUrl, sourceType } = await req.json();
+  if (!name || !destinationUrl) {
+    return NextResponse.json({ error: "name and destinationUrl are required" }, { status: 400 });
+  }
+
+  const campaign = await prisma.campaign.create({
+    data: {
+      userId: user.id,
+      name,
+      destinationUrl,
+      sourceType: sourceType ?? "YOUTUBE",
+    },
+  });
+
+  return NextResponse.json(campaign, { status: 201 });
+}

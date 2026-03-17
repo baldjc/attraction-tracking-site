@@ -46,7 +46,8 @@ const adminLinks = [
 const memberLinks = [
   { href: "/member/scores", label: "My Scores", icon: StarIcon },
   { href: "/member/ai-tools", label: "AI Tools", icon: SparklesIcon },
-  { href: "/member/links", label: "My Links", icon: LinkIcon },
+  { href: "/member/campaigns", label: "Campaigns", icon: LinkIcon },
+  { href: "/member/conversions", label: "Conversions", icon: ChartBarIcon },
   { href: "/member/resources", label: "Resources", icon: BookOpenIcon },
   { href: "/member/settings", label: "Settings", icon: Cog6ToothIcon },
 ];

@@ -41,7 +41,7 @@ Full-stack Next.js 16 platform for YouTube channel audits, GHL member sync, link
 
 ## Key Files
 ```
-prisma/schema.prisma         — DB schema: User (+ avatarProfile/Name/Summary/contentThemes/niche/city), Audit, AuditJob, AppSetting, TrackingLink, Click, ScriptReview, SavedScript, SavedTitle, SavedIdea, TitleAnalysis, AIToolConversation (AIToolType enum: replaced title_creator → content_engine)
+prisma/schema.prisma         — DB schema: User (+ avatarProfile/Name/Summary/contentThemes/niche/city/thankYouPageUrl), Audit, AuditJob, AppSetting, Campaign (+ SourceType enum, destinationUrl, sourceType, deletedAt), TrackingLink (refCode unique, youtubeVideoId/Url/Thumbnail, deletedAt), Click (trackingLinkId, refCode, sessionId, city/province/country), PageView, Lead, ScriptReview, SavedScript, SavedTitle, SavedIdea, TitleAnalysis, AIToolConversation (AIToolType enum: replaced title_creator → content_engine)
 src/lib/
   ghl.ts                     — GHL sync with nextPageUrl pagination + title case normalization
   youtube.ts                 — YouTube API: channel info, playlist, transcripts

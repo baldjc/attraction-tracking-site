@@ -1,0 +1,302 @@
+"use client";
+
+import { useState, useEffect, use } from "react";
+import Link from "next/link";
+
+interface TrackingLinkData {
+  id: string;
+  name: string;
+  refCode: string;
+  trackedUrl: string;
+  youtubeVideoUrl: string | null;
+  youtubeVideoId: string | null;
+  youtubeThumbnailUrl: string | null;
+  youtubeViewCount: number;
+  youtubeViewsUpdatedAt: string | null;
+  createdAt: string;
+  clicks: number;
+  leads: number;
+  conversionRate: number;
+}
+
+interface CampaignData {
+  id: string;
+  name: string;
+  destinationUrl: string;
+  sourceType: string;
+  createdAt: string;
+  links: TrackingLinkData[];
+  totalViews: number | null;
+  totalClicks: number;
+  totalLeads: number;
+  hasYoutube: boolean;
+  lastViewsUpdate: string | null;
+}
+
+const SOURCE_LABELS: Record<string, { label: string; color: string }> = {
+  YOUTUBE: { label: "YouTube", color: "bg-red-100 text-red-700" },
+  GOOGLE_ADS: { label: "Google Ads", color: "bg-blue-100 text-blue-700" },
+  EMAIL: { label: "Email", color: "bg-green-100 text-green-700" },
+  OTHER: { label: "Other", color: "bg-gray-100 text-gray-600" },
+};
+
+export default function CampaignDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  const [campaign, setCampaign] = useState<CampaignData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [showNewLink, setShowNewLink] = useState(false);
+  const [linkForm, setLinkForm] = useState({ name: "", youtubeVideoUrl: "" });
+  const [creating, setCreating] = useState(false);
+  const [copied, setCopied] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState("newest");
+
+  useEffect(() => { loadCampaign(); }, [id]);
+
+  async function loadCampaign() {
+    setLoading(true);
+    const res = await fetch(`/api/campaigns/${id}`);
+    if (res.ok) setCampaign(await res.json());
+    setLoading(false);
+  }
+
+  async function createLink() {
+    if (!linkForm.name) return;
+    setCreating(true);
+    const res = await fetch(`/api/campaigns/${id}/links`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: linkForm.name,
+        youtubeVideoUrl: linkForm.youtubeVideoUrl || undefined,
+      }),
+    });
+    if (res.ok) {
+      setShowNewLink(false);
+      setLinkForm({ name: "", youtubeVideoUrl: "" });
+      loadCampaign();
+    }
+    setCreating(false);
+  }
+
+  async function deleteLink(linkId: string) {
+    if (!confirm("Delete this tracking link? Click data is preserved.")) return;
+    await fetch(`/api/campaigns/${id}/links/${linkId}`, { method: "DELETE" });
+    loadCampaign();
+  }
+
+  function copy(text: string, key: string) {
+    navigator.clipboard.writeText(text);
+    setCopied(key);
+    setTimeout(() => setCopied(null), 2000);
+  }
+
+  if (loading) return <div className="text-center py-16 text-[#1e2a38]/40">Loading...</div>;
+  if (!campaign) return <div className="text-center py-16 text-[#1e2a38]/40">Campaign not found.</div>;
+
+  const src = SOURCE_LABELS[campaign.sourceType] ?? SOURCE_LABELS.OTHER;
+  const ctr = campaign.totalViews && campaign.totalViews > 0
+    ? Math.round((campaign.totalClicks / campaign.totalViews) * 100)
+    : null;
+
+  const sortedLinks = [...campaign.links].sort((a, b) => {
+    if (sortBy === "most_clicks") return b.clicks - a.clicks;
+    if (sortBy === "most_leads") return b.leads - a.leads;
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
+
+  return (
+    <div>
+      <div className="mb-2">
+        <Link href="/member/campaigns" className="text-sm text-[#1e2a38]/40 hover:text-[#1e2a38] transition-colors">
+          ← Campaigns
+        </Link>
+      </div>
+
+      <div className="flex items-start justify-between gap-4 mb-6">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <h1 className="text-2xl font-bold text-[#1e2a38]">{campaign.name}</h1>
+            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${src.color}`}>{src.label}</span>
+          </div>
+          <a
+            href={campaign.destinationUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-[#3dc3ff] hover:underline"
+          >
+            {campaign.destinationUrl}
+          </a>
+        </div>
+        <button
+          onClick={() => setShowNewLink(true)}
+          className="flex-shrink-0 bg-[#3dc3ff] text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-[#3dc3ff]/90 transition-colors"
+        >
+          + New Link
+        </button>
+      </div>
+
+      {/* Stats Bar */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        {campaign.hasYoutube && campaign.totalViews !== null && (
+          <div className="bg-white border border-[#1e2a38]/10 rounded-xl p-4 text-center">
+            <div className="text-xl font-bold text-[#1e2a38]">{campaign.totalViews.toLocaleString()}</div>
+            <div className="text-xs text-[#1e2a38]/40 mt-0.5">Total Views</div>
+          </div>
+        )}
+        <div className="bg-white border border-[#1e2a38]/10 rounded-xl p-4 text-center">
+          <div className="text-xl font-bold text-[#1e2a38]">{campaign.totalClicks}</div>
+          <div className="text-xs text-[#1e2a38]/40 mt-0.5">Clicks</div>
+        </div>
+        <div className="bg-white border border-[#1e2a38]/10 rounded-xl p-4 text-center">
+          <div className="text-xl font-bold text-[#1e2a38]">{campaign.totalLeads}</div>
+          <div className="text-xs text-[#1e2a38]/40 mt-0.5">Leads</div>
+        </div>
+        {campaign.hasYoutube && ctr !== null && (
+          <div className="bg-white border border-[#1e2a38]/10 rounded-xl p-4 text-center">
+            <div className="text-xl font-bold text-[#3dc3ff]">{ctr}%</div>
+            <div className="text-xs text-[#1e2a38]/40 mt-0.5">Click-Through Rate</div>
+          </div>
+        )}
+        <div className="bg-white border border-[#1e2a38]/10 rounded-xl p-4 text-center">
+          <div className="text-xl font-bold text-[#3dc3ff]">
+            {campaign.totalClicks > 0 ? Math.round((campaign.totalLeads / campaign.totalClicks) * 100) : 0}%
+          </div>
+          <div className="text-xs text-[#1e2a38]/40 mt-0.5">Conversion Rate</div>
+        </div>
+      </div>
+
+      {/* Tracking Links */}
+      <div className="bg-white border border-[#1e2a38]/10 rounded-2xl overflow-hidden">
+        <div className="px-5 py-4 border-b border-[#1e2a38]/10 flex items-center justify-between">
+          <h2 className="font-semibold text-[#1e2a38]">Tracking Links ({campaign.links.length})</h2>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="text-xs border border-[#1e2a38]/20 rounded-lg px-2 py-1.5 text-[#1e2a38]/60 focus:outline-none"
+          >
+            <option value="newest">Newest</option>
+            <option value="most_clicks">Most Clicks</option>
+            <option value="most_leads">Most Leads</option>
+          </select>
+        </div>
+
+        {sortedLinks.length === 0 ? (
+          <div className="p-10 text-center text-[#1e2a38]/40 text-sm">
+            No tracking links yet. Create one to start tracking.
+          </div>
+        ) : (
+          <div className="divide-y divide-[#1e2a38]/5">
+            {sortedLinks.map((link) => (
+              <div key={link.id} className="p-5">
+                <div className="flex items-start gap-3">
+                  {link.youtubeThumbnailUrl && (
+                    <img
+                      src={link.youtubeThumbnailUrl}
+                      alt={link.name}
+                      className="w-20 h-14 object-cover rounded-lg flex-shrink-0"
+                    />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="font-medium text-[#1e2a38] text-sm truncate">{link.name}</p>
+                      <button
+                        onClick={() => deleteLink(link.id)}
+                        className="text-xs text-[#1e2a38]/30 hover:text-red-500 transition-colors flex-shrink-0"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-2 mt-1">
+                      <p className="text-xs text-[#1e2a38]/40 truncate flex-1">{link.trackedUrl}</p>
+                      <button
+                        onClick={() => copy(link.trackedUrl, link.id)}
+                        className="text-xs text-[#3dc3ff] hover:text-[#2bb0ec] flex-shrink-0 font-medium"
+                      >
+                        {copied === link.id ? "Copied!" : "Copy"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-3 mt-3 text-center">
+                  {link.youtubeVideoId && (
+                    <div>
+                      <div className="text-sm font-semibold text-[#1e2a38]">{link.youtubeViewCount.toLocaleString()}</div>
+                      <div className="text-xs text-[#1e2a38]/40">Views</div>
+                    </div>
+                  )}
+                  <div>
+                    <div className="text-sm font-semibold text-[#1e2a38]">{link.clicks}</div>
+                    <div className="text-xs text-[#1e2a38]/40">Clicks</div>
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-[#1e2a38]">{link.leads}</div>
+                    <div className="text-xs text-[#1e2a38]/40">Leads</div>
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-[#3dc3ff]">{link.conversionRate}%</div>
+                    <div className="text-xs text-[#1e2a38]/40">Conv. Rate</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {campaign.hasYoutube && campaign.lastViewsUpdate && (
+        <p className="text-xs text-[#1e2a38]/30 mt-3 text-center">
+          YouTube views last updated {new Date(campaign.lastViewsUpdate).toLocaleString()}
+        </p>
+      )}
+
+      {/* New Link Modal */}
+      {showNewLink && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl border border-[#1e2a38]/10 shadow-xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="font-bold text-[#1e2a38]">New Tracking Link</h2>
+              <button onClick={() => setShowNewLink(false)} className="text-[#1e2a38]/40 hover:text-[#1e2a38] text-xl">✕</button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-[#1e2a38] mb-1.5">Link Name</label>
+                <input
+                  type="text"
+                  value={linkForm.name}
+                  onChange={(e) => setLinkForm({ ...linkForm, name: e.target.value })}
+                  placeholder="e.g. Buyers Guide Video - March"
+                  className="w-full border border-[#1e2a38]/20 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#3dc3ff]"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-[#1e2a38] mb-1.5">
+                  YouTube Video URL <span className="font-normal text-[#1e2a38]/40">(optional)</span>
+                </label>
+                <input
+                  type="url"
+                  value={linkForm.youtubeVideoUrl}
+                  onChange={(e) => setLinkForm({ ...linkForm, youtubeVideoUrl: e.target.value })}
+                  placeholder="https://youtube.com/watch?v=..."
+                  className="w-full border border-[#1e2a38]/20 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#3dc3ff]"
+                />
+              </div>
+              <div className="bg-[#f8f9fa] rounded-xl p-3 text-xs text-[#1e2a38]/50">
+                <p className="font-medium text-[#1e2a38]/70 mb-1">Tracked URL preview</p>
+                <p className="break-all font-mono">
+                  {campaign.destinationUrl}{campaign.destinationUrl.includes("?") ? "&" : "?"}ref=<span className="text-[#3dc3ff]">xxxxxxxx</span>
+                </p>
+              </div>
+              <button
+                onClick={createLink}
+                disabled={creating || !linkForm.name}
+                className="w-full bg-[#3dc3ff] text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-[#3dc3ff]/90 disabled:opacity-50 transition-colors"
+              >
+                {creating ? "Creating..." : "Create Link"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
