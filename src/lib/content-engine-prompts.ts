@@ -113,9 +113,10 @@ export function buildBatchSystemPrompt(opts: {
   niche: string | null;
   city: string | null;
   savedTitles: string[];
+  shownTitles?: string[];
   theme: string;
 }): string {
-  const { avatarProfile, contentThemes, niche, city, savedTitles, theme } = opts;
+  const { avatarProfile, contentThemes, niche, city, savedTitles, shownTitles = [], theme } = opts;
   const currentYear = new Date().getFullYear();
 
   const keywordKit = niche && KEYWORD_KITS[niche]
@@ -124,9 +125,10 @@ export function buildBatchSystemPrompt(opts: {
         .join("\n")
     : "  No keyword kit — identify high-performing YouTube keywords for this niche based on search patterns.";
 
-  const avoidList = savedTitles.length > 0
-    ? `Already saved titles to avoid repeating:\n${savedTitles.map((t) => `  - ${t}`).join("\n")}`
-    : "No saved titles yet.";
+  const allAvoidTitles = [...new Set([...savedTitles, ...shownTitles])];
+  const avoidList = allAvoidTitles.length > 0
+    ? `⛔ ALREADY SHOWN OR SAVED — DO NOT REPEAT ANY OF THESE. Do not reuse their frameworks, angles, or core concepts either:\n${allAvoidTitles.map((t) => `  - ${t}`).join("\n")}`
+    : "No previously shown titles yet — this is the first generation. Pick 5 completely different frameworks from the library above.";
 
   return `You are an expert YouTube content strategist for Attraction by Video. You generate high-hook video ideas for members based on their ideal client avatar and content themes.
 
@@ -156,8 +158,9 @@ RULES:
 - Broad appeal: multiple viewer types should want to click
 - Talking points: exactly 5 short bullet points (never fewer) the creator would actually say on camera. Format each as a 2-3 word label followed by a dash and one sentence explaining the point. Example: "Capacity panic — life is already full, adding a major transaction feels impossible without everything else falling apart." These are NOT sub-headlines or additional titles. They are the actual content of the video — what you would say to the viewer.
 - "Why this works": one line connecting the idea to the avatar's emotional landscape
-- Do NOT repeat any already-saved title
-- Every idea in a batch must be completely unique — different title, different framework, different angle. Never repeat or rephrase the same idea within a single batch. Before outputting each idea, verify it covers genuinely different content ground than the others.
+- CRITICAL: Do NOT use any title, framework, or angle from the ⛔ ALREADY SHOWN OR SAVED list above. If you have seen it before, it is completely off limits — even rephrased or reworded versions. Violating this is a failure.
+- Every idea in a batch must be completely unique — different title, different framework, different angle. Never repeat or rephrase the same idea within a single batch. Before outputting each idea, verify it covers genuinely different content ground than every other idea in this batch AND the avoid list above.
+- You have 50+ frameworks available — rotate through them. Each regeneration is an opportunity to explore a completely different corner of the framework library.
 - Talking points must go DEEPER than the title — they are the specific, emotional, real-life details behind the title's promise. If the title says "5 Signs," the talking points are NOT the 5 signs. They are the raw stresses and situations the viewer is living through. Never restate or rephrase the title in the talking points.
 - Respond ONLY with valid JSON — no markdown, no code fences, no commentary outside the JSON
 

@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
   const user = await resolveUserFromSession();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { theme } = await req.json();
+  const { theme, shownTitles = [] } = await req.json();
   if (!theme) return NextResponse.json({ error: "Missing theme" }, { status: 400 });
 
   const dbUser = await prisma.user.findUnique({
@@ -34,6 +34,7 @@ export async function POST(req: NextRequest) {
     niche: dbUser?.niche ?? null,
     city: dbUser?.city ?? null,
     savedTitles: savedIdeas.map((i) => i.title),
+    shownTitles,
     theme,
   });
 
@@ -44,6 +45,7 @@ export async function POST(req: NextRequest) {
   const response = await client.messages.create({
     model: "claude-sonnet-4-20250514",
     max_tokens: 4096,
+    temperature: 1,
     system: systemPrompt,
     messages: [
       {

@@ -44,6 +44,7 @@ export default function ThemeCard({ theme, index, onGoDeeper }: Props) {
 
   const [expanded, setExpanded] = useState(false);
   const [ideas, setIdeas] = useState<Idea[]>([]);
+  const [shownTitles, setShownTitles] = useState<string[]>([]);
   const [savedIdeas, setSavedIdeas] = useState<SavedIdea[]>([]);
   const [savedPage, setSavedPage] = useState(1);
   const [savedTotal, setSavedTotal] = useState(0);
@@ -88,10 +89,12 @@ export default function ThemeCard({ theme, index, onGoDeeper }: Props) {
       const res = await fetch("/api/ai-tools/content-engine/batch", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ theme: t.name }),
+        body: JSON.stringify({ theme: t.name, shownTitles }),
       });
       const data = await res.json();
-      setIdeas(data.ideas ?? []);
+      const newIdeas: Idea[] = data.ideas ?? [];
+      setIdeas(newIdeas);
+      setShownTitles((prev) => [...new Set([...prev, ...newIdeas.map((i) => i.title)])]);
     } finally {
       setGenerating(false);
     }
@@ -104,10 +107,12 @@ export default function ThemeCard({ theme, index, onGoDeeper }: Props) {
       const res = await fetch("/api/ai-tools/content-engine/batch", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ theme: t.name }),
+        body: JSON.stringify({ theme: t.name, shownTitles }),
       });
       const data = await res.json();
-      setIdeas(data.ideas ?? []);
+      const newIdeas: Idea[] = data.ideas ?? [];
+      setIdeas(newIdeas);
+      setShownTitles((prev) => [...new Set([...prev, ...newIdeas.map((i) => i.title)])]);
     } finally {
       setGenerating(false);
     }
