@@ -640,11 +640,24 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
 - Connection: ${a.connection || "(not provided)"}`;
       }).join("\n\n");
 
-      console.log("[ARC final step data]", {
-        conventionalWisdom, uniqueAngle, selectedOpening: selectedPattern, selectedBridge, leadMagnetLine,
-        credibility: selectedCredibility, credClientsHelped, nextVideoTitle, nextVideoWhy,
-        nextVideoTranscript: nextVideoTranscript ? `(${nextVideoTranscript.length} chars)` : "(none)",
-        sourceTheme: prefillData?.theme,
+      console.log("[ARC] ── Final step: all research fields being sent to AI ──", {
+        "ANGLE — Conventional wisdom": conventionalWisdom || "(blank)",
+        "ANGLE — Unique belief": uniqueAngle || "(blank)",
+        "VIEWER — Emotion": viewerEmotion || "(blank)",
+        "VIEWER — Question": viewerQuestion || "(blank)",
+        "VIEWER — Fear": viewerFear || "(blank)",
+        "VIEWER — Hope": viewerHope || "(blank)",
+        "CRED — Clients helped": credClientsHelped || "(blank)",
+        "CRED — Specific result": credSpecificResult || "(blank)",
+        "CRED — Frequency": credFrequency || "(blank)",
+        "CRED — Surprise fact": credSurprise || "(blank)",
+        "CLIENT STORY": clientStory ? `${clientStory.slice(0, 80)}…` : "(blank)",
+        "SELECTED OPENING (chars)": selectedPattern?.length ?? 0,
+        "SELECTED BRIDGE (chars)": selectedBridge?.length ?? 0,
+        "SELECTED CREDIBILITY (chars)": selectedCredibility?.length ?? 0,
+        "NEXT VIDEO TITLE": nextVideoTitle || "(blank)",
+        "NEXT VIDEO TRANSCRIPT": nextVideoTranscript ? `${nextVideoTranscript.length} chars` : "(none)",
+        "SOURCE THEME": prefillData?.theme || "(none)",
       });
       const result = await callStep("final", {
         conventionalWisdom,
