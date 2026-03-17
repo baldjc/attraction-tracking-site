@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import IdeaCard, { Idea } from "./IdeaCard";
 
 export interface ContentTheme {
@@ -51,6 +51,14 @@ export default function ThemeCard({ theme, index, onGoDeeper }: Props) {
   const [loadingSaved, setLoadingSaved] = useState(false);
   const [savedLoaded, setSavedLoaded] = useState(false);
   const [savedCount, setSavedCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetch(`/api/ai-tools/content-engine/saved-ideas?theme=${encodeURIComponent(t.name)}&limit=1`)
+      .then((r) => r.json())
+      .then((d) => { if (d.total != null) setSavedCount(d.total); })
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function loadSaved(page = 1) {
     setLoadingSaved(true);
