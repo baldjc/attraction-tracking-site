@@ -77,17 +77,19 @@ export default function IdeaCard({ idea, theme, onSaved, savedId }: Props) {
       )}
 
       {idea.talkingPoints.length > 0 && (
-        <ol className="space-y-1">
-          {idea.talkingPoints.map((pt, i) => (
-            <li key={i} className="flex items-start gap-2 text-xs text-[#1e2a38]/70">
-              <span className="text-[#3dc3ff] font-bold flex-shrink-0">{i + 1}.</span>
-              <span>{pt}</span>
-            </li>
-          ))}
-        </ol>
-        <p className="text-[10px] text-[#1e2a38]/40 italic mt-1.5">
-          These are starting points — use fewer, combine them, or add your own.
-        </p>
+        <>
+          <ol className="space-y-1">
+            {idea.talkingPoints.map((pt, i) => (
+              <li key={i} className="flex items-start gap-2 text-xs text-[#1e2a38]/70">
+                <span className="text-[#3dc3ff] font-bold flex-shrink-0">{i + 1}.</span>
+                <span>{pt}</span>
+              </li>
+            ))}
+          </ol>
+          <p className="text-[10px] text-[#1e2a38]/40 italic mt-1.5">
+            These are starting points — use fewer, combine them, or add your own.
+          </p>
+        </>
       )}
 
       {idea.whyItWorks && (
