@@ -536,14 +536,13 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
 
   return (
     <div>
-      <div className="mb-6 flex items-center gap-3">
-        <Link href={basePath} className="p-1.5 rounded-lg hover:bg-[#1e2a38]/10 transition-colors">
-          <ArrowLeftIcon className="w-5 h-5 text-[#1e2a38]/50" />
+      <div className="mb-6">
+        <Link href={basePath} className="flex items-center gap-1.5 text-xs text-[#1e2a38]/50 hover:text-[#3dc3ff] transition-colors mb-3">
+          <ArrowLeftIcon className="w-3.5 h-3.5" />
+          Back to AI Tools
         </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-[#1e2a38]">ARC Script Builder</h1>
-          <p className="text-sm text-[#1e2a38]/50">{subtitle}</p>
-        </div>
+        <h1 className="text-2xl font-bold text-[#1e2a38]">🎬 ARC Script Builder</h1>
+        <p className="text-sm text-[#1e2a38]/50">{subtitle}</p>
       </div>
 
       {usage && <UsageBanner percentUsed={usage.percentUsed} resetsAt={usage.resetsAt} />}

@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import Link from "next/link";
 import {
   PaperAirplaneIcon,
   ArrowPathIcon,
+  ArrowLeftIcon,
   ClipboardDocumentIcon,
   CheckIcon,
   PencilIcon,
@@ -526,6 +528,17 @@ export default function AvatarArchitectPage() {
   if (!started) {
     return (
       <div className="max-w-xl mx-auto">
+        <div className="mb-5">
+          <Link
+            href="/member/ai-tools"
+            className="flex items-center gap-1.5 text-xs text-[#1e2a38]/50 hover:text-[#3dc3ff] transition-colors mb-3"
+          >
+            <ArrowLeftIcon className="w-3.5 h-3.5" />
+            Back to AI Tools
+          </Link>
+          <h1 className="text-2xl font-bold text-[#1e2a38]">🎯 Avatar Architect</h1>
+          <p className="text-sm text-[#1e2a38]/60 mt-1">Build your ideal client avatar through a guided coaching conversation</p>
+        </div>
         <PromptEditor toolKey="avatar_architect_prompt" defaultPrompt="" placeholders={[]} />
         <RecentConversations toolType="avatar_architect" refreshTrigger={refreshCounter} />
 
@@ -537,7 +550,6 @@ export default function AvatarArchitectPage() {
         {/* Main CTA */}
         <div className="flex flex-col items-center justify-center py-10 text-center">
           <span className="text-6xl mb-5">🎯</span>
-          <h1 className="text-2xl font-bold text-[#1e2a38] mb-3">Avatar Architect</h1>
           <p className="text-[#1e2a38]/60 max-w-md mb-8">
             {savedAvatar?.avatarName
               ? "Start a new coaching session to refine or replace your current avatar."
@@ -556,9 +568,18 @@ export default function AvatarArchitectPage() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-120px)]">
+      <div className="flex-shrink-0 mb-1">
+        <Link
+          href="/member/ai-tools"
+          className="flex items-center gap-1.5 text-xs text-[#1e2a38]/50 hover:text-[#3dc3ff] transition-colors"
+        >
+          <ArrowLeftIcon className="w-3.5 h-3.5" />
+          Back to AI Tools
+        </Link>
+      </div>
       <div className="flex items-center justify-between mb-4 flex-shrink-0">
         <div>
-          <h1 className="text-xl font-bold text-[#1e2a38]">Avatar Architect</h1>
+          <h1 className="text-xl font-bold text-[#1e2a38]">🎯 Avatar Architect</h1>
           <p className="text-sm text-[#1e2a38]/50">Chat with your AI coach</p>
         </div>
         <button

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
+import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import ThemeCard, { ContentTheme } from "./ThemeCard";
 import ContentEngineChat from "./ContentEngineChat";
 import NicheSetup from "./NicheSetup";
@@ -98,7 +100,14 @@ export default function ThemeDashboard({ themes, niche, city, hasImported, impor
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-[#1e2a38]">Content Engine</h1>
+          <Link
+            href="/member/ai-tools"
+            className="flex items-center gap-1.5 text-xs text-[#1e2a38]/50 hover:text-[#3dc3ff] transition-colors mb-3"
+          >
+            <ArrowLeftIcon className="w-3.5 h-3.5" />
+            Back to AI Tools
+          </Link>
+          <h1 className="text-2xl font-bold text-[#1e2a38]">🚀 Content Engine</h1>
           <p className="text-sm text-[#1e2a38]/50 mt-0.5">
             {currentNiche
               ? `${currentNiche === "real_estate" ? "Real Estate" : currentNiche === "financial_planning" ? "Financial Planning" : "Other"}${currentCity ? ` · ${currentCity}` : ""}`

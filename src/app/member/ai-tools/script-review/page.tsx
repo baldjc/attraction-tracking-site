@@ -28,7 +28,7 @@ export default async function MemberScriptReviewPage() {
           <ArrowLeftIcon className="w-3.5 h-3.5" />
           Back to AI Tools
         </Link>
-        <h1 className="text-2xl font-bold text-[#1e2a38]">Script Review</h1>
+        <h1 className="text-2xl font-bold text-[#1e2a38]">📋 Script Review</h1>
         <p className="text-sm text-[#1e2a38]/60 mt-1">
           Paste your script and get scored on 14 Attraction principles — then chat to improve it.
         </p>

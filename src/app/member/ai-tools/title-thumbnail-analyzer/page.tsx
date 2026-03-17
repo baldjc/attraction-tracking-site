@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { PhotoIcon, BookmarkIcon, CheckIcon, PaperAirplaneIcon } from "@heroicons/react/24/outline";
+import { PhotoIcon, BookmarkIcon, CheckIcon, PaperAirplaneIcon, ArrowLeftIcon } from "@heroicons/react/24/outline";
 import { SparklesIcon } from "@heroicons/react/24/solid";
+import Link from "next/link";
 import PromptEditor from "@/components/ai-tools/PromptEditor";
 import RecentConversations from "@/components/ai-tools/RecentConversations";
 
@@ -369,6 +370,19 @@ export default function TitleThumbnailAnalyzerPage() {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">
+      <div className="mb-5">
+        <Link
+          href="/member/ai-tools"
+          className="flex items-center gap-1.5 text-xs text-[#1e2a38]/50 hover:text-[#3dc3ff] transition-colors mb-3"
+        >
+          <ArrowLeftIcon className="w-3.5 h-3.5" />
+          Back to AI Tools
+        </Link>
+        <h1 className="text-2xl font-bold text-[#1e2a38]">🔍 Title &amp; Thumbnail Analyzer</h1>
+        <p className="text-sm text-[#1e2a38]/60 mt-1">
+          Score your title and thumbnail against Attraction principles before you publish
+        </p>
+      </div>
       <PromptEditor toolKey="title_thumbnail_analyzer_prompt" defaultPrompt="" placeholders={[]} />
       <RecentConversations
         toolType="title_thumbnail_analyzer"
@@ -376,12 +390,6 @@ export default function TitleThumbnailAnalyzerPage() {
         emptyLabel="No analyses saved in the last 30 days."
         refreshTrigger={refreshCounter}
       />
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-[#1e2a38]">Title & Thumbnail Analyzer</h1>
-        <p className="text-[#1e2a38]/60 mt-1">
-          Score your title and thumbnail against Attraction principles before you publish
-        </p>
-      </div>
 
       {!result ? (
         <div className="space-y-5">
