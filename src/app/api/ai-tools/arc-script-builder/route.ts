@@ -3,21 +3,374 @@ import Anthropic from "@anthropic-ai/sdk";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import { checkCostCap, logUsage, getMonthlyUsage } from "@/lib/ai-tool-cost";
 import prisma from "@/lib/prisma";
-import { ARC_SCRIPT_BUILDER_DEFAULT_PROMPT } from "@/lib/arc-script-builder-prompt";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 const MODEL = "claude-sonnet-4-20250514";
 
-const DEFAULT_SYSTEM_PROMPT = ARC_SCRIPT_BUILDER_DEFAULT_PROMPT;
+// ─── Master System Prompt ─────────────────────────────────────────────────────
+const MASTER_SYSTEM_PROMPT = `You are the ARC Script Builder — an AI writing partner that helps real estate content creators build authentic, client-attracting YouTube video scripts using the ARC Method (Attention, Revelation, Connection).
 
-function resetsAtString(): string {
-  const now = new Date();
-  const d = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
-}
+You are NOT a generic copywriter. You understand the ARC Method deeply and your job is to generate script content that follows this framework precisely.
 
-async function buildSystemPrompt(userId: string, researchSummary: string): Promise<string> {
-  const [dbUser, latestAudit, promptSetting] = await Promise.all([
+=== LANGUAGE RULES ===
+
+- Write at a grade 5 reading level. No fancy words. Simple sentences.
+- Every sentence should increase understanding.
+- Use Canadian spelling (colour, neighbourhood, analyse, centre, etc.).
+- Conversational tone — like you're explaining something to a friend over coffee.
+- Never sound templated. Every output must feel specific to THIS video and THIS creator's avatar.
+
+=== THE ARC METHOD OVERVIEW ===
+
+ARC stands for Attention, Revelation, Connection. Every video script follows this structure:
+
+**A — Attention (Opening, ~20-25 seconds):**
+The opening must accomplish three things fast:
+1. Approve the click (first words confirm they made the right choice clicking)
+2. Mention the lead magnet (one line, not a pitch)
+3. Layer in credibility via an expertise bridge (sets up why you're qualified to deliver the first insight)
+
+The "Approve the Click" Principle: The first words out of the creator's mouth must confirm the viewer made the right choice clicking. The hook must directly mirror or reference the title/thumbnail promise. Break this connection and they leave.
+
+Opening structure:
+- Intro Pattern (~8-10 sec) — the primary hook that approves the click
+- Lead Magnet (~4-5 sec) — one line, not a pitch
+- Expertise Bridge (~3-5 sec) — layers credibility INTO the transition to the first point
+- Transition (~2 sec) — "Here's what you..." / "Let's get into it..."
+
+**R — Revelation (Insights using the Value Loop):**
+Each insight follows the Enhanced Value Loop:
+- What it is — the strategic principle or factor most people miss
+- Why it works — the underlying psychology, why this actually matters
+- When it applies — the specific circumstances where this becomes critical
+- Story Proof — 30-60 second example showing the principle in action (personal story, client story, or metaphor)
+- What this means for you — connect back to the viewer's situation (NOT how to implement — that's what the consultation or lead magnet is for)
+
+Insights are ordered: second-best insight first, best insight last (save the strongest for the end).
+
+**C — Connection (Woven Throughout):**
+Connection isn't a section — it's woven through the entire video:
+- 4-5 connection phrases distributed throughout (not clustered)
+- 2-3 values and personal interests peppered in at natural points
+- Lead magnet mentioned 3 times total (opening, ~2/3 through, closing)
+- Curiosity bridges between sections using And → But → Therefore transitions
+
+=== INTRO PATTERNS ===
+
+There are 4 main intro pattern types. The creator chooses ONE as their primary hook:
+
+**CONTRADICTION** — Start with the opposite of what the viewer expects. Validate first when possible, then deliver a sharp pivot to the real issue.
+
+5 sub-patterns:
+1. Validation Pivot — "It makes sense that [logical behaviour]... But here's the problem — [why it backfires]"
+2. Universal Flip — "Everyone thinks [common belief]. The opposite is actually true — [contradiction]"
+3. Logic Trap — "The more you [logical action], the worse [problem] gets. Here's why..."
+4. Obvious Wrong — "Most people [obvious approach]. That's exactly backwards — [real solution]"
+5. Smart People Mistake — "Smart [avatar type] always [logical behaviour]. That's the trap — [why it fails]"
+
+**CONFIRMATION** — Validate their exact feeling first, then reinforce the title promise.
+
+**EMPATHY** — Show you've been there or you see them.
+
+**STAKES** — Make clear what's at risk if they don't watch.
+
+=== EXPERTISE BRIDGES ===
+
+These come AFTER the lead magnet mention and transition INTO the first insight. The expertise bridge isn't a standalone brag — it connects the creator's credibility to the specific insight they're about to deliver.
+
+**Authority Bridge:** "After helping [X families/clients] [do the thing], the first thing I always tell them is..."
+**Revelation Bridge:** "What most [experts] won't tell you — and I can say this after [credibility proof] — is..."
+**Pattern Bridge:** "I've seen this play out [X times], and here's what happens every time..."
+
+=== LEAD MAGNET PLACEMENT ===
+
+Mentioned 3 times throughout the video:
+1. First 10-15 seconds — right after the intro pattern. One line, NOT a pitch.
+2. About 2/3 through — quick reminder tied to a point just made
+3. End of video — final mention as part of the close
+
+=== CONNECTION LANGUAGE REFERENCE ===
+
+Connection phrases must be written directly into the script as spoken dialogue, not listed as notes.
+
+=== CURIOSITY BRIDGES ===
+
+Keep viewers watching between sections using And → But → Therefore transitions.
+
+=== FINAL SCRIPT CHECKLIST ===
+
+Every completed script must pass these checks:
+- Opening is ~20-25 seconds (Intro Pattern + Lead Magnet + Expertise Bridge)
+- Intro pattern comes FIRST (approves the click immediately — no preamble)
+- Expertise bridge comes AFTER lead magnet (layers credibility into first insight, not front-loaded)
+- Lead magnet mentioned 3 times (opening, 2/3 through, end)
+- Each insight follows the Value Loop (What/Why/When/Story/What this means)
+- No "how to implement" (save that for consultation/lead magnet)
+- 4-5 connection phrases integrated (written into dialogue, distributed throughout)
+- 2-3 values/interests peppered in (casual, conversational)
+- Curiosity bridges between sections (And/But/Therefore momentum)
+- Grade 5 reading level (simple words, short sentences)
+- Visual prompts identified (what to show, not just say)
+
+{{MEMBER_CONTEXT}}`;
+
+// ─── Step Prompts ─────────────────────────────────────────────────────────────
+const OPENING_PROMPT = (p: {
+  topic: string; title: string; uniqueAngle: string;
+  beforeFeeling: string; afterFeeling: string;
+}) => `VIDEO DETAILS:
+Topic: ${p.topic}
+Title: ${p.title}
+Unique angle: ${p.uniqueAngle}
+How viewer feels BEFORE: ${p.beforeFeeling}
+How viewer feels AFTER: ${p.afterFeeling}
+
+=== YOUR TASK ===
+
+Generate the complete opening toolkit for this video. This includes intro patterns, expertise bridges, hook starters, and a lead magnet line.
+
+=== PART 1: INTRO PATTERNS ===
+
+Generate all 4 intro pattern types. For CONTRADICTION, generate 2 variations of EACH of the 5 sub-patterns (10 contradiction scripts total). For the other 3 types, generate 1 script each.
+
+CONTRADICTION sub-patterns (generate 2 variations of each):
+1. Validation Pivot
+2. Universal Flip
+3. Logic Trap
+4. Obvious Wrong
+5. Smart People Mistake
+
+Rules for contradiction intros:
+- Use a conversational tone
+- Validate first when possible, then deliver a sharp pivot to the real issue
+- Each must be specific to THIS video's topic, title, and avatar
+- Each must approve the click (mirror the title/thumbnail promise)
+- ~8-10 seconds of spoken word per intro
+
+Other intro types (1 script each):
+- CONFIRMATION — Restate the title promise and reinforce.
+- EMPATHY — Lead with the emotion they're feeling.
+- STAKES — Lead with what's at risk.
+
+=== PART 2: EXPERTISE BRIDGES ===
+
+Generate all 3 expertise bridge types, written specifically for this video topic. These come AFTER the lead magnet mention and transition INTO the first insight.
+
+1. Authority Bridge: "After helping [X families/clients] [do the thing], the first thing I always tell them is..." — best when experience directly sets up the insight
+2. Revelation Bridge: "What most [experts] won't tell you — and I can say this after [credibility proof] — is..." — best when first insight is contrarian
+3. Pattern Bridge: "I've seen this play out [X times], and here's what happens every time..." — best when insight comes from recognizing patterns
+
+Each bridge must be specific to this video's topic and avatar, and ~3-5 seconds of spoken word.
+
+=== PART 3: HOOK STARTERS & LEAD MAGNET ===
+
+Generate 2-3 hook starters that genuinely add value (not filler).
+
+Generate a natural lead magnet mention line (~4-5 seconds): "I've put together a free [resource name] that [brief benefit] — link's in the description." Keep it tight. Do NOT pitch it.
+
+=== OUTPUT FORMAT ===
+
+Return ONLY valid JSON. No markdown, no explanation, just the JSON object:
+{
+  "intro_patterns": [
+    { "name": "CONTRADICTION — Validation Pivot", "subtype": "Validation Pivot", "variation": 1, "script": "Full ~8-10 sec intro text..." },
+    { "name": "CONTRADICTION — Validation Pivot", "subtype": "Validation Pivot", "variation": 2, "script": "..." },
+    { "name": "CONTRADICTION — Universal Flip", "subtype": "Universal Flip", "variation": 1, "script": "..." },
+    { "name": "CONTRADICTION — Universal Flip", "subtype": "Universal Flip", "variation": 2, "script": "..." },
+    { "name": "CONTRADICTION — Logic Trap", "subtype": "Logic Trap", "variation": 1, "script": "..." },
+    { "name": "CONTRADICTION — Logic Trap", "subtype": "Logic Trap", "variation": 2, "script": "..." },
+    { "name": "CONTRADICTION — Obvious Wrong", "subtype": "Obvious Wrong", "variation": 1, "script": "..." },
+    { "name": "CONTRADICTION — Obvious Wrong", "subtype": "Obvious Wrong", "variation": 2, "script": "..." },
+    { "name": "CONTRADICTION — Smart People Mistake", "subtype": "Smart People Mistake", "variation": 1, "script": "..." },
+    { "name": "CONTRADICTION — Smart People Mistake", "subtype": "Smart People Mistake", "variation": 2, "script": "..." },
+    { "name": "CONFIRMATION", "script": "..." },
+    { "name": "EMPATHY", "script": "..." },
+    { "name": "STAKES", "script": "..." }
+  ],
+  "expertise_bridges": [
+    { "name": "Authority Bridge", "script": "Full bridge text...", "best_when": "experience directly sets up the insight" },
+    { "name": "Revelation Bridge", "script": "...", "best_when": "first insight is contrarian" },
+    { "name": "Pattern Bridge", "script": "...", "best_when": "insight comes from recognizing patterns" }
+  ],
+  "hook_starters": ["Hook option 1", "Hook option 2"],
+  "lead_magnet_line": "Natural one-line lead magnet mention..."
+}`;
+
+const CREDIBILITY_PROMPT = (p: {
+  title: string; topic: string; credentialInput: string;
+}) => `VIDEO: ${p.title}
+TOPIC: ${p.topic}
+CREDENTIAL INPUT: ${p.credentialInput}
+
+=== YOUR TASK ===
+
+Based on this credential or proof point, generate 3 natural ways to weave credibility into this specific video.
+
+Rules:
+- Never sound boastful or salesy
+- Credibility should feel like a natural part of the conversation, not a standalone brag
+- Each suggestion should work as an actual spoken line in the script
+- Suggest WHERE in the video each line would land (e.g., "After your first insight", "During the closing")
+- Write at grade 5 reading level — simple, conversational
+- These are ADDITIONAL credibility moments beyond the expertise bridge in the opening
+
+Return ONLY valid JSON. No markdown, no explanation, just the JSON object:
+{
+  "suggestions": [
+    { "line": "Actual spoken script line", "placement": "Where in the video to use this" }
+  ]
+}`;
+
+const INSIGHTS_PROMPT = (p: {
+  title: string; topic: string; insightCount: number;
+}) => `VIDEO: ${p.title}
+TOPIC: ${p.topic}
+Number of insights needed: ${p.insightCount}
+
+=== YOUR TASK ===
+
+Generate ${p.insightCount} insight slot frameworks using the Enhanced Value Loop structure.
+
+For each insight slot, provide guiding questions to help the creator fill it in. Do NOT generate the insights themselves — just the structure and prompts that draw out the creator's unique knowledge.
+
+Enhanced Value Loop structure:
+- What it is — the strategic principle or factor most people miss
+- Why it works — the underlying psychology, why this actually matters
+- When it applies — the specific circumstances where this becomes critical
+- Story Proof — 30-60 second example showing the principle in action (personal story, client story, or metaphor)
+- What this means for you — connect back to the viewer's situation (NOT how to implement)
+
+Important:
+- Order insights: second-best first, best last (save the strongest for the end)
+- Each insight should feel like a revelation, not a textbook definition
+- Story proof is critical — this is what makes the insight land
+- "What this means for you" must connect to the viewer's life, NOT give them a how-to
+
+Return ONLY valid JSON. No markdown, no explanation, just the JSON object:
+{
+  "insight_slots": [
+    {
+      "slot": 1,
+      "label": "Strong opener (second-best insight)",
+      "prompts": {
+        "what": "Question to draw out the what",
+        "why": "Question to draw out the why",
+        "when": "Question to draw out the when",
+        "story": "Prompt for a client story",
+        "connection": "Question for what this means"
+      }
+    }
+  ]
+}`;
+
+const FINAL_PROMPT = (p: {
+  title: string; topic: string; uniqueAngle: string;
+  selectedOpening: string; selectedBridge: string; leadMagnetLine: string;
+  credibility: string; insights: string; values: string; interests: string;
+}) => `VIDEO DETAILS:
+Title: ${p.title}
+Topic: ${p.topic}
+Unique angle: ${p.uniqueAngle}
+
+SELECTED OPENING:
+Intro Pattern: ${p.selectedOpening}
+Expertise Bridge: ${p.selectedBridge}
+Lead Magnet Line: ${p.leadMagnetLine}
+
+CREDIBILITY:
+${p.credibility}
+
+INSIGHTS (Value Loops):
+${p.insights}
+
+VALUES TO PEPPER IN: ${p.values}
+PERSONAL INTERESTS: ${p.interests}
+
+=== YOUR TASK ===
+
+Assemble the complete ARC Method script outline. This is the final deliverable — a full video outline the creator can use to film.
+
+=== SCRIPT STRUCTURE ===
+
+1. Full Opening (~20-25 seconds): Intro Pattern + Lead Magnet line + Expertise Bridge + Transition line into first insight
+2. Credibility signal woven naturally (not front-loaded)
+3. Lead magnet mention #1 (already in opening)
+4. Each insight in Enhanced Value Loop format (What/Why/When/Story/What This Means/Curiosity Bridge)
+5. 4-5 connection phrases distributed throughout (written as actual spoken dialogue)
+6. Values and interests peppered in at 2-3 natural points (casual, conversational)
+7. 5 curiosity bridges using And → But → Therefore transitions between sections
+8. Visual prompt suggestions for each major section
+9. Lead magnet mention #2 (at ~2/3 point, tied to a point just made)
+10. Closing with lead magnet mention #3 and call to connection
+
+=== RULES ===
+
+- Grade 5 reading level throughout
+- Conversational tone — not scripted-sounding
+- NO "how to implement" in any insight
+- Connection phrases must be written INTO the dialogue, not listed as notes
+- Visual prompts should be specific and actionable
+
+=== FINAL SCRIPT CHECKLIST ===
+
+After assembling, run this checklist and report pass/fail for each item.
+
+=== RETENTION ANALYSIS ===
+
+After the script is assembled, analyse it for viewer retention and provide 3-5 specific suggestions for places where viewers might drop off and how to tighten those moments.
+
+=== OUTPUT FORMAT ===
+
+Return ONLY valid JSON. No markdown, no explanation, just the JSON object:
+{
+  "script_outline": {
+    "opening": "Complete opening text (intro pattern + lead magnet + expertise bridge + transition)",
+    "credibility": "Credibility signal text woven into the script",
+    "lead_magnet_1": "First mention (already in opening)",
+    "insights": [
+      {
+        "slot": 1,
+        "what": "What text — written as spoken dialogue",
+        "why": "Why text — written as spoken dialogue",
+        "when": "When text — written as spoken dialogue",
+        "story": "Story proof text — written as spoken dialogue",
+        "connection": "What this means text — written as spoken dialogue",
+        "curiosity_bridge": "Transition to next section",
+        "visual_prompt": "What to show on screen during this insight"
+      }
+    ],
+    "lead_magnet_2": "Second mention (~2/3 through), tied to a specific point",
+    "closing": "Closing text with lead magnet #3 and call to connection",
+    "visual_prompts": ["Additional visual suggestions not tied to specific insights"],
+    "connection_phrases": [
+      { "phrase": "The exact phrase as spoken dialogue", "placement": "Where in the script" }
+    ],
+    "values_placed": [
+      { "value": "The value or interest", "placement": "Where and how it's mentioned" }
+    ]
+  },
+  "checklist": {
+    "opening_length_ok": true,
+    "opening_approves_click": true,
+    "expertise_bridge_after_lead_magnet": true,
+    "credibility_natural": true,
+    "lead_magnet_3_times": true,
+    "value_loops_correct": true,
+    "no_how_to_implement": true,
+    "connection_phrases_4_5": true,
+    "values_peppered": true,
+    "curiosity_bridges": true,
+    "grade_5_language": true,
+    "visual_prompts_identified": true
+  },
+  "retention_suggestions": [
+    { "location": "Where in the script", "issue": "What might cause drop-off", "fix": "How to tighten it" }
+  ]
+}`;
+
+// ─── Context builder ──────────────────────────────────────────────────────────
+async function buildMasterPrompt(userId: string): Promise<string> {
+  const [dbUser, latestAudit] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
       select: { avatarProfile: true, avatarName: true, avatarSummary: true, contentThemes: true },
@@ -27,7 +380,6 @@ async function buildSystemPrompt(userId: string, researchSummary: string): Promi
       orderBy: { createdAt: "desc" },
       select: { scores: true },
     }),
-    prisma.appSetting.findUnique({ where: { key: "prompt_arc_script_builder" } }),
   ]);
 
   const hasAvatar = !!(dbUser?.avatarName || dbUser?.avatarProfile);
@@ -37,29 +389,24 @@ async function buildSystemPrompt(userId: string, researchSummary: string): Promi
   const themes = dbUser?.contentThemes ? JSON.stringify(dbUser.contentThemes) : "No themes saved.";
   const scores = latestAudit?.scores ? JSON.stringify(latestAudit.scores) : "No baseline scores yet.";
 
-  const template = promptSetting?.value ?? DEFAULT_SYSTEM_PROMPT;
+  const contextBlock = `=== MEMBER CONTEXT ===
+Avatar: ${avatarText}
+Content Themes: ${themes}
+Baseline Scores: ${scores}`;
 
-  return template
-    .replace("{{MEMBER_AVATAR}}", avatarText)
-    .replace("{{CONTENT_THEMES}}", themes)
-    .replace("{{BASELINE_SCORES}}", scores)
-    .replace("{{RESEARCH_SUMMARY}}", researchSummary || "No research summary provided.");
+  return MASTER_SYSTEM_PROMPT.replace("{{MEMBER_CONTEXT}}", contextBlock);
 }
 
-// ─── MODE 1: Summarize ────────────────────────────────────────────────────────
-async function handleSummarize(
-  userId: string,
-  researchText: string,
-  title: string,
-  talkingPoints?: string
-): Promise<NextResponse> {
+function parseJSON(text: string): any {
+  // Strip markdown code fences if present
+  const cleaned = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+  return JSON.parse(cleaned);
+}
+
+// ─── Step Handlers ────────────────────────────────────────────────────────────
+async function handleSummarize(userId: string, researchText: string, title: string, talkingPoints?: string): Promise<NextResponse> {
   const cap = await checkCostCap(userId);
-  if (!cap.allowed) {
-    return NextResponse.json(
-      { error: "monthly_cap_reached", resetsAt: cap.resetsAt },
-      { status: 429 }
-    );
-  }
+  if (!cap.allowed) return NextResponse.json({ error: "monthly_cap_reached", resetsAt: cap.resetsAt }, { status: 429 });
 
   const prompt = `You are summarizing research for a YouTube video script. Condense the following into a structured brief.
 
@@ -101,98 +448,137 @@ Format as clean markdown. Preserve actual numbers and specifics. Do not paraphra
 
   const { input_tokens, output_tokens } = response.usage;
   await logUsage(userId, "arc_script_builder", input_tokens, output_tokens);
-
   const summary = response.content[0].type === "text" ? response.content[0].text : "";
   return NextResponse.json({ summary, usage: { inputTokens: input_tokens, outputTokens: output_tokens } });
 }
 
-// ─── MODE 2: Chat (Streaming SSE) ─────────────────────────────────────────────
-async function handleChat(
-  userId: string,
-  messages: Array<{ role: "user" | "assistant"; content: string; researchSummary?: string }>
-): Promise<Response> {
+async function handleOpening(userId: string, body: any): Promise<NextResponse> {
   const cap = await checkCostCap(userId);
-  if (!cap.allowed) {
-    return new Response(
-      JSON.stringify({ error: "monthly_cap_reached", resetsAt: resetsAtString() }),
-      { status: 429, headers: { "Content-Type": "application/json" } }
-    );
+  if (!cap.allowed) return NextResponse.json({ error: "monthly_cap_reached", resetsAt: cap.resetsAt }, { status: 429 });
+
+  const system = await buildMasterPrompt(userId);
+  const userContent = OPENING_PROMPT({
+    topic: body.topic ?? body.title ?? "",
+    title: body.title ?? "",
+    uniqueAngle: body.uniqueAngle ?? "",
+    beforeFeeling: body.beforeFeeling ?? "",
+    afterFeeling: body.afterFeeling ?? "",
+  });
+
+  const response = await client.messages.create({
+    model: MODEL,
+    max_tokens: 4096,
+    system,
+    messages: [{ role: "user", content: userContent }],
+  });
+
+  const { input_tokens, output_tokens } = response.usage;
+  await logUsage(userId, "arc_script_builder", input_tokens, output_tokens);
+
+  const raw = response.content[0].type === "text" ? response.content[0].text : "{}";
+  try {
+    const data = parseJSON(raw);
+    return NextResponse.json(data);
+  } catch {
+    return NextResponse.json({ error: "Failed to parse AI response", raw }, { status: 500 });
   }
+}
 
-  // Extract researchSummary from the first message if present
-  let researchSummary = "";
-  const claudeMessages = messages.map((m, i) => {
-    if (i === 0 && m.researchSummary) researchSummary = m.researchSummary;
-    return { role: m.role, content: m.content };
+async function handleCredibility(userId: string, body: any): Promise<NextResponse> {
+  const cap = await checkCostCap(userId);
+  if (!cap.allowed) return NextResponse.json({ error: "monthly_cap_reached", resetsAt: cap.resetsAt }, { status: 429 });
+
+  const system = await buildMasterPrompt(userId);
+  const userContent = CREDIBILITY_PROMPT({
+    title: body.title ?? "",
+    topic: body.topic ?? body.title ?? "",
+    credentialInput: body.credentialInput ?? "",
   });
 
-  const systemPrompt = await buildSystemPrompt(userId, researchSummary);
-  const encoder = new TextEncoder();
-  let fullText = "";
-
-  const readable = new ReadableStream({
-    async start(controller) {
-      try {
-        const stream = client.messages.stream({
-          model: MODEL,
-          max_tokens: 4096,
-          system: systemPrompt,
-          messages: claudeMessages,
-        });
-
-        for await (const event of stream) {
-          if (
-            event.type === "content_block_delta" &&
-            event.delta.type === "text_delta"
-          ) {
-            const chunk = event.delta.text;
-            fullText += chunk;
-            controller.enqueue(
-              encoder.encode(`data: ${JSON.stringify({ type: "text", text: chunk })}\n\n`)
-            );
-          }
-        }
-
-        const finalMsg = await stream.finalMessage();
-        const { input_tokens, output_tokens } = finalMsg.usage;
-        await logUsage(userId, "arc_script_builder", input_tokens, output_tokens);
-
-        // Parse SECTION_DATA from full response
-        const match = fullText.match(/<SECTION_DATA>([\s\S]*?)<\/SECTION_DATA>/);
-        let sectionData: { currentSection: string; sectionApproved: boolean } | null = null;
-        if (match) {
-          try { sectionData = JSON.parse(match[1].trim()); } catch {}
-        }
-
-        // Cost cap warning
-        const { percentUsed } = await getMonthlyUsage(userId);
-        const costCapWarning =
-          percentUsed >= 90 ? "critical" : percentUsed >= 75 ? "warning" : null;
-
-        controller.enqueue(
-          encoder.encode(
-            `data: ${JSON.stringify({ type: "done", sectionData, costCapWarning })}\n\n`
-          )
-        );
-        controller.close();
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : "Stream error";
-        controller.enqueue(
-          encoder.encode(`data: ${JSON.stringify({ type: "error", message: msg })}\n\n`)
-        );
-        controller.close();
-      }
-    },
+  const response = await client.messages.create({
+    model: MODEL,
+    max_tokens: 2048,
+    system,
+    messages: [{ role: "user", content: userContent }],
   });
 
-  return new Response(readable, {
-    headers: {
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
-      Connection: "keep-alive",
-      "X-Accel-Buffering": "no",
-    },
+  const { input_tokens, output_tokens } = response.usage;
+  await logUsage(userId, "arc_script_builder", input_tokens, output_tokens);
+
+  const raw = response.content[0].type === "text" ? response.content[0].text : "{}";
+  try {
+    const data = parseJSON(raw);
+    return NextResponse.json(data);
+  } catch {
+    return NextResponse.json({ error: "Failed to parse AI response", raw }, { status: 500 });
+  }
+}
+
+async function handleInsights(userId: string, body: any): Promise<NextResponse> {
+  const cap = await checkCostCap(userId);
+  if (!cap.allowed) return NextResponse.json({ error: "monthly_cap_reached", resetsAt: cap.resetsAt }, { status: 429 });
+
+  const system = await buildMasterPrompt(userId);
+  const userContent = INSIGHTS_PROMPT({
+    title: body.title ?? "",
+    topic: body.topic ?? body.title ?? "",
+    insightCount: body.insightCount ?? 3,
   });
+
+  const response = await client.messages.create({
+    model: MODEL,
+    max_tokens: 2048,
+    system,
+    messages: [{ role: "user", content: userContent }],
+  });
+
+  const { input_tokens, output_tokens } = response.usage;
+  await logUsage(userId, "arc_script_builder", input_tokens, output_tokens);
+
+  const raw = response.content[0].type === "text" ? response.content[0].text : "{}";
+  try {
+    const data = parseJSON(raw);
+    return NextResponse.json(data);
+  } catch {
+    return NextResponse.json({ error: "Failed to parse AI response", raw }, { status: 500 });
+  }
+}
+
+async function handleFinal(userId: string, body: any): Promise<NextResponse> {
+  const cap = await checkCostCap(userId);
+  if (!cap.allowed) return NextResponse.json({ error: "monthly_cap_reached", resetsAt: cap.resetsAt }, { status: 429 });
+
+  const system = await buildMasterPrompt(userId);
+  const userContent = FINAL_PROMPT({
+    title: body.title ?? "",
+    topic: body.topic ?? body.title ?? "",
+    uniqueAngle: body.uniqueAngle ?? "",
+    selectedOpening: body.selectedOpening ?? "",
+    selectedBridge: body.selectedBridge ?? "",
+    leadMagnetLine: body.leadMagnetLine ?? "",
+    credibility: body.credibility ?? "",
+    insights: body.insights ?? "",
+    values: body.values ?? "",
+    interests: body.interests ?? "",
+  });
+
+  const response = await client.messages.create({
+    model: MODEL,
+    max_tokens: 4096,
+    system,
+    messages: [{ role: "user", content: userContent }],
+  });
+
+  const { input_tokens, output_tokens } = response.usage;
+  await logUsage(userId, "arc_script_builder", input_tokens, output_tokens);
+
+  const raw = response.content[0].type === "text" ? response.content[0].text : "{}";
+  try {
+    const data = parseJSON(raw);
+    return NextResponse.json(data);
+  } catch {
+    return NextResponse.json({ error: "Failed to parse AI response", raw }, { status: 500 });
+  }
 }
 
 // ─── Router ───────────────────────────────────────────────────────────────────
@@ -203,21 +589,36 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const { step } = body;
 
-  if (step === "summarize") {
-    const { researchText, title, talkingPoints } = body;
-    if (!researchText || !title) {
-      return NextResponse.json({ error: "researchText and title are required" }, { status: 400 });
+  try {
+    switch (step) {
+      case "summarize":
+        if (!body.researchText || !body.title)
+          return NextResponse.json({ error: "researchText and title are required" }, { status: 400 });
+        return handleSummarize(user.id, body.researchText, body.title, body.talkingPoints);
+      case "opening":
+        return handleOpening(user.id, body);
+      case "credibility":
+        return handleCredibility(user.id, body);
+      case "insights":
+        return handleInsights(user.id, body);
+      case "final":
+        return handleFinal(user.id, body);
+      default:
+        return NextResponse.json(
+          { error: "Unknown step. Use summarize | opening | credibility | insights | final." },
+          { status: 400 }
+        );
     }
-    return handleSummarize(user.id, researchText, title, talkingPoints);
+  } catch (err) {
+    console.error("[arc-script-builder]", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
+}
 
-  if (step === "chat") {
-    const { messages } = body;
-    if (!Array.isArray(messages) || messages.length === 0) {
-      return NextResponse.json({ error: "messages array is required" }, { status: 400 });
-    }
-    return handleChat(user.id, messages);
-  }
-
-  return NextResponse.json({ error: "Unknown step. Use 'summarize' or 'chat'." }, { status: 400 });
+// Legacy GET usage check
+export async function GET(req: NextRequest) {
+  const user = await resolveUserFromSession();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const usage = await getMonthlyUsage(user.id);
+  return NextResponse.json(usage);
 }
