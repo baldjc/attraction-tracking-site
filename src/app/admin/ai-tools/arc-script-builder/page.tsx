@@ -6,7 +6,7 @@ import { ARC_MASTER_SYSTEM_PROMPT } from "@/lib/arc-script-builder-prompt";
 
 export default function AdminArcScriptBuilderPage() {
   return (
-    <>
+    <div className="max-w-2xl mx-auto px-4 py-6">
       <PromptEditor
         toolKey="prompt_arc_script_builder"
         defaultPrompt={ARC_MASTER_SYSTEM_PROMPT}
@@ -14,9 +14,7 @@ export default function AdminArcScriptBuilderPage() {
           { key: "{{MEMBER_CONTEXT}}", description: "Auto-injected block with member avatar, content themes, and baseline scores" },
         ]}
       />
-      <div className="max-w-2xl mx-auto px-4 py-6">
-        <ArcScriptBuilderTool basePath="/admin/ai-tools" />
-      </div>
-    </>
+      <ArcScriptBuilderTool basePath="/admin/ai-tools" />
+    </div>
   );
 }
