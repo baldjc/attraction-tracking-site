@@ -121,9 +121,9 @@ Return ONLY valid JSON. No markdown, no explanation, just the JSON object:
 }`;
 
 const INSIGHTS_PROMPT = (p: {
-  title: string; topic: string; insightCount: number; selectedTalkingPoints: string[];
+  title: string; topic: string; insightCount: number; selectedTalkingPoints: string[]; sourceTheme?: string;
 }) => `VIDEO: ${p.title}
-TOPIC: ${p.topic}
+TOPIC: ${p.topic}${p.sourceTheme ? `\nSOURCE THEME: ${p.sourceTheme} — all insights must connect to this emotional category and the stresses it represents` : ""}
 Number of insights needed: ${p.insightCount}
 
 MEMBER'S SELECTED TALKING POINTS:
@@ -179,11 +179,11 @@ const FINAL_PROMPT = (p: {
   title: string; topic: string; uniqueAngle: string;
   selectedOpening: string; selectedBridge: string; leadMagnetLine: string;
   credibility: string; insights: string; values: string; interests: string;
-  nextVideoTitle: string; nextVideoWhy: string;
+  nextVideoTitle: string; nextVideoWhy: string; sourceTheme?: string;
 }) => `VIDEO DETAILS:
 Title: ${p.title}
 Topic: ${p.topic}
-Unique angle: ${p.uniqueAngle}
+Unique angle: ${p.uniqueAngle}${p.sourceTheme ? `\nSource Theme: ${p.sourceTheme} — ensure the script language, examples, and emotional tone align with this theme` : ""}
 
 SELECTED OPENING:
 Intro Pattern: ${p.selectedOpening}
@@ -463,6 +463,7 @@ async function handleInsights(userId: string, body: any): Promise<NextResponse> 
     topic: body.topic ?? body.title ?? "",
     insightCount: body.insightCount ?? 5,
     selectedTalkingPoints: Array.isArray(body.selectedTalkingPoints) ? body.selectedTalkingPoints : [],
+    sourceTheme: body.sourceTheme,
   });
 
   const response = await client.messages.create({
@@ -502,6 +503,7 @@ async function handleFinal(userId: string, body: any): Promise<NextResponse> {
     interests: body.interests ?? "",
     nextVideoTitle: body.nextVideoTitle ?? "",
     nextVideoWhy: body.nextVideoWhy ?? "",
+    sourceTheme: body.sourceTheme,
   });
 
   const response = await client.messages.create({

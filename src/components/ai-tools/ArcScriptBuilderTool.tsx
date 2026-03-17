@@ -412,6 +412,7 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
       const result = await callStep("insights", {
         insightCount,
         selectedTalkingPoints: selectedPoints,
+        sourceTheme: prefillData?.theme,
       });
       setInsightSlots(result.insight_slots ?? []);
       const initial: Record<number, Record<string, string>> = {};
@@ -451,6 +452,7 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
         interests: "",
         nextVideoTitle,
         nextVideoWhy,
+        sourceTheme: prefillData?.theme,
       });
       setFinalData(result);
       setRetentionSuggestions(result.retention_suggestions ?? []);
@@ -960,7 +962,13 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
                       Talking points
                     </p>
                     <p className="text-xs text-[#1e2a38]/40 mb-4">
-                      From: <span className="font-medium text-[#1e2a38]/60">{prefillData.title}</span> — uncheck any you don&apos;t want to use.
+                      From: <span className="font-medium text-[#1e2a38]/60">{prefillData.title}</span>
+                      {prefillData.theme && (
+                        <span className="ml-2 bg-[#3dc3ff]/10 text-[#3dc3ff] text-[10px] font-semibold px-1.5 py-0.5 rounded-full">
+                          {prefillData.theme}
+                        </span>
+                      )}
+                      {" "}— uncheck any you don&apos;t want to use.
                     </p>
                     <div className="space-y-2">
                       {savedTalkingPoints.map((card) => (
