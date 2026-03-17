@@ -234,158 +234,152 @@ const FINAL_PROMPT = (p: {
 }) => `VIDEO DETAILS:
 Title: ${p.title}
 Topic: ${p.topic}
-Conventional wisdom (what everyone else says): ${p.conventionalWisdom || "(not provided)"}
-Member's unique angle (what they believe instead): ${p.uniqueAngle || "(not provided)"}
-${p.sourceTheme ? `Source Theme: ${p.sourceTheme} — ensure the script language, examples, and emotional tone align with this theme\n` : ""}
-VIEWER EMOTIONAL STATE:
+${p.sourceTheme ? `Source Theme: ${p.sourceTheme} — align all language, examples, and emotional tone with this theme\n` : ""}
+MEMBER'S UNIQUE ANGLE:
+What conventional wisdom says: ${p.conventionalWisdom || "(not provided)"}
+What this member believes instead: ${p.uniqueAngle || "(not provided)"}
+
+VIEWER EMOTIONAL STATE (write EVERY section speaking to this internal experience):
 - Emotion right now: ${p.viewerEmotion || "(not provided)"}
-- Internal question they won't say out loud: ${p.viewerQuestion || "(not provided)"}
+- Question they won't say out loud: ${p.viewerQuestion || "(not provided)"}
 - What they're afraid this video might confirm: ${p.viewerFear || "(not provided)"}
 - What they secretly hope this video will tell them: ${p.viewerHope || "(not provided)"}
-Write every section speaking directly to this internal state.
 
-SELECTED OPENING:
+SELECTED OPENING (use EXACTLY — this is the first thing the viewer hears):
 Intro Pattern: ${p.selectedOpening}
 Expertise Bridge: ${p.selectedBridge}
 Lead Magnet Line: ${p.leadMagnetLine}
 
-MEMBER'S EXACT CREDENTIALS (use verbatim — never rephrase or generalize):
+MEMBER'S EXACT CREDENTIALS (use verbatim — never rephrase, never substitute):
 ${p.credClientsHelped ? `- Clients/families helped: ${p.credClientsHelped}` : ""}
 ${p.credSpecificResult ? `- Specific result: ${p.credSpecificResult}` : ""}
 ${p.credFrequency ? `- How often: ${p.credFrequency}` : ""}
 ${p.credSurprise ? `- Surprising track record: ${p.credSurprise}` : ""}
-CREDENTIAL ENFORCEMENT: Use the member's credentials EXACTLY as provided above. If they said "22 years," write "22 years." If they said "200+ families," write "200+ families." The member's specific numbers are non-negotiable — never substitute generic phrases.
 
-CREDIBILITY:
-Selected credibility line: ${p.credibility}
+CREDIBILITY SIGNAL (weave naturally — not as a standalone sentence):
+${p.credibility || "(none selected)"}
 
-CLIENT STORY:
-${p.clientStory
-  ? `Member's real story: "${p.clientStory}"
-Use this story in the most impactful Value Loop's STORY section — use the real name, specific situation, the moment of shift, and the real outcome. For other Value Loops, adapt elements of the story or write '[INSERT YOUR STORY HERE]' placeholders.`
-  : "No client story provided. Write '[INSERT YOUR REAL CLIENT STORY HERE — a name, a specific situation, what shifted, and what happened]' placeholders in every STORY section. Never invent generic stories."}
-
-INSIGHTS (Value Loops):
+VALUE LOOP CONTENT (the insights to develop into narrative sections — DO NOT label them WHAT/WHY/WHEN in the script):
 ${p.insights}
 
 VALUES TO PEPPER IN: ${p.values}
 PERSONAL INTERESTS: ${p.interests}
 
+CLIENT STORY:
+${p.clientStory
+  ? `Member's real story: "${p.clientStory}"
+THREADING APPROACH: Introduce this story early (first or second section). Use the real name, specific situation, and real outcome. Then REVISIT it at 1-2 later moments using a callback: "Remember [name]? Here's where it got worse..." — only bring it back when it genuinely reinforces the new point. Do NOT force story callbacks into every section.`
+  : `No client story provided.
+THREADING APPROACH: Place ONE specific story cue early: [STORY CUE: describe exactly what kind of story to tell — a specific client situation, the stakes, and what changed]. Then add 1-2 callbacks later using [CALLBACK: Reference how this played out for the same client from your earlier story]. Do NOT put a story placeholder in every section — template-generated content kills credibility.`}
+
 NEXT VIDEO PUSH:
 ${p.nextVideoTitle
-  ? `Next video title: ${p.nextVideoTitle}\nWhy it matters now: ${p.nextVideoWhy || "(not provided)"}${p.nextVideoTranscript ? `\nNext video opening (first 30 seconds of transcript): "${p.nextVideoTranscript}"\nUSE THIS TRANSCRIPT: Write the bridge and tease using specific language and ideas from this opening — make the CTA feel like a natural continuation, not a generic plug.` : ""}`
-  : "(not provided — write a generic sign-off without a next-video push)"}
+  ? `Next video title: ${p.nextVideoTitle}\nWhy it matters now: ${p.nextVideoWhy || "(not provided)"}${p.nextVideoTranscript ? `\nNext video opening (first 30 seconds): "${p.nextVideoTranscript}"\nUSE THIS: Write the bridge using specific language and ideas from this opening so the CTA feels like a natural continuation.` : ""}`
+  : "(none provided — write a warm sign-off without a next-video push)"}
 
 === YOUR TASK ===
 
-Assemble the complete ARC Method script outline. This is the final deliverable — a full video outline the creator can use to film.
+Write a FILMABLE VIDEO SCRIPT — a flowing monologue that a creator can read on camera or from a teleprompter. This is NOT an outline. This is NOT a template with labels. These are the actual words the creator will say.
 
-=== SCRIPT STRUCTURE ===
+Target length: 2,500–4,000 words. Over-deliver on content so the creator edits DOWN, not builds up.
 
-1. Full Opening (~20-25 seconds): Intro Pattern + Lead Magnet line + Expertise Bridge + Transition line into first insight
-2. Credibility signal woven naturally (not front-loaded)
-3. Lead magnet mention #1 (already in opening)
-4. Each insight in Enhanced Value Loop format (What/Why/When/Story/What This Means/Curiosity Bridge)
-5. 4-5 connection phrases distributed throughout (written as actual spoken dialogue)
-6. Values and interests peppered in at 2-3 natural points (casual, conversational)
-7. 5 curiosity bridges using And → But → Therefore transitions between sections
-8. Visual prompt suggestions for each major section
-9. Lead magnet mention #2 (at ~2/3 point, tied to a point just made)
-10. Closing: lead magnet mention #3 + next video bridge + sign-off
+=== 14 RULES ===
 
-=== CLOSING INSTRUCTIONS ===
+1. INVISIBLE STRUCTURE: The ARC Value Loop (What → Why → When → Story → What This Means) must be present but NEVER labelled. No "WHAT:", "WHY:", "WHEN:" headers anywhere. The viewer should never see a framework — they should feel a compelling argument.
 
-If a next video is provided, the closing MUST follow this exact pattern:
-1. Bridge sentence — connect the current video's final insight directly to the next video topic (not generic; use the specific idea just covered)
-2. Tease — use the "why it matters now" to frame the next video as a natural continuation of the viewer's thought, not a plug
-3. Lead magnet mention #3 — weave the lead magnet reference in naturally
-4. Sign-off — brief, warm, conversational
+2. NARRATIVE ARC: Insights must BUILD on each other — not be independent modules. Structure as Act 1 (setup/tension — the viewer's current reality and why it's about to get worse or better), Act 2 (escalation — complications they haven't considered, the deeper problem underneath the surface problem), Act 3 (resolution/playbook — specific actions and what changes). Each section raises the stakes from the previous one.
 
-Example tone (not a template — adapt to the actual content):
-"The reality is, [insight from this video]. If you've ever wondered about [next video topic], you'll want to watch this next video where I unpack [specific angle from nextVideoWhy]. Grab the [lead magnet] in the description — and we'll see you in that video."
+3. CONVERSATIONAL VOICE: Write in spoken English, not written English.
+   - Contractions: you're, it's, that's, here's, they've, I've
+   - Sentence fragments for emphasis: "Not anymore." "Here's the thing." "That's the part nobody talks about."
+   - Rhetorical questions: "So what does that mean for you?" "You know what that actually costs?"
+   - Direct address: "Let me show you what I mean." "Think about it this way."
+   - Grade 5 reading level throughout — no jargon, no MBA language
 
-Write this as natural spoken dialogue, Grade 5 reading level.
+4. ANALOGIES: Include at least one vivid analogy per major section. Make them relatable to the avatar's everyday life (sports, family, home repairs, everyday experiences). Examples of the RIGHT kind of analogy: "That safety net has a hole in it now." "It's like leaving the game when they're down by three — you miss the comeback." "It's like grading on a curve — your home didn't change, the comparisons did."
 
-=== RULES ===
+5. DATA INTEGRATION: If the member provided research, data, or statistics in their talking points, weave specific numbers throughout. Show the math — walk through calculations the viewer can follow step by step. Example: "Let's say you've got a $600,000 property at 5.5%. Your carrying costs run about $5,800 a month. Sits empty 60 days? That's $11,600 gone — before you've done a single repair."
 
-- Grade 5 reading level throughout
-- Conversational tone — not scripted-sounding
-- NO "how to implement" in any insight
-- Connection phrases must be written INTO the dialogue, not listed as notes
-- Visual prompts should be specific and actionable
-- Closing must use the next video title specifically — never say "check out my other videos" or "see you next time"
+6. STORY THREADING — ONE STORY, NOT MANY: Use ONE primary client story (two at most) threaded through the entire script, not a different story for every section. Introduce it early. Revisit it at key moments when it genuinely reinforces the new point. Between sections that DON'T have a story callback, use data and analogies instead. NEVER put a story placeholder in every section — that's the #1 tell of template-generated content.
+   - Story CUE format (for first introduction, if no real story provided): [STORY CUE: A client who did X, faced Y situation, and what actually happened — be specific about the type of story needed]
+   - Story CALLBACK format (for later revisits): [CALLBACK: Reference how this played out for the same client — connect it to this specific new point]
+   - If member provided a real story: use the real name, real situation, real outcome. First mention = full story. Later mentions = brief callback ("Remember [name]? This is where it got expensive for them...")
 
-=== QUALITY ENFORCEMENT ===
+7. LEAD MAGNET — ORGANIC, 3 TIMES: Mention the lead magnet 3 times as natural asides woven into the narrative — never as a labelled section. Each mention should connect to what was just said. Example: "By the way — I've put together a free breakdown of exactly this. Link's in the description. But here's what makes this complicated..."
 
-VALUES PLACEMENT:
-Weave in the member's values naturally — do not turn them into a section or list them explicitly. Each value should appear ONCE, in passing, the way someone would say it in a real conversation. They should feel like personality, not a mission statement.
+8. WHAT TO DO ABOUT IT: After the insights, include a "So what do you actually do?" playbook section. Give 3-5 numbered, specific actions. Each action needs a concrete threshold, number, or decision rule — not vague advice. This section is what makes viewers save and share the video.
 
-CURIOSITY BRIDGES:
-For each curiosity bridge between sections, create an information gap the viewer needs to close. The bridge should make the viewer think "wait, what does that mean?" — not "okay, moving on." Do not write summary transitions. Open a door to the next section that the viewer has to walk through.
+9. NEXT VIDEO PUSH: End with a bridge that connects THIS video's content to the next video. Create a specific open loop from the argument just made. Do NOT write "check out my next video" — make it feel like the natural next chapter of the story. The viewer should feel like stopping now would leave their question unanswered.
 
-INSIGHT QUALITY FILTER:
-Before writing each insight, check: would a viewer say "I've never thought about it that way"? If the answer is no — if it's something a basic Google search would return — rewrite it until it earns that reaction. Generic advice disguised as an insight is not acceptable. Each insight must reveal something the viewer didn't know they didn't know.
+10. SPECIFIC VISUAL CUES: Write production cues tied to specific content, inline: [ON SCREEN: Show rental vacancy rate chart 2021–2025] — not generic "show relevant data." These guide the editor and creator on exactly what to display.
 
-CLIENT STORIES:
-If the member provided a real client story, use it in the most impactful Value Loop's STORY section. Reference the real name, real details, and real outcome. For other Value Loops, adapt elements of the story or write '[INSERT YOUR STORY HERE]' placeholders — never invent generic stories.
+11. FULL LENGTH: 2,500–4,000 words. A complete 10-15 minute video script. Do not stop at a skeleton.
 
-CREDENTIAL ENFORCEMENT:
-Use the member's credentials EXACTLY as provided. If they said "22 years," write "22 years" — not "8 years" or "years of experience." The member's specific numbers are non-negotiable.
+12. CREDENTIALS EXACT: Use the member's credentials verbatim. "22 years" means "22 years." "200+ families" means "200+ families." Never substitute avatar defaults.
 
-=== FINAL SCRIPT CHECKLIST ===
+13. CONNECTION PHRASES: Don't list them separately. Weave empathy, shared experience, and personal touches into the narrative fabric. "I've got kids too — I get it" belongs inside a section, not as a labelled note. Make the creator sound like a real person, not a broadcaster.
 
-After assembling, run this checklist and report pass/fail for each item.
+14. CURIOSITY BRIDGES: Between sections, create specific open loops — not generic "but there's more" transitions. The viewer should have a specific unanswered question that makes leaving feel like quitting a mystery halfway through. Example: "That vacancy number gets worse when you look at who's actually leaving — and why they're not coming back." The next section must answer the question the bridge opened.
+
+=== WHAT TO DO ABOUT IT SECTION ===
+
+After the insights and before the closing, include a clearly spoken "What you actually do about this" section. Number each action. Give it a concrete threshold or trigger the viewer can apply immediately. Example format (adapt to the content):
+"So here's what I'd do if I were in your position right now. First — [specific action with a number or threshold]. Second — [specific action]. Third — [specific action]..."
+
+=== CLOSING ===
+
+If a next video is provided:
+1. Bridge sentence — connect the final insight directly to the next video topic using the specific idea just covered (not generic)
+2. Tease — frame the next video as the natural next chapter using the "why it matters now" context
+3. Lead magnet mention #3 — weave it in naturally as a final aside
+4. Warm sign-off
+
+=== CHECKLIST ===
+
+After writing the script, evaluate it against these criteria and report true/false:
+- opening_hook_strong: Opening hook creates immediate tension or curiosity within the first 3 sentences
+- arc_invisible: ARC structure is invisible — no WHAT/WHY/WHEN labels anywhere in the script
+- narrative_escalates: Each section raises the stakes from the previous — reads as a single escalating argument
+- one_story_threaded: One primary story introduced early and revisited (not a different placeholder per section)
+- analogies_present: At least one vivid relatable analogy per major section
+- data_specific: Specific data, numbers, or math woven throughout (not vague "statistics show")
+- lead_magnet_organic_3x: Lead magnet mentioned organically 3 times as narrative asides
+- playbook_included: "What to do about it" section with 3-5 numbered specific actions
+- curiosity_bridges_specific: Each bridge between sections creates a specific open loop (not generic transitions)
+- next_video_bridge_specific: Next video push connects specifically to this video's content
+- credentials_exact: Member's exact credentials appear verbatim in the script
+- conversational_tone: Contractions, fragments, rhetorical questions throughout
+- visual_cues_specific: Visual cues tied to specific content inline (not generic)
 
 === RETENTION ANALYSIS ===
 
-After the script is assembled, analyse it for viewer retention and provide 3-5 specific suggestions for places where viewers might drop off and how to tighten those moments.
+After writing the script, identify 3-5 specific moments where viewers are most likely to drop off. For each, give an estimated timestamp, the issue, and a specific fix.
 
 === OUTPUT FORMAT ===
 
-Return ONLY valid JSON. No markdown, no explanation, just the JSON object:
+Return ONLY valid JSON. No markdown fences, no explanation outside the JSON:
 {
-  "script_outline": {
-    "opening": "Complete opening text (intro pattern + lead magnet + expertise bridge + transition)",
-    "credibility": "Credibility signal text woven into the script",
-    "lead_magnet_1": "First mention (already in opening)",
-    "insights": [
-      {
-        "slot": 1,
-        "what": "What text — written as spoken dialogue",
-        "why": "Why text — written as spoken dialogue",
-        "when": "When text — written as spoken dialogue",
-        "story": "Story proof text — written as spoken dialogue",
-        "connection": "What this means text — written as spoken dialogue",
-        "curiosity_bridge": "Transition to next section",
-        "visual_prompt": "What to show on screen during this insight"
-      }
-    ],
-    "lead_magnet_2": "Second mention (~2/3 through), tied to a specific point",
-    "closing": "Closing text: bridge to next video → next video tease → lead magnet #3 → sign-off, all as spoken dialogue",
-    "visual_prompts": ["Additional visual suggestions not tied to specific insights"],
-    "connection_phrases": [
-      { "phrase": "The exact phrase as spoken dialogue", "placement": "Where in the script" }
-    ],
-    "values_placed": [
-      { "value": "The value or interest", "placement": "Where and how it's mentioned" }
-    ]
-  },
+  "script": "The COMPLETE filmable script as one continuous monologue. [STORY CUE: ...], [CALLBACK: ...], and [ON SCREEN: ...] markers appear inline where they belong. The full text — 2,500 to 4,000 words.",
+  "title": "${p.title}",
+  "leadMagnet": "Name of the lead magnet referenced in the script",
+  "nextVideo": "${p.nextVideoTitle || ""}",
   "checklist": {
-    "opening_length_ok": true,
-    "opening_approves_click": true,
-    "expertise_bridge_after_lead_magnet": true,
-    "credibility_natural": true,
-    "lead_magnet_3_times": true,
-    "value_loops_correct": true,
-    "no_how_to_implement": true,
-    "connection_phrases_4_5": true,
-    "values_peppered": true,
-    "curiosity_bridges": true,
-    "grade_5_language": true,
-    "visual_prompts_identified": true
+    "opening_hook_strong": true,
+    "arc_invisible": true,
+    "narrative_escalates": true,
+    "one_story_threaded": true,
+    "analogies_present": true,
+    "data_specific": true,
+    "lead_magnet_organic_3x": true,
+    "playbook_included": true,
+    "curiosity_bridges_specific": true,
+    "next_video_bridge_specific": true,
+    "credentials_exact": true,
+    "conversational_tone": true,
+    "visual_cues_specific": true
   },
-  "retention_suggestions": [
-    { "location": "Where in the script", "issue": "What might cause drop-off", "fix": "How to tighten it" }
+  "retentionNotes": [
+    { "timestamp": "~2:30", "issue": "What might cause drop-off here", "fix": "How to tighten it" }
   ]
 }`;
 
@@ -644,7 +638,7 @@ async function handleFinal(userId: string, body: any): Promise<NextResponse> {
 
   const response = await client.messages.create({
     model: MODEL,
-    max_tokens: 4096,
+    max_tokens: 8000,
     system,
     messages: [{ role: "user", content: userContent }],
   });

@@ -76,7 +76,8 @@ interface TalkingPointCard {
 }
 
 interface RetentionSuggestion {
-  location: string;
+  timestamp?: string;
+  location?: string;
   issue: string;
   fix: string;
 }
@@ -87,18 +88,19 @@ interface ChecklistItem {
 }
 
 const CHECKLIST_LABELS: ChecklistItem[] = [
-  { key: "opening_length_ok", label: "Opening is ~20-25 seconds" },
-  { key: "opening_approves_click", label: "Opening approves the click" },
-  { key: "expertise_bridge_after_lead_magnet", label: "Expertise bridge comes after lead magnet" },
-  { key: "credibility_natural", label: "Credibility woven in naturally" },
-  { key: "lead_magnet_3_times", label: "Lead magnet mentioned 3 times" },
-  { key: "value_loops_correct", label: "Each insight follows the Value Loop" },
-  { key: "no_how_to_implement", label: "No 'how to implement' anywhere" },
-  { key: "connection_phrases_4_5", label: "4-5 connection phrases integrated" },
-  { key: "values_peppered", label: "2-3 values/interests peppered in" },
-  { key: "curiosity_bridges", label: "Curiosity bridges between sections" },
-  { key: "grade_5_language", label: "Grade 5 reading level" },
-  { key: "visual_prompts_identified", label: "Visual prompts identified" },
+  { key: "opening_hook_strong", label: "Opening hook creates immediate tension or curiosity" },
+  { key: "arc_invisible", label: "ARC structure invisible — no WHAT/WHY/WHEN labels" },
+  { key: "narrative_escalates", label: "Each section builds and escalates from the previous" },
+  { key: "one_story_threaded", label: "One primary story threaded through (not per-section placeholders)" },
+  { key: "analogies_present", label: "At least one vivid analogy per major section" },
+  { key: "data_specific", label: "Specific data and numbers woven throughout" },
+  { key: "lead_magnet_organic_3x", label: "Lead magnet mentioned organically 3 times" },
+  { key: "playbook_included", label: "\"What to do about it\" playbook with numbered actions" },
+  { key: "curiosity_bridges_specific", label: "Curiosity bridges create specific open loops" },
+  { key: "next_video_bridge_specific", label: "Next video push connects specifically to this content" },
+  { key: "credentials_exact", label: "Member's exact credentials appear verbatim" },
+  { key: "conversational_tone", label: "Conversational tone — contractions, fragments, rhetorical questions" },
+  { key: "visual_cues_specific", label: "Visual cues specific and tied to content" },
 ];
 
 type Phase = "upload" | "research" | "opening_context" | "opening" | "credibility" | "insights" | "final" | "done";
@@ -180,87 +182,42 @@ function getNichePlaceholders(niche: string | null) {
 // string. Used by handleCopy, handleSave, and the auto-save conversation payload.
 
 function buildFullScriptMarkdown(finalData: any, title: string): string {
-  // Build a key→label lookup from the existing CHECKLIST_LABELS array
   const checklistLookup = Object.fromEntries(CHECKLIST_LABELS.map((c) => [c.key, c.label]));
-  if (!finalData?.script_outline) return "";
-  const s = finalData.script_outline;
+  if (!finalData) return "";
   const lines: string[] = [];
 
   lines.push(`# ARC Script: ${title}`, "");
 
-  // OPENING
-  if (s.opening) {
-    lines.push("## OPENING", "", s.opening, "");
-  }
-
-  // CREDIBILITY
-  if (s.credibility) {
-    lines.push("## CREDIBILITY SIGNAL", "", s.credibility, "");
-  }
-
-  // LEAD MAGNET #1
-  if (s.lead_magnet_1) {
-    lines.push("## LEAD MAGNET — Mention #1", "", s.lead_magnet_1, "");
-  }
-
-  // INSIGHTS
-  if (s.insights?.length) {
-    s.insights.forEach((ins: any, i: number) => {
-      lines.push(`## INSIGHT ${i + 1}`, "");
-      if (ins.what) lines.push(`**WHAT:** ${ins.what}`, "");
-      if (ins.why) lines.push(`**WHY:** ${ins.why}`, "");
-      if (ins.when) lines.push(`**WHEN:** ${ins.when}`, "");
-      if (ins.story) lines.push(`**STORY / PROOF:** ${ins.story}`, "");
-      if (ins.connection) lines.push(`**WHAT THIS MEANS:** ${ins.connection}`, "");
-      if (ins.curiosity_bridge) lines.push(`**CURIOSITY BRIDGE:** ${ins.curiosity_bridge}`, "");
-      if (ins.visual_prompt) lines.push(`> 🎬 Visual: ${ins.visual_prompt}`, "");
-    });
-  }
-
-  // LEAD MAGNET #2
-  if (s.lead_magnet_2) {
-    lines.push("## LEAD MAGNET — Mention #2", "", s.lead_magnet_2, "");
-  }
-
-  // CLOSING
-  if (s.closing) {
-    lines.push("## CLOSING", "", s.closing, "");
-  }
-
-  // CONNECTION PHRASES
-  if (s.connection_phrases?.length) {
-    lines.push("## CONNECTION PHRASES", "");
-    s.connection_phrases.forEach((cp: any) => {
-      const phrase = typeof cp === "string" ? cp : cp.phrase ?? cp;
-      const placement = typeof cp === "object" && cp.placement ? ` *(${cp.placement})*` : "";
-      lines.push(`- "${phrase}"${placement}`);
-    });
-    lines.push("");
-  }
-
-  // VALUES PLACED
-  if (s.values_placed?.length) {
-    lines.push("## VALUES PLACED", "");
-    s.values_placed.forEach((vp: any) => {
-      const val = typeof vp === "string" ? vp : vp.value ?? vp;
-      const placement = typeof vp === "object" && vp.placement ? ` — ${vp.placement}` : "";
-      lines.push(`- ${val}${placement}`);
-    });
-    lines.push("");
-  }
-
-  // VISUAL PROMPTS (global, not tied to specific insight)
-  if (s.visual_prompts?.length) {
-    lines.push("## VISUAL PROMPTS", "");
-    s.visual_prompts.forEach((vp: string) => {
-      lines.push(`- ${vp}`);
-    });
-    lines.push("");
+  // ── New flat-script format ──────────────────────────────────────────────────
+  if (finalData.script) {
+    lines.push(finalData.script, "");
+  } else if (finalData.script_outline) {
+    // ── Legacy labelled-outline format (backward compat) ─────────────────────
+    const s = finalData.script_outline;
+    if (s.opening)      lines.push("## OPENING", "", s.opening, "");
+    if (s.credibility)  lines.push("## CREDIBILITY SIGNAL", "", s.credibility, "");
+    if (s.lead_magnet_1) lines.push("## LEAD MAGNET — Mention #1", "", s.lead_magnet_1, "");
+    if (s.insights?.length) {
+      s.insights.forEach((ins: any, i: number) => {
+        lines.push(`## INSIGHT ${i + 1}`, "");
+        if (ins.what)           lines.push(`**WHAT:** ${ins.what}`, "");
+        if (ins.why)            lines.push(`**WHY:** ${ins.why}`, "");
+        if (ins.when)           lines.push(`**WHEN:** ${ins.when}`, "");
+        if (ins.story)          lines.push(`**STORY / PROOF:** ${ins.story}`, "");
+        if (ins.connection)     lines.push(`**WHAT THIS MEANS:** ${ins.connection}`, "");
+        if (ins.curiosity_bridge) lines.push(`**CURIOSITY BRIDGE:** ${ins.curiosity_bridge}`, "");
+        if (ins.visual_prompt)  lines.push(`> 🎬 Visual: ${ins.visual_prompt}`, "");
+      });
+    }
+    if (s.lead_magnet_2) lines.push("## LEAD MAGNET — Mention #2", "", s.lead_magnet_2, "");
+    if (s.closing)       lines.push("## CLOSING", "", s.closing, "");
+  } else {
+    return "";
   }
 
   // CHECKLIST
   if (finalData.checklist && Object.keys(finalData.checklist).length) {
-    lines.push("## CHECKLIST", "");
+    lines.push("---", "", "## CHECKLIST", "");
     for (const [key, val] of Object.entries(finalData.checklist as Record<string, boolean>)) {
       const label = checklistLookup[key] ?? key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
       lines.push(`- [${val ? "x" : " "}] ${label}`);
@@ -268,13 +225,15 @@ function buildFullScriptMarkdown(finalData: any, title: string): string {
     lines.push("");
   }
 
-  // RETENTION SUGGESTIONS
-  if (finalData.retention_suggestions?.length) {
-    lines.push("## RETENTION SUGGESTIONS", "");
-    finalData.retention_suggestions.forEach((rs: any, i: number) => {
-      lines.push(`**${i + 1}. ${rs.location ?? ""}**`);
+  // RETENTION NOTES
+  const retNotes = finalData.retentionNotes ?? finalData.retention_suggestions ?? [];
+  if (retNotes.length) {
+    lines.push("## RETENTION NOTES", "");
+    retNotes.forEach((rs: any, i: number) => {
+      const label = rs.timestamp ?? rs.location ?? `Note ${i + 1}`;
+      lines.push(`**${i + 1}. ${label}**`);
       if (rs.issue) lines.push(`Issue: ${rs.issue}`);
-      if (rs.fix) lines.push(`Fix: ${rs.fix}`);
+      if (rs.fix)   lines.push(`Fix: ${rs.fix}`);
       lines.push("");
     });
   }
@@ -684,7 +643,7 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
         sourceTheme: prefillData?.theme,
       });
       setFinalData(result);
-      setRetentionSuggestions(result.retention_suggestions ?? []);
+      setRetentionSuggestions(result.retentionNotes ?? result.retention_suggestions ?? []);
       setPhase("done");
 
       // Auto-save to 30-day conversation history
@@ -1536,52 +1495,100 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
         <div className="space-y-6">
           <StepHeader step={4} total={4} label="Your ARC Script is Ready" />
 
-          {/* Script outline */}
-          {finalData.script_outline && (() => {
-            const s = finalData.script_outline;
-            return (
-              <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-5 space-y-5">
-                {s.opening && (
-                  <div>
-                    <p className="text-xs font-bold text-[#3dc3ff] uppercase tracking-wider mb-2">Opening</p>
-                    <p className="text-sm text-[#1e2a38]/80 leading-relaxed whitespace-pre-wrap">{s.opening}</p>
-                  </div>
-                )}
-                {s.insights?.map((ins: any, i: number) => (
-                  <div key={i} className="border-t border-[#1e2a38]/5 pt-4">
-                    <p className="text-xs font-bold text-[#1e2a38]/50 uppercase tracking-wider mb-3">Insight {i + 1}</p>
-                    <div className="space-y-2">
-                      {ins.what && <div><span className="text-xs font-semibold text-[#1e2a38]/40 mr-2">WHAT</span><span className="text-sm text-[#1e2a38]/80">{ins.what}</span></div>}
-                      {ins.why && <div><span className="text-xs font-semibold text-[#1e2a38]/40 mr-2">WHY</span><span className="text-sm text-[#1e2a38]/80">{ins.why}</span></div>}
-                      {ins.when && <div><span className="text-xs font-semibold text-[#1e2a38]/40 mr-2">WHEN</span><span className="text-sm text-[#1e2a38]/80">{ins.when}</span></div>}
-                      {ins.story && <div><span className="text-xs font-semibold text-[#1e2a38]/40 mr-2">STORY</span><span className="text-sm text-[#1e2a38]/80">{ins.story}</span></div>}
-                      {ins.connection && <div><span className="text-xs font-semibold text-[#1e2a38]/40 mr-2">CONNECTION</span><span className="text-sm text-[#1e2a38]/80">{ins.connection}</span></div>}
-                      {ins.visual_prompt && <div className="bg-[#f1f1ef] rounded-lg px-3 py-2 text-xs text-[#1e2a38]/60 mt-1">📷 {ins.visual_prompt}</div>}
-                      {ins.curiosity_bridge && <div className="text-xs text-[#3dc3ff] italic mt-1">→ {ins.curiosity_bridge}</div>}
-                    </div>
-                  </div>
-                ))}
-                {s.lead_magnet_2 && (
-                  <div className="border-t border-[#1e2a38]/5 pt-4">
-                    <p className="text-xs font-bold text-[#3dc3ff] uppercase tracking-wider mb-2">Lead Magnet #2</p>
-                    <p className="text-sm text-[#1e2a38]/80">{s.lead_magnet_2}</p>
-                  </div>
-                )}
-                {s.closing && (
-                  <div className="border-t border-[#1e2a38]/5 pt-4">
-                    <p className="text-xs font-bold text-[#3dc3ff] uppercase tracking-wider mb-2">Closing</p>
-                    <p className="text-sm text-[#1e2a38]/80 whitespace-pre-wrap">{s.closing}</p>
-                  </div>
-                )}
-              </div>
-            );
-          })()}
-
-          {/* Checklist */}
-          {finalData.checklist && (
+          {/* ── Flowing script display ─────────────────────────────────────── */}
+          {(finalData.script || finalData.script_outline) && (
             <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-5">
-              <h3 className="font-semibold text-[#1e2a38] mb-4">ARC Checklist</h3>
-              <div className="space-y-2">
+              {finalData.script ? (
+                // New format: flowing monologue with inline cues
+                <div className="text-sm text-[#1e2a38]/85 leading-relaxed whitespace-pre-wrap font-mono">
+                  {finalData.script.split(/(\[(?:STORY CUE|CALLBACK|ON SCREEN):[^\]]*\])/g).map((part: string, i: number) => {
+                    if (/^\[STORY CUE:/i.test(part)) {
+                      return (
+                        <span key={i} className="inline-block bg-amber-50 border border-amber-200 text-amber-700 rounded px-2 py-0.5 text-xs font-medium not-italic my-0.5">
+                          {part}
+                        </span>
+                      );
+                    }
+                    if (/^\[CALLBACK:/i.test(part)) {
+                      return (
+                        <span key={i} className="inline-block bg-violet-50 border border-violet-200 text-violet-700 rounded px-2 py-0.5 text-xs font-medium not-italic my-0.5">
+                          {part}
+                        </span>
+                      );
+                    }
+                    if (/^\[ON SCREEN:/i.test(part)) {
+                      return (
+                        <span key={i} className="inline-block bg-blue-50 border border-blue-200 text-[#3dc3ff]/90 rounded px-2 py-0.5 text-xs font-medium not-italic my-0.5">
+                          {part}
+                        </span>
+                      );
+                    }
+                    return <span key={i}>{part}</span>;
+                  })}
+                </div>
+              ) : (
+                // Legacy format: labelled outline sections
+                (() => {
+                  const s = finalData.script_outline;
+                  return (
+                    <div className="space-y-5">
+                      {s.opening && (
+                        <div>
+                          <p className="text-xs font-bold text-[#3dc3ff] uppercase tracking-wider mb-2">Opening</p>
+                          <p className="text-sm text-[#1e2a38]/80 leading-relaxed whitespace-pre-wrap">{s.opening}</p>
+                        </div>
+                      )}
+                      {s.insights?.map((ins: any, i: number) => (
+                        <div key={i} className="border-t border-[#1e2a38]/5 pt-4">
+                          <p className="text-xs font-bold text-[#1e2a38]/50 uppercase tracking-wider mb-3">Insight {i + 1}</p>
+                          <div className="space-y-2">
+                            {ins.what && <div><span className="text-xs font-semibold text-[#1e2a38]/40 mr-2">WHAT</span><span className="text-sm text-[#1e2a38]/80">{ins.what}</span></div>}
+                            {ins.why && <div><span className="text-xs font-semibold text-[#1e2a38]/40 mr-2">WHY</span><span className="text-sm text-[#1e2a38]/80">{ins.why}</span></div>}
+                            {ins.when && <div><span className="text-xs font-semibold text-[#1e2a38]/40 mr-2">WHEN</span><span className="text-sm text-[#1e2a38]/80">{ins.when}</span></div>}
+                            {ins.story && <div><span className="text-xs font-semibold text-[#1e2a38]/40 mr-2">STORY</span><span className="text-sm text-[#1e2a38]/80">{ins.story}</span></div>}
+                            {ins.connection && <div><span className="text-xs font-semibold text-[#1e2a38]/40 mr-2">CONNECTION</span><span className="text-sm text-[#1e2a38]/80">{ins.connection}</span></div>}
+                            {ins.visual_prompt && <div className="bg-[#f1f1ef] rounded-lg px-3 py-2 text-xs text-[#1e2a38]/60 mt-1">📷 {ins.visual_prompt}</div>}
+                            {ins.curiosity_bridge && <div className="text-xs text-[#3dc3ff] italic mt-1">→ {ins.curiosity_bridge}</div>}
+                          </div>
+                        </div>
+                      ))}
+                      {s.lead_magnet_2 && (
+                        <div className="border-t border-[#1e2a38]/5 pt-4">
+                          <p className="text-xs font-bold text-[#3dc3ff] uppercase tracking-wider mb-2">Lead Magnet #2</p>
+                          <p className="text-sm text-[#1e2a38]/80">{s.lead_magnet_2}</p>
+                        </div>
+                      )}
+                      {s.closing && (
+                        <div className="border-t border-[#1e2a38]/5 pt-4">
+                          <p className="text-xs font-bold text-[#3dc3ff] uppercase tracking-wider mb-2">Closing</p>
+                          <p className="text-sm text-[#1e2a38]/80 whitespace-pre-wrap">{s.closing}</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()
+              )}
+
+              {/* Cue legend for new format */}
+              {finalData.script && (
+                <div className="mt-4 pt-4 border-t border-[#1e2a38]/5 flex flex-wrap gap-3 text-xs text-[#1e2a38]/50">
+                  <span className="flex items-center gap-1.5"><span className="inline-block w-2.5 h-2.5 rounded-sm bg-amber-200" />Story Cue</span>
+                  <span className="flex items-center gap-1.5"><span className="inline-block w-2.5 h-2.5 rounded-sm bg-violet-200" />Story Callback</span>
+                  <span className="flex items-center gap-1.5"><span className="inline-block w-2.5 h-2.5 rounded-sm bg-blue-200" />On Screen</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── Checklist (collapsible) ────────────────────────────────────── */}
+          {finalData.checklist && (
+            <details className="bg-white border border-[#1e2a38]/10 rounded-2xl p-5 group">
+              <summary className="font-semibold text-[#1e2a38] cursor-pointer list-none flex items-center justify-between">
+                ARC Script Checklist
+                <span className="text-xs text-[#1e2a38]/40 group-open:hidden">▼ Show</span>
+                <span className="text-xs text-[#1e2a38]/40 hidden group-open:inline">▲ Hide</span>
+              </summary>
+              <div className="space-y-2 mt-4">
                 {CHECKLIST_LABELS.map((item) => {
                   const pass = finalData.checklist[item.key];
                   return (
@@ -1594,23 +1601,26 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
                   );
                 })}
               </div>
-            </div>
+            </details>
           )}
 
-          {/* Retention Analysis */}
+          {/* ── Retention Analysis (collapsible) ──────────────────────────── */}
           {retentionSuggestions.length > 0 && (
-            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5">
-              <h3 className="font-semibold text-amber-800 mb-4">Retention Analysis</h3>
-              <div className="space-y-4">
+            <details className="bg-amber-50 border border-amber-200 rounded-2xl p-5">
+              <summary className="font-semibold text-amber-800 cursor-pointer list-none flex items-center justify-between">
+                Retention Analysis
+                <span className="text-xs text-amber-500">▼ Show</span>
+              </summary>
+              <div className="space-y-4 mt-4">
                 {retentionSuggestions.map((s, i) => (
                   <div key={i} className="space-y-1">
-                    <p className="text-xs font-bold text-amber-600 uppercase tracking-wider">{s.location}</p>
+                    <p className="text-xs font-bold text-amber-600 uppercase tracking-wider">{s.timestamp ?? s.location}</p>
                     <p className="text-sm text-amber-800"><span className="font-semibold">Issue:</span> {s.issue}</p>
                     <p className="text-sm text-amber-800"><span className="font-semibold">Fix:</span> {s.fix}</p>
                   </div>
                 ))}
               </div>
-            </div>
+            </details>
           )}
 
           {/* Actions */}
