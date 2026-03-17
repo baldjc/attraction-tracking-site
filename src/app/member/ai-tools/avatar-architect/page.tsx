@@ -18,18 +18,28 @@ interface Message {
   content: string;
 }
 
+type RawTheme = string | { name: string; emoji?: string | null; colour?: string | null; coreStress?: string | null };
+
 interface AvatarData {
   avatar_name: string;
   avatar_summary: string;
-  content_themes: string[];
+  content_themes: RawTheme[];
   full_document: string;
 }
 
 interface SavedAvatar {
   avatarName?: string;
   avatarSummary?: string;
-  contentThemes?: string[];
+  contentThemes?: RawTheme[];
   updatedAt?: string;
+}
+
+function getThemeName(t: RawTheme): string {
+  return typeof t === "string" ? t : (t.name ?? "");
+}
+
+function getThemeEmoji(t: RawTheme): string | null {
+  return typeof t === "string" ? null : (t.emoji ?? null);
 }
 
 // ─── Lightweight Markdown Renderer ────────────────────────────────────────────
@@ -135,7 +145,7 @@ function AvatarProfileCard({
   const [name, setName] = useState(avatar.avatarName ?? "");
   const [summary, setSummary] = useState(avatar.avatarSummary ?? "");
   const [themes, setThemes] = useState<string[]>(
-    Array.isArray(avatar.contentThemes) ? avatar.contentThemes : []
+    Array.isArray(avatar.contentThemes) ? avatar.contentThemes.map(getThemeName) : []
   );
   const [themeInput, setThemeInput] = useState("");
   const [saving, setSaving] = useState(false);
@@ -144,7 +154,7 @@ function AvatarProfileCard({
   function startEdit() {
     setName(avatar.avatarName ?? "");
     setSummary(avatar.avatarSummary ?? "");
-    setThemes(Array.isArray(avatar.contentThemes) ? [...avatar.contentThemes] : []);
+    setThemes(Array.isArray(avatar.contentThemes) ? avatar.contentThemes.map(getThemeName) : []);
     setEditing(true);
   }
 
@@ -259,12 +269,13 @@ function AvatarProfileCard({
                   Content Themes
                 </p>
                 <div className="flex flex-wrap gap-1.5">
-                  {displayThemes.map((t) => (
+                  {displayThemes.map((t, i) => (
                     <span
-                      key={t}
+                      key={i}
                       className="text-xs bg-[#3dc3ff]/10 text-[#3dc3ff] font-medium px-2.5 py-1 rounded-full border border-[#3dc3ff]/20"
                     >
-                      {t}
+                      {getThemeEmoji(t) && <span className="mr-1">{getThemeEmoji(t)}</span>}
+                      {getThemeName(t)}
                     </span>
                   ))}
                 </div>
