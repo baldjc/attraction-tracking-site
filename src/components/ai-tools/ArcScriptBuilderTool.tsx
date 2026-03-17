@@ -527,80 +527,50 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
 
       {/* ── UPLOAD PHASE (normal flow) ── */}
       {phase === "upload" && (
-        <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-6">
-          {isLocked ? (
-            <div className="text-center py-10 space-y-3">
-              <p className="text-4xl">🔒</p>
-              <p className="font-semibold text-[#1e2a38]">Monthly limit reached</p>
-              <p className="text-sm text-[#1e2a38]/60">
-                Your AI usage cap resets on <span className="font-medium">{usage?.resetsAt}</span>.
-                Contact support if you need an extension.
-              </p>
-            </div>
-          ) : (
-            <>
-              <ArcScriptUploadPhase onStartBuilding={handleStartBuilding} cap={usage?.cap ? parseFloat(usage.cap) : 15} />
-              {/* Extra fields for opening context */}
-              <div className="mt-6 pt-6 border-t border-[#1e2a38]/10 space-y-4">
-                <h3 className="text-sm font-semibold text-[#1e2a38]">Opening Context <span className="text-[#1e2a38]/40 font-normal">(optional but recommended)</span></h3>
-                <div>
-                  <label className="block text-xs font-medium text-[#1e2a38]/60 mb-1">Unique angle or hook for this video</label>
-                  <input
-                    type="text"
-                    value={uniqueAngle}
-                    onChange={(e) => setUniqueAngle(e.target.value)}
-                    placeholder={placeholders.uniqueAngle}
-                    className="w-full border border-[#1e2a38]/15 rounded-lg px-3 py-2 text-sm text-[#1e2a38] focus:outline-none focus:border-[#3dc3ff]"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-medium text-[#1e2a38]/60 mb-1">How viewer feels BEFORE watching</label>
-                    <input
-                      type="text"
-                      value={beforeFeeling}
-                      onChange={(e) => setBeforeFeeling(e.target.value)}
-                      placeholder={placeholders.before}
-                      className="w-full border border-[#1e2a38]/15 rounded-lg px-3 py-2 text-sm text-[#1e2a38] focus:outline-none focus:border-[#3dc3ff]"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-[#1e2a38]/60 mb-1">How viewer feels AFTER watching</label>
-                    <input
-                      type="text"
-                      value={afterFeeling}
-                      onChange={(e) => setAfterFeeling(e.target.value)}
-                      placeholder={placeholders.after}
-                      className="w-full border border-[#1e2a38]/15 rounded-lg px-3 py-2 text-sm text-[#1e2a38] focus:outline-none focus:border-[#3dc3ff]"
-                    />
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-        </div>
+        isLocked ? (
+          <div className="text-center py-10 space-y-3">
+            <p className="text-4xl">🔒</p>
+            <p className="font-semibold text-[#1e2a38]">Monthly limit reached</p>
+            <p className="text-sm text-[#1e2a38]/60">
+              Your AI usage cap resets on <span className="font-medium">{usage?.resetsAt}</span>.
+              Contact support if you need an extension.
+            </p>
+          </div>
+        ) : (
+          <ArcScriptUploadPhase
+            onStartBuilding={handleStartBuilding}
+            cap={usage?.cap ? parseFloat(usage.cap) : 15}
+            openingContext={{
+              uniqueAngle,
+              beforeFeeling,
+              afterFeeling,
+              placeholders,
+              onUniqueAngleChange: setUniqueAngle,
+              onBeforeFeelingChange: setBeforeFeeling,
+              onAfterFeelingChange: setAfterFeeling,
+            }}
+          />
+        )
       )}
 
       {/* ── RESEARCH PHASE (prefill flow) ── */}
       {phase === "research" && !loading && (
-        <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-6">
-          {isLocked ? (
-            <div className="text-center py-10 space-y-3">
-              <p className="text-4xl">🔒</p>
-              <p className="font-semibold text-[#1e2a38]">Monthly limit reached</p>
-              <p className="text-sm text-[#1e2a38]/60">
-                Your AI usage cap resets on <span className="font-medium">{usage?.resetsAt}</span>.
-              </p>
-            </div>
-          ) : (
-            <ArcScriptUploadPhase
-              onStartBuilding={handleResearchComplete}
-              cap={usage?.cap ? parseFloat(usage.cap) : 15}
-              prefillData={prefillData ?? undefined}
-              onSkip={handleSkipResearch}
-            />
-          )}
-        </div>
+        isLocked ? (
+          <div className="text-center py-10 space-y-3">
+            <p className="text-4xl">🔒</p>
+            <p className="font-semibold text-[#1e2a38]">Monthly limit reached</p>
+            <p className="text-sm text-[#1e2a38]/60">
+              Your AI usage cap resets on <span className="font-medium">{usage?.resetsAt}</span>.
+            </p>
+          </div>
+        ) : (
+          <ArcScriptUploadPhase
+            onStartBuilding={handleResearchComplete}
+            cap={usage?.cap ? parseFloat(usage.cap) : 15}
+            prefillData={prefillData ?? undefined}
+            onSkip={handleSkipResearch}
+          />
+        )
       )}
 
       {/* ── OPENING CONTEXT PHASE (prefill flow) ── */}
@@ -612,7 +582,7 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
             <p className="text-sm font-semibold text-[#1e2a38]">{uploadData?.title}</p>
           </div>
 
-          <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-6 space-y-4">
+          <div className="space-y-4">
             <div>
               <h3 className="font-semibold text-[#1e2a38] mb-1">Opening Context</h3>
               <p className="text-sm text-[#1e2a38]/50">
@@ -628,7 +598,7 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
                 value={uniqueAngle}
                 onChange={(e) => setUniqueAngle(e.target.value)}
                 placeholder={placeholders.uniqueAngle}
-                className="w-full border border-[#1e2a38]/15 rounded-lg px-3 py-2 text-sm text-[#1e2a38] focus:outline-none focus:border-[#3dc3ff]"
+                className="w-full bg-white border border-[#1e2a38]/15 rounded-lg px-3 py-2 text-sm text-[#1e2a38] focus:outline-none focus:border-[#3dc3ff]"
               />
             </div>
 
@@ -640,7 +610,7 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
                   value={beforeFeeling}
                   onChange={(e) => setBeforeFeeling(e.target.value)}
                   placeholder={placeholders.before}
-                  className="w-full border border-[#1e2a38]/15 rounded-lg px-3 py-2 text-sm text-[#1e2a38] focus:outline-none focus:border-[#3dc3ff]"
+                  className="w-full bg-white border border-[#1e2a38]/15 rounded-lg px-3 py-2 text-sm text-[#1e2a38] focus:outline-none focus:border-[#3dc3ff]"
                 />
               </div>
               <div>
@@ -650,7 +620,7 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
                   value={afterFeeling}
                   onChange={(e) => setAfterFeeling(e.target.value)}
                   placeholder={placeholders.after}
-                  className="w-full border border-[#1e2a38]/15 rounded-lg px-3 py-2 text-sm text-[#1e2a38] focus:outline-none focus:border-[#3dc3ff]"
+                  className="w-full bg-white border border-[#1e2a38]/15 rounded-lg px-3 py-2 text-sm text-[#1e2a38] focus:outline-none focus:border-[#3dc3ff]"
                 />
               </div>
             </div>

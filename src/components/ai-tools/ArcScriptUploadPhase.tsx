@@ -20,11 +20,22 @@ interface PrefillData {
   talkingPoints: string[];
 }
 
+interface OpeningContextProps {
+  uniqueAngle: string;
+  beforeFeeling: string;
+  afterFeeling: string;
+  placeholders: { uniqueAngle: string; before: string; after: string };
+  onUniqueAngleChange: (v: string) => void;
+  onBeforeFeelingChange: (v: string) => void;
+  onAfterFeelingChange: (v: string) => void;
+}
+
 interface Props {
   onStartBuilding: (data: StartBuildingData) => void;
   cap?: number;
   prefillData?: PrefillData;
   onSkip?: () => void;
+  openingContext?: OpeningContextProps;
 }
 
 function formatBytes(bytes: number): string {
@@ -47,7 +58,7 @@ const ALLOWED_EXTENSIONS = ["pdf", "docx", "txt", "md"];
 const MAX_FILES = 3;
 const MAX_BYTES = 10 * 1024 * 1024;
 
-export default function ArcScriptUploadPhase({ onStartBuilding, cap = 15, prefillData, onSkip }: Props) {
+export default function ArcScriptUploadPhase({ onStartBuilding, cap = 15, prefillData, onSkip, openingContext }: Props) {
   const [title, setTitle] = useState("");
   const [talkingPoints, setTalkingPoints] = useState("");
   const [pastedNotes, setPastedNotes] = useState("");
@@ -218,7 +229,7 @@ export default function ArcScriptUploadPhase({ onStartBuilding, cap = 15, prefil
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="e.g. Why 90% of Real Estate Agents Fail in Year 2"
-            className="w-full border border-[#1e2a38]/20 rounded-xl px-4 py-3 text-sm text-[#1e2a38] placeholder-[#1e2a38]/30 focus:outline-none focus:border-[#3dc3ff] transition-colors"
+            className="w-full bg-white border border-[#1e2a38]/20 rounded-xl px-4 py-3 text-sm text-[#1e2a38] placeholder-[#1e2a38]/30 focus:outline-none focus:border-[#3dc3ff] transition-colors"
           />
         </div>
       )}
@@ -235,7 +246,7 @@ export default function ArcScriptUploadPhase({ onStartBuilding, cap = 15, prefil
             onChange={(e) => setTalkingPoints(e.target.value)}
             placeholder="What insights, tips, or points do you want to cover? One per line is fine."
             rows={3}
-            className="w-full border border-[#1e2a38]/20 rounded-xl px-4 py-3 text-sm text-[#1e2a38] placeholder-[#1e2a38]/30 resize-none focus:outline-none focus:border-[#3dc3ff] transition-colors"
+            className="w-full bg-white border border-[#1e2a38]/20 rounded-xl px-4 py-3 text-sm text-[#1e2a38] placeholder-[#1e2a38]/30 resize-none focus:outline-none focus:border-[#3dc3ff] transition-colors"
           />
         </div>
       )}
@@ -326,7 +337,7 @@ export default function ArcScriptUploadPhase({ onStartBuilding, cap = 15, prefil
           onChange={(e) => setPastedNotes(e.target.value)}
           placeholder="Paste any research, notes, stats, quotes, or article content here…"
           rows={8}
-          className="w-full border border-[#1e2a38]/20 rounded-xl px-4 py-3 text-sm text-[#1e2a38] placeholder-[#1e2a38]/30 resize-none focus:outline-none focus:border-[#3dc3ff] transition-colors"
+          className="w-full bg-white border border-[#1e2a38]/20 rounded-xl px-4 py-3 text-sm text-[#1e2a38] placeholder-[#1e2a38]/30 resize-none focus:outline-none focus:border-[#3dc3ff] transition-colors"
         />
       </div>
 
@@ -376,6 +387,48 @@ export default function ArcScriptUploadPhase({ onStartBuilding, cap = 15, prefil
         </div>
       ) : (
         <>
+          {/* Opening Context — shown above the CTA when passed from parent */}
+          {openingContext && (
+            <div className="pt-4 border-t border-[#1e2a38]/10 space-y-4">
+              <h3 className="text-sm font-semibold text-[#1e2a38]">
+                Opening Context{" "}
+                <span className="text-[#1e2a38]/40 font-normal">(optional but recommended)</span>
+              </h3>
+              <div>
+                <label className="block text-xs font-medium text-[#1e2a38]/60 mb-1">Unique angle or hook for this video</label>
+                <input
+                  type="text"
+                  value={openingContext.uniqueAngle}
+                  onChange={(e) => openingContext.onUniqueAngleChange(e.target.value)}
+                  placeholder={openingContext.placeholders.uniqueAngle}
+                  className="w-full bg-white border border-[#1e2a38]/15 rounded-lg px-3 py-2 text-sm text-[#1e2a38] focus:outline-none focus:border-[#3dc3ff]"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-[#1e2a38]/60 mb-1">How viewer feels BEFORE watching</label>
+                  <input
+                    type="text"
+                    value={openingContext.beforeFeeling}
+                    onChange={(e) => openingContext.onBeforeFeelingChange(e.target.value)}
+                    placeholder={openingContext.placeholders.before}
+                    className="w-full bg-white border border-[#1e2a38]/15 rounded-lg px-3 py-2 text-sm text-[#1e2a38] focus:outline-none focus:border-[#3dc3ff]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-[#1e2a38]/60 mb-1">How viewer feels AFTER watching</label>
+                  <input
+                    type="text"
+                    value={openingContext.afterFeeling}
+                    onChange={(e) => openingContext.onAfterFeelingChange(e.target.value)}
+                    placeholder={openingContext.placeholders.after}
+                    className="w-full bg-white border border-[#1e2a38]/15 rounded-lg px-3 py-2 text-sm text-[#1e2a38] focus:outline-none focus:border-[#3dc3ff]"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
           <button
             onClick={handleStart}
             disabled={!canStart || loading}

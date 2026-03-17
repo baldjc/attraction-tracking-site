@@ -661,7 +661,7 @@ export default function AvatarArchitectPage() {
             onKeyDown={handleKey}
             placeholder="Type your reply... (Enter to send, Shift+Enter for new line)"
             rows={2}
-            className="flex-1 border border-[#1e2a38]/20 rounded-xl px-4 py-3 text-sm text-[#1e2a38] placeholder-[#1e2a38]/30 resize-none focus:outline-none focus:border-[#3dc3ff] transition-colors"
+            className="flex-1 bg-white border border-[#1e2a38]/20 rounded-xl px-4 py-3 text-sm text-[#1e2a38] placeholder-[#1e2a38]/30 resize-none focus:outline-none focus:border-[#3dc3ff] transition-colors"
           />
           <button
             onClick={sendMessage}

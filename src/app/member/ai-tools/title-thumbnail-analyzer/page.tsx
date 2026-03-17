@@ -357,8 +357,7 @@ export default function TitleThumbnailAnalyzerPage() {
       </div>
 
       {!result ? (
-        <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-6">
-          <div className="space-y-5">
+        <div className="space-y-5">
             <div>
               <label className="block text-sm font-semibold text-[#1e2a38] mb-2">Video Title</label>
               <input
@@ -366,7 +365,7 @@ export default function TitleThumbnailAnalyzerPage() {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Paste your video title here..."
-                className="w-full border border-[#1e2a38]/20 rounded-xl px-4 py-3 text-sm text-[#1e2a38] placeholder-[#1e2a38]/30 focus:outline-none focus:border-[#3dc3ff] transition-colors"
+                className="w-full bg-white border border-[#1e2a38]/20 rounded-xl px-4 py-3 text-sm text-[#1e2a38] placeholder-[#1e2a38]/30 focus:outline-none focus:border-[#3dc3ff] transition-colors"
               />
             </div>
 
@@ -421,7 +420,7 @@ export default function TitleThumbnailAnalyzerPage() {
                 onChange={(e) => setIntroTranscript(e.target.value)}
                 placeholder="Hey, in this video I'm going to show you exactly why most agents are losing listings before they even get to the appointment..."
                 rows={4}
-                className="w-full border border-[#1e2a38]/20 rounded-xl px-4 py-3 text-sm text-[#1e2a38] placeholder-[#1e2a38]/30 focus:outline-none focus:border-[#3dc3ff] transition-colors resize-y"
+                className="w-full bg-white border border-[#1e2a38]/20 rounded-xl px-4 py-3 text-sm text-[#1e2a38] placeholder-[#1e2a38]/30 focus:outline-none focus:border-[#3dc3ff] transition-colors resize-y"
               />
             </div>
 
@@ -434,7 +433,6 @@ export default function TitleThumbnailAnalyzerPage() {
             >
               {loading ? "Analysing..." : "Analyse"}
             </button>
-          </div>
         </div>
       ) : (
         <div className="space-y-5">
