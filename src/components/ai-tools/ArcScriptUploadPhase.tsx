@@ -31,11 +31,20 @@ interface SavedScriptOption {
   createdAt: string;
 }
 
+interface MemberOption {
+  id: string;
+  fullName: string | null;
+  email: string;
+  youtubeChannelName: string | null;
+  youtubeChannelUrl: string | null;
+}
+
 interface Props {
   onStartBuilding: (data: StartBuildingData) => void;
   cap?: number;
   prefillData?: PrefillData;
   onSkip?: () => void;
+  isAdmin?: boolean;
 }
 
 function formatBytes(bytes: number): string {
@@ -48,7 +57,7 @@ const ALLOWED_EXTENSIONS = ["pdf", "docx", "txt", "md"];
 const MAX_FILES = 3;
 const MAX_BYTES = 10 * 1024 * 1024;
 
-export default function ArcScriptUploadPhase({ onStartBuilding, prefillData, onSkip }: Props) {
+export default function ArcScriptUploadPhase({ onStartBuilding, prefillData, onSkip, isAdmin }: Props) {
   const [title, setTitle] = useState("");
   const [talkingPoints, setTalkingPoints] = useState("");
   const [pastedNotes, setPastedNotes] = useState("");
@@ -58,6 +67,10 @@ export default function ArcScriptUploadPhase({ onStartBuilding, prefillData, onS
   const [savedScripts, setSavedScripts] = useState<SavedScriptOption[]>([]);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerLoading, setPickerLoading] = useState(false);
+  const [pickerStep, setPickerStep] = useState<"members" | "scripts">("scripts");
+  const [memberList, setMemberList] = useState<MemberOption[]>([]);
+  const [memberListLoading, setMemberListLoading] = useState(false);
+  const [selectedMember, setSelectedMember] = useState<MemberOption | null>(null);
   const pickerRef = useRef<HTMLDivElement>(null);
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
@@ -77,11 +90,46 @@ export default function ArcScriptUploadPhase({ onStartBuilding, prefillData, onS
   }, []);
 
   async function openPicker() {
-    setPickerOpen((v) => !v);
-    if (savedScripts.length > 0) return;
+    const opening = !pickerOpen;
+    setPickerOpen(opening);
+    if (!opening) return;
+
+    if (isAdmin) {
+      setPickerStep("members");
+      if (memberList.length > 0) return;
+      setMemberListLoading(true);
+      try {
+        const res = await fetch("/api/admin/members");
+        const data = await res.json();
+        setMemberList(data.members ?? []);
+      } catch {
+        setMemberList([]);
+      } finally {
+        setMemberListLoading(false);
+      }
+    } else {
+      setPickerStep("scripts");
+      if (savedScripts.length > 0) return;
+      setPickerLoading(true);
+      try {
+        const res = await fetch("/api/ai-tools/saved-scripts");
+        const data = await res.json();
+        setSavedScripts(data.scripts ?? []);
+      } catch {
+        setSavedScripts([]);
+      } finally {
+        setPickerLoading(false);
+      }
+    }
+  }
+
+  async function pickMember(m: MemberOption) {
+    setSelectedMember(m);
+    setPickerStep("scripts");
+    setSavedScripts([]);
     setPickerLoading(true);
     try {
-      const res = await fetch("/api/ai-tools/saved-scripts");
+      const res = await fetch(`/api/ai-tools/saved-scripts?userId=${m.id}`);
       const data = await res.json();
       setSavedScripts(data.scripts ?? []);
     } catch {
@@ -408,28 +456,81 @@ export default function ArcScriptUploadPhase({ onStartBuilding, prefillData, onS
 
             {pickerOpen && (
               <div className="absolute right-0 top-full mt-1.5 w-80 bg-white border border-[#1e2a38]/15 rounded-xl shadow-lg z-20 overflow-hidden">
-                {pickerLoading ? (
-                  <div className="px-4 py-5 text-sm text-[#1e2a38]/50 text-center">Loading scripts…</div>
-                ) : savedScripts.length === 0 ? (
-                  <div className="px-4 py-5 text-sm text-[#1e2a38]/50 text-center">No saved scripts yet</div>
-                ) : (
-                  <ul className="max-h-56 overflow-y-auto divide-y divide-[#1e2a38]/8">
-                    {savedScripts.map((s) => (
-                      <li key={s.id}>
+
+                {pickerStep === "members" && (
+                  <>
+                    <div className="px-4 py-2.5 border-b border-[#1e2a38]/8 bg-[#f1f1ef]">
+                      <p className="text-xs font-semibold text-[#1e2a38]/60 uppercase tracking-wide">Select a member</p>
+                    </div>
+                    {memberListLoading ? (
+                      <div className="px-4 py-5 text-sm text-[#1e2a38]/50 text-center">Loading members…</div>
+                    ) : memberList.length === 0 ? (
+                      <div className="px-4 py-5 text-sm text-[#1e2a38]/50 text-center">No members found</div>
+                    ) : (
+                      <ul className="max-h-64 overflow-y-auto divide-y divide-[#1e2a38]/8">
+                        {memberList.map((m) => (
+                          <li key={m.id}>
+                            <button
+                              type="button"
+                              onClick={() => pickMember(m)}
+                              className="w-full text-left px-4 py-3 hover:bg-[#3dc3ff]/5 transition-colors"
+                            >
+                              <p className="text-sm font-medium text-[#1e2a38]">{m.fullName || m.email}</p>
+                              {m.youtubeChannelName && (
+                                <p className="text-xs text-[#1e2a38]/40 mt-0.5">{m.youtubeChannelName}</p>
+                              )}
+                              {!m.youtubeChannelName && (
+                                <p className="text-xs text-[#1e2a38]/35 mt-0.5">{m.email}</p>
+                              )}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </>
+                )}
+
+                {pickerStep === "scripts" && (
+                  <>
+                    {selectedMember && (
+                      <div className="px-4 py-2.5 border-b border-[#1e2a38]/8 bg-[#f1f1ef] flex items-center justify-between">
+                        <p className="text-xs font-semibold text-[#1e2a38]/70 truncate">
+                          {selectedMember.fullName || selectedMember.email}
+                        </p>
                         <button
                           type="button"
-                          onClick={() => pickScript(s)}
-                          className="w-full text-left px-4 py-3 hover:bg-[#3dc3ff]/5 transition-colors"
+                          onClick={() => setPickerStep("members")}
+                          className="text-xs text-[#3dc3ff] hover:underline shrink-0 ml-2"
                         >
-                          <p className="text-sm font-medium text-[#1e2a38] leading-snug line-clamp-2">{s.videoTitle}</p>
-                          {s.scriptOpening && (
-                            <p className="text-xs text-[#1e2a38]/40 mt-0.5 line-clamp-1">{s.scriptOpening}</p>
-                          )}
+                          Change
                         </button>
-                      </li>
-                    ))}
-                  </ul>
+                      </div>
+                    )}
+                    {pickerLoading ? (
+                      <div className="px-4 py-5 text-sm text-[#1e2a38]/50 text-center">Loading scripts…</div>
+                    ) : savedScripts.length === 0 ? (
+                      <div className="px-4 py-5 text-sm text-[#1e2a38]/50 text-center">No saved scripts yet</div>
+                    ) : (
+                      <ul className="max-h-56 overflow-y-auto divide-y divide-[#1e2a38]/8">
+                        {savedScripts.map((s) => (
+                          <li key={s.id}>
+                            <button
+                              type="button"
+                              onClick={() => pickScript(s)}
+                              className="w-full text-left px-4 py-3 hover:bg-[#3dc3ff]/5 transition-colors"
+                            >
+                              <p className="text-sm font-medium text-[#1e2a38] leading-snug line-clamp-2">{s.videoTitle}</p>
+                              {s.scriptOpening && (
+                                <p className="text-xs text-[#1e2a38]/40 mt-0.5 line-clamp-1">{s.scriptOpening}</p>
+                              )}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </>
                 )}
+
               </div>
             )}
           </div>

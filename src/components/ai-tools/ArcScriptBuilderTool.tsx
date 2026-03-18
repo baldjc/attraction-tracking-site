@@ -26,7 +26,7 @@ interface UsageData {
   resetsAt: string;
 }
 
-export default function ArcScriptBuilderTool({ basePath }: Props) {
+export default function ArcScriptBuilderTool({ basePath, isAdmin }: Props) {
   const [phase, setPhase] = useState<"upload" | "chat">("upload");
   const [uploadData, setUploadData] = useState<UploadData | null>(null);
   const [usage, setUsage] = useState<UsageData | null>(null);
@@ -93,7 +93,7 @@ export default function ArcScriptBuilderTool({ basePath }: Props) {
         </div>
       ) : phase === "upload" ? (
         <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-6">
-          <ArcScriptUploadPhase onStartBuilding={handleStartBuilding} />
+          <ArcScriptUploadPhase onStartBuilding={handleStartBuilding} isAdmin={isAdmin} />
         </div>
       ) : uploadData ? (
         <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-6" style={{ minHeight: "70vh" }}>
