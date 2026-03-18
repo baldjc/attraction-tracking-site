@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, useCallback, DragEvent, ChangeEvent } from "react";
+import { useState, useRef, useCallback, useEffect, DragEvent, ChangeEvent } from "react";
+import { ChevronDownIcon, FilmIcon } from "@heroicons/react/24/outline";
 import { DocumentArrowUpIcon, XMarkIcon } from "@heroicons/react/24/outline";
 
 interface UploadedFile {
@@ -21,6 +22,13 @@ interface StartBuildingData {
 interface PrefillData {
   title: string;
   talkingPoints: string[];
+}
+
+interface SavedScriptOption {
+  id: string;
+  videoTitle: string;
+  scriptOpening: string;
+  createdAt: string;
 }
 
 interface Props {
@@ -47,12 +55,47 @@ export default function ArcScriptUploadPhase({ onStartBuilding, prefillData, onS
   const [clientStory, setClientStory] = useState("");
   const [leadMagnet, setLeadMagnet] = useState("");
   const [nextVideoPush, setNextVideoPush] = useState("");
+  const [savedScripts, setSavedScripts] = useState<SavedScriptOption[]>([]);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerLoading, setPickerLoading] = useState(false);
+  const pickerRef = useRef<HTMLDivElement>(null);
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    function handleOutside(e: MouseEvent) {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+        setPickerOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, []);
+
+  async function openPicker() {
+    setPickerOpen((v) => !v);
+    if (savedScripts.length > 0) return;
+    setPickerLoading(true);
+    try {
+      const res = await fetch("/api/ai-tools/saved-scripts");
+      const data = await res.json();
+      setSavedScripts(data.scripts ?? []);
+    } catch {
+      setSavedScripts([]);
+    } finally {
+      setPickerLoading(false);
+    }
+  }
+
+  function pickScript(s: SavedScriptOption) {
+    const intro = s.scriptOpening ? `\n\nIntro:\n${s.scriptOpening}` : "";
+    setNextVideoPush(`${s.videoTitle}${intro}`);
+    setPickerOpen(false);
+  }
 
   const isPrefilled = !!prefillData;
   const effectiveTitle = isPrefilled ? prefillData!.title : title;
@@ -347,19 +390,59 @@ export default function ArcScriptUploadPhase({ onStartBuilding, prefillData, onS
       </div>
 
       <div>
-        <label className="block text-sm font-semibold text-[#1e2a38] mb-1.5">
-          What video are you pushing viewers to next?{" "}
-          <span className="text-[#1e2a38]/40 font-normal">(optional)</span>
-        </label>
+        <div className="flex items-center justify-between mb-1.5">
+          <label className="block text-sm font-semibold text-[#1e2a38]">
+            What video are you pushing viewers to next?{" "}
+            <span className="text-[#1e2a38]/40 font-normal">(optional)</span>
+          </label>
+          <div className="relative" ref={pickerRef}>
+            <button
+              type="button"
+              onClick={openPicker}
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-[#3dc3ff] hover:text-[#3dc3ff]/80 transition-colors"
+            >
+              <FilmIcon className="w-3.5 h-3.5" />
+              Pick from saved scripts
+              <ChevronDownIcon className={`w-3 h-3 transition-transform ${pickerOpen ? "rotate-180" : ""}`} />
+            </button>
+
+            {pickerOpen && (
+              <div className="absolute right-0 top-full mt-1.5 w-80 bg-white border border-[#1e2a38]/15 rounded-xl shadow-lg z-20 overflow-hidden">
+                {pickerLoading ? (
+                  <div className="px-4 py-5 text-sm text-[#1e2a38]/50 text-center">Loading scripts…</div>
+                ) : savedScripts.length === 0 ? (
+                  <div className="px-4 py-5 text-sm text-[#1e2a38]/50 text-center">No saved scripts yet</div>
+                ) : (
+                  <ul className="max-h-56 overflow-y-auto divide-y divide-[#1e2a38]/8">
+                    {savedScripts.map((s) => (
+                      <li key={s.id}>
+                        <button
+                          type="button"
+                          onClick={() => pickScript(s)}
+                          className="w-full text-left px-4 py-3 hover:bg-[#3dc3ff]/5 transition-colors"
+                        >
+                          <p className="text-sm font-medium text-[#1e2a38] leading-snug line-clamp-2">{s.videoTitle}</p>
+                          {s.scriptOpening && (
+                            <p className="text-xs text-[#1e2a38]/40 mt-0.5 line-clamp-1">{s.scriptOpening}</p>
+                          )}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
         <p className="text-xs text-[#1e2a38]/50 mb-2">
-          Title or topic of your next video. Paste the intro or a few details if you have them — the AI uses this to craft a specific open loop ending.
+          Pick a saved script or type the title/topic. The AI pulls the opening so the teaser is specific to what&apos;s in that video.
         </p>
-        <input
-          type="text"
+        <textarea
           value={nextVideoPush}
           onChange={(e) => setNextVideoPush(e.target.value)}
+          rows={nextVideoPush.length > 80 ? 5 : 2}
           placeholder="e.g. Why Calgary Buyers Are Regret-Proofing Their Offer Strategy in 2026"
-          className="w-full bg-white border border-[#1e2a38]/20 rounded-xl px-4 py-3 text-sm text-[#1e2a38] placeholder-[#1e2a38]/30 focus:outline-none focus:border-[#3dc3ff] transition-colors"
+          className="w-full bg-white border border-[#1e2a38]/20 rounded-xl px-4 py-3 text-sm text-[#1e2a38] placeholder-[#1e2a38]/30 resize-none focus:outline-none focus:border-[#3dc3ff] transition-colors"
         />
       </div>
 
