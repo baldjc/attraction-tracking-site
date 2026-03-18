@@ -24,11 +24,12 @@ interface PrefillData {
   talkingPoints: string[];
 }
 
-interface SavedScriptOption {
-  id: string;
-  videoTitle: string;
-  scriptOpening: string;
-  createdAt: string;
+interface YouTubeVideoOption {
+  videoId: string;
+  title: string;
+  thumbnailUrl: string | null;
+  uploadDate: string;
+  viewCount: number;
 }
 
 interface MemberOption {
@@ -64,10 +65,11 @@ export default function ArcScriptUploadPhase({ onStartBuilding, prefillData, onS
   const [clientStory, setClientStory] = useState("");
   const [leadMagnet, setLeadMagnet] = useState("");
   const [nextVideoPush, setNextVideoPush] = useState("");
-  const [savedScripts, setSavedScripts] = useState<SavedScriptOption[]>([]);
+  const [ytVideos, setYtVideos] = useState<YouTubeVideoOption[]>([]);
+  const [ytError, setYtError] = useState("");
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerLoading, setPickerLoading] = useState(false);
-  const [pickerStep, setPickerStep] = useState<"members" | "scripts">("scripts");
+  const [pickerStep, setPickerStep] = useState<"members" | "videos">("videos");
   const [memberList, setMemberList] = useState<MemberOption[]>([]);
   const [memberListLoading, setMemberListLoading] = useState(false);
   const [selectedMember, setSelectedMember] = useState<MemberOption | null>(null);
@@ -89,6 +91,28 @@ export default function ArcScriptUploadPhase({ onStartBuilding, prefillData, onS
     return () => document.removeEventListener("mousedown", handleOutside);
   }, []);
 
+  async function fetchYtVideos(userId?: string) {
+    setYtError("");
+    setPickerLoading(true);
+    setYtVideos([]);
+    try {
+      const url = userId
+        ? `/api/ai-tools/youtube-videos?userId=${userId}`
+        : "/api/ai-tools/youtube-videos";
+      const res = await fetch(url);
+      const data = await res.json();
+      if (!res.ok) {
+        setYtError(data.error ?? "Could not load videos");
+      } else {
+        setYtVideos(data.videos ?? []);
+      }
+    } catch {
+      setYtError("Could not load videos");
+    } finally {
+      setPickerLoading(false);
+    }
+  }
+
   async function openPicker() {
     const opening = !pickerOpen;
     setPickerOpen(opening);
@@ -108,40 +132,20 @@ export default function ArcScriptUploadPhase({ onStartBuilding, prefillData, onS
         setMemberListLoading(false);
       }
     } else {
-      setPickerStep("scripts");
-      if (savedScripts.length > 0) return;
-      setPickerLoading(true);
-      try {
-        const res = await fetch("/api/ai-tools/saved-scripts");
-        const data = await res.json();
-        setSavedScripts(data.scripts ?? []);
-      } catch {
-        setSavedScripts([]);
-      } finally {
-        setPickerLoading(false);
-      }
+      setPickerStep("videos");
+      if (ytVideos.length > 0) return;
+      fetchYtVideos();
     }
   }
 
   async function pickMember(m: MemberOption) {
     setSelectedMember(m);
-    setPickerStep("scripts");
-    setSavedScripts([]);
-    setPickerLoading(true);
-    try {
-      const res = await fetch(`/api/ai-tools/saved-scripts?userId=${m.id}`);
-      const data = await res.json();
-      setSavedScripts(data.scripts ?? []);
-    } catch {
-      setSavedScripts([]);
-    } finally {
-      setPickerLoading(false);
-    }
+    setPickerStep("videos");
+    fetchYtVideos(m.id);
   }
 
-  function pickScript(s: SavedScriptOption) {
-    const intro = s.scriptOpening ? `\n\nIntro:\n${s.scriptOpening}` : "";
-    setNextVideoPush(`${s.videoTitle}${intro}`);
+  function pickVideo(v: YouTubeVideoOption) {
+    setNextVideoPush(v.title);
     setPickerOpen(false);
   }
 
@@ -450,7 +454,7 @@ export default function ArcScriptUploadPhase({ onStartBuilding, prefillData, onS
               className="inline-flex items-center gap-1.5 text-xs font-medium text-[#3dc3ff] hover:text-[#3dc3ff]/80 transition-colors"
             >
               <FilmIcon className="w-3.5 h-3.5" />
-              Pick from saved scripts
+              Pick from your videos
               <ChevronDownIcon className={`w-3 h-3 transition-transform ${pickerOpen ? "rotate-180" : ""}`} />
             </button>
 
@@ -490,7 +494,7 @@ export default function ArcScriptUploadPhase({ onStartBuilding, prefillData, onS
                   </>
                 )}
 
-                {pickerStep === "scripts" && (
+                {pickerStep === "videos" && (
                   <>
                     {selectedMember && (
                       <div className="px-4 py-2.5 border-b border-[#1e2a38]/8 bg-[#f1f1ef] flex items-center justify-between">
@@ -507,22 +511,30 @@ export default function ArcScriptUploadPhase({ onStartBuilding, prefillData, onS
                       </div>
                     )}
                     {pickerLoading ? (
-                      <div className="px-4 py-5 text-sm text-[#1e2a38]/50 text-center">Loading scripts…</div>
-                    ) : savedScripts.length === 0 ? (
-                      <div className="px-4 py-5 text-sm text-[#1e2a38]/50 text-center">No saved scripts yet</div>
+                      <div className="px-4 py-5 text-sm text-[#1e2a38]/50 text-center">Loading videos…</div>
+                    ) : ytError ? (
+                      <div className="px-4 py-5 text-sm text-[#1e2a38]/50 text-center">{ytError}</div>
+                    ) : ytVideos.length === 0 ? (
+                      <div className="px-4 py-5 text-sm text-[#1e2a38]/50 text-center">No videos found</div>
                     ) : (
-                      <ul className="max-h-56 overflow-y-auto divide-y divide-[#1e2a38]/8">
-                        {savedScripts.map((s) => (
-                          <li key={s.id}>
+                      <ul className="max-h-72 overflow-y-auto divide-y divide-[#1e2a38]/8">
+                        {ytVideos.map((v) => (
+                          <li key={v.videoId}>
                             <button
                               type="button"
-                              onClick={() => pickScript(s)}
-                              className="w-full text-left px-4 py-3 hover:bg-[#3dc3ff]/5 transition-colors"
+                              onClick={() => pickVideo(v)}
+                              className="w-full text-left px-3 py-2.5 hover:bg-[#3dc3ff]/5 transition-colors flex items-center gap-3"
                             >
-                              <p className="text-sm font-medium text-[#1e2a38] leading-snug line-clamp-2">{s.videoTitle}</p>
-                              {s.scriptOpening && (
-                                <p className="text-xs text-[#1e2a38]/40 mt-0.5 line-clamp-1">{s.scriptOpening}</p>
+                              {v.thumbnailUrl ? (
+                                <img
+                                  src={v.thumbnailUrl}
+                                  alt=""
+                                  className="w-16 h-9 rounded object-cover shrink-0 bg-[#1e2a38]/10"
+                                />
+                              ) : (
+                                <div className="w-16 h-9 rounded bg-[#1e2a38]/10 shrink-0" />
                               )}
+                              <p className="text-sm font-medium text-[#1e2a38] leading-snug line-clamp-2 text-left">{v.title}</p>
                             </button>
                           </li>
                         ))}
@@ -536,7 +548,7 @@ export default function ArcScriptUploadPhase({ onStartBuilding, prefillData, onS
           </div>
         </div>
         <p className="text-xs text-[#1e2a38]/50 mb-2">
-          Pick a saved script or type the title/topic. The AI pulls the opening so the teaser is specific to what&apos;s in that video.
+          Pick from your recent YouTube videos or type a title for an upcoming one. The AI uses this to write a specific open loop ending.
         </p>
         <textarea
           value={nextVideoPush}

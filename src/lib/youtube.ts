@@ -4,6 +4,7 @@ const YT_BASE = "https://www.googleapis.com/youtube/v3";
 export interface VideoInfo {
   videoId: string;
   title: string;
+  thumbnailUrl: string | null;
   duration: string; // ISO 8601
   durationSeconds: number;
   uploadDate: string;
@@ -88,9 +89,13 @@ export async function getLatestLongFormVideos(
   const longForm: VideoInfo[] = (vidData.items ?? [])
     .map((v: any) => {
       const durationSec = parseDuration(v.contentDetails?.duration ?? "PT0S");
+      const thumbs = v.snippet?.thumbnails ?? {};
+      const thumbnailUrl =
+        thumbs.medium?.url ?? thumbs.high?.url ?? thumbs.default?.url ?? null;
       return {
         videoId: v.id,
         title: v.snippet?.title ?? "",
+        thumbnailUrl,
         duration: v.contentDetails?.duration ?? "",
         durationSeconds: durationSec,
         uploadDate: v.snippet?.publishedAt ?? "",
@@ -155,10 +160,13 @@ export async function getVideoById(videoId: string): Promise<VideoWithTranscript
 
   const durationSec = parseDuration(v.contentDetails?.duration ?? "PT0S");
   const transcript = await getTranscript(videoId);
+  const thumbs = v.snippet?.thumbnails ?? {};
+  const thumbnailUrl = thumbs.medium?.url ?? thumbs.high?.url ?? thumbs.default?.url ?? null;
 
   return {
     videoId: v.id,
     title: v.snippet?.title ?? "",
+    thumbnailUrl,
     duration: v.contentDetails?.duration ?? "",
     durationSeconds: durationSec,
     uploadDate: v.snippet?.publishedAt ?? "",
