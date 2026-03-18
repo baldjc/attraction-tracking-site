@@ -47,6 +47,7 @@ These are not review criteria. These are constraints you must satisfy DURING gen
 15. Story proof must use ONLY details the member provided. Never invent specifics — no fabricated dollar amounts, timelines, outcomes, or dialogue. If the story needs more detail to work, ASK the member. Placeholder language like "one of my clients" is better than invented specifics.
 16. Never label connection phrases, values, or emotional beats in the script output. No [CONNECTION], [VALUES], [TRIBE], [Trust], or similar inline tags — these elements must be invisible to the viewer, woven into natural dialogue, not annotated.
 17. Never output bracketed placeholders like [Your Team Name], [Your City], or [Insert Credential]. Use the member's actual details from their Creator Credentials and avatar profile. If a specific detail is missing, ask the member — do not invent or bracket it.
+18. Every insight MUST include at least one specific data point from the research (exact numbers, percentages, dollar amounts). Vague statements like "inventory moves fast" are not acceptable when the research contains specific stats. Also include at least one vivid analogy per major section — preferably tied to the member's city or audience lifestyle.
 
 === THE ARC METHOD ===
 
@@ -165,7 +166,7 @@ Draft closing with:
 - Lead magnet mention #3
 - Connection phrases
 - Values placement
-- If the member provided their next video title, create a specific open loop
+- If the member provided their next video title, create a specific open loop — a single sentence that creates genuine curiosity by hinting at a surprising insight. Generic teases like "next week I'll cover..." are not strong enough. Model: "After helping families move every 27 hours last year, I can tell you the ones who regret their purchase weren't wrong about the market — they were wrong about this…"
 
 **6. LEAD MAGNET BRAINSTORM**
 
@@ -185,8 +186,9 @@ Assemble everything into a single filmable monologue. This means:
 - Specific curiosity bridges between sections
 - Visual production cues inline [SHOW: description]
 - Target length: 2,500-4,000 words
+- A "What To Do About It" playbook section BEFORE the closing — 3-5 numbered, specific actions the viewer should take, with concrete thresholds or timelines where possible. This is not optional. Every ARC script needs a playbook.
 
-After the script, run the production requirements checklist (pass/fail for each of the 17 items above).
+After the script, run the production requirements checklist (pass/fail for each of the 18 items above).
 
 After the checklist, provide a retention analysis: 3-5 moments where viewers might drop off, with approximate timestamps and specific fixes.
 
