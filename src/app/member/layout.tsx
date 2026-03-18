@@ -14,8 +14,7 @@ export default async function MemberLayout({
     redirect("/login");
   }
 
-  const isAdmin = (session.user as any).role === "admin";
-  const featureFlags = isAdmin ? null : await getFeatureFlags();
+  const featureFlags = await getFeatureFlags();
 
   return (
     <div className="min-h-screen bg-[#f1f1ef]">
