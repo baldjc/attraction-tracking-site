@@ -21,6 +21,8 @@ This is who you are writing to. Every tone decision, word choice, and emotional 
 
 {{MEMBER_AVATAR}}
 
+Creator Credentials: {{MEMBER_CREDENTIALS}}
+
 Content Themes: {{CONTENT_THEMES}}
 Baseline Audit Scores: {{BASELINE_SCORES}}
 
@@ -145,7 +147,7 @@ Write word-for-word scripts, not templates. Each must approve the click.
 
 **3. CREDIBILITY**
 
-Draft credibility lines using the member's credentials from their avatar profile. Pull these SILENTLY — don't ask the member to re-enter credentials that are already in their avatar. Note what you pulled and where you'd place each line.
+Draft credibility lines using the Creator Credentials field above. Pull these SILENTLY — do not ask the member to re-enter credentials that are already provided. Note what you pulled and where you'd place each line. If credentials are missing or sparse, flag it briefly and suggest what to add in Settings.
 
 **4. INSIGHTS (VALUE LOOPS)**
 
@@ -215,7 +217,7 @@ export async function POST(req: NextRequest) {
 
   const dbUser = await prisma.user.findUnique({
     where: { id: sessionUser.id },
-    select: { id: true, role: true, avatarProfile: true, aiToolsMonthlyCapOverride: true },
+    select: { id: true, role: true, avatarProfile: true, creatorCredentials: true, aiToolsMonthlyCapOverride: true },
   });
   if (!dbUser) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
@@ -291,6 +293,10 @@ export async function POST(req: NextRequest) {
 
     const baselineScores = "(no baseline audit)";
 
+    const credentialsText = dbUser?.creatorCredentials?.trim()
+      ? dbUser.creatorCredentials
+      : "(no credentials saved — member should add these in Settings > Your Credentials)";
+
     const customPromptSetting = await prisma.appSetting.findUnique({
       where: { key: "prompt_arc_script_builder" },
     });
@@ -302,6 +308,7 @@ export async function POST(req: NextRequest) {
 
     const systemPrompt = systemPromptTemplate
       .replace("{{MEMBER_AVATAR}}", avatarText)
+      .replace("{{MEMBER_CREDENTIALS}}", credentialsText)
       .replace("{{CONTENT_THEMES}}", themesText)
       .replace("{{BASELINE_SCORES}}", baselineScores)
       .replace("{{RESEARCH_SUMMARY}}", researchSummary || "(no research summary provided)");

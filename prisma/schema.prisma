@@ -80,7 +80,8 @@ model User {
   contentThemes   Json?
   niche           String?
   city            String?
-  thankYouPageUrl String?
+  thankYouPageUrl     String?
+  creatorCredentials  String?
 
   aiToolsMonthlyCapOverride  Decimal? @db.Decimal(10, 2)
 

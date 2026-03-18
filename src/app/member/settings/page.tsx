@@ -15,6 +15,7 @@ interface AvatarData {
 interface ProfileData {
   id: string;
   thankYouPageUrl: string | null;
+  creatorCredentials: string | null;
 }
 
 const SNIPPET_DOMAIN = "https://members.attractionbyvideo.com";
@@ -31,6 +32,10 @@ export default function MemberSettingsPage() {
   const [savingTracking, setSavingTracking] = useState(false);
   const [savedTracking, setSavedTracking] = useState(false);
   const [copiedSnippet, setCopiedSnippet] = useState(false);
+
+  const [credentials, setCredentials] = useState("");
+  const [savingCredentials, setSavingCredentials] = useState(false);
+  const [savedCredentials, setSavedCredentials] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -51,6 +56,7 @@ export default function MemberSettingsPage() {
       }
       setProfile(profileData);
       setThankYouUrl(profileData?.thankYouPageUrl ?? "");
+      setCredentials(profileData?.creatorCredentials ?? "");
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
@@ -74,6 +80,18 @@ export default function MemberSettingsPage() {
     setSaving(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
+  }
+
+  async function saveCredentials() {
+    setSavingCredentials(true);
+    await fetch("/api/member/profile", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ creatorCredentials: credentials || null }),
+    });
+    setSavingCredentials(false);
+    setSavedCredentials(true);
+    setTimeout(() => setSavedCredentials(false), 3000);
   }
 
   async function saveTracking() {
@@ -231,6 +249,47 @@ export default function MemberSettingsPage() {
                 </div>
               </div>
             </div>
+          )}
+        </div>
+      </div>
+
+      {/* Your Credentials Section */}
+      <div className="bg-white border border-[#1e2a38]/10 rounded-2xl overflow-hidden">
+        <div className="px-6 py-5 border-b border-[#1e2a38]/10">
+          <h2 className="font-semibold text-[#1e2a38]">Your Credentials</h2>
+          <p className="text-sm text-[#1e2a38]/50 mt-0.5">
+            Years of experience, number of clients helped, designations, brokerage, specialities. The ARC Script Builder uses this automatically.
+          </p>
+        </div>
+        <div className="p-6">
+          {loading ? (
+            <p className="text-sm text-[#1e2a38]/40 animate-pulse">Loading...</p>
+          ) : (
+            <>
+              <textarea
+                value={credentials}
+                onChange={(e) => setCredentials(e.target.value)}
+                rows={5}
+                placeholder="e.g. Licensed for 12 years, helped 300+ families buy and sell in the Denver metro. Certified Luxury Home Specialist (CLHMS). Top 1% at RE/MAX Colorado. Expert in first-time buyers and relocation."
+                className="w-full border border-[#1e2a38]/20 rounded-xl px-4 py-3 text-sm text-[#1e2a38] placeholder-[#1e2a38]/30 focus:outline-none focus:border-[#3dc3ff] resize-y"
+              />
+              <div className="flex items-center justify-between mt-3">
+                {savedCredentials && (
+                  <span className="flex items-center gap-1.5 text-sm text-green-600">
+                    <CheckIcon className="w-4 h-4" /> Saved
+                  </span>
+                )}
+                <div className="ml-auto">
+                  <button
+                    onClick={saveCredentials}
+                    disabled={savingCredentials}
+                    className="bg-[#3dc3ff] text-white px-5 py-2 rounded-xl text-sm font-semibold hover:bg-[#3dc3ff]/90 disabled:opacity-50 transition-colors"
+                  >
+                    {savingCredentials ? "Saving..." : "Save Credentials"}
+                  </button>
+                </div>
+              </div>
+            </>
           )}
         </div>
       </div>

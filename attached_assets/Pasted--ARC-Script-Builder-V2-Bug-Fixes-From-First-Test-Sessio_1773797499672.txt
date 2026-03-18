@@ -1,0 +1,66 @@
+  ▎ ARC Script Builder V2 — Bug Fixes From First Test
+  Session
+
+  ▎ We just ran a full end-to-end test. The structural
+  mapping, story identification, and story fabrication
+  fix are all working correctly. Four issues need fixing:
+
+  ▎ Bug 1 (Critical): Section 7 (Final Script) is never
+  generated
+  ▎ The chat flow ends after Lead Magnet Brainstorm
+  (Section 6). The Copy Script / Save Script buttons
+  appear prematurely without Claude ever assembling the
+  final filmable monologue. Section 7 is the entire
+  deliverable — a 2,500-4,000 word filmable monologue
+  with invisible structure, the 14-item production
+  requirements checklist (pass/fail), and a retention
+  analysis (3-5 drop-off points with fixes). The action
+  buttons should only appear when currentSection ===
+  "final_script" AND sectionApproved === true in the
+  <SECTION_DATA> tag. Check the section tracking logic —
+  it's likely marking the flow as complete one section
+  too early.
+
+  ▎ Bug 2: Connection phrases are labelled instead of
+  woven in
+  ▎ In the Closing section, Claude outputs tags like
+  [CONNECTION - Validation], [CONNECTION - Tribe],
+  [VALUES - Family Focus] inline with the script text.
+  These are supposed to be invisible — connection
+  language should be baked into the dialogue, not tagged.
+   Add to the system prompt in the Connection section or
+  Production Requirements: "Never label connection
+  phrases, values, or emotional beats in the script
+  output. No [CONNECTION], [VALUES], [TRIBE], or similar
+  tags. These elements must be invisible to the viewer —
+  woven into natural dialogue, not annotated."
+
+  ▎ Bug 3: Credibility not pulled from member data
+  ▎ Claude asked the member to manually provide
+  credentials (years of experience, clients helped, etc.)
+   even though Section 3 is supposed to pull these
+  silently from the avatar profile or a creator
+  credentials field. Two parts to fix: (a) Add a
+  creatorCredentials text field to the User model
+  (nullable, long text). Expose it on the member settings
+   page as "Your Credentials" with helper text: "Years of
+   experience, number of clients helped, designations,
+  brokerage, specialities. The ARC Script Builder uses
+  this automatically." (b) In the arc-script-builder
+  route.ts, fetch this field alongside avatarProfile and
+  inject it into the system prompt as
+  {{MEMBER_CREDENTIALS}}. Add to the system prompt:
+  "Creator Credentials (use these silently — do not ask
+  the member to re-enter): {{MEMBER_CREDENTIALS}}"
+
+  ▎ Bug 4: "[Your Team Name]" placeholder in lead magnet
+  output
+  ▎ The lead magnet brainstorm included "[Your Team
+  Name]" instead of the actual team name. Once the
+  creatorCredentials field exists (Bug 3), this should
+  resolve. In the meantime, Claude should never output
+  bracketed placeholders — add to Production
+  Requirements: "Never output bracketed placeholders like
+   [Your Team Name] or [Your City]. Use the member's
+  actual details from their credentials and avatar, or
+  ask if you don't have them."
