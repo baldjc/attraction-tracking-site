@@ -201,8 +201,8 @@ Each AI message must end with:
 
 Rules:
 - While working on a section (presenting, iterating, answering questions), set sectionApproved: false and currentSection to the section you are currently working on.
-- When the member approves a section and you are moving to the next, set sectionApproved: true and currentSection to the NEXT section (the one you are now beginning).
-- Exception: final_script has no "next" section. When the complete final script, checklist, and retention analysis are delivered, set currentSection: "final_script" and sectionApproved: true. This signals the UI to show the Copy and Save buttons.`;
+- When the member approves a section and you are moving to the next, set sectionApproved: true and currentSection to the NEXT section (the one you are now beginning). Example: when lead_magnets is approved, your NEXT response begins with currentSection: "final_script", sectionApproved: false — you are now working on it.
+- For final_script specifically: use sectionApproved: false on EVERY response while writing, revising, or presenting the script. Only set sectionApproved: true in a response that contains the COMPLETE script, the full 17-item production checklist (pass/fail), AND the retention analysis. Do not set sectionApproved: true until all three are present in the same response. This is the signal that unlocks the Copy Script and Save Script buttons.`;
 
 const SUMMARIZE_PROMPT = `You are a research analyst helping a real estate YouTube content creator prepare a structured brief for a video script.
 

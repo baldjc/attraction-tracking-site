@@ -218,11 +218,10 @@ export default function ArcScriptChatPhase({ initialData, onReset }: Props) {
                 if (payload.sectionData) {
                   const { currentSection: nextSection, sectionApproved } = payload.sectionData;
                   if (sectionApproved) {
-                    // Detect final script completion: approved while already in final_script
-                    if (
-                      nextSection === "final_script" &&
-                      currentSectionRef.current === "final_script"
-                    ) {
+                    // Detect final script completion: sectionApproved: true on final_script
+                    // means the complete script + checklist + retention analysis are in this response.
+                    // This fires whether Claude delivers it in one shot or after multiple turns.
+                    if (nextSection === "final_script") {
                       setFinalScriptDone(true);
                     }
                     const prevIdx = SECTIONS.findIndex((s) => s.key === nextSection) - 1;
