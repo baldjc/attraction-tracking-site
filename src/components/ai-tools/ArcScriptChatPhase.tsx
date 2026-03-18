@@ -6,7 +6,6 @@ import {
   ClipboardDocumentIcon,
   CheckIcon,
   ArrowPathIcon,
-  ChevronDownIcon,
   ChevronUpIcon,
 } from "@heroicons/react/24/outline";
 import ArcProgressBar, { SECTIONS } from "@/components/ai-tools/ArcProgressBar";
@@ -27,18 +26,17 @@ interface Props {
     title: string;
     talkingPoints: string;
     researchSummary: string;
+    clientStory: string;
   };
   onReset: () => void;
 }
 
 const MAX_TURNS = 20;
 
-// Strip <SECTION_DATA>…</SECTION_DATA> from display text
 function cleanContent(text: string): string {
   return text.replace(/<SECTION_DATA>[\s\S]*?<\/SECTION_DATA>/g, "").trim();
 }
 
-// Simple inline markdown (bold, headers, bullets)
 function renderInline(text: string): React.ReactNode[] {
   const parts = text.split(/(\*\*[^*]+\*\*)/g);
   return parts.map((p, i) =>
@@ -86,7 +84,7 @@ function CostCapBanner({ level }: { level: "warning" | "critical" }) {
   if (level === "critical") {
     return (
       <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700 mb-4">
-        ⚠️ You&apos;ve used 90%+ of your monthly AI allowance. Save your work soon.
+        You&apos;ve used 90%+ of your monthly AI allowance. Save your work soon.
       </div>
     );
   }
@@ -101,7 +99,7 @@ export default function ArcScriptChatPhase({ initialData, onReset }: Props) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [currentSection, setCurrentSection] = useState("research_summary");
+  const [currentSection, setCurrentSection] = useState("research_strategy");
   const [completedSections, setCompletedSections] = useState<string[]>([]);
   const [sectionApprovals, setSectionApprovals] = useState<SectionApproval[]>([]);
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
@@ -112,7 +110,6 @@ export default function ArcScriptChatPhase({ initialData, onReset }: Props) {
   const [saveError, setSaveError] = useState("");
 
   const bottomRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const initialized = useRef(false);
 
   const turnCount = messages.length;
@@ -143,7 +140,6 @@ export default function ArcScriptChatPhase({ initialData, onReset }: Props) {
 
       const historyWithNew = [...messages, newUserMsg];
 
-      // Placeholder for streaming assistant message
       setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
 
       try {
@@ -178,7 +174,6 @@ export default function ArcScriptChatPhase({ initialData, onReset }: Props) {
           return;
         }
 
-        // Stream the response
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
         let buffer = "";
@@ -205,7 +200,6 @@ export default function ArcScriptChatPhase({ initialData, onReset }: Props) {
                   return updated;
                 });
               } else if (payload.type === "done") {
-                // Clean SECTION_DATA from display
                 const displayText = cleanContent(fullText);
                 setMessages((prev) => {
                   const updated = [...prev];
@@ -216,21 +210,15 @@ export default function ArcScriptChatPhase({ initialData, onReset }: Props) {
                 if (payload.sectionData) {
                   const { currentSection: nextSection, sectionApproved } = payload.sectionData;
                   if (sectionApproved) {
-                    // Mark the PREVIOUS section as complete
                     const prevIdx = SECTIONS.findIndex((s) => s.key === nextSection) - 1;
                     if (prevIdx >= 0) {
                       const prevKey = SECTIONS[prevIdx].key;
                       setCompletedSections((prev) =>
                         prev.includes(prevKey) ? prev : [...prev, prevKey]
                       );
-                      // Store snippet from the last assistant message
                       setSectionApprovals((prev) => {
-                        const exists = prev.find((a) => a.key === prevKey);
-                        if (exists) return prev;
-                        return [
-                          ...prev,
-                          { key: prevKey, snippet: displayText.slice(0, 300) },
-                        ];
+                        if (prev.find((a) => a.key === prevKey)) return prev;
+                        return [...prev, { key: prevKey, snippet: displayText.slice(0, 300) }];
                       });
                     }
                   }
@@ -265,13 +253,19 @@ export default function ArcScriptChatPhase({ initialData, onReset }: Props) {
     [loading, messages]
   );
 
-  // Auto-send first message on mount
   useEffect(() => {
     if (initialized.current) return;
     initialized.current = true;
-    const firstMessage = `Let's build the ARC script for: "${initialData.title}"${
-      initialData.talkingPoints ? `\n\nKey talking points I want to cover:\n${initialData.talkingPoints}` : ""
-    }\n\nPlease start with Section 1 — the Research Summary.`;
+    const firstMessage = [
+      `Let's build the ARC script for: "${initialData.title}"`,
+      initialData.talkingPoints
+        ? `\nKey talking points I want to cover:\n${initialData.talkingPoints}`
+        : "",
+      initialData.clientStory
+        ? `\nClient story / personal experience:\n${initialData.clientStory}`
+        : "",
+      "\nPlease start with Section 1 — Research & Strategy.",
+    ].join("");
     sendMessage(firstMessage, initialData.researchSummary);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -307,6 +301,7 @@ export default function ArcScriptChatPhase({ initialData, onReset }: Props) {
             fullScript: finalScriptText,
             researchSummary: initialData.researchSummary,
             talkingPoints: initialData.talkingPoints,
+            clientStory: initialData.clientStory,
             approvedSections: sectionApprovals,
           },
         }),
@@ -322,14 +317,12 @@ export default function ArcScriptChatPhase({ initialData, onReset }: Props) {
 
   return (
     <div className="flex flex-col h-full min-h-0">
-      {/* Progress Bar */}
       <ArcProgressBar
         currentSection={currentSection}
         completedSections={completedSections}
         onSectionClick={handleSectionClick}
       />
 
-      {/* Section approval inline cards */}
       {expandedSection && (
         <div className="mb-4">
           {sectionApprovals.filter((a) => a.key === expandedSection).map((approval) => {
@@ -338,7 +331,7 @@ export default function ArcScriptChatPhase({ initialData, onReset }: Props) {
               <div key={approval.key} className="bg-[#3dc3ff]/8 border border-[#3dc3ff]/20 rounded-2xl p-4">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-bold text-[#3dc3ff] uppercase tracking-wide">
-                    ✓ Approved: {label}
+                    Approved: {label}
                   </span>
                   <button onClick={() => setExpandedSection(null)} className="text-[#1e2a38]/40 hover:text-[#1e2a38]">
                     <ChevronUpIcon className="w-4 h-4" />
@@ -351,18 +344,13 @@ export default function ArcScriptChatPhase({ initialData, onReset }: Props) {
         </div>
       )}
 
-      {/* Cost cap warning */}
       {costCapWarning && <CostCapBanner level={costCapWarning} />}
 
-      {/* Messages */}
       <div className="flex-1 overflow-y-auto space-y-4 pb-4 min-h-0">
         {messages.map((msg, idx) => {
           const displayContent = cleanContent(msg.content);
           return (
-            <div
-              key={idx}
-              className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-            >
+            <div key={idx} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
               <div
                 className={`max-w-[85%] rounded-2xl px-4 py-3 ${
                   msg.role === "user"
@@ -377,11 +365,8 @@ export default function ArcScriptChatPhase({ initialData, onReset }: Props) {
                 ) : (
                   <div className="flex gap-1.5 items-center h-4">
                     {[0, 1, 2].map((i) => (
-                      <span
-                        key={i}
-                        className="w-2 h-2 rounded-full bg-[#3dc3ff]/60 animate-bounce"
-                        style={{ animationDelay: `${i * 0.15}s` }}
-                      />
+                      <span key={i} className="w-2 h-2 rounded-full bg-[#3dc3ff]/60 animate-bounce"
+                        style={{ animationDelay: `${i * 0.15}s` }} />
                     ))}
                   </div>
                 )}
@@ -405,14 +390,12 @@ export default function ArcScriptChatPhase({ initialData, onReset }: Props) {
         <div ref={bottomRef} />
       </div>
 
-      {/* Turn limit message */}
       {atTurnLimit && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-700 mb-3">
           You&apos;ve reached the 20-turn limit for this session. Save your script or start a new one.
         </div>
       )}
 
-      {/* Final script actions */}
       {isFinalScript && (
         <div className="flex gap-2 mb-3 flex-wrap">
           <button
@@ -441,12 +424,10 @@ export default function ArcScriptChatPhase({ initialData, onReset }: Props) {
         </div>
       )}
 
-      {/* Input area */}
       {!atTurnLimit && (
         <div className="flex-shrink-0 border-t border-[#1e2a38]/10 pt-4">
           <div className="flex gap-3 items-end">
             <textarea
-              ref={textareaRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKey}

@@ -1,7 +1,7 @@
 "use client";
 
 export const SECTIONS = [
-  { key: "research_summary", label: "Research" },
+  { key: "research_strategy", label: "Research & Strategy" },
   { key: "opening", label: "Opening" },
   { key: "credibility", label: "Credibility" },
   { key: "insights", label: "Insights" },
@@ -22,7 +22,6 @@ export default function ArcProgressBar({ currentSection, completedSections, onSe
       {SECTIONS.map((section, i) => {
         const isCompleted = completedSections.includes(section.key);
         const isCurrent = currentSection === section.key;
-        const isFuture = !isCompleted && !isCurrent;
 
         return (
           <div key={section.key} className="flex-1 min-w-0">
