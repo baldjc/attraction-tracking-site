@@ -14,6 +14,8 @@ interface StartBuildingData {
   talkingPoints: string;
   researchSummary: string;
   clientStory: string;
+  leadMagnet: string;
+  nextVideoPush: string;
 }
 
 interface PrefillData {
@@ -43,6 +45,8 @@ export default function ArcScriptUploadPhase({ onStartBuilding, prefillData, onS
   const [talkingPoints, setTalkingPoints] = useState("");
   const [pastedNotes, setPastedNotes] = useState("");
   const [clientStory, setClientStory] = useState("");
+  const [leadMagnet, setLeadMagnet] = useState("");
+  const [nextVideoPush, setNextVideoPush] = useState("");
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState("");
@@ -159,6 +163,8 @@ export default function ArcScriptUploadPhase({ onStartBuilding, prefillData, onS
         talkingPoints: effectiveTalkingPoints.trim(),
         researchSummary: summaryData.summary ?? researchText,
         clientStory: clientStory.trim(),
+        leadMagnet: leadMagnet.trim(),
+        nextVideoPush: nextVideoPush.trim(),
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
@@ -320,6 +326,40 @@ export default function ArcScriptUploadPhase({ onStartBuilding, prefillData, onS
           placeholder="e.g. I had a client named Sarah who came to me after her listing had already expired twice. She'd dropped the price $40k and still had zero offers. Here's what we found…"
           rows={4}
           className="w-full bg-white border border-[#1e2a38]/20 rounded-xl px-4 py-3 text-sm text-[#1e2a38] placeholder-[#1e2a38]/30 resize-none focus:outline-none focus:border-[#3dc3ff] transition-colors"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-semibold text-[#1e2a38] mb-1.5">
+          What&apos;s your lead magnet for this video?{" "}
+          <span className="text-[#1e2a38]/40 font-normal">(optional)</span>
+        </label>
+        <p className="text-xs text-[#1e2a38]/50 mb-2">
+          The free resource you&apos;ll mention 3 times (e.g. &ldquo;Calgary Buyer&apos;s Reality Check&rdquo;, &ldquo;Neighbourhood Matchmaker GPT&rdquo;). If you don&apos;t have one yet, leave blank and the AI will brainstorm options.
+        </p>
+        <input
+          type="text"
+          value={leadMagnet}
+          onChange={(e) => setLeadMagnet(e.target.value)}
+          placeholder="e.g. Calgary Home Seller's Readiness Checklist"
+          className="w-full bg-white border border-[#1e2a38]/20 rounded-xl px-4 py-3 text-sm text-[#1e2a38] placeholder-[#1e2a38]/30 focus:outline-none focus:border-[#3dc3ff] transition-colors"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-semibold text-[#1e2a38] mb-1.5">
+          What video are you pushing viewers to next?{" "}
+          <span className="text-[#1e2a38]/40 font-normal">(optional)</span>
+        </label>
+        <p className="text-xs text-[#1e2a38]/50 mb-2">
+          Title or topic of your next video. Paste the intro or a few details if you have them — the AI uses this to craft a specific open loop ending.
+        </p>
+        <input
+          type="text"
+          value={nextVideoPush}
+          onChange={(e) => setNextVideoPush(e.target.value)}
+          placeholder="e.g. Why Calgary Buyers Are Regret-Proofing Their Offer Strategy in 2026"
+          className="w-full bg-white border border-[#1e2a38]/20 rounded-xl px-4 py-3 text-sm text-[#1e2a38] placeholder-[#1e2a38]/30 focus:outline-none focus:border-[#3dc3ff] transition-colors"
         />
       </div>
 

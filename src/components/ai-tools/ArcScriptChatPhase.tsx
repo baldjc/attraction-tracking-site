@@ -27,11 +27,13 @@ interface Props {
     talkingPoints: string;
     researchSummary: string;
     clientStory: string;
+    leadMagnet: string;
+    nextVideoPush: string;
   };
   onReset: () => void;
 }
 
-const MAX_TURNS = 20;
+const MAX_TURNS = 40;
 
 function cleanContent(text: string): string {
   return text.replace(/<SECTION_DATA>[\s\S]*?<\/SECTION_DATA>/g, "").trim();
@@ -154,7 +156,12 @@ export default function ArcScriptChatPhase({ initialData, onReset }: Props) {
         const res = await fetch("/api/ai-tools/arc-script-builder", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ step: "chat", messages: historyWithNew }),
+          body: JSON.stringify({
+            step: "chat",
+            messages: historyWithNew,
+            leadMagnet: initialData.leadMagnet,
+            nextVideoPush: initialData.nextVideoPush,
+          }),
         });
 
         if (res.status === 429) {
@@ -278,6 +285,12 @@ export default function ArcScriptChatPhase({ initialData, onReset }: Props) {
         : "",
       initialData.clientStory
         ? `\nClient story / personal experience:\n${initialData.clientStory}`
+        : "",
+      initialData.leadMagnet
+        ? `\nLead magnet for this video: ${initialData.leadMagnet}`
+        : "",
+      initialData.nextVideoPush
+        ? `\nNext video I'm pushing viewers to: ${initialData.nextVideoPush}`
         : "",
       "\nPlease start with Section 1 — Research & Strategy.",
     ].join("");

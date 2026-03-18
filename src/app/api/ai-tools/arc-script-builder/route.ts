@@ -23,6 +23,9 @@ This is who you are writing to. Every tone decision, word choice, and emotional 
 
 Creator Credentials: {{MEMBER_CREDENTIALS}}
 
+Lead Magnet: {{LEAD_MAGNET}}
+Next Video: {{NEXT_VIDEO}}
+
 Content Themes: {{CONTENT_THEMES}}
 Baseline Audit Scores: {{BASELINE_SCORES}}
 
@@ -162,11 +165,11 @@ Remember: the structure you proposed might not match the member's original order
 
 **5. CLOSING**
 
-Draft closing with:
-- Lead magnet mention #3
-- Connection phrases
-- Values placement
-- If the member provided their next video title, create a specific open loop — a single sentence that creates genuine curiosity by hinting at a surprising insight. Generic teases like "next week I'll cover..." are not strong enough. Model: "After helping families move every 27 hours last year, I can tell you the ones who regret their purchase weren't wrong about the market — they were wrong about this…"
+The closing is ONE paragraph — maximum 3-4 sentences. It contains the third lead magnet mention and a sharp open loop to the next video. That's it. No recap of what was covered. No additional connection phrases. No value restatement. The connection language was already woven throughout — the closing is a hard cut to the next video push.
+
+Use {{LEAD_MAGNET}} for the lead magnet name and {{NEXT_VIDEO}} for the open loop topic. If the member did not provide a next video topic, ask for it before writing the closing — the open loop cannot be generic.
+
+Model closing: "Most Calgary homebuyers obsess over market timing and interest rates, but after helping families move every 27 hours last year, I can tell you the ones who regret their purchase weren't wrong about the market — they were wrong about this… If you're considering a move in 2026, these five warning signs will save you from making a decision that looks smart on paper but falls apart in real life."
 
 **6. LEAD MAGNET BRAINSTORM**
 
@@ -273,7 +276,11 @@ export async function POST(req: NextRequest) {
   }
 
   if (step === "chat") {
-    const { messages } = body as { messages: Array<{ role: string; content: string; researchSummary?: string }> };
+    const { messages, leadMagnet, nextVideoPush } = body as {
+      messages: Array<{ role: string; content: string; researchSummary?: string }>;
+      leadMagnet?: string;
+      nextVideoPush?: string;
+    };
 
     const researchSummary = messages.find((m) => m.researchSummary)?.researchSummary ?? "";
     const cleanMessages = messages.map(({ role, content }) => ({ role, content }));
@@ -315,9 +322,14 @@ export async function POST(req: NextRequest) {
         ? customPromptSetting.value
         : DEFAULT_SYSTEM_PROMPT;
 
+    const leadMagnetText = leadMagnet?.trim() || "(not provided — brainstorm options in Section 6)";
+    const nextVideoText = nextVideoPush?.trim() || "(not provided — ask the member before writing the closing)";
+
     const systemPrompt = systemPromptTemplate
       .replace("{{MEMBER_AVATAR}}", avatarText)
       .replace("{{MEMBER_CREDENTIALS}}", credentialsText)
+      .replace("{{LEAD_MAGNET}}", leadMagnetText)
+      .replace("{{NEXT_VIDEO}}", nextVideoText)
       .replace("{{CONTENT_THEMES}}", themesText)
       .replace("{{BASELINE_SCORES}}", baselineScores)
       .replace("{{RESEARCH_SUMMARY}}", researchSummary || "(no research summary provided)");

@@ -16,6 +16,8 @@ interface UploadData {
   talkingPoints: string;
   researchSummary: string;
   clientStory: string;
+  leadMagnet: string;
+  nextVideoPush: string;
 }
 
 interface UsageData {

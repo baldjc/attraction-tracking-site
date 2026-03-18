@@ -1,0 +1,71 @@
+ ▎ ARC Script Builder — Round 3 Fixes (3 items)         
+                                                         
+  ▎ Fix 1: Increase turn limit from 20 to 40             
+                                                       
+  ▎ 20 turns isn't enough to get through all 7 sections 
+  plus any revisions. The member hit the limit before the
+   final script could be assembled. Change the turn limit
+   from 20 to 40 in ArcScriptChatPhase.tsx. If cost is a 
+  concern, the cost cap already handles that — the turn  
+  limit just needs to be high enough that it never blocks
+   a normal session.                                     
+                                                       
+  ▎ Fix 2: Closing format — single paragraph, not a 
+  mini-essay                                  
+                                            
+  ▎ The closing section is generating 6+ paragraphs of 
+  connection language, value restatement, and lead magnet
+   re-pitch. That's wrong. The closing in an ARC script 
+  should be ONE tight paragraph that does three things:  
+  (1) lead magnet mention #3, (2) a sharp open loop to   
+  the next video, and (3) done. No recap, no "here's what
+   we covered," no extra connection phrases.             
+                                                       
+  ▎ Update the Section 5 (Closing) instructions in the 
+  system prompt to:                           
+                                            
+  ▎ "The closing is ONE paragraph — maximum 3-4 
+  sentences. It contains the third lead magnet mention   
+  and a sharp open loop to the next video. That's it. No 
+  recap of what was covered. No additional connection    
+  phrases. No value restatement. The connection language 
+  was already woven throughout the script — the closing 
+  is a hard cut to the next video push. Model closing:   
+  'Most Calgary homebuyers obsess over market timing and 
+  interest rates, but after helping families move every 
+  27 hours last year, I can tell you the ones who regret
+  their purchase weren't wrong about the market — they
+  were wrong about this… If you're considering a move in
+  2026, these five warning signs will save you from
+  making a decision that looks smart on paper but falls
+  apart in real life.'"
+
+  ▎ Fix 3: Add "Next Video" and "Lead Magnet" fields to 
+  the Upload Phase                            
+                                            
+  ▎ Add two new fields to ArcScriptUploadPhase.tsx:
+                                                         
+  ▎ (a) Lead magnet — text input. Label: "What's your 
+  lead magnet for this video?" Helper text: "The free    
+  resource you'll mention 3 times (e.g., 'Calgary Buyer's
+   Reality Check', 'Neighbourhood Matchmaker GPT'). If 
+  you don't have one yet, leave blank and the AI will    
+  brainstorm options."
+                                                         
+  ▎ (b) Next video push — text input. Label: "What video 
+  are you pushing viewers to next?" Helper text: "Title 
+  or topic of your next video. Paste the intro or a few 
+  details if you have them — the AI uses this to craft a 
+  specific open loop ending."                            
+   
+  ▎ Both fields are optional. Pass them to the chat phase
+   as leadMagnet and nextVideoPush in the initialData. 
+  Include them in the first auto-sent message to Claude. 
+  Add them to the system prompt as {{LEAD_MAGNET}} and 
+  {{NEXT_VIDEO}} placeholders.                           
+   
+  ▎ In the system prompt, update the closing             
+  instructions: "If the member provided a next video   
+  topic, use it to craft the open loop. If not, ask for 
+  it before writing the closing — the open loop cannot be
+   generic." 
