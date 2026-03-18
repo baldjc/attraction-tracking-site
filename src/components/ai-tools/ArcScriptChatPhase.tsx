@@ -108,15 +108,17 @@ export default function ArcScriptChatPhase({ initialData, onReset }: Props) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState("");
+  const [finalScriptDone, setFinalScriptDone] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const initialized = useRef(false);
+  const currentSectionRef = useRef("research_strategy");
 
   const turnCount = messages.length;
   const atTurnLimit = turnCount >= MAX_TURNS;
   const isFinalScript = currentSection === "final_script";
 
-  const finalScriptText = isFinalScript
+  const finalScriptText = finalScriptDone
     ? cleanContent(messages.findLast((m) => m.role === "assistant")?.content ?? "")
     : "";
 
@@ -210,6 +212,13 @@ export default function ArcScriptChatPhase({ initialData, onReset }: Props) {
                 if (payload.sectionData) {
                   const { currentSection: nextSection, sectionApproved } = payload.sectionData;
                   if (sectionApproved) {
+                    // Detect final script completion: approved while already in final_script
+                    if (
+                      nextSection === "final_script" &&
+                      currentSectionRef.current === "final_script"
+                    ) {
+                      setFinalScriptDone(true);
+                    }
                     const prevIdx = SECTIONS.findIndex((s) => s.key === nextSection) - 1;
                     if (prevIdx >= 0) {
                       const prevKey = SECTIONS[prevIdx].key;
@@ -222,6 +231,7 @@ export default function ArcScriptChatPhase({ initialData, onReset }: Props) {
                       });
                     }
                   }
+                  currentSectionRef.current = nextSection;
                   setCurrentSection(nextSection);
                 }
 
@@ -396,7 +406,7 @@ export default function ArcScriptChatPhase({ initialData, onReset }: Props) {
         </div>
       )}
 
-      {isFinalScript && (
+      {finalScriptDone && (
         <div className="flex gap-2 mb-3 flex-wrap">
           <button
             onClick={handleCopy}

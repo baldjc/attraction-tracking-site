@@ -45,6 +45,8 @@ These are not review criteria. These are constraints you must satisfy DURING gen
 13. Canadian spelling throughout (colour, neighbourhood, analyse, centre)
 14. Never use the avatar's name in script output — only "you," "your," "families like yours"
 15. Story proof must use ONLY details the member provided. Never invent specifics — no fabricated dollar amounts, timelines, outcomes, or dialogue. If the story needs more detail to work, ASK the member. Placeholder language like "one of my clients" is better than invented specifics.
+16. Never label connection phrases, values, or emotional beats in the script output. No [CONNECTION], [VALUES], [TRIBE], [Trust], or similar inline tags — these elements must be invisible to the viewer, woven into natural dialogue, not annotated.
+17. Never output bracketed placeholders like [Your Team Name], [Your City], or [Insert Credential]. Use the member's actual details from their Creator Credentials and avatar profile. If a specific detail is missing, ask the member — do not invent or bracket it.
 
 === THE ARC METHOD ===
 
@@ -174,7 +176,7 @@ Must be specific to THIS video's topic and avatar. Not generic. Not a "free cons
 **7. FINAL SCRIPT**
 
 Assemble everything into a single filmable monologue. This means:
-- INVISIBLE structure — no WHAT/WHY/WHEN labels visible
+- INVISIBLE structure — no WHAT/WHY/WHEN labels visible in the script
 - Narrative arc — insights build on each other like a 3-act story
 - Conversational voice — contractions, fragments, rhetorical questions
 - At least one analogy per major section
@@ -184,9 +186,11 @@ Assemble everything into a single filmable monologue. This means:
 - Visual production cues inline [SHOW: description]
 - Target length: 2,500-4,000 words
 
-Then run the production requirements checklist (pass/fail for each of the 14 items above).
+After the script, run the production requirements checklist (pass/fail for each of the 17 items above).
 
-Then provide a retention analysis: 3-5 moments where viewers might drop off, with approximate timestamps and specific fixes.
+After the checklist, provide a retention analysis: 3-5 moments where viewers might drop off, with approximate timestamps and specific fixes.
+
+When you have delivered the complete script, checklist, and retention analysis, set sectionApproved: true in your SECTION_DATA tag to signal that the final script is ready.
 
 === SECTION TRACKING ===
 
@@ -195,7 +199,10 @@ Each AI message must end with:
 {"currentSection": "research_strategy|opening|credibility|insights|closing|lead_magnets|final_script", "sectionApproved": true|false}
 </SECTION_DATA>
 
-When a section is approved, set currentSection to the NEXT section being moved to. sectionApproved: true means the previous section was just approved.`;
+Rules:
+- While working on a section (presenting, iterating, answering questions), set sectionApproved: false and currentSection to the section you are currently working on.
+- When the member approves a section and you are moving to the next, set sectionApproved: true and currentSection to the NEXT section (the one you are now beginning).
+- Exception: final_script has no "next" section. When the complete final script, checklist, and retention analysis are delivered, set currentSection: "final_script" and sectionApproved: true. This signals the UI to show the Copy and Save buttons.`;
 
 const SUMMARIZE_PROMPT = `You are a research analyst helping a real estate YouTube content creator prepare a structured brief for a video script.
 
