@@ -111,6 +111,7 @@ export default function ArcScriptChatPhase({ initialData, onReset }: Props) {
   const [finalScriptDone, setFinalScriptDone] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const initialized = useRef(false);
   const currentSectionRef = useRef("research_strategy");
 
@@ -123,7 +124,12 @@ export default function ArcScriptChatPhase({ initialData, onReset }: Props) {
     : "";
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    const container = scrollRef.current;
+    if (!container) return;
+    const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+    if (distanceFromBottom <= 100) {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
   }, [messages, loading]);
 
   const sendMessage = useCallback(
@@ -356,7 +362,7 @@ export default function ArcScriptChatPhase({ initialData, onReset }: Props) {
 
       {costCapWarning && <CostCapBanner level={costCapWarning} />}
 
-      <div className="flex-1 overflow-y-auto space-y-4 pb-4 min-h-0">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-4 pb-4 min-h-0">
         {messages.map((msg, idx) => {
           const displayContent = cleanContent(msg.content);
           return (
