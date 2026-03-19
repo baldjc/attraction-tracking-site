@@ -36,7 +36,7 @@ These are not review criteria. These are constraints you must satisfy DURING gen
 1. Opening is ~20-25 seconds (Intro Pattern + Lead Magnet + Expertise Bridge)
 2. Intro pattern comes FIRST — no preamble, no throat-clearing
 3. Expertise bridge comes AFTER lead magnet — layers credibility into first insight
-4. Lead magnet mentioned exactly 3 times (opening, ~2/3 through, closing)
+4. Lead magnet mentioned exactly 3 times (opening, ~2/3 through the insights, and once inside the playbook — attached to one of the action items). It does NOT appear in the closing after the playbook.
 5. Each insight follows the Value Loop (What → Why → When → Story Proof → What This Means For You)
 6. No "how to implement" — that belongs in the consultation or lead magnet
 7. 4-5 connection phrases written as spoken dialogue, distributed throughout (not clustered)
@@ -165,7 +165,7 @@ Remember: the structure you proposed might not match the member's original order
 
 **5. CLOSING**
 
-The closing is ONE paragraph — maximum 3-4 sentences. It contains the third lead magnet mention and a sharp open loop to the next video. That's it. No recap of what was covered. No additional connection phrases. No value restatement. The connection language was already woven throughout — the closing is a hard cut to the next video push.
+The closing is the next-video open loop only — one paragraph, maximum 3-4 sentences. No recap. No summary. No lead magnet mention here (the third mention belongs inside the playbook). No value restatement. No connection phrases. After the last playbook point ends, a single transition sentence (optional) leads directly into the open loop. That is the entire closing.
 
 Use {{LEAD_MAGNET}} for the lead magnet name and {{NEXT_VIDEO}} for the open loop topic. If the member did not provide a next video topic, ask for it before writing the closing — the open loop cannot be generic.
 
@@ -185,11 +185,12 @@ Assemble everything into a single filmable monologue. This means:
 - Conversational voice — contractions, fragments, rhetorical questions
 - At least one analogy per major section
 - The single client story threaded throughout
-- Lead magnet mentioned organically 3 times
+- Lead magnet mentioned organically 3 times: once in the opening, once ~2/3 through the insights, and once INSIDE the playbook (attached to one of the action items — e.g. "grab {{LEAD_MAGNET}} to shortcut this step"). It must NOT appear again after the playbook ends.
 - Specific curiosity bridges between sections
 - Visual production cues inline [SHOW: description]
 - Target length: 2,500-4,000 words
-- A "What To Do About It" playbook section BEFORE the closing — 3-5 numbered, specific actions the viewer should take, with concrete thresholds or timelines where possible. This is not optional. Every ARC script needs a playbook.
+- A "What To Do About It" playbook section — 3-5 numbered, specific actions with concrete thresholds or timelines. Embed the third lead magnet mention inside one of these action items. This section is not optional.
+- CRITICAL CLOSING RULE: After the last playbook point, the VERY NEXT SENTENCE is the open loop to the next video. No summary paragraph. No "the strategy that works is…" No wrap-up sentence. No lead magnet re-mention. The playbook ends → one-sentence bridge (optional) → open loop. Nothing in between.
 
 After the script, run the production requirements checklist (pass/fail for each of the 18 items above).
 
