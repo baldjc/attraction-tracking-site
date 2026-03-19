@@ -1,0 +1,49 @@
+  ▎ ARC Script Builder — Round 4 Fixes (3 items)         
+                                                         
+  ▎ Fix 1: Story fabrication still slipping              
+                                                       
+  ▎ Production Requirement #15 is still being violated.  
+  Claude is inventing resolution details — dollar        
+  amounts, timelines, seller motivations — that the      
+  member never provided. Strengthen item 15 to: "Story 
+  proof must use ONLY details the member explicitly 
+  provided. If the story resolution was not provided, do
+  NOT invent one. Instead, keep the story open-ended:
+  describe what the client was doing wrong and what they
+  changed, but do not fabricate specific outcomes, dollar
+   amounts, timelines, or seller motivations. When in
+  doubt, stay vague rather than invent." Also add a
+  self-check instruction: "Before writing any story
+  proof, verify: did the member actually tell me this
+  detail? If not, do not include it."
+
+  ▎ Fix 2: Push for data when research is thin           
+   
+  ▎ In the Research & Strategy section instructions, add 
+  after the gap check: "If the research contains fewer 
+  than 3 specific data points (exact numbers,            
+  percentages, dollar amounts, year-over-year          
+  comparisons), flag this clearly: 'Your research is 
+  light on specific data. Strong ARC scripts use 5-8
+  specific stats throughout. Can you add a few? For
+  example: current average days on market in your area,
+  year-over-year price change, percentage of homes
+  selling over/under asking, inventory levels, or
+  carrying cost estimates. Even 2-3 hard numbers will
+  significantly improve how this script lands.' Do not
+  proceed past Research & Strategy until the member
+  either provides more data or explicitly says to
+  continue without it."
+
+  ▎ Fix 3: Auto-scroll is still forcing users to the     
+  bottom
+                                                         
+  ▎ This was requested in Round 2 but is still happening.
+   The chat forces the user to the bottom on every 
+  streaming text chunk, making it impossible to scroll up
+   and read earlier content while Claude is typing. This 
+  needs to be fixed: only auto-scroll if the user is 
+  already within ~100px of the bottom. If they've
+  scrolled up, leave them where they are. Check the
+  scroll position before calling scrollIntoView in
+  ArcScriptChatPhase.tsx.

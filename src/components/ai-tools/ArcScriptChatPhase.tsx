@@ -130,7 +130,7 @@ export default function ArcScriptChatPhase({ initialData, onReset }: Props) {
     if (!container) return;
     const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
     if (distanceFromBottom <= 100) {
-      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+      container.scrollTop = container.scrollHeight;
     }
   }, [messages, loading]);
 

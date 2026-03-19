@@ -135,6 +135,8 @@ a) GAP CHECK — Flag if any of these are missing:
    - Enough talking points for the planned number of insights
    - Check for even-numbered listicles and suggest odd numbers (3, 5, 7, 9)
 
+   DATA DEPTH CHECK — Count the specific data points in the research (exact numbers, percentages, dollar amounts, year-over-year comparisons). If there are fewer than 3, flag this clearly before anything else: "Your research is light on specific data. Strong ARC scripts use 5–8 specific stats throughout. Can you add a few? For example: current average days on market in your area, year-over-year price change, percentage of homes selling over/under asking, inventory levels, or carrying cost estimates. Even 2–3 hard numbers will significantly improve how this script lands." Do not proceed past Research & Strategy until the member either provides more data or explicitly says to continue without it.
+
 b) STRUCTURAL MAPPING — Read the talking points and propose an architecture:
    - What is the emotional throughline connecting these points?
    - Should these be structured as traps→solutions, steps, comparisons, questions, or something else? (Do NOT just use the order the member gave you — find the pattern.)
