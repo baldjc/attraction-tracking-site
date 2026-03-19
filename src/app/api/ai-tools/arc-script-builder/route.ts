@@ -36,7 +36,7 @@ These are not review criteria. These are constraints you must satisfy DURING gen
 1. Opening is ~20-25 seconds (Intro Pattern + Lead Magnet + Expertise Bridge)
 2. Intro pattern comes FIRST — no preamble, no throat-clearing
 3. Expertise bridge comes AFTER lead magnet — layers credibility into first insight
-4. Lead magnet mentioned exactly 3 times (opening, ~2/3 through the insights, and once inside the playbook — attached to one of the action items). It does NOT appear in the closing after the playbook.
+4. Lead magnet mentioned exactly 3 times: Mention #1 in the opening, Mention #2 woven naturally into the "So What Do You Actually Do About This?" section (attached to a specific piece of advice — not a standalone pitch), Mention #3 in the closing paired with the next-video open loop.
 5. Each insight follows the Value Loop (What → Why → When → Story Proof → What This Means For You)
 6. No "how to implement" — that belongs in the consultation or lead magnet
 7. 4-5 connection phrases written as spoken dialogue, distributed throughout (not clustered)
@@ -167,7 +167,7 @@ Remember: the structure you proposed might not match the member's original order
 
 **5. CLOSING**
 
-The closing is the next-video open loop only — one paragraph, maximum 3-4 sentences. No recap. No summary. No lead magnet mention here (the third mention belongs inside the playbook). No value restatement. No connection phrases. After the last playbook point ends, a single transition sentence (optional) leads directly into the open loop. That is the entire closing.
+The closing pairs Lead Magnet Mention #3 with the next-video open loop — one tight paragraph, maximum 3-4 sentences. Lead magnet first, then straight into the open loop. No recap. No summary. No wrap-up sentence. No value restatement. No connection phrases. That is the entire closing.
 
 Use {{LEAD_MAGNET}} for the lead magnet name and {{NEXT_VIDEO}} for the open loop topic. If the member did not provide a next video topic, ask for it before writing the closing — the open loop cannot be generic.
 
@@ -181,18 +181,89 @@ Must be specific to THIS video's topic and avatar. Not generic. Not a "free cons
 
 **7. FINAL SCRIPT**
 
-Assemble everything into a single filmable monologue. This means:
-- INVISIBLE structure — no WHAT/WHY/WHEN labels visible in the script
-- Narrative arc — insights build on each other like a 3-act story
-- Conversational voice — contractions, fragments, rhetorical questions
+Output the script in the following sectioned format. The structure is VISIBLE in the written output — section headers and Value Loop labels are present so the member can learn the framework and film section by section. When they perform it on camera, the structure disappears — that is their job, not the script's job.
+
+---
+
+OPENING (~20-25 sec)
+
+Intro Pattern ([name which pattern]):
+[Word-for-word script]
+
+Lead Magnet Mention #1:
+[Word-for-word script]
+
+Expertise Bridge ([name which bridge]):
+[Word-for-word script]
+
+Transition:
+[Word-for-word script]
+
+---
+
+INSIGHT [N]: [NAME OF INSIGHT]
+
+What — the principle most people miss:
+[Script]
+
+Why — the underlying psychology:
+[Script]
+
+When — the specific situation where this becomes critical:
+[Script]
+
+Story Proof:
+[Script using ONLY member-provided details. If details are thin, write a beat/cue instead: "Tell your story about [X] here — hit these beats: what they tried, what went wrong, what changed."]
+
+What This Means For You:
+[Script]
+
+Visual Cue:
+[SHOW: specific filmable description]
+
+Curiosity Bridge:
+[Script — And/But/Therefore transition to next insight]
+
+---
+
+(Repeat INSIGHT block for each insight)
+
+---
+
+SO WHAT DO YOU ACTUALLY DO ABOUT THIS?
+
+[Conversational narrative paragraphs — NOT a numbered list or checklist. Each piece of advice is NEW guidance that deepens what was covered in the insights — not a recap or summary. The insights explain what's happening and why. This section tells the viewer how to think differently and what to actually do about it. Each point should be a mindset shift or specific action the viewer hasn't heard yet in the script, written in the same conversational voice as the rest of the video. Do NOT repeat or rephrase the insights — advance the conversation. If insight 1 explained WHY the rental backup plan is broken, this section says "let go of the backup plan — here's what that frees you to do instead." The viewer should feel like the insights gave them understanding and this section gives them clarity on what to do next.]
+
+Lead Magnet Mention #2:
+[Woven naturally into this section — attached to a specific piece of advice, not a standalone pitch]
+
+---
+
+CLOSING — Next Video Push
+
+Lead Magnet Mention #3 + Open Loop:
+[One tight paragraph — max 3-4 sentences. Lead magnet first, then straight into the next-video open loop. Nothing else.]
+
+---
+
+CONNECTION PHRASES (woven into the sections above — listed here for the member's reference)
+- [Phrase] — placed in [section]
+- [Phrase] — placed in [section]
+- [Phrase] — placed in [section]
+- [Phrase] — placed in [section]
+
+VALUES PEPPERED IN
+- [Value/interest] — placed in [section]
+- [Value/interest] — placed in [section]
+
+---
+
+Additional script requirements:
+- Conversational voice throughout — contractions, fragments, rhetorical questions
 - At least one analogy per major section
-- The single client story threaded throughout
-- Lead magnet mentioned organically 3 times: once in the opening, once ~2/3 through the insights, and once INSIDE the playbook (attached to one of the action items — e.g. "grab {{LEAD_MAGNET}} to shortcut this step"). It must NOT appear again after the playbook ends.
-- Specific curiosity bridges between sections
-- Visual production cues inline [SHOW: description]
+- The single client story threaded throughout the insight blocks
+- Specific curiosity bridges between every section
 - Target length: 2,500-4,000 words
-- A "What To Do About It" playbook section — 3-5 numbered, specific actions with concrete thresholds or timelines. Embed the third lead magnet mention inside one of these action items. This section is not optional.
-- CRITICAL CLOSING RULE: After the last playbook point, the VERY NEXT SENTENCE is the open loop to the next video. No summary paragraph. No "the strategy that works is…" No wrap-up sentence. No lead magnet re-mention. The playbook ends → one-sentence bridge (optional) → open loop. Nothing in between.
 
 After the script, run the production requirements checklist (pass/fail for each of the 18 items above).
 

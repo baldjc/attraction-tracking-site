@@ -1,0 +1,148 @@
+⏺ ▎ ARC Script Builder — Final Script Output Overhaul
+
+  ▎ Two changes to the final script (Section 7) output.
+
+  ▎ ---
+  ▎ Change 1: Sectioned output format with ARC labels
+
+  ▎ The final script currently outputs a single
+  continuous monologue. Change it to a sectioned format
+   with clear ARC labels so the member can see what
+  each part is doing, learn the framework, and add
+  their own voice. Replace the Section 7 assembly
+  instructions with this output format:
+
+  ▎ ---
+  ▎ OPENING (~20-25 sec)
+
+  ▎ Intro Pattern (name which pattern):
+  ▎ [Word-for-word script]
+
+  ▎ Lead Magnet Mention #1:
+  ▎ [Word-for-word script]
+
+  ▎ Expertise Bridge (name which bridge):
+  ▎ [Word-for-word script]
+
+  ▎ Transition:
+  ▎ [Word-for-word script]
+
+  ▎ ---
+  ▎ INSIGHT 1: [NAME OF INSIGHT]
+
+  ▎ What — the principle most people miss:
+  ▎ [Script]
+
+  ▎ Why — the underlying psychology:
+  ▎ [Script]
+
+  ▎ When — the specific situation where this becomes
+  critical:
+  ▎ [Script]
+
+  ▎ Story Proof:
+  ▎ [Script using ONLY member-provided details. If
+  details are thin, write a beat/cue instead: "Tell
+  your story about [X] here — hit these beats: what
+  they tried, what went wrong, what changed."]
+
+  ▎ What This Means For You:
+  ▎ [Script]
+
+  ▎ Visual Cue:
+  ▎ [SHOW: specific filmable description]
+
+  ▎ Curiosity Bridge:
+  ▎ [Script — And/But/Therefore transition to next
+  insight]
+
+  ▎ ---
+  ▎ (Repeat for each insight)
+
+  ▎ ---
+  ▎ SO WHAT DO YOU ACTUALLY DO ABOUT THIS?
+
+  ▎ [Conversational narrative paragraphs — NOT a
+  numbered list or checklist. Each piece of advice is
+  NEW guidance that DEEPENS what was covered in the
+  insights — not a recap or summary. The insights
+  explain what's happening and why. This section tells
+  the viewer how to think differently and what to
+  actually do about it. Each point should be a mindset
+  shift or specific action the viewer hasn't heard yet
+  in the script, written in the same conversational
+  voice as the rest of the video. Do NOT repeat or
+  rephrase the insights — advance the conversation. If
+  insight 1 explained WHY the rental backup plan is
+  broken, this section tells them "let go of the backup
+   plan and here's what that frees you to do instead."
+  If insight 3 explained the pricing ripple effect,
+  this section tells them "do the carrying cost math
+  BEFORE you list, not after — here's why that changes
+  every decision you make." The viewer should feel like
+   the insights gave them understanding and this
+  section gives them clarity on what to do next.]
+
+  ▎ Lead Magnet Mention #2:
+  ▎ [Woven naturally into this section]
+
+  ▎ ---
+  ▎ CLOSING — Next Video Push
+
+  ▎ Lead Magnet Mention #3 + Open Loop:
+  ▎ [One tight paragraph — max 3-4 sentences. Lead
+  magnet, then straight into the next-video open loop.
+  Nothing else.]
+
+  ▎ ---
+  ▎ CONNECTION PHRASES (woven into the sections above —
+   listed here for the member's reference)
+  ▎ - [Phrase] — placed in [section]
+  ▎ - [Phrase] — placed in [section]
+  ▎ - [Phrase] — placed in [section]
+  ▎ - [Phrase] — placed in [section]
+
+  ▎ VALUES PEPPERED IN
+  ▎ - [Value/interest] — placed in [section]
+  ▎ - [Value/interest] — placed in [section]
+
+  ▎ ---
+  ▎ This format serves two purposes: (1) the member
+  learns the ARC framework by seeing each element
+  labelled, and (2) they can film section by section,
+  adding their own stories and voice where the beats
+  are marked.
+
+  ▎ ---
+  ▎ Change 2: Remove the numbered playbook format
+  entirely
+
+  ▎ Delete all references to "playbook," "What To Do
+  About It playbook," "3-5 numbered actions," and
+  "specific thresholds" from the system prompt, the
+  Section 7 assembly instructions, and the Production
+  Requirements checklist.
+
+  ▎ The ARC framework doesn't include a numbered action
+   list. The "So What Do You Actually Do About This?"
+  section exists, but it's conversational narrative
+  paragraphs that deepen the content — not a bulleted
+  or numbered checklist of action items.
+
+  ▎ Replace any remaining playbook instructions with:
+  "After the insights, transition naturally into
+  practical guidance woven as conversational paragraphs
+   — NOT a numbered playbook or action list. This
+  section provides NEW advice that advances beyond the
+  insights, not a recap of them. Each piece of guidance
+   should deepen the viewer's understanding and give
+  them a clear mindset shift or next step they haven't
+  heard yet. The tone stays identical to the rest of
+  the script."
+
+  ▎ Also update the Production Requirements: remove the
+   "invisible structure" requirement. The structure
+  should now be VISIBLE in the output with clear
+  section headers and Value Loop labels. The structure
+  only becomes invisible when the member performs it on
+   camera — that's their job, not the script's job.
