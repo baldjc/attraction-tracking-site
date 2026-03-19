@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeftIcon,
@@ -108,6 +108,7 @@ function tierLabel(value: string) {
 
 export default function MemberDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
   const [member, setMember] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -119,6 +120,10 @@ export default function MemberDetailPage() {
   // Audit deletion
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [deletingAuditId, setDeletingAuditId] = useState<string | null>(null);
+
+  // Member deletion
+  const [confirmDeleteMember, setConfirmDeleteMember] = useState(false);
+  const [deletingMember, setDeletingMember] = useState(false);
 
   // Quick tier change
   const [quickTier, setQuickTier] = useState<string>("");
@@ -273,6 +278,12 @@ export default function MemberDetailPage() {
     setConfirmDeleteId(null);
     setDeletingAuditId(null);
     await fetchMember();
+  }
+
+  async function handleDeleteMember() {
+    setDeletingMember(true);
+    await fetch(`/api/members/${id}`, { method: "DELETE" });
+    router.push("/admin/members");
   }
 
   async function runAudit(auditType: string, videoId?: string) {
@@ -1243,6 +1254,40 @@ export default function MemberDetailPage() {
                 </a>
               )}
             </div>
+          </div>
+
+          {/* Danger Zone */}
+          <div className="bg-white rounded-xl border border-red-200 p-5 shadow-sm">
+            <h2 className="text-sm font-semibold text-red-600 mb-3">Danger Zone</h2>
+            {!confirmDeleteMember ? (
+              <button
+                onClick={() => setConfirmDeleteMember(true)}
+                className="w-full text-sm font-medium text-red-600 border border-red-200 hover:bg-red-50 px-4 py-2.5 rounded-lg transition-colors"
+              >
+                Delete Member
+              </button>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-xs text-red-600">
+                  This will permanently delete <strong>{member.fullName || member.email}</strong> and all their data (audits, links, scripts, etc.). This cannot be undone.
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleDeleteMember}
+                    disabled={deletingMember}
+                    className="flex-1 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 px-4 py-2.5 rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    {deletingMember ? "Deleting…" : "Yes, Delete"}
+                  </button>
+                  <button
+                    onClick={() => setConfirmDeleteMember(false)}
+                    className="flex-1 text-sm font-medium text-[#1e2a38] border border-gray-200 hover:bg-gray-50 px-4 py-2.5 rounded-lg transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
