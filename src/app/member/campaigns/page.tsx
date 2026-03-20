@@ -123,7 +123,7 @@ export default function CampaignsPage() {
             <p className="text-xs text-[#1e2a38]/50 font-medium mb-1">Leads (30d)</p>
             <p className="text-2xl font-bold text-[#1e2a38]">{analytics.totalLeads.toLocaleString()}</p>
             <div className="mt-2">
-              <MiniSparkline data={analytics.leadsSparkline.map((s) => ({ value: s.leads }))} color="#1e2a38" />
+              <MiniSparkline data={(analytics.leadsSparkline ?? []).map((s) => ({ value: s.leads }))} color="#1e2a38" />
             </div>
           </div>
           {/* Conversion Rate */}

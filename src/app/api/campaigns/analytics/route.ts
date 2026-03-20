@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
   const campaignIds = campaigns.map((c) => c.id);
 
   if (campaignIds.length === 0) {
-    return NextResponse.json({ daily: [], totalClicks: 0, totalLeads: 0, conversionRate: 0, previousConversionRate: 0, sparkline: [], topLink: null });
+    return NextResponse.json({ daily: [], totalClicks: 0, totalLeads: 0, conversionRate: 0, previousConversionRate: 0, sparkline: [], leadsSparkline: [], topLink: null });
   }
 
   const [clicks, prevClicks, topLinkData] = await Promise.all([
