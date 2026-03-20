@@ -60,24 +60,25 @@ export function buildTrackedUrl(destinationUrl: string, refCode: string): string
   return `${destinationUrl}${sep}ref=${refCode}`;
 }
 
-export async function geolocateIp(ip: string): Promise<{ city: string | null; province: string | null; country: string | null }> {
+export async function geolocateIp(ip: string): Promise<{ city: string | null; province: string | null; country: string | null; countryCode: string | null }> {
   if (!ip || ip === "::1" || ip === "127.0.0.1") {
-    return { city: null, province: null, country: null };
+    return { city: null, province: null, country: null, countryCode: null };
   }
   try {
-    const res = await fetch(`http://ip-api.com/json/${ip}?fields=city,regionName,country,status`, {
+    const res = await fetch(`http://ip-api.com/json/${ip}?fields=city,regionName,country,countryCode,status`, {
       signal: AbortSignal.timeout(3000),
     });
-    if (!res.ok) return { city: null, province: null, country: null };
+    if (!res.ok) return { city: null, province: null, country: null, countryCode: null };
     const data = await res.json();
-    if (data.status !== "success") return { city: null, province: null, country: null };
+    if (data.status !== "success") return { city: null, province: null, country: null, countryCode: null };
     return {
       city: data.city ?? null,
       province: data.regionName ?? null,
       country: data.country ?? null,
+      countryCode: data.countryCode ?? null,
     };
   } catch {
-    return { city: null, province: null, country: null };
+    return { city: null, province: null, country: null, countryCode: null };
   }
 }
 

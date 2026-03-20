@@ -1,0 +1,121 @@
+  Make the summary cards on the Campaigns list page         
+  clickable, and build out a proper Analytics page with deep
+   filtering. The goal: clearly show which lead magnets     
+  perform best with which videos.                           
+                                                            
+  === CLICKABLE SUMMARY CARDS ===                           
+                                                            
+  Each of the 4 summary cards at the top of the Campaigns   
+  page (Clicks, Leads, Conv. Rate, Top Link) should be
+  clickable and navigate to the Analytics page with the     
+  relevant view pre-filtered:
+                                                 
+  - "Clicks" card → Analytics page, Clicks tab              
+  - "Leads" card → Analytics page, Leads tab
+  - "Conv. Rate" card → Analytics page, Conversion Rate tab 
+  - "Top Link" card → Analytics page, filtered to that      
+  specific link                                             
+                                                            
+  Add hover states on the cards so users know they're       
+  clickable (subtle shadow or border change).    
+                                                            
+  === ANALYTICS PAGE OVERHAUL ===                           
+                                                 
+  The Analytics page (already in the sidebar) should be the 
+  central hub for understanding performance. Build it with
+  these sections:                                           
+                  
+  1. **FILTERS BAR (top of page, sticky):**                 
+     - Date range: 7d / 30d / 90d / Custom date picker
+     - Campaign dropdown: All Campaigns or pick one         
+     - Source type: All / YouTube / Google Ads / Email /    
+  Other                                                     
+     - When a filter changes, all charts and tables below   
+  update                                                    
+                                                 
+  2. **OVERVIEW ROW (4 big number cards with trend):**      
+     - Total Views (YouTube) with % change vs previous
+  period                                                    
+     - Total Clicks with % change
+     - Total Leads with % change                            
+     - Overall Conversion Rate with % change
+     - Each card shows a sparkline of the last 30 days
+                                                            
+  3. **LEAD MAGNET PERFORMANCE TABLE:**
+     This is the key insight — which lead magnets           
+  (campaigns) convert best:                                 
+     - Columns: Campaign Name, Destination URL, Total Views,
+   Total Clicks, Total Leads, Conversion Rate, Best         
+  Performing Video (the tracking link with the most leads)
+     - Sortable by any column                               
+     - Colour-code conversion rate: green (>5%), yellow
+  (2-5%), red (<2%)                                         
+     - Click a row to drill into that campaign's detail page
+                                                            
+  4. **VIDEO vs LEAD MAGNET MATRIX:**                       
+     A comparison view showing how each video performs      
+  across different lead magnets (if a video is used in      
+  multiple campaigns):                           
+     - Rows: Videos (tracking links with YouTube URLs)      
+     - Columns: Clicks, Leads, Conv. Rate, Campaign Name,   
+  YouTube Views, Click-Through Rate (clicks ÷ views)        
+     - Sortable by any column                               
+     - Show the YouTube thumbnail next to the video title   
+     - This answers: "Which of my videos drives the most    
+  leads?" and "Which video + lead magnet combo works best?" 
+                                                            
+  5. **CLICKS & LEADS OVER TIME (line chart):**             
+     - Dual-axis line chart: clicks (blue) and leads (dark)
+  over time                                                 
+     - Respects the date range and campaign filters above
+     - Hover shows exact numbers per day                    
+     - Toggle between daily / weekly view                   
+                                                 
+  6. **CONVERSION FUNNEL (horizontal bar or funnel chart):**
+     - YouTube Views → Clicks → Leads
+     - Shows drop-off at each stage                         
+     - Only shows if YouTube view data is available         
+     - Percentages between each stage (e.g., "0.05% clicked"
+   → "33% converted")                                       
+                                                            
+  7. **TOP PERFORMING VIDEOS (bar chart):**                 
+     - Horizontal bar chart ranking videos by leads
+  generated                                                 
+     - Show top 10
+     - Each bar shows the video thumbnail, title, and lead  
+  count                                                     
+     - Colour bars by campaign so you can see which lead
+  magnet each video drove to                                
+                  
+  8. **GEOGRAPHIC BREAKDOWN:**                              
+     - Table or map showing leads by city/province/country
+     - Sortable by lead count                               
+     - Country flag emoji next to each location
+     - Useful for members targeting specific markets        
+                                                            
+  === API ENDPOINTS ===                                     
+                                                            
+  GET /api/analytics/overview?period=30d&campaignId=all&sour
+  ceType=all                                     
+  - Returns: total views, clicks, leads, conversion rate,   
+  plus previous period for % change                         
+                                                 
+  GET /api/analytics/lead-magnets?period=30d&sourceType=all 
+  - Returns: per-campaign performance data for the table
+                                                            
+  GET /api/analytics/videos?period=30d&campaignId=all       
+  - Returns: per-video performance across campaigns         
+                                                            
+  GET /api/analytics/timeseries?period=30d&campaignId=all&gr
+  anularity=daily                                
+  - Returns: daily/weekly clicks and leads for the chart    
+                                                            
+  GET /api/analytics/funnel?period=30d&campaignId=all       
+  - Returns: views → clicks → leads funnel data             
+                                                            
+  GET /api/analytics/geo?period=30d&campaignId=all          
+  - Returns: leads grouped by location                      
+                                                            
+  All endpoints respect data isolation (members see only    
+  their own data, admin sees all with optional member       
+  filter).  

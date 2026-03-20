@@ -26,7 +26,10 @@ export async function GET() {
         include: {
           pageViews: { orderBy: { timestamp: "asc" } },
           link: {
-            include: {
+            select: {
+              name: true,
+              youtubeVideoUrl: true,
+              youtubeThumbnailUrl: true,
               campaign: { select: { id: true, name: true, sourceType: true } },
             },
           },

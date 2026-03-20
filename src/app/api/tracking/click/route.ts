@@ -155,6 +155,7 @@ export async function POST(req: NextRequest) {
         city: geo.city,
         province: geo.province,
         country: geo.country,
+        countryCode: geo.countryCode,
         userAgent: ua,
         referrer: req.headers.get("referer"),
       },

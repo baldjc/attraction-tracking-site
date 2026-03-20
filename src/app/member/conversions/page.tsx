@@ -26,11 +26,13 @@ interface LeadData {
     city: string | null;
     province: string | null;
     country: string | null;
+    countryCode: string | null;
     timestamp: string;
     pageViews: PageViewData[];
     link: {
       name: string;
       youtubeVideoUrl: string | null;
+      youtubeThumbnailUrl: string | null;
       campaign: {
         id: string;
         name: string;
@@ -47,6 +49,20 @@ function toDateStr(d: Date): string {
 function fmtDate(d: string) {
   const [, m, day] = d.split("-");
   return `${parseInt(m)}/${parseInt(day)}`;
+}
+
+function countryFlag(code: string | null): string {
+  if (!code || code.length !== 2) return "";
+  const offset = 0x1f1e6 - "A".charCodeAt(0);
+  return String.fromCodePoint(
+    code.toUpperCase().charCodeAt(0) + offset,
+    code.toUpperCase().charCodeAt(1) + offset
+  );
+}
+
+function formatLocation(city: string | null, province: string | null, country: string | null): string {
+  const parts = [city, province, country].filter(Boolean);
+  return parts.join(", ") || "—";
 }
 
 const SOURCE_LABELS: Record<string, string> = {
@@ -112,11 +128,9 @@ export default function ConversionsPage() {
 
   const hasFilters = campaignFilter || dateFrom || dateTo;
 
-  // Chart data derived from filtered leads
   const { dailyLeads, byCampaign, bySource } = useMemo(() => {
     if (!filtered.length) return { dailyLeads: [], byCampaign: [], bySource: [] };
 
-    // Daily leads (last 30 days or date range)
     const dayMap = new Map<string, number>();
     const start = dateFrom ? new Date(dateFrom) : new Date(Date.now() - 30 * 86400000);
     const end = dateTo ? new Date(dateTo) : new Date();
@@ -130,7 +144,6 @@ export default function ConversionsPage() {
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([date, leads]) => ({ date, leads }));
 
-    // By campaign
     const campMap = new Map<string, number>();
     for (const l of filtered) {
       const name = l.click.link.campaign.name;
@@ -140,7 +153,6 @@ export default function ConversionsPage() {
       .sort(([, a], [, b]) => b - a)
       .map(([name, value]) => ({ name, value }));
 
-    // By source type
     const srcMap = new Map<string, number>();
     for (const l of filtered) {
       const src = SOURCE_LABELS[l.click.link.campaign.sourceType] ?? "Other";
@@ -211,7 +223,6 @@ export default function ConversionsPage() {
         <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-5 mb-5">
           <h2 className="font-semibold text-[#1e2a38] mb-5">Analytics</h2>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Leads per day bar chart */}
             <div className="lg:col-span-1">
               <p className="text-xs font-medium text-[#1e2a38]/50 mb-3">Leads Per Day</p>
               <ResponsiveContainer width="100%" height={180}>
@@ -234,8 +245,6 @@ export default function ConversionsPage() {
                 </BarChart>
               </ResponsiveContainer>
             </div>
-
-            {/* Leads by campaign donut */}
             <div>
               <p className="text-xs font-medium text-[#1e2a38]/50 mb-3">By Campaign</p>
               {byCampaign.length > 0
@@ -243,8 +252,6 @@ export default function ConversionsPage() {
                 : <div className="h-[180px] flex items-center justify-center text-[#1e2a38]/20 text-xs">No data</div>
               }
             </div>
-
-            {/* Leads by source donut */}
             <div>
               <p className="text-xs font-medium text-[#1e2a38]/50 mb-3">By Source</p>
               {bySource.length > 0
@@ -276,9 +283,10 @@ export default function ConversionsPage() {
             {filtered.map((lead) => {
               const isOpen = expanded.has(lead.id);
               const views = lead.click.pageViews;
-              const location = [lead.click.city, lead.click.province, lead.click.country]
-                .filter(Boolean)
-                .join(", ");
+              const { city, province, country, countryCode } = lead.click;
+              const flag = countryFlag(countryCode);
+              const location = formatLocation(city, province, country);
+              const hasThumbnail = !!lead.click.link.youtubeThumbnailUrl;
 
               return (
                 <div key={lead.id}>
@@ -288,6 +296,7 @@ export default function ConversionsPage() {
                   >
                     <div className="flex items-center justify-between gap-4">
                       <div className="grid grid-cols-4 flex-1 gap-4 text-sm">
+                        {/* Date */}
                         <div>
                           <div className="text-[#1e2a38] font-medium">
                             {new Date(lead.timestamp).toLocaleDateString()}
@@ -296,16 +305,34 @@ export default function ConversionsPage() {
                             {new Date(lead.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                           </div>
                         </div>
+
+                        {/* Campaign */}
                         <div>
                           <div className="text-[#1e2a38] font-medium truncate">{lead.click.link.campaign.name}</div>
                           <div className="text-xs text-[#1e2a38]/40">Campaign</div>
                         </div>
-                        <div>
-                          <div className="text-[#1e2a38] truncate">{lead.click.link.name}</div>
-                          <div className="text-xs text-[#1e2a38]/40">Source</div>
+
+                        {/* Source — thumbnail + link name */}
+                        <div className="flex items-center gap-2 min-w-0">
+                          {hasThumbnail && (
+                            <img
+                              src={lead.click.link.youtubeThumbnailUrl!}
+                              alt=""
+                              className="w-[60px] h-[40px] object-cover rounded flex-shrink-0"
+                            />
+                          )}
+                          <div className="min-w-0">
+                            <div className="text-[#1e2a38] truncate">{lead.click.link.name}</div>
+                            <div className="text-xs text-[#1e2a38]/40">Source</div>
+                          </div>
                         </div>
+
+                        {/* Location — flag + city/province/country */}
                         <div>
-                          <div className="text-[#1e2a38]">{location || "—"}</div>
+                          <div className="text-[#1e2a38] flex items-center gap-1">
+                            {flag && <span className="text-base leading-none">{flag}</span>}
+                            <span className="truncate">{location}</span>
+                          </div>
                           <div className="text-xs text-[#1e2a38]/40">Location</div>
                         </div>
                       </div>

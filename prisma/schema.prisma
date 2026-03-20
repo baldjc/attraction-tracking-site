@@ -207,6 +207,7 @@ model Click {
   city           String?
   province       String?
   country        String?
+  countryCode    String?
   userAgent      String?
   referrer       String?
   timestamp      DateTime     @default(now())
