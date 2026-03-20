@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import prisma from "@/lib/prisma";
+import { SourceType } from "@/generated/prisma";
 import { parsePeriod, toDateStr, fillDays } from "@/lib/analytics-utils";
 
 function isoWeekStart(d: Date): string {
@@ -29,7 +30,7 @@ export async function GET(req: NextRequest) {
       deletedAt: null,
       ...(isAdmin ? {} : { userId: user.id }),
       ...(campaignId !== "all" ? { id: campaignId } : {}),
-      ...(sourceType !== "all" ? { sourceType } : {}),
+      ...(sourceType !== "all" ? { sourceType: sourceType as SourceType } : {}),
     },
     select: { id: true },
   });
