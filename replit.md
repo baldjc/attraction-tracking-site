@@ -48,6 +48,14 @@ Full-stack Next.js 16 platform for YouTube channel audits, GHL member sync, link
 - Toggle in sidebar footer (sun/moon icon) above Sign out
 - Global CSS overrides in globals.css handle common hardcoded color patterns
 
+## Member Dashboard (`/member/dashboard`)
+- **Page:** `src/app/member/dashboard/page.tsx` — renders `MemberDashboard` for members, `EditorDashboard` for editors/admins
+- **Component:** `src/app/member/dashboard/MemberDashboard.tsx` — full 3-row client dashboard
+  - Row 1: Attraction Score, Leads/Clicks/Conv Rate this month (vs last month delta)
+  - Row 2: Top 3 strengths + gaps with AI tool deep-links, one-sentence diagnosis (left); Days since upload, next Q&A call, AI Tools quick-links (right)
+  - Row 3: Best video this month (thumbnail + stats), Score History sparkline
+- **API:** `src/app/api/member/dashboard/route.ts` — single endpoint, parallel queries, returns: firstName, latestAudit (score/strengths/gaps/diagnosis), previousAudit, campaignStats (thisMonth/lastMonth), bestVideo, daysSinceUpload, nextCoachingCall (next Thursday), scoreHistory
+
 ## Key Files
 ```
 prisma/schema.prisma         — DB schema: User (+ avatarProfile/Name/Summary/contentThemes/niche/city/thankYouPageUrl), Audit, AuditJob, AppSetting, Campaign (+ SourceType enum, destinationUrl, sourceType, deletedAt), TrackingLink (refCode unique, youtubeVideoId/Url/Thumbnail, deletedAt), Click (trackingLinkId, refCode, sessionId, city/province/country), PageView, Lead, ScriptReview, SavedScript, SavedTitle, SavedIdea, TitleAnalysis, AIToolConversation (AIToolType enum: replaced title_creator → content_engine)
