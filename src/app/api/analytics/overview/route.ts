@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import prisma from "@/lib/prisma";
-import { SourceType } from "@/generated/prisma/client";
 import { parsePeriod, toDateStr, fillDays, pct, delta } from "@/lib/analytics-utils";
 
 export async function GET(req: NextRequest) {
@@ -21,7 +20,7 @@ export async function GET(req: NextRequest) {
     deletedAt: null,
     ...(isAdmin ? {} : { userId: user.id }),
     ...(campaignId !== "all" ? { id: campaignId } : {}),
-    ...(sourceType !== "all" ? { sourceType: sourceType as SourceType } : {}),
+    ...(sourceType !== "all" ? { sourceType: sourceType as "YOUTUBE" | "GOOGLE_ADS" | "EMAIL" | "OTHER" } : {}),
   };
 
   const campaigns = await prisma.campaign.findMany({
