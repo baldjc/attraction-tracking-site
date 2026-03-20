@@ -23,9 +23,12 @@ import {
   ChevronDownIcon,
   MagnifyingGlassIcon,
   UserCircleIcon,
+  SunIcon,
+  MoonIcon,
 } from "@heroicons/react/24/outline";
 import { useState, useEffect, useRef } from "react";
 import { IMPERSONATE_LS_KEY } from "@/lib/impersonate-constants";
+import { useTheme } from "@/components/ThemeProvider";
 
 interface FeatureFlags {
   campaigns?: boolean;
@@ -47,7 +50,6 @@ const adminLinks = [
   { href: "/admin/qa-prep", label: "Q&A Prep", icon: ChatBubbleLeftRightIcon },
   { href: "/admin/ai-tools", label: "AI Tools", icon: SparklesIcon },
   { href: "/member/campaigns", label: "Campaigns", icon: LinkIcon },
-  { href: "/member/conversions", label: "Conversions", icon: ChartBarIcon },
   { href: "/admin/analytics", label: "Analytics", icon: ChartBarIcon },
   { href: "/member/link-tracking", label: "Link Tracking Settings", icon: LinkIcon },
   { href: "/admin/settings", label: "Settings", icon: Cog6ToothIcon },
@@ -57,7 +59,6 @@ const editorLinks = [
   { href: "/member/dashboard", label: "Dashboard", icon: HomeIcon, featureKey: null },
   { href: "/member/ai-tools", label: "AI Tools", icon: SparklesIcon, featureKey: "ai_tools" },
   { href: "/member/campaigns", label: "Campaigns", icon: LinkIcon, featureKey: "campaigns" },
-  { href: "/member/conversions", label: "Conversions", icon: ChartBarIcon, featureKey: "campaigns" },
   { href: "/member/analytics", label: "Analytics", icon: ChartBarIcon, featureKey: "campaigns" },
   { href: "/member/settings", label: "Settings", icon: Cog6ToothIcon, featureKey: null },
 ];
@@ -66,7 +67,6 @@ const memberLinks = [
   { href: "/member/scores", label: "My Scores", icon: StarIcon, featureKey: null },
   { href: "/member/ai-tools", label: "AI Tools", icon: SparklesIcon, featureKey: "ai_tools" },
   { href: "/member/campaigns", label: "Campaigns", icon: LinkIcon, featureKey: "campaigns" },
-  { href: "/member/conversions", label: "Conversions", icon: ChartBarIcon, featureKey: "campaigns" },
   { href: "/member/analytics", label: "Analytics", icon: ChartBarIcon, featureKey: "campaigns" },
   { href: "/member/link-tracking", label: "Link Tracking Settings", icon: LinkIcon, featureKey: "campaigns" },
   { href: "/member/resources", label: "Resources", icon: BookOpenIcon, featureKey: "resources" },
@@ -169,6 +169,7 @@ function SwitchMemberDropdown({
 export default function Sidebar({ role, userName, featureFlags }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const { theme, toggle: toggleTheme } = useTheme();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [impersonate, setImpersonate] = useState<ImpersonateState | null>(null);
   const [showSwitch, setShowSwitch] = useState(false);
@@ -339,6 +340,16 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
           <p className="text-xs text-white/40 mt-0.5">{roleLabel}</p>
         </div>
         <button
+          onClick={toggleTheme}
+          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/60 hover:text-white hover:bg-white/10 transition-all duration-150 w-full"
+          aria-label="Toggle dark mode"
+        >
+          {theme === "dark"
+            ? <SunIcon className="w-5 h-5 shrink-0" />
+            : <MoonIcon className="w-5 h-5 shrink-0" />}
+          <span>{theme === "dark" ? "Light mode" : "Dark mode"}</span>
+        </button>
+        <button
           onClick={() => signOut({ callbackUrl: "/login" })}
           className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/60 hover:text-white hover:bg-white/10 transition-all duration-150 w-full"
         >
@@ -352,7 +363,7 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
   return (
     <>
       {/* Mobile top bar */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-40 h-14 bg-[#1e2a38] flex items-center px-4 gap-3 shadow-lg">
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-40 h-14 bg-[#1e2a38] dark:bg-[#0f1419] flex items-center px-4 gap-3 shadow-lg">
         <button
           onClick={() => setMobileOpen(true)}
           className="text-white/70 hover:text-white transition-colors p-1"
@@ -382,7 +393,7 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
 
       {/* Mobile drawer */}
       <aside
-        className={`lg:hidden fixed inset-y-0 left-0 z-50 w-[260px] bg-[#1e2a38] shadow-2xl transform transition-transform duration-300 ease-in-out ${
+        className={`lg:hidden fixed inset-y-0 left-0 z-50 w-[260px] bg-[#1e2a38] dark:bg-[#0f1419] shadow-2xl transform transition-transform duration-300 ease-in-out ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -397,7 +408,7 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
       </aside>
 
       {/* Desktop fixed sidebar */}
-      <aside className="hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 lg:left-0 lg:w-[260px] bg-[#1e2a38] shadow-xl z-30">
+      <aside className="hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 lg:left-0 lg:w-[260px] bg-[#1e2a38] dark:bg-[#0f1419] shadow-xl z-30">
         {sidebarInner}
       </aside>
     </>

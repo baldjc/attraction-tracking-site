@@ -34,10 +34,19 @@ Full-stack Next.js 16 platform for YouTube channel audits, GHL member sync, link
 - Pagination: use `meta.nextPageUrl` (not `startAfter`/`startAfterId`)
 
 ## Color Palette
-- Background: `#f1f1ef`
+- Background: `#f1f1ef` (dark: `#1a1f2e`)
 - Primary: `#3dc3ff`
 - Alerts: `#ff0033`
-- Text/Sidebar: `#1e2a38`
+- Text/Sidebar: `#1e2a38` (dark: `#e2e8f0`)
+- Cards: `#ffffff` (dark: `#242b3d`)
+- Sidebar: `#1e2a38` (dark: `#0f1419`)
+
+## Dark Mode
+- Class-based: `html.dark` toggled by ThemeProvider
+- `@custom-variant dark` in globals.css enables `dark:` Tailwind variants
+- Anti-FOUC inline script in root layout reads `atbv-theme` from localStorage
+- Toggle in sidebar footer (sun/moon icon) above Sign out
+- Global CSS overrides in globals.css handle common hardcoded color patterns
 
 ## Key Files
 ```

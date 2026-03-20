@@ -1,0 +1,90 @@
+Two changes: consolidate the analytics/conversions pages
+  and add dark mode.                                        
+   
+  === MERGE CONVERSIONS INTO ANALYTICS ===                  
+                  
+  Right now Conversions and Analytics are separate pages in 
+  the sidebar. Merge them into one unified page. Remove     
+  "Conversions" from the sidebar — everything lives under   
+  "Analytics" now.
+                                                 
+  The Analytics page should use tabs across the top to      
+  organize the sections:
+                                                            
+  Tab 1: "Overview" (what's currently the Analytics page top
+   section)                                      
+  - The 4 summary cards (YouTube Views, Clicks, Leads, Conv.
+   Rate) with sparklines and % change                       
+  - Clicks & Leads Over Time chart (daily/weekly toggle)
+  - Conversion Funnel                                       
+                  
+  Tab 2: "Conversions" (what's currently the Conversions    
+  page)           
+  - The lead table with expandable browsing journey rows    
+  - Video thumbnail in source column                        
+  - Country flag + location                      
+  - Filters: campaign dropdown, date range                  
+                  
+  Tab 3: "Lead Magnets"                                     
+  - Lead Magnet Performance table: Campaign Name,
+  Destination URL, Total Views, Clicks, Leads, Conv. Rate,  
+  Best Performing Video
+  - Sortable by any column                                  
+  - Colour-code conversion rate: green (>5%), yellow (2-5%),
+   red (<2%)                                                
+  - Click a row to go to that campaign's detail page        
+                                                            
+  Tab 4: "Videos"                                           
+  - Video vs Lead Magnet comparison: each video with its
+  thumbnail, title, clicks, leads, conv. rate, campaign     
+  name, YouTube views, click-through rate
+  - Sortable by any column                                  
+  - Answers "which video drives the most leads" and "which
+  video + lead magnet combo works best"                     
+  
+  Tab 5: "Geography"                                        
+  - Leads by location with country flag emojis
+  - Sortable by lead count                                  
+  - Table: Flag + Country, Province/State, City, Lead Count
+                                                            
+  The global filters (date range, campaign dropdown, source 
+  type) should sit ABOVE the tabs so they apply to all tabs.
+   Keep the 7d / 30d / 90d / Custom date picker.            
+                                                 
+  The clickable summary cards on the Campaigns list page    
+  should link to the appropriate Analytics tab:
+  - Clicks card → Analytics, Overview tab                   
+  - Leads card → Analytics, Conversions tab                 
+  - Conv. Rate card → Analytics, Overview tab    
+  - Top Link card → Analytics, Videos tab                   
+                                                            
+  === DARK MODE TOGGLE ===                       
+                                                            
+  Add a dark/light mode toggle in the bottom-left of the    
+  sidebar, above "Sign out". Use a sun/moon icon toggle.
+                                                            
+  - Light mode = current design (default)                   
+  - Dark mode colours:                           
+    - Sidebar: #0f1419 (very dark)                          
+    - Page background: #1a1f2e                              
+    - Cards/containers: #242b3d                             
+    - Text: #e2e8f0 (light gray)                            
+    - Secondary text: #94a3b8                               
+    - Borders: #2d3748                                      
+    - Charts: keep the same accent colours (blue for clicks,
+   dark for leads, red for YouTube) but slightly brighter   
+  for contrast on dark backgrounds               
+    - Inputs/dropdowns: #2d3748 background with light text  
+    - The Attraction by Video logo area should stay as-is or
+   get slightly darker                                      
+                                                            
+  - Save the preference to localStorage so it persists      
+  across sessions                                
+  - Apply dark mode to ALL pages site-wide, not just        
+  analytics                                                 
+  - Use CSS variables or Tailwind's dark: variant so it's
+  consistent everywhere                                     
+  - Transition smoothly (200ms transition on
+  background-color and color)                               
+                  
+  Both admin and members should have access to the toggle.

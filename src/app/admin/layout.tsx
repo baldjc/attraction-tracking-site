@@ -18,7 +18,7 @@ export default async function AdminLayout({
   }
 
   return (
-    <div className="min-h-screen bg-[#f1f1ef]">
+    <div className="min-h-screen bg-[#f1f1ef] dark:bg-[#1a1f2e]">
       <div className="print:hidden">
         <Sidebar
           role="admin"
