@@ -127,10 +127,12 @@ function StaffCard({
   staff,
   allMembers,
   onSaved,
+  onRemoved,
 }: {
   staff: StaffMember;
   allMembers: MemberOption[];
   onSaved: (id: string, ids: string[] | null) => void;
+  onRemoved: (id: string) => void;
 }) {
   const rawIds = staff.allowedMemberIds;
   const initIds = Array.isArray(rawIds) ? (rawIds as string[]) : null;
@@ -139,6 +141,8 @@ function StaffCard({
   const [selected, setSelected] = useState<string[]>(initIds ?? []);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [confirmRemove, setConfirmRemove] = useState(false);
+  const [removing, setRemoving] = useState(false);
 
   async function handleSave() {
     setSaving(true);
@@ -157,6 +161,17 @@ function StaffCard({
     }
   }
 
+  async function handleRemove() {
+    setRemoving(true);
+    const res = await fetch("/api/admin/staff", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ staffUserId: staff.id }),
+    });
+    setRemoving(false);
+    if (res.ok) onRemoved(staff.id);
+  }
+
   const roleBadge = staff.role === "admin"
     ? "bg-purple-100 text-purple-700"
     : "bg-amber-100 text-amber-700";
@@ -168,10 +183,45 @@ function StaffCard({
           <p className="text-sm font-semibold text-[#1e2a38] truncate">{staff.fullName || staff.email}</p>
           <p className="text-xs text-[#1e2a38]/50 truncate">{staff.email}</p>
         </div>
-        <span className={`text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full shrink-0 ${roleBadge}`}>
-          {staff.role}
-        </span>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className={`text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full ${roleBadge}`}>
+            {staff.role}
+          </span>
+          {!confirmRemove && (
+            <button
+              type="button"
+              onClick={() => setConfirmRemove(true)}
+              className="text-[#1e2a38]/30 hover:text-[#ff0033] transition-colors"
+              title="Remove account"
+            >
+              <XMarkIcon className="w-4 h-4" />
+            </button>
+          )}
+        </div>
       </div>
+
+      {confirmRemove && (
+        <div className="bg-[#ff0033]/5 border border-[#ff0033]/20 rounded-lg px-4 py-3 flex items-center justify-between gap-3">
+          <p className="text-xs text-[#1e2a38] font-medium">Remove this account permanently?</p>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => setConfirmRemove(false)}
+              className="text-xs text-[#1e2a38]/50 hover:text-[#1e2a38] font-medium"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleRemove}
+              disabled={removing}
+              className="text-xs font-semibold text-white bg-[#ff0033] hover:bg-[#ff0033]/80 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+            >
+              {removing ? "Removing…" : "Remove"}
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="space-y-3">
         <div className="flex items-center gap-2">
@@ -227,6 +277,123 @@ function StaffCard({
   );
 }
 
+function AddStaffForm({ onCreated }: { onCreated: (s: StaffMember) => void }) {
+  const [open, setOpen] = useState(false);
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState<"admin" | "editor">("editor");
+  const [password, setPassword] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleCreate(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    setSaving(true);
+    const res = await fetch("/api/admin/staff", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fullName, email, role, password }),
+    });
+    const data = await res.json();
+    setSaving(false);
+    if (!res.ok) {
+      setError(data.error ?? "Failed to create account");
+      return;
+    }
+    onCreated(data.staff);
+    setOpen(false);
+    setFullName("");
+    setEmail("");
+    setPassword("");
+    setRole("editor");
+  }
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-[#1e2a38]/15 hover:border-[#3dc3ff]/40 rounded-xl py-3 text-sm text-[#1e2a38]/40 hover:text-[#3dc3ff] transition-colors font-medium"
+      >
+        <span className="text-lg leading-none">+</span> Add staff account
+      </button>
+    );
+  }
+
+  return (
+    <div className="border border-[#3dc3ff]/30 bg-[#3dc3ff]/3 rounded-xl p-5">
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-sm font-semibold text-[#1e2a38]">New staff account</p>
+        <button type="button" onClick={() => { setOpen(false); setError(""); }} className="text-[#1e2a38]/30 hover:text-[#1e2a38]">
+          <XMarkIcon className="w-4 h-4" />
+        </button>
+      </div>
+      <form onSubmit={handleCreate} className="space-y-3">
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-medium text-[#1e2a38]/60 mb-1">Full name</label>
+            <input
+              type="text"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="Jane Smith"
+              className="w-full px-3 py-2 text-sm border border-[#1e2a38]/15 rounded-lg focus:outline-none focus:border-[#3dc3ff] bg-white"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-[#1e2a38]/60 mb-1">Role</label>
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value as "admin" | "editor")}
+              className="w-full px-3 py-2 text-sm border border-[#1e2a38]/15 rounded-lg focus:outline-none focus:border-[#3dc3ff] bg-white"
+            >
+              <option value="editor">Editor</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-[#1e2a38]/60 mb-1">Email address <span className="text-[#ff0033]">*</span></label>
+          <input
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="jane@example.com"
+            className="w-full px-3 py-2 text-sm border border-[#1e2a38]/15 rounded-lg focus:outline-none focus:border-[#3dc3ff] bg-white"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-[#1e2a38]/60 mb-1">Temporary password <span className="text-[#ff0033]">*</span></label>
+          <input
+            type="text"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Set a temporary password"
+            className="w-full px-3 py-2 text-sm border border-[#1e2a38]/15 rounded-lg focus:outline-none focus:border-[#3dc3ff] bg-white font-mono"
+          />
+          <p className="text-[10px] text-[#1e2a38]/40 mt-1">Share this password with the team member so they can sign in.</p>
+        </div>
+        {error && <p className="text-xs text-[#ff0033] font-medium">{error}</p>}
+        <div className="flex items-center gap-3 pt-1">
+          <button
+            type="submit"
+            disabled={saving}
+            className="bg-[#1e2a38] text-white text-xs font-semibold px-5 py-2 rounded-lg hover:bg-[#1e2a38]/80 disabled:opacity-50 transition-colors"
+          >
+            {saving ? "Creating…" : "Create account"}
+          </button>
+          <button type="button" onClick={() => { setOpen(false); setError(""); }} className="text-xs text-[#1e2a38]/50 hover:text-[#1e2a38]">
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 function StaffAccessSection() {
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [allMembers, setAllMembers] = useState<MemberOption[]>([]);
@@ -249,6 +416,14 @@ function StaffAccessSection() {
     );
   }
 
+  function handleRemoved(id: string) {
+    setStaff((prev) => prev.filter((s) => s.id !== id));
+  }
+
+  function handleCreated(s: StaffMember) {
+    setStaff((prev) => [...prev, s]);
+  }
+
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
       <div className="flex items-center gap-2 mb-1">
@@ -256,7 +431,7 @@ function StaffAccessSection() {
         <h2 className="text-base font-semibold text-[#1e2a38]">Staff & Editor Access</h2>
       </div>
       <p className="text-sm text-[#1e2a38]/50 mb-5">
-        Control which members each admin or editor account can see. "All members" gives full access. "Custom access" restricts them to specific members only.
+        Create and manage admin or editor accounts. Control which members each one can see — &ldquo;All members&rdquo; for full access, or &ldquo;Custom access&rdquo; to restrict by member.
       </p>
 
       {loading && (
@@ -267,11 +442,7 @@ function StaffAccessSection() {
         </div>
       )}
 
-      {!loading && staff.length === 0 && (
-        <p className="text-sm text-[#1e2a38]/40 italic">No other admin or editor accounts found.</p>
-      )}
-
-      {!loading && staff.length > 0 && (
+      {!loading && (
         <div className="space-y-3">
           {staff.map((s) => (
             <StaffCard
@@ -279,8 +450,10 @@ function StaffAccessSection() {
               staff={s}
               allMembers={allMembers}
               onSaved={handleSaved}
+              onRemoved={handleRemoved}
             />
           ))}
+          <AddStaffForm onCreated={handleCreated} />
         </div>
       )}
     </div>
