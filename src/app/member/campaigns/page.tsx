@@ -14,6 +14,8 @@ interface Campaign {
   totalLeads: number;
   conversionRate: number;
   linkCount: number;
+  member?: { fullName: string | null; email: string };
+  isOwn: boolean;
 }
 
 const SOURCE_LABELS: Record<string, { label: string; color: string }> = {
@@ -33,8 +35,15 @@ export default function CampaignsPage() {
   const [creating, setCreating] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [memberFilter, setMemberFilter] = useState<"all" | "mine">("all");
 
-  useEffect(() => { loadCampaigns(); }, []);
+  useEffect(() => {
+    loadCampaigns();
+    fetch("/api/auth/session").then((r) => r.json()).then((s) => {
+      if ((s?.user as { role?: string })?.role === "admin") setIsAdmin(true);
+    }).catch(() => {});
+  }, []);
 
   async function loadCampaigns() {
     setLoading(true);
@@ -70,6 +79,10 @@ export default function CampaignsPage() {
 
   const confirmingName = campaigns.find((c) => c.id === confirmDeleteId)?.name ?? "";
 
+  const visibleCampaigns = isAdmin && memberFilter === "mine"
+    ? campaigns.filter((c) => c.isOwn)
+    : campaigns;
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -85,9 +98,26 @@ export default function CampaignsPage() {
         </button>
       </div>
 
+      {isAdmin && (
+        <div className="flex gap-2 mb-5">
+          <button
+            onClick={() => setMemberFilter("all")}
+            className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${memberFilter === "all" ? "bg-[#1e2a38] text-white" : "bg-white border border-[#1e2a38]/15 text-[#1e2a38]/60 hover:text-[#1e2a38]"}`}
+          >
+            All Campaigns
+          </button>
+          <button
+            onClick={() => setMemberFilter("mine")}
+            className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${memberFilter === "mine" ? "bg-[#1e2a38] text-white" : "bg-white border border-[#1e2a38]/15 text-[#1e2a38]/60 hover:text-[#1e2a38]"}`}
+          >
+            My Campaigns
+          </button>
+        </div>
+      )}
+
       {loading ? (
         <div className="text-center py-16 text-[#1e2a38]/40">Loading...</div>
-      ) : campaigns.length === 0 ? (
+      ) : visibleCampaigns.length === 0 ? (
         <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-12 text-center">
           <div className="text-4xl mb-3">🔗</div>
           <h2 className="font-semibold text-[#1e2a38] mb-2">No campaigns yet</h2>
@@ -103,8 +133,9 @@ export default function CampaignsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {campaigns.map((c) => {
+          {visibleCampaigns.map((c) => {
             const src = SOURCE_LABELS[c.sourceType] ?? SOURCE_LABELS.OTHER;
+            const memberName = c.member?.fullName || c.member?.email;
             return (
               <div key={c.id} className="relative group bg-white border border-[#1e2a38]/10 rounded-2xl hover:border-[#3dc3ff]/40 hover:shadow-sm transition-all">
                 <Link
@@ -117,6 +148,9 @@ export default function CampaignsPage() {
                       {src.label}
                     </span>
                   </div>
+                  {isAdmin && memberName && (
+                    <p className="text-xs text-[#3dc3ff]/80 mb-1 truncate">{memberName}</p>
+                  )}
                   <p className="text-xs text-[#1e2a38]/40 truncate mb-4">{c.destinationUrl}</p>
                   <div className="grid grid-cols-3 gap-2 text-center">
                     <div>

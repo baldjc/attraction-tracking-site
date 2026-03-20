@@ -45,6 +45,7 @@ export async function GET() {
       conversionRate: totalClicks > 0 ? Math.round((totalLeads / totalClicks) * 100) : 0,
       linkCount: c.links.length,
       member: isAdmin ? c.user : undefined,
+      isOwn: c.userId === user.id,
     };
   });
 

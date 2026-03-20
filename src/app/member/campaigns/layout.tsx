@@ -10,8 +10,10 @@ export default async function CampaignsLayout({
   const session = await auth();
   if (!session?.user) redirect("/login");
 
-  const isAdmin = (session.user as any).role === "admin";
-  if (!isAdmin) {
+  const role = (session.user as any).role;
+  if (role === "editor") redirect("/member/scores");
+
+  if (role !== "admin") {
     const flags = await getFeatureFlags();
     if (flags.campaigns === false) {
       redirect("/member/scores");

@@ -46,8 +46,10 @@ const adminLinks = [
   { href: "/admin/audits", label: "Audits", icon: ClipboardDocumentListIcon },
   { href: "/admin/qa-prep", label: "Q&A Prep", icon: ChatBubbleLeftRightIcon },
   { href: "/admin/ai-tools", label: "AI Tools", icon: SparklesIcon },
-  { href: "/admin/campaigns", label: "Campaigns", icon: LinkIcon },
+  { href: "/member/campaigns", label: "Campaigns", icon: LinkIcon },
+  { href: "/member/conversions", label: "Conversions", icon: ChartBarIcon },
   { href: "/admin/analytics", label: "Analytics", icon: ChartBarIcon },
+  { href: "/member/settings", label: "Link Tracking", icon: LinkIcon },
   { href: "/admin/settings", label: "Settings", icon: Cog6ToothIcon },
 ];
 
