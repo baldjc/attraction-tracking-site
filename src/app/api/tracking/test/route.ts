@@ -12,6 +12,25 @@ export async function POST(req: NextRequest) {
 
   const refCode = "test_" + nanoid(8);
 
+  // Remove any leftover test campaigns from previous failed/timed-out tests
+  const staleLinks = await prisma.trackingLink.findMany({
+    where: { campaign: { userId: user.id, name: "__test_installation__" } },
+    include: { clicks: { include: { pageViews: true } } },
+  });
+  for (const link of staleLinks) {
+    for (const click of link.clicks) {
+      await prisma.pageView.deleteMany({ where: { clickId: click.id } });
+      await prisma.lead.deleteMany({ where: { clickId: click.id } });
+    }
+    await prisma.click.deleteMany({ where: { trackingLinkId: link.id } });
+  }
+  await prisma.trackingLink.deleteMany({
+    where: { campaign: { userId: user.id, name: "__test_installation__" } },
+  });
+  await prisma.campaign.deleteMany({
+    where: { userId: user.id, name: "__test_installation__" },
+  });
+
   const campaign = await prisma.campaign.create({
     data: {
       userId: user.id,

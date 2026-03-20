@@ -14,6 +14,7 @@ export async function GET() {
   const campaigns = await prisma.campaign.findMany({
     where: {
       deletedAt: null,
+      name: { not: "__test_installation__" },
       ...(isAdmin ? {} : { userId: user.id }),
     },
     include: {
