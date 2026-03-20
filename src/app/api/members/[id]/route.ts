@@ -83,3 +83,25 @@ export async function PATCH(
 
   return NextResponse.json({ member });
 }
+
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await auth();
+  if (!session?.user || (session.user as any).role !== "admin") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { id } = await params;
+
+  const member = await prisma.user.findUnique({ where: { id } });
+  if (!member) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  // Cascades to all related records (audits, links, scripts, etc.)
+  await prisma.user.delete({ where: { id } });
+
+  return NextResponse.json({ success: true });
+}
