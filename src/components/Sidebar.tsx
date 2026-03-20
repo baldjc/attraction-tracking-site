@@ -50,7 +50,8 @@ const adminLinks = [
   { href: "/admin/qa-prep", label: "Q&A Prep", icon: ChatBubbleLeftRightIcon },
   { href: "/admin/ai-tools", label: "AI Tools", icon: SparklesIcon },
   { href: "/member/campaigns", label: "Campaigns", icon: LinkIcon },
-  { href: "/admin/analytics", label: "Analytics", icon: ChartBarIcon },
+  { href: "/member/analytics", label: "Lead Analytics", icon: ChartBarIcon },
+  { href: "/admin/analytics", label: "Member Analytics", icon: ChartBarIcon },
   { href: "/member/link-tracking", label: "Link Tracking Settings", icon: LinkIcon },
   { href: "/admin/settings", label: "Settings", icon: Cog6ToothIcon },
 ];
@@ -59,7 +60,7 @@ const editorLinks = [
   { href: "/member/dashboard", label: "Dashboard", icon: HomeIcon, featureKey: null },
   { href: "/member/ai-tools", label: "AI Tools", icon: SparklesIcon, featureKey: "ai_tools" },
   { href: "/member/campaigns", label: "Campaigns", icon: LinkIcon, featureKey: "campaigns" },
-  { href: "/member/analytics", label: "Analytics", icon: ChartBarIcon, featureKey: "campaigns" },
+  { href: "/member/analytics", label: "Lead Analytics", icon: ChartBarIcon, featureKey: "campaigns" },
   { href: "/member/settings", label: "Settings", icon: Cog6ToothIcon, featureKey: null },
 ];
 
@@ -67,7 +68,7 @@ const memberLinks = [
   { href: "/member/scores", label: "My Scores", icon: StarIcon, featureKey: null },
   { href: "/member/ai-tools", label: "AI Tools", icon: SparklesIcon, featureKey: "ai_tools" },
   { href: "/member/campaigns", label: "Campaigns", icon: LinkIcon, featureKey: "campaigns" },
-  { href: "/member/analytics", label: "Analytics", icon: ChartBarIcon, featureKey: "campaigns" },
+  { href: "/member/analytics", label: "Lead Analytics", icon: ChartBarIcon, featureKey: "campaigns" },
   { href: "/member/link-tracking", label: "Link Tracking Settings", icon: LinkIcon, featureKey: "campaigns" },
   { href: "/member/resources", label: "Resources", icon: BookOpenIcon, featureKey: "resources" },
   { href: "/member/settings", label: "Settings", icon: Cog6ToothIcon, featureKey: null },

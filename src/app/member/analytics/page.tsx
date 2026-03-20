@@ -297,7 +297,7 @@ function AnalyticsPageInner() {
   return (
     <div className="space-y-4 pb-10">
       <div>
-        <h1 className={`text-2xl font-bold ${txt}`}>Analytics</h1>
+        <h1 className={`text-2xl font-bold ${txt}`}>Lead Analytics</h1>
         <p className={`text-sm ${muted} mt-0.5`}>Performance across all your campaigns and videos</p>
       </div>
 
