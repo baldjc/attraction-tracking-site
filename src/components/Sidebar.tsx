@@ -53,6 +53,14 @@ const adminLinks = [
   { href: "/admin/settings", label: "Settings", icon: Cog6ToothIcon },
 ];
 
+const editorLinks = [
+  { href: "/member/dashboard", label: "Dashboard", icon: HomeIcon, featureKey: null },
+  { href: "/member/ai-tools", label: "AI Tools", icon: SparklesIcon, featureKey: "ai_tools" },
+  { href: "/member/campaigns", label: "Campaigns", icon: LinkIcon, featureKey: "campaigns" },
+  { href: "/member/conversions", label: "Conversions", icon: ChartBarIcon, featureKey: "campaigns" },
+  { href: "/member/settings", label: "Settings", icon: Cog6ToothIcon, featureKey: null },
+];
+
 const memberLinks = [
   { href: "/member/scores", label: "My Scores", icon: StarIcon, featureKey: null },
   { href: "/member/ai-tools", label: "AI Tools", icon: SparklesIcon, featureKey: "ai_tools" },
@@ -184,22 +192,25 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
 
   const isAdminOnMemberView =
     role === "admin" && !!impersonate && !pathname.startsWith("/admin");
+  const isEditorOnMemberView =
+    role === "editor" && !!impersonate;
+  const isStaffOnMemberView = isAdminOnMemberView || isEditorOnMemberView;
 
-  const baseMemberLinks = isAdminOnMemberView
-    ? memberLinks
-    : memberLinks.filter((link) => {
-        if (!link.featureKey || !featureFlags) return true;
-        return featureFlags[link.featureKey] !== false;
-      });
+  const baseMemberLinks = memberLinks.filter((link) => {
+    if (!link.featureKey || !featureFlags) return true;
+    return featureFlags[link.featureKey] !== false;
+  });
 
-  const links = isAdminOnMemberView
+  const links = isStaffOnMemberView
     ? baseMemberLinks
     : role === "admin"
     ? adminLinks
+    : role === "editor"
+    ? editorLinks.filter((l) => !l.featureKey || featureFlags?.[l.featureKey] !== false)
     : baseMemberLinks;
 
   function isActive(href: string) {
-    if (href === "/admin" || href === "/member/scores") {
+    if (href === "/admin" || href === "/member/scores" || href === "/member/dashboard") {
       return pathname === href;
     }
     return pathname.startsWith(href);
@@ -211,7 +222,11 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
       localStorage.removeItem(IMPERSONATE_LS_KEY);
     } catch { }
     setImpersonate(null);
-    router.push("/admin");
+    if (role === "editor") {
+      window.location.href = "/member/dashboard";
+    } else {
+      router.push("/admin");
+    }
   }
 
   async function handleSwitchMember(member: MemberOption) {
@@ -230,10 +245,26 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
     } catch { }
   }
 
+  const homeHref = isStaffOnMemberView
+    ? "/member/scores"
+    : role === "admin"
+    ? "/admin"
+    : role === "editor"
+    ? "/member/dashboard"
+    : "/member/scores";
+
+  const roleLabel = isStaffOnMemberView
+    ? "Foundations Member"
+    : role === "admin"
+    ? "Admin"
+    : role === "editor"
+    ? "Editor"
+    : "Foundations Member";
+
   const sidebarInner = (
     <div className="flex flex-col h-full">
-      {/* Impersonation banner */}
-      {isAdminOnMemberView && impersonate && (
+      {/* Impersonation banner — admin or editor viewing a member */}
+      {(isAdminOnMemberView || isEditorOnMemberView) && impersonate && (
         <div className="bg-amber-500 px-3 pt-2.5 pb-2 flex-shrink-0 relative">
           <div className="flex items-center justify-between gap-1 mb-1.5">
             <div className="flex items-center gap-1.5">
@@ -268,7 +299,7 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
       )}
 
       <div className="px-4 py-4 border-b border-white/10 flex-shrink-0">
-        <Link href={isAdminOnMemberView ? "/member/scores" : role === "admin" ? "/admin" : "/member/scores"} className="flex items-center gap-3">
+        <Link href={homeHref} className="flex items-center gap-3">
           <img src="/logo-icon.png" alt="" className="h-10 w-10 rounded-xl object-cover shrink-0" />
           <img
             src="/logo-transparent.png"
@@ -303,9 +334,7 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
       <div className="px-3 py-4 border-t border-white/10 flex-shrink-0">
         <div className="px-3 py-2 mb-1">
           <p className="text-sm font-semibold text-white truncate">{userName}</p>
-          <p className="text-xs text-white/40 mt-0.5">
-            {isAdminOnMemberView ? "Foundations Member" : role === "admin" ? "Admin" : "Foundations Member"}
-          </p>
+          <p className="text-xs text-white/40 mt-0.5">{roleLabel}</p>
         </div>
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}
@@ -331,7 +360,7 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
         </button>
         <img src="/logo-icon.png" alt="" className="h-8 w-8 rounded-lg object-cover" />
         <img src="/logo-transparent.png" alt="Attraction by Video" className="h-6 w-auto object-contain" style={{ filter: "brightness(0) invert(1)" }} />
-        {isAdminOnMemberView && impersonate && (
+        {(isAdminOnMemberView || isEditorOnMemberView) && impersonate && (
           <button
             onClick={exitImpersonation}
             className="ml-auto flex items-center gap-1 bg-amber-500 text-amber-900 text-xs font-semibold px-3 py-1.5 rounded-lg"

@@ -12,8 +12,8 @@ export async function resolveUserFromSession(): Promise<{ id: string; email: str
 
   const role = (session.user as any).role;
 
-  // Admin impersonation: if admin has an impersonation cookie, use that member's ID
-  if (role === "admin") {
+  // Admin and editor impersonation: if they have an impersonation cookie, use that member's ID
+  if (role === "admin" || role === "editor") {
     const cookieStore = await cookies();
     const impersonateId = cookieStore.get(IMPERSONATE_COOKIE)?.value;
     if (impersonateId) {

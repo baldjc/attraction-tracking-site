@@ -6,11 +6,24 @@ import { IMPERSONATE_COOKIE } from "@/lib/session-utils";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
-  if (!session?.user || (session.user as any).role !== "admin") {
+  const role = (session?.user as any)?.role;
+  if (!session?.user || (role !== "admin" && role !== "editor")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { memberId } = await req.json();
+
+  if (role === "editor") {
+    const editorId = (session.user as any).id as string;
+    const editor = await prisma.user.findUnique({
+      where: { id: editorId },
+      select: { allowedMemberIds: true },
+    });
+    const allowed = editor?.allowedMemberIds;
+    if (allowed !== null && Array.isArray(allowed) && !(allowed as string[]).includes(memberId)) {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
+    }
+  }
 
   const member = await prisma.user.findUnique({
     where: { id: memberId },
@@ -37,7 +50,8 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE() {
   const session = await auth();
-  if (!session?.user || (session.user as any).role !== "admin") {
+  const role = (session?.user as any)?.role;
+  if (!session?.user || (role !== "admin" && role !== "editor")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
