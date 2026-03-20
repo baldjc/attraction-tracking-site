@@ -27,7 +27,7 @@ export async function GET() {
           pageViews: { orderBy: { timestamp: "asc" } },
           link: {
             include: {
-              campaign: { select: { id: true, name: true } },
+              campaign: { select: { id: true, name: true, sourceType: true } },
             },
           },
         },

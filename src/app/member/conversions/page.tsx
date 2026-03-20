@@ -1,6 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+} from "recharts";
+import { DonutChart } from "@/components/charts/DonutChart";
 
 interface PageViewData {
   pageUrl: string;
@@ -24,10 +34,27 @@ interface LeadData {
       campaign: {
         id: string;
         name: string;
+        sourceType: string;
       };
     };
   };
 }
+
+function toDateStr(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+
+function fmtDate(d: string) {
+  const [, m, day] = d.split("-");
+  return `${parseInt(m)}/${parseInt(day)}`;
+}
+
+const SOURCE_LABELS: Record<string, string> = {
+  YOUTUBE: "YouTube",
+  GOOGLE_ADS: "Google Ads",
+  EMAIL: "Email",
+  OTHER: "Other",
+};
 
 export default function ConversionsPage() {
   const [leads, setLeads] = useState<LeadData[]>([]);
@@ -85,6 +112,49 @@ export default function ConversionsPage() {
 
   const hasFilters = campaignFilter || dateFrom || dateTo;
 
+  // Chart data derived from filtered leads
+  const { dailyLeads, byCampaign, bySource } = useMemo(() => {
+    if (!filtered.length) return { dailyLeads: [], byCampaign: [], bySource: [] };
+
+    // Daily leads (last 30 days or date range)
+    const dayMap = new Map<string, number>();
+    const start = dateFrom ? new Date(dateFrom) : new Date(Date.now() - 30 * 86400000);
+    const end = dateTo ? new Date(dateTo) : new Date();
+    const cur = new Date(start); cur.setHours(0, 0, 0, 0);
+    while (cur <= end) { dayMap.set(toDateStr(cur), 0); cur.setDate(cur.getDate() + 1); }
+    for (const l of filtered) {
+      const d = toDateStr(new Date(l.timestamp));
+      if (dayMap.has(d)) dayMap.set(d, (dayMap.get(d) ?? 0) + 1);
+    }
+    const dailyLeads = Array.from(dayMap.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, leads]) => ({ date, leads }));
+
+    // By campaign
+    const campMap = new Map<string, number>();
+    for (const l of filtered) {
+      const name = l.click.link.campaign.name;
+      campMap.set(name, (campMap.get(name) ?? 0) + 1);
+    }
+    const byCampaign = Array.from(campMap.entries())
+      .sort(([, a], [, b]) => b - a)
+      .map(([name, value]) => ({ name, value }));
+
+    // By source type
+    const srcMap = new Map<string, number>();
+    for (const l of filtered) {
+      const src = SOURCE_LABELS[l.click.link.campaign.sourceType] ?? "Other";
+      srcMap.set(src, (srcMap.get(src) ?? 0) + 1);
+    }
+    const bySource = Array.from(srcMap.entries())
+      .sort(([, a], [, b]) => b - a)
+      .map(([name, value]) => ({ name, value }));
+
+    return { dailyLeads, byCampaign, bySource };
+  }, [filtered, dateFrom, dateTo]);
+
+  const hasChartData = filtered.length > 0;
+
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
@@ -135,6 +205,56 @@ export default function ConversionsPage() {
           </span>
         )}
       </div>
+
+      {/* Analytics Charts */}
+      {!loading && hasChartData && (
+        <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-5 mb-5">
+          <h2 className="font-semibold text-[#1e2a38] mb-5">Analytics</h2>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Leads per day bar chart */}
+            <div className="lg:col-span-1">
+              <p className="text-xs font-medium text-[#1e2a38]/50 mb-3">Leads Per Day</p>
+              <ResponsiveContainer width="100%" height={180}>
+                <BarChart data={dailyLeads} margin={{ top: 0, right: 5, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1e2a3808" vertical={false} />
+                  <XAxis
+                    dataKey="date"
+                    tickFormatter={fmtDate}
+                    tick={{ fontSize: 10, fill: "#1e2a3860" }}
+                    axisLine={false}
+                    tickLine={false}
+                    interval="preserveStartEnd"
+                  />
+                  <YAxis tick={{ fontSize: 10, fill: "#1e2a3860" }} axisLine={false} tickLine={false} allowDecimals={false} />
+                  <Tooltip
+                    contentStyle={{ background: "#fff", border: "1px solid #1e2a3815", borderRadius: 10, fontSize: 12 }}
+                    labelFormatter={(label) => fmtDate(String(label ?? ""))}
+                  />
+                  <Bar dataKey="leads" fill="#1e2a38" radius={[3, 3, 0, 0]} name="Leads" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Leads by campaign donut */}
+            <div>
+              <p className="text-xs font-medium text-[#1e2a38]/50 mb-3">By Campaign</p>
+              {byCampaign.length > 0
+                ? <DonutChart data={byCampaign} />
+                : <div className="h-[180px] flex items-center justify-center text-[#1e2a38]/20 text-xs">No data</div>
+              }
+            </div>
+
+            {/* Leads by source donut */}
+            <div>
+              <p className="text-xs font-medium text-[#1e2a38]/50 mb-3">By Source</p>
+              {bySource.length > 0
+                ? <DonutChart data={bySource} colors={["#ff0033", "#3dc3ff", "#22c55e", "#f59e0b"]} />
+                : <div className="h-[180px] flex items-center justify-center text-[#1e2a38]/20 text-xs">No data</div>
+              }
+            </div>
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <div className="text-center py-16 text-[#1e2a38]/40">Loading...</div>
