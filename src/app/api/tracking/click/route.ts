@@ -2,6 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { isBot, generateSessionId, geolocateIp, CORS_HEADERS } from "@/lib/tracking-utils";
 
+function normPath(raw: string): string {
+  try {
+    return new URL(raw).pathname.toLowerCase().replace(/\/$/, "") || "/";
+  } catch {
+    return raw.split("?")[0].split("#")[0].toLowerCase().replace(/\/$/, "") || "/";
+  }
+}
+
 export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: CORS_HEADERS });
 }
@@ -20,7 +28,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ session_id: null }, { headers });
     }
 
-    const member = await prisma.user.findUnique({ where: { id: member_id }, select: { id: true } });
+    const member = await prisma.user.findUnique({
+      where: { id: member_id },
+      select: { id: true, thankYouPageUrl: true },
+    });
     if (!member) return NextResponse.json({ error: "Invalid member" }, { status: 400, headers });
 
     const link = await prisma.trackingLink.findFirst({
@@ -54,6 +65,18 @@ export async function POST(req: NextRequest) {
     await prisma.pageView.create({
       data: { clickId: click.id, pageUrl: page_url ?? "" },
     });
+
+    if (member.thankYouPageUrl && page_url) {
+      const saved = normPath(member.thankYouPageUrl);
+      const current = normPath(page_url);
+      if (current === saved) {
+        await prisma.lead.upsert({
+          where: { clickId: click.id },
+          create: { clickId: click.id },
+          update: {},
+        });
+      }
+    }
 
     return NextResponse.json({ session_id: sessionId }, { headers });
   } catch (err) {

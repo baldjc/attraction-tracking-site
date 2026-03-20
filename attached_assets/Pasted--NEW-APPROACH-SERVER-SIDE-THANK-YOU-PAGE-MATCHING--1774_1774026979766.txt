@@ -1,0 +1,43 @@
+  === NEW APPROACH: SERVER-SIDE THANK YOU PAGE MATCHING ===                                 
+                                                                                          
+  1. The member already saves their Thank You Page Path in the Link Tracking Setup page     
+  (e.g., /thank-you). This is stored on their member record.                              
+                                                                                            
+  2. The t.js snippet should send the current page URL with EVERY tracking call (it already 
+  sends page_url on click events).
+                                                                                            
+  3. Move the thank you page detection to the SERVER SIDE:                                  
+     - On the POST /api/tracking/click endpoint: after recording the click, check if the
+  page_url path matches the member's saved thankYouPageUrl. If it matches, automatically    
+  create a Lead record too.                                                               
+     - On the POST /api/tracking/pageview endpoint: same check — if the page_url path       
+  matches the member's thankYouPageUrl, create a Lead record linked to that click.          
+     - Keep the existing POST /api/tracking/lead endpoint as a fallback but it shouldn't be
+  needed for most cases.                                                                    
+                                                                                          
+  4. The path matching should be flexible:                                                  
+     - Compare just the pathname (ignore domain, query params, hash)                      
+     - Handle with or without trailing slash (/thank-you and /thank-you/ both match)        
+     - Case-insensitive comparison                                                          
+                                                                                            
+  5. Remove data-ty from the snippet entirely. The snippet preview on the Link Tracking     
+  Setup page should just be:                                                              
+     <script src="https://members.attractionbyvideo.com/api/t.js" data-id="{memberId}"      
+  defer></script>                                                                           
+   
+     Simple. One attribute. Members paste it on every page and it just works.               
+                                                                                          
+  6. The t.js snippet still needs to:                                                       
+     - Detect ?ref= param → fire click event                                              
+     - On every page load with an active session (cookie exists) → fire pageview event      
+     - That's it. No client-side thank you page detection needed.                           
+                                                                                            
+  This is better because:                                                                   
+  - Members don't need to worry about data-ty                                             
+  - The snippet is the same on every page (simpler instructions)                            
+  - Thank you page path can be changed in the dashboard without updating the snippet        
+  - Works even if the member only pastes the snippet on the thank you page itself           
+                                                                                            
+  This is a much cleaner approach — the server already knows the thank you page path, so let
+   the server handle the matching instead of putting that logic in the client-side snippet. 
+  Simpler for your members too. 

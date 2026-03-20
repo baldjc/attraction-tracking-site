@@ -37,8 +37,7 @@ export default function LinkTrackingPage() {
 
   function getSnippet(): string {
     if (!profile?.id) return "";
-    const tyAttr = thankYouUrl ? ` data-ty="${thankYouUrl}"` : "";
-    return `<script src="${SNIPPET_DOMAIN}/api/t.js" data-id="${profile.id}"${tyAttr} defer></script>`;
+    return `<script src="${SNIPPET_DOMAIN}/api/t.js" data-id="${profile.id}" defer></script>`;
   }
 
   function copySnippet() {
@@ -174,12 +173,12 @@ export default function LinkTrackingPage() {
                   <div className="mt-2 flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5">
                     <ExclamationTriangleIcon className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
                     <p className="text-xs text-amber-700">
-                      Save your thank you page path above to enable lead tracking. Without it, conversions won&apos;t be recorded.
+                      Save your thank you page path above so we know when to record a conversion. The snippet itself stays the same on every page.
                     </p>
                   </div>
                 )}
                 <p className="text-xs text-[#1e2a38]/40 mt-2">
-                  Paste this inside the <code className="text-[#1e2a38]/60">&lt;head&gt;</code> tag on every page of your website. The snippet is less than 2KB and loads asynchronously — it won&apos;t affect your page speed.
+                  Paste this inside the <code className="text-[#1e2a38]/60">&lt;head&gt;</code> tag on <strong className="text-[#1e2a38]/60">every page</strong> of your website — the same snippet works everywhere. It&apos;s less than 2KB and loads asynchronously.
                 </p>
               </div>
             )}
@@ -257,9 +256,9 @@ export default function LinkTrackingPage() {
             <div className="bg-[#f8f9fa] rounded-xl p-4">
               <p className="text-xs font-semibold text-[#1e2a38]/60 uppercase tracking-wide mb-2">How it works</p>
               <ol className="space-y-1.5 text-xs text-[#1e2a38]/60">
-                <li><span className="font-semibold text-[#1e2a38]/80">1.</span> A viewer clicks your tracked link — we record the click and attach a session.</li>
-                <li><span className="font-semibold text-[#1e2a38]/80">2.</span> As they browse your site, each page view is tracked in their session.</li>
-                <li><span className="font-semibold text-[#1e2a38]/80">3.</span> When they reach your thank you page, a lead conversion is recorded.</li>
+                <li><span className="font-semibold text-[#1e2a38]/80">1.</span> A viewer clicks your tracked link — we record the click and start a session.</li>
+                <li><span className="font-semibold text-[#1e2a38]/80">2.</span> As they browse your site, each page view is logged against their session.</li>
+                <li><span className="font-semibold text-[#1e2a38]/80">3.</span> Our server automatically detects when they hit your thank you page path and records a conversion — no extra code needed.</li>
                 <li><span className="font-semibold text-[#1e2a38]/80">4.</span> View all conversions and browsing journeys in the Conversions tab.</li>
               </ol>
             </div>
