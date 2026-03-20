@@ -116,7 +116,7 @@ export default function MemberScoresPage() {
     );
   }
 
-  const { latestAudit, baselineAudit, audits } = data;
+  const { latestAudit, baselineAudit, audits, channelBannerUrl, channelName, youtubeHandle, youtubeChannelUrl } = data;
   const scores = latestAudit.scores as Record<string, { score: number | null; evidence?: string }>;
   const baselineScores = (baselineAudit?.scores as any) ?? null;
 
@@ -140,6 +140,44 @@ export default function MemberScoresPage() {
 
   return (
     <div className="space-y-5 pb-10">
+      {/* YouTube Channel Banner */}
+      {channelBannerUrl && (
+        <div className="rounded-xl overflow-hidden shadow-sm border border-gray-200 dark:border-[#2d3748] relative">
+          <img
+            src={channelBannerUrl}
+            alt={channelName ? `${channelName} YouTube banner` : "YouTube channel banner"}
+            className="w-full object-cover"
+            style={{ maxHeight: 220, objectPosition: "center" }}
+          />
+          {/* Gradient overlay + channel info */}
+          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent px-5 py-4">
+            <div className="flex items-end justify-between gap-4">
+              <div>
+                {channelName && (
+                  <p className="text-white font-bold text-lg leading-tight drop-shadow">
+                    {channelName}
+                  </p>
+                )}
+                {youtubeHandle && (
+                  <p className="text-white/70 text-sm mt-0.5">{youtubeHandle.startsWith("@") ? youtubeHandle : `@${youtubeHandle}`}</p>
+                )}
+              </div>
+              {youtubeChannelUrl && (
+                <a
+                  href={youtubeChannelUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="shrink-0 flex items-center gap-1.5 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white text-xs font-semibold px-3 py-1.5 rounded-lg border border-white/20 transition-colors"
+                >
+                  <svg className="w-4 h-4 fill-white" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                  View Channel
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
