@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import prisma from "@/lib/prisma";
 import { generateUniqueRefCode, extractYoutubeVideoId, buildTrackedUrl } from "@/lib/tracking-utils";
+import { fetchSingleTrackingVideoInfo } from "@/lib/youtube";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -64,18 +65,35 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const refCode = await generateUniqueRefCode();
   const youtubeVideoId = youtubeVideoUrl ? extractYoutubeVideoId(youtubeVideoUrl) : null;
-  const youtubeThumbnailUrl = youtubeVideoId
+
+  let youtubeThumbnailUrl: string | null = youtubeVideoId
     ? `https://img.youtube.com/vi/${youtubeVideoId}/mqdefault.jpg`
     : null;
+  let resolvedName = name;
+  let youtubeViewCount = 0;
+
+  if (youtubeVideoId) {
+    try {
+      const info = await fetchSingleTrackingVideoInfo(youtubeVideoId);
+      if (info) {
+        if (info.thumbnailUrl) youtubeThumbnailUrl = info.thumbnailUrl;
+        if (info.viewCount) youtubeViewCount = info.viewCount;
+      }
+    } catch {
+      // non-fatal, continue with defaults
+    }
+  }
 
   const link = await prisma.trackingLink.create({
     data: {
       campaignId: id,
-      name,
+      name: resolvedName,
       refCode,
       youtubeVideoUrl: youtubeVideoUrl ?? null,
       youtubeVideoId,
       youtubeThumbnailUrl,
+      youtubeViewCount,
+      ...(youtubeVideoId ? { youtubeViewsUpdatedAt: new Date() } : {}),
     },
   });
 

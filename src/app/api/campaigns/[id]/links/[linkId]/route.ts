@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import prisma from "@/lib/prisma";
+import { fetchSingleTrackingVideoInfo } from "@/lib/youtube";
 
 function extractYoutubeId(url: string): string | null {
   try {
@@ -45,11 +46,25 @@ export async function PATCH(
   if (youtubeVideoUrl !== undefined) {
     const trimmed = youtubeVideoUrl?.trim() || null;
     updateData.youtubeVideoUrl = trimmed;
-    updateData.youtubeVideoId = trimmed ? extractYoutubeId(trimmed) : null;
-    if (trimmed && updateData.youtubeVideoId) {
-      updateData.youtubeThumbnailUrl = `https://img.youtube.com/vi/${updateData.youtubeVideoId}/hqdefault.jpg`;
+    const videoId = trimmed ? extractYoutubeId(trimmed) : null;
+    updateData.youtubeVideoId = videoId;
+
+    if (trimmed && videoId) {
+      updateData.youtubeThumbnailUrl = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+      try {
+        const info = await fetchSingleTrackingVideoInfo(videoId);
+        if (info) {
+          if (info.thumbnailUrl) updateData.youtubeThumbnailUrl = info.thumbnailUrl;
+          updateData.youtubeViewCount = info.viewCount;
+          updateData.youtubeViewsUpdatedAt = new Date();
+        }
+      } catch {
+        // non-fatal
+      }
     } else if (!trimmed) {
       updateData.youtubeThumbnailUrl = null;
+      updateData.youtubeViewCount = 0;
+      updateData.youtubeViewsUpdatedAt = null;
     }
   }
 

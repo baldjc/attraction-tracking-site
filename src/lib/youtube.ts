@@ -188,3 +188,98 @@ export async function getVideosWithTranscripts(
   }
   return results;
 }
+
+// ─── Tracking View Count Utilities ───────────────────────────────────────────
+
+export interface TrackingVideoInfo {
+  viewCount: number;
+  title: string;
+  thumbnailUrl: string;
+}
+
+function sleep(ms: number) {
+  return new Promise<void>((resolve) => setTimeout(resolve, ms));
+}
+
+async function fetchVideoBatchRaw(
+  ids: string[],
+  apiKey: string,
+  retried = false
+): Promise<VideoInfo[]> {
+  const url = `${YT_BASE}/videos?part=statistics,snippet&id=${ids.join(",")}&key=${apiKey}`;
+  const res = await fetch(url, { cache: "no-store" });
+
+  if (res.status === 429) {
+    if (retried) throw new Error("YouTube API rate limited after retry");
+    console.warn("[youtube] Rate limited (429) — backing off 60s and retrying...");
+    await sleep(60_000);
+    return fetchVideoBatchRaw(ids, apiKey, true);
+  }
+
+  if (!res.ok) throw new Error(`YouTube API error: ${res.status} ${res.statusText}`);
+  const data = await res.json();
+
+  return (data.items ?? []).map((v: any) => {
+    const thumbs = v.snippet?.thumbnails ?? {};
+    const thumbnailUrl = thumbs.medium?.url ?? thumbs.high?.url ?? thumbs.default?.url ?? `https://img.youtube.com/vi/${v.id}/mqdefault.jpg`;
+    return {
+      videoId: v.id,
+      title: v.snippet?.title ?? "",
+      thumbnailUrl,
+      duration: "",
+      durationSeconds: 0,
+      uploadDate: "",
+      viewCount: parseInt(v.statistics?.viewCount ?? "0", 10),
+    };
+  });
+}
+
+export async function fetchTrackingVideoInfoBatch(
+  videoIds: string[]
+): Promise<Map<string, TrackingVideoInfo>> {
+  const apiKey = process.env.YOUTUBE_API_KEY;
+  if (!apiKey) {
+    console.warn("[youtube] YOUTUBE_API_KEY is not set — skipping view count fetch");
+    return new Map();
+  }
+
+  const result = new Map<string, TrackingVideoInfo>();
+  const BATCH = 50;
+
+  for (let i = 0; i < videoIds.length; i += BATCH) {
+    const chunk = videoIds.slice(i, i + BATCH);
+    let items: VideoInfo[] = [];
+    try {
+      items = await fetchVideoBatchRaw(chunk, apiKey);
+    } catch (err) {
+      console.error("[youtube] Batch fetch failed:", err);
+      continue;
+    }
+
+    for (const v of items) {
+      result.set(v.videoId, {
+        viewCount: v.viewCount,
+        title: v.title,
+        thumbnailUrl: v.thumbnailUrl ?? "",
+      });
+    }
+
+    // Mark missing IDs
+    for (const vid of chunk) {
+      if (!result.has(vid)) {
+        result.set(vid, { viewCount: 0, title: "", thumbnailUrl: "" });
+      }
+    }
+  }
+
+  return result;
+}
+
+export async function fetchSingleTrackingVideoInfo(
+  videoId: string
+): Promise<TrackingVideoInfo | null> {
+  const map = await fetchTrackingVideoInfoBatch([videoId]);
+  const info = map.get(videoId);
+  if (!info || (!info.title && info.viewCount === 0 && !info.thumbnailUrl)) return null;
+  return info;
+}

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect, use, useCallback } from "react";
 import Link from "next/link";
-import { PencilIcon } from "@heroicons/react/24/outline";
+import { PencilIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
 
 interface TrackingLinkData {
   id: string;
@@ -43,31 +43,74 @@ const SOURCE_LABELS: Record<string, { label: string; color: string }> = {
 
 const INPUT_CLS = "w-full border border-[#1e2a38]/20 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-[#3dc3ff]";
 
+function extractVideoId(url: string): string | null {
+  try {
+    const u = new URL(url.trim());
+    if (u.hostname === "youtu.be") return u.pathname.slice(1).split("?")[0] || null;
+    if (u.hostname.includes("youtube.com")) return u.searchParams.get("v");
+  } catch { /* empty */ }
+  const m = url.match(/(?:v=|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+
 export default function CampaignDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const [campaign, setCampaign] = useState<CampaignData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // New link modal
   const [showNewLink, setShowNewLink] = useState(false);
   const [linkForm, setLinkForm] = useState({ name: "", youtubeVideoUrl: "" });
   const [creating, setCreating] = useState(false);
+  const [fetchingYtInfo, setFetchingYtInfo] = useState(false);
+  const [previewThumb, setPreviewThumb] = useState<string | null>(null);
+  const [nameTouchedNew, setNameTouchedNew] = useState(false);
 
   // Edit link modal
   const [editingLink, setEditingLink] = useState<TrackingLinkData | null>(null);
   const [editForm, setEditForm] = useState({ name: "", youtubeVideoUrl: "" });
   const [saving, setSaving] = useState(false);
+  const [fetchingYtEdit, setFetchingYtEdit] = useState(false);
+  const [editPreviewThumb, setEditPreviewThumb] = useState<string | null>(null);
+  const [nameTouchedEdit, setNameTouchedEdit] = useState(false);
 
   const [copied, setCopied] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState("newest");
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => { loadCampaign(); }, [id]);
-
-  async function loadCampaign() {
+  const loadCampaign = useCallback(async () => {
     setLoading(true);
     const res = await fetch(`/api/campaigns/${id}`);
     if (res.ok) setCampaign(await res.json());
     setLoading(false);
+  }, [id]);
+
+  useEffect(() => {
+    loadCampaign();
+    fetch("/api/auth/session").then((r) => r.json()).then((s) => {
+      if ((s?.user as { role?: string })?.role === "admin") setIsAdmin(true);
+    }).catch(() => { /* no admin */ });
+  }, [loadCampaign]);
+
+  async function fetchYtInfoForUrl(url: string, { isEdit = false } = {}) {
+    const videoId = extractVideoId(url);
+    if (!videoId) return;
+    isEdit ? setFetchingYtEdit(true) : setFetchingYtInfo(true);
+    try {
+      const res = await fetch(`/api/youtube/video-info?videoId=${videoId}`);
+      if (!res.ok) return;
+      const info = await res.json() as { title?: string; thumbnailUrl?: string };
+      if (isEdit) {
+        setEditPreviewThumb(info.thumbnailUrl ?? null);
+        if (!nameTouchedEdit && info.title) setEditForm((f) => ({ ...f, name: info.title! }));
+      } else {
+        setPreviewThumb(info.thumbnailUrl ?? null);
+        if (!nameTouchedNew && info.title) setLinkForm((f) => ({ ...f, name: info.title! }));
+      }
+    } catch { /* skip */ } finally {
+      isEdit ? setFetchingYtEdit(false) : setFetchingYtInfo(false);
+    }
   }
 
   async function createLink() {
@@ -84,6 +127,8 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
     if (res.ok) {
       setShowNewLink(false);
       setLinkForm({ name: "", youtubeVideoUrl: "" });
+      setPreviewThumb(null);
+      setNameTouchedNew(false);
       loadCampaign();
     }
     setCreating(false);
@@ -92,6 +137,8 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
   function openEdit(link: TrackingLinkData) {
     setEditingLink(link);
     setEditForm({ name: link.name, youtubeVideoUrl: link.youtubeVideoUrl ?? "" });
+    setEditPreviewThumb(link.youtubeThumbnailUrl ?? null);
+    setNameTouchedEdit(false);
   }
 
   async function saveEdit() {
@@ -122,6 +169,13 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
     navigator.clipboard.writeText(text);
     setCopied(key);
     setTimeout(() => setCopied(null), 2000);
+  }
+
+  async function refreshViews() {
+    setRefreshing(true);
+    await fetch(`/api/campaigns/${id}/refresh-views`, { method: "POST" });
+    await loadCampaign();
+    setRefreshing(false);
   }
 
   if (loading) return <div className="text-center py-16 text-[#1e2a38]/40">Loading...</div>;
@@ -298,10 +352,24 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
         )}
       </div>
 
-      {campaign.hasYoutube && campaign.lastViewsUpdate && (
-        <p className="text-xs text-[#1e2a38]/30 mt-3 text-center">
-          YouTube views last updated {new Date(campaign.lastViewsUpdate).toLocaleString()}
-        </p>
+      {campaign.hasYoutube && (
+        <div className="flex items-center justify-center gap-2 mt-3">
+          {campaign.lastViewsUpdate && (
+            <p className="text-xs text-[#1e2a38]/30">
+              YouTube views last updated {new Date(campaign.lastViewsUpdate).toLocaleString()}
+            </p>
+          )}
+          {isAdmin && (
+            <button
+              onClick={refreshViews}
+              disabled={refreshing}
+              title="Refresh YouTube view counts now"
+              className="text-[#1e2a38]/30 hover:text-[#3dc3ff] disabled:opacity-40 transition-colors"
+            >
+              <ArrowPathIcon className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} />
+            </button>
+          )}
+        </div>
       )}
 
       {/* New Link Modal */}
@@ -310,31 +378,54 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
           <div className="bg-white rounded-2xl border border-[#1e2a38]/10 shadow-xl w-full max-w-md p-6">
             <div className="flex items-center justify-between mb-5">
               <h2 className="font-bold text-[#1e2a38]">New Tracking Link</h2>
-              <button onClick={() => setShowNewLink(false)} className="text-[#1e2a38]/40 hover:text-[#1e2a38] text-xl">✕</button>
+              <button onClick={() => { setShowNewLink(false); setPreviewThumb(null); setNameTouchedNew(false); }} className="text-[#1e2a38]/40 hover:text-[#1e2a38] text-xl">✕</button>
             </div>
             <div className="space-y-4">
+              {isYoutube && (
+                <div>
+                  <label className="block text-sm font-semibold text-[#1e2a38] mb-1.5">
+                    YouTube Video URL <span className="font-normal text-[#1e2a38]/40">(optional)</span>
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="url"
+                      value={linkForm.youtubeVideoUrl}
+                      onChange={(e) => setLinkForm({ ...linkForm, youtubeVideoUrl: e.target.value })}
+                      onBlur={(e) => { if (e.target.value) fetchYtInfoForUrl(e.target.value); }}
+                      placeholder="https://youtube.com/watch?v=..."
+                      className={INPUT_CLS}
+                    />
+                    {fetchingYtInfo && <span className="w-5 h-5 mt-2.5 border-2 border-[#3dc3ff] border-t-transparent rounded-full animate-spin flex-shrink-0" />}
+                  </div>
+                  {previewThumb && (
+                    <img src={previewThumb} alt="thumbnail" className="mt-2 w-full h-28 object-cover rounded-lg" />
+                  )}
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-semibold text-[#1e2a38] mb-1.5">{linkLabel}</label>
                 <input
                   type="text"
                   value={linkForm.name}
-                  onChange={(e) => setLinkForm({ ...linkForm, name: e.target.value })}
+                  onChange={(e) => { setLinkForm({ ...linkForm, name: e.target.value }); setNameTouchedNew(true); }}
                   placeholder={linkPlaceholder}
                   className={INPUT_CLS}
                 />
               </div>
-              <div>
-                <label className="block text-sm font-semibold text-[#1e2a38] mb-1.5">
-                  YouTube Video URL <span className="font-normal text-[#1e2a38]/40">(optional)</span>
-                </label>
-                <input
-                  type="url"
-                  value={linkForm.youtubeVideoUrl}
-                  onChange={(e) => setLinkForm({ ...linkForm, youtubeVideoUrl: e.target.value })}
-                  placeholder="https://youtube.com/watch?v=..."
-                  className={INPUT_CLS}
-                />
-              </div>
+              {!isYoutube && (
+                <div>
+                  <label className="block text-sm font-semibold text-[#1e2a38] mb-1.5">
+                    YouTube Video URL <span className="font-normal text-[#1e2a38]/40">(optional)</span>
+                  </label>
+                  <input
+                    type="url"
+                    value={linkForm.youtubeVideoUrl}
+                    onChange={(e) => setLinkForm({ ...linkForm, youtubeVideoUrl: e.target.value })}
+                    placeholder="https://youtube.com/watch?v=..."
+                    className={INPUT_CLS}
+                  />
+                </div>
+              )}
               <div className="bg-[#f8f9fa] rounded-xl p-3 text-xs text-[#1e2a38]/50">
                 <p className="font-medium text-[#1e2a38]/70 mb-1">Tracked URL preview</p>
                 <p className="break-all font-mono">
@@ -363,27 +454,34 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
             </div>
             <div className="space-y-4">
               <div>
+                <label className="block text-sm font-semibold text-[#1e2a38] mb-1.5">
+                  YouTube Video URL <span className="font-normal text-[#1e2a38]/40">(optional)</span>
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="url"
+                    value={editForm.youtubeVideoUrl}
+                    onChange={(e) => setEditForm({ ...editForm, youtubeVideoUrl: e.target.value })}
+                    onBlur={(e) => { if (e.target.value) fetchYtInfoForUrl(e.target.value, { isEdit: true }); }}
+                    placeholder="https://youtube.com/watch?v=..."
+                    className={INPUT_CLS}
+                  />
+                  {fetchingYtEdit && <span className="w-5 h-5 mt-2.5 border-2 border-[#3dc3ff] border-t-transparent rounded-full animate-spin flex-shrink-0" />}
+                </div>
+                {editPreviewThumb && (
+                  <img src={editPreviewThumb} alt="thumbnail" className="mt-2 w-full h-28 object-cover rounded-lg" />
+                )}
+                <p className="text-xs text-[#1e2a38]/40 mt-1">Adding a URL links views data and the video thumbnail to this tracking link.</p>
+              </div>
+              <div>
                 <label className="block text-sm font-semibold text-[#1e2a38] mb-1.5">{linkLabel}</label>
                 <input
                   type="text"
                   value={editForm.name}
-                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                  onChange={(e) => { setEditForm({ ...editForm, name: e.target.value }); setNameTouchedEdit(true); }}
                   placeholder={linkPlaceholder}
                   className={INPUT_CLS}
                 />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-[#1e2a38] mb-1.5">
-                  YouTube Video URL <span className="font-normal text-[#1e2a38]/40">(optional)</span>
-                </label>
-                <input
-                  type="url"
-                  value={editForm.youtubeVideoUrl}
-                  onChange={(e) => setEditForm({ ...editForm, youtubeVideoUrl: e.target.value })}
-                  placeholder="https://youtube.com/watch?v=..."
-                  className={INPUT_CLS}
-                />
-                <p className="text-xs text-[#1e2a38]/40 mt-1">Adding a URL links views data and the video thumbnail to this tracking link.</p>
               </div>
               <div className="flex gap-3">
                 <button

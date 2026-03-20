@@ -3,6 +3,9 @@ export async function register() {
     const { scheduleMonthlyCheck } = await import("@/lib/monthly-scheduler");
     scheduleMonthlyCheck();
 
+    const { scheduleYoutubeViewCounts } = await import("@/lib/youtube-scheduler");
+    scheduleYoutubeViewCounts();
+
     try {
       const prisma = (await import("@/lib/prisma")).default;
       const existing = await prisma.user.findFirst({ where: { role: "admin" } });
