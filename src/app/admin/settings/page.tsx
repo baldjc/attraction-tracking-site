@@ -1,7 +1,291 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { EyeSlashIcon } from "@heroicons/react/24/outline";
+import { useState, useEffect, useRef } from "react";
+import { EyeSlashIcon, UserGroupIcon, ChevronDownIcon, XMarkIcon, CheckIcon } from "@heroicons/react/24/outline";
+
+// ─── Staff Access ─────────────────────────────────────────────────────────────
+
+interface StaffMember {
+  id: string;
+  fullName: string | null;
+  email: string;
+  role: string;
+  allowedMemberIds: string[] | null;
+}
+
+interface MemberOption {
+  id: string;
+  fullName: string | null;
+  email: string;
+  youtubeChannelName: string | null;
+}
+
+function MemberPicker({
+  allMembers,
+  selected,
+  onChange,
+}: {
+  allMembers: MemberOption[];
+  selected: string[];
+  onChange: (ids: string[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    function outside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", outside);
+    return () => document.removeEventListener("mousedown", outside);
+  }, []);
+
+  const filtered = allMembers.filter((m) => {
+    const name = (m.fullName ?? m.email).toLowerCase();
+    return name.includes(search.toLowerCase());
+  });
+
+  function toggle(id: string) {
+    if (selected.includes(id)) onChange(selected.filter((s) => s !== id));
+    else onChange([...selected, id]);
+  }
+
+  const selectedMembers = allMembers.filter((m) => selected.includes(m.id));
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between gap-2 px-3 py-2 border border-[#1e2a38]/15 rounded-lg text-sm bg-white hover:border-[#3dc3ff]/50 transition-colors"
+      >
+        <span className="text-[#1e2a38]/60 truncate">
+          {selected.length === 0 ? "Add members…" : `${selected.length} member${selected.length !== 1 ? "s" : ""} selected`}
+        </span>
+        <ChevronDownIcon className={`w-3.5 h-3.5 text-[#1e2a38]/40 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      {open && (
+        <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-[#1e2a38]/15 rounded-xl shadow-lg z-20 overflow-hidden">
+          <div className="p-2 border-b border-[#1e2a38]/8">
+            <input
+              autoFocus
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search members…"
+              className="w-full px-3 py-1.5 text-sm border border-[#1e2a38]/15 rounded-lg focus:outline-none focus:border-[#3dc3ff]"
+            />
+          </div>
+          <ul className="max-h-52 overflow-y-auto divide-y divide-[#1e2a38]/6">
+            {filtered.length === 0 ? (
+              <li className="px-4 py-3 text-sm text-[#1e2a38]/40 text-center">No members found</li>
+            ) : (
+              filtered.map((m) => {
+                const checked = selected.includes(m.id);
+                return (
+                  <li key={m.id}>
+                    <button
+                      type="button"
+                      onClick={() => toggle(m.id)}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[#3dc3ff]/5 transition-colors text-left"
+                    >
+                      <span className={`w-4 h-4 rounded border shrink-0 flex items-center justify-center ${checked ? "bg-[#3dc3ff] border-[#3dc3ff]" : "border-[#1e2a38]/25"}`}>
+                        {checked && <CheckIcon className="w-3 h-3 text-white" />}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-[#1e2a38] truncate">{m.fullName || m.email}</p>
+                        {m.youtubeChannelName && <p className="text-xs text-[#1e2a38]/40 truncate">{m.youtubeChannelName}</p>}
+                      </div>
+                    </button>
+                  </li>
+                );
+              })
+            )}
+          </ul>
+        </div>
+      )}
+
+      {selectedMembers.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mt-2">
+          {selectedMembers.map((m) => (
+            <span key={m.id} className="inline-flex items-center gap-1 bg-[#3dc3ff]/10 text-[#1e2a38] text-xs font-medium px-2 py-1 rounded-full">
+              {m.fullName || m.email}
+              <button type="button" onClick={() => toggle(m.id)} className="hover:text-[#ff0033]">
+                <XMarkIcon className="w-3 h-3" />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StaffCard({
+  staff,
+  allMembers,
+  onSaved,
+}: {
+  staff: StaffMember;
+  allMembers: MemberOption[];
+  onSaved: (id: string, ids: string[] | null) => void;
+}) {
+  const rawIds = staff.allowedMemberIds;
+  const initIds = Array.isArray(rawIds) ? (rawIds as string[]) : null;
+
+  const [fullAccess, setFullAccess] = useState(initIds === null);
+  const [selected, setSelected] = useState<string[]>(initIds ?? []);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  async function handleSave() {
+    setSaving(true);
+    setSaved(false);
+    const payload = fullAccess ? null : selected;
+    const res = await fetch("/api/admin/staff", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ staffUserId: staff.id, allowedMemberIds: payload }),
+    });
+    setSaving(false);
+    if (res.ok) {
+      setSaved(true);
+      onSaved(staff.id, payload);
+      setTimeout(() => setSaved(false), 2500);
+    }
+  }
+
+  const roleBadge = staff.role === "admin"
+    ? "bg-purple-100 text-purple-700"
+    : "bg-amber-100 text-amber-700";
+
+  return (
+    <div className="border border-[#1e2a38]/10 rounded-xl p-5 space-y-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-[#1e2a38] truncate">{staff.fullName || staff.email}</p>
+          <p className="text-xs text-[#1e2a38]/50 truncate">{staff.email}</p>
+        </div>
+        <span className={`text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full shrink-0 ${roleBadge}`}>
+          {staff.role}
+        </span>
+      </div>
+
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setFullAccess(true)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
+              fullAccess
+                ? "bg-[#1e2a38] text-white border-[#1e2a38]"
+                : "bg-white text-[#1e2a38]/60 border-[#1e2a38]/15 hover:border-[#1e2a38]/30"
+            }`}
+          >
+            All members
+          </button>
+          <button
+            type="button"
+            onClick={() => setFullAccess(false)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
+              !fullAccess
+                ? "bg-[#1e2a38] text-white border-[#1e2a38]"
+                : "bg-white text-[#1e2a38]/60 border-[#1e2a38]/15 hover:border-[#1e2a38]/30"
+            }`}
+          >
+            Custom access
+          </button>
+        </div>
+
+        {!fullAccess && (
+          <MemberPicker
+            allMembers={allMembers}
+            selected={selected}
+            onChange={setSelected}
+          />
+        )}
+
+        {fullAccess && (
+          <p className="text-xs text-[#1e2a38]/40 italic">This account can see all members.</p>
+        )}
+      </div>
+
+      <div className="flex items-center gap-3 pt-1">
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={saving}
+          className="bg-[#3dc3ff] text-white text-xs font-semibold px-4 py-2 rounded-lg hover:bg-[#3dc3ff]/90 disabled:opacity-50 transition-colors"
+        >
+          {saving ? "Saving…" : "Save"}
+        </button>
+        {saved && <span className="text-xs text-green-600 font-medium">✓ Saved</span>}
+      </div>
+    </div>
+  );
+}
+
+function StaffAccessSection() {
+  const [staff, setStaff] = useState<StaffMember[]>([]);
+  const [allMembers, setAllMembers] = useState<MemberOption[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/admin/staff")
+      .then((r) => r.json())
+      .then((d) => {
+        setStaff(d.staff ?? []);
+        setAllMembers(d.members ?? []);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
+  function handleSaved(id: string, ids: string[] | null) {
+    setStaff((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, allowedMemberIds: ids } : s))
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+      <div className="flex items-center gap-2 mb-1">
+        <UserGroupIcon className="w-5 h-5 text-[#3dc3ff]" />
+        <h2 className="text-base font-semibold text-[#1e2a38]">Staff & Editor Access</h2>
+      </div>
+      <p className="text-sm text-[#1e2a38]/50 mb-5">
+        Control which members each admin or editor account can see. "All members" gives full access. "Custom access" restricts them to specific members only.
+      </p>
+
+      {loading && (
+        <div className="space-y-3">
+          {[1, 2].map((i) => (
+            <div key={i} className="h-32 bg-[#1e2a38]/5 rounded-xl animate-pulse" />
+          ))}
+        </div>
+      )}
+
+      {!loading && staff.length === 0 && (
+        <p className="text-sm text-[#1e2a38]/40 italic">No other admin or editor accounts found.</p>
+      )}
+
+      {!loading && staff.length > 0 && (
+        <div className="space-y-3">
+          {staff.map((s) => (
+            <StaffCard
+              key={s.id}
+              staff={s}
+              allMembers={allMembers}
+              onSaved={handleSaved}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ─── Feature Visibility ───────────────────────────────────────────────────────
 
@@ -335,6 +619,7 @@ export default function SettingsPage() {
         <h1 className="text-2xl font-bold text-[#1e2a38]">Settings</h1>
         <p className="text-[#1e2a38]/60 mt-1 text-sm">Configure platform preferences and AI scoring.</p>
       </div>
+      <StaffAccessSection />
       <FeatureVisibilitySection />
       <AIScoringPromptSection />
       <PromptEditorSection
