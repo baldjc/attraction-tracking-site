@@ -357,11 +357,21 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                         <button onClick={() => deleteLink(link.id)} className="text-xs text-[#1e2a38]/30 hover:text-red-500 transition-colors">Delete</button>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <p className="text-xs text-[#1e2a38]/40 truncate flex-1">{link.trackedUrl}</p>
-                      <button onClick={() => copy(link.trackedUrl, link.id)} className="text-xs text-[#3dc3ff] hover:text-[#2bb0ec] flex-shrink-0 font-medium">
-                        {copied === link.id ? "Copied!" : "Copy"}
-                      </button>
+                    <div className="mt-2 space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-semibold text-[#1e2a38]/40 uppercase tracking-wide w-16 flex-shrink-0">Direct</span>
+                        <p className="text-xs text-[#1e2a38]/50 truncate flex-1 font-mono">{link.trackedUrl}</p>
+                        <button onClick={() => copy(link.trackedUrl, `${link.id}-direct`)} className="text-xs text-[#3dc3ff] hover:text-[#2bb0ec] flex-shrink-0 font-medium">
+                          {copied === `${link.id}-direct` ? "Copied!" : "Copy"}
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-semibold text-[#1e2a38]/40 uppercase tracking-wide w-16 flex-shrink-0">Short</span>
+                        <p className="text-xs text-[#1e2a38]/50 truncate flex-1 font-mono">https://members.attractionbyvideo.com/r/{link.refCode}</p>
+                        <button onClick={() => copy(`https://members.attractionbyvideo.com/r/${link.refCode}`, `${link.id}-short`)} className="text-xs text-[#3dc3ff] hover:text-[#2bb0ec] flex-shrink-0 font-medium">
+                          {copied === `${link.id}-short` ? "Copied!" : "Copy"}
+                        </button>
+                      </div>
                     </div>
                     {isYoutube && !link.youtubeVideoId && (
                       <button onClick={() => openEdit(link)} className="mt-1.5 text-xs text-amber-500 hover:text-amber-600 font-medium">
