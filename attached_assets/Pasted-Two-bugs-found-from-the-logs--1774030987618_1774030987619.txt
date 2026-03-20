@@ -1,0 +1,29 @@
+Two bugs found from the logs:                                                             
+                                                                                            
+  BUG 1: thankYouPageUrl is NULL for the admin user even though they saved it in the UI.    
+                                                                                            
+  The admin's member/user ID is f1930b19-cf62-4041-b962-91fa737a1ef5. Check:                
+  - Where does the Link Tracking Settings "Save" button write the thankYouPageUrl?        
+  - Is it writing to the User table or a Member table?                                      
+  - The tracking click endpoint is looking up the member by the data-id from the snippet —  
+  is it looking in the right table?                                                         
+  - Run a direct database query: what is the thankYouPageUrl for this user ID?              
+                                                                                            
+  The admin account might be stored differently than regular members. The save and the      
+  lookup need to use the same table and field. Fix this so the admin's thankYouPageUrl      
+  actually persists and is found by the tracking endpoint.                                  
+                                                                                          
+  BUG 2: One click is generating 7-8 click events.                                          
+   
+  The t.js snippet is firing multiple click events for a single page load. Between 12:21:12 
+  and 12:21:32, there were 8 separate click events all for the same ref code and same page
+  URL, each creating a new session.                                                         
+                                                                                          
+  Fix the snippet to prevent duplicate fires:                                               
+  - Add a guard: before firing a click event, check if we already fired one for this ref
+  code in this page load (use a simple flag variable like window._atClickFired = true)      
+  - Also add deduplication on the server side: if a click with the same ref_code and IP   
+  address was recorded in the last 30 seconds, don't create a new click record. Return the  
+  existing session_id instead.                                                            
+                                                                                            
+  Both fixes are needed — client-side to prevent the calls, server-side as a safety net.

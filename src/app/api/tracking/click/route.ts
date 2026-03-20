@@ -32,6 +32,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ session_id: null }, { headers });
     }
 
+    const rawIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+      ?? req.headers.get("x-real-ip")
+      ?? null;
+
+    // SERVER-SIDE DEDUP: if this exact ref_code + IP already fired within 30 seconds,
+    // return the existing session_id without creating another click record.
+    if (rawIp) {
+      const dedupCutoff = new Date(Date.now() - 30 * 1000);
+      const existing = await prisma.click.findFirst({
+        where: { refCode: ref_code, ipAddress: rawIp, timestamp: { gte: dedupCutoff } },
+        orderBy: { timestamp: "desc" },
+      });
+      if (existing) {
+        console.log(`[click] DEDUP — returning existing click=${existing.id} session=${existing.sessionId}`);
+        return NextResponse.json({ session_id: existing.sessionId }, { headers });
+      }
+    }
+
     const member = await prisma.user.findUnique({
       where: { id: member_id },
       select: { id: true, thankYouPageUrl: true },
@@ -82,10 +100,6 @@ export async function POST(req: NextRequest) {
     } else {
       console.log(`[click] TY check SKIPPED: thankYouPageUrl="${member.thankYouPageUrl ?? "NULL"}" page_url="${page_url ?? "NULL"}"`);
     }
-
-    const rawIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
-      ?? req.headers.get("x-real-ip")
-      ?? null;
 
     const [geo, sessionId] = await Promise.all([
       geolocateIp(rawIp ?? ""),
