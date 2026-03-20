@@ -73,7 +73,15 @@ src/app/
     ai-tools/title-thumbnail-analyzer/page.tsx — Title+thumbnail scoring (+ PromptEditor + RecentConversations)
     ai-tools/arc-script-builder/page.tsx — 4-step ARC Method script wizard
     ai-tools/script-review/page.tsx — Chat-based Script Review: paste script → scorecard (15 principles + visual suggestions) → coaching chat
+  member/
+    analytics/page.tsx        — Analytics: overview KPIs + sparklines, clicks/leads timeseries (LineChart), conversion funnel, lead magnet table, video matrix (CTR + conv rate), top videos BarChart, geo breakdown. All tables sortable. Filter bar: 7d/30d/90d/custom, campaign, source. ?section= deep-link from campaigns page cards.
   api/
+    analytics/overview/       — totalViews/Clicks/Leads/convRate + deltas vs prev period + 30d sparklines
+    analytics/lead-magnets/   — Per-campaign: views/clicks/leads/convRate + bestVideo in period
+    analytics/videos/         — Per tracking link: YT views, clicks, leads, CTR, convRate
+    analytics/timeseries/     — Daily/weekly clicks+leads series (granularity param)
+    analytics/funnel/         — Views→Clicks→Leads with viewToClickRate + clickToLeadRate
+    analytics/geo/            — Leads grouped by city/province/country with flag emoji
     member/avatar/            — GET/PUT user avatar profile, themes (normalizes string[] → object[]), niche, city
     member/niche/             — PUT update niche + city
     ai-tools/avatar-architect/ — POST multi-turn chat; saves enhanced themes (with emoji/colour/coreStress)

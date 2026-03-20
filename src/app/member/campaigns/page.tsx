@@ -126,23 +126,23 @@ export default function CampaignsPage() {
       {analytics && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
           {/* Total Clicks */}
-          <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-4">
+          <Link href="/member/analytics?section=timeseries" className="bg-white border border-[#1e2a38]/10 rounded-2xl p-4 hover:border-[#3dc3ff]/40 hover:shadow-sm transition-all block">
             <p className="text-xs text-[#1e2a38]/50 font-medium mb-1">Clicks (30d)</p>
             <p className="text-2xl font-bold text-[#1e2a38]">{analytics.totalClicks.toLocaleString()}</p>
             <div className="mt-2">
               <MiniSparkline data={analytics.sparkline.map((s) => ({ value: s.clicks }))} color="#3dc3ff" />
             </div>
-          </div>
+          </Link>
           {/* Total Leads */}
-          <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-4">
+          <Link href="/member/analytics?section=lead-magnets" className="bg-white border border-[#1e2a38]/10 rounded-2xl p-4 hover:border-[#3dc3ff]/40 hover:shadow-sm transition-all block">
             <p className="text-xs text-[#1e2a38]/50 font-medium mb-1">Leads (30d)</p>
             <p className="text-2xl font-bold text-[#1e2a38]">{analytics.totalLeads.toLocaleString()}</p>
             <div className="mt-2">
               <MiniSparkline data={(analytics.leadsSparkline ?? []).map((s) => ({ value: s.leads }))} color="#1e2a38" />
             </div>
-          </div>
+          </Link>
           {/* Conversion Rate */}
-          <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-4">
+          <Link href="/member/analytics?section=lead-magnets" className="bg-white border border-[#1e2a38]/10 rounded-2xl p-4 hover:border-[#3dc3ff]/40 hover:shadow-sm transition-all block">
             <p className="text-xs text-[#1e2a38]/50 font-medium mb-1">Conv. Rate (30d)</p>
             <p className="text-2xl font-bold text-[#3dc3ff]">{analytics.conversionRate}%</p>
             {analytics.previousConversionRate > 0 && (
@@ -153,9 +153,9 @@ export default function CampaignsPage() {
                 {convRateDelta >= 0 ? "+" : ""}{convRateDelta}% vs prev period
               </div>
             )}
-          </div>
+          </Link>
           {/* Top Performing Link */}
-          <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-4">
+          <Link href="/member/analytics?section=videos" className="bg-white border border-[#1e2a38]/10 rounded-2xl p-4 hover:border-[#3dc3ff]/40 hover:shadow-sm transition-all block">
             <p className="text-xs text-[#1e2a38]/50 font-medium mb-1">Top Link (30d)</p>
             {analytics.topLink ? (
               <>
@@ -166,7 +166,7 @@ export default function CampaignsPage() {
             ) : (
               <p className="text-sm text-[#1e2a38]/30 mt-1">No leads yet</p>
             )}
-          </div>
+          </Link>
         </div>
       )}
 
