@@ -2,7 +2,7 @@
 
 import { useState, useEffect, use, useCallback } from "react";
 import Link from "next/link";
-import { PencilIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
+import { PencilIcon, ArrowPathIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import { DailyLineChart, ChartEmpty } from "@/components/charts/DailyLineChart";
 import { LinkBarChart } from "@/components/charts/LinkBarChart";
 
@@ -76,6 +76,7 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
   const [campaign, setCampaign] = useState<CampaignData | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [hasTyUrl, setHasTyUrl] = useState<boolean | null>(null);
 
   // Analytics
   const [period, setPeriod] = useState("30d");
@@ -120,6 +121,9 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
     loadCampaign();
     fetch("/api/auth/session").then((r) => r.json()).then((s) => {
       if ((s?.user as { role?: string })?.role === "admin") setIsAdmin(true);
+    }).catch(() => {});
+    fetch("/api/member/profile").then((r) => r.ok ? r.json() : null).then((d) => {
+      if (d) setHasTyUrl(!!d.thankYouPageUrl);
     }).catch(() => {});
   }, [loadCampaign]);
 
@@ -225,6 +229,17 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
 
   return (
     <div className="space-y-6">
+      {/* Thank You Page Warning */}
+      {hasTyUrl === false && (
+        <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+          <ExclamationTriangleIcon className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-amber-800">Lead tracking isn&apos;t set up yet</p>
+            <p className="text-xs text-amber-700 mt-0.5">Clicks will be recorded but leads won&apos;t count until you save your Thank You Page Path. <Link href="/member/link-tracking" className="underline font-medium">Go to Link Tracking Settings →</Link></p>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div>
         <div className="mb-2">

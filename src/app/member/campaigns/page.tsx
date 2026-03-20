@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { TrashIcon, ArrowTrendingUpIcon, ArrowTrendingDownIcon } from "@heroicons/react/24/outline";
+import { TrashIcon, ArrowTrendingUpIcon, ArrowTrendingDownIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import { MiniSparkline } from "@/components/charts/MiniSparkline";
 
 interface Campaign {
@@ -49,12 +49,16 @@ export default function CampaignsPage() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [memberFilter, setMemberFilter] = useState<"all" | "mine">("all");
+  const [hasTyUrl, setHasTyUrl] = useState<boolean | null>(null);
 
   useEffect(() => {
     loadCampaigns();
     fetch("/api/campaigns/analytics?period=30d").then((r) => r.ok ? r.json() : null).then((d) => d && setAnalytics(d)).catch(() => {});
     fetch("/api/auth/session").then((r) => r.json()).then((s) => {
       if ((s?.user as { role?: string })?.role === "admin") setIsAdmin(true);
+    }).catch(() => {});
+    fetch("/api/member/profile").then((r) => r.ok ? r.json() : null).then((d) => {
+      if (d) setHasTyUrl(!!d.thankYouPageUrl);
     }).catch(() => {});
   }, []);
 
@@ -106,6 +110,17 @@ export default function CampaignsPage() {
           + New Campaign
         </button>
       </div>
+
+      {/* Thank You Page Warning */}
+      {hasTyUrl === false && (
+        <div className="mb-5 flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+          <ExclamationTriangleIcon className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-amber-800">Link tracking isn&apos;t fully set up</p>
+            <p className="text-xs text-amber-700 mt-0.5">Clicks are tracked but leads won&apos;t be recorded until you save your Thank You Page Path. <Link href="/member/link-tracking" className="underline font-medium">Go to Link Tracking Settings →</Link></p>
+          </div>
+        </div>
+      )}
 
       {/* Summary Dashboard */}
       {analytics && (
@@ -246,6 +261,12 @@ export default function CampaignsPage() {
                   <option value="OTHER">Other</option>
                 </select>
               </div>
+              {hasTyUrl === false && (
+                <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5">
+                  <ExclamationTriangleIcon className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                  <p className="text-xs text-amber-700">Before this campaign can track leads, save your <Link href="/member/link-tracking" className="underline font-medium">Thank You Page Path</Link> in Link Tracking Settings.</p>
+                </div>
+              )}
               <button onClick={createCampaign} disabled={creating || !form.name || !form.destinationUrl} className="w-full bg-[#3dc3ff] text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-[#3dc3ff]/90 disabled:opacity-50 transition-colors">
                 {creating ? "Creating..." : "Create Campaign"}
               </button>

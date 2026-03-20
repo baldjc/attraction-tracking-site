@@ -39,6 +39,30 @@ export async function POST(req: NextRequest) {
     });
     if (!link) return NextResponse.json({ error: "Invalid ref_code" }, { status: 400, headers });
 
+    // If this page IS the thank-you page and ?ref= is just carrying through from the form
+    // submission, attribute the lead to the most recent existing click instead of creating
+    // a duplicate click record.
+    if (member.thankYouPageUrl && page_url) {
+      const saved = normPath(member.thankYouPageUrl);
+      const current = normPath(page_url);
+      if (current === saved) {
+        const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        const recentClick = await prisma.click.findFirst({
+          where: { refCode: ref_code, timestamp: { gte: cutoff } },
+          orderBy: { timestamp: "desc" },
+        });
+        if (recentClick) {
+          await prisma.lead.upsert({
+            where: { clickId: recentClick.id },
+            create: { clickId: recentClick.id },
+            update: {},
+          });
+          return NextResponse.json({ session_id: null }, { headers });
+        }
+        // No recent click found — fall through and create a new click+lead below
+      }
+    }
+
     const rawIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
       ?? req.headers.get("x-real-ip")
       ?? null;
@@ -66,6 +90,7 @@ export async function POST(req: NextRequest) {
       data: { clickId: click.id, pageUrl: page_url ?? "" },
     });
 
+    // Edge case: someone lands directly on TY page with a ref code (no prior click found)
     if (member.thankYouPageUrl && page_url) {
       const saved = normPath(member.thankYouPageUrl);
       const current = normPath(page_url);
