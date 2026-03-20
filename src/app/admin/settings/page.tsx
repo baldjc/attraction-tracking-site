@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
 import { EyeSlashIcon, EyeIcon, UserGroupIcon, ChevronDownIcon, XMarkIcon, CheckIcon, SparklesIcon, EnvelopeIcon, PencilSquareIcon } from "@heroicons/react/24/outline";
 import { IMPERSONATE_LS_KEY } from "@/lib/impersonate-constants";
 
@@ -136,7 +135,6 @@ function StaffCard({
   onSaved: (id: string, ids: string[] | null) => void;
   onRemoved: (id: string) => void;
 }) {
-  const router = useRouter();
   const rawIds = staff.allowedMemberIds;
   const initIds = Array.isArray(rawIds) ? (rawIds as string[]) : null;
 
@@ -158,7 +156,7 @@ function StaffCard({
     if (res.ok) {
       const memberName = staff.fullName || staff.email;
       localStorage.setItem(IMPERSONATE_LS_KEY, JSON.stringify({ memberId: staff.id, memberName }));
-      router.push("/member/dashboard");
+      window.location.href = "/member/scores";
     }
     setViewingAs(false);
   }
