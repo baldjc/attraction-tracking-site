@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { EyeSlashIcon, UserGroupIcon, ChevronDownIcon, XMarkIcon, CheckIcon } from "@heroicons/react/24/outline";
+import React, { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { EyeSlashIcon, EyeIcon, UserGroupIcon, ChevronDownIcon, XMarkIcon, CheckIcon, SparklesIcon, EnvelopeIcon, PencilSquareIcon } from "@heroicons/react/24/outline";
+import { IMPERSONATE_LS_KEY } from "@/lib/impersonate-constants";
 
 // ─── Staff Access ─────────────────────────────────────────────────────────────
 
@@ -134,6 +136,7 @@ function StaffCard({
   onSaved: (id: string, ids: string[] | null) => void;
   onRemoved: (id: string) => void;
 }) {
+  const router = useRouter();
   const rawIds = staff.allowedMemberIds;
   const initIds = Array.isArray(rawIds) ? (rawIds as string[]) : null;
 
@@ -143,6 +146,22 @@ function StaffCard({
   const [saved, setSaved] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState(false);
   const [removing, setRemoving] = useState(false);
+  const [viewingAs, setViewingAs] = useState(false);
+
+  async function handleViewAs() {
+    setViewingAs(true);
+    const res = await fetch("/api/admin/impersonate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ memberId: staff.id }),
+    });
+    if (res.ok) {
+      const memberName = staff.fullName || staff.email;
+      localStorage.setItem(IMPERSONATE_LS_KEY, JSON.stringify({ memberId: staff.id, memberName }));
+      router.push("/member/dashboard");
+    }
+    setViewingAs(false);
+  }
 
   async function handleSave() {
     setSaving(true);
@@ -187,6 +206,15 @@ function StaffCard({
           <span className={`text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full ${roleBadge}`}>
             {staff.role}
           </span>
+          <button
+            type="button"
+            onClick={handleViewAs}
+            disabled={viewingAs}
+            title={`View as ${staff.fullName || staff.email}`}
+            className="text-xs font-medium text-[#3dc3ff] border border-[#3dc3ff]/30 px-2.5 py-1 rounded-lg hover:bg-[#3dc3ff]/10 disabled:opacity-50 transition-colors"
+          >
+            {viewingAs ? "…" : "View as"}
+          </button>
           {!confirmRemove && (
             <button
               type="button"
@@ -553,7 +581,10 @@ function FeatureVisibilitySection() {
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
       <div className="mb-5">
-        <h2 className="text-base font-semibold text-[#1e2a38]">Feature Visibility</h2>
+        <div className="flex items-center gap-2 mb-1">
+          <EyeIcon className="w-5 h-5 text-[#3dc3ff]" />
+          <h2 className="text-base font-semibold text-[#1e2a38]">Feature Visibility</h2>
+        </div>
         <p className="text-sm text-[#1e2a38]/50 mt-0.5">
           Control what members can see and access. Changes take effect immediately.
           You always see everything when viewing as a member.
@@ -644,11 +675,13 @@ function PromptEditorSection({
   description,
   settingKey,
   rows = 20,
+  icon,
 }: {
   title: string;
   description: string;
   settingKey: string;
   rows?: number;
+  icon?: React.ReactNode;
 }) {
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(true);
@@ -684,7 +717,10 @@ function PromptEditorSection({
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
       <div className="flex items-center justify-between mb-2">
-        <h2 className="text-base font-semibold text-[#1e2a38]">{title}</h2>
+        <div className="flex items-center gap-2">
+          {icon}
+          <h2 className="text-base font-semibold text-[#1e2a38]">{title}</h2>
+        </div>
         <button onClick={handleReset} className="text-xs text-[#1e2a38]/50 hover:text-[#1e2a38] underline">
           Reset to Default
         </button>
@@ -751,7 +787,10 @@ function AIScoringPromptSection() {
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
       <div className="flex items-center justify-between mb-2">
-        <h2 className="text-base font-semibold text-[#1e2a38]">AI Scoring Prompt</h2>
+        <div className="flex items-center gap-2">
+          <SparklesIcon className="w-5 h-5 text-[#3dc3ff]" />
+          <h2 className="text-base font-semibold text-[#1e2a38]">AI Scoring Prompt</h2>
+        </div>
         <button onClick={handleReset} className="text-xs text-[#1e2a38]/50 hover:text-[#1e2a38] underline">
           Reset to Default
         </button>
@@ -800,12 +839,14 @@ export default function SettingsPage() {
         description={`System prompt used when generating email newsletters. Use these tokens for dynamic values: {{MEMBER_NAME}}, {{BUSINESS_NAME}}, {{LIST_SIZE_TEXT}}, {{VOICE_STYLE}}, {{AVATAR_TEXT}}.`}
         settingKey="repurpose_newsletter_prompt"
         rows={28}
+        icon={<EnvelopeIcon className="w-5 h-5 text-[#3dc3ff]" />}
       />
       <PromptEditorSection
         title="Repurpose Content — LinkedIn Article Prompt"
         description={`System prompt used when generating LinkedIn articles. Use these tokens for dynamic values: {{MEMBER_NAME}}, {{BUSINESS_NAME}}, {{VOICE_STYLE}}, {{AVATAR_TEXT}}, {{LINKS_TEXT}}.`}
         settingKey="repurpose_linkedin_prompt"
         rows={36}
+        icon={<PencilSquareIcon className="w-5 h-5 text-[#3dc3ff]" />}
       />
     </div>
   );

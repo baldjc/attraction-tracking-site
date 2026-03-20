@@ -49,7 +49,7 @@ const adminLinks = [
   { href: "/member/campaigns", label: "Campaigns", icon: LinkIcon },
   { href: "/member/conversions", label: "Conversions", icon: ChartBarIcon },
   { href: "/admin/analytics", label: "Analytics", icon: ChartBarIcon },
-  { href: "/member/settings", label: "Link Tracking", icon: LinkIcon },
+  { href: "/member/link-tracking", label: "Link Tracking", icon: LinkIcon },
   { href: "/admin/settings", label: "Settings", icon: Cog6ToothIcon },
 ];
 
@@ -58,6 +58,7 @@ const memberLinks = [
   { href: "/member/ai-tools", label: "AI Tools", icon: SparklesIcon, featureKey: "ai_tools" },
   { href: "/member/campaigns", label: "Campaigns", icon: LinkIcon, featureKey: "campaigns" },
   { href: "/member/conversions", label: "Conversions", icon: ChartBarIcon, featureKey: "campaigns" },
+  { href: "/member/link-tracking", label: "Link Tracking", icon: LinkIcon, featureKey: "campaigns" },
   { href: "/member/resources", label: "Resources", icon: BookOpenIcon, featureKey: "resources" },
   { href: "/member/settings", label: "Settings", icon: Cog6ToothIcon, featureKey: null },
 ];
