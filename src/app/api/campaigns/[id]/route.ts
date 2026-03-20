@@ -114,6 +114,8 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   const campaign = await getCampaignForUser(id, user.id, isAdmin);
   if (!campaign) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  await prisma.campaign.update({ where: { id }, data: { deletedAt: new Date() } });
+  const now = new Date();
+  await prisma.trackingLink.updateMany({ where: { campaignId: id, deletedAt: null }, data: { deletedAt: now } });
+  await prisma.campaign.update({ where: { id }, data: { deletedAt: now } });
   return NextResponse.json({ success: true });
 }

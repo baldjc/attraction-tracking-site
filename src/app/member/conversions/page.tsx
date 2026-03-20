@@ -35,6 +35,8 @@ export default function ConversionsPage() {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [campaignFilter, setCampaignFilter] = useState("");
   const [campaigns, setCampaigns] = useState<{ id: string; name: string }[]>([]);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
   useEffect(() => {
     Promise.all([
@@ -69,17 +71,31 @@ export default function ConversionsPage() {
     return timeBetween(views[0].timestamp, views[views.length - 1].timestamp);
   }
 
-  const filtered = leads.filter((l) =>
-    campaignFilter ? l.click.link.campaign.id === campaignFilter : true
-  );
+  const filtered = leads.filter((l) => {
+    if (campaignFilter && l.click.link.campaign.id !== campaignFilter) return false;
+    const ts = new Date(l.timestamp);
+    if (dateFrom && ts < new Date(dateFrom)) return false;
+    if (dateTo) {
+      const endOfDay = new Date(dateTo);
+      endOfDay.setHours(23, 59, 59, 999);
+      if (ts > endOfDay) return false;
+    }
+    return true;
+  });
+
+  const hasFilters = campaignFilter || dateFrom || dateTo;
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-2xl font-bold text-[#1e2a38]">Conversions</h1>
           <p className="text-sm text-[#1e2a38]/50 mt-0.5">Every lead captured across all your campaigns</p>
         </div>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-3 mb-5">
         <select
           value={campaignFilter}
           onChange={(e) => setCampaignFilter(e.target.value)}
@@ -90,6 +106,34 @@ export default function ConversionsPage() {
             <option key={c.id} value={c.id}>{c.name}</option>
           ))}
         </select>
+        <div className="flex items-center gap-2">
+          <input
+            type="date"
+            value={dateFrom}
+            onChange={(e) => setDateFrom(e.target.value)}
+            className="text-sm border border-[#1e2a38]/20 rounded-xl px-3 py-2 focus:outline-none focus:border-[#3dc3ff] bg-white text-[#1e2a38]"
+          />
+          <span className="text-[#1e2a38]/30 text-sm">to</span>
+          <input
+            type="date"
+            value={dateTo}
+            onChange={(e) => setDateTo(e.target.value)}
+            className="text-sm border border-[#1e2a38]/20 rounded-xl px-3 py-2 focus:outline-none focus:border-[#3dc3ff] bg-white text-[#1e2a38]"
+          />
+        </div>
+        {hasFilters && (
+          <button
+            onClick={() => { setCampaignFilter(""); setDateFrom(""); setDateTo(""); }}
+            className="text-xs text-[#1e2a38]/40 hover:text-[#1e2a38] underline"
+          >
+            Clear filters
+          </button>
+        )}
+        {!loading && (
+          <span className="text-xs text-[#1e2a38]/40 ml-auto">
+            {filtered.length} conversion{filtered.length !== 1 ? "s" : ""}
+          </span>
+        )}
       </div>
 
       {loading ? (
@@ -97,9 +141,13 @@ export default function ConversionsPage() {
       ) : filtered.length === 0 ? (
         <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-12 text-center">
           <div className="text-4xl mb-3">📬</div>
-          <h2 className="font-semibold text-[#1e2a38] mb-2">No conversions yet</h2>
+          <h2 className="font-semibold text-[#1e2a38] mb-2">
+            {hasFilters ? "No conversions match your filters" : "No conversions yet"}
+          </h2>
           <p className="text-sm text-[#1e2a38]/50">
-            When someone clicks a tracked link and reaches your thank you page, they'll appear here.
+            {hasFilters
+              ? "Try adjusting your date range or campaign filter."
+              : "When someone clicks a tracked link and reaches your thank you page, they'll appear here."}
           </p>
         </div>
       ) : (

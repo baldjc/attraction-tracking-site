@@ -1,0 +1,80 @@
+=== FIX 6: CAMPAIGN DETAIL STATS ===
+  The campaign detail page should show 5 stats across the top (not just Clicks and Leads):
+  - Total Views (sum of YouTube views across all links) — HIDE if no links have YouTube URLs
+  - Total Clicks
+  - Total Leads
+  - Click-Through Rate (clicks ÷ views) — HIDE if no YouTube views
+  - Conversion Rate (leads ÷ clicks)
+
+  === FIX 7: TRACKING LINK ROWS ===
+  Each tracking link row on the campaign detail page should show:
+  - YouTube thumbnail + video title (if YouTube link), or just the link name
+  - The tracked URL with a Copy button
+  - Views (or "—" if no YouTube URL)
+  - Clicks, Leads, Conversion Rate per link
+  - Sort dropdown above the list: Newest, Most Clicks, Most Leads
+
+  === FIX 8: CAMPAIGN LIST CARDS ===
+  Each campaign card on the campaigns list should show:
+  - Campaign name
+  - Source type badge (YouTube=red, Google Ads=blue, Email=green, Other=gray)
+  - Destination URL
+  - Total clicks, total leads, conversion rate
+
+  ---
+  Prompt 2: Conversions Page + Test Installation
+
+  Two new features for the campaigns system:
+
+  === FEATURE 1: CONVERSIONS PAGE ===
+
+  Add a "Conversions" page at /conversions with a link in the sidebar nav.
+
+  This is a table of all leads (conversions) across all campaigns:
+
+  Columns: Date/Time, Campaign Name, Source (link name / video title), Location (city,
+  province)
+
+  Each row is EXPANDABLE (click to expand):
+  - Shows the full browsing journey: list of pages visited in order with timestamps
+  - Time on each page (calculated from gap between consecutive page view timestamps; last
+  page shows "—")
+  - Total session duration (first page view to last page view)
+
+  Filters:
+  - Campaign dropdown filter
+  - Date range filter (start date / end date)
+
+  Data isolation: Members only see their own conversions. Admin sees everything with a
+  member filter dropdown.
+
+  === FEATURE 2: TEST INSTALLATION BUTTON ===
+
+  Add a "Test Installation" section on the Link Tracking Setup page, below the snippet.
+
+  How it works:
+  1. "Test Installation" button
+  2. When clicked:
+     a. Generate a temporary test ref code like "test_" + 8 random chars
+     b. Create a temporary test TrackingLink for this member (flagged somehow as test data)
+     c. Show the member: "Open this link in a new tab:" with a clickable link to their
+  destination URL + ?ref={testRefCode} (opens in new tab)
+     d. Start polling GET /api/tracking/verify?refCode={testRefCode} every 2 seconds for 30
+  seconds
+     e. The verify endpoint checks if a Click record exists for that ref code
+
+  3. Results:
+     - SUCCESS (click found): Green checkmark — "Your snippet is working! We detected your
+  test visit." Then clean up: delete the test TrackingLink and test Click data so it doesn't
+   pollute real stats.
+     - FAILURE (30 seconds, no click): Red X with troubleshooting tips:
+       * "Make sure the tracking snippet is pasted inside the <head> tag on every page of
+  your site"
+       * "Check that the data-id in the snippet matches your member ID"
+       * "Disable ad blockers and try again"
+       * "The snippet must be on the page you're testing"
+     - "Try Again" button to restart
+
+  4. API: GET /api/tracking/verify?refCode={refCode} — returns { found: true/false }
+
+  ---

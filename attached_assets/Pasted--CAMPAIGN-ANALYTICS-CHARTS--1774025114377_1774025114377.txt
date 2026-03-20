@@ -1,0 +1,38 @@
+=== CAMPAIGN ANALYTICS & CHARTS ===                                                       
+                                                                                            
+  Add visual analytics to the campaigns system. Use a charting library (Recharts is already 
+  common in Next.js — use that).                                                            
+                                                                                            
+  1. CAMPAIGN DETAIL PAGE — add a charts section below the stats bar:                       
+     - Line chart: Clicks per day over the last 30 days (with a date range selector: 7d /
+  30d / 90d / All)                                                                          
+     - Line chart: Leads per day over the same period                                     
+     - Bar chart: Clicks + Leads by tracking link (compare which videos/links perform best) 
+     - If YouTube views are available: overlay views vs clicks on the same chart to show    
+  click-through rate visually                                                               
+                                                                                            
+  2. CAMPAIGNS LIST PAGE — add a summary dashboard at the top before the campaign cards:    
+     - Total clicks (all campaigns) with a sparkline showing the last 30 days trend       
+     - Total leads (all campaigns) with a sparkline                                         
+     - Overall conversion rate with an up/down arrow showing change vs previous period      
+     - "Top Performing Link" — name of the link with the most leads this month              
+                                                                                            
+  3. CONVERSIONS PAGE — add a chart above the table:                                        
+     - Bar chart: Leads per day for the selected date range                                 
+     - Pie or donut chart: Leads by campaign (which campaigns are driving the most          
+  conversions)                                                                              
+     - Pie or donut chart: Leads by source type (YouTube vs Google Ads vs Email vs Other)   
+                                                                                            
+  4. API ENDPOINTS for chart data:                                                        
+     - GET /api/campaigns/analytics?period=30d — returns daily click/lead totals across all 
+  campaigns                                                                                 
+     - GET /api/campaigns/[id]/analytics?period=30d — returns daily click/lead totals for
+  one campaign, plus per-link breakdowns                                                    
+     - These endpoints respect data isolation (members see only their own data)           
+                                                                                            
+  5. STYLING:                                                                             
+     - Use the existing colour palette from the site                                        
+     - Charts should be responsive (work on desktop and tablet)                             
+     - Loading skeletons while chart data fetches                                           
+     - Empty states: "No data yet — clicks and leads will appear here once your tracking    
+  links get traffic"    
