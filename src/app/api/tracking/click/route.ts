@@ -36,14 +36,40 @@ export async function POST(req: NextRequest) {
       ?? req.headers.get("x-real-ip")
       ?? null;
 
-    // SERVER-SIDE DEDUP: same ref_code + IP within 30s → return existing session
+    // SERVER-SIDE DEDUP: same ref_code + IP within 30s → return existing session.
+    // But still check if THIS request is landing on the thank-you page so we can
+    // create a lead against the existing click even when dedup fires.
     if (rawIp) {
       const dedupCutoff = new Date(Date.now() - 30 * 1000);
       const existing = await prisma.click.findFirst({
         where: { refCode: ref_code, ipAddress: rawIp, timestamp: { gte: dedupCutoff } },
         orderBy: { timestamp: "desc" },
+        include: {
+          link: {
+            include: {
+              campaign: {
+                include: { user: { select: { id: true, thankYouPageUrl: true } } },
+              },
+            },
+          },
+        },
       });
       if (existing) {
+        const dedupTyUrl = existing.link.campaign.user.thankYouPageUrl ?? null;
+        if (dedupTyUrl && page_url) {
+          const saved = normPath(dedupTyUrl);
+          const current = normPath(page_url);
+          if (current === saved) {
+            await prisma.lead.upsert({
+              where: { clickId: existing.id },
+              create: { clickId: existing.id },
+              update: {},
+            });
+            console.log(`[click] DEDUP — TY check: current="${current}" saved="${saved}" match=true → LEAD CREATED for click=${existing.id}`);
+          } else {
+            console.log(`[click] DEDUP — TY check: current="${current}" saved="${saved}" match=false`);
+          }
+        }
         console.log(`[click] DEDUP — returning existing click=${existing.id} session=${existing.sessionId}`);
         return NextResponse.json({ session_id: existing.sessionId }, { headers });
       }
