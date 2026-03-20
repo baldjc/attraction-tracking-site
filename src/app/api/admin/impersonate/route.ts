@@ -3,10 +3,12 @@ import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { cookies } from "next/headers";
 import { IMPERSONATE_COOKIE } from "@/lib/session-utils";
+import { isAdminOrEditor, canAccessTier } from "@/lib/auth-utils";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
-  if (!session?.user || (session.user as any).role !== "admin") {
+  const role = (session?.user as any)?.role;
+  if (!session?.user || !isAdminOrEditor(role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -14,11 +16,16 @@ export async function POST(req: NextRequest) {
 
   const member = await prisma.user.findUnique({
     where: { id: memberId },
-    select: { id: true, fullName: true, email: true },
+    select: { id: true, fullName: true, email: true, serviceTier: true },
   });
 
   if (!member) {
     return NextResponse.json({ error: "Member not found" }, { status: 404 });
+  }
+
+  // Editor can only impersonate editing/mastery members
+  if (!canAccessTier(role, member.serviceTier)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const cookieStore = await cookies();
@@ -37,7 +44,8 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE() {
   const session = await auth();
-  if (!session?.user || (session.user as any).role !== "admin") {
+  const role = (session?.user as any)?.role;
+  if (!session?.user || !isAdminOrEditor(role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

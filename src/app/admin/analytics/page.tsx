@@ -1,4 +1,10 @@
-export default function AnalyticsPage() {
+import { auth } from "@/lib/auth";
+import { redirect } from "next/navigation";
+
+export default async function AnalyticsPage() {
+  const session = await auth();
+  if ((session?.user as any)?.role === "editor") redirect("/admin");
+
   return (
     <div>
       <h1 className="text-2xl font-bold text-[#1e2a38]">Analytics</h1>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useSession } from "next-auth/react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -107,6 +108,10 @@ function tierLabel(value: string) {
 }
 
 export default function MemberDetailPage() {
+  const { data: sessionData } = useSession();
+  const currentRole = (sessionData?.user as any)?.role ?? "admin";
+  const isEditorRole = currentRole === "editor";
+
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [member, setMember] = useState<any>(null);
@@ -542,42 +547,44 @@ export default function MemberDetailPage() {
           <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-base font-semibold text-[#1e2a38]">Member Info</h2>
-              {!editing ? (
-                <button
-                  onClick={() => {
-                    setEditFields({
-                      fullName: member.fullName ?? "",
-                      email: member.email ?? "",
-                      phone: member.phone ?? "",
-                      youtubeChannelUrl: member.youtubeChannelUrl ?? "",
-                      youtubeHandle: member.youtubeHandle ?? "",
-                      youtubeChannelName: member.youtubeChannelName ?? "",
-                      serviceTier: member.serviceTier ?? "foundations",
-                      ghlContactId: member.ghlContactId ?? "",
-                    });
-                    setEditing(true);
-                  }}
-                  className="flex items-center gap-1.5 text-sm text-[#3dc3ff] hover:text-[#2bb3ef]"
-                >
-                  <PencilIcon className="w-4 h-4" /> Edit
-                </button>
-              ) : (
-                <div className="flex items-center gap-2">
+              {!isEditorRole && (
+                !editing ? (
                   <button
-                    onClick={handleSaveEdit}
-                    disabled={saving}
-                    className="flex items-center gap-1 text-sm text-green-600 hover:text-green-700 font-medium"
+                    onClick={() => {
+                      setEditFields({
+                        fullName: member.fullName ?? "",
+                        email: member.email ?? "",
+                        phone: member.phone ?? "",
+                        youtubeChannelUrl: member.youtubeChannelUrl ?? "",
+                        youtubeHandle: member.youtubeHandle ?? "",
+                        youtubeChannelName: member.youtubeChannelName ?? "",
+                        serviceTier: member.serviceTier ?? "foundations",
+                        ghlContactId: member.ghlContactId ?? "",
+                      });
+                      setEditing(true);
+                    }}
+                    className="flex items-center gap-1.5 text-sm text-[#3dc3ff] hover:text-[#2bb3ef]"
                   >
-                    <CheckIcon className="w-4 h-4" />
-                    {saving ? "Saving…" : "Save"}
+                    <PencilIcon className="w-4 h-4" /> Edit
                   </button>
-                  <button
-                    onClick={() => setEditing(false)}
-                    className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600"
-                  >
-                    <XMarkIcon className="w-4 h-4" /> Cancel
-                  </button>
-                </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleSaveEdit}
+                      disabled={saving}
+                      className="flex items-center gap-1 text-sm text-green-600 hover:text-green-700 font-medium"
+                    >
+                      <CheckIcon className="w-4 h-4" />
+                      {saving ? "Saving…" : "Save"}
+                    </button>
+                    <button
+                      onClick={() => setEditing(false)}
+                      className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600"
+                    >
+                      <XMarkIcon className="w-4 h-4" /> Cancel
+                    </button>
+                  </div>
+                )
               )}
             </div>
 
@@ -685,32 +692,34 @@ export default function MemberDetailPage() {
           <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-base font-semibold text-[#1e2a38]">Audit History</h2>
-              <div className="relative">
-                <button
-                  onClick={() => setAuditOpenHeader((o) => !o)}
-                  className="flex items-center gap-1.5 bg-[#3dc3ff] hover:bg-[#2bb3ef] text-white text-sm font-semibold px-3 py-2 rounded-lg transition-colors"
-                >
-                  Run Audit
-                  <ChevronDownIcon className="w-4 h-4" />
-                </button>
-                {auditOpenHeader && (
-                  <div className="absolute right-0 mt-1 w-44 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-                    {[
-                      { label: "Baseline", value: "baseline" },
-                      { label: "Monthly", value: "monthly" },
-                      { label: "Single Video", value: "single_video" },
-                    ].map(({ label, value }) => (
-                      <button
-                        key={value}
-                        onClick={() => value === "single_video" ? openVideoModal() : runAudit(value)}
-                        className="w-full text-left px-4 py-2.5 text-sm text-[#1e2a38] hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg"
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+              {!isEditorRole && (
+                <div className="relative">
+                  <button
+                    onClick={() => setAuditOpenHeader((o) => !o)}
+                    className="flex items-center gap-1.5 bg-[#3dc3ff] hover:bg-[#2bb3ef] text-white text-sm font-semibold px-3 py-2 rounded-lg transition-colors"
+                  >
+                    Run Audit
+                    <ChevronDownIcon className="w-4 h-4" />
+                  </button>
+                  {auditOpenHeader && (
+                    <div className="absolute right-0 mt-1 w-44 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                      {[
+                        { label: "Baseline", value: "baseline" },
+                        { label: "Monthly", value: "monthly" },
+                        { label: "Single Video", value: "single_video" },
+                      ].map(({ label, value }) => (
+                        <button
+                          key={value}
+                          onClick={() => value === "single_video" ? openVideoModal() : runAudit(value)}
+                          className="w-full text-left px-4 py-2.5 text-sm text-[#1e2a38] hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg"
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {member.audits?.length === 0 ? (
@@ -764,7 +773,7 @@ export default function MemberDetailPage() {
                           )}
                         </td>
                         <td className="py-3 text-right">
-                          {confirmDeleteId === audit.id ? (
+                          {!isEditorRole && confirmDeleteId === audit.id ? (
                             <span className="inline-flex items-center gap-2">
                               <span className="text-xs text-[#1e2a38]/50">Delete?</span>
                               <button
@@ -789,12 +798,14 @@ export default function MemberDetailPage() {
                               >
                                 View →
                               </Link>
-                              <button
-                                onClick={() => setConfirmDeleteId(audit.id)}
-                                className="text-xs text-gray-300 hover:text-[#ff0033] transition-colors"
-                              >
-                                Delete
-                              </button>
+                              {!isEditorRole && (
+                                <button
+                                  onClick={() => setConfirmDeleteId(audit.id)}
+                                  className="text-xs text-gray-300 hover:text-[#ff0033] transition-colors"
+                                >
+                                  Delete
+                                </button>
+                              )}
                             </span>
                           )}
                         </td>
@@ -1058,20 +1069,28 @@ export default function MemberDetailPage() {
                 </span>
               )}
             </div>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={6}
-              placeholder="Private coaching notes about this member…"
-              className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-[#1e2a38] focus:outline-none focus:ring-2 focus:ring-[#3dc3ff]/30 resize-none"
-            />
-            <button
-              onClick={handleSaveNotes}
-              disabled={notesSaving}
-              className="mt-2 bg-[#1e2a38] hover:bg-[#2a3a4e] disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
-            >
-              {notesSaving ? "Saving…" : "Save Notes"}
-            </button>
+            {isEditorRole ? (
+              <div className="text-sm text-[#1e2a38] whitespace-pre-wrap bg-gray-50 rounded-lg px-4 py-3 min-h-[80px]">
+                {notes || <span className="text-[#1e2a38]/30 italic">No coaching notes yet.</span>}
+              </div>
+            ) : (
+              <>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  rows={6}
+                  placeholder="Private coaching notes about this member…"
+                  className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-[#1e2a38] focus:outline-none focus:ring-2 focus:ring-[#3dc3ff]/30 resize-none"
+                />
+                <button
+                  onClick={handleSaveNotes}
+                  disabled={notesSaving}
+                  className="mt-2 bg-[#1e2a38] hover:bg-[#2a3a4e] disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+                >
+                  {notesSaving ? "Saving…" : "Save Notes"}
+                </button>
+              </>
+            )}
           </div>
 
           {/* Avatar Profile */}
@@ -1100,54 +1119,66 @@ export default function MemberDetailPage() {
                 )}
               </>
             )}
-            <textarea
-              value={avatarText}
-              onChange={(e) => setAvatarText(e.target.value)}
-              rows={6}
-              placeholder="No avatar document saved. You can paste or edit one here."
-              className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-[#1e2a38] font-mono focus:outline-none focus:ring-2 focus:ring-[#3dc3ff]/30 resize-none"
-            />
-            <div className="flex items-center justify-between mt-2">
-              {avatarSaved && <span className="text-xs text-green-600 font-medium">✓ Saved</span>}
-              <button
-                onClick={handleSaveAdminAvatar}
-                disabled={avatarSaving || !avatarText.trim()}
-                className="ml-auto bg-[#1e2a38] hover:bg-[#2a3a4e] disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
-              >
-                {avatarSaving ? "Saving…" : "Save Avatar"}
-              </button>
-            </div>
+            {isEditorRole ? (
+              avatarText ? (
+                <div className="text-sm text-[#1e2a38] whitespace-pre-wrap bg-gray-50 rounded-lg px-4 py-3 font-mono max-h-48 overflow-y-auto">
+                  {avatarText}
+                </div>
+              ) : null
+            ) : (
+              <>
+                <textarea
+                  value={avatarText}
+                  onChange={(e) => setAvatarText(e.target.value)}
+                  rows={6}
+                  placeholder="No avatar document saved. You can paste or edit one here."
+                  className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-[#1e2a38] font-mono focus:outline-none focus:ring-2 focus:ring-[#3dc3ff]/30 resize-none"
+                />
+                <div className="flex items-center justify-between mt-2">
+                  {avatarSaved && <span className="text-xs text-green-600 font-medium">Saved</span>}
+                  <button
+                    onClick={handleSaveAdminAvatar}
+                    disabled={avatarSaving || !avatarText.trim()}
+                    className="ml-auto bg-[#1e2a38] hover:bg-[#2a3a4e] disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+                  >
+                    {avatarSaving ? "Saving…" : "Save Avatar"}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
         {/* RIGHT SIDEBAR — QUICK ACTIONS */}
         <div className="space-y-4 order-1 lg:order-2">
-          {/* Membership Level — always-visible quick selector */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-            <h2 className="text-sm font-semibold text-[#1e2a38] mb-3">Membership Level</h2>
-            <select
-              value={quickTier}
-              onChange={(e) => { setQuickTier(e.target.value); setTierSaved(false); }}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-[#1e2a38] focus:outline-none focus:ring-2 focus:ring-[#3dc3ff]/30 mb-2"
-            >
-              {SERVICE_TIERS.map((t) => (
-                <option key={t.value} value={t.value}>{t.label}</option>
-              ))}
-            </select>
-            <button
-              onClick={handleQuickTierSave}
-              disabled={tierSaving || quickTier === member.serviceTier}
-              className={`w-full text-sm font-semibold px-4 py-2 rounded-lg transition-colors ${
-                tierSaved
-                  ? "bg-green-100 text-green-700"
-                  : quickTier === member.serviceTier
-                  ? "bg-gray-100 text-gray-400 cursor-default"
-                  : "bg-[#1e2a38] hover:bg-[#2a3a4a] text-white"
-              }`}
-            >
-              {tierSaved ? "✓ Saved" : tierSaving ? "Saving…" : "Save Tier"}
-            </button>
-          </div>
+          {/* Membership Level — always-visible quick selector (admin only) */}
+          {!isEditorRole && (
+            <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+              <h2 className="text-sm font-semibold text-[#1e2a38] mb-3">Membership Level</h2>
+              <select
+                value={quickTier}
+                onChange={(e) => { setQuickTier(e.target.value); setTierSaved(false); }}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-[#1e2a38] focus:outline-none focus:ring-2 focus:ring-[#3dc3ff]/30 mb-2"
+              >
+                {SERVICE_TIERS.map((t) => (
+                  <option key={t.value} value={t.value}>{t.label}</option>
+                ))}
+              </select>
+              <button
+                onClick={handleQuickTierSave}
+                disabled={tierSaving || quickTier === member.serviceTier}
+                className={`w-full text-sm font-semibold px-4 py-2 rounded-lg transition-colors ${
+                  tierSaved
+                    ? "bg-green-100 text-green-700"
+                    : quickTier === member.serviceTier
+                    ? "bg-gray-100 text-gray-400 cursor-default"
+                    : "bg-[#1e2a38] hover:bg-[#2a3a4a] text-white"
+                }`}
+              >
+                {tierSaved ? "Saved" : tierSaving ? "Saving…" : "Save Tier"}
+              </button>
+            </div>
+          )}
 
           {/* AI Tools Usage */}
           <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
@@ -1185,32 +1216,34 @@ export default function MemberDetailPage() {
             <h2 className="text-sm font-semibold text-[#1e2a38] mb-4">Quick Actions</h2>
             <div className="space-y-2">
               {/* Run Audit */}
-              <div className="relative">
-                <button
-                  onClick={() => setAuditOpenSidebar((o) => !o)}
-                  className="w-full flex items-center justify-between bg-[#3dc3ff] hover:bg-[#2bb3ef] text-white text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors"
-                >
-                  Run Audit
-                  <ChevronDownIcon className="w-4 h-4" />
-                </button>
-                {auditOpenSidebar && (
-                  <div className="absolute left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-                    {[
-                      { label: "Baseline", value: "baseline" },
-                      { label: "Monthly", value: "monthly" },
-                      { label: "Single Video", value: "single_video" },
-                    ].map(({ label, value }) => (
-                      <button
-                        key={value}
-                        onClick={() => value === "single_video" ? openVideoModal() : runAudit(value)}
-                        className="w-full text-left px-4 py-2.5 text-sm text-[#1e2a38] hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg"
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+              {!isEditorRole && (
+                <div className="relative">
+                  <button
+                    onClick={() => setAuditOpenSidebar((o) => !o)}
+                    className="w-full flex items-center justify-between bg-[#3dc3ff] hover:bg-[#2bb3ef] text-white text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors"
+                  >
+                    Run Audit
+                    <ChevronDownIcon className="w-4 h-4" />
+                  </button>
+                  {auditOpenSidebar && (
+                    <div className="absolute left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                      {[
+                        { label: "Baseline", value: "baseline" },
+                        { label: "Monthly", value: "monthly" },
+                        { label: "Single Video", value: "single_video" },
+                      ].map(({ label, value }) => (
+                        <button
+                          key={value}
+                          onClick={() => value === "single_video" ? openVideoModal() : runAudit(value)}
+                          className="w-full text-left px-4 py-2.5 text-sm text-[#1e2a38] hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg"
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {member.youtubeChannelUrl && (
                 <a
@@ -1256,39 +1289,41 @@ export default function MemberDetailPage() {
             </div>
           </div>
 
-          {/* Danger Zone */}
-          <div className="bg-white rounded-xl border border-red-200 p-5 shadow-sm">
-            <h2 className="text-sm font-semibold text-red-600 mb-3">Danger Zone</h2>
-            {!confirmDeleteMember ? (
-              <button
-                onClick={() => setConfirmDeleteMember(true)}
-                className="w-full text-sm font-medium text-red-600 border border-red-200 hover:bg-red-50 px-4 py-2.5 rounded-lg transition-colors"
-              >
-                Delete Member
-              </button>
-            ) : (
-              <div className="space-y-2">
-                <p className="text-xs text-red-600">
-                  This will permanently delete <strong>{member.fullName || member.email}</strong> and all their data (audits, links, scripts, etc.). This cannot be undone.
-                </p>
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleDeleteMember}
-                    disabled={deletingMember}
-                    className="flex-1 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 px-4 py-2.5 rounded-lg transition-colors disabled:opacity-50"
-                  >
-                    {deletingMember ? "Deleting…" : "Yes, Delete"}
-                  </button>
-                  <button
-                    onClick={() => setConfirmDeleteMember(false)}
-                    className="flex-1 text-sm font-medium text-[#1e2a38] border border-gray-200 hover:bg-gray-50 px-4 py-2.5 rounded-lg transition-colors"
-                  >
-                    Cancel
-                  </button>
+          {/* Danger Zone — admin only */}
+          {!isEditorRole && (
+            <div className="bg-white rounded-xl border border-red-200 p-5 shadow-sm">
+              <h2 className="text-sm font-semibold text-red-600 mb-3">Danger Zone</h2>
+              {!confirmDeleteMember ? (
+                <button
+                  onClick={() => setConfirmDeleteMember(true)}
+                  className="w-full text-sm font-medium text-red-600 border border-red-200 hover:bg-red-50 px-4 py-2.5 rounded-lg transition-colors"
+                >
+                  Delete Member
+                </button>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-xs text-red-600">
+                    This will permanently delete <strong>{member.fullName || member.email}</strong> and all their data (audits, links, scripts, etc.). This cannot be undone.
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleDeleteMember}
+                      disabled={deletingMember}
+                      className="flex-1 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 px-4 py-2.5 rounded-lg transition-colors disabled:opacity-50"
+                    >
+                      {deletingMember ? "Deleting…" : "Yes, Delete"}
+                    </button>
+                    <button
+                      onClick={() => setConfirmDeleteMember(false)}
+                      className="flex-1 text-sm font-medium text-[#1e2a38] border border-gray-200 hover:bg-gray-50 px-4 py-2.5 rounded-lg transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

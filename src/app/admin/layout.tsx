@@ -13,7 +13,9 @@ export default async function AdminLayout({
     redirect("/login");
   }
 
-  if ((session.user as any).role !== "admin") {
+  const role = (session.user as any).role;
+
+  if (role !== "admin" && role !== "editor") {
     redirect("/member/scores");
   }
 
@@ -21,7 +23,7 @@ export default async function AdminLayout({
     <div className="min-h-screen bg-[#f1f1ef]">
       <div className="print:hidden">
         <Sidebar
-          role="admin"
+          role={role}
           userName={session.user.name || session.user.email || "Admin"}
         />
       </div>

@@ -1,13 +1,25 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { DEFAULT_SCORING_PROMPT } from "@/lib/audit-engine";
 
 export default function SettingsPage() {
+  const { data: session } = useSession();
+  const router = useRouter();
+  const pageRole = (session?.user as any)?.role;
+
+  useEffect(() => {
+    if (session && pageRole === "editor") router.replace("/admin");
+  }, [session, pageRole, router]);
+
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+
+  if (pageRole === "editor") return null;
 
   useEffect(() => {
     fetch("/api/settings")

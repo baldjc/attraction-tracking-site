@@ -44,6 +44,13 @@ const adminLinks = [
   { href: "/admin/settings", label: "Settings", icon: Cog6ToothIcon },
 ];
 
+const editorLinks = [
+  { href: "/admin", label: "Dashboard", icon: HomeIcon },
+  { href: "/admin/members", label: "Members", icon: UsersIcon },
+  { href: "/admin/audits", label: "Audits", icon: ClipboardDocumentListIcon },
+  { href: "/admin/qa-prep", label: "Q&A Prep", icon: ChatBubbleLeftRightIcon },
+];
+
 const memberLinks = [
   { href: "/member/scores", label: "My Scores", icon: StarIcon },
   { href: "/member/ai-tools", label: "AI Tools", icon: SparklesIcon },
@@ -172,9 +179,15 @@ export default function Sidebar({ role, userName }: SidebarProps) {
   }, [mobileOpen]);
 
   const isAdminOnMemberView =
-    role === "admin" && !!impersonate && !pathname.startsWith("/admin");
+    (role === "admin" || role === "editor") && !!impersonate && !pathname.startsWith("/admin");
 
-  const links = isAdminOnMemberView ? memberLinks : role === "admin" ? adminLinks : memberLinks;
+  const links = isAdminOnMemberView
+    ? memberLinks
+    : role === "admin"
+    ? adminLinks
+    : role === "editor"
+    ? editorLinks
+    : memberLinks;
 
   function isActive(href: string) {
     if (href === "/admin" || href === "/member/scores") {
@@ -246,7 +259,7 @@ export default function Sidebar({ role, userName }: SidebarProps) {
       )}
 
       <div className="px-4 py-4 border-b border-white/10 flex-shrink-0">
-        <Link href={isAdminOnMemberView ? "/member/scores" : role === "admin" ? "/admin" : "/member/scores"} className="flex items-center gap-3">
+        <Link href={isAdminOnMemberView ? "/member/scores" : (role === "admin" || role === "editor") ? "/admin" : "/member/scores"} className="flex items-center gap-3">
           <img src="/logo-icon.png" alt="" className="h-10 w-10 rounded-xl object-cover shrink-0" />
           <img
             src="/logo-transparent.png"
@@ -282,7 +295,7 @@ export default function Sidebar({ role, userName }: SidebarProps) {
         <div className="px-3 py-2 mb-1">
           <p className="text-sm font-semibold text-white truncate">{userName}</p>
           <p className="text-xs text-white/40 mt-0.5">
-            {isAdminOnMemberView ? "Foundations Member" : role === "admin" ? "Admin" : "Foundations Member"}
+            {isAdminOnMemberView ? "Foundations Member" : role === "admin" ? "Admin" : role === "editor" ? "Editor" : "Foundations Member"}
           </p>
         </div>
         <button

@@ -9,6 +9,7 @@ import {
   ChartBarIcon,
   EyeIcon,
 } from "@heroicons/react/24/outline";
+import { useSession } from "next-auth/react";
 import MemberPickerModal from "@/components/admin/MemberPickerModal";
 
 interface DashboardStats {
@@ -17,6 +18,10 @@ interface DashboardStats {
 }
 
 export default function AdminDashboard() {
+  const { data: session } = useSession();
+  const role = (session?.user as any)?.role ?? "admin";
+  const isEditorRole = role === "editor";
+
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState<string | null>(null);
@@ -97,13 +102,15 @@ export default function AdminDashboard() {
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-[#1e2a38]">Dashboard</h1>
         <p className="text-[#1e2a38]/50 mt-1 text-sm">
-          Welcome back. Here&apos;s an overview of your program.
+          {isEditorRole
+            ? "Overview of your editing and mastery clients."
+            : "Welcome back. Here\u0027s an overview of your program."}
         </p>
       </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-        {kpiCards.map((card) => {
+        {(isEditorRole ? kpiCards.filter((c) => c.label !== "Analytics") : kpiCards).map((card) => {
           const Icon = card.icon;
           return (
             <Link
@@ -128,37 +135,39 @@ export default function AdminDashboard() {
       </div>
 
       {/* Sync from GHL */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h2 className="text-base font-semibold text-[#1e2a38]">
-              Sync Foundations Members from GHL
-            </h2>
-            <p className="text-sm text-[#1e2a38]/50 mt-1">
-              Pulls all contacts tagged &ldquo;foundations - weekly coaching&rdquo; from GoHighLevel.
-            </p>
+      {!isEditorRole && (
+        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h2 className="text-base font-semibold text-[#1e2a38]">
+                Sync Foundations Members from GHL
+              </h2>
+              <p className="text-sm text-[#1e2a38]/50 mt-1">
+                Pulls all contacts tagged &ldquo;foundations - weekly coaching&rdquo; from GoHighLevel.
+              </p>
+            </div>
+            <button
+              onClick={handleSync}
+              disabled={syncing}
+              className="flex items-center gap-2 bg-[#3dc3ff] hover:bg-[#2bb3ef] disabled:opacity-50 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors shrink-0"
+            >
+              <ArrowPathIcon className={`w-4 h-4 ${syncing ? "animate-spin" : ""}`} />
+              {syncing ? "Syncing…" : "Sync from GHL"}
+            </button>
           </div>
-          <button
-            onClick={handleSync}
-            disabled={syncing}
-            className="flex items-center gap-2 bg-[#3dc3ff] hover:bg-[#2bb3ef] disabled:opacity-50 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors shrink-0"
-          >
-            <ArrowPathIcon className={`w-4 h-4 ${syncing ? "animate-spin" : ""}`} />
-            {syncing ? "Syncing…" : "Sync from GHL"}
-          </button>
+          {syncMsg && (
+            <div
+              className={`mt-4 text-sm px-4 py-3 rounded-lg ${
+                syncMsg.startsWith("Error") || syncMsg.startsWith("Sync failed")
+                  ? "bg-[#ff0033]/10 text-[#ff0033]"
+                  : "bg-[#3dc3ff]/10 text-[#1e2a38]"
+              }`}
+            >
+              {syncMsg}
+            </div>
+          )}
         </div>
-        {syncMsg && (
-          <div
-            className={`mt-4 text-sm px-4 py-3 rounded-lg ${
-              syncMsg.startsWith("Error") || syncMsg.startsWith("Sync failed")
-                ? "bg-[#ff0033]/10 text-[#ff0033]"
-                : "bg-[#3dc3ff]/10 text-[#1e2a38]"
-            }`}
-          >
-            {syncMsg}
-          </div>
-        )}
-      </div>
+      )}
 
       {/* Quick links */}
       <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">

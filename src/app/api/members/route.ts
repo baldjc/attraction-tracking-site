@@ -1,15 +1,22 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { isAdminOrEditor, editorTierFilter } from "@/lib/auth-utils";
 
 export async function GET() {
   const session = await auth();
-  if (!session?.user || (session.user as any).role !== "admin") {
+  const role = (session?.user as any)?.role;
+  if (!session?.user || !isAdminOrEditor(role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const tierFilter = editorTierFilter(role);
+
   const members = await prisma.user.findMany({
-    where: { role: "foundations_member" },
+    where: {
+      role: "foundations_member",
+      ...tierFilter,
+    },
     orderBy: { fullName: "asc" },
     include: {
       _count: { select: { audits: true } },
