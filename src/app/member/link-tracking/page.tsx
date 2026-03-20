@@ -13,6 +13,7 @@ const SNIPPET_DOMAIN = "https://members.attractionbyvideo.com";
 export default function LinkTrackingPage() {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [thankYouUrl, setThankYouUrl] = useState("");
+  const [tyUrlError, setTyUrlError] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -47,6 +48,11 @@ export default function LinkTrackingPage() {
   }
 
   async function saveTracking() {
+    setTyUrlError("");
+    if (thankYouUrl && !thankYouUrl.startsWith("http://") && !thankYouUrl.startsWith("https://")) {
+      setTyUrlError("Must be a full URL starting with https:// or http://");
+      return;
+    }
     setSaving(true);
     await fetch("/api/member/profile", {
       method: "PUT",
@@ -130,19 +136,22 @@ export default function LinkTrackingPage() {
           <div className="p-6 space-y-6">
             {/* Thank You Page URL */}
             <div>
-              <label className="block text-sm font-semibold text-[#1e2a38] mb-1.5">Thank You Page Path</label>
+              <label className="block text-sm font-semibold text-[#1e2a38] mb-1.5">Thank You Page URL</label>
               <p className="text-xs text-[#1e2a38]/40 mb-2">
-                The URL path of your thank you / confirmation page (e.g. <code>/thank-you</code>). When a visitor lands on this page, we record a conversion.
+                The full URL of your thank you or confirmation page. When a visitor lands here after clicking your tracked link, we&apos;ll record a lead.
               </p>
               <input
-                type="text"
+                type="url"
                 value={thankYouUrl}
-                onChange={(e) => setThankYouUrl(e.target.value)}
-                placeholder="/thank-you"
-                className="w-full border border-[#1e2a38]/20 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#3dc3ff]"
+                onChange={(e) => { setThankYouUrl(e.target.value); setTyUrlError(""); }}
+                placeholder="https://www.yoursite.com/thank-you"
+                className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none transition-colors ${tyUrlError ? "border-red-400 focus:border-red-400" : "border-[#1e2a38]/20 focus:border-[#3dc3ff]"}`}
               />
-              {!thankYouUrl && !loading && (
-                <p className="mt-2 text-xs text-red-600 font-medium">Required for lead tracking. Without this, clicks will be tracked but leads won&apos;t be recorded.</p>
+              {tyUrlError && (
+                <p className="mt-1.5 text-xs text-red-600 font-medium">{tyUrlError}</p>
+              )}
+              {!thankYouUrl && !loading && !tyUrlError && (
+                <p className="mt-1.5 text-xs text-red-600 font-medium">Required for lead tracking. Without this, clicks will be tracked but leads won&apos;t be recorded.</p>
               )}
               <div className="flex items-center justify-between mt-3">
                 {saved && (
@@ -176,7 +185,7 @@ export default function LinkTrackingPage() {
                   <div className="mt-2 flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5">
                     <ExclamationTriangleIcon className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
                     <p className="text-xs text-amber-700">
-                      Save your thank you page path above so we know when to record a conversion. The snippet itself stays the same on every page.
+                      Save your Thank You Page URL above so we know when to record a conversion. The snippet itself stays the same on every page.
                     </p>
                   </div>
                 )}
