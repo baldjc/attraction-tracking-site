@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import prisma from "@/lib/prisma";
-import { SourceType } from "@/generated/prisma";
+import { SourceType } from "@/generated/prisma/client";
 import { parsePeriod, pct } from "@/lib/analytics-utils";
 
 export async function GET(req: NextRequest) {
