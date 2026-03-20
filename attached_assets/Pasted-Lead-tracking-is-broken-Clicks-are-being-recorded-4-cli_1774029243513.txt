@@ -1,0 +1,36 @@
+Lead tracking is broken. Clicks are being recorded (4 clicks showing) but leads are 0 even
+   after landing on the thank you page.                                                     
+                                                                                            
+  Debug this step by step:                                                                  
+                                                                                            
+  1. First check: Does the t.js snippet fire a pageview event when the thank you page loads?
+   Add a console.log at the start of t.js so we can verify it's executing on the thank you  
+  page.                                                                                   
+                                                                                            
+  2. Check the server-side thank you page matching logic:                                 
+     - What is the member's saved thankYouPageUrl value in the database?                    
+     - When a click or pageview comes in, is the path comparison actually happening?
+     - Add logging to the /api/tracking/click and /api/tracking/pageview endpoints that     
+  logs: "Checking thank you page match: page_url=[X] vs saved=[Y], match=[true/false]"      
+                                                                                            
+  3. Common issues to check:                                                                
+     - Is the thankYouPageUrl actually saved for this member? (Check the database directly) 
+     - Path mismatch: is the saved path "/thank-you" but the actual page URL path is       
+  something different like "/thank-you/" (trailing slash) or "/9/thank-you" or a completely 
+  different format?                                                                         
+     - Is the pageview endpoint even being called on the thank you page? The snippet needs  
+  an active session (cookie) to fire pageviews.                                             
+     - Is the click endpoint checking for thank you page match BEFORE the click record is   
+  fully created?                                                                          
+                                                                                            
+  4. Quick test: Log every incoming request to /api/tracking/* endpoints with the full    
+  request body so we can see exactly what's being sent.                                     
+                                                                                          
+  5. After finding and fixing the issue, verify by:                                         
+     - Checking the Replit logs                                                             
+     - Clicking a tracked link → filling out form → landing on thank you page               
+     - Confirming a Lead record appears in the database                                     
+                                                                                            
+  Also — can you check something for me? In the Link Tracking Setup page, what did you save 
+  as the Thank You Page Path? And what's the actual full URL of your thank you page when you
+   land on it after the form?  
