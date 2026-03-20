@@ -158,9 +158,6 @@ export default function MemberScoresPage() {
                     {channelName}
                   </p>
                 )}
-                {youtubeHandle && (
-                  <p className="text-white/70 text-sm mt-0.5">{youtubeHandle.startsWith("@") ? youtubeHandle : `@${youtubeHandle}`}</p>
-                )}
               </div>
               {youtubeChannelUrl && (
                 <a
