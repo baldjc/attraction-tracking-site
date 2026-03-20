@@ -2,6 +2,7 @@
 
 import { useState, useEffect, use } from "react";
 import Link from "next/link";
+import { PencilIcon } from "@heroicons/react/24/outline";
 
 interface TrackingLinkData {
   id: string;
@@ -40,13 +41,23 @@ const SOURCE_LABELS: Record<string, { label: string; color: string }> = {
   OTHER: { label: "Other", color: "bg-gray-100 text-gray-600" },
 };
 
+const INPUT_CLS = "w-full border border-[#1e2a38]/20 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-[#3dc3ff]";
+
 export default function CampaignDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const [campaign, setCampaign] = useState<CampaignData | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // New link modal
   const [showNewLink, setShowNewLink] = useState(false);
   const [linkForm, setLinkForm] = useState({ name: "", youtubeVideoUrl: "" });
   const [creating, setCreating] = useState(false);
+
+  // Edit link modal
+  const [editingLink, setEditingLink] = useState<TrackingLinkData | null>(null);
+  const [editForm, setEditForm] = useState({ name: "", youtubeVideoUrl: "" });
+  const [saving, setSaving] = useState(false);
+
   const [copied, setCopied] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState("newest");
 
@@ -78,6 +89,29 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
     setCreating(false);
   }
 
+  function openEdit(link: TrackingLinkData) {
+    setEditingLink(link);
+    setEditForm({ name: link.name, youtubeVideoUrl: link.youtubeVideoUrl ?? "" });
+  }
+
+  async function saveEdit() {
+    if (!editingLink || !editForm.name) return;
+    setSaving(true);
+    const res = await fetch(`/api/campaigns/${id}/links/${editingLink.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: editForm.name,
+        youtubeVideoUrl: editForm.youtubeVideoUrl || null,
+      }),
+    });
+    setSaving(false);
+    if (res.ok) {
+      setEditingLink(null);
+      loadCampaign();
+    }
+  }
+
   async function deleteLink(linkId: string) {
     if (!confirm("Delete this tracking link? Click data is preserved.")) return;
     await fetch(`/api/campaigns/${id}/links/${linkId}`, { method: "DELETE" });
@@ -92,6 +126,10 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
 
   if (loading) return <div className="text-center py-16 text-[#1e2a38]/40">Loading...</div>;
   if (!campaign) return <div className="text-center py-16 text-[#1e2a38]/40">Campaign not found.</div>;
+
+  const isYoutube = campaign.sourceType === "YOUTUBE";
+  const linkLabel = isYoutube ? "Video Name" : "Link Name";
+  const linkPlaceholder = isYoutube ? "e.g. Buyers Guide Video — March" : "e.g. Email Newsletter — April";
 
   const src = SOURCE_LABELS[campaign.sourceType] ?? SOURCE_LABELS.OTHER;
   const ctr = campaign.totalViews && campaign.totalViews > 0
@@ -199,12 +237,21 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
                       <p className="font-medium text-[#1e2a38] text-sm truncate">{link.name}</p>
-                      <button
-                        onClick={() => deleteLink(link.id)}
-                        className="text-xs text-[#1e2a38]/30 hover:text-red-500 transition-colors flex-shrink-0"
-                      >
-                        Delete
-                      </button>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <button
+                          onClick={() => openEdit(link)}
+                          className="text-[#1e2a38]/30 hover:text-[#3dc3ff] transition-colors"
+                          title="Edit link"
+                        >
+                          <PencilIcon className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => deleteLink(link.id)}
+                          className="text-xs text-[#1e2a38]/30 hover:text-red-500 transition-colors"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </div>
                     <div className="flex items-center gap-2 mt-1">
                       <p className="text-xs text-[#1e2a38]/40 truncate flex-1">{link.trackedUrl}</p>
@@ -215,6 +262,14 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                         {copied === link.id ? "Copied!" : "Copy"}
                       </button>
                     </div>
+                    {isYoutube && !link.youtubeVideoId && (
+                      <button
+                        onClick={() => openEdit(link)}
+                        className="mt-1.5 text-xs text-amber-500 hover:text-amber-600 font-medium"
+                      >
+                        + Attach YouTube URL
+                      </button>
+                    )}
                   </div>
                 </div>
                 <div className="grid grid-cols-3 gap-3 mt-3 text-center">
@@ -259,13 +314,13 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-[#1e2a38] mb-1.5">Link Name</label>
+                <label className="block text-sm font-semibold text-[#1e2a38] mb-1.5">{linkLabel}</label>
                 <input
                   type="text"
                   value={linkForm.name}
                   onChange={(e) => setLinkForm({ ...linkForm, name: e.target.value })}
-                  placeholder="e.g. Buyers Guide Video - March"
-                  className="w-full border border-[#1e2a38]/20 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#3dc3ff]"
+                  placeholder={linkPlaceholder}
+                  className={INPUT_CLS}
                 />
               </div>
               <div>
@@ -277,7 +332,7 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                   value={linkForm.youtubeVideoUrl}
                   onChange={(e) => setLinkForm({ ...linkForm, youtubeVideoUrl: e.target.value })}
                   placeholder="https://youtube.com/watch?v=..."
-                  className="w-full border border-[#1e2a38]/20 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#3dc3ff]"
+                  className={INPUT_CLS}
                 />
               </div>
               <div className="bg-[#f8f9fa] rounded-xl p-3 text-xs text-[#1e2a38]/50">
@@ -293,6 +348,58 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
               >
                 {creating ? "Creating..." : "Create Link"}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Link Modal */}
+      {editingLink && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl border border-[#1e2a38]/10 shadow-xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="font-bold text-[#1e2a38]">Edit Link</h2>
+              <button onClick={() => setEditingLink(null)} className="text-[#1e2a38]/40 hover:text-[#1e2a38] text-xl">✕</button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-[#1e2a38] mb-1.5">{linkLabel}</label>
+                <input
+                  type="text"
+                  value={editForm.name}
+                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                  placeholder={linkPlaceholder}
+                  className={INPUT_CLS}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-[#1e2a38] mb-1.5">
+                  YouTube Video URL <span className="font-normal text-[#1e2a38]/40">(optional)</span>
+                </label>
+                <input
+                  type="url"
+                  value={editForm.youtubeVideoUrl}
+                  onChange={(e) => setEditForm({ ...editForm, youtubeVideoUrl: e.target.value })}
+                  placeholder="https://youtube.com/watch?v=..."
+                  className={INPUT_CLS}
+                />
+                <p className="text-xs text-[#1e2a38]/40 mt-1">Adding a URL links views data and the video thumbnail to this tracking link.</p>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={saveEdit}
+                  disabled={saving || !editForm.name}
+                  className="flex-1 bg-[#3dc3ff] text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-[#3dc3ff]/90 disabled:opacity-50 transition-colors"
+                >
+                  {saving ? "Saving..." : "Save Changes"}
+                </button>
+                <button
+                  onClick={() => setEditingLink(null)}
+                  className="px-5 py-2.5 border border-[#1e2a38]/20 rounded-xl text-sm text-[#1e2a38]/60 hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
         </div>

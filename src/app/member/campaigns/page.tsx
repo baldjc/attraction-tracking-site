@@ -141,7 +141,7 @@ export default function CampaignsPage() {
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                   placeholder="e.g. Free Home Valuation Guide"
-                  className="w-full border border-[#1e2a38]/20 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#3dc3ff]"
+                  className="w-full border border-[#1e2a38]/20 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-[#3dc3ff]"
                 />
               </div>
               <div>
@@ -151,7 +151,7 @@ export default function CampaignsPage() {
                   value={form.destinationUrl}
                   onChange={(e) => setForm({ ...form, destinationUrl: e.target.value })}
                   placeholder="https://yoursite.com/free-guide"
-                  className="w-full border border-[#1e2a38]/20 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#3dc3ff]"
+                  className="w-full border border-[#1e2a38]/20 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-[#3dc3ff]"
                 />
                 <p className="text-xs text-[#1e2a38]/40 mt-1">The lead magnet or landing page URL</p>
               </div>
@@ -160,7 +160,7 @@ export default function CampaignsPage() {
                 <select
                   value={form.sourceType}
                   onChange={(e) => setForm({ ...form, sourceType: e.target.value })}
-                  className="w-full border border-[#1e2a38]/20 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#3dc3ff] bg-white"
+                  className="w-full border border-[#1e2a38]/20 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-[#3dc3ff] bg-white"
                 >
                   <option value="YOUTUBE">YouTube</option>
                   <option value="GOOGLE_ADS">Google Ads</option>

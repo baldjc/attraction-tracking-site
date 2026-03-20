@@ -3,6 +3,64 @@ import { auth } from "@/lib/auth";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import prisma from "@/lib/prisma";
 
+function extractYoutubeId(url: string): string | null {
+  try {
+    const u = new URL(url);
+    if (u.hostname.includes("youtu.be")) return u.pathname.slice(1).split("?")[0] || null;
+    return u.searchParams.get("v");
+  } catch {
+    return null;
+  }
+}
+
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string; linkId: string }> }
+) {
+  const { id, linkId } = await params;
+  const user = await resolveUserFromSession();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const session = await auth();
+  const isAdmin = (session?.user as { role?: string })?.role === "admin";
+
+  const link = await prisma.trackingLink.findFirst({
+    where: {
+      id: linkId,
+      campaignId: id,
+      deletedAt: null,
+      campaign: { deletedAt: null, ...(isAdmin ? {} : { userId: user.id }) },
+    },
+  });
+  if (!link) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  const { name, youtubeVideoUrl } = await req.json() as {
+    name?: string;
+    youtubeVideoUrl?: string | null;
+  };
+
+  const updateData: Record<string, unknown> = {};
+  if (name !== undefined) updateData.name = name;
+
+  if (youtubeVideoUrl !== undefined) {
+    const trimmed = youtubeVideoUrl?.trim() || null;
+    updateData.youtubeVideoUrl = trimmed;
+    updateData.youtubeVideoId = trimmed ? extractYoutubeId(trimmed) : null;
+    if (trimmed && updateData.youtubeVideoId) {
+      updateData.youtubeThumbnailUrl = `https://img.youtube.com/vi/${updateData.youtubeVideoId}/hqdefault.jpg`;
+    } else if (!trimmed) {
+      updateData.youtubeThumbnailUrl = null;
+    }
+  }
+
+  const updated = await prisma.trackingLink.update({
+    where: { id: linkId },
+    data: updateData,
+  });
+
+  return NextResponse.json({ success: true, link: updated });
+}
+
 export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string; linkId: string }> }
