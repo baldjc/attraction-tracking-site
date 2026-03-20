@@ -148,8 +148,8 @@ export default function AdminCampaignDetailPage({ params }: { params: Promise<{ 
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] font-semibold text-[#1e2a38]/40 uppercase tracking-wide w-16 flex-shrink-0">Short</span>
-                        <p className="text-xs text-[#1e2a38]/50 truncate flex-1 font-mono">https://members.attractionbyvideo.com/r/{link.refCode}</p>
-                        <button onClick={() => copy(`https://members.attractionbyvideo.com/r/${link.refCode}`, `${link.id}-short`)} className="text-xs text-[#3dc3ff] hover:text-[#2bb0ec] flex-shrink-0 font-medium">
+                        <p className="text-xs text-[#1e2a38]/50 truncate flex-1 font-mono">{typeof window !== "undefined" ? window.location.origin : "https://members.attractionbyvideo.com"}/r/{link.refCode}</p>
+                        <button onClick={() => copy(`${window.location.origin}/r/${link.refCode}`, `${link.id}-short`)} className="text-xs text-[#3dc3ff] hover:text-[#2bb0ec] flex-shrink-0 font-medium">
                           {copied === `${link.id}-short` ? "Copied!" : "Copy"}
                         </button>
                       </div>
