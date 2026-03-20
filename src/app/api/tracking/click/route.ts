@@ -36,8 +36,7 @@ export async function POST(req: NextRequest) {
       ?? req.headers.get("x-real-ip")
       ?? null;
 
-    // SERVER-SIDE DEDUP: if this exact ref_code + IP already fired within 30 seconds,
-    // return the existing session_id without creating another click record.
+    // SERVER-SIDE DEDUP: same ref_code + IP within 30s → return existing session
     if (rawIp) {
       const dedupCutoff = new Date(Date.now() - 30 * 1000);
       const existing = await prisma.click.findFirst({
@@ -50,29 +49,45 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const member = await prisma.user.findUnique({
-      where: { id: member_id },
-      select: { id: true, thankYouPageUrl: true },
-    });
-    if (!member) {
-      console.log(`[click] REJECT unknown member ${member_id}`);
-      return NextResponse.json({ error: "Invalid member" }, { status: 400, headers });
-    }
-
-    console.log(`[click] member thankYouPageUrl="${member.thankYouPageUrl ?? "NULL"}"`);
-
+    // Look up the tracking link AND its campaign owner's thankYouPageUrl in one query.
+    // We intentionally use the link's campaign owner — NOT the member_id from the snippet —
+    // so that thankYouPageUrl is always resolved from the correct record, regardless of
+    // whether the installed snippet has a stale or different member_id.
     const link = await prisma.trackingLink.findFirst({
       where: { refCode: ref_code, deletedAt: null },
+      include: {
+        campaign: {
+          include: {
+            user: { select: { id: true, thankYouPageUrl: true } },
+          },
+        },
+      },
     });
+
     if (!link) {
       console.log(`[click] REJECT unknown ref_code ${ref_code}`);
       return NextResponse.json({ error: "Invalid ref_code" }, { status: 400, headers });
     }
 
-    // If this page IS the thank-you page, attribute the lead to the most recent
+    const linkOwner = link.campaign.user;
+    const thankYouPageUrl = linkOwner.thankYouPageUrl ?? null;
+
+    console.log(`[click] link owned by user=${linkOwner.id} (snippet sent member_id=${member_id}) thankYouPageUrl="${thankYouPageUrl ?? "NULL"}"`);
+
+    // Also validate the member_id is a real user (snippet integrity check)
+    const memberExists = await prisma.user.findUnique({
+      where: { id: member_id },
+      select: { id: true },
+    });
+    if (!memberExists) {
+      console.log(`[click] REJECT unknown member_id ${member_id}`);
+      return NextResponse.json({ error: "Invalid member" }, { status: 400, headers });
+    }
+
+    // If this page is the thank-you page, attribute the lead to the most recent
     // existing click for this ref_code rather than creating a duplicate click.
-    if (member.thankYouPageUrl && page_url) {
-      const saved = normPath(member.thankYouPageUrl);
+    if (thankYouPageUrl && page_url) {
+      const saved = normPath(thankYouPageUrl);
       const current = normPath(page_url);
       const isMatch = current === saved;
       console.log(`[click] TY check: current="${current}" saved="${saved}" match=${isMatch}`);
@@ -94,11 +109,10 @@ export async function POST(req: NextRequest) {
           console.log(`[click] LEAD CREATED for existing click ${recentClick.id}`);
           return NextResponse.json({ session_id: null }, { headers });
         }
-        // No recent click — fall through and create a new click+lead
         console.log(`[click] No recent click found, creating new click+lead`);
       }
     } else {
-      console.log(`[click] TY check SKIPPED: thankYouPageUrl="${member.thankYouPageUrl ?? "NULL"}" page_url="${page_url ?? "NULL"}"`);
+      console.log(`[click] TY check SKIPPED: thankYouPageUrl="${thankYouPageUrl ?? "NULL"}" page_url="${page_url ?? "NULL"}"`);
     }
 
     const [geo, sessionId] = await Promise.all([
@@ -124,9 +138,9 @@ export async function POST(req: NextRequest) {
       data: { clickId: click.id, pageUrl: page_url ?? "" },
     });
 
-    // Edge case: no prior click within 24h — create new click and lead together
-    if (member.thankYouPageUrl && page_url) {
-      const saved = normPath(member.thankYouPageUrl);
+    // Edge case: landed directly on TY page with no prior click recorded
+    if (thankYouPageUrl && page_url) {
+      const saved = normPath(thankYouPageUrl);
       const current = normPath(page_url);
       if (current === saved) {
         await prisma.lead.upsert({
