@@ -19,12 +19,16 @@ export async function POST(req: NextRequest) {
 
   try {
     const { ref_code, page_url, member_id } = await req.json();
+
+    console.log(`[click] IN ref=${ref_code} member=${member_id} page_url=${page_url}`);
+
     if (!ref_code || !member_id) {
       return NextResponse.json({ error: "ref_code and member_id required" }, { status: 400, headers });
     }
 
     const ua = req.headers.get("user-agent");
     if (isBot(ua)) {
+      console.log(`[click] SKIP bot`);
       return NextResponse.json({ session_id: null }, { headers });
     }
 
@@ -32,35 +36,51 @@ export async function POST(req: NextRequest) {
       where: { id: member_id },
       select: { id: true, thankYouPageUrl: true },
     });
-    if (!member) return NextResponse.json({ error: "Invalid member" }, { status: 400, headers });
+    if (!member) {
+      console.log(`[click] REJECT unknown member ${member_id}`);
+      return NextResponse.json({ error: "Invalid member" }, { status: 400, headers });
+    }
+
+    console.log(`[click] member thankYouPageUrl="${member.thankYouPageUrl ?? "NULL"}"`);
 
     const link = await prisma.trackingLink.findFirst({
       where: { refCode: ref_code, deletedAt: null },
     });
-    if (!link) return NextResponse.json({ error: "Invalid ref_code" }, { status: 400, headers });
+    if (!link) {
+      console.log(`[click] REJECT unknown ref_code ${ref_code}`);
+      return NextResponse.json({ error: "Invalid ref_code" }, { status: 400, headers });
+    }
 
-    // If this page IS the thank-you page and ?ref= is just carrying through from the form
-    // submission, attribute the lead to the most recent existing click instead of creating
-    // a duplicate click record.
+    // If this page IS the thank-you page, attribute the lead to the most recent
+    // existing click for this ref_code rather than creating a duplicate click.
     if (member.thankYouPageUrl && page_url) {
       const saved = normPath(member.thankYouPageUrl);
       const current = normPath(page_url);
-      if (current === saved) {
+      const isMatch = current === saved;
+      console.log(`[click] TY check: current="${current}" saved="${saved}" match=${isMatch}`);
+
+      if (isMatch) {
         const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
         const recentClick = await prisma.click.findFirst({
           where: { refCode: ref_code, timestamp: { gte: cutoff } },
           orderBy: { timestamp: "desc" },
         });
+        console.log(`[click] recentClick=${recentClick?.id ?? "NONE"}`);
+
         if (recentClick) {
           await prisma.lead.upsert({
             where: { clickId: recentClick.id },
             create: { clickId: recentClick.id },
             update: {},
           });
+          console.log(`[click] LEAD CREATED for existing click ${recentClick.id}`);
           return NextResponse.json({ session_id: null }, { headers });
         }
-        // No recent click found — fall through and create a new click+lead below
+        // No recent click — fall through and create a new click+lead
+        console.log(`[click] No recent click found, creating new click+lead`);
       }
+    } else {
+      console.log(`[click] TY check SKIPPED: thankYouPageUrl="${member.thankYouPageUrl ?? "NULL"}" page_url="${page_url ?? "NULL"}"`);
     }
 
     const rawIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
@@ -90,7 +110,7 @@ export async function POST(req: NextRequest) {
       data: { clickId: click.id, pageUrl: page_url ?? "" },
     });
 
-    // Edge case: someone lands directly on TY page with a ref code (no prior click found)
+    // Edge case: no prior click within 24h — create new click and lead together
     if (member.thankYouPageUrl && page_url) {
       const saved = normPath(member.thankYouPageUrl);
       const current = normPath(page_url);
@@ -100,12 +120,14 @@ export async function POST(req: NextRequest) {
           create: { clickId: click.id },
           update: {},
         });
+        console.log(`[click] LEAD CREATED (new click edge case) click=${click.id}`);
       }
     }
 
+    console.log(`[click] OK new click=${click.id} session=${sessionId}`);
     return NextResponse.json({ session_id: sessionId }, { headers });
   } catch (err) {
-    console.error("[tracking/click]", err);
+    console.error("[click] ERROR", err);
     return NextResponse.json({ error: "Internal error" }, { status: 500, headers });
   }
 }
