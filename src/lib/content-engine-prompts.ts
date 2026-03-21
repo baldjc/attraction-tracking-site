@@ -128,6 +128,17 @@ The viewer is ALWAYS a buyer first — even if they have a home to sell. The sel
 
 This rule applies automatically whenever the content theme involves sell-side or transition stress. Buy-side themes (like "The Purchase") do not need this constraint.`;
 
+function extractActiveTheme(contentThemes: unknown, theme: string): { coreStress?: string; content_engine_prompt?: string } | null {
+  if (!Array.isArray(contentThemes)) return null;
+  for (const t of contentThemes) {
+    if (typeof t === "string") continue;
+    if (t && typeof t === "object" && (t as Record<string, unknown>).name === theme) {
+      return t as { coreStress?: string; content_engine_prompt?: string };
+    }
+  }
+  return null;
+}
+
 export function buildBatchSystemPrompt(opts: {
   avatarProfile: unknown;
   contentThemes: unknown;
@@ -151,6 +162,17 @@ export function buildBatchSystemPrompt(opts: {
     ? `⛔ ALREADY SHOWN OR SAVED — DO NOT REPEAT ANY OF THESE. Do not reuse their frameworks, angles, or core concepts either:\n${allAvoidTitles.map((t) => `  - ${t}`).join("\n")}`
     : "No previously shown titles yet — this is the first generation. Pick 5 completely different frameworks from the library above.";
 
+  const activeTheme = extractActiveTheme(contentThemes, theme);
+
+  const activeThemeSection = activeTheme
+    ? `
+ACTIVE THEME — "${theme}":
+${activeTheme.coreStress ? `Core stress (in the avatar's voice): "${activeTheme.coreStress}"` : ""}
+${activeTheme.content_engine_prompt ? `\nContent Engine Instructions for this theme (follow these exactly):\n${activeTheme.content_engine_prompt}` : ""}
+
+SCOPE RULE: Every idea you generate MUST address the specific stresses of the "${theme}" theme above. Do NOT use stress angles, tensions, or talking points that belong to a different theme. If a talking point could belong to any theme in this avatar's journey, it is too generic — make it specifically about the emotional terrain of "${theme}".`
+    : `\nACTIVE THEME: "${theme}" — generate all ideas specifically for the stresses and emotional terrain of this phase.`;
+
   return `You are an expert YouTube content strategist for Attraction by Video. You generate high-hook video ideas for members based on their ideal client avatar and content themes.
 
 CURRENT YEAR: ${currentYear} — use this exact year in any year-specific titles or frameworks. Never use a past year.
@@ -158,8 +180,9 @@ CURRENT YEAR: ${currentYear} — use this exact year in any year-specific titles
 MEMBER AVATAR:
 ${JSON.stringify(avatarProfile, null, 2)}
 
-CONTENT THEMES:
+ALL CONTENT THEMES (for reference — generate ONLY for the active theme):
 ${JSON.stringify(contentThemes, null, 2)}
+${activeThemeSection}
 
 MEMBER NICHE: ${niche ?? "general"}
 MEMBER CITY/MARKET: ${city ?? "not specified"}
@@ -171,18 +194,38 @@ ${buildFrameworkLibrary(currentYear)}
 
 ${avoidList}
 
+THEME DIFFERENTIATION RULE:
+When generating content for the active theme "${theme}", the titles and stress angles must be UNIQUE to this theme. Do not repeat or closely mirror titles, hooks, or stress angles that belong to a different theme in the avatar's journey.
+
+Before outputting each idea, identify what makes THIS theme distinct:
+- What is the unique tension in "${theme}" that no other theme in this avatar covers?
+- What angles are OFF-LIMITS because they belong to a different theme?
+
+For real estate avatars, typical theme boundaries:
+- "The Decision" = Should I do this? Angles: readiness, timing, opportunity cost, guilt, rate lock-in. NOT logistics or market risks.
+- "The Equity" = Can my current situation fund this? Angles: buying power, budget math, what equity unlocks, prep ROI. NOT choosing a home.
+- "The Transition" = How do I get from A to B without chaos? Angles: timing strategies, bridge financing, moving logistics, competing with a contingency. NOT evaluating the home itself.
+- "The Purchase" = Is this the right home/neighbourhood/price? Angles: hidden costs, market traps, inspection risks, neighbourhood evaluation. NOT logistics or selling.
+- "The Aftermath" = Did I get it right? Angles: post-close surprises, tax resets, protecting the investment. NOT the buying process.
+
+If a generated title could fit equally well under two different themes, it is too generic. Make it specific to "${theme}".
+
+DEDUPLICATION RULE: Before outputting any content idea, check: has this exact title or a very similar title already been generated for a different theme in this member's avatar? If YES → reject it and generate a new one. No two themes should ever share a title or share more than one talking point.
+
 RULES:
 - Generate exactly 5 video ideas for the theme: "${theme}"
-- Each idea must use a proven framework — pick the best-fit framework for each stress angle, never force-fit
+- Each idea must target the specific stresses of "${theme}" — not the general avatar profile
+- Each idea must produce exactly 3 title options using 3 different proven frameworks
+- Each framework in titleOptions must be genuinely different from the others (e.g., Warning, Curiosity, Reality — not two Warning variants)
 - Keyword stacking: include 2-4 high-performing keywords per title naturally
 - Include city naturally if applicable (do not force it if it sounds unnatural)
 - Broad appeal: multiple viewer types should want to click
 - Talking points: exactly 5 short bullet points (never fewer) the creator would actually say on camera. Format each as a 2-3 word label followed by a dash and one sentence explaining the point. Example: "Capacity panic — life is already full, adding a major transaction feels impossible without everything else falling apart." These are NOT sub-headlines or additional titles. They are the actual content of the video — what you would say to the viewer.
-- "Why this works": one line connecting the idea to the avatar's emotional landscape
+- "Why this works": one line connecting the idea to the avatar's emotional landscape AND to the specific stresses of "${theme}"
 - CRITICAL: Do NOT use any title, framework, or angle from the ⛔ ALREADY SHOWN OR SAVED list above. If you have seen it before, it is completely off limits — even rephrased or reworded versions. Violating this is a failure.
-- Every idea in a batch must be completely unique — different title, different framework, different angle. Never repeat or rephrase the same idea within a single batch. Before outputting each idea, verify it covers genuinely different content ground than every other idea in this batch AND the avoid list above.
+- Every idea in a batch must be completely unique — different title options, different framework, different angle. Never repeat or rephrase the same idea within a single batch AND the avoid list above.
 - You have 50+ frameworks available — rotate through them. Each regeneration is an opportunity to explore a completely different corner of the framework library.
-- Talking points must go DEEPER than the title — they are the specific, emotional, real-life details behind the title's promise. If the title says "5 Signs," the talking points are NOT the 5 signs. They are the raw stresses and situations the viewer is living through. Never restate or rephrase the title in the talking points.
+- Talking points must go DEEPER than the title — they are the specific, emotional, real-life details behind the title's promise. They must connect directly to the stresses of "${theme}". Never restate or rephrase the title in the talking points.
 - Respond ONLY with valid JSON — no markdown, no code fences, no commentary outside the JSON
 
 OUTPUT FORMAT:
@@ -190,7 +233,11 @@ OUTPUT FORMAT:
   "theme": "${theme}",
   "ideas": [
     {
-      "title": "Do NOT Buy a Home in Calgary Until You Watch This",
+      "titleOptions": [
+        { "title": "Do NOT Buy a Home in Calgary Until You Watch This", "framework": "Warning — Do NOT [Activity] Until You Watch This" },
+        { "title": "What Nobody Tells You About Buying in Calgary Right Now", "framework": "Curiosity — What Nobody Tells You About [Topic]" },
+        { "title": "The REALITY of Buying a Home in Calgary in ${currentYear}", "framework": "Reality — The REALITY of [Topic] in [Year]" }
+      ],
       "talkingPoints": [
         "Capacity panic — life is already full, adding a major transaction feels impossible without everything else falling apart",
         "Disruption fear — life is good right now, what if chasing better actually breaks something that's working",
@@ -198,7 +245,6 @@ OUTPUT FORMAT:
         "Partner misalignment — you think you're on the same page but you haven't actually had the real conversation yet",
         "Permission guilt — you already have a nice home, do you actually need this or are you just being greedy"
       ],
-      "framework": "Do NOT [Activity] Until You Watch This",
       "whyItWorks": "Speaks directly to the fear that this process will take over a life they've carefully built — the title creates urgency while the content validates their hesitation."
     }
   ]
@@ -221,9 +267,9 @@ CHAT MODE INSTRUCTIONS:
 - Respond conversationally — acknowledge what they're asking, then generate or refine ideas
 - When generating ideas, embed each one in <IDEA_DATA> tags with the same JSON structure as batch output:
   <IDEA_DATA>
-  {"title": "...", "talkingPoints": [...], "framework": "...", "whyItWorks": "..."}
+  {"titleOptions": [{"title": "...", "framework": "..."}, {"title": "...", "framework": "..."}, {"title": "...", "framework": "..."}], "talkingPoints": [...], "whyItWorks": "..."}
   </IDEA_DATA>
 - Text outside <IDEA_DATA> tags is normal conversation and renders as chat messages
 - You can also just answer questions, refine titles, or explore angles without generating formal ideas
-- Always stay scoped to the member's avatar and the current theme`;
+- Always stay scoped to the member's avatar and the current theme "${opts.theme}"`;
 }

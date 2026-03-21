@@ -8,6 +8,7 @@ export interface ContentTheme {
   emoji?: string | null;
   colour?: string | null;
   coreStress?: string | null;
+  content_engine_prompt?: string | null;
 }
 
 interface SavedIdea {
@@ -94,7 +95,10 @@ export default function ThemeCard({ theme, index, onGoDeeper }: Props) {
       const data = await res.json();
       const newIdeas: Idea[] = data.ideas ?? [];
       setIdeas(newIdeas);
-      setShownTitles((prev) => [...new Set([...prev, ...newIdeas.map((i) => i.title)])]);
+      const allTitles = newIdeas.flatMap((i) =>
+        i.titleOptions?.map((o) => o.title) ?? (i.title ? [i.title] : [])
+      );
+      setShownTitles((prev) => [...new Set([...prev, ...allTitles])]);
     } finally {
       setGenerating(false);
     }
@@ -112,7 +116,10 @@ export default function ThemeCard({ theme, index, onGoDeeper }: Props) {
       const data = await res.json();
       const newIdeas: Idea[] = data.ideas ?? [];
       setIdeas(newIdeas);
-      setShownTitles((prev) => [...new Set([...prev, ...newIdeas.map((i) => i.title)])]);
+      const allTitles = newIdeas.flatMap((i) =>
+        i.titleOptions?.map((o) => o.title) ?? (i.title ? [i.title] : [])
+      );
+      setShownTitles((prev) => [...new Set([...prev, ...allTitles])]);
     } finally {
       setGenerating(false);
     }

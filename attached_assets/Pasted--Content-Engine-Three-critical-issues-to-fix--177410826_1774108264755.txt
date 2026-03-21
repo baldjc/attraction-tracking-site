@@ -1,0 +1,111 @@
+  ---                      
+  Content Engine — Three critical issues to fix:            
+                                                            
+  ---                                            
+  ISSUE 1: The engine is generating identical content across
+   ALL themes.                                              
+                                                            
+  The same title ("Do NOT Buy a Home in Calgary Until You   
+  Watch This"), same 5 talking points (capacity panic,      
+  disruption fear, timing doubt, partner misalignment,
+  permission guilt), word for word across every single      
+  theme. The engine is completely ignoring the            
+  theme-specific stresses and content engine prompts.
+
+  Root cause is likely one of these:
+  1. The engine is only receiving the theme NAME (e.g., "The
+   Transition") but not the theme's specific stresses or    
+  content engine prompt                                 
+  2. The engine is receiving the avatar profile but not     
+  differentiating by theme — it's generating content from 
+  the general avatar, not from the individual theme      
+  3. The theme's stress list and content engine prompt
+  aren't being passed into the AI prompt at all
+                                                            
+  What needs to happen:
+                                                            
+  When a user clicks "Generate" on a specific theme, the  
+  prompt sent to the AI must include:            
+  - The theme name
+  - The theme's specific stresses (the 4-5 bullet points
+  unique to that theme)                                 
+  - The theme's content engine prompt (the full block       
+  including angle, tone, and framing rules)          
+  - An instruction that says: "Generate content ideas that  
+  ONLY address the stresses listed for THIS theme. Do not 
+  use stresses from other themes. Every talking point must  
+  tie directly to one of the specific stresses listed     
+  above."                                                   
+                                                          
+  Can you check what's actually being sent to the AI when a 
+  user generates ideas for a theme? I suspect the theme     
+  stresses aren't being passed at all — just the theme name
+  and the general avatar profile.                           
+                                                          
+  ---                                            
+  ISSUE 2: No differentiation between themes — even if 
+  stresses are passed correctly, the engine needs           
+  boundaries.                                     
+                                                            
+  Add this to the Content Engine system prompt:           
+                                                            
+  THEME DIFFERENTIATION RULE:                               
+                                                            
+  When generating content for a specific stress theme, the  
+  titles and stress angles must be UNIQUE to that theme. Do
+  not repeat or closely mirror titles, hooks, or stress     
+  angles that belong to a different theme.                
+                                                 
+  Before outputting ideas for any theme, identify what makes
+   this theme DISTINCT from the others:
+  - What is the UNIQUE tension in this theme that no other  
+  theme covers?                                             
+  - What angles or topics are OFF-LIMITS because they belong
+   to another theme?                                        
+                                                          
+  For real estate avatars, common theme boundaries:         
+  - "The Decision" = Should I do this? Angles: readiness, 
+  timing, opportunity cost, guilt, rate lock-in. NOT about  
+  logistics, market risks, or evaluating homes.           
+  - "The Equity" = Can my current situation fund this?      
+  Angles: buying power, budget math, what equity unlocks,   
+  prep ROI. NOT about choosing a home or neighbourhood.
+  - "The Transition" = How do I get from A to B without     
+  chaos? Angles: timing strategies, bridge financing, moving
+   logistics, competing with a contingency, temporary
+  housing. NOT about evaluating the home itself.            
+  - "The Purchase" = Is this the right                    
+  home/neighbourhood/price? Angles: hidden costs, market    
+  traps, inspection risks, neighbourhood evaluation, local
+  data. NOT about logistics or selling.                     
+  - "The Aftermath" = Did I get it right? Angles: post-close
+   surprises, tax resets, protecting the investment. NOT    
+  about the buying process.
+                                                            
+  If a generated title could fit equally well under two     
+  different themes, it is too generic. Make it more specific
+   to the theme it belongs to.                              
+                                                          
+  DEDUPLICATION RULE: Before outputting any content idea,   
+  check: has this exact title or a very similar title
+  already been generated for a different theme in this      
+  member's avatar? If YES → reject it and generate a new  
+  one. No two themes should ever share a title or share more
+   than 1 talking point.
+
+  ---
+  ISSUE 3: Users need title variations, not just one title 
+  per idea.                                                 
+           
+  Instead of generating one title per content idea, generate
+   3 alternative title versions for each idea using         
+  different proven frameworks. Present them as options the
+  user can choose from or remix. Format like:               
+                                                          
+  [Content Idea Description]                     
+    → "Title Option A" (Warning framework)                  
+    → "Title Option B" (Curiosity framework)                
+    → "Title Option C" (Reality framework)                  
+                                                            
+  This gives users the power to pick the version that fits  
+  their voice or combine elements from multiple options. 
