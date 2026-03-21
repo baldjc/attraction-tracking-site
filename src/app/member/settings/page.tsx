@@ -99,6 +99,7 @@ export default function MemberSettingsPage() {
   const [channelUrl, setChannelUrl] = useState("");
   const [channelHandle, setChannelHandle] = useState<string | null>(null);
   const [channelName, setChannelName] = useState<string | null>(null);
+  const [channelLocked, setChannelLocked] = useState(false);
   const [savingChannel, setSavingChannel] = useState(false);
   const [savedChannel, setSavedChannel] = useState(false);
 
@@ -122,6 +123,7 @@ export default function MemberSettingsPage() {
       setChannelUrl(channelData?.youtubeChannelUrl ?? "");
       setChannelHandle(channelData?.youtubeHandle ?? null);
       setChannelName(channelData?.youtubeChannelName ?? null);
+      setChannelLocked(!!channelData?.locked);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
@@ -166,11 +168,14 @@ export default function MemberSettingsPage() {
       body: JSON.stringify({ youtubeChannelUrl: channelUrl || null }),
     });
     const data = await res.json();
-    setChannelHandle(data.youtubeHandle ?? null);
-    setChannelName(data.youtubeChannelName ?? null);
+    if (res.ok) {
+      setChannelHandle(data.youtubeHandle ?? null);
+      setChannelName(data.youtubeChannelName ?? null);
+      if (data.locked) setChannelLocked(true);
+      setSavedChannel(true);
+      setTimeout(() => setSavedChannel(false), 3000);
+    }
     setSavingChannel(false);
-    setSavedChannel(true);
-    setTimeout(() => setSavedChannel(false), 3000);
   }
 
   const hasAvatar = !!avatar?.avatarProfile;
@@ -313,29 +318,45 @@ export default function MemberSettingsPage() {
         <div className="p-6">
           {loading ? (
             <p className="text-sm text-[#1e2a38]/40 dark:text-[#718096] animate-pulse">Loading...</p>
+          ) : channelLocked ? (
+            <div className="space-y-4">
+              {/* Locked: read-only display */}
+              <div className="flex items-center gap-3 bg-[#f1f1ef] dark:bg-[#1a1f2e] rounded-xl px-4 py-3">
+                <div className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0">
+                  <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                  </svg>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-[#1e2a38] dark:text-[#e2e8f0] truncate">
+                    {channelName || channelHandle || channelUrl}
+                  </p>
+                  {channelHandle && channelName && (
+                    <p className="text-xs text-[#1e2a38]/50 dark:text-[#718096]">{channelHandle}</p>
+                  )}
+                  <p className="text-xs text-[#1e2a38]/40 dark:text-[#718096] font-mono truncate mt-0.5">{channelUrl}</p>
+                </div>
+                <a
+                  href={channelUrl || `https://youtube.com/${channelHandle}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-[#3dc3ff] hover:underline whitespace-nowrap"
+                >
+                  View →
+                </a>
+              </div>
+              <div className="flex items-start gap-2.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/40 rounded-xl px-4 py-3">
+                <svg className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                </svg>
+                <p className="text-sm text-amber-700 dark:text-amber-400">
+                  Your channel is locked. To update it, please reach out to your admin.
+                </p>
+              </div>
+            </div>
           ) : (
             <div className="space-y-4">
-              {channelName && (
-                <div className="flex items-center gap-3 bg-[#f1f1ef] dark:bg-[#1a1f2e] rounded-xl px-4 py-3">
-                  <div className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0">
-                    <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-[#1e2a38] dark:text-[#e2e8f0]">{channelName}</p>
-                    {channelHandle && <p className="text-xs text-[#1e2a38]/50 dark:text-[#718096]">{channelHandle}</p>}
-                  </div>
-                  <a
-                    href={channelUrl || `https://youtube.com/${channelHandle}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="ml-auto text-xs text-[#3dc3ff] hover:underline"
-                  >
-                    View →
-                  </a>
-                </div>
-              )}
+              {/* Not yet set: allow first-time entry */}
               <div>
                 <label className="block text-sm font-semibold text-[#1e2a38] dark:text-[#e2e8f0] mb-2">
                   Channel URL
@@ -348,7 +369,7 @@ export default function MemberSettingsPage() {
                   className="w-full border border-[#1e2a38]/20 dark:border-[#2d3748] rounded-xl px-4 py-3 text-sm text-[#1e2a38] dark:text-[#e2e8f0] placeholder-[#1e2a38]/30 dark:bg-[#242b3d] focus:outline-none focus:border-[#3dc3ff]"
                 />
                 <p className="text-xs text-[#1e2a38]/40 dark:text-[#718096] mt-1.5">
-                  Paste your full channel URL, e.g. <span className="font-mono">https://www.youtube.com/@JaredChamberlain</span>
+                  Paste your full channel URL, e.g. <span className="font-mono">https://www.youtube.com/@YourHandle</span>. Once saved, only your admin can change this.
                 </p>
               </div>
               <div className="flex items-center justify-between">
@@ -360,7 +381,7 @@ export default function MemberSettingsPage() {
                 <div className="ml-auto">
                   <button
                     onClick={saveChannel}
-                    disabled={savingChannel}
+                    disabled={savingChannel || !channelUrl.trim()}
                     className="bg-[#3dc3ff] text-white px-5 py-2 rounded-xl text-sm font-semibold hover:bg-[#3dc3ff]/90 disabled:opacity-50 transition-colors"
                   >
                     {savingChannel ? "Saving..." : "Save Channel"}

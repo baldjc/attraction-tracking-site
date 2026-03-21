@@ -17,12 +17,25 @@ export async function GET() {
     youtubeChannelUrl: member?.youtubeChannelUrl ?? null,
     youtubeHandle: member?.youtubeHandle ?? null,
     youtubeChannelName: member?.youtubeChannelName ?? null,
+    locked: !!member?.youtubeChannelUrl,
   });
 }
 
 export async function PUT(req: NextRequest) {
   const user = await resolveUserFromSession();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const existing = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { youtubeChannelUrl: true, email: true },
+  });
+
+  if (existing?.youtubeChannelUrl) {
+    return NextResponse.json(
+      { error: "Channel is locked. Contact your admin to change it." },
+      { status: 403 }
+    );
+  }
 
   const { youtubeChannelUrl } = await req.json();
   const url: string | null = youtubeChannelUrl?.trim() || null;
@@ -59,14 +72,9 @@ export async function PUT(req: NextRequest) {
     },
   });
 
-  // Push to GHL
-  const fullUser = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: { email: true },
-  });
-  if (fullUser?.email && url) {
+  if (existing?.email && url) {
     try {
-      const contact = await fetchContactByEmail(fullUser.email);
+      const contact = await fetchContactByEmail(existing.email);
       if (contact?.id) {
         await updateContactCustomField(contact.id, GHL_FIELDS.YOUTUBE_CHANNEL_URL, url);
       }
@@ -77,5 +85,6 @@ export async function PUT(req: NextRequest) {
     youtubeChannelUrl: url,
     youtubeHandle,
     youtubeChannelName,
+    locked: !!url,
   });
 }
