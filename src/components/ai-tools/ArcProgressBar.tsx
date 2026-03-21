@@ -46,7 +46,7 @@ export default function ArcProgressBar({ currentSection, completedSections, onSe
                     ? "text-[#3dc3ff] font-bold"
                     : isCompleted
                     ? "text-[#3dc3ff]/70 font-medium"
-                    : "text-[#1e2a38]/25"
+                    : "text-[#1e2a38]/25 dark:text-white/25"
                 } ${isCompleted ? "cursor-pointer" : "cursor-default"}`}
               >
                 {i + 1}. {section.label}

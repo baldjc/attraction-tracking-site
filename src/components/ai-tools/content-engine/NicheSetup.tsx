@@ -41,11 +41,11 @@ export default function NicheSetup({ initialNiche, initialCity, onSaved, isModal
   }
 
   return (
-    <div className={isModal ? "" : "bg-white rounded-2xl border border-[#1e2a38]/10 p-8 max-w-md mx-auto shadow-sm"}>
+    <div className={isModal ? "" : "bg-white dark:bg-[#242b3d] rounded-2xl border border-[#1e2a38]/10 dark:border-white/10 p-8 max-w-md mx-auto shadow-sm"}>
       {!isModal && (
         <div className="mb-6">
-          <h2 className="text-lg font-bold text-[#1e2a38]">Set your niche</h2>
-          <p className="text-sm text-[#1e2a38]/60 mt-1">
+          <h2 className="text-lg font-bold text-[#1e2a38] dark:text-white">Set your niche</h2>
+          <p className="text-sm text-[#1e2a38]/60 dark:text-white/60 mt-1">
             This helps us optimize your video titles for search in your market.
           </p>
         </div>
@@ -53,11 +53,11 @@ export default function NicheSetup({ initialNiche, initialCity, onSaved, isModal
 
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-[#1e2a38] mb-1.5">Niche</label>
+          <label className="block text-sm font-medium text-[#1e2a38] dark:text-white mb-1.5">Niche</label>
           <select
             value={niche}
             onChange={(e) => setNiche(e.target.value)}
-            className="w-full border border-[#1e2a38]/20 rounded-lg px-3 py-2 text-sm text-[#1e2a38] bg-white focus:outline-none focus:ring-2 focus:ring-[#3dc3ff]/40"
+            className="w-full border border-[#1e2a38]/20 dark:border-white/20 rounded-lg px-3 py-2 text-sm text-[#1e2a38] dark:text-white bg-white dark:bg-[#1a1f2e] focus:outline-none focus:ring-2 focus:ring-[#3dc3ff]/40"
           >
             <option value="">Select your niche...</option>
             {NICHES.map((n) => (
@@ -68,13 +68,13 @@ export default function NicheSetup({ initialNiche, initialCity, onSaved, isModal
 
         {niche === "real_estate" && (
           <div>
-            <label className="block text-sm font-medium text-[#1e2a38] mb-1.5">City / Market</label>
+            <label className="block text-sm font-medium text-[#1e2a38] dark:text-white mb-1.5">City / Market</label>
             <input
               type="text"
               value={city}
               onChange={(e) => setCity(e.target.value)}
               placeholder="e.g. Calgary, Houston, Toronto"
-              className="w-full border border-[#1e2a38]/20 rounded-lg px-3 py-2 text-sm text-[#1e2a38] placeholder-[#1e2a38]/30 focus:outline-none focus:ring-2 focus:ring-[#3dc3ff]/40"
+              className="w-full border border-[#1e2a38]/20 dark:border-white/20 rounded-lg px-3 py-2 text-sm text-[#1e2a38] dark:text-white placeholder-[#1e2a38]/30 dark:placeholder-white/30 bg-white dark:bg-[#1a1f2e] focus:outline-none focus:ring-2 focus:ring-[#3dc3ff]/40"
             />
           </div>
         )}
