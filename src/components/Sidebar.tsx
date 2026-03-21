@@ -88,11 +88,9 @@ interface MemberOption {
 
 function SwitchMemberDropdown({
   current,
-  onSelect,
   onClose,
 }: {
   current: ImpersonateState;
-  onSelect: (m: MemberOption) => void;
   onClose: () => void;
 }) {
   const [members, setMembers] = useState<MemberOption[]>([]);
@@ -108,11 +106,11 @@ function SwitchMemberDropdown({
   }, []);
 
   useEffect(() => {
-    function onClick(e: MouseEvent) {
+    function onMouseDown(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) onClose();
     }
-    document.addEventListener("mousedown", onClick);
-    return () => document.removeEventListener("mousedown", onClick);
+    document.addEventListener("mousedown", onMouseDown);
+    return () => document.removeEventListener("mousedown", onMouseDown);
   }, [onClose]);
 
   const filtered = members.filter((m) => {
@@ -149,8 +147,13 @@ function SwitchMemberDropdown({
           const isCurrent = m.id === current.memberId;
           return (
             <li key={m.id}>
-              <button
-                onClick={() => onSelect(m)}
+              <a
+                href={`/api/admin/switch?memberId=${encodeURIComponent(m.id)}`}
+                onClick={() => {
+                  try {
+                    localStorage.setItem(IMPERSONATE_LS_KEY, JSON.stringify({ memberId: m.id, memberName: name }));
+                  } catch { }
+                }}
                 className={`w-full flex items-center gap-2 px-3 py-2.5 text-left hover:bg-[#3dc3ff]/5 transition-colors ${isCurrent ? "bg-amber-50" : ""}`}
               >
                 <UserCircleIcon className="w-4 h-4 text-gray-400 shrink-0" />
@@ -159,7 +162,7 @@ function SwitchMemberDropdown({
                   {m.fullName && <p className="text-[10px] text-gray-400 truncate">{m.email}</p>}
                 </div>
                 {isCurrent && <span className="text-[10px] text-amber-600 font-semibold shrink-0">Current</span>}
-              </button>
+              </a>
             </li>
           );
         })}
@@ -234,14 +237,6 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
     }
   }
 
-  function handleSwitchMember(member: MemberOption) {
-    setShowSwitch(false);
-    const memberName = member.fullName ?? member.email;
-    try {
-      localStorage.setItem(IMPERSONATE_LS_KEY, JSON.stringify({ memberId: member.id, memberName }));
-    } catch { }
-    window.location.href = "/api/admin/switch?memberId=" + encodeURIComponent(member.id);
-  }
 
   const homeHref = isStaffOnMemberView
     ? "/member/scores"
@@ -288,7 +283,6 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
             {showSwitch && (
               <SwitchMemberDropdown
                 current={impersonate}
-                onSelect={handleSwitchMember}
                 onClose={() => setShowSwitch(false)}
               />
             )}
