@@ -351,6 +351,8 @@ export default function TitleThumbnailAnalyzerPage() {
             titleScore: data.result.title?.score ?? null,
             thumbnailScore: data.result.thumbnail?.score ?? null,
             combinedRaw: data.result.combined?.score ?? null,
+            analysisResult: data.result,
+            videoTitle: title.trim(),
           },
         }),
       }).then(() => setRefreshCounter((n) => n + 1)).catch(() => {});
@@ -368,6 +370,15 @@ export default function TitleThumbnailAnalyzerPage() {
     setResult(null);
     setError("");
     if (fileRef.current) fileRef.current.value = "";
+  }
+
+  function handleLoadConversation(conv: { title: string; metadata?: Record<string, unknown> | null }) {
+    const meta = conv.metadata as { analysisResult?: AnalysisResult; videoTitle?: string } | null;
+    if (!meta?.analysisResult) return;
+    setTitle(meta.videoTitle ?? conv.title);
+    setResult(meta.analysisResult);
+    setError("");
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   return (
@@ -391,6 +402,7 @@ export default function TitleThumbnailAnalyzerPage() {
         label="Recent Analyses"
         emptyLabel="No analyses saved in the last 30 days."
         refreshTrigger={refreshCounter}
+        onLoad={handleLoadConversation as any}
       />
 
       {!result ? (

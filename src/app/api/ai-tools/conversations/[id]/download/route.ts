@@ -19,7 +19,114 @@ function formatDate(d: Date) {
   return d.toISOString().slice(0, 10);
 }
 
+function buildTitleThumbnailMarkdown(conv: any, memberName: string): string {
+  const date = formatDate(new Date(conv.createdAt));
+  const r = (conv.metadata as any)?.analysisResult;
+  const videoTitle = (conv.metadata as any)?.videoTitle ?? conv.title;
+
+  let md = `# Title & Thumbnail Analysis — ${videoTitle}\n`;
+  md += `**Member:** ${memberName}  \n`;
+  md += `**Date:** ${date}  \n\n`;
+  md += `---\n\n`;
+
+  if (!r) {
+    md += `*Full analysis data not available for this session.*\n`;
+    return md;
+  }
+
+  md += `## Scores\n\n`;
+  md += `| Category | Score |\n| --- | --- |\n`;
+  if (r.thumbnail?.score != null) md += `| Thumbnail | ${r.thumbnail.score}/20 |\n`;
+  if (r.title?.score != null) md += `| Title | ${r.title.score}/20 |\n`;
+  if (r.combined?.score != null) md += `| Combined | ${r.combined.score}/20 |\n`;
+  if (r.intro?.score != null) md += `| Intro | ${r.intro.score}/20 |\n`;
+  md += `\n`;
+
+  if (r.title?.attraction_scores) {
+    const as_ = r.title.attraction_scores;
+    md += `## Attraction Principle Scores\n\n`;
+    md += `| Principle | Score |\n| --- | --- |\n`;
+    if (as_.title_frameworks != null) md += `| Title Frameworks | ${as_.title_frameworks}/10 |\n`;
+    if (as_.approve_the_click != null) md += `| Approve the Click | ${as_.approve_the_click}/10 |\n`;
+    if (as_.avatar_clarity != null) md += `| Avatar Clarity | ${as_.avatar_clarity}/10 |\n`;
+    md += `\n`;
+    if (r.title.framework_used) md += `**Framework detected:** ${r.title.framework_used}\n\n`;
+  }
+
+  if (r.title?.alternatives?.length) {
+    md += `## Improved Title Alternatives\n\n`;
+    for (let i = 0; i < r.title.alternatives.length; i++) {
+      md += `${i + 1}. ${r.title.alternatives[i]}\n`;
+    }
+    md += `\n`;
+  }
+
+  if (r.title?.observations?.length) {
+    md += `## Title Observations\n\n`;
+    for (const o of r.title.observations) md += `- ${o}\n`;
+    md += `\n`;
+  }
+
+  if (r.thumbnail?.observations?.length) {
+    md += `## Thumbnail Observations\n\n`;
+    for (const o of r.thumbnail.observations) md += `- ${o}\n`;
+    md += `\n`;
+  }
+
+  if (r.thumbnail?.improvements?.length) {
+    md += `## Thumbnail Improvements\n\n`;
+    for (const o of r.thumbnail.improvements) md += `- ${o}\n`;
+    md += `\n`;
+  }
+
+  if (r.combined?.observations?.length) {
+    md += `## Combined Observations\n\n`;
+    for (const o of r.combined.observations) md += `- ${o}\n`;
+    md += `\n`;
+  }
+
+  if (r.combined?.improvements?.length) {
+    md += `## Combined Improvements\n\n`;
+    for (const o of r.combined.improvements) md += `- ${o}\n`;
+    md += `\n`;
+  }
+
+  if (r.combined?.thumbnail_concepts?.length) {
+    md += `## Thumbnail Concepts\n\n`;
+    for (const o of r.combined.thumbnail_concepts) md += `- ${o}\n`;
+    md += `\n`;
+  }
+
+  if (r.combined?.redundancies?.length) {
+    md += `## Redundancies to Fix\n\n`;
+    for (const o of r.combined.redundancies) md += `- ${o}\n`;
+    md += `\n`;
+  }
+
+  if (r.intro?.observations?.length) {
+    md += `## Intro Observations\n\n`;
+    for (const o of r.intro.observations) md += `- ${o}\n`;
+    md += `\n`;
+  }
+
+  if (r.intro?.improvements?.length) {
+    md += `## Intro Improvements\n\n`;
+    for (const o of r.intro.improvements) md += `- ${o}\n`;
+    md += `\n`;
+  }
+
+  if (r.follow_up) {
+    md += `## Next Steps\n\n${r.follow_up}\n\n`;
+  }
+
+  return md;
+}
+
 function buildMarkdown(conv: any, memberName: string): string {
+  if (conv.toolType === "title_thumbnail_analyzer") {
+    return buildTitleThumbnailMarkdown(conv, memberName);
+  }
+
   const toolName = TOOL_NAMES[conv.toolType] ?? conv.toolType;
   const date = formatDate(new Date(conv.createdAt));
   const messages = Array.isArray(conv.messages) ? conv.messages : [];
