@@ -17,11 +17,8 @@ import {
   CheckCircleIcon,
   ExclamationTriangleIcon,
   ExclamationCircleIcon,
-  SparklesIcon,
   VideoCameraIcon,
   PlayCircleIcon,
-  MagnifyingGlassIcon,
-  PencilSquareIcon,
   ChartBarIcon,
 } from "@heroicons/react/24/outline";
 
@@ -440,11 +437,11 @@ export default function MemberDashboard() {
             </div>
             <div className="grid grid-cols-2 gap-2">
               {[
-                { label: "Content Engine", icon: SparklesIcon, href: "/member/ai-tools?tool=content_engine" },
-                { label: "ARC Script Builder", icon: PencilSquareIcon, href: "/member/ai-tools?tool=arc_script_builder" },
-                { label: "Script Review", icon: MagnifyingGlassIcon, href: "/member/ai-tools?tool=script_review" },
-                { label: "Title Analyzer", icon: ChartBarIcon, href: "/member/ai-tools?tool=title_analyzer" },
-              ].map(({ label, icon: Icon, href }) => (
+                { label: "Content Engine", emoji: "🚀", href: "/member/ai-tools?tool=content_engine" },
+                { label: "ARC Script Builder", emoji: "🎬", href: "/member/ai-tools?tool=arc_script_builder" },
+                { label: "Script Review", emoji: "📋", href: "/member/ai-tools?tool=script_review" },
+                { label: "Title Analyzer", emoji: "🔍", href: "/member/ai-tools?tool=title_analyzer" },
+              ].map(({ label, emoji, href }) => (
                 <Link
                   key={label}
                   href={href}
@@ -452,7 +449,7 @@ export default function MemberDashboard() {
                     bg-gray-50 dark:bg-[#1a1f2e] hover:bg-[#3dc3ff]/10 dark:hover:bg-[#3dc3ff]/10
                     border border-transparent hover:border-[#3dc3ff]/30`}
                 >
-                  <Icon className="w-5 h-5 text-[#3dc3ff]" />
+                  <span className="text-2xl leading-none">{emoji}</span>
                   <span className={`text-xs font-medium ${txt} leading-tight`}>{label}</span>
                 </Link>
               ))}
