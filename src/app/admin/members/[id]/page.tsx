@@ -152,6 +152,12 @@ export default function MemberDetailPage() {
     scriptsCount: number; analysesCount: number; lastActivity: string | null;
   } | null>(null);
 
+  // Top videos — last 30 days
+  const [topVideos, setTopVideos] = useState<any[]>([]);
+  const [topVideosLoading, setTopVideosLoading] = useState(false);
+  const [topVideosNoChannel, setTopVideosNoChannel] = useState(false);
+  const [topVideosNoUploads, setTopVideosNoUploads] = useState(false);
+
   // Single video selection modal
   const [showVideoModal, setShowVideoModal] = useState(false);
   const [videoModalLoading, setVideoModalLoading] = useState(false);
@@ -173,6 +179,20 @@ export default function MemberDetailPage() {
   useEffect(() => {
     fetchMember();
   }, [fetchMember]);
+
+  useEffect(() => {
+    if (!member?.id) return;
+    setTopVideosLoading(true);
+    fetch(`/api/admin/members/${member.id}/top-videos`)
+      .then((r) => r.json())
+      .then((data) => {
+        setTopVideos(data.videos ?? []);
+        setTopVideosNoChannel(!!data.noChannel);
+        setTopVideosNoUploads(!!data.noUploadsIn30Days);
+      })
+      .catch(() => {})
+      .finally(() => setTopVideosLoading(false));
+  }, [member?.id]);
 
   useEffect(() => {
     if (!member?.id) return;
@@ -800,6 +820,50 @@ export default function MemberDetailPage() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+          </div>
+
+          {/* TOP VIDEOS — last 30 days */}
+          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+            <h2 className="text-base font-semibold text-[#1e2a38] mb-4">Most Viewed — Last 30 Days</h2>
+            {topVideosLoading ? (
+              <p className="text-sm text-[#1e2a38]/50 text-center py-6">Loading videos…</p>
+            ) : topVideosNoChannel ? (
+              <p className="text-sm text-[#1e2a38]/50 text-center py-6">No YouTube channel connected.</p>
+            ) : topVideosNoUploads ? (
+              <p className="text-sm text-amber-500 text-center py-6">No uploads in the last 30 days.</p>
+            ) : topVideos.length === 0 ? (
+              <p className="text-sm text-[#1e2a38]/50 text-center py-6">No videos found.</p>
+            ) : (
+              <div className="space-y-3">
+                {topVideos.map((v, i) => (
+                  <a
+                    key={v.videoId}
+                    href={v.watchUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors group"
+                  >
+                    <span className="text-xs font-bold text-[#1e2a38]/30 w-4 shrink-0">{i + 1}</span>
+                    <img
+                      src={v.thumbnailUrl}
+                      alt={v.title}
+                      className="w-20 h-[45px] object-cover rounded shrink-0"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-[#1e2a38] leading-snug line-clamp-2 group-hover:text-[#3dc3ff] transition-colors">
+                        {v.title}
+                      </p>
+                      <p className="text-xs text-[#1e2a38]/40 mt-0.5">
+                        {Number(v.viewCount).toLocaleString()} views
+                        {v.uploadDate && (
+                          <span className="ml-2">{new Date(v.uploadDate).toLocaleDateString()}</span>
+                        )}
+                      </p>
+                    </div>
+                  </a>
+                ))}
               </div>
             )}
           </div>
