@@ -913,8 +913,7 @@ export default function RepurposeContentPage() {
                           <button
                             onClick={async () => {
                               const text = pastOutputText(output);
-                              if (output.toolType === "linkedin" || output.toolType === "blog") await copyRichText(text);
-                              else await copyPlainText(text);
+                              await copyPlainText(text);
                               setCopiedPastId(output.id);
                               setTimeout(() => setCopiedPastId(null), 2000);
                             }}
@@ -979,9 +978,10 @@ export default function RepurposeContentPage() {
               )}
               {linkedInResult && (
                 <div className="space-y-3">
-                  <textarea value={editedLinkedIn} onChange={(e) => setEditedLinkedIn(e.target.value)} rows={28} className="w-full border border-[#1e2a38]/20 dark:border-white/20 bg-white dark:bg-[#1a1f2e] rounded-xl px-4 py-3 text-sm text-[#1e2a38] dark:text-white focus:outline-none focus:border-[#3dc3ff] transition-colors resize-y font-mono" />
+                  <textarea value={editedLinkedIn} onChange={(e) => setEditedLinkedIn(e.target.value)} rows={28} className="w-full border border-[#1e2a38]/20 dark:border-white/20 bg-white dark:bg-[#1a1f2e] rounded-xl px-4 py-3 text-sm text-[#1e2a38] dark:text-white focus:outline-none focus:border-[#3dc3ff] transition-colors resize-y" />
+                  <p className="text-xs text-[#1e2a38]/40 dark:text-white/40">Plain text — paste directly into LinkedIn&apos;s article editor.</p>
                   <div className="flex gap-2">
-                    <CopyButton text={editedLinkedIn} rich label="Copy (Rich Text)" />
+                    <CopyButton text={editedLinkedIn} label="Copy Article" />
                     <SaveButton
                       onSave={() => saveEdit(linkedInRecordId!, editedLinkedIn, setSavingLinkedIn, setSavedLinkedIn)}
                       saving={savingLinkedIn}
@@ -1055,14 +1055,15 @@ export default function RepurposeContentPage() {
                   </div>
                   <div>
                     <p className="text-xs font-semibold text-[#1e2a38]/50 dark:text-white/50 uppercase tracking-wide mb-1.5">Full article</p>
-                    <textarea value={editedBlogArticle} onChange={(e) => setEditedBlogArticle(e.target.value)} rows={32} className="w-full border border-[#1e2a38]/20 dark:border-white/20 bg-white dark:bg-[#1a1f2e] rounded-xl px-4 py-3 text-sm text-[#1e2a38] dark:text-white focus:outline-none focus:border-[#3dc3ff] transition-colors resize-y font-mono" />
+                    <textarea value={editedBlogArticle} onChange={(e) => setEditedBlogArticle(e.target.value)} rows={32} className="w-full border border-[#1e2a38]/20 dark:border-white/20 bg-white dark:bg-[#1a1f2e] rounded-xl px-4 py-3 text-sm text-[#1e2a38] dark:text-white focus:outline-none focus:border-[#3dc3ff] transition-colors resize-y" />
                   </div>
                   <div>
                     <p className="text-xs font-semibold text-[#1e2a38]/50 dark:text-white/50 uppercase tracking-wide mb-1.5">Meta description <span className="font-normal normal-case text-[#1e2a38]/30 dark:text-white/30">({editedBlogMeta.length}/160 chars)</span></p>
                     <textarea value={editedBlogMeta} onChange={(e) => setEditedBlogMeta(e.target.value)} rows={2} className="w-full border border-[#1e2a38]/20 dark:border-white/20 bg-white dark:bg-[#1a1f2e] rounded-xl px-4 py-3 text-sm text-[#1e2a38] dark:text-white focus:outline-none focus:border-[#3dc3ff] transition-colors resize-none" />
                   </div>
+                  <p className="text-xs text-[#1e2a38]/40 dark:text-white/40">Plain text — paste directly into WordPress, Squarespace, Wix, or any CMS editor.</p>
                   <div className="flex gap-2">
-                    <CopyButton text={`${editedBlogTitle}\n\n${editedBlogArticle}`} rich label="Copy Article" />
+                    <CopyButton text={`${editedBlogTitle}\n\n${editedBlogArticle}`} label="Copy Article" />
                     <SaveButton
                       onSave={() => {
                         const combined = `${editedBlogTitle}\n\n${editedBlogArticle}\n\nMeta: ${editedBlogMeta}`;

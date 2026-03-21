@@ -50,6 +50,7 @@ export async function POST(req: NextRequest) {
     ? allLinks.map((l: { label: string; url: string }) => `- ${l.label}: ${l.url}`).join("\n")
     : "No links provided — do not include any clickable links in the article.";
 
+  const currentYear = String(new Date().getFullYear());
   const promptTemplate = promptSetting?.value || DEFAULT_LINKEDIN_PROMPT;
   const systemPrompt = applyLinkedInTokens(promptTemplate, {
     memberName,
@@ -57,6 +58,7 @@ export async function POST(req: NextRequest) {
     voiceStyle,
     avatarText,
     linksText,
+    currentYear,
   });
 
   const response = await client.messages.create({

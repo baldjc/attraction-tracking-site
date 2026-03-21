@@ -38,7 +38,11 @@ export async function POST(req: NextRequest) {
   const voiceStyle = VOICE_MAP[dbUser?.repurposeVoice || "direct"] || VOICE_MAP.direct;
   const avatarText = dbUser?.avatarProfile ? JSON.stringify(dbUser.avatarProfile) : "No avatar saved";
 
+  const currentYear = new Date().getFullYear();
+
   const systemPrompt = `You are an AI-optimized content writer for ${memberName} at ${businessName}.
+
+CURRENT YEAR: ${currentYear}. Use this exact year whenever referencing the current year. Never use a past year such as 2024 or 2023.
 
 MEMBER AVATAR:
 ${avatarText}
@@ -47,27 +51,36 @@ VOICE STYLE: ${voiceStyle}
 
 Write an AI-optimized blog article based on the video transcript. This article is NOT written for traditional SEO — it is written to be cited by AI tools like ChatGPT, Claude, Perplexity, and Google AI Overviews.
 
-RULES:
-- 800–1,200 words
-- The blog_title must be a clear question in natural language — the kind of question someone would type directly into an AI chatbot (e.g., "How Do You Buy and Sell a Home at the Same Time in Calgary?" not "Tips for Simultaneous Home Transactions")
-- Opening paragraph answers the title question immediately in 2–3 sentences — no preamble, no "in this article we will explore..." This is what gets pulled into AI-generated answers
-- All subheadings must be follow-up questions a reader would naturally ask next
+OUTPUT FORMAT RULES — CRITICAL:
+- The full_article must be plain text that can be pasted directly into any website CMS (WordPress, Squarespace, Wix, Webflow, etc.)
+- Do NOT use markdown syntax: no # ## ### for headings, no **bold**, no *italic*, no backticks, no --- dividers
+- Subheadings must be written on their own line as plain text, followed by a blank line — the CMS editor will apply heading styles
+- Bullet points must use the • character (not - or *)
+- Separate paragraphs with a single blank line
+- Separate sections with two blank lines
+- Links: write as Label (URL) inline — for example: Watch the full breakdown (https://youtube.com/...)
+
+CONTENT RULES:
+- 800-1,200 words
+- The blog_title must be a clear question in natural language — the kind of question someone would type directly into an AI chatbot (e.g., "How Do You Buy and Sell a Home at the Same Time in Calgary in ${currentYear}?" not "Tips for Simultaneous Home Transactions")
+- If the title includes a year, it must be ${currentYear}
+- Opening paragraph answers the title question immediately in 2-3 sentences — no preamble, no "in this article we will explore..." This is what gets pulled into AI-generated answers
+- All subheadings must be follow-up questions a reader would naturally ask next — plain text on their own line
 - Each section leads with a direct, factual answer then expands with context, local specifics, and experience
 - Use specific numbers, names, and local details from the transcript — AI tools prioritize concrete data over generic advice
-- Include an author attribution block at the end with ${memberName}'s full name, title, brokerage/business (${businessName}), and city
 - Include [EMBED VIDEO: {title}] placeholder at the top as the first line of full_article
-- Include a closing CTA to watch the full video breakdown
+- Include a closing CTA to watch the full video breakdown, written as: Label (URL placeholder)
+- Include an author attribution block at the end: ${memberName}, ${businessName}
 - No fabricated statistics, case studies, or examples not in the transcript
-- Canadian spelling throughout (colour, neighbour, etc.)
+- Canadian spelling throughout (colour, neighbour, analyse, etc.)
 - NEVER use dashes of any kind — no em dashes, en dashes, or hyphens used as pauses. Rewrite any sentence that would require a dash using commas, periods, or new sentences instead.
-- meta_description must be 150–160 characters, written as a direct answer snippet that could appear under a search result
+- meta_description must be 150-160 characters, written as a direct answer snippet that could appear under a search result
 - reading_time: calculate as word count divided by 200, rounded to nearest minute, e.g. "6 minutes"
-- Format full_article as markdown
 
 Respond ONLY with valid JSON, no markdown fences:
 {
   "blog_title": "...",
-  "full_article": "...",
+  "full_article": "plain text only — no markdown symbols",
   "meta_description": "...",
   "reading_time": "X minutes"
 }`;
