@@ -109,7 +109,8 @@ export default function LinkTrackingPage() {
   function getHandoffMessage(): string {
     if (!profile?.id) return "";
     const ty = thankYouPath || "/thank-you";
-    const fullTyUrl = `yourwebsite.com${ty}`;
+    const isFullUrl = ty.startsWith("http://") || ty.startsWith("https://");
+    const fullTyUrl = isFullUrl ? ty : `yourwebsite.com${ty}`;
     return `Hi — I need a small tracking snippet added to my website. Here's what to do:
 
 1. Paste this script tag in the <head> section of every page on the site:
@@ -135,8 +136,10 @@ That's it — one snippet, site-wide. Let me know when it's done.`;
 
   async function savePath() {
     setTyPathError("");
-    if (thankYouPath && !thankYouPath.startsWith("/")) {
-      setTyPathError('Path must start with / — for example: /thank-you');
+    const isFullUrl = thankYouPath.startsWith("http://") || thankYouPath.startsWith("https://");
+    const isPath = thankYouPath.startsWith("/");
+    if (thankYouPath && !isFullUrl && !isPath) {
+      setTyPathError('Enter a full URL (https://yoursite.com/thank-you) or a path (/thank-you)');
       return;
     }
     setSaving(true);
@@ -345,7 +348,7 @@ That's it — one snippet, site-wide. Let me know when it's done.`;
                   type="text"
                   value={thankYouPath}
                   onChange={(e) => { setThankYouPath(e.target.value); setTyPathError(""); }}
-                  placeholder="e.g. /thank-you"
+                  placeholder="e.g. /thank-you or https://yoursite.com/thank-you"
                   className={`flex-1 border rounded-xl px-4 py-2.5 text-sm focus:outline-none transition-colors dark:bg-[#1a1f2e] dark:text-white ${
                     tyPathError
                       ? "border-red-400 focus:border-red-400"
@@ -369,9 +372,7 @@ That's it — one snippet, site-wide. Let me know when it's done.`;
                 </p>
               )}
               <p className="mt-2 text-xs text-[#1e2a38]/50 dark:text-white/50 leading-relaxed">
-                Enter just the path — the part after your domain. For example, if your thank you page is{" "}
-                <span className="font-mono">www.yoursite.com/thank-you</span>, enter{" "}
-                <span className="font-mono text-[#1e2a38]/70 dark:text-white/70">/thank-you</span>.
+                Enter a full URL (e.g. <span className="font-mono">https://yoursite.com/thank-you</span>) or just the path (e.g. <span className="font-mono text-[#1e2a38]/70 dark:text-white/70">/thank-you</span>). Either format works.
               </p>
               {!thankYouPath && (
                 <div className="mt-3 flex items-start gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-600/30 rounded-lg px-3 py-2.5">
