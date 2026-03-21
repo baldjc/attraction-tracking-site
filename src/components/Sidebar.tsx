@@ -246,11 +246,7 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
       const memberName = member.fullName ?? member.email;
       localStorage.setItem(IMPERSONATE_LS_KEY, JSON.stringify({ memberId: member.id, memberName }));
       setImpersonate({ memberId: member.id, memberName });
-      if (window.location.pathname === "/member/dashboard") {
-        window.location.reload();
-      } else {
-        window.location.href = "/member/dashboard";
-      }
+      window.location.href = "/member/dashboard?_t=" + Date.now();
     } catch { }
   }
 
