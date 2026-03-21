@@ -107,6 +107,27 @@ POWER WORDS to use in titles:
 - Urgency: Now, Today, ${year}, Before it's too late, Must know`.trim();
 }
 
+export const CONTENT_ENGINE_DEFAULT_ADDENDUM = `CRITICAL RULE — BUY-SIDE TITLES ONLY FOR SELL-SIDE THEMES:
+
+When generating titles for stress themes that involve selling a home, listing, pricing, staging, equity, or the logistics of selling and buying simultaneously:
+
+The TITLE must be 100% buy-side. Sell-side content does not perform on YouTube. The viewer clicks because they're thinking about BUYING — the sell-side reality is revealed inside the content, never in the title.
+
+TITLE VALIDATION: Before outputting any title, check: does this title contain the words "sell," "selling," "seller," "list," "listing," "your home sale," "staging," or any language that positions the viewer as a seller? If YES → reject it and reframe from the buyer's perspective.
+
+REFRAME RULES:
+- "Will my home sell for enough?" becomes → "How much home can I actually afford?"
+- "How do I prep my home?" becomes → "What separates the buyers who get the best homes from those who don't?"
+- "What if my home sits?" becomes → "Why some buyers in this market have way more power than others"
+- "Am I pricing right?" becomes → "The hidden number that determines your real buying budget"
+- "How to sell and buy at the same time" becomes → "How to buy your next home without a sale condition holding you back"
+- "Avoid moving twice" becomes → "The strategy that lets you move directly into your next home"
+- "Bridge financing explained" becomes → "How buyers are making non-contingent offers without being cash buyers"
+
+The viewer is ALWAYS a buyer first — even if they have a home to sell. The sell-side is the content inside the video, never the title hook.
+
+This rule applies automatically whenever the content theme involves sell-side or transition stress. Buy-side themes (like "The Purchase") do not need this constraint.`;
+
 export function buildBatchSystemPrompt(opts: {
   avatarProfile: unknown;
   contentThemes: unknown;

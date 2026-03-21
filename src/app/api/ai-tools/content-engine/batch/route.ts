@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import { logUsage } from "@/lib/ai-tool-cost";
-import { buildBatchSystemPrompt } from "@/lib/content-engine-prompts";
+import { buildBatchSystemPrompt, CONTENT_ENGINE_DEFAULT_ADDENDUM } from "@/lib/content-engine-prompts";
 import prisma from "@/lib/prisma";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -38,8 +38,9 @@ export async function POST(req: NextRequest) {
     theme,
   });
 
-  if (customSetting?.value?.trim()) {
-    systemPrompt = systemPrompt + "\n\n" + customSetting.value;
+  const addendum = customSetting !== null ? (customSetting.value ?? "") : CONTENT_ENGINE_DEFAULT_ADDENDUM;
+  if (addendum.trim()) {
+    systemPrompt = systemPrompt + "\n\n" + addendum;
   }
 
   const response = await client.messages.create({

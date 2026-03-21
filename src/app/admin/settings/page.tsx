@@ -833,6 +833,13 @@ export default function SettingsPage() {
       <FeatureVisibilitySection />
       <AIScoringPromptSection />
       <PromptEditorSection
+        title="Content Engine — Buy-Side Framing Rules"
+        description="Additional rules appended to the Content Engine system prompt. Controls how the AI frames titles across all themes. The default enforces buy-side title framing for sell-side stress themes. Reset to restore the default buy-side constraint."
+        settingKey="content_engine_prompt"
+        rows={22}
+        icon={<SparklesIcon className="w-5 h-5 text-[#3dc3ff]" />}
+      />
+      <PromptEditorSection
         title="Repurpose Content — Newsletter Prompt"
         description={`System prompt used when generating email newsletters. Use these tokens for dynamic values: {{MEMBER_NAME}}, {{BUSINESS_NAME}}, {{LIST_SIZE_TEXT}}, {{VOICE_STYLE}}, {{AVATAR_TEXT}}.`}
         settingKey="repurpose_newsletter_prompt"

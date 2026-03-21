@@ -1,0 +1,202 @@
+  Add 3 new repurposing tools to the existing Repurpose
+  Content page
+  (src/app/member/ai-tools/repurpose-content/page.tsx).
+  These sit alongside the existing Newsletter and LinkedIn
+  Article tools as checkboxes. Follow the same architecture
+  pattern as the existing tools (parallel API calls,
+  editable results, 30-day retention via the existing
+  RepurposedContent model).
+
+  1. UI Changes — Results Layout
+
+  The current tabbed results view needs to be replaced with
+  a stacked collapsible card layout. With up to 5 outputs,
+  tabs get crowded especially on mobile.
+
+  - Each generated output appears as its own collapsible
+  card, stacked vertically
+  - Cards are expanded by default on generation, collapsible
+   after
+  - Each card has a header showing the format name (e.g.,
+  "Facebook Post", "Blog Post") with copy and save buttons
+  in the header
+  - Only the outputs the member selected appear — no empty
+  cards
+  - Cards maintain the same edit/copy/save functionality
+  - This replaces the tabbed approach for ALL outputs
+  including the existing Newsletter and LinkedIn Article
+
+  2. New Checkboxes
+
+  Add three new checkboxes to the input form alongside
+  Newsletter and LinkedIn Article:
+
+  - Facebook Post
+  - Blog Post (AI-Optimized)
+  - Neighbourhood Postcard
+
+  When "Neighbourhood Postcard" is checked, show a text
+  input: "What neighbourhood are you sending this to?"
+
+  3. Facebook Post — POST /api/ai-tools/repurpose-facebook
+
+  Input: { transcript, title }
+  Loads from DB: avatar profile, repurpose profile (name,
+  business, voice style)
+  Model: claude-sonnet-4-20250514, max_tokens: 1024
+
+  Returns:
+  {
+    "result": {
+      "post_body": "...",
+      "first_comment": "...",
+      "hashtags": ["...", "..."]
+    }
+  }
+
+  System prompt rules:
+  - Generate a 150–300 word Facebook post that pulls the
+  most relatable or provocative takeaway from the video
+  - Structure: hook line (question or bold statement) → 3–5
+  short paragraphs delivering one key insight → soft CTA ("I
+   broke this down in detail — link in comments")
+  - Generate a separate first_comment field with the link
+  text (Facebook suppresses posts with links in the body)
+  - Tone: conversational, first-person, like telling a
+  friend what you just learned. Direct, no hype.
+  - No hashtag spam — maximum 3 relevant hashtags or none
+  - No emojis unless they serve the message (not decorative)
+  - Canadian spelling throughout
+  - Never use dashes of any kind (em dashes, en dashes, or
+  hyphens as pauses)
+  - Inject member's avatar profile, name, business, and
+  voice style into the prompt
+
+  Card layout: Two distinct sections — "Post body" (editable
+   text area) and "First comment" (separate editable text
+  area labelled "Paste this as your first comment").
+
+  4. Blog Post (AI-Optimized) — POST
+  /api/ai-tools/repurpose-blog
+
+  Input: { transcript, title }
+  Loads from DB: avatar profile, repurpose profile (name,
+  business, voice style)
+  Model: claude-sonnet-4-20250514, max_tokens: 4096
+
+  Returns:
+  {
+    "result": {
+      "blog_title": "...",
+      "full_article": "... (complete formatted article as
+  markdown)",
+      "meta_description": "... (150-160 chars, written as a
+  direct answer snippet)",
+      "reading_time": "X minutes"
+    }
+  }
+
+  System prompt rules — this is AI-optimized, NOT
+  traditional SEO:
+  - 800–1,200 words
+  - Title must be a clear question in natural language —
+  mirrors how someone would ask an AI (e.g., "How Do You Buy
+   and Sell a Home at the Same Time in Calgary?" not "Tips
+  for Simultaneous Transactions")
+  - Opening paragraph answers the title question immediately
+   in 2–3 sentences — no preamble, no "in this article we'll
+   explore..." This is what gets pulled into AI-generated
+  answers (ChatGPT, Claude, Perplexity, Google AI
+  Overviews).
+  - All subheadings must be follow-up questions a reader
+  would naturally ask next
+  - Each section leads with a direct, factual answer then
+  expands with context, local specifics, and experience
+  - Use specific numbers, names, and local details from the
+  transcript — AI tools prioritize concrete data over
+  generic advice
+  - Include an author attribution block at the end (full
+  name, title, brokerage, city) — AI tools weight sourced,
+  attributed content higher
+  - Include [EMBED VIDEO: {title}] placeholder at the top
+  - Closing CTA to watch the full video breakdown
+  - No fabricated statistics, case studies, or examples not
+  in the transcript
+  - Canadian spelling throughout
+  - Never use dashes of any kind (em dashes, en dashes, or
+  hyphens as pauses)
+  - Inject member's avatar profile, name, business, and
+  voice style into the prompt
+
+  5. Neighbourhood Postcard — POST
+  /api/ai-tools/repurpose-postcard
+
+  Input: { transcript, title, neighbourhood }
+  Loads from DB: avatar profile, repurpose profile (name,
+  business)
+  Model: claude-sonnet-4-20250514, max_tokens: 512
+
+  Returns:
+  {
+    "result": {
+      "front_headline": "...",
+      "front_hook": "...",
+      "back_body": "...",
+      "video_url_placeholder": "[Insert your video URL for
+  QR code generation]"
+    }
+  }
+
+  CRITICAL DESIGN PRINCIPLE — ALWAYS BUY-SIDE:
+  The postcard speaks to homeowners who are thinking about
+  their NEXT home — never about selling their current one.
+  The current home is the fuel for the move, never the
+  headline. This must be enforced in the prompt.
+
+  Correct framing examples:
+  - "Wondering what your next home looks like after Aspen
+  Woods? I just broke down what families in your position
+  are actually buying — and what it takes to get there."
+  - "Most Tuscany families looking to move up have no idea
+  how much buying power they're actually sitting on. I made
+  a video about it."
+
+  NEVER generate:
+  - "Thinking of selling your Aspen Woods home?"
+  - "Find out what your home is worth"
+  - "Is it time to list?"
+
+  System prompt rules:
+  - Front copy: maximum 25 words (headline + compelling
+  line)
+  - Back copy: maximum 60 words (2–3 sentences)
+  - Must reference the specific neighbourhood by name (from
+  user input)
+  - Must be framed from the buy side — the viewer is
+  thinking about their next home
+  - The video does the heavy lifting — the postcard just
+  gets them there
+  - No salesy language, no urgency tactics, no "call me
+  today"
+  - Curiosity over pressure
+  - Canadian spelling throughout
+
+  Card layout: Two-panel layout — "Front" (headline + hook
+  in a card-like preview) and "Back" (body copy in a
+  card-like preview). Note beneath: "Copy this text into
+  your postcard design tool (Canva, etc.)"
+
+  6. Database
+
+  No schema changes needed. The existing RepurposedContent
+  model's toolType field accepts three new values:
+  "facebook", "blog", "postcard". The output JSON field
+  stores the tool-specific structured output. For postcard
+  records, also store the neighbourhood value in the output
+  JSON so it shows in Past Outputs.
+
+  7. AIToolsHub
+
+  Update the Repurpose Content card description to: "Turn
+  your video transcript into a newsletter, LinkedIn article,
+   Facebook post, blog post, or neighbourhood postcard"

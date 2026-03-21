@@ -11,6 +11,7 @@ import {
 } from "@/lib/audit-engine";
 import { ARC_MASTER_SYSTEM_PROMPT } from "@/lib/arc-script-builder-prompt";
 import { DEFAULT_NEWSLETTER_PROMPT, DEFAULT_LINKEDIN_PROMPT } from "@/lib/repurpose-prompts";
+import { CONTENT_ENGINE_DEFAULT_ADDENDUM } from "@/lib/content-engine-prompts";
 
 export async function GET(req: NextRequest) {
   const session = await auth();
@@ -30,7 +31,7 @@ export async function GET(req: NextRequest) {
     title_creator_prompt: TITLE_CREATOR_PROMPT,
     title_thumbnail_analyzer_prompt: TITLE_THUMBNAIL_ANALYZER_PROMPT,
     prompt_arc_script_builder: ARC_MASTER_SYSTEM_PROMPT,
-    content_engine_prompt: "",
+    content_engine_prompt: CONTENT_ENGINE_DEFAULT_ADDENDUM,
     repurpose_newsletter_prompt: DEFAULT_NEWSLETTER_PROMPT,
     repurpose_linkedin_prompt: DEFAULT_LINKEDIN_PROMPT,
   };

@@ -232,10 +232,10 @@ export default function ThemeDashboard({ themes, niche, city, hasImported, impor
         <div className="mt-6 bg-[#f8f8f6] dark:bg-[#1a1f2e] rounded-2xl border border-[#1e2a38]/10 dark:border-white/10 p-5">
           <div className="flex items-center gap-2 mb-3">
             <h3 className="font-semibold text-[#1e2a38]/60 dark:text-white/60 text-sm">Imported Titles ({importedCount})</h3>
-            <span className="text-xs text-[#1e2a38]/40 dark:text-white/40 bg-[#1e2a38]/5 dark:bg-white/5 px-2 py-0.5 rounded-full">From old Title Creator</span>
+            <span className="text-xs text-[#1e2a38]/40 dark:text-white/40 bg-[#1e2a38]/5 dark:bg-white/5 px-2 py-0.5 rounded-full">Imported titles</span>
           </div>
           <p className="text-xs text-[#1e2a38]/40 dark:text-white/40 mb-3">
-            These titles were saved from the old Title Creator. You can keep them here or delete ones you no longer need.
+            These titles were imported into the Content Engine. You can keep them here or delete ones you no longer need.
           </p>
           <div className="space-y-2">
             {importedIdeas.slice(0, 10).map((idea) => (
