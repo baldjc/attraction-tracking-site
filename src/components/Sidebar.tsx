@@ -234,20 +234,13 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
     }
   }
 
-  async function handleSwitchMember(member: MemberOption) {
+  function handleSwitchMember(member: MemberOption) {
     setShowSwitch(false);
+    const memberName = member.fullName ?? member.email;
     try {
-      const res = await fetch("/api/admin/impersonate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ memberId: member.id }),
-      });
-      if (!res.ok) return;
-      const memberName = member.fullName ?? member.email;
       localStorage.setItem(IMPERSONATE_LS_KEY, JSON.stringify({ memberId: member.id, memberName }));
-      setImpersonate({ memberId: member.id, memberName });
-      window.location.href = "/member/dashboard?_t=" + Date.now();
     } catch { }
+    window.location.href = "/api/admin/switch?memberId=" + encodeURIComponent(member.id);
   }
 
   const homeHref = isStaffOnMemberView

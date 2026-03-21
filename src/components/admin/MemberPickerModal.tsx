@@ -43,27 +43,13 @@ export default function MemberPickerModal({ onClose, adminEmail }: Props) {
     return (m.fullName ?? "").toLowerCase().includes(q) || m.email.toLowerCase().includes(q);
   });
 
-  async function handleSelect(member: Member) {
+  function handleSelect(member: Member) {
     setSelecting(member.id);
+    const memberName = member.fullName ?? member.email;
     try {
-      const res = await fetch("/api/admin/impersonate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ memberId: member.id }),
-      });
-      if (!res.ok) {
-        alert("Failed to switch member");
-        setSelecting(null);
-        return;
-      }
-      const memberName = member.fullName ?? member.email;
-      try {
-        localStorage.setItem(IMPERSONATE_LS_KEY, JSON.stringify({ memberId: member.id, memberName }));
-      } catch { }
-      window.location.href = "/member/dashboard?_t=" + Date.now();
-    } catch {
-      setSelecting(null);
-    }
+      localStorage.setItem(IMPERSONATE_LS_KEY, JSON.stringify({ memberId: member.id, memberName }));
+    } catch { }
+    window.location.href = "/api/admin/switch?memberId=" + encodeURIComponent(member.id);
   }
 
   return (
