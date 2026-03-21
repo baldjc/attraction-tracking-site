@@ -945,7 +945,24 @@ export default function RepurposeContentPage() {
 
       {hasResults && (
         <div className="space-y-4">
-          {loading && (
+          <div className="flex items-center justify-between">
+            <button
+              onClick={reset}
+              className="flex items-center gap-1.5 text-sm text-[#1e2a38]/55 dark:text-white/55 hover:text-[#3dc3ff] dark:hover:text-[#3dc3ff] transition-colors font-medium"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              New content
+            </button>
+            {loading && (
+              <span className="text-sm text-[#1e2a38]/50 dark:text-white/50 animate-pulse">
+                Generating — this may take a minute…
+              </span>
+            )}
+          </div>
+
+          {loading && !newsletterResult && !linkedInResult && !facebookResult && !blogResult && !postcardResult && (
             <div className="text-center py-4 text-sm text-[#1e2a38]/50 dark:text-white/50 animate-pulse">
               Generating your content — this may take a minute for longer formats…
             </div>
