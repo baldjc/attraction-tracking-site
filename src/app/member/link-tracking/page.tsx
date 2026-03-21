@@ -30,7 +30,7 @@ const PLATFORM_INSTRUCTIONS: { key: string; label: string; instructions: string 
     key: "wp",
     label: "WordPress",
     instructions:
-      "Install the free "Insert Headers and Footers" plugin from the WordPress plugin directory. Once active, go to Settings → Insert Headers and Footers and paste the snippet into the Header section. It will apply site-wide.",
+      'Install the free "Insert Headers and Footers" plugin from the WordPress plugin directory. Once active, go to Settings → Insert Headers and Footers and paste the snippet into the Header section. It will apply site-wide.',
   },
   {
     key: "squarespace",
@@ -399,9 +399,9 @@ That's it — one snippet, site-wide. Let me know when it's done.`;
           </p>
           <ul className="space-y-1.5">
             {[
-              "They download your neighbourhood guide → they see a page that says "Check your email!"",
+              `They download your neighbourhood guide → they see a page that says "Check your email!"`,
               "They book a call → they see a confirmation page.",
-              "They sign up for your newsletter → they see a "You're in!" page.",
+              `They sign up for your newsletter → they see a "You're in!" page.`,
             ].map((item, i) => (
               <li key={i} className="flex items-start gap-2">
                 <span className="shrink-0 mt-1.5 w-1.5 h-1.5 rounded-full bg-[#3dc3ff]" />
