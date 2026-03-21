@@ -9,12 +9,25 @@ const nextConfig: NextConfig = {
     "*.repl.co",
     ...(devDomain ? [devDomain] : []),
   ],
+  async rewrites() {
+    return [
+      { source: "/t.js", destination: "/api/t.js" },
+    ];
+  },
   async headers() {
     return [
       {
         source: "/(.*)",
         headers: [
           { key: "X-Frame-Options", value: "ALLOWALL" },
+        ],
+      },
+      {
+        source: "/t.js",
+        headers: [
+          { key: "Access-Control-Allow-Origin", value: "*" },
+          { key: "Content-Type", value: "application/javascript" },
+          { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
         ],
       },
     ];

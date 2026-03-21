@@ -17,7 +17,7 @@ interface ProfileData {
   thankYouPageUrl: string | null;
 }
 
-const SNIPPET_DOMAIN = "https://member.attractionbyvideo.com";
+const SNIPPET_DOMAIN = "https://members.attractionbyvideo.com";
 
 const PLATFORM_INSTRUCTIONS: { key: string; label: string; instructions: string }[] = [
   {
