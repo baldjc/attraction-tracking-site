@@ -32,6 +32,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         <script
+          suppressHydrationWarning
           dangerouslySetInnerHTML={{
             __html: `(function(){try{if(localStorage.getItem('atbv-theme')==='dark')document.documentElement.classList.add('dark');}catch(e){}})();`,
           }}
