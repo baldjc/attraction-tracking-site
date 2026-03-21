@@ -13,8 +13,9 @@ const SNIPPET = `(function(){
   var API_BASE=script.src?(new URL(script.src).origin):'https://members.attractionbyvideo.com';
   var COOKIE_NAME='_atref';
   var SESSION_KEY='_atsid';
+  function getRootDomain(){var h=window.location.hostname;if(h==='localhost'||/^\d{1,3}(\.\d{1,3}){3}$/.test(h))return null;var p=h.split('.');if(p.length<=2)return h;var tld=p[p.length-1];var sld=p[p.length-2];return(tld.length===2&&sld.length<=3)?p.slice(-3).join('.'):p.slice(-2).join('.');}
   function getCookie(n){var m=document.cookie.match(new RegExp('(^| )'+n+'=([^;]+)'));return m?m[2]:null;}
-  function setCookie(n,v,d){var e=new Date();e.setTime(e.getTime()+d*86400000);document.cookie=n+'='+v+';expires='+e.toUTCString()+';path=/;SameSite=Lax;Secure';}
+  function setCookie(n,v,d){var e=new Date();e.setTime(e.getTime()+d*86400000);var r=getRootDomain();var dp=r?';domain=.'+r:'';document.cookie=n+'='+v+';expires='+e.toUTCString()+';path=/'+dp+';SameSite=Lax;Secure';}
   function getSession(){try{return sessionStorage.getItem(SESSION_KEY);}catch(e){return null;}}
   function setSession(s){try{sessionStorage.setItem(SESSION_KEY,s);}catch(e){}}
   function normPath(raw){try{return new URL(raw).pathname.toLowerCase().replace(/\/$/,'')||'/';}catch(e){return raw.split('?')[0].split('#')[0].toLowerCase().replace(/\/$/,'')||'/';}}
