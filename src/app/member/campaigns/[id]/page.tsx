@@ -201,6 +201,13 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
     loadAnalytics(period);
   }
 
+  async function resetStats(linkId: string, linkName: string) {
+    if (!confirm(`Reset all clicks and leads for "${linkName}"? This cannot be undone — use this before going live.`)) return;
+    await fetch(`/api/campaigns/${id}/links/${linkId}/reset-stats`, { method: "POST" });
+    loadCampaign();
+    loadAnalytics(period);
+  }
+
   function copy(text: string, key: string) {
     navigator.clipboard.writeText(text);
     setCopied(key);
@@ -378,6 +385,7 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                         <button onClick={() => openEdit(link)} className="text-[#1e2a38]/30 hover:text-[#3dc3ff] transition-colors" title="Edit link">
                           <PencilIcon className="w-3.5 h-3.5" />
                         </button>
+                        <button onClick={() => resetStats(link.id, link.name)} className="text-xs text-[#1e2a38]/30 hover:text-amber-500 transition-colors" title="Reset clicks &amp; leads for testing">Reset</button>
                         <button onClick={() => deleteLink(link.id)} className="text-xs text-[#1e2a38]/30 hover:text-red-500 transition-colors">Delete</button>
                       </div>
                     </div>
