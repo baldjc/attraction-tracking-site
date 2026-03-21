@@ -96,11 +96,18 @@ export default function MemberSettingsPage() {
   const [savingCredentials, setSavingCredentials] = useState(false);
   const [savedCredentials, setSavedCredentials] = useState(false);
 
+  const [channelUrl, setChannelUrl] = useState("");
+  const [channelHandle, setChannelHandle] = useState<string | null>(null);
+  const [channelName, setChannelName] = useState<string | null>(null);
+  const [savingChannel, setSavingChannel] = useState(false);
+  const [savedChannel, setSavedChannel] = useState(false);
+
   useEffect(() => {
     Promise.all([
       fetch("/api/member/avatar").then((r) => r.json()),
       fetch("/api/member/profile").then((r) => r.json()),
-    ]).then(([avatarData, profileData]: [AvatarData, ProfileData]) => {
+      fetch("/api/member/channel").then((r) => r.json()),
+    ]).then(([avatarData, profileData, channelData]: [AvatarData, ProfileData, { youtubeChannelUrl: string | null; youtubeHandle: string | null; youtubeChannelName: string | null }]) => {
       setAvatar(avatarData);
       if (avatarData?.avatarProfile) {
         try {
@@ -112,6 +119,9 @@ export default function MemberSettingsPage() {
         } catch { setAvatarText(""); }
       }
       setCredentials(profileData?.creatorCredentials ?? "");
+      setChannelUrl(channelData?.youtubeChannelUrl ?? "");
+      setChannelHandle(channelData?.youtubeHandle ?? null);
+      setChannelName(channelData?.youtubeChannelName ?? null);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
@@ -145,6 +155,22 @@ export default function MemberSettingsPage() {
     setSavingCredentials(false);
     setSavedCredentials(true);
     setTimeout(() => setSavedCredentials(false), 3000);
+  }
+
+  async function saveChannel() {
+    setSavingChannel(true);
+    setSavedChannel(false);
+    const res = await fetch("/api/member/channel", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ youtubeChannelUrl: channelUrl || null }),
+    });
+    const data = await res.json();
+    setChannelHandle(data.youtubeHandle ?? null);
+    setChannelName(data.youtubeChannelName ?? null);
+    setSavingChannel(false);
+    setSavedChannel(true);
+    setTimeout(() => setSavedChannel(false), 3000);
   }
 
   const hasAvatar = !!avatar?.avatarProfile;
@@ -269,6 +295,76 @@ export default function MemberSettingsPage() {
                       {saving ? "Saving..." : "Save Avatar"}
                     </button>
                   </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* YouTube Channel Section */}
+      <div className="bg-white dark:bg-[#242b3d] border border-[#1e2a38]/10 dark:border-[#2d3748] rounded-2xl overflow-hidden">
+        <div className="px-6 py-5 border-b border-[#1e2a38]/10 dark:border-[#2d3748]">
+          <h2 className="font-semibold text-[#1e2a38] dark:text-[#e2e8f0]">YouTube Channel</h2>
+          <p className="text-sm text-[#1e2a38]/50 dark:text-[#718096] mt-0.5">
+            Your channel URL is used for audits, top video tracking, and AI tools.
+          </p>
+        </div>
+        <div className="p-6">
+          {loading ? (
+            <p className="text-sm text-[#1e2a38]/40 dark:text-[#718096] animate-pulse">Loading...</p>
+          ) : (
+            <div className="space-y-4">
+              {channelName && (
+                <div className="flex items-center gap-3 bg-[#f1f1ef] dark:bg-[#1a1f2e] rounded-xl px-4 py-3">
+                  <div className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0">
+                    <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-[#1e2a38] dark:text-[#e2e8f0]">{channelName}</p>
+                    {channelHandle && <p className="text-xs text-[#1e2a38]/50 dark:text-[#718096]">{channelHandle}</p>}
+                  </div>
+                  <a
+                    href={channelUrl || `https://youtube.com/${channelHandle}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="ml-auto text-xs text-[#3dc3ff] hover:underline"
+                  >
+                    View →
+                  </a>
+                </div>
+              )}
+              <div>
+                <label className="block text-sm font-semibold text-[#1e2a38] dark:text-[#e2e8f0] mb-2">
+                  Channel URL
+                </label>
+                <input
+                  type="url"
+                  value={channelUrl}
+                  onChange={(e) => setChannelUrl(e.target.value)}
+                  placeholder="https://www.youtube.com/@YourHandle"
+                  className="w-full border border-[#1e2a38]/20 dark:border-[#2d3748] rounded-xl px-4 py-3 text-sm text-[#1e2a38] dark:text-[#e2e8f0] placeholder-[#1e2a38]/30 dark:bg-[#242b3d] focus:outline-none focus:border-[#3dc3ff]"
+                />
+                <p className="text-xs text-[#1e2a38]/40 dark:text-[#718096] mt-1.5">
+                  Paste your full channel URL, e.g. <span className="font-mono">https://www.youtube.com/@JaredChamberlain</span>
+                </p>
+              </div>
+              <div className="flex items-center justify-between">
+                {savedChannel && (
+                  <span className="flex items-center gap-1.5 text-sm text-green-600">
+                    <CheckIcon className="w-4 h-4" /> Saved &amp; synced to GHL
+                  </span>
+                )}
+                <div className="ml-auto">
+                  <button
+                    onClick={saveChannel}
+                    disabled={savingChannel}
+                    className="bg-[#3dc3ff] text-white px-5 py-2 rounded-xl text-sm font-semibold hover:bg-[#3dc3ff]/90 disabled:opacity-50 transition-colors"
+                  >
+                    {savingChannel ? "Saving..." : "Save Channel"}
+                  </button>
                 </div>
               </div>
             </div>

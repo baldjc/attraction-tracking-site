@@ -142,6 +142,29 @@ export async function fetchLocationCustomFields(): Promise<GHLCustomFieldDef[]> 
   }
 }
 
+export async function updateContactCustomField(
+  contactId: string,
+  fieldId: string,
+  value: string
+): Promise<boolean> {
+  try {
+    const res = await fetch(`${GHL_BASE_URL}/contacts/${contactId}`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${getApiKey()}`,
+        Version: "2021-07-28",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        customFields: [{ id: fieldId, value }],
+      }),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 export async function fetchLocationCustomValues(): Promise<GHLCustomValue[]> {
   try {
     const res = await fetch(
