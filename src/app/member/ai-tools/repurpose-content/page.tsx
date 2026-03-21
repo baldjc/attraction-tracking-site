@@ -241,6 +241,7 @@ export default function RepurposeContentPage() {
 
   const [title, setTitle] = useState("");
   const [transcript, setTranscript] = useState("");
+  const [toolFlags, setToolFlags] = useState({ newsletter: true, linkedin: true, facebook: true, blog: true, postcard: true });
   const [generateNewsletter, setGenerateNewsletter] = useState(true);
   const [generateLinkedIn, setGenerateLinkedIn] = useState(true);
   const [generateFacebook, setGenerateFacebook] = useState(false);
@@ -317,6 +318,11 @@ export default function RepurposeContentPage() {
         setProfile(data.profile);
         setSavedLinks(data.savedLinks || []);
         setIsSetup(data.isSetup);
+        if (data.toolFlags) {
+          setToolFlags(data.toolFlags);
+          if (!data.toolFlags.newsletter) setGenerateNewsletter(false);
+          if (!data.toolFlags.linkedin) setGenerateLinkedIn(false);
+        }
       });
   }, []);
 
@@ -437,7 +443,12 @@ export default function RepurposeContentPage() {
     setTimeout(() => setSaved(false), 4000);
   }
 
-  const anySelected = generateNewsletter || generateLinkedIn || generateFacebook || generateBlog || generatePostcard;
+  const anySelected =
+    (toolFlags.newsletter && generateNewsletter) ||
+    (toolFlags.linkedin && generateLinkedIn) ||
+    (toolFlags.facebook && generateFacebook) ||
+    (toolFlags.blog && generateBlog) ||
+    (toolFlags.postcard && generatePostcard);
 
   async function generate() {
     if (!title.trim() || !transcript.trim()) return;
@@ -454,7 +465,7 @@ export default function RepurposeContentPage() {
 
     const promises: Promise<void>[] = [];
 
-    if (generateNewsletter) {
+    if (toolFlags.newsletter && generateNewsletter) {
       promises.push(
         fetch("/api/ai-tools/repurpose-newsletter", {
           method: "POST",
@@ -476,7 +487,7 @@ export default function RepurposeContentPage() {
       );
     }
 
-    if (generateLinkedIn) {
+    if (toolFlags.linkedin && generateLinkedIn) {
       const linksForApi = selectedLinkIndexes.map((i) => savedLinks[i]).filter(Boolean);
       const campaignLinksForApi = activeCampaignLinks.map((l) => ({ label: l.linkName, url: l.trackedUrl }));
       promises.push(
@@ -504,7 +515,7 @@ export default function RepurposeContentPage() {
       );
     }
 
-    if (generateFacebook) {
+    if (toolFlags.facebook && generateFacebook) {
       promises.push(
         fetch("/api/ai-tools/repurpose-facebook", {
           method: "POST",
@@ -526,7 +537,7 @@ export default function RepurposeContentPage() {
       );
     }
 
-    if (generateBlog) {
+    if (toolFlags.blog && generateBlog) {
       promises.push(
         fetch("/api/ai-tools/repurpose-blog", {
           method: "POST",
@@ -549,7 +560,7 @@ export default function RepurposeContentPage() {
       );
     }
 
-    if (generatePostcard) {
+    if (toolFlags.postcard && generatePostcard) {
       promises.push(
         fetch("/api/ai-tools/repurpose-postcard", {
           method: "POST",
@@ -672,12 +683,12 @@ export default function RepurposeContentPage() {
                 <label className="block text-sm font-semibold text-[#1e2a38] dark:text-white mb-3">Generate</label>
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                   {[
-                    { key: "newsletter", label: "Newsletter", value: generateNewsletter, setter: setGenerateNewsletter },
-                    { key: "linkedin", label: "LinkedIn Article", value: generateLinkedIn, setter: setGenerateLinkedIn },
-                    { key: "facebook", label: "Facebook Post", value: generateFacebook, setter: setGenerateFacebook },
-                    { key: "blog", label: "Blog Post (AI-Optimized)", value: generateBlog, setter: setGenerateBlog },
-                    { key: "postcard", label: "Neighbourhood Postcard", value: generatePostcard, setter: setGeneratePostcard },
-                  ].map(({ key, label, value, setter }) => (
+                    { key: "newsletter" as const, label: "Newsletter", value: generateNewsletter, setter: setGenerateNewsletter },
+                    { key: "linkedin" as const, label: "LinkedIn Article", value: generateLinkedIn, setter: setGenerateLinkedIn },
+                    { key: "facebook" as const, label: "Facebook Post", value: generateFacebook, setter: setGenerateFacebook },
+                    { key: "blog" as const, label: "Blog Post (AI-Optimized)", value: generateBlog, setter: setGenerateBlog },
+                    { key: "postcard" as const, label: "Neighbourhood Postcard", value: generatePostcard, setter: setGeneratePostcard },
+                  ].filter(({ key }) => toolFlags[key] !== false).map(({ key, label, value, setter }) => (
                     <label key={key} className="flex items-center gap-2 cursor-pointer">
                       <input
                         type="checkbox"

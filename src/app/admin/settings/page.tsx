@@ -497,6 +497,12 @@ interface FeatureFlags {
   tool_arc_script_builder: boolean;
   tool_title_analyzer: boolean;
   tool_script_review: boolean;
+  tool_repurpose_content: boolean;
+  tool_repurpose_newsletter: boolean;
+  tool_repurpose_linkedin: boolean;
+  tool_repurpose_facebook: boolean;
+  tool_repurpose_blog: boolean;
+  tool_repurpose_postcard: boolean;
   [key: string]: boolean;
 }
 
@@ -517,7 +523,18 @@ const FEATURE_DEFS = [
       { key: "tool_arc_script_builder", label: "ARC Script Builder", desc: "Video script outline builder" },
       { key: "tool_title_analyzer", label: "Title & Thumbnail Analyzer", desc: "Title/thumbnail scoring" },
       { key: "tool_script_review", label: "Script Review", desc: "Script scoring and feedback" },
-      { key: "tool_repurpose_content", label: "Repurpose Content", desc: "Turn transcripts into newsletters and LinkedIn articles" },
+      { key: "tool_repurpose_content", label: "Repurpose Content", desc: "Turn transcripts into content — also controls individual formats below" },
+    ],
+  },
+  {
+    group: "Repurpose Content Formats",
+    parentFlag: "tool_repurpose_content",
+    items: [
+      { key: "tool_repurpose_newsletter", label: "Newsletter", desc: "Email newsletter format" },
+      { key: "tool_repurpose_linkedin", label: "LinkedIn Article", desc: "Long-form LinkedIn article" },
+      { key: "tool_repurpose_facebook", label: "Facebook Post", desc: "Facebook post and first comment" },
+      { key: "tool_repurpose_blog", label: "Blog Post (AI-Optimized)", desc: "AI-citation-ready blog article" },
+      { key: "tool_repurpose_postcard", label: "Neighbourhood Postcard", desc: "Direct mail postcard copy" },
     ],
   },
 ];
@@ -602,12 +619,26 @@ function FeatureVisibilitySection() {
       {flags && FEATURE_DEFS.map((group) => {
         const isAiGroup = group.group === "AI Tools";
         const aiOn = flags.ai_tools !== false;
+        const parentFlag = (group as { parentFlag?: string }).parentFlag;
+        const parentOn = parentFlag ? flags[parentFlag] !== false : true;
+        const groupDimmed = (isAiGroup && !aiOn) || (!!parentFlag && (!aiOn || !parentOn));
+        const isSubGroup = !!parentFlag;
 
         return (
-          <div key={group.group} className="mb-5 last:mb-0">
+          <div key={group.group} className={`mb-5 last:mb-0 ${isSubGroup ? "ml-4 pl-4 border-l-2 border-[#1e2a38]/10" : ""}`}>
             <p className="text-xs font-semibold text-[#1e2a38]/40 uppercase tracking-wider mb-2">
               {group.group}
               {isAiGroup && !aiOn && (
+                <span className="ml-2 font-normal text-amber-600 normal-case tracking-normal">
+                  — hidden (AI Tools Hub is off)
+                </span>
+              )}
+              {isSubGroup && !parentOn && aiOn && (
+                <span className="ml-2 font-normal text-amber-600 normal-case tracking-normal">
+                  — hidden (Repurpose Content is off)
+                </span>
+              )}
+              {isSubGroup && !aiOn && (
                 <span className="ml-2 font-normal text-amber-600 normal-case tracking-normal">
                   — hidden (AI Tools Hub is off)
                 </span>
@@ -617,7 +648,7 @@ function FeatureVisibilitySection() {
               {group.items.map((item) => {
                 const isOn = flags[item.key] !== false;
                 const isSaving = saving === item.key;
-                const dimmed = isAiGroup && !aiOn;
+                const dimmed = groupDimmed;
 
                 return (
                   <div

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import prisma from "@/lib/prisma";
+import { getFeatureFlags } from "@/lib/feature-flags";
 
 export async function GET() {
   const user = await resolveUserFromSession();
@@ -17,6 +18,8 @@ export async function GET() {
     },
   });
 
+  const flags = await getFeatureFlags();
+
   return NextResponse.json({
     profile: {
       name: dbUser?.repurposeName ?? "",
@@ -26,6 +29,13 @@ export async function GET() {
     },
     savedLinks: dbUser?.savedLinks ?? [],
     isSetup: !!(dbUser?.repurposeName && dbUser?.repurposeBusiness && dbUser?.repurposeVoice),
+    toolFlags: {
+      newsletter: flags.tool_repurpose_newsletter !== false,
+      linkedin: flags.tool_repurpose_linkedin !== false,
+      facebook: flags.tool_repurpose_facebook !== false,
+      blog: flags.tool_repurpose_blog !== false,
+      postcard: flags.tool_repurpose_postcard !== false,
+    },
   });
 }
 

@@ -12,6 +12,11 @@ export interface FeatureFlags {
   tool_title_analyzer: boolean;
   tool_script_review: boolean;
   tool_repurpose_content: boolean;
+  tool_repurpose_newsletter: boolean;
+  tool_repurpose_linkedin: boolean;
+  tool_repurpose_facebook: boolean;
+  tool_repurpose_blog: boolean;
+  tool_repurpose_postcard: boolean;
   [key: string]: boolean;
 }
 
@@ -27,6 +32,11 @@ export const DEFAULT_FLAGS: FeatureFlags = {
   tool_title_analyzer: true,
   tool_script_review: true,
   tool_repurpose_content: true,
+  tool_repurpose_newsletter: true,
+  tool_repurpose_linkedin: true,
+  tool_repurpose_facebook: true,
+  tool_repurpose_blog: true,
+  tool_repurpose_postcard: true,
 };
 
 export async function getFeatureFlags(): Promise<FeatureFlags> {
