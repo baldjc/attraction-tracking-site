@@ -20,7 +20,7 @@ interface Message {
   content: string;
 }
 
-type RawTheme = string | { name: string; emoji?: string | null; colour?: string | null; coreStress?: string | null };
+type RawTheme = string | { name: string; emoji?: string | null; colour?: string | null; coreStress?: string | null; content_engine_prompt?: string | null };
 
 interface AvatarData {
   avatar_name: string;

@@ -853,6 +853,13 @@ export default function SettingsPage() {
         rows={36}
         icon={<PencilSquareIcon className="w-5 h-5 text-[#3dc3ff]" />}
       />
+      <PromptEditorSection
+        title="Avatar Architect — System Prompt"
+        description="Full system prompt for the Avatar Architect coaching conversation. Controls the 4-phase flow, question bank, avatar document template, stress theme format, content engine prompt rules, and title frameworks. Reset to restore the built-in prompt."
+        settingKey="avatar_architect_prompt"
+        rows={50}
+        icon={<SparklesIcon className="w-5 h-5 text-[#3dc3ff]" />}
+      />
     </div>
   );
 }
