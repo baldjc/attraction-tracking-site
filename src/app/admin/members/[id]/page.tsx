@@ -138,6 +138,7 @@ export default function MemberDetailPage() {
   // Audit dropdown + job polling (separate state for header vs sidebar)
   const [auditOpenHeader, setAuditOpenHeader] = useState(false);
   const [auditOpenSidebar, setAuditOpenSidebar] = useState(false);
+  const [breakdownOpen, setBreakdownOpen] = useState(false);
   const [jobId, setJobId] = useState<string | null>(null);
   const [jobStatus, setJobStatus] = useState<string>("");
   const [jobMessage, setJobMessage] = useState<string>("");
@@ -899,16 +900,32 @@ export default function MemberDetailPage() {
           </div>
 
           {/* 16-PRINCIPLE BREAKDOWN */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-            <h2 className="text-base font-semibold text-[#1e2a38] mb-4">
-              16-Principle Breakdown
-            </h2>
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <button
+              onClick={() => setBreakdownOpen((o) => !o)}
+              className="w-full flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition-colors"
+            >
+              <h2 className="text-base font-semibold text-[#1e2a38]">16-Principle Breakdown</h2>
+              <div className="flex items-center gap-2">
+                {latestAudit && (
+                  <span className="text-xs text-[#1e2a38]/40 font-medium">
+                    {DIMENSIONS.length} categories
+                  </span>
+                )}
+                <ChevronDownIcon
+                  className={`w-4 h-4 text-[#1e2a38]/40 transition-transform duration-200 ${breakdownOpen ? "rotate-180" : ""}`}
+                />
+              </div>
+            </button>
+
+            {breakdownOpen && (
+              <div className="px-6 pb-6 border-t border-gray-100">
             {!latestAudit ? (
               <p className="text-sm text-[#1e2a38]/50 text-center py-8">
                 Scores will appear after the first audit.
               </p>
             ) : (
-              <div className="space-y-6">
+              <div className="space-y-6 pt-4">
                 {DIMENSIONS.map((dim) => {
                   const dimScores = dim.keys
                     .map((k) => extractScore(rawLatestScores, k))
@@ -984,6 +1001,8 @@ export default function MemberDetailPage() {
                     </div>
                   );
                 })}
+              </div>
+            )}
               </div>
             )}
           </div>
