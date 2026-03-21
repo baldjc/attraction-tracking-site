@@ -1,0 +1,65 @@
+  ▎ In the Avatar Architect system prompt (the AI 
+  coach instructions), add a "Recognised Theme     
+  Patterns" section after the stress phases 
+  instructions. This section teaches the AI to     
+  recognise common theme patterns that emerge    
+  during the deep dig and suggest them as stress 
+  phases when they fit.
+
+  ▎ Add this block to the system prompt:           
+  
+  ▎ ## Recognised Theme Patterns                   
+                                                 
+  ▎ When the avatar's journey includes choosing    
+  WHERE to buy (not just whether to buy), recognise
+   this as a distinct stress phase called "The     
+  Neighbourhood." This is common for move-up     
+  buyers, relocators, and families upgrading.    
+
+  ▎ Present it as:                                 
+  ▎ - **Phase Name:** The Neighbourhood — "Are We 
+  Picking the Right Area?"                         
+  ▎ - **What's happening:** They know they want to 
+  upgrade but choosing where feels overwhelming —  
+  and picking wrong means living with a massive  
+  mistake.                                         
+  ▎ - **Specific fears:** Fear of picking wrong and
+   regretting it, overwhelm from too many options, 
+  overpaying for an area that doesn't deliver, 
+  missing hidden gems and streets they'd never find
+   on their own.                                 
+  ▎ - **What they need to hear:** Which areas match
+   their lifestyle and budget, what the market data
+   says (inventory, price trends, growth), hidden 
+  pockets most buyers overlook, how to evaluate a  
+  neighbourhood beyond curb appeal.              
+                                                 
+  ▎ This theme generates content across 4 video    
+  type categories:
+  ▎ 1. City-wide roundups — best move-up areas in  
+  [CITY] for [criteria]                            
+  ▎ 2. Data-driven groupings — areas filtered by 
+  market stats (MOI, price range,                  
+  quadrant/corridor, growth). NOT 1v1 comparisons 
+  or single-area deep dives. Comparisons are fine  
+  when covering larger areas or 3+ grouped by    
+  criteria.                                      
+  ▎ 3. Lifestyle-fit filters — areas matched to 
+  priorities (schools, walkability, lot size,      
+  commute, family stage)
+  ▎ 4. Hidden gems / street-level — underrated     
+  pockets, specific streets, areas most buyers     
+  overlook. Can be standalone or embedded.       
+                                                   
+  ▎ Only suggest this theme when the avatar's      
+  situation naturally involves neighbourhood/area 
+  discovery. Don't force it for avatars like       
+  first-time buyers in a single small town where 
+  location choice isn't a major stress point.    
+
+  ▎ This should not replace any existing logic — it
+   adds a recognisable pattern the AI can draw on 
+  when building stress phases. The AI should still 
+  generate phases organically from the           
+  conversation, but now it has this pattern to   
+  reference when it fits.

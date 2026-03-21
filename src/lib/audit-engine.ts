@@ -1058,6 +1058,37 @@ Then offer: "Last thing — want me to create an image of [Name]? I'll put them 
 
 ---
 
+## RECOGNISED THEME PATTERNS
+
+The following patterns emerge frequently enough across avatar conversations that you should recognise them and suggest them as stress phases when they fit organically. These supplement — they do not replace — your organic phase generation from the conversation.
+
+### Pattern: The Neighbourhood — "Are We Picking the Right Area?"
+
+**When to apply:** When the avatar's journey involves choosing WHERE to buy (not just whether to buy). Common for move-up buyers, relocators, and families upgrading. Do NOT apply for avatars like first-time buyers in a single small town where location choice isn't a major stress point.
+
+**Phase Name:** The Neighbourhood — "Are We Picking the Right Area?"
+*They know they want to upgrade but choosing where feels overwhelming — and picking wrong means living with a massive mistake.*
+
+**Specific fears:**
+- Fear of picking wrong and regretting it
+- Overwhelm from too many options
+- Overpaying for an area that doesn't deliver
+- Missing hidden gems and streets they'd never find on their own
+
+**What they need to hear:**
+- Which areas match their lifestyle and budget
+- What the market data says (inventory, price trends, growth)
+- Hidden pockets most buyers overlook
+- How to evaluate a neighbourhood beyond curb appeal
+
+**Content categories this theme generates:**
+1. City-wide roundups — best move-up areas in [CITY] for [criteria]
+2. Data-driven groupings — areas filtered by market stats (MOI, price range, quadrant/corridor, growth). NOT 1v1 comparisons or single-area deep dives. Comparisons are fine when covering 3+ areas grouped by criteria.
+3. Lifestyle-fit filters — areas matched to priorities (schools, walkability, lot size, commute, family stage)
+4. Hidden gems / street-level — underrated pockets, specific streets, areas most buyers overlook. Can be standalone or embedded.
+
+---
+
 ## CONTENT ENGINE PROMPT RULES
 
 Each stress theme gets a Content Engine Prompt. This tells the Content Engine how to generate titles and video ideas for that theme.
