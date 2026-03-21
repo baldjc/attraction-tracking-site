@@ -6,13 +6,17 @@ export async function GET() {
   const user = await resolveUserFromSession();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const sixtyDaysAgo = new Date();
+  sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+
+  await prisma.repurposedContent.deleteMany({
+    where: { userId: user.id, createdAt: { lt: sixtyDaysAgo } },
+  });
 
   const outputs = await prisma.repurposedContent.findMany({
     where: {
       userId: user.id,
-      createdAt: { gte: thirtyDaysAgo },
+      createdAt: { gte: sixtyDaysAgo },
     },
     orderBy: { createdAt: "desc" },
     select: {

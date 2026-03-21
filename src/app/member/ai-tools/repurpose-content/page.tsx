@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { ChevronDownIcon, ChevronUpIcon, ClipboardDocumentIcon, CheckIcon } from "@heroicons/react/24/outline";
 
 function markdownToHtml(md: string): string {
@@ -141,8 +141,31 @@ const TOOL_LABELS: Record<string, string> = {
   newsletter: "Newsletter",
   linkedin: "LinkedIn Article",
   facebook: "Facebook Post",
-  blog: "Blog Post (AI-Optimized)",
-  postcard: "Neighbourhood Postcard",
+  blog: "Blog Post",
+  postcard: "Postcard",
+};
+
+const TOOL_COLORS: Record<string, { base: string; active: string }> = {
+  newsletter: {
+    base: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 hover:bg-amber-200 dark:hover:bg-amber-900/50",
+    active: "bg-amber-500 text-white dark:bg-amber-500",
+  },
+  linkedin: {
+    base: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/50",
+    active: "bg-blue-500 text-white dark:bg-blue-500",
+  },
+  facebook: {
+    base: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-900/50",
+    active: "bg-indigo-500 text-white dark:bg-indigo-500",
+  },
+  blog: {
+    base: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-900/50",
+    active: "bg-emerald-500 text-white dark:bg-emerald-500",
+  },
+  postcard: {
+    base: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 hover:bg-purple-200 dark:hover:bg-purple-900/50",
+    active: "bg-purple-500 text-white dark:bg-purple-500",
+  },
 };
 
 function nlFormatted(nl: NewsletterResult): string {
@@ -308,8 +331,7 @@ export default function RepurposeContentPage() {
 
   const [pastOutputs, setPastOutputs] = useState<PastOutput[]>([]);
   const [showPastOutputs, setShowPastOutputs] = useState(false);
-  const [expandedOutputId, setExpandedOutputId] = useState<string | null>(null);
-  const [copiedPastId, setCopiedPastId] = useState<string | null>(null);
+  const [expandedSession, setExpandedSession] = useState<{ key: string; tool: string } | null>(null);
 
   useEffect(() => {
     fetch("/api/ai-tools/repurpose-profile")
@@ -607,6 +629,25 @@ export default function RepurposeContentPage() {
   const transcriptLength = transcript.length;
   const overLimit = transcriptLength > 50000;
 
+  const TOOL_ORDER = ["newsletter", "linkedin", "facebook", "blog", "postcard"];
+  const sessions = useMemo(() => {
+    const groups = new Map<string, PastOutput[]>();
+    for (const output of pastOutputs) {
+      const dateStr = new Date(output.createdAt).toLocaleDateString();
+      const key = `${output.videoTitle}|||${dateStr}`;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push(output);
+    }
+    return Array.from(groups.entries()).map(([key, items]) => ({
+      key,
+      title: items[0].videoTitle,
+      date: new Date(items[0].createdAt).toLocaleDateString(),
+      items: [...items].sort(
+        (a, b) => TOOL_ORDER.indexOf(a.toolType) - TOOL_ORDER.indexOf(b.toolType)
+      ),
+    }));
+  }, [pastOutputs]);
+
   if (isSetup === null) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-6">
@@ -893,49 +934,88 @@ export default function RepurposeContentPage() {
             </div>
           </div>
 
-          {pastOutputs.length > 0 && (
-            <div className="bg-white dark:bg-[#242b3d] border border-[#1e2a38]/10 dark:border-white/10 rounded-2xl p-6">
-              <button onClick={() => setShowPastOutputs(!showPastOutputs)} className="flex items-center justify-between w-full">
-                <h2 className="font-semibold text-[#1e2a38] dark:text-white">Past Outputs ({pastOutputs.length})</h2>
-                <span className="text-[#1e2a38]/40 dark:text-white/40 text-sm">{showPastOutputs ? "Hide" : "Show"}</span>
+          {sessions.length > 0 && (
+            <div className="bg-white dark:bg-[#242b3d] border border-[#1e2a38]/10 dark:border-white/10 rounded-2xl overflow-hidden">
+              <button
+                onClick={() => setShowPastOutputs(!showPastOutputs)}
+                className="w-full flex items-center justify-between px-5 py-4 text-left"
+              >
+                <div>
+                  <h2 className="font-semibold text-[#1e2a38] dark:text-white text-sm">Content Library</h2>
+                  <p className="text-xs text-[#1e2a38]/40 dark:text-white/40 mt-0.5">
+                    {sessions.length} video{sessions.length !== 1 ? "s" : ""} · saved for 60 days
+                  </p>
+                </div>
+                {showPastOutputs
+                  ? <ChevronUpIcon className="w-4 h-4 text-[#1e2a38]/40 dark:text-white/40 shrink-0" />
+                  : <ChevronDownIcon className="w-4 h-4 text-[#1e2a38]/40 dark:text-white/40 shrink-0" />}
               </button>
+
               {showPastOutputs && (
-                <div className="mt-4 space-y-2">
-                  {pastOutputs.map((output) => (
-                    <div key={output.id} className="border border-[#1e2a38]/10 dark:border-white/10 rounded-xl">
-                      <button onClick={() => setExpandedOutputId(expandedOutputId === output.id ? null : output.id)} className="w-full flex items-center justify-between px-4 py-3 text-left">
-                        <div>
-                          <span className="text-sm font-medium text-[#1e2a38] dark:text-white">{output.videoTitle}</span>
-                          <span className="text-xs text-[#1e2a38]/40 dark:text-white/40 ml-2">
-                            {TOOL_LABELS[output.toolType] ?? output.toolType}
-                            {output.toolType === "postcard" && (output.output as { neighbourhood?: string }).neighbourhood
-                              ? ` — ${(output.output as { neighbourhood?: string }).neighbourhood}`
-                              : ""}{" "}
-                            — {new Date(output.createdAt).toLocaleDateString()}
+                <div className="border-t border-[#1e2a38]/8 dark:border-white/8 divide-y divide-[#1e2a38]/6 dark:divide-white/6">
+                  {sessions.map((session) => {
+                    const activeToolType = expandedSession?.key === session.key ? expandedSession.tool : null;
+                    const activeRecord = activeToolType
+                      ? session.items.find((i) => i.toolType === activeToolType) ?? null
+                      : null;
+
+                    return (
+                      <div key={session.key} className="px-5 py-4">
+                        <div className="flex items-start justify-between gap-3 mb-3">
+                          <p className="text-sm font-medium text-[#1e2a38] dark:text-white leading-snug">
+                            {session.title}
+                          </p>
+                          <span className="text-xs text-[#1e2a38]/35 dark:text-white/35 shrink-0 mt-0.5 whitespace-nowrap">
+                            {session.date}
                           </span>
                         </div>
-                        <span className="text-[#1e2a38]/30 dark:text-white/30 text-xs">{expandedOutputId === output.id ? "Collapse" : "Expand"}</span>
-                      </button>
-                      {expandedOutputId === output.id && (
-                        <div className="px-4 pb-4">
-                          <pre className="bg-[#f1f1ef] dark:bg-[#1a1f2e] rounded-lg p-4 text-sm text-[#1e2a38] dark:text-white whitespace-pre-wrap overflow-auto max-h-96">
-                            {pastOutputText(output)}
-                          </pre>
-                          <button
-                            onClick={async () => {
-                              const text = pastOutputText(output);
-                              await copyPlainText(text);
-                              setCopiedPastId(output.id);
-                              setTimeout(() => setCopiedPastId(null), 2000);
-                            }}
-                            className="mt-2 text-xs text-[#3dc3ff] hover:underline"
-                          >
-                            {copiedPastId === output.id ? "✓ Copied!" : "Copy to clipboard"}
-                          </button>
+
+                        <div className="flex flex-wrap gap-1.5">
+                          {session.items.map((item) => {
+                            const isActive = activeToolType === item.toolType;
+                            const colors = TOOL_COLORS[item.toolType] ?? {
+                              base: "bg-[#1e2a38]/8 text-[#1e2a38]/60 dark:bg-white/10 dark:text-white/60 hover:bg-[#1e2a38]/15",
+                              active: "bg-[#3dc3ff] text-white",
+                            };
+                            return (
+                              <button
+                                key={item.id}
+                                onClick={() =>
+                                  setExpandedSession(
+                                    isActive ? null : { key: session.key, tool: item.toolType }
+                                  )
+                                }
+                                className={`text-xs font-semibold px-2.5 py-1 rounded-full transition-colors ${
+                                  isActive ? colors.active : colors.base
+                                }`}
+                              >
+                                {TOOL_LABELS[item.toolType] ?? item.toolType}
+                              </button>
+                            );
+                          })}
                         </div>
-                      )}
-                    </div>
-                  ))}
+
+                        {activeRecord && (
+                          <div className="mt-3 bg-[#f8f9fa] dark:bg-[#1a1f2e] rounded-xl overflow-hidden">
+                            <div className="max-h-72 overflow-y-auto p-4">
+                              <pre className="text-xs text-[#1e2a38] dark:text-white whitespace-pre-wrap leading-relaxed">
+                                {pastOutputText(activeRecord)}
+                              </pre>
+                            </div>
+                            <div className="flex items-center justify-between px-4 py-3 border-t border-[#1e2a38]/8 dark:border-white/8">
+                              <CopyButton text={pastOutputText(activeRecord)} label="Copy" />
+                              <button
+                                onClick={() => setExpandedSession(null)}
+                                className="text-xs text-[#1e2a38]/40 dark:text-white/40 hover:text-[#1e2a38] dark:hover:text-white transition-colors"
+                              >
+                                Close
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
