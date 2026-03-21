@@ -384,7 +384,8 @@ export default function AvatarArchitectPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [started, setStarted] = useState(false);
+  const [screen, setScreen] = useState<"landing" | "import" | "chat">("landing");
+  const [importText, setImportText] = useState("");
   const [detectedAvatar, setDetectedAvatar] = useState<AvatarData | null>(null);
   const [savedAvatar, setSavedAvatar] = useState<SavedAvatar | null>(null);
   const [avatarLoading, setAvatarLoading] = useState(true);
@@ -413,12 +414,12 @@ export default function AvatarArchitectPage() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
-  async function startSession() {
+  async function startFromScratch() {
     setMessages([]);
     setDetectedAvatar(null);
     setSaved(false);
     setConfirmReplace(false);
-    setStarted(true);
+    setScreen("chat");
     setLoading(true);
 
     const res = await fetch("/api/ai-tools/avatar-architect", {
@@ -429,6 +430,29 @@ export default function AvatarArchitectPage() {
     const data = await res.json();
     const aiMsg = cleanMessage(data.message);
     setMessages([{ role: "assistant", content: aiMsg }]);
+    if (data.avatarData) setDetectedAvatar(data.avatarData);
+    setLoading(false);
+  }
+
+  async function startFromImport() {
+    if (!importText.trim()) return;
+    const taggedContent = `[IMPORTED_AVATAR_DOC]\n${importText.trim()}`;
+    const userMsg: Message = { role: "user", content: taggedContent };
+    setMessages([userMsg]);
+    setDetectedAvatar(null);
+    setSaved(false);
+    setConfirmReplace(false);
+    setScreen("chat");
+    setLoading(true);
+
+    const res = await fetch("/api/ai-tools/avatar-architect", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages: [userMsg] }),
+    });
+    const data = await res.json();
+    const aiMsg = cleanMessage(data.message);
+    setMessages([userMsg, { role: "assistant", content: aiMsg }]);
     if (data.avatarData) setDetectedAvatar(data.avatarData);
     setLoading(false);
   }
@@ -525,7 +549,7 @@ export default function AvatarArchitectPage() {
     }
   }
 
-  if (!started) {
+  if (screen === "landing") {
     return (
       <div className="max-w-xl mx-auto">
         <div className="mb-5">
@@ -542,24 +566,81 @@ export default function AvatarArchitectPage() {
         <PromptEditor toolKey="avatar_architect_prompt" defaultPrompt="" placeholders={[]} />
         <RecentConversations toolType="avatar_architect" refreshTrigger={refreshCounter} />
 
-        {/* Avatar card — always shown once loading is done */}
         {!avatarLoading && (
           <AvatarProfileCard avatar={savedAvatar ?? {}} onChange={setSavedAvatar} />
         )}
 
-        {/* Main CTA */}
-        <div className="flex flex-col items-center justify-center py-10 text-center">
-          <span className="text-6xl mb-5">🎯</span>
-          <p className="text-[#1e2a38]/60 max-w-md mb-8">
-            {savedAvatar?.avatarName
-              ? "Start a new coaching session to refine or replace your current avatar."
-              : "Use the guided AI coaching session to build your avatar — or enter the details manually above."}
-          </p>
+        {/* Existing avatar notice */}
+        {!avatarLoading && savedAvatar?.avatarName && (
+          <div className="mb-4 px-4 py-3 bg-[#3dc3ff]/8 border border-[#3dc3ff]/25 rounded-xl text-sm text-[#1e2a38]/70">
+            You already have an avatar saved (<strong className="text-[#1e2a38]">{savedAvatar.avatarName}</strong>). Starting either path will let you update it.
+          </div>
+        )}
+
+        {/* Entry point cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2 mb-10">
           <button
-            onClick={startSession}
-            className="bg-[#3dc3ff] text-white px-8 py-3 rounded-xl font-semibold hover:bg-[#3dc3ff]/90 transition-colors"
+            onClick={startFromScratch}
+            className="group text-left p-6 border-2 border-[#1e2a38]/10 hover:border-[#3dc3ff]/50 bg-white hover:bg-[#3dc3ff]/3 rounded-2xl transition-all duration-200 shadow-sm hover:shadow-md"
           >
-            {savedAvatar?.avatarName ? "Start New Session" : "Start Building My Avatar"}
+            <span className="text-3xl mb-3 block">🚀</span>
+            <p className="font-bold text-[#1e2a38] text-base mb-1.5 group-hover:text-[#3dc3ff] transition-colors">Start from Scratch</p>
+            <p className="text-sm text-[#1e2a38]/55 leading-relaxed">Build your avatar through a guided coaching conversation</p>
+          </button>
+          <button
+            onClick={() => setScreen("import")}
+            className="group text-left p-6 border-2 border-[#1e2a38]/10 hover:border-[#3dc3ff]/50 bg-white hover:bg-[#3dc3ff]/3 rounded-2xl transition-all duration-200 shadow-sm hover:shadow-md"
+          >
+            <span className="text-3xl mb-3 block">📋</span>
+            <p className="font-bold text-[#1e2a38] text-base mb-1.5 group-hover:text-[#3dc3ff] transition-colors">I Have an Existing Avatar</p>
+            <p className="text-sm text-[#1e2a38]/55 leading-relaxed">Paste in notes, docs, or bullet points you already have and we&apos;ll build from there</p>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (screen === "import") {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <div className="mb-5">
+          <Link
+            href="/member/ai-tools"
+            className="flex items-center gap-1.5 text-xs text-[#1e2a38]/50 hover:text-[#3dc3ff] transition-colors mb-3"
+          >
+            <ArrowLeftIcon className="w-3.5 h-3.5" />
+            Back to AI Tools
+          </Link>
+          <h1 className="text-2xl font-bold text-[#1e2a38]">🎯 Avatar Architect</h1>
+          <p className="text-sm text-[#1e2a38]/60 mt-1">Import your existing avatar notes</p>
+        </div>
+
+        <p className="text-sm text-[#1e2a38]/70 mb-4 leading-relaxed">
+          Paste your avatar notes below — this can be a full avatar document, rough notes, bullet points, or anything you&apos;ve already written about your ideal client. The more you give me, the less I&apos;ll need to ask.
+        </p>
+
+        <textarea
+          value={importText}
+          onChange={(e) => setImportText(e.target.value)}
+          rows={20}
+          placeholder="Paste your avatar notes here…"
+          className="w-full border border-[#1e2a38]/20 rounded-xl px-4 py-3 text-sm text-[#1e2a38] placeholder-[#1e2a38]/30 resize-y focus:outline-none focus:border-[#3dc3ff] transition-colors bg-white leading-relaxed"
+        />
+
+        <div className="flex items-center justify-between mt-4">
+          <button
+            onClick={() => setScreen("landing")}
+            className="flex items-center gap-1.5 text-sm text-[#1e2a38]/50 hover:text-[#3dc3ff] transition-colors"
+          >
+            <ArrowLeftIcon className="w-4 h-4" />
+            Back to options
+          </button>
+          <button
+            onClick={startFromImport}
+            disabled={!importText.trim()}
+            className="bg-[#3dc3ff] text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#3dc3ff]/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            Start Building →
           </button>
         </div>
       </div>
@@ -583,7 +664,7 @@ export default function AvatarArchitectPage() {
           <p className="text-sm text-[#1e2a38]/50">Chat with your AI coach</p>
         </div>
         <button
-          onClick={startSession}
+          onClick={() => { setScreen("landing"); setMessages([]); setDetectedAvatar(null); setSaved(false); setConfirmReplace(false); setImportText(""); }}
           className="flex items-center gap-2 text-sm text-[#1e2a38]/60 hover:text-[#1e2a38] border border-[#1e2a38]/20 px-3 py-1.5 rounded-lg transition-colors"
         >
           <ArrowPathIcon className="w-4 h-4" />
@@ -650,7 +731,9 @@ export default function AvatarArchitectPage() {
                   : "bg-white border border-[#1e2a38]/10 text-[#1e2a38] rounded-tl-sm shadow-sm"
               }`}
             >
-              {msg.content}
+              {msg.role === "user"
+                ? msg.content.replace(/^\[IMPORTED_AVATAR_DOC\]\n?/, "")
+                : msg.content}
             </div>
           </div>
         ))}

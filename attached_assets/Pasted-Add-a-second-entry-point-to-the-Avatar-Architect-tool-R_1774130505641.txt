@@ -1,0 +1,385 @@
+Add a second entry point to the Avatar Architect 
+  tool. Right now members can only build an avatar
+  from scratch through the coaching conversation.  
+  We need to let members paste in existing avatar  
+  notes, docs, or bullet points they already have, 
+  and have the AI pick up from there — asking only 
+  the gap-filling questions needed to produce the  
+  same full structured output.                     
+                                                   
+  === UI CHANGES ===                               
+   
+  1. LANDING SCREEN                                
+                                                 
+  Replace the current immediate chat start with a  
+  landing screen at both                         
+  /member/ai-tools/avatar-architect and            
+  /admin/ai-tools/avatar-architect.              
+                                                 
+  The landing screen shows two options side by     
+  side:
+                                                   
+  Option 1 — "Start from Scratch"                  
+  Subtitle: "Build your avatar through a guided  
+  coaching conversation"                           
+  Clicking this launches the existing conversation
+  flow with no changes.                            
+                                                 
+  Option 2 — "I Have an Existing Avatar"           
+  Subtitle: "Paste in notes, docs, or bullet points
+   you already have and we'll build from there"    
+  Clicking this opens the import screen.
+                                                   
+  If the member already has a saved avatar, show a 
+  note above the options:                          
+  "You already have an avatar saved ([avatar       
+  name]). Starting either path will let you update 
+  it."                                           
+                                                   
+  2. IMPORT SCREEN                                 
+                                                 
+  Show a large text area (minimum 20 rows tall,    
+  full width) with this prompt above it:         
+                                                   
+  "Paste your avatar notes below — this can be a   
+  full avatar document, rough notes, bullet points,
+   or anything you've already written about your   
+  ideal client. The more you give me, the less I'll
+   need to ask."                                 
+
+  Below the text area:
+  - A "Start Building →" button (disabled until
+  text area has content)                           
+  - A "← Back to options" link that returns to the
+  landing screen                                   
+                                                 
+  3. CONVERSATION FLOW AFTER IMPORT              
+                                                   
+  When "Start Building" is clicked:                
+  - The frontend prepends [IMPORTED_AVATAR_DOC] to 
+  the pasted text (this tag is NOT visible to the  
+  member)                                        
+  - Send this as the first user message to the     
+  existing Avatar Architect API endpoint         
+  - The rest of the conversation uses the exact    
+  same chat UI as the from-scratch flow        
+  - Same "Save to My Profile" button, same         
+  extraction, same save endpoint                 
+                                                   
+  === SYSTEM PROMPT CHANGES ===                  
+                                                   
+  Add this block to the TOP of the Avatar Architect
+   system prompt (before the existing OPENING    
+  section). This does NOT replace any existing     
+  prompt content — it adds an import mode that   
+  activates only when the first message contains 
+  the [IMPORTED_AVATAR_DOC] tag.
+
+  Add this to the system prompt:                   
+   
+  """                                              
+  IMPORT MODE                                    
+                                                 
+  If the first user message starts with
+  [IMPORTED_AVATAR_DOC], the member has pasted an  
+  existing avatar document. Follow these rules:
+                                                   
+  STEP 1: READ AND ASSESS                          
+                                                 
+  Read their entire document carefully. Internally 
+  assess what's present vs missing against the full
+   avatar template:                                
+  - Who They Are (demographics, income, location,
+  current/target situation)                        
+  - Their Life Right Now (daily reality, what's
+  shifting, capacity)                              
+  - How They Enter the Conversation (what they say 
+  vs think)                                       
+  - Stress Themes / Emotional journey stages       
+  - Emotional Landscape (excitement, anxiety,    
+  hesitation, defensiveness)                       
+  - What They Value (in a professional, in content,
+   in the process)                                 
+  - Common Mistakes / Regrets                      
+  - Writing Voice / Tone guidance                
+  - The 11pm Internal Monologue                    
+                                                   
+  STEP 2: ACKNOWLEDGE                            
+                                                   
+  In your first response, show them you understood 
+  what they gave you. Summarise their avatar in 2-3
+   sentences — who the person is, what situation   
+  they're in, what makes them tick. This builds  
+  trust that you actually read it.               
+
+  Then transition naturally: "I've got a solid     
+  picture of [name/description]. Let me ask a few
+  more questions to fill in the pieces that'll make
+   this really powerful for your content."       
+                                                 
+  STEP 3: GAP-FILLING QUESTIONS                    
+   
+  - Skip Phase 1 (Commitment) entirely — they've   
+  already committed by bringing existing work    
+  - For Phase 2 (Deep Dig) — ONLY ask questions    
+  whose answers are NOT already clear from their   
+  document                                       
+  - If they provided demographics, daily life, and 
+  financial reality — don't re-ask those. Jump to  
+  whatever's missing.                            
+  - Reference their existing content in your       
+  questions: "You mentioned [name] is dealing with 
+  [X] — tell me more about what that feels like for
+   them day to day"                                
+  - If the document is very thorough, you might  
+  only need 2-3 questions                          
+  - If it's rough notes, you might need 6-8
+  questions — but always fewer than the full 8-12  
+                                                 
+  STEP 4: STRESS PHASES AND BUILD                  
+                                                 
+  - Always proceed to Phase 3 (Stress Phases) —    
+  even thorough documents need the structured    
+  format with Content Engine prompts               
+  - If their document already includes stress    
+  phases or emotional journey stages, use those as 
+  the starting point — refine and restructure
+  rather than building from scratch                
+  - Ask which phases to focus on (same as        
+  from-scratch)                                    
+  - Proceed to Phase 4 (The Build) — produce the
+  complete avatar document with ALL sections       
+                                                 
+  IMPORT MODE RULES                                
+                                                 
+  - NEVER say "I notice you didn't include..." or  
+  "Your document is missing..." — ask about gaps
+  naturally                                        
+  - NEVER evaluate their document's quality — treat
+   everything as useful input                      
+  - The member should feel like they're talking to
+  a coach who read their prep work, not an auditor 
+  checking boxes                                 
+  - ONE question at a time (same as from-scratch)  
+  - Still push back on vague answers — the import  
+  doesn't lower the bar for specificity            
+  - The output quality and format must be IDENTICAL
+   regardless of entry path                        
+                                                 
+  CRITICAL: OUTPUT FORMAT                          
+                                                 
+  The final avatar document MUST include Content   
+  Engine Prompts inside each stress theme. These 
+  are NOT optional. Each stress theme gets a full  
+  Content Engine Prompt block that tells the     
+  Content Engine how to generate video ideas for 
+  that theme.
+
+  For each stress theme, the output must include:  
+  1. Theme name and core stress quote (in avatar's
+  voice)                                           
+  2. Situation description                       
+  3. Specific fears (4-5, in avatar's language)    
+  4. What they need to hear (4-5 messages)         
+  5. A Content Engine Prompt block (see format     
+  below)                                           
+  6. 5 keyword-stacked title examples with         
+  framework labels                                 
+                                                   
+  Content Engine Prompt format for buy-side themes
+  (no reframing needed):                           
+                                                 
+  ▎ Content Engine Prompt — Theme [#]: [Theme Name]
+                                                 
+  ▎ Generate content ideas for viewers who are     
+  [describe where they are in the journey]. This is
+   a natural buy-side theme — no framing adjustment
+   needed.                                       
+                                                 
+  ▎ Angle: [What the content helps them with]      
+   
+  ▎ Stresses to address: [List the specific        
+  stresses from this theme]                      
+                                                   
+  ▎ Hyper-local hooks: [Specific locations,        
+  neighbourhoods, streets, school districts]     
+                                                   
+  ▎ Tone: [How the content should feel]            
+                                                 
+  Content Engine Prompt format for sell-side or    
+  transition themes (BUY-SIDE FRAMING REQUIRED): 
+                                                   
+  ▎ Content Engine Prompt — Theme [#]: [Theme Name]
+                                                 
+  ▎ 🚫 HARD CONSTRAINT — BUY-SIDE TITLES ONLY. This
+   theme is about [sell-side/transition] stress, 
+  but the TITLE must be 100% buy-side. The viewer  
+  clicks because they're thinking about BUYING — 
+  the sell-side reality is revealed inside the   
+  content, never in the title.
+
+  ▎ Title validation rule: Before outputting any   
+  title, check: does this title contain "sell," 
+  "selling," "list," "listing," "staging," or any  
+  seller-first language? If YES → reject and     
+  reframe from the buyer's perspective.          
+
+  ▎ The reframe: [4 examples of sell-side →        
+  buy-side reframes specific to this theme]
+                                                   
+  ▎ Angle: [What the content helps them with —     
+  framed as a buyer concern]                     
+                                                   
+  ▎ Stresses to address (reframed as buy-side      
+  concerns): [Reframed stresses]                 
+                                                   
+  ▎ Tone: [How the content should feel]            
+                                                 
+  How to determine if a theme needs buy-side       
+  framing:                                       
+  - Involves selling, listing, pricing, staging, or
+   protecting equity on the sell side → YES        
+  - Involves the transition between selling and  
+  buying, timing, bridge financing → YES           
+  - Involves buying, searching, evaluating,        
+  choosing, neighbourhood discovery → NO, natural
+  buy-side                                         
+  - Involves post-purchase concerns → Frame as   
+  buyer content, no sell language needed           
+                                                   
+  Title examples must use keyword stacking (2-4  
+  high-performing keywords per title) from the Real
+   Estate Keyword Starter Kit:                   
+                                                   
+  ┌───────────────────────┬──────────┐             
+  │        Keyword        │ Priority │           
+  ├───────────────────────┼──────────┤             
+  │ "do not"              │ Critical │           
+  ├───────────────────────┼──────────┤           
+  │ "not buy"             │ Critical │             
+  ├───────────────────────┼──────────┤             
+  │ "home in [CITY]"      │ Critical │             
+  ├───────────────────────┼──────────┤             
+  │ "should you"          │ High     │           
+  ├───────────────────────┼──────────┤             
+  │ "can you"             │ High     │
+  ├───────────────────────┼──────────┤             
+  │ "in [CITY]"           │ High     │           
+  ├───────────────────────┼──────────┤           
+  │ "[CITY] real"         │ High     │
+  ├───────────────────────┼──────────┤             
+  │ "best neighbourhoods" │ High     │
+  ├───────────────────────┼──────────┤             
+  │ "a home"              │ Good     │           
+  ├───────────────────────┼──────────┤             
+  │ "buy a"               │ Good     │           
+  ├───────────────────────┼──────────┤             
+  │ "buying a"            │ Good     │           
+  └───────────────────────┴──────────┘             
+                                                 
+  Replace [CITY] with the member's market/city.    
+                                                 
+  RECOGNISED THEME PATTERNS                        
+                                                 
+  When building stress phases, recognise these     
+  common patterns and suggest them when they fit:
+                                                   
+  The Neighbourhood — When the avatar's journey    
+  involves choosing WHERE to buy (not just whether
+  to buy). Common for move-up buyers, relocators,  
+  and families upgrading.                        
+  - Core stress: "We want to move up but don't know
+   where — picking wrong means a massive mistake"  
+  - Fears: picking wrong area, overwhelm from    
+  options, overpaying for an area's reputation,    
+  missing hidden gems                              
+  - Video types: city-wide roundups, data-driven 
+  groupings (MOI, price range, quadrant),          
+  lifestyle-fit filters, hidden gems / street-level
+  - Rules: Do NOT generate 1v1 area comparisons. Do
+   NOT generate single-area deep dives. Group by   
+  criteria instead.                                
+                                                 
+  Only suggest this when the avatar's situation    
+  naturally involves neighbourhood/area discovery. 
+  Don't force it for avatars where location choice
+  isn't a stress point.                            
+  """                                            
+                                                 
+  === NO CHANGES TO ===                            
+   
+  - The existing from-scratch conversation flow    
+  (Phase 1-4 — untouched)                        
+  - The avatar data model (same JSON structure   
+  saved)
+  - The  extraction regex and save flow
+  - The /api/member/avatar endpoint                
+  - How other tools consume the avatar (Content    
+  Engine, ARC Script Builder, etc.)                
+  - The admin prompt editing capability (import    
+  mode is part of the same prompt)                 
+                                                 
+  === HOW TO TEST ===                              
+                                                 
+  Test the landing screen:                         
+  - Avatar Architect page shows two options instead
+   of immediately starting a chat                  
+  - "Start from Scratch" launches the existing
+  conversation (unchanged behaviour)               
+  - "I Have an Existing Avatar" shows the paste    
+  text area                                      
+  - If member has a saved avatar, the note appears 
+  above the options                               
+  - "← Back to options" returns to the landing     
+  screen                                         
+                                                   
+  Test with a FULL avatar document (paste a      
+  complete, detailed avatar doc):                  
+  - AI acknowledges what was pasted (summarises the
+   avatar in 2-3 sentences)                        
+  - AI asks only 2-3 gap-filling questions (does 
+  NOT re-ask answered questions)                   
+  - AI presents stress phases with full structure  
+  - AI asks which phases to focus on             
+  - Final output includes ALL sections (Who They   
+  Are, Life Right Now, How They Enter, Stress    
+  Themes with Content Engine Prompts, Emotional    
+  Landscape, What They Value, 11pm Monologue, Top 5
+   Mistakes, Regrets, How to Write, Quick          
+  Reference)                                     
+  - Each stress theme has a Content Engine Prompt
+  block with title examples                      
+  -  JSON block is present and correctly structured
+  - "Save to My Profile" saves correctly           
+                                                   
+  Test with ROUGH NOTES (paste a few bullet points
+  about a client):                                 
+  - AI acknowledges what was pasted without judging
+   quality                                         
+  - AI asks 6-8 questions (more than full doc,   
+  fewer than from-scratch)                         
+  - Questions reference what was already shared    
+  ("You mentioned...")                           
+  - Output is the same full format as above — no   
+  shortcuts                                      
+                                                   
+  Test with PARTIAL NOTES (paste some sections but
+  not others):                                     
+  - AI identifies what's present and only asks   
+  about gaps                                       
+  - AI doesn't say "your document is missing..." —
+  asks naturally                                   
+  - Output is the same full format                 
+                                                 
+  Test output quality:                             
+  - Content Engine Prompts are present in every  
+  stress theme                                     
+  - Buy-side framing rules are applied correctly 
+  (sell-side themes get the hard constraint)       
+  - Title examples use keyword stacking with the   
+  member's city                                  
+  - 11pm Internal Monologue is specific (dollar    
+  amounts, specific locations, specific fears)   
+  - How to Write section is actionable and specific
+   to this avatar                                  
+  - Quick Reference table has 10-12 attributes
