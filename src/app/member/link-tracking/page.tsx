@@ -71,25 +71,19 @@ export default function LinkTrackingPage() {
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    fetch("/api/member/profile")
-      .then((r) => r.json())
-      .then((d) => {
-        setProfile(d);
-        const stored: string = d?.thankYouPageUrl ?? "";
-        if (stored.startsWith("http://") || stored.startsWith("https://")) {
-          try {
-            setThankYouPath(new URL(stored).pathname);
-          } catch {
-            setThankYouPath(stored);
-          }
-        } else {
-          setThankYouPath(stored);
-        }
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, []);
+  async function loadProfile() {
+    try {
+      const res = await fetch("/api/member/profile");
+      const d = await res.json();
+      setProfile(d);
+      setThankYouPath(d?.thankYouPageUrl ?? "");
+      setLoading(false);
+    } catch {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => { loadProfile(); }, []);
 
   function toggleAccordion(key: string) {
     setOpenAccordions((prev) => {
@@ -143,14 +137,21 @@ That's it — one snippet, site-wide. Let me know when it's done.`;
       return;
     }
     setSaving(true);
-    await fetch("/api/member/profile", {
+    const res = await fetch("/api/member/profile", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ thankYouPageUrl: thankYouPath || null }),
     });
+    const saved = await res.json();
     setSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+    if (res.ok) {
+      setThankYouPath(saved.thankYouPageUrl ?? "");
+      setProfile((p: ProfileData | null) => p ? { ...p, thankYouPageUrl: saved.thankYouPageUrl ?? null } : p);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } else {
+      setTyPathError("Save failed — please try again.");
+    }
   }
 
   function stopPolling() {

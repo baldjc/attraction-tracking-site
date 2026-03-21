@@ -39,11 +39,11 @@ const SNIPPET = `(function(){
         }
       })
       .catch(function(){});
-  }else if(currentRef&&currentSession){
+  }else if(currentRef){
     if(isThankYou){
-      fetch(API_BASE+'/api/tracking/lead',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ref_code:currentRef,session_id:currentSession,member_id:memberId})})
+      fetch(API_BASE+'/api/tracking/lead',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ref_code:currentRef,session_id:currentSession||null,member_id:memberId})})
         .catch(function(){});
-    }else{
+    }else if(currentSession){
       fetch(API_BASE+'/api/tracking/pageview',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({session_id:currentSession,page_url:window.location.href,member_id:memberId})})
         .catch(function(){});
     }
