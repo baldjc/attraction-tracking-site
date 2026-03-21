@@ -182,6 +182,7 @@ model TrackingLink {
   campaignId            String
   campaign              Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   name                  String
+  channel               String?
   refCode               String    @unique
   youtubeVideoUrl       String?
   youtubeVideoId        String?

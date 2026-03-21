@@ -31,6 +31,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       return {
         id: l.id,
         name: l.name,
+        channel: l.channel ?? null,
         refCode: l.refCode,
         trackedUrl: buildTrackedUrl(campaign.destinationUrl, l.refCode),
         youtubeVideoUrl: l.youtubeVideoUrl,
@@ -60,7 +61,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   });
   if (!campaign) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const { name, youtubeVideoUrl } = await req.json();
+  const { name, youtubeVideoUrl, channel } = await req.json();
   if (!name) return NextResponse.json({ error: "name is required" }, { status: 400 });
 
   const refCode = await generateUniqueRefCode();
@@ -88,6 +89,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     data: {
       campaignId: id,
       name: resolvedName,
+      channel: channel ?? null,
       refCode,
       youtubeVideoUrl: youtubeVideoUrl ?? null,
       youtubeVideoId,
