@@ -66,7 +66,8 @@ export async function getChannelInfo(handle: string): Promise<ChannelInfo> {
 export async function getTopVideosByViewCount(
   uploadsPlaylistId: string,
   fetchCount = 50,
-  returnCount = 5
+  returnCount = 5,
+  sinceDate?: Date
 ): Promise<VideoInfo[]> {
   const plUrl = `${YT_BASE}/playlistItems?part=snippet&playlistId=${uploadsPlaylistId}&maxResults=${Math.min(fetchCount, 50)}&key=${YT_API_KEY}`;
   const plRes = await fetch(plUrl);
@@ -100,6 +101,7 @@ export async function getTopVideosByViewCount(
       };
     })
     .filter((v: VideoInfo) => v.durationSeconds >= 60)
+    .filter((v: VideoInfo) => !sinceDate || new Date(v.uploadDate) >= sinceDate)
     .sort((a: VideoInfo, b: VideoInfo) => b.viewCount - a.viewCount);
 
   return videos.slice(0, returnCount);

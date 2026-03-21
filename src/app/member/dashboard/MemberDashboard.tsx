@@ -128,6 +128,7 @@ export default function MemberDashboard() {
   const [loading, setLoading] = useState(true);
   const [topVideos, setTopVideos] = useState<TopVideo[] | null>(null);
   const [videosLoading, setVideosLoading] = useState(true);
+  const [noUploadsIn30Days, setNoUploadsIn30Days] = useState(false);
 
   useEffect(() => {
     fetch("/api/member/dashboard")
@@ -138,7 +139,11 @@ export default function MemberDashboard() {
   useEffect(() => {
     fetch("/api/member/top-videos")
       .then((r) => r.json())
-      .then((d) => { setTopVideos(d.videos ?? []); setVideosLoading(false); })
+      .then((d) => {
+        setTopVideos(d.videos ?? []);
+        setNoUploadsIn30Days(!!d.noUploadsIn30Days);
+        setVideosLoading(false);
+      })
       .catch(() => { setTopVideos([]); setVideosLoading(false); });
   }, []);
 
@@ -461,7 +466,7 @@ export default function MemberDashboard() {
         {/* Most Viewed Videos */}
         <div className={`${card} p-5`}>
           <div className="flex items-center justify-between mb-4">
-            <h3 className={`text-sm font-semibold ${txt}`}>Most Viewed Videos</h3>
+            <h3 className={`text-sm font-semibold ${txt}`}>Most Viewed — Last 30 Days</h3>
             <a
               href="https://studio.youtube.com"
               target="_blank"
@@ -523,6 +528,20 @@ export default function MemberDashboard() {
                   </div>
                 </a>
               ))}
+            </div>
+          ) : noUploadsIn30Days ? (
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <VideoCameraIcon className={`w-8 h-8 text-yellow-400 mb-2`} />
+              <p className={`text-sm font-medium ${txt}`}>No uploads in the last 30 days</p>
+              <p className={`text-xs ${muted} mt-1`}>Upload a video to see it here.</p>
+              <a
+                href="https://studio.youtube.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-[#3dc3ff] hover:underline mt-2"
+              >
+                Go to YouTube Studio →
+              </a>
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-8 text-center">

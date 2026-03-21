@@ -37,9 +37,11 @@ export async function GET() {
 
   try {
     const channelInfo = await getChannelInfo(identifier);
-    const videos = await getTopVideosByViewCount(channelInfo.uploadsPlaylistId, 50, 5);
+    const since30d = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const videos = await getTopVideosByViewCount(channelInfo.uploadsPlaylistId, 50, 5, since30d);
 
     return NextResponse.json({
+      noUploadsIn30Days: videos.length === 0,
       videos: videos.map((v) => ({
         videoId: v.videoId,
         title: v.title,
