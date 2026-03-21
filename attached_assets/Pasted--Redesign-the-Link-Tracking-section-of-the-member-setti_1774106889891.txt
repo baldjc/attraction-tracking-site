@@ -1,0 +1,177 @@
+⏺ Redesign the Link Tracking section of the member settings 
+  page to include comprehensive setup instructions. The     
+  current page just has a snippet code block and thank you  
+  page input — it needs five instructional sections that    
+  explain the value and walk members through setup. These   
+  members are real estate agents, not developers.           
+                                                 
+  All five sections are permanently visible on the page (not
+   a wizard, not hidden by default). Here's what to build:  
+                                                            
+  Section 1: "What This Does" (callout box at top)          
+                                                 
+  Styled as a highlight/callout box:                        
+                                                          
+  ▎ What This Does                                          
+                                                          
+  ▎ A URL shortener tells you how many people clicked. This 
+  tells you which video or which post drove each click, what
+   pages they looked at on your site, and whether they      
+  became a lead. You'll know exactly which content is     
+  bringing in business — not just getting clicks.
+
+  Section 2: "How It Works" (numbered flow)                 
+   
+  Styled as a bordered card with a lightning bolt or similar
+   icon (similar to the Audience Growers "How it works"   
+  pattern):                                                 
+                                                          
+  ▎ How It Works                                            
+   
+  ▎ 1. You create a tracking link for each video or post —  
+  it's your normal landing page URL with a unique code added
+   to the end                                               
+  ▎ 2. A viewer clicks it and lands on your lead magnet or 
+  website                                                   
+  ▎ 3. The landing page snippet (Step 1 below) records which
+   video sent them and tracks the pages they visit          
+  ▎ 4. They opt in, book a call, or take action — and land 
+  on your thank you page                                    
+  ▎ 5. The thank you page snippet (Step 2 below) records  
+  them as a lead and ties them back to the exact video or   
+  post that brought them in                               
+                                                            
+  ▎ Everything shows up in your Campaigns dashboard —       
+  clicks, leads, and which content is actually driving 
+  results.                                                  
+                                                          
+  Section 3: Setup (two steps)                              
+   
+  Step 1: Landing Page Snippet                              
+                                                          
+  ▎ Step 1: Landing Page Snippet                 
+
+  ▎ Paste this on every page of your website. It records    
+  when visitors arrive through your tracking links and 
+  follows their browsing journey.                           
+                                                          
+  ▎ <script src="https://member.attractionbyvideo.com/t.js" 
+  data-id="{member_id}" data-ty="{thank_you_path}"></script>
+                                                            
+  ▎ [Copy button]                                         
+                                                 
+  Below the snippet, add collapsible accordions (collapsed  
+  by default) for platform-specific instructions:
+                                                            
+  - GoHighLevel — Funnel → Settings → Head Tracking Code.   
+  This adds it to every page in your funnel automatically.
+  - WordPress — Install the "Insert Headers and Footers"    
+  plugin → paste into the Header section. Applies site-wide.
+  - Squarespace — Settings → Advanced → Code Injection →
+  Header.                                                   
+  - Wix — Settings → Custom Code → Head → paste and set to
+  load on All Pages.                                        
+  - Other — Paste this in the <head> section of your site.
+  If you're not sure how, send the "Hand This Off" section  
+  below to your web person.                               
+                                                            
+  Step 2: Thank You Page                                  
+                                                 
+  ▎ Step 2: Thank You Page                                  
+   
+  ▎ This is the page someone sees after they take action —  
+  after they opt in for your guide, book a call, or sign up.
+   That page's URL is how the system knows a visitor became 
+  a lead.                                                 
+                                                 
+  ▎ Your thank you page path:                               
+   
+  ▎ [Text input: e.g. /thank-you] [Save button]             
+                                                          
+  ▎ Enter just the path (the part after your domain). For   
+  example, if your thank you page is                      
+  www.yoursite.com/thank-you, enter /thank-you.             
+                                                          
+  ▎ Don't have a thank you page? See below.                 
+   
+  When the member saves the thank you page path, the snippet
+   in Step 1 should automatically update its data-ty value
+  to match.                                                 
+                                                          
+  Section 4: "What's a Thank You Page?"                     
+   
+  ▎ What's a Thank You Page?                                
+                                                          
+  ▎ A thank you page is the page someone lands on after they
+   take action on your site. For example:
+                                                            
+  ▎ - They download your neighbourhood guide → they see a   
+  page that says "Check your email!"             
+  ▎ - They book a call → they see a confirmation page       
+  ▎ - They sign up for your newsletter → they see a "You're 
+  in!" page                                                 
+   
+  ▎ That page is how the system knows a visitor turned into 
+  a lead. Without it, we can track clicks but can't tell you
+   who converted.                                           
+                                                          
+  ▎ If you don't have one yet, most website builders make it
+   easy:
+                                                            
+  ▎ - GoHighLevel — Add a "Thank You" step to your funnel   
+  after the opt-in form                          
+  ▎ - WordPress — Create a new page, give it the URL        
+  /thank-you, and redirect your form to it                  
+  ▎ - Any form tool (Calendly, Typeform, etc.) — Set the 
+  "redirect after submission" URL to a thank you page on    
+  your site                                               
+                                                            
+  ▎ The page doesn't need to be fancy — it just needs to    
+  exist at a consistent URL so the tracking can see it.
+                                                            
+  Below that, add a distinct callout box (light background, 
+  subtle border):                                
+                                                            
+  ▎ Need help setting this up?                            
+                                                 
+  ▎ Attraction by Video offers done-with-you services that  
+  can help you get your funnel, thank you page, and tracking
+   set up properly.                                         
+                                                          
+  ▎ [DM Jared in Slack] ← button                 
+
+  The button links to:                                      
+  https://attractionbyvideo.slack.com/team/U092LR97DPH —
+  opens in a new tab (target="_blank"). Style it as a       
+  secondary/outline button, not primary.                  
+                                                 
+  Section 5: "Hand This Off"
+
+  A pre-written message members can copy and send to their  
+  VA or web person.
+                                                            
+  ▎ Hand This Off                                         
+                                                 
+  ▎ If someone else manages your website, copy the message
+  below and send it to them.
+
+  ▎ [Copy button]
+
+  The copyable block (styled as a bordered card):           
+   
+  ▎ Hi — I need a small tracking snippet added to my        
+  website. Here's what to do:                             
+                                                 
+  ▎ 1. Paste this script tag in the <head> section of every 
+  page on the site:
+                                                            
+  ▎ <script src="https://member.attractionbyvideo.com/t.js" 
+  data-id="{member_id}" data-ty="{thank_you_path}"></script>
+                                                            
+  ▎ 2. Make sure there's a page at {full_thank_you_url} —   
+  this is the confirmation page visitors see after they opt 
+  in or book a call. The script uses this page to track     
+  conversions.                                            
+                                                 
+  ▎ That's it — one snippet, site-wide. Let me know when
+  it's done.
