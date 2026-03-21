@@ -156,7 +156,7 @@ function StaffCard({
     if (res.ok) {
       const memberName = staff.fullName || staff.email;
       localStorage.setItem(IMPERSONATE_LS_KEY, JSON.stringify({ memberId: staff.id, memberName }));
-      window.location.href = "/member/scores";
+      window.location.href = "/member/dashboard";
     }
     setViewingAs(false);
   }
