@@ -64,7 +64,8 @@ model User {
   phone               String?
   youtubeChannelUrl   String?
   youtubeHandle       String?
-  youtubeChannelName  String?
+  youtubeChannelName      String?
+  youtubeChannelThumbnail String?
   serviceTier         ServiceTier @default(foundations)
   slackUserId       String?
   skoolProfile      String?

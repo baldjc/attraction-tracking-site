@@ -10,13 +10,35 @@ export async function GET() {
 
   const member = await prisma.user.findUnique({
     where: { id: user.id },
-    select: { youtubeChannelUrl: true, youtubeHandle: true, youtubeChannelName: true },
+    select: {
+      youtubeChannelUrl: true,
+      youtubeHandle: true,
+      youtubeChannelName: true,
+      youtubeChannelThumbnail: true,
+    },
   });
+
+  let thumbnail = member?.youtubeChannelThumbnail ?? null;
+
+  // Backfill thumbnail for members who have a handle but no thumbnail yet
+  if (!thumbnail && member?.youtubeHandle) {
+    try {
+      const info = await getChannelInfo(member.youtubeHandle);
+      if (info?.thumbnailUrl) {
+        thumbnail = info.thumbnailUrl;
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { youtubeChannelThumbnail: thumbnail },
+        });
+      }
+    } catch {}
+  }
 
   return NextResponse.json({
     youtubeChannelUrl: member?.youtubeChannelUrl ?? null,
     youtubeHandle: member?.youtubeHandle ?? null,
     youtubeChannelName: member?.youtubeChannelName ?? null,
+    youtubeChannelThumbnail: thumbnail,
     locked: !!member?.youtubeChannelUrl,
   });
 }
@@ -42,6 +64,7 @@ export async function PUT(req: NextRequest) {
 
   let youtubeHandle: string | null = null;
   let youtubeChannelName: string | null = null;
+  let youtubeChannelThumbnail: string | null = null;
 
   if (url) {
     const handleMatch = url.match(/@[\w-]+/);
@@ -58,7 +81,8 @@ export async function PUT(req: NextRequest) {
     if (youtubeHandle) {
       try {
         const info = await getChannelInfo(youtubeHandle);
-        if (info?.channelName) youtubeChannelName = info.channelName;
+        if (info?.title) youtubeChannelName = info.title;
+        if (info?.thumbnailUrl) youtubeChannelThumbnail = info.thumbnailUrl;
       } catch {}
     }
   }
@@ -69,6 +93,7 @@ export async function PUT(req: NextRequest) {
       youtubeChannelUrl: url,
       ...(youtubeHandle !== null && { youtubeHandle }),
       ...(youtubeChannelName !== null && { youtubeChannelName }),
+      ...(youtubeChannelThumbnail !== null && { youtubeChannelThumbnail }),
     },
   });
 
@@ -85,6 +110,7 @@ export async function PUT(req: NextRequest) {
     youtubeChannelUrl: url,
     youtubeHandle,
     youtubeChannelName,
+    youtubeChannelThumbnail,
     locked: !!url,
   });
 }

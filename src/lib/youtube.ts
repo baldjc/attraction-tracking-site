@@ -16,6 +16,7 @@ export interface ChannelInfo {
   title: string;
   handle: string;
   bannerUrl: string | null;
+  thumbnailUrl: string | null;
   uploadsPlaylistId: string;
 }
 
@@ -54,11 +55,15 @@ export async function getChannelInfo(handle: string): Promise<ChannelInfo> {
   const ch = data.items?.[0];
   if (!ch) throw new Error(`Channel not found for: ${handle}`);
 
+  const thumbs = ch.snippet?.thumbnails ?? {};
+  const thumbnailUrl = thumbs.medium?.url ?? thumbs.high?.url ?? thumbs.default?.url ?? null;
+
   return {
     channelId: ch.id,
     title: ch.snippet.title,
     handle: handle.startsWith("@") ? handle : `@${handle}`,
     bannerUrl: ch.brandingSettings?.image?.bannerExternalUrl ?? null,
+    thumbnailUrl,
     uploadsPlaylistId: ch.contentDetails.relatedPlaylists.uploads,
   };
 }
