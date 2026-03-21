@@ -1,0 +1,102 @@
+Update two files to add superlative and urgency           
+  requirements to the AI prompts:                           
+                                                            
+  File 1:                                                   
+  src/app/api/ai-tools/title-thumbnail-analyzer/route.ts    
+                                                          
+  In the system prompt's TITLE ANALYSIS section (section 2),
+   after the "Power word assessment" bullet, add these two
+  new bullets:                                              
+                                                          
+     - SUPERLATIVE CHECK: Does the title contain at least   
+  one superlative (biggest, worst, best, fastest, most, #1, 
+  ultimate, easiest, first, only, never, always, every)?    
+  Titles without superlatives feel generic and forgettable —
+   flag this as a weakness and score down.                
+     - URGENCY CHECK: Does the title create time pressure or
+   loss aversion (now, today, before it's too late, stop,   
+  don't wait, while you still can, you're running out of,
+  before you lose, immediately, this week, or you'll regret 
+  it)? Titles without urgency lack the push that converts a
+  curious scroller into a clicker — flag and score down.
+
+  Change the "Generate 3 improved title alternatives" bullet
+   to:
+                                                            
+     - Generate 3 improved title alternatives using proven
+  frameworks — each alternative MUST contain at least one   
+  superlative AND one urgency trigger, and must be designed
+  to create DISSONANCE against the thumbnail (not echo it). 
+  Reject any alternative that lacks both.                 
+                                                 
+  Add a 4th Attraction principle score after Avatar Clarity:
+   
+     - Superlative & Urgency (0-10): Does it use power      
+  superlatives AND create time pressure? (0 = neither       
+  present, 5 = one present, 10 = both present and
+  compelling)                                               
+                                                          
+  In the JSON output template, inside the "title" object,   
+  add these two fields before "alternatives":
+                                                            
+  "superlatives_found": ["biggest", "#1"],                  
+  "urgency_triggers_found": ["right now"],       
+                                                            
+  And inside "attraction_scores", add:                      
+                                                            
+  "superlative_urgency": 0                                  
+                                                          
+  File 2: src/app/api/ai-tools/title-creator/route.ts       
+                                                          
+  In the system prompt, after the "Every title must be      
+  specific to the user's topic and avatar" rule, add:     
+                                                            
+  - EVERY title MUST contain at least one SUPERLATIVE and at
+   least one URGENCY TRIGGER. No exceptions. If a title     
+  lacks either, reject it and write a better one.
+                                                            
+  ## SUPERLATIVE BANK (use 1-2 per title):                
+  - Scale superlatives: biggest, smallest, worst, best,
+  most, least, #1, ultimate, fastest, easiest, highest,     
+  lowest
+  - Extreme superlatives: never, always, every, only, first,
+   last, deadliest, riskiest                                
+  - Emotional superlatives: shocking, terrifying,
+  unbelievable, incredible, life-changing, devastating,     
+  jaw-dropping                                            
+                                                 
+  ## URGENCY BANK (use 1 per title):
+  - Time pressure: now, today, this week, before it's too
+  late, immediately, while you still can, right now, in     
+  (current year)
+  - Loss aversion: before you lose, stop doing this, you're 
+  running out of, the clock is ticking, don't miss          
+  - Consequence: or else, or you'll regret it, and it's
+  getting worse, before they change the rules               
+                                                          
+  Update ALL framework examples to include superlatives +   
+  urgency. For example:                                   
+  - "STOP Doing This When (Activity)" becomes "STOP Doing   
+  This Immediately When (Activity) or You'll Regret It"     
+  - "(Topic) & The Biggest Mistake You're Making" becomes
+  "The #1 Biggest Mistake (Audience) Make Right Now"        
+  - "The NEW Way To (Achieve Goal) in (Current Year)"       
+  becomes "The Fastest NEW Way To (Achieve Goal) in (Current
+   Year) Before They Change the Rules"                      
+                                                          
+  Apply this pattern to every framework example across all 6
+   categories — every example must model both a superlative 
+  and an urgency trigger.                        
+                                                            
+  In the JSON output template, inside each title object,  
+  add:                                           
+
+  "superlatives": ["biggest", "#1"],                        
+  "urgency_triggers": ["right now", "before it's too late"],
+                                                            
+  Before the "ONLY return valid JSON" line, add:          
+                                                            
+  VALIDATION: Before returning, scan every title. If ANY  
+  title is missing a superlative or an urgency trigger,     
+  rewrite it until both are present. Every single title must
+   pass this check. 

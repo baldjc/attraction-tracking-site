@@ -1015,42 +1015,53 @@ IMPORTANT RULES:
 - Never use em dash, en dash or colons in titles
 - Write at a grade 5 reading level
 - Every title must be specific to the user's topic and avatar
+- EVERY title MUST contain at least one SUPERLATIVE and at least one URGENCY TRIGGER. No exceptions. If a title lacks either, reject it and write a better one.
+
+## SUPERLATIVE BANK (use 1-2 per title):
+- Scale superlatives: biggest, smallest, worst, best, most, least, #1, ultimate, fastest, easiest, highest, lowest
+- Extreme superlatives: never, always, every, only, first, last, deadliest, riskiest
+- Emotional superlatives: shocking, terrifying, unbelievable, incredible, life-changing, devastating, jaw-dropping
+
+## URGENCY BANK (use 1 per title):
+- Time pressure: now, today, this week, before it's too late, immediately, while you still can, right now, in (current year)
+- Loss aversion: before you lose, stop doing this, you're running out of, the clock is ticking, don't miss
+- Consequence: or else, or you'll regret it, and it's getting worse, before they change the rules
 
 Generate titles organised into these framework categories:
 
 MISTAKES & WARNINGS:
-- (Topic) & The Biggest Mistake You're Making
-- This is Why 99% of (Audience) Don't (Achieve Goal)
-- What (Authority Figures) DON'T Tell You About (Topic)
-- STOP Doing This When (Activity)
-- If You Hear (Authority Figure) Say This… RUN!
+- The #1 Biggest Mistake (Audience) Make Right Now
+- This is Why 99% of (Audience) Will Never (Achieve Goal) Before It's Too Late
+- What (Authority Figures) DON'T Tell You About (Topic) and It's Getting Worse
+- STOP Doing This Immediately When (Activity) or You'll Regret It
+- If You Hear (Authority Figure) Say This Right Now… RUN!
 
 HOW-TO & EDUCATION:
-- (Number) Things I Wish I Knew Before (Activity)
-- The NEW Way To (Achieve Goal) in (Current Year)
-- (Number) Tips NOBODY Tells You (but are EASY to do)
-- How I (Activity) (With Proof of Credibility)
+- The (Number) Most Important Things I Wish I Knew Before (Activity) — Learn Them Today
+- The Fastest NEW Way To (Achieve Goal) in (Current Year) Before They Change the Rules
+- (Number) Easiest Tips NOBODY Tells You (do them now before everyone else catches on)
+- How I (Activity) (With Proof of Credibility) — and You Need to Start Immediately
 
 LISTS & RANKINGS:
-- (Number) Signs Your (Journey) Is Going Well
-- (Number) Habits of (Secretly Successful) People
-- I Tried (Large Number). These (Small Number) Worked Best
-- (Authority Figure) Ranks Best/Worst (Entities)
+- The (Number) Biggest Signs Your (Journey) Is Going Wrong Right Now
+- (Number) Habits of the Most Successful (People) — Start Today Before You Fall Behind
+- I Tried (Large Number). These (Small Number) Were the Best — Don't Waste Another Week
+- (Authority Figure) Ranks the Worst (Entities) You Must Avoid Right Now
 
 COMPARISONS:
-- I Tested (Option A) vs (Option B) — Which Is Better?
-- Is It Still Worth (Activity) in (Current Year)?
-- Why (Underdog) Crushes Every Other (Option)
+- I Tested (Option A) vs (Option B) Right Now — The Winner Will Shock You
+- Is It Still Worth (Activity) in (Current Year) Before It's Too Late?
+- Why (Underdog) Is Now the Only Option That Crushes Every Other (Option)
 
 TIMELY & NEWS:
-- The REALITY of (Topic) in (Current Year)
-- Something Is About to Happen in (Place/Industry)
-- New (Rules/Changes) for (Year) You MUST Know
+- The Shocking REALITY of (Topic) in (Current Year) — Don't Wait to See This
+- Something Devastating Is About to Happen in (Place/Industry) — Watch This Now
+- The Most Important New (Rules/Changes) for (Year) You MUST Know Before They Hit
 
 STORY & CURIOSITY:
-- If You (Experience Problem), Watch This
-- Why Everything Changes If You (Specific Situation)
-- They Said It Couldn't Be Done… But I Did It Anyway
+- If You (Experience Problem) Right Now Watch This Before It Gets Worse
+- Why Everything Changes Immediately If You (Specific Situation) — Most People Find Out Too Late
+- They Said It Couldn't Be Done… But I Did It Anyway and You Can Start Today
 
 For each category, generate 2-3 title options. Return your response as JSON in this exact structure:
 
@@ -1063,13 +1074,17 @@ For each category, generate 2-3 title options. Return your response as JSON in t
           "title": "The actual title",
           "framework": "Which framework pattern it uses",
           "trigger": "curiosity|negativity|desire|urgency",
-          "note": "Why it works for this avatar"
+          "note": "Why it works for this avatar",
+          "superlatives": ["biggest", "#1"],
+          "urgency_triggers": ["right now", "before it's too late"]
         }
       ]
     }
   ],
   "follow_up": "Which ones stand out? I can refine your favourites or explore different angles."
 }
+
+VALIDATION: Before returning, scan every title. If ANY title is missing a superlative or an urgency trigger, rewrite it until both are present. Every single title must pass this check.
 
 ONLY return valid JSON. No markdown, no code fences, no extra text.`;
 
@@ -1105,12 +1120,15 @@ Think of it like a movie trailer: the image is the hook, the title is the twist.
    - Is it specific to the avatar — would they feel this was made for them?
    - Grade 5 language check (simple, conversational words)
    - Power word assessment
-   - Generate 3 improved title alternatives using proven frameworks — each alternative must be designed to create DISSONANCE against the thumbnail (not echo it)
+   - SUPERLATIVE CHECK: Does the title contain at least one superlative (biggest, worst, best, fastest, most, #1, ultimate, easiest, first, only, never, always, every)? Titles without superlatives feel generic and forgettable — flag this as a weakness and score down.
+   - URGENCY CHECK: Does the title create time pressure or loss aversion (now, today, before it's too late, stop, don't wait, while you still can, you're running out of, before you lose, immediately, this week, or you'll regret it)? Titles without urgency lack the push that converts a curious scroller into a clicker — flag and score down.
+   - Generate 3 improved title alternatives using proven frameworks — each alternative MUST contain at least one superlative AND one urgency trigger, and must be designed to create DISSONANCE against the thumbnail (not echo it). Reject any alternative that lacks both.
 
    Also score against Attraction principles:
    - Title Frameworks (0-10): Does it use a proven pattern?
    - Approve the Click potential (0-10): Will the viewer know what to expect from the video?
    - Avatar Clarity (0-10): Would the avatar specifically feel this is for THEM?
+   - Superlative & Urgency (0-10): Does it use power superlatives AND create time pressure? (0 = neither present, 5 = one present, 10 = both present and compelling)
 
 3. COMBINED ANALYSIS — THE DISSONANCE TEST (score 0-20 for cognitive dissonance):
    This is the most important section. Score the PAIR on how much psychological tension they create together.
@@ -1136,11 +1154,14 @@ Return ONLY valid JSON in this exact structure:
     "avatar_specific": true,
     "grade_5_ok": true,
     "power_words": ["word1"],
+    "superlatives_found": ["biggest", "#1"],
+    "urgency_triggers_found": ["right now"],
     "alternatives": ["Alt title 1", "Alt title 2", "Alt title 3"],
     "attraction_scores": {
       "title_frameworks": 0,
       "approve_the_click": 0,
-      "avatar_clarity": 0
+      "avatar_clarity": 0,
+      "superlative_urgency": 0
     },
     "observations": ["observation 1"]
   },
