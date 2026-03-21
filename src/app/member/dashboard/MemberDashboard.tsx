@@ -147,9 +147,11 @@ export default function MemberDashboard() {
   const convDiff = diffLabel(thisMonth.convRate, lastMonth.convRate, true);
 
   let scoreTrend: "up" | "down" | "same" | null = null;
+  let scoreDelta: number | null = null;
   if (latestAudit?.score != null && previousAudit?.score != null) {
-    if (latestAudit.score > previousAudit.score) scoreTrend = "up";
-    else if (latestAudit.score < previousAudit.score) scoreTrend = "down";
+    scoreDelta = Math.round((latestAudit.score - previousAudit.score) * 10) / 10;
+    if (scoreDelta > 0) scoreTrend = "up";
+    else if (scoreDelta < 0) scoreTrend = "down";
     else scoreTrend = "same";
   }
 
@@ -207,17 +209,27 @@ export default function MemberDashboard() {
       {/* Row 1 — KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Attraction Score */}
-        <div className={`${card} p-5`}>
+        <Link href="/member/scores" className={`${card} p-5 block hover:ring-2 hover:ring-[#3dc3ff]/40 transition-shadow`}>
           <p className={`text-xs font-semibold uppercase tracking-wider ${muted} mb-2`}>Attraction Score</p>
           {latestAudit ? (
             <>
-              <div className="flex items-end gap-2">
+              <div className="flex items-end gap-1.5">
                 <span className={`text-4xl font-black ${txt}`}>
                   {latestAudit.score?.toFixed(1) ?? "—"}
                 </span>
                 <span className={`text-sm ${muted} mb-1`}>/10</span>
-                {scoreTrend === "up" && <ArrowTrendingUpIcon className="w-5 h-5 mb-1 text-green-500" />}
-                {scoreTrend === "down" && <ArrowTrendingDownIcon className="w-5 h-5 mb-1 text-[#ff0033]" />}
+                {scoreTrend === "up" && (
+                  <>
+                    <ArrowTrendingUpIcon className="w-5 h-5 mb-1 text-green-500" />
+                    <span className="text-xs font-bold text-green-500 mb-1">+{scoreDelta?.toFixed(1)}</span>
+                  </>
+                )}
+                {scoreTrend === "down" && (
+                  <>
+                    <ArrowTrendingDownIcon className="w-5 h-5 mb-1 text-[#ff0033]" />
+                    <span className="text-xs font-bold text-[#ff0033] mb-1">{scoreDelta?.toFixed(1)}</span>
+                  </>
+                )}
                 {scoreTrend === "same" && <MinusIcon className="w-5 h-5 mb-1 text-gray-400" />}
               </div>
               <p className={`text-xs ${muted} mt-1`}>from {fmt(latestAudit.date)}</p>
@@ -228,10 +240,10 @@ export default function MemberDashboard() {
               <p className={`text-xs ${muted} mt-1`}>Awaiting first audit</p>
             </>
           )}
-        </div>
+        </Link>
 
         {/* Leads This Month */}
-        <div className={`${card} p-5`}>
+        <Link href="/member/analytics?tab=conversions" className={`${card} p-5 block hover:ring-2 hover:ring-[#3dc3ff]/40 transition-shadow`}>
           <p className={`text-xs font-semibold uppercase tracking-wider ${muted} mb-2`}>Leads This Month</p>
           <p className={`text-4xl font-black ${txt}`}>{thisMonth.leads}</p>
           {hasCampaigns ? (
@@ -243,14 +255,14 @@ export default function MemberDashboard() {
               <p className={`text-xs mt-1 ${muted}`}>Same as last month</p>
             )
           ) : (
-            <Link href="/member/link-tracking" className="text-xs mt-1 text-[#3dc3ff] hover:underline block">
+            <span className="text-xs mt-1 text-[#3dc3ff] block">
               Set up link tracking →
-            </Link>
+            </span>
           )}
-        </div>
+        </Link>
 
         {/* Clicks This Month */}
-        <div className={`${card} p-5`}>
+        <Link href="/member/analytics?tab=overview" className={`${card} p-5 block hover:ring-2 hover:ring-[#3dc3ff]/40 transition-shadow`}>
           <p className={`text-xs font-semibold uppercase tracking-wider ${muted} mb-2`}>Clicks This Month</p>
           <p className={`text-4xl font-black ${txt}`}>{thisMonth.clicks}</p>
           {hasCampaigns ? (
@@ -262,14 +274,14 @@ export default function MemberDashboard() {
               <p className={`text-xs mt-1 ${muted}`}>Same as last month</p>
             )
           ) : (
-            <Link href="/member/link-tracking" className="text-xs mt-1 text-[#3dc3ff] hover:underline block">
+            <span className="text-xs mt-1 text-[#3dc3ff] block">
               Set up link tracking →
-            </Link>
+            </span>
           )}
-        </div>
+        </Link>
 
         {/* Conversion Rate */}
-        <div className={`${card} p-5`}>
+        <Link href="/member/analytics?tab=overview" className={`${card} p-5 block hover:ring-2 hover:ring-[#3dc3ff]/40 transition-shadow`}>
           <p className={`text-xs font-semibold uppercase tracking-wider ${muted} mb-2`}>Conversion Rate</p>
           <p className={`text-4xl font-black text-[#3dc3ff]`}>{thisMonth.convRate}%</p>
           {hasCampaigns ? (
@@ -281,9 +293,11 @@ export default function MemberDashboard() {
               <p className={`text-xs mt-1 ${muted}`}>Same as last month</p>
             )
           ) : (
-            <p className={`text-xs mt-1 ${muted}`}>No data yet</p>
+            <span className="text-xs mt-1 text-[#3dc3ff] block">
+              Set up link tracking →
+            </span>
           )}
-        </div>
+        </Link>
       </div>
 
       {/* Row 2 — Strengths/Gaps + Right panel */}
