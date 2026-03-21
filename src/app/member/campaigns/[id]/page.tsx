@@ -9,7 +9,6 @@ import { LinkBarChart } from "@/components/charts/LinkBarChart";
 interface TrackingLinkData {
   id: string;
   name: string;
-  channel: string | null;
   refCode: string;
   trackedUrl: string;
   youtubeVideoUrl: string | null;
@@ -23,19 +22,6 @@ interface TrackingLinkData {
   conversionRate: number;
 }
 
-const CHANNELS: { key: string; label: string; icon: string; color: string; badge: string }[] = [
-  { key: "youtube_desc",  label: "YouTube Description",    icon: "▶",  color: "bg-red-50 border-red-200 text-red-700",     badge: "bg-red-100 text-red-700" },
-  { key: "newsletter",    label: "Email Newsletter",        icon: "✉",  color: "bg-amber-50 border-amber-200 text-amber-700", badge: "bg-amber-100 text-amber-700" },
-  { key: "linkedin",      label: "LinkedIn Article",        icon: "in", color: "bg-blue-50 border-blue-200 text-blue-700",   badge: "bg-blue-100 text-blue-700" },
-  { key: "facebook",      label: "Facebook Post",           icon: "f",  color: "bg-indigo-50 border-indigo-200 text-indigo-700", badge: "bg-indigo-100 text-indigo-700" },
-  { key: "blog",          label: "Blog Post",               icon: "✍",  color: "bg-emerald-50 border-emerald-200 text-emerald-700", badge: "bg-emerald-100 text-emerald-700" },
-  { key: "postcard",      label: "Neighbourhood Postcard",  icon: "✉",  color: "bg-purple-50 border-purple-200 text-purple-700", badge: "bg-purple-100 text-purple-700" },
-  { key: "instagram",     label: "Instagram",               icon: "◈",  color: "bg-pink-50 border-pink-200 text-pink-700",   badge: "bg-pink-100 text-pink-700" },
-  { key: "email_sig",     label: "Email Signature",         icon: "~",  color: "bg-teal-50 border-teal-200 text-teal-700",   badge: "bg-teal-100 text-teal-700" },
-  { key: "reels",         label: "Stories / Reels",         icon: "⏱",  color: "bg-orange-50 border-orange-200 text-orange-700", badge: "bg-orange-100 text-orange-700" },
-  { key: "google_ads",    label: "Google / Meta Ads",       icon: "G",  color: "bg-sky-50 border-sky-200 text-sky-700",     badge: "bg-sky-100 text-sky-700" },
-  { key: "other",         label: "Other",                   icon: "•",  color: "bg-gray-50 border-gray-200 text-gray-600",  badge: "bg-gray-100 text-gray-600" },
-];
 
 interface CampaignData {
   id: string;
@@ -57,10 +43,13 @@ interface AnalyticsData {
 }
 
 const SOURCE_LABELS: Record<string, { label: string; color: string }> = {
-  YOUTUBE: { label: "YouTube", color: "bg-red-100 text-red-700" },
-  GOOGLE_ADS: { label: "Google Ads", color: "bg-blue-100 text-blue-700" },
-  EMAIL: { label: "Email", color: "bg-green-100 text-green-700" },
-  OTHER: { label: "Other", color: "bg-gray-100 text-gray-600" },
+  YOUTUBE:          { label: "YouTube",          color: "bg-red-100 text-red-700" },
+  EMAIL_NEWSLETTER: { label: "Email Newsletter", color: "bg-amber-100 text-amber-700" },
+  GOOGLE_ADS:       { label: "Google Ads",       color: "bg-blue-100 text-blue-700" },
+  META_ADS:         { label: "Meta Ads",          color: "bg-indigo-100 text-indigo-700" },
+  DIRECT_MAIL:      { label: "Direct Mail",       color: "bg-purple-100 text-purple-700" },
+  BLOG_POSTS:       { label: "Blog Posts",        color: "bg-emerald-100 text-emerald-700" },
+  OTHER:            { label: "Other",             color: "bg-gray-100 text-gray-600" },
 };
 
 const PERIODS = [
@@ -100,7 +89,7 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
 
   // New link modal
   const [showNewLink, setShowNewLink] = useState(false);
-  const [linkForm, setLinkForm] = useState({ name: "", youtubeVideoUrl: "", channel: "" });
+  const [linkForm, setLinkForm] = useState({ name: "", youtubeVideoUrl: "" });
   const [creating, setCreating] = useState(false);
   const [fetchingYtInfo, setFetchingYtInfo] = useState(false);
   const [previewThumb, setPreviewThumb] = useState<string | null>(null);
@@ -173,12 +162,11 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
       body: JSON.stringify({
         name: linkForm.name,
         youtubeVideoUrl: linkForm.youtubeVideoUrl || undefined,
-        channel: linkForm.channel || undefined,
       }),
     });
     if (res.ok) {
       setShowNewLink(false);
-      setLinkForm({ name: "", youtubeVideoUrl: "", channel: "" });
+      setLinkForm({ name: "", youtubeVideoUrl: "" });
       setPreviewThumb(null);
       setNameTouchedNew(false);
       loadCampaign();
@@ -385,14 +373,6 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                     <div className="flex items-center justify-between gap-2">
                       <div className="min-w-0">
                         <p className="font-medium text-[#1e2a38] text-sm truncate">{link.name}</p>
-                        {link.channel && (() => {
-                          const ch = CHANNELS.find((c) => c.key === link.channel);
-                          return ch ? (
-                            <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full mt-1 ${ch.badge}`}>
-                              {ch.icon} {ch.label}
-                            </span>
-                          ) : null;
-                        })()}
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
                         <button onClick={() => openEdit(link)} className="text-[#1e2a38]/30 hover:text-[#3dc3ff] transition-colors" title="Edit link">
@@ -470,49 +450,15 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
             <div className="flex items-center justify-between mb-5">
               <div>
                 <h2 className="font-bold text-[#1e2a38]">New Tracking Link</h2>
-                <p className="text-xs text-[#1e2a38]/40 mt-0.5">Where will you share this link?</p>
+                <p className="text-xs text-[#1e2a38]/40 mt-0.5">Add a unique link to track within this campaign</p>
               </div>
               <button
-                onClick={() => { setShowNewLink(false); setPreviewThumb(null); setNameTouchedNew(false); setLinkForm({ name: "", youtubeVideoUrl: "", channel: "" }); }}
+                onClick={() => { setShowNewLink(false); setPreviewThumb(null); setNameTouchedNew(false); setLinkForm({ name: "", youtubeVideoUrl: "" }); }}
                 className="text-[#1e2a38]/40 hover:text-[#1e2a38] text-xl"
               >✕</button>
             </div>
 
             <div className="space-y-5">
-              {/* Channel picker */}
-              <div>
-                <label className="block text-xs font-semibold text-[#1e2a38]/50 uppercase tracking-wider mb-2">Channel / Placement</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {CHANNELS.map((ch) => {
-                    const selected = linkForm.channel === ch.key;
-                    return (
-                      <button
-                        key={ch.key}
-                        type="button"
-                        onClick={() => {
-                          const next = selected ? "" : ch.key;
-                          setLinkForm((f) => ({ ...f, channel: next }));
-                          if (!nameTouchedNew && next) {
-                            setLinkForm((f) => ({ ...f, channel: next, name: ch.label }));
-                          }
-                          if (!nameTouchedNew && !next) {
-                            setLinkForm((f) => ({ ...f, channel: "", name: "" }));
-                          }
-                        }}
-                        className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-sm font-medium transition-colors text-left ${
-                          selected
-                            ? `${ch.color} border-current ring-2 ring-offset-1 ring-current/30`
-                            : "bg-white border-[#1e2a38]/10 text-[#1e2a38]/60 hover:border-[#1e2a38]/25"
-                        }`}
-                      >
-                        <span className="text-base w-5 text-center flex-shrink-0">{ch.icon}</span>
-                        <span className="leading-tight">{ch.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
               {/* Link name */}
               <div>
                 <label className="block text-sm font-semibold text-[#1e2a38] mb-1.5">

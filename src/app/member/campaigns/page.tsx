@@ -30,10 +30,13 @@ interface AnalyticsSummary {
 }
 
 const SOURCE_LABELS: Record<string, { label: string; color: string }> = {
-  YOUTUBE: { label: "YouTube", color: "bg-red-100 text-red-700" },
-  GOOGLE_ADS: { label: "Google Ads", color: "bg-blue-100 text-blue-700" },
-  EMAIL: { label: "Email", color: "bg-green-100 text-green-700" },
-  OTHER: { label: "Other", color: "bg-gray-100 text-gray-600" },
+  YOUTUBE:          { label: "YouTube",          color: "bg-red-100 text-red-700" },
+  EMAIL_NEWSLETTER: { label: "Email Newsletter", color: "bg-amber-100 text-amber-700" },
+  GOOGLE_ADS:       { label: "Google Ads",       color: "bg-blue-100 text-blue-700" },
+  META_ADS:         { label: "Meta Ads",          color: "bg-indigo-100 text-indigo-700" },
+  DIRECT_MAIL:      { label: "Direct Mail",       color: "bg-purple-100 text-purple-700" },
+  BLOG_POSTS:       { label: "Blog Posts",        color: "bg-emerald-100 text-emerald-700" },
+  OTHER:            { label: "Other",             color: "bg-gray-100 text-gray-600" },
 };
 
 const INPUT_CLS = "w-full border border-[#1e2a38]/20 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-[#3dc3ff]";
@@ -256,8 +259,11 @@ export default function CampaignsPage() {
                 <label className="block text-sm font-semibold text-[#1e2a38] mb-1.5">Traffic Source</label>
                 <select value={form.sourceType} onChange={(e) => setForm({ ...form, sourceType: e.target.value })} className={`${INPUT_CLS} bg-white`}>
                   <option value="YOUTUBE">YouTube</option>
+                  <option value="EMAIL_NEWSLETTER">Email Newsletter</option>
                   <option value="GOOGLE_ADS">Google Ads</option>
-                  <option value="EMAIL">Email</option>
+                  <option value="META_ADS">Meta Ads</option>
+                  <option value="DIRECT_MAIL">Direct Mail</option>
+                  <option value="BLOG_POSTS">Blog Posts</option>
                   <option value="OTHER">Other</option>
                 </select>
               </div>
