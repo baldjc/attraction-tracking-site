@@ -60,7 +60,11 @@ export default function MemberPickerModal({ onClose, adminEmail }: Props) {
       try {
         localStorage.setItem(IMPERSONATE_LS_KEY, JSON.stringify({ memberId: member.id, memberName }));
       } catch { }
-      window.location.href = "/member/dashboard";
+      if (window.location.pathname === "/member/dashboard") {
+        window.location.reload();
+      } else {
+        window.location.href = "/member/dashboard";
+      }
     } catch {
       setSelecting(null);
     }
