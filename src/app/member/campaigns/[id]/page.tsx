@@ -106,6 +106,8 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
   const [copied, setCopied] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState("newest");
   const [refreshing, setRefreshing] = useState(false);
+  const [resetConfirmLink, setResetConfirmLink] = useState<TrackingLinkData | null>(null);
+  const [resetting, setResetting] = useState(false);
 
   const loadCampaign = useCallback(async () => {
     setLoading(true);
@@ -201,9 +203,16 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
     loadAnalytics(period);
   }
 
-  async function resetStats(linkId: string, linkName: string) {
-    if (!confirm(`Reset all clicks and leads for "${linkName}"? This cannot be undone — use this before going live.`)) return;
-    await fetch(`/api/campaigns/${id}/links/${linkId}/reset-stats`, { method: "POST" });
+  function resetStats(link: TrackingLinkData) {
+    setResetConfirmLink(link);
+  }
+
+  async function confirmReset() {
+    if (!resetConfirmLink) return;
+    setResetting(true);
+    await fetch(`/api/campaigns/${id}/links/${resetConfirmLink.id}/reset-stats`, { method: "POST" });
+    setResetting(false);
+    setResetConfirmLink(null);
     loadCampaign();
     loadAnalytics(period);
   }
@@ -385,7 +394,7 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                         <button onClick={() => openEdit(link)} className="text-[#1e2a38]/30 hover:text-[#3dc3ff] transition-colors" title="Edit link">
                           <PencilIcon className="w-3.5 h-3.5" />
                         </button>
-                        <button onClick={() => resetStats(link.id, link.name)} className="text-xs text-[#1e2a38]/30 hover:text-amber-500 transition-colors" title="Reset clicks &amp; leads for testing">Reset</button>
+                        <button onClick={() => resetStats(link)} className="text-xs text-[#1e2a38]/30 hover:text-amber-500 transition-colors" title="Reset clicks &amp; leads for testing">Reset</button>
                         <button onClick={() => deleteLink(link.id)} className="text-xs text-[#1e2a38]/30 hover:text-red-500 transition-colors">Delete</button>
                       </div>
                     </div>
@@ -549,6 +558,38 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                   Cancel
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reset Stats Confirmation Modal */}
+      {resetConfirmLink && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl border border-[#1e2a38]/10 shadow-xl w-full max-w-sm p-6">
+            <h2 className="font-bold text-[#1e2a38] text-lg mb-2">Reset Stats?</h2>
+            <p className="text-sm text-[#1e2a38]/60 mb-1">
+              This will clear all clicks and leads recorded for:
+            </p>
+            <p className="text-sm font-semibold text-[#1e2a38] mb-4">{resetConfirmLink.name}</p>
+            <p className="text-xs text-amber-600 bg-amber-50 rounded-xl px-3 py-2 mb-5">
+              Use this to wipe test data before sharing your link publicly. This cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={confirmReset}
+                disabled={resetting}
+                className="flex-1 bg-amber-500 text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-amber-600 disabled:opacity-50 transition-colors"
+              >
+                {resetting ? "Resetting..." : "Yes, Reset Stats"}
+              </button>
+              <button
+                onClick={() => setResetConfirmLink(null)}
+                disabled={resetting}
+                className="px-5 py-2.5 border border-[#1e2a38]/20 rounded-xl text-sm text-[#1e2a38]/60 hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>
