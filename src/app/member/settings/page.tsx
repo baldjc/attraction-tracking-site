@@ -109,7 +109,7 @@ export default function MemberSettingsPage() {
       fetch("/api/member/avatar").then((r) => r.json()),
       fetch("/api/member/profile").then((r) => r.json()),
       fetch("/api/member/channel").then((r) => r.json()),
-    ]).then(([avatarData, profileData, channelData]: [AvatarData, ProfileData, { youtubeChannelUrl: string | null; youtubeHandle: string | null; youtubeChannelName: string | null }]) => {
+    ]).then(([avatarData, profileData, channelData]: [AvatarData, ProfileData, { youtubeChannelUrl: string | null; youtubeHandle: string | null; youtubeChannelName: string | null; youtubeChannelThumbnail?: string | null; locked?: boolean }]) => {
       setAvatar(avatarData);
       if (avatarData?.avatarProfile) {
         try {
