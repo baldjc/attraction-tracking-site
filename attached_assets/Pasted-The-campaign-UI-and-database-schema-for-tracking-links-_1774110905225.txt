@@ -1,0 +1,57 @@
+The campaign UI and database schema 
+  for tracking links are already      
+  built, but the actual click tracking
+   redirect endpoint is missing. When 
+  someone clicks a short link like    
+  /r/UEbTOTFy, it needs to log the    
+  click to the database and then      
+  redirect to the destination URL.    
+  Right now clicks show 0 because  
+  nothing is writing Click records.   
+                                      
+  Build the /r/[shortCode] redirect   
+  route with these requirements:      
+                                      
+  1. Create                           
+  src/app/r/[shortCode]/route.ts — a  
+  Next.js route handler (GET):        
+    - Look up the TrackingLink by     
+  shortCode (from the URL param)      
+    - If not found, return 404
+    - Create a Click record in the    
+  database with: linkId, timestamp    
+  (now), ipAddress (from request      
+  headers — check x-forwarded-for     
+  first, then x-real-ip), userAgent,
+  referrer                          
+    - Also capture Google Ads
+  ValueTrack params from the query    
+  string if present: gclid →
+  gCampaignId, adgroupid → gAdGroupId,
+   keyword → gKeyword, device →
+  gDevice, network → gNetwork,      
+  matchtype → gMatchType
+    - Do NOT await the click insert 
+  before redirecting — use a          
+  fire-and-forget pattern (e.g.,
+  prisma.click.create(...).catch(conso
+  le.error) without await) so the
+  redirect is instant               
+    - Return a 302 redirect to the
+  destinationUrl                      
+    - Append ?ref={shortCode} (or
+  &ref={shortCode} if the destination 
+  already has query params) to the
+  destination URL for attribution     
+  2. The existing Prisma schema 
+  already has all the models needed — 
+  TrackingLink (with unique
+  shortCode), Click, and Conversion.  
+  No schema changes required.
+  3. Test it: After building, clicking
+   https://members.attractionbyvideo.c
+  om/r/UEbTOTFy should create a Click
+  record and redirect to the          
+  destination URL. The campaign
+  dashboard should then show the click
+   count incrementing.
