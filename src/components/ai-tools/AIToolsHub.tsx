@@ -190,7 +190,7 @@ export default function AIToolsHub({ basePath, featureFlags }: Props) {
       featureKey: "tool_repurpose_content",
       icon: "♻️",
       title: "Repurpose Content",
-      description: "Turn your video transcript into a newsletter and LinkedIn article",
+      description: "Turn your video transcript into a newsletter, LinkedIn article, Facebook post, blog post, or neighbourhood postcard",
       extra: "Generate both in one click",
       badge: "blue" as const,
     },
