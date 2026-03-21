@@ -9,13 +9,18 @@ const SNIPPET = `(function(){
   var script=document.currentScript;
   var memberId=script.getAttribute('data-id');
   if(!memberId)return;
+  var tyAttr=script.getAttribute('data-ty')||'';
   var API_BASE=script.src?(new URL(script.src).origin):'https://members.attractionbyvideo.com';
   var COOKIE_NAME='_atref';
   var SESSION_KEY='_atsid';
-  function getCookie(name){var match=document.cookie.match(new RegExp('(^| )'+name+'=([^;]+)'));return match?match[2]:null;}
-  function setCookie(name,value,days){var d=new Date();d.setTime(d.getTime()+days*86400000);document.cookie=name+'='+value+';expires='+d.toUTCString()+';path=/;SameSite=Lax;Secure';}
+  function getCookie(n){var m=document.cookie.match(new RegExp('(^| )'+n+'=([^;]+)'));return m?m[2]:null;}
+  function setCookie(n,v,d){var e=new Date();e.setTime(e.getTime()+d*86400000);document.cookie=n+'='+v+';expires='+e.toUTCString()+';path=/;SameSite=Lax;Secure';}
   function getSession(){try{return sessionStorage.getItem(SESSION_KEY);}catch(e){return null;}}
-  function setSession(sid){try{sessionStorage.setItem(SESSION_KEY,sid);}catch(e){}}
+  function setSession(s){try{sessionStorage.setItem(SESSION_KEY,s);}catch(e){}}
+  function normPath(raw){try{return new URL(raw).pathname.toLowerCase().replace(/\/$/,'')||'/';}catch(e){return raw.split('?')[0].split('#')[0].toLowerCase().replace(/\/$/,'')||'/';}}
+  var tyPath=tyAttr?normPath(tyAttr):'';
+  var currentPath=normPath(window.location.pathname);
+  var isThankYou=tyPath&&currentPath===tyPath;
   var urlParams=new URLSearchParams(window.location.search);
   var refParam=urlParams.get('ref');
   var currentRef=refParam||getCookie(COOKIE_NAME);
@@ -24,11 +29,24 @@ const SNIPPET = `(function(){
     setCookie(COOKIE_NAME,refParam,30);
     fetch(API_BASE+'/api/tracking/click',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ref_code:refParam,page_url:window.location.href,member_id:memberId})})
       .then(function(r){return r.json();})
-      .then(function(data){if(data.session_id){setSession(data.session_id);}})
+      .then(function(data){
+        if(data.session_id){
+          setSession(data.session_id);
+          if(isThankYou){
+            fetch(API_BASE+'/api/tracking/lead',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ref_code:refParam,session_id:data.session_id,member_id:memberId})})
+              .catch(function(){});
+          }
+        }
+      })
       .catch(function(){});
   }else if(currentRef&&currentSession){
-    fetch(API_BASE+'/api/tracking/pageview',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({session_id:currentSession,page_url:window.location.href,member_id:memberId})})
-      .catch(function(){});
+    if(isThankYou){
+      fetch(API_BASE+'/api/tracking/lead',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ref_code:currentRef,session_id:currentSession,member_id:memberId})})
+        .catch(function(){});
+    }else{
+      fetch(API_BASE+'/api/tracking/pageview',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({session_id:currentSession,page_url:window.location.href,member_id:memberId})})
+        .catch(function(){});
+    }
   }
 })();`.replace(/\n\s*/g, "");
 
