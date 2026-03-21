@@ -104,14 +104,42 @@ interface DashboardData {
   scoreHistory: { date: string; score: number }[];
 }
 
+interface TopVideo {
+  videoId: string;
+  title: string;
+  thumbnailUrl: string | null;
+  viewCount: number;
+  uploadDate: string;
+  studioUrl: string;
+}
+
+function fmtViews(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+  return n.toString();
+}
+
+function fmtUploadDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" });
+}
+
 export default function MemberDashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [topVideos, setTopVideos] = useState<TopVideo[] | null>(null);
+  const [videosLoading, setVideosLoading] = useState(true);
 
   useEffect(() => {
     fetch("/api/member/dashboard")
       .then((r) => r.json())
       .then((d) => { setData(d); setLoading(false); });
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/member/top-videos")
+      .then((r) => r.json())
+      .then((d) => { setTopVideos(d.videos ?? []); setVideosLoading(false); })
+      .catch(() => { setTopVideos([]); setVideosLoading(false); });
   }, []);
 
   const card = "bg-white dark:bg-[#242b3d] rounded-2xl border border-gray-200 dark:border-[#2d3748] shadow-sm";
@@ -430,53 +458,78 @@ export default function MemberDashboard() {
 
       {/* Row 3 — Best Video + Score History */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Best Performing Video */}
+        {/* Most Viewed Videos */}
         <div className={`${card} p-5`}>
-          <h3 className={`text-sm font-semibold ${txt} mb-4`}>Best Performing Video This Month</h3>
-          {bestVideo ? (
-            <div className="flex gap-4">
-              {bestVideo.thumbnail && (
-                <img
-                  src={bestVideo.thumbnail}
-                  alt={bestVideo.title}
-                  className="w-28 h-16 object-cover rounded-lg shrink-0"
-                />
-              )}
-              {!bestVideo.thumbnail && (
-                <div className="w-28 h-16 bg-gray-100 dark:bg-[#1a1f2e] rounded-lg flex items-center justify-center shrink-0">
-                  <PlayCircleIcon className={`w-8 h-8 ${muted}`} />
-                </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <p className={`text-sm font-medium ${txt} line-clamp-2 leading-snug`}>{bestVideo.title}</p>
-                <div className="flex gap-4 mt-2">
-                  <div>
-                    <p className={`text-xs ${muted}`}>Clicks</p>
-                    <p className={`text-sm font-bold ${txt}`}>{bestVideo.clicks}</p>
-                  </div>
-                  <div>
-                    <p className={`text-xs ${muted}`}>Leads</p>
-                    <p className={`text-sm font-bold ${txt}`}>{bestVideo.leads}</p>
-                  </div>
-                  <div>
-                    <p className={`text-xs ${muted}`}>Conv.</p>
-                    <p className="text-sm font-bold text-[#3dc3ff]">{bestVideo.convRate}%</p>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className={`text-sm font-semibold ${txt}`}>Most Viewed Videos</h3>
+            <a
+              href="https://studio.youtube.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-[#3dc3ff] hover:underline"
+            >
+              Open Studio →
+            </a>
+          </div>
+          {videosLoading ? (
+            <div className="flex flex-col gap-3">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="flex gap-3 animate-pulse">
+                  <div className="w-24 h-14 bg-gray-200 dark:bg-[#2d3748] rounded-lg shrink-0" />
+                  <div className="flex-1 space-y-2 py-1">
+                    <div className="h-3 bg-gray-200 dark:bg-[#2d3748] rounded w-full" />
+                    <div className="h-3 bg-gray-200 dark:bg-[#2d3748] rounded w-2/3" />
                   </div>
                 </div>
-                <Link
-                  href={`/member/campaigns?id=${bestVideo.campaignId}`}
-                  className="text-xs text-[#3dc3ff] hover:underline mt-2 block"
+              ))}
+            </div>
+          ) : topVideos && topVideos.length > 0 ? (
+            <div className="flex flex-col gap-3">
+              {topVideos.slice(0, 3).map((v, i) => (
+                <a
+                  key={v.videoId}
+                  href={v.studioUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex gap-3 group rounded-xl p-1 -m-1 hover:bg-gray-50 dark:hover:bg-[#1a1f2e] transition-colors"
                 >
-                  View campaign →
-                </Link>
-              </div>
+                  <div className="relative shrink-0">
+                    {v.thumbnailUrl ? (
+                      <img
+                        src={v.thumbnailUrl}
+                        alt={v.title}
+                        className="w-24 h-14 object-cover rounded-lg"
+                      />
+                    ) : (
+                      <div className="w-24 h-14 bg-gray-100 dark:bg-[#1a1f2e] rounded-lg flex items-center justify-center">
+                        <PlayCircleIcon className={`w-6 h-6 ${muted}`} />
+                      </div>
+                    )}
+                    <span className="absolute top-1 left-1 text-[10px] font-bold bg-black/70 text-white px-1 rounded">
+                      #{i + 1}
+                    </span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-xs font-medium ${txt} line-clamp-2 leading-snug group-hover:text-[#3dc3ff] transition-colors`}>
+                      {v.title}
+                    </p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className={`text-xs font-semibold ${txt}`}>{fmtViews(v.viewCount)} views</span>
+                      <span className={`text-xs ${muted}`}>· {fmtUploadDate(v.uploadDate)}</span>
+                    </div>
+                    <span className="text-[10px] text-[#3dc3ff] group-hover:underline mt-0.5 block">
+                      Edit in Studio →
+                    </span>
+                  </div>
+                </a>
+              ))}
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-8 text-center">
               <VideoCameraIcon className={`w-8 h-8 ${muted} mb-2`} />
-              <p className={`text-sm ${muted}`}>No campaign data this month yet.</p>
-              <Link href="/member/campaigns" className="text-xs text-[#3dc3ff] hover:underline mt-1">
-                Set up a campaign →
+              <p className={`text-sm ${muted}`}>No YouTube channel connected.</p>
+              <Link href="/member/settings" className="text-xs text-[#3dc3ff] hover:underline mt-1">
+                Add your channel in Settings →
               </Link>
             </div>
           )}

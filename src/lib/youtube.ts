@@ -63,6 +63,48 @@ export async function getChannelInfo(handle: string): Promise<ChannelInfo> {
   };
 }
 
+export async function getTopVideosByViewCount(
+  uploadsPlaylistId: string,
+  fetchCount = 50,
+  returnCount = 5
+): Promise<VideoInfo[]> {
+  const plUrl = `${YT_BASE}/playlistItems?part=snippet&playlistId=${uploadsPlaylistId}&maxResults=${Math.min(fetchCount, 50)}&key=${YT_API_KEY}`;
+  const plRes = await fetch(plUrl);
+  if (!plRes.ok) throw new Error(`YouTube playlistItems API error: ${plRes.status}`);
+  const plData = await plRes.json();
+
+  const videoIds: string[] = (plData.items ?? [])
+    .map((item: any) => item.snippet?.resourceId?.videoId)
+    .filter(Boolean);
+
+  if (videoIds.length === 0) return [];
+
+  const vidUrl = `${YT_BASE}/videos?part=snippet,contentDetails,statistics&id=${videoIds.join(",")}&key=${YT_API_KEY}`;
+  const vidRes = await fetch(vidUrl);
+  if (!vidRes.ok) throw new Error(`YouTube videos API error: ${vidRes.status}`);
+  const vidData = await vidRes.json();
+
+  const videos: VideoInfo[] = (vidData.items ?? [])
+    .map((v: any) => {
+      const durationSec = parseDuration(v.contentDetails?.duration ?? "PT0S");
+      const thumbs = v.snippet?.thumbnails ?? {};
+      const thumbnailUrl = thumbs.medium?.url ?? thumbs.high?.url ?? thumbs.default?.url ?? null;
+      return {
+        videoId: v.id,
+        title: v.snippet?.title ?? "",
+        thumbnailUrl,
+        duration: v.contentDetails?.duration ?? "",
+        durationSeconds: durationSec,
+        uploadDate: v.snippet?.publishedAt ?? "",
+        viewCount: parseInt(v.statistics?.viewCount ?? "0"),
+      };
+    })
+    .filter((v: VideoInfo) => v.durationSeconds >= 60)
+    .sort((a: VideoInfo, b: VideoInfo) => b.viewCount - a.viewCount);
+
+  return videos.slice(0, returnCount);
+}
+
 export async function getLatestLongFormVideos(
   uploadsPlaylistId: string,
   count = 5,
