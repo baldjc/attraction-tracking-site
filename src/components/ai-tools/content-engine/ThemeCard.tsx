@@ -217,10 +217,10 @@ export default function ThemeCard({ theme, index, onGoDeeper }: Props) {
                         setSavedCount((prev) => (prev ?? 0) + 1);
                         const newSaved: SavedIdea = {
                           id,
-                          title: idea.title,
-                          talkingPoints: idea.talkingPoints,
-                          framework: idea.framework,
-                          whyItWorks: idea.whyItWorks,
+                          title: idea.title ?? "",
+                          talkingPoints: idea.talkingPoints ?? [],
+                          framework: idea.framework ?? null,
+                          whyItWorks: idea.whyItWorks ?? null,
                           source: "batch",
                           createdAt: new Date().toISOString(),
                         };
