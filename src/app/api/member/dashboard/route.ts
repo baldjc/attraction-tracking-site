@@ -1,14 +1,56 @@
 import { NextResponse } from "next/server";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import prisma from "@/lib/prisma";
+import {
+  fetchContactByEmail,
+  fetchLocationCustomFields,
+  fetchLocationCustomValues,
+} from "@/lib/ghl";
 
-function nextThursday(): string {
+function fallbackNextThursday(): string {
   const now = new Date();
   const day = now.getDay();
   const daysUntil = ((4 - day) + 7) % 7 || 7;
   const next = new Date(now);
   next.setDate(now.getDate() + daysUntil);
   return next.toISOString().split("T")[0];
+}
+
+async function fetchGHLCoachingInfo(email: string): Promise<{ date: string; link: string | null }> {
+  try {
+    const [contact, fieldDefs, customValues] = await Promise.all([
+      fetchContactByEmail(email),
+      fetchLocationCustomFields(),
+      fetchLocationCustomValues(),
+    ]);
+
+    // Find the call link from location custom values
+    const callLinkEntry = customValues.find(
+      (v) => v.name.toLowerCase().includes("foundations weekly call link")
+    );
+    const link = callLinkEntry?.value ?? null;
+
+    // Find the coaching call date from the contact's custom fields
+    const coachingFieldDef = fieldDefs.find(
+      (f) => f.name.toLowerCase().includes("next foundations weekly coaching call")
+    );
+    if (coachingFieldDef && contact) {
+      const rawVal = contact.customFields?.find(
+        (cf) => cf.id === coachingFieldDef.id
+      )?.value;
+      if (rawVal) {
+        // GHL may return a timestamp (ms) or ISO date string
+        const parsed = /^\d+$/.test(rawVal)
+          ? new Date(parseInt(rawVal, 10)).toISOString().split("T")[0]
+          : rawVal.split("T")[0];
+        return { date: parsed, link };
+      }
+    }
+
+    return { date: fallbackNextThursday(), link };
+  } catch {
+    return { date: fallbackNextThursday(), link: null };
+  }
 }
 
 function monthBounds(offsetMonths = 0) {
@@ -31,13 +73,17 @@ export async function GET() {
 
   const fullUser = await prisma.user.findUnique({
     where: { id: user.id },
-    select: { fullName: true },
+    select: { fullName: true, email: true },
   });
 
   const thisBounds = monthBounds(0);
   const lastBounds = monthBounds(1);
 
-  const [audits, thisMthClicks, lastMthClicks, trackingLinks] = await Promise.all([
+  const [
+    [audits, thisMthClicks, lastMthClicks, trackingLinks],
+    coachingInfo,
+  ] = await Promise.all([
+    Promise.all([
     prisma.audit.findMany({
       where: { userId: user.id },
       orderBy: { createdAt: "desc" },
@@ -79,6 +125,8 @@ export async function GET() {
         campaignId: true,
       },
     }),
+    ]),
+    fetchGHLCoachingInfo(fullUser?.email ?? user.email ?? ""),
   ]);
 
   const thisMonthClicks = thisMthClicks.length;
@@ -192,7 +240,7 @@ export async function GET() {
     },
     bestVideo,
     daysSinceUpload,
-    nextCoachingCall: nextThursday(),
+    nextCoachingCall: coachingInfo,
     scoreHistory,
   });
 }

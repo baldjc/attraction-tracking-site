@@ -90,3 +90,73 @@ export const GHL_FIELDS = {
   MONTHLY_ANALYSIS_LINK: "3IwK8sUBoGLsj1PlMjhe",
   LEAD_AUDIT_LINK: "zfEHoi06Cw8cmAi42dW6",
 };
+
+export interface GHLCustomFieldDef {
+  id: string;
+  name: string;
+  fieldKey?: string;
+  dataType?: string;
+}
+
+export interface GHLCustomValue {
+  id: string;
+  name: string;
+  value: string;
+}
+
+export async function fetchContactByEmail(email: string): Promise<GHLContact | null> {
+  try {
+    const res = await fetch(
+      `${GHL_BASE_URL}/contacts/?locationId=${getLocationId()}&email=${encodeURIComponent(email)}&limit=1`,
+      {
+        headers: {
+          Authorization: `Bearer ${getApiKey()}`,
+          Version: "2021-07-28",
+        },
+      }
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.contacts?.[0] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchLocationCustomFields(): Promise<GHLCustomFieldDef[]> {
+  try {
+    const res = await fetch(
+      `${GHL_BASE_URL}/locations/${getLocationId()}/customFields`,
+      {
+        headers: {
+          Authorization: `Bearer ${getApiKey()}`,
+          Version: "2021-07-28",
+        },
+      }
+    );
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.customFields ?? [];
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchLocationCustomValues(): Promise<GHLCustomValue[]> {
+  try {
+    const res = await fetch(
+      `${GHL_BASE_URL}/locations/${getLocationId()}/customValues`,
+      {
+        headers: {
+          Authorization: `Bearer ${getApiKey()}`,
+          Version: "2021-07-28",
+        },
+      }
+    );
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.customValues ?? [];
+  } catch {
+    return [];
+  }
+}

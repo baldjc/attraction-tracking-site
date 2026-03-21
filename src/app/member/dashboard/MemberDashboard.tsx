@@ -100,7 +100,7 @@ interface DashboardData {
     campaignId: string;
   } | null;
   daysSinceUpload: number | null;
-  nextCoachingCall: string;
+  nextCoachingCall: { date: string; link: string | null };
   scoreHistory: { date: string; score: number }[];
 }
 
@@ -132,7 +132,7 @@ export default function MemberDashboard() {
   const { firstName, latestAudit, previousAudit, campaignStats, bestVideo, daysSinceUpload, nextCoachingCall, scoreHistory } = data;
   const { thisMonth, lastMonth } = campaignStats;
   const hasCampaigns = thisMonth.clicks > 0 || lastMonth.clicks > 0;
-  const coaching = fmtThursday(nextCoachingCall);
+  const coaching = fmtThursday(nextCoachingCall.date);
 
   function diffLabel(curr: number, prev: number, isPercent = false) {
     const diff = curr - prev;
@@ -380,9 +380,21 @@ export default function MemberDashboard() {
           <div className={`${card} p-5`}>
             <h3 className={`text-sm font-semibold ${txt} mb-2`}>Next Q&A Call</h3>
             <p className={`text-base font-bold ${txt}`}>{coaching.label}</p>
-            <span className="inline-block mt-1 text-xs font-medium px-2 py-0.5 rounded-full bg-[#3dc3ff]/15 text-[#3dc3ff]">
-              {coaching.relative}
-            </span>
+            <div className="flex items-center gap-2 mt-1 flex-wrap">
+              <span className="inline-block text-xs font-medium px-2 py-0.5 rounded-full bg-[#3dc3ff]/15 text-[#3dc3ff]">
+                {coaching.relative}
+              </span>
+              {nextCoachingCall.link && nextCoachingCall.link.startsWith("http") && (
+                <a
+                  href={nextCoachingCall.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1 rounded-full bg-[#3dc3ff] text-white hover:bg-[#29aee8] transition-colors"
+                >
+                  Join Call →
+                </a>
+              )}
+            </div>
           </div>
 
           {/* Quick Links — AI Tools */}
