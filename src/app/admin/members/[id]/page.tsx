@@ -905,7 +905,7 @@ export default function MemberDetailPage() {
               onClick={() => setBreakdownOpen((o) => !o)}
               className="w-full flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition-colors"
             >
-              <h2 className="text-base font-semibold text-[#1e2a38]">16-Principle Breakdown</h2>
+              <span className="text-base font-semibold text-[#1e2a38]">16-Principle Breakdown</span>
               <div className="flex items-center gap-2">
                 {latestAudit && (
                   <span className="text-xs text-[#1e2a38]/40 font-medium">
