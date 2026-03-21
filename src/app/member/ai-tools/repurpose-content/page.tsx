@@ -68,6 +68,31 @@ interface SavedLink {
   url: string;
 }
 
+interface CampaignInfo {
+  id: string;
+  name: string;
+  destinationUrl: string;
+  linkCount: number;
+}
+
+interface CampaignLinkInfo {
+  id: string;
+  name: string;
+  trackedUrl: string;
+  refCode: string;
+  clicks: number;
+  leads: number;
+}
+
+interface ActiveCampaignLink {
+  campaignId: string;
+  campaignName: string;
+  linkId: string;
+  linkName: string;
+  trackedUrl: string;
+  isNew: boolean;
+}
+
 interface NewsletterResult {
   subject_line: string;
   preview_text: string;
@@ -226,6 +251,18 @@ export default function RepurposeContentPage() {
   const [oneOffLinks, setOneOffLinks] = useState<SavedLink[]>([]);
   const [showLinkManager, setShowLinkManager] = useState(false);
 
+  const [activeCampaignLinks, setActiveCampaignLinks] = useState<ActiveCampaignLink[]>([]);
+  const [showCampaignPicker, setShowCampaignPicker] = useState(false);
+  const [campaigns, setCampaigns] = useState<CampaignInfo[]>([]);
+  const [campaignsLoading, setCampaignsLoading] = useState(false);
+  const [campaignsLoaded, setCampaignsLoaded] = useState(false);
+  const [pickerCampaignId, setPickerCampaignId] = useState<string>("");
+  const [campaignPickerLinks, setCampaignPickerLinks] = useState<CampaignLinkInfo[]>([]);
+  const [campaignPickerLinksLoading, setCampaignPickerLinksLoading] = useState(false);
+  const [newLinkMode, setNewLinkMode] = useState(false);
+  const [newLinkName, setNewLinkName] = useState("");
+  const [creatingLink, setCreatingLink] = useState(false);
+
   const [loading, setLoading] = useState(false);
 
   const [newsletterResult, setNewsletterResult] = useState<NewsletterResult | null>(null);
@@ -311,6 +348,83 @@ export default function RepurposeContentPage() {
     });
   }
 
+  async function openCampaignPicker() {
+    setShowCampaignPicker(true);
+    setNewLinkMode(false);
+    setNewLinkName("");
+    setPickerCampaignId("");
+    setCampaignPickerLinks([]);
+    if (!campaignsLoaded) {
+      setCampaignsLoading(true);
+      const res = await fetch("/api/campaigns");
+      if (res.ok) setCampaigns(await res.json());
+      setCampaignsLoaded(true);
+      setCampaignsLoading(false);
+    }
+  }
+
+  async function handlePickerCampaignChange(campaignId: string) {
+    setPickerCampaignId(campaignId);
+    setNewLinkMode(false);
+    setNewLinkName(title ? `${title} — LinkedIn Article` : "");
+    setCampaignPickerLinks([]);
+    if (!campaignId) return;
+    setCampaignPickerLinksLoading(true);
+    const res = await fetch(`/api/campaigns/${campaignId}/links`);
+    if (res.ok) setCampaignPickerLinks(await res.json());
+    setCampaignPickerLinksLoading(false);
+  }
+
+  function addExistingCampaignLink(link: CampaignLinkInfo) {
+    const campaign = campaigns.find((c) => c.id === pickerCampaignId);
+    if (activeCampaignLinks.some((l) => l.linkId === link.id)) return;
+    setActiveCampaignLinks((prev) => [
+      ...prev,
+      {
+        campaignId: pickerCampaignId,
+        campaignName: campaign?.name ?? "",
+        linkId: link.id,
+        linkName: link.name,
+        trackedUrl: link.trackedUrl,
+        isNew: false,
+      },
+    ]);
+    setShowCampaignPicker(false);
+    setPickerCampaignId("");
+    setCampaignPickerLinks([]);
+  }
+
+  async function createCampaignLink() {
+    if (!pickerCampaignId || !newLinkName.trim()) return;
+    setCreatingLink(true);
+    const res = await fetch(`/api/campaigns/${pickerCampaignId}/links`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: newLinkName.trim() }),
+    });
+    if (res.ok) {
+      const link = await res.json();
+      const campaign = campaigns.find((c) => c.id === pickerCampaignId);
+      setActiveCampaignLinks((prev) => [
+        ...prev,
+        {
+          campaignId: pickerCampaignId,
+          campaignName: campaign?.name ?? "",
+          linkId: link.id,
+          linkName: link.name,
+          trackedUrl: link.trackedUrl,
+          isNew: true,
+        },
+      ]);
+      setShowCampaignPicker(false);
+      setPickerCampaignId("");
+      setNewLinkName("");
+      setCampaignPickerLinks([]);
+      setNewLinkMode(false);
+    }
+    setCreatingLink(false);
+  }
+
   async function saveEdit(id: string, editedOutput: string, setSaving: (v: boolean) => void, setSaved: (v: boolean) => void) {
     setSaving(true);
     await fetch("/api/ai-tools/repurposed-content", {
@@ -364,11 +478,17 @@ export default function RepurposeContentPage() {
 
     if (generateLinkedIn) {
       const linksForApi = selectedLinkIndexes.map((i) => savedLinks[i]).filter(Boolean);
+      const campaignLinksForApi = activeCampaignLinks.map((l) => ({ label: l.linkName, url: l.trackedUrl }));
       promises.push(
         fetch("/api/ai-tools/repurpose-linkedin", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ transcript, title, selectedLinks: linksForApi, oneOffLinks: oneOffLinks.filter((l) => l.label && l.url) }),
+          body: JSON.stringify({
+            transcript,
+            title,
+            selectedLinks: linksForApi,
+            oneOffLinks: [...oneOffLinks.filter((l) => l.label && l.url), ...campaignLinksForApi],
+          }),
         })
           .then((r) => r.json())
           .then((data) => {
@@ -466,7 +586,8 @@ export default function RepurposeContentPage() {
     setEditedPostcardFrontHeadline(""); setEditedPostcardFrontHook(""); setEditedPostcardBack("");
     setNewsletterRecordId(null); setLinkedInRecordId(null); setFacebookRecordId(null); setBlogRecordId(null); setPostcardRecordId(null);
     setSavedNewsletter(false); setSavedLinkedIn(false); setSavedFacebook(false); setSavedBlog(false); setSavedPostcard(false);
-    setSelectedLinkIndexes([]); setOneOffLinks([]);
+    setSelectedLinkIndexes([]); setOneOffLinks([]); setActiveCampaignLinks([]);
+    setShowCampaignPicker(false); setPickerCampaignId(""); setCampaignPickerLinks([]);
   }
 
   const hasResults = newsletterResult || linkedInResult || facebookResult || blogResult || postcardResult
@@ -586,15 +707,18 @@ export default function RepurposeContentPage() {
               </div>
 
               {generateLinkedIn && (
-                <div className="border-t border-[#1e2a38]/10 dark:border-white/10 pt-5">
-                  <div className="flex items-center justify-between mb-3">
+                <div className="border-t border-[#1e2a38]/10 dark:border-white/10 pt-5 space-y-4">
+                  {/* Header */}
+                  <div className="flex items-center justify-between">
                     <label className="text-sm font-semibold text-[#1e2a38] dark:text-white">Links for Article</label>
                     <button onClick={() => setShowLinkManager(!showLinkManager)} className="text-xs text-[#3dc3ff] hover:underline">
                       {showLinkManager ? "Done" : "Manage Saved Links"}
                     </button>
                   </div>
+
+                  {/* Saved link manager (edit mode) */}
                   {showLinkManager && (
-                    <div className="bg-[#f1f1ef] dark:bg-[#1a1f2e] rounded-xl p-4 mb-4 space-y-2">
+                    <div className="bg-[#f1f1ef] dark:bg-[#1a1f2e] rounded-xl p-4 space-y-2">
                       {savedLinks.map((link, i) => (
                         <div key={i} className="flex gap-2">
                           <input type="text" value={link.label} onChange={(e) => { const u = [...savedLinks]; u[i] = { ...u[i], label: e.target.value }; setSavedLinks(u); }} placeholder="Label" className="flex-1 border border-[#1e2a38]/20 dark:border-white/20 bg-white dark:bg-[#242b3d] text-[#1e2a38] dark:text-white rounded-lg px-3 py-2 text-sm" />
@@ -602,14 +726,16 @@ export default function RepurposeContentPage() {
                           <button onClick={() => setSavedLinks(savedLinks.filter((_, j) => j !== i))} className="text-red-500 text-sm px-2">Remove</button>
                         </div>
                       ))}
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 pt-1">
                         <button onClick={() => setSavedLinks([...savedLinks, { label: "", url: "" }])} className="text-sm text-[#3dc3ff] hover:underline">+ Add Link</button>
                         <button onClick={() => saveLinks(savedLinks.filter((l) => l.label && l.url))} className="text-sm bg-[#3dc3ff] text-white px-3 py-1 rounded-lg hover:bg-[#3dc3ff]/90">Save Links</button>
                       </div>
                     </div>
                   )}
+
+                  {/* Saved links checklist */}
                   {savedLinks.length > 0 && !showLinkManager && (
-                    <div className="space-y-1.5 mb-3">
+                    <div className="space-y-1.5">
                       {savedLinks.map((link, i) => (
                         <label key={i} className="flex items-center gap-2 cursor-pointer">
                           <input type="checkbox" checked={selectedLinkIndexes.includes(i)} onChange={(e) => setSelectedLinkIndexes(e.target.checked ? [...selectedLinkIndexes, i] : selectedLinkIndexes.filter((idx) => idx !== i))} className="w-4 h-4 rounded border-[#1e2a38]/20 text-[#3dc3ff] focus:ring-[#3dc3ff]" />
@@ -619,7 +745,120 @@ export default function RepurposeContentPage() {
                       ))}
                     </div>
                   )}
-                  <div className="mt-3">
+
+                  {/* Active campaign links */}
+                  {activeCampaignLinks.length > 0 && (
+                    <div className="space-y-1.5">
+                      {activeCampaignLinks.map((l) => (
+                        <div key={l.linkId} className="flex items-center gap-2 bg-[#3dc3ff]/8 dark:bg-[#3dc3ff]/15 border border-[#3dc3ff]/20 rounded-lg px-3 py-2">
+                          <span className="text-xs font-medium text-[#3dc3ff] shrink-0">Campaign</span>
+                          <span className="text-xs text-[#1e2a38]/50 dark:text-white/50 shrink-0">{l.campaignName}</span>
+                          <span className="text-xs font-medium text-[#1e2a38] dark:text-white flex-1 truncate">{l.linkName}</span>
+                          {l.isNew && <span className="text-[10px] font-semibold text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-1.5 py-0.5 rounded-full shrink-0">New</span>}
+                          <button onClick={() => setActiveCampaignLinks((prev) => prev.filter((x) => x.linkId !== l.linkId))} className="text-[#1e2a38]/30 dark:text-white/30 hover:text-red-500 text-sm shrink-0 ml-1">✕</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Campaign picker inline */}
+                  {showCampaignPicker ? (
+                    <div className="bg-[#f1f1ef] dark:bg-[#1a1f2e] rounded-xl p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-semibold text-[#1e2a38] dark:text-white">Add Campaign Link</p>
+                        <button onClick={() => { setShowCampaignPicker(false); setPickerCampaignId(""); setCampaignPickerLinks([]); setNewLinkMode(false); }} className="text-xs text-[#1e2a38]/40 dark:text-white/40 hover:text-[#1e2a38] dark:hover:text-white">Cancel</button>
+                      </div>
+
+                      {/* Campaign dropdown */}
+                      <div>
+                        <label className="block text-xs text-[#1e2a38]/60 dark:text-white/60 mb-1">Select Campaign</label>
+                        {campaignsLoading ? (
+                          <p className="text-xs text-[#1e2a38]/40 dark:text-white/40">Loading campaigns…</p>
+                        ) : campaigns.length === 0 ? (
+                          <p className="text-xs text-[#1e2a38]/40 dark:text-white/40">No campaigns found. <a href="/member/campaigns" className="text-[#3dc3ff] hover:underline">Create one →</a></p>
+                        ) : (
+                          <select
+                            value={pickerCampaignId}
+                            onChange={(e) => handlePickerCampaignChange(e.target.value)}
+                            className="w-full border border-[#1e2a38]/20 dark:border-white/20 bg-white dark:bg-[#242b3d] text-[#1e2a38] dark:text-white rounded-lg px-3 py-2 text-sm"
+                          >
+                            <option value="">Choose a campaign…</option>
+                            {campaigns.map((c) => (
+                              <option key={c.id} value={c.id}>{c.name}</option>
+                            ))}
+                          </select>
+                        )}
+                      </div>
+
+                      {/* Links in selected campaign */}
+                      {pickerCampaignId && (
+                        <div className="space-y-2">
+                          {campaignPickerLinksLoading ? (
+                            <p className="text-xs text-[#1e2a38]/40 dark:text-white/40">Loading links…</p>
+                          ) : (
+                            <>
+                              {campaignPickerLinks.length > 0 && !newLinkMode && (
+                                <div className="space-y-1">
+                                  <p className="text-xs text-[#1e2a38]/60 dark:text-white/60">Existing links — pick one or create new</p>
+                                  {campaignPickerLinks.map((link) => {
+                                    const alreadyAdded = activeCampaignLinks.some((l) => l.linkId === link.id);
+                                    return (
+                                      <button
+                                        key={link.id}
+                                        onClick={() => !alreadyAdded && addExistingCampaignLink(link)}
+                                        disabled={alreadyAdded}
+                                        className={`w-full text-left flex items-center justify-between gap-2 rounded-lg px-3 py-2 border transition-colors ${alreadyAdded ? "border-[#1e2a38]/10 dark:border-white/10 opacity-40 cursor-not-allowed" : "border-[#1e2a38]/15 dark:border-white/15 hover:border-[#3dc3ff] hover:bg-[#3dc3ff]/5 cursor-pointer"}`}
+                                      >
+                                        <span className="text-sm text-[#1e2a38] dark:text-white truncate">{link.name}</span>
+                                        <span className="text-xs text-[#1e2a38]/40 dark:text-white/40 shrink-0">{link.clicks} clicks</span>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              )}
+
+                              {/* Create new link */}
+                              {!newLinkMode ? (
+                                <button onClick={() => { setNewLinkMode(true); setNewLinkName(title ? `${title} — LinkedIn Article` : ""); }} className="text-xs text-[#3dc3ff] hover:underline">
+                                  + Create new link in this campaign
+                                </button>
+                              ) : (
+                                <div className="space-y-2 pt-1 border-t border-[#1e2a38]/10 dark:border-white/10">
+                                  <p className="text-xs text-[#1e2a38]/60 dark:text-white/60">Name this link (tracks clicks from this specific content)</p>
+                                  <input
+                                    type="text"
+                                    value={newLinkName}
+                                    onChange={(e) => setNewLinkName(e.target.value)}
+                                    placeholder="e.g. How to Buy Without Selling First — LinkedIn Article"
+                                    className="w-full border border-[#1e2a38]/20 dark:border-white/20 bg-white dark:bg-[#242b3d] text-[#1e2a38] dark:text-white rounded-lg px-3 py-2 text-sm"
+                                  />
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={createCampaignLink}
+                                      disabled={creatingLink || !newLinkName.trim()}
+                                      className="bg-[#3dc3ff] text-white text-xs font-semibold px-4 py-2 rounded-lg hover:bg-[#3dc3ff]/90 disabled:opacity-50 transition-colors"
+                                    >
+                                      {creatingLink ? "Creating…" : "Create & Add Link"}
+                                    </button>
+                                    <button onClick={() => setNewLinkMode(false)} className="text-xs text-[#1e2a38]/40 dark:text-white/40 hover:text-[#1e2a38] dark:hover:text-white px-2">
+                                      Back
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <button onClick={openCampaignPicker} className="text-xs text-[#3dc3ff] hover:underline">
+                      + Add Campaign Link
+                    </button>
+                  )}
+
+                  {/* One-off links */}
+                  <div>
                     <p className="text-xs text-[#1e2a38]/40 dark:text-white/40 mb-2">Add links for this article only:</p>
                     {oneOffLinks.map((link, i) => (
                       <div key={i} className="flex gap-2 mb-2">
