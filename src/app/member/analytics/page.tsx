@@ -186,6 +186,11 @@ function AnalyticsPageInner() {
       .catch(() => setLeadsLoading(false));
   }, []);
 
+  // Auto-switch to hourly granularity when Today is selected (gives a better hourly view)
+  useEffect(() => {
+    if (period === "1d") setGranularity("hourly");
+  }, [period]);
+
   // When a specific campaign is chosen, load its links for the link filter dropdown
   useEffect(() => {
     setLinkId("all");
@@ -251,6 +256,8 @@ function AnalyticsPageInner() {
     if (period === "custom" && customFrom && customTo) {
       from = new Date(customFrom);
       to = new Date(customTo); to.setHours(23, 59, 59, 999);
+    } else if (period === "1d") {
+      from = new Date(now.getTime() - 86400000);
     } else if (period === "7d") {
       from = new Date(now.getTime() - 7 * 86400000);
     } else if (period === "90d") {
@@ -266,7 +273,7 @@ function AnalyticsPageInner() {
       if (linkId !== "all" && l.click.link.id !== linkId) return false;
       return true;
     });
-  }, [leads, period, customFrom, customTo, campaignId, sourceType, linkId]);
+  }, [leads, period, customFrom, customTo, campaignId, sourceType, linkId, tzOffset]);
 
   // Conversions tab charts data
   const { dailyLeads, byCampaign, bySource } = useMemo(() => {
@@ -316,7 +323,7 @@ function AnalyticsPageInner() {
   const topVideos = [...videos].sort((a, b) => b.totalLeads - a.totalLeads).slice(0, 10);
   const showFunnel = !!funnel && (funnel.views > 0 || funnel.clicks > 0 || funnel.leads > 0);
   const funnelMax = showFunnel ? Math.max(funnel!.views, funnel!.clicks, funnel!.leads, 1) : 1;
-  const periodLabel = period === "7d" ? "7 days" : period === "90d" ? "90 days" : period === "custom" ? "custom" : "30 days";
+  const periodLabel = period === "1d" ? "today" : period === "7d" ? "7 days" : period === "90d" ? "90 days" : period === "custom" ? "custom" : "30 days";
 
   return (
     <div className="space-y-4 pb-10">
@@ -330,10 +337,10 @@ function AnalyticsPageInner() {
         {/* Period + loading row */}
         <div className="flex items-center gap-3 flex-wrap">
           <div className={`flex gap-1 ${periodBg} rounded-xl p-1`}>
-            {(["7d", "30d", "90d"] as const).map((p) => (
+            {(["1d", "7d", "30d", "90d"] as const).map((p) => (
               <button key={p} onClick={() => setPeriod(p)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${period === p ? `bg-white dark:bg-[#2d3748] shadow-sm ${txt}` : `${muted} hover:${txt}`}`}>
-                {p}
+                {p === "1d" ? "Today" : p}
               </button>
             ))}
             <button onClick={() => setPeriod("custom")}

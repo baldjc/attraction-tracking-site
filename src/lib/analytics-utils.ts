@@ -56,6 +56,10 @@ export function parsePeriod(
   if (period === "all") {
     return { periodStart: new Date(0), periodEnd: now, prevStart: new Date(0), prevEnd: now, days: 365 };
   }
+  if (period === "1d") {
+    const periodStart = new Date(now.getTime() - 86400000);
+    return { periodStart, periodEnd: now, prevStart: new Date(now.getTime() - 2 * 86400000), prevEnd: periodStart, days: 1 };
+  }
   const days = period === "7d" ? 7 : period === "90d" ? 90 : 30;
   const periodStart = new Date(now.getTime() - days * 86400000);
   return { periodStart, periodEnd: now, prevStart: new Date(periodStart.getTime() - days * 86400000), prevEnd: new Date(periodStart), days };
