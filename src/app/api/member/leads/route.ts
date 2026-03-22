@@ -27,6 +27,7 @@ export async function GET() {
           pageViews: { orderBy: { timestamp: "asc" } },
           link: {
             select: {
+              id: true,
               name: true,
               youtubeVideoUrl: true,
               youtubeThumbnailUrl: true,

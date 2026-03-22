@@ -262,9 +262,10 @@ function AnalyticsPageInner() {
       if (ts < from || ts > to) return false;
       if (campaignId !== "all" && l.click.link.campaign.id !== campaignId) return false;
       if (sourceType !== "all" && l.click.link.campaign.sourceType !== sourceType) return false;
+      if (linkId !== "all" && l.click.link.id !== linkId) return false;
       return true;
     });
-  }, [leads, period, customFrom, customTo, campaignId, sourceType]);
+  }, [leads, period, customFrom, customTo, campaignId, sourceType, linkId]);
 
   // Conversions tab charts data
   const { dailyLeads, byCampaign, bySource } = useMemo(() => {
