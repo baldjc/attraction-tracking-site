@@ -64,6 +64,7 @@ const dim = "text-[#1e2a38]/30 dark:text-[#64748b]";
 const rowHover = "hover:bg-[#f8f9fa] dark:hover:bg-[#2d3748] transition-colors";
 const divider = "divide-y divide-[#1e2a38]/5 dark:divide-[#2d3748]";
 const inputCls = "text-xs border border-[#1e2a38]/20 dark:border-[#2d3748] rounded-xl px-3 py-2 focus:outline-none focus:border-[#3dc3ff] bg-white dark:bg-[#2d3748] text-[#1e2a38] dark:text-[#e2e8f0]";
+const selectCls = inputCls + " w-full appearance-none cursor-pointer";
 const periodBg = "bg-[#f1f1ef] dark:bg-[#1a1f2e]";
 
 // ── Generic helpers ─────────────────────────────────────────────────────────
@@ -325,49 +326,52 @@ function AnalyticsPageInner() {
       </div>
 
       {/* ── Global filters (above tabs) ───────────────────────────────────── */}
-      <div className={`${card} rounded-2xl px-5 py-3.5 flex flex-wrap items-center gap-3 sticky top-0 z-10`}>
-        <div className={`flex gap-1 ${periodBg} rounded-xl p-1`}>
-          {(["7d", "30d", "90d"] as const).map((p) => (
-            <button key={p} onClick={() => setPeriod(p)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${period === p ? `bg-white dark:bg-[#2d3748] shadow-sm ${txt}` : `${muted} hover:${txt}`}`}>
-              {p}
+      <div className={`${card} rounded-2xl px-5 py-3.5 flex flex-col gap-3 sticky top-0 z-10`}>
+        {/* Period + loading row */}
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className={`flex gap-1 ${periodBg} rounded-xl p-1`}>
+            {(["7d", "30d", "90d"] as const).map((p) => (
+              <button key={p} onClick={() => setPeriod(p)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${period === p ? `bg-white dark:bg-[#2d3748] shadow-sm ${txt}` : `${muted} hover:${txt}`}`}>
+                {p}
+              </button>
+            ))}
+            <button onClick={() => setPeriod("custom")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${period === "custom" ? `bg-white dark:bg-[#2d3748] shadow-sm ${txt}` : `${muted} hover:${txt}`}`}>
+              Custom
             </button>
-          ))}
-          <button onClick={() => setPeriod("custom")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${period === "custom" ? `bg-white dark:bg-[#2d3748] shadow-sm ${txt}` : `${muted} hover:${txt}`}`}>
-            Custom
-          </button>
+          </div>
+          {loading && <span className={`text-xs ${dim} animate-pulse ml-auto`}>Loading…</span>}
         </div>
 
         {period === "custom" && (
           <div className="flex items-center gap-2">
-            <input type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} className={inputCls} />
+            <input type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} className={inputCls + " flex-1"} />
             <span className={`${dim} text-xs`}>to</span>
-            <input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} className={inputCls} />
+            <input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} className={inputCls + " flex-1"} />
           </div>
         )}
 
-        <select value={campaignId} onChange={(e) => setCampaignId(e.target.value)} className={inputCls}>
+        {/* Dropdowns — each on its own full-width row on mobile */}
+        <select value={campaignId} onChange={(e) => setCampaignId(e.target.value)} className={selectCls}>
           <option value="all">All Campaigns</option>
           {campaigns.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
 
         {campaignId !== "all" && campaignLinks.length > 0 && (
-          <select value={linkId} onChange={(e) => setLinkId(e.target.value)} className={inputCls}>
+          <select value={linkId} onChange={(e) => setLinkId(e.target.value)} className={selectCls}>
             <option value="all">All Links</option>
             {campaignLinks.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
           </select>
         )}
 
-        <select value={sourceType} onChange={(e) => setSourceType(e.target.value)} className={inputCls}>
+        <select value={sourceType} onChange={(e) => setSourceType(e.target.value)} className={selectCls}>
           <option value="all">All Sources</option>
           <option value="YOUTUBE">YouTube</option>
           <option value="GOOGLE_ADS">Google Ads</option>
           <option value="EMAIL">Email</option>
           <option value="OTHER">Other</option>
         </select>
-
-        {loading && <span className={`text-xs ${dim} animate-pulse ml-auto`}>Loading…</span>}
       </div>
 
       {/* ── Tab navigation ────────────────────────────────────────────────── */}
