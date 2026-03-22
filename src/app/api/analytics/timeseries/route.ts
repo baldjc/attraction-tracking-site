@@ -45,6 +45,26 @@ export async function GET(req: NextRequest) {
     select: { timestamp: true, lead: { select: { id: true } } },
   });
 
+  if (granularity === "hourly") {
+    const hourMap = new Map<string, { clicks: number; leads: number }>();
+    for (const c of clicks) {
+      const h = c.timestamp.toISOString().slice(0, 13); // "2026-03-22T14"
+      const e = hourMap.get(h) ?? { clicks: 0, leads: 0 };
+      e.clicks++;
+      if (c.lead) e.leads++;
+      hourMap.set(h, e);
+    }
+    const hourKeys: string[] = [];
+    const cur = new Date(p.periodStart); cur.setMinutes(0, 0, 0);
+    const end = p.periodEnd;
+    while (cur <= end) {
+      hourKeys.push(cur.toISOString().slice(0, 13));
+      cur.setHours(cur.getHours() + 1);
+    }
+    const daily = hourKeys.map((h) => ({ date: h, ...(hourMap.get(h) ?? { clicks: 0, leads: 0 }) }));
+    return NextResponse.json({ daily });
+  }
+
   if (granularity === "weekly") {
     const weekMap = new Map<string, { clicks: number; leads: number }>();
     for (const c of clicks) {

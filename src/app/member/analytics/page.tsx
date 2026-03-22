@@ -68,6 +68,15 @@ const periodBg = "bg-[#f1f1ef] dark:bg-[#1a1f2e]";
 
 // ── Generic helpers ─────────────────────────────────────────────────────────
 function fmtDate(d: string) { const [, m, day] = d.split("-"); return `${parseInt(m)}/${parseInt(day)}`; }
+function fmtHour(str: string) {
+  const [datePart, hourStr] = str.split("T");
+  if (!datePart || hourStr === undefined) return fmtDate(str);
+  const [, m, d] = datePart.split("-");
+  const h = parseInt(hourStr ?? "0");
+  const ampm = h >= 12 ? "pm" : "am";
+  const h12 = h % 12 || 12;
+  return `${parseInt(m)}/${parseInt(d)} ${h12}${ampm}`;
+}
 function fmtNum(n: number) { return n.toLocaleString(); }
 function toDateStr(d: Date) { return d.toISOString().slice(0, 10); }
 
@@ -147,7 +156,7 @@ function AnalyticsPageInner() {
   const [customTo, setCustomTo] = useState("");
   const [campaignId, setCampaignId] = useState("all");
   const [sourceType, setSourceType] = useState("all");
-  const [granularity, setGranularity] = useState<"daily" | "weekly">("daily");
+  const [granularity, setGranularity] = useState<"hourly" | "daily" | "weekly">("daily");
   const [campaigns, setCampaigns] = useState<{ id: string; name: string }[]>([]);
 
   // Analytics data
@@ -363,11 +372,11 @@ function AnalyticsPageInner() {
           <div className="p-5 space-y-6">
             {/* KPI Cards */}
             {overview && (
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
                 <div className={`${card} rounded-xl p-4`}>
                   <p className={`text-xs ${muted} font-medium mb-1`}>YouTube Views</p>
                   <p className={`text-2xl font-bold ${txt}`}>{fmtNum(overview.totalViews)}</p>
-                  <p className={`text-xs ${dim} mt-1`}>Total across all links</p>
+                  <p className={`text-xs ${dim} mt-1`}>Updated 4×/day, 6am–6pm</p>
                 </div>
                 <div className={`${card} rounded-xl p-4`}>
                   <p className={`text-xs ${muted} font-medium mb-1`}>Clicks ({periodLabel})</p>
@@ -386,6 +395,15 @@ function AnalyticsPageInner() {
                   <p className="text-2xl font-bold text-[#3dc3ff]">{overview.convRate}%</p>
                   <div className="mt-1"><DeltaBadge d={overview.convRateDelta} suffix="pp" /></div>
                 </div>
+                <div className={`${card} rounded-xl p-4`}>
+                  <p className={`text-xs ${muted} font-medium mb-1`}>Leads / Views</p>
+                  <p className={`text-2xl font-bold ${txt}`}>
+                    {overview.totalViews > 0
+                      ? `${((overview.totalLeads / overview.totalViews) * 100).toFixed(2)}%`
+                      : "—"}
+                  </p>
+                  <p className={`text-xs ${dim} mt-1`}>Leads per YouTube view</p>
+                </div>
               </div>
             )}
 
@@ -394,10 +412,10 @@ function AnalyticsPageInner() {
               <div className="flex items-center justify-between mb-4">
                 <h2 className={`font-semibold ${txt}`}>Clicks &amp; Leads Over Time</h2>
                 <div className={`flex gap-1 ${periodBg} rounded-xl p-1`}>
-                  {(["daily", "weekly"] as const).map((g) => (
+                  {(["hourly", "daily", "weekly"] as const).map((g) => (
                     <button key={g} onClick={() => setGranularity(g)}
                       className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${granularity === g ? `bg-white dark:bg-[#2d3748] shadow-sm ${txt}` : `${dim} hover:${txt}`}`}>
-                      {g === "daily" ? "Daily" : "Weekly"}
+                      {g === "hourly" ? "Hourly" : g === "daily" ? "Daily" : "Weekly"}
                     </button>
                   ))}
                 </div>
@@ -408,9 +426,9 @@ function AnalyticsPageInner() {
                 <ResponsiveContainer width="100%" height={220}>
                   <LineChart data={timeseries} margin={{ top: 5, right: 10, left: -15, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#1e2a3808" vertical={false} />
-                    <XAxis dataKey="date" tickFormatter={fmtDate} tick={{ fontSize: 10, fill: "#1e2a3860" }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
+                    <XAxis dataKey="date" tickFormatter={granularity === "hourly" ? fmtHour : fmtDate} tick={{ fontSize: 10, fill: "#1e2a3860" }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
                     <YAxis tick={{ fontSize: 10, fill: "#1e2a3860" }} axisLine={false} tickLine={false} allowDecimals={false} />
-                    <Tooltip contentStyle={{ background: "#1e2a38", border: "none", borderRadius: 10, fontSize: 12, color: "#e2e8f0" }} labelFormatter={(l) => fmtDate(String(l ?? ""))} />
+                    <Tooltip contentStyle={{ background: "#1e2a38", border: "none", borderRadius: 10, fontSize: 12, color: "#e2e8f0" }} labelFormatter={(l) => granularity === "hourly" ? fmtHour(String(l ?? "")) : fmtDate(String(l ?? ""))} />
                     <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11 }} />
                     <Line type="monotone" dataKey="clicks" stroke="#3dc3ff" strokeWidth={2} dot={false} name="Clicks" />
                     <Line type="monotone" dataKey="leads" stroke="#22c55e" strokeWidth={2} dot={false} name="Leads" />
