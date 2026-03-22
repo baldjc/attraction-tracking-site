@@ -14,11 +14,13 @@ export async function GET(req: NextRequest) {
   const p = parsePeriod(sp.get("period") ?? "30d", sp.get("from"), sp.get("to"));
   const campaignId = sp.get("campaignId") ?? "all";
   const sourceType = sp.get("sourceType") ?? "all";
+  const linkId = sp.get("linkId") ?? "all";
 
   const links = await prisma.trackingLink.findMany({
     where: {
       deletedAt: null,
       youtubeVideoUrl: { not: null },
+      ...(linkId !== "all" ? { id: linkId } : {}),
       campaign: {
         deletedAt: null,
         ...(isAdmin ? {} : { userId: user.id }),

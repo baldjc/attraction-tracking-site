@@ -42,7 +42,7 @@ interface LeadData {
     id: string; refCode: string;
     city: string | null; province: string | null; country: string | null; countryCode: string | null;
     timestamp: string; pageViews: PageViewData[];
-    link: { name: string; youtubeVideoUrl: string | null; youtubeThumbnailUrl: string | null; campaign: { id: string; name: string; sourceType: string; }; };
+    link: { id: string; name: string; youtubeVideoUrl: string | null; youtubeThumbnailUrl: string | null; campaign: { id: string; name: string; sourceType: string; }; };
   };
 }
 
@@ -158,6 +158,8 @@ function AnalyticsPageInner() {
   const [sourceType, setSourceType] = useState("all");
   const [granularity, setGranularity] = useState<"hourly" | "daily" | "weekly">("daily");
   const [campaigns, setCampaigns] = useState<{ id: string; name: string }[]>([]);
+  const [linkId, setLinkId] = useState("all");
+  const [campaignLinks, setCampaignLinks] = useState<{ id: string; name: string }[]>([]);
   const [tzOffset] = useState(() => new Date().getTimezoneOffset());
 
   // Analytics data
@@ -183,11 +185,21 @@ function AnalyticsPageInner() {
       .catch(() => setLeadsLoading(false));
   }, []);
 
+  // When a specific campaign is chosen, load its links for the link filter dropdown
+  useEffect(() => {
+    setLinkId("all");
+    if (campaignId === "all") { setCampaignLinks([]); return; }
+    fetch(`/api/campaigns/${campaignId}/links`)
+      .then((r) => r.ok ? r.json() : [])
+      .then((data: { id: string; name: string }[]) => setCampaignLinks(Array.isArray(data) ? data : []))
+      .catch(() => setCampaignLinks([]));
+  }, [campaignId]);
+
   const buildQS = useCallback(() => {
-    const p = new URLSearchParams({ period, campaignId, sourceType, tzOffset: String(tzOffset) });
+    const p = new URLSearchParams({ period, campaignId, sourceType, tzOffset: String(tzOffset), linkId });
     if (period === "custom" && customFrom && customTo) { p.set("from", customFrom); p.set("to", customTo); }
     return p.toString();
-  }, [period, campaignId, sourceType, customFrom, customTo, tzOffset]);
+  }, [period, campaignId, sourceType, customFrom, customTo, tzOffset, linkId]);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -338,6 +350,13 @@ function AnalyticsPageInner() {
           <option value="all">All Campaigns</option>
           {campaigns.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
+
+        {campaignId !== "all" && campaignLinks.length > 0 && (
+          <select value={linkId} onChange={(e) => setLinkId(e.target.value)} className={inputCls}>
+            <option value="all">All Links</option>
+            {campaignLinks.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
+          </select>
+        )}
 
         <select value={sourceType} onChange={(e) => setSourceType(e.target.value)} className={inputCls}>
           <option value="all">All Sources</option>

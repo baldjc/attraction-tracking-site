@@ -14,6 +14,7 @@ export async function GET(req: NextRequest) {
   const p = parsePeriod(sp.get("period") ?? "30d", sp.get("from"), sp.get("to"));
   const sourceType = sp.get("sourceType") ?? "all";
   const campaignId = sp.get("campaignId") ?? "all";
+  const linkId = sp.get("linkId") ?? "all";
 
   const campaigns = await prisma.campaign.findMany({
     where: {
@@ -28,7 +29,7 @@ export async function GET(req: NextRequest) {
       destinationUrl: true,
       sourceType: true,
       links: {
-        where: { deletedAt: null },
+        where: { deletedAt: null, ...(linkId !== "all" ? { id: linkId } : {}) },
         select: {
           id: true,
           name: true,

@@ -15,6 +15,7 @@ export async function GET(req: NextRequest) {
   const campaignId = sp.get("campaignId") ?? "all";
   const sourceType = sp.get("sourceType") ?? "all";
   const tzOffset = parseInt(sp.get("tzOffset") ?? "0");
+  const linkId = sp.get("linkId") ?? "all";
   const p = parsePeriod(period, sp.get("from"), sp.get("to"));
 
   const campaignWhere = {
@@ -34,7 +35,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ totalViews: 0, totalClicks: 0, totalLeads: 0, convRate: 0, viewsDelta: 0, clicksDelta: 0, leadsDelta: 0, convRateDelta: 0, prevClicks: 0, prevLeads: 0, sparkline: [], leadsSparkline: [] });
   }
 
-  const linkWhere = { campaignId: { in: ids }, deletedAt: null };
+  const linkWhere = { campaignId: { in: ids }, deletedAt: null, ...(linkId !== "all" ? { id: linkId } : {}) };
 
   const [currentClicks, prevClicks, links] = await Promise.all([
     prisma.click.findMany({

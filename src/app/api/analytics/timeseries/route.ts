@@ -26,6 +26,7 @@ export async function GET(req: NextRequest) {
   const campaignId = sp.get("campaignId") ?? "all";
   const sourceType = sp.get("sourceType") ?? "all";
   const tzOffset = parseInt(sp.get("tzOffset") ?? "0"); // minutes from getTimezoneOffset()
+  const linkId = sp.get("linkId") ?? "all";
 
   const campaigns = await prisma.campaign.findMany({
     where: {
@@ -43,7 +44,7 @@ export async function GET(req: NextRequest) {
   const clicks = await prisma.click.findMany({
     where: {
       timestamp: { gte: p.periodStart, lte: p.periodEnd },
-      link: { campaignId: { in: ids }, deletedAt: null },
+      link: { campaignId: { in: ids }, deletedAt: null, ...(linkId !== "all" ? { id: linkId } : {}) },
     },
     select: { timestamp: true, lead: { select: { id: true } } },
   });
