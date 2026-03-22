@@ -2,17 +2,35 @@ export function toDateStr(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
-export function fillDays(start: Date, end: Date): string[] {
+// ── Timezone-aware helpers ───────────────────────────────────────────────────
+// tzOffset = value of new Date().getTimezoneOffset() on the client
+// (positive means west of UTC, e.g. 420 = UTC-7 / PDT)
+// Formula: localTime = utcTime - tzOffset * 60000
+
+export function toLocalDateStr(d: Date, tzOffset: number): string {
+  return new Date(d.getTime() - tzOffset * 60000).toISOString().slice(0, 10);
+}
+
+export function toLocalHourKey(d: Date, tzOffset: number): string {
+  return new Date(d.getTime() - tzOffset * 60000).toISOString().slice(0, 13);
+}
+
+export function fillLocalDays(start: Date, end: Date, tzOffset: number): string[] {
+  // Floor start to beginning of the local day
+  const localStart = new Date(start.getTime() - tzOffset * 60000);
+  localStart.setUTCHours(0, 0, 0, 0);
+  const localEnd = new Date(end.getTime() - tzOffset * 60000);
   const days: string[] = [];
-  const cur = new Date(start);
-  cur.setHours(0, 0, 0, 0);
-  const endDay = new Date(end);
-  endDay.setHours(23, 59, 59, 999);
-  while (cur <= endDay) {
-    days.push(toDateStr(cur));
-    cur.setDate(cur.getDate() + 1);
+  const cur = new Date(localStart.getTime());
+  while (cur <= localEnd) {
+    days.push(cur.toISOString().slice(0, 10));
+    cur.setUTCDate(cur.getUTCDate() + 1);
   }
   return days;
+}
+
+export function fillDays(start: Date, end: Date): string[] {
+  return fillLocalDays(start, end, 0);
 }
 
 export interface AnalyticsPeriod {

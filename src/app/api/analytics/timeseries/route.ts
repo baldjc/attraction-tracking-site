@@ -2,13 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import prisma from "@/lib/prisma";
-import { parsePeriod, toDateStr, fillDays } from "@/lib/analytics-utils";
+import { parsePeriod, toLocalDateStr, toLocalHourKey, fillLocalDays } from "@/lib/analytics-utils";
 
-function isoWeekStart(d: Date): string {
-  const day = d.getDay();
+function isoWeekStart(d: Date, tzOffset: number): string {
+  // Work in local-time space: shift to local, find Monday, return date string
+  const local = new Date(d.getTime() - tzOffset * 60000);
+  const day = local.getUTCDay();
   const diff = (day === 0 ? -6 : 1) - day;
-  const mon = new Date(d);
-  mon.setDate(mon.getDate() + diff);
+  const mon = new Date(local);
+  mon.setUTCDate(mon.getUTCDate() + diff);
   return mon.toISOString().slice(0, 10);
 }
 
@@ -23,6 +25,7 @@ export async function GET(req: NextRequest) {
   const granularity = sp.get("granularity") ?? "daily";
   const campaignId = sp.get("campaignId") ?? "all";
   const sourceType = sp.get("sourceType") ?? "all";
+  const tzOffset = parseInt(sp.get("tzOffset") ?? "0"); // minutes from getTimezoneOffset()
 
   const campaigns = await prisma.campaign.findMany({
     where: {
@@ -48,18 +51,21 @@ export async function GET(req: NextRequest) {
   if (granularity === "hourly") {
     const hourMap = new Map<string, { clicks: number; leads: number }>();
     for (const c of clicks) {
-      const h = c.timestamp.toISOString().slice(0, 13); // "2026-03-22T14"
+      const h = toLocalHourKey(c.timestamp, tzOffset);
       const e = hourMap.get(h) ?? { clicks: 0, leads: 0 };
       e.clicks++;
       if (c.lead) e.leads++;
       hourMap.set(h, e);
     }
+    // Fill all local hours in the period
+    const localStart = new Date(p.periodStart.getTime() - tzOffset * 60000);
+    localStart.setUTCMinutes(0, 0, 0);
+    const localEnd = new Date(p.periodEnd.getTime() - tzOffset * 60000);
     const hourKeys: string[] = [];
-    const cur = new Date(p.periodStart); cur.setMinutes(0, 0, 0);
-    const end = p.periodEnd;
-    while (cur <= end) {
+    const cur = new Date(localStart.getTime());
+    while (cur <= localEnd) {
       hourKeys.push(cur.toISOString().slice(0, 13));
-      cur.setHours(cur.getHours() + 1);
+      cur.setUTCHours(cur.getUTCHours() + 1);
     }
     const daily = hourKeys.map((h) => ({ date: h, ...(hourMap.get(h) ?? { clicks: 0, leads: 0 }) }));
     return NextResponse.json({ daily });
@@ -68,7 +74,7 @@ export async function GET(req: NextRequest) {
   if (granularity === "weekly") {
     const weekMap = new Map<string, { clicks: number; leads: number }>();
     for (const c of clicks) {
-      const wk = isoWeekStart(c.timestamp);
+      const wk = isoWeekStart(c.timestamp, tzOffset);
       const e = weekMap.get(wk) ?? { clicks: 0, leads: 0 };
       e.clicks++;
       if (c.lead) e.leads++;
@@ -80,10 +86,11 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ daily });
   }
 
-  const days = fillDays(p.periodStart, p.periodEnd);
+  // Daily (default)
+  const days = fillLocalDays(p.periodStart, p.periodEnd, tzOffset);
   const dayMap = new Map(days.map((d) => [d, { clicks: 0, leads: 0 }]));
   for (const c of clicks) {
-    const d = toDateStr(c.timestamp);
+    const d = toLocalDateStr(c.timestamp, tzOffset);
     const e = dayMap.get(d) ?? { clicks: 0, leads: 0 };
     e.clicks++;
     if (c.lead) e.leads++;

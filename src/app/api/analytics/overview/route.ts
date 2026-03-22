@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import prisma from "@/lib/prisma";
-import { parsePeriod, toDateStr, fillDays, pct, delta } from "@/lib/analytics-utils";
+import { parsePeriod, toLocalDateStr, fillLocalDays, pct, delta } from "@/lib/analytics-utils";
 
 export async function GET(req: NextRequest) {
   const user = await resolveUserFromSession();
@@ -14,6 +14,7 @@ export async function GET(req: NextRequest) {
   const period = sp.get("period") ?? "30d";
   const campaignId = sp.get("campaignId") ?? "all";
   const sourceType = sp.get("sourceType") ?? "all";
+  const tzOffset = parseInt(sp.get("tzOffset") ?? "0");
   const p = parsePeriod(period, sp.get("from"), sp.get("to"));
 
   const campaignWhere = {
@@ -61,7 +62,7 @@ export async function GET(req: NextRequest) {
 
   // Sparklines — last 30 days of clicks & leads
   const spark30Start = new Date(Date.now() - 30 * 86400000);
-  const sparkDays = fillDays(spark30Start, new Date());
+  const sparkDays = fillLocalDays(spark30Start, new Date(), tzOffset);
   const sparkClickMap = new Map(sparkDays.map((d) => [d, 0]));
   const sparkLeadMap = new Map(sparkDays.map((d) => [d, 0]));
 
@@ -71,7 +72,7 @@ export async function GET(req: NextRequest) {
   });
 
   for (const c of sparkSource) {
-    const d = toDateStr(c.timestamp);
+    const d = toLocalDateStr(c.timestamp, tzOffset);
     if (sparkClickMap.has(d)) sparkClickMap.set(d, (sparkClickMap.get(d) ?? 0) + 1);
     if (c.lead && sparkLeadMap.has(d)) sparkLeadMap.set(d, (sparkLeadMap.get(d) ?? 0) + 1);
   }

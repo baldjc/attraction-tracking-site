@@ -158,6 +158,7 @@ function AnalyticsPageInner() {
   const [sourceType, setSourceType] = useState("all");
   const [granularity, setGranularity] = useState<"hourly" | "daily" | "weekly">("daily");
   const [campaigns, setCampaigns] = useState<{ id: string; name: string }[]>([]);
+  const [tzOffset] = useState(() => new Date().getTimezoneOffset());
 
   // Analytics data
   const [overview, setOverview] = useState<OverviewData | null>(null);
@@ -183,10 +184,10 @@ function AnalyticsPageInner() {
   }, []);
 
   const buildQS = useCallback(() => {
-    const p = new URLSearchParams({ period, campaignId, sourceType });
+    const p = new URLSearchParams({ period, campaignId, sourceType, tzOffset: String(tzOffset) });
     if (period === "custom" && customFrom && customTo) { p.set("from", customFrom); p.set("to", customTo); }
     return p.toString();
-  }, [period, campaignId, sourceType, customFrom, customTo]);
+  }, [period, campaignId, sourceType, customFrom, customTo, tzOffset]);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
