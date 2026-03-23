@@ -1,0 +1,72 @@
+  Fix: Major search quality improvements
+
+  The transcript search has several issues that make it nearly
+  useless. Fix all of these:
+
+  1. Store original transcripts, anonymise only on display
+
+  The full transcript in QACall.fullTranscript must store the
+  ORIGINAL text with real names. Name anonymisation ("a member")
+  should only happen at display time based on who is viewing:
+  - Admin: sees all real names — never anonymise
+  - Member viewing their own name: sees their own name
+  - Member viewing another member's name: replace with "a member"
+
+  The search query must run against the ORIGINAL transcript (with
+  real names) so that searching "mike" actually finds "mike." Then
+  anonymise the snippet before returning it to the client.
+
+  2. Filter out low-value transcript sections
+
+  Skip matches that fall within chit-chat/greetings. Before returning
+   results, filter out matches where the surrounding 200 characters
+  consist mostly of:
+  - Greetings: "how are you", "good afternoon", "how's it going",
+  "thank you", "hello", "nice to see you"
+  - One-word responses: "Good.", "Amazing.", "Cool.", "Yes.", "No."
+  - Roll call / check-in sections (typically the first 3-5 minutes of
+   a call)
+
+  Simple approach: Add a minimum content threshold — only return
+  transcript matches where the surrounding snippet contains at least
+  20 words that are NOT speaker labels ("a member:", "Jared:") or
+  common greetings. If a match is in the first 3 minutes of the call
+  (timestamp < 180 seconds) AND the snippet is mostly greetings, skip
+   it.
+
+  3. Deduplicate results from the same call
+
+  If multiple matches are found within 60 seconds of each other in
+  the same call, merge them into ONE result:
+  - Use the timestamp of the first match
+  - Show the longest/most complete snippet
+  - Don't show 5 cards for the same 30-second conversation
+
+  4. Better snippet extraction
+
+  - Show 200-250 characters of context around the keyword match
+  (currently seems too short or poorly centred)
+  - Bold/highlight the actual search keyword in the snippet text
+  - Centre the snippet on the keyword match, not on the start of a
+  paragraph
+  - If the keyword appears multiple times in the snippet, highlight
+  all occurrences
+
+  5. Admin vs member display
+
+  Check the requesting user's role:
+  - admin → return original transcript snippets with real names, no
+  anonymisation
+  - foundations_member → replace other members' names with "a member"
+   in the snippet AFTER searching. Keep the member's own name
+  visible. Use the existing User table to get all member names for
+  replacement.
+
+  6. Result quality ordering
+
+  Order transcript search results by quality, not just chronological:
+  - Longer snippets with more substantive content rank higher
+  - Matches in the middle of a call (likely coaching content) rank
+  higher than matches in the first 5 or last 5 minutes
+  - Matches where the keyword appears multiple times nearby rank
+  higher
