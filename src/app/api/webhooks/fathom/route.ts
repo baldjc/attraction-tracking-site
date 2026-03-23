@@ -45,8 +45,10 @@ export async function POST(req: NextRequest) {
 
   // Fathom sends either the meeting object directly or wrapped in event.data
   const meeting = body?.data ?? body?.meeting ?? body;
-  if (!meeting?.id) {
-    return NextResponse.json({ error: "No meeting id in payload" }, { status: 400 });
+  // Fathom uses recording_id (number) as the unique identifier, not id
+  const fathomId = meeting?.recording_id != null ? String(meeting.recording_id) : meeting?.id;
+  if (!fathomId) {
+    return NextResponse.json({ error: "No recording_id in payload" }, { status: 400 });
   }
 
   // Apply title filter
@@ -62,9 +64,9 @@ export async function POST(req: NextRequest) {
 
   try {
     const qaCall = await prisma.qACall.upsert({
-      where: { fathomId: meeting.id },
+      where: { fathomId },
       create: {
-        fathomId: meeting.id,
+        fathomId,
         title: meetingTitle,
         callDate: new Date(callDate),
         fathomShareUrl: shareUrl,
@@ -127,10 +129,15 @@ function extractTranscript(m: any): string {
   if (typeof m.transcript === "string") return m.transcript;
   if (Array.isArray(m.transcript)) {
     return m.transcript.map((seg: any) => {
-      const speaker = seg.speaker_name ?? seg.speaker ?? "";
-      const text = seg.content ?? seg.text ?? "";
+      // Fathom format: { speaker: { display_name: "..." }, text: "...", timestamp: "..." }
+      const speaker =
+        seg.speaker?.display_name ??
+        seg.speaker_name ??
+        (typeof seg.speaker === "string" ? seg.speaker : "") ??
+        "";
+      const text = seg.text ?? seg.content ?? "";
       return speaker ? `${speaker}: ${text}` : text;
-    }).join("\n");
+    }).filter(Boolean).join("\n");
   }
   if (typeof m.full_transcript === "string") return m.full_transcript;
   return "";

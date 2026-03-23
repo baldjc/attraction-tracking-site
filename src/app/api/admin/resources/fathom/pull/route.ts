@@ -45,24 +45,27 @@ export async function POST() {
       return titleMatch;
     });
 
-    // Check which are already imported
-    const fathomIds = filtered.map((m) => m.id);
+    // Check which are already imported — Fathom uses recording_id (number) as the unique ID
+    const fathomIds = filtered.map((m) => String(m.recording_id)).filter(Boolean);
     const existing = await prisma.qACall.findMany({
       where: { fathomId: { in: fathomIds } },
       select: { fathomId: true, id: true },
     });
     const existingMap = Object.fromEntries(existing.map((e) => [e.fathomId, e.id]));
 
-    const calls = filtered.map((m) => ({
-      fathomId: m.id,
-      title: m.title ?? m.meeting_title ?? "Untitled Q&A",
-      callDate: m.recording_start_time ?? m.scheduled_start_time ?? m.created_at ?? new Date().toISOString(),
-      duration: m.duration ?? null,
-      alreadyImported: !!existingMap[m.id],
-      existingId: existingMap[m.id] ?? null,
-      fathomShareUrl: m.share_url ?? m.url ?? "",
-      transcript: extractTranscript(m),
-    }));
+    const calls = filtered.map((m) => {
+      const fId = String(m.recording_id);
+      return {
+        fathomId: fId,
+        title: m.title ?? m.meeting_title ?? "Untitled Q&A",
+        callDate: m.recording_start_time ?? m.scheduled_start_time ?? m.created_at ?? new Date().toISOString(),
+        duration: m.duration ?? null,
+        alreadyImported: !!existingMap[fId],
+        existingId: existingMap[fId] ?? null,
+        fathomShareUrl: m.share_url ?? m.url ?? "",
+        transcript: extractTranscript(m),
+      };
+    });
 
     return NextResponse.json({ calls });
   } catch (err) {
@@ -72,21 +75,26 @@ export async function POST() {
 }
 
 function extractTranscript(m: FathomMeeting): string {
-  // Fathom returns transcript as an array of segments or a plain string
+  // Fathom returns transcript as an array of segment objects or a plain string
   if (typeof m.transcript === "string") return m.transcript;
   if (Array.isArray(m.transcript)) {
     return m.transcript.map((seg: any) => {
-      const speaker = seg.speaker_name ?? seg.speaker ?? "";
-      const text = seg.content ?? seg.text ?? "";
+      // Fathom format: { speaker: { display_name: "..." }, text: "...", timestamp: "..." }
+      const speaker =
+        seg.speaker?.display_name ??
+        seg.speaker_name ??
+        (typeof seg.speaker === "string" ? seg.speaker : "") ??
+        "";
+      const text = seg.text ?? seg.content ?? "";
       return speaker ? `${speaker}: ${text}` : text;
-    }).join("\n");
+    }).filter(Boolean).join("\n");
   }
   if (typeof m.full_transcript === "string") return m.full_transcript;
   return "";
 }
 
 interface FathomMeeting {
-  id: string;
+  recording_id: number;
   title?: string;
   meeting_title?: string;
   scheduled_start_time?: string;
