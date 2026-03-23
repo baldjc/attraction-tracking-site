@@ -6,6 +6,9 @@ export async function register() {
     const { scheduleYoutubeViewCounts } = await import("@/lib/youtube-scheduler");
     scheduleYoutubeViewCounts();
 
+    const { scheduleFathomAutoPull } = await import("@/lib/fathom-scheduler");
+    scheduleFathomAutoPull();
+
     try {
       const prisma = (await import("@/lib/prisma")).default;
       const existing = await prisma.user.findFirst({ where: { role: "admin" } });

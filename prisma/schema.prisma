@@ -110,8 +110,75 @@ model User {
   aiToolConversations  AIToolConversation[]
   aiToolUsage          AIToolUsage[]
   repurposedContent    RepurposedContent[]
+  kbEntries            KnowledgeBaseEntry[]
+  savedItems           SavedItem[]
 
   @@map("users")
+}
+
+model CourseLesson {
+  id            String   @id @default(uuid())
+  title         String
+  lessonNumber  String
+  sessionNumber Int
+  skoolUrl      String   @default("")
+  fullTranscript String  @db.Text
+  principles    String[]
+  createdAt     DateTime @default(now())
+
+  @@map("course_lessons")
+}
+
+model QACall {
+  id             String   @id @default(uuid())
+  fathomId       String   @unique
+  title          String
+  callDate       DateTime
+  fathomShareUrl String
+  fullTranscript String   @db.Text
+  status         String   @default("pending_review")
+  errorMessage   String?
+  createdAt      DateTime @default(now())
+
+  @@map("qa_calls")
+}
+
+model KnowledgeBaseEntry {
+  id                String   @id @default(uuid())
+  sourceType        String
+  sourceId          String
+  principles        String[]
+  subTopic          String   @default("")
+  summary           String
+  searchableText    String   @db.Text
+  timestampStart    Int?
+  timestampEnd      Int?
+  memberId          String?
+  member            User?    @relation(fields: [memberId], references: [id], onDelete: SetNull)
+  isGeneralTeaching Boolean  @default(true)
+  status            String   @default("pending")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  savedItems SavedItem[]
+
+  @@index([status])
+  @@index([sourceType, sourceId])
+  @@index([memberId])
+  @@index([principles])
+  @@map("knowledge_base_entries")
+}
+
+model SavedItem {
+  id                   String             @id @default(uuid())
+  userId               String
+  user                 User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  knowledgeBaseEntryId String
+  knowledgeBaseEntry   KnowledgeBaseEntry @relation(fields: [knowledgeBaseEntryId], references: [id], onDelete: Cascade)
+  savedAt              DateTime           @default(now())
+
+  @@unique([userId, knowledgeBaseEntryId])
+  @@map("saved_items")
 }
 
 model ScriptReview {

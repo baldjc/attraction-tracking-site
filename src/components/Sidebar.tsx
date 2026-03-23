@@ -25,6 +25,8 @@ import {
   UserCircleIcon,
   SunIcon,
   MoonIcon,
+  AcademicCapIcon,
+  VideoCameraIcon,
 } from "@heroicons/react/24/outline";
 import { useState, useEffect, useRef } from "react";
 import { IMPERSONATE_LS_KEY } from "@/lib/impersonate-constants";
@@ -53,6 +55,8 @@ const adminLinks = [
   { href: "/member/analytics", label: "Lead Analytics", icon: ChartBarIcon },
   { href: "/admin/analytics", label: "Member Analytics", icon: ChartBarIcon },
   { href: "/member/link-tracking", label: "Link Tracking Settings", icon: LinkIcon },
+  { href: "/admin/resources/lessons", label: "Course Lessons", icon: AcademicCapIcon, section: "Resources" },
+  { href: "/admin/resources/qa-calls", label: "Q&A Calls", icon: VideoCameraIcon, section: "Resources", badgeKey: "qaCallsPending" },
   { href: "/admin/settings", label: "Settings", icon: Cog6ToothIcon },
 ];
 
@@ -178,6 +182,16 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [impersonate, setImpersonate] = useState<ImpersonateState | null>(null);
   const [showSwitch, setShowSwitch] = useState(false);
+  const [qaCallsPending, setQaCallsPending] = useState(0);
+
+  useEffect(() => {
+    if (role === "admin") {
+      fetch("/api/admin/resources/review-queue?status=pending")
+        .then((r) => r.ok ? r.json() : null)
+        .then((d) => d && setQaCallsPending(d.entries?.length ?? 0))
+        .catch(() => {});
+    }
+  }, [role, pathname]);
 
   useEffect(() => {
     try {
@@ -303,24 +317,48 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
       </div>
 
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-        {links.map((link) => {
-          const Icon = link.icon;
-          const active = isActive(link.href);
-          return (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${
-                active
-                  ? "bg-[#3dc3ff]/20 text-[#3dc3ff]"
-                  : "text-white/60 hover:text-white hover:bg-white/10"
-              }`}
-            >
-              <Icon className="w-5 h-5 shrink-0" />
-              <span className="leading-tight">{link.label}</span>
-            </Link>
-          );
-        })}
+        {(() => {
+          const badges: Record<string, number> = { qaCallsPending };
+          const renderedSections = new Set<string>();
+          return links.map((link) => {
+            const Icon = link.icon;
+            const active = isActive(link.href);
+            const sectionLabel = (link as any).section as string | undefined;
+            const badgeKey = (link as any).badgeKey as string | undefined;
+            const badgeCount = badgeKey ? (badges[badgeKey] ?? 0) : 0;
+
+            const sectionHeader = sectionLabel && !renderedSections.has(sectionLabel) ? (() => {
+              renderedSections.add(sectionLabel);
+              return (
+                <div key={`section-${sectionLabel}`} className="px-3 pt-3 pb-1">
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-white/30">{sectionLabel}</p>
+                </div>
+              );
+            })() : null;
+
+            return (
+              <div key={link.href}>
+                {sectionHeader}
+                <Link
+                  href={link.href}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${
+                    active
+                      ? "bg-[#3dc3ff]/20 text-[#3dc3ff]"
+                      : "text-white/60 hover:text-white hover:bg-white/10"
+                  } ${sectionLabel ? "pl-6" : ""}`}
+                >
+                  <Icon className="w-5 h-5 shrink-0" />
+                  <span className="leading-tight flex-1">{link.label}</span>
+                  {badgeCount > 0 && (
+                    <span className="bg-amber-500 text-amber-900 text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">
+                      {badgeCount}
+                    </span>
+                  )}
+                </Link>
+              </div>
+            );
+          });
+        })()}
       </nav>
 
       <div className="px-3 py-4 border-t border-white/10 flex-shrink-0">
