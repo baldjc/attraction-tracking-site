@@ -53,6 +53,7 @@ export default function CampaignsPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [memberFilter, setMemberFilter] = useState<"all" | "mine">("all");
   const [hasTyUrl, setHasTyUrl] = useState<boolean | null>(null);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   useEffect(() => {
     loadCampaigns();
@@ -75,16 +76,24 @@ export default function CampaignsPage() {
   async function createCampaign() {
     if (!form.name || !form.destinationUrl) return;
     setCreating(true);
-    const res = await fetch("/api/campaigns", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
-    if (res.ok) {
-      const campaign = await res.json();
-      setShowModal(false);
-      setForm({ name: "", destinationUrl: "", sourceType: "YOUTUBE" });
-      window.location.href = `/member/campaigns/${campaign.id}`;
+    setCreateError(null);
+    try {
+      const res = await fetch("/api/campaigns", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      if (res.ok) {
+        const campaign = await res.json();
+        setShowModal(false);
+        setForm({ name: "", destinationUrl: "", sourceType: "YOUTUBE" });
+        window.location.href = `/member/campaigns/${campaign.id}`;
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setCreateError(data.error ?? `Server error (${res.status}) — please try again.`);
+      }
+    } catch {
+      setCreateError("Network error — please check your connection and try again.");
     }
     setCreating(false);
   }
@@ -243,7 +252,7 @@ export default function CampaignsPage() {
           <div className="bg-white rounded-2xl border border-[#1e2a38]/10 shadow-xl w-full max-w-md p-6">
             <div className="flex items-center justify-between mb-5">
               <h2 className="font-bold text-[#1e2a38]">New Campaign</h2>
-              <button onClick={() => setShowModal(false)} className="text-[#1e2a38]/40 hover:text-[#1e2a38] text-xl">✕</button>
+              <button onClick={() => { setShowModal(false); setCreateError(null); }} className="text-[#1e2a38]/40 hover:text-[#1e2a38] text-xl">✕</button>
             </div>
             <div className="space-y-4">
               <div>
@@ -252,7 +261,7 @@ export default function CampaignsPage() {
               </div>
               <div>
                 <label className="block text-sm font-semibold text-[#1e2a38] mb-1.5">Destination URL</label>
-                <input type="url" value={form.destinationUrl} onChange={(e) => setForm({ ...form, destinationUrl: e.target.value })} placeholder="https://yoursite.com/free-guide" className={INPUT_CLS} />
+                <input type="text" value={form.destinationUrl} onChange={(e) => setForm({ ...form, destinationUrl: e.target.value })} placeholder="https://yoursite.com/free-guide" className={INPUT_CLS} />
                 <p className="text-xs text-[#1e2a38]/40 mt-1">The lead magnet or landing page URL</p>
               </div>
               <div>
@@ -272,6 +281,9 @@ export default function CampaignsPage() {
                   <ExclamationTriangleIcon className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
                   <p className="text-xs text-amber-700">Before this campaign can track leads, save your <Link href="/member/link-tracking" className="underline font-medium">Thank You Page Path</Link> in Link Tracking Settings.</p>
                 </div>
+              )}
+              {createError && (
+                <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-xl px-3 py-2">{createError}</p>
               )}
               <button onClick={createCampaign} disabled={creating || !form.name || !form.destinationUrl} className="w-full bg-[#3dc3ff] text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-[#3dc3ff]/90 disabled:opacity-50 transition-colors">
                 {creating ? "Creating..." : "Create Campaign"}

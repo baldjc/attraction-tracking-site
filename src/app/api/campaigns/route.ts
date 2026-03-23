@@ -62,14 +62,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "name and destinationUrl are required" }, { status: 400 });
   }
 
-  const campaign = await prisma.campaign.create({
-    data: {
-      userId: user.id,
-      name,
-      destinationUrl,
-      sourceType: sourceType ?? "YOUTUBE",
-    },
-  });
-
-  return NextResponse.json(campaign, { status: 201 });
+  try {
+    const campaign = await prisma.campaign.create({
+      data: {
+        userId: user.id,
+        name,
+        destinationUrl,
+        sourceType: sourceType ?? "YOUTUBE",
+      },
+    });
+    return NextResponse.json(campaign, { status: 201 });
+  } catch (err) {
+    console.error("[campaigns POST] DB error:", err);
+    return NextResponse.json({ error: "Failed to create campaign. Please try again." }, { status: 500 });
+  }
 }
