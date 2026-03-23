@@ -75,9 +75,10 @@ function fmtDate(d?: string) {
 
 function fathomUrlWithTimestamp(shareUrl: string, ts?: number | null) {
   if (!shareUrl) return shareUrl;
+  // Fathom uses fragment-based timestamps: #t=seconds
   if (ts == null) return shareUrl;
-  const sep = shareUrl.includes("?") ? "&" : "?";
-  return `${shareUrl}${sep}t=${ts}`;
+  const base = shareUrl.split("#")[0];
+  return `${base}#t=${ts}`;
 }
 
 // --- Entry Card ---
@@ -292,15 +293,30 @@ function FathomModal({ entry, onClose }: { entry: Entry; onClose: () => void }) 
           </button>
         </div>
         {shareUrl ? (
-          <div className="relative w-full" style={{ paddingTop: "56.25%" }}>
-            <iframe
-              src={embedUrl}
-              className="absolute inset-0 w-full h-full"
-              allowFullScreen
-              allow="fullscreen"
-              title={entry.subTopic}
-            />
-          </div>
+          <a
+            href={embedUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block group"
+          >
+            <div className="bg-[#0f1620] relative flex flex-col items-center justify-center gap-4 py-16 px-8 text-center cursor-pointer hover:bg-[#0f1620]/80 transition-colors">
+              <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-[#3dc3ff]/20 transition-colors">
+                <svg className="w-7 h-7 text-white group-hover:text-[#3dc3ff] transition-colors" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-white font-semibold text-sm mb-1">Watch on Fathom</p>
+                {entry.timestampStart != null && (
+                  <p className="text-white/50 text-xs">Starts at {fmtTime(entry.timestampStart)}</p>
+                )}
+              </div>
+              <span className="flex items-center gap-1.5 text-xs text-white/30 group-hover:text-[#3dc3ff]/70 transition-colors">
+                Opens in a new tab
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+              </span>
+            </div>
+          </a>
         ) : (
           <div className="px-5 py-12 text-center text-sm text-[#1e2a38]/40 dark:text-white/30">
             Recording not available for this call.
