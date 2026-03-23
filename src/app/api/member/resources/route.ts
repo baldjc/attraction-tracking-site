@@ -72,6 +72,7 @@ export async function GET(req: NextRequest) {
       principles: e.principles,
       subTopic: e.subTopic,
       summary: e.summary,
+      searchableText: e.searchableText,
       timestampStart: e.timestampStart,
       timestampEnd: e.timestampEnd,
       isGeneralTeaching: e.isGeneralTeaching,

@@ -54,6 +54,7 @@ interface Entry {
   principles: string[];
   subTopic: string;
   summary: string;
+  searchableText?: string | null;
   timestampStart?: number | null;
   timestampEnd?: number | null;
   isGeneralTeaching: boolean;
@@ -329,19 +330,40 @@ export default function MemberResourcesPage() {
   const [savedEntries, setSavedEntries] = useState<Entry[]>([]);
   const [savedLoading, setSavedLoading] = useState(true);
 
-  // Inline Fathom player
+  // Q&A moment detail modal
   const [playerEntry, setPlayerEntry] = useState<Entry | null>(null);
-  const [copiedTimestamp, setCopiedTimestamp] = useState<string | null>(null);
+  const [modalSaved, setModalSaved] = useState(false);
+  const [modalSaving, setModalSaving] = useState(false);
 
   function handlePlay(entry: Entry) {
-    const shareUrl = entry.source?.fathomShareUrl ?? "";
-    if (!shareUrl) return;
+    if (!entry.source?.fathomShareUrl) return;
     setPlayerEntry(entry);
+    setModalSaved(entry.isSaved);
   }
 
-  function playerUrl(entry: Entry) {
-    const base = (entry.source?.fathomShareUrl ?? "").split("#")[0];
-    return entry.timestampStart != null ? `${base}#t=${entry.timestampStart}` : base;
+  async function modalToggleSave() {
+    if (!playerEntry) return;
+    setModalSaving(true);
+    const optimistic = !modalSaved;
+    setModalSaved(optimistic);
+    try {
+      const res = await fetch("/api/member/resources/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ entryId: playerEntry.id }),
+      });
+      if (res.ok) {
+        const d = await res.json();
+        setModalSaved(d.saved);
+        handleSaved(playerEntry.id, d.saved);
+      } else {
+        setModalSaved(!optimistic);
+      }
+    } catch {
+      setModalSaved(!optimistic);
+    } finally {
+      setModalSaving(false);
+    }
   }
 
   // Load browse
@@ -428,68 +450,124 @@ export default function MemberResourcesPage() {
 
   return (
     <div className="space-y-6 max-w-7xl">
-      {/* Fathom inline player modal */}
+      {/* Q&A Moment detail modal */}
       {playerEntry && (() => {
-        const url = playerUrl(playerEntry);
-        const ts = playerEntry.timestampStart != null ? fmtTime(playerEntry.timestampStart) : null;
+        const shareUrl = playerEntry.source?.fathomShareUrl ?? "";
+        const base = shareUrl.split("#")[0];
+        const fathomUrl = playerEntry.timestampStart != null ? `${base}#t=${playerEntry.timestampStart}` : base;
+        const ts = fmtTime(playerEntry.timestampStart);
+        const transcript = playerEntry.searchableText?.trim();
+
         return (
-          <div className="fixed inset-0 z-50 flex flex-col items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-            <div className="w-full max-w-3xl bg-[#1a1f2e] rounded-2xl overflow-hidden shadow-2xl flex flex-col">
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            onClick={(e) => { if (e.target === e.currentTarget) setPlayerEntry(null); }}
+          >
+            <div className="w-full max-w-2xl bg-[#1a1f2e] rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+
               {/* Header */}
-              <div className="flex items-center gap-3 px-5 py-3 border-b border-white/10">
+              <div className="flex items-start gap-3 px-6 py-4 border-b border-white/10 flex-shrink-0">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-white truncate">{playerEntry.subTopic}</p>
-                  <p className="text-xs text-white/40 mt-0.5">
-                    {playerEntry.source?.callTitle ?? "Q&A Call"}
-                    {ts && <span className="ml-2 font-mono text-[#3dc3ff]">@ {ts}</span>}
-                  </p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-violet-400 bg-violet-400/15 px-2 py-0.5 rounded-full">
+                      <VideoCameraIcon className="w-3 h-3" /> Q&A Call
+                    </span>
+                    {ts && (
+                      <span className="text-[11px] font-mono text-[#3dc3ff] bg-[#3dc3ff]/10 px-2 py-0.5 rounded-full">
+                        @ {ts}
+                      </span>
+                    )}
+                  </div>
+                  <h2 className="text-base font-bold text-white mt-1.5 leading-snug">{playerEntry.subTopic}</h2>
+                  {playerEntry.source && (
+                    <p className="text-xs text-white/40 mt-0.5">
+                      {playerEntry.source.title ?? "Q&A Call"}
+                      {playerEntry.source.callDate && <span className="ml-1.5">· {fmtDate(playerEntry.source.callDate)}</span>}
+                    </p>
+                  )}
                 </div>
-                <a
-                  href={url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 text-xs font-semibold text-[#3dc3ff] hover:text-white border border-[#3dc3ff]/30 hover:border-white/30 px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap"
-                >
-                  Open in Fathom ↗
-                </a>
                 <button
                   onClick={() => setPlayerEntry(null)}
-                  className="p-1.5 text-white/40 hover:text-white transition-colors rounded-lg hover:bg-white/10"
-                  aria-label="Close player"
+                  className="flex-shrink-0 p-1.5 text-white/30 hover:text-white rounded-lg hover:bg-white/10 transition-colors mt-0.5"
+                  aria-label="Close"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                  <XMarkIcon className="w-5 h-5" />
                 </button>
               </div>
-              {/* iframe */}
-              <div className="relative w-full" style={{ aspectRatio: "16/9" }}>
-                <iframe
-                  key={url}
-                  src={url}
-                  className="absolute inset-0 w-full h-full"
-                  allow="autoplay; fullscreen"
-                  allowFullScreen
-                />
+
+              {/* Body — scrollable */}
+              <div className="overflow-y-auto flex-1 px-6 py-5 space-y-5">
+
+                {/* Summary */}
+                {playerEntry.summary && (
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-white/35 mb-1.5">Summary</p>
+                    <p className="text-sm text-white/80 leading-relaxed">{playerEntry.summary}</p>
+                  </div>
+                )}
+
+                {/* Transcript excerpt */}
+                {transcript && (
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-white/35 mb-1.5">Transcript Excerpt</p>
+                    <div className="bg-white/5 border border-white/8 rounded-xl px-4 py-3 max-h-48 overflow-y-auto">
+                      <p className="text-[13px] text-white/65 leading-relaxed whitespace-pre-wrap">{transcript}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Principles */}
+                {playerEntry.principles.length > 0 && (
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-white/35 mb-1.5">Principles</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {playerEntry.principles.map((p) => (
+                        <span
+                          key={p}
+                          className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-white/10 text-white/70"
+                        >
+                          {p}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-              {/* Fallback hint */}
-              <div className="px-5 py-2.5 text-center text-xs text-white/30">
-                If the player is blank,{" "}
-                <a href={url} target="_blank" rel="noopener noreferrer" className="text-[#3dc3ff] hover:underline">
-                  open directly in Fathom
+
+              {/* Footer actions */}
+              <div className="flex items-center gap-3 px-6 py-4 border-t border-white/10 flex-shrink-0">
+                <button
+                  onClick={modalToggleSave}
+                  disabled={modalSaving}
+                  title={modalSaved ? "Remove bookmark" : "Bookmark this moment"}
+                  className={`flex items-center gap-1.5 text-sm font-medium px-3.5 py-2 rounded-xl border transition-all disabled:opacity-50 ${
+                    modalSaved
+                      ? "border-[#3dc3ff]/40 text-[#3dc3ff] bg-[#3dc3ff]/10"
+                      : "border-white/15 text-white/50 hover:text-white hover:border-white/30 bg-white/5"
+                  }`}
+                >
+                  {modalSaved
+                    ? <BookmarkSolid className="w-4 h-4" />
+                    : <BookmarkOutline className="w-4 h-4" />}
+                  {modalSaved ? "Saved" : "Save"}
+                </button>
+
+                <a
+                  href={fathomUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 flex items-center justify-center gap-2 bg-[#3dc3ff] hover:bg-[#5cceff] text-[#0f1620] font-bold text-sm py-2.5 rounded-xl transition-colors"
+                >
+                  <VideoCameraIcon className="w-4 h-4" />
+                  Watch in Fathom
+                  {ts && <span className="font-mono font-normal opacity-70 text-xs">@ {ts}</span>}
+                  <span className="opacity-60">↗</span>
                 </a>
-                {ts && <> and seek to <span className="font-mono text-white/50">{ts}</span></>}
               </div>
             </div>
           </div>
         );
       })()}
-
-      {/* Timestamp copied toast */}
-      {copiedTimestamp && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2.5 bg-[#1e2a38] dark:bg-[#0f1620] text-white px-4 py-3 rounded-xl shadow-xl text-sm font-medium animate-fade-in">
-          <svg className="w-4 h-4 text-[#3dc3ff] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
-          <span>Timestamp <span className="font-mono text-[#3dc3ff]">{copiedTimestamp}</span> copied — seek to it in Fathom</span>
-        </div>
-      )}
 
       {/* Header */}
       <div>

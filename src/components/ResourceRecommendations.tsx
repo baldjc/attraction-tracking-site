@@ -56,7 +56,7 @@ function RecommendationCard({ rec }: { rec: Recommendation }) {
   const isLesson = rec.sourceType === "course_lesson";
   const fathomUrl = rec.source?.fathomShareUrl
     ? rec.timestampStart != null
-      ? `${rec.source.fathomShareUrl}${rec.source.fathomShareUrl.includes("?") ? "&" : "?"}t=${rec.timestampStart}`
+      ? `${rec.source.fathomShareUrl.split("#")[0]}#t=${rec.timestampStart}`
       : rec.source.fathomShareUrl
     : null;
 
@@ -115,7 +115,7 @@ function RecommendationCard({ rec }: { rec: Recommendation }) {
               className="flex items-center gap-1 text-[11px] font-semibold text-violet-600 hover:text-violet-700 transition-colors"
             >
               <PlayCircleIcon className="w-3.5 h-3.5" />
-              {rec.timestampStart != null ? `Watch moment` : "Watch call"}
+              Watch in Fathom ↗
             </a>
           )}
         </div>
@@ -232,7 +232,7 @@ function InlineRecommendationRow({ rec }: { rec: Recommendation }) {
   const isLesson = rec.sourceType === "course_lesson";
   const fathomUrl = rec.source?.fathomShareUrl
     ? rec.timestampStart != null
-      ? `${rec.source.fathomShareUrl}${rec.source.fathomShareUrl.includes("?") ? "&" : "?"}t=${rec.timestampStart}`
+      ? `${rec.source.fathomShareUrl.split("#")[0]}#t=${rec.timestampStart}`
       : rec.source.fathomShareUrl
     : null;
 
@@ -270,7 +270,7 @@ function InlineRecommendationRow({ rec }: { rec: Recommendation }) {
         {!isLesson && fathomUrl && (
           <a href={fathomUrl} target="_blank" rel="noopener noreferrer"
             className="flex items-center gap-0.5 text-[11px] font-semibold text-violet-600 hover:underline whitespace-nowrap">
-            <PlayCircleIcon className="w-3 h-3" /> Play
+            <PlayCircleIcon className="w-3 h-3" /> Watch in Fathom ↗
           </a>
         )}
       </div>
