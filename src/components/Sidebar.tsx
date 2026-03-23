@@ -55,6 +55,7 @@ const adminLinks = [
   { href: "/member/analytics", label: "Lead Analytics", icon: ChartBarIcon },
   { href: "/admin/analytics", label: "Member Analytics", icon: ChartBarIcon },
   { href: "/member/link-tracking", label: "Link Tracking Settings", icon: LinkIcon },
+  { href: "/member/resources", label: "Member Resources", icon: BookOpenIcon, section: "Resources" },
   { href: "/admin/resources/lessons", label: "Course Lessons", icon: AcademicCapIcon, section: "Resources" },
   { href: "/admin/resources/qa-calls", label: "Q&A Calls", icon: VideoCameraIcon, section: "Resources", badgeKey: "qaCallsPending" },
   { href: "/admin/settings", label: "Settings", icon: Cog6ToothIcon },
