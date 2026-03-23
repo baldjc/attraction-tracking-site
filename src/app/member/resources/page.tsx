@@ -204,7 +204,14 @@ function EntryCard({
               className="flex items-center gap-1.5 text-xs font-semibold text-violet-600 dark:text-violet-400 hover:text-violet-700 transition-colors"
             >
               <PlayCircleIcon className="w-4 h-4" />
-              {entry.timestampStart != null ? `Watch moment (${fmtTime(entry.timestampStart)})` : "Watch call"}
+              {entry.timestampStart != null ? (
+                <>
+                  Watch on Fathom
+                  <span className="ml-0.5 px-1.5 py-0.5 bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 rounded font-mono text-[10px]">
+                    {fmtTime(entry.timestampStart)}
+                  </span>
+                </>
+              ) : "Watch call"}
             </button>
           )}
           <div className="flex-1" />
@@ -322,11 +329,19 @@ export default function MemberResourcesPage() {
   const [savedEntries, setSavedEntries] = useState<Entry[]>([]);
   const [savedLoading, setSavedLoading] = useState(true);
 
-  // Open Fathom recording directly at the right timestamp
+  // Open Fathom recording. Fathom's /calls/ URLs don't support #t= deep-linking,
+  // so we copy the timestamp to clipboard as a convenience and open the recording.
+  const [copiedTimestamp, setCopiedTimestamp] = useState<string | null>(null);
   function handlePlay(entry: Entry) {
     const shareUrl = entry.source?.fathomShareUrl ?? "";
     if (!shareUrl) return;
-    const url = fathomUrlWithTimestamp(shareUrl, entry.timestampStart);
+    const url = shareUrl.split("#")[0]; // strip any stale fragment
+    if (entry.timestampStart != null) {
+      const ts = fmtTime(entry.timestampStart);
+      navigator.clipboard.writeText(ts ?? "").catch(() => {});
+      setCopiedTimestamp(ts);
+      setTimeout(() => setCopiedTimestamp(null), 3000);
+    }
     window.open(url, "_blank", "noopener,noreferrer");
   }
 
@@ -414,6 +429,14 @@ export default function MemberResourcesPage() {
 
   return (
     <div className="space-y-6 max-w-7xl">
+      {/* Timestamp copied toast */}
+      {copiedTimestamp && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2.5 bg-[#1e2a38] dark:bg-[#0f1620] text-white px-4 py-3 rounded-xl shadow-xl text-sm font-medium animate-fade-in">
+          <svg className="w-4 h-4 text-[#3dc3ff] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+          <span>Timestamp <span className="font-mono text-[#3dc3ff]">{copiedTimestamp}</span> copied — seek to it in Fathom</span>
+        </div>
+      )}
+
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-[#1e2a38] dark:text-white">Resources & Knowledge Base</h1>
