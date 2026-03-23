@@ -612,7 +612,7 @@ export default function TitleThumbnailAnalyzerPage() {
                       Observations
                     </p>
                     <ul className="space-y-1.5">
-                      {result.intro.observations.map((o, i) => (
+                      {result.intro.observations?.map((o, i) => (
                         <li key={i} className="text-sm text-[#1e2a38] flex gap-2">
                           <span className="text-[#3dc3ff]">•</span>
                           {o}
@@ -627,7 +627,7 @@ export default function TitleThumbnailAnalyzerPage() {
                       Improvements
                     </p>
                     <ul className="space-y-1.5">
-                      {result.intro.improvements.map((o, i) => (
+                      {result.intro.improvements?.map((o, i) => (
                         <li key={i} className="text-sm text-[#1e2a38] flex gap-2">
                           <span className="text-amber-500">→</span>
                           {o}
