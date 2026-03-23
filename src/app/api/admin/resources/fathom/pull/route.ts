@@ -24,20 +24,34 @@ export async function POST() {
   const titleFilter = (await getSetting("fathom_title_filter")) ?? "Q&A";
 
   try {
-    const params = new URLSearchParams({ include_transcript: "true", limit: "50" });
-    if (recordingEmail) params.append("recorded_by[]", recordingEmail);
+    // Paginate through all pages to get every matching call, not just the last 2 weeks
+    const allMeetings: FathomMeeting[] = [];
+    let cursor: string | null = null;
+    let pageCount = 0;
+    const MAX_PAGES = 20; // safety cap
 
-    const res = await fetch(`https://api.fathom.ai/external/v1/meetings?${params}`, {
-      headers: { "X-Api-Key": apiKey },
-    });
+    do {
+      const params = new URLSearchParams({ include_transcript: "true", limit: "50" });
+      if (recordingEmail) params.append("recorded_by[]", recordingEmail);
+      if (cursor) params.set("cursor", cursor);
 
-    if (!res.ok) {
-      const text = await res.text();
-      return NextResponse.json({ error: `Fathom API error ${res.status}: ${text}` }, { status: 502 });
-    }
+      const res = await fetch(`https://api.fathom.ai/external/v1/meetings?${params}`, {
+        headers: { "X-Api-Key": apiKey },
+      });
 
-    const data = await res.json();
-    const meetings: FathomMeeting[] = data.items ?? data.meetings ?? data ?? [];
+      if (!res.ok) {
+        const text = await res.text();
+        return NextResponse.json({ error: `Fathom API error ${res.status}: ${text}` }, { status: 502 });
+      }
+
+      const data = await res.json();
+      const items: FathomMeeting[] = data.items ?? data.meetings ?? [];
+      allMeetings.push(...items);
+      cursor = data.next_cursor ?? null;
+      pageCount++;
+    } while (cursor && pageCount < MAX_PAGES);
+
+    const meetings = allMeetings;
 
     // Filter by title
     const filtered = meetings.filter((m) => {
@@ -62,7 +76,7 @@ export async function POST() {
         duration: m.duration ?? null,
         alreadyImported: !!existingMap[fId],
         existingId: existingMap[fId] ?? null,
-        fathomShareUrl: m.share_url ?? m.url ?? "",
+        fathomShareUrl: m.url ?? m.share_url ?? "",
         transcript: extractTranscript(m),
       };
     });

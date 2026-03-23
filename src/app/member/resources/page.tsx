@@ -262,74 +262,6 @@ function PrincipleFilter({
   );
 }
 
-// --- Fathom Player Modal ---
-function FathomModal({ entry, onClose }: { entry: Entry; onClose: () => void }) {
-  const shareUrl = entry.source?.fathomShareUrl ?? "";
-  const embedUrl = fathomUrlWithTimestamp(shareUrl, entry.timestampStart);
-
-  useEffect(() => {
-    function handleKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-    }
-    document.addEventListener("keydown", handleKey);
-    return () => document.removeEventListener("keydown", handleKey);
-  }, [onClose]);
-
-  return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div
-        className="bg-white dark:bg-[#242b3d] rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-start justify-between px-5 py-4 border-b border-[#1e2a38]/10 dark:border-white/10">
-          <div className="flex-1 min-w-0 pr-4">
-            <p className="text-xs text-[#1e2a38]/40 dark:text-white/40 mb-0.5">
-              {entry.source?.title ?? "Q&A Call"} {entry.timestampStart != null && `· @ ${fmtTime(entry.timestampStart)}`}
-            </p>
-            <h3 className="font-bold text-[#1e2a38] dark:text-white text-sm leading-snug">{entry.subTopic}</h3>
-          </div>
-          <button onClick={onClose} className="text-[#1e2a38]/40 dark:text-white/40 hover:text-[#1e2a38] dark:hover:text-white flex-shrink-0 mt-0.5">
-            <XMarkIcon className="w-5 h-5" />
-          </button>
-        </div>
-        {shareUrl ? (
-          <a
-            href={embedUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block group"
-          >
-            <div className="bg-[#0f1620] relative flex flex-col items-center justify-center gap-4 py-16 px-8 text-center cursor-pointer hover:bg-[#0f1620]/80 transition-colors">
-              <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-[#3dc3ff]/20 transition-colors">
-                <svg className="w-7 h-7 text-white group-hover:text-[#3dc3ff] transition-colors" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M8 5v14l11-7z" />
-                </svg>
-              </div>
-              <div>
-                <p className="text-white font-semibold text-sm mb-1">Watch on Fathom</p>
-                {entry.timestampStart != null && (
-                  <p className="text-white/50 text-xs">Starts at {fmtTime(entry.timestampStart)}</p>
-                )}
-              </div>
-              <span className="flex items-center gap-1.5 text-xs text-white/30 group-hover:text-[#3dc3ff]/70 transition-colors">
-                Opens in a new tab
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-              </span>
-            </div>
-          </a>
-        ) : (
-          <div className="px-5 py-12 text-center text-sm text-[#1e2a38]/40 dark:text-white/30">
-            Recording not available for this call.
-          </div>
-        )}
-        <div className="px-5 py-3 border-t border-[#1e2a38]/10 dark:border-white/10">
-          <p className="text-xs text-[#1e2a38]/60 dark:text-white/50 leading-relaxed">{entry.summary}</p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // --- Empty States ---
 function EmptyState({ message, sub }: { message: string; sub?: string }) {
   return (
@@ -390,8 +322,13 @@ export default function MemberResourcesPage() {
   const [savedEntries, setSavedEntries] = useState<Entry[]>([]);
   const [savedLoading, setSavedLoading] = useState(true);
 
-  // Fathom player
-  const [playing, setPlaying] = useState<Entry | null>(null);
+  // Open Fathom recording directly at the right timestamp
+  function handlePlay(entry: Entry) {
+    const shareUrl = entry.source?.fathomShareUrl ?? "";
+    if (!shareUrl) return;
+    const url = fathomUrlWithTimestamp(shareUrl, entry.timestampStart);
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
 
   // Load browse
   const loadBrowse = useCallback(async () => {
@@ -549,7 +486,7 @@ export default function MemberResourcesPage() {
           ) : (
             <>
               <p className="text-xs text-[#1e2a38]/40 dark:text-white/30">{browseEntries.length} item{browseEntries.length !== 1 ? "s" : ""}</p>
-              <EntryGrid entries={browseEntries} onSaved={handleSaved} onPlay={setPlaying} />
+              <EntryGrid entries={browseEntries} onSaved={handleSaved} onPlay={handlePlay} />
             </>
           )}
         </div>
@@ -593,7 +530,7 @@ export default function MemberResourcesPage() {
               {searchResults.length > 0 && (
                 <p className="text-xs text-[#1e2a38]/40 dark:text-white/30">{searchResults.length} result{searchResults.length !== 1 ? "s" : ""}</p>
               )}
-              <EntryGrid entries={searchResults} onSaved={handleSaved} onPlay={setPlaying} highlight={searchQuery} />
+              <EntryGrid entries={searchResults} onSaved={handleSaved} onPlay={handlePlay} highlight={searchQuery} />
             </>
           )}
         </div>
@@ -618,7 +555,7 @@ export default function MemberResourcesPage() {
           ) : (
             <>
               <p className="text-xs text-[#1e2a38]/40 dark:text-white/30">{moments.length} moment{moments.length !== 1 ? "s" : ""}</p>
-              <EntryGrid entries={moments} onSaved={handleSaved} onPlay={setPlaying} />
+              <EntryGrid entries={moments} onSaved={handleSaved} onPlay={handlePlay} />
             </>
           )}
         </div>
@@ -642,14 +579,12 @@ export default function MemberResourcesPage() {
               <EntryGrid entries={savedEntries} onSaved={(id, isSaved) => {
                 if (!isSaved) setSavedEntries((prev) => prev.filter((e) => e.id !== id));
                 handleSaved(id, isSaved);
-              }} onPlay={setPlaying} />
+              }} onPlay={handlePlay} />
             </>
           )}
         </div>
       )}
 
-      {/* Fathom Player Modal */}
-      {playing && <FathomModal entry={playing} onClose={() => setPlaying(null)} />}
     </div>
   );
 }
