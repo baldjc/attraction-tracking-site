@@ -9,6 +9,8 @@ import {
   AcademicCapIcon,
   VideoCameraIcon,
   ChevronRightIcon,
+  ClockIcon,
+  CalendarDaysIcon,
 } from "@heroicons/react/24/outline";
 import { BookmarkIcon as BookmarkSolid } from "@heroicons/react/24/solid";
 
@@ -60,6 +62,18 @@ interface Entry {
   isGeneralTeaching: boolean;
   isSaved: boolean;
   source: Source | null;
+}
+
+interface TranscriptMatch {
+  id: string;
+  sourceType: "qa_call" | "course_lesson";
+  title: string;
+  date?: string;
+  lessonNumber?: string;
+  fathomShareUrl?: string;
+  skoolUrl?: string;
+  snippet: string;
+  estimatedTimestamp: number;
 }
 
 type Tab = "browse" | "search" | "moments" | "saved";
@@ -302,6 +316,114 @@ function EntryGrid({
   );
 }
 
+// --- Transcript Match Card ---
+function TranscriptMatchCard({
+  match,
+  highlight,
+}: {
+  match: TranscriptMatch;
+  highlight: string;
+}) {
+  const [tsCopied, setTsCopied] = useState(false);
+  const ts = fmtTime(match.estimatedTimestamp);
+  const isCall = match.sourceType === "qa_call";
+
+  function copyTs() {
+    if (!ts) return;
+    navigator.clipboard.writeText(ts).catch(() => {});
+    setTsCopied(true);
+    setTimeout(() => setTsCopied(false), 2000);
+  }
+
+  function highlightSnippet(text: string) {
+    if (!highlight.trim()) return <span>{text}</span>;
+    const word = highlight.trim();
+    const idx = text.toLowerCase().indexOf(word.toLowerCase());
+    if (idx === -1) return <span>{text}</span>;
+    return (
+      <span>
+        {text.slice(0, idx)}
+        <mark className="bg-[#3dc3ff]/30 text-inherit rounded px-0.5 font-semibold">
+          {text.slice(idx, idx + word.length)}
+        </mark>
+        {text.slice(idx + word.length)}
+      </span>
+    );
+  }
+
+  return (
+    <div className={`bg-white dark:bg-[#242b3d] rounded-xl border shadow-sm overflow-hidden ${
+      isCall ? "border-violet-100 dark:border-violet-900/30" : "border-blue-100 dark:border-blue-900/30"
+    }`}>
+      {/* Source header */}
+      <div className={`flex items-center justify-between px-4 py-2 border-b ${
+        isCall
+          ? "bg-violet-50 dark:bg-violet-900/10 border-violet-100 dark:border-violet-900/20"
+          : "bg-blue-50 dark:bg-blue-900/10 border-blue-100 dark:border-blue-900/20"
+      }`}>
+        <div className="flex items-center gap-2 min-w-0">
+          {isCall
+            ? <VideoCameraIcon className="w-3.5 h-3.5 text-violet-500 flex-shrink-0" />
+            : <AcademicCapIcon className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />}
+          <span className="text-xs font-medium text-[#1e2a38]/60 dark:text-white/50 truncate">
+            {isCall
+              ? `${match.title}${match.date ? ` · ${fmtDate(match.date)}` : ""}`
+              : `Lesson ${match.lessonNumber} — ${match.title}`}
+          </span>
+        </div>
+        {ts && (
+          <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
+            <span className="inline-flex items-center gap-1 text-[10px] font-mono font-semibold text-[#3dc3ff] bg-[#3dc3ff]/10 px-2 py-0.5 rounded-full">
+              <ClockIcon className="w-3 h-3" />
+              ~{ts}
+            </span>
+            <button
+              onClick={copyTs}
+              title="Copy timestamp"
+              className="text-[10px] text-[#1e2a38]/30 dark:text-white/30 hover:text-[#3dc3ff] transition-colors px-1.5 py-0.5 rounded hover:bg-[#3dc3ff]/10"
+            >
+              {tsCopied ? "Copied!" : "Copy"}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Snippet */}
+      <div className="px-4 py-3">
+        <p className="text-xs text-[#1e2a38]/70 dark:text-white/55 leading-relaxed font-mono">
+          {highlightSnippet(match.snippet)}
+        </p>
+      </div>
+
+      {/* Footer actions */}
+      <div className="flex items-center gap-3 px-4 py-2 border-t border-[#1e2a38]/5 dark:border-white/5">
+        {isCall && match.fathomShareUrl && (
+          <a
+            href={match.fathomShareUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 text-xs font-semibold text-violet-600 dark:text-violet-400 hover:text-violet-700 transition-colors"
+          >
+            <PlayCircleIcon className="w-4 h-4" />
+            Watch in Fathom ↗
+          </a>
+        )}
+        {!isCall && match.skoolUrl && (
+          <a
+            href={match.skoolUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 transition-colors"
+          >
+            <AcademicCapIcon className="w-4 h-4" />
+            Watch on Skool ↗
+          </a>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ============================================================
 //  MAIN PAGE
 // ============================================================
@@ -317,8 +439,13 @@ export default function MemberResourcesPage() {
   // Search state
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Entry[]>([]);
+  const [transcriptMatches, setTranscriptMatches] = useState<TranscriptMatch[]>([]);
+  const [transcriptTotal, setTranscriptTotal] = useState(0);
+  const [txLoading, setTxLoading] = useState(false);
   const [searching, setSearching] = useState(false);
   const [searchPrinciple, setSearchPrinciple] = useState<string | null>(null);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const didSearch = useRef(false);
 
@@ -404,8 +531,10 @@ export default function MemberResourcesPage() {
 
   // Search with debounce
   useEffect(() => {
-    if (!searchQuery.trim() && !searchPrinciple) {
+    if (!searchQuery.trim() && !searchPrinciple && !dateFrom && !dateTo) {
       setSearchResults([]);
+      setTranscriptMatches([]);
+      setTranscriptTotal(0);
       didSearch.current = false;
       return;
     }
@@ -415,13 +544,44 @@ export default function MemberResourcesPage() {
       const params = new URLSearchParams();
       if (searchQuery.trim()) params.set("search", searchQuery.trim());
       if (searchPrinciple) params.set("principle", searchPrinciple);
+      if (dateFrom) params.set("dateFrom", dateFrom);
+      if (dateTo) params.set("dateTo", dateTo);
       const res = await fetch(`/api/member/resources?${params}`);
-      if (res.ok) setSearchResults(await res.json());
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setSearchResults(data);
+          setTranscriptMatches([]);
+          setTranscriptTotal(0);
+        } else {
+          setSearchResults(data.entries ?? []);
+          setTranscriptMatches(data.transcriptMatches ?? []);
+          setTranscriptTotal(data.transcriptTotal ?? 0);
+        }
+      }
       didSearch.current = true;
       setSearching(false);
     }, 350);
     return () => { if (searchTimer.current) clearTimeout(searchTimer.current); };
-  }, [searchQuery, searchPrinciple]);
+  }, [searchQuery, searchPrinciple, dateFrom, dateTo]);
+
+  async function loadMoreTranscripts() {
+    if (!searchQuery.trim()) return;
+    setTxLoading(true);
+    const params = new URLSearchParams();
+    params.set("search", searchQuery.trim());
+    params.set("txOffset", String(transcriptMatches.length));
+    if (searchPrinciple) params.set("principle", searchPrinciple);
+    if (dateFrom) params.set("dateFrom", dateFrom);
+    if (dateTo) params.set("dateTo", dateTo);
+    const res = await fetch(`/api/member/resources?${params}`);
+    if (res.ok) {
+      const data = await res.json();
+      const more: TranscriptMatch[] = Array.isArray(data) ? [] : (data.transcriptMatches ?? []);
+      setTranscriptMatches((prev) => [...prev, ...more]);
+    }
+    setTxLoading(false);
+  }
 
   function handleSaved(id: string, isSaved: boolean) {
     // Update saved state across all entry arrays
@@ -670,13 +830,14 @@ export default function MemberResourcesPage() {
       {tab === "search" && (
         <div className="space-y-5">
           <div className="space-y-3">
+            {/* Search input */}
             <div className="relative">
               <MagnifyingGlassIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1e2a38]/30 dark:text-white/30" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search coaching moments, topics, summaries..."
+                placeholder="Search coaching moments, topics, summaries, transcripts..."
                 className="w-full pl-10 pr-4 py-3 border border-[#1e2a38]/15 dark:border-white/15 rounded-xl text-sm bg-white dark:bg-[#242b3d] text-[#1e2a38] dark:text-white placeholder-[#1e2a38]/30 dark:placeholder-white/25 focus:outline-none focus:border-[#3dc3ff] transition-colors"
                 autoFocus
               />
@@ -686,26 +847,107 @@ export default function MemberResourcesPage() {
                 </button>
               )}
             </div>
+
+            {/* Date range + principle filter row */}
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2">
+                <CalendarDaysIcon className="w-4 h-4 text-[#1e2a38]/30 dark:text-white/30 flex-shrink-0" />
+                <input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  className="text-xs border border-[#1e2a38]/15 dark:border-white/15 rounded-lg px-2 py-1.5 bg-white dark:bg-[#242b3d] text-[#1e2a38] dark:text-white focus:outline-none focus:border-[#3dc3ff] transition-colors"
+                  title="From date"
+                />
+                <span className="text-[#1e2a38]/30 dark:text-white/30 text-xs">–</span>
+                <input
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  min={dateFrom || undefined}
+                  className="text-xs border border-[#1e2a38]/15 dark:border-white/15 rounded-lg px-2 py-1.5 bg-white dark:bg-[#242b3d] text-[#1e2a38] dark:text-white focus:outline-none focus:border-[#3dc3ff] transition-colors"
+                  title="To date"
+                />
+                {(dateFrom || dateTo) && (
+                  <button
+                    onClick={() => { setDateFrom(""); setDateTo(""); }}
+                    className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-full bg-[#3dc3ff]/15 text-[#3dc3ff] hover:bg-[#3dc3ff]/25 transition-colors"
+                  >
+                    {dateFrom && dateTo
+                      ? `${new Date(dateFrom).toLocaleDateString("en-US", { month: "short", day: "numeric" })} – ${new Date(dateTo).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`
+                      : dateFrom
+                        ? `From ${new Date(dateFrom).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`
+                        : `To ${new Date(dateTo).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`
+                    }
+                    <XMarkIcon className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+            </div>
             <PrincipleFilter selected={searchPrinciple} onChange={setSearchPrinciple} />
           </div>
 
           {searching ? (
             <div className="text-center py-8 text-sm text-[#1e2a38]/40 dark:text-white/30">Searching...</div>
-          ) : !searchQuery.trim() && !searchPrinciple ? (
+          ) : !searchQuery.trim() && !searchPrinciple && !dateFrom && !dateTo ? (
             <div className="text-center py-16 text-[#1e2a38]/30 dark:text-white/20">
               <MagnifyingGlassIcon className="w-10 h-10 mx-auto mb-3 opacity-40" />
-              <p className="text-sm font-medium">Type to search the knowledge base</p>
-              <p className="text-xs mt-1">Or filter by principle above</p>
+              <p className="text-sm font-medium">Type to search coaching moments and full transcripts</p>
+              <p className="text-xs mt-1">Or filter by date range and principle above</p>
             </div>
-          ) : searchResults.length === 0 && didSearch.current ? (
-            <EmptyState message="No results found" sub="Try different keywords or browse by principle" />
+          ) : searchResults.length === 0 && transcriptMatches.length === 0 && didSearch.current ? (
+            <EmptyState message="No results found" sub="Try different keywords, a wider date range, or browse by principle" />
           ) : (
-            <>
+            <div className="space-y-8">
+              {/* Section 1: Tagged moments */}
               {searchResults.length > 0 && (
-                <p className="text-xs text-[#1e2a38]/40 dark:text-white/30">{searchResults.length} result{searchResults.length !== 1 ? "s" : ""}</p>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <h3 className="text-sm font-semibold text-[#1e2a38] dark:text-white">Tagged Moments</h3>
+                    <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300">
+                      {searchResults.length} curated result{searchResults.length !== 1 ? "s" : ""}
+                    </span>
+                  </div>
+                  <EntryGrid entries={searchResults} onSaved={handleSaved} onPlay={handlePlay} highlight={searchQuery} />
+                </div>
               )}
-              <EntryGrid entries={searchResults} onSaved={handleSaved} onPlay={handlePlay} highlight={searchQuery} />
-            </>
+
+              {/* Section 2: Raw transcript matches */}
+              {transcriptMatches.length > 0 && (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <h3 className="text-sm font-semibold text-[#1e2a38] dark:text-white">Also mentioned in these recordings</h3>
+                    <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-[#3dc3ff]/15 text-[#3dc3ff]">
+                      {transcriptTotal} occurrence{transcriptTotal !== 1 ? "s" : ""}
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#1e2a38]/40 dark:text-white/30 -mt-2">
+                    Every time this keyword was said on any call or lesson — timestamps are approximate.
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {transcriptMatches.map((m) => (
+                      <TranscriptMatchCard key={m.id} match={m} highlight={searchQuery} />
+                    ))}
+                  </div>
+                  {transcriptMatches.length < transcriptTotal && (
+                    <div className="text-center pt-2">
+                      <button
+                        onClick={loadMoreTranscripts}
+                        disabled={txLoading}
+                        className="text-sm font-medium text-[#3dc3ff] hover:text-[#3dc3ff]/80 disabled:opacity-50 transition-colors"
+                      >
+                        {txLoading ? "Loading…" : `Load more (${transcriptTotal - transcriptMatches.length} remaining)`}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Nothing at all after search */}
+              {searchResults.length === 0 && transcriptMatches.length === 0 && didSearch.current && (
+                <EmptyState message="No results found" sub="Try different keywords, a wider date range, or browse by principle" />
+              )}
+            </div>
           )}
         </div>
       )}

@@ -1,0 +1,57 @@
+ Fix: Search must also search full Q&A call transcripts and course
+  lesson transcripts
+
+  The current search only queries KnowledgeBaseEntry records. It
+  needs to ALSO search the raw fullTranscript on QACall and
+  CourseLesson tables. This is the "deep search" that lets members
+  find any keyword mentioned in any call or lesson.
+
+  Changes to the search API (/api/resources/search):
+
+  1. Keep the existing KnowledgeBaseEntry search — this returns
+  tagged moments (best results, shown first)
+  2. Add a second query that searches QACall.fullTranscript and
+  CourseLesson.fullTranscript for the search term using
+  case-insensitive text matching (ILIKE '%keyword%' or Postgres
+  full-text search)
+  3. For transcript matches, calculate the approximate timestamp:
+    - Fathom transcripts include speaker timestamps in the text
+  (e.g., "@ 10:55", "Paul Wolfert" next to timestamps). When a
+  keyword is found in the transcript, look backwards from the match
+  position to find the nearest timestamp marker.
+    - If the transcript doesn't have inline timestamps, estimate
+  based on position: (match character position / total transcript
+  length) * call duration in seconds
+    - Return the timestamp as seconds
+  4. Return transcript search results as a separate section below the
+   tagged moment results:
+    - Section header: "Also mentioned in these recordings"
+    - Each result shows:
+        - Call title (or lesson title)
+      - Date
+      - Source badge (Q&A Call / Course Lesson)
+      - Transcript snippet: ~150 characters around the keyword match,
+   with the keyword highlighted/bolded
+      - Approximate timestamp badge (e.g., @ ~35:00)
+      - "Watch in Fathom" link (for Q&A calls) or "Watch on Skool"
+  link (for lessons)
+      - Copy timestamp button
+    - If the same keyword appears multiple times in one transcript,
+  show each occurrence as a separate result (different timestamps)
+    - Limit to 20 transcript matches, with "Load more"
+  5. Privacy for transcript results: If a member's name appears in
+  the search results snippet (because the transcript mentions them),
+  replace other members' names with "a member" in the displayed
+  snippet. The searching member's own name stays visible.
+  6. Result ordering:
+    - First: Tagged KnowledgeBaseEntry moments (these are curated,
+  highest quality)
+    - Second: Raw transcript matches (labelled "Also mentioned in
+  these recordings")
+
+  Example: Member searches "lead magnet"
+  - Tagged moments section: 3 results — coaching moments specifically
+   about lead magnets with summaries, principle tags, etc.
+  - Also mentioned section: 5 results — every time "lead magnet" was
+  said on any call, with a transcript snippet, the call name, and
+  approximate timestamp
