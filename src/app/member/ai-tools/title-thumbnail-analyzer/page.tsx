@@ -9,37 +9,37 @@ import RecentConversations from "@/components/ai-tools/RecentConversations";
 import ResourceRecommendations from "@/components/ResourceRecommendations";
 
 interface AnalysisResult {
-  thumbnail: {
-    score: number;
-    observations: string[];
-    improvements: string[];
+  thumbnail?: {
+    score?: number;
+    observations?: string[];
+    improvements?: string[];
   };
-  title: {
-    score: number;
-    framework_used: string;
-    alternatives: string[];
-    attraction_scores: {
+  title?: {
+    score?: number;
+    framework_used?: string;
+    alternatives?: string[];
+    attraction_scores?: {
       title_frameworks: number;
       approve_the_click: number;
       avatar_clarity: number;
     };
-    observations: string[];
+    observations?: string[];
   };
-  combined: {
-    score: number;
-    avatar_would_click: boolean;
-    observations: string[];
-    improvements: string[];
+  combined?: {
+    score?: number;
+    avatar_would_click?: boolean;
+    observations?: string[];
+    improvements?: string[];
     redundancies?: string[];
     thumbnail_concepts?: string[];
   };
   intro?: {
-    score: number;
-    approves_click: boolean;
-    observations: string[];
-    improvements: string[];
+    score?: number;
+    approves_click?: boolean;
+    observations?: string[];
+    improvements?: string[];
   };
-  follow_up: string;
+  follow_up?: string;
 }
 
 interface ChatMessage {
@@ -107,7 +107,7 @@ function GoDeeperSection({
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const alternatives = result.title.alternatives ?? [];
+  const alternatives = result.title?.alternatives ?? [];
 
   const quickActions: string[] = [
     ...alternatives.slice(0, 3).map((_, i) => `Give me 5 more title variations like alternative #${i + 1}`),
@@ -490,15 +490,15 @@ export default function TitleThumbnailAnalyzerPage() {
           <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-6">
             <h2 className="font-semibold text-[#1e2a38] mb-6 text-center">Cognitive Dissonance Scores</h2>
             <div className={`grid gap-4 ${result.intro ? "grid-cols-4" : "grid-cols-3"}`}>
-              <ScoreGauge label="Thumbnail" score={result.thumbnail.score ?? 0} />
-              <ScoreGauge label="Title" score={result.title.score ?? 0} />
-              <ScoreGauge label="Combined" score={result.combined.score ?? 0} />
-              {result.intro && <ScoreGauge label="Intro" score={result.intro.score ?? 0} />}
+              <ScoreGauge label="Thumbnail" score={result.thumbnail?.score ?? 0} />
+              <ScoreGauge label="Title" score={result.title?.score ?? 0} />
+              <ScoreGauge label="Combined" score={result.combined?.score ?? 0} />
+              {result.intro && <ScoreGauge label="Intro" score={result.intro?.score ?? 0} />}
             </div>
           </div>
 
           {/* Attraction principle scores */}
-          {result.title.attraction_scores && (
+          {result.title?.attraction_scores && (
             <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-6">
               <h2 className="font-semibold text-[#1e2a38] mb-4">Attraction Principle Scores</h2>
               <div className="flex flex-wrap gap-2">
@@ -506,7 +506,7 @@ export default function TitleThumbnailAnalyzerPage() {
                 <ScoreBadge label="Approve the Click" score={result.title.attraction_scores.approve_the_click} />
                 <ScoreBadge label="Avatar Clarity" score={result.title.attraction_scores.avatar_clarity} />
               </div>
-              {result.title.framework_used && (
+              {result.title?.framework_used && (
                 <p className="text-sm text-[#1e2a38]/60 mt-3">
                   Framework detected: <strong>{result.title.framework_used}</strong>
                 </p>
@@ -515,7 +515,7 @@ export default function TitleThumbnailAnalyzerPage() {
           )}
 
           {/* Thumbnail analysis */}
-          {(result.thumbnail.observations?.length ?? 0) > 0 && (
+          {(result.thumbnail?.observations?.length ?? 0) > 0 && (
             <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-6">
               <h2 className="font-semibold text-[#1e2a38] mb-4">Thumbnail Analysis</h2>
               <div className="space-y-3">
@@ -524,7 +524,7 @@ export default function TitleThumbnailAnalyzerPage() {
                     Observations
                   </p>
                   <ul className="space-y-1.5">
-                    {result.thumbnail.observations.map((o, i) => (
+                    {result.thumbnail?.observations?.map((o, i) => (
                       <li key={i} className="text-sm text-[#1e2a38] flex gap-2">
                         <span className="text-[#3dc3ff]">•</span>
                         {o}
@@ -532,13 +532,13 @@ export default function TitleThumbnailAnalyzerPage() {
                     ))}
                   </ul>
                 </div>
-                {(result.thumbnail.improvements?.length ?? 0) > 0 && (
+                {(result.thumbnail?.improvements?.length ?? 0) > 0 && (
                   <div>
                     <p className="text-xs font-semibold text-[#1e2a38]/40 uppercase tracking-wide mb-2">
                       Improvements
                     </p>
                     <ul className="space-y-1.5">
-                      {result.thumbnail.improvements.map((o, i) => (
+                      {result.thumbnail?.improvements?.map((o, i) => (
                         <li key={i} className="text-sm text-[#1e2a38] flex gap-2">
                           <span className="text-amber-500">→</span>
                           {o}
@@ -554,13 +554,13 @@ export default function TitleThumbnailAnalyzerPage() {
           {/* Title analysis */}
           <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-6">
             <h2 className="font-semibold text-[#1e2a38] mb-4">Title Analysis</h2>
-            {(result.title.observations?.length ?? 0) > 0 && (
+            {(result.title?.observations?.length ?? 0) > 0 && (
               <div className="mb-4">
                 <p className="text-xs font-semibold text-[#1e2a38]/40 uppercase tracking-wide mb-2">
                   Observations
                 </p>
                 <ul className="space-y-1.5">
-                  {result.title.observations.map((o, i) => (
+                  {result.title?.observations?.map((o, i) => (
                     <li key={i} className="text-sm text-[#1e2a38] flex gap-2">
                       <span className="text-[#3dc3ff]">•</span>
                       {o}
@@ -569,13 +569,13 @@ export default function TitleThumbnailAnalyzerPage() {
                 </ul>
               </div>
             )}
-            {(result.title.alternatives?.length ?? 0) > 0 && (
+            {(result.title?.alternatives?.length ?? 0) > 0 && (
               <div>
                 <p className="text-xs font-semibold text-[#1e2a38]/40 uppercase tracking-wide mb-2">
                   Improved Alternatives
                 </p>
                 <ul className="space-y-2">
-                  {result.title.alternatives.map((a, i) => (
+                  {result.title?.alternatives?.map((a, i) => (
                     <li
                       key={i}
                       className="bg-[#f1f1ef] rounded-lg px-4 py-2.5 text-sm font-medium text-[#1e2a38]"
@@ -646,19 +646,19 @@ export default function TitleThumbnailAnalyzerPage() {
             <div className="flex items-center gap-2 mb-3">
               <span
                 className={`text-sm font-medium px-3 py-1 rounded-full ${
-                  result.combined.avatar_would_click
+                  result.combined?.avatar_would_click
                     ? "bg-green-100 text-green-700"
                     : "bg-red-100 text-red-700"
                 }`}
               >
-                {result.combined.avatar_would_click
+                {result.combined?.avatar_would_click
                   ? "✓ Avatar would click"
                   : "✗ Avatar unlikely to click"}
               </span>
             </div>
-            {(result.combined.observations?.length ?? 0) > 0 && (
+            {(result.combined?.observations?.length ?? 0) > 0 && (
               <ul className="space-y-1.5 mb-3">
-                {result.combined.observations.map((o, i) => (
+                {result.combined?.observations?.map((o, i) => (
                   <li key={i} className="text-sm text-[#1e2a38] flex gap-2">
                     <span className="text-[#3dc3ff]">•</span>
                     {o}
@@ -666,13 +666,13 @@ export default function TitleThumbnailAnalyzerPage() {
                 ))}
               </ul>
             )}
-            {(result.combined.improvements?.length ?? 0) > 0 && (
+            {(result.combined?.improvements?.length ?? 0) > 0 && (
               <>
                 <p className="text-xs font-semibold text-[#1e2a38]/40 uppercase tracking-wide mb-2">
                   Improvements
                 </p>
                 <ul className="space-y-1.5 mb-4">
-                  {result.combined.improvements.map((o, i) => (
+                  {result.combined?.improvements?.map((o, i) => (
                     <li key={i} className="text-sm text-[#1e2a38] flex gap-2">
                       <span className="text-amber-500">→</span>
                       {o}
@@ -683,13 +683,13 @@ export default function TitleThumbnailAnalyzerPage() {
             )}
 
             {/* Redundancies warning */}
-            {result.combined.redundancies && result.combined.redundancies.length > 0 && (
+            {(result.combined?.redundancies?.length ?? 0) > 0 && (
               <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
                 <p className="text-xs font-semibold text-red-700 uppercase tracking-wide mb-2">
                   ⚠ Redundancies Found — Title &amp; Thumbnail Overlap
                 </p>
                 <ul className="space-y-1">
-                  {result.combined.redundancies.map((r, i) => (
+                  {result.combined?.redundancies?.map((r, i) => (
                     <li key={i} className="text-sm text-red-700 flex gap-2">
                       <span>⚠</span>
                       {r}
@@ -700,13 +700,13 @@ export default function TitleThumbnailAnalyzerPage() {
             )}
 
             {/* Thumbnail concepts */}
-            {result.combined.thumbnail_concepts && result.combined.thumbnail_concepts.length > 0 && (
+            {(result.combined?.thumbnail_concepts?.length ?? 0) > 0 && (
               <div className="bg-[#3dc3ff]/5 border border-[#3dc3ff]/20 rounded-xl p-4">
                 <p className="text-xs font-semibold text-[#1e2a38]/60 uppercase tracking-wide mb-3">
                   Thumbnail Concepts That Create Dissonance
                 </p>
                 <div className="space-y-2">
-                  {result.combined.thumbnail_concepts.map((c, i) => (
+                  {result.combined?.thumbnail_concepts?.map((c, i) => (
                     <div key={i} className="bg-white rounded-lg px-4 py-3 text-sm text-[#1e2a38] leading-relaxed">
                       {c}
                     </div>
@@ -721,7 +721,7 @@ export default function TitleThumbnailAnalyzerPage() {
           )}
 
           {/* Resource Recommendations */}
-          {result.title.attraction_scores && (() => {
+          {result.title?.attraction_scores && (() => {
             const weakPrinciples = Object.entries(result.title.attraction_scores)
               .filter(([, v]) => (v as number) < 8)
               .map(([k]) => k)
