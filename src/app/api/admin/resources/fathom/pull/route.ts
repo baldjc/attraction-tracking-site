@@ -25,9 +25,10 @@ export async function POST() {
 
   try {
     const params = new URLSearchParams({ include_transcript: "true", limit: "50" });
+    if (recordingEmail) params.append("recorded_by[]", recordingEmail);
 
     const res = await fetch(`https://api.fathom.ai/external/v1/meetings?${params}`, {
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      headers: { "X-Api-Key": apiKey },
     });
 
     if (!res.ok) {
@@ -38,11 +39,10 @@ export async function POST() {
     const data = await res.json();
     const meetings: FathomMeeting[] = data.items ?? data.meetings ?? data ?? [];
 
-    // Filter by title and recording email
+    // Filter by title
     const filtered = meetings.filter((m) => {
-      const titleMatch = !titleFilter || m.title?.toLowerCase().includes(titleFilter.toLowerCase());
-      const emailMatch = !recordingEmail || m.organizer_email === recordingEmail || m.recorded_by === recordingEmail;
-      return titleMatch && emailMatch;
+      const titleMatch = !titleFilter || (m.title ?? m.meeting_title ?? "").toLowerCase().includes(titleFilter.toLowerCase());
+      return titleMatch;
     });
 
     // Check which are already imported
@@ -55,13 +55,13 @@ export async function POST() {
 
     const calls = filtered.map((m) => ({
       fathomId: m.id,
-      title: m.title ?? "Untitled Q&A",
-      callDate: m.started_at ?? m.created_at ?? new Date().toISOString(),
+      title: m.title ?? m.meeting_title ?? "Untitled Q&A",
+      callDate: m.recording_start_time ?? m.scheduled_start_time ?? m.created_at ?? new Date().toISOString(),
       duration: m.duration ?? null,
       alreadyImported: !!existingMap[m.id],
       existingId: existingMap[m.id] ?? null,
       fathomShareUrl: m.share_url ?? m.url ?? "",
-      transcript: m.transcript ?? m.full_transcript ?? "",
+      transcript: extractTranscript(m),
     }));
 
     return NextResponse.json({ calls });
@@ -71,16 +71,32 @@ export async function POST() {
   }
 }
 
+function extractTranscript(m: FathomMeeting): string {
+  // Fathom returns transcript as an array of segments or a plain string
+  if (typeof m.transcript === "string") return m.transcript;
+  if (Array.isArray(m.transcript)) {
+    return m.transcript.map((seg: any) => {
+      const speaker = seg.speaker_name ?? seg.speaker ?? "";
+      const text = seg.content ?? seg.text ?? "";
+      return speaker ? `${speaker}: ${text}` : text;
+    }).join("\n");
+  }
+  if (typeof m.full_transcript === "string") return m.full_transcript;
+  return "";
+}
+
 interface FathomMeeting {
   id: string;
   title?: string;
-  started_at?: string;
+  meeting_title?: string;
+  scheduled_start_time?: string;
+  recording_start_time?: string;
   created_at?: string;
   duration?: number;
   share_url?: string;
   url?: string;
-  transcript?: string;
+  transcript?: any;
   full_transcript?: string;
   organizer_email?: string;
-  recorded_by?: string;
+  recorded_by?: any;
 }

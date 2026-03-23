@@ -86,11 +86,12 @@ export default function QACallsPage() {
 
   // Settings
   const [showSettings, setShowSettings] = useState(false);
-  const [settings, setSettings] = useState({ fathomApiKey: "", fathomRecordingEmail: "", fathomTitleFilter: "Q&A", apiKeySet: false });
+  const [settings, setSettings] = useState({ fathomApiKey: "", fathomRecordingEmail: "", fathomTitleFilter: "Q&A", fathomWebhookSecret: "", apiKeySet: false, webhookSecretSet: false });
   const [savingSettings, setSavingSettings] = useState(false);
   const [settingsSaved, setSettingsSaved] = useState(false);
   const [lastPullDate, setLastPullDate] = useState<string | null>(null);
   const [lastPullStatus, setLastPullStatus] = useState<string | null>(null);
+  const [webhookUrl, setWebhookUrl] = useState("");
 
   // Pull modal
   const [pulling, setPulling] = useState(false);
@@ -129,10 +130,18 @@ export default function QACallsPage() {
     const res = await fetch("/api/admin/resources/fathom/settings");
     if (res.ok) {
       const d = await res.json();
-      setSettings({ fathomApiKey: d.fathomApiKeySet ? "••••••••" : "", fathomRecordingEmail: d.fathomRecordingEmail, fathomTitleFilter: d.fathomTitleFilter, apiKeySet: d.fathomApiKeySet });
+      setSettings({
+        fathomApiKey: d.fathomApiKeySet ? "••••••••" : "",
+        fathomRecordingEmail: d.fathomRecordingEmail,
+        fathomTitleFilter: d.fathomTitleFilter,
+        fathomWebhookSecret: d.fathomWebhookSecretSet ? "••••••••" : "",
+        apiKeySet: d.fathomApiKeySet,
+        webhookSecretSet: d.fathomWebhookSecretSet,
+      });
       setLastPullDate(d.lastPullDate);
       setLastPullStatus(d.lastPullStatus);
     }
+    setWebhookUrl(`${window.location.origin}/api/webhooks/fathom`);
   }
 
   const loadQueue = useCallback(async () => {
@@ -151,7 +160,12 @@ export default function QACallsPage() {
     await fetch("/api/admin/resources/fathom/settings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ fathomApiKey: settings.fathomApiKey, fathomRecordingEmail: settings.fathomRecordingEmail, fathomTitleFilter: settings.fathomTitleFilter }),
+      body: JSON.stringify({
+        fathomApiKey: settings.fathomApiKey,
+        fathomRecordingEmail: settings.fathomRecordingEmail,
+        fathomTitleFilter: settings.fathomTitleFilter,
+        fathomWebhookSecret: settings.fathomWebhookSecret,
+      }),
     });
     setSavingSettings(false);
     setSettingsSaved(true);
@@ -287,8 +301,8 @@ export default function QACallsPage() {
 
       {/* Settings Panel */}
       {showSettings && (
-        <div className={CARD + " p-6"}>
-          <h3 className="font-semibold text-[#1e2a38] mb-4">Fathom Settings</h3>
+        <div className={CARD + " p-6 space-y-5"}>
+          <h3 className="font-semibold text-[#1e2a38]">Fathom Settings</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-semibold text-[#1e2a38] mb-1.5">API Key</label>
@@ -321,7 +335,48 @@ export default function QACallsPage() {
               />
             </div>
           </div>
-          <div className="flex items-center justify-between mt-4">
+
+          {/* Webhook setup */}
+          <div className="border border-[#3dc3ff]/25 rounded-xl bg-[#3dc3ff]/5 p-4 space-y-3">
+            <div>
+              <p className="text-sm font-semibold text-[#1e2a38] mb-0.5">Webhook (auto-import on call end)</p>
+              <p className="text-xs text-[#1e2a38]/50">
+                In Fathom → Developers → Add Webhook, paste the URL below. Set triggers to <strong>my_recordings</strong> and enable <strong>include_transcript</strong>. Copy the Webhook Secret and paste it here.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-[#1e2a38]/60 mb-1">Your Webhook URL</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    readOnly
+                    value={webhookUrl}
+                    className="flex-1 border border-[#1e2a38]/15 rounded-lg px-3 py-2 text-xs bg-white text-[#1e2a38]/70 font-mono select-all"
+                  />
+                  <button
+                    onClick={() => navigator.clipboard.writeText(webhookUrl)}
+                    className="px-2.5 py-2 border border-[#1e2a38]/20 rounded-lg text-xs text-[#1e2a38]/50 hover:text-[#3dc3ff] hover:border-[#3dc3ff] transition-colors whitespace-nowrap"
+                  >
+                    Copy
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-[#1e2a38]/60 mb-1">
+                  Webhook Secret <span className="font-normal text-[#1e2a38]/40">(from Fathom)</span>
+                </label>
+                <input
+                  type="password"
+                  value={settings.fathomWebhookSecret}
+                  onChange={(e) => setSettings({ ...settings, fathomWebhookSecret: e.target.value })}
+                  placeholder={settings.webhookSecretSet ? "Secret saved — enter new to update" : "Paste webhook secret..."}
+                  className={INPUT}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between">
             <div className="text-xs text-[#1e2a38]/40">
               {lastPullDate && <>Last pull: {fmt(lastPullDate)} — <span className={lastPullStatus === "success" ? "text-green-600" : "text-red-500"}>{lastPullStatus}</span></>}
               {!lastPullDate && "No auto-pull has run yet"}

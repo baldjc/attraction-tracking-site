@@ -9,7 +9,7 @@ async function requireAdmin() {
   return session.user;
 }
 
-const KEYS = ["fathom_api_key", "fathom_recording_email", "fathom_title_filter", "fathom_last_pull_date", "fathom_last_pull_status"];
+const KEYS = ["fathom_api_key", "fathom_recording_email", "fathom_title_filter", "fathom_last_pull_date", "fathom_last_pull_status", "fathom_webhook_secret"];
 
 export async function GET() {
   if (!await requireAdmin()) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -23,6 +23,8 @@ export async function GET() {
     fathomApiKeySet: !!map["fathom_api_key"],
     fathomRecordingEmail: map["fathom_recording_email"] ?? "",
     fathomTitleFilter: map["fathom_title_filter"] ?? "Q&A",
+    fathomWebhookSecret: map["fathom_webhook_secret"] ? "••••••••" : "",
+    fathomWebhookSecretSet: !!map["fathom_webhook_secret"],
     lastPullDate: map["fathom_last_pull_date"] ?? null,
     lastPullStatus: map["fathom_last_pull_status"] ?? null,
   });
@@ -31,12 +33,13 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   if (!await requireAdmin()) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { fathomApiKey, fathomRecordingEmail, fathomTitleFilter } = await req.json();
+  const { fathomApiKey, fathomRecordingEmail, fathomTitleFilter, fathomWebhookSecret } = await req.json();
 
   const updates: { key: string; value: string }[] = [];
   if (fathomApiKey && fathomApiKey !== "••••••••") updates.push({ key: "fathom_api_key", value: fathomApiKey });
   if (fathomRecordingEmail !== undefined) updates.push({ key: "fathom_recording_email", value: fathomRecordingEmail });
   if (fathomTitleFilter !== undefined) updates.push({ key: "fathom_title_filter", value: fathomTitleFilter || "Q&A" });
+  if (fathomWebhookSecret && fathomWebhookSecret !== "••••••••") updates.push({ key: "fathom_webhook_secret", value: fathomWebhookSecret });
 
   await Promise.all(
     updates.map((u) =>
