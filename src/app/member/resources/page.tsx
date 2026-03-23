@@ -329,13 +329,15 @@ export default function MemberResourcesPage() {
   const [savedEntries, setSavedEntries] = useState<Entry[]>([]);
   const [savedLoading, setSavedLoading] = useState(true);
 
-  // Open Fathom recording. Fathom's /calls/ URLs don't support #t= deep-linking,
-  // so we copy the timestamp to clipboard as a convenience and open the recording.
+  // Open Fathom recording at the right timestamp.
+  // We store the slug-style URL (recording_playback_url base) which supports #t=seconds.
   const [copiedTimestamp, setCopiedTimestamp] = useState<string | null>(null);
   function handlePlay(entry: Entry) {
     const shareUrl = entry.source?.fathomShareUrl ?? "";
     if (!shareUrl) return;
-    const url = shareUrl.split("#")[0]; // strip any stale fragment
+    const base = shareUrl.split("#")[0];
+    const url = entry.timestampStart != null ? `${base}#t=${entry.timestampStart}` : base;
+    // Also copy timestamp as fallback in case the URL doesn't seek automatically
     if (entry.timestampStart != null) {
       const ts = fmtTime(entry.timestampStart);
       navigator.clipboard.writeText(ts ?? "").catch(() => {});

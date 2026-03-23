@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
 
   const transcript = extractTranscript(meeting);
   const callDate = meeting.recording_start_time ?? meeting.scheduled_start_time ?? meeting.created_at ?? new Date().toISOString();
-  const shareUrl = meeting.share_url ?? meeting.url ?? "";
+  const shareUrl = (meeting.recording_playback_url ?? meeting.share_url ?? meeting.url ?? "").split("#")[0];
 
   try {
     const qaCall = await prisma.qACall.upsert({

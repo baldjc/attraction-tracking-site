@@ -45,6 +45,7 @@ export async function POST(req: NextRequest) {
         },
         update: {
           title: call.title,
+          fathomShareUrl: call.fathomShareUrl,
           fullTranscript: call.transcript,
           status: "pending_review",
           errorMessage: null,
