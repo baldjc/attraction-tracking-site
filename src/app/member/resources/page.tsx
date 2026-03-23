@@ -334,6 +334,7 @@ export default function MemberResourcesPage() {
   const [playerEntry, setPlayerEntry] = useState<Entry | null>(null);
   const [modalSaved, setModalSaved] = useState(false);
   const [modalSaving, setModalSaving] = useState(false);
+  const [tsCopied, setTsCopied] = useState(false);
 
   function handlePlay(entry: Entry) {
     if (!entry.source?.fathomShareUrl) return;
@@ -452,9 +453,7 @@ export default function MemberResourcesPage() {
     <div className="space-y-6 max-w-7xl">
       {/* Q&A Moment detail modal */}
       {playerEntry && (() => {
-        const shareUrl = playerEntry.source?.fathomShareUrl ?? "";
-        const base = shareUrl.split("#")[0];
-        const fathomUrl = playerEntry.timestampStart != null ? `${base}#t=${playerEntry.timestampStart}` : base;
+        const fathomUrl = (playerEntry.source?.fathomShareUrl ?? "").split("#")[0];
         const ts = fmtTime(playerEntry.timestampStart);
         const transcript = playerEntry.searchableText?.trim();
 
@@ -473,8 +472,22 @@ export default function MemberResourcesPage() {
                       <VideoCameraIcon className="w-3 h-3" /> Q&A Call
                     </span>
                     {ts && (
-                      <span className="text-[11px] font-mono text-[#3dc3ff] bg-[#3dc3ff]/10 px-2 py-0.5 rounded-full">
+                      <span className="inline-flex items-center gap-1.5 text-[11px] font-mono text-[#3dc3ff] bg-[#3dc3ff]/10 px-2 py-0.5 rounded-full">
                         @ {ts}
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(ts).catch(() => {});
+                            setTsCopied(true);
+                            setTimeout(() => setTsCopied(false), 2000);
+                          }}
+                          title="Copy timestamp to clipboard"
+                          className="text-[#3dc3ff]/60 hover:text-[#3dc3ff] transition-colors"
+                        >
+                          {tsCopied
+                            ? <span className="text-[9px] font-sans font-semibold not-italic">Copied!</span>
+                            : <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                          }
+                        </button>
                       </span>
                     )}
                   </div>
@@ -522,10 +535,7 @@ export default function MemberResourcesPage() {
                     <p className="text-[11px] font-semibold uppercase tracking-wide text-white/35 mb-1.5">Principles</p>
                     <div className="flex flex-wrap gap-1.5">
                       {playerEntry.principles.map((p) => (
-                        <span
-                          key={p}
-                          className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-white/10 text-white/70"
-                        >
+                        <span key={p} className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-white/10 text-white/70">
                           {p}
                         </span>
                       ))}
@@ -535,34 +545,39 @@ export default function MemberResourcesPage() {
               </div>
 
               {/* Footer actions */}
-              <div className="flex items-center gap-3 px-6 py-4 border-t border-white/10 flex-shrink-0">
-                <button
-                  onClick={modalToggleSave}
-                  disabled={modalSaving}
-                  title={modalSaved ? "Remove bookmark" : "Bookmark this moment"}
-                  className={`flex items-center gap-1.5 text-sm font-medium px-3.5 py-2 rounded-xl border transition-all disabled:opacity-50 ${
-                    modalSaved
-                      ? "border-[#3dc3ff]/40 text-[#3dc3ff] bg-[#3dc3ff]/10"
-                      : "border-white/15 text-white/50 hover:text-white hover:border-white/30 bg-white/5"
-                  }`}
-                >
-                  {modalSaved
-                    ? <BookmarkSolid className="w-4 h-4" />
-                    : <BookmarkOutline className="w-4 h-4" />}
-                  {modalSaved ? "Saved" : "Save"}
-                </button>
+              <div className="px-6 py-4 border-t border-white/10 flex-shrink-0 space-y-2.5">
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={modalToggleSave}
+                    disabled={modalSaving}
+                    title={modalSaved ? "Remove bookmark" : "Bookmark this moment"}
+                    className={`flex items-center gap-1.5 text-sm font-medium px-3.5 py-2 rounded-xl border transition-all disabled:opacity-50 ${
+                      modalSaved
+                        ? "border-[#3dc3ff]/40 text-[#3dc3ff] bg-[#3dc3ff]/10"
+                        : "border-white/15 text-white/50 hover:text-white hover:border-white/30 bg-white/5"
+                    }`}
+                  >
+                    {modalSaved ? <BookmarkSolid className="w-4 h-4" /> : <BookmarkOutline className="w-4 h-4" />}
+                    {modalSaved ? "Saved" : "Save"}
+                  </button>
 
-                <a
-                  href={fathomUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 flex items-center justify-center gap-2 bg-[#3dc3ff] hover:bg-[#5cceff] text-[#0f1620] font-bold text-sm py-2.5 rounded-xl transition-colors"
-                >
-                  <VideoCameraIcon className="w-4 h-4" />
-                  Watch in Fathom
-                  {ts && <span className="font-mono font-normal opacity-70 text-xs">@ {ts}</span>}
-                  <span className="opacity-60">↗</span>
-                </a>
+                  <a
+                    href={fathomUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 flex items-center justify-center gap-2 bg-[#3dc3ff] hover:bg-[#5cceff] text-[#0f1620] font-bold text-sm py-2.5 rounded-xl transition-colors"
+                  >
+                    <VideoCameraIcon className="w-4 h-4" />
+                    Watch in Fathom ↗
+                  </a>
+                </div>
+
+                {ts && (
+                  <p className="text-[11px] text-white/35 leading-relaxed text-center">
+                    Jump to <span className="font-mono text-white/55">{ts}</span> in the recording.{" "}
+                    <span className="text-white/25">Tip: Open the Transcript tab in Fathom and search for the excerpt above — timestamps there are clickable.</span>
+                  </p>
+                )}
               </div>
             </div>
           </div>

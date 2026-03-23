@@ -55,9 +55,7 @@ function fmtDate(d?: string) {
 function RecommendationCard({ rec }: { rec: Recommendation }) {
   const isLesson = rec.sourceType === "course_lesson";
   const fathomUrl = rec.source?.fathomShareUrl
-    ? rec.timestampStart != null
-      ? `${rec.source.fathomShareUrl.split("#")[0]}#t=${rec.timestampStart}`
-      : rec.source.fathomShareUrl
+    ? rec.source.fathomShareUrl.split("#")[0]
     : null;
 
   return (
@@ -231,9 +229,7 @@ export function ResourceRecommendationsInline({
 function InlineRecommendationRow({ rec }: { rec: Recommendation }) {
   const isLesson = rec.sourceType === "course_lesson";
   const fathomUrl = rec.source?.fathomShareUrl
-    ? rec.timestampStart != null
-      ? `${rec.source.fathomShareUrl.split("#")[0]}#t=${rec.timestampStart}`
-      : rec.source.fathomShareUrl
+    ? rec.source.fathomShareUrl.split("#")[0]
     : null;
 
   return (
