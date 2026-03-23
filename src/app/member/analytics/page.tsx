@@ -106,7 +106,14 @@ function sessionDuration(views: PageViewData[]): string {
 }
 
 const SOURCE_LABELS: Record<string, string> = {
-  YOUTUBE: "YouTube", GOOGLE_ADS: "Google Ads", EMAIL: "Email", OTHER: "Other",
+  YOUTUBE: "YouTube",
+  GOOGLE_ADS: "Google Ads",
+  EMAIL: "Email",
+  EMAIL_NEWSLETTER: "Email Newsletter",
+  META_ADS: "Meta Ads",
+  DIRECT_MAIL: "Direct Mail",
+  BLOG_POSTS: "Blog Posts",
+  OTHER: "Other",
 };
 
 // ── Delta badge ─────────────────────────────────────────────────────────────
@@ -377,6 +384,10 @@ function AnalyticsPageInner() {
           <option value="YOUTUBE">YouTube</option>
           <option value="GOOGLE_ADS">Google Ads</option>
           <option value="EMAIL">Email</option>
+          <option value="EMAIL_NEWSLETTER">Email Newsletter</option>
+          <option value="META_ADS">Meta Ads</option>
+          <option value="DIRECT_MAIL">Direct Mail</option>
+          <option value="BLOG_POSTS">Blog Posts</option>
           <option value="OTHER">Other</option>
         </select>
       </div>
