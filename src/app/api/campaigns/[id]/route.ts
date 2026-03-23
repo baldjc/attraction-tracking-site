@@ -91,16 +91,20 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (!campaign) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const { name, destinationUrl, sourceType } = await req.json();
-  const updated = await prisma.campaign.update({
-    where: { id },
-    data: {
-      ...(name && { name }),
-      ...(destinationUrl && { destinationUrl }),
-      ...(sourceType && { sourceType }),
-    },
-  });
-
-  return NextResponse.json(updated);
+  try {
+    const updated = await prisma.campaign.update({
+      where: { id },
+      data: {
+        ...(name && { name }),
+        ...(destinationUrl && { destinationUrl }),
+        ...(sourceType && { sourceType }),
+      },
+    });
+    return NextResponse.json(updated);
+  } catch (err) {
+    console.error("[campaigns PATCH] DB error:", err);
+    return NextResponse.json({ error: "Failed to save changes. Please try again." }, { status: 500 });
+  }
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

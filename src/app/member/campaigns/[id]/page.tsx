@@ -109,6 +109,12 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
   const [resetConfirmLink, setResetConfirmLink] = useState<TrackingLinkData | null>(null);
   const [resetting, setResetting] = useState(false);
 
+  // Edit campaign
+  const [showEditCampaign, setShowEditCampaign] = useState(false);
+  const [campaignEditForm, setCampaignEditForm] = useState({ name: "", destinationUrl: "", sourceType: "" });
+  const [savingCampaign, setSavingCampaign] = useState(false);
+  const [campaignEditError, setCampaignEditError] = useState<string | null>(null);
+
   const loadCampaign = useCallback(async () => {
     setLoading(true);
     const res = await fetch(`/api/campaigns/${id}`);
@@ -230,6 +236,36 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
     setRefreshing(false);
   }
 
+  function openEditCampaign() {
+    if (!campaign) return;
+    setCampaignEditForm({ name: campaign.name, destinationUrl: campaign.destinationUrl, sourceType: campaign.sourceType });
+    setCampaignEditError(null);
+    setShowEditCampaign(true);
+  }
+
+  async function saveCampaign() {
+    if (!campaignEditForm.name || !campaignEditForm.destinationUrl) return;
+    setSavingCampaign(true);
+    setCampaignEditError(null);
+    try {
+      const res = await fetch(`/api/campaigns/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(campaignEditForm),
+      });
+      if (res.ok) {
+        setShowEditCampaign(false);
+        await loadCampaign();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setCampaignEditError(data.error ?? `Error saving — please try again.`);
+      }
+    } catch {
+      setCampaignEditError("Network error — please try again.");
+    }
+    setSavingCampaign(false);
+  }
+
   if (loading) return <div className="text-center py-16 text-[#1e2a38]/40">Loading...</div>;
   if (!campaign) return <div className="text-center py-16 text-[#1e2a38]/40">Campaign not found.</div>;
 
@@ -275,6 +311,9 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
             <div className="flex items-center gap-2 mb-1">
               <h1 className="text-2xl font-bold text-[#1e2a38]">{campaign.name}</h1>
               <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${src.color}`}>{src.label}</span>
+              <button onClick={openEditCampaign} title="Edit campaign" className="text-[#1e2a38]/30 hover:text-[#3dc3ff] transition-colors">
+                <PencilIcon className="w-4 h-4" />
+              </button>
             </div>
             <a href={campaign.destinationUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-[#3dc3ff] hover:underline">
               {campaign.destinationUrl}
@@ -555,6 +594,51 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                   {saving ? "Saving..." : "Save Changes"}
                 </button>
                 <button onClick={() => setEditingLink(null)} className="px-5 py-2.5 border border-[#1e2a38]/20 rounded-xl text-sm text-[#1e2a38]/60 hover:bg-gray-50 transition-colors">
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Campaign Modal */}
+      {showEditCampaign && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl border border-[#1e2a38]/10 shadow-xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="font-bold text-[#1e2a38]">Edit Campaign</h2>
+              <button onClick={() => setShowEditCampaign(false)} className="text-[#1e2a38]/40 hover:text-[#1e2a38] text-xl">✕</button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-[#1e2a38] mb-1.5">Campaign Name</label>
+                <input type="text" value={campaignEditForm.name} onChange={(e) => setCampaignEditForm({ ...campaignEditForm, name: e.target.value })} className={INPUT_CLS} />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-[#1e2a38] mb-1.5">Destination URL</label>
+                <input type="text" value={campaignEditForm.destinationUrl} onChange={(e) => setCampaignEditForm({ ...campaignEditForm, destinationUrl: e.target.value })} placeholder="https://yoursite.com/free-guide" className={INPUT_CLS} />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-[#1e2a38] mb-1.5">Traffic Source</label>
+                <select value={campaignEditForm.sourceType} onChange={(e) => setCampaignEditForm({ ...campaignEditForm, sourceType: e.target.value })} className={`${INPUT_CLS} bg-white`}>
+                  <option value="YOUTUBE">YouTube</option>
+                  <option value="EMAIL_NEWSLETTER">Email Newsletter</option>
+                  <option value="GOOGLE_ADS">Google Ads</option>
+                  <option value="META_ADS">Meta Ads</option>
+                  <option value="DIRECT_MAIL">Direct Mail</option>
+                  <option value="BLOG_POSTS">Blog Posts</option>
+                  <option value="OTHER">Other</option>
+                </select>
+              </div>
+              {campaignEditError && (
+                <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-xl px-3 py-2">{campaignEditError}</p>
+              )}
+              <div className="flex gap-3">
+                <button onClick={saveCampaign} disabled={savingCampaign || !campaignEditForm.name || !campaignEditForm.destinationUrl} className="flex-1 bg-[#3dc3ff] text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-[#3dc3ff]/90 disabled:opacity-50 transition-colors">
+                  {savingCampaign ? "Saving..." : "Save Changes"}
+                </button>
+                <button onClick={() => setShowEditCampaign(false)} className="px-5 py-2.5 border border-[#1e2a38]/20 rounded-xl text-sm text-[#1e2a38]/60 hover:bg-gray-50 transition-colors">
                   Cancel
                 </button>
               </div>
