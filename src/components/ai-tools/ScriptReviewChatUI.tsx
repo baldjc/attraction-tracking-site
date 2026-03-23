@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import {
   ArrowUpIcon,
   ArrowDownTrayIcon,
@@ -9,6 +9,7 @@ import {
 } from "@heroicons/react/24/solid";
 import RecentConversations from "./RecentConversations";
 import PromptEditor from "./PromptEditor";
+import ResourceRecommendations from "@/components/ResourceRecommendations";
 
 const PRINCIPLES: Record<string, string> = {
   avatar_clarity: "Avatar Clarity",
@@ -321,6 +322,17 @@ export default function ScriptReviewChatUI({ basePath, noAvatar }: Props) {
     }
   }
 
+  const weakScriptPrinciples = useMemo(() => {
+    const analysis = messages[0]?.analysis;
+    if (!analysis?.scores) return "";
+    return Object.entries(analysis.scores)
+      .filter(([, v]) => v.score < 7)
+      .sort(([, a], [, b]) => a.score - b.score)
+      .slice(0, 5)
+      .map(([key]) => key)
+      .join(",");
+  }, [messages]);
+
   function handleReset() {
     setPhase("input");
     setVideoTitle("");
@@ -475,6 +487,15 @@ export default function ScriptReviewChatUI({ basePath, noAvatar }: Props) {
             )}
             <div ref={messagesEndRef} />
           </div>
+
+          {weakScriptPrinciples && (
+            <ResourceRecommendations
+              principles={weakScriptPrinciples}
+              limitPerPrinciple={2}
+              heading="📚 Resources for Your Weakest Areas"
+              className="pt-3 border-t border-gray-100 dark:border-white/10 mt-1"
+            />
+          )}
 
           <div className="flex gap-2 mt-3 border-t border-gray-100 dark:border-white/10 pt-3">
             <textarea

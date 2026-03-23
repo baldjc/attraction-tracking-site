@@ -6,6 +6,7 @@ import { SparklesIcon } from "@heroicons/react/24/solid";
 import Link from "next/link";
 import PromptEditor from "@/components/ai-tools/PromptEditor";
 import RecentConversations from "@/components/ai-tools/RecentConversations";
+import ResourceRecommendations from "@/components/ResourceRecommendations";
 
 interface AnalysisResult {
   thumbnail: {
@@ -718,6 +719,23 @@ export default function TitleThumbnailAnalyzerPage() {
           {result.follow_up && (
             <p className="text-sm text-[#1e2a38]/60 italic text-center">{result.follow_up}</p>
           )}
+
+          {/* Resource Recommendations */}
+          {result.title.attraction_scores && (() => {
+            const weakPrinciples = Object.entries(result.title.attraction_scores)
+              .filter(([, v]) => (v as number) < 8)
+              .map(([k]) => k)
+              .join(",");
+            return weakPrinciples ? (
+              <div className="bg-[#3dc3ff]/5 border border-[#3dc3ff]/25 rounded-2xl p-5">
+                <ResourceRecommendations
+                  principles={weakPrinciples}
+                  limitPerPrinciple={2}
+                  heading="📚 Related Resources for Your Packaging"
+                />
+              </div>
+            ) : null;
+          })()}
 
           {/* Go Deeper section */}
           <GoDeeperSection title={title} result={result} introTranscript={introTranscript} />

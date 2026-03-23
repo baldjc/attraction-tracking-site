@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/outline";
+import { ResourceRecommendationsInline } from "@/components/ResourceRecommendations";
 
 const PRINCIPLE_LABELS: Record<string, string> = {
   avatar_clarity: "Avatar Clarity",
@@ -420,6 +421,15 @@ export default function SharedReportPage() {
               ))}
             </div>
           </div>
+        )}
+
+        {/* Resource Recommendations from Learning Path */}
+        {learningGaps.length > 0 && (
+          <ResourceRecommendationsInline
+            principles={learningGaps.slice(0, 5).map(([key]) => key).join(",")}
+            limitPerPrinciple={2}
+            heading="📚 Related Lessons & Coaching Moments"
+          />
         )}
 
         {/* Learning Path */}
