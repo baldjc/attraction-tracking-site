@@ -9,10 +9,10 @@ async function requireAdmin() {
   return session.user;
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   if (!await requireAdmin()) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { id } = params;
+  const { id } = await params;
 
   const call = await prisma.qACall.findUnique({ where: { id } });
   if (!call) return NextResponse.json({ error: "Not found" }, { status: 404 });
