@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { ChevronDownIcon, ChevronUpIcon, ArrowPathIcon, CheckIcon, XMarkIcon, PencilIcon } from "@heroicons/react/24/outline";
+import { ChevronDownIcon, ChevronUpIcon, ArrowPathIcon, CheckIcon, XMarkIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
 
 const PRINCIPLES = [
   "Avatar Clarity", "Themes Over Topics", "Binge Architecture", "Lead Magnet System",
@@ -112,6 +112,21 @@ export default function QACallsPage() {
 
   // Expanded call
   const [expandedCallId, setExpandedCallId] = useState<string | null>(null);
+
+  // Remove call
+  const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
+  const [removingId, setRemovingId] = useState<string | null>(null);
+
+  async function removeCall(id: string) {
+    setRemovingId(id);
+    const res = await fetch(`/api/admin/resources/qa-calls/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      setCalls((prev) => prev.filter((c) => c.id !== id));
+      if (expandedCallId === id) setExpandedCallId(null);
+    }
+    setRemovingId(null);
+    setConfirmRemoveId(null);
+  }
 
   useEffect(() => {
     loadCalls();
@@ -544,6 +559,32 @@ export default function QACallsPage() {
                       <p className="text-xs text-red-600 mt-1">{call.errorMessage}</p>
                     )}
                   </div>
+                  {confirmRemoveId === call.id ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-red-600 font-medium">Remove call + all moments?</span>
+                      <button
+                        onClick={() => removeCall(call.id)}
+                        disabled={removingId === call.id}
+                        className="text-xs bg-red-600 text-white px-2.5 py-1 rounded-lg font-semibold hover:bg-red-700 transition-colors disabled:opacity-50"
+                      >
+                        {removingId === call.id ? "Removing…" : "Yes, remove"}
+                      </button>
+                      <button
+                        onClick={() => setConfirmRemoveId(null)}
+                        className="text-xs text-[#1e2a38]/40 hover:text-[#1e2a38] px-1"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setConfirmRemoveId(call.id)}
+                      title="Remove this call"
+                      className="p-2 rounded-lg text-[#1e2a38]/20 hover:text-red-500 hover:bg-red-50 transition-colors"
+                    >
+                      <TrashIcon className="w-4 h-4" />
+                    </button>
+                  )}
                   <button
                     onClick={() => setExpandedCallId(expandedCallId === call.id ? null : call.id)}
                     className="p-2 rounded-lg text-[#1e2a38]/30 hover:text-[#1e2a38] transition-colors"
