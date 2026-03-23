@@ -573,10 +573,14 @@ export default function MemberResourcesPage() {
                 </div>
 
                 {ts && (
-                  <p className="text-[11px] text-white/35 leading-relaxed text-center">
-                    Jump to <span className="font-mono text-white/55">{ts}</span> in the recording.{" "}
-                    <span className="text-white/25">Tip: Open the Transcript tab in Fathom and search for the excerpt above — timestamps there are clickable.</span>
-                  </p>
+                  <div className="bg-white/8 border border-white/15 rounded-xl px-4 py-3 text-center">
+                    <p className="text-sm text-white/80 leading-relaxed">
+                      Jump to <span className="font-mono font-semibold text-[#3dc3ff]">{ts}</span> in the recording.
+                    </p>
+                    <p className="text-xs text-white/50 mt-1 leading-relaxed">
+                      Tip: Open the <strong className="text-white/70">Transcript</strong> tab in Fathom and search for the excerpt above — timestamps there are clickable and will seek the player.
+                    </p>
+                  </div>
                 )}
               </div>
             </div>
