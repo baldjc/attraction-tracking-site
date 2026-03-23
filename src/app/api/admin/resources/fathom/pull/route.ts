@@ -76,7 +76,7 @@ export async function POST() {
         duration: m.duration ?? null,
         alreadyImported: !!existingMap[fId],
         existingId: existingMap[fId] ?? null,
-        fathomShareUrl: (m.recording_playback_url ?? m.share_url ?? m.url ?? "").split("#")[0],
+        fathomShareUrl: (m.share_url ?? m.url ?? "").split("#")[0],
         transcript: extractTranscript(m),
       };
     });

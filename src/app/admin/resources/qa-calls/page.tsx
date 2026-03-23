@@ -113,6 +113,23 @@ export default function QACallsPage() {
   // Expanded call
   const [expandedCallId, setExpandedCallId] = useState<string | null>(null);
 
+  // Refresh share URLs
+  const [refreshingUrls, setRefreshingUrls] = useState(false);
+  const [refreshResult, setRefreshResult] = useState<string | null>(null);
+
+  async function refreshShareUrls() {
+    setRefreshingUrls(true);
+    setRefreshResult(null);
+    const res = await fetch("/api/admin/resources/fathom/refresh-urls", { method: "POST" });
+    const d = await res.json();
+    if (res.ok) {
+      setRefreshResult(`Updated ${d.updated} of ${d.total} call URL${d.total !== 1 ? "s" : ""} to share_url format.`);
+    } else {
+      setRefreshResult(`Error: ${d.error ?? "Failed"}`);
+    }
+    setRefreshingUrls(false);
+  }
+
   // Remove call
   const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
@@ -531,9 +548,25 @@ export default function QACallsPage() {
 
       {/* Q&A Calls List */}
       <div className={CARD}>
-        <div className="px-6 py-4 border-b border-[#1e2a38]/10">
-          <h3 className="font-semibold text-[#1e2a38]">Imported Calls</h3>
-          <p className="text-xs text-[#1e2a38]/40 mt-0.5">{calls.length} call{calls.length !== 1 ? "s" : ""} imported</p>
+        <div className="px-6 py-4 border-b border-[#1e2a38]/10 flex items-center justify-between gap-4">
+          <div>
+            <h3 className="font-semibold text-[#1e2a38]">Imported Calls</h3>
+            <p className="text-xs text-[#1e2a38]/40 mt-0.5">{calls.length} call{calls.length !== 1 ? "s" : ""} imported</p>
+          </div>
+          <div className="flex flex-col items-end gap-1">
+            <button
+              onClick={refreshShareUrls}
+              disabled={refreshingUrls}
+              title="Re-fetches share_url from Fathom for all imported calls so timestamps work correctly"
+              className="flex items-center gap-1.5 text-xs text-[#1e2a38]/50 hover:text-[#3dc3ff] border border-[#1e2a38]/15 hover:border-[#3dc3ff]/40 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+            >
+              <ArrowPathIcon className={`w-3.5 h-3.5 ${refreshingUrls ? "animate-spin" : ""}`} />
+              {refreshingUrls ? "Refreshing…" : "Refresh Share URLs"}
+            </button>
+            {refreshResult && (
+              <p className={`text-[11px] ${refreshResult.startsWith("Error") ? "text-red-500" : "text-green-600"}`}>{refreshResult}</p>
+            )}
+          </div>
         </div>
         {loading ? (
           <div className="px-6 py-12 text-center text-sm text-[#1e2a38]/40">Loading...</div>
