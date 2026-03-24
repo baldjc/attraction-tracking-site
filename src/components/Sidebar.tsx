@@ -154,21 +154,29 @@ function SwitchMemberDropdown({
             <li key={m.id}>
               <button
                 onClick={async () => {
+                  console.log("member switch clicked:", m.id, m.fullName ?? m.email);
                   try {
                     const res = await fetch("/api/admin/impersonate", {
                       method: "POST",
                       headers: { "Content-Type": "application/json" },
                       body: JSON.stringify({ memberId: m.id }),
                     });
-                    if (!res.ok) return;
+                    console.log("impersonate API response status:", res.status);
+                    if (!res.ok) {
+                      console.log("API call failed, aborting");
+                      return;
+                    }
                     try {
                       localStorage.setItem(IMPERSONATE_LS_KEY, JSON.stringify({ memberId: m.id, memberName: name }));
                     } catch { }
-                    // Set cookie client-side — server Set-Cookie can be blocked in preview/iframe contexts
                     document.cookie = `${IMPERSONATE_COOKIE}=${m.id}; path=/; max-age=${60 * 60 * 8}; SameSite=Lax`;
-                  } catch {
+                    console.log("cookie set, localStorage set, about to reload");
+                    console.log("current document.cookie:", document.cookie);
+                  } catch (err) {
+                    console.error("member switch error:", err);
                     return;
                   }
+                  console.log("calling window.location.reload()");
                   window.location.reload();
                 }}
                 className={`w-full flex items-center gap-2 px-3 py-2.5 text-left hover:bg-[#3dc3ff]/5 transition-colors ${isCurrent ? "bg-amber-50" : ""}`}
