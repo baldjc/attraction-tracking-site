@@ -44,25 +44,34 @@ export default function MemberPickerModal({ onClose, adminEmail }: Props) {
   });
 
   async function handleSelect(member: Member) {
+    console.log("MemberPickerModal handleSelect called:", member.id, member.fullName);
     setSelecting(member.id);
-    const memberName = member.fullName ?? member.email;
     try {
       const res = await fetch("/api/admin/impersonate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ memberId: member.id }),
       });
-      if (!res.ok) { setSelecting(null); return; }
+      console.log("impersonate API response:", res.status);
+      if (!res.ok) {
+        console.log("API failed, aborting");
+        alert("Failed to switch member");
+        setSelecting(null);
+        return;
+      }
+      const memberName = member.fullName ?? member.email;
       try {
         localStorage.setItem(IMPERSONATE_LS_KEY, JSON.stringify({ memberId: member.id, memberName }));
-      } catch { }
-      // Set cookie client-side — server Set-Cookie can be blocked in preview/iframe contexts
-      document.cookie = `${IMPERSONATE_COOKIE}=${member.id}; path=/; max-age=${60 * 60 * 8}; SameSite=Lax`;
-    } catch {
+      } catch {}
+      // Set cookie client-side (server Set-Cookie can get blocked in preview)
+      document.cookie = `impersonate_member=${member.id}; path=/; max-age=${60 * 60 * 8}; SameSite=Lax`;
+      console.log("cookie and localStorage set, navigating now");
+      console.log("document.cookie:", document.cookie);
+      window.location.href = "/member/scores";
+    } catch (err) {
+      console.error("handleSelect error:", err);
       setSelecting(null);
-      return;
     }
-    window.location.reload();
   }
 
   return (
