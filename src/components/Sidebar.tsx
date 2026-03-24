@@ -152,12 +152,22 @@ function SwitchMemberDropdown({
           const isCurrent = m.id === current.memberId;
           return (
             <li key={m.id}>
-              <a
-                href={`/api/admin/switch?memberId=${encodeURIComponent(m.id)}`}
-                onClick={() => {
+              <button
+                onClick={async () => {
                   try {
-                    localStorage.setItem(IMPERSONATE_LS_KEY, JSON.stringify({ memberId: m.id, memberName: name }));
-                  } catch { }
+                    const res = await fetch("/api/admin/impersonate", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ memberId: m.id }),
+                    });
+                    if (!res.ok) return;
+                    try {
+                      localStorage.setItem(IMPERSONATE_LS_KEY, JSON.stringify({ memberId: m.id, memberName: name }));
+                    } catch { }
+                  } catch {
+                    return;
+                  }
+                  window.location.reload();
                 }}
                 className={`w-full flex items-center gap-2 px-3 py-2.5 text-left hover:bg-[#3dc3ff]/5 transition-colors ${isCurrent ? "bg-amber-50" : ""}`}
               >
@@ -167,7 +177,7 @@ function SwitchMemberDropdown({
                   {m.fullName && <p className="text-[10px] text-gray-400 truncate">{m.email}</p>}
                 </div>
                 {isCurrent && <span className="text-[10px] text-amber-600 font-semibold shrink-0">Current</span>}
-              </a>
+              </button>
             </li>
           );
         })}
