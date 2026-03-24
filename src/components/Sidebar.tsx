@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import MemberPickerModal from "@/components/admin/MemberPickerModal";
 import { usePathname, useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 import {
@@ -21,7 +22,6 @@ import {
   ArrowLeftIcon,
   EyeIcon,
   ChevronDownIcon,
-  MagnifyingGlassIcon,
   UserCircleIcon,
   SunIcon,
   MoonIcon,
@@ -85,116 +85,6 @@ interface ImpersonateState {
   memberName: string;
 }
 
-interface MemberOption {
-  id: string;
-  fullName: string | null;
-  email: string;
-}
-
-function SwitchMemberDropdown({
-  current,
-  onClose,
-}: {
-  current: ImpersonateState;
-  onClose: () => void;
-}) {
-  const [members, setMembers] = useState<MemberOption[]>([]);
-  const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(true);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    fetch("/api/members")
-      .then((r) => r.json())
-      .then((d) => setMembers(d.members ?? []))
-      .finally(() => setLoading(false));
-  }, []);
-
-  useEffect(() => {
-    function onMouseDown(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
-    }
-    document.addEventListener("mousedown", onMouseDown);
-    return () => document.removeEventListener("mousedown", onMouseDown);
-  }, [onClose]);
-
-  const filtered = members.filter((m) => {
-    if (!search) return true;
-    const q = search.toLowerCase();
-    return (m.fullName ?? "").toLowerCase().includes(q) || m.email.toLowerCase().includes(q);
-  });
-
-  return (
-    <div
-      ref={ref}
-      className="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 overflow-hidden"
-    >
-      <div className="p-2 border-b border-gray-100">
-        <div className="relative">
-          <MagnifyingGlassIcon className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400" />
-          <input
-            autoFocus
-            type="text"
-            placeholder="Search members…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-6 pr-2 py-1.5 text-xs border border-gray-200 rounded-lg outline-none focus:ring-1 focus:ring-[#3dc3ff]"
-          />
-        </div>
-      </div>
-      <ul className="max-h-56 overflow-y-auto divide-y divide-gray-50">
-        {loading ? (
-          <li className="px-3 py-4 text-xs text-center text-gray-400">Loading…</li>
-        ) : filtered.length === 0 ? (
-          <li className="px-3 py-4 text-xs text-center text-gray-400">No members found</li>
-        ) : filtered.map((m) => {
-          const name = m.fullName ?? m.email;
-          const isCurrent = m.id === current.memberId;
-          return (
-            <li key={m.id}>
-              <button
-                onClick={async () => {
-                  console.log("member switch clicked:", m.id, m.fullName ?? m.email);
-                  try {
-                    const res = await fetch("/api/admin/impersonate", {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ memberId: m.id }),
-                    });
-                    console.log("impersonate API response status:", res.status);
-                    if (!res.ok) {
-                      console.log("API call failed, aborting");
-                      return;
-                    }
-                    try {
-                      localStorage.setItem(IMPERSONATE_LS_KEY, JSON.stringify({ memberId: m.id, memberName: name }));
-                    } catch { }
-                    document.cookie = `${IMPERSONATE_COOKIE}=${m.id}; path=/; max-age=${60 * 60 * 8}; SameSite=Lax`;
-                    console.log("cookie set, localStorage set, about to reload");
-                    console.log("current document.cookie:", document.cookie);
-                  } catch (err) {
-                    console.error("member switch error:", err);
-                    return;
-                  }
-                  console.log("calling window.location.reload()");
-                  window.location.reload();
-                }}
-                className={`w-full flex items-center gap-2 px-3 py-2.5 text-left hover:bg-[#3dc3ff]/5 transition-colors ${isCurrent ? "bg-amber-50" : ""}`}
-              >
-                <UserCircleIcon className="w-4 h-4 text-gray-400 shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-[#1e2a38] truncate">{name}</p>
-                  {m.fullName && <p className="text-[10px] text-gray-400 truncate">{m.email}</p>}
-                </div>
-                {isCurrent && <span className="text-[10px] text-amber-600 font-semibold shrink-0">Current</span>}
-              </button>
-            </li>
-          );
-        })}
-      </ul>
-    </div>
-  );
-}
 
 export default function Sidebar({ role, userName, featureFlags }: SidebarProps) {
   const pathname = usePathname();
@@ -316,10 +206,7 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
               <ChevronDownIcon className={`w-3 h-3 text-amber-900 shrink-0 transition-transform ${showSwitch ? "rotate-180" : ""}`} />
             </button>
             {showSwitch && (
-              <SwitchMemberDropdown
-                current={impersonate}
-                onClose={() => setShowSwitch(false)}
-              />
+              <MemberPickerModal onClose={() => setShowSwitch(false)} />
             )}
           </div>
         </div>
