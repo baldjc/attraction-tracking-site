@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { MagnifyingGlassIcon, XMarkIcon, UserCircleIcon } from "@heroicons/react/24/outline";
-import { IMPERSONATE_LS_KEY } from "@/lib/impersonate-constants";
+import { IMPERSONATE_LS_KEY, IMPERSONATE_COOKIE } from "@/lib/impersonate-constants";
 
 interface Member {
   id: string;
@@ -43,13 +43,26 @@ export default function MemberPickerModal({ onClose, adminEmail }: Props) {
     return (m.fullName ?? "").toLowerCase().includes(q) || m.email.toLowerCase().includes(q);
   });
 
-  function handleSelect(member: Member) {
+  async function handleSelect(member: Member) {
     setSelecting(member.id);
     const memberName = member.fullName ?? member.email;
     try {
-      localStorage.setItem(IMPERSONATE_LS_KEY, JSON.stringify({ memberId: member.id, memberName }));
-    } catch { }
-    window.location.href = "/api/admin/switch?memberId=" + encodeURIComponent(member.id);
+      const res = await fetch("/api/admin/impersonate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ memberId: member.id }),
+      });
+      if (!res.ok) { setSelecting(null); return; }
+      try {
+        localStorage.setItem(IMPERSONATE_LS_KEY, JSON.stringify({ memberId: member.id, memberName }));
+      } catch { }
+      // Set cookie client-side — server Set-Cookie can be blocked in preview/iframe contexts
+      document.cookie = `${IMPERSONATE_COOKIE}=${member.id}; path=/; max-age=${60 * 60 * 8}; SameSite=Lax`;
+    } catch {
+      setSelecting(null);
+      return;
+    }
+    window.location.reload();
   }
 
   return (

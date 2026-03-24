@@ -29,7 +29,7 @@ import {
   VideoCameraIcon,
 } from "@heroicons/react/24/outline";
 import { useState, useEffect, useRef } from "react";
-import { IMPERSONATE_LS_KEY } from "@/lib/impersonate-constants";
+import { IMPERSONATE_LS_KEY, IMPERSONATE_COOKIE } from "@/lib/impersonate-constants";
 import { useTheme } from "@/components/ThemeProvider";
 
 interface FeatureFlags {
@@ -164,6 +164,8 @@ function SwitchMemberDropdown({
                     try {
                       localStorage.setItem(IMPERSONATE_LS_KEY, JSON.stringify({ memberId: m.id, memberName: name }));
                     } catch { }
+                    // Set cookie client-side — server Set-Cookie can be blocked in preview/iframe contexts
+                    document.cookie = `${IMPERSONATE_COOKIE}=${m.id}; path=/; max-age=${60 * 60 * 8}; SameSite=Lax`;
                   } catch {
                     return;
                   }
