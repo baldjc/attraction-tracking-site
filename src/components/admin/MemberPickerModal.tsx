@@ -67,7 +67,7 @@ export default function MemberPickerModal({ onClose, adminEmail }: Props) {
       document.cookie = `impersonate_member=${member.id}; path=/; max-age=${60 * 60 * 8}; SameSite=Lax`;
       console.log("cookie and localStorage set, navigating now");
       console.log("document.cookie:", document.cookie);
-      window.location.href = "/member/scores";
+      window.location.href = "/member/dashboard";
     } catch (err) {
       console.error("handleSelect error:", err);
       setSelecting(null);

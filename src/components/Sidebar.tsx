@@ -164,12 +164,12 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
 
 
   const homeHref = isStaffOnMemberView
-    ? "/member/scores"
+    ? "/member/dashboard"
     : role === "admin"
     ? "/admin"
     : role === "editor"
     ? "/member/dashboard"
-    : "/member/scores";
+    : "/member/dashboard";
 
   const roleLabel = isStaffOnMemberView
     ? "Foundations Member"
