@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(new URL("/admin", base));
   }
 
-  const response = NextResponse.redirect(new URL("/member/dashboard", base));
+  const response = NextResponse.redirect(new URL(`/member/dashboard?t=${Date.now()}`, base));
   response.cookies.set(IMPERSONATE_COOKIE, memberId, {
     httpOnly: false,
     path: "/",
