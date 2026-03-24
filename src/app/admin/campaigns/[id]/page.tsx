@@ -1,7 +1,10 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect, use, useCallback } from "react";
 import Link from "next/link";
+import { DailyLineChart, ChartEmpty } from "@/components/charts/DailyLineChart";
+import ClickMap from "@/components/campaigns/ClickMap";
+import LocationTable from "@/components/campaigns/LocationTable";
 
 interface TrackingLinkData {
   id: string;
@@ -29,7 +32,34 @@ interface CampaignData {
   totalViews: number | null;
   totalClicks: number;
   totalLeads: number;
+  totalUniqueClicks: number;
   hasYoutube: boolean;
+}
+
+interface GeoLocation {
+  city: string;
+  province: string | null;
+  country: string | null;
+  neighbourhood: string | null;
+  count: number;
+}
+
+interface GeoMarker {
+  city: string;
+  province: string | null;
+  country: string | null;
+  count: number;
+}
+
+interface GeoClickData {
+  locations: GeoLocation[];
+  markers: GeoMarker[];
+  isEmail: boolean;
+  links: { id: string; name: string }[];
+}
+
+interface AnalyticsData {
+  daily: { date: string; clicks: number; leads: number }[];
 }
 
 const SOURCE_LABELS: Record<string, { label: string; color: string }> = {
@@ -43,18 +73,48 @@ const SOURCE_LABELS: Record<string, { label: string; color: string }> = {
   OTHER:            { label: "Other",            color: "bg-gray-100 text-gray-600" },
 };
 
+const PERIODS = [
+  { label: "7d", value: "7d" },
+  { label: "30d", value: "30d" },
+  { label: "90d", value: "90d" },
+  { label: "All", value: "all" },
+];
+
 export default function AdminCampaignDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const [campaign, setCampaign] = useState<CampaignData | null>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState<string | null>(null);
 
+  const [period, setPeriod] = useState("30d");
+  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(true);
+
+  const [geoData, setGeoData] = useState<GeoClickData | null>(null);
+  const [geoLinkFilter, setGeoLinkFilter] = useState<string>("all");
+
+  const loadGeoData = useCallback(async (linkId?: string) => {
+    const qs = linkId && linkId !== "all" ? `?linkId=${linkId}` : "";
+    const res = await fetch(`/api/campaigns/${id}/geo-clicks${qs}`);
+    if (res.ok) setGeoData(await res.json());
+  }, [id]);
+
+  const loadAnalytics = useCallback(async (p: string) => {
+    setAnalyticsLoading(true);
+    const res = await fetch(`/api/campaigns/${id}/analytics?period=${p}`);
+    if (res.ok) setAnalytics(await res.json());
+    setAnalyticsLoading(false);
+  }, [id]);
+
   useEffect(() => {
     fetch(`/api/campaigns/${id}`)
       .then((r) => r.json())
       .then((d) => { setCampaign(d); setLoading(false); })
       .catch(() => setLoading(false));
-  }, [id]);
+    loadGeoData();
+  }, [id, loadGeoData]);
+
+  useEffect(() => { loadAnalytics(period); }, [period, loadAnalytics]);
 
   function copy(text: string, key: string) {
     navigator.clipboard.writeText(text);
@@ -67,16 +127,26 @@ export default function AdminCampaignDetailPage({ params }: { params: Promise<{ 
 
   const src = SOURCE_LABELS[campaign.sourceType] ?? SOURCE_LABELS.OTHER;
   const memberName = campaign.member?.fullName ?? campaign.member?.email ?? "—";
+  const isEmailNewsletter = campaign.sourceType === "EMAIL_NEWSLETTER";
+  const isYoutube = campaign.sourceType === "YOUTUBE";
+  const convRate = campaign.totalClicks > 0
+    ? Math.round((campaign.totalLeads / campaign.totalClicks) * 100)
+    : 0;
+
+  const hasAnalyticsData = analytics && analytics.daily.some((d) => d.clicks > 0 || d.leads > 0);
+  const filteredMarkers = geoData?.markers ?? [];
+  const filteredLocations = geoData?.locations ?? [];
 
   return (
-    <div>
+    <div className="space-y-6">
       <div className="mb-2">
         <Link href="/admin/campaigns" className="text-sm text-[#1e2a38]/40 hover:text-[#1e2a38] transition-colors">
           ← Campaigns
         </Link>
       </div>
 
-      <div className="flex items-start justify-between gap-4 mb-6">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <h1 className="text-2xl font-bold text-[#1e2a38]">{campaign.name}</h1>
@@ -99,29 +169,117 @@ export default function AdminCampaignDetailPage({ params }: { params: Promise<{ 
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        {campaign.hasYoutube && campaign.totalViews !== null && (
-          <div className="bg-white border border-[#1e2a38]/10 rounded-xl p-4 text-center">
-            <div className="text-xl font-bold text-[#1e2a38]">{campaign.totalViews.toLocaleString()}</div>
-            <div className="text-xs text-[#1e2a38]/40 mt-0.5">Total Views</div>
+      {/* Stats Bar — source-type-aware */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {isEmailNewsletter ? (
+          <>
+            <div className="bg-white border border-[#1e2a38]/10 rounded-xl p-4 text-center">
+              <div className="text-xl font-bold text-[#1e2a38]">{campaign.totalClicks.toLocaleString()}</div>
+              <div className="text-xs text-[#1e2a38]/40 mt-0.5">Clicks</div>
+            </div>
+            <div className="bg-white border border-[#1e2a38]/10 rounded-xl p-4 text-center">
+              <div className="text-xl font-bold text-[#3dc3ff]">{campaign.totalUniqueClicks.toLocaleString()}</div>
+              <div className="text-xs text-[#1e2a38]/40 mt-0.5">Unique Clicks</div>
+            </div>
+          </>
+        ) : isYoutube ? (
+          <>
+            {campaign.totalViews !== null && (
+              <div className="bg-white border border-[#1e2a38]/10 rounded-xl p-4 text-center">
+                <div className="text-xl font-bold text-[#1e2a38]">{campaign.totalViews.toLocaleString()}</div>
+                <div className="text-xs text-[#1e2a38]/40 mt-0.5">Views</div>
+              </div>
+            )}
+            <div className="bg-white border border-[#1e2a38]/10 rounded-xl p-4 text-center">
+              <div className="text-xl font-bold text-[#1e2a38]">{campaign.totalClicks.toLocaleString()}</div>
+              <div className="text-xs text-[#1e2a38]/40 mt-0.5">Clicks</div>
+            </div>
+            <div className="bg-white border border-[#1e2a38]/10 rounded-xl p-4 text-center">
+              <div className="text-xl font-bold text-[#1e2a38]">{campaign.totalLeads.toLocaleString()}</div>
+              <div className="text-xs text-[#1e2a38]/40 mt-0.5">Leads</div>
+            </div>
+            <div className="bg-white border border-[#1e2a38]/10 rounded-xl p-4 text-center">
+              <div className="text-xl font-bold text-[#3dc3ff]">{convRate}%</div>
+              <div className="text-xs text-[#1e2a38]/40 mt-0.5">Conversion Rate</div>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="bg-white border border-[#1e2a38]/10 rounded-xl p-4 text-center">
+              <div className="text-xl font-bold text-[#1e2a38]">{campaign.totalClicks.toLocaleString()}</div>
+              <div className="text-xs text-[#1e2a38]/40 mt-0.5">Clicks</div>
+            </div>
+            <div className="bg-white border border-[#1e2a38]/10 rounded-xl p-4 text-center">
+              <div className="text-xl font-bold text-[#1e2a38]">{campaign.totalLeads.toLocaleString()}</div>
+              <div className="text-xs text-[#1e2a38]/40 mt-0.5">Leads</div>
+            </div>
+            <div className="bg-white border border-[#1e2a38]/10 rounded-xl p-4 text-center">
+              <div className="text-xl font-bold text-[#3dc3ff]">{convRate}%</div>
+              <div className="text-xs text-[#1e2a38]/40 mt-0.5">Conversion Rate</div>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Analytics Chart */}
+      <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-5">
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="font-semibold text-[#1e2a38]">Analytics</h2>
+          <div className="flex gap-1">
+            {PERIODS.map((p) => (
+              <button
+                key={p.value}
+                onClick={() => setPeriod(p.value)}
+                className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${period === p.value ? "bg-[#1e2a38] text-white" : "text-[#1e2a38]/50 hover:text-[#1e2a38]"}`}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        {analyticsLoading ? (
+          <div className="h-[220px] bg-[#1e2a38]/5 rounded-xl animate-pulse" />
+        ) : !hasAnalyticsData ? (
+          <ChartEmpty />
+        ) : (
+          <div>
+            <p className="text-xs font-medium text-[#1e2a38]/50 mb-3">
+              {isEmailNewsletter ? "Clicks Per Day" : "Clicks & Leads Per Day"}
+            </p>
+            <DailyLineChart data={analytics!.daily} hideLeads={isEmailNewsletter} />
           </div>
         )}
-        <div className="bg-white border border-[#1e2a38]/10 rounded-xl p-4 text-center">
-          <div className="text-xl font-bold text-[#1e2a38]">{campaign.totalClicks}</div>
-          <div className="text-xs text-[#1e2a38]/40 mt-0.5">Clicks</div>
+      </div>
+
+      {/* Click Map + Location Table */}
+      <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-semibold text-[#1e2a38]">Click Map</h2>
+          {geoData && geoData.links.length > 1 && (
+            <select
+              value={geoLinkFilter}
+              onChange={(e) => {
+                const val = e.target.value;
+                setGeoLinkFilter(val);
+                loadGeoData(val === "all" ? undefined : val);
+              }}
+              className="text-xs border border-[#1e2a38]/20 rounded-lg px-2 py-1.5 text-[#1e2a38]/60 focus:outline-none"
+            >
+              <option value="all">All Links</option>
+              {geoData.links.map((l) => (
+                <option key={l.id} value={l.id}>{l.name}</option>
+              ))}
+            </select>
+          )}
         </div>
-        <div className="bg-white border border-[#1e2a38]/10 rounded-xl p-4 text-center">
-          <div className="text-xl font-bold text-[#1e2a38]">{campaign.totalLeads}</div>
-          <div className="text-xs text-[#1e2a38]/40 mt-0.5">Leads</div>
-        </div>
-        <div className="bg-white border border-[#1e2a38]/10 rounded-xl p-4 text-center">
-          <div className="text-xl font-bold text-[#3dc3ff]">
-            {campaign.totalClicks > 0 ? Math.round((campaign.totalLeads / campaign.totalClicks) * 100) : 0}%
-          </div>
-          <div className="text-xs text-[#1e2a38]/40 mt-0.5">Conversion Rate</div>
+        <ClickMap markers={filteredMarkers} height={400} />
+        <div className="mt-5 border-t border-[#1e2a38]/10 pt-4">
+          <h3 className="text-sm font-semibold text-[#1e2a38] mb-3">Location Breakdown</h3>
+          <LocationTable locations={filteredLocations} isEmail={isEmailNewsletter} />
         </div>
       </div>
 
+      {/* Tracking Links */}
       <div className="bg-white border border-[#1e2a38]/10 rounded-2xl overflow-hidden">
         <div className="px-5 py-4 border-b border-[#1e2a38]/10">
           <h2 className="font-semibold text-[#1e2a38]">Tracking Links ({campaign.links.length})</h2>

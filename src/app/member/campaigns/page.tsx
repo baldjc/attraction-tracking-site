@@ -13,6 +13,8 @@ interface Campaign {
   createdAt: string;
   totalClicks: number;
   totalLeads: number;
+  totalUniqueClicks: number;
+  totalViews: number | null;
   conversionRate: number;
   linkCount: number;
   member?: { fullName: string | null; email: string };
@@ -215,20 +217,54 @@ export default function CampaignsPage() {
                   </div>
                   {isAdmin && memberName && <p className="text-xs text-[#3dc3ff]/80 mb-1 truncate">{memberName}</p>}
                   <p className="text-xs text-[#1e2a38]/40 truncate mb-4">{c.destinationUrl}</p>
-                  <div className="grid grid-cols-3 gap-2 text-center">
-                    <div>
-                      <div className="text-lg font-bold text-[#1e2a38]">{c.totalClicks}</div>
-                      <div className="text-xs text-[#1e2a38]/40">Clicks</div>
+                  {c.sourceType === "EMAIL_NEWSLETTER" ? (
+                    <div className="grid grid-cols-2 gap-2 text-center">
+                      <div>
+                        <div className="text-lg font-bold text-[#1e2a38]">{c.totalClicks}</div>
+                        <div className="text-xs text-[#1e2a38]/40">Clicks</div>
+                      </div>
+                      <div>
+                        <div className="text-lg font-bold text-[#3dc3ff]">{c.totalUniqueClicks}</div>
+                        <div className="text-xs text-[#1e2a38]/40">Unique Clicks</div>
+                      </div>
                     </div>
-                    <div>
-                      <div className="text-lg font-bold text-[#1e2a38]">{c.totalLeads}</div>
-                      <div className="text-xs text-[#1e2a38]/40">Leads</div>
+                  ) : c.sourceType === "YOUTUBE" ? (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-center">
+                      {c.totalViews !== null && (
+                        <div>
+                          <div className="text-lg font-bold text-[#1e2a38]">{c.totalViews.toLocaleString()}</div>
+                          <div className="text-xs text-[#1e2a38]/40">Views</div>
+                        </div>
+                      )}
+                      <div>
+                        <div className="text-lg font-bold text-[#1e2a38]">{c.totalClicks}</div>
+                        <div className="text-xs text-[#1e2a38]/40">Clicks</div>
+                      </div>
+                      <div>
+                        <div className="text-lg font-bold text-[#1e2a38]">{c.totalLeads}</div>
+                        <div className="text-xs text-[#1e2a38]/40">Leads</div>
+                      </div>
+                      <div>
+                        <div className="text-lg font-bold text-[#3dc3ff]">{c.conversionRate}%</div>
+                        <div className="text-xs text-[#1e2a38]/40">Conv. Rate</div>
+                      </div>
                     </div>
-                    <div>
-                      <div className="text-lg font-bold text-[#3dc3ff]">{c.conversionRate}%</div>
-                      <div className="text-xs text-[#1e2a38]/40">Conv. Rate</div>
+                  ) : (
+                    <div className="grid grid-cols-3 gap-2 text-center">
+                      <div>
+                        <div className="text-lg font-bold text-[#1e2a38]">{c.totalClicks}</div>
+                        <div className="text-xs text-[#1e2a38]/40">Clicks</div>
+                      </div>
+                      <div>
+                        <div className="text-lg font-bold text-[#1e2a38]">{c.totalLeads}</div>
+                        <div className="text-xs text-[#1e2a38]/40">Leads</div>
+                      </div>
+                      <div>
+                        <div className="text-lg font-bold text-[#3dc3ff]">{c.conversionRate}%</div>
+                        <div className="text-xs text-[#1e2a38]/40">Conv. Rate</div>
+                      </div>
                     </div>
-                  </div>
+                  )}
                   <div className="mt-3 pt-3 border-t border-[#1e2a38]/5 text-xs text-[#1e2a38]/40">
                     {c.linkCount} tracking link{c.linkCount !== 1 ? "s" : ""}
                   </div>

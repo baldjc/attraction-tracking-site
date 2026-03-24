@@ -11,6 +11,8 @@ interface Campaign {
   createdAt: string;
   totalClicks: number;
   totalLeads: number;
+  totalUniqueClicks: number;
+  totalViews: number | null;
   conversionRate: number;
   linkCount: number;
   member?: { fullName: string | null; email: string };
@@ -114,8 +116,25 @@ export default function AdminCampaignsPage() {
                     <p className="text-xs text-[#1e2a38]/40">{memberName} · {c.linkCount} link{c.linkCount !== 1 ? "s" : ""}</p>
                   </div>
                   <div className="text-right text-sm flex-shrink-0">
-                    <div className="text-[#1e2a38] font-semibold">{c.totalClicks} clicks</div>
-                    <div className="text-[#3dc3ff] text-xs">{c.totalLeads} leads · {c.conversionRate}% conv</div>
+                    {c.sourceType === "EMAIL_NEWSLETTER" ? (
+                      <>
+                        <div className="text-[#1e2a38] font-semibold">{c.totalClicks} clicks</div>
+                        <div className="text-[#3dc3ff] text-xs">{c.totalUniqueClicks} unique</div>
+                      </>
+                    ) : c.sourceType === "YOUTUBE" ? (
+                      <>
+                        {c.totalViews !== null && (
+                          <div className="text-[#1e2a38] text-xs font-medium">{c.totalViews.toLocaleString()} views</div>
+                        )}
+                        <div className="text-[#1e2a38] font-semibold">{c.totalClicks} clicks</div>
+                        <div className="text-[#3dc3ff] text-xs">{c.totalLeads} leads · {c.conversionRate}% conv</div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="text-[#1e2a38] font-semibold">{c.totalClicks} clicks</div>
+                        <div className="text-[#3dc3ff] text-xs">{c.totalLeads} leads · {c.conversionRate}% conv</div>
+                      </>
+                    )}
                   </div>
                   <span className="text-[#1e2a38]/30 text-sm">›</span>
                 </Link>

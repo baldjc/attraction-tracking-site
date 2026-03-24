@@ -5,6 +5,8 @@ import Link from "next/link";
 import { PencilIcon, ArrowPathIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import { DailyLineChart, ChartEmpty } from "@/components/charts/DailyLineChart";
 import { LinkBarChart } from "@/components/charts/LinkBarChart";
+import ClickMap from "@/components/campaigns/ClickMap";
+import LocationTable from "@/components/campaigns/LocationTable";
 
 interface TrackingLinkData {
   id: string;
@@ -33,8 +35,31 @@ interface CampaignData {
   totalViews: number | null;
   totalClicks: number;
   totalLeads: number;
+  totalUniqueClicks: number;
   hasYoutube: boolean;
   lastViewsUpdate: string | null;
+}
+
+interface GeoLocation {
+  city: string;
+  province: string | null;
+  country: string | null;
+  neighbourhood: string | null;
+  count: number;
+}
+
+interface GeoMarker {
+  city: string;
+  province: string | null;
+  country: string | null;
+  count: number;
+}
+
+interface GeoClickData {
+  locations: GeoLocation[];
+  markers: GeoMarker[];
+  isEmail: boolean;
+  links: { id: string; name: string }[];
 }
 
 interface AnalyticsData {
@@ -103,6 +128,10 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
   const [editPreviewThumb, setEditPreviewThumb] = useState<string | null>(null);
   const [nameTouchedEdit, setNameTouchedEdit] = useState(false);
 
+  // Geo clicks
+  const [geoData, setGeoData] = useState<GeoClickData | null>(null);
+  const [geoLinkFilter, setGeoLinkFilter] = useState<string>("all");
+
   const [copied, setCopied] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState("newest");
   const [refreshing, setRefreshing] = useState(false);
@@ -129,15 +158,22 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
     setAnalyticsLoading(false);
   }, [id]);
 
+  const loadGeoData = useCallback(async (linkId?: string) => {
+    const qs = linkId && linkId !== "all" ? `?linkId=${linkId}` : "";
+    const res = await fetch(`/api/campaigns/${id}/geo-clicks${qs}`);
+    if (res.ok) setGeoData(await res.json());
+  }, [id]);
+
   useEffect(() => {
     loadCampaign();
+    loadGeoData();
     fetch("/api/auth/session").then((r) => r.json()).then((s) => {
       if ((s?.user as { role?: string })?.role === "admin") setIsAdmin(true);
     }).catch(() => {});
     fetch("/api/member/profile").then((r) => r.ok ? r.json() : null).then((d) => {
       if (d) setHasTyUrl(!!d.thankYouPageUrl);
     }).catch(() => {});
-  }, [loadCampaign]);
+  }, [loadCampaign, loadGeoData]);
 
   useEffect(() => { loadAnalytics(period); }, [period, loadAnalytics]);
 
@@ -270,6 +306,7 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
   if (!campaign) return <div className="text-center py-16 text-[#1e2a38]/40">Campaign not found.</div>;
 
   const isYoutube = campaign.sourceType === "YOUTUBE";
+  const isEmailNewsletter = campaign.sourceType === "EMAIL_NEWSLETTER";
   const linkLabel = isYoutube ? "Video Name" : "Link Name";
   const linkPlaceholder = isYoutube ? "e.g. Buyers Guide Video — March" : "e.g. Email Newsletter — April";
 
@@ -277,6 +314,14 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
   const ctr = campaign.totalViews && campaign.totalViews > 0
     ? Math.round((campaign.totalClicks / campaign.totalViews) * 100)
     : null;
+
+  const convRate = campaign.totalClicks > 0
+    ? Math.round((campaign.totalLeads / campaign.totalClicks) * 100)
+    : 0;
+
+  // filtered geo data based on link filter
+  const filteredMarkers = geoData?.markers ?? [];
+  const filteredLocations = geoData?.locations ?? [];
 
   const sortedLinks = [...campaign.links].sort((a, b) => {
     if (sortBy === "most_clicks") return b.clicks - a.clicks;
@@ -328,34 +373,56 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
         </div>
       </div>
 
-      {/* Stats Bar */}
+      {/* Stats Bar — source-type-aware */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {campaign.hasYoutube && campaign.totalViews !== null && (
-          <div className="bg-white border border-[#1e2a38]/10 rounded-xl p-4 text-center">
-            <div className="text-xl font-bold text-[#1e2a38]">{campaign.totalViews.toLocaleString()}</div>
-            <div className="text-xs text-[#1e2a38]/40 mt-0.5">Total Views</div>
-          </div>
+        {isEmailNewsletter ? (
+          <>
+            <div className="bg-white border border-[#1e2a38]/10 rounded-xl p-4 text-center">
+              <div className="text-xl font-bold text-[#1e2a38]">{campaign.totalClicks.toLocaleString()}</div>
+              <div className="text-xs text-[#1e2a38]/40 mt-0.5">Clicks</div>
+            </div>
+            <div className="bg-white border border-[#1e2a38]/10 rounded-xl p-4 text-center">
+              <div className="text-xl font-bold text-[#3dc3ff]">{campaign.totalUniqueClicks.toLocaleString()}</div>
+              <div className="text-xs text-[#1e2a38]/40 mt-0.5">Unique Clicks</div>
+            </div>
+          </>
+        ) : isYoutube ? (
+          <>
+            {campaign.totalViews !== null && (
+              <div className="bg-white border border-[#1e2a38]/10 rounded-xl p-4 text-center">
+                <div className="text-xl font-bold text-[#1e2a38]">{campaign.totalViews.toLocaleString()}</div>
+                <div className="text-xs text-[#1e2a38]/40 mt-0.5">Views</div>
+              </div>
+            )}
+            <div className="bg-white border border-[#1e2a38]/10 rounded-xl p-4 text-center">
+              <div className="text-xl font-bold text-[#1e2a38]">{campaign.totalClicks.toLocaleString()}</div>
+              <div className="text-xs text-[#1e2a38]/40 mt-0.5">Clicks</div>
+            </div>
+            <div className="bg-white border border-[#1e2a38]/10 rounded-xl p-4 text-center">
+              <div className="text-xl font-bold text-[#1e2a38]">{campaign.totalLeads.toLocaleString()}</div>
+              <div className="text-xs text-[#1e2a38]/40 mt-0.5">Leads</div>
+            </div>
+            <div className="bg-white border border-[#1e2a38]/10 rounded-xl p-4 text-center">
+              <div className="text-xl font-bold text-[#3dc3ff]">{convRate}%</div>
+              <div className="text-xs text-[#1e2a38]/40 mt-0.5">Conversion Rate</div>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="bg-white border border-[#1e2a38]/10 rounded-xl p-4 text-center">
+              <div className="text-xl font-bold text-[#1e2a38]">{campaign.totalClicks.toLocaleString()}</div>
+              <div className="text-xs text-[#1e2a38]/40 mt-0.5">Clicks</div>
+            </div>
+            <div className="bg-white border border-[#1e2a38]/10 rounded-xl p-4 text-center">
+              <div className="text-xl font-bold text-[#1e2a38]">{campaign.totalLeads.toLocaleString()}</div>
+              <div className="text-xs text-[#1e2a38]/40 mt-0.5">Leads</div>
+            </div>
+            <div className="bg-white border border-[#1e2a38]/10 rounded-xl p-4 text-center">
+              <div className="text-xl font-bold text-[#3dc3ff]">{convRate}%</div>
+              <div className="text-xs text-[#1e2a38]/40 mt-0.5">Conversion Rate</div>
+            </div>
+          </>
         )}
-        <div className="bg-white border border-[#1e2a38]/10 rounded-xl p-4 text-center">
-          <div className="text-xl font-bold text-[#1e2a38]">{campaign.totalClicks}</div>
-          <div className="text-xs text-[#1e2a38]/40 mt-0.5">Clicks</div>
-        </div>
-        <div className="bg-white border border-[#1e2a38]/10 rounded-xl p-4 text-center">
-          <div className="text-xl font-bold text-[#1e2a38]">{campaign.totalLeads}</div>
-          <div className="text-xs text-[#1e2a38]/40 mt-0.5">Leads</div>
-        </div>
-        {campaign.hasYoutube && ctr !== null && (
-          <div className="bg-white border border-[#1e2a38]/10 rounded-xl p-4 text-center">
-            <div className="text-xl font-bold text-[#3dc3ff]">{ctr}%</div>
-            <div className="text-xs text-[#1e2a38]/40 mt-0.5">Click-Through Rate</div>
-          </div>
-        )}
-        <div className="bg-white border border-[#1e2a38]/10 rounded-xl p-4 text-center">
-          <div className="text-xl font-bold text-[#3dc3ff]">
-            {campaign.totalClicks > 0 ? Math.round((campaign.totalLeads / campaign.totalClicks) * 100) : 0}%
-          </div>
-          <div className="text-xs text-[#1e2a38]/40 mt-0.5">Conversion Rate</div>
-        </div>
       </div>
 
       {/* Analytics Charts */}
@@ -385,8 +452,10 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
         ) : (
           <div className="space-y-6">
             <div>
-              <p className="text-xs font-medium text-[#1e2a38]/50 mb-3">Clicks &amp; Leads Per Day</p>
-              <DailyLineChart data={analytics!.daily} />
+              <p className="text-xs font-medium text-[#1e2a38]/50 mb-3">
+                {isEmailNewsletter ? "Clicks Per Day" : "Clicks & Leads Per Day"}
+              </p>
+              <DailyLineChart data={analytics!.daily} hideLeads={isEmailNewsletter} />
             </div>
 
             {analytics!.byLink.length > 1 && (
@@ -397,6 +466,34 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
             )}
           </div>
         )}
+      </div>
+
+      {/* Click Map + Location Table */}
+      <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-semibold text-[#1e2a38]">Click Map</h2>
+          {geoData && geoData.links.length > 1 && (
+            <select
+              value={geoLinkFilter}
+              onChange={(e) => {
+                const val = e.target.value;
+                setGeoLinkFilter(val);
+                loadGeoData(val === "all" ? undefined : val);
+              }}
+              className="text-xs border border-[#1e2a38]/20 rounded-lg px-2 py-1.5 text-[#1e2a38]/60 focus:outline-none"
+            >
+              <option value="all">All Links</option>
+              {geoData.links.map((l) => (
+                <option key={l.id} value={l.id}>{l.name}</option>
+              ))}
+            </select>
+          )}
+        </div>
+        <ClickMap markers={filteredMarkers} height={400} />
+        <div className="mt-5 border-t border-[#1e2a38]/10 pt-4">
+          <h3 className="text-sm font-semibold text-[#1e2a38] mb-3">Location Breakdown</h3>
+          <LocationTable locations={filteredLocations} isEmail={isEmailNewsletter} />
+        </div>
       </div>
 
       {/* Tracking Links */}

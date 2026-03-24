@@ -62,6 +62,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const allClicks = campaign.links.flatMap((l) => l.clicks);
   const totalViews = campaign.links.reduce((sum, l) => sum + l.youtubeViewCount, 0);
   const hasYoutube = campaign.links.some((l) => l.youtubeVideoId);
+  const uniqueIps = new Set(allClicks.map((c) => c.ipAddress).filter(Boolean));
+  const totalUniqueClicks = uniqueIps.size;
 
   return NextResponse.json({
     id: campaign.id,
@@ -74,6 +76,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     totalViews: hasYoutube ? totalViews : null,
     totalClicks: allClicks.length,
     totalLeads: allClicks.filter((c) => c.lead).length,
+    totalUniqueClicks,
     hasYoutube,
     lastViewsUpdate: campaign.links.find((l) => l.youtubeViewsUpdatedAt)?.youtubeViewsUpdatedAt ?? null,
   });

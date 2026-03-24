@@ -20,6 +20,7 @@ interface DayData {
 interface Props {
   data: DayData[];
   showLegend?: boolean;
+  hideLeads?: boolean;
 }
 
 function fmtDate(d: string) {
@@ -27,7 +28,7 @@ function fmtDate(d: string) {
   return `${parseInt(m)}/${parseInt(day)}`;
 }
 
-export function DailyLineChart({ data, showLegend = true }: Props) {
+export function DailyLineChart({ data, showLegend = true, hideLeads = false }: Props) {
   if (!data.length) return <ChartEmpty />;
   const hasData = data.some((d) => d.clicks > 0 || d.leads > 0);
   if (!hasData) return <ChartEmpty />;
@@ -56,7 +57,7 @@ export function DailyLineChart({ data, showLegend = true }: Props) {
         />
         {showLegend && <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12 }} />}
         <Line type="monotone" dataKey="clicks" stroke="#3dc3ff" strokeWidth={2} dot={false} name="Clicks" />
-        <Line type="monotone" dataKey="leads" stroke="#1e2a38" strokeWidth={2} dot={false} name="Leads" />
+        {!hideLeads && <Line type="monotone" dataKey="leads" stroke="#1e2a38" strokeWidth={2} dot={false} name="Leads" />}
       </LineChart>
     </ResponsiveContainer>
   );

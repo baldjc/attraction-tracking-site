@@ -35,6 +35,10 @@ export async function GET() {
     const allClicks = c.links.flatMap((l) => l.clicks);
     const totalClicks = allClicks.length;
     const totalLeads = allClicks.filter((cl) => cl.lead).length;
+    const uniqueIps = new Set(allClicks.map((cl) => cl.ipAddress).filter(Boolean));
+    const totalUniqueClicks = uniqueIps.size;
+    const totalViews = c.links.reduce((sum, l) => sum + l.youtubeViewCount, 0);
+    const hasYoutube = c.links.some((l) => l.youtubeVideoId);
     return {
       id: c.id,
       name: c.name,
@@ -43,6 +47,8 @@ export async function GET() {
       createdAt: c.createdAt,
       totalClicks,
       totalLeads,
+      totalUniqueClicks,
+      totalViews: hasYoutube ? totalViews : null,
       conversionRate: totalClicks > 0 ? Math.round((totalLeads / totalClicks) * 100) : 0,
       linkCount: c.links.length,
       member: isAdmin ? c.user : undefined,
