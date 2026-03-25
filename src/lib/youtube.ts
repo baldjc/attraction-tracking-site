@@ -18,6 +18,9 @@ export interface ChannelInfo {
   bannerUrl: string | null;
   thumbnailUrl: string | null;
   uploadsPlaylistId: string;
+  subscriberCount: number;
+  totalVideoCount: number;
+  totalViewCount: number;
 }
 
 export interface VideoWithTranscript extends VideoInfo {
@@ -48,7 +51,7 @@ export async function getChannelInfo(handle: string): Promise<ChannelInfo> {
     ? `id=${encodeURIComponent(stripped)}`
     : `forHandle=${encodeURIComponent(handle.startsWith("@") ? handle : `@${handle}`)}`;
 
-  const url = `${YT_BASE}/channels?part=snippet,brandingSettings,contentDetails&${param}&key=${YT_API_KEY}`;
+  const url = `${YT_BASE}/channels?part=snippet,brandingSettings,contentDetails,statistics&${param}&key=${YT_API_KEY}`;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`YouTube channels API error: ${res.status}`);
   const data = await res.json();
@@ -65,6 +68,9 @@ export async function getChannelInfo(handle: string): Promise<ChannelInfo> {
     bannerUrl: ch.brandingSettings?.image?.bannerExternalUrl ?? null,
     thumbnailUrl,
     uploadsPlaylistId: ch.contentDetails.relatedPlaylists.uploads,
+    subscriberCount: parseInt(ch.statistics?.subscriberCount || "0"),
+    totalVideoCount: parseInt(ch.statistics?.videoCount || "0"),
+    totalViewCount: parseInt(ch.statistics?.viewCount || "0"),
   };
 }
 

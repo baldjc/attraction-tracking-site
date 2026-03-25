@@ -62,7 +62,9 @@ prisma/schema.prisma         — DB schema: User (+ avatarProfile/Name/Summary/c
 src/lib/
   feature-flags.ts           — FeatureFlags interface + getFeatureFlags() (reads AppSetting "feature_visibility"); flags: campaigns, ai_tools, resources, tool_avatar_architect, tool_content_engine, tool_arc_script_builder, tool_title_analyzer, tool_script_review; all default true; admins bypass all flags
   ghl.ts                     — GHL sync with nextPageUrl pagination + title case normalization
-  youtube.ts                 — YouTube API: channel info, playlist, transcripts
+  youtube.ts                 — YouTube API: channel info (now includes statistics: subscriberCount/totalVideoCount/totalViewCount), playlist, transcripts
+  youtube-sync.ts            — syncMemberChannel(userId) + syncAllChannels() — upserts YouTubeVideo + YouTubeChannelSnapshot rows
+  auth-utils.ts              — isAdminOrEditor(role) + editorTierFilter(role) helpers
   audit-engine.ts            — Claude AI scoring + DEFAULT_SCORING_PROMPT + SCRIPT_REVIEW_PROMPT + AuditResult types
   auth.ts                    — NextAuth config
   prisma.ts                  — Prisma client singleton
@@ -71,6 +73,8 @@ src/lib/
 
 src/app/
   admin/
+    analytics/page.tsx        — Admin Member Analytics: 5 summary cards (videos/active/inactive/clicks/top lead), recent videos grid with Run Audit buttons, sortable member engagement table with status+tier filters and pagination (20/page)
+    analytics/members/[id]/page.tsx — Member deep-dive: YouTube stats (subs/views/pace with 30d deltas), video list with Run Audit, tool usage table, campaigns + click trend bar chart, score history line chart, 4 dimension score cards
     members/page.tsx          — Members list with search/filter
     members/[id]/page.tsx     — Member detail: info, audit history, Run Audit, score trend, coaching notes, avatar profile editor, AI Tools Usage stats
     audits/page.tsx           — All audits list with Run All Baseline + Run All Monthly buttons
@@ -115,6 +119,10 @@ src/app/
     ai-tools/conversations/[id]/download/ — GET markdown download (increments downloadCount)
     ai-tools/save-script/     — POST save SavedScript
     ai-tools/saved-scripts/   — GET list member's saved scripts
+    admin/analytics/          — GET full analytics payload: cards, recentVideos (7d), member rows with status/score/activity
+    admin/analytics/members/[id]/ — GET deep-dive: user info, channelStats, videos, toolUsage, campaigns, clickTrend30d, scoreHistory, dimensions
+    admin/youtube/sync/       — POST sync all or one member's YouTube channel (body: {} or { userId })
+    cron/youtube-sync/        — GET daily cron (x-cron-secret header) syncs all member channels at 2pm UTC
     admin/member-tools-usage/[userId]/ — GET scripts count, analyses count, last activity
     admin/impersonate/        — POST (set cookie) / DELETE (clear cookie) for admin member impersonation
     admin/feature-visibility/ — GET/PUT toggle feature flags stored in AppSetting "feature_visibility" (JSON)

@@ -150,6 +150,23 @@ export async function processAuditJob(jobId: string, selectedVideoId?: string) {
       },
     });
 
+    // Link audit to YouTubeVideo if it was a single_video audit
+    if (job.auditType === "single_video" && selectedVideoId && member.id) {
+      try {
+        const ytVideo = await prisma.youTubeVideo.findUnique({
+          where: { userId_videoId: { userId: member.id, videoId: selectedVideoId } },
+        });
+        if (ytVideo) {
+          await prisma.audit.update({
+            where: { id: audit.id },
+            data: { youtubeVideoId: ytVideo.id },
+          });
+        }
+      } catch {
+        // non-critical — don't fail the audit job if linking fails
+      }
+    }
+
     await prisma.auditJob.update({ where: { id: jobId }, data: { status: "complete", auditId: audit.id } });
   } catch (err: any) {
     console.error(`[audit job ${jobId}] failed:`, err.message);

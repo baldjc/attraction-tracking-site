@@ -99,6 +99,8 @@ model User {
   repurposeVoice    String?
   savedLinks        Json?
 
+  lastYoutubeSyncAt    DateTime? @map("last_youtube_sync_at")
+
   audits               Audit[]
   auditJobs            AuditJob[]
   campaigns            Campaign[]
@@ -112,6 +114,8 @@ model User {
   repurposedContent    RepurposedContent[]
   kbEntries            KnowledgeBaseEntry[]
   savedItems           SavedItem[]
+  youtubeVideos        YouTubeVideo[]
+  channelSnapshots     YouTubeChannelSnapshot[]
 
   @@map("users")
 }
@@ -208,6 +212,9 @@ model Audit {
   notionPageUrl  String?
   reportMonth    String?
   createdAt      DateTime  @default(now())
+
+  youtubeVideoId String?       @map("youtube_video_id")
+  youtubeVideo   YouTubeVideo? @relation(fields: [youtubeVideoId], references: [id])
 
   auditJob AuditJob?
 
@@ -438,4 +445,39 @@ model RepurposedContent {
 
   @@index([userId, toolType, createdAt])
   @@map("repurposed_content")
+}
+
+model YouTubeVideo {
+  id           String   @id @default(uuid())
+  userId       String
+  videoId      String
+  title        String
+  publishedAt  DateTime
+  thumbnailUrl String?
+  viewCount    Int      @default(0)
+  likeCount    Int      @default(0)
+  commentCount Int      @default(0)
+  duration     String?
+  discoveredAt DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  audits Audit[]
+
+  @@unique([userId, videoId])
+  @@map("youtube_videos")
+}
+
+model YouTubeChannelSnapshot {
+  id              String   @id @default(uuid())
+  userId          String
+  subscriberCount Int
+  totalVideoCount Int
+  totalViewCount  BigInt
+  snapshotAt      DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("youtube_channel_snapshots")
 }
