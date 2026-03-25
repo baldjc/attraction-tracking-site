@@ -78,7 +78,7 @@ export default function ThemeDashboard({ themes, niche, city, hasImported, impor
           return { theme: themeName(t), ideas: data.ideas ?? [] };
         })
       );
-      const map: Record<string, Array<unknown>> = {};
+      const map: Record<string, Idea[]> = {};
       for (const r of results) {
         if (r.status === "fulfilled") {
           map[r.value.theme] = r.value.ideas;
