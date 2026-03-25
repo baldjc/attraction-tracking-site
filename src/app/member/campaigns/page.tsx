@@ -54,6 +54,7 @@ export default function CampaignsPage() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [memberFilter, setMemberFilter] = useState<"all" | "mine">("all");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
   const [hasTyUrl, setHasTyUrl] = useState<boolean | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
 
@@ -109,7 +110,10 @@ export default function CampaignsPage() {
   }
 
   const confirmingName = campaigns.find((c) => c.id === confirmDeleteId)?.name ?? "";
-  const visibleCampaigns = isAdmin && memberFilter === "mine" ? campaigns.filter((c) => c.isOwn) : campaigns;
+
+  const memberFiltered = isAdmin && memberFilter === "mine" ? campaigns.filter((c) => c.isOwn) : campaigns;
+  const availableTypes = Array.from(new Set(memberFiltered.map((c) => c.sourceType)));
+  const visibleCampaigns = typeFilter === "all" ? memberFiltered : memberFiltered.filter((c) => c.sourceType === typeFilter);
 
   const convRateDelta = analytics ? analytics.conversionRate - analytics.previousConversionRate : 0;
 
@@ -184,24 +188,63 @@ export default function CampaignsPage() {
         </div>
       )}
 
-      {/* Admin Filter */}
-      {isAdmin && (
-        <div className="flex gap-2 mb-5">
-          <button onClick={() => setMemberFilter("all")} className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${memberFilter === "all" ? "bg-[#1e2a38] text-white" : "bg-white border border-[#1e2a38]/15 text-[#1e2a38]/60 hover:text-[#1e2a38]"}`}>All Campaigns</button>
-          <button onClick={() => setMemberFilter("mine")} className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${memberFilter === "mine" ? "bg-[#1e2a38] text-white" : "bg-white border border-[#1e2a38]/15 text-[#1e2a38]/60 hover:text-[#1e2a38]"}`}>My Campaigns</button>
+      {/* Type filter + admin toggle row */}
+      {campaigns.length > 0 && (
+        <div className="flex items-center justify-between gap-3 mb-5 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={() => setTypeFilter("all")}
+              className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${typeFilter === "all" ? "bg-[#1e2a38] text-white dark:bg-white dark:text-[#1e2a38]" : "bg-white dark:bg-white/10 border border-[#1e2a38]/15 dark:border-white/15 text-[#1e2a38]/60 dark:text-white/60 hover:text-[#1e2a38] dark:hover:text-white"}`}
+            >
+              All
+            </button>
+            {availableTypes.map((type) => {
+              const src = SOURCE_LABELS[type] ?? SOURCE_LABELS.OTHER;
+              return (
+                <button
+                  key={type}
+                  onClick={() => setTypeFilter(type)}
+                  className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${typeFilter === type ? "bg-[#1e2a38] text-white dark:bg-white dark:text-[#1e2a38]" : "bg-white dark:bg-white/10 border border-[#1e2a38]/15 dark:border-white/15 text-[#1e2a38]/60 dark:text-white/60 hover:text-[#1e2a38] dark:hover:text-white"}`}
+                >
+                  {src.label}
+                </button>
+              );
+            })}
+          </div>
+          {isAdmin && (
+            <div className="flex items-center gap-1 bg-[#1e2a38]/5 dark:bg-white/5 rounded-full p-0.5">
+              <button
+                onClick={() => setMemberFilter("all")}
+                className={`text-xs px-3 py-1 rounded-full font-medium transition-colors ${memberFilter === "all" ? "bg-white dark:bg-[#242b3d] text-[#1e2a38] dark:text-white shadow-sm" : "text-[#1e2a38]/50 dark:text-white/50 hover:text-[#1e2a38] dark:hover:text-white"}`}
+              >
+                All Members
+              </button>
+              <button
+                onClick={() => setMemberFilter("mine")}
+                className={`text-xs px-3 py-1 rounded-full font-medium transition-colors ${memberFilter === "mine" ? "bg-white dark:bg-[#242b3d] text-[#1e2a38] dark:text-white shadow-sm" : "text-[#1e2a38]/50 dark:text-white/50 hover:text-[#1e2a38] dark:hover:text-white"}`}
+              >
+                Mine
+              </button>
+            </div>
+          )}
         </div>
       )}
 
       {loading ? (
         <div className="text-center py-16 text-[#1e2a38]/40">Loading...</div>
-      ) : visibleCampaigns.length === 0 ? (
-        <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-12 text-center">
+      ) : campaigns.length === 0 ? (
+        <div className="bg-white dark:bg-[#242b3d] border border-[#1e2a38]/10 dark:border-white/10 rounded-2xl p-12 text-center">
           <div className="text-4xl mb-3">🔗</div>
-          <h2 className="font-semibold text-[#1e2a38] mb-2">No campaigns yet</h2>
-          <p className="text-sm text-[#1e2a38]/50 mb-5">Create a campaign for each lead magnet you want to track.</p>
+          <h2 className="font-semibold text-[#1e2a38] dark:text-white mb-2">No campaigns yet</h2>
+          <p className="text-sm text-[#1e2a38]/50 dark:text-white/50 mb-5">Create a campaign for each lead magnet you want to track.</p>
           <button onClick={() => setShowModal(true)} className="bg-[#3dc3ff] text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#3dc3ff]/90 transition-colors">
             Create your first campaign
           </button>
+        </div>
+      ) : visibleCampaigns.length === 0 ? (
+        <div className="bg-white dark:bg-[#242b3d] border border-[#1e2a38]/10 dark:border-white/10 rounded-2xl p-8 text-center">
+          <p className="text-sm text-[#1e2a38]/50 dark:text-white/50">No {SOURCE_LABELS[typeFilter]?.label ?? ""} campaigns found.</p>
+          <button onClick={() => setTypeFilter("all")} className="mt-3 text-xs text-[#3dc3ff] hover:underline">Clear filter</button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
