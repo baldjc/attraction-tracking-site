@@ -7,6 +7,7 @@ import PromptEditor from "@/components/ai-tools/PromptEditor";
 import ThemeCard, { ContentTheme } from "./ThemeCard";
 import ContentEngineChat from "./ContentEngineChat";
 import NicheSetup from "./NicheSetup";
+import type { Idea } from "./IdeaCard";
 
 interface Props {
   themes: Array<ContentTheme | string>;
@@ -23,7 +24,7 @@ export default function ThemeDashboard({ themes, niche, city, hasImported, impor
   const [currentNiche, setCurrentNiche] = useState(niche);
   const [currentCity, setCurrentCity] = useState(city);
   const [generatingAll, setGeneratingAll] = useState(false);
-  const [allGenerated, setAllGenerated] = useState<Record<string, Array<unknown>>>({});
+  const [allGenerated, setAllGenerated] = useState<Record<string, Idea[]>>({});
   const [reordering, setReordering] = useState(false);
   const [orderedThemes, setOrderedThemes] = useState<Array<ContentTheme | string>>(themes);
   const [savingOrder, setSavingOrder] = useState(false);
@@ -223,6 +224,7 @@ export default function ThemeDashboard({ themes, niche, city, hasImported, impor
               theme={t}
               index={i}
               onGoDeeper={(theme) => setChatTheme(theme)}
+              initialIdeas={allGenerated[themeName(t)]}
             />
           ))}
         </div>

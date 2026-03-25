@@ -25,6 +25,7 @@ interface Props {
   theme: ContentTheme | string;
   index: number;
   onGoDeeper: (theme: ContentTheme | string) => void;
+  initialIdeas?: Idea[];
 }
 
 const FALLBACK_EMOJIS = ["🎯", "⚡", "🔥", "🌿", "💡", "💎", "🌊", "🚀"];
@@ -39,17 +40,26 @@ function themeObj(t: ContentTheme | string, index: number): ContentTheme {
   return { ...t, emoji: t.emoji ?? fallbackEmoji, colour: t.colour ?? fallbackColour };
 }
 
-export default function ThemeCard({ theme, index, onGoDeeper }: Props) {
+export default function ThemeCard({ theme, index, onGoDeeper, initialIdeas }: Props) {
   const t = themeObj(theme, index);
   const colour = t.colour ?? "#3dc3ff";
 
   const [expanded, setExpanded] = useState(false);
   const [ideas, setIdeas] = useState<Idea[]>([]);
+
+  useEffect(() => {
+    if (initialIdeas && initialIdeas.length > 0) {
+      setIdeas(initialIdeas);
+      setExpanded(true);
+    }
+  }, [initialIdeas]);
+
   const [shownTitles, setShownTitles] = useState<string[]>([]);
   const [savedIdeas, setSavedIdeas] = useState<SavedIdea[]>([]);
   const [savedPage, setSavedPage] = useState(1);
   const [savedTotal, setSavedTotal] = useState(0);
   const [generating, setGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState<string | null>(null);
   const [loadingSaved, setLoadingSaved] = useState(false);
   const [savedLoaded, setSavedLoaded] = useState(false);
   const [savedCount, setSavedCount] = useState<number | null>(null);
@@ -83,22 +93,33 @@ export default function ThemeCard({ theme, index, onGoDeeper }: Props) {
     if (next && !savedLoaded) loadSaved(1);
   }
 
+  async function callBatch(): Promise<Idea[]> {
+    const res = await fetch("/api/ai-tools/content-engine/batch", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ theme: t.name, shownTitles }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error ?? `Server error ${res.status}`);
+    }
+    return (data.ideas ?? []) as Idea[];
+  }
+
   async function handleGenerate() {
     setExpanded(true);
     setGenerating(true);
+    setGenerateError(null);
     try {
-      const res = await fetch("/api/ai-tools/content-engine/batch", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ theme: t.name, shownTitles }),
-      });
-      const data = await res.json();
-      const newIdeas: Idea[] = data.ideas ?? [];
+      const newIdeas = await callBatch();
       setIdeas(newIdeas);
       const allTitles = newIdeas.flatMap((i) =>
         i.titleOptions?.map((o) => o.title) ?? (i.title ? [i.title] : [])
       );
       setShownTitles((prev) => [...new Set([...prev, ...allTitles])]);
+    } catch (err) {
+      console.error("[ThemeCard] Generate failed:", err);
+      setGenerateError(err instanceof Error ? err.message : "Generation failed. Please try again.");
     } finally {
       setGenerating(false);
     }
@@ -107,19 +128,17 @@ export default function ThemeCard({ theme, index, onGoDeeper }: Props) {
 
   async function handleGenerateMore() {
     setGenerating(true);
+    setGenerateError(null);
     try {
-      const res = await fetch("/api/ai-tools/content-engine/batch", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ theme: t.name, shownTitles }),
-      });
-      const data = await res.json();
-      const newIdeas: Idea[] = data.ideas ?? [];
+      const newIdeas = await callBatch();
       setIdeas(newIdeas);
       const allTitles = newIdeas.flatMap((i) =>
         i.titleOptions?.map((o) => o.title) ?? (i.title ? [i.title] : [])
       );
       setShownTitles((prev) => [...new Set([...prev, ...allTitles])]);
+    } catch (err) {
+      console.error("[ThemeCard] Generate more failed:", err);
+      setGenerateError(err instanceof Error ? err.message : "Generation failed. Please try again.");
     } finally {
       setGenerating(false);
     }
@@ -191,6 +210,11 @@ export default function ThemeCard({ theme, index, onGoDeeper }: Props) {
 
       {expanded && (
         <div className="border-t border-[#1e2a38]/10 dark:border-white/10 bg-[#fafafa] dark:bg-[#1a1f2e]">
+          {generateError && (
+            <div className="mx-4 mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-700 dark:text-red-400">
+              {generateError}
+            </div>
+          )}
           {ideas.length > 0 && (
             <div className="p-4">
               <div className="flex items-center justify-between mb-3">
