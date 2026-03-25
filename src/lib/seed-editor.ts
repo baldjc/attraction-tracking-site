@@ -2,10 +2,14 @@ import prisma from "./prisma";
 import bcrypt from "bcryptjs";
 
 async function seedEditor() {
-  const email = "connor@apstlstudios.com";
-  const fullName = "Connor Strauss";
-  // Change this password after first login
-  const tempPassword = "ABV-editor-2026!";
+  const email = process.env.EDITOR_EMAIL;
+  const tempPassword = process.env.EDITOR_TEMP_PASSWORD;
+  const fullName = process.env.EDITOR_FULL_NAME ?? "Editor";
+
+  if (!email || !tempPassword) {
+    console.error("EDITOR_EMAIL and EDITOR_TEMP_PASSWORD environment variables are required.");
+    process.exit(1);
+  }
 
   const passwordHash = await bcrypt.hash(tempPassword, 10);
 
@@ -21,8 +25,7 @@ async function seedEditor() {
   });
 
   console.log(`Editor account created/updated: ${user.email} (${user.id})`);
-  console.log(`Temporary password: ${tempPassword}`);
-  console.log("Please change this password after first login.");
+  console.log("Password set from EDITOR_TEMP_PASSWORD env var. Please change after first login.");
 }
 
 seedEditor()
