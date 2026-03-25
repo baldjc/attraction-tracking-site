@@ -16,7 +16,8 @@ import {
 
 // ── Types ────────────────────────────────────────────────────────────────────
 interface OverviewData {
-  totalViews: number; totalClicks: number; totalLeads: number; convRate: number;
+  totalViews: number; totalClicks: number; totalLeads: number; newLeads: number; convRate: number;
+  newVisitors: number; returningVisitors: number; unknownVisitors: number;
   clicksDelta: number; leadsDelta: number; convRateDelta: number;
   sparkline: { date: string; clicks: number }[];
   leadsSparkline: { date: string; leads: number }[];
@@ -164,6 +165,7 @@ function AnalyticsPageInner() {
   const [customTo, setCustomTo] = useState("");
   const [campaignId, setCampaignId] = useState("all");
   const [sourceType, setSourceType] = useState("all");
+  const [visitorType, setVisitorType] = useState("all");
   const [granularity, setGranularity] = useState<"hourly" | "daily" | "weekly">("daily");
   const [campaigns, setCampaigns] = useState<{ id: string; name: string }[]>([]);
   const [linkId, setLinkId] = useState("all");
@@ -209,10 +211,10 @@ function AnalyticsPageInner() {
   }, [campaignId]);
 
   const buildQS = useCallback(() => {
-    const p = new URLSearchParams({ period, campaignId, sourceType, tzOffset: String(tzOffset), linkId });
+    const p = new URLSearchParams({ period, campaignId, sourceType, visitorType, tzOffset: String(tzOffset), linkId });
     if (period === "custom" && customFrom && customTo) { p.set("from", customFrom); p.set("to", customTo); }
     return p.toString();
-  }, [period, campaignId, sourceType, customFrom, customTo, tzOffset, linkId]);
+  }, [period, campaignId, sourceType, visitorType, customFrom, customTo, tzOffset, linkId]);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -390,6 +392,13 @@ function AnalyticsPageInner() {
           <option value="BLOG_POSTS">Blog Posts</option>
           <option value="OTHER">Other</option>
         </select>
+
+        <select value={visitorType} onChange={(e) => setVisitorType(e.target.value)} className={selectCls}>
+          <option value="all">All Visitor Types</option>
+          <option value="new">New Leads</option>
+          <option value="returning">Returning Visits</option>
+          <option value="unknown">Unknown</option>
+        </select>
       </div>
 
       {/* ── Tab navigation ────────────────────────────────────────────────── */}
@@ -447,6 +456,45 @@ function AnalyticsPageInner() {
                   </p>
                   <p className={`text-xs ${dim} mt-1`}>Leads per YouTube view</p>
                 </div>
+              </div>
+            )}
+
+            {/* Visitor type breakdown */}
+            {overview && (
+              <div className={`${card} rounded-xl p-4`}>
+                <p className={`text-xs font-semibold ${muted} uppercase tracking-wide mb-3`}>Clicks by Visitor Type ({periodLabel})</p>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="text-center">
+                    <p className="text-xl font-bold text-green-500">{fmtNum(overview.newVisitors)}</p>
+                    <p className={`text-xs ${muted} mt-0.5`}>New Leads</p>
+                    <p className={`text-xs ${dim} mt-0.5`}>
+                      {overview.totalClicks > 0 ? `${Math.round((overview.newVisitors / overview.totalClicks) * 100)}%` : "—"} of clicks
+                    </p>
+                  </div>
+                  <div className="text-center border-x border-[#1e2a38]/10 dark:border-[#2d3748]">
+                    <p className="text-xl font-bold text-amber-500">{fmtNum(overview.returningVisitors)}</p>
+                    <p className={`text-xs ${muted} mt-0.5`}>Returning Visits</p>
+                    <p className={`text-xs ${dim} mt-0.5`}>
+                      {overview.totalClicks > 0 ? `${Math.round((overview.returningVisitors / overview.totalClicks) * 100)}%` : "—"} of clicks
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className={`text-xl font-bold ${txt}`}>{fmtNum(overview.unknownVisitors)}</p>
+                    <p className={`text-xs ${muted} mt-0.5`}>Unknown</p>
+                    <p className={`text-xs ${dim} mt-0.5`}>clicked, no follow-up</p>
+                  </div>
+                </div>
+                <div className="mt-3 flex h-2 rounded-full overflow-hidden gap-px">
+                  {overview.totalClicks > 0 && (
+                    <>
+                      <div className="bg-green-500 transition-all" style={{ width: `${(overview.newVisitors / overview.totalClicks) * 100}%` }} />
+                      <div className="bg-amber-400 transition-all" style={{ width: `${(overview.returningVisitors / overview.totalClicks) * 100}%` }} />
+                      <div className="bg-slate-300 dark:bg-slate-600 transition-all flex-1" />
+                    </>
+                  )}
+                  {overview.totalClicks === 0 && <div className="bg-slate-200 dark:bg-slate-700 flex-1" />}
+                </div>
+                <p className={`text-xs ${dim} mt-2`}>Conv. rate uses new leads only — returning visits are not counted as conversions</p>
               </div>
             )}
 

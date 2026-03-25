@@ -290,6 +290,7 @@ model Click {
   countryCode    String?
   userAgent      String?
   referrer       String?
+  visitorType    String?      @map("visitor_type")
   timestamp      DateTime     @default(now())
 
   pageViews PageView[]

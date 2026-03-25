@@ -37,14 +37,20 @@ export async function GET(req: NextRequest) {
 
   const linkWhere = { campaignId: { in: ids }, deletedAt: null, ...(linkId !== "all" ? { id: linkId } : {}) };
 
+  const visitorTypeFilter = sp.get("visitorType") ?? "all"; // "all" | "new" | "returning" | "unknown"
+
+  const clickVisitorWhere = visitorTypeFilter === "all" ? {} :
+    visitorTypeFilter === "unknown" ? { visitorType: null } :
+    { visitorType: visitorTypeFilter };
+
   const [currentClicks, prevClicks, links] = await Promise.all([
     prisma.click.findMany({
-      where: { timestamp: { gte: p.periodStart, lte: p.periodEnd }, link: linkWhere },
-      select: { id: true, timestamp: true, lead: { select: { id: true } } },
+      where: { timestamp: { gte: p.periodStart, lte: p.periodEnd }, link: linkWhere, ...clickVisitorWhere },
+      select: { id: true, timestamp: true, visitorType: true, lead: { select: { id: true } } },
     }),
     prisma.click.findMany({
-      where: { timestamp: { gte: p.prevStart, lt: p.periodStart }, link: linkWhere },
-      select: { id: true, lead: { select: { id: true } } },
+      where: { timestamp: { gte: p.prevStart, lt: p.periodStart }, link: linkWhere, ...clickVisitorWhere },
+      select: { id: true, visitorType: true, lead: { select: { id: true } } },
     }),
     prisma.trackingLink.findMany({
       where: linkWhere,
@@ -55,11 +61,20 @@ export async function GET(req: NextRequest) {
   const totalViews = links.reduce((s, l) => s + (l.youtubeViewCount ?? 0), 0);
   const totalClicks = currentClicks.length;
   const totalLeads = currentClicks.filter((c) => c.lead).length;
-  const convRate = pct(totalLeads, totalClicks);
+
+  // Visitor type breakdown
+  const newVisitors     = currentClicks.filter((c) => c.visitorType === "new").length;
+  const returningVisitors = currentClicks.filter((c) => c.visitorType === "returning").length;
+  const unknownVisitors = currentClicks.filter((c) => c.visitorType == null).length;
+
+  // Conversion rate counts only "new" leads (confirmed first-time sign-ups)
+  const newLeads = currentClicks.filter((c) => c.visitorType === "new" && c.lead).length;
+  const convRate = pct(newLeads, totalClicks);
 
   const prevTotalClicks = prevClicks.length;
   const prevTotalLeads = prevClicks.filter((c) => c.lead).length;
-  const prevConvRate = pct(prevTotalLeads, prevTotalClicks);
+  const prevNewLeads = prevClicks.filter((c) => c.visitorType === "new" && c.lead).length;
+  const prevConvRate = pct(prevNewLeads, prevTotalClicks);
 
   // Sparklines — last 30 days of clicks & leads
   const spark30Start = new Date(Date.now() - 30 * 86400000);
@@ -68,8 +83,8 @@ export async function GET(req: NextRequest) {
   const sparkLeadMap = new Map(sparkDays.map((d) => [d, 0]));
 
   const sparkSource = period === "30d" ? currentClicks : await prisma.click.findMany({
-    where: { timestamp: { gte: spark30Start }, link: linkWhere },
-    select: { id: true, timestamp: true, lead: { select: { id: true } } },
+    where: { timestamp: { gte: spark30Start }, link: linkWhere, ...clickVisitorWhere },
+    select: { id: true, timestamp: true, visitorType: true, lead: { select: { id: true } } },
   });
 
   for (const c of sparkSource) {
@@ -85,6 +100,10 @@ export async function GET(req: NextRequest) {
     totalViews,
     totalClicks,
     totalLeads,
+    newLeads,
+    newVisitors,
+    returningVisitors,
+    unknownVisitors,
     convRate,
     prevClicks: prevTotalClicks,
     prevLeads: prevTotalLeads,
