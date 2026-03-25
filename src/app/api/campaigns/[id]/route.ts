@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import prisma from "@/lib/prisma";
+import { normalizeUrl } from "@/lib/tracking-utils";
 
 async function getCampaignForUser(id: string, userId: string, isAdmin: boolean) {
   return prisma.campaign.findFirst({
@@ -52,7 +53,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       youtubeViewCount: l.youtubeViewCount,
       youtubeViewsUpdatedAt: l.youtubeViewsUpdatedAt,
       createdAt: l.createdAt,
-      trackedUrl: `${campaign.destinationUrl}${campaign.destinationUrl.includes("?") ? "&" : "?"}ref=${l.refCode}`,
+      trackedUrl: `${normalizeUrl(campaign.destinationUrl)}${normalizeUrl(campaign.destinationUrl).includes("?") ? "&" : "?"}ref=${l.refCode}`,
       clicks,
       leads,
       conversionRate: clicks > 0 ? Math.round((leads / clicks) * 100) : 0,
@@ -99,7 +100,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       where: { id },
       data: {
         ...(name && { name }),
-        ...(destinationUrl && { destinationUrl }),
+        ...(destinationUrl && { destinationUrl: normalizeUrl(destinationUrl) }),
         ...(sourceType && { sourceType }),
       },
     });

@@ -43,7 +43,8 @@ export async function GET(
     })
     .catch(console.error);
 
-  const dest = link.campaign.destinationUrl;
+  const raw = link.campaign.destinationUrl;
+  const dest = raw.startsWith("http://") || raw.startsWith("https://") ? raw : `https://${raw}`;
   const separator = dest.includes("?") ? "&" : "?";
   const redirectUrl = `${dest}${separator}ref=${link.refCode}`;
 

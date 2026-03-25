@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import prisma from "@/lib/prisma";
+import { normalizeUrl } from "@/lib/tracking-utils";
 
 export async function GET() {
   const user = await resolveUserFromSession();
@@ -73,7 +74,7 @@ export async function POST(req: NextRequest) {
       data: {
         userId: user.id,
         name,
-        destinationUrl,
+        destinationUrl: normalizeUrl(destinationUrl),
         sourceType: sourceType ?? "YOUTUBE",
       },
     });

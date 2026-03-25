@@ -55,9 +55,18 @@ export function extractYoutubeVideoId(url: string): string | null {
   return null;
 }
 
+export function normalizeUrl(url: string): string {
+  if (!url) return url;
+  const trimmed = url.trim();
+  return trimmed.startsWith("http://") || trimmed.startsWith("https://")
+    ? trimmed
+    : `https://${trimmed}`;
+}
+
 export function buildTrackedUrl(destinationUrl: string, refCode: string): string {
-  const sep = destinationUrl.includes("?") ? "&" : "?";
-  return `${destinationUrl}${sep}ref=${refCode}`;
+  const normalized = normalizeUrl(destinationUrl);
+  const sep = normalized.includes("?") ? "&" : "?";
+  return `${normalized}${sep}ref=${refCode}`;
 }
 
 export async function geolocateIp(ip: string): Promise<{ city: string | null; province: string | null; country: string | null; countryCode: string | null }> {
