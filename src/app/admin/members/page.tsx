@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowPathIcon } from "@heroicons/react/24/outline";
+import { useSession } from "next-auth/react";
 
 interface Member {
   id: string;
@@ -85,6 +86,10 @@ function subtitleLabel(filter: TierFilter, count: number) {
 }
 
 export default function MembersPage() {
+  const { data: session } = useSession();
+  const role = (session?.user as any)?.role ?? "admin";
+  const isEditorRole = role === "editor";
+
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
@@ -146,17 +151,19 @@ export default function MembersPage() {
           <h1 className="text-2xl font-bold text-[#1e2a38]">Members</h1>
           <p className="text-[#1e2a38]/60 mt-1">{subtitleLabel(tierFilter, filtered.length)}</p>
         </div>
-        <button
-          onClick={handleSync}
-          disabled={syncing}
-          className="flex items-center gap-2 bg-[#3dc3ff] hover:bg-[#2bb3ef] text-white px-4 py-2.5 rounded-lg font-medium transition-colors disabled:opacity-50"
-        >
-          <ArrowPathIcon className={`w-5 h-5 ${syncing ? "animate-spin" : ""}`} />
-          {syncing ? "Syncing from GHL..." : "Sync from GHL"}
-        </button>
+        {!isEditorRole && (
+          <button
+            onClick={handleSync}
+            disabled={syncing}
+            className="flex items-center gap-2 bg-[#3dc3ff] hover:bg-[#2bb3ef] text-white px-4 py-2.5 rounded-lg font-medium transition-colors disabled:opacity-50"
+          >
+            <ArrowPathIcon className={`w-5 h-5 ${syncing ? "animate-spin" : ""}`} />
+            {syncing ? "Syncing from GHL..." : "Sync from GHL"}
+          </button>
+        )}
       </div>
 
-      {syncResult && (
+      {!isEditorRole && syncResult && (
         <div
           className={`mb-4 text-sm px-4 py-3 rounded-lg ${
             syncResult.startsWith("Error") || syncResult.startsWith("Sync failed")
@@ -168,10 +175,10 @@ export default function MembersPage() {
         </div>
       )}
 
-      {flaggedInactive.length > 0 && (
+      {!isEditorRole && flaggedInactive.length > 0 && (
         <div className="mb-4 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
           <p className="text-sm font-semibold text-amber-800 mb-2">
-            ⚠️ These members no longer have the &ldquo;foundations - weekly coaching&rdquo; tag in GHL:
+            These members no longer have the &ldquo;foundations - weekly coaching&rdquo; tag in GHL:
           </p>
           <ul className="space-y-1">
             {flaggedInactive.map((m) => (

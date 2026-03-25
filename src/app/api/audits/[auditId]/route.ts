@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { isAdminOrEditor, canAccessTier } from "@/lib/auth-utils";
 
 export async function GET(
   _req: NextRequest,
@@ -14,17 +15,23 @@ export async function GET(
   const { auditId } = await params;
   const audit = await prisma.audit.findUnique({
     where: { id: auditId },
-    include: { user: { select: { id: true, fullName: true, email: true, youtubeHandle: true, youtubeChannelUrl: true, youtubeChannelName: true } } },
+    include: { user: { select: { id: true, fullName: true, email: true, youtubeHandle: true, youtubeChannelUrl: true, youtubeChannelName: true, serviceTier: true } } },
   });
 
   if (!audit) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  // Members can only see their own audits
   const userRole = (session.user as any).role;
   const userId = (session.user as any).id;
-  if (userRole !== "admin" && audit.userId !== userId) {
+
+  // Editor can view audits for editing/mastery members
+  if (isAdminOrEditor(userRole)) {
+    if (audit.user && !canAccessTier(userRole, audit.user.serviceTier)) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+  } else if (audit.userId !== userId) {
+    // Members can only see their own audits
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

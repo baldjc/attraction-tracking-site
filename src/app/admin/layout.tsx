@@ -13,15 +13,17 @@ export default async function AdminLayout({
     redirect("/login");
   }
 
-  if ((session.user as any).role !== "admin") {
-    redirect("/member/dashboard");
+  const role = (session.user as any).role;
+
+  if (role !== "admin" && role !== "editor") {
+    redirect("/member/scores");
   }
 
   return (
     <div className="min-h-screen bg-[#f1f1ef] dark:bg-[#1a1f2e]">
       <div className="print:hidden">
         <Sidebar
-          role="admin"
+          role={role}
           userName={session.user.name || session.user.email || "Admin"}
           featureFlags={null}
         />

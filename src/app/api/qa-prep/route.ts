@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { UserRole } from "@/generated/prisma/client";
+import { isAdminOrEditor, editorTierFilter } from "@/lib/auth-utils";
 
 const PRINCIPLE_LABELS: Record<string, string> = {
   avatar_clarity: "Avatar Clarity",
@@ -49,15 +49,20 @@ function extractScore(val: any): number {
 
 export async function GET(request: Request) {
   const session = await auth();
-  if (!session || (session.user as any)?.role !== "admin") {
+  const role = (session?.user as any)?.role;
+  if (!session || !isAdminOrEditor(role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { searchParams } = new URL(request.url);
   const weekOf = searchParams.get("weekOf");
 
+  const tierFilter = editorTierFilter(role);
   const users = await prisma.user.findMany({
-    where: { role: { not: UserRole.admin } },
+    where: {
+      role: "foundations_member",
+      ...tierFilter,
+    },
     include: {
       audits: {
         where: { auditType: { in: ["baseline", "monthly"] } },

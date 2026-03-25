@@ -14,7 +14,7 @@ const STATUS_MESSAGES: Record<string, string> = {
 
 export async function GET(_req: NextRequest) {
   const session = await auth();
-  if (!session?.user) {
+  if (!session?.user || (session.user as any).role !== "admin") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

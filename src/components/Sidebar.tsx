@@ -62,11 +62,10 @@ const adminLinks = [
 ];
 
 const editorLinks = [
-  { href: "/member/dashboard", label: "Dashboard", icon: HomeIcon, featureKey: null },
-  { href: "/member/ai-tools", label: "AI Tools", icon: SparklesIcon, featureKey: "ai_tools" },
-  { href: "/member/campaigns", label: "Campaigns", icon: LinkIcon, featureKey: "campaigns" },
-  { href: "/member/analytics", label: "Lead Analytics", icon: ChartBarIcon, featureKey: "campaigns" },
-  { href: "/member/settings", label: "Settings", icon: Cog6ToothIcon, featureKey: null },
+  { href: "/admin", label: "Dashboard", icon: HomeIcon },
+  { href: "/admin/members", label: "Members", icon: UsersIcon },
+  { href: "/admin/audits", label: "Audits", icon: ClipboardDocumentListIcon },
+  { href: "/admin/qa-prep", label: "Q&A Prep", icon: ChatBubbleLeftRightIcon },
 ];
 
 const memberLinks = [
@@ -124,10 +123,9 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
   }, [mobileOpen]);
 
   const isAdminOnMemberView =
-    role === "admin" && !!impersonate && !pathname.startsWith("/admin");
-  const isEditorOnMemberView =
-    role === "editor" && !!impersonate;
-  const isStaffOnMemberView = isAdminOnMemberView || isEditorOnMemberView;
+    (role === "admin" || role === "editor") && !!impersonate && !pathname.startsWith("/admin");
+  const isEditorOnMemberView = false;
+  const isStaffOnMemberView = isAdminOnMemberView;
 
   const baseMemberLinks = memberLinks.filter((link) => {
     if (!link.featureKey || !featureFlags) return true;
@@ -139,7 +137,7 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
     : role === "admin"
     ? adminLinks
     : role === "editor"
-    ? editorLinks.filter((l) => !l.featureKey || featureFlags?.[l.featureKey] !== false)
+    ? editorLinks
     : baseMemberLinks;
 
   function isActive(href: string) {

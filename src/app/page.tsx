@@ -8,7 +8,8 @@ export default async function Home() {
     redirect("/login");
   }
 
-  if ((session.user as any).role === "admin") {
+  const role = (session.user as any).role;
+  if (role === "admin" || role === "editor") {
     redirect("/admin");
   }
 
