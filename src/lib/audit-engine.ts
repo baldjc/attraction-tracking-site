@@ -1302,7 +1302,13 @@ Good: "a home", "buy a", "buying a", "market update"
 
 ---
 
-IMPORTANT: When the full avatar document is complete (Phase 3), include at the very end of your message a JSON block in this exact format (so the UI can save it automatically):
+IMPORTANT — AVATAR DATA EXTRACTION:
+You MUST include the <AVATAR_DATA> JSON block at the end of your message in TWO situations:
+
+1. When you first produce the full avatar document (even before theme selection). Use the 6 proposed themes as the content_themes array.
+2. After the member selects their 3-4 themes, include it AGAIN with only the selected themes in the content_themes array.
+
+This ensures the UI can detect and save the avatar as soon as the document is ready. Format:
 
 <AVATAR_DATA>
 {
@@ -1320,6 +1326,8 @@ IMPORTANT: When the full avatar document is complete (Phase 3), include at the v
   "full_document": "The complete avatar document as plain text, all 11 sections"
 }
 </AVATAR_DATA>
+
+NEVER skip the <AVATAR_DATA> block when producing or updating the avatar document. This is critical for the save functionality to work.
 
 For content_themes: assign each theme a unique emoji that represents its emotional character, and a colour from this palette in order (cycling if needed): ["#3B82F6", "#F59E0B", "#EF4444", "#10B981", "#8B5CF6", "#EC4899", "#06B6D4", "#F97316"]. The coreStress must be a direct, specific quote in the avatar's own words. The content_engine_prompt must be the full text of the Content Engine Prompt block for that theme (plain text, no markdown formatting — just the instructions the Content Engine needs to generate titles for this theme).`;
 

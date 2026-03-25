@@ -14,6 +14,7 @@ import {
 } from "@heroicons/react/24/outline";
 import PromptEditor from "@/components/ai-tools/PromptEditor";
 import RecentConversations from "@/components/ai-tools/RecentConversations";
+import MarkdownMessage from "@/components/MarkdownMessage";
 
 interface Message {
   role: "user" | "assistant";
@@ -725,15 +726,17 @@ export default function AvatarArchitectPage() {
         {messages.map((msg, i) => (
           <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
             <div
-              className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm whitespace-pre-wrap leading-relaxed ${
+              className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
                 msg.role === "user"
-                  ? "bg-[#1e2a38] text-white rounded-tr-sm"
+                  ? "bg-[#1e2a38] text-white rounded-tr-sm whitespace-pre-wrap"
                   : "bg-white border border-[#1e2a38]/10 text-[#1e2a38] rounded-tl-sm shadow-sm"
               }`}
             >
-              {msg.role === "user"
-                ? msg.content.replace(/^\[IMPORTED_AVATAR_DOC\]\n?/, "")
-                : msg.content}
+              {msg.role === "assistant" ? (
+                <MarkdownMessage>{msg.content}</MarkdownMessage>
+              ) : (
+                msg.content.replace(/^\[IMPORTED_AVATAR_DOC\]\n?/, "")
+              )}
             </div>
           </div>
         ))}
