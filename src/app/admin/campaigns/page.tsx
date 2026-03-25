@@ -16,6 +16,7 @@ interface Campaign {
   conversionRate: number;
   linkCount: number;
   member?: { fullName: string | null; email: string };
+  isOwn: boolean;
 }
 
 const SOURCE_LABELS: Record<string, { label: string; color: string }> = {
@@ -34,6 +35,7 @@ export default function AdminCampaignsPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [memberFilter, setMemberFilter] = useState<"all" | "mine">("all");
 
   useEffect(() => {
     fetch("/api/campaigns")
@@ -48,9 +50,10 @@ export default function AdminCampaignsPage() {
     leads: campaigns.reduce((s, c) => s + c.totalLeads, 0),
   };
 
-  const availableTypes = Array.from(new Set(campaigns.map((c) => c.sourceType)));
+  const memberFiltered = memberFilter === "mine" ? campaigns.filter((c) => c.isOwn) : campaigns;
+  const availableTypes = Array.from(new Set(memberFiltered.map((c) => c.sourceType)));
 
-  const filtered = campaigns.filter((c) => {
+  const filtered = memberFiltered.filter((c) => {
     if (typeFilter !== "all" && c.sourceType !== typeFilter) return false;
     if (!search) return true;
     const q = search.toLowerCase();
@@ -86,7 +89,7 @@ export default function AdminCampaignsPage() {
 
       <div className="bg-white border border-[#1e2a38]/10 rounded-2xl overflow-hidden">
         <div className="px-5 py-4 border-b border-[#1e2a38]/10 space-y-3">
-          {availableTypes.length > 1 && (
+          <div className="flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-2 flex-wrap">
               <button
                 onClick={() => setTypeFilter("all")}
@@ -107,7 +110,21 @@ export default function AdminCampaignsPage() {
                 );
               })}
             </div>
-          )}
+            <div className="flex items-center gap-1 bg-[#1e2a38]/5 rounded-full p-0.5 flex-shrink-0">
+              <button
+                onClick={() => setMemberFilter("all")}
+                className={`text-xs px-3 py-1 rounded-full font-medium transition-colors ${memberFilter === "all" ? "bg-white text-[#1e2a38] shadow-sm" : "text-[#1e2a38]/50 hover:text-[#1e2a38]"}`}
+              >
+                All Members
+              </button>
+              <button
+                onClick={() => setMemberFilter("mine")}
+                className={`text-xs px-3 py-1 rounded-full font-medium transition-colors ${memberFilter === "mine" ? "bg-white text-[#1e2a38] shadow-sm" : "text-[#1e2a38]/50 hover:text-[#1e2a38]"}`}
+              >
+                Mine
+              </button>
+            </div>
+          </div>
           <input
             type="text"
             value={search}

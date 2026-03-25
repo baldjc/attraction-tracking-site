@@ -52,8 +52,6 @@ export default function CampaignsPage() {
   const [creating, setCreating] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [memberFilter, setMemberFilter] = useState<"all" | "mine">("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [hasTyUrl, setHasTyUrl] = useState<boolean | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
@@ -61,9 +59,6 @@ export default function CampaignsPage() {
   useEffect(() => {
     loadCampaigns();
     fetch("/api/campaigns/analytics?period=30d").then((r) => r.ok ? r.json() : null).then((d) => d && setAnalytics(d)).catch(() => {});
-    fetch("/api/auth/session").then((r) => r.json()).then((s) => {
-      if ((s?.user as { role?: string })?.role === "admin") setIsAdmin(true);
-    }).catch(() => {});
     fetch("/api/member/profile").then((r) => r.ok ? r.json() : null).then((d) => {
       if (d) setHasTyUrl(!!d.thankYouPageUrl);
     }).catch(() => {});
@@ -111,9 +106,8 @@ export default function CampaignsPage() {
 
   const confirmingName = campaigns.find((c) => c.id === confirmDeleteId)?.name ?? "";
 
-  const memberFiltered = isAdmin && memberFilter === "mine" ? campaigns.filter((c) => c.isOwn) : campaigns;
-  const availableTypes = Array.from(new Set(memberFiltered.map((c) => c.sourceType)));
-  const visibleCampaigns = typeFilter === "all" ? memberFiltered : memberFiltered.filter((c) => c.sourceType === typeFilter);
+  const availableTypes = Array.from(new Set(campaigns.map((c) => c.sourceType)));
+  const visibleCampaigns = typeFilter === "all" ? campaigns : campaigns.filter((c) => c.sourceType === typeFilter);
 
   const convRateDelta = analytics ? analytics.conversionRate - analytics.previousConversionRate : 0;
 
@@ -188,45 +182,27 @@ export default function CampaignsPage() {
         </div>
       )}
 
-      {/* Type filter + admin toggle row */}
+      {/* Type filter pills */}
       {campaigns.length > 0 && (
-        <div className="flex items-center justify-between gap-3 mb-5 flex-wrap">
-          <div className="flex items-center gap-2 flex-wrap">
-            <button
-              onClick={() => setTypeFilter("all")}
-              className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${typeFilter === "all" ? "bg-[#1e2a38] text-white dark:bg-white dark:text-[#1e2a38]" : "bg-white dark:bg-white/10 border border-[#1e2a38]/15 dark:border-white/15 text-[#1e2a38]/60 dark:text-white/60 hover:text-[#1e2a38] dark:hover:text-white"}`}
-            >
-              All
-            </button>
-            {availableTypes.map((type) => {
-              const src = SOURCE_LABELS[type] ?? SOURCE_LABELS.OTHER;
-              return (
-                <button
-                  key={type}
-                  onClick={() => setTypeFilter(type)}
-                  className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${typeFilter === type ? "bg-[#1e2a38] text-white dark:bg-white dark:text-[#1e2a38]" : "bg-white dark:bg-white/10 border border-[#1e2a38]/15 dark:border-white/15 text-[#1e2a38]/60 dark:text-white/60 hover:text-[#1e2a38] dark:hover:text-white"}`}
-                >
-                  {src.label}
-                </button>
-              );
-            })}
-          </div>
-          {isAdmin && (
-            <div className="flex items-center gap-1 bg-[#1e2a38]/5 dark:bg-white/5 rounded-full p-0.5">
+        <div className="flex items-center gap-2 flex-wrap mb-5">
+          <button
+            onClick={() => setTypeFilter("all")}
+            className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${typeFilter === "all" ? "bg-[#1e2a38] text-white dark:bg-white dark:text-[#1e2a38]" : "bg-white dark:bg-white/10 border border-[#1e2a38]/15 dark:border-white/15 text-[#1e2a38]/60 dark:text-white/60 hover:text-[#1e2a38] dark:hover:text-white"}`}
+          >
+            All
+          </button>
+          {availableTypes.map((type) => {
+            const src = SOURCE_LABELS[type] ?? SOURCE_LABELS.OTHER;
+            return (
               <button
-                onClick={() => setMemberFilter("all")}
-                className={`text-xs px-3 py-1 rounded-full font-medium transition-colors ${memberFilter === "all" ? "bg-white dark:bg-[#242b3d] text-[#1e2a38] dark:text-white shadow-sm" : "text-[#1e2a38]/50 dark:text-white/50 hover:text-[#1e2a38] dark:hover:text-white"}`}
+                key={type}
+                onClick={() => setTypeFilter(type)}
+                className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${typeFilter === type ? "bg-[#1e2a38] text-white dark:bg-white dark:text-[#1e2a38]" : "bg-white dark:bg-white/10 border border-[#1e2a38]/15 dark:border-white/15 text-[#1e2a38]/60 dark:text-white/60 hover:text-[#1e2a38] dark:hover:text-white"}`}
               >
-                All Members
+                {src.label}
               </button>
-              <button
-                onClick={() => setMemberFilter("mine")}
-                className={`text-xs px-3 py-1 rounded-full font-medium transition-colors ${memberFilter === "mine" ? "bg-white dark:bg-[#242b3d] text-[#1e2a38] dark:text-white shadow-sm" : "text-[#1e2a38]/50 dark:text-white/50 hover:text-[#1e2a38] dark:hover:text-white"}`}
-              >
-                Mine
-              </button>
-            </div>
-          )}
+            );
+          })}
         </div>
       )}
 
@@ -258,7 +234,6 @@ export default function CampaignsPage() {
                     <h3 className="font-semibold text-[#1e2a38]">{c.name}</h3>
                     <span className={`text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0 ${src.color}`}>{src.label}</span>
                   </div>
-                  {isAdmin && memberName && <p className="text-xs text-[#3dc3ff]/80 mb-1 truncate">{memberName}</p>}
                   <p className="text-xs text-[#1e2a38]/40 truncate mb-4">{c.destinationUrl}</p>
                   {c.sourceType === "EMAIL_NEWSLETTER" ? (
                     <div className="grid grid-cols-2 gap-2 text-center">
