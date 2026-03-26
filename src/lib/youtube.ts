@@ -167,7 +167,7 @@ export async function getLatestLongFormVideos(
 }
 
 export async function getTranscript(videoId: string): Promise<string | null> {
-  const apiKey = process.env.SUPADATA_API_KEY;
+  const apiKey = process.env.SUPADATA_API_KEY?.replace(/\s+/g, "");
   if (!apiKey) {
     console.warn("[transcript] SUPADATA_API_KEY not set");
     return null;

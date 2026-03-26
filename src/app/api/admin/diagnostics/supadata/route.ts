@@ -8,7 +8,7 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const apiKey = process.env.SUPADATA_API_KEY;
+  const apiKey = process.env.SUPADATA_API_KEY?.replace(/\s+/g, "");
   if (!apiKey) {
     return NextResponse.json({ ok: false, error: "SUPADATA_API_KEY is not set" });
   }
