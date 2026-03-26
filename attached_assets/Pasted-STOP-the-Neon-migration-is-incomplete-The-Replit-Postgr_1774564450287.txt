@@ -1,0 +1,73 @@
+STOP — the Neon migration is     
+  incomplete. The Replit Postgres has 
+  20 campaigns, 11 tracking links, 399
+   clicks, and 20 leads. But Neon only
+   has 2 campaigns and 3 links. We    
+  need to re-dump and re-import.    
+                                
+  Step 1 — Dump the Replit Postgres
+  directly (NOT using $DATABASE_URL   
+  which now points to Neon). Find the
+  original Replit Postgres connection
+  string from the internal environment
+   and dump it:                     
+
+  pg_dump "$REPLIT_DB_URL" --no-owner
+  --no-privileges --data-only -F plain
+   -f /tmp/full_data_dump.sql      
+                   
+  If REPLIT_DB_URL doesn't work, check
+   the Database tab's connection    
+  string or use the internal Postgres
+  connection details.                 
+                                    
+  Step 2 — Wipe Neon's data and       
+  re-import the complete dump:     
+                   
+  psql "postgresql://neondb_owner:npg_
+  A0Xneoz5xFhd@ep-odd-dream-amrl8l3f-p
+  ooler.c-5.us-east-1.aws.neon.tech/ne
+  ondb?sslmode=require&channel_binding
+  =require" -c "TRUNCATE users,       
+  campaigns, tracking_links, clicks, 
+  conversions, audits, audit_jobs,
+  app_settings, script_reviews,
+  saved_scripts, saved_titles,
+  title_analyses,
+  ai_tool_conversations,
+  ai_tool_usage, course_lessons,
+  knowledge_base_entries, leads,
+  login_otps, page_views, qa_calls,
+  repurposed_content, saved_ideas,
+  saved_items,
+  youtube_channel_snapshots,
+  youtube_videos CASCADE;"
+
+  Step 3 — Import the full dump to
+  Neon:
+
+  psql "postgresql://neondb_owner:npg_
+  A0Xneoz5xFhd@ep-odd-dream-amrl8l3f-p
+  ooler.c-5.us-east-1.aws.neon.tech/ne
+  ondb?sslmode=require&channel_binding
+  =require" -f /tmp/full_data_dump.sql
+                                    
+  Step 4 — Verify counts match:
+
+  SELECT 'campaigns' as t, count(*)
+  FROM campaigns                      
+  UNION ALL SELECT 'tracking_links',
+  count(*) FROM tracking_links
+  UNION ALL SELECT 'clicks', count(*) 
+  FROM clicks                         
+  UNION ALL SELECT 'leads', count(*)
+  FROM leads       
+  UNION ALL SELECT 'users', count(*)  
+  FROM users;                       
+
+  Expected: 20 campaigns, 11 tracking 
+  links, 399 clicks, 20 leads, 23  
+  users.           
+                                      
+  Show me all output before           
+  proceeding. 
