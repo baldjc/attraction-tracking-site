@@ -21,6 +21,7 @@ export async function processAuditJob(jobId: string, selectedVideoId?: string) {
       console.log(`[audit job ${jobId}] Single video mode — fetching videoId: ${selectedVideoId}`);
       const video = await getVideoById(selectedVideoId);
       if (!video) throw new Error("Could not fetch the selected video from YouTube.");
+      console.log(`[audit job ${jobId}] Video fetched: "${video.title}" — transcript: ${video.transcript ? `${video.transcript.length} chars` : "NULL (check SUPADATA_API_KEY)"}`);
       videos = [video];
       const youtubeIdentifier = member.youtubeHandle || (() => {
         if (!member.youtubeChannelUrl) return null;

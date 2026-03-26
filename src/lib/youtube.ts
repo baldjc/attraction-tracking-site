@@ -180,11 +180,17 @@ export async function getTranscript(videoId: string): Promise<string | null> {
     );
 
     if (res.status === 206) {
-      console.warn(`[transcript] No transcript available for ${videoId}`);
+      console.warn(`[transcript] No transcript available for ${videoId} (206 — video may have auto-generated captions disabled)`);
+      return null;
+    }
+    if (res.status === 401) {
+      const body = await res.text().catch(() => "");
+      console.error(`[transcript] ⛔ SUPADATA_API_KEY is INVALID or EXPIRED — all audits will score 0.5 until fixed. Details: ${body}`);
       return null;
     }
     if (!res.ok) {
-      console.warn(`[transcript] Supadata API error ${res.status} for ${videoId}`);
+      const body = await res.text().catch(() => "");
+      console.warn(`[transcript] Supadata API error ${res.status} for ${videoId}: ${body}`);
       return null;
     }
 
