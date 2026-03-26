@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 interface Campaign {
@@ -31,11 +33,19 @@ const SOURCE_LABELS: Record<string, { label: string; color: string }> = {
 };
 
 export default function AdminCampaignsPage() {
+  const { data: session } = useSession();
+  const router = useRouter();
+  const pageRole = (session?.user as any)?.role;
+
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [memberFilter, setMemberFilter] = useState<"all" | "mine">("all");
+
+  useEffect(() => {
+    if (session && pageRole === "editor") router.replace("/admin");
+  }, [session, pageRole, router]);
 
   useEffect(() => {
     fetch("/api/campaigns")
@@ -63,6 +73,8 @@ export default function AdminCampaignsPage() {
       (c.member?.email ?? "").toLowerCase().includes(q)
     );
   });
+
+  if (pageRole === "editor") return null;
 
   return (
     <div>

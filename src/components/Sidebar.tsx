@@ -153,20 +153,14 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
       localStorage.removeItem(IMPERSONATE_LS_KEY);
     } catch { }
     setImpersonate(null);
-    if (role === "editor") {
-      window.location.href = "/member/dashboard";
-    } else {
-      router.push("/admin");
-    }
+    router.push("/admin");
   }
 
 
   const homeHref = isStaffOnMemberView
     ? "/member/dashboard"
-    : role === "admin"
+    : role === "admin" || role === "editor"
     ? "/admin"
-    : role === "editor"
-    ? "/member/dashboard"
     : "/member/dashboard";
 
   const roleLabel = isStaffOnMemberView

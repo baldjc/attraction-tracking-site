@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   VideoCameraIcon,
@@ -82,6 +84,10 @@ function fmtDate(iso: string | null) {
 const PAGE_SIZE = 20;
 
 export default function AnalyticsPage() {
+  const { data: session } = useSession();
+  const router = useRouter();
+  const pageRole = (session?.user as any)?.role;
+
   const [cards, setCards] = useState<SummaryCards | null>(null);
   const [recentVideos, setRecentVideos] = useState<RecentVideo[]>([]);
   const [members, setMembers] = useState<MemberRow[]>([]);
@@ -97,6 +103,10 @@ export default function AnalyticsPage() {
   const [sortKey, setSortKey] = useState<SortKey>("fullName");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    if (session && pageRole === "editor") router.replace("/admin");
+  }, [session, pageRole, router]);
 
   useEffect(() => {
     fetch("/api/admin/analytics")
@@ -179,6 +189,8 @@ export default function AnalyticsPage() {
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  if (pageRole === "editor") return null;
 
   if (loading) {
     return (

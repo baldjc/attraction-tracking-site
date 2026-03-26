@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { EyeSlashIcon, EyeIcon, UserGroupIcon, ChevronDownIcon, XMarkIcon, CheckIcon, SparklesIcon, EnvelopeIcon, PencilSquareIcon } from "@heroicons/react/24/outline";
 import { IMPERSONATE_LS_KEY } from "@/lib/impersonate-constants";
 
@@ -854,6 +856,16 @@ function AIScoringPromptSection() {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
+  const { data: session } = useSession();
+  const router = useRouter();
+  const pageRole = (session?.user as any)?.role;
+
+  useEffect(() => {
+    if (session && pageRole === "editor") router.replace("/admin");
+  }, [session, pageRole, router]);
+
+  if (pageRole === "editor") return null;
+
   return (
     <div className="max-w-3xl space-y-6">
       <div>
