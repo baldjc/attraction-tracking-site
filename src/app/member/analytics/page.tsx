@@ -13,6 +13,7 @@ import {
   ArrowTrendingUpIcon, ArrowTrendingDownIcon,
   ArrowUpIcon, ArrowDownIcon,
 } from "@heroicons/react/24/outline";
+import { useTheme } from "@/components/ThemeProvider";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 interface OverviewData {
@@ -57,16 +58,17 @@ const TABS = [
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
 
-// ── Dark mode class helpers ─────────────────────────────────────────────────
-const card = "bg-white dark:bg-[#242b3d] border border-[#1e2a38]/10 dark:border-[#2d3748]";
+// ── Light/dark class helpers (aligned with site design system) ───────────────
+const card = "bg-white dark:bg-[#242b3d] rounded-xl border border-gray-200 dark:border-[#2d3748] shadow-sm";
 const txt = "text-[#1e2a38] dark:text-[#e2e8f0]";
-const muted = "text-[#1e2a38]/50 dark:text-[#94a3b8]";
+const muted = "text-[#1e2a38]/60 dark:text-[#94a3b8]";
 const dim = "text-[#1e2a38]/30 dark:text-[#64748b]";
-const rowHover = "hover:bg-[#f8f9fa] dark:hover:bg-[#2d3748] transition-colors";
-const divider = "divide-y divide-[#1e2a38]/5 dark:divide-[#2d3748]";
-const inputCls = "text-xs border border-[#1e2a38]/20 dark:border-[#2d3748] rounded-xl px-3 py-2 focus:outline-none focus:border-[#3dc3ff] bg-white dark:bg-[#2d3748] text-[#1e2a38] dark:text-[#e2e8f0]";
+const rowHover = "hover:bg-gray-50 dark:hover:bg-[#1a1f2e] transition-colors";
+const divider = "divide-y divide-gray-100 dark:divide-[#2d3748]";
+const thCls = `px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#1e2a38]/50 dark:text-[#94a3b8] bg-gray-50 dark:bg-[#1e2530]`;
+const inputCls = "text-xs border border-gray-200 dark:border-[#2d3748] rounded-xl px-3 py-2 focus:outline-none focus:border-[#3dc3ff] bg-white dark:bg-[#2d3748] text-[#1e2a38] dark:text-[#e2e8f0]";
 const selectCls = inputCls + " w-full appearance-none cursor-pointer";
-const periodBg = "bg-[#f1f1ef] dark:bg-[#1a1f2e]";
+const periodBg = "bg-gray-100 dark:bg-[#1a1f2e]";
 
 // ── Generic helpers ─────────────────────────────────────────────────────────
 function fmtDate(d: string) { const [, m, day] = d.split("-"); return `${parseInt(m)}/${parseInt(day)}`; }
@@ -153,6 +155,20 @@ function useSortTable<T>(rows: T[], defaultKey: keyof T) {
 // ── Main analytics inner component ──────────────────────────────────────────
 function AnalyticsPageInner() {
   const searchParams = useSearchParams();
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+
+  // Chart colors — adaptive to current theme
+  const chartGrid = isDark ? "rgba(45,55,72,0.5)" : "rgba(30,42,56,0.06)";
+  const chartTick = isDark ? "#64748b" : "rgba(30,42,56,0.45)";
+  const chartTooltip = {
+    background: isDark ? "#242b3d" : "#fff",
+    border: `1px solid ${isDark ? "#2d3748" : "#e5e7eb"}`,
+    borderRadius: 10,
+    fontSize: 12,
+    color: isDark ? "#e2e8f0" : "#1e2a38",
+  };
+  const clicksBarColor = isDark ? "#94a3b8" : "#1e2a38";
 
   const [activeTab, setActiveTab] = useState<TabId>(() => {
     const t = searchParams.get("tab") as TabId;
@@ -516,10 +532,10 @@ function AnalyticsPageInner() {
               ) : (
                 <ResponsiveContainer width="100%" height={220}>
                   <LineChart data={timeseries} margin={{ top: 5, right: 10, left: -15, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#1e2a3808" vertical={false} />
-                    <XAxis dataKey="date" tickFormatter={granularity === "hourly" ? fmtHour : fmtDate} tick={{ fontSize: 10, fill: "#1e2a3860" }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
-                    <YAxis tick={{ fontSize: 10, fill: "#1e2a3860" }} axisLine={false} tickLine={false} allowDecimals={false} />
-                    <Tooltip contentStyle={{ background: "#1e2a38", border: "none", borderRadius: 10, fontSize: 12, color: "#e2e8f0" }} labelFormatter={(l) => granularity === "hourly" ? fmtHour(String(l ?? "")) : fmtDate(String(l ?? ""))} />
+                    <CartesianGrid strokeDasharray="3 3" stroke={chartGrid} vertical={false} />
+                    <XAxis dataKey="date" tickFormatter={granularity === "hourly" ? fmtHour : fmtDate} tick={{ fontSize: 10, fill: chartTick }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
+                    <YAxis tick={{ fontSize: 10, fill: chartTick }} axisLine={false} tickLine={false} allowDecimals={false} />
+                    <Tooltip contentStyle={chartTooltip} labelFormatter={(l) => granularity === "hourly" ? fmtHour(String(l ?? "")) : fmtDate(String(l ?? ""))} />
                     <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11 }} />
                     <Line type="monotone" dataKey="clicks" stroke="#3dc3ff" strokeWidth={2} dot={false} name="Clicks" />
                     <Line type="monotone" dataKey="leads" stroke="#22c55e" strokeWidth={2} dot={false} name="Leads" />
@@ -535,7 +551,7 @@ function AnalyticsPageInner() {
                 <div className="space-y-3">
                   {[
                     { label: "YouTube Views", value: funnel!.views, color: "#3dc3ff", pct: null },
-                    { label: "Clicks", value: funnel!.clicks, color: "#1e2a38", pct: funnel!.views > 0 ? `${funnel!.viewToClickRate}% clicked` : null },
+                    { label: "Clicks", value: funnel!.clicks, color: clicksBarColor, pct: funnel!.views > 0 ? `${funnel!.viewToClickRate}% clicked` : null },
                     { label: "Leads", value: funnel!.leads, color: "#22c55e", pct: funnel!.clicks > 0 ? `${funnel!.clickToLeadRate}% converted` : null },
                   ].map((stage) => (
                     <div key={stage.label}>
@@ -586,10 +602,10 @@ function AnalyticsPageInner() {
                     <p className={`text-xs font-medium ${muted} mb-3`}>Leads Per Day</p>
                     <ResponsiveContainer width="100%" height={180}>
                       <BarChart data={dailyLeads} margin={{ top: 0, right: 5, left: -20, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#1e2a3808" vertical={false} />
-                        <XAxis dataKey="date" tickFormatter={fmtDate} tick={{ fontSize: 10, fill: "#1e2a3860" }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
-                        <YAxis tick={{ fontSize: 10, fill: "#1e2a3860" }} axisLine={false} tickLine={false} allowDecimals={false} />
-                        <Tooltip contentStyle={{ background: "#1e2a38", border: "none", borderRadius: 10, fontSize: 12, color: "#e2e8f0" }} labelFormatter={(l) => fmtDate(String(l ?? ""))} />
+                        <CartesianGrid strokeDasharray="3 3" stroke={chartGrid} vertical={false} />
+                        <XAxis dataKey="date" tickFormatter={fmtDate} tick={{ fontSize: 10, fill: chartTick }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
+                        <YAxis tick={{ fontSize: 10, fill: chartTick }} axisLine={false} tickLine={false} allowDecimals={false} />
+                        <Tooltip contentStyle={chartTooltip} labelFormatter={(l) => fmtDate(String(l ?? ""))} />
                         <Bar dataKey="leads" fill="#3dc3ff" radius={[3, 3, 0, 0]} name="Leads" />
                       </BarChart>
                     </ResponsiveContainer>
@@ -714,7 +730,7 @@ function AnalyticsPageInner() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className={`border-b border-[#1e2a38]/5 dark:border-[#2d3748] text-xs ${dim} font-medium`}>
+                    <tr>
                       {[
                         { key: "name" as const, label: "Campaign" },
                         { key: "totalViews" as const, label: "YT Views" },
@@ -723,11 +739,11 @@ function AnalyticsPageInner() {
                         { key: "conversionRate" as const, label: "Conv. Rate" },
                       ].map(({ key, label }) => (
                         <th key={key} onClick={() => lmSort.toggle(key)}
-                          className={`px-5 py-3 text-left cursor-pointer hover:${txt} select-none whitespace-nowrap`}>
+                          className={`${thCls} cursor-pointer select-none whitespace-nowrap`}>
                           {label}<lmSort.SortIcon col={key} />
                         </th>
                       ))}
-                      <th className="px-5 py-3 text-left">Best Video</th>
+                      <th className={thCls}>Best Video</th>
                     </tr>
                   </thead>
                   <tbody className={divider}>
@@ -779,8 +795,8 @@ function AnalyticsPageInner() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className={`border-b border-[#1e2a38]/5 dark:border-[#2d3748] text-xs ${dim} font-medium`}>
-                        <th className="px-5 py-3 text-left">Video</th>
+                      <tr>
+                        <th className={thCls}>Video</th>
                         {[
                           { key: "youtubeViewCount" as const, label: "YT Views" },
                           { key: "totalClicks" as const, label: "Clicks" },
@@ -789,11 +805,11 @@ function AnalyticsPageInner() {
                           { key: "conversionRate" as const, label: "Conv. Rate" },
                         ].map(({ key, label }) => (
                           <th key={key} onClick={() => vidSort.toggle(key)}
-                            className={`px-5 py-3 text-left cursor-pointer hover:${txt} select-none whitespace-nowrap`}>
+                            className={`${thCls} cursor-pointer select-none whitespace-nowrap`}>
                             {label}<vidSort.SortIcon col={key} />
                           </th>
                         ))}
-                        <th className="px-5 py-3 text-left">Campaign</th>
+                        <th className={thCls}>Campaign</th>
                       </tr>
                     </thead>
                     <tbody className={divider}>
@@ -838,15 +854,15 @@ function AnalyticsPageInner() {
 
                 {/* Top Videos Bar Chart */}
                 {topVideos.length > 1 && (
-                  <div className="px-5 py-5 border-t border-[#1e2a38]/5 dark:border-[#2d3748]">
+                  <div className="px-5 py-5 border-t border-gray-100 dark:border-[#2d3748]">
                     <h3 className={`text-sm font-semibold ${txt} mb-4`}>Top Videos by Leads</h3>
                     <ResponsiveContainer width="100%" height={Math.max(200, topVideos.length * 36)}>
                       <BarChart data={topVideos} layout="vertical" margin={{ top: 0, right: 30, left: 10, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#1e2a3808" horizontal={false} />
-                        <XAxis type="number" tick={{ fontSize: 10, fill: "#1e2a3860" }} axisLine={false} tickLine={false} allowDecimals={false} />
-                        <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: "#1e2a3860" }} axisLine={false} tickLine={false} width={120}
+                        <CartesianGrid strokeDasharray="3 3" stroke={chartGrid} horizontal={false} />
+                        <XAxis type="number" tick={{ fontSize: 10, fill: chartTick }} axisLine={false} tickLine={false} allowDecimals={false} />
+                        <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: chartTick }} axisLine={false} tickLine={false} width={120}
                           tickFormatter={(v: string) => v.length > 18 ? v.slice(0, 18) + "…" : v} />
-                        <Tooltip contentStyle={{ background: "#1e2a38", border: "none", borderRadius: 10, fontSize: 12, color: "#e2e8f0" }} />
+                        <Tooltip contentStyle={chartTooltip} />
                         <Bar dataKey="totalLeads" fill="#3dc3ff" radius={[0, 4, 4, 0]} name="Leads" />
                       </BarChart>
                     </ResponsiveContainer>
@@ -870,12 +886,12 @@ function AnalyticsPageInner() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className={`border-b border-[#1e2a38]/5 dark:border-[#2d3748] text-xs ${dim} font-medium`}>
-                      <th className="px-5 py-3 text-left">Country</th>
-                      <th className="px-5 py-3 text-left">Province / State</th>
-                      <th className="px-5 py-3 text-left">City</th>
+                    <tr>
+                      <th className={thCls}>Country</th>
+                      <th className={thCls}>Province / State</th>
+                      <th className={thCls}>City</th>
                       <th onClick={() => geoSort.toggle("leads")}
-                        className={`px-5 py-3 text-left cursor-pointer hover:${txt} select-none`}>
+                        className={`${thCls} cursor-pointer select-none`}>
                         Leads<geoSort.SortIcon col="leads" />
                       </th>
                     </tr>
