@@ -21,7 +21,7 @@ SCORING PRINCIPLES (score each 0–10):
 12. connection_language — Are there phrases that make the avatar feel directly spoken to? "If you're a first-time buyer in Calgary..."
 13. story_proof — Are there client stories with names, situations, stakes, and outcomes? Not just "I helped a client."
 14. grade_5_language — Could a 10-year-old follow along? Is jargon explained? Is the language conversational and simple?
-15. binge_architecture — TWO components: (1) Avatar consistency — do all videos serve the same person? This is the FOUNDATION. (2) Cross-references with a specific reason to watch the next video. Component 1 is more important than Component 2.
+15. binge_architecture — TWO components: (1) Avatar consistency — do all videos serve the same person? This is the FOUNDATION. (2) Cross-references to EXISTING published videos with a specific reason to watch — e.g. "In this video here, I share how..." NEVER "watch my next video" or future teasers. The referenced video must already exist so the viewer can click and watch immediately. Component 1 is more important than Component 2.
 16. consistency — Calculated mathematically from upload dates. Compute the average gap in days between consecutive uploads and apply the lookup table in calibration rule #11.
 
 SCORING GUIDELINES:
@@ -147,15 +147,28 @@ Scoring guide:
    7-8: 3x system in most videos (opening, mid, close) with natural integration and a compelling free resource
    9-10: Strategic system with different lead magnets for different content themes, mentioned 3x consistently with natural, non-salesy integration
 
-6. CURIOSITY BRIDGES — REQUIRE SPECIFIC EVIDENCE:
-   You MUST quote specific transition phrases from the transcript. Do not give a score of 7+ without citing at least 3 actual bridge phrases used across the videos.
+6. CURIOSITY BRIDGES — BROADER THAN AND/BUT/THEREFORE:
+   A curiosity bridge is ANY sentence that pulls the viewer forward, making them want to keep watching. "And/But/Therefore" is one pattern but NOT the only one. Score ALL forward-pulling language.
+
+   Examples of valid curiosity bridges (all count equally):
+   - "If you think that was good, you'll love this next part"
+   - "And this next point is even more important"
+   - "Which brings me to the mistake that catches even the most organised families offguard"
+   - "But here's what most people miss..."
+   - "Now here's where it gets really interesting"
+   - "But that's not even the biggest issue"
+   - Teasing a later point: "I'll get to the biggest one in a minute, but first..."
+
+   What is NOT a bridge: flat mechanical transitions — "Next up...", "Moving on...", "Let's talk about...", "Number three is..."
 
    Scoring guide:
-   0-2: No transitions, abrupt topic changes, or just silence between sections
-   3-4: Only uses flat transitions like 'next up...', 'let's talk about...', 'moving on...'
-   5-6: Occasional decent transitions but mostly mechanical
-   7-8: Regular use of curiosity-building phrases like 'but here's where it gets interesting...', 'and that's just the beginning...', 'but wait until you see...'
-   9-10: Masterful And/But/Therefore momentum between every section
+   0-2: No forward-pulling language. Abrupt topic changes.
+   3-4: Only flat transitions like "next up", "moving on" — no curiosity built
+   5-6: Some curiosity-building moments but inconsistent
+   7-8: Regular curiosity bridges pulling viewer forward through most sections
+   9-10: Nearly every transition creates anticipation. Viewer feels compelled to stay.
+
+   IMPORTANT: Do NOT limit your assessment to "And/But/Therefore" only. A sentence like "which brings me to the mistake that catches even the most organised families offguard" IS a strong curiosity bridge — score it as such.
 
 7. VALUES PEPPERING — THIS IS NOT ABOUT CREATOR HOBBIES:
 
@@ -216,18 +229,22 @@ Scoring guide:
    Are all videos serving the same avatar? A channel where every video speaks to the same person creates natural binge behaviour — the viewer sees the next video and thinks "that's for me too." This is the FOUNDATION of binge architecture. Without it, cross-references don't matter.
 
    COMPONENT 2 — Cross-references and end-of-video direction:
-   Does the creator reference other videos during content? At the end, do they clearly mention a SPECIFIC next video and what the viewer will GET from watching it?
+   Does the creator reference other EXISTING PUBLISHED videos during content? At the end, do they direct the viewer to a SPECIFIC video that ALREADY EXISTS on their channel and explain what they'll GET from watching it?
+   CRITICAL: Binge architecture means sending viewers to videos that are ALREADY PUBLISHED AND LIVE. "Watch my next video" or "stay tuned for my upcoming video" or "next week I'll be covering..." = WRONG — that's a tease, not binge architecture. The video MUST exist NOW so the viewer can click and watch immediately.
+   The correct language sounds like: "In this video here, I share how..." or "I made a video about X — here's the link" or "Go watch my video on X where I walk you through..."
    Generic "check out my other videos" = weak.
-   "Watch my video on the 5 neighbourhoods most people overlook — I walk you through exactly why they're undervalued" = strong.
+   "In this video right here, I walk you through the 5 neighbourhoods most people overlook and exactly why they're undervalued — link is in the description." = strong. The video exists and the viewer can watch it right now.
+
+   IMPORTANT FOR IMPROVED EXAMPLES: When writing improved binge architecture suggestions, you MUST use language that references an existing video. ALWAYS use phrasing like "In this video here, I share..." or "I made a video about..." NEVER use "my next video", "coming soon", "next week", "stay tuned", or any future-tense language about upcoming content.
 
    Scoring guide:
    0-2: Videos serve different audiences. No cross-references. Each video is an island for a different person.
    3-4: Videos loosely target same audience but no cross-references. OR: cross-references exist but videos serve scattered audiences.
-   5-6: Videos mostly serve same avatar. Occasional cross-references but generic ("check out this video" with no context).
-   7-8: All videos clearly serve same avatar. Some contextual cross-references. End cards or verbal mentions of related videos with a reason to watch.
-   9-10: All videos serve same avatar — obvious binge path. Contextual cross-references during content. End of video clearly directs to a specific next video with a compelling reason to watch.
+   5-6: Videos mostly serve same avatar. Occasional cross-references but generic ("check out this video" with no context). OR references to future/upcoming videos instead of existing ones.
+   7-8: All videos clearly serve same avatar. Some contextual cross-references to existing published videos. End cards or verbal mentions of existing related videos with a reason to watch.
+   9-10: All videos serve same avatar — obvious binge path. Contextual cross-references to existing published videos during content. End of video clearly directs to a specific existing video with a compelling reason to watch it now.
 
-   Evidence structure: (1) Do all videos serve the same avatar? List who each video speaks to. (2) Count and quote cross-references. (3) Assess end-of-video direction — is it specific with a reason to watch, or generic?
+   Evidence structure: (1) Do all videos serve the same avatar? List who each video speaks to. (2) Count and quote cross-references — are they to EXISTING videos or future teasers? (3) Assess end-of-video direction — does it point to a specific existing video with a reason to watch, or is it generic/future-tense?
 
 11. CONSISTENCY — MANDATORY MATHEMATICAL CALCULATION:
 
@@ -345,7 +362,7 @@ SCORING PRINCIPLES (score each 0–10):
 12. connection_language — Direct phrases that speak to the avatar specifically?
 13. story_proof — Client stories with names, situations, stakes, outcomes?
 14. grade_5_language — Conversational, jargon-free, simple?
-15. binge_architecture — (1) Does this video clearly speak to the same avatar as the channel? (2) Cross-references to other videos with a specific reason to watch?
+15. binge_architecture — (1) Does this video clearly speak to the same avatar as the channel? (2) Cross-references to other EXISTING published videos with a specific reason to watch? Correct language: "In this video here, I share..." NEVER "watch my next video" or future teasers. When writing improved examples, ALWAYS reference an existing video, never a future one.
 16. consistency — N/A for single video audits. Do NOT score this principle. Return null for the score in the JSON.
 
 SCORING GUIDELINES:
@@ -496,7 +513,7 @@ SCORING PRINCIPLES (score each 0–10):
 12. connection_language — Are there phrases that make the avatar feel directly spoken to?
 13. story_proof — Are there client stories with names, situations, stakes, and outcomes?
 14. grade_5_language — Is the language conversational and jargon-free? Could a 10-year-old follow along?
-15. binge_architecture — (1) Does this script clearly speak to one consistent avatar? (2) Are there mentions of or cross-references to other videos with a specific reason to watch?
+15. binge_architecture — (1) Does this script clearly speak to one consistent avatar? (2) Are there mentions of or cross-references to other EXISTING published videos? Correct language: "In this video here, I share..." NEVER "watch my next video" or future teasers. When writing improved examples, ALWAYS reference an existing video, never a future one.
 16. consistency — Score this 5 by default. Cannot assess consistency from a single script.
 
 SCORING GUIDELINES:
