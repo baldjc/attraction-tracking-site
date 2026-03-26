@@ -9,6 +9,9 @@ export async function register() {
     const { scheduleFathomAutoPull } = await import("@/lib/fathom-scheduler");
     scheduleFathomAutoPull();
 
+    const { scheduleBackup } = await import("@/lib/backup-scheduler");
+    scheduleBackup();
+
     try {
       const prisma = (await import("@/lib/prisma")).default;
       const existing = await prisma.user.findFirst({ where: { role: "admin" } });
