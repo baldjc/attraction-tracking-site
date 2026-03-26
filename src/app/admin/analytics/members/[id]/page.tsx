@@ -281,7 +281,7 @@ export default function MemberAnalyticsDetailPage({ params }: { params: Promise<
                 <div className="flex-shrink-0">
                   {latestAudit ? (
                     <Link
-                      href={`/admin/members/${user.id}/audits/${latestAudit.id}`}
+                      href={`/admin/audits/${latestAudit.id}`}
                       className="text-xs bg-emerald-50 dark:bg-emerald-600/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-600/30 rounded-lg px-3 py-1.5 hover:bg-emerald-100 dark:hover:bg-emerald-600/30 transition whitespace-nowrap"
                     >
                       View Audit {latestAudit.overallScore !== null ? `(${latestAudit.overallScore.toFixed(1)})` : ""}
