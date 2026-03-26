@@ -5,8 +5,14 @@ const globalForPrisma = globalThis as unknown as {
   prisma: InstanceType<typeof PrismaClient>;
 };
 
+function cleanUrl(url: string | undefined): string | undefined {
+  return url?.replace(/\s+/g, "");
+}
+
 function createPrismaClient() {
-  const connectionString = process.env.NEON_DATABASE_URL ?? process.env.DATABASE_URL;
+  const connectionString =
+    cleanUrl(process.env.NEON_DATABASE_URL) ??
+    cleanUrl(process.env.DATABASE_URL);
   if (!connectionString) {
     throw new Error("No database connection string found. Set NEON_DATABASE_URL.");
   }
