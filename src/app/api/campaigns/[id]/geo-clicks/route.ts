@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resolveUserFromSession } from "@/lib/session-utils";
-import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
 export async function GET(
@@ -11,11 +10,8 @@ export async function GET(
   const user = await resolveUserFromSession();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const session = await auth();
-  const isAdmin = (session?.user as { role?: string })?.role === "admin";
-
   const campaign = await prisma.campaign.findFirst({
-    where: { id, deletedAt: null, ...(isAdmin ? {} : { userId: user.id }) },
+    where: { id, userId: user.id, deletedAt: null },
     include: {
       links: { where: { deletedAt: null }, select: { id: true, name: true } },
     },
@@ -54,7 +50,6 @@ export async function GET(
     }
     const unique = Array.from(seen.values());
 
-    // Group by location for table
     const locationMap = new Map<
       string,
       { city: string; province: string | null; country: string | null; neighbourhood: string | null; count: number }
@@ -80,7 +75,6 @@ export async function GET(
 
     return NextResponse.json({ locations, markers, isEmail: true, links: campaign.links });
   } else {
-    // All clicks grouped by location
     const locationMap = new Map<
       string,
       { city: string; province: string | null; country: string | null; neighbourhood: string | null; count: number }

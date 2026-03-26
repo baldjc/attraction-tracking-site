@@ -4,13 +4,9 @@ import { resolveUserFromSession } from "@/lib/session-utils";
 import prisma from "@/lib/prisma";
 import { normalizeUrl } from "@/lib/tracking-utils";
 
-async function getCampaignForUser(id: string, userId: string, isAdmin: boolean) {
+async function getCampaignForUser(id: string, userId: string) {
   return prisma.campaign.findFirst({
-    where: {
-      id,
-      deletedAt: null,
-      ...(isAdmin ? {} : { userId }),
-    },
+    where: { id, userId, deletedAt: null },
   });
 }
 
@@ -23,7 +19,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const isAdmin = (session?.user as { role?: string })?.role === "admin";
 
   const campaign = await prisma.campaign.findFirst({
-    where: { id, deletedAt: null, ...(isAdmin ? {} : { userId: user.id }) },
+    where: { id, userId: user.id, deletedAt: null },
     include: {
       links: {
         where: { deletedAt: null },
@@ -88,10 +84,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const user = await resolveUserFromSession();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const session = await auth();
-  const isAdmin = (session?.user as { role?: string })?.role === "admin";
-
-  const campaign = await getCampaignForUser(id, user.id, isAdmin);
+  const campaign = await getCampaignForUser(id, user.id);
   if (!campaign) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const { name, destinationUrl, sourceType } = await req.json();
@@ -116,10 +109,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   const user = await resolveUserFromSession();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const session = await auth();
-  const isAdmin = (session?.user as { role?: string })?.role === "admin";
-
-  const campaign = await getCampaignForUser(id, user.id, isAdmin);
+  const campaign = await getCampaignForUser(id, user.id);
   if (!campaign) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const now = new Date();

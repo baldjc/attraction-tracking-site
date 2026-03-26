@@ -9,14 +9,13 @@ export async function GET() {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const session = await auth();
-  const role = (session?.user as { role?: string })?.role;
-  const isAdmin = role === "admin";
+  const isAdmin = (session?.user as { role?: string })?.role === "admin";
 
   const campaigns = await prisma.campaign.findMany({
     where: {
+      userId: user.id,
       deletedAt: null,
       name: { not: "__test_installation__" },
-      ...(isAdmin ? {} : { userId: user.id }),
     },
     include: {
       links: {

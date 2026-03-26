@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import prisma from "@/lib/prisma";
 import { generateUniqueRefCode, extractYoutubeVideoId, buildTrackedUrl } from "@/lib/tracking-utils";
@@ -10,11 +9,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const user = await resolveUserFromSession();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const session = await auth();
-  const isAdmin = (session?.user as { role?: string })?.role === "admin";
-
   const campaign = await prisma.campaign.findFirst({
-    where: { id, deletedAt: null, ...(isAdmin ? {} : { userId: user.id }) },
+    where: { id, userId: user.id, deletedAt: null },
   });
   if (!campaign) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
@@ -52,11 +48,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const user = await resolveUserFromSession();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const session = await auth();
-  const isAdmin = (session?.user as { role?: string })?.role === "admin";
-
   const campaign = await prisma.campaign.findFirst({
-    where: { id, deletedAt: null, ...(isAdmin ? {} : { userId: user.id }) },
+    where: { id, userId: user.id, deletedAt: null },
   });
   if (!campaign) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
