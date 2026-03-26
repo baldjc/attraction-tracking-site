@@ -58,20 +58,34 @@ const TIER_LABELS: Record<string, string> = {
   mastery_4: "Mastery 4",
 };
 
+// ── Design system class helpers ──────────────────────────────────────────────
+const txt   = "text-[#1e2a38] dark:text-[#e2e8f0]";
+const muted = "text-[#1e2a38]/60 dark:text-[#94a3b8]";
+const dim   = "text-[#1e2a38]/30 dark:text-[#64748b]";
+const card  = "bg-white dark:bg-[#242b3d] rounded-xl border border-gray-200 dark:border-[#2d3748] shadow-sm";
+const thCls = "px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#1e2a38]/50 dark:text-[#94a3b8] bg-gray-50 dark:bg-[#1e2530] whitespace-nowrap";
+const rowHover = "border-b border-gray-100 dark:border-[#2d3748]/60 hover:bg-gray-50 dark:hover:bg-[#1a1f2e] transition-colors";
+
 function scoreColor(score: number | null) {
-  if (score === null) return "text-gray-500";
-  if (score >= 7) return "text-emerald-400";
-  if (score >= 5) return "text-yellow-400";
-  return "text-red-400";
+  if (score === null) return muted;
+  if (score >= 7) return "text-emerald-600 dark:text-emerald-400";
+  if (score >= 5) return "text-yellow-600 dark:text-yellow-400";
+  return "text-[#ff0033] dark:text-red-400";
 }
 
 function StatusDot({ status }: { status: string }) {
-  const color = status === "active" ? "bg-emerald-400" : status === "at_risk" ? "bg-yellow-400" : "bg-red-400";
-  const label = status === "active" ? "Active" : status === "at_risk" ? "At Risk" : "Inactive";
+  const color =
+    status === "active" ? "bg-emerald-500" :
+    status === "at_risk" ? "bg-yellow-400" :
+    "bg-red-400";
+  const label =
+    status === "active" ? "Active" :
+    status === "at_risk" ? "At Risk" :
+    "Inactive";
   return (
     <span className="flex items-center gap-1.5">
       <span className={`w-2 h-2 rounded-full ${color}`} />
-      <span className="capitalize text-gray-300 text-xs">{label}</span>
+      <span className={`text-xs ${muted}`}>{label}</span>
     </span>
   );
 }
@@ -167,11 +181,11 @@ export default function AnalyticsPage() {
   }
 
   function SortIcon({ col }: { col: SortKey }) {
-    if (sortKey !== col) return <span className="text-gray-600 ml-1">↕</span>;
+    if (sortKey !== col) return <span className={`${dim} ml-1`}>↕</span>;
     return sortDir === "asc" ? (
-      <ChevronUpIcon className="w-3 h-3 inline ml-1 text-cyan-400" />
+      <ChevronUpIcon className="w-3 h-3 inline ml-1 text-[#3dc3ff]" />
     ) : (
-      <ChevronDownIcon className="w-3 h-3 inline ml-1 text-cyan-400" />
+      <ChevronDownIcon className="w-3 h-3 inline ml-1 text-[#3dc3ff]" />
     );
   }
 
@@ -194,7 +208,7 @@ export default function AnalyticsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64 text-gray-400">
+      <div className={`flex items-center justify-center h-64 ${muted}`}>
         <ArrowPathIcon className="w-6 h-6 animate-spin mr-2" />
         Loading analytics…
       </div>
@@ -206,15 +220,15 @@ export default function AnalyticsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Member Analytics</h1>
+          <h1 className={`text-2xl font-bold ${txt}`}>Member Analytics</h1>
           {lastSyncedAt && (
-            <p className="text-sm text-gray-500 mt-1">Last synced {fmtDate(lastSyncedAt)}</p>
+            <p className={`text-sm ${muted} mt-1`}>Last synced {fmtDate(lastSyncedAt)}</p>
           )}
         </div>
         <button
           onClick={handleRefreshAll}
           disabled={syncing}
-          className="flex items-center gap-2 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg transition"
+          className="flex items-center gap-2 bg-[#3dc3ff] hover:bg-[#29b0f0] disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg transition"
         >
           <ArrowPathIcon className={`w-4 h-4 ${syncing ? "animate-spin" : ""}`} />
           {syncing ? "Syncing…" : "Refresh All Channels"}
@@ -222,7 +236,7 @@ export default function AnalyticsPage() {
       </div>
 
       {syncMsg && (
-        <div className="bg-gray-700 border border-gray-600 text-gray-200 text-sm px-4 py-3 rounded-lg">
+        <div className="bg-[#3dc3ff]/10 border border-[#3dc3ff]/30 text-[#1e2a38] dark:text-[#e2e8f0] text-sm px-4 py-3 rounded-lg">
           {syncMsg}
         </div>
       )}
@@ -230,46 +244,46 @@ export default function AnalyticsPage() {
       {/* Summary Cards */}
       {cards && (
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-          <div className="bg-gray-800 border border-gray-700 rounded-xl p-4">
-            <div className="flex items-center gap-3 mb-2">
-              <VideoCameraIcon className="w-5 h-5 text-cyan-400" />
-              <span className="text-xs text-gray-400 uppercase tracking-wide">Videos This Week</span>
+          <div className={`${card} p-4`}>
+            <div className="flex items-center gap-3 mb-3">
+              <VideoCameraIcon className="w-5 h-5 text-[#3dc3ff]" />
+              <span className={`text-xs uppercase tracking-wide font-semibold ${muted}`}>Videos This Week</span>
             </div>
-            <div className="text-3xl font-bold text-white">{cards.videosThisWeek}</div>
+            <div className={`text-3xl font-bold ${txt}`}>{cards.videosThisWeek}</div>
           </div>
-          <div className="bg-gray-800 border border-gray-700 rounded-xl p-4">
-            <div className="flex items-center gap-3 mb-2">
-              <UserGroupIcon className="w-5 h-5 text-emerald-400" />
-              <span className="text-xs text-gray-400 uppercase tracking-wide">Active Members</span>
+          <div className={`${card} p-4`}>
+            <div className="flex items-center gap-3 mb-3">
+              <UserGroupIcon className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
+              <span className={`text-xs uppercase tracking-wide font-semibold ${muted}`}>Active Members</span>
             </div>
-            <div className="text-3xl font-bold text-white">{cards.activeMembers}</div>
+            <div className={`text-3xl font-bold ${txt}`}>{cards.activeMembers}</div>
           </div>
-          <div className="bg-gray-800 border border-gray-700 rounded-xl p-4">
-            <div className="flex items-center gap-3 mb-2">
-              <ExclamationTriangleIcon className="w-5 h-5 text-red-400" />
-              <span className="text-xs text-gray-400 uppercase tracking-wide">Inactive</span>
+          <div className={`${card} p-4`}>
+            <div className="flex items-center gap-3 mb-3">
+              <ExclamationTriangleIcon className="w-5 h-5 text-[#ff0033] dark:text-red-400" />
+              <span className={`text-xs uppercase tracking-wide font-semibold ${muted}`}>Inactive</span>
             </div>
-            <div className="text-3xl font-bold text-white">{cards.inactiveMembers}</div>
+            <div className={`text-3xl font-bold ${txt}`}>{cards.inactiveMembers}</div>
           </div>
-          <div className="bg-gray-800 border border-gray-700 rounded-xl p-4">
-            <div className="flex items-center gap-3 mb-2">
-              <CursorArrowRaysIcon className="w-5 h-5 text-cyan-400" />
-              <span className="text-xs text-gray-400 uppercase tracking-wide">Link Clicks (7d)</span>
+          <div className={`${card} p-4`}>
+            <div className="flex items-center gap-3 mb-3">
+              <CursorArrowRaysIcon className="w-5 h-5 text-[#3dc3ff]" />
+              <span className={`text-xs uppercase tracking-wide font-semibold ${muted}`}>Link Clicks (7d)</span>
             </div>
-            <div className="text-3xl font-bold text-white">{cards.linkClicks7d}</div>
+            <div className={`text-3xl font-bold ${txt}`}>{cards.linkClicks7d}</div>
           </div>
-          <div className="bg-gray-800 border border-gray-700 rounded-xl p-4">
-            <div className="flex items-center gap-3 mb-2">
-              <TrophyIcon className="w-5 h-5 text-yellow-400" />
-              <span className="text-xs text-gray-400 uppercase tracking-wide">Top Lead Performer</span>
+          <div className={`${card} p-4`}>
+            <div className="flex items-center gap-3 mb-3">
+              <TrophyIcon className="w-5 h-5 text-yellow-500 dark:text-yellow-400" />
+              <span className={`text-xs uppercase tracking-wide font-semibold ${muted}`}>Top Lead Performer</span>
             </div>
             {cards.topLead ? (
               <>
-                <div className="text-sm font-semibold text-white truncate">{cards.topLead.fullName}</div>
-                <div className="text-xs text-gray-400">{cards.topLead.conversions} conversions</div>
+                <div className={`text-sm font-semibold ${txt} truncate`}>{cards.topLead.fullName}</div>
+                <div className={`text-xs ${muted}`}>{cards.topLead.conversions} conversions</div>
               </>
             ) : (
-              <div className="text-gray-500 text-sm">—</div>
+              <div className={`text-sm ${dim}`}>—</div>
             )}
           </div>
         </div>
@@ -278,39 +292,39 @@ export default function AnalyticsPage() {
       {/* Recent Videos */}
       {recentVideos.length > 0 && (
         <section>
-          <h2 className="text-lg font-semibold text-white mb-4">Videos Published This Week</h2>
+          <h2 className={`text-lg font-semibold ${txt} mb-4`}>Videos Published This Week</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {recentVideos.map((video) => {
               const latestAudit = video.audits[0];
               const started = auditDone[video.id];
               return (
-                <div key={video.id} className="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden flex flex-col">
+                <div key={video.id} className={`${card} overflow-hidden flex flex-col`}>
                   {video.thumbnailUrl ? (
                     <img src={video.thumbnailUrl} alt={video.title} className="w-full aspect-video object-cover" />
                   ) : (
-                    <div className="w-full aspect-video bg-gray-700 flex items-center justify-center">
-                      <VideoCameraIcon className="w-8 h-8 text-gray-500" />
+                    <div className="w-full aspect-video bg-gray-100 dark:bg-[#1e2530] flex items-center justify-center">
+                      <VideoCameraIcon className={`w-8 h-8 ${dim}`} />
                     </div>
                   )}
                   <div className="p-3 flex flex-col gap-2 flex-1">
-                    <div className="text-xs text-cyan-400 font-medium truncate">{video.user.fullName || "Unknown"}</div>
-                    <div className="text-sm text-white font-medium line-clamp-2 leading-snug">{video.title}</div>
-                    <div className="text-xs text-gray-500">{fmtDate(video.publishedAt)} · {video.viewCount.toLocaleString()} views</div>
+                    <div className="text-xs text-[#3dc3ff] font-medium truncate">{video.user.fullName || "Unknown"}</div>
+                    <div className={`text-sm ${txt} font-medium line-clamp-2 leading-snug`}>{video.title}</div>
+                    <div className={`text-xs ${dim}`}>{fmtDate(video.publishedAt)} · {video.viewCount.toLocaleString()} views</div>
                     <div className="mt-auto">
                       {latestAudit ? (
                         <Link
                           href={`/admin/members/${video.user.id}/audits/${latestAudit.id}`}
-                          className="block text-center text-xs bg-emerald-600/20 text-emerald-400 border border-emerald-600/30 rounded-lg px-3 py-1.5 hover:bg-emerald-600/30 transition"
+                          className="block text-center text-xs bg-emerald-50 dark:bg-emerald-600/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-600/30 rounded-lg px-3 py-1.5 hover:bg-emerald-100 dark:hover:bg-emerald-600/30 transition"
                         >
                           View Audit {latestAudit.overallScore !== null ? `(${latestAudit.overallScore.toFixed(1)})` : ""}
                         </Link>
                       ) : started ? (
-                        <div className="text-center text-xs text-gray-400 py-1.5">Audit queued…</div>
+                        <div className={`text-center text-xs ${dim} py-1.5`}>Audit queued…</div>
                       ) : (
                         <button
                           onClick={() => handleRunAudit(video)}
                           disabled={runningAudit[video.id]}
-                          className="w-full text-xs bg-cyan-600 hover:bg-cyan-500 disabled:opacity-60 text-white rounded-lg px-3 py-1.5 transition"
+                          className="w-full text-xs bg-[#3dc3ff] hover:bg-[#29b0f0] disabled:opacity-60 text-white rounded-lg px-3 py-1.5 transition"
                         >
                           {runningAudit[video.id] ? "Starting…" : "Run Audit"}
                         </button>
@@ -327,7 +341,7 @@ export default function AnalyticsPage() {
       {/* Member Table */}
       <section>
         <div className="flex flex-wrap items-center gap-3 mb-4">
-          <h2 className="text-lg font-semibold text-white">Member Engagement</h2>
+          <h2 className={`text-lg font-semibold ${txt}`}>Member Engagement</h2>
           <div className="flex items-center gap-1 ml-auto flex-wrap">
             {["all", "active", "at_risk", "inactive"].map((s) => (
               <button
@@ -335,8 +349,8 @@ export default function AnalyticsPage() {
                 onClick={() => { setStatusFilter(s); setPage(1); }}
                 className={`text-xs px-3 py-1.5 rounded-lg border transition ${
                   statusFilter === s
-                    ? "bg-cyan-600 border-cyan-500 text-white"
-                    : "bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500"
+                    ? "bg-[#3dc3ff] border-[#3dc3ff] text-white"
+                    : "bg-white dark:bg-[#242b3d] border-gray-200 dark:border-[#2d3748] text-[#1e2a38]/60 dark:text-[#94a3b8] hover:border-[#3dc3ff]/50"
                 }`}
               >
                 {s === "all" ? "All" : s === "at_risk" ? "At Risk" : s.charAt(0).toUpperCase() + s.slice(1)}
@@ -345,7 +359,7 @@ export default function AnalyticsPage() {
             <select
               value={tierFilter}
               onChange={(e) => { setTierFilter(e.target.value); setPage(1); }}
-              className="text-xs bg-gray-800 border border-gray-700 text-gray-300 rounded-lg px-3 py-1.5 ml-2"
+              className={`text-xs bg-white dark:bg-[#242b3d] border border-gray-200 dark:border-[#2d3748] ${txt} rounded-lg px-3 py-1.5 ml-2 focus:outline-none focus:border-[#3dc3ff]`}
             >
               <option value="all">All Tiers</option>
               {Object.entries(TIER_LABELS).map(([v, l]) => (
@@ -355,11 +369,11 @@ export default function AnalyticsPage() {
           </div>
         </div>
 
-        <div className="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden">
+        <div className={`${card} overflow-hidden`}>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-700">
+                <tr>
                   {[
                     { key: "fullName", label: "Member" },
                     { key: "lastVideoAt", label: "Last Video" },
@@ -373,7 +387,7 @@ export default function AnalyticsPage() {
                     <th
                       key={key}
                       onClick={() => toggleSort(key as SortKey)}
-                      className="px-4 py-3 text-left text-xs text-gray-400 uppercase tracking-wide cursor-pointer hover:text-gray-200 select-none whitespace-nowrap"
+                      className={`${thCls} cursor-pointer select-none`}
                     >
                       {label}
                       <SortIcon col={key as SortKey} />
@@ -384,25 +398,25 @@ export default function AnalyticsPage() {
               <tbody>
                 {paginated.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-4 py-8 text-center text-gray-500">No members match current filters.</td>
+                    <td colSpan={8} className={`px-4 py-8 text-center ${dim}`}>No members match current filters.</td>
                   </tr>
                 ) : (
                   paginated.map((m) => (
-                    <tr key={m.id} className="border-b border-gray-700/50 hover:bg-gray-700/30 transition">
+                    <tr key={m.id} className={rowHover}>
                       <td className="px-4 py-3">
-                        <Link href={`/admin/analytics/members/${m.id}`} className="text-cyan-400 hover:underline font-medium">
+                        <Link href={`/admin/analytics/members/${m.id}`} className="text-[#3dc3ff] hover:underline font-medium">
                           {m.fullName || "Unknown"}
                         </Link>
-                        <div className="text-xs text-gray-500">{TIER_LABELS[m.serviceTier] || m.serviceTier}</div>
+                        <div className={`text-xs ${dim}`}>{TIER_LABELS[m.serviceTier] || m.serviceTier}</div>
                       </td>
-                      <td className="px-4 py-3 text-gray-300 whitespace-nowrap">{fmtDate(m.lastVideoAt)}</td>
-                      <td className="px-4 py-3 text-gray-300">{m.videos7d}</td>
+                      <td className={`px-4 py-3 ${muted} whitespace-nowrap`}>{fmtDate(m.lastVideoAt)}</td>
+                      <td className={`px-4 py-3 ${muted}`}>{m.videos7d}</td>
                       <td className={`px-4 py-3 font-semibold ${scoreColor(m.currentScore)}`}>
                         {m.currentScore !== null ? m.currentScore.toFixed(1) : "—"}
                       </td>
-                      <td className="px-4 py-3 text-gray-300">{m.toolUses7d}</td>
-                      <td className="px-4 py-3 text-gray-300">{m.clicks7d}</td>
-                      <td className="px-4 py-3 text-gray-300">{m.conversions7d}</td>
+                      <td className={`px-4 py-3 ${muted}`}>{m.toolUses7d}</td>
+                      <td className={`px-4 py-3 ${muted}`}>{m.clicks7d}</td>
+                      <td className={`px-4 py-3 ${muted}`}>{m.conversions7d}</td>
                       <td className="px-4 py-3">
                         <StatusDot status={m.status} />
                       </td>
@@ -414,22 +428,22 @@ export default function AnalyticsPage() {
           </div>
 
           {/* Pagination */}
-          <div className="flex items-center justify-between px-4 py-3 border-t border-gray-700">
-            <span className="text-xs text-gray-500">
+          <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 dark:border-[#2d3748]">
+            <span className={`text-xs ${dim}`}>
               Showing {filtered.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length}
             </span>
             <div className="flex gap-2">
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
-                className="text-xs px-3 py-1.5 bg-gray-700 rounded-lg disabled:opacity-40 hover:bg-gray-600 transition text-gray-300"
+                className={`text-xs px-3 py-1.5 bg-gray-100 dark:bg-[#1e2530] border border-gray-200 dark:border-[#2d3748] rounded-lg disabled:opacity-40 hover:bg-gray-200 dark:hover:bg-[#2d3748] transition ${muted}`}
               >
                 Previous
               </button>
               <button
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
-                className="text-xs px-3 py-1.5 bg-gray-700 rounded-lg disabled:opacity-40 hover:bg-gray-600 transition text-gray-300"
+                className={`text-xs px-3 py-1.5 bg-gray-100 dark:bg-[#1e2530] border border-gray-200 dark:border-[#2d3748] rounded-lg disabled:opacity-40 hover:bg-gray-200 dark:hover:bg-[#2d3748] transition ${muted}`}
               >
                 Next
               </button>
