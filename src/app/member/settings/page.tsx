@@ -182,7 +182,7 @@ export default function MemberSettingsPage() {
   }
 
   const hasAvatar = !!avatar?.avatarProfile;
-  const themes: string[] = Array.isArray(avatar?.contentThemes) ? (avatar!.contentThemes as string[]) : [];
+  const themes: unknown[] = Array.isArray(avatar?.contentThemes) ? (avatar!.contentThemes as unknown[]) : [];
 
   return (
     <div className="space-y-6">
@@ -222,9 +222,16 @@ export default function MemberSettingsPage() {
                 <div>
                   <p className="text-xs font-semibold text-[#1e2a38]/40 dark:text-[#718096] uppercase tracking-wide mb-2">Content Themes</p>
                   <div className="flex flex-wrap gap-2">
-                    {themes.map((t) => (
-                      <span key={t} className="bg-[#3dc3ff]/10 text-[#3dc3ff] text-xs font-medium px-3 py-1 rounded-full">{t}</span>
-                    ))}
+                    {themes.map((t, i) => {
+                      const label = typeof t === "string"
+                        ? t
+                        : t && typeof t === "object" && "name" in t
+                          ? `${(t as any).emoji ?? ""} ${(t as any).name ?? ""}`.trim()
+                          : null;
+                      return label ? (
+                        <span key={i} className="bg-[#3dc3ff]/10 text-[#3dc3ff] text-xs font-medium px-3 py-1 rounded-full">{label}</span>
+                      ) : null;
+                    })}
                   </div>
                 </div>
               )}

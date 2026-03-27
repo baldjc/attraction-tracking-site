@@ -1192,9 +1192,16 @@ export default function MemberDetailPage() {
                 )}
                 {Array.isArray(member.contentThemes) && member.contentThemes.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mb-4">
-                    {(member.contentThemes as string[]).map((t: string) => (
-                      <span key={t} className="text-xs bg-[#3dc3ff]/10 text-[#3dc3ff] px-2.5 py-1 rounded-full font-medium">{t}</span>
-                    ))}
+                    {(member.contentThemes as unknown[]).map((t, i) => {
+                      const label = typeof t === "string"
+                        ? t
+                        : t && typeof t === "object" && "name" in t
+                          ? `${(t as any).emoji ?? ""} ${(t as any).name ?? ""}`.trim()
+                          : null;
+                      return label ? (
+                        <span key={i} className="text-xs bg-[#3dc3ff]/10 text-[#3dc3ff] px-2.5 py-1 rounded-full font-medium">{label}</span>
+                      ) : null;
+                    })}
                   </div>
                 )}
               </>
