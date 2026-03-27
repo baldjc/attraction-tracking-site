@@ -77,8 +77,8 @@ export default function AdminDashboard() {
       value: stats?.totalMembers ?? "—",
       icon: UsersIcon,
       href: "/admin/members",
-      color: "text-[#3dc3ff]",
-      bg: "bg-[#3dc3ff]/10",
+      color: "text-[#0d9488]",
+      bg: "bg-[#0d9488]/10",
     },
     {
       label: "Total Audits",
@@ -101,8 +101,8 @@ export default function AdminDashboard() {
   return (
     <div className="max-w-5xl">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-[#1e2a38]">Dashboard</h1>
-        <p className="text-[#1e2a38]/50 mt-1 text-sm">
+        <h1 className="text-2xl font-bold text-[#2f3437]">Dashboard</h1>
+        <p className="text-[#2f3437]/50 mt-1 text-sm">
           {isEditorRole
             ? "Overview of your editing and mastery clients."
             : "Welcome back. Here\u0027s an overview of your program."}
@@ -117,14 +117,14 @@ export default function AdminDashboard() {
             <Link
               key={card.label}
               href={card.href}
-              className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm hover:shadow-md transition-shadow group"
+              className="bg-white rounded-lg border border-gray-200 p-5 hover:shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-shadow group"
             >
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-xs font-semibold text-[#1e2a38]/50 uppercase tracking-wider mb-2">
+                  <p className="text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wider mb-2">
                     {card.label}
                   </p>
-                  <p className="text-3xl font-bold text-[#1e2a38]">{card.value}</p>
+                  <p className="text-3xl font-bold text-[#2f3437]">{card.value}</p>
                 </div>
                 <div className={`${card.bg} p-2.5 rounded-lg`}>
                   <Icon className={`w-6 h-6 ${card.color}`} />
@@ -137,20 +137,20 @@ export default function AdminDashboard() {
 
       {/* Sync from GHL */}
       {!isEditorRole && (
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h2 className="text-base font-semibold text-[#1e2a38]">
+              <h2 className="text-base font-semibold text-[#2f3437]">
                 Sync Foundations Members from GHL
               </h2>
-              <p className="text-sm text-[#1e2a38]/50 mt-1">
+              <p className="text-sm text-[#2f3437]/50 mt-1">
                 Pulls all contacts tagged &ldquo;foundations - weekly coaching&rdquo; from GoHighLevel.
               </p>
             </div>
             <button
               onClick={handleSync}
               disabled={syncing}
-              className="flex items-center gap-2 bg-[#3dc3ff] hover:bg-[#2bb3ef] disabled:opacity-50 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors shrink-0"
+              className="flex items-center gap-2 bg-[#0d9488] hover:bg-[#0b7a70] disabled:opacity-50 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors shrink-0"
             >
               <ArrowPathIcon className={`w-4 h-4 ${syncing ? "animate-spin" : ""}`} />
               {syncing ? "Syncing…" : "Sync from GHL"}
@@ -161,7 +161,7 @@ export default function AdminDashboard() {
               className={`mt-4 text-sm px-4 py-3 rounded-lg ${
                 syncMsg.startsWith("Error") || syncMsg.startsWith("Sync failed")
                   ? "bg-[#ff0033]/10 text-[#ff0033]"
-                  : "bg-[#3dc3ff]/10 text-[#1e2a38]"
+                  : "bg-[#0d9488]/10 text-[#2f3437]"
               }`}
             >
               {syncMsg}
@@ -174,38 +174,38 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Link
           href="/admin/members"
-          className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm hover:shadow-md transition-shadow"
+          className="bg-white rounded-lg border border-gray-200 p-5 hover:shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-shadow"
         >
-          <h3 className="font-semibold text-[#1e2a38] mb-1">Manage Members</h3>
-          <p className="text-sm text-[#1e2a38]/50">
+          <h3 className="font-semibold text-[#2f3437] mb-1">Manage Members</h3>
+          <p className="text-sm text-[#2f3437]/50">
             View, search, and manage all Foundations Members.
           </p>
         </Link>
         <Link
           href="/admin/audits"
-          className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm hover:shadow-md transition-shadow"
+          className="bg-white rounded-lg border border-gray-200 p-5 hover:shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-shadow"
         >
-          <h3 className="font-semibold text-[#1e2a38] mb-1">Audit History</h3>
-          <p className="text-sm text-[#1e2a38]/50">
+          <h3 className="font-semibold text-[#2f3437] mb-1">Audit History</h3>
+          <p className="text-sm text-[#2f3437]/50">
             Review YouTube channel audits and scores.
           </p>
         </Link>
         <Link
           href="/admin/settings"
-          className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm hover:shadow-md transition-shadow"
+          className="bg-white rounded-lg border border-gray-200 p-5 hover:shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-shadow"
         >
           <div className="flex items-center gap-2 mb-1">
-            <Cog6ToothIcon className="w-4 h-4 text-[#1e2a38]/50" />
-            <h3 className="font-semibold text-[#1e2a38]">Settings</h3>
+            <Cog6ToothIcon className="w-4 h-4 text-[#2f3437]/50" />
+            <h3 className="font-semibold text-[#2f3437]">Settings</h3>
           </div>
-          <p className="text-sm text-[#1e2a38]/50">
+          <p className="text-sm text-[#2f3437]/50">
             Feature visibility, AI scoring prompt, and platform preferences.
           </p>
         </Link>
       </div>
 
       {/* View as Member */}
-      <div className="mt-4 bg-amber-50 border border-amber-200 rounded-xl p-5 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h3 className="font-semibold text-amber-900 mb-1 flex items-center gap-2">
             <EyeIcon className="w-4 h-4" />

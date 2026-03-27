@@ -7,7 +7,7 @@ interface Props {
   color?: string;
 }
 
-export function MiniSparkline({ data, color = "#3dc3ff" }: Props) {
+export function MiniSparkline({ data, color = "#0d9488" }: Props) {
   if (!data.length) return null;
   return (
     <ResponsiveContainer width="100%" height={40}>

@@ -90,35 +90,35 @@ export default function RecentConversations({
     Array.isArray(conv.messages) ? conv.messages.length : 0;
 
   return (
-    <div className="border border-gray-200 rounded-xl overflow-hidden mb-6">
+    <div className="border border-gray-200 rounded-lg overflow-hidden mb-6">
       <button
         onClick={() => setOpen((o) => !o)}
         className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
       >
         <div className="flex items-center gap-2">
-          <ChatBubbleLeftRightIcon className="w-4 h-4 text-[#1e2a38]/40" />
-          <span className="text-xs font-semibold text-[#1e2a38]/60 uppercase tracking-wider">
+          <ChatBubbleLeftRightIcon className="w-4 h-4 text-[#2f3437]/40" />
+          <span className="text-xs font-semibold text-[#2f3437]/60 uppercase tracking-wider">
             {label}
           </span>
           {conversations.length > 0 && (
-            <span className="text-xs bg-[#3dc3ff]/10 text-[#3dc3ff] font-semibold px-1.5 py-0.5 rounded-full">
+            <span className="text-xs bg-[#0d9488]/10 text-[#0d9488] font-semibold px-1.5 py-0.5 rounded-full">
               {conversations.length}
             </span>
           )}
         </div>
         {open ? (
-          <ChevronUpIcon className="w-4 h-4 text-[#1e2a38]/40" />
+          <ChevronUpIcon className="w-4 h-4 text-[#2f3437]/40" />
         ) : (
-          <ChevronDownIcon className="w-4 h-4 text-[#1e2a38]/40" />
+          <ChevronDownIcon className="w-4 h-4 text-[#2f3437]/40" />
         )}
       </button>
 
       {open && (
         <div className="bg-white">
           {loading ? (
-            <p className="px-4 py-3 text-xs text-[#1e2a38]/40 animate-pulse">Loading…</p>
+            <p className="px-4 py-3 text-xs text-[#2f3437]/40 animate-pulse">Loading…</p>
           ) : conversations.length === 0 ? (
-            <p className="px-4 py-3 text-xs text-[#1e2a38]/40">{emptyLabel}</p>
+            <p className="px-4 py-3 text-xs text-[#2f3437]/40">{emptyLabel}</p>
           ) : (
             <ul className="divide-y divide-gray-50">
               {conversations.map((conv) => (
@@ -129,7 +129,7 @@ export default function RecentConversations({
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium text-[#1e2a38] truncate">{conv.title}</p>
+                        <p className="text-sm font-medium text-[#2f3437] truncate">{conv.title}</p>
                         {conv.metadata?.overallScore != null && (
                           <span className={`shrink-0 text-xs font-bold px-1.5 py-0.5 rounded-md ${
                             conv.metadata.overallScore >= 7
@@ -142,7 +142,7 @@ export default function RecentConversations({
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-[#1e2a38]/40 mt-0.5">
+                      <p className="text-xs text-[#2f3437]/40 mt-0.5">
                         {fmt(conv.updatedAt)} · {messageCount(conv)} messages
                         {conv.downloadCount > 0 && ` · ${conv.downloadCount} downloads`}
                       </p>
@@ -151,7 +151,7 @@ export default function RecentConversations({
                       <button
                         onClick={(e) => handleDownload(conv.id, e)}
                         title="Download"
-                        className="p-1.5 rounded-lg text-[#1e2a38]/30 hover:text-[#3dc3ff] hover:bg-[#3dc3ff]/10 transition-colors"
+                        className="p-1.5 rounded-lg text-[#2f3437]/30 hover:text-[#0d9488] hover:bg-[#0d9488]/10 transition-colors"
                       >
                         <ArrowDownTrayIcon className="w-3.5 h-3.5" />
                       </button>
@@ -159,7 +159,7 @@ export default function RecentConversations({
                         onClick={(e) => handleDelete(conv.id, e)}
                         disabled={deletingId === conv.id}
                         title="Delete"
-                        className="p-1.5 rounded-lg text-[#1e2a38]/30 hover:text-[#ff0033] hover:bg-[#ff0033]/10 transition-colors disabled:opacity-40"
+                        className="p-1.5 rounded-lg text-[#2f3437]/30 hover:text-[#ff0033] hover:bg-[#ff0033]/10 transition-colors disabled:opacity-40"
                       >
                         <TrashIcon className="w-3.5 h-3.5" />
                       </button>

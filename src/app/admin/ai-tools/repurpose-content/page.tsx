@@ -11,7 +11,7 @@ export default function AdminRepurposeContentPage() {
       <div className="max-w-2xl mx-auto px-4 pt-4 pb-0">
         <Link
           href="/admin/ai-tools"
-          className="flex items-center gap-1.5 text-xs text-[#1e2a38]/50 hover:text-[#3dc3ff] transition-colors"
+          className="flex items-center gap-1.5 text-xs text-[#2f3437]/50 hover:text-[#0d9488] transition-colors"
         >
           <ArrowLeftIcon className="w-3.5 h-3.5" />
           Back to AI Tools

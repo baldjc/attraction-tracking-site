@@ -87,17 +87,17 @@ export default function MemberScoresPage() {
 
   useEffect(() => { load(); }, []);
 
-  const txt = "text-[#1e2a38] dark:text-[#e2e8f0]";
-  const muted = "text-[#1e2a38]/60 dark:text-[#94a3b8]";
-  const card = "bg-white dark:bg-[#242b3d] rounded-xl border border-gray-200 dark:border-[#2d3748] shadow-sm";
-  const divider = "divide-gray-100 dark:divide-[#2d3748]";
+  const txt = "text-[#2f3437] dark:text-[#e2e8f0]";
+  const muted = "text-[#2f3437]/60 dark:text-[#94a3b8]";
+  const card = "bg-white dark:bg-[#1a1a1a] rounded-lg border border-gray-200 dark:border-[#2a2a2a]";
+  const divider = "divide-gray-100 dark:divide-[#2a2a2a]";
   const thClass = `text-left px-5 py-3 text-xs font-semibold uppercase tracking-wider ${muted} bg-gray-50 dark:bg-[#1e2530]`;
   const tdClass = `px-5 py-3.5`;
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-4 border-[#3dc3ff] border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-4 border-[#0d9488] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -106,7 +106,7 @@ export default function MemberScoresPage() {
     return (
       <div>
         <h1 className={`text-2xl font-bold ${txt} mb-2`}>My Scores</h1>
-        <div className="bg-[#3dc3ff]/10 border border-[#3dc3ff]/30 rounded-xl p-10 text-center">
+        <div className="bg-[#0d9488]/10 border border-[#0d9488]/30 rounded-lg p-10 text-center">
           <p className={`font-medium ${txt} mb-2`}>No audits yet</p>
           <p className={`text-sm ${muted}`}>
             Your Attraction Scores will appear here after your first audit is completed by your coach.
@@ -142,7 +142,7 @@ export default function MemberScoresPage() {
     <div className="space-y-5 pb-10">
       {/* YouTube Channel Banner */}
       {channelBannerUrl && (
-        <div className="rounded-xl overflow-hidden shadow-sm border border-gray-200 dark:border-[#2d3748] relative">
+        <div className="rounded-lg overflow-hidden border border-gray-200 dark:border-[#2a2a2a] relative">
           <img
             src={channelBannerUrl}
             alt={channelName ? `${channelName} YouTube banner` : "YouTube channel banner"}
@@ -183,7 +183,7 @@ export default function MemberScoresPage() {
         </div>
         <button
           onClick={load}
-          className={`flex items-center gap-2 px-4 py-2.5 border border-gray-200 dark:border-[#2d3748] rounded-lg text-sm ${txt} hover:bg-gray-50 dark:hover:bg-[#1a1f2e] transition-colors`}
+          className={`flex items-center gap-2 px-4 py-2.5 border border-gray-200 dark:border-[#2a2a2a] rounded-lg text-sm ${txt} hover:bg-gray-50 dark:hover:bg-[#111111] transition-colors`}
         >
           <ArrowPathIcon className="w-4 h-4" /> Refresh
         </button>
@@ -247,21 +247,21 @@ export default function MemberScoresPage() {
                 <Tooltip
                   formatter={(v) => [typeof v === "number" ? v.toFixed(1) : v, "Score"]}
                   contentStyle={{
-                    background: "#242b3d",
-                    border: "1px solid #2d3748",
+                    background: "#1a1a1a",
+                    border: "1px solid #2a2a2a",
                     borderRadius: 8,
                     fontSize: 12,
                     color: "#e2e8f0",
                   }}
-                  cursor={{ stroke: "#3dc3ff", strokeWidth: 1, strokeDasharray: "4 4" }}
+                  cursor={{ stroke: "#0d9488", strokeWidth: 1, strokeDasharray: "4 4" }}
                 />
                 <Line
                   type="monotone"
                   dataKey="score"
-                  stroke="#3dc3ff"
+                  stroke="#0d9488"
                   strokeWidth={2.5}
-                  dot={{ r: 4, fill: "#3dc3ff", strokeWidth: 0 }}
-                  activeDot={{ r: 6, fill: "#3dc3ff" }}
+                  dot={{ r: 4, fill: "#0d9488", strokeWidth: 0 }}
+                  activeDot={{ r: 6, fill: "#0d9488" }}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -282,14 +282,14 @@ export default function MemberScoresPage() {
 
       {/* 16-Principle Breakdown Table */}
       <div className={`${card} overflow-hidden`}>
-        <div className={`px-5 py-4 border-b border-gray-200 dark:border-[#2d3748]`}>
+        <div className={`px-5 py-4 border-b border-gray-200 dark:border-[#2a2a2a]`}>
           <h2 className={`text-sm font-semibold ${txt}`}>16-Principle Breakdown</h2>
           <p className={`text-xs ${muted} mt-0.5`}>Click any row to see the evidence note from your audit</p>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className={`border-b border-gray-200 dark:border-[#2d3748]`}>
+              <tr className={`border-b border-gray-200 dark:border-[#2a2a2a]`}>
                 <th className={thClass} style={{ width: "36%" }}>Principle</th>
                 <th className={thClass} style={{ width: "20%" }}>Learning Path</th>
                 <th className={thClass} style={{ width: "24%" }}>Score</th>
@@ -305,8 +305,8 @@ export default function MemberScoresPage() {
                   <React.Fragment key={key}>
                     <tr
                       onClick={() => setExpanded(isOpen ? null : key)}
-                      className={`cursor-pointer hover:bg-gray-50 dark:hover:bg-[#1a1f2e] transition-colors ${
-                        isOpen ? "bg-gray-50 dark:bg-[#1a1f2e]" : ""
+                      className={`cursor-pointer hover:bg-gray-50 dark:hover:bg-[#111111] transition-colors ${
+                        isOpen ? "bg-gray-50 dark:bg-[#111111]" : ""
                       }`}
                     >
                       <td className={`${tdClass} font-medium ${txt}`}>
@@ -322,7 +322,7 @@ export default function MemberScoresPage() {
                       </td>
                       <td className={tdClass}>
                         <div className="flex items-center gap-2">
-                          <div className="flex-1 bg-gray-100 dark:bg-[#1a1f2e] rounded-full h-1.5 max-w-[120px]">
+                          <div className="flex-1 bg-gray-100 dark:bg-[#111111] rounded-full h-1.5 max-w-[120px]">
                             <div
                               className={`h-1.5 rounded-full transition-all ${scoreBarColor(score)}`}
                               style={{ width: score != null ? `${(score / 10) * 100}%` : "0%" }}
@@ -358,12 +358,12 @@ export default function MemberScoresPage() {
                       )}
                     </tr>
                     {isOpen && val.evidence && (
-                      <tr className="bg-gray-50 dark:bg-[#1a1f2e]">
+                      <tr className="bg-gray-50 dark:bg-[#111111]">
                         <td
                           colSpan={baselineAudit ? 5 : 4}
                           className={`px-5 pb-3 pt-0 text-xs italic ${muted}`}
                         >
-                          <div className="border-l-2 border-[#3dc3ff] pl-3 ml-1">
+                          <div className="border-l-2 border-[#0d9488] pl-3 ml-1">
                             {val.evidence}
                           </div>
                         </td>
@@ -382,13 +382,13 @@ export default function MemberScoresPage() {
         {/* Learning Path */}
         {gaps.length > 0 && (
           <div className={`${card} overflow-hidden`}>
-            <div className="px-5 py-4 border-b border-gray-200 dark:border-[#2d3748] bg-[#3dc3ff]/5">
+            <div className="px-5 py-4 border-b border-gray-200 dark:border-[#2a2a2a] bg-[#0d9488]/5">
               <h2 className={`text-sm font-semibold ${txt}`}>📚 Your Learning Path</h2>
               <p className={`text-xs ${muted} mt-0.5`}>Revisit these lessons to close your gaps</p>
             </div>
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-200 dark:border-[#2d3748]">
+                <tr className="border-b border-gray-200 dark:border-[#2a2a2a]">
                   <th className={thClass}>Principle</th>
                   <th className={thClass}>Score</th>
                   <th className={thClass}>Lesson</th>
@@ -396,14 +396,14 @@ export default function MemberScoresPage() {
               </thead>
               <tbody className={`divide-y ${divider}`}>
                 {gaps.map(({ key, val }) => (
-                  <tr key={key} className="hover:bg-gray-50 dark:hover:bg-[#1a1f2e] transition-colors">
+                  <tr key={key} className="hover:bg-gray-50 dark:hover:bg-[#111111] transition-colors">
                     <td className={`${tdClass} font-medium ${txt}`}>{PRINCIPLE_LABELS[key]}</td>
                     <td className={tdClass}>
                       <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${scoreBadge(val.score)}`}>
                         {val.score?.toFixed(1)}
                       </span>
                     </td>
-                    <td className={`${tdClass} text-xs text-[#3dc3ff] font-semibold`}>
+                    <td className={`${tdClass} text-xs text-[#0d9488] font-semibold`}>
                       {LEARNING_PATH[key] ?? "—"}
                     </td>
                   </tr>
@@ -415,13 +415,13 @@ export default function MemberScoresPage() {
 
         {/* Audit History */}
         <div className={`${card} overflow-hidden ${gaps.length === 0 ? "lg:col-span-2" : ""}`}>
-          <div className="px-5 py-4 border-b border-gray-200 dark:border-[#2d3748]">
+          <div className="px-5 py-4 border-b border-gray-200 dark:border-[#2a2a2a]">
             <h2 className={`text-sm font-semibold ${txt}`}>Audit History</h2>
             <p className={`text-xs ${muted} mt-0.5`}>{audits.length} audit{audits.length !== 1 ? "s" : ""} completed</p>
           </div>
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-200 dark:border-[#2d3748]">
+              <tr className="border-b border-gray-200 dark:border-[#2a2a2a]">
                 <th className={thClass}>Date</th>
                 <th className={thClass}>Type</th>
                 <th className={thClass}>Score</th>
@@ -430,7 +430,7 @@ export default function MemberScoresPage() {
             </thead>
             <tbody className={`divide-y ${divider}`}>
               {audits.map((a: any) => (
-                <tr key={a.id} className="hover:bg-gray-50 dark:hover:bg-[#1a1f2e] transition-colors">
+                <tr key={a.id} className="hover:bg-gray-50 dark:hover:bg-[#111111] transition-colors">
                   <td className={`${tdClass} ${muted}`}>{fmt(a.createdAt)}</td>
                   <td className={`${tdClass} ${txt} capitalize`}>
                     {a.auditType.replace(/_/g, " ")}
@@ -447,7 +447,7 @@ export default function MemberScoresPage() {
                   <td className={tdClass}>
                     <Link
                       href={`/member/audits/${a.id}`}
-                      className="text-xs font-medium text-[#3dc3ff] hover:underline"
+                      className="text-xs font-medium text-[#0d9488] hover:underline"
                     >
                       View Report →
                     </Link>

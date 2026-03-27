@@ -77,8 +77,8 @@ export default function MemberAuditReportPage() {
       .then((d) => { setAudit(d.audit); setLoading(false); });
   }, [auditId]);
 
-  if (loading) return <div className="flex items-center justify-center h-64 text-[#1e2a38]/40">Loading report…</div>;
-  if (!audit) return <div className="text-center py-20 text-[#1e2a38]/50">Report not found.</div>;
+  if (loading) return <div className="flex items-center justify-center h-64 text-[#2f3437]/40">Loading report…</div>;
+  if (!audit) return <div className="text-center py-20 text-[#2f3437]/50">Report not found.</div>;
 
   const report = audit.reportContent as any;
   console.log("[MemberAuditReport] reportContent keys:", report ? Object.keys(report) : "null/undefined", "| audit.scores:", audit.scores);
@@ -96,14 +96,14 @@ export default function MemberAuditReportPage() {
 
   return (
     <div className="max-w-3xl space-y-4 md:space-y-5">
-      <Link href="/member/scores" className="inline-flex items-center gap-1.5 text-sm text-[#1e2a38]/50 hover:text-[#1e2a38]">
+      <Link href="/member/scores" className="inline-flex items-center gap-1.5 text-sm text-[#2f3437]/50 hover:text-[#2f3437]">
         <ArrowLeftIcon className="w-4 h-4" />
         Back to My Scores
       </Link>
 
       {/* Score + Header — side-by-side on desktop */}
       <div className="flex flex-col md:flex-row gap-4">
-        <div className={`rounded-xl p-4 md:p-5 text-center md:w-44 shrink-0 ${scoreBg(Number(audit.overallScore))}`}>
+        <div className={`rounded-lg p-4 md:p-5 text-center md:w-44 shrink-0 ${scoreBg(Number(audit.overallScore))}`}>
           <p className="text-xs font-semibold uppercase tracking-wider mb-1 opacity-70">Attraction Score</p>
           <p className={`text-5xl md:text-6xl font-black ${scoreText(Number(audit.overallScore))}`}>{audit.overallScore != null ? Number(audit.overallScore).toFixed(1) : "—"}</p>
           <p className="text-sm font-medium mt-0.5 opacity-50">/ 10</p>
@@ -111,20 +111,20 @@ export default function MemberAuditReportPage() {
             <p className="text-xs opacity-40 mt-1">Avg: {Number(report.raw_average).toFixed(1)}</p>
           )}
         </div>
-        <div className="bg-[#3dc3ff]/10 border border-[#3dc3ff]/30 rounded-xl p-4 md:p-5 flex-1 flex flex-col justify-center">
-          <p className="text-xs font-semibold text-[#3dc3ff] uppercase tracking-wider mb-1">Attraction by Video — {typeLabel}</p>
-          <p className="text-sm text-[#1e2a38]/50 mb-2">{fmt(audit.createdAt)}</p>
+        <div className="bg-[#0d9488]/10 border border-[#0d9488]/30 rounded-lg p-4 md:p-5 flex-1 flex flex-col justify-center">
+          <p className="text-xs font-semibold text-[#0d9488] uppercase tracking-wider mb-1">Attraction by Video — {typeLabel}</p>
+          <p className="text-sm text-[#2f3437]/50 mb-2">{fmt(audit.createdAt)}</p>
           {report?.one_sentence_diagnosis && (
-            <p className="text-sm italic text-[#1e2a38]/80">"{report.one_sentence_diagnosis}"</p>
+            <p className="text-sm italic text-[#2f3437]/80">"{report.one_sentence_diagnosis}"</p>
           )}
         </div>
       </div>
 
       {/* Scores */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-        <h2 className="text-base font-semibold text-[#1e2a38] mb-4">16-Principle Breakdown</h2>
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <h2 className="text-base font-semibold text-[#2f3437] mb-4">16-Principle Breakdown</h2>
         {!hasScores ? (
-          <p className="text-sm text-[#1e2a38]/50 italic">Score data unavailable for this audit.</p>
+          <p className="text-sm text-[#2f3437]/50 italic">Score data unavailable for this audit.</p>
         ) : (
         <div className="space-y-1">
           {Object.entries(scores).map(([key, val]: [string, any]) => {
@@ -138,7 +138,7 @@ export default function MemberAuditReportPage() {
                   onClick={() => setExpanded(isOpen ? null : key)}
                   className="w-full flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-gray-50 transition-colors"
                 >
-                  <span className={`text-sm text-left ${isNA ? "text-[#1e2a38]/40" : "text-[#1e2a38]"}`}>{PRINCIPLE_LABELS[key] ?? key}</span>
+                  <span className={`text-sm text-left ${isNA ? "text-[#2f3437]/40" : "text-[#2f3437]"}`}>{PRINCIPLE_LABELS[key] ?? key}</span>
                   <div className="flex items-center gap-2 shrink-0">
                     {!isNA && delta != null && (
                       <span className={`text-xs font-semibold ${delta > 0 ? "text-green-600" : delta < 0 ? "text-[#ff0033]" : "text-gray-400"}`}>
@@ -148,11 +148,11 @@ export default function MemberAuditReportPage() {
                     <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${isNA ? "bg-gray-100 text-gray-400" : scoreBg(val.score)}`}>
                       {isNA ? "N/A" : val.score.toFixed(1)}
                     </span>
-                    <span className="text-[#1e2a38]/30 text-xs">{isOpen ? "▲" : "▼"}</span>
+                    <span className="text-[#2f3437]/30 text-xs">{isOpen ? "▲" : "▼"}</span>
                   </div>
                 </button>
                 {isOpen && val.evidence && (
-                  <div className="mx-3 mb-1 px-3 py-2 bg-gray-50 rounded-lg text-xs text-[#1e2a38]/70 italic">
+                  <div className="mx-3 mb-1 px-3 py-2 bg-gray-50 rounded-lg text-xs text-[#2f3437]/70 italic">
                     {val.evidence}
                   </div>
                 )}
@@ -165,7 +165,7 @@ export default function MemberAuditReportPage() {
 
       {/* Strengths */}
       {report?.strengths?.length > 0 && (
-        <div className="bg-green-50 border border-green-200 rounded-xl p-6">
+        <div className="bg-green-50 border border-green-200 rounded-lg p-6">
           <h2 className="text-base font-semibold text-green-800 mb-3">✅ What&apos;s Working</h2>
           <ul className="space-y-2">
             {report.strengths.map((s: string, i: number) => (
@@ -179,13 +179,13 @@ export default function MemberAuditReportPage() {
 
       {/* Gaps */}
       {report?.biggest_gaps?.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-          <h2 className="text-base font-semibold text-[#1e2a38] mb-3">🎯 Three Biggest Gaps</h2>
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <h2 className="text-base font-semibold text-[#2f3437] mb-3">🎯 Three Biggest Gaps</h2>
           <ul className="space-y-3">
             {report.biggest_gaps.map((g: string, i: number) => (
               <li key={i} className="flex items-start gap-3">
                 <span className="bg-[#ff0033]/10 text-[#ff0033] text-xs font-bold px-2 py-0.5 rounded-full shrink-0 mt-0.5">{i + 1}</span>
-                <span className="text-sm text-[#1e2a38]/80">{g}</span>
+                <span className="text-sm text-[#2f3437]/80">{g}</span>
               </li>
             ))}
           </ul>
@@ -194,16 +194,16 @@ export default function MemberAuditReportPage() {
 
       {/* Learning Path */}
       {gaps.length > 0 && (
-        <div className="bg-[#3dc3ff]/10 border border-[#3dc3ff]/30 rounded-xl p-6">
-          <h2 className="text-base font-semibold text-[#1e2a38] mb-3">📚 Your Learning Path</h2>
+        <div className="bg-[#0d9488]/10 border border-[#0d9488]/30 rounded-lg p-6">
+          <h2 className="text-base font-semibold text-[#2f3437] mb-3">📚 Your Learning Path</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {gaps.map(([key, val]: [string, any]) => (
               <div key={key} className="flex items-center justify-between bg-white rounded-lg px-3 py-2">
                 <div>
-                  <span className="text-sm text-[#1e2a38]">{PRINCIPLE_LABELS[key]}</span>
+                  <span className="text-sm text-[#2f3437]">{PRINCIPLE_LABELS[key]}</span>
                   <span className={`ml-2 text-xs font-bold ${scoreBg(val.score)} px-1.5 py-0.5 rounded-full`}>{val.score.toFixed(1)}</span>
                 </div>
-                <span className="text-xs text-[#3dc3ff] font-semibold">{LEARNING_PATH[key]}</span>
+                <span className="text-xs text-[#0d9488] font-semibold">{LEARNING_PATH[key]}</span>
               </div>
             ))}
           </div>
@@ -212,23 +212,23 @@ export default function MemberAuditReportPage() {
 
       {/* Videos */}
       {videos.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-          <h2 className="text-base font-semibold text-[#1e2a38] mb-4">Videos Analysed</h2>
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <h2 className="text-base font-semibold text-[#2f3437] mb-4">Videos Analysed</h2>
           <ul className="space-y-2">
             {videos.map((v: any, i: number) => (
               <li key={i} className="flex items-center justify-between">
-                <a href={`https://youtube.com/watch?v=${v.videoId}`} target="_blank" rel="noopener noreferrer" className="text-sm text-[#3dc3ff] hover:underline flex items-center gap-1">
+                <a href={`https://youtube.com/watch?v=${v.videoId}`} target="_blank" rel="noopener noreferrer" className="text-sm text-[#0d9488] hover:underline flex items-center gap-1">
                   {v.title}
                   <ArrowTopRightOnSquareIcon className="w-3 h-3 shrink-0" />
                 </a>
-                <span className="text-xs text-[#1e2a38]/50">{fmtDuration(v.durationSeconds)}</span>
+                <span className="text-xs text-[#2f3437]/50">{fmtDuration(v.durationSeconds)}</span>
               </li>
             ))}
           </ul>
         </div>
       )}
 
-      <div className="text-center py-6 text-sm text-[#1e2a38]/40 border-t border-gray-200">
+      <div className="text-center py-6 text-sm text-[#2f3437]/40 border-t border-gray-200">
         Prepared by Jared Chamberlain ~ Founder of Attraction by Video
       </div>
     </div>

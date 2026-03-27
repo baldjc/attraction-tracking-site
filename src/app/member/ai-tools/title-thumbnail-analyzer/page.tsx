@@ -64,11 +64,11 @@ function ScoreGauge({ label, score, max = 20 }: { label: string; score: number; 
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-xl font-bold text-[#1e2a38]">{score}</span>
-          <span className="text-xs text-[#1e2a38]/40">/{max}</span>
+          <span className="text-xl font-bold text-[#2f3437]">{score}</span>
+          <span className="text-xs text-[#2f3437]/40">/{max}</span>
         </div>
       </div>
-      <p className="text-sm font-semibold text-[#1e2a38]">{label}</p>
+      <p className="text-sm font-semibold text-[#2f3437]">{label}</p>
     </div>
   );
 }
@@ -170,23 +170,23 @@ function GoDeeperSection({
   }
 
   return (
-    <div className="bg-white border border-[#1e2a38]/10 rounded-2xl overflow-hidden">
-      <div className="px-6 py-4 border-b border-[#1e2a38]/8 flex items-center gap-2">
-        <SparklesIcon className="w-4 h-4 text-[#3dc3ff]" />
-        <h2 className="font-semibold text-[#1e2a38]">Go Deeper</h2>
-        <span className="text-xs text-[#1e2a38]/40 ml-1">Ask questions or try variations based on your analysis</span>
+    <div className="bg-white border border-[#2f3437]/10 rounded-lg overflow-hidden">
+      <div className="px-6 py-4 border-b border-[#2f3437]/8 flex items-center gap-2">
+        <SparklesIcon className="w-4 h-4 text-[#0d9488]" />
+        <h2 className="font-semibold text-[#2f3437]">Go Deeper</h2>
+        <span className="text-xs text-[#2f3437]/40 ml-1">Ask questions or try variations based on your analysis</span>
       </div>
 
       {/* Quick action buttons */}
-      <div className="px-6 py-4 border-b border-[#1e2a38]/8">
-        <p className="text-xs font-semibold text-[#1e2a38]/40 uppercase tracking-wide mb-3">Quick Actions</p>
+      <div className="px-6 py-4 border-b border-[#2f3437]/8">
+        <p className="text-xs font-semibold text-[#2f3437]/40 uppercase tracking-wide mb-3">Quick Actions</p>
         <div className="flex flex-wrap gap-2">
           {quickActions.map((action) => (
             <button
               key={action}
               onClick={() => sendMessage(action)}
               disabled={loading}
-              className="text-xs px-3 py-2 rounded-lg border border-[#3dc3ff]/40 text-[#3dc3ff] bg-[#3dc3ff]/5 hover:bg-[#3dc3ff]/10 hover:border-[#3dc3ff] transition-colors disabled:opacity-50"
+              className="text-xs px-3 py-2 rounded-lg border border-[#0d9488]/40 text-[#0d9488] bg-[#0d9488]/5 hover:bg-[#0d9488]/10 hover:border-[#0d9488] transition-colors disabled:opacity-50"
             >
               {action}
             </button>
@@ -196,27 +196,27 @@ function GoDeeperSection({
 
       {/* Chat messages */}
       {messages.length > 0 && (
-        <div className="px-6 py-4 space-y-4 max-h-[520px] overflow-y-auto border-b border-[#1e2a38]/8">
+        <div className="px-6 py-4 space-y-4 max-h-[520px] overflow-y-auto border-b border-[#2f3437]/8">
           {messages.map((msg, i) => (
             <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
               {msg.role === "user" ? (
-                <div className="bg-[#3dc3ff] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[85%]">
+                <div className="bg-[#0d9488] text-white rounded-lg rounded-tr-sm px-4 py-2.5 max-w-[85%]">
                   <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                 </div>
               ) : (
-                <div className="bg-[#f1f1ef] rounded-2xl rounded-tl-sm px-4 py-3 max-w-full w-full space-y-3">
-                  <p className="text-sm text-[#1e2a38] whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                <div className="bg-[#f7f6f3] rounded-lg rounded-tl-sm px-4 py-3 max-w-full w-full space-y-3">
+                  <p className="text-sm text-[#2f3437] whitespace-pre-wrap leading-relaxed">{msg.content}</p>
                   {msg.titles && msg.titles.length > 0 && (
-                    <div className="border-t border-[#1e2a38]/10 pt-3 space-y-2">
-                      <p className="text-xs font-semibold text-[#1e2a38]/40 uppercase tracking-wide">
+                    <div className="border-t border-[#2f3437]/10 pt-3 space-y-2">
+                      <p className="text-xs font-semibold text-[#2f3437]/40 uppercase tracking-wide">
                         Title Suggestions — click to save
                       </p>
                       {msg.titles.map((t, ti) => (
                         <div
                           key={ti}
-                          className="flex items-start justify-between gap-3 bg-white border border-[#1e2a38]/10 rounded-lg px-3 py-2.5"
+                          className="flex items-start justify-between gap-3 bg-white border border-[#2f3437]/10 rounded-lg px-3 py-2.5"
                         >
-                          <p className="text-sm text-[#1e2a38] flex-1">
+                          <p className="text-sm text-[#2f3437] flex-1">
                             {ti + 1}. {t}
                           </p>
                           <button
@@ -226,7 +226,7 @@ function GoDeeperSection({
                             className={`shrink-0 p-1 rounded transition-colors ${
                               savedTitles.has(t)
                                 ? "text-green-500"
-                                : "text-[#1e2a38]/30 hover:text-[#3dc3ff]"
+                                : "text-[#2f3437]/30 hover:text-[#0d9488]"
                             }`}
                           >
                             {savedTitles.has(t) ? (
@@ -246,11 +246,11 @@ function GoDeeperSection({
 
           {loading && (
             <div className="flex justify-start">
-              <div className="bg-[#f1f1ef] rounded-2xl rounded-tl-sm px-4 py-3">
+              <div className="bg-[#f7f6f3] rounded-lg rounded-tl-sm px-4 py-3">
                 <div className="flex gap-1">
-                  <span className="w-2 h-2 bg-[#3dc3ff]/60 rounded-full animate-bounce [animation-delay:0ms]" />
-                  <span className="w-2 h-2 bg-[#3dc3ff]/60 rounded-full animate-bounce [animation-delay:150ms]" />
-                  <span className="w-2 h-2 bg-[#3dc3ff]/60 rounded-full animate-bounce [animation-delay:300ms]" />
+                  <span className="w-2 h-2 bg-[#0d9488]/60 rounded-full animate-bounce [animation-delay:0ms]" />
+                  <span className="w-2 h-2 bg-[#0d9488]/60 rounded-full animate-bounce [animation-delay:150ms]" />
+                  <span className="w-2 h-2 bg-[#0d9488]/60 rounded-full animate-bounce [animation-delay:300ms]" />
                 </div>
               </div>
             </div>
@@ -268,12 +268,12 @@ function GoDeeperSection({
           onKeyDown={handleKeyDown}
           placeholder="Ask anything — e.g. 'Make it more curiosity-driven' or 'Give versions for Instagram Reels too'"
           rows={2}
-          className="flex-1 border border-[#1e2a38]/20 rounded-xl px-4 py-3 text-sm text-[#1e2a38] placeholder-[#1e2a38]/30 focus:outline-none focus:border-[#3dc3ff] resize-none transition-colors"
+          className="flex-1 border border-[#2f3437]/20 rounded-lg px-4 py-3 text-sm text-[#2f3437] placeholder-[#2f3437]/30 focus:outline-none focus:border-[#0d9488] resize-none transition-colors"
         />
         <button
           onClick={() => sendMessage(input)}
           disabled={loading || !input.trim()}
-          className="shrink-0 p-3 bg-[#3dc3ff] text-white rounded-xl hover:bg-[#3dc3ff]/90 disabled:opacity-50 transition-colors"
+          className="shrink-0 p-3 bg-[#0d9488] text-white rounded-lg hover:bg-[#0d9488]/90 disabled:opacity-50 transition-colors"
         >
           <PaperAirplaneIcon className="w-4 h-4" />
         </button>
@@ -387,13 +387,13 @@ export default function TitleThumbnailAnalyzerPage() {
       <div className="mb-5">
         <Link
           href="/member/ai-tools"
-          className="flex items-center gap-1.5 text-xs text-[#1e2a38]/50 hover:text-[#3dc3ff] transition-colors mb-3"
+          className="flex items-center gap-1.5 text-xs text-[#2f3437]/50 hover:text-[#0d9488] transition-colors mb-3"
         >
           <ArrowLeftIcon className="w-3.5 h-3.5" />
           Back to AI Tools
         </Link>
-        <h1 className="text-2xl font-bold text-[#1e2a38]">🔍 Title &amp; Thumbnail Analyzer</h1>
-        <p className="text-sm text-[#1e2a38]/60 mt-1">
+        <h1 className="text-2xl font-bold text-[#2f3437]">🔍 Title &amp; Thumbnail Analyzer</h1>
+        <p className="text-sm text-[#2f3437]/60 mt-1">
           Score your title and thumbnail for cognitive dissonance — the gap that compels the click
         </p>
       </div>
@@ -409,27 +409,27 @@ export default function TitleThumbnailAnalyzerPage() {
       {!result ? (
         <div className="space-y-5">
             <div>
-              <label className="block text-sm font-semibold text-[#1e2a38] mb-2">Video Title</label>
+              <label className="block text-sm font-semibold text-[#2f3437] mb-2">Video Title</label>
               <input
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Paste your video title here..."
-                className="w-full bg-white border border-[#1e2a38]/20 rounded-xl px-4 py-3 text-sm text-[#1e2a38] placeholder-[#1e2a38]/30 focus:outline-none focus:border-[#3dc3ff] transition-colors"
+                className="w-full bg-white border border-[#2f3437]/20 rounded-lg px-4 py-3 text-sm text-[#2f3437] placeholder-[#2f3437]/30 focus:outline-none focus:border-[#0d9488] transition-colors"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-[#1e2a38] mb-2">
+              <label className="block text-sm font-semibold text-[#2f3437] mb-2">
                 Thumbnail{" "}
-                <span className="font-normal text-[#1e2a38]/40">(optional — jpg, png, webp)</span>
+                <span className="font-normal text-[#2f3437]/40">(optional — jpg, png, webp)</span>
               </label>
               {thumbnailPreview ? (
                 <div className="relative inline-block">
                   <img
                     src={thumbnailPreview}
                     alt="Thumbnail preview"
-                    className="h-32 rounded-xl border border-[#1e2a38]/20 object-cover"
+                    className="h-32 rounded-lg border border-[#2f3437]/20 object-cover"
                   />
                   <button
                     onClick={() => {
@@ -443,9 +443,9 @@ export default function TitleThumbnailAnalyzerPage() {
                   </button>
                 </div>
               ) : (
-                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-[#1e2a38]/20 rounded-xl cursor-pointer hover:border-[#3dc3ff]/50 transition-colors">
-                  <PhotoIcon className="w-8 h-8 text-[#1e2a38]/20 mb-2" />
-                  <span className="text-sm text-[#1e2a38]/40">Click to upload thumbnail</span>
+                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-[#2f3437]/20 rounded-lg cursor-pointer hover:border-[#0d9488]/50 transition-colors">
+                  <PhotoIcon className="w-8 h-8 text-[#2f3437]/20 mb-2" />
+                  <span className="text-sm text-[#2f3437]/40">Click to upload thumbnail</span>
                   <input
                     ref={fileRef}
                     type="file"
@@ -458,11 +458,11 @@ export default function TitleThumbnailAnalyzerPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-[#1e2a38] mb-1">
+              <label className="block text-sm font-semibold text-[#2f3437] mb-1">
                 Video Intro Transcript{" "}
-                <span className="font-normal text-[#1e2a38]/40">(optional — first 30–60 seconds)</span>
+                <span className="font-normal text-[#2f3437]/40">(optional — first 30–60 seconds)</span>
               </label>
-              <p className="text-xs text-[#1e2a38]/40 mb-2">
+              <p className="text-xs text-[#2f3437]/40 mb-2">
                 Paste your intro script or transcript so the AI can check whether it delivers on the promise of your title.
               </p>
               <textarea
@@ -470,7 +470,7 @@ export default function TitleThumbnailAnalyzerPage() {
                 onChange={(e) => setIntroTranscript(e.target.value)}
                 placeholder="Hey, in this video I'm going to show you exactly why most agents are losing listings before they even get to the appointment..."
                 rows={4}
-                className="w-full bg-white border border-[#1e2a38]/20 rounded-xl px-4 py-3 text-sm text-[#1e2a38] placeholder-[#1e2a38]/30 focus:outline-none focus:border-[#3dc3ff] transition-colors resize-y"
+                className="w-full bg-white border border-[#2f3437]/20 rounded-lg px-4 py-3 text-sm text-[#2f3437] placeholder-[#2f3437]/30 focus:outline-none focus:border-[#0d9488] transition-colors resize-y"
               />
             </div>
 
@@ -479,7 +479,7 @@ export default function TitleThumbnailAnalyzerPage() {
             <button
               onClick={analyse}
               disabled={loading || !title.trim()}
-              className="w-full bg-[#3dc3ff] text-white py-3 rounded-xl font-semibold hover:bg-[#3dc3ff]/90 disabled:opacity-50 transition-colors"
+              className="w-full bg-[#0d9488] text-white py-3 rounded-lg font-semibold hover:bg-[#0d9488]/90 disabled:opacity-50 transition-colors"
             >
               {loading ? "Analysing..." : "Analyse"}
             </button>
@@ -487,8 +487,8 @@ export default function TitleThumbnailAnalyzerPage() {
       ) : (
         <div className="space-y-5">
           {/* Score gauges */}
-          <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-6">
-            <h2 className="font-semibold text-[#1e2a38] mb-6 text-center">Cognitive Dissonance Scores</h2>
+          <div className="bg-white border border-[#2f3437]/10 rounded-lg p-6">
+            <h2 className="font-semibold text-[#2f3437] mb-6 text-center">Cognitive Dissonance Scores</h2>
             <div className={`grid gap-4 ${result.intro ? "grid-cols-4" : "grid-cols-3"}`}>
               <ScoreGauge label="Thumbnail" score={result.thumbnail?.score ?? 0} />
               <ScoreGauge label="Title" score={result.title?.score ?? 0} />
@@ -499,15 +499,15 @@ export default function TitleThumbnailAnalyzerPage() {
 
           {/* Attraction principle scores */}
           {result.title?.attraction_scores && (
-            <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-6">
-              <h2 className="font-semibold text-[#1e2a38] mb-4">Attraction Principle Scores</h2>
+            <div className="bg-white border border-[#2f3437]/10 rounded-lg p-6">
+              <h2 className="font-semibold text-[#2f3437] mb-4">Attraction Principle Scores</h2>
               <div className="flex flex-wrap gap-2">
                 <ScoreBadge label="Title Frameworks" score={result.title.attraction_scores.title_frameworks} />
                 <ScoreBadge label="Approve the Click" score={result.title.attraction_scores.approve_the_click} />
                 <ScoreBadge label="Avatar Clarity" score={result.title.attraction_scores.avatar_clarity} />
               </div>
               {result.title?.framework_used && (
-                <p className="text-sm text-[#1e2a38]/60 mt-3">
+                <p className="text-sm text-[#2f3437]/60 mt-3">
                   Framework detected: <strong>{result.title.framework_used}</strong>
                 </p>
               )}
@@ -516,17 +516,17 @@ export default function TitleThumbnailAnalyzerPage() {
 
           {/* Thumbnail analysis */}
           {(result.thumbnail?.observations?.length ?? 0) > 0 && (
-            <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-6">
-              <h2 className="font-semibold text-[#1e2a38] mb-4">Thumbnail Analysis</h2>
+            <div className="bg-white border border-[#2f3437]/10 rounded-lg p-6">
+              <h2 className="font-semibold text-[#2f3437] mb-4">Thumbnail Analysis</h2>
               <div className="space-y-3">
                 <div>
-                  <p className="text-xs font-semibold text-[#1e2a38]/40 uppercase tracking-wide mb-2">
+                  <p className="text-xs font-semibold text-[#2f3437]/40 uppercase tracking-wide mb-2">
                     Observations
                   </p>
                   <ul className="space-y-1.5">
                     {result.thumbnail?.observations?.map((o, i) => (
-                      <li key={i} className="text-sm text-[#1e2a38] flex gap-2">
-                        <span className="text-[#3dc3ff]">•</span>
+                      <li key={i} className="text-sm text-[#2f3437] flex gap-2">
+                        <span className="text-[#0d9488]">•</span>
                         {o}
                       </li>
                     ))}
@@ -534,12 +534,12 @@ export default function TitleThumbnailAnalyzerPage() {
                 </div>
                 {(result.thumbnail?.improvements?.length ?? 0) > 0 && (
                   <div>
-                    <p className="text-xs font-semibold text-[#1e2a38]/40 uppercase tracking-wide mb-2">
+                    <p className="text-xs font-semibold text-[#2f3437]/40 uppercase tracking-wide mb-2">
                       Improvements
                     </p>
                     <ul className="space-y-1.5">
                       {result.thumbnail?.improvements?.map((o, i) => (
-                        <li key={i} className="text-sm text-[#1e2a38] flex gap-2">
+                        <li key={i} className="text-sm text-[#2f3437] flex gap-2">
                           <span className="text-amber-500">→</span>
                           {o}
                         </li>
@@ -552,17 +552,17 @@ export default function TitleThumbnailAnalyzerPage() {
           )}
 
           {/* Title analysis */}
-          <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-6">
-            <h2 className="font-semibold text-[#1e2a38] mb-4">Title Analysis</h2>
+          <div className="bg-white border border-[#2f3437]/10 rounded-lg p-6">
+            <h2 className="font-semibold text-[#2f3437] mb-4">Title Analysis</h2>
             {(result.title?.observations?.length ?? 0) > 0 && (
               <div className="mb-4">
-                <p className="text-xs font-semibold text-[#1e2a38]/40 uppercase tracking-wide mb-2">
+                <p className="text-xs font-semibold text-[#2f3437]/40 uppercase tracking-wide mb-2">
                   Observations
                 </p>
                 <ul className="space-y-1.5">
                   {result.title?.observations?.map((o, i) => (
-                    <li key={i} className="text-sm text-[#1e2a38] flex gap-2">
-                      <span className="text-[#3dc3ff]">•</span>
+                    <li key={i} className="text-sm text-[#2f3437] flex gap-2">
+                      <span className="text-[#0d9488]">•</span>
                       {o}
                     </li>
                   ))}
@@ -571,14 +571,14 @@ export default function TitleThumbnailAnalyzerPage() {
             )}
             {(result.title?.alternatives?.length ?? 0) > 0 && (
               <div>
-                <p className="text-xs font-semibold text-[#1e2a38]/40 uppercase tracking-wide mb-2">
+                <p className="text-xs font-semibold text-[#2f3437]/40 uppercase tracking-wide mb-2">
                   Improved Alternatives
                 </p>
                 <ul className="space-y-2">
                   {result.title?.alternatives?.map((a, i) => (
                     <li
                       key={i}
-                      className="bg-[#f1f1ef] rounded-lg px-4 py-2.5 text-sm font-medium text-[#1e2a38]"
+                      className="bg-[#f7f6f3] rounded-lg px-4 py-2.5 text-sm font-medium text-[#2f3437]"
                     >
                       {i + 1}. {a}
                     </li>
@@ -590,9 +590,9 @@ export default function TitleThumbnailAnalyzerPage() {
 
           {/* Intro analysis — only shown when transcript was provided */}
           {result.intro && (
-            <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-6">
+            <div className="bg-white border border-[#2f3437]/10 rounded-lg p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="font-semibold text-[#1e2a38]">Intro Analysis</h2>
+                <h2 className="font-semibold text-[#2f3437]">Intro Analysis</h2>
                 <span
                   className={`text-sm font-medium px-3 py-1 rounded-full ${
                     result.intro.approves_click
@@ -608,13 +608,13 @@ export default function TitleThumbnailAnalyzerPage() {
               <div className="space-y-3">
                 {(result.intro.observations?.length ?? 0) > 0 && (
                   <div>
-                    <p className="text-xs font-semibold text-[#1e2a38]/40 uppercase tracking-wide mb-2">
+                    <p className="text-xs font-semibold text-[#2f3437]/40 uppercase tracking-wide mb-2">
                       Observations
                     </p>
                     <ul className="space-y-1.5">
                       {result.intro.observations?.map((o, i) => (
-                        <li key={i} className="text-sm text-[#1e2a38] flex gap-2">
-                          <span className="text-[#3dc3ff]">•</span>
+                        <li key={i} className="text-sm text-[#2f3437] flex gap-2">
+                          <span className="text-[#0d9488]">•</span>
                           {o}
                         </li>
                       ))}
@@ -623,12 +623,12 @@ export default function TitleThumbnailAnalyzerPage() {
                 )}
                 {(result.intro.improvements?.length ?? 0) > 0 && (
                   <div>
-                    <p className="text-xs font-semibold text-[#1e2a38]/40 uppercase tracking-wide mb-2">
+                    <p className="text-xs font-semibold text-[#2f3437]/40 uppercase tracking-wide mb-2">
                       Improvements
                     </p>
                     <ul className="space-y-1.5">
                       {result.intro.improvements?.map((o, i) => (
-                        <li key={i} className="text-sm text-[#1e2a38] flex gap-2">
+                        <li key={i} className="text-sm text-[#2f3437] flex gap-2">
                           <span className="text-amber-500">→</span>
                           {o}
                         </li>
@@ -641,8 +641,8 @@ export default function TitleThumbnailAnalyzerPage() {
           )}
 
           {/* Combined analysis */}
-          <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-6">
-            <h2 className="font-semibold text-[#1e2a38] mb-4">Dissonance Test — Title + Thumbnail</h2>
+          <div className="bg-white border border-[#2f3437]/10 rounded-lg p-6">
+            <h2 className="font-semibold text-[#2f3437] mb-4">Dissonance Test — Title + Thumbnail</h2>
             <div className="flex items-center gap-2 mb-3">
               <span
                 className={`text-sm font-medium px-3 py-1 rounded-full ${
@@ -659,8 +659,8 @@ export default function TitleThumbnailAnalyzerPage() {
             {(result.combined?.observations?.length ?? 0) > 0 && (
               <ul className="space-y-1.5 mb-3">
                 {result.combined?.observations?.map((o, i) => (
-                  <li key={i} className="text-sm text-[#1e2a38] flex gap-2">
-                    <span className="text-[#3dc3ff]">•</span>
+                  <li key={i} className="text-sm text-[#2f3437] flex gap-2">
+                    <span className="text-[#0d9488]">•</span>
                     {o}
                   </li>
                 ))}
@@ -668,12 +668,12 @@ export default function TitleThumbnailAnalyzerPage() {
             )}
             {(result.combined?.improvements?.length ?? 0) > 0 && (
               <>
-                <p className="text-xs font-semibold text-[#1e2a38]/40 uppercase tracking-wide mb-2">
+                <p className="text-xs font-semibold text-[#2f3437]/40 uppercase tracking-wide mb-2">
                   Improvements
                 </p>
                 <ul className="space-y-1.5 mb-4">
                   {result.combined?.improvements?.map((o, i) => (
-                    <li key={i} className="text-sm text-[#1e2a38] flex gap-2">
+                    <li key={i} className="text-sm text-[#2f3437] flex gap-2">
                       <span className="text-amber-500">→</span>
                       {o}
                     </li>
@@ -684,7 +684,7 @@ export default function TitleThumbnailAnalyzerPage() {
 
             {/* Redundancies warning */}
             {(result.combined?.redundancies?.length ?? 0) > 0 && (
-              <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
                 <p className="text-xs font-semibold text-red-700 uppercase tracking-wide mb-2">
                   ⚠ Redundancies Found — Title &amp; Thumbnail Overlap
                 </p>
@@ -701,13 +701,13 @@ export default function TitleThumbnailAnalyzerPage() {
 
             {/* Thumbnail concepts */}
             {(result.combined?.thumbnail_concepts?.length ?? 0) > 0 && (
-              <div className="bg-[#3dc3ff]/5 border border-[#3dc3ff]/20 rounded-xl p-4">
-                <p className="text-xs font-semibold text-[#1e2a38]/60 uppercase tracking-wide mb-3">
+              <div className="bg-[#0d9488]/5 border border-[#0d9488]/20 rounded-lg p-4">
+                <p className="text-xs font-semibold text-[#2f3437]/60 uppercase tracking-wide mb-3">
                   Thumbnail Concepts That Create Dissonance
                 </p>
                 <div className="space-y-2">
                   {result.combined?.thumbnail_concepts?.map((c, i) => (
-                    <div key={i} className="bg-white rounded-lg px-4 py-3 text-sm text-[#1e2a38] leading-relaxed">
+                    <div key={i} className="bg-white rounded-lg px-4 py-3 text-sm text-[#2f3437] leading-relaxed">
                       {c}
                     </div>
                   ))}
@@ -717,7 +717,7 @@ export default function TitleThumbnailAnalyzerPage() {
           </div>
 
           {result.follow_up && (
-            <p className="text-sm text-[#1e2a38]/60 italic text-center">{result.follow_up}</p>
+            <p className="text-sm text-[#2f3437]/60 italic text-center">{result.follow_up}</p>
           )}
 
           {/* Resource Recommendations */}
@@ -727,7 +727,7 @@ export default function TitleThumbnailAnalyzerPage() {
               .map(([k]) => k)
               .join(",");
             return weakPrinciples ? (
-              <div className="bg-[#3dc3ff]/5 border border-[#3dc3ff]/25 rounded-2xl p-5">
+              <div className="bg-[#0d9488]/5 border border-[#0d9488]/25 rounded-lg p-5">
                 <ResourceRecommendations
                   principles={weakPrinciples}
                   limitPerPrinciple={2}
@@ -742,7 +742,7 @@ export default function TitleThumbnailAnalyzerPage() {
 
           <button
             onClick={reset}
-            className="w-full border border-[#1e2a38]/20 text-[#1e2a38] py-3 rounded-xl font-semibold hover:bg-[#1e2a38]/5 transition-colors"
+            className="w-full border border-[#2f3437]/20 text-[#2f3437] py-3 rounded-lg font-semibold hover:bg-[#111]/5 transition-colors"
           >
             Analyse Another
           </button>

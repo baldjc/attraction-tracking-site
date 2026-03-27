@@ -48,44 +48,44 @@ const TOOL_LABELS: Record<string, string> = {
 
 function UsageCard({ usage }: { usage: UsageData }) {
   const pct = Math.min(100, usage.percentUsed);
-  const barColor = pct >= 90 ? "bg-red-500" : pct >= 75 ? "bg-amber-400" : "bg-[#3dc3ff]";
-  const textColor = pct >= 90 ? "text-red-600 dark:text-red-400" : pct >= 75 ? "text-amber-600 dark:text-amber-400" : "text-[#3dc3ff]";
+  const barColor = pct >= 90 ? "bg-red-500" : pct >= 75 ? "bg-amber-400" : "bg-[#0d9488]";
+  const textColor = pct >= 90 ? "text-red-600 dark:text-red-400" : pct >= 75 ? "text-amber-600 dark:text-amber-400" : "text-[#0d9488]";
 
   const breakdownEntries = Object.entries(usage.breakdown).filter(([, v]) => parseFloat(v) > 0);
 
   return (
-    <div className="bg-white dark:bg-[#242b3d] border border-[#1e2a38]/10 dark:border-white/10 rounded-2xl p-5 space-y-4">
+    <div className="bg-white dark:bg-[#1a1a1a] border border-[#2f3437]/10 dark:border-white/10 rounded-lg p-5 space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-[#1e2a38] dark:text-white text-sm">My AI Usage</h3>
+        <h3 className="font-semibold text-[#2f3437] dark:text-white text-sm">My AI Usage</h3>
         <span className={`text-xs font-semibold ${textColor}`}>{Math.round(pct)}%</span>
       </div>
 
       <div>
-        <div className="h-2 bg-[#1e2a38]/10 dark:bg-white/10 rounded-full overflow-hidden">
+        <div className="h-2 bg-[#111]/10 dark:bg-white/10 rounded-full overflow-hidden">
           <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${pct}%` }} />
         </div>
-        <p className="text-xs text-[#1e2a38]/50 dark:text-white/50 mt-2">
+        <p className="text-xs text-[#2f3437]/50 dark:text-white/50 mt-2">
           {Math.round(pct)}% of monthly allowance used
         </p>
       </div>
 
       {breakdownEntries.length > 0 && (
-        <div className="space-y-1 pt-1 border-t border-[#1e2a38]/5 dark:border-white/5">
+        <div className="space-y-1 pt-1 border-t border-[#2f3437]/5 dark:border-white/5">
           {breakdownEntries.map(([tool, cost]) => {
             const toolPct = parseFloat(usage.cap) > 0
               ? ((parseFloat(cost) / parseFloat(usage.cap)) * 100).toFixed(1)
               : "0.0";
             return (
               <div key={tool} className="flex items-center justify-between">
-                <span className="text-xs text-[#1e2a38]/60 dark:text-white/60">{TOOL_LABELS[tool] ?? tool}</span>
-                <span className="text-xs text-[#1e2a38]/50 dark:text-white/50">{toolPct}%</span>
+                <span className="text-xs text-[#2f3437]/60 dark:text-white/60">{TOOL_LABELS[tool] ?? tool}</span>
+                <span className="text-xs text-[#2f3437]/50 dark:text-white/50">{toolPct}%</span>
               </div>
             );
           })}
         </div>
       )}
 
-      <p className="text-xs text-[#1e2a38]/40 dark:text-white/40">Resets {usage.resetsAt}</p>
+      <p className="text-xs text-[#2f3437]/40 dark:text-white/40">Resets {usage.resetsAt}</p>
     </div>
   );
 }
@@ -204,8 +204,8 @@ export default function AIToolsHub({ basePath, featureFlags }: Props) {
     <div>
       <div className="mb-8 flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-[#1e2a38] dark:text-white">AI Tools</h1>
-          <p className="text-[#1e2a38]/60 dark:text-white/60 mt-1">
+          <h1 className="text-2xl font-bold text-[#2f3437] dark:text-white">AI Tools</h1>
+          <p className="text-[#2f3437]/60 dark:text-white/60 mt-1">
             AI-powered tools built around the Attraction by Video framework.{" "}
             {!avatar?.avatarName && "Build your avatar first for personalised results."}
           </p>
@@ -213,7 +213,7 @@ export default function AIToolsHub({ basePath, featureFlags }: Props) {
         {isAdmin && (
           <Link
             href={`${basePath}/usage`}
-            className="shrink-0 text-xs text-[#1e2a38]/50 dark:text-white/50 hover:text-[#3dc3ff] border border-gray-200 dark:border-white/20 px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap"
+            className="shrink-0 text-xs text-[#2f3437]/50 dark:text-white/50 hover:text-[#0d9488] border border-gray-200 dark:border-white/20 px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap"
           >
             📊 Usage
           </Link>
@@ -221,7 +221,7 @@ export default function AIToolsHub({ basePath, featureFlags }: Props) {
       </div>
 
       {!loading && usage && (usage.percentUsed >= 50) && (
-        <div className={`mb-5 flex items-start gap-3 border rounded-xl p-4 ${
+        <div className={`mb-5 flex items-start gap-3 border rounded-lg p-4 ${
           usage.percentUsed >= 90
             ? "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800"
             : usage.percentUsed >= 75
@@ -240,7 +240,7 @@ export default function AIToolsHub({ basePath, featureFlags }: Props) {
       )}
 
       {!loading && !avatar?.avatarName && (
-        <div className="mb-6 flex items-start gap-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
+        <div className="mb-6 flex items-start gap-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
           <span className="text-xl">💡</span>
           <div>
             <p className="font-semibold text-amber-800 dark:text-amber-300 text-sm">Start with the Avatar Architect</p>
@@ -262,20 +262,20 @@ export default function AIToolsHub({ basePath, featureFlags }: Props) {
           <Link
             key={tool.href}
             href={tool.href}
-            className="group bg-white dark:bg-[#242b3d] rounded-2xl border border-[#1e2a38]/10 dark:border-white/10 p-6 hover:border-[#3dc3ff]/50 hover:shadow-lg transition-all duration-200"
+            className="group bg-white dark:bg-[#1a1a1a] rounded-lg border border-[#2f3437]/10 dark:border-white/10 p-6 hover:border-[#0d9488]/50 hover:shadow-lg transition-all duration-200"
           >
             <div className="flex items-start gap-4">
               <span className="text-3xl">{tool.icon}</span>
               <div className="flex-1 min-w-0">
-                <h2 className="font-semibold text-[#1e2a38] dark:text-white group-hover:text-[#3dc3ff] transition-colors">
+                <h2 className="font-semibold text-[#2f3437] dark:text-white group-hover:text-[#0d9488] transition-colors">
                   {tool.title}
                 </h2>
-                <p className="text-sm text-[#1e2a38]/60 dark:text-white/60 mt-1">{tool.description}</p>
-                <p className={`text-xs mt-3 font-medium ${tool.badge === "green" ? "text-[#3dc3ff]" : tool.badge === "blue" ? "text-[#1e2a38]/50 dark:text-white/50" : "text-amber-600 dark:text-amber-400"}`}>
+                <p className="text-sm text-[#2f3437]/60 dark:text-white/60 mt-1">{tool.description}</p>
+                <p className={`text-xs mt-3 font-medium ${tool.badge === "green" ? "text-[#0d9488]" : tool.badge === "blue" ? "text-[#2f3437]/50 dark:text-white/50" : "text-amber-600 dark:text-amber-400"}`}>
                   {tool.extra}
                 </p>
               </div>
-              <span className="text-[#1e2a38]/20 dark:text-white/20 group-hover:text-[#3dc3ff]/50 transition-colors text-lg">→</span>
+              <span className="text-[#2f3437]/20 dark:text-white/20 group-hover:text-[#0d9488]/50 transition-colors text-lg">→</span>
             </div>
           </Link>
         ))}

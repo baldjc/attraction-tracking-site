@@ -72,7 +72,7 @@ function ScorecardCard({ analysis, onDownload }: { analysis: AnalysisResult; onD
     <div className="space-y-5">
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1">
-          <p className="text-base font-medium text-[#1e2a38] dark:text-white leading-snug">
+          <p className="text-base font-medium text-[#2f3437] dark:text-white leading-snug">
             {analysis.one_sentence_diagnosis}
           </p>
         </div>
@@ -80,8 +80,8 @@ function ScorecardCard({ analysis, onDownload }: { analysis: AnalysisResult; onD
           <div className={`text-4xl font-black ${scoreColor(overallScore)}`}>
             {Number(overallScore).toFixed(1)}
           </div>
-          <div className="text-xs text-[#1e2a38]/40 dark:text-white/40 font-medium">/ 10</div>
-          <div className="text-[11px] text-[#1e2a38]/40 dark:text-white/40">Script Score</div>
+          <div className="text-xs text-[#2f3437]/40 dark:text-white/40 font-medium">/ 10</div>
+          <div className="text-[11px] text-[#2f3437]/40 dark:text-white/40">Script Score</div>
         </div>
       </div>
 
@@ -94,7 +94,7 @@ function ScorecardCard({ analysis, onDownload }: { analysis: AnalysisResult; onD
               className={`rounded-lg border px-2.5 py-2 ${scoreBg(val.score)}`}
               title={val.evidence}
             >
-              <div className="text-[10px] font-medium text-[#1e2a38]/60 dark:text-white/60 truncate">
+              <div className="text-[10px] font-medium text-[#2f3437]/60 dark:text-white/60 truncate">
                 {PRINCIPLES[key]}
               </div>
               <div className={`text-lg font-black mt-0.5 ${scoreColor(val.score)}`}>
@@ -105,7 +105,7 @@ function ScorecardCard({ analysis, onDownload }: { analysis: AnalysisResult; onD
       </div>
 
       {analysis.whats_working?.length > 0 && (
-        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-4 space-y-2">
+        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 space-y-2">
           <p className="text-xs font-semibold text-green-800 dark:text-green-300 uppercase tracking-wider">
             ✅ What&apos;s Working
           </p>
@@ -120,38 +120,38 @@ function ScorecardCard({ analysis, onDownload }: { analysis: AnalysisResult; onD
 
       {analysis.three_improvements?.length > 0 && (
         <div className="space-y-2">
-          <p className="text-xs font-semibold text-[#1e2a38]/60 dark:text-white/60 uppercase tracking-wider">
+          <p className="text-xs font-semibold text-[#2f3437]/60 dark:text-white/60 uppercase tracking-wider">
             🔧 Top 3 Improvements
           </p>
           {analysis.three_improvements.map((imp, i) => (
-            <div key={i} className="border border-gray-200 dark:border-white/10 rounded-xl overflow-hidden">
+            <div key={i} className="border border-gray-200 dark:border-white/10 rounded-lg overflow-hidden">
               <button
                 onClick={() => setExpandedImprovement(expandedImprovement === i ? null : i)}
-                className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-[#1a1f2e] hover:bg-gray-100 dark:hover:bg-white/5 transition-colors text-left"
+                className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-[#111111] hover:bg-gray-100 dark:hover:bg-white/5 transition-colors text-left"
               >
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-[#1e2a38] dark:text-white">{imp.principle}</span>
+                  <span className="text-sm font-semibold text-[#2f3437] dark:text-white">{imp.principle}</span>
                   <span className={`text-sm font-bold ${scoreColor(imp.score)}`}>
                     {Number(imp.score).toFixed(1)}
                   </span>
                 </div>
-                <span className="text-xs text-[#3dc3ff]">
+                <span className="text-xs text-[#0d9488]">
                   {expandedImprovement === i ? "Hide" : "Show"} rewrite
                 </span>
               </button>
               {expandedImprovement === i && (
-                <div className="px-4 py-3 space-y-3 bg-white dark:bg-[#242b3d]">
+                <div className="px-4 py-3 space-y-3 bg-white dark:bg-[#1a1a1a]">
                   <div>
-                    <p className="text-[10px] font-semibold text-[#1e2a38]/50 dark:text-white/50 uppercase tracking-wider mb-1">
+                    <p className="text-[10px] font-semibold text-[#2f3437]/50 dark:text-white/50 uppercase tracking-wider mb-1">
                       Current
                     </p>
-                    <p className="text-sm text-[#1e2a38]/70 dark:text-white/70 italic">&ldquo;{imp.current}&rdquo;</p>
+                    <p className="text-sm text-[#2f3437]/70 dark:text-white/70 italic">&ldquo;{imp.current}&rdquo;</p>
                   </div>
-                  <div className="bg-[#3dc3ff]/5 border border-[#3dc3ff]/20 rounded-lg px-3 py-3">
-                    <p className="text-[10px] font-semibold text-[#3dc3ff] uppercase tracking-wider mb-1">
+                  <div className="bg-[#0d9488]/5 border border-[#0d9488]/20 rounded-lg px-3 py-3">
+                    <p className="text-[10px] font-semibold text-[#0d9488] uppercase tracking-wider mb-1">
                       Rewritten
                     </p>
-                    <p className="text-sm text-[#1e2a38] dark:text-white leading-relaxed">{imp.improved}</p>
+                    <p className="text-sm text-[#2f3437] dark:text-white leading-relaxed">{imp.improved}</p>
                   </div>
                   {imp.arc_breakdown && (
                     <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded-lg px-3 py-2.5 space-y-1.5">
@@ -172,8 +172,8 @@ function ScorecardCard({ analysis, onDownload }: { analysis: AnalysisResult; onD
                       </p>
                     </div>
                   )}
-                  <p className="text-xs text-[#1e2a38]/60 dark:text-white/60">{imp.why}</p>
-                  <p className="text-[10px] text-[#3dc3ff]/80 font-medium">📚 {imp.lesson}</p>
+                  <p className="text-xs text-[#2f3437]/60 dark:text-white/60">{imp.why}</p>
+                  <p className="text-[10px] text-[#0d9488]/80 font-medium">📚 {imp.lesson}</p>
                 </div>
               )}
             </div>
@@ -182,18 +182,18 @@ function ScorecardCard({ analysis, onDownload }: { analysis: AnalysisResult; onD
       )}
 
       {analysis.visual_suggestions?.length > 0 && (
-        <div className="border border-[#3dc3ff]/30 rounded-xl overflow-hidden">
-          <div className="px-4 py-2.5 bg-[#3dc3ff]/5 border-b border-[#3dc3ff]/20">
-            <p className="text-xs font-semibold text-[#3dc3ff] uppercase tracking-wider">
+        <div className="border border-[#0d9488]/30 rounded-lg overflow-hidden">
+          <div className="px-4 py-2.5 bg-[#0d9488]/5 border-b border-[#0d9488]/20">
+            <p className="text-xs font-semibold text-[#0d9488] uppercase tracking-wider">
               🎬 Visual Suggestions
             </p>
           </div>
           <div className="divide-y divide-gray-50 dark:divide-white/5">
             {analysis.visual_suggestions.map((vs, i) => (
               <div key={i} className="px-4 py-3 space-y-1">
-                <p className="text-xs text-[#1e2a38]/50 dark:text-white/50 italic">&ldquo;{vs.moment}&rdquo;</p>
-                <p className="text-sm font-medium text-[#1e2a38] dark:text-white">{vs.suggestion}</p>
-                <p className="text-xs text-[#1e2a38]/60 dark:text-white/60">{vs.why}</p>
+                <p className="text-xs text-[#2f3437]/50 dark:text-white/50 italic">&ldquo;{vs.moment}&rdquo;</p>
+                <p className="text-sm font-medium text-[#2f3437] dark:text-white">{vs.suggestion}</p>
+                <p className="text-xs text-[#2f3437]/60 dark:text-white/60">{vs.why}</p>
               </div>
             ))}
           </div>
@@ -201,7 +201,7 @@ function ScorecardCard({ analysis, onDownload }: { analysis: AnalysisResult; onD
       )}
 
       {analysis.quick_win && (
-        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-xl px-4 py-3">
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg px-4 py-3">
           <p className="text-xs font-semibold text-yellow-800 dark:text-yellow-300 uppercase tracking-wider mb-1">
             ⚡ Quick Win
           </p>
@@ -212,7 +212,7 @@ function ScorecardCard({ analysis, onDownload }: { analysis: AnalysisResult; onD
       {onDownload && (
         <button
           onClick={onDownload}
-          className="flex items-center gap-1.5 text-xs text-[#1e2a38]/50 hover:text-[#3dc3ff] transition-colors"
+          className="flex items-center gap-1.5 text-xs text-[#2f3437]/50 hover:text-[#0d9488] transition-colors"
         >
           <ArrowDownTrayIcon className="w-3.5 h-3.5" />
           Download full report
@@ -231,14 +231,14 @@ function AssistantBubble({
 }) {
   if (message.analysis) {
     return (
-      <div className="bg-white dark:bg-[#242b3d] rounded-2xl rounded-tl-sm border border-gray-200 dark:border-white/10 p-4 max-w-full">
+      <div className="bg-white dark:bg-[#1a1a1a] rounded-lg rounded-tl-sm border border-gray-200 dark:border-white/10 p-4 max-w-full">
         <ScorecardCard analysis={message.analysis} onDownload={onDownload} />
       </div>
     );
   }
   return (
-    <div className="bg-white dark:bg-[#242b3d] rounded-2xl rounded-tl-sm border border-gray-200 dark:border-white/10 px-4 py-3 max-w-full">
-      <p className="text-sm text-[#1e2a38] dark:text-white whitespace-pre-wrap leading-relaxed">
+    <div className="bg-white dark:bg-[#1a1a1a] rounded-lg rounded-tl-sm border border-gray-200 dark:border-white/10 px-4 py-3 max-w-full">
+      <p className="text-sm text-[#2f3437] dark:text-white whitespace-pre-wrap leading-relaxed">
         {message.content}
       </p>
     </div>
@@ -379,7 +379,7 @@ export default function ScriptReviewChatUI({ basePath, noAvatar }: Props) {
       />
 
       {noAvatar && phase === "input" && (
-        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-xl px-4 py-3">
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg px-4 py-3">
           <p className="text-sm text-yellow-800 dark:text-yellow-300">
             <span className="font-semibold">Tip:</span> Build your avatar first in Avatar Architect — it makes Script Review feedback much more specific to your ideal viewer.
           </p>
@@ -389,7 +389,7 @@ export default function ScriptReviewChatUI({ basePath, noAvatar }: Props) {
       {phase === "input" ? (
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-semibold text-[#1e2a38] dark:text-white mb-1.5">
+            <label className="block text-sm font-semibold text-[#2f3437] dark:text-white mb-1.5">
               Video Title
             </label>
             <input
@@ -397,12 +397,12 @@ export default function ScriptReviewChatUI({ basePath, noAvatar }: Props) {
               value={videoTitle}
               onChange={(e) => setVideoTitle(e.target.value)}
               placeholder="What is this video called? (or planned title)"
-              className="w-full bg-white dark:bg-[#1a1f2e] border border-gray-200 dark:border-white/20 rounded-xl px-4 py-3 text-sm text-[#1e2a38] dark:text-white placeholder-gray-400 dark:placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#3dc3ff]/40"
+              className="w-full bg-white dark:bg-[#111111] border border-gray-200 dark:border-white/20 rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-white placeholder-gray-400 dark:placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#0d9488]/40"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-[#1e2a38] dark:text-white mb-1.5">
+            <label className="block text-sm font-semibold text-[#2f3437] dark:text-white mb-1.5">
               Script or Transcript
             </label>
             <textarea
@@ -410,14 +410,14 @@ export default function ScriptReviewChatUI({ basePath, noAvatar }: Props) {
               onChange={(e) => setScriptText(e.target.value)}
               placeholder="Paste your full script or transcript here…"
               rows={14}
-              className="w-full bg-white dark:bg-[#1a1f2e] border border-gray-200 dark:border-white/20 rounded-xl px-4 py-3 text-sm text-[#1e2a38] dark:text-white placeholder-gray-400 dark:placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#3dc3ff]/40 resize-y"
+              className="w-full bg-white dark:bg-[#111111] border border-gray-200 dark:border-white/20 rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-white placeholder-gray-400 dark:placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#0d9488]/40 resize-y"
             />
           </div>
 
           <button
             onClick={handleAnalyze}
             disabled={loading || !videoTitle.trim() || !scriptText.trim()}
-            className="w-full py-3.5 bg-[#3dc3ff] text-white font-semibold rounded-xl hover:bg-[#3dc3ff]/90 disabled:opacity-50 transition-colors"
+            className="w-full py-3.5 bg-[#0d9488] text-white font-semibold rounded-lg hover:bg-[#0d9488]/90 disabled:opacity-50 transition-colors"
           >
             {loading ? "Analysing script…" : "Analyse My Script"}
           </button>
@@ -425,7 +425,7 @@ export default function ScriptReviewChatUI({ basePath, noAvatar }: Props) {
       ) : (
         <div className="flex flex-col h-[70vh]">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-[#1e2a38] dark:text-white truncate max-w-[70%]">
+            <h2 className="text-sm font-semibold text-[#2f3437] dark:text-white truncate max-w-[70%]">
               {videoTitle}
             </h2>
             <div className="flex items-center gap-2 shrink-0">
@@ -437,7 +437,7 @@ export default function ScriptReviewChatUI({ basePath, noAvatar }: Props) {
                 <button
                   onClick={handleDownload}
                   title="Download"
-                  className="p-1.5 rounded-lg text-[#1e2a38]/40 dark:text-white/40 hover:text-[#3dc3ff] hover:bg-[#3dc3ff]/10 transition-colors"
+                  className="p-1.5 rounded-lg text-[#2f3437]/40 dark:text-white/40 hover:text-[#0d9488] hover:bg-[#0d9488]/10 transition-colors"
                 >
                   <ArrowDownTrayIcon className="w-4 h-4" />
                 </button>
@@ -445,7 +445,7 @@ export default function ScriptReviewChatUI({ basePath, noAvatar }: Props) {
               <button
                 onClick={handleReset}
                 title="New review"
-                className="flex items-center gap-1 px-3 py-1.5 border border-gray-200 dark:border-white/20 rounded-lg text-xs text-[#1e2a38]/60 dark:text-white/60 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+                className="flex items-center gap-1 px-3 py-1.5 border border-gray-200 dark:border-white/20 rounded-lg text-xs text-[#2f3437]/60 dark:text-white/60 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
               >
                 <PlusIcon className="w-3 h-3" />
                 New
@@ -460,7 +460,7 @@ export default function ScriptReviewChatUI({ basePath, noAvatar }: Props) {
                 className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
               >
                 {msg.role === "user" ? (
-                  <div className="bg-[#3dc3ff] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[85%]">
+                  <div className="bg-[#0d9488] text-white rounded-lg rounded-tr-sm px-4 py-2.5 max-w-[85%]">
                     <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                   </div>
                 ) : (
@@ -476,11 +476,11 @@ export default function ScriptReviewChatUI({ basePath, noAvatar }: Props) {
 
             {loading && (
               <div className="flex justify-start">
-                <div className="bg-white dark:bg-[#242b3d] border border-gray-200 dark:border-white/10 rounded-2xl rounded-tl-sm px-4 py-3">
+                <div className="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-lg rounded-tl-sm px-4 py-3">
                   <div className="flex gap-1">
-                    <span className="w-2 h-2 bg-[#3dc3ff]/60 rounded-full animate-bounce [animation-delay:0ms]" />
-                    <span className="w-2 h-2 bg-[#3dc3ff]/60 rounded-full animate-bounce [animation-delay:150ms]" />
-                    <span className="w-2 h-2 bg-[#3dc3ff]/60 rounded-full animate-bounce [animation-delay:300ms]" />
+                    <span className="w-2 h-2 bg-[#0d9488]/60 rounded-full animate-bounce [animation-delay:0ms]" />
+                    <span className="w-2 h-2 bg-[#0d9488]/60 rounded-full animate-bounce [animation-delay:150ms]" />
+                    <span className="w-2 h-2 bg-[#0d9488]/60 rounded-full animate-bounce [animation-delay:300ms]" />
                   </div>
                 </div>
               </div>
@@ -509,12 +509,12 @@ export default function ScriptReviewChatUI({ basePath, noAvatar }: Props) {
               }}
               placeholder="Ask a follow-up question or request a rewrite…"
               rows={2}
-              className="flex-1 bg-white dark:bg-[#1a1f2e] border border-gray-200 dark:border-white/20 rounded-xl px-3 py-2 text-sm text-[#1e2a38] dark:text-white placeholder-gray-400 dark:placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#3dc3ff]/40 resize-none"
+              className="flex-1 bg-white dark:bg-[#111111] border border-gray-200 dark:border-white/20 rounded-lg px-3 py-2 text-sm text-[#2f3437] dark:text-white placeholder-gray-400 dark:placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#0d9488]/40 resize-none"
             />
             <button
               onClick={handleSend}
               disabled={loading || !input.trim()}
-              className="self-end p-3 bg-[#3dc3ff] text-white rounded-xl hover:bg-[#3dc3ff]/90 disabled:opacity-50 transition-colors"
+              className="self-end p-3 bg-[#0d9488] text-white rounded-lg hover:bg-[#0d9488]/90 disabled:opacity-50 transition-colors"
             >
               <ArrowUpIcon className="w-4 h-4" />
             </button>

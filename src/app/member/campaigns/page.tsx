@@ -41,7 +41,7 @@ const SOURCE_LABELS: Record<string, { label: string; color: string }> = {
   OTHER:            { label: "Other",             color: "bg-gray-100 text-gray-600" },
 };
 
-const INPUT_CLS = "w-full border border-[#1e2a38]/20 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-[#3dc3ff]";
+const INPUT_CLS = "w-full border border-[#2f3437]/20 rounded-lg px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-[#0d9488]";
 
 export default function CampaignsPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -115,17 +115,17 @@ export default function CampaignsPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-[#1e2a38]">Campaigns</h1>
-          <p className="text-sm text-[#1e2a38]/50 mt-0.5">Track clicks and leads from your content</p>
+          <h1 className="text-2xl font-bold text-[#2f3437]">Campaigns</h1>
+          <p className="text-sm text-[#2f3437]/50 mt-0.5">Track clicks and leads from your content</p>
         </div>
-        <button onClick={() => setShowModal(true)} className="bg-[#3dc3ff] text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-[#3dc3ff]/90 transition-colors">
+        <button onClick={() => setShowModal(true)} className="bg-[#0d9488] text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-[#0d9488]/90 transition-colors">
           + New Campaign
         </button>
       </div>
 
       {/* Thank You Page Warning */}
       {hasTyUrl === false && (
-        <div className="mb-5 flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+        <div className="mb-5 flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
           <ExclamationTriangleIcon className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-amber-800">Link tracking isn&apos;t fully set up</p>
@@ -138,25 +138,25 @@ export default function CampaignsPage() {
       {analytics && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
           {/* Total Clicks */}
-          <Link href="/member/analytics?tab=overview" className="bg-white border border-[#1e2a38]/10 rounded-2xl p-4 hover:border-[#3dc3ff]/40 hover:shadow-sm transition-all block">
-            <p className="text-xs text-[#1e2a38]/50 font-medium mb-1">Clicks (30d)</p>
-            <p className="text-2xl font-bold text-[#1e2a38]">{analytics.totalClicks.toLocaleString()}</p>
+          <Link href="/member/analytics?tab=overview" className="bg-white border border-[#2f3437]/10 rounded-lg p-4 hover:border-[#0d9488]/40 hover:shadow-sm transition-all block">
+            <p className="text-xs text-[#2f3437]/50 font-medium mb-1">Clicks (30d)</p>
+            <p className="text-2xl font-bold text-[#2f3437]">{analytics.totalClicks.toLocaleString()}</p>
             <div className="mt-2">
-              <MiniSparkline data={analytics.sparkline.map((s) => ({ value: s.clicks }))} color="#3dc3ff" />
+              <MiniSparkline data={analytics.sparkline.map((s) => ({ value: s.clicks }))} color="#0d9488" />
             </div>
           </Link>
           {/* Total Leads */}
-          <Link href="/member/analytics?tab=conversions" className="bg-white border border-[#1e2a38]/10 rounded-2xl p-4 hover:border-[#3dc3ff]/40 hover:shadow-sm transition-all block">
-            <p className="text-xs text-[#1e2a38]/50 font-medium mb-1">Leads (30d)</p>
-            <p className="text-2xl font-bold text-[#1e2a38]">{analytics.totalLeads.toLocaleString()}</p>
+          <Link href="/member/analytics?tab=conversions" className="bg-white border border-[#2f3437]/10 rounded-lg p-4 hover:border-[#0d9488]/40 hover:shadow-sm transition-all block">
+            <p className="text-xs text-[#2f3437]/50 font-medium mb-1">Leads (30d)</p>
+            <p className="text-2xl font-bold text-[#2f3437]">{analytics.totalLeads.toLocaleString()}</p>
             <div className="mt-2">
-              <MiniSparkline data={(analytics.leadsSparkline ?? []).map((s) => ({ value: s.leads }))} color="#1e2a38" />
+              <MiniSparkline data={(analytics.leadsSparkline ?? []).map((s) => ({ value: s.leads }))} color="#2f3437" />
             </div>
           </Link>
           {/* Conversion Rate */}
-          <Link href="/member/analytics?tab=overview" className="bg-white border border-[#1e2a38]/10 rounded-2xl p-4 hover:border-[#3dc3ff]/40 hover:shadow-sm transition-all block">
-            <p className="text-xs text-[#1e2a38]/50 font-medium mb-1">Conv. Rate (30d)</p>
-            <p className="text-2xl font-bold text-[#3dc3ff]">{analytics.conversionRate}%</p>
+          <Link href="/member/analytics?tab=overview" className="bg-white border border-[#2f3437]/10 rounded-lg p-4 hover:border-[#0d9488]/40 hover:shadow-sm transition-all block">
+            <p className="text-xs text-[#2f3437]/50 font-medium mb-1">Conv. Rate (30d)</p>
+            <p className="text-2xl font-bold text-[#0d9488]">{analytics.conversionRate}%</p>
             {analytics.previousConversionRate > 0 && (
               <div className={`flex items-center gap-1 mt-1 text-xs font-medium ${convRateDelta >= 0 ? "text-green-600" : "text-red-500"}`}>
                 {convRateDelta >= 0
@@ -167,16 +167,16 @@ export default function CampaignsPage() {
             )}
           </Link>
           {/* Top Performing Link */}
-          <Link href="/member/analytics?tab=videos" className="bg-white border border-[#1e2a38]/10 rounded-2xl p-4 hover:border-[#3dc3ff]/40 hover:shadow-sm transition-all block">
-            <p className="text-xs text-[#1e2a38]/50 font-medium mb-1">Top Link (30d)</p>
+          <Link href="/member/analytics?tab=videos" className="bg-white border border-[#2f3437]/10 rounded-lg p-4 hover:border-[#0d9488]/40 hover:shadow-sm transition-all block">
+            <p className="text-xs text-[#2f3437]/50 font-medium mb-1">Top Link (30d)</p>
             {analytics.topLink ? (
               <>
-                <p className="text-sm font-semibold text-[#1e2a38] leading-tight">{analytics.topLink.name}</p>
-                <p className="text-xs text-[#1e2a38]/40 mt-0.5 truncate">{analytics.topLink.campaignName}</p>
-                <p className="text-xs text-[#3dc3ff] font-semibold mt-1">{analytics.topLink.leads} lead{analytics.topLink.leads !== 1 ? "s" : ""}</p>
+                <p className="text-sm font-semibold text-[#2f3437] leading-tight">{analytics.topLink.name}</p>
+                <p className="text-xs text-[#2f3437]/40 mt-0.5 truncate">{analytics.topLink.campaignName}</p>
+                <p className="text-xs text-[#0d9488] font-semibold mt-1">{analytics.topLink.leads} lead{analytics.topLink.leads !== 1 ? "s" : ""}</p>
               </>
             ) : (
-              <p className="text-sm text-[#1e2a38]/30 mt-1">No leads yet</p>
+              <p className="text-sm text-[#2f3437]/30 mt-1">No leads yet</p>
             )}
           </Link>
         </div>
@@ -187,7 +187,7 @@ export default function CampaignsPage() {
         <div className="flex items-center gap-2 flex-wrap mb-5">
           <button
             onClick={() => setTypeFilter("all")}
-            className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${typeFilter === "all" ? "bg-[#1e2a38] text-white dark:bg-white dark:text-[#1e2a38]" : "bg-white dark:bg-white/10 border border-[#1e2a38]/15 dark:border-white/15 text-[#1e2a38]/60 dark:text-white/60 hover:text-[#1e2a38] dark:hover:text-white"}`}
+            className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${typeFilter === "all" ? "bg-[#111] text-white dark:bg-white dark:text-[#2f3437]" : "bg-white dark:bg-white/10 border border-[#2f3437]/15 dark:border-white/15 text-[#2f3437]/60 dark:text-white/60 hover:text-[#2f3437] dark:hover:text-white"}`}
           >
             All
           </button>
@@ -197,7 +197,7 @@ export default function CampaignsPage() {
               <button
                 key={type}
                 onClick={() => setTypeFilter(type)}
-                className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${typeFilter === type ? "bg-[#1e2a38] text-white dark:bg-white dark:text-[#1e2a38]" : "bg-white dark:bg-white/10 border border-[#1e2a38]/15 dark:border-white/15 text-[#1e2a38]/60 dark:text-white/60 hover:text-[#1e2a38] dark:hover:text-white"}`}
+                className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${typeFilter === type ? "bg-[#111] text-white dark:bg-white dark:text-[#2f3437]" : "bg-white dark:bg-white/10 border border-[#2f3437]/15 dark:border-white/15 text-[#2f3437]/60 dark:text-white/60 hover:text-[#2f3437] dark:hover:text-white"}`}
               >
                 {src.label}
               </button>
@@ -207,20 +207,20 @@ export default function CampaignsPage() {
       )}
 
       {loading ? (
-        <div className="text-center py-16 text-[#1e2a38]/40">Loading...</div>
+        <div className="text-center py-16 text-[#2f3437]/40">Loading...</div>
       ) : campaigns.length === 0 ? (
-        <div className="bg-white dark:bg-[#242b3d] border border-[#1e2a38]/10 dark:border-white/10 rounded-2xl p-12 text-center">
+        <div className="bg-white dark:bg-[#1a1a1a] border border-[#2f3437]/10 dark:border-white/10 rounded-lg p-12 text-center">
           <div className="text-4xl mb-3">🔗</div>
-          <h2 className="font-semibold text-[#1e2a38] dark:text-white mb-2">No campaigns yet</h2>
-          <p className="text-sm text-[#1e2a38]/50 dark:text-white/50 mb-5">Create a campaign for each lead magnet you want to track.</p>
-          <button onClick={() => setShowModal(true)} className="bg-[#3dc3ff] text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#3dc3ff]/90 transition-colors">
+          <h2 className="font-semibold text-[#2f3437] dark:text-white mb-2">No campaigns yet</h2>
+          <p className="text-sm text-[#2f3437]/50 dark:text-white/50 mb-5">Create a campaign for each lead magnet you want to track.</p>
+          <button onClick={() => setShowModal(true)} className="bg-[#0d9488] text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-[#0d9488]/90 transition-colors">
             Create your first campaign
           </button>
         </div>
       ) : visibleCampaigns.length === 0 ? (
-        <div className="bg-white dark:bg-[#242b3d] border border-[#1e2a38]/10 dark:border-white/10 rounded-2xl p-8 text-center">
-          <p className="text-sm text-[#1e2a38]/50 dark:text-white/50">No {SOURCE_LABELS[typeFilter]?.label ?? ""} campaigns found.</p>
-          <button onClick={() => setTypeFilter("all")} className="mt-3 text-xs text-[#3dc3ff] hover:underline">Clear filter</button>
+        <div className="bg-white dark:bg-[#1a1a1a] border border-[#2f3437]/10 dark:border-white/10 rounded-lg p-8 text-center">
+          <p className="text-sm text-[#2f3437]/50 dark:text-white/50">No {SOURCE_LABELS[typeFilter]?.label ?? ""} campaigns found.</p>
+          <button onClick={() => setTypeFilter("all")} className="mt-3 text-xs text-[#0d9488] hover:underline">Clear filter</button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -228,68 +228,68 @@ export default function CampaignsPage() {
             const src = SOURCE_LABELS[c.sourceType] ?? SOURCE_LABELS.OTHER;
             const memberName = c.member?.fullName || c.member?.email;
             return (
-              <div key={c.id} className="relative group bg-white border border-[#1e2a38]/10 rounded-2xl hover:border-[#3dc3ff]/40 hover:shadow-sm transition-all">
+              <div key={c.id} className="relative group bg-white border border-[#2f3437]/10 rounded-lg hover:border-[#0d9488]/40 hover:shadow-sm transition-all">
                 <Link href={`/member/campaigns/${c.id}`} className="block p-5">
                   <div className="flex items-start justify-between gap-3 mb-1">
-                    <h3 className="font-semibold text-[#1e2a38]">{c.name}</h3>
+                    <h3 className="font-semibold text-[#2f3437]">{c.name}</h3>
                     <span className={`text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0 ${src.color}`}>{src.label}</span>
                   </div>
-                  <p className="text-xs text-[#1e2a38]/40 truncate mb-4">{c.destinationUrl}</p>
+                  <p className="text-xs text-[#2f3437]/40 truncate mb-4">{c.destinationUrl}</p>
                   {c.sourceType === "EMAIL_NEWSLETTER" ? (
                     <div className="grid grid-cols-2 gap-2 text-center">
                       <div>
-                        <div className="text-lg font-bold text-[#1e2a38]">{c.totalClicks}</div>
-                        <div className="text-xs text-[#1e2a38]/40">Clicks</div>
+                        <div className="text-lg font-bold text-[#2f3437]">{c.totalClicks}</div>
+                        <div className="text-xs text-[#2f3437]/40">Clicks</div>
                       </div>
                       <div>
-                        <div className="text-lg font-bold text-[#3dc3ff]">{c.totalUniqueClicks}</div>
-                        <div className="text-xs text-[#1e2a38]/40">Unique Clicks</div>
+                        <div className="text-lg font-bold text-[#0d9488]">{c.totalUniqueClicks}</div>
+                        <div className="text-xs text-[#2f3437]/40">Unique Clicks</div>
                       </div>
                     </div>
                   ) : c.sourceType === "YOUTUBE" ? (
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-center">
                       {c.totalViews !== null && (
                         <div>
-                          <div className="text-lg font-bold text-[#1e2a38]">{c.totalViews.toLocaleString()}</div>
-                          <div className="text-xs text-[#1e2a38]/40">Views</div>
+                          <div className="text-lg font-bold text-[#2f3437]">{c.totalViews.toLocaleString()}</div>
+                          <div className="text-xs text-[#2f3437]/40">Views</div>
                         </div>
                       )}
                       <div>
-                        <div className="text-lg font-bold text-[#1e2a38]">{c.totalClicks}</div>
-                        <div className="text-xs text-[#1e2a38]/40">Clicks</div>
+                        <div className="text-lg font-bold text-[#2f3437]">{c.totalClicks}</div>
+                        <div className="text-xs text-[#2f3437]/40">Clicks</div>
                       </div>
                       <div>
-                        <div className="text-lg font-bold text-[#1e2a38]">{c.totalLeads}</div>
-                        <div className="text-xs text-[#1e2a38]/40">Leads</div>
+                        <div className="text-lg font-bold text-[#2f3437]">{c.totalLeads}</div>
+                        <div className="text-xs text-[#2f3437]/40">Leads</div>
                       </div>
                       <div>
-                        <div className="text-lg font-bold text-[#3dc3ff]">{c.conversionRate}%</div>
-                        <div className="text-xs text-[#1e2a38]/40">Conv. Rate</div>
+                        <div className="text-lg font-bold text-[#0d9488]">{c.conversionRate}%</div>
+                        <div className="text-xs text-[#2f3437]/40">Conv. Rate</div>
                       </div>
                     </div>
                   ) : (
                     <div className="grid grid-cols-3 gap-2 text-center">
                       <div>
-                        <div className="text-lg font-bold text-[#1e2a38]">{c.totalClicks}</div>
-                        <div className="text-xs text-[#1e2a38]/40">Clicks</div>
+                        <div className="text-lg font-bold text-[#2f3437]">{c.totalClicks}</div>
+                        <div className="text-xs text-[#2f3437]/40">Clicks</div>
                       </div>
                       <div>
-                        <div className="text-lg font-bold text-[#1e2a38]">{c.totalLeads}</div>
-                        <div className="text-xs text-[#1e2a38]/40">Leads</div>
+                        <div className="text-lg font-bold text-[#2f3437]">{c.totalLeads}</div>
+                        <div className="text-xs text-[#2f3437]/40">Leads</div>
                       </div>
                       <div>
-                        <div className="text-lg font-bold text-[#3dc3ff]">{c.conversionRate}%</div>
-                        <div className="text-xs text-[#1e2a38]/40">Conv. Rate</div>
+                        <div className="text-lg font-bold text-[#0d9488]">{c.conversionRate}%</div>
+                        <div className="text-xs text-[#2f3437]/40">Conv. Rate</div>
                       </div>
                     </div>
                   )}
-                  <div className="mt-3 pt-3 border-t border-[#1e2a38]/5 text-xs text-[#1e2a38]/40">
+                  <div className="mt-3 pt-3 border-t border-[#2f3437]/5 text-xs text-[#2f3437]/40">
                     {c.linkCount} tracking link{c.linkCount !== 1 ? "s" : ""}
                   </div>
                 </Link>
                 <button
                   onClick={(e) => { e.preventDefault(); setConfirmDeleteId(c.id); }}
-                  className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity text-[#1e2a38]/20 hover:text-[#ff0033] p-1.5 rounded-lg hover:bg-[#ff0033]/5"
+                  className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity text-[#2f3437]/20 hover:text-[#ff0033] p-1.5 rounded-lg hover:bg-[#ff0033]/5"
                   title="Delete campaign"
                 >
                   <TrashIcon className="w-3.5 h-3.5" />
@@ -303,23 +303,23 @@ export default function CampaignsPage() {
       {/* New Campaign Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl border border-[#1e2a38]/10 shadow-xl w-full max-w-md p-6">
+          <div className="bg-white rounded-lg border border-[#2f3437]/10 shadow-xl w-full max-w-md p-6">
             <div className="flex items-center justify-between mb-5">
-              <h2 className="font-bold text-[#1e2a38]">New Campaign</h2>
-              <button onClick={() => { setShowModal(false); setCreateError(null); }} className="text-[#1e2a38]/40 hover:text-[#1e2a38] text-xl">✕</button>
+              <h2 className="font-bold text-[#2f3437]">New Campaign</h2>
+              <button onClick={() => { setShowModal(false); setCreateError(null); }} className="text-[#2f3437]/40 hover:text-[#2f3437] text-xl">✕</button>
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-[#1e2a38] mb-1.5">Campaign Name</label>
+                <label className="block text-sm font-semibold text-[#2f3437] mb-1.5">Campaign Name</label>
                 <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Free Home Valuation Guide" className={INPUT_CLS} />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-[#1e2a38] mb-1.5">Destination URL</label>
+                <label className="block text-sm font-semibold text-[#2f3437] mb-1.5">Destination URL</label>
                 <input type="text" value={form.destinationUrl} onChange={(e) => setForm({ ...form, destinationUrl: e.target.value })} placeholder="https://yoursite.com/free-guide" className={INPUT_CLS} />
-                <p className="text-xs text-[#1e2a38]/40 mt-1">The lead magnet or landing page URL</p>
+                <p className="text-xs text-[#2f3437]/40 mt-1">The lead magnet or landing page URL</p>
               </div>
               <div>
-                <label className="block text-sm font-semibold text-[#1e2a38] mb-1.5">Traffic Source</label>
+                <label className="block text-sm font-semibold text-[#2f3437] mb-1.5">Traffic Source</label>
                 <select value={form.sourceType} onChange={(e) => setForm({ ...form, sourceType: e.target.value })} className={`${INPUT_CLS} bg-white`}>
                   <option value="YOUTUBE">YouTube</option>
                   <option value="EMAIL_NEWSLETTER">Email Newsletter</option>
@@ -331,15 +331,15 @@ export default function CampaignsPage() {
                 </select>
               </div>
               {hasTyUrl === false && (
-                <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5">
+                <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5">
                   <ExclamationTriangleIcon className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
                   <p className="text-xs text-amber-700">Before this campaign can track leads, save your <Link href="/member/link-tracking" className="underline font-medium">Thank You Page Path</Link> in Link Tracking Settings.</p>
                 </div>
               )}
               {createError && (
-                <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-xl px-3 py-2">{createError}</p>
+                <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{createError}</p>
               )}
-              <button onClick={createCampaign} disabled={creating || !form.name || !form.destinationUrl} className="w-full bg-[#3dc3ff] text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-[#3dc3ff]/90 disabled:opacity-50 transition-colors">
+              <button onClick={createCampaign} disabled={creating || !form.name || !form.destinationUrl} className="w-full bg-[#0d9488] text-white py-2.5 rounded-lg font-semibold text-sm hover:bg-[#0d9488]/90 disabled:opacity-50 transition-colors">
                 {creating ? "Creating..." : "Create Campaign"}
               </button>
             </div>
@@ -350,15 +350,15 @@ export default function CampaignsPage() {
       {/* Delete Confirmation Modal */}
       {confirmDeleteId && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl border border-[#1e2a38]/10 shadow-xl w-full max-w-sm p-6">
-            <h2 className="font-bold text-[#1e2a38] mb-2">Delete Campaign?</h2>
-            <p className="text-sm text-[#1e2a38]/60 mb-1">Delete <span className="font-semibold text-[#1e2a38]">{confirmingName}</span>?</p>
-            <p className="text-xs text-[#1e2a38]/40 mb-5">Historical click and lead data will be preserved.</p>
+          <div className="bg-white rounded-lg border border-[#2f3437]/10 shadow-xl w-full max-w-sm p-6">
+            <h2 className="font-bold text-[#2f3437] mb-2">Delete Campaign?</h2>
+            <p className="text-sm text-[#2f3437]/60 mb-1">Delete <span className="font-semibold text-[#2f3437]">{confirmingName}</span>?</p>
+            <p className="text-xs text-[#2f3437]/40 mb-5">Historical click and lead data will be preserved.</p>
             <div className="flex gap-3">
-              <button onClick={() => deleteCampaign(confirmDeleteId)} disabled={!!deletingId} className="flex-1 bg-[#ff0033] text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-[#ff0033]/80 disabled:opacity-50 transition-colors">
+              <button onClick={() => deleteCampaign(confirmDeleteId)} disabled={!!deletingId} className="flex-1 bg-[#ff0033] text-white py-2.5 rounded-lg font-semibold text-sm hover:bg-[#ff0033]/80 disabled:opacity-50 transition-colors">
                 {deletingId ? "Deleting..." : "Delete"}
               </button>
-              <button onClick={() => setConfirmDeleteId(null)} className="flex-1 border border-[#1e2a38]/20 text-[#1e2a38]/60 py-2.5 rounded-xl text-sm hover:bg-gray-50 transition-colors">
+              <button onClick={() => setConfirmDeleteId(null)} className="flex-1 border border-[#2f3437]/20 text-[#2f3437]/60 py-2.5 rounded-lg text-sm hover:bg-gray-50 transition-colors">
                 Cancel
               </button>
             </div>

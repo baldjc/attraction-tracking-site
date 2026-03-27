@@ -206,7 +206,7 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
 
       <div className="px-4 py-4 border-b border-white/10 flex-shrink-0">
         <Link href={homeHref} className="flex items-center gap-3">
-          <img src="/logo-icon.png" alt="" className="h-10 w-10 rounded-xl object-cover shrink-0" />
+          <img src="/logo-icon.png" alt="" className="h-10 w-10 rounded-lg object-cover shrink-0" />
           <img
             src="/logo-transparent.png"
             alt="Attraction by Video"
@@ -230,8 +230,8 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
             const sectionHeader = sectionLabel && !renderedSections.has(sectionLabel) ? (() => {
               renderedSections.add(sectionLabel);
               return (
-                <div key={`section-${sectionLabel}`} className="px-3 pt-3 pb-1">
-                  <p className="text-[10px] font-semibold uppercase tracking-widest text-white/30">{sectionLabel}</p>
+                <div key={`section-${sectionLabel}`} className="px-3 pt-4 pb-1">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-white/30">{sectionLabel}</p>
                 </div>
               );
             })() : null;
@@ -241,10 +241,10 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
                 {sectionHeader}
                 <Link
                   href={link.href}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${
+                  className={`flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-colors duration-200 border-l-2 ${
                     active
-                      ? "bg-[#3dc3ff]/20 text-[#3dc3ff]"
-                      : "text-white/60 hover:text-white hover:bg-white/10"
+                      ? "border-white text-white"
+                      : "border-transparent text-white/50 hover:text-white hover:bg-white/5"
                   } ${sectionLabel ? "pl-6" : ""}`}
                 >
                   <Icon className="w-5 h-5 shrink-0" />
@@ -268,7 +268,7 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
         </div>
         <button
           onClick={toggleTheme}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/60 hover:text-white hover:bg-white/10 transition-all duration-150 w-full"
+          className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-white/50 hover:text-white hover:bg-white/5 transition-colors duration-200 w-full"
           aria-label="Toggle dark mode"
         >
           {theme === "dark"
@@ -278,7 +278,7 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
         </button>
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/60 hover:text-white hover:bg-white/10 transition-all duration-150 w-full"
+          className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-white/50 hover:text-white hover:bg-white/5 transition-colors duration-200 w-full"
         >
           <ArrowRightOnRectangleIcon className="w-5 h-5 shrink-0" />
           <span>Sign out</span>
@@ -290,7 +290,7 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
   return (
     <>
       {/* Mobile top bar */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-40 h-14 bg-[#1e2a38] dark:bg-[#0f1419] flex items-center px-4 gap-3 shadow-lg">
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-40 h-14 bg-[#111111] flex items-center px-4 gap-3">
         <button
           onClick={() => setMobileOpen(true)}
           className="text-white/70 hover:text-white transition-colors p-1"
@@ -320,7 +320,7 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
 
       {/* Mobile drawer */}
       <aside
-        className={`lg:hidden fixed inset-y-0 left-0 z-50 w-[260px] bg-[#1e2a38] dark:bg-[#0f1419] shadow-2xl transform transition-transform duration-300 ease-in-out ${
+        className={`lg:hidden fixed inset-y-0 left-0 z-50 w-[260px] bg-[#111111] shadow-2xl transform transition-transform duration-300 ease-in-out ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -335,7 +335,7 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
       </aside>
 
       {/* Desktop fixed sidebar */}
-      <aside className="hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 lg:left-0 lg:w-[260px] bg-[#1e2a38] dark:bg-[#0f1419] shadow-xl z-30">
+      <aside className="hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 lg:left-0 lg:w-[260px] bg-[#111111] z-30">
         {sidebarInner}
       </aside>
     </>

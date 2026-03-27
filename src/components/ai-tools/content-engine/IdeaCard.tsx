@@ -95,11 +95,11 @@ export default function IdeaCard({ idea, theme, onSaved, savedId, onDelete }: Pr
   const hasMultipleOptions = titleOptions.length > 1;
 
   return (
-    <div className="bg-[#f8f8f6] dark:bg-[#242b3d] rounded-xl border border-[#1e2a38]/10 dark:border-white/10 p-4 space-y-3">
+    <div className="bg-[#f8f8f6] dark:bg-[#1a1a1a] rounded-lg border border-[#2f3437]/10 dark:border-white/10 p-4 space-y-3">
       {/* Title options */}
       {hasMultipleOptions ? (
         <div className="space-y-1.5">
-          <p className="text-[10px] font-semibold text-[#1e2a38]/40 dark:text-white/40 uppercase tracking-wider">
+          <p className="text-[10px] font-semibold text-[#2f3437]/40 dark:text-white/40 uppercase tracking-wider">
             Pick a title
           </p>
           {titleOptions.map((opt, i) => (
@@ -108,16 +108,16 @@ export default function IdeaCard({ idea, theme, onSaved, savedId, onDelete }: Pr
               onClick={() => setSelectedIdx(i)}
               className={`w-full text-left rounded-lg px-3 py-2.5 border transition-all ${
                 selectedIdx === i
-                  ? "border-[#3dc3ff] bg-[#3dc3ff]/8 dark:bg-[#3dc3ff]/15"
-                  : "border-[#1e2a38]/10 dark:border-white/10 hover:border-[#1e2a38]/25 dark:hover:border-white/25 bg-white dark:bg-white/5"
+                  ? "border-[#0d9488] bg-[#0d9488]/8 dark:bg-[#0d9488]/15"
+                  : "border-[#2f3437]/10 dark:border-white/10 hover:border-[#2f3437]/25 dark:hover:border-white/25 bg-white dark:bg-white/5"
               }`}
             >
               <div className="flex items-start gap-2">
                 <span
                   className={`shrink-0 mt-0.5 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors ${
                     selectedIdx === i
-                      ? "border-[#3dc3ff] bg-[#3dc3ff]"
-                      : "border-[#1e2a38]/30 dark:border-white/30"
+                      ? "border-[#0d9488] bg-[#0d9488]"
+                      : "border-[#2f3437]/30 dark:border-white/30"
                   }`}
                 >
                   {selectedIdx === i && (
@@ -125,9 +125,9 @@ export default function IdeaCard({ idea, theme, onSaved, savedId, onDelete }: Pr
                   )}
                 </span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-[#1e2a38] dark:text-white leading-snug">{opt.title}</p>
+                  <p className="text-sm font-semibold text-[#2f3437] dark:text-white leading-snug">{opt.title}</p>
                   {opt.framework && (
-                    <p className="text-[10px] text-[#1e2a38]/40 dark:text-white/40 mt-0.5">{opt.framework}</p>
+                    <p className="text-[10px] text-[#2f3437]/40 dark:text-white/40 mt-0.5">{opt.framework}</p>
                   )}
                 </div>
               </div>
@@ -136,7 +136,7 @@ export default function IdeaCard({ idea, theme, onSaved, savedId, onDelete }: Pr
         </div>
       ) : (
         <div className="flex items-start justify-between gap-3">
-          <h3 className="font-semibold text-[#1e2a38] dark:text-white text-sm leading-snug flex-1">
+          <h3 className="font-semibold text-[#2f3437] dark:text-white text-sm leading-snug flex-1">
             {selectedOption.title}
           </h3>
         </div>
@@ -149,7 +149,7 @@ export default function IdeaCard({ idea, theme, onSaved, savedId, onDelete }: Pr
             onClick={handleDelete}
             disabled={deleting}
             title="Delete saved idea"
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-[#1e2a38]/30 dark:text-white/30 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-[#2f3437]/30 dark:text-white/30 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
           >
             {deleting ? <span className="text-xs animate-spin">↻</span> : <span className="text-sm">✕</span>}
           </button>
@@ -161,8 +161,8 @@ export default function IdeaCard({ idea, theme, onSaved, savedId, onDelete }: Pr
             title={isSaved ? "Saved" : "Save selected title"}
             className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
               isSaved
-                ? "bg-[#3dc3ff]/20 text-[#3dc3ff]"
-                : "bg-[#1e2a38]/5 dark:bg-white/5 hover:bg-[#3dc3ff]/10 text-[#1e2a38]/40 dark:text-white/40 hover:text-[#3dc3ff]"
+                ? "bg-[#0d9488]/20 text-[#0d9488]"
+                : "bg-[#111]/5 dark:bg-white/5 hover:bg-[#0d9488]/10 text-[#2f3437]/40 dark:text-white/40 hover:text-[#0d9488]"
             }`}
           >
             {saving ? (
@@ -176,7 +176,7 @@ export default function IdeaCard({ idea, theme, onSaved, savedId, onDelete }: Pr
 
       {/* Framework badge (single-title mode) */}
       {!hasMultipleOptions && selectedOption.framework && (
-        <span className="inline-block text-xs font-medium text-[#3dc3ff] bg-[#3dc3ff]/10 px-2 py-0.5 rounded-full">
+        <span className="inline-block text-xs font-medium text-[#0d9488] bg-[#0d9488]/10 px-2 py-0.5 rounded-full">
           {selectedOption.framework}
         </span>
       )}
@@ -186,13 +186,13 @@ export default function IdeaCard({ idea, theme, onSaved, savedId, onDelete }: Pr
         <>
           <ol className="space-y-1">
             {idea.talkingPoints.map((pt, i) => (
-              <li key={i} className="flex items-start gap-2 text-xs text-[#1e2a38]/70 dark:text-white/70">
-                <span className="text-[#3dc3ff] font-bold flex-shrink-0">{i + 1}.</span>
+              <li key={i} className="flex items-start gap-2 text-xs text-[#2f3437]/70 dark:text-white/70">
+                <span className="text-[#0d9488] font-bold flex-shrink-0">{i + 1}.</span>
                 <span>{pt}</span>
               </li>
             ))}
           </ol>
-          <p className="text-[10px] text-[#1e2a38]/40 dark:text-white/40 italic mt-1.5">
+          <p className="text-[10px] text-[#2f3437]/40 dark:text-white/40 italic mt-1.5">
             These are starting points — use fewer, combine them, or add your own.
           </p>
         </>
@@ -200,16 +200,16 @@ export default function IdeaCard({ idea, theme, onSaved, savedId, onDelete }: Pr
 
       {/* Why it works */}
       {idea.whyItWorks && (
-        <p className="text-xs text-[#1e2a38]/50 dark:text-white/50 italic border-t border-[#1e2a38]/5 dark:border-white/5 pt-2">
+        <p className="text-xs text-[#2f3437]/50 dark:text-white/50 italic border-t border-[#2f3437]/5 dark:border-white/5 pt-2">
           {idea.whyItWorks}
         </p>
       )}
 
       {/* Build Script */}
-      <div className="border-t border-[#1e2a38]/5 dark:border-white/5 pt-2">
+      <div className="border-t border-[#2f3437]/5 dark:border-white/5 pt-2">
         <button
           onClick={handleBuildScript}
-          className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-semibold text-[#1e2a38] dark:text-white bg-[#1e2a38]/5 dark:bg-white/5 hover:bg-[#3dc3ff]/10 hover:text-[#3dc3ff] dark:hover:text-[#3dc3ff] rounded-lg transition-colors"
+          className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-semibold text-[#2f3437] dark:text-white bg-[#111]/5 dark:bg-white/5 hover:bg-[#0d9488]/10 hover:text-[#0d9488] dark:hover:text-[#0d9488] rounded-lg transition-colors"
         >
           <span>🎬</span>
           Build Script

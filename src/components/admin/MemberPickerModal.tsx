@@ -76,12 +76,12 @@ export default function MemberPickerModal({ onClose, adminEmail }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col max-h-[80vh]">
+      <div className="bg-white rounded-lg shadow-2xl w-full max-w-md flex flex-col max-h-[80vh]">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <div>
-            <h2 className="text-base font-semibold text-[#1e2a38]">View as Member</h2>
-            <p className="text-xs text-[#1e2a38]/50 mt-0.5">Pick a member to see their view of the platform</p>
+            <h2 className="text-base font-semibold text-[#2f3437]">View as Member</h2>
+            <p className="text-xs text-[#2f3437]/50 mt-0.5">Pick a member to see their view of the platform</p>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
             <XMarkIcon className="w-5 h-5" />
@@ -98,7 +98,7 @@ export default function MemberPickerModal({ onClose, adminEmail }: Props) {
               placeholder="Search by name or email…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#3dc3ff] focus:border-transparent outline-none"
+              className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0d9488] focus:border-transparent outline-none"
             />
           </div>
         </div>
@@ -106,9 +106,9 @@ export default function MemberPickerModal({ onClose, adminEmail }: Props) {
         {/* Member list */}
         <div className="flex-1 overflow-y-auto">
           {loading ? (
-            <div className="py-12 text-center text-sm text-[#1e2a38]/40">Loading members…</div>
+            <div className="py-12 text-center text-sm text-[#2f3437]/40">Loading members…</div>
           ) : filtered.length === 0 ? (
-            <div className="py-12 text-center text-sm text-[#1e2a38]/40">No members found</div>
+            <div className="py-12 text-center text-sm text-[#2f3437]/40">No members found</div>
           ) : (
             <ul className="divide-y divide-gray-50">
               {filtered.map((member) => {
@@ -119,19 +119,19 @@ export default function MemberPickerModal({ onClose, adminEmail }: Props) {
                     <button
                       onClick={() => handleSelect(member)}
                       disabled={!!selecting}
-                      className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-[#3dc3ff]/5 transition-colors text-left disabled:opacity-50"
+                      className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-[#0d9488]/5 transition-colors text-left disabled:opacity-50"
                     >
-                      <div className="w-8 h-8 rounded-full bg-[#1e2a38]/10 flex items-center justify-center shrink-0">
-                        <UserCircleIcon className="w-5 h-5 text-[#1e2a38]/40" />
+                      <div className="w-8 h-8 rounded-full bg-[#111]/10 flex items-center justify-center shrink-0">
+                        <UserCircleIcon className="w-5 h-5 text-[#2f3437]/40" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-[#1e2a38] truncate">{displayName}</p>
+                        <p className="text-sm font-medium text-[#2f3437] truncate">{displayName}</p>
                         {member.fullName && (
-                          <p className="text-xs text-[#1e2a38]/40 truncate">{member.email}</p>
+                          <p className="text-xs text-[#2f3437]/40 truncate">{member.email}</p>
                         )}
                       </div>
                       {isSelecting && (
-                        <div className="w-4 h-4 border-2 border-[#3dc3ff] border-t-transparent rounded-full animate-spin shrink-0" />
+                        <div className="w-4 h-4 border-2 border-[#0d9488] border-t-transparent rounded-full animate-spin shrink-0" />
                       )}
                     </button>
                   </li>
@@ -142,7 +142,7 @@ export default function MemberPickerModal({ onClose, adminEmail }: Props) {
         </div>
 
         <div className="px-5 py-3 border-t border-gray-100">
-          <p className="text-xs text-[#1e2a38]/40 text-center">
+          <p className="text-xs text-[#2f3437]/40 text-center">
             {members.length} member{members.length !== 1 ? "s" : ""} · You&apos;ll see the platform exactly as they do
           </p>
         </div>

@@ -48,7 +48,7 @@ interface Props {
 export default function ContentEngineChat({ theme, onBack }: Props) {
   const themeName = typeof theme === "string" ? theme : theme.name;
   const themeEmoji = typeof theme === "string" ? null : (theme.emoji ?? null);
-  const themeColour = typeof theme === "string" ? "#3dc3ff" : (theme.colour ?? "#3dc3ff");
+  const themeColour = typeof theme === "string" ? "#0d9488" : (theme.colour ?? "#0d9488");
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -85,10 +85,10 @@ export default function ContentEngineChat({ theme, onBack }: Props) {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center gap-3 pb-4 border-b border-[#1e2a38]/10 dark:border-white/10 mb-4">
+      <div className="flex items-center gap-3 pb-4 border-b border-[#2f3437]/10 dark:border-white/10 mb-4">
         <button
           onClick={onBack}
-          className="text-sm text-[#1e2a38]/50 dark:text-white/50 hover:text-[#1e2a38] dark:hover:text-white transition-colors flex items-center gap-1"
+          className="text-sm text-[#2f3437]/50 dark:text-white/50 hover:text-[#2f3437] dark:hover:text-white transition-colors flex items-center gap-1"
         >
           ← Back
         </button>
@@ -99,15 +99,15 @@ export default function ContentEngineChat({ theme, onBack }: Props) {
           {themeEmoji && <span>{themeEmoji}</span>}
           <span>{themeName}</span>
         </div>
-        <span className="text-xs text-[#1e2a38]/40 dark:text-white/40">Go Deeper mode</span>
+        <span className="text-xs text-[#2f3437]/40 dark:text-white/40">Go Deeper mode</span>
       </div>
 
       <div className="flex-1 overflow-y-auto space-y-4 pr-1">
         {messages.length === 0 && (
           <div className="text-center py-12">
             <p className="text-2xl mb-3">{themeEmoji ?? "💬"}</p>
-            <p className="text-sm font-medium text-[#1e2a38] dark:text-white">Explore the <span style={{ color: themeColour }}>{themeName}</span> theme</p>
-            <p className="text-xs text-[#1e2a38]/50 dark:text-white/50 mt-1 max-w-xs mx-auto">
+            <p className="text-sm font-medium text-[#2f3437] dark:text-white">Explore the <span style={{ color: themeColour }}>{themeName}</span> theme</p>
+            <p className="text-xs text-[#2f3437]/50 dark:text-white/50 mt-1 max-w-xs mx-auto">
               Ask for specific ideas, request variations, or explore different angles within this theme.
             </p>
           </div>
@@ -116,7 +116,7 @@ export default function ContentEngineChat({ theme, onBack }: Props) {
         {messages.map((msg, i) => (
           <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
             {msg.role === "user" ? (
-              <div className="bg-[#1e2a38] dark:bg-[#3dc3ff]/20 text-white text-sm px-4 py-2.5 rounded-2xl rounded-br-sm max-w-[80%]">
+              <div className="bg-[#111] dark:bg-[#0d9488]/20 text-white text-sm px-4 py-2.5 rounded-lg rounded-br-sm max-w-[80%]">
                 {msg.content}
               </div>
             ) : (
@@ -125,7 +125,7 @@ export default function ContentEngineChat({ theme, onBack }: Props) {
                   seg.type === "idea" && seg.idea ? (
                     <IdeaCard key={j} idea={seg.idea} theme={themeName} />
                   ) : (
-                    <div key={j} className="text-sm text-[#1e2a38]/80 dark:text-white/80 whitespace-pre-wrap leading-relaxed">
+                    <div key={j} className="text-sm text-[#2f3437]/80 dark:text-white/80 whitespace-pre-wrap leading-relaxed">
                       {seg.text}
                     </div>
                   )
@@ -138,16 +138,16 @@ export default function ContentEngineChat({ theme, onBack }: Props) {
         {loading && (
           <div className="flex justify-start">
             <div className="flex gap-1 items-center px-4 py-3">
-              <span className="w-2 h-2 bg-[#3dc3ff] rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-              <span className="w-2 h-2 bg-[#3dc3ff] rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-              <span className="w-2 h-2 bg-[#3dc3ff] rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+              <span className="w-2 h-2 bg-[#0d9488] rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+              <span className="w-2 h-2 bg-[#0d9488] rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+              <span className="w-2 h-2 bg-[#0d9488] rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
             </div>
           </div>
         )}
         <div ref={bottomRef} />
       </div>
 
-      <div className="pt-4 border-t border-[#1e2a38]/10 dark:border-white/10 mt-4">
+      <div className="pt-4 border-t border-[#2f3437]/10 dark:border-white/10 mt-4">
         <div className="flex gap-2">
           <input
             type="text"
@@ -156,12 +156,12 @@ export default function ContentEngineChat({ theme, onBack }: Props) {
             onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
             placeholder={`Ask about the "${themeName}" theme...`}
             disabled={loading}
-            className="flex-1 bg-white dark:bg-[#1a1f2e] border border-[#1e2a38]/20 dark:border-white/20 rounded-xl px-4 py-2.5 text-sm text-[#1e2a38] dark:text-white placeholder-[#1e2a38]/30 dark:placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#3dc3ff]/40"
+            className="flex-1 bg-white dark:bg-[#111111] border border-[#2f3437]/20 dark:border-white/20 rounded-lg px-4 py-2.5 text-sm text-[#2f3437] dark:text-white placeholder-[#2f3437]/30 dark:placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#0d9488]/40"
           />
           <button
             onClick={handleSend}
             disabled={loading || !input.trim()}
-            className="bg-[#3dc3ff] hover:bg-[#2bb0ec] text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors disabled:opacity-40"
+            className="bg-[#0d9488] hover:bg-[#2bb0ec] text-white text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors disabled:opacity-40"
           >
             Send
           </button>

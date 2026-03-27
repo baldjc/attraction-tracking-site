@@ -61,29 +61,29 @@ function MemberPicker({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between gap-2 px-3 py-2 border border-[#1e2a38]/15 rounded-lg text-sm bg-white hover:border-[#3dc3ff]/50 transition-colors"
+        className="w-full flex items-center justify-between gap-2 px-3 py-2 border border-[#2f3437]/15 rounded-lg text-sm bg-white hover:border-[#0d9488]/50 transition-colors"
       >
-        <span className="text-[#1e2a38]/60 truncate">
+        <span className="text-[#2f3437]/60 truncate">
           {selected.length === 0 ? "Add members…" : `${selected.length} member${selected.length !== 1 ? "s" : ""} selected`}
         </span>
-        <ChevronDownIcon className={`w-3.5 h-3.5 text-[#1e2a38]/40 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
+        <ChevronDownIcon className={`w-3.5 h-3.5 text-[#2f3437]/40 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
 
       {open && (
-        <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-[#1e2a38]/15 rounded-xl shadow-lg z-20 overflow-hidden">
-          <div className="p-2 border-b border-[#1e2a38]/8">
+        <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-[#2f3437]/15 rounded-lg shadow-lg z-20 overflow-hidden">
+          <div className="p-2 border-b border-[#2f3437]/8">
             <input
               autoFocus
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search members…"
-              className="w-full px-3 py-1.5 text-sm border border-[#1e2a38]/15 rounded-lg focus:outline-none focus:border-[#3dc3ff]"
+              className="w-full px-3 py-1.5 text-sm border border-[#2f3437]/15 rounded-lg focus:outline-none focus:border-[#0d9488]"
             />
           </div>
-          <ul className="max-h-52 overflow-y-auto divide-y divide-[#1e2a38]/6">
+          <ul className="max-h-52 overflow-y-auto divide-y divide-[#2f3437]/6">
             {filtered.length === 0 ? (
-              <li className="px-4 py-3 text-sm text-[#1e2a38]/40 text-center">No members found</li>
+              <li className="px-4 py-3 text-sm text-[#2f3437]/40 text-center">No members found</li>
             ) : (
               filtered.map((m) => {
                 const checked = selected.includes(m.id);
@@ -92,14 +92,14 @@ function MemberPicker({
                     <button
                       type="button"
                       onClick={() => toggle(m.id)}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[#3dc3ff]/5 transition-colors text-left"
+                      className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[#0d9488]/5 transition-colors text-left"
                     >
-                      <span className={`w-4 h-4 rounded border shrink-0 flex items-center justify-center ${checked ? "bg-[#3dc3ff] border-[#3dc3ff]" : "border-[#1e2a38]/25"}`}>
+                      <span className={`w-4 h-4 rounded border shrink-0 flex items-center justify-center ${checked ? "bg-[#0d9488] border-[#0d9488]" : "border-[#2f3437]/25"}`}>
                         {checked && <CheckIcon className="w-3 h-3 text-white" />}
                       </span>
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-[#1e2a38] truncate">{m.fullName || m.email}</p>
-                        {m.youtubeChannelName && <p className="text-xs text-[#1e2a38]/40 truncate">{m.youtubeChannelName}</p>}
+                        <p className="text-sm font-medium text-[#2f3437] truncate">{m.fullName || m.email}</p>
+                        {m.youtubeChannelName && <p className="text-xs text-[#2f3437]/40 truncate">{m.youtubeChannelName}</p>}
                       </div>
                     </button>
                   </li>
@@ -113,7 +113,7 @@ function MemberPicker({
       {selectedMembers.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mt-2">
           {selectedMembers.map((m) => (
-            <span key={m.id} className="inline-flex items-center gap-1 bg-[#3dc3ff]/10 text-[#1e2a38] text-xs font-medium px-2 py-1 rounded-full">
+            <span key={m.id} className="inline-flex items-center gap-1 bg-[#0d9488]/10 text-[#2f3437] text-xs font-medium px-2 py-1 rounded-full">
               {m.fullName || m.email}
               <button type="button" onClick={() => toggle(m.id)} className="hover:text-[#ff0033]">
                 <XMarkIcon className="w-3 h-3" />
@@ -196,11 +196,11 @@ function StaffCard({
     : "bg-amber-100 text-amber-700";
 
   return (
-    <div className="border border-[#1e2a38]/10 rounded-xl p-5 space-y-4">
+    <div className="border border-[#2f3437]/10 rounded-lg p-5 space-y-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-[#1e2a38] truncate">{staff.fullName || staff.email}</p>
-          <p className="text-xs text-[#1e2a38]/50 truncate">{staff.email}</p>
+          <p className="text-sm font-semibold text-[#2f3437] truncate">{staff.fullName || staff.email}</p>
+          <p className="text-xs text-[#2f3437]/50 truncate">{staff.email}</p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <span className={`text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full ${roleBadge}`}>
@@ -211,7 +211,7 @@ function StaffCard({
             onClick={handleViewAs}
             disabled={viewingAs}
             title={`View as ${staff.fullName || staff.email}`}
-            className="text-xs font-medium text-[#3dc3ff] border border-[#3dc3ff]/30 px-2.5 py-1 rounded-lg hover:bg-[#3dc3ff]/10 disabled:opacity-50 transition-colors"
+            className="text-xs font-medium text-[#0d9488] border border-[#0d9488]/30 px-2.5 py-1 rounded-lg hover:bg-[#0d9488]/10 disabled:opacity-50 transition-colors"
           >
             {viewingAs ? "…" : "View as"}
           </button>
@@ -219,7 +219,7 @@ function StaffCard({
             <button
               type="button"
               onClick={() => setConfirmRemove(true)}
-              className="text-[#1e2a38]/30 hover:text-[#ff0033] transition-colors"
+              className="text-[#2f3437]/30 hover:text-[#ff0033] transition-colors"
               title="Remove account"
             >
               <XMarkIcon className="w-4 h-4" />
@@ -230,12 +230,12 @@ function StaffCard({
 
       {confirmRemove && (
         <div className="bg-[#ff0033]/5 border border-[#ff0033]/20 rounded-lg px-4 py-3 flex items-center justify-between gap-3">
-          <p className="text-xs text-[#1e2a38] font-medium">Remove this account permanently?</p>
+          <p className="text-xs text-[#2f3437] font-medium">Remove this account permanently?</p>
           <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
               onClick={() => setConfirmRemove(false)}
-              className="text-xs text-[#1e2a38]/50 hover:text-[#1e2a38] font-medium"
+              className="text-xs text-[#2f3437]/50 hover:text-[#2f3437] font-medium"
             >
               Cancel
             </button>
@@ -258,8 +258,8 @@ function StaffCard({
             onClick={() => setFullAccess(true)}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
               fullAccess
-                ? "bg-[#1e2a38] text-white border-[#1e2a38]"
-                : "bg-white text-[#1e2a38]/60 border-[#1e2a38]/15 hover:border-[#1e2a38]/30"
+                ? "bg-[#111] text-white border-[#2f3437]"
+                : "bg-white text-[#2f3437]/60 border-[#2f3437]/15 hover:border-[#2f3437]/30"
             }`}
           >
             All members
@@ -269,8 +269,8 @@ function StaffCard({
             onClick={() => setFullAccess(false)}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
               !fullAccess
-                ? "bg-[#1e2a38] text-white border-[#1e2a38]"
-                : "bg-white text-[#1e2a38]/60 border-[#1e2a38]/15 hover:border-[#1e2a38]/30"
+                ? "bg-[#111] text-white border-[#2f3437]"
+                : "bg-white text-[#2f3437]/60 border-[#2f3437]/15 hover:border-[#2f3437]/30"
             }`}
           >
             Custom access
@@ -286,7 +286,7 @@ function StaffCard({
         )}
 
         {fullAccess && (
-          <p className="text-xs text-[#1e2a38]/40 italic">This account can see all members.</p>
+          <p className="text-xs text-[#2f3437]/40 italic">This account can see all members.</p>
         )}
       </div>
 
@@ -295,7 +295,7 @@ function StaffCard({
           type="button"
           onClick={handleSave}
           disabled={saving}
-          className="bg-[#3dc3ff] text-white text-xs font-semibold px-4 py-2 rounded-lg hover:bg-[#3dc3ff]/90 disabled:opacity-50 transition-colors"
+          className="bg-[#0d9488] text-white text-xs font-semibold px-4 py-2 rounded-lg hover:bg-[#0d9488]/90 disabled:opacity-50 transition-colors"
         >
           {saving ? "Saving…" : "Save"}
         </button>
@@ -342,7 +342,7 @@ function AddStaffForm({ onCreated }: { onCreated: (s: StaffMember) => void }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-[#1e2a38]/15 hover:border-[#3dc3ff]/40 rounded-xl py-3 text-sm text-[#1e2a38]/40 hover:text-[#3dc3ff] transition-colors font-medium"
+        className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-[#2f3437]/15 hover:border-[#0d9488]/40 rounded-lg py-3 text-sm text-[#2f3437]/40 hover:text-[#0d9488] transition-colors font-medium"
       >
         <span className="text-lg leading-none">+</span> Add staff account
       </button>
@@ -350,31 +350,31 @@ function AddStaffForm({ onCreated }: { onCreated: (s: StaffMember) => void }) {
   }
 
   return (
-    <div className="border border-[#3dc3ff]/30 bg-[#3dc3ff]/3 rounded-xl p-5">
+    <div className="border border-[#0d9488]/30 bg-[#0d9488]/3 rounded-lg p-5">
       <div className="flex items-center justify-between mb-4">
-        <p className="text-sm font-semibold text-[#1e2a38]">New staff account</p>
-        <button type="button" onClick={() => { setOpen(false); setError(""); }} className="text-[#1e2a38]/30 hover:text-[#1e2a38]">
+        <p className="text-sm font-semibold text-[#2f3437]">New staff account</p>
+        <button type="button" onClick={() => { setOpen(false); setError(""); }} className="text-[#2f3437]/30 hover:text-[#2f3437]">
           <XMarkIcon className="w-4 h-4" />
         </button>
       </div>
       <form onSubmit={handleCreate} className="space-y-3">
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-medium text-[#1e2a38]/60 mb-1">Full name</label>
+            <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Full name</label>
             <input
               type="text"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               placeholder="Jane Smith"
-              className="w-full px-3 py-2 text-sm border border-[#1e2a38]/15 rounded-lg focus:outline-none focus:border-[#3dc3ff] bg-white"
+              className="w-full px-3 py-2 text-sm border border-[#2f3437]/15 rounded-lg focus:outline-none focus:border-[#0d9488] bg-white"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-[#1e2a38]/60 mb-1">Role</label>
+            <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Role</label>
             <select
               value={role}
               onChange={(e) => setRole(e.target.value as "admin" | "editor")}
-              className="w-full px-3 py-2 text-sm border border-[#1e2a38]/15 rounded-lg focus:outline-none focus:border-[#3dc3ff] bg-white"
+              className="w-full px-3 py-2 text-sm border border-[#2f3437]/15 rounded-lg focus:outline-none focus:border-[#0d9488] bg-white"
             >
               <option value="editor">Editor</option>
               <option value="admin">Admin</option>
@@ -382,38 +382,38 @@ function AddStaffForm({ onCreated }: { onCreated: (s: StaffMember) => void }) {
           </div>
         </div>
         <div>
-          <label className="block text-xs font-medium text-[#1e2a38]/60 mb-1">Email address <span className="text-[#ff0033]">*</span></label>
+          <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Email address <span className="text-[#ff0033]">*</span></label>
           <input
             type="email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="jane@example.com"
-            className="w-full px-3 py-2 text-sm border border-[#1e2a38]/15 rounded-lg focus:outline-none focus:border-[#3dc3ff] bg-white"
+            className="w-full px-3 py-2 text-sm border border-[#2f3437]/15 rounded-lg focus:outline-none focus:border-[#0d9488] bg-white"
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-[#1e2a38]/60 mb-1">Temporary password <span className="text-[#ff0033]">*</span></label>
+          <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Temporary password <span className="text-[#ff0033]">*</span></label>
           <input
             type="text"
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Set a temporary password"
-            className="w-full px-3 py-2 text-sm border border-[#1e2a38]/15 rounded-lg focus:outline-none focus:border-[#3dc3ff] bg-white font-mono"
+            className="w-full px-3 py-2 text-sm border border-[#2f3437]/15 rounded-lg focus:outline-none focus:border-[#0d9488] bg-white font-mono"
           />
-          <p className="text-[10px] text-[#1e2a38]/40 mt-1">Share this password with the team member so they can sign in.</p>
+          <p className="text-[10px] text-[#2f3437]/40 mt-1">Share this password with the team member so they can sign in.</p>
         </div>
         {error && <p className="text-xs text-[#ff0033] font-medium">{error}</p>}
         <div className="flex items-center gap-3 pt-1">
           <button
             type="submit"
             disabled={saving}
-            className="bg-[#1e2a38] text-white text-xs font-semibold px-5 py-2 rounded-lg hover:bg-[#1e2a38]/80 disabled:opacity-50 transition-colors"
+            className="bg-[#111] text-white text-xs font-semibold px-5 py-2 rounded-lg hover:bg-[#111]/80 disabled:opacity-50 transition-colors"
           >
             {saving ? "Creating…" : "Create account"}
           </button>
-          <button type="button" onClick={() => { setOpen(false); setError(""); }} className="text-xs text-[#1e2a38]/50 hover:text-[#1e2a38]">
+          <button type="button" onClick={() => { setOpen(false); setError(""); }} className="text-xs text-[#2f3437]/50 hover:text-[#2f3437]">
             Cancel
           </button>
         </div>
@@ -453,19 +453,19 @@ function StaffAccessSection() {
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+    <div className="bg-white rounded-lg border border-gray-200 p-6">
       <div className="flex items-center gap-2 mb-1">
-        <UserGroupIcon className="w-5 h-5 text-[#3dc3ff]" />
-        <h2 className="text-base font-semibold text-[#1e2a38]">Staff & Editor Access</h2>
+        <UserGroupIcon className="w-5 h-5 text-[#0d9488]" />
+        <h2 className="text-base font-semibold text-[#2f3437]">Staff & Editor Access</h2>
       </div>
-      <p className="text-sm text-[#1e2a38]/50 mb-5">
+      <p className="text-sm text-[#2f3437]/50 mb-5">
         Create and manage admin or editor accounts. Control which members each one can see — &ldquo;All members&rdquo; for full access, or &ldquo;Custom access&rdquo; to restrict by member.
       </p>
 
       {loading && (
         <div className="space-y-3">
           {[1, 2].map((i) => (
-            <div key={i} className="h-32 bg-[#1e2a38]/5 rounded-xl animate-pulse" />
+            <div key={i} className="h-32 bg-[#111]/5 rounded-lg animate-pulse" />
           ))}
         </div>
       )}
@@ -548,7 +548,7 @@ function Toggle({ enabled, onChange, disabled }: { enabled: boolean; onChange: (
       disabled={disabled}
       className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors shrink-0 ${
         disabled ? "opacity-40 cursor-not-allowed" : "cursor-pointer"
-      } ${enabled ? "bg-[#3dc3ff]" : "bg-[#1e2a38]/20"}`}
+      } ${enabled ? "bg-[#0d9488]" : "bg-[#111]/20"}`}
     >
       <span
         className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${
@@ -596,13 +596,13 @@ function FeatureVisibilitySection() {
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+    <div className="bg-white rounded-lg border border-gray-200 p-6">
       <div className="mb-5">
         <div className="flex items-center gap-2 mb-1">
-          <EyeIcon className="w-5 h-5 text-[#3dc3ff]" />
-          <h2 className="text-base font-semibold text-[#1e2a38]">Feature Visibility</h2>
+          <EyeIcon className="w-5 h-5 text-[#0d9488]" />
+          <h2 className="text-base font-semibold text-[#2f3437]">Feature Visibility</h2>
         </div>
-        <p className="text-sm text-[#1e2a38]/50 mt-0.5">
+        <p className="text-sm text-[#2f3437]/50 mt-0.5">
           Control what members can see and access. Changes take effect immediately.
           You always see everything when viewing as a member.
         </p>
@@ -613,7 +613,7 @@ function FeatureVisibilitySection() {
       {!flags && !loadError && (
         <div className="space-y-2">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-12 bg-[#1e2a38]/5 rounded-xl animate-pulse" />
+            <div key={i} className="h-12 bg-[#111]/5 rounded-lg animate-pulse" />
           ))}
         </div>
       )}
@@ -627,8 +627,8 @@ function FeatureVisibilitySection() {
         const isSubGroup = !!parentFlag;
 
         return (
-          <div key={group.group} className={`mb-5 last:mb-0 ${isSubGroup ? "ml-4 pl-4 border-l-2 border-[#1e2a38]/10" : ""}`}>
-            <p className="text-xs font-semibold text-[#1e2a38]/40 uppercase tracking-wider mb-2">
+          <div key={group.group} className={`mb-5 last:mb-0 ${isSubGroup ? "ml-4 pl-4 border-l-2 border-[#2f3437]/10" : ""}`}>
+            <p className="text-xs font-semibold text-[#2f3437]/40 uppercase tracking-wider mb-2">
               {group.group}
               {isAiGroup && !aiOn && (
                 <span className="ml-2 font-normal text-amber-600 normal-case tracking-normal">
@@ -655,19 +655,19 @@ function FeatureVisibilitySection() {
                 return (
                   <div
                     key={item.key}
-                    className={`flex items-center justify-between gap-4 px-4 py-3 rounded-xl border transition-colors ${
+                    className={`flex items-center justify-between gap-4 px-4 py-3 rounded-lg border transition-colors ${
                       dimmed
-                        ? "bg-[#1e2a38]/3 border-[#1e2a38]/5 opacity-50"
+                        ? "bg-[#111]/3 border-[#2f3437]/5 opacity-50"
                         : isOn
-                        ? "bg-white border-[#1e2a38]/10"
+                        ? "bg-white border-[#2f3437]/10"
                         : "bg-[#ff0033]/3 border-[#ff0033]/15"
                     }`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${isOn && !dimmed ? "bg-[#3dc3ff]" : "bg-[#1e2a38]/20"}`} />
+                      <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${isOn && !dimmed ? "bg-[#0d9488]" : "bg-[#111]/20"}`} />
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-[#1e2a38]">{item.label}</p>
-                        <p className="text-xs text-[#1e2a38]/45">{item.desc}</p>
+                        <p className="text-sm font-medium text-[#2f3437]">{item.label}</p>
+                        <p className="text-xs text-[#2f3437]/45">{item.desc}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
@@ -678,7 +678,7 @@ function FeatureVisibilitySection() {
                       )}
                       {isSaving ? (
                         <div className="w-9 flex justify-center">
-                          <span className="w-4 h-4 border-2 border-[#3dc3ff] border-t-transparent rounded-full animate-spin" />
+                          <span className="w-4 h-4 border-2 border-[#0d9488] border-t-transparent rounded-full animate-spin" />
                         </div>
                       ) : (
                         <Toggle
@@ -746,17 +746,17 @@ function PromptEditorSection({
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+    <div className="bg-white rounded-lg border border-gray-200 p-6">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           {icon}
-          <h2 className="text-base font-semibold text-[#1e2a38]">{title}</h2>
+          <h2 className="text-base font-semibold text-[#2f3437]">{title}</h2>
         </div>
-        <button onClick={handleReset} className="text-xs text-[#1e2a38]/50 hover:text-[#1e2a38] underline">
+        <button onClick={handleReset} className="text-xs text-[#2f3437]/50 hover:text-[#2f3437] underline">
           Reset to Default
         </button>
       </div>
-      <p className="text-xs text-[#1e2a38]/50 mb-3">{description}</p>
+      <p className="text-xs text-[#2f3437]/50 mb-3">{description}</p>
       {loading ? (
         <div className="h-64 bg-gray-50 rounded-lg animate-pulse" />
       ) : (
@@ -764,14 +764,14 @@ function PromptEditorSection({
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           rows={rows}
-          className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-[#1e2a38] font-mono focus:outline-none focus:ring-2 focus:ring-[#3dc3ff]/30 resize-y"
+          className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-[#2f3437] font-mono focus:outline-none focus:ring-2 focus:ring-[#0d9488]/30 resize-y"
         />
       )}
       <div className="flex items-center gap-3 mt-3">
         <button
           onClick={handleSave}
           disabled={saving || loading}
-          className="bg-[#3dc3ff] hover:bg-[#2bb3ef] disabled:opacity-50 text-white font-semibold px-5 py-2.5 rounded-lg text-sm transition-colors"
+          className="bg-[#0d9488] hover:bg-[#0b7a70] disabled:opacity-50 text-white font-semibold px-5 py-2.5 rounded-lg text-sm transition-colors"
         >
           {saving ? "Saving…" : "Save Prompt"}
         </button>
@@ -816,17 +816,17 @@ function AIScoringPromptSection() {
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+    <div className="bg-white rounded-lg border border-gray-200 p-6">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <SparklesIcon className="w-5 h-5 text-[#3dc3ff]" />
-          <h2 className="text-base font-semibold text-[#1e2a38]">AI Scoring Prompt</h2>
+          <SparklesIcon className="w-5 h-5 text-[#0d9488]" />
+          <h2 className="text-base font-semibold text-[#2f3437]">AI Scoring Prompt</h2>
         </div>
-        <button onClick={handleReset} className="text-xs text-[#1e2a38]/50 hover:text-[#1e2a38] underline">
+        <button onClick={handleReset} className="text-xs text-[#2f3437]/50 hover:text-[#2f3437] underline">
           Reset to Default
         </button>
       </div>
-      <p className="text-xs text-[#1e2a38]/50 mb-3">
+      <p className="text-xs text-[#2f3437]/50 mb-3">
         System prompt sent to Claude when running audits. Changes take effect on the next audit run.
       </p>
       {loading ? (
@@ -836,14 +836,14 @@ function AIScoringPromptSection() {
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           rows={24}
-          className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-[#1e2a38] font-mono focus:outline-none focus:ring-2 focus:ring-[#3dc3ff]/30 resize-y"
+          className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-[#2f3437] font-mono focus:outline-none focus:ring-2 focus:ring-[#0d9488]/30 resize-y"
         />
       )}
       <div className="flex items-center gap-3 mt-3">
         <button
           onClick={handleSave}
           disabled={saving || loading}
-          className="bg-[#3dc3ff] hover:bg-[#2bb3ef] disabled:opacity-50 text-white font-semibold px-5 py-2.5 rounded-lg text-sm transition-colors"
+          className="bg-[#0d9488] hover:bg-[#0b7a70] disabled:opacity-50 text-white font-semibold px-5 py-2.5 rounded-lg text-sm transition-colors"
         >
           {saving ? "Saving…" : "Save Prompt"}
         </button>
@@ -869,8 +869,8 @@ export default function SettingsPage() {
   return (
     <div className="max-w-3xl space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-[#1e2a38]">Settings</h1>
-        <p className="text-[#1e2a38]/60 mt-1 text-sm">Configure platform preferences and AI scoring.</p>
+        <h1 className="text-2xl font-bold text-[#2f3437]">Settings</h1>
+        <p className="text-[#2f3437]/60 mt-1 text-sm">Configure platform preferences and AI scoring.</p>
       </div>
       <StaffAccessSection />
       <FeatureVisibilitySection />
@@ -880,28 +880,28 @@ export default function SettingsPage() {
         description="Additional rules appended to the Content Engine system prompt. Controls how the AI frames titles across all themes. The default enforces buy-side title framing for sell-side stress themes. Reset to restore the default buy-side constraint."
         settingKey="content_engine_prompt"
         rows={22}
-        icon={<SparklesIcon className="w-5 h-5 text-[#3dc3ff]" />}
+        icon={<SparklesIcon className="w-5 h-5 text-[#0d9488]" />}
       />
       <PromptEditorSection
         title="Repurpose Content — Newsletter Prompt"
         description={`System prompt used when generating email newsletters. Use these tokens for dynamic values: {{MEMBER_NAME}}, {{BUSINESS_NAME}}, {{LIST_SIZE_TEXT}}, {{VOICE_STYLE}}, {{AVATAR_TEXT}}.`}
         settingKey="repurpose_newsletter_prompt"
         rows={28}
-        icon={<EnvelopeIcon className="w-5 h-5 text-[#3dc3ff]" />}
+        icon={<EnvelopeIcon className="w-5 h-5 text-[#0d9488]" />}
       />
       <PromptEditorSection
         title="Repurpose Content — LinkedIn Article Prompt"
         description={`System prompt used when generating LinkedIn articles. Use these tokens for dynamic values: {{MEMBER_NAME}}, {{BUSINESS_NAME}}, {{VOICE_STYLE}}, {{AVATAR_TEXT}}, {{LINKS_TEXT}}.`}
         settingKey="repurpose_linkedin_prompt"
         rows={36}
-        icon={<PencilSquareIcon className="w-5 h-5 text-[#3dc3ff]" />}
+        icon={<PencilSquareIcon className="w-5 h-5 text-[#0d9488]" />}
       />
       <PromptEditorSection
         title="Avatar Architect — System Prompt"
         description="Full system prompt for the Avatar Architect coaching conversation. Controls the 4-phase flow, question bank, avatar document template, stress theme format, content engine prompt rules, and title frameworks. Reset to restore the built-in prompt."
         settingKey="avatar_architect_prompt"
         rows={50}
-        icon={<SparklesIcon className="w-5 h-5 text-[#3dc3ff]" />}
+        icon={<SparklesIcon className="w-5 h-5 text-[#0d9488]" />}
       />
     </div>
   );

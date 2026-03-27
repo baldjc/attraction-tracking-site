@@ -54,29 +54,29 @@ function MarkdownBlock({ content }: { content: string }) {
     const line = lines[i];
     const t = line.trim();
     if (!t) { i++; continue; }
-    if (/^---+$/.test(t)) { nodes.push(<hr key={i} className="my-3 border-[#1e2a38]/10 dark:border-white/10" />); i++; continue; }
+    if (/^---+$/.test(t)) { nodes.push(<hr key={i} className="my-3 border-[#2f3437]/10 dark:border-white/10" />); i++; continue; }
     if (t.startsWith("### ")) {
-      nodes.push(<h3 key={i} className="text-xs font-bold text-[#1e2a38]/50 dark:text-white/50 uppercase tracking-wider mt-4 mb-1">{renderInline(t.slice(4))}</h3>);
+      nodes.push(<h3 key={i} className="text-xs font-bold text-[#2f3437]/50 dark:text-white/50 uppercase tracking-wider mt-4 mb-1">{renderInline(t.slice(4))}</h3>);
       i++; continue;
     }
     if (t.startsWith("## ")) {
-      nodes.push(<h2 key={i} className="text-sm font-bold text-[#1e2a38] dark:text-white mt-5 mb-1.5">{renderInline(t.slice(3))}</h2>);
+      nodes.push(<h2 key={i} className="text-sm font-bold text-[#2f3437] dark:text-white mt-5 mb-1.5">{renderInline(t.slice(3))}</h2>);
       i++; continue;
     }
     if (t.startsWith("# ")) {
-      nodes.push(<h1 key={i} className="text-base font-bold text-[#1e2a38] dark:text-white mt-2 mb-2">{renderInline(t.slice(2))}</h1>);
+      nodes.push(<h1 key={i} className="text-base font-bold text-[#2f3437] dark:text-white mt-2 mb-2">{renderInline(t.slice(2))}</h1>);
       i++; continue;
     }
     if (t.startsWith("- ") || t.startsWith("* ")) {
       const items: React.ReactNode[] = [];
       while (i < lines.length && (lines[i].trim().startsWith("- ") || lines[i].trim().startsWith("* "))) {
-        items.push(<li key={i} className="text-sm text-[#1e2a38]/80 dark:text-white/80 leading-relaxed">{renderInline(lines[i].trim().slice(2))}</li>);
+        items.push(<li key={i} className="text-sm text-[#2f3437]/80 dark:text-white/80 leading-relaxed">{renderInline(lines[i].trim().slice(2))}</li>);
         i++;
       }
       nodes.push(<ul key={`ul-${i}`} className="list-disc list-inside space-y-0.5 my-1.5 ml-1">{items}</ul>);
       continue;
     }
-    nodes.push(<p key={i} className="text-sm text-[#1e2a38]/80 dark:text-white/80 leading-relaxed my-1.5">{renderInline(t)}</p>);
+    nodes.push(<p key={i} className="text-sm text-[#2f3437]/80 dark:text-white/80 leading-relaxed my-1.5">{renderInline(t)}</p>);
     i++;
   }
   return <div>{nodes}</div>;
@@ -85,13 +85,13 @@ function MarkdownBlock({ content }: { content: string }) {
 function CostCapBanner({ level }: { level: "warning" | "critical" }) {
   if (level === "critical") {
     return (
-      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-xl px-4 py-3 text-sm text-red-700 dark:text-red-400 mb-4">
+      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg px-4 py-3 text-sm text-red-700 dark:text-red-400 mb-4">
         You&apos;ve used 90%+ of your monthly AI allowance. Save your work soon.
       </div>
     );
   }
   return (
-    <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-500/30 rounded-xl px-4 py-3 text-sm text-amber-700 dark:text-amber-300 mb-4">
+    <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-500/30 rounded-lg px-4 py-3 text-sm text-amber-700 dark:text-amber-300 mb-4">
       You&apos;ve used 75%+ of your monthly AI allowance.
     </div>
   );
@@ -356,16 +356,16 @@ export default function ArcScriptChatPhase({ initialData, onReset }: Props) {
           {sectionApprovals.filter((a) => a.key === expandedSection).map((approval) => {
             const label = SECTIONS.find((s) => s.key === approval.key)?.label ?? approval.key;
             return (
-              <div key={approval.key} className="bg-[#3dc3ff]/8 border border-[#3dc3ff]/20 rounded-2xl p-4">
+              <div key={approval.key} className="bg-[#0d9488]/8 border border-[#0d9488]/20 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-bold text-[#3dc3ff] uppercase tracking-wide">
+                  <span className="text-xs font-bold text-[#0d9488] uppercase tracking-wide">
                     Approved: {label}
                   </span>
-                  <button onClick={() => setExpandedSection(null)} className="text-[#1e2a38]/40 dark:text-white/40 hover:text-[#1e2a38] dark:hover:text-white">
+                  <button onClick={() => setExpandedSection(null)} className="text-[#2f3437]/40 dark:text-white/40 hover:text-[#2f3437] dark:hover:text-white">
                     <ChevronUpIcon className="w-4 h-4" />
                   </button>
                 </div>
-                <p className="text-sm text-[#1e2a38]/70 dark:text-white/70 line-clamp-4">{approval.snippet}…</p>
+                <p className="text-sm text-[#2f3437]/70 dark:text-white/70 line-clamp-4">{approval.snippet}…</p>
               </div>
             );
           })}
@@ -380,10 +380,10 @@ export default function ArcScriptChatPhase({ initialData, onReset }: Props) {
           return (
             <div key={idx} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
               <div
-                className={`max-w-[85%] rounded-2xl px-4 py-3 ${
+                className={`max-w-[85%] rounded-lg px-4 py-3 ${
                   msg.role === "user"
-                    ? "bg-[#1e2a38] text-white rounded-tr-sm text-sm leading-relaxed"
-                    : "bg-white dark:bg-[#242b3d] border border-[#1e2a38]/10 dark:border-white/10 text-[#1e2a38] dark:text-white rounded-tl-sm shadow-sm"
+                    ? "bg-[#111] text-white rounded-tr-sm text-sm leading-relaxed"
+                    : "bg-white dark:bg-[#1a1a1a] border border-[#2f3437]/10 dark:border-white/10 text-[#2f3437] dark:text-white rounded-tl-sm"
                 }`}
               >
                 {msg.role === "user" ? (
@@ -393,7 +393,7 @@ export default function ArcScriptChatPhase({ initialData, onReset }: Props) {
                 ) : (
                   <div className="flex gap-1.5 items-center h-4">
                     {[0, 1, 2].map((i) => (
-                      <span key={i} className="w-2 h-2 rounded-full bg-[#3dc3ff]/60 animate-bounce"
+                      <span key={i} className="w-2 h-2 rounded-full bg-[#0d9488]/60 animate-bounce"
                         style={{ animationDelay: `${i * 0.15}s` }} />
                     ))}
                   </div>
@@ -405,10 +405,10 @@ export default function ArcScriptChatPhase({ initialData, onReset }: Props) {
 
         {loading && messages[messages.length - 1]?.role !== "assistant" && (
           <div className="flex justify-start">
-            <div className="bg-white dark:bg-[#242b3d] border border-[#1e2a38]/10 dark:border-white/10 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
+            <div className="bg-white dark:bg-[#1a1a1a] border border-[#2f3437]/10 dark:border-white/10 rounded-lg rounded-tl-sm px-4 py-3">
               <div className="flex gap-1.5 items-center h-4">
                 {[0, 1, 2].map((i) => (
-                  <span key={i} className="w-2 h-2 rounded-full bg-[#3dc3ff]/60 animate-bounce"
+                  <span key={i} className="w-2 h-2 rounded-full bg-[#0d9488]/60 animate-bounce"
                     style={{ animationDelay: `${i * 0.15}s` }} />
                 ))}
               </div>
@@ -419,7 +419,7 @@ export default function ArcScriptChatPhase({ initialData, onReset }: Props) {
       </div>
 
       {atTurnLimit && (
-        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-500/30 rounded-xl px-4 py-3 text-sm text-amber-700 dark:text-amber-300 mb-3">
+        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-500/30 rounded-lg px-4 py-3 text-sm text-amber-700 dark:text-amber-300 mb-3">
           You&apos;ve reached the 20-turn limit for this session. Save your script or start a new one.
         </div>
       )}
@@ -428,7 +428,7 @@ export default function ArcScriptChatPhase({ initialData, onReset }: Props) {
         <div className="flex gap-2 mb-3 flex-wrap">
           <button
             onClick={handleCopy}
-            className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium border border-[#1e2a38]/15 dark:border-white/15 rounded-xl hover:bg-[#1e2a38]/5 dark:hover:bg-white/5 transition-colors text-[#1e2a38] dark:text-white"
+            className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium border border-[#2f3437]/15 dark:border-white/15 rounded-lg hover:bg-[#111]/5 dark:hover:bg-white/5 transition-colors text-[#2f3437] dark:text-white"
           >
             {copied ? <CheckIcon className="w-4 h-4 text-green-500" /> : <ClipboardDocumentIcon className="w-4 h-4" />}
             {copied ? "Copied!" : "Copy Script"}
@@ -436,14 +436,14 @@ export default function ArcScriptChatPhase({ initialData, onReset }: Props) {
           <button
             onClick={handleSave}
             disabled={saving || saved}
-            className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-[#3dc3ff] text-white rounded-xl hover:bg-[#3dc3ff]/90 disabled:opacity-50 transition-colors"
+            className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-[#0d9488] text-white rounded-lg hover:bg-[#0d9488]/90 disabled:opacity-50 transition-colors"
           >
             {saved ? <CheckIcon className="w-4 h-4" /> : null}
             {saving ? "Saving…" : saved ? "Saved!" : "Save Script"}
           </button>
           <button
             onClick={onReset}
-            className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium border border-[#1e2a38]/15 dark:border-white/15 rounded-xl hover:bg-[#1e2a38]/5 dark:hover:bg-white/5 transition-colors text-[#1e2a38] dark:text-white"
+            className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium border border-[#2f3437]/15 dark:border-white/15 rounded-lg hover:bg-[#111]/5 dark:hover:bg-white/5 transition-colors text-[#2f3437] dark:text-white"
           >
             <ArrowPathIcon className="w-4 h-4" />
             Build Another Script
@@ -453,7 +453,7 @@ export default function ArcScriptChatPhase({ initialData, onReset }: Props) {
       )}
 
       {!atTurnLimit && (
-        <div className="flex-shrink-0 border-t border-[#1e2a38]/10 dark:border-white/10 pt-4">
+        <div className="flex-shrink-0 border-t border-[#2f3437]/10 dark:border-white/10 pt-4">
           <div className="flex gap-3 items-end">
             <textarea
               value={input}
@@ -465,21 +465,21 @@ export default function ArcScriptChatPhase({ initialData, onReset }: Props) {
                   : "Type your reply… (Enter to send, Shift+Enter for new line)"
               }
               rows={2}
-              className="flex-1 bg-white dark:bg-[#1a1f2e] border border-[#1e2a38]/20 dark:border-white/20 rounded-xl px-4 py-3 text-sm text-[#1e2a38] dark:text-white placeholder-[#1e2a38]/30 dark:placeholder-white/30 resize-none focus:outline-none focus:border-[#3dc3ff] transition-colors"
+              className="flex-1 bg-white dark:bg-[#111111] border border-[#2f3437]/20 dark:border-white/20 rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-white placeholder-[#2f3437]/30 dark:placeholder-white/30 resize-none focus:outline-none focus:border-[#0d9488] transition-colors"
             />
             <button
               onClick={() => { if (input.trim() && !loading) sendMessage(input.trim()); }}
               disabled={loading || !input.trim()}
-              className="flex-shrink-0 w-11 h-11 flex items-center justify-center bg-[#3dc3ff] text-white rounded-xl hover:bg-[#3dc3ff]/90 disabled:opacity-40 transition-colors"
+              className="flex-shrink-0 w-11 h-11 flex items-center justify-center bg-[#0d9488] text-white rounded-lg hover:bg-[#0d9488]/90 disabled:opacity-40 transition-colors"
             >
               <PaperAirplaneIcon className="w-5 h-5" />
             </button>
           </div>
           <div className="flex justify-between mt-1.5">
-            <button onClick={onReset} className="text-xs text-[#1e2a38]/30 dark:text-white/30 hover:text-[#1e2a38]/60 dark:hover:text-white/60 flex items-center gap-1">
+            <button onClick={onReset} className="text-xs text-[#2f3437]/30 dark:text-white/30 hover:text-[#2f3437]/60 dark:hover:text-white/60 flex items-center gap-1">
               <ArrowPathIcon className="w-3 h-3" /> Start over
             </button>
-            <span className="text-xs text-[#1e2a38]/25 dark:text-white/25">{turnCount}/{MAX_TURNS} turns</span>
+            <span className="text-xs text-[#2f3437]/25 dark:text-white/25">{turnCount}/{MAX_TURNS} turns</span>
           </div>
         </div>
       )}

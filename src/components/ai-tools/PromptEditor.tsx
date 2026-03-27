@@ -75,46 +75,46 @@ export default function PromptEditor({ toolKey, defaultPrompt, placeholders }: P
   }
 
   return (
-    <div className="mb-6 border border-[#3dc3ff]/30 rounded-xl overflow-hidden">
+    <div className="mb-6 border border-[#0d9488]/30 rounded-lg overflow-hidden">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center justify-between px-4 py-3 bg-[#3dc3ff]/5 hover:bg-[#3dc3ff]/10 transition-colors"
+        className="w-full flex items-center justify-between px-4 py-3 bg-[#0d9488]/5 hover:bg-[#0d9488]/10 transition-colors"
       >
-        <span className="text-xs font-semibold text-[#3dc3ff] uppercase tracking-wider">
+        <span className="text-xs font-semibold text-[#0d9488] uppercase tracking-wider">
           ⚙️ Edit System Prompt
         </span>
         {open ? (
-          <ChevronUpIcon className="w-4 h-4 text-[#3dc3ff]" />
+          <ChevronUpIcon className="w-4 h-4 text-[#0d9488]" />
         ) : (
-          <ChevronDownIcon className="w-4 h-4 text-[#3dc3ff]" />
+          <ChevronDownIcon className="w-4 h-4 text-[#0d9488]" />
         )}
       </button>
 
       {open && (
         <div className="p-4 bg-white space-y-3">
           {loading ? (
-            <p className="text-sm text-[#1e2a38]/40 animate-pulse">Loading prompt…</p>
+            <p className="text-sm text-[#2f3437]/40 animate-pulse">Loading prompt…</p>
           ) : (
             <>
               <textarea
                 value={value}
                 onChange={(e) => setValue(e.target.value)}
                 rows={20}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-xs font-mono text-[#1e2a38] focus:outline-none focus:ring-2 focus:ring-[#3dc3ff]/40 resize-y"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-xs font-mono text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#0d9488]/40 resize-y"
               />
 
               {placeholders && placeholders.length > 0 && (
-                <div className="bg-[#f1f1ef] rounded-lg p-3">
-                  <p className="text-xs font-semibold text-[#1e2a38]/60 uppercase tracking-wider mb-2">
+                <div className="bg-[#f7f6f3] rounded-lg p-3">
+                  <p className="text-xs font-semibold text-[#2f3437]/60 uppercase tracking-wider mb-2">
                     Available Placeholders
                   </p>
                   <div className="space-y-1">
                     {placeholders.map((p) => (
                       <div key={p.key} className="flex items-start gap-2 text-xs">
-                        <code className="bg-white px-1.5 py-0.5 rounded font-mono text-[#3dc3ff] border border-[#3dc3ff]/20 shrink-0">
+                        <code className="bg-white px-1.5 py-0.5 rounded font-mono text-[#0d9488] border border-[#0d9488]/20 shrink-0">
                           {p.key}
                         </code>
-                        <span className="text-[#1e2a38]/60">{p.description}</span>
+                        <span className="text-[#2f3437]/60">{p.description}</span>
                       </div>
                     ))}
                   </div>
@@ -125,14 +125,14 @@ export default function PromptEditor({ toolKey, defaultPrompt, placeholders }: P
                 <button
                   onClick={handleSave}
                   disabled={saving}
-                  className="px-4 py-2 bg-[#3dc3ff] text-white text-xs font-semibold rounded-lg hover:bg-[#3dc3ff]/90 disabled:opacity-50 transition-colors"
+                  className="px-4 py-2 bg-[#0d9488] text-white text-xs font-semibold rounded-lg hover:bg-[#0d9488]/90 disabled:opacity-50 transition-colors"
                 >
                   {saving ? "Saving…" : "Save Prompt"}
                 </button>
                 <button
                   onClick={handleReset}
                   disabled={saving}
-                  className="px-4 py-2 border border-gray-200 text-[#1e2a38]/60 text-xs font-semibold rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors"
+                  className="px-4 py-2 border border-gray-200 text-[#2f3437]/60 text-xs font-semibold rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors"
                 >
                   Reset to Default
                 </button>
