@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import crypto from "crypto";
 import prisma from "@/lib/prisma";
 import { UserRole } from "@/generated/prisma/client";
 import { runMonthlyBatch } from "@/lib/batch-monthly";
@@ -8,8 +9,9 @@ export const maxDuration = 60;
 // Called daily by an external cron. Returns immediately after starting the batch.
 // Protect with CRON_SECRET header so only authorised callers can trigger it.
 export async function GET(req: NextRequest) {
-  const secret = req.headers.get("x-cron-secret");
-  if (secret !== process.env.CRON_SECRET) {
+  const secret = req.headers.get("x-cron-secret") ?? "";
+  const expected = process.env.CRON_SECRET ?? "";
+  if (!secret || !expected || !crypto.timingSafeEqual(Buffer.from(secret), Buffer.from(expected))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

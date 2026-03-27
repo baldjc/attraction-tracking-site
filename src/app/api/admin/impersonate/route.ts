@@ -42,7 +42,8 @@ export async function POST(req: NextRequest) {
 
   const cookieStore = await cookies();
   cookieStore.set(IMPERSONATE_COOKIE, memberId, {
-    httpOnly: false,
+    httpOnly: true,
+    secure: true,
     path: "/",
     maxAge: 60 * 60 * 8,
     sameSite: "lax",

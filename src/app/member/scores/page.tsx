@@ -117,7 +117,7 @@ export default function MemberScoresPage() {
   }
 
   const { latestAudit, baselineAudit, audits, channelBannerUrl, channelName, youtubeChannelUrl } = data;
-  const scores = latestAudit.scores as Record<string, { score: number | null; evidence?: string }>;
+  const scores = (latestAudit.scores ?? {}) as Record<string, { score: number | null; evidence?: string }>;
   const baselineScores = (baselineAudit?.scores as any) ?? null;
 
   const chartData = [...(audits ?? [])]

@@ -43,6 +43,7 @@ enum JobStatus {
   generating
   complete
   failed
+  cancelled
 }
 
 enum SourceType {
