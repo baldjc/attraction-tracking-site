@@ -1,0 +1,89 @@
+```
+We're continuing the Academy / Foundations Library build on the "feature/academy-foundations-library" branch. Make sure you're on that branch. This is Part 3 of 4 — admin course manager.
+
+=== ADMIN API ROUTES (13 routes) ===
+
+All routes require admin role. Use resolveUserFromSession() and check role.
+
+1. GET /api/admin/academy/sections — list all sections (published and unpublished) with lesson counts
+2. POST /api/admin/academy/sections — create a new section (title, description, sortOrder, published)
+3. PUT /api/admin/academy/sections/[id] — update section
+4. DELETE /api/admin/academy/sections/[id] — delete section. If section has lessons, return error with message "This section has X lessons. Delete lessons first."
+
+5. POST /api/admin/academy/lessons — create a new lesson (all lesson fields + sectionId)
+6. PUT /api/admin/academy/lessons/[id] — update lesson details
+7. DELETE /api/admin/academy/lessons/[id] — delete lesson. If member progress or responses exist, return warning but allow with ?force=true query param.
+
+8. PUT /api/admin/academy/reorder — body: { sections: [{ id, sortOrder }], lessons: [{ id, sortOrder }] } — batch update sort orders
+
+9. GET /api/admin/academy/lessons/[id]/workbook-fields — list all workbook fields for a lesson
+10. POST /api/admin/academy/lessons/[id]/workbook-fields — add a workbook field
+11. PUT /api/admin/academy/workbook-fields/[id] — update a workbook field
+12. DELETE /api/admin/academy/workbook-fields/[id] — delete a workbook field (warn if responses exist, allow with ?force=true)
+
+13. GET /api/admin/academy/member-progress/[userId] — get a member's full course progress:
+    - Overall: % complete, lessons finished, total lessons
+    - Per section: completed/total
+    - Workbook: fields filled / total fields
+    - Homework: items completed / total items
+    - Last lesson viewed + date
+
+
+=== ADMIN PAGES ===
+
+Match existing admin site design system.
+
+PAGE 1: Course Manager (/admin/course-manager)
+- Add "Course Manager" to the admin sidebar (use a book or mortarboard icon)
+- Main view: accordion/expandable list of sections
+  - Each section row shows: title, lesson count, published toggle (inline), edit button
+  - Expand section → shows lessons within
+  - Each lesson row shows: title, YouTube URL (truncated), principle tag badges, published toggle, edit button
+  - "Add Section" button at bottom
+  - "Add Lesson" button within each expanded section
+- Reordering: up/down arrow buttons for both sections and lessons (drag-to-reorder if easy, otherwise up/down arrows are fine)
+
+PAGE 2: Edit Section (/admin/course-manager/sections/[id])
+- Form with: title, slug (auto-generated, editable), description (textarea), sort order (number), published toggle
+- Save and Cancel buttons
+- Delete button (with confirmation modal)
+
+PAGE 3: Edit Lesson (/admin/course-manager/lessons/[id])
+- Form with all lesson fields:
+  - Title, slug (auto-generated, editable)
+  - YouTube URL
+  - Description (textarea)
+  - Key Takeaways (textarea, markdown)
+  - Action Items (textarea, markdown)
+  - Principle Tags — multi-select of all 17 principles (show as checkboxes or multi-select dropdown)
+  - AI Tool Link — dropdown: None, Avatar Architect (/member/ai-tools/avatar-architect), Title Creator (/member/ai-tools/title-creator), Title & Thumbnail Analyzer (/member/ai-tools/title-analyzer), ARC Script Builder (/member/ai-tools/arc-script-builder)
+  - AI Tool Label — text input (auto-suggests based on tool selection)
+  - Published toggle
+
+- Below the lesson form: **Workbook Field Editor**
+  - Ordered list of workbook fields for this lesson
+  - Each field shows: type badge, label, edit/delete buttons
+  - "Add Field" button → opens inline form:
+    - Type selector: short_text, long_text, table, checklist
+    - Label (text input)
+    - Placeholder text (text input, optional)
+    - Config editor (changes based on type):
+      * short_text: optional "surrounding text" with _______ placeholders
+      * long_text: row count (number, default 4)
+      * table: column editor (add/remove columns with key, label, type) + row count
+      * checklist: item editor (add/remove checklist items)
+    - Preview panel showing how the member will see the field
+  - Reorder fields with up/down arrows
+  - Delete field (confirmation modal if member responses exist)
+
+PAGE 4: Admin Insights (add to existing member detail page)
+- Add a new section/card on the admin's member detail page:
+  - "Academy Progress" card showing:
+    - Overall: X% complete (Y/Z lessons)
+    - Per section breakdown (mini progress bars)
+    - Workbook: X/Y fields filled in
+    - Homework: X/Y items completed
+    - Last active lesson + date
+
+IMPORTANT: Commit your work on the feature/academy-foundations-library branch. Do NOT merge to main.
+```

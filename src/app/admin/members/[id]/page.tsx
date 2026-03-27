@@ -157,6 +157,9 @@ export default function MemberDetailPage() {
     scriptsCount: number; analysesCount: number; lastActivity: string | null;
   } | null>(null);
 
+  // Academy progress
+  const [academyProgress, setAcademyProgress] = useState<any>(null);
+
   // Top videos — last 30 days
   const [topVideos, setTopVideos] = useState<any[]>([]);
   const [topVideosLoading, setTopVideosLoading] = useState(false);
@@ -197,6 +200,14 @@ export default function MemberDetailPage() {
       })
       .catch(() => {})
       .finally(() => setTopVideosLoading(false));
+  }, [member?.id]);
+
+  useEffect(() => {
+    if (!member?.id) return;
+    fetch(`/api/admin/academy/member-progress/${member.id}`)
+      .then((r) => r.json())
+      .then((data) => setAcademyProgress(data))
+      .catch(() => {});
   }, [member?.id]);
 
   useEffect(() => {
@@ -1236,6 +1247,90 @@ export default function MemberDetailPage() {
               </>
             )}
           </div>
+
+          {/* ACADEMY PROGRESS */}
+          {academyProgress && (
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-base font-semibold text-[#2f3437]">Academy Progress</h2>
+                <span className="text-sm font-bold text-[#6ba3c7]">
+                  {academyProgress.overall?.pct ?? 0}%
+                </span>
+              </div>
+
+              {/* Overall bar */}
+              <div className="mb-5">
+                <div className="flex items-center justify-between text-xs text-[#2f3437]/50 mb-1">
+                  <span>Overall</span>
+                  <span>{academyProgress.overall?.completed ?? 0}/{academyProgress.overall?.total ?? 0} lessons</span>
+                </div>
+                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-[#6ba3c7] rounded-full transition-all"
+                    style={{ width: `${academyProgress.overall?.pct ?? 0}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Per section */}
+              {Array.isArray(academyProgress.sections) && academyProgress.sections.length > 0 && (
+                <div className="space-y-2 mb-5">
+                  {academyProgress.sections.map((sec: any) => {
+                    const pct = sec.total > 0 ? Math.round((sec.completed / sec.total) * 100) : 0;
+                    return (
+                      <div key={sec.id}>
+                        <div className="flex items-center justify-between text-xs text-[#2f3437]/60 mb-0.5">
+                          <span className="truncate max-w-[200px]">{sec.title}</span>
+                          <span className="shrink-0 ml-2">{sec.completed}/{sec.total}</span>
+                        </div>
+                        <div className="h-1 bg-gray-100 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full ${pct === 100 ? "bg-green-500" : "bg-[#6ba3c7]"}`}
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Workbook + Homework stats */}
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <div className="bg-gray-50 rounded-lg p-3 text-center">
+                  <p className="text-lg font-bold text-[#2f3437]">
+                    {academyProgress.workbook?.filled ?? 0}
+                    <span className="text-sm font-normal text-[#2f3437]/40">/{academyProgress.workbook?.total ?? 0}</span>
+                  </p>
+                  <p className="text-xs text-[#2f3437]/50 mt-0.5">Workbook fields</p>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-3 text-center">
+                  <p className="text-lg font-bold text-[#2f3437]">
+                    {academyProgress.homework?.completed ?? 0}
+                    <span className="text-sm font-normal text-[#2f3437]/40">/{academyProgress.homework?.total ?? 0}</span>
+                  </p>
+                  <p className="text-xs text-[#2f3437]/50 mt-0.5">Homework items</p>
+                </div>
+              </div>
+
+              {/* Last lesson */}
+              {academyProgress.lastLesson && (
+                <div className="border-t border-gray-100 pt-3">
+                  <p className="text-xs text-[#2f3437]/50 mb-0.5">Last completed lesson</p>
+                  <p className="text-sm font-medium text-[#2f3437] truncate">{academyProgress.lastLesson.title}</p>
+                  {academyProgress.lastLesson.date && (
+                    <p className="text-xs text-[#2f3437]/40 mt-0.5">
+                      {new Date(academyProgress.lastLesson.date).toLocaleDateString("en-CA", { year: "numeric", month: "short", day: "numeric" })}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {academyProgress.overall?.total === 0 && (
+                <p className="text-sm text-[#2f3437]/40 italic">No academy content published yet.</p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* RIGHT SIDEBAR — QUICK ACTIONS */}

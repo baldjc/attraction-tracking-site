@@ -50,6 +50,7 @@ const adminLinks = [
   { href: "/admin/members", label: "Foundations Members", icon: UsersIcon },
   { href: "/admin/audits", label: "Audits", icon: ClipboardDocumentListIcon },
   { href: "/admin/qa-prep", label: "Q&A Prep", icon: ChatBubbleLeftRightIcon },
+  { href: "/admin/course-manager", label: "Course Manager", icon: AcademicCapIcon },
   { href: "/admin/ai-tools", label: "AI Tools", icon: SparklesIcon },
   { href: "/member/campaigns", label: "Campaigns", icon: LinkIcon },
   { href: "/member/analytics", label: "Lead Analytics", icon: ChartBarIcon },
