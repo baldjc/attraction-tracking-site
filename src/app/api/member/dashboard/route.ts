@@ -187,13 +187,16 @@ export async function GET() {
     strengths = scored.slice(0, 3);
     gaps = [...scored].reverse().slice(0, 3);
 
-    const videos = (latestAudit.videosAnalysed as Array<{ uploadDate?: string }>) ?? [];
-    const dates = videos
-      .filter((v) => v.uploadDate)
-      .map((v) => new Date(v.uploadDate!).getTime());
-    if (dates.length > 0) {
-      daysSinceUpload = Math.floor((Date.now() - Math.max(...dates)) / 86400000);
-    }
+  }
+
+  // Use the live YouTubeVideo table (updated by nightly sync) instead of stale audit snapshot
+  const latestVideo = await prisma.youTubeVideo.findFirst({
+    where: { userId: memberId },
+    orderBy: { publishedAt: "desc" },
+    select: { publishedAt: true },
+  });
+  if (latestVideo) {
+    daysSinceUpload = Math.floor((Date.now() - latestVideo.publishedAt.getTime()) / 86400000);
   }
 
   const scoreHistory = [...audits]
