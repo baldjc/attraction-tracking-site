@@ -598,7 +598,7 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
 
       {/* New Link Modal */}
       {showNewLink && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg border border-[#2f3437]/10 shadow-xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-5">
               <div>
@@ -666,7 +666,7 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
 
       {/* Edit Link Modal */}
       {editingLink && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg border border-[#2f3437]/10 shadow-xl w-full max-w-md p-6">
             <div className="flex items-center justify-between mb-5">
               <h2 className="font-bold text-[#2f3437]">Edit Link</h2>
@@ -701,7 +701,7 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
 
       {/* Edit Campaign Modal */}
       {showEditCampaign && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg border border-[#2f3437]/10 shadow-xl w-full max-w-md p-6">
             <div className="flex items-center justify-between mb-5">
               <h2 className="font-bold text-[#2f3437]">Edit Campaign</h2>
@@ -746,7 +746,7 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
 
       {/* Reset Stats Confirmation Modal */}
       {resetConfirmLink && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg border border-[#2f3437]/10 shadow-xl w-full max-w-sm p-6">
             <h2 className="font-bold text-[#2f3437] text-lg mb-2">Reset Stats?</h2>
             <p className="text-sm text-[#2f3437]/60 mb-1">

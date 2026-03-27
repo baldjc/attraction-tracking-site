@@ -302,7 +302,7 @@ export default function CampaignsPage() {
 
       {/* New Campaign Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg border border-[#2f3437]/10 shadow-xl w-full max-w-md p-6">
             <div className="flex items-center justify-between mb-5">
               <h2 className="font-bold text-[#2f3437]">New Campaign</h2>
@@ -349,7 +349,7 @@ export default function CampaignsPage() {
 
       {/* Delete Confirmation Modal */}
       {confirmDeleteId && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg border border-[#2f3437]/10 shadow-xl w-full max-w-sm p-6">
             <h2 className="font-bold text-[#2f3437] mb-2">Delete Campaign?</h2>
             <p className="text-sm text-[#2f3437]/60 mb-1">Delete <span className="font-semibold text-[#2f3437]">{confirmingName}</span>?</p>

@@ -291,7 +291,7 @@ export default function AdminLessonsPage() {
 
       {/* Add/Edit Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-start justify-center z-50 p-4 overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-start justify-center z-50 p-4 overflow-y-auto">
           <div className="bg-white rounded-lg border border-[#2f3437]/10 shadow-xl w-full max-w-2xl my-8">
             <div className="flex items-center justify-between px-6 py-5 border-b border-[#2f3437]/10">
               <h2 className="font-bold text-[#2f3437] text-lg">{editingId ? "Edit Lesson" : "Add Lesson"}</h2>
@@ -373,7 +373,7 @@ export default function AdminLessonsPage() {
 
       {/* Delete confirm */}
       {deleteConfirm && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-sm p-6">
             <h3 className="font-bold text-[#2f3437] mb-2">Delete Lesson?</h3>
             <p className="text-sm text-[#2f3437]/60 mb-5">This will also delete all knowledge base segments for this lesson. This cannot be undone.</p>
