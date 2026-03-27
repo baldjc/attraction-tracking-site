@@ -276,7 +276,7 @@ export default function AuditsPage() {
           <button
             onClick={handleRunAllBaseline}
             disabled={baselineLaunching || isBaselineRunning || isRunning}
-            className="flex items-center gap-2 bg-[#0d9488] hover:bg-[#2ab0ec] disabled:opacity-50 text-white px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors"
+            className="flex items-center gap-2 bg-[#6ba3c7] hover:bg-[#2ab0ec] disabled:opacity-50 text-white px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors"
           >
             <PlayIcon className={`w-4 h-4 ${isBaselineRunning ? "animate-pulse" : ""}`} />
             {isBaselineRunning ? `Running… ${baselineBatchStatus!.current}/${baselineBatchStatus!.total}` : baselineLaunching ? "Starting…" : "Run All Baseline Audits"}
@@ -284,7 +284,7 @@ export default function AuditsPage() {
           <button
             onClick={handleRunAllMonthly}
             disabled={launching || isRunning || isBaselineRunning}
-            className="flex items-center gap-2 bg-[#111] hover:bg-[#333] disabled:opacity-50 text-white px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors"
+            className="flex items-center gap-2 bg-[#111] hover:bg-[#2a3a4d] disabled:opacity-50 text-white px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors"
           >
             <PlayIcon className={`w-4 h-4 ${isRunning ? "animate-pulse" : ""}`} />
             {isRunning ? `Running… ${batchStatus!.current}/${batchStatus!.total}` : launching ? "Starting…" : "Run All Monthly Audits"}
@@ -294,10 +294,10 @@ export default function AuditsPage() {
 
       {/* Active Jobs section */}
       {activeJobs.length > 0 && (
-        <div className="mb-5 bg-white border border-[#0d9488]/30 rounded-lg overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-[#0d9488]/20 bg-[#e8f7ff]/40">
+        <div className="mb-5 bg-white border border-[#6ba3c7]/30 rounded-lg overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-[#6ba3c7]/20 bg-[#e8f7ff]/40">
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-[#0d9488] animate-pulse" />
+              <div className="w-2 h-2 rounded-full bg-[#6ba3c7] animate-pulse" />
               <span className="text-sm font-semibold text-[#2f3437]">
                 {activeJobs.length} Audit{activeJobs.length !== 1 ? "s" : ""} In Progress
               </span>
@@ -312,13 +312,13 @@ export default function AuditsPage() {
           <div className="divide-y divide-gray-100">
             {activeJobs.map((job) => (
               <div key={job.id} className="flex items-center gap-4 px-4 py-3">
-                <div className="w-4 h-4 border-2 border-[#0d9488] border-t-transparent rounded-full animate-spin shrink-0" />
+                <div className="w-4 h-4 border-2 border-[#6ba3c7] border-t-transparent rounded-full animate-spin shrink-0" />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     {job.user ? (
                       <Link
                         href={`/admin/members/${job.user.id}`}
-                        className="text-sm font-medium text-[#0d9488] hover:underline truncate"
+                        className="text-sm font-medium text-[#6ba3c7] hover:underline truncate"
                       >
                         {job.user.fullName ?? job.user.email}
                       </Link>
@@ -351,7 +351,7 @@ export default function AuditsPage() {
 
       {/* Batch progress */}
       {isRunning && (
-        <div className="mb-4 bg-white border border-[#0d9488]/30 rounded-lg p-4">
+        <div className="mb-4 bg-white border border-[#6ba3c7]/30 rounded-lg p-4">
           <div className="flex items-center justify-between mb-2">
             <p className="text-sm font-semibold text-[#2f3437]">Monthly batch in progress…</p>
             <div className="flex items-center gap-3">
@@ -361,7 +361,7 @@ export default function AuditsPage() {
           </div>
           <div className="w-full bg-gray-100 rounded-full h-2 mb-3">
             <div
-              className="bg-[#0d9488] h-2 rounded-full transition-all duration-500"
+              className="bg-[#6ba3c7] h-2 rounded-full transition-all duration-500"
               style={{ width: `${batchStatus.total > 0 ? (batchStatus.current / batchStatus.total) * 100 : 0}%` }}
             />
           </div>
@@ -412,7 +412,7 @@ export default function AuditsPage() {
 
       {/* Baseline batch progress */}
       {isBaselineRunning && (
-        <div className="mb-4 bg-white border border-[#0d9488]/30 rounded-lg p-4">
+        <div className="mb-4 bg-white border border-[#6ba3c7]/30 rounded-lg p-4">
           <div className="flex items-center justify-between mb-2">
             <p className="text-sm font-semibold text-[#2f3437]">Baseline batch in progress…</p>
             <div className="flex items-center gap-3">
@@ -422,7 +422,7 @@ export default function AuditsPage() {
           </div>
           <div className="w-full bg-gray-100 rounded-full h-2 mb-3">
             <div
-              className="bg-[#0d9488] h-2 rounded-full transition-all duration-500"
+              className="bg-[#6ba3c7] h-2 rounded-full transition-all duration-500"
               style={{ width: `${baselineBatchStatus!.total > 0 ? (baselineBatchStatus!.current / baselineBatchStatus!.total) * 100 : 0}%` }}
             />
           </div>
@@ -444,9 +444,9 @@ export default function AuditsPage() {
 
       {/* Baseline batch summary */}
       {!isBaselineRunning && baselineBatchStatus?.status === "complete" && baselineBatchStatus.completed && (
-        <div className="mb-4 bg-white border border-[#0d9488]/20 rounded-lg p-4">
+        <div className="mb-4 bg-white border border-[#6ba3c7]/20 rounded-lg p-4">
           <div className="flex items-center gap-2 mb-1">
-            <CheckCircleIcon className="w-4 h-4 text-[#0d9488] shrink-0" />
+            <CheckCircleIcon className="w-4 h-4 text-[#6ba3c7] shrink-0" />
             <p className="text-sm font-semibold text-[#2f3437]">Baseline batch complete</p>
             <p className="text-xs text-[#2f3437]/40 ml-auto">{fmtDateTime(baselineBatchStatus.completed)}</p>
           </div>
@@ -459,7 +459,7 @@ export default function AuditsPage() {
 
       {/* Last baseline run from DB */}
       {baselineLastRun && !isBaselineRunning && !(baselineBatchStatus?.status === "complete") && (
-        <div className="mb-4 px-4 py-3 bg-[#e8f7ff]/60 border border-[#0d9488]/20 rounded-lg text-xs text-[#2f3437]/60">
+        <div className="mb-4 px-4 py-3 bg-[#e8f7ff]/60 border border-[#6ba3c7]/20 rounded-lg text-xs text-[#2f3437]/60">
           <span className="font-medium text-[#2f3437]">Last baseline run:</span>{" "}
           {fmtDateTime(baselineLastRun.date)} — {baselineLastRun.generated} baseline{baselineLastRun.generated !== 1 ? "s" : ""} generated
           {baselineLastRun.failures > 0 && `, ${baselineLastRun.failures} failed`}
@@ -472,12 +472,12 @@ export default function AuditsPage() {
           placeholder="Search by member name…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0d9488] focus:border-transparent outline-none text-[#2f3437] bg-white text-sm"
+          className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6ba3c7] focus:border-transparent outline-none text-[#2f3437] bg-white text-sm"
         />
         <select
           value={typeFilter}
           onChange={(e) => setTypeFilter(e.target.value)}
-          className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0d9488] outline-none text-[#2f3437] bg-white text-sm"
+          className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6ba3c7] outline-none text-[#2f3437] bg-white text-sm"
         >
           <option value="">All Types</option>
           <option value="baseline">Baseline</option>
@@ -512,7 +512,7 @@ export default function AuditsPage() {
                   <td className="px-6 py-4 text-[#2f3437]/70">{fmt(a.createdAt)}</td>
                   <td className="px-6 py-4">
                     {a.user ? (
-                      <Link href={`/admin/members/${a.user.id}`} className="text-[#0d9488] hover:underline font-medium">
+                      <Link href={`/admin/members/${a.user.id}`} className="text-[#6ba3c7] hover:underline font-medium">
                         {a.user.fullName ?? a.user.email}
                       </Link>
                     ) : "—"}
@@ -526,7 +526,7 @@ export default function AuditsPage() {
                     ) : "—"}
                   </td>
                   <td className="px-6 py-4">
-                    <Link href={`/admin/audits/${a.id}`} className="text-[#0d9488] hover:underline text-xs font-medium">
+                    <Link href={`/admin/audits/${a.id}`} className="text-[#6ba3c7] hover:underline text-xs font-medium">
                       View Report →
                     </Link>
                   </td>

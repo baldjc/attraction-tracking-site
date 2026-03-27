@@ -148,7 +148,7 @@ export default function QAPrepPage() {
           type="date"
           value={selectedDate}
           onChange={(e) => setSelectedDate(e.target.value)}
-          className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#0d9488]/50"
+          className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/50"
         />
         {selectedDate && (
           <button
@@ -183,7 +183,7 @@ export default function QAPrepPage() {
                 {data.celebrate.map((m: any) => (
                   <div key={m.userId} className="bg-white rounded-lg p-4 border border-green-200">
                     <div className="flex items-center justify-between gap-2 mb-2">
-                      <Link href={`/admin/members/${m.userId}`} className="font-semibold text-[#2f3437] hover:text-[#0d9488] text-sm">
+                      <Link href={`/admin/members/${m.userId}`} className="font-semibold text-[#2f3437] hover:text-[#6ba3c7] text-sm">
                         {m.name}
                       </Link>
                       <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${scoreBg(m.latestScore)}`}>
@@ -216,7 +216,7 @@ export default function QAPrepPage() {
                 {data.address.map((m: any) => (
                   <div key={m.userId} className="bg-white rounded-lg p-4 border border-amber-200">
                     <div className="flex items-center justify-between gap-2 mb-2">
-                      <Link href={`/admin/members/${m.userId}`} className="font-semibold text-[#2f3437] hover:text-[#0d9488] text-sm">
+                      <Link href={`/admin/members/${m.userId}`} className="font-semibold text-[#2f3437] hover:text-[#6ba3c7] text-sm">
                         {m.name}
                       </Link>
                       <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${scoreBg(m.latestScore)}`}>
@@ -303,7 +303,7 @@ export default function QAPrepPage() {
                           </span>
                           <Link
                             href={`/admin/audits/${m.auditId}`}
-                            className="inline-flex items-center gap-1 text-xs text-[#0d9488] hover:underline"
+                            className="inline-flex items-center gap-1 text-xs text-[#6ba3c7] hover:underline"
                           >
                             View report
                             <ArrowTopRightOnSquareIcon className="w-3 h-3" />
@@ -341,7 +341,7 @@ export default function QAPrepPage() {
 
                         {m.qaFlags.length > 0 && (
                           <div>
-                            <p className="text-xs font-semibold text-[#0d9488] mb-1">If they're on the call:</p>
+                            <p className="text-xs font-semibold text-[#6ba3c7] mb-1">If they're on the call:</p>
                             <div className="space-y-1">
                               {m.qaFlags.map((flag: any, i: number) => (
                                 <p key={i} className="text-xs text-[#2f3437]/70">

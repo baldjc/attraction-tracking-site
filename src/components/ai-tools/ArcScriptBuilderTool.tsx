@@ -61,7 +61,7 @@ export default function ArcScriptBuilderTool({ basePath, isAdmin }: Props) {
       <div className="mb-6">
         <Link
           href={basePath}
-          className="inline-flex items-center gap-1.5 text-sm text-[#2f3437]/50 hover:text-[#0d9488] transition-colors mb-4"
+          className="inline-flex items-center gap-1.5 text-sm text-[#2f3437]/50 hover:text-[#6ba3c7] transition-colors mb-4"
         >
           <ArrowLeftIcon className="w-4 h-4" />
           AI Tools

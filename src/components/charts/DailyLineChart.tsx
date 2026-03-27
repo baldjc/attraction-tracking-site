@@ -56,7 +56,7 @@ export function DailyLineChart({ data, showLegend = true, hideLeads = false }: P
           labelFormatter={(label) => fmtDate(String(label ?? ""))}
         />
         {showLegend && <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12 }} />}
-        <Line type="monotone" dataKey="clicks" stroke="#0d9488" strokeWidth={2} dot={false} name="Clicks" />
+        <Line type="monotone" dataKey="clicks" stroke="#6ba3c7" strokeWidth={2} dot={false} name="Clicks" />
         {!hideLeads && <Line type="monotone" dataKey="leads" stroke="#2f3437" strokeWidth={2} dot={false} name="Leads" />}
       </LineChart>
     </ResponsiveContainer>

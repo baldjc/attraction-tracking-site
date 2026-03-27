@@ -17,7 +17,7 @@ export default async function MemberLayout({
   const featureFlags = await getFeatureFlags();
 
   return (
-    <div className="min-h-screen bg-[#f7f6f3] dark:bg-[#111111]">
+    <div className="min-h-screen bg-[#f7f6f3] dark:bg-[#0f1419]">
       <Sidebar
         role={(session.user as any).role}
         userName={session.user.name || session.user.email || "Member"}

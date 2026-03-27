@@ -224,7 +224,7 @@ That's it — one snippet, site-wide. Let me know when it's done.`;
       </div>
 
       {/* ─── Section 1: What This Does ─── */}
-      <div className="border-l-4 border-[#0d9488] bg-[#0d9488]/8 dark:bg-[#0d9488]/10 rounded-r-xl px-5 py-4">
+      <div className="border-l-4 border-[#6ba3c7] bg-[#6ba3c7]/8 dark:bg-[#6ba3c7]/10 rounded-r-xl px-5 py-4">
         <p className="text-sm font-bold text-[#2f3437] dark:text-white mb-2">What This Does</p>
         <p className="text-sm text-[#2f3437]/80 dark:text-white/80 leading-relaxed">
           A URL shortener tells you how many people clicked. This tells you which video or which post drove each click,
@@ -236,7 +236,7 @@ That's it — one snippet, site-wide. Let me know when it's done.`;
       {/* ─── Section 2: How It Works ─── */}
       <div className="bg-white dark:bg-[#1a1a1a] border border-[#2f3437]/10 dark:border-white/10 rounded-lg overflow-hidden">
         <div className="px-5 py-4 border-b border-[#2f3437]/10 dark:border-white/10 flex items-center gap-2">
-          <BoltIcon className="w-4 h-4 text-[#0d9488] shrink-0" />
+          <BoltIcon className="w-4 h-4 text-[#6ba3c7] shrink-0" />
           <p className="text-sm font-bold text-[#2f3437] dark:text-white">How It Works</p>
         </div>
         <div className="px-5 py-4">
@@ -249,7 +249,7 @@ That's it — one snippet, site-wide. Let me know when it's done.`;
               "The thank you page snippet (Step 2 below) records them as a lead and ties them back to the exact video or post that brought them in.",
             ].map((text, i) => (
               <li key={i} className="flex items-start gap-3">
-                <span className="shrink-0 w-6 h-6 rounded-full bg-[#0d9488]/15 text-[#0d9488] text-xs font-bold flex items-center justify-center mt-0.5">
+                <span className="shrink-0 w-6 h-6 rounded-full bg-[#6ba3c7]/15 text-[#6ba3c7] text-xs font-bold flex items-center justify-center mt-0.5">
                   {i + 1}
                 </span>
                 <span className="text-sm text-[#2f3437]/80 dark:text-white/80 leading-relaxed">{text}</span>
@@ -270,7 +270,7 @@ That's it — one snippet, site-wide. Let me know when it's done.`;
         <div className="bg-white dark:bg-[#1a1a1a] border border-[#2f3437]/10 dark:border-white/10 rounded-lg overflow-hidden">
           <div className="px-5 py-4 border-b border-[#2f3437]/10 dark:border-white/10">
             <div className="flex items-center gap-2">
-              <span className="shrink-0 w-6 h-6 rounded-full bg-[#0d9488] text-white text-xs font-bold flex items-center justify-center">1</span>
+              <span className="shrink-0 w-6 h-6 rounded-full bg-[#6ba3c7] text-white text-xs font-bold flex items-center justify-center">1</span>
               <p className="text-sm font-bold text-[#2f3437] dark:text-white">Landing Page Snippet</p>
             </div>
             <p className="text-xs text-[#2f3437]/60 dark:text-white/60 mt-2 ml-8 leading-relaxed">
@@ -281,12 +281,12 @@ That's it — one snippet, site-wide. Let me know when it's done.`;
             {profile?.id ? (
               <>
                 <div className="bg-[#111] dark:bg-[#0f1520] rounded-lg p-4 overflow-x-auto">
-                  <code className="text-xs text-[#0d9488] font-mono whitespace-pre-wrap break-all">{getSnippet()}</code>
+                  <code className="text-xs text-[#6ba3c7] font-mono whitespace-pre-wrap break-all">{getSnippet()}</code>
                 </div>
                 <div className="flex justify-end">
                   <button
                     onClick={copySnippet}
-                    className="flex items-center gap-1.5 text-xs font-semibold text-[#0d9488] hover:text-[#2bb0ec] transition-colors"
+                    className="flex items-center gap-1.5 text-xs font-semibold text-[#6ba3c7] hover:text-[#2bb0ec] transition-colors"
                   >
                     {copiedSnippet ? (
                       <><ClipboardDocumentCheckIcon className="w-4 h-4" /> Copied!</>
@@ -302,7 +302,7 @@ That's it — one snippet, site-wide. Let me know when it's done.`;
 
             {/* Platform accordions */}
             <div className="border border-[#2f3437]/10 dark:border-white/10 rounded-lg overflow-hidden divide-y divide-[#2f3437]/10 dark:divide-white/10">
-              <p className="px-4 py-2.5 text-xs font-semibold text-[#2f3437]/50 dark:text-white/50 uppercase tracking-wider bg-[#f8f9fa] dark:bg-[#111111]">
+              <p className="px-4 py-2.5 text-xs font-semibold text-[#2f3437]/50 dark:text-white/50 uppercase tracking-wider bg-[#f8f9fa] dark:bg-[#0f1419]">
                 Where to paste it
               </p>
               {PLATFORM_INSTRUCTIONS.map((p) => (
@@ -331,7 +331,7 @@ That's it — one snippet, site-wide. Let me know when it's done.`;
         <div className="bg-white dark:bg-[#1a1a1a] border border-[#2f3437]/10 dark:border-white/10 rounded-lg overflow-hidden">
           <div className="px-5 py-4 border-b border-[#2f3437]/10 dark:border-white/10">
             <div className="flex items-center gap-2">
-              <span className="shrink-0 w-6 h-6 rounded-full bg-[#0d9488] text-white text-xs font-bold flex items-center justify-center">2</span>
+              <span className="shrink-0 w-6 h-6 rounded-full bg-[#6ba3c7] text-white text-xs font-bold flex items-center justify-center">2</span>
               <p className="text-sm font-bold text-[#2f3437] dark:text-white">Thank You Page</p>
             </div>
             <p className="text-xs text-[#2f3437]/60 dark:text-white/60 mt-2 ml-8 leading-relaxed">
@@ -350,16 +350,16 @@ That's it — one snippet, site-wide. Let me know when it's done.`;
                   value={thankYouPath}
                   onChange={(e) => { setThankYouPath(e.target.value); setTyPathError(""); }}
                   placeholder="e.g. /thank-you or https://yoursite.com/thank-you"
-                  className={`flex-1 border rounded-lg px-4 py-2.5 text-sm focus:outline-none transition-colors dark:bg-[#111111] dark:text-white ${
+                  className={`flex-1 border rounded-lg px-4 py-2.5 text-sm focus:outline-none transition-colors dark:bg-[#0f1419] dark:text-white ${
                     tyPathError
                       ? "border-red-400 focus:border-red-400"
-                      : "border-[#2f3437]/20 dark:border-white/20 focus:border-[#0d9488]"
+                      : "border-[#2f3437]/20 dark:border-white/20 focus:border-[#6ba3c7]"
                   }`}
                 />
                 <button
                   onClick={savePath}
                   disabled={saving}
-                  className="shrink-0 bg-[#0d9488] text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-[#0d9488]/90 disabled:opacity-50 transition-colors"
+                  className="shrink-0 bg-[#6ba3c7] text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-[#6ba3c7]/90 disabled:opacity-50 transition-colors"
                 >
                   {saving ? "Saving…" : "Save"}
                 </button>
@@ -392,7 +392,7 @@ That's it — one snippet, site-wide. Let me know when it's done.`;
       {/* ─── Section 4: What's a Thank You Page? ─── */}
       <div className="bg-white dark:bg-[#1a1a1a] border border-[#2f3437]/10 dark:border-white/10 rounded-lg overflow-hidden">
         <div className="px-5 py-4 border-b border-[#2f3437]/10 dark:border-white/10 flex items-center gap-2">
-          <QuestionMarkCircleIcon className="w-4 h-4 text-[#0d9488] shrink-0" />
+          <QuestionMarkCircleIcon className="w-4 h-4 text-[#6ba3c7] shrink-0" />
           <p className="text-sm font-bold text-[#2f3437] dark:text-white">What's a Thank You Page?</p>
         </div>
         <div className="px-5 py-4 space-y-4 text-sm text-[#2f3437]/80 dark:text-white/80 leading-relaxed">
@@ -406,7 +406,7 @@ That's it — one snippet, site-wide. Let me know when it's done.`;
               `They sign up for your newsletter → they see a "You're in!" page.`,
             ].map((item, i) => (
               <li key={i} className="flex items-start gap-2">
-                <span className="shrink-0 mt-1.5 w-1.5 h-1.5 rounded-full bg-[#0d9488]" />
+                <span className="shrink-0 mt-1.5 w-1.5 h-1.5 rounded-full bg-[#6ba3c7]" />
                 <span>{item}</span>
               </li>
             ))}
@@ -425,7 +425,7 @@ That's it — one snippet, site-wide. Let me know when it's done.`;
                 { platform: "Any form tool (Calendly, Typeform, etc.)", detail: 'Set the "redirect after submission" URL to a thank you page on your site.' },
               ].map((item, i) => (
                 <li key={i} className="flex items-start gap-2">
-                  <span className="shrink-0 mt-1.5 w-1.5 h-1.5 rounded-full bg-[#0d9488]" />
+                  <span className="shrink-0 mt-1.5 w-1.5 h-1.5 rounded-full bg-[#6ba3c7]" />
                   <span>
                     <span className="font-semibold text-[#2f3437] dark:text-white">{item.platform}</span> — {item.detail}
                   </span>
@@ -438,7 +438,7 @@ That's it — one snippet, site-wide. Let me know when it's done.`;
           </p>
 
           {/* Need help callout */}
-          <div className="bg-[#f8f9fa] dark:bg-[#111111] border border-[#2f3437]/10 dark:border-white/10 rounded-lg px-4 py-4 space-y-3">
+          <div className="bg-[#f8f9fa] dark:bg-[#0f1419] border border-[#2f3437]/10 dark:border-white/10 rounded-lg px-4 py-4 space-y-3">
             <p className="text-sm font-semibold text-[#2f3437] dark:text-white">Need help setting this up?</p>
             <p className="text-sm text-[#2f3437]/70 dark:text-white/70 leading-relaxed">
               Attraction by Video offers done-with-you services that can help you get your funnel, thank you page, and tracking set up properly.
@@ -447,7 +447,7 @@ That's it — one snippet, site-wide. Let me know when it's done.`;
               href="https://attractionbyvideo.slack.com/team/U092LR97DPH"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 border border-[#0d9488] text-[#0d9488] hover:bg-[#0d9488]/8 px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+              className="inline-flex items-center gap-1.5 border border-[#6ba3c7] text-[#6ba3c7] hover:bg-[#6ba3c7]/8 px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
             >
               DM Jared in Slack
             </a>
@@ -458,7 +458,7 @@ That's it — one snippet, site-wide. Let me know when it's done.`;
       {/* ─── Section 5: Hand This Off ─── */}
       <div className="bg-white dark:bg-[#1a1a1a] border border-[#2f3437]/10 dark:border-white/10 rounded-lg overflow-hidden">
         <div className="px-5 py-4 border-b border-[#2f3437]/10 dark:border-white/10 flex items-center gap-2">
-          <DocumentDuplicateIcon className="w-4 h-4 text-[#0d9488] shrink-0" />
+          <DocumentDuplicateIcon className="w-4 h-4 text-[#6ba3c7] shrink-0" />
           <p className="text-sm font-bold text-[#2f3437] dark:text-white">Hand This Off</p>
         </div>
         <div className="px-5 py-4 space-y-3">
@@ -467,7 +467,7 @@ That's it — one snippet, site-wide. Let me know when it's done.`;
           </p>
           {profile?.id ? (
             <>
-              <div className="bg-[#f8f9fa] dark:bg-[#111111] border border-[#2f3437]/10 dark:border-white/10 rounded-lg p-4">
+              <div className="bg-[#f8f9fa] dark:bg-[#0f1419] border border-[#2f3437]/10 dark:border-white/10 rounded-lg p-4">
                 <pre className="text-xs text-[#2f3437]/80 dark:text-white/80 font-mono whitespace-pre-wrap leading-relaxed break-all">
                   {getHandoffMessage()}
                 </pre>
@@ -480,7 +480,7 @@ That's it — one snippet, site-wide. Let me know when it's done.`;
                 )}
                 <button
                   onClick={copyHandoff}
-                  className="ml-auto flex items-center gap-1.5 text-xs font-semibold text-[#0d9488] hover:text-[#2bb0ec] transition-colors"
+                  className="ml-auto flex items-center gap-1.5 text-xs font-semibold text-[#6ba3c7] hover:text-[#2bb0ec] transition-colors"
                 >
                   {copiedHandoff ? (
                     <><ClipboardDocumentCheckIcon className="w-4 h-4" /> Copied!</>
@@ -515,7 +515,7 @@ That's it — one snippet, site-wide. Let me know when it's done.`;
                     value={testWebsiteUrl}
                     onChange={(e) => setTestWebsiteUrl(e.target.value)}
                     placeholder="https://yoursite.com"
-                    className="w-full border border-[#2f3437]/20 dark:border-white/20 dark:bg-[#111111] dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#0d9488]"
+                    className="w-full border border-[#2f3437]/20 dark:border-white/20 dark:bg-[#0f1419] dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#6ba3c7]"
                   />
                   <p className="text-xs text-[#2f3437]/40 dark:text-white/40 mt-1">Enter any page on your site that has the snippet installed.</p>
                 </div>
@@ -530,15 +530,15 @@ That's it — one snippet, site-wide. Let me know when it's done.`;
             )}
             {testState === "running" && testData && (
               <div className="space-y-3">
-                <div className="bg-[#f8f9fa] dark:bg-[#111111] rounded-lg p-3">
+                <div className="bg-[#f8f9fa] dark:bg-[#0f1419] rounded-lg p-3">
                   <p className="text-xs font-medium text-[#2f3437] dark:text-white mb-1.5">Step 1 — Open this link in a new tab:</p>
-                  <a href={testData.testUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-[#0d9488] hover:underline break-all font-mono">
+                  <a href={testData.testUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-[#6ba3c7] hover:underline break-all font-mono">
                     {testData.testUrl}
                   </a>
                   <p className="text-xs text-[#2f3437]/40 dark:text-white/40 mt-2">Step 2 — Wait here. We're checking for your visit every 2 seconds (up to 30s).</p>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-[#2f3437]/50 dark:text-white/50">
-                  <span className="w-3.5 h-3.5 border-2 border-[#0d9488] border-t-transparent rounded-full animate-spin shrink-0" />
+                  <span className="w-3.5 h-3.5 border-2 border-[#6ba3c7] border-t-transparent rounded-full animate-spin shrink-0" />
                   Waiting for test visit…
                 </div>
               </div>

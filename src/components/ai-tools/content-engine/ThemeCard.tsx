@@ -42,7 +42,7 @@ function themeObj(t: ContentTheme | string, index: number): ContentTheme {
 
 export default function ThemeCard({ theme, index, onGoDeeper, initialIdeas }: Props) {
   const t = themeObj(theme, index);
-  const colour = t.colour ?? "#0d9488";
+  const colour = t.colour ?? "#6ba3c7";
 
   const [expanded, setExpanded] = useState(false);
   const [ideas, setIdeas] = useState<Idea[]>([]);
@@ -209,7 +209,7 @@ export default function ThemeCard({ theme, index, onGoDeeper, initialIdeas }: Pr
       </div>
 
       {expanded && (
-        <div className="border-t border-[#2f3437]/10 dark:border-white/10 bg-[#fafafa] dark:bg-[#111111]">
+        <div className="border-t border-[#2f3437]/10 dark:border-white/10 bg-[#fafafa] dark:bg-[#0f1419]">
           {generateError && (
             <div className="mx-4 mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-700 dark:text-red-400">
               {generateError}
@@ -222,7 +222,7 @@ export default function ThemeCard({ theme, index, onGoDeeper, initialIdeas }: Pr
                 <button
                   onClick={handleGenerateMore}
                   disabled={generating}
-                  className="text-xs text-[#0d9488] hover:text-[#2bb0ec] font-medium disabled:opacity-50"
+                  className="text-xs text-[#6ba3c7] hover:text-[#2bb0ec] font-medium disabled:opacity-50"
                 >
                   {generating ? "Generating..." : "Generate More"}
                 </button>
@@ -285,7 +285,7 @@ export default function ThemeCard({ theme, index, onGoDeeper, initialIdeas }: Pr
                 {savedTotal > savedIdeas.length && (
                   <button
                     onClick={() => loadSaved(savedPage + 1)}
-                    className="w-full text-xs text-[#0d9488] hover:text-[#2bb0ec] font-medium py-2"
+                    className="w-full text-xs text-[#6ba3c7] hover:text-[#2bb0ec] font-medium py-2"
                   >
                     Load more
                   </button>

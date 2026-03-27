@@ -221,11 +221,11 @@ function AvatarProfileCard({
     : null;
 
   return (
-    <div className="border border-[#0d9488]/30 rounded-lg overflow-hidden mb-6">
-      <div className="flex items-center justify-between px-4 py-3 bg-[#0d9488]/5">
+    <div className="border border-[#6ba3c7]/30 rounded-lg overflow-hidden mb-6">
+      <div className="flex items-center justify-between px-4 py-3 bg-[#6ba3c7]/5">
         <div className="flex items-center gap-2">
           <span className="text-base">🎯</span>
-          <span className="text-xs font-semibold text-[#0d9488] uppercase tracking-wider">
+          <span className="text-xs font-semibold text-[#6ba3c7] uppercase tracking-wider">
             {isEmpty ? "Save Your Avatar" : "Your Current Avatar"}
           </span>
         </div>
@@ -236,7 +236,7 @@ function AvatarProfileCard({
           {!editing && (
             <button
               onClick={startEdit}
-              className="flex items-center gap-1 text-xs text-[#0d9488] hover:text-[#0d9488]/70 transition-colors font-medium"
+              className="flex items-center gap-1 text-xs text-[#6ba3c7] hover:text-[#6ba3c7]/70 transition-colors font-medium"
             >
               <PencilIcon className="w-3.5 h-3.5" />
               Edit
@@ -275,7 +275,7 @@ function AvatarProfileCard({
                   {displayThemes.map((t, i) => (
                     <span
                       key={i}
-                      className="text-xs bg-[#0d9488]/10 text-[#0d9488] font-medium px-2.5 py-1 rounded-full border border-[#0d9488]/20"
+                      className="text-xs bg-[#6ba3c7]/10 text-[#6ba3c7] font-medium px-2.5 py-1 rounded-full border border-[#6ba3c7]/20"
                     >
                       {getThemeEmoji(t) && <span className="mr-1">{getThemeEmoji(t)}</span>}
                       {getThemeName(t)}
@@ -300,7 +300,7 @@ function AvatarProfileCard({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Sarah the Suburban Mover"
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#0d9488]/40"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40"
               />
             </div>
 
@@ -313,7 +313,7 @@ function AvatarProfileCard({
                 onChange={(e) => setSummary(e.target.value)}
                 placeholder="A brief description of your avatar's situation, fears, and goals…"
                 rows={4}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#0d9488]/40 resize-none"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40 resize-none"
               />
             </div>
 
@@ -325,12 +325,12 @@ function AvatarProfileCard({
                 {themes.map((t) => (
                   <span
                     key={t}
-                    className="flex items-center gap-1 text-xs bg-[#0d9488]/10 text-[#0d9488] font-medium px-2.5 py-1 rounded-full border border-[#0d9488]/20"
+                    className="flex items-center gap-1 text-xs bg-[#6ba3c7]/10 text-[#6ba3c7] font-medium px-2.5 py-1 rounded-full border border-[#6ba3c7]/20"
                   >
                     {t}
                     <button
                       onClick={() => removeTheme(t)}
-                      className="text-[#0d9488]/60 hover:text-[#ff0033] transition-colors"
+                      className="text-[#6ba3c7]/60 hover:text-[#ff0033] transition-colors"
                     >
                       <XMarkIcon className="w-3 h-3" />
                     </button>
@@ -344,11 +344,11 @@ function AvatarProfileCard({
                   onChange={(e) => setThemeInput(e.target.value)}
                   onKeyDown={handleThemeKeyDown}
                   placeholder="Add a theme, press Enter…"
-                  className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#0d9488]/40"
+                  className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40"
                 />
                 <button
                   onClick={addTheme}
-                  className="p-2 bg-[#0d9488]/10 text-[#0d9488] rounded-lg hover:bg-[#0d9488]/20 transition-colors"
+                  className="p-2 bg-[#6ba3c7]/10 text-[#6ba3c7] rounded-lg hover:bg-[#6ba3c7]/20 transition-colors"
                 >
                   <PlusIcon className="w-4 h-4" />
                 </button>
@@ -359,7 +359,7 @@ function AvatarProfileCard({
               <button
                 onClick={save}
                 disabled={saving}
-                className="px-4 py-2 bg-[#0d9488] text-white text-xs font-semibold rounded-lg hover:bg-[#0d9488]/90 disabled:opacity-50 transition-colors"
+                className="px-4 py-2 bg-[#6ba3c7] text-white text-xs font-semibold rounded-lg hover:bg-[#6ba3c7]/90 disabled:opacity-50 transition-colors"
               >
                 {saving ? "Saving…" : isEmpty ? "Save Avatar" : "Save Changes"}
               </button>
@@ -556,7 +556,7 @@ export default function AvatarArchitectPage() {
         <div className="mb-5">
           <Link
             href="/member/ai-tools"
-            className="flex items-center gap-1.5 text-xs text-[#2f3437]/50 hover:text-[#0d9488] transition-colors mb-3"
+            className="flex items-center gap-1.5 text-xs text-[#2f3437]/50 hover:text-[#6ba3c7] transition-colors mb-3"
           >
             <ArrowLeftIcon className="w-3.5 h-3.5" />
             Back to AI Tools
@@ -573,7 +573,7 @@ export default function AvatarArchitectPage() {
 
         {/* Existing avatar notice */}
         {!avatarLoading && savedAvatar?.avatarName && (
-          <div className="mb-4 px-4 py-3 bg-[#0d9488]/8 border border-[#0d9488]/25 rounded-lg text-sm text-[#2f3437]/70">
+          <div className="mb-4 px-4 py-3 bg-[#6ba3c7]/8 border border-[#6ba3c7]/25 rounded-lg text-sm text-[#2f3437]/70">
             You already have an avatar saved (<strong className="text-[#2f3437]">{savedAvatar.avatarName}</strong>). Starting either path will let you update it.
           </div>
         )}
@@ -582,18 +582,18 @@ export default function AvatarArchitectPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2 mb-10">
           <button
             onClick={startFromScratch}
-            className="group text-left p-6 border-2 border-[#2f3437]/10 hover:border-[#0d9488]/50 bg-white hover:bg-[#0d9488]/3 rounded-lg transition-all duration-200 hover:shadow-[0_2px_8px_rgba(0,0,0,0.04)]"
+            className="group text-left p-6 border-2 border-[#2f3437]/10 hover:border-[#6ba3c7]/50 bg-white hover:bg-[#6ba3c7]/3 rounded-lg transition-all duration-200 hover:shadow-[0_2px_8px_rgba(0,0,0,0.04)]"
           >
             <span className="text-3xl mb-3 block">🚀</span>
-            <p className="font-bold text-[#2f3437] text-base mb-1.5 group-hover:text-[#0d9488] transition-colors">Start from Scratch</p>
+            <p className="font-bold text-[#2f3437] text-base mb-1.5 group-hover:text-[#6ba3c7] transition-colors">Start from Scratch</p>
             <p className="text-sm text-[#2f3437]/55 leading-relaxed">Build your avatar through a guided coaching conversation</p>
           </button>
           <button
             onClick={() => setScreen("import")}
-            className="group text-left p-6 border-2 border-[#2f3437]/10 hover:border-[#0d9488]/50 bg-white hover:bg-[#0d9488]/3 rounded-lg transition-all duration-200 hover:shadow-[0_2px_8px_rgba(0,0,0,0.04)]"
+            className="group text-left p-6 border-2 border-[#2f3437]/10 hover:border-[#6ba3c7]/50 bg-white hover:bg-[#6ba3c7]/3 rounded-lg transition-all duration-200 hover:shadow-[0_2px_8px_rgba(0,0,0,0.04)]"
           >
             <span className="text-3xl mb-3 block">📋</span>
-            <p className="font-bold text-[#2f3437] text-base mb-1.5 group-hover:text-[#0d9488] transition-colors">I Have an Existing Avatar</p>
+            <p className="font-bold text-[#2f3437] text-base mb-1.5 group-hover:text-[#6ba3c7] transition-colors">I Have an Existing Avatar</p>
             <p className="text-sm text-[#2f3437]/55 leading-relaxed">Paste in notes, docs, or bullet points you already have and we&apos;ll build from there</p>
           </button>
         </div>
@@ -607,7 +607,7 @@ export default function AvatarArchitectPage() {
         <div className="mb-5">
           <Link
             href="/member/ai-tools"
-            className="flex items-center gap-1.5 text-xs text-[#2f3437]/50 hover:text-[#0d9488] transition-colors mb-3"
+            className="flex items-center gap-1.5 text-xs text-[#2f3437]/50 hover:text-[#6ba3c7] transition-colors mb-3"
           >
             <ArrowLeftIcon className="w-3.5 h-3.5" />
             Back to AI Tools
@@ -625,13 +625,13 @@ export default function AvatarArchitectPage() {
           onChange={(e) => setImportText(e.target.value)}
           rows={20}
           placeholder="Paste your avatar notes here…"
-          className="w-full border border-[#2f3437]/20 rounded-lg px-4 py-3 text-sm text-[#2f3437] placeholder-[#2f3437]/30 resize-y focus:outline-none focus:border-[#0d9488] transition-colors bg-white leading-relaxed"
+          className="w-full border border-[#2f3437]/20 rounded-lg px-4 py-3 text-sm text-[#2f3437] placeholder-[#2f3437]/30 resize-y focus:outline-none focus:border-[#6ba3c7] transition-colors bg-white leading-relaxed"
         />
 
         <div className="flex items-center justify-between mt-4">
           <button
             onClick={() => setScreen("landing")}
-            className="flex items-center gap-1.5 text-sm text-[#2f3437]/50 hover:text-[#0d9488] transition-colors"
+            className="flex items-center gap-1.5 text-sm text-[#2f3437]/50 hover:text-[#6ba3c7] transition-colors"
           >
             <ArrowLeftIcon className="w-4 h-4" />
             Back to options
@@ -639,7 +639,7 @@ export default function AvatarArchitectPage() {
           <button
             onClick={startFromImport}
             disabled={!importText.trim()}
-            className="bg-[#0d9488] text-white px-6 py-2.5 rounded-lg text-sm font-semibold hover:bg-[#0d9488]/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="bg-[#6ba3c7] text-white px-6 py-2.5 rounded-lg text-sm font-semibold hover:bg-[#6ba3c7]/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             Start Building →
           </button>
@@ -653,7 +653,7 @@ export default function AvatarArchitectPage() {
       <div className="flex-shrink-0 mb-1">
         <Link
           href="/member/ai-tools"
-          className="flex items-center gap-1.5 text-xs text-[#2f3437]/50 hover:text-[#0d9488] transition-colors"
+          className="flex items-center gap-1.5 text-xs text-[#2f3437]/50 hover:text-[#6ba3c7] transition-colors"
         >
           <ArrowLeftIcon className="w-3.5 h-3.5" />
           Back to AI Tools
@@ -675,7 +675,7 @@ export default function AvatarArchitectPage() {
 
       {/* Avatar save banner */}
       {detectedAvatar && !saved && (
-        <div className="flex-shrink-0 mb-3 bg-[#0d9488]/10 border border-[#0d9488]/30 rounded-lg p-4">
+        <div className="flex-shrink-0 mb-3 bg-[#6ba3c7]/10 border border-[#6ba3c7]/30 rounded-lg p-4">
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="font-semibold text-[#2f3437] text-sm">
@@ -702,7 +702,7 @@ export default function AvatarArchitectPage() {
                 className={`text-xs px-4 py-1.5 rounded-lg font-semibold transition-colors ${
                   confirmReplace
                     ? "bg-amber-500 text-white hover:bg-amber-600"
-                    : "bg-[#0d9488] text-white hover:bg-[#0d9488]/90"
+                    : "bg-[#6ba3c7] text-white hover:bg-[#6ba3c7]/90"
                 }`}
               >
                 {saving ? "Saving..." : confirmReplace ? "Yes, Replace" : "Save to My Profile"}
@@ -747,7 +747,7 @@ export default function AvatarArchitectPage() {
                 {[0, 1, 2].map((i) => (
                   <span
                     key={i}
-                    className="w-2 h-2 rounded-full bg-[#0d9488]/60 animate-bounce"
+                    className="w-2 h-2 rounded-full bg-[#6ba3c7]/60 animate-bounce"
                     style={{ animationDelay: `${i * 0.15}s` }}
                   />
                 ))}
@@ -768,12 +768,12 @@ export default function AvatarArchitectPage() {
             onKeyDown={handleKey}
             placeholder="Type your reply... (Enter to send, Shift+Enter for new line)"
             rows={2}
-            className="flex-1 bg-white border border-[#2f3437]/20 rounded-lg px-4 py-3 text-sm text-[#2f3437] placeholder-[#2f3437]/30 resize-none focus:outline-none focus:border-[#0d9488] transition-colors"
+            className="flex-1 bg-white border border-[#2f3437]/20 rounded-lg px-4 py-3 text-sm text-[#2f3437] placeholder-[#2f3437]/30 resize-none focus:outline-none focus:border-[#6ba3c7] transition-colors"
           />
           <button
             onClick={sendMessage}
             disabled={loading || !input.trim()}
-            className="flex-shrink-0 w-11 h-11 flex items-center justify-center bg-[#0d9488] text-white rounded-lg hover:bg-[#0d9488]/90 disabled:opacity-40 transition-colors"
+            className="flex-shrink-0 w-11 h-11 flex items-center justify-center bg-[#6ba3c7] text-white rounded-lg hover:bg-[#6ba3c7]/90 disabled:opacity-40 transition-colors"
           >
             <PaperAirplaneIcon className="w-5 h-5" />
           </button>

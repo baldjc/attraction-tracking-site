@@ -98,7 +98,7 @@ export default function MemberPickerModal({ onClose, adminEmail }: Props) {
               placeholder="Search by name or email…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0d9488] focus:border-transparent outline-none"
+              className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#6ba3c7] focus:border-transparent outline-none"
             />
           </div>
         </div>
@@ -119,7 +119,7 @@ export default function MemberPickerModal({ onClose, adminEmail }: Props) {
                     <button
                       onClick={() => handleSelect(member)}
                       disabled={!!selecting}
-                      className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-[#0d9488]/5 transition-colors text-left disabled:opacity-50"
+                      className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-[#6ba3c7]/5 transition-colors text-left disabled:opacity-50"
                     >
                       <div className="w-8 h-8 rounded-full bg-[#111]/10 flex items-center justify-center shrink-0">
                         <UserCircleIcon className="w-5 h-5 text-[#2f3437]/40" />
@@ -131,7 +131,7 @@ export default function MemberPickerModal({ onClose, adminEmail }: Props) {
                         )}
                       </div>
                       {isSelecting && (
-                        <div className="w-4 h-4 border-2 border-[#0d9488] border-t-transparent rounded-full animate-spin shrink-0" />
+                        <div className="w-4 h-4 border-2 border-[#6ba3c7] border-t-transparent rounded-full animate-spin shrink-0" />
                       )}
                     </button>
                   </li>

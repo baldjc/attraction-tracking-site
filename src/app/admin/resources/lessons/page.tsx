@@ -54,7 +54,7 @@ const emptyForm: FormState = {
   title: "", lessonNumber: "", sessionNumber: "1", skoolUrl: "", principles: [], fullTranscript: "",
 };
 
-const INPUT = "w-full border border-[#2f3437]/20 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#0d9488]";
+const INPUT = "w-full border border-[#2f3437]/20 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#6ba3c7]";
 const CARD = "bg-white rounded-lg border border-[#2f3437]/10";
 
 export default function AdminLessonsPage() {
@@ -203,7 +203,7 @@ export default function AdminLessonsPage() {
           <h1 className="text-2xl font-bold text-[#2f3437]">Course Lessons</h1>
           <p className="text-sm text-[#2f3437]/50 mt-1">Manage the Attraction by Video course content and transcripts</p>
         </div>
-        <button onClick={openAdd} className="flex items-center gap-2 bg-[#0d9488] text-white px-4 py-2.5 rounded-lg text-sm font-semibold hover:bg-[#0d9488]/90 transition-colors">
+        <button onClick={openAdd} className="flex items-center gap-2 bg-[#6ba3c7] text-white px-4 py-2.5 rounded-lg text-sm font-semibold hover:bg-[#6ba3c7]/90 transition-colors">
           <PlusIcon className="w-4 h-4" /> Add Lesson
         </button>
       </div>
@@ -232,7 +232,7 @@ export default function AdminLessonsPage() {
                           <div className="flex items-center gap-2 mb-1.5">
                             <span className="font-semibold text-[#2f3437] text-sm">{lesson.title}</span>
                             {lesson.skoolUrl && (
-                              <a href={lesson.skoolUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] text-[#0d9488] hover:underline">Skool ↗</a>
+                              <a href={lesson.skoolUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] text-[#6ba3c7] hover:underline">Skool ↗</a>
                             )}
                           </div>
                           <div className="flex flex-wrap gap-1 mb-2">
@@ -244,7 +244,7 @@ export default function AdminLessonsPage() {
                             <span>{lesson.segmentCount} segment{lesson.segmentCount !== 1 ? "s" : ""}</span>
                             {lesson.fullTranscript ? <span className="text-green-600">Transcript uploaded</span> : <span className="text-amber-500">No transcript</span>}
                             {processResult?.id === lesson.id && (
-                              <span className="text-[#0d9488] flex items-center gap-1">
+                              <span className="text-[#6ba3c7] flex items-center gap-1">
                                 <CheckCircleIcon className="w-3.5 h-3.5" /> {processResult.count} segments created
                               </span>
                             )}
@@ -256,12 +256,12 @@ export default function AdminLessonsPage() {
                               onClick={() => processTranscript(lesson)}
                               disabled={processingId === lesson.id}
                               title="Re-process transcript with Claude"
-                              className="p-2 rounded-lg text-[#2f3437]/30 hover:text-[#0d9488] hover:bg-[#0d9488]/5 transition-colors disabled:opacity-40"
+                              className="p-2 rounded-lg text-[#2f3437]/30 hover:text-[#6ba3c7] hover:bg-[#6ba3c7]/5 transition-colors disabled:opacity-40"
                             >
                               <ArrowPathIcon className={`w-4 h-4 ${processingId === lesson.id ? "animate-spin" : ""}`} />
                             </button>
                           )}
-                          <button onClick={() => openEdit(lesson)} className="p-2 rounded-lg text-[#2f3437]/30 hover:text-[#0d9488] hover:bg-[#0d9488]/5 transition-colors">
+                          <button onClick={() => openEdit(lesson)} className="p-2 rounded-lg text-[#2f3437]/30 hover:text-[#6ba3c7] hover:bg-[#6ba3c7]/5 transition-colors">
                             <PencilIcon className="w-4 h-4" />
                           </button>
                           <button onClick={() => setDeleteConfirm(lesson.id)} className="p-2 rounded-lg text-[#2f3437]/30 hover:text-red-500 hover:bg-red-50 transition-colors">
@@ -354,7 +354,7 @@ export default function AdminLessonsPage() {
               </div>
               {error && <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>}
               <div className="flex gap-3 pt-2">
-                <button onClick={saveLesson} disabled={saving} className="flex-1 bg-[#0d9488] text-white py-2.5 rounded-lg font-semibold text-sm disabled:opacity-50 hover:bg-[#0d9488]/90 transition-colors">
+                <button onClick={saveLesson} disabled={saving} className="flex-1 bg-[#6ba3c7] text-white py-2.5 rounded-lg font-semibold text-sm disabled:opacity-50 hover:bg-[#6ba3c7]/90 transition-colors">
                   {saving ? "Saving..." : editingId ? "Save Changes" : "Create Lesson"}
                 </button>
                 {editingId && form.fullTranscript && (

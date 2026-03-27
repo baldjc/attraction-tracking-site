@@ -33,7 +33,7 @@ function tierBadge(tier: string) {
   const label = tierLabels[tier] || tier;
   if (tier === "foundations") {
     return (
-      <span className="text-xs font-semibold bg-[#0d9488] text-white px-2.5 py-1 rounded-full">
+      <span className="text-xs font-semibold bg-[#6ba3c7] text-white px-2.5 py-1 rounded-full">
         {label}
       </span>
     );
@@ -155,7 +155,7 @@ export default function MembersPage() {
           <button
             onClick={handleSync}
             disabled={syncing}
-            className="flex items-center gap-2 bg-[#0d9488] hover:bg-[#0b7a70] text-white px-4 py-2.5 rounded-lg font-medium transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 bg-[#6ba3c7] hover:bg-[#5490b5] text-white px-4 py-2.5 rounded-lg font-medium transition-colors disabled:opacity-50"
           >
             <ArrowPathIcon className={`w-5 h-5 ${syncing ? "animate-spin" : ""}`} />
             {syncing ? "Syncing from GHL..." : "Sync from GHL"}
@@ -168,7 +168,7 @@ export default function MembersPage() {
           className={`mb-4 text-sm px-4 py-3 rounded-lg ${
             syncResult.startsWith("Error") || syncResult.startsWith("Sync failed")
               ? "bg-[#ff0033]/10 text-[#ff0033]"
-              : "bg-[#0d9488]/10 text-[#2f3437]"
+              : "bg-[#6ba3c7]/10 text-[#2f3437]"
           }`}
         >
           {syncResult}
@@ -200,7 +200,7 @@ export default function MembersPage() {
           placeholder="Search by name, email, or YouTube handle..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full max-w-sm px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0d9488] focus:border-transparent outline-none text-[#2f3437] bg-white text-sm"
+          className="w-full max-w-sm px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6ba3c7] focus:border-transparent outline-none text-[#2f3437] bg-white text-sm"
         />
         <div className="flex items-center gap-1.5">
           {TIER_FILTERS.map((f) => (
@@ -210,7 +210,7 @@ export default function MembersPage() {
               className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-colors border ${
                 tierFilter === f.value
                   ? f.value === "foundations"
-                    ? "bg-[#0d9488] text-white border-[#0d9488]"
+                    ? "bg-[#6ba3c7] text-white border-[#6ba3c7]"
                     : f.value === "editing"
                     ? "bg-[#f59e0b] text-white border-[#f59e0b]"
                     : f.value === "mastery"
@@ -275,12 +275,12 @@ export default function MembersPage() {
                     <td className="px-6 py-4">
                       <Link href={`/admin/members/${m.id}`} className="flex items-center gap-3">
                         <div className="w-2 h-2 bg-green-500 rounded-full shrink-0" />
-                        <span className="font-medium text-[#2f3437] hover:text-[#0d9488] transition-colors">{m.fullName || "—"}</span>
+                        <span className="font-medium text-[#2f3437] hover:text-[#6ba3c7] transition-colors">{m.fullName || "—"}</span>
                       </Link>
                     </td>
                     <td className="px-6 py-4 text-sm text-[#2f3437]/70">
                       {m.youtubeHandle ? (
-                        <a href={`https://youtube.com/${m.youtubeHandle}`} target="_blank" rel="noopener noreferrer" className="text-[#0d9488] hover:underline">{m.youtubeHandle}</a>
+                        <a href={`https://youtube.com/${m.youtubeHandle}`} target="_blank" rel="noopener noreferrer" className="text-[#6ba3c7] hover:underline">{m.youtubeHandle}</a>
                       ) : "—"}
                     </td>
                     <td className="px-6 py-4">{tierBadge(m.serviceTier)}</td>

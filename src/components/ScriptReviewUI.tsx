@@ -60,7 +60,7 @@ function scoreBg(score: number) {
 }
 
 function scoreBgBlock(score: number) {
-  if (score >= 7) return "bg-[#e8f7ff] border-[#0d9488]/30";
+  if (score >= 7) return "bg-[#e8f7ff] border-[#6ba3c7]/30";
   if (score >= 5) return "bg-[#fef3c7] border-amber-200";
   return "bg-[#ffe5ea] border-[#ff0033]/20";
 }
@@ -124,7 +124,7 @@ function ResultDisplay({ r, baselineScores }: { r: ReviewResult; baselineScores:
     <div className="space-y-5">
       {reportContent.one_sentence_diagnosis && (
         <div className="bg-[#111] rounded-lg p-5">
-          <p className="text-xs font-semibold text-[#0d9488] uppercase tracking-wider mb-2">Diagnosis</p>
+          <p className="text-xs font-semibold text-[#6ba3c7] uppercase tracking-wider mb-2">Diagnosis</p>
           <p className="text-sm font-medium text-white leading-relaxed italic">"{reportContent.one_sentence_diagnosis}"</p>
         </div>
       )}
@@ -229,9 +229,9 @@ function ResultDisplay({ r, baselineScores }: { r: ReviewResult; baselineScores:
               const lesson = item.lesson ?? (principleKey ? LEARNING_PATH[principleKey] : null);
               const score = item.score ?? (principleKey ? extractScore(scores[principleKey]) : null);
               return (
-                <div key={i} className="border-l-4 border-[#0d9488] pl-4">
+                <div key={i} className="border-l-4 border-[#6ba3c7] pl-4">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xs font-bold text-[#0d9488] uppercase tracking-wider">{i + 1}. {item.principle}</span>
+                    <span className="text-xs font-bold text-[#6ba3c7] uppercase tracking-wider">{i + 1}. {item.principle}</span>
                     {score != null && score > 0 && (
                       <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${scoreBg(score)}`}>{score.toFixed(1)}</span>
                     )}
@@ -245,7 +245,7 @@ function ResultDisplay({ r, baselineScores }: { r: ReviewResult; baselineScores:
                       <p className="text-xs text-[#2f3437]/80 italic">"{item.current}"</p>
                     </div>
                     <div className="bg-[#e8f7ff] rounded-lg px-3 py-2">
-                      <p className="text-xs font-semibold text-[#0d9488] mb-1">Improved</p>
+                      <p className="text-xs font-semibold text-[#6ba3c7] mb-1">Improved</p>
                       <p className="text-xs text-[#2f3437]/80 italic">"{item.improved}"</p>
                     </div>
                     {item.why && (
@@ -466,7 +466,7 @@ export default function ScriptReviewUI({ fetchBaseline = false, isAdmin = false 
               onClick={() => handleModeToggle("member")}
               className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium border transition-colors flex items-center justify-center gap-1.5 ${
                 adminMode === "member"
-                  ? "bg-[#0d9488] text-white border-[#0d9488]"
+                  ? "bg-[#6ba3c7] text-white border-[#6ba3c7]"
                   : "bg-white text-[#2f3437]/60 border-gray-200 hover:border-gray-300"
               }`}
             >
@@ -482,7 +482,7 @@ export default function ScriptReviewUI({ fetchBaseline = false, isAdmin = false 
                 <select
                   value={selectedMemberId}
                   onChange={(e) => handleMemberSelect(e.target.value)}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#0d9488]/40"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40"
                 >
                   <option value="">— Select a member —</option>
                   {members.map((m) => (
@@ -516,7 +516,7 @@ export default function ScriptReviewUI({ fetchBaseline = false, isAdmin = false 
             placeholder="What's the working title?"
             required
             disabled={loading}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-[#2f3437] placeholder-[#2f3437]/30 focus:outline-none focus:ring-2 focus:ring-[#0d9488]/40 disabled:opacity-60"
+            className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-[#2f3437] placeholder-[#2f3437]/30 focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40 disabled:opacity-60"
           />
         </div>
         <div>
@@ -528,7 +528,7 @@ export default function ScriptReviewUI({ fetchBaseline = false, isAdmin = false 
             required
             disabled={loading}
             rows={12}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-[#2f3437] placeholder-[#2f3437]/30 focus:outline-none focus:ring-2 focus:ring-[#0d9488]/40 resize-y disabled:opacity-60"
+            className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-[#2f3437] placeholder-[#2f3437]/30 focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40 resize-y disabled:opacity-60"
           />
           <p className="text-xs text-[#2f3437]/40 mt-1">
             {scriptText.length > 0 ? `${scriptText.split(/\s+/).filter(Boolean).length} words` : "Paste at least a paragraph for best results"}
@@ -540,7 +540,7 @@ export default function ScriptReviewUI({ fetchBaseline = false, isAdmin = false 
         <button
           type="submit"
           disabled={loading || !videoTitle.trim() || !scriptText.trim()}
-          className="w-full bg-[#0d9488] hover:bg-[#2ab0ec] text-white font-semibold text-sm py-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="w-full bg-[#6ba3c7] hover:bg-[#2ab0ec] text-white font-semibold text-sm py-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
           {loading ? (
             <>
@@ -618,7 +618,7 @@ export default function ScriptReviewUI({ fetchBaseline = false, isAdmin = false 
                   disabled={viewLoading && viewingId === rev.id}
                   className={`text-xs px-3 py-1.5 rounded-lg border transition-colors shrink-0 ${
                     viewingId === rev.id
-                      ? "border-[#0d9488] bg-[#e8f7ff] text-[#0d9488]"
+                      ? "border-[#6ba3c7] bg-[#e8f7ff] text-[#6ba3c7]"
                       : "border-gray-200 hover:bg-gray-50 text-[#2f3437]/70"
                   }`}
                 >

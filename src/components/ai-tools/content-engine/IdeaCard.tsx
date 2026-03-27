@@ -108,7 +108,7 @@ export default function IdeaCard({ idea, theme, onSaved, savedId, onDelete }: Pr
               onClick={() => setSelectedIdx(i)}
               className={`w-full text-left rounded-lg px-3 py-2.5 border transition-all ${
                 selectedIdx === i
-                  ? "border-[#0d9488] bg-[#0d9488]/8 dark:bg-[#0d9488]/15"
+                  ? "border-[#6ba3c7] bg-[#6ba3c7]/8 dark:bg-[#6ba3c7]/15"
                   : "border-[#2f3437]/10 dark:border-white/10 hover:border-[#2f3437]/25 dark:hover:border-white/25 bg-white dark:bg-white/5"
               }`}
             >
@@ -116,7 +116,7 @@ export default function IdeaCard({ idea, theme, onSaved, savedId, onDelete }: Pr
                 <span
                   className={`shrink-0 mt-0.5 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors ${
                     selectedIdx === i
-                      ? "border-[#0d9488] bg-[#0d9488]"
+                      ? "border-[#6ba3c7] bg-[#6ba3c7]"
                       : "border-[#2f3437]/30 dark:border-white/30"
                   }`}
                 >
@@ -161,8 +161,8 @@ export default function IdeaCard({ idea, theme, onSaved, savedId, onDelete }: Pr
             title={isSaved ? "Saved" : "Save selected title"}
             className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
               isSaved
-                ? "bg-[#0d9488]/20 text-[#0d9488]"
-                : "bg-[#111]/5 dark:bg-white/5 hover:bg-[#0d9488]/10 text-[#2f3437]/40 dark:text-white/40 hover:text-[#0d9488]"
+                ? "bg-[#6ba3c7]/20 text-[#6ba3c7]"
+                : "bg-[#111]/5 dark:bg-white/5 hover:bg-[#6ba3c7]/10 text-[#2f3437]/40 dark:text-white/40 hover:text-[#6ba3c7]"
             }`}
           >
             {saving ? (
@@ -176,7 +176,7 @@ export default function IdeaCard({ idea, theme, onSaved, savedId, onDelete }: Pr
 
       {/* Framework badge (single-title mode) */}
       {!hasMultipleOptions && selectedOption.framework && (
-        <span className="inline-block text-xs font-medium text-[#0d9488] bg-[#0d9488]/10 px-2 py-0.5 rounded-full">
+        <span className="inline-block text-xs font-medium text-[#6ba3c7] bg-[#6ba3c7]/10 px-2 py-0.5 rounded-full">
           {selectedOption.framework}
         </span>
       )}
@@ -187,7 +187,7 @@ export default function IdeaCard({ idea, theme, onSaved, savedId, onDelete }: Pr
           <ol className="space-y-1">
             {idea.talkingPoints.map((pt, i) => (
               <li key={i} className="flex items-start gap-2 text-xs text-[#2f3437]/70 dark:text-white/70">
-                <span className="text-[#0d9488] font-bold flex-shrink-0">{i + 1}.</span>
+                <span className="text-[#6ba3c7] font-bold flex-shrink-0">{i + 1}.</span>
                 <span>{pt}</span>
               </li>
             ))}
@@ -209,7 +209,7 @@ export default function IdeaCard({ idea, theme, onSaved, savedId, onDelete }: Pr
       <div className="border-t border-[#2f3437]/5 dark:border-white/5 pt-2">
         <button
           onClick={handleBuildScript}
-          className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-semibold text-[#2f3437] dark:text-white bg-[#111]/5 dark:bg-white/5 hover:bg-[#0d9488]/10 hover:text-[#0d9488] dark:hover:text-[#0d9488] rounded-lg transition-colors"
+          className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-semibold text-[#2f3437] dark:text-white bg-[#111]/5 dark:bg-white/5 hover:bg-[#6ba3c7]/10 hover:text-[#6ba3c7] dark:hover:text-[#6ba3c7] rounded-lg transition-colors"
         >
           <span>🎬</span>
           Build Script

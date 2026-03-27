@@ -101,7 +101,7 @@ export default function RecentConversations({
             {label}
           </span>
           {conversations.length > 0 && (
-            <span className="text-xs bg-[#0d9488]/10 text-[#0d9488] font-semibold px-1.5 py-0.5 rounded-full">
+            <span className="text-xs bg-[#6ba3c7]/10 text-[#6ba3c7] font-semibold px-1.5 py-0.5 rounded-full">
               {conversations.length}
             </span>
           )}
@@ -151,7 +151,7 @@ export default function RecentConversations({
                       <button
                         onClick={(e) => handleDownload(conv.id, e)}
                         title="Download"
-                        className="p-1.5 rounded-lg text-[#2f3437]/30 hover:text-[#0d9488] hover:bg-[#0d9488]/10 transition-colors"
+                        className="p-1.5 rounded-lg text-[#2f3437]/30 hover:text-[#6ba3c7] hover:bg-[#6ba3c7]/10 transition-colors"
                       >
                         <ArrowDownTrayIcon className="w-3.5 h-3.5" />
                       </button>

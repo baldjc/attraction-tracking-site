@@ -61,7 +61,7 @@ function MemberPicker({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between gap-2 px-3 py-2 border border-[#2f3437]/15 rounded-lg text-sm bg-white hover:border-[#0d9488]/50 transition-colors"
+        className="w-full flex items-center justify-between gap-2 px-3 py-2 border border-[#2f3437]/15 rounded-lg text-sm bg-white hover:border-[#6ba3c7]/50 transition-colors"
       >
         <span className="text-[#2f3437]/60 truncate">
           {selected.length === 0 ? "Add members…" : `${selected.length} member${selected.length !== 1 ? "s" : ""} selected`}
@@ -78,7 +78,7 @@ function MemberPicker({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search members…"
-              className="w-full px-3 py-1.5 text-sm border border-[#2f3437]/15 rounded-lg focus:outline-none focus:border-[#0d9488]"
+              className="w-full px-3 py-1.5 text-sm border border-[#2f3437]/15 rounded-lg focus:outline-none focus:border-[#6ba3c7]"
             />
           </div>
           <ul className="max-h-52 overflow-y-auto divide-y divide-[#2f3437]/6">
@@ -92,9 +92,9 @@ function MemberPicker({
                     <button
                       type="button"
                       onClick={() => toggle(m.id)}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[#0d9488]/5 transition-colors text-left"
+                      className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[#6ba3c7]/5 transition-colors text-left"
                     >
-                      <span className={`w-4 h-4 rounded border shrink-0 flex items-center justify-center ${checked ? "bg-[#0d9488] border-[#0d9488]" : "border-[#2f3437]/25"}`}>
+                      <span className={`w-4 h-4 rounded border shrink-0 flex items-center justify-center ${checked ? "bg-[#6ba3c7] border-[#6ba3c7]" : "border-[#2f3437]/25"}`}>
                         {checked && <CheckIcon className="w-3 h-3 text-white" />}
                       </span>
                       <div className="min-w-0">
@@ -113,7 +113,7 @@ function MemberPicker({
       {selectedMembers.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mt-2">
           {selectedMembers.map((m) => (
-            <span key={m.id} className="inline-flex items-center gap-1 bg-[#0d9488]/10 text-[#2f3437] text-xs font-medium px-2 py-1 rounded-full">
+            <span key={m.id} className="inline-flex items-center gap-1 bg-[#6ba3c7]/10 text-[#2f3437] text-xs font-medium px-2 py-1 rounded-full">
               {m.fullName || m.email}
               <button type="button" onClick={() => toggle(m.id)} className="hover:text-[#ff0033]">
                 <XMarkIcon className="w-3 h-3" />
@@ -211,7 +211,7 @@ function StaffCard({
             onClick={handleViewAs}
             disabled={viewingAs}
             title={`View as ${staff.fullName || staff.email}`}
-            className="text-xs font-medium text-[#0d9488] border border-[#0d9488]/30 px-2.5 py-1 rounded-lg hover:bg-[#0d9488]/10 disabled:opacity-50 transition-colors"
+            className="text-xs font-medium text-[#6ba3c7] border border-[#6ba3c7]/30 px-2.5 py-1 rounded-lg hover:bg-[#6ba3c7]/10 disabled:opacity-50 transition-colors"
           >
             {viewingAs ? "…" : "View as"}
           </button>
@@ -295,7 +295,7 @@ function StaffCard({
           type="button"
           onClick={handleSave}
           disabled={saving}
-          className="bg-[#0d9488] text-white text-xs font-semibold px-4 py-2 rounded-lg hover:bg-[#0d9488]/90 disabled:opacity-50 transition-colors"
+          className="bg-[#6ba3c7] text-white text-xs font-semibold px-4 py-2 rounded-lg hover:bg-[#6ba3c7]/90 disabled:opacity-50 transition-colors"
         >
           {saving ? "Saving…" : "Save"}
         </button>
@@ -342,7 +342,7 @@ function AddStaffForm({ onCreated }: { onCreated: (s: StaffMember) => void }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-[#2f3437]/15 hover:border-[#0d9488]/40 rounded-lg py-3 text-sm text-[#2f3437]/40 hover:text-[#0d9488] transition-colors font-medium"
+        className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-[#2f3437]/15 hover:border-[#6ba3c7]/40 rounded-lg py-3 text-sm text-[#2f3437]/40 hover:text-[#6ba3c7] transition-colors font-medium"
       >
         <span className="text-lg leading-none">+</span> Add staff account
       </button>
@@ -350,7 +350,7 @@ function AddStaffForm({ onCreated }: { onCreated: (s: StaffMember) => void }) {
   }
 
   return (
-    <div className="border border-[#0d9488]/30 bg-[#0d9488]/3 rounded-lg p-5">
+    <div className="border border-[#6ba3c7]/30 bg-[#6ba3c7]/3 rounded-lg p-5">
       <div className="flex items-center justify-between mb-4">
         <p className="text-sm font-semibold text-[#2f3437]">New staff account</p>
         <button type="button" onClick={() => { setOpen(false); setError(""); }} className="text-[#2f3437]/30 hover:text-[#2f3437]">
@@ -366,7 +366,7 @@ function AddStaffForm({ onCreated }: { onCreated: (s: StaffMember) => void }) {
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               placeholder="Jane Smith"
-              className="w-full px-3 py-2 text-sm border border-[#2f3437]/15 rounded-lg focus:outline-none focus:border-[#0d9488] bg-white"
+              className="w-full px-3 py-2 text-sm border border-[#2f3437]/15 rounded-lg focus:outline-none focus:border-[#6ba3c7] bg-white"
             />
           </div>
           <div>
@@ -374,7 +374,7 @@ function AddStaffForm({ onCreated }: { onCreated: (s: StaffMember) => void }) {
             <select
               value={role}
               onChange={(e) => setRole(e.target.value as "admin" | "editor")}
-              className="w-full px-3 py-2 text-sm border border-[#2f3437]/15 rounded-lg focus:outline-none focus:border-[#0d9488] bg-white"
+              className="w-full px-3 py-2 text-sm border border-[#2f3437]/15 rounded-lg focus:outline-none focus:border-[#6ba3c7] bg-white"
             >
               <option value="editor">Editor</option>
               <option value="admin">Admin</option>
@@ -389,7 +389,7 @@ function AddStaffForm({ onCreated }: { onCreated: (s: StaffMember) => void }) {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="jane@example.com"
-            className="w-full px-3 py-2 text-sm border border-[#2f3437]/15 rounded-lg focus:outline-none focus:border-[#0d9488] bg-white"
+            className="w-full px-3 py-2 text-sm border border-[#2f3437]/15 rounded-lg focus:outline-none focus:border-[#6ba3c7] bg-white"
           />
         </div>
         <div>
@@ -400,7 +400,7 @@ function AddStaffForm({ onCreated }: { onCreated: (s: StaffMember) => void }) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Set a temporary password"
-            className="w-full px-3 py-2 text-sm border border-[#2f3437]/15 rounded-lg focus:outline-none focus:border-[#0d9488] bg-white font-mono"
+            className="w-full px-3 py-2 text-sm border border-[#2f3437]/15 rounded-lg focus:outline-none focus:border-[#6ba3c7] bg-white font-mono"
           />
           <p className="text-[10px] text-[#2f3437]/40 mt-1">Share this password with the team member so they can sign in.</p>
         </div>
@@ -455,7 +455,7 @@ function StaffAccessSection() {
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6">
       <div className="flex items-center gap-2 mb-1">
-        <UserGroupIcon className="w-5 h-5 text-[#0d9488]" />
+        <UserGroupIcon className="w-5 h-5 text-[#6ba3c7]" />
         <h2 className="text-base font-semibold text-[#2f3437]">Staff & Editor Access</h2>
       </div>
       <p className="text-sm text-[#2f3437]/50 mb-5">
@@ -548,7 +548,7 @@ function Toggle({ enabled, onChange, disabled }: { enabled: boolean; onChange: (
       disabled={disabled}
       className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors shrink-0 ${
         disabled ? "opacity-40 cursor-not-allowed" : "cursor-pointer"
-      } ${enabled ? "bg-[#0d9488]" : "bg-[#111]/20"}`}
+      } ${enabled ? "bg-[#6ba3c7]" : "bg-[#111]/20"}`}
     >
       <span
         className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${
@@ -599,7 +599,7 @@ function FeatureVisibilitySection() {
     <div className="bg-white rounded-lg border border-gray-200 p-6">
       <div className="mb-5">
         <div className="flex items-center gap-2 mb-1">
-          <EyeIcon className="w-5 h-5 text-[#0d9488]" />
+          <EyeIcon className="w-5 h-5 text-[#6ba3c7]" />
           <h2 className="text-base font-semibold text-[#2f3437]">Feature Visibility</h2>
         </div>
         <p className="text-sm text-[#2f3437]/50 mt-0.5">
@@ -664,7 +664,7 @@ function FeatureVisibilitySection() {
                     }`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${isOn && !dimmed ? "bg-[#0d9488]" : "bg-[#111]/20"}`} />
+                      <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${isOn && !dimmed ? "bg-[#6ba3c7]" : "bg-[#111]/20"}`} />
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-[#2f3437]">{item.label}</p>
                         <p className="text-xs text-[#2f3437]/45">{item.desc}</p>
@@ -678,7 +678,7 @@ function FeatureVisibilitySection() {
                       )}
                       {isSaving ? (
                         <div className="w-9 flex justify-center">
-                          <span className="w-4 h-4 border-2 border-[#0d9488] border-t-transparent rounded-full animate-spin" />
+                          <span className="w-4 h-4 border-2 border-[#6ba3c7] border-t-transparent rounded-full animate-spin" />
                         </div>
                       ) : (
                         <Toggle
@@ -764,14 +764,14 @@ function PromptEditorSection({
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           rows={rows}
-          className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-[#2f3437] font-mono focus:outline-none focus:ring-2 focus:ring-[#0d9488]/30 resize-y"
+          className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-[#2f3437] font-mono focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30 resize-y"
         />
       )}
       <div className="flex items-center gap-3 mt-3">
         <button
           onClick={handleSave}
           disabled={saving || loading}
-          className="bg-[#0d9488] hover:bg-[#0b7a70] disabled:opacity-50 text-white font-semibold px-5 py-2.5 rounded-lg text-sm transition-colors"
+          className="bg-[#6ba3c7] hover:bg-[#5490b5] disabled:opacity-50 text-white font-semibold px-5 py-2.5 rounded-lg text-sm transition-colors"
         >
           {saving ? "Saving…" : "Save Prompt"}
         </button>
@@ -819,7 +819,7 @@ function AIScoringPromptSection() {
     <div className="bg-white rounded-lg border border-gray-200 p-6">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <SparklesIcon className="w-5 h-5 text-[#0d9488]" />
+          <SparklesIcon className="w-5 h-5 text-[#6ba3c7]" />
           <h2 className="text-base font-semibold text-[#2f3437]">AI Scoring Prompt</h2>
         </div>
         <button onClick={handleReset} className="text-xs text-[#2f3437]/50 hover:text-[#2f3437] underline">
@@ -836,14 +836,14 @@ function AIScoringPromptSection() {
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           rows={24}
-          className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-[#2f3437] font-mono focus:outline-none focus:ring-2 focus:ring-[#0d9488]/30 resize-y"
+          className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-[#2f3437] font-mono focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30 resize-y"
         />
       )}
       <div className="flex items-center gap-3 mt-3">
         <button
           onClick={handleSave}
           disabled={saving || loading}
-          className="bg-[#0d9488] hover:bg-[#0b7a70] disabled:opacity-50 text-white font-semibold px-5 py-2.5 rounded-lg text-sm transition-colors"
+          className="bg-[#6ba3c7] hover:bg-[#5490b5] disabled:opacity-50 text-white font-semibold px-5 py-2.5 rounded-lg text-sm transition-colors"
         >
           {saving ? "Saving…" : "Save Prompt"}
         </button>
@@ -880,28 +880,28 @@ export default function SettingsPage() {
         description="Additional rules appended to the Content Engine system prompt. Controls how the AI frames titles across all themes. The default enforces buy-side title framing for sell-side stress themes. Reset to restore the default buy-side constraint."
         settingKey="content_engine_prompt"
         rows={22}
-        icon={<SparklesIcon className="w-5 h-5 text-[#0d9488]" />}
+        icon={<SparklesIcon className="w-5 h-5 text-[#6ba3c7]" />}
       />
       <PromptEditorSection
         title="Repurpose Content — Newsletter Prompt"
         description={`System prompt used when generating email newsletters. Use these tokens for dynamic values: {{MEMBER_NAME}}, {{BUSINESS_NAME}}, {{LIST_SIZE_TEXT}}, {{VOICE_STYLE}}, {{AVATAR_TEXT}}.`}
         settingKey="repurpose_newsletter_prompt"
         rows={28}
-        icon={<EnvelopeIcon className="w-5 h-5 text-[#0d9488]" />}
+        icon={<EnvelopeIcon className="w-5 h-5 text-[#6ba3c7]" />}
       />
       <PromptEditorSection
         title="Repurpose Content — LinkedIn Article Prompt"
         description={`System prompt used when generating LinkedIn articles. Use these tokens for dynamic values: {{MEMBER_NAME}}, {{BUSINESS_NAME}}, {{VOICE_STYLE}}, {{AVATAR_TEXT}}, {{LINKS_TEXT}}.`}
         settingKey="repurpose_linkedin_prompt"
         rows={36}
-        icon={<PencilSquareIcon className="w-5 h-5 text-[#0d9488]" />}
+        icon={<PencilSquareIcon className="w-5 h-5 text-[#6ba3c7]" />}
       />
       <PromptEditorSection
         title="Avatar Architect — System Prompt"
         description="Full system prompt for the Avatar Architect coaching conversation. Controls the 4-phase flow, question bank, avatar document template, stress theme format, content engine prompt rules, and title frameworks. Reset to restore the built-in prompt."
         settingKey="avatar_architect_prompt"
         rows={50}
-        icon={<SparklesIcon className="w-5 h-5 text-[#0d9488]" />}
+        icon={<SparklesIcon className="w-5 h-5 text-[#6ba3c7]" />}
       />
     </div>
   );

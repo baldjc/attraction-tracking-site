@@ -162,7 +162,7 @@ export default function AdminCampaignDetailPage({ params }: { params: Promise<{ 
             href={campaign.destinationUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm text-[#0d9488] hover:underline"
+            className="text-sm text-[#6ba3c7] hover:underline"
           >
             {campaign.destinationUrl}
           </a>
@@ -178,7 +178,7 @@ export default function AdminCampaignDetailPage({ params }: { params: Promise<{ 
               <div className="text-xs text-[#2f3437]/40 mt-0.5">Clicks</div>
             </div>
             <div className="bg-white border border-[#2f3437]/10 rounded-lg p-4 text-center">
-              <div className="text-xl font-bold text-[#0d9488]">{campaign.totalUniqueClicks.toLocaleString()}</div>
+              <div className="text-xl font-bold text-[#6ba3c7]">{campaign.totalUniqueClicks.toLocaleString()}</div>
               <div className="text-xs text-[#2f3437]/40 mt-0.5">Unique Clicks</div>
             </div>
           </>
@@ -199,7 +199,7 @@ export default function AdminCampaignDetailPage({ params }: { params: Promise<{ 
               <div className="text-xs text-[#2f3437]/40 mt-0.5">Leads</div>
             </div>
             <div className="bg-white border border-[#2f3437]/10 rounded-lg p-4 text-center">
-              <div className="text-xl font-bold text-[#0d9488]">{convRate}%</div>
+              <div className="text-xl font-bold text-[#6ba3c7]">{convRate}%</div>
               <div className="text-xs text-[#2f3437]/40 mt-0.5">Conversion Rate</div>
             </div>
           </>
@@ -214,7 +214,7 @@ export default function AdminCampaignDetailPage({ params }: { params: Promise<{ 
               <div className="text-xs text-[#2f3437]/40 mt-0.5">Leads</div>
             </div>
             <div className="bg-white border border-[#2f3437]/10 rounded-lg p-4 text-center">
-              <div className="text-xl font-bold text-[#0d9488]">{convRate}%</div>
+              <div className="text-xl font-bold text-[#6ba3c7]">{convRate}%</div>
               <div className="text-xs text-[#2f3437]/40 mt-0.5">Conversion Rate</div>
             </div>
           </>
@@ -304,14 +304,14 @@ export default function AdminCampaignDetailPage({ params }: { params: Promise<{ 
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] font-semibold text-[#2f3437]/40 uppercase tracking-wide w-16 flex-shrink-0">Direct</span>
                         <p className="text-xs text-[#2f3437]/50 truncate flex-1 font-mono">{link.trackedUrl}</p>
-                        <button onClick={() => copy(link.trackedUrl, `${link.id}-direct`)} className="text-xs text-[#0d9488] hover:text-[#2bb0ec] flex-shrink-0 font-medium">
+                        <button onClick={() => copy(link.trackedUrl, `${link.id}-direct`)} className="text-xs text-[#6ba3c7] hover:text-[#2bb0ec] flex-shrink-0 font-medium">
                           {copied === `${link.id}-direct` ? "Copied!" : "Copy"}
                         </button>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] font-semibold text-[#2f3437]/40 uppercase tracking-wide w-16 flex-shrink-0">Short</span>
                         <p className="text-xs text-[#2f3437]/50 truncate flex-1 font-mono">https://members.attractionbyvideo.com/r/{link.refCode}</p>
-                        <button onClick={() => copy(`https://members.attractionbyvideo.com/r/${link.refCode}`, `${link.id}-short`)} className="text-xs text-[#0d9488] hover:text-[#2bb0ec] flex-shrink-0 font-medium">
+                        <button onClick={() => copy(`https://members.attractionbyvideo.com/r/${link.refCode}`, `${link.id}-short`)} className="text-xs text-[#6ba3c7] hover:text-[#2bb0ec] flex-shrink-0 font-medium">
                           {copied === `${link.id}-short` ? "Copied!" : "Copy"}
                         </button>
                       </div>
@@ -334,7 +334,7 @@ export default function AdminCampaignDetailPage({ params }: { params: Promise<{ 
                     <div className="text-xs text-[#2f3437]/40">Leads</div>
                   </div>
                   <div>
-                    <div className="text-sm font-semibold text-[#0d9488]">{link.conversionRate}%</div>
+                    <div className="text-sm font-semibold text-[#6ba3c7]">{link.conversionRate}%</div>
                     <div className="text-xs text-[#2f3437]/40">Conv. Rate</div>
                   </div>
                 </div>

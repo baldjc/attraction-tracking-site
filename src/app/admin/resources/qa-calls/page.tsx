@@ -69,7 +69,7 @@ interface KBEntry {
 
 interface MemberOption { id: string; fullName: string | null; email: string; }
 
-const INPUT = "w-full border border-[#2f3437]/20 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#0d9488]";
+const INPUT = "w-full border border-[#2f3437]/20 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#6ba3c7]";
 const CARD = "bg-white rounded-lg border border-[#2f3437]/10";
 
 function fmt(d: string) {
@@ -323,7 +323,7 @@ export default function QACallsPage() {
             onClick={pullFromFathom}
             disabled={pulling || !settings.apiKeySet}
             title={!settings.apiKeySet ? "Configure Fathom API key in Settings first" : ""}
-            className="flex items-center gap-2 bg-[#0d9488] text-white px-4 py-2.5 rounded-lg text-sm font-semibold hover:bg-[#0d9488]/90 disabled:opacity-50 transition-colors"
+            className="flex items-center gap-2 bg-[#6ba3c7] text-white px-4 py-2.5 rounded-lg text-sm font-semibold hover:bg-[#6ba3c7]/90 disabled:opacity-50 transition-colors"
           >
             <ArrowPathIcon className={`w-4 h-4 ${pulling ? "animate-spin" : ""}`} />
             {pulling ? "Pulling..." : "Pull from Fathom"}
@@ -369,7 +369,7 @@ export default function QACallsPage() {
           </div>
 
           {/* Webhook setup */}
-          <div className="border border-[#0d9488]/25 rounded-lg bg-[#0d9488]/5 p-4 space-y-3">
+          <div className="border border-[#6ba3c7]/25 rounded-lg bg-[#6ba3c7]/5 p-4 space-y-3">
             <div>
               <p className="text-sm font-semibold text-[#2f3437] mb-0.5">Webhook (auto-import on call end)</p>
               <p className="text-xs text-[#2f3437]/50">
@@ -387,7 +387,7 @@ export default function QACallsPage() {
                   />
                   <button
                     onClick={() => navigator.clipboard.writeText(webhookUrl)}
-                    className="px-2.5 py-2 border border-[#2f3437]/20 rounded-lg text-xs text-[#2f3437]/50 hover:text-[#0d9488] hover:border-[#0d9488] transition-colors whitespace-nowrap"
+                    className="px-2.5 py-2 border border-[#2f3437]/20 rounded-lg text-xs text-[#2f3437]/50 hover:text-[#6ba3c7] hover:border-[#6ba3c7] transition-colors whitespace-nowrap"
                   >
                     Copy
                   </button>
@@ -441,7 +441,7 @@ export default function QACallsPage() {
               <button
                 onClick={importSelected}
                 disabled={importing || selectedIds.size === 0}
-                className="bg-[#0d9488] text-white px-4 py-2 rounded-lg text-sm font-semibold disabled:opacity-50 hover:bg-[#0d9488]/90 transition-colors"
+                className="bg-[#6ba3c7] text-white px-4 py-2 rounded-lg text-sm font-semibold disabled:opacity-50 hover:bg-[#6ba3c7]/90 transition-colors"
               >
                 {importing ? "Importing..." : `Import ${selectedIds.size > 0 ? selectedIds.size : ""} Selected`}
               </button>
@@ -509,7 +509,7 @@ export default function QACallsPage() {
                       <span className="text-xs font-medium text-[#2f3437]/40">{entry.sourceTitle}</span>
                       {entry.callDate && <span className="text-xs text-[#2f3437]/30">{fmt(entry.callDate)}</span>}
                       {entry.timestampStart != null && (
-                        <span className="text-xs text-[#0d9488]">@ {fmtTime(entry.timestampStart)}</span>
+                        <span className="text-xs text-[#6ba3c7]">@ {fmtTime(entry.timestampStart)}</span>
                       )}
                     </div>
                     <p className="text-sm font-semibold text-[#2f3437] mb-0.5">{entry.subTopic}</p>
@@ -529,7 +529,7 @@ export default function QACallsPage() {
                     )}
                   </div>
                   <div className="flex items-center gap-1 flex-shrink-0">
-                    <button onClick={() => openEdit(entry)} className="p-2 rounded-lg text-[#2f3437]/30 hover:text-[#0d9488] hover:bg-[#0d9488]/5 transition-colors" title="Edit">
+                    <button onClick={() => openEdit(entry)} className="p-2 rounded-lg text-[#2f3437]/30 hover:text-[#6ba3c7] hover:bg-[#6ba3c7]/5 transition-colors" title="Edit">
                       <PencilIcon className="w-4 h-4" />
                     </button>
                     <button onClick={() => entryAction(entry.id, "approve")} className="p-2 rounded-lg text-[#2f3437]/30 hover:text-green-600 hover:bg-green-50 transition-colors" title="Approve">
@@ -558,7 +558,7 @@ export default function QACallsPage() {
               onClick={refreshShareUrls}
               disabled={refreshingUrls}
               title="Re-fetches share_url from Fathom for all imported calls so timestamps work correctly"
-              className="flex items-center gap-1.5 text-xs text-[#2f3437]/50 hover:text-[#0d9488] border border-[#2f3437]/15 hover:border-[#0d9488]/40 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+              className="flex items-center gap-1.5 text-xs text-[#2f3437]/50 hover:text-[#6ba3c7] border border-[#2f3437]/15 hover:border-[#6ba3c7]/40 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
             >
               <ArrowPathIcon className={`w-3.5 h-3.5 ${refreshingUrls ? "animate-spin" : ""}`} />
               {refreshingUrls ? "Refreshing…" : "Refresh Share URLs"}
@@ -678,7 +678,7 @@ export default function QACallsPage() {
                 </select>
               </div>
               <div className="flex gap-3 pt-2">
-                <button onClick={saveEdit} disabled={savingEntry} className="flex-1 bg-[#0d9488] text-white py-2.5 rounded-lg font-semibold text-sm disabled:opacity-50 hover:bg-[#0d9488]/90 transition-colors">
+                <button onClick={saveEdit} disabled={savingEntry} className="flex-1 bg-[#6ba3c7] text-white py-2.5 rounded-lg font-semibold text-sm disabled:opacity-50 hover:bg-[#6ba3c7]/90 transition-colors">
                   {savingEntry ? "Saving..." : "Save Changes"}
                 </button>
                 <button onClick={() => setEditingEntry(null)} className="px-4 py-2.5 border border-[#2f3437]/20 rounded-lg text-sm text-[#2f3437]/60 hover:bg-gray-50 transition-colors">Cancel</button>
@@ -713,7 +713,7 @@ function CallMoments({ callId, members, onUpdate }: { callId: string; members: M
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-0.5">
               <span className="text-xs font-semibold text-[#2f3437]">{e.subTopic}</span>
-              {e.timestampStart != null && <span className="text-[10px] text-[#0d9488]">@ {fmtTime(e.timestampStart)}</span>}
+              {e.timestampStart != null && <span className="text-[10px] text-[#6ba3c7]">@ {fmtTime(e.timestampStart)}</span>}
               <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${e.status === "approved" ? "bg-green-100 text-green-700" : e.status === "rejected" ? "bg-red-100 text-red-600" : "bg-amber-100 text-amber-700"}`}>
                 {e.status}
               </span>

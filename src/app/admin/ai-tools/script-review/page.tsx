@@ -23,7 +23,7 @@ export default async function AdminScriptReviewPage() {
       <div className="mb-5">
         <Link
           href="/admin/ai-tools"
-          className="flex items-center gap-1.5 text-xs text-[#2f3437]/50 hover:text-[#0d9488] transition-colors mb-3"
+          className="flex items-center gap-1.5 text-xs text-[#2f3437]/50 hover:text-[#6ba3c7] transition-colors mb-3"
         >
           <ArrowLeftIcon className="w-3.5 h-3.5" />
           Back to AI Tools

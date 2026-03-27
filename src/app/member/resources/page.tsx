@@ -146,7 +146,7 @@ function EntryCard({
     return (
       <>
         {text.slice(0, idx)}
-        <mark className="bg-[#0d9488]/25 text-inherit rounded px-0.5">{text.slice(idx, idx + word.length)}</mark>
+        <mark className="bg-[#6ba3c7]/25 text-inherit rounded px-0.5">{text.slice(idx, idx + word.length)}</mark>
         {text.slice(idx + word.length)}
       </>
     );
@@ -237,7 +237,7 @@ function EntryCard({
             className="p-1.5 rounded-lg hover:bg-[#111]/5 dark:hover:bg-white/5 transition-colors disabled:opacity-50"
           >
             {saved
-              ? <BookmarkSolid className="w-4 h-4 text-[#0d9488]" />
+              ? <BookmarkSolid className="w-4 h-4 text-[#6ba3c7]" />
               : <BookmarkOutline className="w-4 h-4 text-[#2f3437]/30 dark:text-white/30" />
             }
           </button>
@@ -343,7 +343,7 @@ function TranscriptMatchCard({
     return (
       <span>
         {text.slice(0, idx)}
-        <mark className="bg-[#0d9488]/30 text-inherit rounded px-0.5 font-semibold">
+        <mark className="bg-[#6ba3c7]/30 text-inherit rounded px-0.5 font-semibold">
           {text.slice(idx, idx + word.length)}
         </mark>
         {text.slice(idx + word.length)}
@@ -373,14 +373,14 @@ function TranscriptMatchCard({
         </div>
         {ts && (
           <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
-            <span className="inline-flex items-center gap-1 text-[10px] font-mono font-semibold text-[#0d9488] bg-[#0d9488]/10 px-2 py-0.5 rounded-full">
+            <span className="inline-flex items-center gap-1 text-[10px] font-mono font-semibold text-[#6ba3c7] bg-[#6ba3c7]/10 px-2 py-0.5 rounded-full">
               <ClockIcon className="w-3 h-3" />
               ~{ts}
             </span>
             <button
               onClick={copyTs}
               title="Copy timestamp"
-              className="text-[10px] text-[#2f3437]/30 dark:text-white/30 hover:text-[#0d9488] transition-colors px-1.5 py-0.5 rounded hover:bg-[#0d9488]/10"
+              className="text-[10px] text-[#2f3437]/30 dark:text-white/30 hover:text-[#6ba3c7] transition-colors px-1.5 py-0.5 rounded hover:bg-[#6ba3c7]/10"
             >
               {tsCopied ? "Copied!" : "Copy"}
             </button>
@@ -622,7 +622,7 @@ export default function MemberResourcesPage() {
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
             onClick={(e) => { if (e.target === e.currentTarget) setPlayerEntry(null); }}
           >
-            <div className="w-full max-w-2xl bg-[#111111] rounded-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="w-full max-w-2xl bg-[#1e2a38] rounded-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
 
               {/* Header */}
               <div className="flex items-start gap-3 px-6 py-4 border-b border-white/10 flex-shrink-0">
@@ -632,7 +632,7 @@ export default function MemberResourcesPage() {
                       <VideoCameraIcon className="w-3 h-3" /> Q&A Call
                     </span>
                     {ts && (
-                      <span className="inline-flex items-center gap-1.5 text-[11px] font-mono text-[#0d9488] bg-[#0d9488]/10 px-2 py-0.5 rounded-full">
+                      <span className="inline-flex items-center gap-1.5 text-[11px] font-mono text-[#6ba3c7] bg-[#6ba3c7]/10 px-2 py-0.5 rounded-full">
                         @ {ts}
                         <button
                           onClick={() => {
@@ -641,7 +641,7 @@ export default function MemberResourcesPage() {
                             setTimeout(() => setTsCopied(false), 2000);
                           }}
                           title="Copy timestamp to clipboard"
-                          className="text-[#0d9488]/60 hover:text-[#0d9488] transition-colors"
+                          className="text-[#6ba3c7]/60 hover:text-[#6ba3c7] transition-colors"
                         >
                           {tsCopied
                             ? <span className="text-[9px] font-sans font-semibold not-italic">Copied!</span>
@@ -713,7 +713,7 @@ export default function MemberResourcesPage() {
                     title={modalSaved ? "Remove bookmark" : "Bookmark this moment"}
                     className={`flex items-center gap-1.5 text-sm font-medium px-3.5 py-2 rounded-lg border transition-all disabled:opacity-50 ${
                       modalSaved
-                        ? "border-[#0d9488]/40 text-[#0d9488] bg-[#0d9488]/10"
+                        ? "border-[#6ba3c7]/40 text-[#6ba3c7] bg-[#6ba3c7]/10"
                         : "border-white/15 text-white/50 hover:text-white hover:border-white/30 bg-white/5"
                     }`}
                   >
@@ -725,7 +725,7 @@ export default function MemberResourcesPage() {
                     href={fathomUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-1 flex items-center justify-center gap-2 bg-[#0d9488] hover:bg-[#5cceff] text-[#0f1620] font-bold text-sm py-2.5 rounded-lg transition-colors"
+                    className="flex-1 flex items-center justify-center gap-2 bg-[#6ba3c7] hover:bg-[#5cceff] text-[#0f1620] font-bold text-sm py-2.5 rounded-lg transition-colors"
                   >
                     <VideoCameraIcon className="w-4 h-4" />
                     Watch in Fathom ↗
@@ -735,7 +735,7 @@ export default function MemberResourcesPage() {
                 {ts && (
                   <div className="bg-white/8 border border-white/15 rounded-lg px-4 py-3 text-center">
                     <p className="text-sm text-white/80 leading-relaxed">
-                      Jump to <span className="font-mono font-semibold text-[#0d9488]">{ts}</span> in the recording.
+                      Jump to <span className="font-mono font-semibold text-[#6ba3c7]">{ts}</span> in the recording.
                     </p>
                     <p className="text-xs text-white/50 mt-1 leading-relaxed">
                       Tip: Open the <strong className="text-white/70">Transcript</strong> tab in Fathom and search for the excerpt above — timestamps there are clickable and will seek the player.
@@ -771,7 +771,7 @@ export default function MemberResourcesPage() {
             {t.label}
             {t.count != null && t.count > 0 && (
               <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold leading-none ${
-                tab === t.id ? "bg-[#0d9488] text-white" : "bg-[#111]/10 dark:bg-white/10 text-[#2f3437]/60 dark:text-white/40"
+                tab === t.id ? "bg-[#6ba3c7] text-white" : "bg-[#111]/10 dark:bg-white/10 text-[#2f3437]/60 dark:text-white/40"
               }`}>
                 {t.count}
               </span>
@@ -838,7 +838,7 @@ export default function MemberResourcesPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search coaching moments, topics, summaries, transcripts..."
-                className="w-full pl-10 pr-4 py-3 border border-[#2f3437]/15 dark:border-white/15 rounded-lg text-sm bg-white dark:bg-[#1a1a1a] text-[#2f3437] dark:text-white placeholder-[#2f3437]/30 dark:placeholder-white/25 focus:outline-none focus:border-[#0d9488] transition-colors"
+                className="w-full pl-10 pr-4 py-3 border border-[#2f3437]/15 dark:border-white/15 rounded-lg text-sm bg-white dark:bg-[#1a1a1a] text-[#2f3437] dark:text-white placeholder-[#2f3437]/30 dark:placeholder-white/25 focus:outline-none focus:border-[#6ba3c7] transition-colors"
                 autoFocus
               />
               {searchQuery && (
@@ -856,7 +856,7 @@ export default function MemberResourcesPage() {
                   type="date"
                   value={dateFrom}
                   onChange={(e) => setDateFrom(e.target.value)}
-                  className="text-xs border border-[#2f3437]/15 dark:border-white/15 rounded-lg px-2 py-1.5 bg-white dark:bg-[#1a1a1a] text-[#2f3437] dark:text-white focus:outline-none focus:border-[#0d9488] transition-colors"
+                  className="text-xs border border-[#2f3437]/15 dark:border-white/15 rounded-lg px-2 py-1.5 bg-white dark:bg-[#1a1a1a] text-[#2f3437] dark:text-white focus:outline-none focus:border-[#6ba3c7] transition-colors"
                   title="From date"
                 />
                 <span className="text-[#2f3437]/30 dark:text-white/30 text-xs">–</span>
@@ -865,13 +865,13 @@ export default function MemberResourcesPage() {
                   value={dateTo}
                   onChange={(e) => setDateTo(e.target.value)}
                   min={dateFrom || undefined}
-                  className="text-xs border border-[#2f3437]/15 dark:border-white/15 rounded-lg px-2 py-1.5 bg-white dark:bg-[#1a1a1a] text-[#2f3437] dark:text-white focus:outline-none focus:border-[#0d9488] transition-colors"
+                  className="text-xs border border-[#2f3437]/15 dark:border-white/15 rounded-lg px-2 py-1.5 bg-white dark:bg-[#1a1a1a] text-[#2f3437] dark:text-white focus:outline-none focus:border-[#6ba3c7] transition-colors"
                   title="To date"
                 />
                 {(dateFrom || dateTo) && (
                   <button
                     onClick={() => { setDateFrom(""); setDateTo(""); }}
-                    className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-full bg-[#0d9488]/15 text-[#0d9488] hover:bg-[#0d9488]/25 transition-colors"
+                    className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-full bg-[#6ba3c7]/15 text-[#6ba3c7] hover:bg-[#6ba3c7]/25 transition-colors"
                   >
                     {dateFrom && dateTo
                       ? `${new Date(dateFrom).toLocaleDateString("en-US", { month: "short", day: "numeric" })} – ${new Date(dateTo).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`
@@ -917,7 +917,7 @@ export default function MemberResourcesPage() {
                 <div className="space-y-4">
                   <div className="flex items-center gap-3">
                     <h3 className="text-sm font-semibold text-[#2f3437] dark:text-white">Also mentioned in these recordings</h3>
-                    <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-[#0d9488]/15 text-[#0d9488]">
+                    <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-[#6ba3c7]/15 text-[#6ba3c7]">
                       {transcriptTotal} occurrence{transcriptTotal !== 1 ? "s" : ""}
                     </span>
                   </div>
@@ -934,7 +934,7 @@ export default function MemberResourcesPage() {
                       <button
                         onClick={loadMoreTranscripts}
                         disabled={txLoading}
-                        className="text-sm font-medium text-[#0d9488] hover:text-[#0d9488]/80 disabled:opacity-50 transition-colors"
+                        className="text-sm font-medium text-[#6ba3c7] hover:text-[#6ba3c7]/80 disabled:opacity-50 transition-colors"
                       >
                         {txLoading ? "Loading…" : `Load more (${transcriptTotal - transcriptMatches.length} remaining)`}
                       </button>

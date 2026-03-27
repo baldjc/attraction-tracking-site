@@ -48,8 +48,8 @@ const TOOL_LABELS: Record<string, string> = {
 
 function UsageCard({ usage }: { usage: UsageData }) {
   const pct = Math.min(100, usage.percentUsed);
-  const barColor = pct >= 90 ? "bg-red-500" : pct >= 75 ? "bg-amber-400" : "bg-[#0d9488]";
-  const textColor = pct >= 90 ? "text-red-600 dark:text-red-400" : pct >= 75 ? "text-amber-600 dark:text-amber-400" : "text-[#0d9488]";
+  const barColor = pct >= 90 ? "bg-red-500" : pct >= 75 ? "bg-amber-400" : "bg-[#6ba3c7]";
+  const textColor = pct >= 90 ? "text-red-600 dark:text-red-400" : pct >= 75 ? "text-amber-600 dark:text-amber-400" : "text-[#6ba3c7]";
 
   const breakdownEntries = Object.entries(usage.breakdown).filter(([, v]) => parseFloat(v) > 0);
 
@@ -213,7 +213,7 @@ export default function AIToolsHub({ basePath, featureFlags }: Props) {
         {isAdmin && (
           <Link
             href={`${basePath}/usage`}
-            className="shrink-0 text-xs text-[#2f3437]/50 dark:text-white/50 hover:text-[#0d9488] border border-gray-200 dark:border-white/20 px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap"
+            className="shrink-0 text-xs text-[#2f3437]/50 dark:text-white/50 hover:text-[#6ba3c7] border border-gray-200 dark:border-white/20 px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap"
           >
             📊 Usage
           </Link>
@@ -262,20 +262,20 @@ export default function AIToolsHub({ basePath, featureFlags }: Props) {
           <Link
             key={tool.href}
             href={tool.href}
-            className="group bg-white dark:bg-[#1a1a1a] rounded-lg border border-[#2f3437]/10 dark:border-white/10 p-6 hover:border-[#0d9488]/50 hover:shadow-lg transition-all duration-200"
+            className="group bg-white dark:bg-[#1a1a1a] rounded-lg border border-[#2f3437]/10 dark:border-white/10 p-6 hover:border-[#6ba3c7]/50 hover:shadow-lg transition-all duration-200"
           >
             <div className="flex items-start gap-4">
               <span className="text-3xl">{tool.icon}</span>
               <div className="flex-1 min-w-0">
-                <h2 className="font-semibold text-[#2f3437] dark:text-white group-hover:text-[#0d9488] transition-colors">
+                <h2 className="font-semibold text-[#2f3437] dark:text-white group-hover:text-[#6ba3c7] transition-colors">
                   {tool.title}
                 </h2>
                 <p className="text-sm text-[#2f3437]/60 dark:text-white/60 mt-1">{tool.description}</p>
-                <p className={`text-xs mt-3 font-medium ${tool.badge === "green" ? "text-[#0d9488]" : tool.badge === "blue" ? "text-[#2f3437]/50 dark:text-white/50" : "text-amber-600 dark:text-amber-400"}`}>
+                <p className={`text-xs mt-3 font-medium ${tool.badge === "green" ? "text-[#6ba3c7]" : tool.badge === "blue" ? "text-[#2f3437]/50 dark:text-white/50" : "text-amber-600 dark:text-amber-400"}`}>
                   {tool.extra}
                 </p>
               </div>
-              <span className="text-[#2f3437]/20 dark:text-white/20 group-hover:text-[#0d9488]/50 transition-colors text-lg">→</span>
+              <span className="text-[#2f3437]/20 dark:text-white/20 group-hover:text-[#6ba3c7]/50 transition-colors text-lg">→</span>
             </div>
           </Link>
         ))}

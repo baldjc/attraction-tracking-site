@@ -84,7 +84,7 @@ const PERIODS = [
   { label: "All", value: "all" },
 ];
 
-const INPUT_CLS = "w-full border border-[#2f3437]/20 rounded-lg px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-[#0d9488]";
+const INPUT_CLS = "w-full border border-[#2f3437]/20 rounded-lg px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-[#6ba3c7]";
 
 function extractVideoId(url: string): string | null {
   try {
@@ -356,17 +356,17 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
             <div className="flex items-center gap-2 mb-1">
               <h1 className="text-2xl font-bold text-[#2f3437]">{campaign.name}</h1>
               <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${src.color}`}>{src.label}</span>
-              <button onClick={openEditCampaign} title="Edit campaign" className="text-[#2f3437]/30 hover:text-[#0d9488] transition-colors">
+              <button onClick={openEditCampaign} title="Edit campaign" className="text-[#2f3437]/30 hover:text-[#6ba3c7] transition-colors">
                 <PencilIcon className="w-4 h-4" />
               </button>
             </div>
-            <a href={campaign.destinationUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-[#0d9488] hover:underline">
+            <a href={campaign.destinationUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-[#6ba3c7] hover:underline">
               {campaign.destinationUrl}
             </a>
           </div>
           <button
             onClick={() => setShowNewLink(true)}
-            className="flex-shrink-0 bg-[#0d9488] text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-[#0d9488]/90 transition-colors"
+            className="flex-shrink-0 bg-[#6ba3c7] text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-[#6ba3c7]/90 transition-colors"
           >
             + New Link
           </button>
@@ -382,7 +382,7 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
               <div className="text-xs text-[#2f3437]/40 mt-0.5">Clicks</div>
             </div>
             <div className="bg-white border border-[#2f3437]/10 rounded-lg p-4 text-center">
-              <div className="text-xl font-bold text-[#0d9488]">{campaign.totalUniqueClicks.toLocaleString()}</div>
+              <div className="text-xl font-bold text-[#6ba3c7]">{campaign.totalUniqueClicks.toLocaleString()}</div>
               <div className="text-xs text-[#2f3437]/40 mt-0.5">Unique Clicks</div>
             </div>
           </>
@@ -403,7 +403,7 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
               <div className="text-xs text-[#2f3437]/40 mt-0.5">Leads</div>
             </div>
             <div className="bg-white border border-[#2f3437]/10 rounded-lg p-4 text-center">
-              <div className="text-xl font-bold text-[#0d9488]">{convRate}%</div>
+              <div className="text-xl font-bold text-[#6ba3c7]">{convRate}%</div>
               <div className="text-xs text-[#2f3437]/40 mt-0.5">Conversion Rate</div>
             </div>
           </>
@@ -418,7 +418,7 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
               <div className="text-xs text-[#2f3437]/40 mt-0.5">Leads</div>
             </div>
             <div className="bg-white border border-[#2f3437]/10 rounded-lg p-4 text-center">
-              <div className="text-xl font-bold text-[#0d9488]">{convRate}%</div>
+              <div className="text-xl font-bold text-[#6ba3c7]">{convRate}%</div>
               <div className="text-xs text-[#2f3437]/40 mt-0.5">Conversion Rate</div>
             </div>
           </>
@@ -527,7 +527,7 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                         <p className="font-medium text-[#2f3437] text-sm truncate">{link.name}</p>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        <button onClick={() => openEdit(link)} className="text-[#2f3437]/30 hover:text-[#0d9488] transition-colors" title="Edit link">
+                        <button onClick={() => openEdit(link)} className="text-[#2f3437]/30 hover:text-[#6ba3c7] transition-colors" title="Edit link">
                           <PencilIcon className="w-3.5 h-3.5" />
                         </button>
                         <button onClick={() => resetStats(link)} className="text-xs text-[#2f3437]/30 hover:text-amber-500 transition-colors" title="Reset clicks &amp; leads for testing">Reset</button>
@@ -538,14 +538,14 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] font-semibold text-[#2f3437]/40 uppercase tracking-wide w-16 flex-shrink-0">Direct</span>
                         <p className="text-xs text-[#2f3437]/50 truncate flex-1 font-mono">{link.trackedUrl}</p>
-                        <button onClick={() => copy(link.trackedUrl, `${link.id}-direct`)} className="text-xs text-[#0d9488] hover:text-[#2bb0ec] flex-shrink-0 font-medium">
+                        <button onClick={() => copy(link.trackedUrl, `${link.id}-direct`)} className="text-xs text-[#6ba3c7] hover:text-[#2bb0ec] flex-shrink-0 font-medium">
                           {copied === `${link.id}-direct` ? "Copied!" : "Copy"}
                         </button>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] font-semibold text-[#2f3437]/40 uppercase tracking-wide w-16 flex-shrink-0">Short</span>
                         <p className="text-xs text-[#2f3437]/50 truncate flex-1 font-mono">https://members.attractionbyvideo.com/r/{link.refCode}</p>
-                        <button onClick={() => copy(`https://members.attractionbyvideo.com/r/${link.refCode}`, `${link.id}-short`)} className="text-xs text-[#0d9488] hover:text-[#2bb0ec] flex-shrink-0 font-medium">
+                        <button onClick={() => copy(`https://members.attractionbyvideo.com/r/${link.refCode}`, `${link.id}-short`)} className="text-xs text-[#6ba3c7] hover:text-[#2bb0ec] flex-shrink-0 font-medium">
                           {copied === `${link.id}-short` ? "Copied!" : "Copy"}
                         </button>
                       </div>
@@ -573,7 +573,7 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                     <div className="text-xs text-[#2f3437]/40">Leads</div>
                   </div>
                   <div>
-                    <div className="text-sm font-semibold text-[#0d9488]">{link.conversionRate}%</div>
+                    <div className="text-sm font-semibold text-[#6ba3c7]">{link.conversionRate}%</div>
                     <div className="text-xs text-[#2f3437]/40">Conv. Rate</div>
                   </div>
                 </div>
@@ -589,7 +589,7 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
             <p className="text-xs text-[#2f3437]/30">YouTube views last updated {new Date(campaign.lastViewsUpdate).toLocaleString()}</p>
           )}
           {isAdmin && (
-            <button onClick={refreshViews} disabled={refreshing} title="Refresh YouTube view counts now" className="text-[#2f3437]/30 hover:text-[#0d9488] disabled:opacity-40 transition-colors">
+            <button onClick={refreshViews} disabled={refreshing} title="Refresh YouTube view counts now" className="text-[#2f3437]/30 hover:text-[#6ba3c7] disabled:opacity-40 transition-colors">
               <ArrowPathIcon className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} />
             </button>
           )}
@@ -640,7 +640,7 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                     placeholder="https://youtube.com/watch?v=..."
                     className={INPUT_CLS}
                   />
-                  {fetchingYtInfo && <span className="w-5 h-5 mt-2.5 border-2 border-[#0d9488] border-t-transparent rounded-full animate-spin flex-shrink-0" />}
+                  {fetchingYtInfo && <span className="w-5 h-5 mt-2.5 border-2 border-[#6ba3c7] border-t-transparent rounded-full animate-spin flex-shrink-0" />}
                 </div>
                 {previewThumb && <img src={previewThumb} alt="thumbnail" className="mt-2 w-full h-28 object-cover rounded-lg" />}
                 <p className="text-xs text-[#2f3437]/40 mt-1">Links view count and thumbnail to this tracking link.</p>
@@ -649,13 +649,13 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
               {/* URL preview */}
               <div className="bg-[#f8f9fa] rounded-lg p-3 text-xs text-[#2f3437]/50">
                 <p className="font-medium text-[#2f3437]/70 mb-1">Tracked URL preview</p>
-                <p className="break-all font-mono">{campaign.destinationUrl}{campaign.destinationUrl.includes("?") ? "&" : "?"}ref=<span className="text-[#0d9488]">xxxxxxxx</span></p>
+                <p className="break-all font-mono">{campaign.destinationUrl}{campaign.destinationUrl.includes("?") ? "&" : "?"}ref=<span className="text-[#6ba3c7]">xxxxxxxx</span></p>
               </div>
 
               <button
                 onClick={createLink}
                 disabled={creating || !linkForm.name}
-                className="w-full bg-[#0d9488] text-white py-2.5 rounded-lg font-semibold text-sm hover:bg-[#0d9488]/90 disabled:opacity-50 transition-colors"
+                className="w-full bg-[#6ba3c7] text-white py-2.5 rounded-lg font-semibold text-sm hover:bg-[#6ba3c7]/90 disabled:opacity-50 transition-colors"
               >
                 {creating ? "Creating..." : "Create Link"}
               </button>
@@ -677,7 +677,7 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                 <label className="block text-sm font-semibold text-[#2f3437] mb-1.5">YouTube Video URL <span className="font-normal text-[#2f3437]/40">(optional)</span></label>
                 <div className="flex gap-2">
                   <input type="url" value={editForm.youtubeVideoUrl} onChange={(e) => setEditForm({ ...editForm, youtubeVideoUrl: e.target.value })} onBlur={(e) => { if (e.target.value) fetchYtInfoForUrl(e.target.value, { isEdit: true }); }} placeholder="https://youtube.com/watch?v=..." className={INPUT_CLS} />
-                  {fetchingYtEdit && <span className="w-5 h-5 mt-2.5 border-2 border-[#0d9488] border-t-transparent rounded-full animate-spin flex-shrink-0" />}
+                  {fetchingYtEdit && <span className="w-5 h-5 mt-2.5 border-2 border-[#6ba3c7] border-t-transparent rounded-full animate-spin flex-shrink-0" />}
                 </div>
                 {editPreviewThumb && <img src={editPreviewThumb} alt="thumbnail" className="mt-2 w-full h-28 object-cover rounded-lg" />}
                 <p className="text-xs text-[#2f3437]/40 mt-1">Adding a URL links views data and the video thumbnail to this tracking link.</p>
@@ -687,7 +687,7 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                 <input type="text" value={editForm.name} onChange={(e) => { setEditForm({ ...editForm, name: e.target.value }); setNameTouchedEdit(true); }} placeholder={linkPlaceholder} className={INPUT_CLS} />
               </div>
               <div className="flex gap-3">
-                <button onClick={saveEdit} disabled={saving || !editForm.name} className="flex-1 bg-[#0d9488] text-white py-2.5 rounded-lg font-semibold text-sm hover:bg-[#0d9488]/90 disabled:opacity-50 transition-colors">
+                <button onClick={saveEdit} disabled={saving || !editForm.name} className="flex-1 bg-[#6ba3c7] text-white py-2.5 rounded-lg font-semibold text-sm hover:bg-[#6ba3c7]/90 disabled:opacity-50 transition-colors">
                   {saving ? "Saving..." : "Save Changes"}
                 </button>
                 <button onClick={() => setEditingLink(null)} className="px-5 py-2.5 border border-[#2f3437]/20 rounded-lg text-sm text-[#2f3437]/60 hover:bg-gray-50 transition-colors">
@@ -732,7 +732,7 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                 <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{campaignEditError}</p>
               )}
               <div className="flex gap-3">
-                <button onClick={saveCampaign} disabled={savingCampaign || !campaignEditForm.name || !campaignEditForm.destinationUrl} className="flex-1 bg-[#0d9488] text-white py-2.5 rounded-lg font-semibold text-sm hover:bg-[#0d9488]/90 disabled:opacity-50 transition-colors">
+                <button onClick={saveCampaign} disabled={savingCampaign || !campaignEditForm.name || !campaignEditForm.destinationUrl} className="flex-1 bg-[#6ba3c7] text-white py-2.5 rounded-lg font-semibold text-sm hover:bg-[#6ba3c7]/90 disabled:opacity-50 transition-colors">
                   {savingCampaign ? "Saving..." : "Save Changes"}
                 </button>
                 <button onClick={() => setShowEditCampaign(false)} className="px-5 py-2.5 border border-[#2f3437]/20 rounded-lg text-sm text-[#2f3437]/60 hover:bg-gray-50 transition-colors">

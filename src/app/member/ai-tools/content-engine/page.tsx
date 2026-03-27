@@ -70,7 +70,7 @@ export default function ContentEnginePage() {
           </p>
           <Link
             href="/member/ai-tools/avatar-architect"
-            className="inline-block bg-[#0d9488] hover:bg-[#2bb0ec] text-white font-semibold text-sm px-6 py-2.5 rounded-lg transition-colors"
+            className="inline-block bg-[#6ba3c7] hover:bg-[#2bb0ec] text-white font-semibold text-sm px-6 py-2.5 rounded-lg transition-colors"
           >
             Build your avatar →
           </Link>

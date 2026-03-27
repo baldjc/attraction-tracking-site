@@ -118,7 +118,7 @@ export default function ClickMapInner({ markers, height = 400 }: Props) {
           bounds.push(ll);
           const circle = markerIcon([lat, lng], {
             radius: 7,
-            fillColor: "#0d9488",
+            fillColor: "#6ba3c7",
             color: "#1e88c7",
             weight: 1.5,
             opacity: 1,

@@ -177,7 +177,7 @@ export default function LoginPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   autoFocus
-                  className="w-full px-4 py-2.5 border border-[#eaeaea] rounded-md focus:ring-2 focus:ring-[#0d9488] focus:border-transparent outline-none text-[#2f3437] text-sm"
+                  className="w-full px-4 py-2.5 border border-[#eaeaea] rounded-md focus:ring-2 focus:ring-[#6ba3c7] focus:border-transparent outline-none text-[#2f3437] text-sm"
                   placeholder="you@example.com"
                 />
               </div>
@@ -185,7 +185,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-[#111] hover:bg-[#333] active:scale-[0.98] text-white font-medium py-2.5 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-[#111] hover:bg-[#2a3a4d] active:scale-[0.98] text-white font-medium py-2.5 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? "Sending code..." : "Send login code"}
               </button>
@@ -222,7 +222,7 @@ export default function LoginPage() {
                       value={digit}
                       onChange={(e) => handleDigitChange(i, e.target.value)}
                       onKeyDown={(e) => handleDigitKeyDown(i, e)}
-                      className="w-12 h-14 text-center text-2xl font-bold border border-[#eaeaea] rounded-md focus:ring-2 focus:ring-[#0d9488] focus:border-[#0d9488] outline-none text-[#2f3437] transition-colors font-data"
+                      className="w-12 h-14 text-center text-2xl font-bold border border-[#eaeaea] rounded-md focus:ring-2 focus:ring-[#6ba3c7] focus:border-[#6ba3c7] outline-none text-[#2f3437] transition-colors font-data"
                     />
                   ))}
                 </div>
@@ -231,7 +231,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading || code.join("").length < 6}
-                className="w-full bg-[#111] hover:bg-[#333] active:scale-[0.98] text-white font-medium py-2.5 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-[#111] hover:bg-[#2a3a4d] active:scale-[0.98] text-white font-medium py-2.5 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? "Verifying..." : "Sign in"}
               </button>
@@ -248,7 +248,7 @@ export default function LoginPage() {
                   type="button"
                   onClick={handleResend}
                   disabled={resendCooldown > 0 || loading}
-                  className="text-sm text-[#0d9488] hover:text-[#0b7a70] disabled:text-[#787774] disabled:cursor-not-allowed transition-colors"
+                  className="text-sm text-[#6ba3c7] hover:text-[#5490b5] disabled:text-[#787774] disabled:cursor-not-allowed transition-colors"
                 >
                   {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend code"}
                 </button>

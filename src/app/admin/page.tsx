@@ -77,8 +77,8 @@ export default function AdminDashboard() {
       value: stats?.totalMembers ?? "—",
       icon: UsersIcon,
       href: "/admin/members",
-      color: "text-[#0d9488]",
-      bg: "bg-[#0d9488]/10",
+      color: "text-[#6ba3c7]",
+      bg: "bg-[#6ba3c7]/10",
     },
     {
       label: "Total Audits",
@@ -150,7 +150,7 @@ export default function AdminDashboard() {
             <button
               onClick={handleSync}
               disabled={syncing}
-              className="flex items-center gap-2 bg-[#0d9488] hover:bg-[#0b7a70] disabled:opacity-50 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors shrink-0"
+              className="flex items-center gap-2 bg-[#6ba3c7] hover:bg-[#5490b5] disabled:opacity-50 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors shrink-0"
             >
               <ArrowPathIcon className={`w-4 h-4 ${syncing ? "animate-spin" : ""}`} />
               {syncing ? "Syncing…" : "Sync from GHL"}
@@ -161,7 +161,7 @@ export default function AdminDashboard() {
               className={`mt-4 text-sm px-4 py-3 rounded-lg ${
                 syncMsg.startsWith("Error") || syncMsg.startsWith("Sync failed")
                   ? "bg-[#ff0033]/10 text-[#ff0033]"
-                  : "bg-[#0d9488]/10 text-[#2f3437]"
+                  : "bg-[#6ba3c7]/10 text-[#2f3437]"
               }`}
             >
               {syncMsg}

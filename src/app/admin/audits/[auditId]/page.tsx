@@ -264,12 +264,12 @@ export default function AuditReportPage() {
           <img src={channelInfo.bannerUrl} alt="Channel banner" className="w-full h-full object-cover" />
         </div>
       ) : (
-        <div className="h-28 rounded-lg bg-gradient-to-r from-[#2f3437] via-[#2c4a6e] to-[#0d9488] print-avoid-break" />
+        <div className="h-28 rounded-lg bg-gradient-to-r from-[#2f3437] via-[#2c4a6e] to-[#6ba3c7] print-avoid-break" />
       )}
 
       {/* Header callout */}
-      <div className="bg-[#0d9488]/10 border border-[#0d9488]/30 rounded-lg p-6 print-avoid-break">
-        <p className="text-xs font-semibold text-[#0d9488] uppercase tracking-wider mb-1">
+      <div className="bg-[#6ba3c7]/10 border border-[#6ba3c7]/30 rounded-lg p-6 print-avoid-break">
+        <p className="text-xs font-semibold text-[#6ba3c7] uppercase tracking-wider mb-1">
           Attraction by Video — {typeLabel}
         </p>
         <h1 className="text-2xl font-bold text-[#2f3437]">{member?.fullName ?? member?.email}</h1>
@@ -301,7 +301,7 @@ export default function AuditReportPage() {
         </div>
         {report?.one_sentence_diagnosis && (
           <div className="bg-[#111] rounded-lg p-5 flex-1 flex flex-col justify-center">
-            <p className="text-xs font-semibold text-[#0d9488] uppercase tracking-wider mb-2">Diagnosis</p>
+            <p className="text-xs font-semibold text-[#6ba3c7] uppercase tracking-wider mb-2">Diagnosis</p>
             <p className="text-base font-medium text-white leading-relaxed italic">
               "{report.one_sentence_diagnosis}"
             </p>
@@ -341,7 +341,7 @@ export default function AuditReportPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {phase.strengths?.length > 0 && (
                       <div className="bg-[#e8f7ff] rounded-lg p-3">
-                        <p className="text-xs font-semibold text-[#0d9488] uppercase tracking-wider mb-1.5">✅ Strong</p>
+                        <p className="text-xs font-semibold text-[#6ba3c7] uppercase tracking-wider mb-1.5">✅ Strong</p>
                         {phase.strengths.map((s: string, i: number) => (
                           <p key={i} className="text-xs text-[#2f3437]/70">{s}</p>
                         ))}
@@ -369,15 +369,15 @@ export default function AuditReportPage() {
           <h2 className="text-base font-semibold text-[#2f3437] mb-5">💡 Three Ideas for Improvement</h2>
           <div className="space-y-5">
             {report.three_improvements.map((item: any, i: number) => (
-              <div key={i} className="border-l-4 border-[#0d9488] pl-4 print-avoid-break">
-                <p className="text-xs font-bold text-[#0d9488] uppercase tracking-wider mb-2">{i + 1}. {item.principle}</p>
+              <div key={i} className="border-l-4 border-[#6ba3c7] pl-4 print-avoid-break">
+                <p className="text-xs font-bold text-[#6ba3c7] uppercase tracking-wider mb-2">{i + 1}. {item.principle}</p>
                 <div className="space-y-2">
                   <div className="bg-[#ffe5ea] rounded-lg px-3 py-2">
                     <p className="text-xs font-semibold text-[#ff0033] mb-1">Current</p>
                     <p className="text-xs text-[#2f3437]/80 italic">"{item.current}"</p>
                   </div>
                   <div className="bg-[#e8f7ff] rounded-lg px-3 py-2">
-                    <p className="text-xs font-semibold text-[#0d9488] mb-1">Improved</p>
+                    <p className="text-xs font-semibold text-[#6ba3c7] mb-1">Improved</p>
                     <p className="text-xs text-[#2f3437]/80 italic">"{item.improved}"</p>
                   </div>
                   {item.why && (
@@ -404,7 +404,7 @@ export default function AuditReportPage() {
 
       {/* Monthly progress summary */}
       {isMonthly && baselineScores && (
-        <div className="bg-[#0d9488]/10 border border-[#0d9488]/30 rounded-lg p-6 print-avoid-break">
+        <div className="bg-[#6ba3c7]/10 border border-[#6ba3c7]/30 rounded-lg p-6 print-avoid-break">
           <h2 className="text-base font-semibold text-[#2f3437] mb-4">📊 Progress Summary</h2>
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
@@ -587,7 +587,7 @@ export default function AuditReportPage() {
                       href={`https://youtube.com/watch?v=${v.videoId}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-sm font-semibold text-[#0d9488] hover:underline flex items-center gap-1"
+                      className="text-sm font-semibold text-[#6ba3c7] hover:underline flex items-center gap-1"
                     >
                       {v.title}
                       <ArrowTopRightOnSquareIcon className="w-3 h-3 shrink-0 no-print" />
@@ -630,7 +630,7 @@ export default function AuditReportPage() {
           <h2 className="text-base font-semibold text-[#2f3437] mb-4">🔍 Video Deep Dive</h2>
           <div className="space-y-6">
             {report.video_breakdowns.map((v: any, i: number) => (
-              <div key={i} className="border-l-4 border-[#0d9488] pl-4 print-avoid-break">
+              <div key={i} className="border-l-4 border-[#6ba3c7] pl-4 print-avoid-break">
                 <h3 className="font-semibold text-[#2f3437] mb-3">"{v.title}"</h3>
                 {[
                   { label: "Opening", text: v.opening_analysis },
@@ -693,7 +693,7 @@ export default function AuditReportPage() {
                     </div>
                     {gap.improved_example && (
                       <div className="bg-[#e8f7ff] rounded-lg px-3 py-2">
-                        <p className="text-xs font-semibold text-[#0d9488] mb-1">Improved</p>
+                        <p className="text-xs font-semibold text-[#6ba3c7] mb-1">Improved</p>
                         <p className="text-xs text-[#2f3437]/80 italic">"{gap.improved_example}"</p>
                       </div>
                     )}
@@ -707,13 +707,13 @@ export default function AuditReportPage() {
 
       {/* Learning Path */}
       {learningGaps.length > 0 && (
-        <div className="bg-[#0d9488]/10 border border-[#0d9488]/30 rounded-lg p-6 print-page-break">
+        <div className="bg-[#6ba3c7]/10 border border-[#6ba3c7]/30 rounded-lg p-6 print-page-break">
           <h2 className="text-base font-semibold text-[#2f3437] mb-1">📚 Learning Path</h2>
           <p className="text-xs text-[#2f3437]/50 mb-4">Principles below 7 — sorted by priority</p>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-[#0d9488]/20">
+                <tr className="border-b border-[#6ba3c7]/20">
                   <th className="text-left py-2 pr-3 text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wider">Principle</th>
                   <th className="text-center py-2 px-2 text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wider">Score</th>
                   <th className="text-left py-2 px-2 text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wider">Lesson</th>
@@ -724,7 +724,7 @@ export default function AuditReportPage() {
                 {learningGaps.map(([key, val]: [string, any]) => {
                   const p = priority(val.score);
                   return (
-                    <tr key={key} className="border-b border-[#0d9488]/10 last:border-0">
+                    <tr key={key} className="border-b border-[#6ba3c7]/10 last:border-0">
                       <td className="py-2 pr-3 text-[#2f3437] font-medium">{PRINCIPLE_LABELS[key]}</td>
                       <td className="py-2 px-2 text-center">
                         <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${scoreBg(val.score)}`}>
@@ -759,7 +759,7 @@ export default function AuditReportPage() {
             <div className="space-y-2">
               {allItems.map((item: any, i: number) => (
                 <div key={i} className="flex items-start gap-3 py-2 border-b border-gray-50 last:border-0">
-                  <span className="w-2 h-2 rounded-full bg-[#0d9488] mt-1.5 shrink-0" />
+                  <span className="w-2 h-2 rounded-full bg-[#6ba3c7] mt-1.5 shrink-0" />
                   <div className="flex-1">
                     {item.key && (
                       <span className="text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wide mr-2">

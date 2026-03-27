@@ -97,7 +97,7 @@ export default function MemberScoresPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-4 border-[#0d9488] border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-4 border-[#6ba3c7] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -106,7 +106,7 @@ export default function MemberScoresPage() {
     return (
       <div>
         <h1 className={`text-2xl font-bold ${txt} mb-2`}>My Scores</h1>
-        <div className="bg-[#0d9488]/10 border border-[#0d9488]/30 rounded-lg p-10 text-center">
+        <div className="bg-[#6ba3c7]/10 border border-[#6ba3c7]/30 rounded-lg p-10 text-center">
           <p className={`font-medium ${txt} mb-2`}>No audits yet</p>
           <p className={`text-sm ${muted}`}>
             Your Attraction Scores will appear here after your first audit is completed by your coach.
@@ -183,7 +183,7 @@ export default function MemberScoresPage() {
         </div>
         <button
           onClick={load}
-          className={`flex items-center gap-2 px-4 py-2.5 border border-gray-200 dark:border-[#2a2a2a] rounded-lg text-sm ${txt} hover:bg-gray-50 dark:hover:bg-[#111111] transition-colors`}
+          className={`flex items-center gap-2 px-4 py-2.5 border border-gray-200 dark:border-[#2a2a2a] rounded-lg text-sm ${txt} hover:bg-gray-50 dark:hover:bg-[#1e2a38] transition-colors`}
         >
           <ArrowPathIcon className="w-4 h-4" /> Refresh
         </button>
@@ -253,15 +253,15 @@ export default function MemberScoresPage() {
                     fontSize: 12,
                     color: "#e2e8f0",
                   }}
-                  cursor={{ stroke: "#0d9488", strokeWidth: 1, strokeDasharray: "4 4" }}
+                  cursor={{ stroke: "#6ba3c7", strokeWidth: 1, strokeDasharray: "4 4" }}
                 />
                 <Line
                   type="monotone"
                   dataKey="score"
-                  stroke="#0d9488"
+                  stroke="#6ba3c7"
                   strokeWidth={2.5}
-                  dot={{ r: 4, fill: "#0d9488", strokeWidth: 0 }}
-                  activeDot={{ r: 6, fill: "#0d9488" }}
+                  dot={{ r: 4, fill: "#6ba3c7", strokeWidth: 0 }}
+                  activeDot={{ r: 6, fill: "#6ba3c7" }}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -305,8 +305,8 @@ export default function MemberScoresPage() {
                   <React.Fragment key={key}>
                     <tr
                       onClick={() => setExpanded(isOpen ? null : key)}
-                      className={`cursor-pointer hover:bg-gray-50 dark:hover:bg-[#111111] transition-colors ${
-                        isOpen ? "bg-gray-50 dark:bg-[#111111]" : ""
+                      className={`cursor-pointer hover:bg-gray-50 dark:hover:bg-[#1e2a38] transition-colors ${
+                        isOpen ? "bg-gray-50 dark:bg-[#0f1419]" : ""
                       }`}
                     >
                       <td className={`${tdClass} font-medium ${txt}`}>
@@ -322,7 +322,7 @@ export default function MemberScoresPage() {
                       </td>
                       <td className={tdClass}>
                         <div className="flex items-center gap-2">
-                          <div className="flex-1 bg-gray-100 dark:bg-[#111111] rounded-full h-1.5 max-w-[120px]">
+                          <div className="flex-1 bg-gray-100 dark:bg-[#0f1419] rounded-full h-1.5 max-w-[120px]">
                             <div
                               className={`h-1.5 rounded-full transition-all ${scoreBarColor(score)}`}
                               style={{ width: score != null ? `${(score / 10) * 100}%` : "0%" }}
@@ -358,12 +358,12 @@ export default function MemberScoresPage() {
                       )}
                     </tr>
                     {isOpen && val.evidence && (
-                      <tr className="bg-gray-50 dark:bg-[#111111]">
+                      <tr className="bg-gray-50 dark:bg-[#0f1419]">
                         <td
                           colSpan={baselineAudit ? 5 : 4}
                           className={`px-5 pb-3 pt-0 text-xs italic ${muted}`}
                         >
-                          <div className="border-l-2 border-[#0d9488] pl-3 ml-1">
+                          <div className="border-l-2 border-[#6ba3c7] pl-3 ml-1">
                             {val.evidence}
                           </div>
                         </td>
@@ -382,7 +382,7 @@ export default function MemberScoresPage() {
         {/* Learning Path */}
         {gaps.length > 0 && (
           <div className={`${card} overflow-hidden`}>
-            <div className="px-5 py-4 border-b border-gray-200 dark:border-[#2a2a2a] bg-[#0d9488]/5">
+            <div className="px-5 py-4 border-b border-gray-200 dark:border-[#2a2a2a] bg-[#6ba3c7]/5">
               <h2 className={`text-sm font-semibold ${txt}`}>📚 Your Learning Path</h2>
               <p className={`text-xs ${muted} mt-0.5`}>Revisit these lessons to close your gaps</p>
             </div>
@@ -396,14 +396,14 @@ export default function MemberScoresPage() {
               </thead>
               <tbody className={`divide-y ${divider}`}>
                 {gaps.map(({ key, val }) => (
-                  <tr key={key} className="hover:bg-gray-50 dark:hover:bg-[#111111] transition-colors">
+                  <tr key={key} className="hover:bg-gray-50 dark:hover:bg-[#1e2a38] transition-colors">
                     <td className={`${tdClass} font-medium ${txt}`}>{PRINCIPLE_LABELS[key]}</td>
                     <td className={tdClass}>
                       <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${scoreBadge(val.score)}`}>
                         {val.score?.toFixed(1)}
                       </span>
                     </td>
-                    <td className={`${tdClass} text-xs text-[#0d9488] font-semibold`}>
+                    <td className={`${tdClass} text-xs text-[#6ba3c7] font-semibold`}>
                       {LEARNING_PATH[key] ?? "—"}
                     </td>
                   </tr>
@@ -430,7 +430,7 @@ export default function MemberScoresPage() {
             </thead>
             <tbody className={`divide-y ${divider}`}>
               {audits.map((a: any) => (
-                <tr key={a.id} className="hover:bg-gray-50 dark:hover:bg-[#111111] transition-colors">
+                <tr key={a.id} className="hover:bg-gray-50 dark:hover:bg-[#1e2a38] transition-colors">
                   <td className={`${tdClass} ${muted}`}>{fmt(a.createdAt)}</td>
                   <td className={`${tdClass} ${txt} capitalize`}>
                     {a.auditType.replace(/_/g, " ")}
@@ -447,7 +447,7 @@ export default function MemberScoresPage() {
                   <td className={tdClass}>
                     <Link
                       href={`/member/audits/${a.id}`}
-                      className="text-xs font-medium text-[#0d9488] hover:underline"
+                      className="text-xs font-medium text-[#6ba3c7] hover:underline"
                     >
                       View Report →
                     </Link>

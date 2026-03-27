@@ -75,18 +75,18 @@ export default function PromptEditor({ toolKey, defaultPrompt, placeholders }: P
   }
 
   return (
-    <div className="mb-6 border border-[#0d9488]/30 rounded-lg overflow-hidden">
+    <div className="mb-6 border border-[#6ba3c7]/30 rounded-lg overflow-hidden">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center justify-between px-4 py-3 bg-[#0d9488]/5 hover:bg-[#0d9488]/10 transition-colors"
+        className="w-full flex items-center justify-between px-4 py-3 bg-[#6ba3c7]/5 hover:bg-[#6ba3c7]/10 transition-colors"
       >
-        <span className="text-xs font-semibold text-[#0d9488] uppercase tracking-wider">
+        <span className="text-xs font-semibold text-[#6ba3c7] uppercase tracking-wider">
           ⚙️ Edit System Prompt
         </span>
         {open ? (
-          <ChevronUpIcon className="w-4 h-4 text-[#0d9488]" />
+          <ChevronUpIcon className="w-4 h-4 text-[#6ba3c7]" />
         ) : (
-          <ChevronDownIcon className="w-4 h-4 text-[#0d9488]" />
+          <ChevronDownIcon className="w-4 h-4 text-[#6ba3c7]" />
         )}
       </button>
 
@@ -100,7 +100,7 @@ export default function PromptEditor({ toolKey, defaultPrompt, placeholders }: P
                 value={value}
                 onChange={(e) => setValue(e.target.value)}
                 rows={20}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-xs font-mono text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#0d9488]/40 resize-y"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-xs font-mono text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40 resize-y"
               />
 
               {placeholders && placeholders.length > 0 && (
@@ -111,7 +111,7 @@ export default function PromptEditor({ toolKey, defaultPrompt, placeholders }: P
                   <div className="space-y-1">
                     {placeholders.map((p) => (
                       <div key={p.key} className="flex items-start gap-2 text-xs">
-                        <code className="bg-white px-1.5 py-0.5 rounded font-mono text-[#0d9488] border border-[#0d9488]/20 shrink-0">
+                        <code className="bg-white px-1.5 py-0.5 rounded font-mono text-[#6ba3c7] border border-[#6ba3c7]/20 shrink-0">
                           {p.key}
                         </code>
                         <span className="text-[#2f3437]/60">{p.description}</span>
@@ -125,7 +125,7 @@ export default function PromptEditor({ toolKey, defaultPrompt, placeholders }: P
                 <button
                   onClick={handleSave}
                   disabled={saving}
-                  className="px-4 py-2 bg-[#0d9488] text-white text-xs font-semibold rounded-lg hover:bg-[#0d9488]/90 disabled:opacity-50 transition-colors"
+                  className="px-4 py-2 bg-[#6ba3c7] text-white text-xs font-semibold rounded-lg hover:bg-[#6ba3c7]/90 disabled:opacity-50 transition-colors"
                 >
                   {saving ? "Saving…" : "Save Prompt"}
                 </button>

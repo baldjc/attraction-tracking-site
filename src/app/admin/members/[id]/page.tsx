@@ -74,7 +74,7 @@ const DIMENSIONS = [
 ];
 
 function tierColors(tier: string) {
-  if (tier === "foundations") return { badge: "bg-[#0d9488]/20 text-[#0d9488]", dot: "#0d9488" };
+  if (tier === "foundations") return { badge: "bg-[#6ba3c7]/20 text-[#6ba3c7]", dot: "#6ba3c7" };
   if (tier === "editing_2" || tier === "editing_4") return { badge: "bg-amber-100 text-amber-700", dot: "#f59e0b" };
   if (tier === "mastery_2" || tier === "mastery_4") return { badge: "bg-purple-100 text-purple-700", dot: "#7c3aed" };
   return { badge: "bg-gray-100 text-gray-500", dot: "#9ca3af" };
@@ -397,7 +397,7 @@ export default function MemberDetailPage() {
     return (
       <div className="text-center py-20">
         <p className="text-[#2f3437]/50">Member not found.</p>
-        <Link href="/admin/members" className="text-[#0d9488] text-sm mt-2 inline-block">
+        <Link href="/admin/members" className="text-[#6ba3c7] text-sm mt-2 inline-block">
           ← Back to Members
         </Link>
       </div>
@@ -469,11 +469,11 @@ export default function MemberDetailPage() {
         <div className={`rounded-lg px-5 py-3.5 flex items-center justify-between gap-4 ${
           jobStatus === "complete" ? "bg-green-50 border border-green-200" :
           jobStatus === "failed" ? "bg-red-50 border border-[#ff0033]/20" :
-          "bg-[#0d9488]/10 border border-[#0d9488]/30"
+          "bg-[#6ba3c7]/10 border border-[#6ba3c7]/30"
         }`}>
           <div className="flex items-center gap-3">
             {!["complete", "failed"].includes(jobStatus) && (
-              <div className="w-4 h-4 border-2 border-[#0d9488] border-t-transparent rounded-full animate-spin shrink-0" />
+              <div className="w-4 h-4 border-2 border-[#6ba3c7] border-t-transparent rounded-full animate-spin shrink-0" />
             )}
             {jobStatus === "complete" && <span className="text-green-600 text-lg">✓</span>}
             {jobStatus === "failed" && <span className="text-[#ff0033] text-lg">✕</span>}
@@ -490,7 +490,7 @@ export default function MemberDetailPage() {
       )}
 
       {/* HEADER BANNER */}
-      <div className="rounded-lg overflow-hidden bg-gradient-to-r from-[#2f3437] via-[#2c4a6e] to-[#0d9488] p-6 pt-10">
+      <div className="rounded-lg overflow-hidden bg-gradient-to-r from-[#2f3437] via-[#2c4a6e] to-[#6ba3c7] p-6 pt-10">
         <div className="flex flex-col gap-3">
           <div className="min-w-0">
             <h1 className="text-xl sm:text-2xl font-bold text-white leading-snug break-words">
@@ -583,7 +583,7 @@ export default function MemberDetailPage() {
                       });
                       setEditing(true);
                     }}
-                    className="flex items-center gap-1.5 text-sm text-[#0d9488] hover:text-[#0b7a70]"
+                    className="flex items-center gap-1.5 text-sm text-[#6ba3c7] hover:text-[#5490b5]"
                   >
                     <PencilIcon className="w-4 h-4" /> Edit
                   </button>
@@ -613,7 +613,7 @@ export default function MemberDetailPage() {
               <div className="flex flex-col sm:flex-row sm:items-center gap-1">
                 <span className="text-[#2f3437]/50 w-40 shrink-0">Full Name</span>
                 {editing ? (
-                  <input value={editFields.fullName ?? ""} onChange={(e) => setEditFields((f: any) => ({ ...f, fullName: e.target.value }))} className="flex-1 border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d9488]/30" />
+                  <input value={editFields.fullName ?? ""} onChange={(e) => setEditFields((f: any) => ({ ...f, fullName: e.target.value }))} className="flex-1 border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30" />
                 ) : (
                   <span className="text-[#2f3437]">{member.fullName || <span className="text-gray-400">—</span>}</span>
                 )}
@@ -623,7 +623,7 @@ export default function MemberDetailPage() {
               <div className="flex flex-col sm:flex-row sm:items-center gap-1">
                 <span className="text-[#2f3437]/50 w-40 shrink-0">Email</span>
                 {editing ? (
-                  <input value={editFields.email ?? ""} onChange={(e) => setEditFields((f: any) => ({ ...f, email: e.target.value }))} className="flex-1 border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d9488]/30" />
+                  <input value={editFields.email ?? ""} onChange={(e) => setEditFields((f: any) => ({ ...f, email: e.target.value }))} className="flex-1 border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30" />
                 ) : (
                   <span className="text-[#2f3437]">{member.email || <span className="text-gray-400">—</span>}</span>
                 )}
@@ -633,11 +633,11 @@ export default function MemberDetailPage() {
               <div className="flex flex-col sm:flex-row sm:items-center gap-1">
                 <span className="text-[#2f3437]/50 w-40 shrink-0">Phone</span>
                 {editing ? (
-                  <input value={editFields.phone ?? ""} onChange={(e) => setEditFields((f: any) => ({ ...f, phone: e.target.value }))} className="flex-1 border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d9488]/30" placeholder="+1 555 000 0000" />
+                  <input value={editFields.phone ?? ""} onChange={(e) => setEditFields((f: any) => ({ ...f, phone: e.target.value }))} className="flex-1 border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30" placeholder="+1 555 000 0000" />
                 ) : (
                   <span className="text-[#2f3437]">
                     {member.phone ? (
-                      <a href={`tel:${member.phone}`} className="text-[#0d9488] hover:underline">{member.phone}</a>
+                      <a href={`tel:${member.phone}`} className="text-[#6ba3c7] hover:underline">{member.phone}</a>
                     ) : <span className="text-gray-400">—</span>}
                   </span>
                 )}
@@ -648,14 +648,14 @@ export default function MemberDetailPage() {
                 <span className="text-[#2f3437]/50 w-40 shrink-0">YouTube Channel</span>
                 {editing ? (
                   <div className="flex-1 space-y-1.5">
-                    <input value={editFields.youtubeChannelUrl ?? ""} onChange={(e) => setEditFields((f: any) => ({ ...f, youtubeChannelUrl: e.target.value }))} className="w-full border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d9488]/30" placeholder="YouTube URL" />
-                    <input value={editFields.youtubeHandle ?? ""} onChange={(e) => setEditFields((f: any) => ({ ...f, youtubeHandle: e.target.value }))} className="w-full border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d9488]/30" placeholder="Handle (@channel)" />
-                    <input value={editFields.youtubeChannelName ?? ""} onChange={(e) => setEditFields((f: any) => ({ ...f, youtubeChannelName: e.target.value }))} className="w-full border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d9488]/30" placeholder="Channel name" />
+                    <input value={editFields.youtubeChannelUrl ?? ""} onChange={(e) => setEditFields((f: any) => ({ ...f, youtubeChannelUrl: e.target.value }))} className="w-full border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30" placeholder="YouTube URL" />
+                    <input value={editFields.youtubeHandle ?? ""} onChange={(e) => setEditFields((f: any) => ({ ...f, youtubeHandle: e.target.value }))} className="w-full border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30" placeholder="Handle (@channel)" />
+                    <input value={editFields.youtubeChannelName ?? ""} onChange={(e) => setEditFields((f: any) => ({ ...f, youtubeChannelName: e.target.value }))} className="w-full border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30" placeholder="Channel name" />
                   </div>
                 ) : (
                   <span className="text-[#2f3437] break-all">
                     {member.youtubeChannelUrl ? (
-                      <a href={member.youtubeChannelUrl} target="_blank" rel="noopener noreferrer" className="text-[#0d9488] hover:underline flex items-center gap-1">
+                      <a href={member.youtubeChannelUrl} target="_blank" rel="noopener noreferrer" className="text-[#6ba3c7] hover:underline flex items-center gap-1">
                         {member.youtubeChannelName
                           ? (member.youtubeHandle && !isRawChannelId(member.youtubeHandle)
                               ? `${member.youtubeChannelName} (${member.youtubeHandle})`
@@ -674,11 +674,11 @@ export default function MemberDetailPage() {
               <div className="flex flex-col sm:flex-row sm:items-center gap-1">
                 <span className="text-[#2f3437]/50 w-40 shrink-0">GHL Contact ID</span>
                 {editing ? (
-                  <input value={editFields.ghlContactId ?? ""} onChange={(e) => setEditFields((f: any) => ({ ...f, ghlContactId: e.target.value }))} className="flex-1 border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d9488]/30" />
+                  <input value={editFields.ghlContactId ?? ""} onChange={(e) => setEditFields((f: any) => ({ ...f, ghlContactId: e.target.value }))} className="flex-1 border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30" />
                 ) : (
                   <span className="text-[#2f3437] break-all">
                     {member.ghlContactId ? (
-                      <a href={`https://app.gohighlevel.com/v2/location/${GHL_LOCATION_ID}/contacts/detail/${member.ghlContactId}`} target="_blank" rel="noopener noreferrer" className="text-[#0d9488] hover:underline">
+                      <a href={`https://app.gohighlevel.com/v2/location/${GHL_LOCATION_ID}/contacts/detail/${member.ghlContactId}`} target="_blank" rel="noopener noreferrer" className="text-[#6ba3c7] hover:underline">
                         {member.ghlContactId}
                       </a>
                     ) : <span className="text-gray-400">—</span>}
@@ -693,7 +693,7 @@ export default function MemberDetailPage() {
                   <select
                     value={editFields.serviceTier ?? "foundations"}
                     onChange={(e) => setEditFields((f: any) => ({ ...f, serviceTier: e.target.value }))}
-                    className="border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d9488]/30"
+                    className="border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30"
                   >
                     {SERVICE_TIERS.map((t) => (
                       <option key={t.value} value={t.value}>{t.label}</option>
@@ -716,7 +716,7 @@ export default function MemberDetailPage() {
                 <div className="relative">
                   <button
                     onClick={() => setAuditOpenHeader((o) => !o)}
-                    className="flex items-center gap-1.5 bg-[#0d9488] hover:bg-[#0b7a70] text-white text-sm font-semibold px-3 py-2 rounded-lg transition-colors"
+                    className="flex items-center gap-1.5 bg-[#6ba3c7] hover:bg-[#5490b5] text-white text-sm font-semibold px-3 py-2 rounded-lg transition-colors"
                   >
                     Run Audit
                     <ChevronDownIcon className="w-4 h-4" />
@@ -814,7 +814,7 @@ export default function MemberDetailPage() {
                             <span className="inline-flex items-center gap-3">
                               <Link
                                 href={`/admin/audits/${audit.id}`}
-                                className="text-[#0d9488] hover:underline text-xs"
+                                className="text-[#6ba3c7] hover:underline text-xs"
                               >
                                 View →
                               </Link>
@@ -865,7 +865,7 @@ export default function MemberDetailPage() {
                       className="w-20 h-[45px] object-cover rounded shrink-0"
                     />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-[#2f3437] leading-snug line-clamp-2 group-hover:text-[#0d9488] transition-colors">
+                      <p className="text-sm font-medium text-[#2f3437] leading-snug line-clamp-2 group-hover:text-[#6ba3c7] transition-colors">
                         {v.title}
                       </p>
                       <p className="text-xs text-[#2f3437]/40 mt-0.5">
@@ -902,7 +902,7 @@ export default function MemberDetailPage() {
                         x={chartData[0].date}
                         y={chartData[0].score}
                         r={5}
-                        fill="#0d9488"
+                        fill="#6ba3c7"
                       />
                     </LineChart>
                   </ResponsiveContainer>
@@ -923,9 +923,9 @@ export default function MemberDetailPage() {
                     <Line
                       type="monotone"
                       dataKey="score"
-                      stroke="#0d9488"
+                      stroke="#6ba3c7"
                       strokeWidth={2.5}
-                      dot={{ r: 4, fill: "#0d9488" }}
+                      dot={{ r: 4, fill: "#6ba3c7" }}
                       activeDot={{ r: 6 }}
                     />
                   </LineChart>
@@ -1088,7 +1088,7 @@ export default function MemberDetailPage() {
           <div className="bg-white rounded-lg border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-base font-semibold text-[#2f3437]">Tracking Links</h2>
-              <button className="text-sm text-[#0d9488] hover:text-[#0b7a70] font-medium">
+              <button className="text-sm text-[#6ba3c7] hover:text-[#5490b5] font-medium">
                 + Create Link
               </button>
             </div>
@@ -1125,7 +1125,7 @@ export default function MemberDetailPage() {
                         <tr key={link.id} className="border-b border-gray-50 last:border-0">
                           <td className="py-3 pr-4 text-[#2f3437]">{link.name}</td>
                           <td className="py-3 pr-4">
-                            <span className="text-[#0d9488] font-mono text-xs">
+                            <span className="text-[#6ba3c7] font-mono text-xs">
                               /{link.refCode}
                             </span>
                           </td>
@@ -1162,12 +1162,12 @@ export default function MemberDetailPage() {
                   onChange={(e) => setNotes(e.target.value)}
                   rows={6}
                   placeholder="Private coaching notes about this member…"
-                  className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#0d9488]/30 resize-none"
+                  className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30 resize-none"
                 />
                 <button
                   onClick={handleSaveNotes}
                   disabled={notesSaving}
-                  className="mt-2 bg-[#111] hover:bg-[#333] disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+                  className="mt-2 bg-[#111] hover:bg-[#2a3a4d] disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
                 >
                   {notesSaving ? "Saving…" : "Save Notes"}
                 </button>
@@ -1180,7 +1180,7 @@ export default function MemberDetailPage() {
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-base font-semibold text-[#2f3437]">Avatar Profile</h2>
               {member?.avatarName && (
-                <span className="text-xs text-[#0d9488] bg-[#0d9488]/10 px-2.5 py-1 rounded-full font-medium">
+                <span className="text-xs text-[#6ba3c7] bg-[#6ba3c7]/10 px-2.5 py-1 rounded-full font-medium">
                   {member.avatarName}
                 </span>
               )}
@@ -1201,7 +1201,7 @@ export default function MemberDetailPage() {
                           ? `${(t as any).emoji ?? ""} ${(t as any).name ?? ""}`.trim()
                           : null;
                       return label ? (
-                        <span key={i} className="text-xs bg-[#0d9488]/10 text-[#0d9488] px-2.5 py-1 rounded-full font-medium">{label}</span>
+                        <span key={i} className="text-xs bg-[#6ba3c7]/10 text-[#6ba3c7] px-2.5 py-1 rounded-full font-medium">{label}</span>
                       ) : null;
                     })}
                   </div>
@@ -1221,14 +1221,14 @@ export default function MemberDetailPage() {
                   onChange={(e) => setAvatarText(e.target.value)}
                   rows={6}
                   placeholder="No avatar document saved. You can paste or edit one here."
-                  className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-[#2f3437] font-mono focus:outline-none focus:ring-2 focus:ring-[#0d9488]/30 resize-none"
+                  className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-[#2f3437] font-mono focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30 resize-none"
                 />
                 <div className="flex items-center justify-between mt-2">
                   {avatarSaved && <span className="text-xs text-green-600 font-medium">Saved</span>}
                   <button
                     onClick={handleSaveAdminAvatar}
                     disabled={avatarSaving || !avatarText.trim()}
-                    className="ml-auto bg-[#111] hover:bg-[#333] disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+                    className="ml-auto bg-[#111] hover:bg-[#2a3a4d] disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
                   >
                     {avatarSaving ? "Saving…" : "Save Avatar"}
                   </button>
@@ -1247,7 +1247,7 @@ export default function MemberDetailPage() {
               <select
                 value={quickTier}
                 onChange={(e) => { setQuickTier(e.target.value); setTierSaved(false); }}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#0d9488]/30 mb-2"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30 mb-2"
               >
                 {SERVICE_TIERS.map((t) => (
                   <option key={t.value} value={t.value}>{t.label}</option>
@@ -1261,7 +1261,7 @@ export default function MemberDetailPage() {
                     ? "bg-green-100 text-green-700"
                     : quickTier === member.serviceTier
                     ? "bg-gray-100 text-gray-400 cursor-default"
-                    : "bg-[#111] hover:bg-[#333] text-white"
+                    : "bg-[#111] hover:bg-[#2a3a4d] text-white"
                 }`}
               >
                 {tierSaved ? "Saved" : tierSaving ? "Saving…" : "Save Tier"}
@@ -1309,7 +1309,7 @@ export default function MemberDetailPage() {
                 <div className="relative">
                   <button
                     onClick={() => setAuditOpenSidebar((o) => !o)}
-                    className="w-full flex items-center justify-between bg-[#0d9488] hover:bg-[#0b7a70] text-white text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors"
+                    className="w-full flex items-center justify-between bg-[#6ba3c7] hover:bg-[#5490b5] text-white text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors"
                   >
                     Run Audit
                     <ChevronDownIcon className="w-4 h-4" />
@@ -1341,7 +1341,7 @@ export default function MemberDetailPage() {
                   rel="noopener noreferrer"
                   className="w-full flex items-center gap-2 border border-gray-200 hover:bg-gray-50 text-[#2f3437] text-sm font-medium px-4 py-2.5 rounded-lg transition-colors"
                 >
-                  <ArrowTopRightOnSquareIcon className="w-4 h-4 text-[#0d9488]" />
+                  <ArrowTopRightOnSquareIcon className="w-4 h-4 text-[#6ba3c7]" />
                   View on YouTube
                 </a>
               )}
@@ -1350,7 +1350,7 @@ export default function MemberDetailPage() {
                 href={`mailto:${member.email}`}
                 className="w-full flex items-center gap-2 border border-gray-200 hover:bg-gray-50 text-[#2f3437] text-sm font-medium px-4 py-2.5 rounded-lg transition-colors"
               >
-                <EnvelopeIcon className="w-4 h-4 text-[#0d9488]" />
+                <EnvelopeIcon className="w-4 h-4 text-[#6ba3c7]" />
                 Email Member
               </a>
 
@@ -1359,7 +1359,7 @@ export default function MemberDetailPage() {
                   href={`tel:${member.phone}`}
                   className="w-full flex items-center gap-2 border border-gray-200 hover:bg-gray-50 text-[#2f3437] text-sm font-medium px-4 py-2.5 rounded-lg transition-colors"
                 >
-                  <PhoneIcon className="w-4 h-4 text-[#0d9488]" />
+                  <PhoneIcon className="w-4 h-4 text-[#6ba3c7]" />
                   Call Member
                 </a>
               )}
@@ -1433,7 +1433,7 @@ export default function MemberDetailPage() {
             <div className="overflow-y-auto flex-1 p-4">
               {videoModalLoading && (
                 <div className="flex flex-col items-center justify-center h-48 gap-3">
-                  <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-200 border-t-[#0d9488]" />
+                  <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-200 border-t-[#6ba3c7]" />
                   <p className="text-sm text-[#2f3437]/50">Fetching videos…</p>
                 </div>
               )}
@@ -1450,7 +1450,7 @@ export default function MemberDetailPage() {
                       onClick={() => setSelectedVideoId(v.videoId)}
                       className={`w-full flex items-center gap-3 p-3 rounded-lg border-2 text-left transition-colors ${
                         selectedVideoId === v.videoId
-                          ? "border-[#0d9488] bg-[#e8f7ff]"
+                          ? "border-[#6ba3c7] bg-[#e8f7ff]"
                           : "border-gray-100 hover:border-gray-200 hover:bg-gray-50"
                       }`}
                     >
@@ -1466,7 +1466,7 @@ export default function MemberDetailPage() {
                         </p>
                       </div>
                       {selectedVideoId === v.videoId && (
-                        <CheckIcon className="w-5 h-5 text-[#0d9488] shrink-0" />
+                        <CheckIcon className="w-5 h-5 text-[#6ba3c7] shrink-0" />
                       )}
                     </button>
                   ))}
@@ -1491,7 +1491,7 @@ export default function MemberDetailPage() {
                     runAudit("single_video", selectedVideoId!);
                   }}
                   disabled={!selectedVideoId}
-                  className="px-4 py-2 text-sm font-semibold bg-[#0d9488] hover:bg-[#0b7a70] text-white rounded-lg disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  className="px-4 py-2 text-sm font-semibold bg-[#6ba3c7] hover:bg-[#5490b5] text-white rounded-lg disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
                   Run Audit
                 </button>

@@ -135,7 +135,7 @@ export default function SharedReportPage() {
     <div className="min-h-screen flex items-center justify-center bg-[#f7f6f3]">
       <div className="text-center">
         <p className="text-[#2f3437]/60 mb-2">{error}</p>
-        <a href="/login" className="text-sm text-[#0d9488] hover:underline">Sign in to view this report</a>
+        <a href="/login" className="text-sm text-[#6ba3c7] hover:underline">Sign in to view this report</a>
       </div>
     </div>
   );
@@ -230,12 +230,12 @@ export default function SharedReportPage() {
             <img src={channelInfo.bannerUrl} alt="Channel banner" className="w-full h-full object-cover" />
           </div>
         ) : (
-          <div className="h-28 rounded-lg bg-gradient-to-r from-[#2f3437] via-[#2c4a6e] to-[#0d9488]" />
+          <div className="h-28 rounded-lg bg-gradient-to-r from-[#2f3437] via-[#2c4a6e] to-[#6ba3c7]" />
         )}
 
         {/* Header callout */}
-        <div className="bg-[#0d9488]/10 border border-[#0d9488]/30 rounded-lg p-6">
-          <p className="text-xs font-semibold text-[#0d9488] uppercase tracking-wider mb-1">
+        <div className="bg-[#6ba3c7]/10 border border-[#6ba3c7]/30 rounded-lg p-6">
+          <p className="text-xs font-semibold text-[#6ba3c7] uppercase tracking-wider mb-1">
             Attraction by Video — {typeLabel}
           </p>
           <h1 className="text-2xl font-bold text-[#2f3437]">{member?.fullName ?? member?.email}</h1>
@@ -250,7 +250,7 @@ export default function SharedReportPage() {
         {/* Diagnosis */}
         {report?.one_sentence_diagnosis && (
           <div className="bg-[#111] rounded-lg p-5">
-            <p className="text-xs font-semibold text-[#0d9488] uppercase tracking-wider mb-2">Diagnosis</p>
+            <p className="text-xs font-semibold text-[#6ba3c7] uppercase tracking-wider mb-2">Diagnosis</p>
             <p className="text-base font-medium text-white leading-relaxed italic">
               "{report.one_sentence_diagnosis}"
             </p>
@@ -276,7 +276,7 @@ export default function SharedReportPage() {
           const baseAvg = (Object.values(baselineScores) as Array<{ score: number }>).reduce((a, b) => a + b.score, 0) / Object.keys(baselineScores).length;
           const delta = audit.overallScore - baseAvg;
           return (
-            <div className="bg-[#0d9488]/10 border border-[#0d9488]/30 rounded-lg p-5 text-center">
+            <div className="bg-[#6ba3c7]/10 border border-[#6ba3c7]/30 rounded-lg p-5 text-center">
               <p className="text-sm font-semibold text-[#2f3437]">
                 This Month: {Number(audit.overallScore).toFixed(1)}/10 &nbsp;·&nbsp;{" "}
                 <span className={delta >= 0 ? "text-green-600" : "text-[#cc0029]"}>
@@ -343,7 +343,7 @@ export default function SharedReportPage() {
                   <div key={i} className="border border-gray-100 rounded-lg p-3">
                     <div className="flex items-start justify-between gap-2 mb-1">
                       <a href={`https://youtube.com/watch?v=${v.videoId}`} target="_blank" rel="noopener noreferrer"
-                        className="text-sm font-medium text-[#0d9488] hover:underline flex items-center gap-1">
+                        className="text-sm font-medium text-[#6ba3c7] hover:underline flex items-center gap-1">
                         {v.title}
                         <ArrowTopRightOnSquareIcon className="w-3 h-3 shrink-0 no-print" />
                       </a>
@@ -411,7 +411,7 @@ export default function SharedReportPage() {
                       </div>
                       {gap.improved_example && (
                         <div className="bg-[#e8f7ff] rounded-lg px-3 py-2">
-                          <p className="text-xs font-semibold text-[#0d9488] mb-1">Improved</p>
+                          <p className="text-xs font-semibold text-[#6ba3c7] mb-1">Improved</p>
                           <p className="text-xs text-[#2f3437]/80 italic">"{gap.improved_example}"</p>
                         </div>
                       )}
@@ -434,13 +434,13 @@ export default function SharedReportPage() {
 
         {/* Learning Path */}
         {learningGaps.length > 0 && (
-          <div className="bg-[#0d9488]/10 border border-[#0d9488]/30 rounded-lg p-6">
+          <div className="bg-[#6ba3c7]/10 border border-[#6ba3c7]/30 rounded-lg p-6">
             <h2 className="text-base font-semibold text-[#2f3437] mb-1">📚 Learning Path</h2>
             <p className="text-xs text-[#2f3437]/50 mb-4">Principles below 7 — sorted by priority</p>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-[#0d9488]/20">
+                  <tr className="border-b border-[#6ba3c7]/20">
                     <th className="text-left py-2 pr-3 text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wider">Principle</th>
                     <th className="text-center py-2 px-2 text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wider">Score</th>
                     <th className="text-left py-2 px-2 text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wider">Lesson</th>
@@ -451,7 +451,7 @@ export default function SharedReportPage() {
                   {learningGaps.map(([key, val]: [string, any]) => {
                     const p = priority(val.score);
                     return (
-                      <tr key={key} className="border-b border-[#0d9488]/10 last:border-0">
+                      <tr key={key} className="border-b border-[#6ba3c7]/10 last:border-0">
                         <td className="py-2 pr-3 text-[#2f3437] font-medium">{PRINCIPLE_LABELS[key]}</td>
                         <td className="py-2 px-2 text-center">
                           <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${scoreBg(val.score)}`}>{val.score.toFixed(1)}</span>
@@ -477,7 +477,7 @@ export default function SharedReportPage() {
             <div className="space-y-2">
               {qaItems.map((item, i) => (
                 <div key={i} className="flex items-start gap-3 py-2 border-b border-gray-50 last:border-0">
-                  <span className="w-2 h-2 rounded-full bg-[#0d9488] mt-1.5 shrink-0" />
+                  <span className="w-2 h-2 rounded-full bg-[#6ba3c7] mt-1.5 shrink-0" />
                   <div className="flex-1">
                     <span className="text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wide mr-2">
                       {PRINCIPLE_LABELS[item.key]} ({item.score.toFixed(1)}):

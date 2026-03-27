@@ -75,7 +75,7 @@ export default function EditorDashboard() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search members…"
-          className="w-full pl-10 pr-4 py-2.5 border border-[#2f3437]/15 rounded-lg text-sm bg-white focus:outline-none focus:border-[#0d9488]"
+          className="w-full pl-10 pr-4 py-2.5 border border-[#2f3437]/15 rounded-lg text-sm bg-white focus:outline-none focus:border-[#6ba3c7]"
         />
       </div>
 
@@ -108,7 +108,7 @@ export default function EditorDashboard() {
                       <p className="text-xs text-[#2f3437]/40 truncate">{member.email}</p>
                     )}
                     {member.youtubeHandle && (
-                      <p className="text-xs text-[#0d9488] truncate mt-0.5">{member.youtubeHandle}</p>
+                      <p className="text-xs text-[#6ba3c7] truncate mt-0.5">{member.youtubeHandle}</p>
                     )}
                   </div>
                   {score !== null && (
@@ -124,7 +124,7 @@ export default function EditorDashboard() {
                   <button
                     onClick={() => viewAsMember(member)}
                     disabled={viewingId === member.id}
-                    className="text-xs font-semibold text-[#0d9488] border border-[#0d9488]/30 px-3 py-1.5 rounded-lg hover:bg-[#0d9488]/10 disabled:opacity-50 transition-colors"
+                    className="text-xs font-semibold text-[#6ba3c7] border border-[#6ba3c7]/30 px-3 py-1.5 rounded-lg hover:bg-[#6ba3c7]/10 disabled:opacity-50 transition-colors"
                   >
                     {viewingId === member.id ? "Opening…" : "View as"}
                   </button>

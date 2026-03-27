@@ -72,7 +72,7 @@ const TIER_LABELS: Record<string, string> = {
 };
 
 const TIER_COLORS: Record<string, string> = {
-  foundations: "bg-[#0d9488]/10 text-[#0d9488] border-[#0d9488]/30",
+  foundations: "bg-[#6ba3c7]/10 text-[#6ba3c7] border-[#6ba3c7]/30",
   editing_2:   "bg-amber-100 dark:bg-amber-600/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-600/30",
   editing_4:   "bg-amber-100 dark:bg-amber-600/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-600/30",
   mastery_2:   "bg-purple-100 dark:bg-purple-600/20 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-600/30",
@@ -85,7 +85,7 @@ const muted = "text-[#2f3437]/60 dark:text-[#94a3b8]";
 const dim   = "text-[#2f3437]/30 dark:text-[#64748b]";
 const card  = "bg-white dark:bg-[#1a1a1a] rounded-lg border border-gray-200 dark:border-[#2a2a2a]";
 const thCls = "px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#2f3437]/50 dark:text-[#94a3b8] bg-gray-50 dark:bg-[#1e2530]";
-const rowCls = "border-b border-gray-100 dark:border-[#2a2a2a]/60 hover:bg-gray-50 dark:hover:bg-[#111111] transition-colors";
+const rowCls = "border-b border-gray-100 dark:border-[#2a2a2a]/60 hover:bg-gray-50 dark:hover:bg-[#1e2a38] transition-colors";
 
 function scoreColor(score: number | null) {
   if (score === null) return "text-[#2f3437]/30 dark:text-[#64748b]";
@@ -185,7 +185,7 @@ export default function MemberAnalyticsDetailPage({ params }: { params: Promise<
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <Link href="/admin/analytics" className={`flex items-center gap-1 text-sm ${muted} hover:text-[#0d9488] mb-4 transition`}>
+        <Link href="/admin/analytics" className={`flex items-center gap-1 text-sm ${muted} hover:text-[#6ba3c7] mb-4 transition`}>
           <ArrowLeftIcon className="w-4 h-4" />
           Back to Analytics
         </Link>
@@ -202,7 +202,7 @@ export default function MemberAnalyticsDetailPage({ params }: { params: Promise<
                 href={user.youtubeChannelUrl || `https://youtube.com/${user.youtubeHandle}`}
                 target="_blank"
                 rel="noreferrer"
-                className="text-sm text-[#0d9488] hover:underline mt-1 block"
+                className="text-sm text-[#6ba3c7] hover:underline mt-1 block"
               >
                 {user.youtubeHandle || user.youtubeChannelUrl}
               </a>
@@ -219,7 +219,7 @@ export default function MemberAnalyticsDetailPage({ params }: { params: Promise<
             <button
               onClick={handleRefresh}
               disabled={refreshing}
-              className={`flex items-center gap-2 border border-gray-200 dark:border-[#2a2a2a] bg-white dark:bg-[#1a1a1a] hover:bg-gray-50 dark:hover:bg-[#111111] disabled:opacity-60 ${txt} text-sm px-4 py-2 rounded-lg transition`}
+              className={`flex items-center gap-2 border border-gray-200 dark:border-[#2a2a2a] bg-white dark:bg-[#1a1a1a] hover:bg-gray-50 dark:hover:bg-[#1e2a38] disabled:opacity-60 ${txt} text-sm px-4 py-2 rounded-lg transition`}
             >
               <ArrowPathIcon className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
               {refreshing ? "Refreshing…" : "Refresh Channel"}
@@ -292,7 +292,7 @@ export default function MemberAnalyticsDetailPage({ params }: { params: Promise<
                     <button
                       onClick={() => handleRunAudit(video)}
                       disabled={runningAudit[video.id]}
-                      className="text-xs bg-[#0d9488] hover:bg-[#29b0f0] disabled:opacity-60 text-white rounded-lg px-3 py-1.5 transition whitespace-nowrap"
+                      className="text-xs bg-[#6ba3c7] hover:bg-[#29b0f0] disabled:opacity-60 text-white rounded-lg px-3 py-1.5 transition whitespace-nowrap"
                     >
                       {runningAudit[video.id] ? "Starting…" : "Run Audit"}
                     </button>
@@ -381,7 +381,7 @@ export default function MemberAnalyticsDetailPage({ params }: { params: Promise<
                 <XAxis dataKey="date" tick={{ fontSize: 10, fill: chartTick }} tickFormatter={(v) => v.slice(5)} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 10, fill: chartTick }} axisLine={false} tickLine={false} />
                 <Tooltip contentStyle={chartTooltip} />
-                <Bar dataKey="clicks" fill="#0d9488" radius={[2, 2, 0, 0]} />
+                <Bar dataKey="clicks" fill="#6ba3c7" radius={[2, 2, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -399,7 +399,7 @@ export default function MemberAnalyticsDetailPage({ params }: { params: Promise<
                 <XAxis dataKey="date" tick={{ fontSize: 10, fill: chartTick }} tickFormatter={(v) => v.slice(5)} axisLine={false} tickLine={false} />
                 <YAxis domain={[0, 10]} tick={{ fontSize: 10, fill: chartTick }} axisLine={false} tickLine={false} />
                 <Tooltip contentStyle={chartTooltip} />
-                <Line type="monotone" dataKey="overallScore" stroke="#0d9488" strokeWidth={2.5} dot={{ r: 3, fill: "#0d9488" }} />
+                <Line type="monotone" dataKey="overallScore" stroke="#6ba3c7" strokeWidth={2.5} dot={{ r: 3, fill: "#6ba3c7" }} />
               </LineChart>
             </ResponsiveContainer>
           </div>

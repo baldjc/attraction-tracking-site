@@ -50,7 +50,7 @@ interface ChatMessage {
 
 function ScoreGauge({ label, score, max = 20 }: { label: string; score: number; max?: number }) {
   const pct = Math.min((score / max) * 100, 100);
-  const color = score >= max * 0.75 ? "#22c55e" : score >= max * 0.5 ? "#f59e0b" : "#ef4444";
+  const color = score >= max * 0.75 ? "#22c55e" : score >= max * 0.5 ? "#f59e0b" : "#e63946";
   return (
     <div className="text-center">
       <div className="relative w-24 h-24 mx-auto mb-2">
@@ -172,7 +172,7 @@ function GoDeeperSection({
   return (
     <div className="bg-white border border-[#2f3437]/10 rounded-lg overflow-hidden">
       <div className="px-6 py-4 border-b border-[#2f3437]/8 flex items-center gap-2">
-        <SparklesIcon className="w-4 h-4 text-[#0d9488]" />
+        <SparklesIcon className="w-4 h-4 text-[#6ba3c7]" />
         <h2 className="font-semibold text-[#2f3437]">Go Deeper</h2>
         <span className="text-xs text-[#2f3437]/40 ml-1">Ask questions or try variations based on your analysis</span>
       </div>
@@ -186,7 +186,7 @@ function GoDeeperSection({
               key={action}
               onClick={() => sendMessage(action)}
               disabled={loading}
-              className="text-xs px-3 py-2 rounded-lg border border-[#0d9488]/40 text-[#0d9488] bg-[#0d9488]/5 hover:bg-[#0d9488]/10 hover:border-[#0d9488] transition-colors disabled:opacity-50"
+              className="text-xs px-3 py-2 rounded-lg border border-[#6ba3c7]/40 text-[#6ba3c7] bg-[#6ba3c7]/5 hover:bg-[#6ba3c7]/10 hover:border-[#6ba3c7] transition-colors disabled:opacity-50"
             >
               {action}
             </button>
@@ -200,7 +200,7 @@ function GoDeeperSection({
           {messages.map((msg, i) => (
             <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
               {msg.role === "user" ? (
-                <div className="bg-[#0d9488] text-white rounded-lg rounded-tr-sm px-4 py-2.5 max-w-[85%]">
+                <div className="bg-[#6ba3c7] text-white rounded-lg rounded-tr-sm px-4 py-2.5 max-w-[85%]">
                   <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                 </div>
               ) : (
@@ -226,7 +226,7 @@ function GoDeeperSection({
                             className={`shrink-0 p-1 rounded transition-colors ${
                               savedTitles.has(t)
                                 ? "text-green-500"
-                                : "text-[#2f3437]/30 hover:text-[#0d9488]"
+                                : "text-[#2f3437]/30 hover:text-[#6ba3c7]"
                             }`}
                           >
                             {savedTitles.has(t) ? (
@@ -248,9 +248,9 @@ function GoDeeperSection({
             <div className="flex justify-start">
               <div className="bg-[#f7f6f3] rounded-lg rounded-tl-sm px-4 py-3">
                 <div className="flex gap-1">
-                  <span className="w-2 h-2 bg-[#0d9488]/60 rounded-full animate-bounce [animation-delay:0ms]" />
-                  <span className="w-2 h-2 bg-[#0d9488]/60 rounded-full animate-bounce [animation-delay:150ms]" />
-                  <span className="w-2 h-2 bg-[#0d9488]/60 rounded-full animate-bounce [animation-delay:300ms]" />
+                  <span className="w-2 h-2 bg-[#6ba3c7]/60 rounded-full animate-bounce [animation-delay:0ms]" />
+                  <span className="w-2 h-2 bg-[#6ba3c7]/60 rounded-full animate-bounce [animation-delay:150ms]" />
+                  <span className="w-2 h-2 bg-[#6ba3c7]/60 rounded-full animate-bounce [animation-delay:300ms]" />
                 </div>
               </div>
             </div>
@@ -268,12 +268,12 @@ function GoDeeperSection({
           onKeyDown={handleKeyDown}
           placeholder="Ask anything — e.g. 'Make it more curiosity-driven' or 'Give versions for Instagram Reels too'"
           rows={2}
-          className="flex-1 border border-[#2f3437]/20 rounded-lg px-4 py-3 text-sm text-[#2f3437] placeholder-[#2f3437]/30 focus:outline-none focus:border-[#0d9488] resize-none transition-colors"
+          className="flex-1 border border-[#2f3437]/20 rounded-lg px-4 py-3 text-sm text-[#2f3437] placeholder-[#2f3437]/30 focus:outline-none focus:border-[#6ba3c7] resize-none transition-colors"
         />
         <button
           onClick={() => sendMessage(input)}
           disabled={loading || !input.trim()}
-          className="shrink-0 p-3 bg-[#0d9488] text-white rounded-lg hover:bg-[#0d9488]/90 disabled:opacity-50 transition-colors"
+          className="shrink-0 p-3 bg-[#6ba3c7] text-white rounded-lg hover:bg-[#6ba3c7]/90 disabled:opacity-50 transition-colors"
         >
           <PaperAirplaneIcon className="w-4 h-4" />
         </button>
@@ -387,7 +387,7 @@ export default function TitleThumbnailAnalyzerPage() {
       <div className="mb-5">
         <Link
           href="/member/ai-tools"
-          className="flex items-center gap-1.5 text-xs text-[#2f3437]/50 hover:text-[#0d9488] transition-colors mb-3"
+          className="flex items-center gap-1.5 text-xs text-[#2f3437]/50 hover:text-[#6ba3c7] transition-colors mb-3"
         >
           <ArrowLeftIcon className="w-3.5 h-3.5" />
           Back to AI Tools
@@ -415,7 +415,7 @@ export default function TitleThumbnailAnalyzerPage() {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Paste your video title here..."
-                className="w-full bg-white border border-[#2f3437]/20 rounded-lg px-4 py-3 text-sm text-[#2f3437] placeholder-[#2f3437]/30 focus:outline-none focus:border-[#0d9488] transition-colors"
+                className="w-full bg-white border border-[#2f3437]/20 rounded-lg px-4 py-3 text-sm text-[#2f3437] placeholder-[#2f3437]/30 focus:outline-none focus:border-[#6ba3c7] transition-colors"
               />
             </div>
 
@@ -443,7 +443,7 @@ export default function TitleThumbnailAnalyzerPage() {
                   </button>
                 </div>
               ) : (
-                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-[#2f3437]/20 rounded-lg cursor-pointer hover:border-[#0d9488]/50 transition-colors">
+                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-[#2f3437]/20 rounded-lg cursor-pointer hover:border-[#6ba3c7]/50 transition-colors">
                   <PhotoIcon className="w-8 h-8 text-[#2f3437]/20 mb-2" />
                   <span className="text-sm text-[#2f3437]/40">Click to upload thumbnail</span>
                   <input
@@ -470,7 +470,7 @@ export default function TitleThumbnailAnalyzerPage() {
                 onChange={(e) => setIntroTranscript(e.target.value)}
                 placeholder="Hey, in this video I'm going to show you exactly why most agents are losing listings before they even get to the appointment..."
                 rows={4}
-                className="w-full bg-white border border-[#2f3437]/20 rounded-lg px-4 py-3 text-sm text-[#2f3437] placeholder-[#2f3437]/30 focus:outline-none focus:border-[#0d9488] transition-colors resize-y"
+                className="w-full bg-white border border-[#2f3437]/20 rounded-lg px-4 py-3 text-sm text-[#2f3437] placeholder-[#2f3437]/30 focus:outline-none focus:border-[#6ba3c7] transition-colors resize-y"
               />
             </div>
 
@@ -479,7 +479,7 @@ export default function TitleThumbnailAnalyzerPage() {
             <button
               onClick={analyse}
               disabled={loading || !title.trim()}
-              className="w-full bg-[#0d9488] text-white py-3 rounded-lg font-semibold hover:bg-[#0d9488]/90 disabled:opacity-50 transition-colors"
+              className="w-full bg-[#6ba3c7] text-white py-3 rounded-lg font-semibold hover:bg-[#6ba3c7]/90 disabled:opacity-50 transition-colors"
             >
               {loading ? "Analysing..." : "Analyse"}
             </button>
@@ -526,7 +526,7 @@ export default function TitleThumbnailAnalyzerPage() {
                   <ul className="space-y-1.5">
                     {result.thumbnail?.observations?.map((o, i) => (
                       <li key={i} className="text-sm text-[#2f3437] flex gap-2">
-                        <span className="text-[#0d9488]">•</span>
+                        <span className="text-[#6ba3c7]">•</span>
                         {o}
                       </li>
                     ))}
@@ -562,7 +562,7 @@ export default function TitleThumbnailAnalyzerPage() {
                 <ul className="space-y-1.5">
                   {result.title?.observations?.map((o, i) => (
                     <li key={i} className="text-sm text-[#2f3437] flex gap-2">
-                      <span className="text-[#0d9488]">•</span>
+                      <span className="text-[#6ba3c7]">•</span>
                       {o}
                     </li>
                   ))}
@@ -614,7 +614,7 @@ export default function TitleThumbnailAnalyzerPage() {
                     <ul className="space-y-1.5">
                       {result.intro.observations?.map((o, i) => (
                         <li key={i} className="text-sm text-[#2f3437] flex gap-2">
-                          <span className="text-[#0d9488]">•</span>
+                          <span className="text-[#6ba3c7]">•</span>
                           {o}
                         </li>
                       ))}
@@ -660,7 +660,7 @@ export default function TitleThumbnailAnalyzerPage() {
               <ul className="space-y-1.5 mb-3">
                 {result.combined?.observations?.map((o, i) => (
                   <li key={i} className="text-sm text-[#2f3437] flex gap-2">
-                    <span className="text-[#0d9488]">•</span>
+                    <span className="text-[#6ba3c7]">•</span>
                     {o}
                   </li>
                 ))}
@@ -701,7 +701,7 @@ export default function TitleThumbnailAnalyzerPage() {
 
             {/* Thumbnail concepts */}
             {(result.combined?.thumbnail_concepts?.length ?? 0) > 0 && (
-              <div className="bg-[#0d9488]/5 border border-[#0d9488]/20 rounded-lg p-4">
+              <div className="bg-[#6ba3c7]/5 border border-[#6ba3c7]/20 rounded-lg p-4">
                 <p className="text-xs font-semibold text-[#2f3437]/60 uppercase tracking-wide mb-3">
                   Thumbnail Concepts That Create Dissonance
                 </p>
@@ -727,7 +727,7 @@ export default function TitleThumbnailAnalyzerPage() {
               .map(([k]) => k)
               .join(",");
             return weakPrinciples ? (
-              <div className="bg-[#0d9488]/5 border border-[#0d9488]/25 rounded-lg p-5">
+              <div className="bg-[#6ba3c7]/5 border border-[#6ba3c7]/25 rounded-lg p-5">
                 <ResourceRecommendations
                   principles={weakPrinciples}
                   limitPerPrinciple={2}

@@ -356,9 +356,9 @@ export default function ArcScriptChatPhase({ initialData, onReset }: Props) {
           {sectionApprovals.filter((a) => a.key === expandedSection).map((approval) => {
             const label = SECTIONS.find((s) => s.key === approval.key)?.label ?? approval.key;
             return (
-              <div key={approval.key} className="bg-[#0d9488]/8 border border-[#0d9488]/20 rounded-lg p-4">
+              <div key={approval.key} className="bg-[#6ba3c7]/8 border border-[#6ba3c7]/20 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-bold text-[#0d9488] uppercase tracking-wide">
+                  <span className="text-xs font-bold text-[#6ba3c7] uppercase tracking-wide">
                     Approved: {label}
                   </span>
                   <button onClick={() => setExpandedSection(null)} className="text-[#2f3437]/40 dark:text-white/40 hover:text-[#2f3437] dark:hover:text-white">
@@ -393,7 +393,7 @@ export default function ArcScriptChatPhase({ initialData, onReset }: Props) {
                 ) : (
                   <div className="flex gap-1.5 items-center h-4">
                     {[0, 1, 2].map((i) => (
-                      <span key={i} className="w-2 h-2 rounded-full bg-[#0d9488]/60 animate-bounce"
+                      <span key={i} className="w-2 h-2 rounded-full bg-[#6ba3c7]/60 animate-bounce"
                         style={{ animationDelay: `${i * 0.15}s` }} />
                     ))}
                   </div>
@@ -408,7 +408,7 @@ export default function ArcScriptChatPhase({ initialData, onReset }: Props) {
             <div className="bg-white dark:bg-[#1a1a1a] border border-[#2f3437]/10 dark:border-white/10 rounded-lg rounded-tl-sm px-4 py-3">
               <div className="flex gap-1.5 items-center h-4">
                 {[0, 1, 2].map((i) => (
-                  <span key={i} className="w-2 h-2 rounded-full bg-[#0d9488]/60 animate-bounce"
+                  <span key={i} className="w-2 h-2 rounded-full bg-[#6ba3c7]/60 animate-bounce"
                     style={{ animationDelay: `${i * 0.15}s` }} />
                 ))}
               </div>
@@ -436,7 +436,7 @@ export default function ArcScriptChatPhase({ initialData, onReset }: Props) {
           <button
             onClick={handleSave}
             disabled={saving || saved}
-            className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-[#0d9488] text-white rounded-lg hover:bg-[#0d9488]/90 disabled:opacity-50 transition-colors"
+            className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-[#6ba3c7] text-white rounded-lg hover:bg-[#6ba3c7]/90 disabled:opacity-50 transition-colors"
           >
             {saved ? <CheckIcon className="w-4 h-4" /> : null}
             {saving ? "Saving…" : saved ? "Saved!" : "Save Script"}
@@ -465,12 +465,12 @@ export default function ArcScriptChatPhase({ initialData, onReset }: Props) {
                   : "Type your reply… (Enter to send, Shift+Enter for new line)"
               }
               rows={2}
-              className="flex-1 bg-white dark:bg-[#111111] border border-[#2f3437]/20 dark:border-white/20 rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-white placeholder-[#2f3437]/30 dark:placeholder-white/30 resize-none focus:outline-none focus:border-[#0d9488] transition-colors"
+              className="flex-1 bg-white dark:bg-[#0f1419] border border-[#2f3437]/20 dark:border-white/20 rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-white placeholder-[#2f3437]/30 dark:placeholder-white/30 resize-none focus:outline-none focus:border-[#6ba3c7] transition-colors"
             />
             <button
               onClick={() => { if (input.trim() && !loading) sendMessage(input.trim()); }}
               disabled={loading || !input.trim()}
-              className="flex-shrink-0 w-11 h-11 flex items-center justify-center bg-[#0d9488] text-white rounded-lg hover:bg-[#0d9488]/90 disabled:opacity-40 transition-colors"
+              className="flex-shrink-0 w-11 h-11 flex items-center justify-center bg-[#6ba3c7] text-white rounded-lg hover:bg-[#6ba3c7]/90 disabled:opacity-40 transition-colors"
             >
               <PaperAirplaneIcon className="w-5 h-5" />
             </button>

@@ -59,7 +59,7 @@ function RecommendationCard({ rec }: { rec: Recommendation }) {
     : null;
 
   return (
-    <div className={`flex-shrink-0 w-64 rounded-lg border overflow-hidden bg-white dark:bg-[#111111] ${
+    <div className={`flex-shrink-0 w-64 rounded-lg border overflow-hidden bg-white dark:bg-[#0f1419] ${
       isLesson ? "border-blue-100 dark:border-blue-900/30" : "border-violet-100 dark:border-violet-900/30"
     }`}>
       {/* Source bar */}
@@ -159,7 +159,7 @@ export default function ResourceRecommendations({
   return (
     <div className={`${className}`}>
       <div className={`flex items-center gap-2 mb-3 ${compact ? "" : ""}`}>
-        <BookOpenIcon className="w-4 h-4 text-[#0d9488] flex-shrink-0" />
+        <BookOpenIcon className="w-4 h-4 text-[#6ba3c7] flex-shrink-0" />
         <h3 className="text-sm font-semibold text-[#2f3437] dark:text-white">{heading}</h3>
         {!loading && recs.length > 0 && (
           <span className="text-[10px] text-[#2f3437]/40 dark:text-white/30">{recs.length} item{recs.length !== 1 ? "s" : ""}</span>
@@ -204,9 +204,9 @@ export function ResourceRecommendationsInline({
   if (!loading && recs.length === 0) return null;
 
   return (
-    <div className={`rounded-lg border border-[#0d9488]/25 bg-[#0d9488]/5 p-5 ${className}`}>
+    <div className={`rounded-lg border border-[#6ba3c7]/25 bg-[#6ba3c7]/5 p-5 ${className}`}>
       <div className="flex items-center gap-2 mb-4">
-        <BookOpenIcon className="w-4 h-4 text-[#0d9488]" />
+        <BookOpenIcon className="w-4 h-4 text-[#6ba3c7]" />
         <h3 className="text-sm font-semibold text-[#2f3437]">{heading}</h3>
         {!loading && recs.length > 0 && (
           <span className="text-[10px] text-[#2f3437]/40">{recs.length} item{recs.length !== 1 ? "s" : ""}</span>

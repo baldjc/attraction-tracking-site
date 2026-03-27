@@ -48,7 +48,7 @@ interface Props {
 export default function ContentEngineChat({ theme, onBack }: Props) {
   const themeName = typeof theme === "string" ? theme : theme.name;
   const themeEmoji = typeof theme === "string" ? null : (theme.emoji ?? null);
-  const themeColour = typeof theme === "string" ? "#0d9488" : (theme.colour ?? "#0d9488");
+  const themeColour = typeof theme === "string" ? "#6ba3c7" : (theme.colour ?? "#6ba3c7");
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -116,7 +116,7 @@ export default function ContentEngineChat({ theme, onBack }: Props) {
         {messages.map((msg, i) => (
           <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
             {msg.role === "user" ? (
-              <div className="bg-[#111] dark:bg-[#0d9488]/20 text-white text-sm px-4 py-2.5 rounded-lg rounded-br-sm max-w-[80%]">
+              <div className="bg-[#111] dark:bg-[#6ba3c7]/20 text-white text-sm px-4 py-2.5 rounded-lg rounded-br-sm max-w-[80%]">
                 {msg.content}
               </div>
             ) : (
@@ -138,9 +138,9 @@ export default function ContentEngineChat({ theme, onBack }: Props) {
         {loading && (
           <div className="flex justify-start">
             <div className="flex gap-1 items-center px-4 py-3">
-              <span className="w-2 h-2 bg-[#0d9488] rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-              <span className="w-2 h-2 bg-[#0d9488] rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-              <span className="w-2 h-2 bg-[#0d9488] rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+              <span className="w-2 h-2 bg-[#6ba3c7] rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+              <span className="w-2 h-2 bg-[#6ba3c7] rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+              <span className="w-2 h-2 bg-[#6ba3c7] rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
             </div>
           </div>
         )}
@@ -156,12 +156,12 @@ export default function ContentEngineChat({ theme, onBack }: Props) {
             onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
             placeholder={`Ask about the "${themeName}" theme...`}
             disabled={loading}
-            className="flex-1 bg-white dark:bg-[#111111] border border-[#2f3437]/20 dark:border-white/20 rounded-lg px-4 py-2.5 text-sm text-[#2f3437] dark:text-white placeholder-[#2f3437]/30 dark:placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#0d9488]/40"
+            className="flex-1 bg-white dark:bg-[#0f1419] border border-[#2f3437]/20 dark:border-white/20 rounded-lg px-4 py-2.5 text-sm text-[#2f3437] dark:text-white placeholder-[#2f3437]/30 dark:placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40"
           />
           <button
             onClick={handleSend}
             disabled={loading || !input.trim()}
-            className="bg-[#0d9488] hover:bg-[#2bb0ec] text-white text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors disabled:opacity-40"
+            className="bg-[#6ba3c7] hover:bg-[#2bb0ec] text-white text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors disabled:opacity-40"
           >
             Send
           </button>

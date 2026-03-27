@@ -152,7 +152,7 @@ export default function MemberDashboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-4 border-[#0d9488] border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-4 border-[#6ba3c7] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -188,11 +188,11 @@ export default function MemberDashboard() {
   function UploadStatus() {
     if (daysSinceUpload == null) {
       return (
-        <div className={`flex items-start gap-3 p-4 rounded-lg bg-gray-50 dark:bg-[#111111]`}>
+        <div className={`flex items-start gap-3 p-4 rounded-lg bg-gray-50 dark:bg-[#0f1419]`}>
           <VideoCameraIcon className={`w-5 h-5 mt-0.5 ${muted} shrink-0`} />
           <div>
             <p className={`text-sm font-medium ${txt}`}>No upload data available</p>
-            <Link href="/member/campaigns" className="text-xs text-[#0d9488] hover:underline mt-0.5 block">
+            <Link href="/member/campaigns" className="text-xs text-[#6ba3c7] hover:underline mt-0.5 block">
               Connect a YouTube video to start tracking →
             </Link>
           </div>
@@ -239,7 +239,7 @@ export default function MemberDashboard() {
       {/* Row 1 — KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Attraction Score */}
-        <Link href="/member/scores" className={`${card} p-5 block hover:ring-2 hover:ring-[#0d9488]/40 transition-shadow`}>
+        <Link href="/member/scores" className={`${card} p-5 block hover:ring-2 hover:ring-[#6ba3c7]/40 transition-shadow`}>
           <p className={`text-xs font-semibold uppercase tracking-wider ${muted} mb-2`}>Attraction Score</p>
           {latestAudit ? (
             <>
@@ -273,7 +273,7 @@ export default function MemberDashboard() {
         </Link>
 
         {/* Leads This Month */}
-        <Link href="/member/analytics?tab=conversions" className={`${card} p-5 block hover:ring-2 hover:ring-[#0d9488]/40 transition-shadow`}>
+        <Link href="/member/analytics?tab=conversions" className={`${card} p-5 block hover:ring-2 hover:ring-[#6ba3c7]/40 transition-shadow`}>
           <p className={`text-xs font-semibold uppercase tracking-wider ${muted} mb-2`}>Leads This Month</p>
           <p className={`text-4xl font-black ${txt}`}>{thisMonth.leads}</p>
           {hasCampaigns ? (
@@ -285,14 +285,14 @@ export default function MemberDashboard() {
               <p className={`text-xs mt-1 ${muted}`}>Same as last month</p>
             )
           ) : (
-            <span className="text-xs mt-1 text-[#0d9488] block">
+            <span className="text-xs mt-1 text-[#6ba3c7] block">
               Set up link tracking →
             </span>
           )}
         </Link>
 
         {/* Clicks This Month */}
-        <Link href="/member/analytics?tab=overview" className={`${card} p-5 block hover:ring-2 hover:ring-[#0d9488]/40 transition-shadow`}>
+        <Link href="/member/analytics?tab=overview" className={`${card} p-5 block hover:ring-2 hover:ring-[#6ba3c7]/40 transition-shadow`}>
           <p className={`text-xs font-semibold uppercase tracking-wider ${muted} mb-2`}>Clicks This Month</p>
           <p className={`text-4xl font-black ${txt}`}>{thisMonth.clicks}</p>
           {hasCampaigns ? (
@@ -304,16 +304,16 @@ export default function MemberDashboard() {
               <p className={`text-xs mt-1 ${muted}`}>Same as last month</p>
             )
           ) : (
-            <span className="text-xs mt-1 text-[#0d9488] block">
+            <span className="text-xs mt-1 text-[#6ba3c7] block">
               Set up link tracking →
             </span>
           )}
         </Link>
 
         {/* Conversion Rate */}
-        <Link href="/member/analytics?tab=overview" className={`${card} p-5 block hover:ring-2 hover:ring-[#0d9488]/40 transition-shadow`}>
+        <Link href="/member/analytics?tab=overview" className={`${card} p-5 block hover:ring-2 hover:ring-[#6ba3c7]/40 transition-shadow`}>
           <p className={`text-xs font-semibold uppercase tracking-wider ${muted} mb-2`}>Conversion Rate</p>
-          <p className={`text-4xl font-black text-[#0d9488]`}>{thisMonth.convRate}%</p>
+          <p className={`text-4xl font-black text-[#6ba3c7]`}>{thisMonth.convRate}%</p>
           {hasCampaigns ? (
             convDiff ? (
               <p className={`text-xs mt-1 font-medium ${convDiff.positive ? "text-green-600" : "text-[#ff0033]"}`}>
@@ -323,7 +323,7 @@ export default function MemberDashboard() {
               <p className={`text-xs mt-1 ${muted}`}>Same as last month</p>
             )
           ) : (
-            <span className="text-xs mt-1 text-[#0d9488] block">
+            <span className="text-xs mt-1 text-[#6ba3c7] block">
               Set up link tracking →
             </span>
           )}
@@ -375,7 +375,7 @@ export default function MemberDashboard() {
                         </div>
                         <Link
                           href={suggestion.href}
-                          className="text-xs text-[#0d9488] hover:underline mt-0.5 block"
+                          className="text-xs text-[#6ba3c7] hover:underline mt-0.5 block"
                         >
                           {suggestion.label}
                         </Link>
@@ -389,7 +389,7 @@ export default function MemberDashboard() {
               {latestAudit.oneSentenceDiagnosis && (
                 <>
                   <div className={`border-t ${divider}`} />
-                  <blockquote className="bg-[#0d9488]/8 dark:bg-[#0d9488]/10 border-l-4 border-[#0d9488] rounded-r-xl px-4 py-3">
+                  <blockquote className="bg-[#6ba3c7]/8 dark:bg-[#6ba3c7]/10 border-l-4 border-[#6ba3c7] rounded-r-xl px-4 py-3">
                     <p className={`text-sm italic ${txt}`}>{latestAudit.oneSentenceDiagnosis}</p>
                   </blockquote>
                 </>
@@ -411,7 +411,7 @@ export default function MemberDashboard() {
             <h3 className={`text-sm font-semibold ${txt} mb-2`}>Next Q&A Call</h3>
             <p className={`text-base font-bold ${txt}`}>{coaching.label}</p>
             <div className="flex items-center gap-2 mt-1 flex-wrap">
-              <span className="inline-block text-xs font-medium px-2 py-0.5 rounded-full bg-[#0d9488]/15 text-[#0d9488]">
+              <span className="inline-block text-xs font-medium px-2 py-0.5 rounded-full bg-[#6ba3c7]/15 text-[#6ba3c7]">
                 {coaching.relative}
               </span>
               {nextCoachingCall.link && nextCoachingCall.link.startsWith("http") && (
@@ -419,7 +419,7 @@ export default function MemberDashboard() {
                   href={nextCoachingCall.link}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1 rounded-full bg-[#0d9488] text-white hover:bg-[#29aee8] transition-colors"
+                  className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1 rounded-full bg-[#6ba3c7] text-white hover:bg-[#29aee8] transition-colors"
                 >
                   Join Call →
                 </a>
@@ -431,7 +431,7 @@ export default function MemberDashboard() {
           <div className={`${card} p-5`}>
             <div className="flex items-center justify-between mb-3">
               <h3 className={`text-sm font-semibold ${txt}`}>AI Tools</h3>
-              <Link href="/member/ai-tools" className="text-xs text-[#0d9488] hover:underline">
+              <Link href="/member/ai-tools" className="text-xs text-[#6ba3c7] hover:underline">
                 See all →
               </Link>
             </div>
@@ -446,8 +446,8 @@ export default function MemberDashboard() {
                   key={label}
                   href={href}
                   className={`flex flex-col items-center gap-1.5 p-3 rounded-lg text-center transition-colors
-                    bg-gray-50 dark:bg-[#111111] hover:bg-[#0d9488]/10 dark:hover:bg-[#0d9488]/10
-                    border border-transparent hover:border-[#0d9488]/30`}
+                    bg-gray-50 dark:bg-[#0f1419] hover:bg-[#6ba3c7]/10 dark:hover:bg-[#6ba3c7]/10
+                    border border-transparent hover:border-[#6ba3c7]/30`}
                 >
                   <span className="text-2xl leading-none">{emoji}</span>
                   <span className={`text-xs font-medium ${txt} leading-tight`}>{label}</span>
@@ -468,7 +468,7 @@ export default function MemberDashboard() {
               href="https://studio.youtube.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs text-[#0d9488] hover:underline"
+              className="text-xs text-[#6ba3c7] hover:underline"
             >
               Open Studio →
             </a>
@@ -493,7 +493,7 @@ export default function MemberDashboard() {
                   href={v.studioUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex gap-3 group rounded-lg p-1 -m-1 hover:bg-gray-50 dark:hover:bg-[#111111] transition-colors"
+                  className="flex gap-3 group rounded-lg p-1 -m-1 hover:bg-gray-50 dark:hover:bg-[#1e2a38] transition-colors"
                 >
                   <div className="relative shrink-0">
                     {v.thumbnailUrl ? (
@@ -503,7 +503,7 @@ export default function MemberDashboard() {
                         className="w-24 h-14 object-cover rounded-lg"
                       />
                     ) : (
-                      <div className="w-24 h-14 bg-gray-100 dark:bg-[#111111] rounded-lg flex items-center justify-center">
+                      <div className="w-24 h-14 bg-gray-100 dark:bg-[#0f1419] rounded-lg flex items-center justify-center">
                         <PlayCircleIcon className={`w-6 h-6 ${muted}`} />
                       </div>
                     )}
@@ -512,14 +512,14 @@ export default function MemberDashboard() {
                     </span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className={`text-xs font-medium ${txt} line-clamp-2 leading-snug group-hover:text-[#0d9488] transition-colors`}>
+                    <p className={`text-xs font-medium ${txt} line-clamp-2 leading-snug group-hover:text-[#6ba3c7] transition-colors`}>
                       {v.title}
                     </p>
                     <div className="flex items-center gap-2 mt-1">
                       <span className={`text-xs font-semibold ${txt}`}>{fmtViews(v.viewCount)} views</span>
                       <span className={`text-xs ${muted}`}>· {fmtUploadDate(v.uploadDate)}</span>
                     </div>
-                    <span className="text-[10px] text-[#0d9488] group-hover:underline mt-0.5 block">
+                    <span className="text-[10px] text-[#6ba3c7] group-hover:underline mt-0.5 block">
                       Edit in Studio →
                     </span>
                   </div>
@@ -535,7 +535,7 @@ export default function MemberDashboard() {
                 href="https://studio.youtube.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs text-[#0d9488] hover:underline mt-2"
+                className="text-xs text-[#6ba3c7] hover:underline mt-2"
               >
                 Go to YouTube Studio →
               </a>
@@ -544,7 +544,7 @@ export default function MemberDashboard() {
             <div className="flex flex-col items-center justify-center py-8 text-center">
               <VideoCameraIcon className={`w-8 h-8 ${muted} mb-2`} />
               <p className={`text-sm ${muted}`}>No YouTube channel connected.</p>
-              <Link href="/member/settings" className="text-xs text-[#0d9488] hover:underline mt-1">
+              <Link href="/member/settings" className="text-xs text-[#6ba3c7] hover:underline mt-1">
                 Add your channel in Settings →
               </Link>
             </div>
@@ -555,7 +555,7 @@ export default function MemberDashboard() {
         <div className={`${card} p-5`}>
           <div className="flex items-center justify-between mb-4">
             <h3 className={`text-sm font-semibold ${txt}`}>Score History</h3>
-            <Link href="/member/scores" className="text-xs text-[#0d9488] hover:underline">
+            <Link href="/member/scores" className="text-xs text-[#6ba3c7] hover:underline">
               See details →
             </Link>
           </div>
@@ -577,16 +577,16 @@ export default function MemberDashboard() {
                     fontSize: 12,
                     color: "#e2e8f0",
                   }}
-                  cursor={{ stroke: "#0d9488", strokeWidth: 1, strokeDasharray: "4 4" }}
+                  cursor={{ stroke: "#6ba3c7", strokeWidth: 1, strokeDasharray: "4 4" }}
                   formatter={(v) => [typeof v === "number" ? v.toFixed(1) : v, "Score"]}
                 />
                 <Line
                   type="monotone"
                   dataKey="score"
-                  stroke="#0d9488"
+                  stroke="#6ba3c7"
                   strokeWidth={2}
-                  dot={{ fill: "#0d9488", r: 3 }}
-                  activeDot={{ r: 5, fill: "#0d9488" }}
+                  dot={{ fill: "#6ba3c7", r: 3 }}
+                  activeDot={{ r: 5, fill: "#6ba3c7" }}
                 />
               </LineChart>
             </ResponsiveContainer>

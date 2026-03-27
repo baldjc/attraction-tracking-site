@@ -7,29 +7,29 @@
 :root {
   --atbv-bg: #f7f6f3;
   --atbv-surface: #ffffff;
-  --atbv-sidebar: #111111;
+  --atbv-sidebar: #1e2a38;
   --atbv-text: #2f3437;
   --atbv-text-muted: #787774;
   --atbv-text-dim: rgba(47, 52, 55, 0.4);
   --atbv-border: #eaeaea;
   --atbv-hover: #f4f3f0;
   --atbv-input: #ffffff;
-  --atbv-primary: #0d9488;
-  --atbv-danger: #dc2626;
+  --atbv-primary: #6ba3c7;
+  --atbv-danger: #e63946;
 }
 
 html.dark {
-  --atbv-bg: #111111;
-  --atbv-surface: #1a1a1a;
-  --atbv-sidebar: #0a0a0a;
+  --atbv-bg: #0f1419;
+  --atbv-surface: #1a2232;
+  --atbv-sidebar: #0f1419;
   --atbv-text: #e2e8f0;
   --atbv-text-muted: #94a3b8;
   --atbv-text-dim: #64748b;
-  --atbv-border: #2a2a2a;
-  --atbv-hover: #222222;
-  --atbv-input: #1a1a1a;
-  --atbv-primary: #0d9488;
-  --atbv-danger: #ef4444;
+  --atbv-border: #2d3748;
+  --atbv-hover: #2d3748;
+  --atbv-input: #2d3748;
+  --atbv-primary: #6ba3c7;
+  --atbv-danger: #e63946;
 }
 
 /* ── Smooth colour transitions everywhere ────────────────────── */

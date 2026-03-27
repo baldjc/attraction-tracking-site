@@ -12,7 +12,7 @@ interface Props {
   colors?: string[];
 }
 
-const DEFAULT_COLORS = ["#0d9488", "#2f3437", "#ff0033", "#22c55e", "#f59e0b", "#a78bfa"];
+const DEFAULT_COLORS = ["#6ba3c7", "#2f3437", "#ff0033", "#22c55e", "#f59e0b", "#a78bfa"];
 
 export function DonutChart({ data, colors = DEFAULT_COLORS }: Props) {
   const nonZero = data.filter((d) => d.value > 0);

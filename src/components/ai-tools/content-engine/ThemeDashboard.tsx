@@ -105,7 +105,7 @@ export default function ThemeDashboard({ themes, niche, city, hasImported, impor
         <div>
           <Link
             href="/member/ai-tools"
-            className="flex items-center gap-1.5 text-xs text-[#2f3437]/50 dark:text-white/50 hover:text-[#0d9488] transition-colors mb-3"
+            className="flex items-center gap-1.5 text-xs text-[#2f3437]/50 dark:text-white/50 hover:text-[#6ba3c7] transition-colors mb-3"
           >
             <ArrowLeftIcon className="w-3.5 h-3.5" />
             Back to AI Tools
@@ -123,7 +123,7 @@ export default function ThemeDashboard({ themes, niche, city, hasImported, impor
               <button
                 onClick={saveOrder}
                 disabled={savingOrder}
-                className="text-sm bg-[#0d9488] hover:bg-[#2bb0ec] text-white font-semibold px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+                className="text-sm bg-[#6ba3c7] hover:bg-[#2bb0ec] text-white font-semibold px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
               >
                 {savingOrder ? "Saving..." : "Save Order"}
               </button>
@@ -139,7 +139,7 @@ export default function ThemeDashboard({ themes, niche, city, hasImported, impor
               <button
                 onClick={handleGenerateAll}
                 disabled={generatingAll}
-                className="text-sm bg-[#0d9488] hover:bg-[#2bb0ec] text-white font-semibold px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+                className="text-sm bg-[#6ba3c7] hover:bg-[#2bb0ec] text-white font-semibold px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
               >
                 {generatingAll ? "Generating..." : "Generate All"}
               </button>
@@ -187,7 +187,7 @@ export default function ThemeDashboard({ themes, niche, city, hasImported, impor
             const obj = typeof t === "string" ? null : t as ContentTheme;
             const name = typeof t === "string" ? t : t.name;
             const emoji = obj?.emoji ?? "🎯";
-            const colour = obj?.colour ?? "#0d9488";
+            const colour = obj?.colour ?? "#6ba3c7";
             return (
               <div key={i} className="flex items-center gap-3 bg-white dark:bg-[#1a1a1a] rounded-lg border border-[#2f3437]/10 dark:border-white/10 p-4">
                 <span className="text-xl flex-shrink-0">{emoji}</span>
@@ -231,7 +231,7 @@ export default function ThemeDashboard({ themes, niche, city, hasImported, impor
       )}
 
       {hasImported && (
-        <div className="mt-6 bg-[#f8f8f6] dark:bg-[#111111] rounded-lg border border-[#2f3437]/10 dark:border-white/10 p-5">
+        <div className="mt-6 bg-[#f8f8f6] dark:bg-[#0f1419] rounded-lg border border-[#2f3437]/10 dark:border-white/10 p-5">
           <div className="flex items-center gap-2 mb-3">
             <h3 className="font-semibold text-[#2f3437]/60 dark:text-white/60 text-sm">Imported Titles ({importedCount})</h3>
             <span className="text-xs text-[#2f3437]/40 dark:text-white/40 bg-[#111]/5 dark:bg-white/5 px-2 py-0.5 rounded-full">Imported titles</span>

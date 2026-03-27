@@ -142,7 +142,7 @@ export default function AdminCampaignsPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by campaign name or member…"
-            className="w-full border border-[#2f3437]/20 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-[#0d9488]"
+            className="w-full border border-[#2f3437]/20 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-[#6ba3c7]"
           />
         </div>
 
@@ -174,7 +174,7 @@ export default function AdminCampaignsPage() {
                     {c.sourceType === "EMAIL_NEWSLETTER" ? (
                       <>
                         <div className="text-[#2f3437] font-semibold">{c.totalClicks} clicks</div>
-                        <div className="text-[#0d9488] text-xs">{c.totalUniqueClicks} unique</div>
+                        <div className="text-[#6ba3c7] text-xs">{c.totalUniqueClicks} unique</div>
                       </>
                     ) : c.sourceType === "YOUTUBE" ? (
                       <>
@@ -182,12 +182,12 @@ export default function AdminCampaignsPage() {
                           <div className="text-[#2f3437] text-xs font-medium">{c.totalViews.toLocaleString()} views</div>
                         )}
                         <div className="text-[#2f3437] font-semibold">{c.totalClicks} clicks</div>
-                        <div className="text-[#0d9488] text-xs">{c.totalLeads} leads · {c.conversionRate}% conv</div>
+                        <div className="text-[#6ba3c7] text-xs">{c.totalLeads} leads · {c.conversionRate}% conv</div>
                       </>
                     ) : (
                       <>
                         <div className="text-[#2f3437] font-semibold">{c.totalClicks} clicks</div>
-                        <div className="text-[#0d9488] text-xs">{c.totalLeads} leads · {c.conversionRate}% conv</div>
+                        <div className="text-[#6ba3c7] text-xs">{c.totalLeads} leads · {c.conversionRate}% conv</div>
                       </>
                     )}
                   </div>

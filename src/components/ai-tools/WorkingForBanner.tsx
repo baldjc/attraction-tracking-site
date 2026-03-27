@@ -76,7 +76,7 @@ export default function WorkingForBanner() {
   });
 
   return (
-    <div className="mb-6 bg-[#0d9488]/8 border border-[#0d9488]/20 rounded-lg px-4 py-3">
+    <div className="mb-6 bg-[#6ba3c7]/8 border border-[#6ba3c7]/20 rounded-lg px-4 py-3">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
           <UserCircleIcon className="w-4 h-4 text-[#2f3437]/40 shrink-0" />
@@ -91,7 +91,7 @@ export default function WorkingForBanner() {
         <div className="relative shrink-0" ref={dropdownRef}>
           <button
             onClick={() => setShowPicker((s) => !s)}
-            className="flex items-center gap-1.5 text-xs font-semibold text-[#0d9488] border border-[#0d9488]/30 px-3 py-1.5 rounded-lg hover:bg-[#0d9488]/10 transition-colors whitespace-nowrap"
+            className="flex items-center gap-1.5 text-xs font-semibold text-[#6ba3c7] border border-[#6ba3c7]/30 px-3 py-1.5 rounded-lg hover:bg-[#6ba3c7]/10 transition-colors whitespace-nowrap"
           >
             {impersonate ? "Change" : "Select member"}
             <ChevronDownIcon className={`w-3 h-3 transition-transform ${showPicker ? "rotate-180" : ""}`} />
@@ -108,7 +108,7 @@ export default function WorkingForBanner() {
                     placeholder="Search members…"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="w-full pl-6 pr-2 py-1.5 text-xs border border-gray-200 rounded-lg outline-none focus:ring-1 focus:ring-[#0d9488]"
+                    className="w-full pl-6 pr-2 py-1.5 text-xs border border-gray-200 rounded-lg outline-none focus:ring-1 focus:ring-[#6ba3c7]"
                   />
                 </div>
               </div>
@@ -122,7 +122,7 @@ export default function WorkingForBanner() {
                     <li key={m.id}>
                       <button
                         onClick={() => selectMember(m)}
-                        className={`w-full flex items-center gap-2 px-3 py-2.5 text-left hover:bg-[#0d9488]/5 transition-colors ${
+                        className={`w-full flex items-center gap-2 px-3 py-2.5 text-left hover:bg-[#6ba3c7]/5 transition-colors ${
                           impersonate?.memberId === m.id ? "bg-amber-50" : ""
                         }`}
                       >

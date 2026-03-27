@@ -61,7 +61,7 @@ export function LinkBarChart({ data }: Props) {
         />
         <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12 }} />
         {hasViews && <Bar dataKey="Views" fill="#e0f7ff" radius={[4, 4, 0, 0]} />}
-        <Bar dataKey="Clicks" fill="#0d9488" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="Clicks" fill="#6ba3c7" radius={[4, 4, 0, 0]} />
         <Bar dataKey="Leads" fill="#2f3437" radius={[4, 4, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>

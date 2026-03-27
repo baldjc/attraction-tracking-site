@@ -127,7 +127,7 @@ function ScorecardCard({ analysis, onDownload }: { analysis: AnalysisResult; onD
             <div key={i} className="border border-gray-200 dark:border-white/10 rounded-lg overflow-hidden">
               <button
                 onClick={() => setExpandedImprovement(expandedImprovement === i ? null : i)}
-                className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-[#111111] hover:bg-gray-100 dark:hover:bg-white/5 transition-colors text-left"
+                className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-[#0f1419] hover:bg-gray-100 dark:hover:bg-white/5 transition-colors text-left"
               >
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-semibold text-[#2f3437] dark:text-white">{imp.principle}</span>
@@ -135,7 +135,7 @@ function ScorecardCard({ analysis, onDownload }: { analysis: AnalysisResult; onD
                     {Number(imp.score).toFixed(1)}
                   </span>
                 </div>
-                <span className="text-xs text-[#0d9488]">
+                <span className="text-xs text-[#6ba3c7]">
                   {expandedImprovement === i ? "Hide" : "Show"} rewrite
                 </span>
               </button>
@@ -147,8 +147,8 @@ function ScorecardCard({ analysis, onDownload }: { analysis: AnalysisResult; onD
                     </p>
                     <p className="text-sm text-[#2f3437]/70 dark:text-white/70 italic">&ldquo;{imp.current}&rdquo;</p>
                   </div>
-                  <div className="bg-[#0d9488]/5 border border-[#0d9488]/20 rounded-lg px-3 py-3">
-                    <p className="text-[10px] font-semibold text-[#0d9488] uppercase tracking-wider mb-1">
+                  <div className="bg-[#6ba3c7]/5 border border-[#6ba3c7]/20 rounded-lg px-3 py-3">
+                    <p className="text-[10px] font-semibold text-[#6ba3c7] uppercase tracking-wider mb-1">
                       Rewritten
                     </p>
                     <p className="text-sm text-[#2f3437] dark:text-white leading-relaxed">{imp.improved}</p>
@@ -173,7 +173,7 @@ function ScorecardCard({ analysis, onDownload }: { analysis: AnalysisResult; onD
                     </div>
                   )}
                   <p className="text-xs text-[#2f3437]/60 dark:text-white/60">{imp.why}</p>
-                  <p className="text-[10px] text-[#0d9488]/80 font-medium">📚 {imp.lesson}</p>
+                  <p className="text-[10px] text-[#6ba3c7]/80 font-medium">📚 {imp.lesson}</p>
                 </div>
               )}
             </div>
@@ -182,9 +182,9 @@ function ScorecardCard({ analysis, onDownload }: { analysis: AnalysisResult; onD
       )}
 
       {analysis.visual_suggestions?.length > 0 && (
-        <div className="border border-[#0d9488]/30 rounded-lg overflow-hidden">
-          <div className="px-4 py-2.5 bg-[#0d9488]/5 border-b border-[#0d9488]/20">
-            <p className="text-xs font-semibold text-[#0d9488] uppercase tracking-wider">
+        <div className="border border-[#6ba3c7]/30 rounded-lg overflow-hidden">
+          <div className="px-4 py-2.5 bg-[#6ba3c7]/5 border-b border-[#6ba3c7]/20">
+            <p className="text-xs font-semibold text-[#6ba3c7] uppercase tracking-wider">
               🎬 Visual Suggestions
             </p>
           </div>
@@ -212,7 +212,7 @@ function ScorecardCard({ analysis, onDownload }: { analysis: AnalysisResult; onD
       {onDownload && (
         <button
           onClick={onDownload}
-          className="flex items-center gap-1.5 text-xs text-[#2f3437]/50 hover:text-[#0d9488] transition-colors"
+          className="flex items-center gap-1.5 text-xs text-[#2f3437]/50 hover:text-[#6ba3c7] transition-colors"
         >
           <ArrowDownTrayIcon className="w-3.5 h-3.5" />
           Download full report
@@ -397,7 +397,7 @@ export default function ScriptReviewChatUI({ basePath, noAvatar }: Props) {
               value={videoTitle}
               onChange={(e) => setVideoTitle(e.target.value)}
               placeholder="What is this video called? (or planned title)"
-              className="w-full bg-white dark:bg-[#111111] border border-gray-200 dark:border-white/20 rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-white placeholder-gray-400 dark:placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#0d9488]/40"
+              className="w-full bg-white dark:bg-[#0f1419] border border-gray-200 dark:border-white/20 rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-white placeholder-gray-400 dark:placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40"
             />
           </div>
 
@@ -410,14 +410,14 @@ export default function ScriptReviewChatUI({ basePath, noAvatar }: Props) {
               onChange={(e) => setScriptText(e.target.value)}
               placeholder="Paste your full script or transcript here…"
               rows={14}
-              className="w-full bg-white dark:bg-[#111111] border border-gray-200 dark:border-white/20 rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-white placeholder-gray-400 dark:placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#0d9488]/40 resize-y"
+              className="w-full bg-white dark:bg-[#0f1419] border border-gray-200 dark:border-white/20 rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-white placeholder-gray-400 dark:placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40 resize-y"
             />
           </div>
 
           <button
             onClick={handleAnalyze}
             disabled={loading || !videoTitle.trim() || !scriptText.trim()}
-            className="w-full py-3.5 bg-[#0d9488] text-white font-semibold rounded-lg hover:bg-[#0d9488]/90 disabled:opacity-50 transition-colors"
+            className="w-full py-3.5 bg-[#6ba3c7] text-white font-semibold rounded-lg hover:bg-[#6ba3c7]/90 disabled:opacity-50 transition-colors"
           >
             {loading ? "Analysing script…" : "Analyse My Script"}
           </button>
@@ -437,7 +437,7 @@ export default function ScriptReviewChatUI({ basePath, noAvatar }: Props) {
                 <button
                   onClick={handleDownload}
                   title="Download"
-                  className="p-1.5 rounded-lg text-[#2f3437]/40 dark:text-white/40 hover:text-[#0d9488] hover:bg-[#0d9488]/10 transition-colors"
+                  className="p-1.5 rounded-lg text-[#2f3437]/40 dark:text-white/40 hover:text-[#6ba3c7] hover:bg-[#6ba3c7]/10 transition-colors"
                 >
                   <ArrowDownTrayIcon className="w-4 h-4" />
                 </button>
@@ -460,7 +460,7 @@ export default function ScriptReviewChatUI({ basePath, noAvatar }: Props) {
                 className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
               >
                 {msg.role === "user" ? (
-                  <div className="bg-[#0d9488] text-white rounded-lg rounded-tr-sm px-4 py-2.5 max-w-[85%]">
+                  <div className="bg-[#6ba3c7] text-white rounded-lg rounded-tr-sm px-4 py-2.5 max-w-[85%]">
                     <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                   </div>
                 ) : (
@@ -478,9 +478,9 @@ export default function ScriptReviewChatUI({ basePath, noAvatar }: Props) {
               <div className="flex justify-start">
                 <div className="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-lg rounded-tl-sm px-4 py-3">
                   <div className="flex gap-1">
-                    <span className="w-2 h-2 bg-[#0d9488]/60 rounded-full animate-bounce [animation-delay:0ms]" />
-                    <span className="w-2 h-2 bg-[#0d9488]/60 rounded-full animate-bounce [animation-delay:150ms]" />
-                    <span className="w-2 h-2 bg-[#0d9488]/60 rounded-full animate-bounce [animation-delay:300ms]" />
+                    <span className="w-2 h-2 bg-[#6ba3c7]/60 rounded-full animate-bounce [animation-delay:0ms]" />
+                    <span className="w-2 h-2 bg-[#6ba3c7]/60 rounded-full animate-bounce [animation-delay:150ms]" />
+                    <span className="w-2 h-2 bg-[#6ba3c7]/60 rounded-full animate-bounce [animation-delay:300ms]" />
                   </div>
                 </div>
               </div>
@@ -509,12 +509,12 @@ export default function ScriptReviewChatUI({ basePath, noAvatar }: Props) {
               }}
               placeholder="Ask a follow-up question or request a rewrite…"
               rows={2}
-              className="flex-1 bg-white dark:bg-[#111111] border border-gray-200 dark:border-white/20 rounded-lg px-3 py-2 text-sm text-[#2f3437] dark:text-white placeholder-gray-400 dark:placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#0d9488]/40 resize-none"
+              className="flex-1 bg-white dark:bg-[#0f1419] border border-gray-200 dark:border-white/20 rounded-lg px-3 py-2 text-sm text-[#2f3437] dark:text-white placeholder-gray-400 dark:placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40 resize-none"
             />
             <button
               onClick={handleSend}
               disabled={loading || !input.trim()}
-              className="self-end p-3 bg-[#0d9488] text-white rounded-lg hover:bg-[#0d9488]/90 disabled:opacity-50 transition-colors"
+              className="self-end p-3 bg-[#6ba3c7] text-white rounded-lg hover:bg-[#6ba3c7]/90 disabled:opacity-50 transition-colors"
             >
               <ArrowUpIcon className="w-4 h-4" />
             </button>

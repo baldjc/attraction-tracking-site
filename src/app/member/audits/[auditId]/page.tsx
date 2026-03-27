@@ -111,8 +111,8 @@ export default function MemberAuditReportPage() {
             <p className="text-xs opacity-40 mt-1">Avg: {Number(report.raw_average).toFixed(1)}</p>
           )}
         </div>
-        <div className="bg-[#0d9488]/10 border border-[#0d9488]/30 rounded-lg p-4 md:p-5 flex-1 flex flex-col justify-center">
-          <p className="text-xs font-semibold text-[#0d9488] uppercase tracking-wider mb-1">Attraction by Video — {typeLabel}</p>
+        <div className="bg-[#6ba3c7]/10 border border-[#6ba3c7]/30 rounded-lg p-4 md:p-5 flex-1 flex flex-col justify-center">
+          <p className="text-xs font-semibold text-[#6ba3c7] uppercase tracking-wider mb-1">Attraction by Video — {typeLabel}</p>
           <p className="text-sm text-[#2f3437]/50 mb-2">{fmt(audit.createdAt)}</p>
           {report?.one_sentence_diagnosis && (
             <p className="text-sm italic text-[#2f3437]/80">"{report.one_sentence_diagnosis}"</p>
@@ -194,7 +194,7 @@ export default function MemberAuditReportPage() {
 
       {/* Learning Path */}
       {gaps.length > 0 && (
-        <div className="bg-[#0d9488]/10 border border-[#0d9488]/30 rounded-lg p-6">
+        <div className="bg-[#6ba3c7]/10 border border-[#6ba3c7]/30 rounded-lg p-6">
           <h2 className="text-base font-semibold text-[#2f3437] mb-3">📚 Your Learning Path</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {gaps.map(([key, val]: [string, any]) => (
@@ -203,7 +203,7 @@ export default function MemberAuditReportPage() {
                   <span className="text-sm text-[#2f3437]">{PRINCIPLE_LABELS[key]}</span>
                   <span className={`ml-2 text-xs font-bold ${scoreBg(val.score)} px-1.5 py-0.5 rounded-full`}>{val.score.toFixed(1)}</span>
                 </div>
-                <span className="text-xs text-[#0d9488] font-semibold">{LEARNING_PATH[key]}</span>
+                <span className="text-xs text-[#6ba3c7] font-semibold">{LEARNING_PATH[key]}</span>
               </div>
             ))}
           </div>
@@ -217,7 +217,7 @@ export default function MemberAuditReportPage() {
           <ul className="space-y-2">
             {videos.map((v: any, i: number) => (
               <li key={i} className="flex items-center justify-between">
-                <a href={`https://youtube.com/watch?v=${v.videoId}`} target="_blank" rel="noopener noreferrer" className="text-sm text-[#0d9488] hover:underline flex items-center gap-1">
+                <a href={`https://youtube.com/watch?v=${v.videoId}`} target="_blank" rel="noopener noreferrer" className="text-sm text-[#6ba3c7] hover:underline flex items-center gap-1">
                   {v.title}
                   <ArrowTopRightOnSquareIcon className="w-3 h-3 shrink-0" />
                 </a>
