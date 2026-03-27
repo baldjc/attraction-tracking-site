@@ -252,7 +252,7 @@ export default function AdminCampaignDetailPage({ params }: { params: Promise<{ 
       </div>
 
       {/* Click Map + Location Table */}
-      <div className="bg-white border border-[#2f3437]/10 rounded-lg p-5">
+      <div className="relative z-0 bg-white border border-[#2f3437]/10 rounded-lg p-5">
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-semibold text-[#2f3437]">Click Map</h2>
           {geoData && geoData.links.length > 1 && (

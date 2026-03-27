@@ -622,13 +622,13 @@ export default function MemberResourcesPage() {
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
             onClick={(e) => { if (e.target === e.currentTarget) setPlayerEntry(null); }}
           >
-            <div className="w-full max-w-2xl bg-[#1e2a38] rounded-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="w-full max-w-2xl bg-white dark:bg-[#1a2232] rounded-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
 
               {/* Header */}
-              <div className="flex items-start gap-3 px-6 py-4 border-b border-white/10 flex-shrink-0">
+              <div className="flex items-start gap-3 px-6 py-4 border-b border-[#eaeaea] dark:border-white/10 flex-shrink-0">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-violet-400 bg-violet-400/15 px-2 py-0.5 rounded-full">
+                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-violet-600 dark:text-violet-400 bg-violet-100 dark:bg-violet-400/15 px-2 py-0.5 rounded-full">
                       <VideoCameraIcon className="w-3 h-3" /> Q&A Call
                     </span>
                     {ts && (
@@ -651,9 +651,9 @@ export default function MemberResourcesPage() {
                       </span>
                     )}
                   </div>
-                  <h2 className="text-base font-bold text-white mt-1.5 leading-snug">{playerEntry.subTopic}</h2>
+                  <h2 className="text-base font-bold text-[#2f3437] dark:text-white mt-1.5 leading-snug">{playerEntry.subTopic}</h2>
                   {playerEntry.source && (
-                    <p className="text-xs text-white/40 mt-0.5">
+                    <p className="text-xs text-[#2f3437]/50 dark:text-white/40 mt-0.5">
                       {playerEntry.source.title ?? "Q&A Call"}
                       {playerEntry.source.callDate && <span className="ml-1.5">· {fmtDate(playerEntry.source.callDate)}</span>}
                     </p>
@@ -661,7 +661,7 @@ export default function MemberResourcesPage() {
                 </div>
                 <button
                   onClick={() => setPlayerEntry(null)}
-                  className="flex-shrink-0 p-1.5 text-white/30 hover:text-white rounded-lg hover:bg-white/10 transition-colors mt-0.5"
+                  className="flex-shrink-0 p-1.5 text-[#2f3437]/30 dark:text-white/30 hover:text-[#2f3437] dark:hover:text-white rounded-lg hover:bg-[#111]/5 dark:hover:bg-white/10 transition-colors mt-0.5"
                   aria-label="Close"
                 >
                   <XMarkIcon className="w-5 h-5" />
@@ -674,17 +674,17 @@ export default function MemberResourcesPage() {
                 {/* Summary */}
                 {playerEntry.summary && (
                   <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-wide text-white/35 mb-1.5">Summary</p>
-                    <p className="text-sm text-white/80 leading-relaxed">{playerEntry.summary}</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-[#2f3437]/40 dark:text-white/35 mb-1.5">Summary</p>
+                    <p className="text-sm text-[#2f3437]/80 dark:text-white/80 leading-relaxed">{playerEntry.summary}</p>
                   </div>
                 )}
 
                 {/* Transcript excerpt */}
                 {transcript && (
                   <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-wide text-white/35 mb-1.5">Transcript Excerpt</p>
-                    <div className="bg-white/5 border border-white/8 rounded-lg px-4 py-3 max-h-48 overflow-y-auto">
-                      <p className="text-[13px] text-white/65 leading-relaxed whitespace-pre-wrap">{transcript}</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-[#2f3437]/40 dark:text-white/35 mb-1.5">Transcript Excerpt</p>
+                    <div className="bg-[#f7f6f3] dark:bg-white/5 border border-[#eaeaea] dark:border-white/8 rounded-lg px-4 py-3 max-h-48 overflow-y-auto">
+                      <p className="text-[13px] text-[#2f3437]/70 dark:text-white/65 leading-relaxed whitespace-pre-wrap">{transcript}</p>
                     </div>
                   </div>
                 )}
@@ -692,10 +692,10 @@ export default function MemberResourcesPage() {
                 {/* Principles */}
                 {playerEntry.principles.length > 0 && (
                   <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-wide text-white/35 mb-1.5">Principles</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-[#2f3437]/40 dark:text-white/35 mb-1.5">Principles</p>
                     <div className="flex flex-wrap gap-1.5">
                       {playerEntry.principles.map((p) => (
-                        <span key={p} className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-white/10 text-white/70">
+                        <span key={p} className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-[#111]/8 dark:bg-white/10 text-[#2f3437]/60 dark:text-white/70">
                           {p}
                         </span>
                       ))}
@@ -705,7 +705,7 @@ export default function MemberResourcesPage() {
               </div>
 
               {/* Footer actions */}
-              <div className="px-6 py-4 border-t border-white/10 flex-shrink-0 space-y-2.5">
+              <div className="px-6 py-4 border-t border-[#eaeaea] dark:border-white/10 flex-shrink-0 space-y-2.5">
                 <div className="flex items-center gap-3">
                   <button
                     onClick={modalToggleSave}
@@ -714,7 +714,7 @@ export default function MemberResourcesPage() {
                     className={`flex items-center gap-1.5 text-sm font-medium px-3.5 py-2 rounded-lg border transition-all disabled:opacity-50 ${
                       modalSaved
                         ? "border-[#6ba3c7]/40 text-[#6ba3c7] bg-[#6ba3c7]/10"
-                        : "border-white/15 text-white/50 hover:text-white hover:border-white/30 bg-white/5"
+                        : "bg-white dark:bg-transparent border border-[#eaeaea] dark:border-white/15 text-[#2f3437] dark:text-white/50 hover:border-[#2f3437]/30 dark:hover:border-white/30"
                     }`}
                   >
                     {modalSaved ? <BookmarkSolid className="w-4 h-4" /> : <BookmarkOutline className="w-4 h-4" />}
@@ -725,7 +725,7 @@ export default function MemberResourcesPage() {
                     href={fathomUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-1 flex items-center justify-center gap-2 bg-[#6ba3c7] hover:bg-[#5cceff] text-[#0f1620] font-bold text-sm py-2.5 rounded-lg transition-colors"
+                    className="flex-1 flex items-center justify-center gap-2 bg-[#1e2a38] hover:bg-[#2a3a4d] text-white font-bold text-sm py-2.5 rounded-lg transition-colors"
                   >
                     <VideoCameraIcon className="w-4 h-4" />
                     Watch in Fathom ↗
@@ -733,12 +733,12 @@ export default function MemberResourcesPage() {
                 </div>
 
                 {ts && (
-                  <div className="bg-white/8 border border-white/15 rounded-lg px-4 py-3 text-center">
-                    <p className="text-sm text-white/80 leading-relaxed">
+                  <div className="bg-[#f7f6f3] dark:bg-white/5 border border-[#eaeaea] dark:border-white/10 rounded-lg px-4 py-3 text-center">
+                    <p className="text-sm text-[#2f3437]/70 dark:text-white/80 leading-relaxed">
                       Jump to <span className="font-mono font-semibold text-[#6ba3c7]">{ts}</span> in the recording.
                     </p>
-                    <p className="text-xs text-white/50 mt-1 leading-relaxed">
-                      Tip: Open the <strong className="text-white/70">Transcript</strong> tab in Fathom and search for the excerpt above — timestamps there are clickable and will seek the player.
+                    <p className="text-xs text-[#2f3437]/50 dark:text-white/50 mt-1 leading-relaxed">
+                      Tip: Open the <strong className="text-[#2f3437]/70 dark:text-white/70">Transcript</strong> tab in Fathom and search for the excerpt above — timestamps there are clickable and will seek the player.
                     </p>
                   </div>
                 )}
