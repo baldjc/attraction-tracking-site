@@ -1,0 +1,41 @@
+export const PRINCIPLE_NAMES: Record<string, string> = {
+  avatar_clarity: "Avatar Clarity",
+  themes_over_topics: "Themes Over Topics",
+  lead_magnet: "Lead Magnet",
+  arc_attention: "ARC Attention",
+  arc_revelation: "ARC Revelation",
+  arc_connection: "ARC Connection",
+  connection_language: "Connection Language",
+  approve_the_click: "Approve the Click",
+  title_frameworks: "Title Frameworks",
+  curiosity_bridges: "Curiosity Bridges",
+  binge_architecture: "Binge Architecture",
+  consistency: "Consistency",
+  values_peppering: "Values Peppering",
+  grade_5_language: "Grade 5 Language",
+  story_proof: "Story Proof",
+  show_dont_tell: "Show Don't Tell",
+  studio_setup: "Studio Setup",
+};
+
+export const PRINCIPLE_SLUGS = Object.keys(PRINCIPLE_NAMES);
+
+export const PRINCIPLE_COLORS: Record<string, string> = {
+  avatar_clarity: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
+  themes_over_topics: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300",
+  lead_magnet: "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300",
+  arc_attention: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
+  arc_revelation: "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300",
+  arc_connection: "bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300",
+  connection_language: "bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300",
+  approve_the_click: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
+  title_frameworks: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300",
+  curiosity_bridges: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300",
+  binge_architecture: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300",
+  consistency: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
+  values_peppering: "bg-lime-100 text-lime-700 dark:bg-lime-900/40 dark:text-lime-300",
+  grade_5_language: "bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300",
+  story_proof: "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300",
+  show_dont_tell: "bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-900/40 dark:text-fuchsia-300",
+  studio_setup: "bg-stone-100 text-stone-700 dark:bg-stone-900/40 dark:text-stone-300",
+};

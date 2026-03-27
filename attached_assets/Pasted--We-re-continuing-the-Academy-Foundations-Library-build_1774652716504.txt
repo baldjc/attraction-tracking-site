@@ -1,0 +1,145 @@
+```
+We're continuing the Academy / Foundations Library build on the "feature/academy-foundations-library" branch. Make sure you're on that branch. This is Part 2 of 4 — member-facing API routes and pages.
+
+=== MEMBER API ROUTES (8 routes) ===
+
+All routes use resolveUserFromSession() for multi-tenancy, consistent with existing codebase patterns.
+
+1. GET /api/member/academy/sections
+   - Returns all published sections ordered by sortOrder
+   - Include lesson count per section
+   - Include member's progress: lessons completed / total lessons per section
+   - Response shape: { sections: [{ id, title, slug, description, sortOrder, lessonCount, completedCount }] }
+
+2. GET /api/member/academy/sections/[sectionId]/lessons
+   - Returns all published lessons in a section, ordered by sortOrder
+   - Include member's completion state for each lesson
+   - Response shape: { lessons: [{ id, title, slug, youtubeUrl, sortOrder, completed, principleTags }] }
+
+3. GET /api/member/academy/lessons/[lessonId]
+   - Returns full lesson detail including:
+     - All lesson fields (description, keyTakeaways, actionItems, etc.)
+     - All workbook fields with the member's saved responses
+     - Member's homework items (if any saved)
+     - Completion state
+     - Previous and next lesson IDs/slugs for navigation
+   - Response shape: { lesson: { ...allFields, workbookFields: [{ id, fieldType, label, placeholderText, sortOrder, config, response }], homework: { homeworkItems }, completed, completedAt, prevLesson: { slug, sectionSlug }, nextLesson: { slug, sectionSlug } } }
+
+4. PUT /api/member/academy/workbook/[fieldId]
+   - Body: { response: any } (JSON — the response format depends on field type)
+   - Upserts MemberWorkbookResponse for this user + field
+   - Returns { success: true }
+   - This is called on every auto-save (debounced on frontend)
+
+5. PUT /api/member/academy/lessons/[lessonId]/progress
+   - Body: { completed: boolean }
+   - Upserts MemberLessonProgress
+   - If completed=true, sets completedAt to now
+   - If completed=false, clears completedAt
+   - Returns { success: true, completed, completedAt }
+
+6. PUT /api/member/academy/lessons/[lessonId]/homework
+   - Body: { homeworkItems: [{ label: string, completed: boolean }] }
+   - Upserts MemberHomework
+   - Returns { success: true }
+
+7. GET /api/member/academy/principles
+   - Returns all 17 principles with count of associated lessons
+   - Response shape: { principles: [{ slug, name, lessonCount }] }
+   - Principle name mapping (hardcoded is fine):
+     avatar_clarity → Avatar Clarity
+     themes_over_topics → Themes Over Topics
+     lead_magnet → Lead Magnet
+     arc_attention → ARC Attention
+     arc_revelation → ARC Revelation
+     arc_connection → ARC Connection
+     connection_language → Connection Language
+     approve_the_click → Approve the Click
+     title_frameworks → Title Frameworks
+     curiosity_bridges → Curiosity Bridges
+     binge_architecture → Binge Architecture
+     consistency → Consistency
+     values_peppering → Values Peppering
+     grade_5_language → Grade 5 Language
+     story_proof → Story Proof
+     show_dont_tell → Show Don't Tell
+     studio_setup → Studio Setup
+
+8. GET /api/member/academy/principles/[slug]
+   - Returns principle name + all published lessons tagged with that principle slug
+   - Searches the principleTags JSON array field
+   - Response shape: { principle: { slug, name }, lessons: [{ id, title, slug, sectionTitle, sectionSlug }] }
+
+
+=== MEMBER PAGES ===
+
+All pages should match the existing member site design system (same layout, sidebar, card styles, colours, fonts). Look at existing member pages for reference.
+
+PAGE 1: Academy Landing (/member/academy)
+- Add "Academy" to the member sidebar, positioned ABOVE "AI Tools"
+- Use a graduation cap or book icon (consistent with existing sidebar icon style)
+- Landing page shows a card for "The Foundations Library" with:
+  - Title: "The Foundations Library"
+  - Subtitle: "Master the Attraction by Video system — from avatar clarity to packaging"
+  - Overall progress bar (total lessons completed / total lessons)
+  - "Continue Learning" button → goes to last incomplete section, or first section if none started
+
+PAGE 2: Foundations Library (/member/academy/foundations)
+- 6 section cards displayed in sortOrder
+- Each card shows:
+  - Section number and title
+  - Brief description
+  - Progress bar with "X/Y lessons complete"
+  - Clickable → goes to section page
+- Styling: consistent with existing dashboard cards
+
+PAGE 3: Section Page (/member/academy/foundations/[section-slug])
+- Section title and description at top
+- Ordered list of lessons, each showing:
+  - Lesson number and title
+  - Completion checkmark (filled green circle with checkmark when complete, empty circle when not)
+  - Principle tag badges (small, coloured pills — use a consistent colour per principle)
+- Click a lesson → goes to lesson page
+
+PAGE 4: Lesson Page (/member/academy/foundations/[section-slug]/[lesson-slug])
+- This is the main content page. Layout from top to bottom:
+
+  A) YouTube embed (responsive, 16:9 aspect ratio, full width) — ONLY show if youtubeUrl is not null
+
+  B) Tabs or sections: "Overview" and "Workbook"
+     - Overview tab:
+       - Description paragraph
+       - "Key Takeaways" section with bulleted list (render markdown)
+       - "Action Items" section with bulleted list (render markdown)
+     - Workbook tab:
+       - Render all workbook fields for this lesson by sortOrder
+       - Each field rendered based on fieldType:
+         * short_text: single-line input with label. If config.surroundingText exists, render as fill-in-the-blank (text with input fields where _______ markers are)
+         * long_text: multi-line textarea with label, rows from config.rows (default 4)
+         * table: rendered table with column headers from config.columns, config.rowCount rows, appropriate input types per column (text input for "text", checkbox for "checkbox")
+         * checklist: list of checkable items from config.items
+       - AUTO-SAVE: debounce 1 second after last keystroke, call PUT /api/member/academy/workbook/[fieldId]
+       - Show save status indicator: "All changes saved" (green) / "Saving..." (grey) / "Error saving" (red)
+
+  C) Homework section (below tabs):
+     - Heading: "Homework"
+     - List of action items from the lesson's actionItems, rendered as a trackable checklist
+     - Each item has a checkbox that persists via PUT homework endpoint
+
+  D) AI Tool CTA (if aiToolLink is set):
+     - Styled card/banner: "Ready to [aiToolLabel]? →"
+     - Links to the existing AI tool page
+
+  E) Navigation:
+     - "← Previous Lesson" / "Next Lesson →" buttons at bottom
+     - "Mark as Complete" toggle button (green when complete)
+     - When marking complete, confetti or subtle animation (optional, only if easy)
+
+PAGE 5: Browse by Principle (/member/academy/principles)
+- List all 17 principles as cards or rows
+- Each shows principle name and lesson count
+- Click → filtered view showing all lessons tagged with that principle
+- Can also be accessed with query param: /member/academy/principles?tag=avatar_clarity (auto-scrolls/filters to that principle)
+
+IMPORTANT: Commit your work on the feature/academy-foundations-library branch. Do NOT merge to main.
+```

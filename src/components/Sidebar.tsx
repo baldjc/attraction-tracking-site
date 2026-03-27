@@ -71,6 +71,7 @@ const editorLinks = [
 const memberLinks = [
   { href: "/member/dashboard", label: "Dashboard", icon: HomeIcon, featureKey: null },
   { href: "/member/scores", label: "My Scores", icon: StarIcon, featureKey: null },
+  { href: "/member/academy", label: "Academy", icon: AcademicCapIcon, featureKey: null },
   { href: "/member/ai-tools", label: "AI Tools", icon: SparklesIcon, featureKey: "ai_tools" },
   { href: "/member/campaigns", label: "Campaigns", icon: LinkIcon, featureKey: "campaigns" },
   { href: "/member/analytics", label: "Lead Analytics", icon: ChartBarIcon, featureKey: "campaigns" },
