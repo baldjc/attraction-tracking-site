@@ -223,7 +223,7 @@ export async function GET(req: NextRequest) {
 
     const [lessons, calls] = await Promise.all([
       lessonIds.length > 0
-        ? prisma.fathomLesson.findMany({ where: { id: { in: lessonIds } }, select: { id: true, title: true, lessonNumber: true, skoolUrl: true } })
+        ? prisma.resourceLesson.findMany({ where: { id: { in: lessonIds } }, select: { id: true, title: true, lessonNumber: true, skoolUrl: true } })
         : [],
       callIds.length > 0
         ? prisma.qACall.findMany({ where: { id: { in: callIds } }, select: { id: true, title: true, callDate: true, fathomShareUrl: true } })
@@ -272,7 +272,7 @@ export async function GET(req: NextRequest) {
 
   const [lessons, calls] = await Promise.all([
     lessonIds.length > 0
-      ? prisma.fathomLesson.findMany({ where: { id: { in: lessonIds } }, select: { id: true, title: true, lessonNumber: true, skoolUrl: true } })
+      ? prisma.resourceLesson.findMany({ where: { id: { in: lessonIds } }, select: { id: true, title: true, lessonNumber: true, skoolUrl: true } })
       : [],
     callIds.length > 0
       ? prisma.qACall.findMany({ where: { id: { in: callIds } }, select: { id: true, title: true, callDate: true, fathomShareUrl: true } })
@@ -354,7 +354,7 @@ export async function GET(req: NextRequest) {
     }
 
     // ── Course Lessons (no date filter) ──
-    const matchingLessons = await prisma.fathomLesson.findMany({
+    const matchingLessons = await prisma.resourceLesson.findMany({
       where: { fullTranscript: { contains: search, mode: "insensitive" } },
       select: { id: true, title: true, lessonNumber: true, skoolUrl: true, fullTranscript: true },
       orderBy: { lessonNumber: "asc" },

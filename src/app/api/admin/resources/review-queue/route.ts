@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
 
   const [qaCalls, lessons] = await Promise.all([
     qaCallIds.length > 0 ? prisma.qACall.findMany({ where: { id: { in: qaCallIds } }, select: { id: true, title: true, callDate: true } }) : [],
-    lessonIds.length > 0 ? prisma.fathomLesson.findMany({ where: { id: { in: lessonIds } }, select: { id: true, title: true, lessonNumber: true } }) : [],
+    lessonIds.length > 0 ? prisma.resourceLesson.findMany({ where: { id: { in: lessonIds } }, select: { id: true, title: true, lessonNumber: true } }) : [],
   ]);
 
   const qaMap = Object.fromEntries(qaCalls.map((c) => [c.id, c]));

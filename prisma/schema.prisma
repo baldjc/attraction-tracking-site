@@ -124,7 +124,7 @@ model User {
   @@map("users")
 }
 
-model FathomLesson {
+model ResourceLesson {
   id            String   @id @default(uuid())
   title         String
   lessonNumber  String
