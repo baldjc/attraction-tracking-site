@@ -191,7 +191,7 @@ export async function GET() {
 
   // Use the live YouTubeVideo table (updated by nightly sync) instead of stale audit snapshot
   const latestVideo = await prisma.youTubeVideo.findFirst({
-    where: { userId: memberId },
+    where: { userId: user.id },
     orderBy: { publishedAt: "desc" },
     select: { publishedAt: true },
   });
