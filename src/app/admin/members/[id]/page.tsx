@@ -25,6 +25,8 @@ import {
   ReferenceDot,
 } from "recharts";
 
+const GHL_LOCATION_ID = process.env.NEXT_PUBLIC_GHL_LOCATION_ID ?? "";
+
 const SERVICE_TIERS = [
   { value: "foundations", label: "Foundations" },
   { value: "editing_2", label: "Editing 2" },
@@ -167,15 +169,6 @@ export default function MemberDetailPage() {
   const [videoModalVideos, setVideoModalVideos] = useState<any[]>([]);
   const [videoModalError, setVideoModalError] = useState<string | null>(null);
   const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
-
-  const [ghlLocationId, setGhlLocationId] = useState("vEIiKAjpBkCDrabeDre7");
-
-  useEffect(() => {
-    fetch("/api/admin/ghl-location")
-      .then((r) => r.json())
-      .then((d) => { if (d.locationId) setGhlLocationId(d.locationId); })
-      .catch(() => {});
-  }, []);
 
   const fetchMember = useCallback(async () => {
     setLoading(true);
