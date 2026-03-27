@@ -35,8 +35,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Member not found" }, { status: 404 });
   }
 
-  // Editor can only impersonate editing/mastery members
-  if (!canAccessTier(role, member.serviceTier)) {
+  // Editor can only impersonate editing/mastery members; admin can impersonate anyone
+  if (role === "editor" && !canAccessTier(role, member.serviceTier ?? "")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

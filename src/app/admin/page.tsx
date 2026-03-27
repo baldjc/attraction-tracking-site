@@ -7,11 +7,9 @@ import {
   ClipboardDocumentListIcon,
   ArrowPathIcon,
   ChartBarIcon,
-  EyeIcon,
   Cog6ToothIcon,
 } from "@heroicons/react/24/outline";
 import { useSession } from "next-auth/react";
-import MemberPickerModal from "@/components/admin/MemberPickerModal";
 
 interface DashboardStats {
   totalMembers: number;
@@ -26,7 +24,6 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState<string | null>(null);
-  const [showMemberPicker, setShowMemberPicker] = useState(false);
 
   useEffect(() => {
     fetch("/api/members")
@@ -212,33 +209,6 @@ export default function AdminDashboard() {
         ))}
       </div>
 
-      {/* View as Member */}
-      {!isEditorRole && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-5">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-            <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-amber-900 mb-1 flex items-center gap-2">
-                <EyeIcon className="w-4 h-4 shrink-0" />
-                View as Member
-              </h3>
-              <p className="text-sm text-amber-700">
-                Pick any member to see the platform exactly as they do — their scores, AI tools, and links.
-              </p>
-            </div>
-            <button
-              onClick={() => setShowMemberPicker(true)}
-              className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors shrink-0 self-start sm:self-auto"
-            >
-              <EyeIcon className="w-4 h-4" />
-              Choose Member…
-            </button>
-          </div>
-        </div>
-      )}
-
-      {showMemberPicker && (
-        <MemberPickerModal onClose={() => setShowMemberPicker(false)} />
-      )}
     </div>
   );
 }
