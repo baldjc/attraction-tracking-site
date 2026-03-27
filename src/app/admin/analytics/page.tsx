@@ -316,7 +316,7 @@ export default function AnalyticsPage() {
                           href={`/admin/audits/${latestAudit.id}`}
                           className="block text-center text-xs bg-emerald-50 dark:bg-emerald-600/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-600/30 rounded-lg px-3 py-1.5 hover:bg-emerald-100 dark:hover:bg-emerald-600/30 transition"
                         >
-                          View Audit {latestAudit.overallScore !== null ? `(${latestAudit.overallScore.toFixed(1)})` : ""}
+                          View Audit {latestAudit.overallScore !== null ? `(${Number(latestAudit.overallScore).toFixed(1)})` : ""}
                         </Link>
                       ) : started ? (
                         <div className={`text-center text-xs ${dim} py-1.5`}>Audit queued…</div>

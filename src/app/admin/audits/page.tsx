@@ -520,8 +520,8 @@ export default function AuditsPage() {
                   <td className="px-6 py-4 capitalize text-[#1e2a38]">{a.auditType.replace("_", " ")}</td>
                   <td className="px-6 py-4">
                     {a.overallScore != null ? (
-                      <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${scoreBg(a.overallScore)}`}>
-                        {a.overallScore.toFixed(1)}
+                      <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${scoreBg(Number(a.overallScore))}`}>
+                        {Number(a.overallScore).toFixed(1)}
                       </span>
                     ) : "—"}
                   </td>

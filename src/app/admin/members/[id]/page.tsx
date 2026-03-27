@@ -418,7 +418,7 @@ export default function MemberDetailPage() {
         month: "short",
         day: "numeric",
       }),
-      score: Number(a.overallScore?.toFixed(1)),
+      score: parseFloat(Number(a.overallScore).toFixed(1)),
       type: a.auditType,
     }));
 
@@ -430,7 +430,7 @@ export default function MemberDetailPage() {
         month: "short",
         day: "numeric",
       }),
-      score: Number(a.overallScore?.toFixed(1)),
+      score: parseFloat(Number(a.overallScore).toFixed(1)),
       title: (a.videosAnalysed as any)?.[0]?.title ?? "Single Video",
     }));
 
@@ -528,10 +528,10 @@ export default function MemberDetailPage() {
           {
             label: "Current Score",
             value: latestAudit?.overallScore != null
-              ? latestAudit.overallScore.toFixed(1)
+              ? Number(latestAudit.overallScore).toFixed(1)
               : "—",
             colored: true,
-            score: latestAudit?.overallScore,
+            score: latestAudit?.overallScore != null ? Number(latestAudit.overallScore) : null,
           },
           { label: "Member Since", value: fmt(member.invitedAt ?? member.createdAt) },
           { label: "Last Audit", value: fmt(latestAudit?.createdAt) },
@@ -783,8 +783,8 @@ export default function MemberDetailPage() {
                         </td>
                         <td className="py-3 pr-4">
                           {audit.overallScore != null ? (
-                            <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${scoreBg(audit.overallScore)}`}>
-                              {audit.overallScore.toFixed(1)}
+                            <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${scoreBg(Number(audit.overallScore))}`}>
+                              {Number(audit.overallScore).toFixed(1)}
                             </span>
                           ) : (
                             <span className="text-gray-400">—</span>

@@ -291,8 +291,8 @@ export default function AuditReportPage() {
           <p className="text-xs font-semibold uppercase tracking-wider mb-1 text-[#1e2a38]/60">
             {isSingleVideo ? "Video Score" : "Channel Score"}
           </p>
-          <p className={`text-6xl font-black ${scoreText(audit.overallScore)}`}>
-            {audit.overallScore?.toFixed(1)}
+          <p className={`text-6xl font-black ${scoreText(Number(audit.overallScore))}`}>
+            {audit.overallScore != null ? Number(audit.overallScore).toFixed(1) : "—"}
           </p>
           <p className="text-sm font-medium mt-0.5 text-[#1e2a38]/50">/ 10</p>
           {report?.raw_average != null && (
@@ -409,7 +409,7 @@ export default function AuditReportPage() {
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
               <p className="text-xs text-[#1e2a38]/50 uppercase tracking-wider mb-1">This Month</p>
-              <p className={`text-3xl font-bold ${scoreText(audit.overallScore)}`}>{audit.overallScore?.toFixed(1)}</p>
+              <p className={`text-3xl font-bold ${scoreText(Number(audit.overallScore))}`}>{audit.overallScore != null ? Number(audit.overallScore).toFixed(1) : "—"}</p>
             </div>
             {baselineScores && (() => {
               const baseAvg = (Object.values(baselineScores) as Array<{ score: number }>).reduce((a, b) => a + b.score, 0) / Object.keys(baselineScores).length;

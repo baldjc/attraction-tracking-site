@@ -125,7 +125,7 @@ export default function MemberScoresPage() {
     .filter((a: any) => a.overallScore != null)
     .map((a: any) => ({
       date: new Date(a.createdAt).toLocaleDateString("en-CA", { month: "short", day: "numeric" }),
-      score: Number(a.overallScore?.toFixed(1)),
+      score: parseFloat(Number(a.overallScore).toFixed(1)),
     }));
 
   const principleRows = Object.entries(scores).map(([key, val]) => {
@@ -214,7 +214,7 @@ export default function MemberScoresPage() {
                   : "text-[#ff0033]"
               }`}
             >
-              {latestAudit.overallScore?.toFixed(1)}
+              {Number(latestAudit.overallScore).toFixed(1)}
             </span>
             <span className={`text-xs font-medium ${muted} mt-0.5`}>/ 10</span>
           </div>
@@ -223,7 +223,7 @@ export default function MemberScoresPage() {
             <p className={`text-xs ${muted} mt-1`}>
               Baseline:{" "}
               <span className="font-semibold">
-                {baselineAudit.overallScore?.toFixed(1) ?? "—"}
+                {Number(baselineAudit.overallScore).toFixed(1)}
               </span>
             </p>
           )}
@@ -437,8 +437,8 @@ export default function MemberScoresPage() {
                   </td>
                   <td className={tdClass}>
                     {a.overallScore != null ? (
-                      <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${scoreBadge(a.overallScore)}`}>
-                        {a.overallScore.toFixed(1)}
+                      <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${scoreBadge(Number(a.overallScore))}`}>
+                        {Number(a.overallScore).toFixed(1)}
                       </span>
                     ) : (
                       <span className={`text-xs ${muted}`}>—</span>

@@ -103,9 +103,9 @@ export default function MemberAuditReportPage() {
 
       {/* Score + Header — side-by-side on desktop */}
       <div className="flex flex-col md:flex-row gap-4">
-        <div className={`rounded-xl p-4 md:p-5 text-center md:w-44 shrink-0 ${scoreBg(audit.overallScore)}`}>
+        <div className={`rounded-xl p-4 md:p-5 text-center md:w-44 shrink-0 ${scoreBg(Number(audit.overallScore))}`}>
           <p className="text-xs font-semibold uppercase tracking-wider mb-1 opacity-70">Attraction Score</p>
-          <p className={`text-5xl md:text-6xl font-black ${scoreText(audit.overallScore)}`}>{audit.overallScore?.toFixed(1)}</p>
+          <p className={`text-5xl md:text-6xl font-black ${scoreText(Number(audit.overallScore))}`}>{audit.overallScore != null ? Number(audit.overallScore).toFixed(1) : "—"}</p>
           <p className="text-sm font-medium mt-0.5 opacity-50">/ 10</p>
           {report?.raw_average != null && (
             <p className="text-xs opacity-40 mt-1">Avg: {Number(report.raw_average).toFixed(1)}</p>

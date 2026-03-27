@@ -262,8 +262,8 @@ export default function SharedReportPage() {
           <p className="text-sm font-semibold uppercase tracking-wider mb-2 text-[#1e2a38]/60">
             {isSingleVideo ? "Video Attraction Score" : "Channel Attraction Score"}
           </p>
-          <p className={`text-7xl font-black ${scoreText(audit.overallScore)}`}>
-            {audit.overallScore?.toFixed(1)}
+          <p className={`text-7xl font-black ${scoreText(Number(audit.overallScore))}`}>
+            {audit.overallScore != null ? Number(audit.overallScore).toFixed(1) : "—"}
           </p>
           <p className="text-lg font-medium mt-1 text-[#1e2a38]/50">/ 10</p>
           {report?.raw_average != null && (
@@ -278,9 +278,9 @@ export default function SharedReportPage() {
           return (
             <div className="bg-[#3dc3ff]/10 border border-[#3dc3ff]/30 rounded-xl p-5 text-center">
               <p className="text-sm font-semibold text-[#1e2a38]">
-                This Month: {audit.overallScore?.toFixed(1)}/10 &nbsp;·&nbsp;{" "}
+                This Month: {Number(audit.overallScore).toFixed(1)}/10 &nbsp;·&nbsp;{" "}
                 <span className={delta >= 0 ? "text-green-600" : "text-[#cc0029]"}>
-                  {delta >= 0 ? "↑" : "↓"}{Math.abs(delta).toFixed(1)} from baseline ({baseAvg.toFixed(1)} → {audit.overallScore?.toFixed(1)})
+                  {delta >= 0 ? "↑" : "↓"}{Math.abs(delta).toFixed(1)} from baseline ({baseAvg.toFixed(1)} → {Number(audit.overallScore).toFixed(1)})
                 </span>
               </p>
             </div>
