@@ -17,7 +17,7 @@ export default async function MemberLayout({
   const featureFlags = await getFeatureFlags();
 
   return (
-    <div className="min-h-screen bg-[#f1f1ef] dark:bg-[#1a1f2e]">
+    <div className="min-h-screen bg-[#f7f6f3] dark:bg-[#0f1419]">
       <Sidebar
         role={(session.user as any).role}
         userName={session.user.name || session.user.email || "Member"}
@@ -25,7 +25,9 @@ export default async function MemberLayout({
       />
       <main className="lg:pl-[260px]">
         <div className="pt-14 lg:pt-0">
-          <div className="p-6 lg:p-8">{children}</div>
+          <div className="p-6 lg:p-8">
+            <div className="animate-fade-in-up">{children}</div>
+          </div>
         </div>
       </main>
     </div>

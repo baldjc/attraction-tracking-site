@@ -270,14 +270,14 @@ export default function ArcScriptUploadPhase({ onStartBuilding, prefillData, onS
   return (
     <div className="max-w-2xl mx-auto space-y-5">
       {isPrefilled && (
-        <div className="bg-[#3dc3ff]/8 border border-[#3dc3ff]/25 rounded-xl px-4 py-3 space-y-2">
-          <p className="text-xs font-semibold text-[#3dc3ff] uppercase tracking-wider">Building script for</p>
-          <p className="text-sm font-semibold text-[#1e2a38] dark:text-white leading-snug">{prefillData!.title}</p>
+        <div className="bg-[#6ba3c7]/8 border border-[#6ba3c7]/25 rounded-lg px-4 py-3 space-y-2">
+          <p className="text-xs font-semibold text-[#6ba3c7] uppercase tracking-wider">Building script for</p>
+          <p className="text-sm font-semibold text-[#2f3437] dark:text-white leading-snug">{prefillData!.title}</p>
           {prefillData!.talkingPoints.length > 0 && (
             <ol className="space-y-0.5 mt-1">
               {prefillData!.talkingPoints.map((pt, i) => (
-                <li key={i} className="flex items-start gap-1.5 text-xs text-[#1e2a38]/60 dark:text-white/60">
-                  <span className="text-[#3dc3ff] font-bold flex-shrink-0">{i + 1}.</span>
+                <li key={i} className="flex items-start gap-1.5 text-xs text-[#2f3437]/60 dark:text-white/60">
+                  <span className="text-[#6ba3c7] font-bold flex-shrink-0">{i + 1}.</span>
                   <span>{pt}</span>
                 </li>
               ))}
@@ -288,7 +288,7 @@ export default function ArcScriptUploadPhase({ onStartBuilding, prefillData, onS
 
       {!isPrefilled && (
         <div>
-          <label className="block text-sm font-semibold text-[#1e2a38] dark:text-white mb-1.5">
+          <label className="block text-sm font-semibold text-[#2f3437] dark:text-white mb-1.5">
             What&apos;s your video title? <span className="text-red-500">*</span>
           </label>
           <input
@@ -296,18 +296,18 @@ export default function ArcScriptUploadPhase({ onStartBuilding, prefillData, onS
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="e.g. Why 90% of Real Estate Agents Fail in Year 2"
-            className="w-full bg-white dark:bg-[#1a1f2e] border border-[#1e2a38]/20 dark:border-white/20 rounded-xl px-4 py-3 text-sm text-[#1e2a38] dark:text-white placeholder-[#1e2a38]/30 dark:placeholder-white/30 focus:outline-none focus:border-[#3dc3ff] transition-colors"
+            className="w-full bg-white dark:bg-[#0f1419] border border-[#2f3437]/20 dark:border-white/20 rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-white placeholder-[#2f3437]/30 dark:placeholder-white/30 focus:outline-none focus:border-[#6ba3c7] transition-colors"
           />
         </div>
       )}
 
       {!isPrefilled && (
         <div>
-          <label className="block text-sm font-semibold text-[#1e2a38] dark:text-white mb-1.5">
+          <label className="block text-sm font-semibold text-[#2f3437] dark:text-white mb-1.5">
             Key talking points{" "}
-            <span className="text-[#1e2a38]/40 dark:text-white/40 font-normal">(optional but encouraged)</span>
+            <span className="text-[#2f3437]/40 dark:text-white/40 font-normal">(optional but encouraged)</span>
           </label>
-          <p className="text-xs text-[#1e2a38]/50 dark:text-white/50 mb-2">
+          <p className="text-xs text-[#2f3437]/50 dark:text-white/50 mb-2">
             List the main points you want to cover. Don&apos;t worry about order — the AI will propose the best structure.
           </p>
           <textarea
@@ -315,18 +315,18 @@ export default function ArcScriptUploadPhase({ onStartBuilding, prefillData, onS
             onChange={(e) => setTalkingPoints(e.target.value)}
             placeholder="What insights, tips, or points do you want to cover? One per line is fine."
             rows={3}
-            className="w-full bg-white dark:bg-[#1a1f2e] border border-[#1e2a38]/20 dark:border-white/20 rounded-xl px-4 py-3 text-sm text-[#1e2a38] dark:text-white placeholder-[#1e2a38]/30 dark:placeholder-white/30 resize-none focus:outline-none focus:border-[#3dc3ff] transition-colors"
+            className="w-full bg-white dark:bg-[#0f1419] border border-[#2f3437]/20 dark:border-white/20 rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-white placeholder-[#2f3437]/30 dark:placeholder-white/30 resize-none focus:outline-none focus:border-[#6ba3c7] transition-colors"
           />
         </div>
       )}
 
       {isPrefilled && (
         <div>
-          <p className="text-sm font-semibold text-[#1e2a38] dark:text-white mb-1">
+          <p className="text-sm font-semibold text-[#2f3437] dark:text-white mb-1">
             Add research{" "}
-            <span className="font-normal text-[#1e2a38]/40 dark:text-white/40">(optional — upload files or paste notes below)</span>
+            <span className="font-normal text-[#2f3437]/40 dark:text-white/40">(optional — upload files or paste notes below)</span>
           </p>
-          <p className="text-xs text-[#1e2a38]/50 dark:text-white/50">
+          <p className="text-xs text-[#2f3437]/50 dark:text-white/50">
             Supporting research helps the AI generate more specific, credible script content. You can skip this step if you don&apos;t have anything to add.
           </p>
         </div>
@@ -334,13 +334,13 @@ export default function ArcScriptUploadPhase({ onStartBuilding, prefillData, onS
 
       <div>
         {!isPrefilled && (
-          <label className="block text-sm font-semibold text-[#1e2a38] dark:text-white mb-1.5">
+          <label className="block text-sm font-semibold text-[#2f3437] dark:text-white mb-1.5">
             Upload research files{" "}
-            <span className="text-[#1e2a38]/40 dark:text-white/40 font-normal">(PDF, DOCX, TXT, MD — max 3 files, 10 MB each)</span>
+            <span className="text-[#2f3437]/40 dark:text-white/40 font-normal">(PDF, DOCX, TXT, MD — max 3 files, 10 MB each)</span>
           </label>
         )}
         {isPrefilled && (
-          <label className="block text-xs font-medium text-[#1e2a38]/50 dark:text-white/50 mb-1.5">
+          <label className="block text-xs font-medium text-[#2f3437]/50 dark:text-white/50 mb-1.5">
             PDF, DOCX, TXT, or MD — max 3 files, 10 MB each
           </label>
         )}
@@ -350,16 +350,16 @@ export default function ArcScriptUploadPhase({ onStartBuilding, prefillData, onS
           onDragLeave={() => setIsDragging(false)}
           onDrop={onDrop}
           onClick={() => fileInputRef.current?.click()}
-          className={`relative border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-colors ${
+          className={`relative border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
             isDragging
-              ? "border-[#3dc3ff] bg-[#3dc3ff]/5"
-              : "border-[#1e2a38]/15 dark:border-white/15 hover:border-[#3dc3ff]/50 hover:bg-[#3dc3ff]/3"
+              ? "border-[#6ba3c7] bg-[#6ba3c7]/5"
+              : "border-[#2f3437]/15 dark:border-white/15 hover:border-[#6ba3c7]/50 hover:bg-[#6ba3c7]/3"
           }`}
         >
-          <DocumentArrowUpIcon className="w-8 h-8 text-[#1e2a38]/30 dark:text-white/30 mx-auto mb-2" />
-          <p className="text-sm text-[#1e2a38]/50 dark:text-white/50">
+          <DocumentArrowUpIcon className="w-8 h-8 text-[#2f3437]/30 dark:text-white/30 mx-auto mb-2" />
+          <p className="text-sm text-[#2f3437]/50 dark:text-white/50">
             Drag and drop files here, or{" "}
-            <span className="text-[#3dc3ff] font-medium">click to browse</span>
+            <span className="text-[#6ba3c7] font-medium">click to browse</span>
           </p>
           <input
             ref={fileInputRef}
@@ -376,14 +376,14 @@ export default function ArcScriptUploadPhase({ onStartBuilding, prefillData, onS
             {files.map((f) => (
               <li
                 key={f.file.name}
-                className="flex items-center gap-3 bg-white dark:bg-[#242b3d] border border-[#1e2a38]/10 dark:border-white/10 rounded-xl px-4 py-2.5"
+                className="flex items-center gap-3 bg-white dark:bg-[#1a1a1a] border border-[#2f3437]/10 dark:border-white/10 rounded-lg px-4 py-2.5"
               >
-                <DocumentArrowUpIcon className="w-4 h-4 text-[#3dc3ff] flex-shrink-0" />
-                <span className="text-sm text-[#1e2a38] dark:text-white flex-1 truncate">{f.file.name}</span>
-                <span className="text-xs text-[#1e2a38]/40 dark:text-white/40 flex-shrink-0">{formatBytes(f.file.size)}</span>
+                <DocumentArrowUpIcon className="w-4 h-4 text-[#6ba3c7] flex-shrink-0" />
+                <span className="text-sm text-[#2f3437] dark:text-white flex-1 truncate">{f.file.name}</span>
+                <span className="text-xs text-[#2f3437]/40 dark:text-white/40 flex-shrink-0">{formatBytes(f.file.size)}</span>
                 <button
                   onClick={(e) => { e.stopPropagation(); removeFile(f.file.name); }}
-                  className="text-[#1e2a38]/30 dark:text-white/30 hover:text-red-500 transition-colors"
+                  className="text-[#2f3437]/30 dark:text-white/30 hover:text-red-500 transition-colors"
                 >
                   <XMarkIcon className="w-4 h-4" />
                 </button>
@@ -394,25 +394,25 @@ export default function ArcScriptUploadPhase({ onStartBuilding, prefillData, onS
       </div>
 
       <div>
-        <label className="block text-sm font-semibold text-[#1e2a38] dark:text-white mb-1.5">
+        <label className="block text-sm font-semibold text-[#2f3437] dark:text-white mb-1.5">
           {isPrefilled ? "Paste research notes" : "Paste your research notes"}{" "}
-          <span className="text-[#1e2a38]/40 dark:text-white/40 font-normal">(or paste content from scanned PDFs)</span>
+          <span className="text-[#2f3437]/40 dark:text-white/40 font-normal">(or paste content from scanned PDFs)</span>
         </label>
         <textarea
           value={pastedNotes}
           onChange={(e) => setPastedNotes(e.target.value)}
           placeholder="Paste any research, notes, stats, quotes, or article content here…"
           rows={8}
-          className="w-full bg-white dark:bg-[#1a1f2e] border border-[#1e2a38]/20 dark:border-white/20 rounded-xl px-4 py-3 text-sm text-[#1e2a38] dark:text-white placeholder-[#1e2a38]/30 dark:placeholder-white/30 resize-none focus:outline-none focus:border-[#3dc3ff] transition-colors"
+          className="w-full bg-white dark:bg-[#0f1419] border border-[#2f3437]/20 dark:border-white/20 rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-white placeholder-[#2f3437]/30 dark:placeholder-white/30 resize-none focus:outline-none focus:border-[#6ba3c7] transition-colors"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-semibold text-[#1e2a38] dark:text-white mb-1.5">
+        <label className="block text-sm font-semibold text-[#2f3437] dark:text-white mb-1.5">
           Client story or personal experience{" "}
-          <span className="text-[#1e2a38]/40 dark:text-white/40 font-normal">(optional but recommended)</span>
+          <span className="text-[#2f3437]/40 dark:text-white/40 font-normal">(optional but recommended)</span>
         </label>
-        <p className="text-xs text-[#1e2a38]/50 dark:text-white/50 mb-2">
+        <p className="text-xs text-[#2f3437]/50 dark:text-white/50 mb-2">
           This gets woven through the whole script as a single threaded story. The more specific, the better — real name, real situation, real outcome.
         </p>
         <textarea
@@ -420,16 +420,16 @@ export default function ArcScriptUploadPhase({ onStartBuilding, prefillData, onS
           onChange={(e) => setClientStory(e.target.value)}
           placeholder="e.g. I had a client named Sarah who came to me after her listing had already expired twice. She'd dropped the price $40k and still had zero offers. Here's what we found…"
           rows={4}
-          className="w-full bg-white dark:bg-[#1a1f2e] border border-[#1e2a38]/20 dark:border-white/20 rounded-xl px-4 py-3 text-sm text-[#1e2a38] dark:text-white placeholder-[#1e2a38]/30 dark:placeholder-white/30 resize-none focus:outline-none focus:border-[#3dc3ff] transition-colors"
+          className="w-full bg-white dark:bg-[#0f1419] border border-[#2f3437]/20 dark:border-white/20 rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-white placeholder-[#2f3437]/30 dark:placeholder-white/30 resize-none focus:outline-none focus:border-[#6ba3c7] transition-colors"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-semibold text-[#1e2a38] dark:text-white mb-1.5">
+        <label className="block text-sm font-semibold text-[#2f3437] dark:text-white mb-1.5">
           What&apos;s your lead magnet for this video?{" "}
-          <span className="text-[#1e2a38]/40 dark:text-white/40 font-normal">(optional)</span>
+          <span className="text-[#2f3437]/40 dark:text-white/40 font-normal">(optional)</span>
         </label>
-        <p className="text-xs text-[#1e2a38]/50 dark:text-white/50 mb-2">
+        <p className="text-xs text-[#2f3437]/50 dark:text-white/50 mb-2">
           The free resource you&apos;ll mention 3 times (e.g. &ldquo;Calgary Buyer&apos;s Reality Check&rdquo;, &ldquo;Neighbourhood Matchmaker GPT&rdquo;). If you don&apos;t have one yet, leave blank and the AI will brainstorm options.
         </p>
         <input
@@ -437,21 +437,21 @@ export default function ArcScriptUploadPhase({ onStartBuilding, prefillData, onS
           value={leadMagnet}
           onChange={(e) => setLeadMagnet(e.target.value)}
           placeholder="e.g. Calgary Home Seller's Readiness Checklist"
-          className="w-full bg-white dark:bg-[#1a1f2e] border border-[#1e2a38]/20 dark:border-white/20 rounded-xl px-4 py-3 text-sm text-[#1e2a38] dark:text-white placeholder-[#1e2a38]/30 dark:placeholder-white/30 focus:outline-none focus:border-[#3dc3ff] transition-colors"
+          className="w-full bg-white dark:bg-[#0f1419] border border-[#2f3437]/20 dark:border-white/20 rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-white placeholder-[#2f3437]/30 dark:placeholder-white/30 focus:outline-none focus:border-[#6ba3c7] transition-colors"
         />
       </div>
 
       <div>
         <div className="flex items-center justify-between mb-1.5">
-          <label className="block text-sm font-semibold text-[#1e2a38] dark:text-white">
+          <label className="block text-sm font-semibold text-[#2f3437] dark:text-white">
             What video are you pushing viewers to next?{" "}
-            <span className="text-[#1e2a38]/40 dark:text-white/40 font-normal">(optional)</span>
+            <span className="text-[#2f3437]/40 dark:text-white/40 font-normal">(optional)</span>
           </label>
           <div className="relative" ref={pickerRef}>
             <button
               type="button"
               onClick={openPicker}
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-[#3dc3ff] hover:text-[#3dc3ff]/80 transition-colors"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-[#6ba3c7] hover:text-[#6ba3c7]/80 transition-colors"
             >
               <FilmIcon className="w-3.5 h-3.5" />
               Pick from your videos
@@ -459,32 +459,32 @@ export default function ArcScriptUploadPhase({ onStartBuilding, prefillData, onS
             </button>
 
             {pickerOpen && (
-              <div className="absolute right-0 top-full mt-1.5 w-80 bg-white dark:bg-[#242b3d] border border-[#1e2a38]/15 dark:border-white/15 rounded-xl shadow-lg z-20 overflow-hidden">
+              <div className="absolute right-0 top-full mt-1.5 w-80 bg-white dark:bg-[#1a1a1a] border border-[#2f3437]/15 dark:border-white/15 rounded-lg shadow-lg z-20 overflow-hidden">
 
                 {pickerStep === "members" && (
                   <>
-                    <div className="px-4 py-2.5 border-b border-[#1e2a38]/10 dark:border-white/10 bg-[#f1f1ef] dark:bg-[#1a1f2e]">
-                      <p className="text-xs font-semibold text-[#1e2a38]/60 dark:text-white/60 uppercase tracking-wide">Select a member</p>
+                    <div className="px-4 py-2.5 border-b border-[#2f3437]/10 dark:border-white/10 bg-[#f7f6f3] dark:bg-[#0f1419]">
+                      <p className="text-xs font-semibold text-[#2f3437]/60 dark:text-white/60 uppercase tracking-wide">Select a member</p>
                     </div>
                     {memberListLoading ? (
-                      <div className="px-4 py-5 text-sm text-[#1e2a38]/50 dark:text-white/50 text-center">Loading members…</div>
+                      <div className="px-4 py-5 text-sm text-[#2f3437]/50 dark:text-white/50 text-center">Loading members…</div>
                     ) : memberList.length === 0 ? (
-                      <div className="px-4 py-5 text-sm text-[#1e2a38]/50 dark:text-white/50 text-center">No members found</div>
+                      <div className="px-4 py-5 text-sm text-[#2f3437]/50 dark:text-white/50 text-center">No members found</div>
                     ) : (
-                      <ul className="max-h-64 overflow-y-auto divide-y divide-[#1e2a38]/8 dark:divide-white/10">
+                      <ul className="max-h-64 overflow-y-auto divide-y divide-[#2f3437]/8 dark:divide-white/10">
                         {memberList.map((m) => (
                           <li key={m.id}>
                             <button
                               type="button"
                               onClick={() => pickMember(m)}
-                              className="w-full text-left px-4 py-3 hover:bg-[#3dc3ff]/5 transition-colors"
+                              className="w-full text-left px-4 py-3 hover:bg-[#6ba3c7]/5 transition-colors"
                             >
-                              <p className="text-sm font-medium text-[#1e2a38] dark:text-white">{m.fullName || m.email}</p>
+                              <p className="text-sm font-medium text-[#2f3437] dark:text-white">{m.fullName || m.email}</p>
                               {m.youtubeChannelName && (
-                                <p className="text-xs text-[#1e2a38]/40 dark:text-white/40 mt-0.5">{m.youtubeChannelName}</p>
+                                <p className="text-xs text-[#2f3437]/40 dark:text-white/40 mt-0.5">{m.youtubeChannelName}</p>
                               )}
                               {!m.youtubeChannelName && (
-                                <p className="text-xs text-[#1e2a38]/35 dark:text-white/35 mt-0.5">{m.email}</p>
+                                <p className="text-xs text-[#2f3437]/35 dark:text-white/35 mt-0.5">{m.email}</p>
                               )}
                             </button>
                           </li>
@@ -497,44 +497,44 @@ export default function ArcScriptUploadPhase({ onStartBuilding, prefillData, onS
                 {pickerStep === "videos" && (
                   <>
                     {selectedMember && (
-                      <div className="px-4 py-2.5 border-b border-[#1e2a38]/10 dark:border-white/10 bg-[#f1f1ef] dark:bg-[#1a1f2e] flex items-center justify-between">
-                        <p className="text-xs font-semibold text-[#1e2a38]/70 dark:text-white/70 truncate">
+                      <div className="px-4 py-2.5 border-b border-[#2f3437]/10 dark:border-white/10 bg-[#f7f6f3] dark:bg-[#0f1419] flex items-center justify-between">
+                        <p className="text-xs font-semibold text-[#2f3437]/70 dark:text-white/70 truncate">
                           {selectedMember.fullName || selectedMember.email}
                         </p>
                         <button
                           type="button"
                           onClick={() => setPickerStep("members")}
-                          className="text-xs text-[#3dc3ff] hover:underline shrink-0 ml-2"
+                          className="text-xs text-[#6ba3c7] hover:underline shrink-0 ml-2"
                         >
                           Change
                         </button>
                       </div>
                     )}
                     {pickerLoading ? (
-                      <div className="px-4 py-5 text-sm text-[#1e2a38]/50 dark:text-white/50 text-center">Loading videos…</div>
+                      <div className="px-4 py-5 text-sm text-[#2f3437]/50 dark:text-white/50 text-center">Loading videos…</div>
                     ) : ytError ? (
-                      <div className="px-4 py-5 text-sm text-[#1e2a38]/50 dark:text-white/50 text-center">{ytError}</div>
+                      <div className="px-4 py-5 text-sm text-[#2f3437]/50 dark:text-white/50 text-center">{ytError}</div>
                     ) : ytVideos.length === 0 ? (
-                      <div className="px-4 py-5 text-sm text-[#1e2a38]/50 dark:text-white/50 text-center">No videos found</div>
+                      <div className="px-4 py-5 text-sm text-[#2f3437]/50 dark:text-white/50 text-center">No videos found</div>
                     ) : (
-                      <ul className="max-h-72 overflow-y-auto divide-y divide-[#1e2a38]/8 dark:divide-white/10">
+                      <ul className="max-h-72 overflow-y-auto divide-y divide-[#2f3437]/8 dark:divide-white/10">
                         {ytVideos.map((v) => (
                           <li key={v.videoId}>
                             <button
                               type="button"
                               onClick={() => pickVideo(v)}
-                              className="w-full text-left px-3 py-2.5 hover:bg-[#3dc3ff]/5 transition-colors flex items-center gap-3"
+                              className="w-full text-left px-3 py-2.5 hover:bg-[#6ba3c7]/5 transition-colors flex items-center gap-3"
                             >
                               {v.thumbnailUrl ? (
                                 <img
                                   src={v.thumbnailUrl}
                                   alt=""
-                                  className="w-16 h-9 rounded object-cover shrink-0 bg-[#1e2a38]/10 dark:bg-white/10"
+                                  className="w-16 h-9 rounded object-cover shrink-0 bg-[#111]/10 dark:bg-white/10"
                                 />
                               ) : (
-                                <div className="w-16 h-9 rounded bg-[#1e2a38]/10 dark:bg-white/10 shrink-0" />
+                                <div className="w-16 h-9 rounded bg-[#111]/10 dark:bg-white/10 shrink-0" />
                               )}
-                              <p className="text-sm font-medium text-[#1e2a38] dark:text-white leading-snug line-clamp-2 text-left">{v.title}</p>
+                              <p className="text-sm font-medium text-[#2f3437] dark:text-white leading-snug line-clamp-2 text-left">{v.title}</p>
                             </button>
                           </li>
                         ))}
@@ -547,7 +547,7 @@ export default function ArcScriptUploadPhase({ onStartBuilding, prefillData, onS
             )}
           </div>
         </div>
-        <p className="text-xs text-[#1e2a38]/50 dark:text-white/50 mb-2">
+        <p className="text-xs text-[#2f3437]/50 dark:text-white/50 mb-2">
           Pick from your recent YouTube videos or type a title for an upcoming one. The AI uses this to write a specific open loop ending.
         </p>
         <textarea
@@ -555,12 +555,12 @@ export default function ArcScriptUploadPhase({ onStartBuilding, prefillData, onS
           onChange={(e) => setNextVideoPush(e.target.value)}
           rows={nextVideoPush.length > 80 ? 5 : 2}
           placeholder="e.g. Why Calgary Buyers Are Regret-Proofing Their Offer Strategy in 2026"
-          className="w-full bg-white dark:bg-[#1a1f2e] border border-[#1e2a38]/20 dark:border-white/20 rounded-xl px-4 py-3 text-sm text-[#1e2a38] dark:text-white placeholder-[#1e2a38]/30 dark:placeholder-white/30 resize-none focus:outline-none focus:border-[#3dc3ff] transition-colors"
+          className="w-full bg-white dark:bg-[#0f1419] border border-[#2f3437]/20 dark:border-white/20 rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-white placeholder-[#2f3437]/30 dark:placeholder-white/30 resize-none focus:outline-none focus:border-[#6ba3c7] transition-colors"
         />
       </div>
 
       {error && (
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-xl px-4 py-3 text-sm text-red-600 dark:text-red-400">
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg px-4 py-3 text-sm text-red-600 dark:text-red-400">
           {error}
         </div>
       )}
@@ -569,14 +569,14 @@ export default function ArcScriptUploadPhase({ onStartBuilding, prefillData, onS
         <div className="flex gap-3">
           <button
             onClick={onSkip}
-            className="flex-1 py-3 text-sm font-semibold border border-[#1e2a38]/15 dark:border-white/15 text-[#1e2a38]/60 dark:text-white/60 rounded-xl hover:bg-[#1e2a38]/5 dark:hover:bg-white/5 transition-colors"
+            className="flex-1 py-3 text-sm font-semibold border border-[#2f3437]/15 dark:border-white/15 text-[#2f3437]/60 dark:text-white/60 rounded-lg hover:bg-[#111]/5 dark:hover:bg-white/5 transition-colors"
           >
             Skip — no research
           </button>
           <button
             onClick={handleStart}
             disabled={!canStart || loading}
-            className="flex-1 bg-[#3dc3ff] text-white font-semibold py-3 rounded-xl hover:bg-[#3dc3ff]/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+            className="flex-1 bg-[#6ba3c7] text-white font-semibold py-3 rounded-lg hover:bg-[#6ba3c7]/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
           >
             {loading ? (
               <>
@@ -598,7 +598,7 @@ export default function ArcScriptUploadPhase({ onStartBuilding, prefillData, onS
           <button
             onClick={handleStart}
             disabled={!canStart || loading}
-            className="w-full bg-[#3dc3ff] text-white font-semibold py-3.5 rounded-xl hover:bg-[#3dc3ff]/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+            className="w-full bg-[#6ba3c7] text-white font-semibold py-3.5 rounded-lg hover:bg-[#6ba3c7]/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
           >
             {loading ? (
               <>
@@ -616,7 +616,7 @@ export default function ArcScriptUploadPhase({ onStartBuilding, prefillData, onS
           </button>
 
           {!canStart && !loading && (
-            <p className="text-center text-xs text-[#1e2a38]/35 dark:text-white/35">
+            <p className="text-center text-xs text-[#2f3437]/35 dark:text-white/35">
               Add a video title and at least one file, some research notes, or talking points to continue.
             </p>
           )}

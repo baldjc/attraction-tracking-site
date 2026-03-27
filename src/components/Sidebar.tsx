@@ -94,6 +94,9 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
   const [showSwitch, setShowSwitch] = useState(false);
   const [qaCallsPending, setQaCallsPending] = useState(0);
 
+  const isStaff = role === "admin" || role === "editor";
+  const isImpersonating = !!impersonate;
+
   useEffect(() => {
     if (role === "admin") {
       fetch("/api/admin/resources/review-queue?status=pending")
@@ -122,10 +125,7 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
     return () => { document.body.style.overflow = ""; };
   }, [mobileOpen]);
 
-  const isAdminOnMemberView =
-    (role === "admin" || role === "editor") && !!impersonate && !pathname.startsWith("/admin");
-  const isEditorOnMemberView = false;
-  const isStaffOnMemberView = isAdminOnMemberView;
+  const isStaffOnMemberView = isStaff && isImpersonating;
 
   const baseMemberLinks = memberLinks.filter((link) => {
     if (!link.featureKey || !featureFlags) return true;
@@ -173,40 +173,53 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
 
   const sidebarInner = (
     <div className="flex flex-col h-full">
-      {/* Impersonation banner — admin or editor viewing a member */}
-      {(isAdminOnMemberView || isEditorOnMemberView) && impersonate && (
-        <div className="bg-amber-500 px-3 pt-2.5 pb-2 flex-shrink-0 relative">
-          <div className="flex items-center justify-between gap-1 mb-1.5">
-            <div className="flex items-center gap-1.5">
-              <EyeIcon className="w-3.5 h-3.5 text-amber-900 shrink-0" />
-              <span className="text-[11px] font-bold text-amber-900 uppercase tracking-wide">Member View</span>
-            </div>
+      {/* Persistent view switcher bar — admin and editor only */}
+      {isStaff && (
+        <div
+          className={`flex-shrink-0 px-3 py-2 flex items-center gap-2 ${
+            isImpersonating ? "bg-[#e63946]" : "bg-[#6ba3c7]/20"
+          }`}
+        >
+          {/* Label */}
+          <EyeIcon className={`w-3.5 h-3.5 shrink-0 ${isImpersonating ? "text-white/80" : "text-white/50"}`} />
+          <span className={`text-[10px] font-bold uppercase tracking-widest shrink-0 ${isImpersonating ? "text-white" : "text-white/60"}`}>
+            {isImpersonating ? "Member" : "Admin"}
+          </span>
+
+          {/* Name + dropdown */}
+          <button
+            onClick={() => setShowSwitch((s) => !s)}
+            className={`flex items-center gap-1.5 flex-1 min-w-0 text-left rounded-md px-2 py-1 transition-colors ${
+              isImpersonating
+                ? "bg-black/20 hover:bg-black/30"
+                : "bg-white/10 hover:bg-white/15"
+            }`}
+          >
+            <span className={`text-[11px] font-semibold truncate flex-1 ${isImpersonating ? "text-white" : "text-white/80"}`}>
+              {isImpersonating ? impersonate!.memberName : userName}
+            </span>
+            <ChevronDownIcon className={`w-3 h-3 shrink-0 transition-transform ${showSwitch ? "rotate-180" : ""} ${isImpersonating ? "text-white/80" : "text-white/50"}`} />
+          </button>
+
+          {/* Exit button — impersonation only */}
+          {isImpersonating && (
             <button
               onClick={exitImpersonation}
-              className="flex items-center gap-1 text-[11px] font-semibold text-amber-900 hover:text-white transition-colors whitespace-nowrap"
+              className="flex items-center gap-1 text-[11px] font-semibold text-white/80 hover:text-white transition-colors whitespace-nowrap shrink-0"
             >
               <ArrowLeftIcon className="w-3 h-3" /> Exit
             </button>
-          </div>
-          <div className="relative">
-            <button
-              onClick={() => setShowSwitch((s) => !s)}
-              className="flex items-center gap-1.5 w-full text-left bg-amber-600/30 hover:bg-amber-600/50 rounded-lg px-2.5 py-1.5 transition-colors"
-            >
-              <UserCircleIcon className="w-3.5 h-3.5 text-amber-900 shrink-0" />
-              <span className="text-xs font-semibold text-amber-900 flex-1 truncate">{impersonate.memberName}</span>
-              <ChevronDownIcon className={`w-3 h-3 text-amber-900 shrink-0 transition-transform ${showSwitch ? "rotate-180" : ""}`} />
-            </button>
-            {showSwitch && (
-              <MemberPickerModal onClose={() => setShowSwitch(false)} />
-            )}
-          </div>
+          )}
         </div>
+      )}
+
+      {showSwitch && (
+        <MemberPickerModal onClose={() => setShowSwitch(false)} />
       )}
 
       <div className="px-4 py-4 border-b border-white/10 flex-shrink-0">
         <Link href={homeHref} className="flex items-center gap-3">
-          <img src="/logo-icon.png" alt="" className="h-10 w-10 rounded-xl object-cover shrink-0" />
+          <img src="/logo-icon.png" alt="" className="h-10 w-10 rounded-lg object-cover shrink-0" />
           <img
             src="/logo-transparent.png"
             alt="Attraction by Video"
@@ -230,8 +243,8 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
             const sectionHeader = sectionLabel && !renderedSections.has(sectionLabel) ? (() => {
               renderedSections.add(sectionLabel);
               return (
-                <div key={`section-${sectionLabel}`} className="px-3 pt-3 pb-1">
-                  <p className="text-[10px] font-semibold uppercase tracking-widest text-white/30">{sectionLabel}</p>
+                <div key={`section-${sectionLabel}`} className="px-3 pt-4 pb-1">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-white/30">{sectionLabel}</p>
                 </div>
               );
             })() : null;
@@ -241,10 +254,10 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
                 {sectionHeader}
                 <Link
                   href={link.href}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${
+                  className={`flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-colors duration-200 border-l-2 ${
                     active
-                      ? "bg-[#3dc3ff]/20 text-[#3dc3ff]"
-                      : "text-white/60 hover:text-white hover:bg-white/10"
+                      ? "border-[#6ba3c7] bg-white/10 text-white"
+                      : "border-transparent text-white/60 hover:text-white hover:bg-white/8"
                   } ${sectionLabel ? "pl-6" : ""}`}
                 >
                   <Icon className="w-5 h-5 shrink-0" />
@@ -268,7 +281,7 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
         </div>
         <button
           onClick={toggleTheme}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/60 hover:text-white hover:bg-white/10 transition-all duration-150 w-full"
+          className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-white/50 hover:text-white hover:bg-white/5 transition-colors duration-200 w-full"
           aria-label="Toggle dark mode"
         >
           {theme === "dark"
@@ -278,7 +291,7 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
         </button>
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/60 hover:text-white hover:bg-white/10 transition-all duration-150 w-full"
+          className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-white/50 hover:text-white hover:bg-white/5 transition-colors duration-200 w-full"
         >
           <ArrowRightOnRectangleIcon className="w-5 h-5 shrink-0" />
           <span>Sign out</span>
@@ -290,7 +303,7 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
   return (
     <>
       {/* Mobile top bar */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-40 h-14 bg-[#1e2a38] dark:bg-[#0f1419] flex items-center px-4 gap-3 shadow-lg">
+      <div className={`lg:hidden fixed top-0 left-0 right-0 z-40 h-14 flex items-center px-4 gap-3 transition-colors ${isImpersonating ? "bg-[#e63946]" : "bg-[#1e2a38]"}`}>
         <button
           onClick={() => setMobileOpen(true)}
           className="text-white/70 hover:text-white transition-colors p-1"
@@ -299,11 +312,17 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
           <Bars3Icon className="w-6 h-6" />
         </button>
         <img src="/logo-icon.png" alt="" className="h-8 w-8 rounded-lg object-cover" />
-        <img src="/logo-transparent.png" alt="Attraction by Video" className="h-6 w-auto object-contain" style={{ filter: "brightness(0) invert(1)" }} />
-        {(isAdminOnMemberView || isEditorOnMemberView) && impersonate && (
+        {isImpersonating ? (
+          <span className="text-xs font-bold text-white uppercase tracking-widest">
+            Member View
+          </span>
+        ) : (
+          <img src="/logo-transparent.png" alt="Attraction by Video" className="h-6 w-auto object-contain" style={{ filter: "brightness(0) invert(1)" }} />
+        )}
+        {isStaff && isImpersonating && (
           <button
             onClick={exitImpersonation}
-            className="ml-auto flex items-center gap-1 bg-amber-500 text-amber-900 text-xs font-semibold px-3 py-1.5 rounded-lg"
+            className="ml-auto flex items-center gap-1 bg-black/20 hover:bg-black/30 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
           >
             <ArrowLeftIcon className="w-3 h-3" /> Exit
           </button>
@@ -320,7 +339,7 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
 
       {/* Mobile drawer */}
       <aside
-        className={`lg:hidden fixed inset-y-0 left-0 z-50 w-[260px] bg-[#1e2a38] dark:bg-[#0f1419] shadow-2xl transform transition-transform duration-300 ease-in-out ${
+        className={`lg:hidden fixed inset-y-0 left-0 z-50 w-[260px] bg-[#1e2a38] shadow-2xl transform transition-transform duration-300 ease-in-out ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -335,7 +354,7 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
       </aside>
 
       {/* Desktop fixed sidebar */}
-      <aside className="hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 lg:left-0 lg:w-[260px] bg-[#1e2a38] dark:bg-[#0f1419] shadow-xl z-30">
+      <aside className="hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 lg:left-0 lg:w-[260px] bg-[#1e2a38] z-30">
         {sidebarInner}
       </aside>
     </>

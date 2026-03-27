@@ -146,14 +146,14 @@ function EntryCard({
     return (
       <>
         {text.slice(0, idx)}
-        <mark className="bg-[#3dc3ff]/25 text-inherit rounded px-0.5">{text.slice(idx, idx + word.length)}</mark>
+        <mark className="bg-[#6ba3c7]/25 text-inherit rounded px-0.5">{text.slice(idx, idx + word.length)}</mark>
         {text.slice(idx + word.length)}
       </>
     );
   }
 
   return (
-    <div className={`bg-white dark:bg-[#242b3d] rounded-2xl border dark:border-white/10 shadow-sm overflow-hidden hover:shadow-md transition-shadow ${
+    <div className={`bg-white dark:bg-[#1a1a1a] rounded-lg border dark:border-white/10 overflow-hidden hover:shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-shadow ${
       isLesson ? "border-blue-100" : "border-violet-100"
     }`}>
       {/* Source bar */}
@@ -167,7 +167,7 @@ function EntryCard({
             ? <AcademicCapIcon className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
             : <VideoCameraIcon className="w-3.5 h-3.5 text-violet-500 flex-shrink-0" />
           }
-          <span className="text-xs font-medium text-[#1e2a38]/60 dark:text-white/50 truncate">
+          <span className="text-xs font-medium text-[#2f3437]/60 dark:text-white/50 truncate">
             {isLesson
               ? entry.source ? `Lesson ${entry.source.lessonNumber} — ${entry.source.title}` : "Course Lesson"
               : entry.source ? `Q&A Call · ${fmtDate(entry.source.callDate)}` : "Q&A Call"
@@ -195,10 +195,10 @@ function EntryCard({
       <div className="p-4">
         <div className="flex items-start gap-3">
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-[#1e2a38] dark:text-white text-sm mb-1.5 leading-snug">
+            <h3 className="font-semibold text-[#2f3437] dark:text-white text-sm mb-1.5 leading-snug">
               {typeof highlightText(entry.subTopic) === "string" ? highlightText(entry.subTopic) : highlightText(entry.subTopic)}
             </h3>
-            <p className="text-xs text-[#1e2a38]/65 dark:text-white/55 leading-relaxed mb-3">
+            <p className="text-xs text-[#2f3437]/65 dark:text-white/55 leading-relaxed mb-3">
               {highlightText(entry.summary)}
             </p>
             <div className="flex flex-wrap gap-1">
@@ -212,7 +212,7 @@ function EntryCard({
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-2 mt-3 pt-3 border-t border-[#1e2a38]/5 dark:border-white/5">
+        <div className="flex items-center gap-2 mt-3 pt-3 border-t border-[#2f3437]/5 dark:border-white/5">
           {hasVideo && (
             <button
               onClick={() => onPlay(entry)}
@@ -234,11 +234,11 @@ function EntryCard({
             onClick={toggleSave}
             disabled={saving}
             title={saved ? "Remove bookmark" : "Bookmark this moment"}
-            className="p-1.5 rounded-lg hover:bg-[#1e2a38]/5 dark:hover:bg-white/5 transition-colors disabled:opacity-50"
+            className="p-1.5 rounded-lg hover:bg-[#111]/5 dark:hover:bg-white/5 transition-colors disabled:opacity-50"
           >
             {saved
-              ? <BookmarkSolid className="w-4 h-4 text-[#3dc3ff]" />
-              : <BookmarkOutline className="w-4 h-4 text-[#1e2a38]/30 dark:text-white/30" />
+              ? <BookmarkSolid className="w-4 h-4 text-[#6ba3c7]" />
+              : <BookmarkOutline className="w-4 h-4 text-[#2f3437]/30 dark:text-white/30" />
             }
           </button>
         </div>
@@ -261,8 +261,8 @@ function PrincipleFilter({
         onClick={() => onChange(null)}
         className={`flex-shrink-0 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all ${
           selected === null
-            ? "bg-[#1e2a38] text-white border-[#1e2a38] dark:bg-white dark:text-[#1e2a38]"
-            : "border-[#1e2a38]/20 dark:border-white/20 text-[#1e2a38]/60 dark:text-white/50 hover:border-[#1e2a38]/40"
+            ? "bg-[#111] text-white border-[#2f3437] dark:bg-white dark:text-[#2f3437]"
+            : "border-[#2f3437]/20 dark:border-white/20 text-[#2f3437]/60 dark:text-white/50 hover:border-[#2f3437]/40"
         }`}
       >
         All Principles
@@ -274,7 +274,7 @@ function PrincipleFilter({
           className={`flex-shrink-0 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all ${
             selected === p
               ? `${PRINCIPLE_COLORS[p] ?? "bg-gray-100 text-gray-600"} border-transparent`
-              : "border-[#1e2a38]/15 dark:border-white/15 text-[#1e2a38]/55 dark:text-white/45 hover:border-[#1e2a38]/30"
+              : "border-[#2f3437]/15 dark:border-white/15 text-[#2f3437]/55 dark:text-white/45 hover:border-[#2f3437]/30"
           }`}
         >
           {p}
@@ -288,8 +288,8 @@ function PrincipleFilter({
 function EmptyState({ message, sub }: { message: string; sub?: string }) {
   return (
     <div className="text-center py-16">
-      <p className="text-[#1e2a38]/40 dark:text-white/30 text-sm font-medium">{message}</p>
-      {sub && <p className="text-[#1e2a38]/30 dark:text-white/20 text-xs mt-1">{sub}</p>}
+      <p className="text-[#2f3437]/40 dark:text-white/30 text-sm font-medium">{message}</p>
+      {sub && <p className="text-[#2f3437]/30 dark:text-white/20 text-xs mt-1">{sub}</p>}
     </div>
   );
 }
@@ -343,7 +343,7 @@ function TranscriptMatchCard({
     return (
       <span>
         {text.slice(0, idx)}
-        <mark className="bg-[#3dc3ff]/30 text-inherit rounded px-0.5 font-semibold">
+        <mark className="bg-[#6ba3c7]/30 text-inherit rounded px-0.5 font-semibold">
           {text.slice(idx, idx + word.length)}
         </mark>
         {text.slice(idx + word.length)}
@@ -352,7 +352,7 @@ function TranscriptMatchCard({
   }
 
   return (
-    <div className={`bg-white dark:bg-[#242b3d] rounded-xl border shadow-sm overflow-hidden ${
+    <div className={`bg-white dark:bg-[#1a1a1a] rounded-lg border overflow-hidden ${
       isCall ? "border-violet-100 dark:border-violet-900/30" : "border-blue-100 dark:border-blue-900/30"
     }`}>
       {/* Source header */}
@@ -365,7 +365,7 @@ function TranscriptMatchCard({
           {isCall
             ? <VideoCameraIcon className="w-3.5 h-3.5 text-violet-500 flex-shrink-0" />
             : <AcademicCapIcon className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />}
-          <span className="text-xs font-medium text-[#1e2a38]/60 dark:text-white/50 truncate">
+          <span className="text-xs font-medium text-[#2f3437]/60 dark:text-white/50 truncate">
             {isCall
               ? `${match.title}${match.date ? ` · ${fmtDate(match.date)}` : ""}`
               : `Lesson ${match.lessonNumber} — ${match.title}`}
@@ -373,14 +373,14 @@ function TranscriptMatchCard({
         </div>
         {ts && (
           <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
-            <span className="inline-flex items-center gap-1 text-[10px] font-mono font-semibold text-[#3dc3ff] bg-[#3dc3ff]/10 px-2 py-0.5 rounded-full">
+            <span className="inline-flex items-center gap-1 text-[10px] font-mono font-semibold text-[#6ba3c7] bg-[#6ba3c7]/10 px-2 py-0.5 rounded-full">
               <ClockIcon className="w-3 h-3" />
               ~{ts}
             </span>
             <button
               onClick={copyTs}
               title="Copy timestamp"
-              className="text-[10px] text-[#1e2a38]/30 dark:text-white/30 hover:text-[#3dc3ff] transition-colors px-1.5 py-0.5 rounded hover:bg-[#3dc3ff]/10"
+              className="text-[10px] text-[#2f3437]/30 dark:text-white/30 hover:text-[#6ba3c7] transition-colors px-1.5 py-0.5 rounded hover:bg-[#6ba3c7]/10"
             >
               {tsCopied ? "Copied!" : "Copy"}
             </button>
@@ -390,13 +390,13 @@ function TranscriptMatchCard({
 
       {/* Snippet */}
       <div className="px-4 py-3">
-        <p className="text-xs text-[#1e2a38]/70 dark:text-white/55 leading-relaxed font-mono">
+        <p className="text-xs text-[#2f3437]/70 dark:text-white/55 leading-relaxed font-mono">
           {highlightSnippet(match.snippet)}
         </p>
       </div>
 
       {/* Footer actions */}
-      <div className="flex items-center gap-3 px-4 py-2 border-t border-[#1e2a38]/5 dark:border-white/5">
+      <div className="flex items-center gap-3 px-4 py-2 border-t border-[#2f3437]/5 dark:border-white/5">
         {isCall && match.fathomShareUrl && (
           <a
             href={match.fathomShareUrl}
@@ -622,17 +622,17 @@ export default function MemberResourcesPage() {
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
             onClick={(e) => { if (e.target === e.currentTarget) setPlayerEntry(null); }}
           >
-            <div className="w-full max-w-2xl bg-[#1a1f2e] rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="w-full max-w-2xl bg-white dark:bg-[#1a2232] rounded-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
 
               {/* Header */}
-              <div className="flex items-start gap-3 px-6 py-4 border-b border-white/10 flex-shrink-0">
+              <div className="flex items-start gap-3 px-6 py-4 border-b border-[#eaeaea] dark:border-white/10 flex-shrink-0">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-violet-400 bg-violet-400/15 px-2 py-0.5 rounded-full">
+                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-violet-600 dark:text-violet-400 bg-violet-100 dark:bg-violet-400/15 px-2 py-0.5 rounded-full">
                       <VideoCameraIcon className="w-3 h-3" /> Q&A Call
                     </span>
                     {ts && (
-                      <span className="inline-flex items-center gap-1.5 text-[11px] font-mono text-[#3dc3ff] bg-[#3dc3ff]/10 px-2 py-0.5 rounded-full">
+                      <span className="inline-flex items-center gap-1.5 text-[11px] font-mono text-[#6ba3c7] bg-[#6ba3c7]/10 px-2 py-0.5 rounded-full">
                         @ {ts}
                         <button
                           onClick={() => {
@@ -641,7 +641,7 @@ export default function MemberResourcesPage() {
                             setTimeout(() => setTsCopied(false), 2000);
                           }}
                           title="Copy timestamp to clipboard"
-                          className="text-[#3dc3ff]/60 hover:text-[#3dc3ff] transition-colors"
+                          className="text-[#6ba3c7]/60 hover:text-[#6ba3c7] transition-colors"
                         >
                           {tsCopied
                             ? <span className="text-[9px] font-sans font-semibold not-italic">Copied!</span>
@@ -651,9 +651,9 @@ export default function MemberResourcesPage() {
                       </span>
                     )}
                   </div>
-                  <h2 className="text-base font-bold text-white mt-1.5 leading-snug">{playerEntry.subTopic}</h2>
+                  <h2 className="text-base font-bold text-[#2f3437] dark:text-white mt-1.5 leading-snug">{playerEntry.subTopic}</h2>
                   {playerEntry.source && (
-                    <p className="text-xs text-white/40 mt-0.5">
+                    <p className="text-xs text-[#2f3437]/50 dark:text-white/40 mt-0.5">
                       {playerEntry.source.title ?? "Q&A Call"}
                       {playerEntry.source.callDate && <span className="ml-1.5">· {fmtDate(playerEntry.source.callDate)}</span>}
                     </p>
@@ -661,7 +661,7 @@ export default function MemberResourcesPage() {
                 </div>
                 <button
                   onClick={() => setPlayerEntry(null)}
-                  className="flex-shrink-0 p-1.5 text-white/30 hover:text-white rounded-lg hover:bg-white/10 transition-colors mt-0.5"
+                  className="flex-shrink-0 p-1.5 text-[#2f3437]/30 dark:text-white/30 hover:text-[#2f3437] dark:hover:text-white rounded-lg hover:bg-[#111]/5 dark:hover:bg-white/10 transition-colors mt-0.5"
                   aria-label="Close"
                 >
                   <XMarkIcon className="w-5 h-5" />
@@ -674,17 +674,17 @@ export default function MemberResourcesPage() {
                 {/* Summary */}
                 {playerEntry.summary && (
                   <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-wide text-white/35 mb-1.5">Summary</p>
-                    <p className="text-sm text-white/80 leading-relaxed">{playerEntry.summary}</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-[#2f3437]/40 dark:text-white/35 mb-1.5">Summary</p>
+                    <p className="text-sm text-[#2f3437]/80 dark:text-white/80 leading-relaxed">{playerEntry.summary}</p>
                   </div>
                 )}
 
                 {/* Transcript excerpt */}
                 {transcript && (
                   <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-wide text-white/35 mb-1.5">Transcript Excerpt</p>
-                    <div className="bg-white/5 border border-white/8 rounded-xl px-4 py-3 max-h-48 overflow-y-auto">
-                      <p className="text-[13px] text-white/65 leading-relaxed whitespace-pre-wrap">{transcript}</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-[#2f3437]/40 dark:text-white/35 mb-1.5">Transcript Excerpt</p>
+                    <div className="bg-[#f7f6f3] dark:bg-white/5 border border-[#eaeaea] dark:border-white/8 rounded-lg px-4 py-3 max-h-48 overflow-y-auto">
+                      <p className="text-[13px] text-[#2f3437]/70 dark:text-white/65 leading-relaxed whitespace-pre-wrap">{transcript}</p>
                     </div>
                   </div>
                 )}
@@ -692,10 +692,10 @@ export default function MemberResourcesPage() {
                 {/* Principles */}
                 {playerEntry.principles.length > 0 && (
                   <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-wide text-white/35 mb-1.5">Principles</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-[#2f3437]/40 dark:text-white/35 mb-1.5">Principles</p>
                     <div className="flex flex-wrap gap-1.5">
                       {playerEntry.principles.map((p) => (
-                        <span key={p} className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-white/10 text-white/70">
+                        <span key={p} className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-[#111]/8 dark:bg-white/10 text-[#2f3437]/60 dark:text-white/70">
                           {p}
                         </span>
                       ))}
@@ -705,16 +705,16 @@ export default function MemberResourcesPage() {
               </div>
 
               {/* Footer actions */}
-              <div className="px-6 py-4 border-t border-white/10 flex-shrink-0 space-y-2.5">
+              <div className="px-6 py-4 border-t border-[#eaeaea] dark:border-white/10 flex-shrink-0 space-y-2.5">
                 <div className="flex items-center gap-3">
                   <button
                     onClick={modalToggleSave}
                     disabled={modalSaving}
                     title={modalSaved ? "Remove bookmark" : "Bookmark this moment"}
-                    className={`flex items-center gap-1.5 text-sm font-medium px-3.5 py-2 rounded-xl border transition-all disabled:opacity-50 ${
+                    className={`flex items-center gap-1.5 text-sm font-medium px-3.5 py-2 rounded-lg border transition-all disabled:opacity-50 ${
                       modalSaved
-                        ? "border-[#3dc3ff]/40 text-[#3dc3ff] bg-[#3dc3ff]/10"
-                        : "border-white/15 text-white/50 hover:text-white hover:border-white/30 bg-white/5"
+                        ? "border-[#6ba3c7]/40 text-[#6ba3c7] bg-[#6ba3c7]/10"
+                        : "bg-white dark:bg-transparent border border-[#eaeaea] dark:border-white/15 text-[#2f3437] dark:text-white/50 hover:border-[#2f3437]/30 dark:hover:border-white/30"
                     }`}
                   >
                     {modalSaved ? <BookmarkSolid className="w-4 h-4" /> : <BookmarkOutline className="w-4 h-4" />}
@@ -725,7 +725,7 @@ export default function MemberResourcesPage() {
                     href={fathomUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-1 flex items-center justify-center gap-2 bg-[#3dc3ff] hover:bg-[#5cceff] text-[#0f1620] font-bold text-sm py-2.5 rounded-xl transition-colors"
+                    className="flex-1 flex items-center justify-center gap-2 bg-[#1e2a38] hover:bg-[#2a3a4d] text-white font-bold text-sm py-2.5 rounded-lg transition-colors"
                   >
                     <VideoCameraIcon className="w-4 h-4" />
                     Watch in Fathom ↗
@@ -733,12 +733,12 @@ export default function MemberResourcesPage() {
                 </div>
 
                 {ts && (
-                  <div className="bg-white/8 border border-white/15 rounded-xl px-4 py-3 text-center">
-                    <p className="text-sm text-white/80 leading-relaxed">
-                      Jump to <span className="font-mono font-semibold text-[#3dc3ff]">{ts}</span> in the recording.
+                  <div className="bg-[#f7f6f3] dark:bg-white/5 border border-[#eaeaea] dark:border-white/10 rounded-lg px-4 py-3 text-center">
+                    <p className="text-sm text-[#2f3437]/70 dark:text-white/80 leading-relaxed">
+                      Jump to <span className="font-mono font-semibold text-[#6ba3c7]">{ts}</span> in the recording.
                     </p>
-                    <p className="text-xs text-white/50 mt-1 leading-relaxed">
-                      Tip: Open the <strong className="text-white/70">Transcript</strong> tab in Fathom and search for the excerpt above — timestamps there are clickable and will seek the player.
+                    <p className="text-xs text-[#2f3437]/50 dark:text-white/50 mt-1 leading-relaxed">
+                      Tip: Open the <strong className="text-[#2f3437]/70 dark:text-white/70">Transcript</strong> tab in Fathom and search for the excerpt above — timestamps there are clickable and will seek the player.
                     </p>
                   </div>
                 )}
@@ -750,28 +750,28 @@ export default function MemberResourcesPage() {
 
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-[#1e2a38] dark:text-white">Resources & Knowledge Base</h1>
-        <p className="text-sm text-[#1e2a38]/50 dark:text-white/40 mt-1">
+        <h1 className="text-2xl font-bold text-[#2f3437] dark:text-white">Resources & Knowledge Base</h1>
+        <p className="text-sm text-[#2f3437]/50 dark:text-white/40 mt-1">
           Coaching wisdom from Q&A calls and course lessons, organised by Attraction principle
         </p>
       </div>
 
       {/* Tab bar */}
-      <div className="flex gap-1 bg-[#1e2a38]/5 dark:bg-white/5 rounded-xl p-1 w-fit">
+      <div className="flex gap-1 bg-[#111]/5 dark:bg-white/5 rounded-lg p-1 w-fit">
         {TABS.map((t) => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
               tab === t.id
-                ? "bg-white dark:bg-[#242b3d] text-[#1e2a38] dark:text-white shadow-sm"
-                : "text-[#1e2a38]/50 dark:text-white/40 hover:text-[#1e2a38] dark:hover:text-white"
+                ? "bg-white dark:bg-[#1a1a1a] text-[#2f3437] dark:text-white"
+                : "text-[#2f3437]/50 dark:text-white/40 hover:text-[#2f3437] dark:hover:text-white"
             }`}
           >
             {t.label}
             {t.count != null && t.count > 0 && (
               <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold leading-none ${
-                tab === t.id ? "bg-[#3dc3ff] text-white" : "bg-[#1e2a38]/10 dark:bg-white/10 text-[#1e2a38]/60 dark:text-white/40"
+                tab === t.id ? "bg-[#6ba3c7] text-white" : "bg-[#111]/10 dark:bg-white/10 text-[#2f3437]/60 dark:text-white/40"
               }`}>
                 {t.count}
               </span>
@@ -793,8 +793,8 @@ export default function MemberResourcesPage() {
                   onClick={() => setSourceType(s)}
                   className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all ${
                     sourceType === s
-                      ? "bg-[#1e2a38] text-white border-[#1e2a38] dark:bg-white dark:text-[#1e2a38]"
-                      : "border-[#1e2a38]/20 dark:border-white/20 text-[#1e2a38]/55 dark:text-white/45 hover:border-[#1e2a38]/40"
+                      ? "bg-[#111] text-white border-[#2f3437] dark:bg-white dark:text-[#2f3437]"
+                      : "border-[#2f3437]/20 dark:border-white/20 text-[#2f3437]/55 dark:text-white/45 hover:border-[#2f3437]/40"
                   }`}
                 >
                   {s === "" && "All Content"}
@@ -809,7 +809,7 @@ export default function MemberResourcesPage() {
           {browseLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {[...Array(6)].map((_, i) => (
-                <div key={i} className="bg-white dark:bg-[#242b3d] rounded-2xl border border-[#1e2a38]/10 h-44 animate-pulse" />
+                <div key={i} className="bg-white dark:bg-[#1a1a1a] rounded-lg border border-[#2f3437]/10 h-44 animate-pulse" />
               ))}
             </div>
           ) : browseEntries.length === 0 ? (
@@ -819,7 +819,7 @@ export default function MemberResourcesPage() {
             />
           ) : (
             <>
-              <p className="text-xs text-[#1e2a38]/40 dark:text-white/30">{browseEntries.length} item{browseEntries.length !== 1 ? "s" : ""}</p>
+              <p className="text-xs text-[#2f3437]/40 dark:text-white/30">{browseEntries.length} item{browseEntries.length !== 1 ? "s" : ""}</p>
               <EntryGrid entries={browseEntries} onSaved={handleSaved} onPlay={handlePlay} />
             </>
           )}
@@ -832,17 +832,17 @@ export default function MemberResourcesPage() {
           <div className="space-y-3">
             {/* Search input */}
             <div className="relative">
-              <MagnifyingGlassIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1e2a38]/30 dark:text-white/30" />
+              <MagnifyingGlassIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#2f3437]/30 dark:text-white/30" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search coaching moments, topics, summaries, transcripts..."
-                className="w-full pl-10 pr-4 py-3 border border-[#1e2a38]/15 dark:border-white/15 rounded-xl text-sm bg-white dark:bg-[#242b3d] text-[#1e2a38] dark:text-white placeholder-[#1e2a38]/30 dark:placeholder-white/25 focus:outline-none focus:border-[#3dc3ff] transition-colors"
+                className="w-full pl-10 pr-4 py-3 border border-[#2f3437]/15 dark:border-white/15 rounded-lg text-sm bg-white dark:bg-[#1a1a1a] text-[#2f3437] dark:text-white placeholder-[#2f3437]/30 dark:placeholder-white/25 focus:outline-none focus:border-[#6ba3c7] transition-colors"
                 autoFocus
               />
               {searchQuery && (
-                <button onClick={() => setSearchQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#1e2a38]/30 hover:text-[#1e2a38] dark:hover:text-white">
+                <button onClick={() => setSearchQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#2f3437]/30 hover:text-[#2f3437] dark:hover:text-white">
                   <XMarkIcon className="w-4 h-4" />
                 </button>
               )}
@@ -851,27 +851,27 @@ export default function MemberResourcesPage() {
             {/* Date range + principle filter row */}
             <div className="flex flex-wrap items-center gap-3">
               <div className="flex items-center gap-2">
-                <CalendarDaysIcon className="w-4 h-4 text-[#1e2a38]/30 dark:text-white/30 flex-shrink-0" />
+                <CalendarDaysIcon className="w-4 h-4 text-[#2f3437]/30 dark:text-white/30 flex-shrink-0" />
                 <input
                   type="date"
                   value={dateFrom}
                   onChange={(e) => setDateFrom(e.target.value)}
-                  className="text-xs border border-[#1e2a38]/15 dark:border-white/15 rounded-lg px-2 py-1.5 bg-white dark:bg-[#242b3d] text-[#1e2a38] dark:text-white focus:outline-none focus:border-[#3dc3ff] transition-colors"
+                  className="text-xs border border-[#2f3437]/15 dark:border-white/15 rounded-lg px-2 py-1.5 bg-white dark:bg-[#1a1a1a] text-[#2f3437] dark:text-white focus:outline-none focus:border-[#6ba3c7] transition-colors"
                   title="From date"
                 />
-                <span className="text-[#1e2a38]/30 dark:text-white/30 text-xs">–</span>
+                <span className="text-[#2f3437]/30 dark:text-white/30 text-xs">–</span>
                 <input
                   type="date"
                   value={dateTo}
                   onChange={(e) => setDateTo(e.target.value)}
                   min={dateFrom || undefined}
-                  className="text-xs border border-[#1e2a38]/15 dark:border-white/15 rounded-lg px-2 py-1.5 bg-white dark:bg-[#242b3d] text-[#1e2a38] dark:text-white focus:outline-none focus:border-[#3dc3ff] transition-colors"
+                  className="text-xs border border-[#2f3437]/15 dark:border-white/15 rounded-lg px-2 py-1.5 bg-white dark:bg-[#1a1a1a] text-[#2f3437] dark:text-white focus:outline-none focus:border-[#6ba3c7] transition-colors"
                   title="To date"
                 />
                 {(dateFrom || dateTo) && (
                   <button
                     onClick={() => { setDateFrom(""); setDateTo(""); }}
-                    className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-full bg-[#3dc3ff]/15 text-[#3dc3ff] hover:bg-[#3dc3ff]/25 transition-colors"
+                    className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-full bg-[#6ba3c7]/15 text-[#6ba3c7] hover:bg-[#6ba3c7]/25 transition-colors"
                   >
                     {dateFrom && dateTo
                       ? `${new Date(dateFrom).toLocaleDateString("en-US", { month: "short", day: "numeric" })} – ${new Date(dateTo).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`
@@ -888,9 +888,9 @@ export default function MemberResourcesPage() {
           </div>
 
           {searching ? (
-            <div className="text-center py-8 text-sm text-[#1e2a38]/40 dark:text-white/30">Searching...</div>
+            <div className="text-center py-8 text-sm text-[#2f3437]/40 dark:text-white/30">Searching...</div>
           ) : !searchQuery.trim() && !searchPrinciple && !dateFrom && !dateTo ? (
-            <div className="text-center py-16 text-[#1e2a38]/30 dark:text-white/20">
+            <div className="text-center py-16 text-[#2f3437]/30 dark:text-white/20">
               <MagnifyingGlassIcon className="w-10 h-10 mx-auto mb-3 opacity-40" />
               <p className="text-sm font-medium">Type to search coaching moments and full transcripts</p>
               <p className="text-xs mt-1">Or filter by date range and principle above</p>
@@ -903,7 +903,7 @@ export default function MemberResourcesPage() {
               {searchResults.length > 0 && (
                 <div className="space-y-4">
                   <div className="flex items-center gap-3">
-                    <h3 className="text-sm font-semibold text-[#1e2a38] dark:text-white">Tagged Moments</h3>
+                    <h3 className="text-sm font-semibold text-[#2f3437] dark:text-white">Tagged Moments</h3>
                     <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300">
                       {searchResults.length} curated result{searchResults.length !== 1 ? "s" : ""}
                     </span>
@@ -916,12 +916,12 @@ export default function MemberResourcesPage() {
               {transcriptMatches.length > 0 && (
                 <div className="space-y-4">
                   <div className="flex items-center gap-3">
-                    <h3 className="text-sm font-semibold text-[#1e2a38] dark:text-white">Also mentioned in these recordings</h3>
-                    <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-[#3dc3ff]/15 text-[#3dc3ff]">
+                    <h3 className="text-sm font-semibold text-[#2f3437] dark:text-white">Also mentioned in these recordings</h3>
+                    <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-[#6ba3c7]/15 text-[#6ba3c7]">
                       {transcriptTotal} occurrence{transcriptTotal !== 1 ? "s" : ""}
                     </span>
                   </div>
-                  <p className="text-xs text-[#1e2a38]/40 dark:text-white/30 -mt-2">
+                  <p className="text-xs text-[#2f3437]/40 dark:text-white/30 -mt-2">
                     Every time this keyword was said on any call or lesson — timestamps are approximate.
                   </p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -934,7 +934,7 @@ export default function MemberResourcesPage() {
                       <button
                         onClick={loadMoreTranscripts}
                         disabled={txLoading}
-                        className="text-sm font-medium text-[#3dc3ff] hover:text-[#3dc3ff]/80 disabled:opacity-50 transition-colors"
+                        className="text-sm font-medium text-[#6ba3c7] hover:text-[#6ba3c7]/80 disabled:opacity-50 transition-colors"
                       >
                         {txLoading ? "Loading…" : `Load more (${transcriptTotal - transcriptMatches.length} remaining)`}
                       </button>
@@ -955,13 +955,13 @@ export default function MemberResourcesPage() {
       {/* ── MY COACHING MOMENTS TAB ── */}
       {tab === "moments" && (
         <div className="space-y-5">
-          <div className="bg-violet-50 dark:bg-violet-900/10 border border-violet-100 dark:border-violet-900/20 rounded-xl px-4 py-3 text-xs text-violet-700 dark:text-violet-300">
+          <div className="bg-violet-50 dark:bg-violet-900/10 border border-violet-100 dark:border-violet-900/20 rounded-lg px-4 py-3 text-xs text-violet-700 dark:text-violet-300">
             These are moments from Q&A coaching calls where you were coached directly. They are private to you.
           </div>
 
           {momentsLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {[...Array(3)].map((_, i) => <div key={i} className="bg-white dark:bg-[#242b3d] rounded-2xl border border-[#1e2a38]/10 h-44 animate-pulse" />)}
+              {[...Array(3)].map((_, i) => <div key={i} className="bg-white dark:bg-[#1a1a1a] rounded-lg border border-[#2f3437]/10 h-44 animate-pulse" />)}
             </div>
           ) : moments.length === 0 ? (
             <EmptyState
@@ -970,7 +970,7 @@ export default function MemberResourcesPage() {
             />
           ) : (
             <>
-              <p className="text-xs text-[#1e2a38]/40 dark:text-white/30">{moments.length} moment{moments.length !== 1 ? "s" : ""}</p>
+              <p className="text-xs text-[#2f3437]/40 dark:text-white/30">{moments.length} moment{moments.length !== 1 ? "s" : ""}</p>
               <EntryGrid entries={moments} onSaved={handleSaved} onPlay={handlePlay} />
             </>
           )}
@@ -982,7 +982,7 @@ export default function MemberResourcesPage() {
         <div className="space-y-5">
           {savedLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {[...Array(3)].map((_, i) => <div key={i} className="bg-white dark:bg-[#242b3d] rounded-2xl border border-[#1e2a38]/10 h-44 animate-pulse" />)}
+              {[...Array(3)].map((_, i) => <div key={i} className="bg-white dark:bg-[#1a1a1a] rounded-lg border border-[#2f3437]/10 h-44 animate-pulse" />)}
             </div>
           ) : savedEntries.length === 0 ? (
             <EmptyState
@@ -991,7 +991,7 @@ export default function MemberResourcesPage() {
             />
           ) : (
             <>
-              <p className="text-xs text-[#1e2a38]/40 dark:text-white/30">{savedEntries.length} saved item{savedEntries.length !== 1 ? "s" : ""}</p>
+              <p className="text-xs text-[#2f3437]/40 dark:text-white/30">{savedEntries.length} saved item{savedEntries.length !== 1 ? "s" : ""}</p>
               <EntryGrid entries={savedEntries} onSaved={(id, isSaved) => {
                 if (!isSaved) setSavedEntries((prev) => prev.filter((e) => e.id !== id));
                 handleSaved(id, isSaved);

@@ -126,16 +126,16 @@ export default function SharedReportPage() {
   useEffect(() => { load(); }, [load]);
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-[#f1f1ef]">
-      <p className="text-[#1e2a38]/40">Loading report…</p>
+    <div className="min-h-screen flex items-center justify-center bg-[#f7f6f3]">
+      <p className="text-[#2f3437]/40">Loading report…</p>
     </div>
   );
 
   if (error) return (
-    <div className="min-h-screen flex items-center justify-center bg-[#f1f1ef]">
+    <div className="min-h-screen flex items-center justify-center bg-[#f7f6f3]">
       <div className="text-center">
-        <p className="text-[#1e2a38]/60 mb-2">{error}</p>
-        <a href="/login" className="text-sm text-[#3dc3ff] hover:underline">Sign in to view this report</a>
+        <p className="text-[#2f3437]/60 mb-2">{error}</p>
+        <a href="/login" className="text-sm text-[#6ba3c7] hover:underline">Sign in to view this report</a>
       </div>
     </div>
   );
@@ -189,13 +189,13 @@ export default function SharedReportPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f1f1ef] py-8 px-4">
+    <div className="min-h-screen bg-[#f7f6f3] py-8 px-4">
       <div className="max-w-3xl mx-auto space-y-6" id="audit-report">
 
         {/* Top bar */}
         <div className="flex items-center justify-between no-print">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-[#1e2a38] tracking-tight">Attraction by Video</span>
+            <span className="text-xs font-bold text-[#2f3437] tracking-tight">Attraction by Video</span>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -205,13 +205,13 @@ export default function SharedReportPage() {
                   setTimeout(() => setCopied(false), 2000);
                 });
               }}
-              className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-[#1e2a38]/70 transition-colors"
+              className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-[#2f3437]/70 transition-colors"
             >
               {copied ? "Copied!" : "Copy Link"}
             </button>
             <button
               onClick={() => window.print()}
-              className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-[#1e2a38]/70 transition-colors"
+              className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-[#2f3437]/70 transition-colors"
             >
               Print / PDF
             </button>
@@ -220,37 +220,37 @@ export default function SharedReportPage() {
 
         {/* Print logo */}
         <div className="hidden print:block text-center py-4 border-b border-gray-200">
-          <p className="text-lg font-black text-[#1e2a38] tracking-tight">Attraction by Video</p>
-          <p className="text-xs text-[#1e2a38]/50">YouTube Channel Audit Report</p>
+          <p className="text-lg font-black text-[#2f3437] tracking-tight">Attraction by Video</p>
+          <p className="text-xs text-[#2f3437]/50">YouTube Channel Audit Report</p>
         </div>
 
         {/* Banner */}
         {channelInfo?.bannerUrl ? (
-          <div className="w-full h-28 rounded-xl overflow-hidden">
+          <div className="w-full h-28 rounded-lg overflow-hidden">
             <img src={channelInfo.bannerUrl} alt="Channel banner" className="w-full h-full object-cover" />
           </div>
         ) : (
-          <div className="h-28 rounded-xl bg-gradient-to-r from-[#1e2a38] via-[#2c4a6e] to-[#3dc3ff]" />
+          <div className="h-28 rounded-lg bg-gradient-to-r from-[#2f3437] via-[#2c4a6e] to-[#6ba3c7]" />
         )}
 
         {/* Header callout */}
-        <div className="bg-[#3dc3ff]/10 border border-[#3dc3ff]/30 rounded-xl p-6">
-          <p className="text-xs font-semibold text-[#3dc3ff] uppercase tracking-wider mb-1">
+        <div className="bg-[#6ba3c7]/10 border border-[#6ba3c7]/30 rounded-lg p-6">
+          <p className="text-xs font-semibold text-[#6ba3c7] uppercase tracking-wider mb-1">
             Attraction by Video — {typeLabel}
           </p>
-          <h1 className="text-2xl font-bold text-[#1e2a38]">{member?.fullName ?? member?.email}</h1>
+          <h1 className="text-2xl font-bold text-[#2f3437]">{member?.fullName ?? member?.email}</h1>
           {(member?.youtubeChannelName || channelInfo?.title) && (
-            <p className="text-[#1e2a38]/60 mt-1">
+            <p className="text-[#2f3437]/60 mt-1">
               {member?.youtubeChannelName || channelInfo?.title}
             </p>
           )}
-          <p className="text-sm text-[#1e2a38]/50 mt-1">{fmt(audit.createdAt)}</p>
+          <p className="text-sm text-[#2f3437]/50 mt-1">{fmt(audit.createdAt)}</p>
         </div>
 
         {/* Diagnosis */}
         {report?.one_sentence_diagnosis && (
-          <div className="bg-[#1e2a38] rounded-xl p-5">
-            <p className="text-xs font-semibold text-[#3dc3ff] uppercase tracking-wider mb-2">Diagnosis</p>
+          <div className="bg-[#111] rounded-lg p-5">
+            <p className="text-xs font-semibold text-[#6ba3c7] uppercase tracking-wider mb-2">Diagnosis</p>
             <p className="text-base font-medium text-white leading-relaxed italic">
               "{report.one_sentence_diagnosis}"
             </p>
@@ -258,16 +258,16 @@ export default function SharedReportPage() {
         )}
 
         {/* Score */}
-        <div className={`rounded-xl p-8 text-center ${scoreBgBlock(audit.overallScore)}`}>
-          <p className="text-sm font-semibold uppercase tracking-wider mb-2 text-[#1e2a38]/60">
+        <div className={`rounded-lg p-8 text-center ${scoreBgBlock(audit.overallScore)}`}>
+          <p className="text-sm font-semibold uppercase tracking-wider mb-2 text-[#2f3437]/60">
             {isSingleVideo ? "Video Attraction Score" : "Channel Attraction Score"}
           </p>
           <p className={`text-7xl font-black ${scoreText(Number(audit.overallScore))}`}>
             {audit.overallScore != null ? Number(audit.overallScore).toFixed(1) : "—"}
           </p>
-          <p className="text-lg font-medium mt-1 text-[#1e2a38]/50">/ 10</p>
+          <p className="text-lg font-medium mt-1 text-[#2f3437]/50">/ 10</p>
           {report?.raw_average != null && (
-            <p className="text-xs text-[#1e2a38]/40 mt-2">Raw Average: {Number(report.raw_average).toFixed(1)} / 10</p>
+            <p className="text-xs text-[#2f3437]/40 mt-2">Raw Average: {Number(report.raw_average).toFixed(1)} / 10</p>
           )}
         </div>
 
@@ -276,8 +276,8 @@ export default function SharedReportPage() {
           const baseAvg = (Object.values(baselineScores) as Array<{ score: number }>).reduce((a, b) => a + b.score, 0) / Object.keys(baselineScores).length;
           const delta = audit.overallScore - baseAvg;
           return (
-            <div className="bg-[#3dc3ff]/10 border border-[#3dc3ff]/30 rounded-xl p-5 text-center">
-              <p className="text-sm font-semibold text-[#1e2a38]">
+            <div className="bg-[#6ba3c7]/10 border border-[#6ba3c7]/30 rounded-lg p-5 text-center">
+              <p className="text-sm font-semibold text-[#2f3437]">
                 This Month: {Number(audit.overallScore).toFixed(1)}/10 &nbsp;·&nbsp;{" "}
                 <span className={delta >= 0 ? "text-green-600" : "text-[#cc0029]"}>
                   {delta >= 0 ? "↑" : "↓"}{Math.abs(delta).toFixed(1)} from baseline ({baseAvg.toFixed(1)} → {Number(audit.overallScore).toFixed(1)})
@@ -288,22 +288,22 @@ export default function SharedReportPage() {
         })()}
 
         {/* Scorecard */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-          <h2 className="text-base font-semibold text-[#1e2a38] mb-4">16-Principle Scorecard</h2>
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <h2 className="text-base font-semibold text-[#2f3437] mb-4">16-Principle Scorecard</h2>
           {!hasScores ? (
-            <p className="text-sm text-[#1e2a38]/50 italic">Score data unavailable for this audit.</p>
+            <p className="text-sm text-[#2f3437]/50 italic">Score data unavailable for this audit.</p>
           ) : (
           <div className="space-y-4">
             {DIMENSIONS.map((dim) => (
               <div key={dim.label}>
-                <h3 className="text-sm font-bold text-[#1e2a38] uppercase tracking-wide mb-2">{dim.label}</h3>
+                <h3 className="text-sm font-bold text-[#2f3437] uppercase tracking-wide mb-2">{dim.label}</h3>
                 <div className="space-y-1">
                   {dim.keys.filter((k) => scores[k]).map((key) => {
                     const val = scores[key];
                     const isNA = val.score == null;
                     return (
                       <div key={key} className="flex items-center justify-between py-1.5 px-3 rounded-lg">
-                        <span className={`text-sm ${isNA ? "text-[#1e2a38]/40" : "text-[#1e2a38]"}`}>{PRINCIPLE_LABELS[key]}</span>
+                        <span className={`text-sm ${isNA ? "text-[#2f3437]/40" : "text-[#2f3437]"}`}>{PRINCIPLE_LABELS[key]}</span>
                         {isNA
                           ? <span className="inline-block px-2 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-400">N/A</span>
                           : <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${scoreBg(val.score)}`}>{val.score.toFixed(1)}</span>
@@ -320,8 +320,8 @@ export default function SharedReportPage() {
 
         {/* Videos Analysed */}
         {videos.length > 0 && (
-          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-            <h2 className="text-base font-semibold text-[#1e2a38] mb-4">Videos Analysed</h2>
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <h2 className="text-base font-semibold text-[#2f3437] mb-4">Videos Analysed</h2>
             <div className="space-y-3">
               {videos.map((v: any, i: number) => {
                 const breakdown =
@@ -343,11 +343,11 @@ export default function SharedReportPage() {
                   <div key={i} className="border border-gray-100 rounded-lg p-3">
                     <div className="flex items-start justify-between gap-2 mb-1">
                       <a href={`https://youtube.com/watch?v=${v.videoId}`} target="_blank" rel="noopener noreferrer"
-                        className="text-sm font-medium text-[#3dc3ff] hover:underline flex items-center gap-1">
+                        className="text-sm font-medium text-[#6ba3c7] hover:underline flex items-center gap-1">
                         {v.title}
                         <ArrowTopRightOnSquareIcon className="w-3 h-3 shrink-0 no-print" />
                       </a>
-                      <span className="text-xs text-[#1e2a38]/40 whitespace-nowrap shrink-0">
+                      <span className="text-xs text-[#2f3437]/40 whitespace-nowrap shrink-0">
                         {fmtDuration(v.durationSeconds)} · {fmt(v.uploadDate)}
                       </span>
                     </div>
@@ -359,8 +359,8 @@ export default function SharedReportPage() {
                         {dimBadge(dimScores.lead_generation, "📈")}
                       </div>
                     )}
-                    {strong && <p className="text-xs text-[#1e2a38]/70 mt-1"><span className="mr-1">✅</span>{strong}</p>}
-                    {improve && <p className="text-xs text-[#1e2a38]/70 mt-1"><span className="mr-1">⚠️</span>{improve}</p>}
+                    {strong && <p className="text-xs text-[#2f3437]/70 mt-1"><span className="mr-1">✅</span>{strong}</p>}
+                    {improve && <p className="text-xs text-[#2f3437]/70 mt-1"><span className="mr-1">⚠️</span>{improve}</p>}
                   </div>
                 );
               })}
@@ -370,7 +370,7 @@ export default function SharedReportPage() {
 
         {/* What's Working */}
         {whatsWorking.length > 0 && (
-          <div className="bg-green-50 border border-green-200 rounded-xl p-6">
+          <div className="bg-green-50 border border-green-200 rounded-lg p-6">
             <h2 className="text-base font-semibold text-green-800 mb-3">✅ What&apos;s Working</h2>
             <div className="space-y-3">
               {whatsWorking.map((item, i) => (
@@ -388,31 +388,31 @@ export default function SharedReportPage() {
 
         {/* Three Biggest Gaps */}
         {biggestGaps.length > 0 && (
-          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-            <h2 className="text-base font-semibold text-[#1e2a38] mb-4">🎯 Three Biggest Gaps</h2>
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <h2 className="text-base font-semibold text-[#2f3437] mb-4">🎯 Three Biggest Gaps</h2>
             <div className="space-y-5">
               {biggestGaps.map((gap, i) => (
                 <div key={i} className="border-l-4 border-[#ff0033] pl-4">
                   <div className="flex items-center gap-2 mb-2">
                     <span className="bg-[#ff0033]/10 text-[#ff0033] text-xs font-bold px-2 py-0.5 rounded-full">{i + 1}</span>
-                    <span className="text-sm font-bold text-[#1e2a38]">{gap.principle}</span>
+                    <span className="text-sm font-bold text-[#2f3437]">{gap.principle}</span>
                     {gap.score > 0 && (
                       <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${scoreBg(gap.score)}`}>
                         {gap.score.toFixed(1)}
                       </span>
                     )}
                   </div>
-                  <p className="text-sm text-[#1e2a38]/80 mb-3 leading-relaxed">{gap.description}</p>
+                  <p className="text-sm text-[#2f3437]/80 mb-3 leading-relaxed">{gap.description}</p>
                   {gap.current_example && (
                     <div className="space-y-2">
                       <div className="bg-[#ffe5ea] rounded-lg px-3 py-2">
                         <p className="text-xs font-semibold text-[#ff0033] mb-1">Current</p>
-                        <p className="text-xs text-[#1e2a38]/80 italic">"{gap.current_example}"</p>
+                        <p className="text-xs text-[#2f3437]/80 italic">"{gap.current_example}"</p>
                       </div>
                       {gap.improved_example && (
                         <div className="bg-[#e8f7ff] rounded-lg px-3 py-2">
-                          <p className="text-xs font-semibold text-[#3dc3ff] mb-1">Improved</p>
-                          <p className="text-xs text-[#1e2a38]/80 italic">"{gap.improved_example}"</p>
+                          <p className="text-xs font-semibold text-[#6ba3c7] mb-1">Improved</p>
+                          <p className="text-xs text-[#2f3437]/80 italic">"{gap.improved_example}"</p>
                         </div>
                       )}
                     </div>
@@ -434,29 +434,29 @@ export default function SharedReportPage() {
 
         {/* Learning Path */}
         {learningGaps.length > 0 && (
-          <div className="bg-[#3dc3ff]/10 border border-[#3dc3ff]/30 rounded-xl p-6">
-            <h2 className="text-base font-semibold text-[#1e2a38] mb-1">📚 Learning Path</h2>
-            <p className="text-xs text-[#1e2a38]/50 mb-4">Principles below 7 — sorted by priority</p>
+          <div className="bg-[#6ba3c7]/10 border border-[#6ba3c7]/30 rounded-lg p-6">
+            <h2 className="text-base font-semibold text-[#2f3437] mb-1">📚 Learning Path</h2>
+            <p className="text-xs text-[#2f3437]/50 mb-4">Principles below 7 — sorted by priority</p>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-[#3dc3ff]/20">
-                    <th className="text-left py-2 pr-3 text-xs font-semibold text-[#1e2a38]/50 uppercase tracking-wider">Principle</th>
-                    <th className="text-center py-2 px-2 text-xs font-semibold text-[#1e2a38]/50 uppercase tracking-wider">Score</th>
-                    <th className="text-left py-2 px-2 text-xs font-semibold text-[#1e2a38]/50 uppercase tracking-wider">Lesson</th>
-                    <th className="text-center py-2 pl-2 text-xs font-semibold text-[#1e2a38]/50 uppercase tracking-wider">Priority</th>
+                  <tr className="border-b border-[#6ba3c7]/20">
+                    <th className="text-left py-2 pr-3 text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wider">Principle</th>
+                    <th className="text-center py-2 px-2 text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wider">Score</th>
+                    <th className="text-left py-2 px-2 text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wider">Lesson</th>
+                    <th className="text-center py-2 pl-2 text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wider">Priority</th>
                   </tr>
                 </thead>
                 <tbody>
                   {learningGaps.map(([key, val]: [string, any]) => {
                     const p = priority(val.score);
                     return (
-                      <tr key={key} className="border-b border-[#3dc3ff]/10 last:border-0">
-                        <td className="py-2 pr-3 text-[#1e2a38] font-medium">{PRINCIPLE_LABELS[key]}</td>
+                      <tr key={key} className="border-b border-[#6ba3c7]/10 last:border-0">
+                        <td className="py-2 pr-3 text-[#2f3437] font-medium">{PRINCIPLE_LABELS[key]}</td>
                         <td className="py-2 px-2 text-center">
                           <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${scoreBg(val.score)}`}>{val.score.toFixed(1)}</span>
                         </td>
-                        <td className="py-2 px-2 text-xs text-[#1e2a38]/70">{LEARNING_PATH[key]}</td>
+                        <td className="py-2 px-2 text-xs text-[#2f3437]/70">{LEARNING_PATH[key]}</td>
                         <td className="py-2 pl-2 text-center">
                           <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${p.cls}`}>{p.label}</span>
                         </td>
@@ -471,18 +471,18 @@ export default function SharedReportPage() {
 
         {/* Q&A Topics */}
         {qaItems.length > 0 && (
-          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-            <h2 className="text-base font-semibold text-[#1e2a38] mb-1">❓ Q&amp;A Topics for Coaching Call</h2>
-            <p className="text-xs text-[#1e2a38]/50 mb-4">Bring these to your next call</p>
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <h2 className="text-base font-semibold text-[#2f3437] mb-1">❓ Q&amp;A Topics for Coaching Call</h2>
+            <p className="text-xs text-[#2f3437]/50 mb-4">Bring these to your next call</p>
             <div className="space-y-2">
               {qaItems.map((item, i) => (
                 <div key={i} className="flex items-start gap-3 py-2 border-b border-gray-50 last:border-0">
-                  <span className="w-2 h-2 rounded-full bg-[#3dc3ff] mt-1.5 shrink-0" />
+                  <span className="w-2 h-2 rounded-full bg-[#6ba3c7] mt-1.5 shrink-0" />
                   <div className="flex-1">
-                    <span className="text-xs font-semibold text-[#1e2a38]/50 uppercase tracking-wide mr-2">
+                    <span className="text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wide mr-2">
                       {PRINCIPLE_LABELS[item.key]} ({item.score.toFixed(1)}):
                     </span>
-                    <span className="text-sm text-[#1e2a38]/80">{item.prompt}</span>
+                    <span className="text-sm text-[#2f3437]/80">{item.prompt}</span>
                   </div>
                 </div>
               ))}
@@ -491,7 +491,7 @@ export default function SharedReportPage() {
         )}
 
         {/* Footer */}
-        <div className="text-center py-6 text-sm text-[#1e2a38]/40 border-t border-gray-200">
+        <div className="text-center py-6 text-sm text-[#2f3437]/40 border-t border-gray-200">
           Prepared for {member?.fullName ?? member?.email} by Jared Chamberlain ~ Founder of Attraction by Video
         </div>
       </div>

@@ -72,7 +72,7 @@ const TIER_LABELS: Record<string, string> = {
 };
 
 const TIER_COLORS: Record<string, string> = {
-  foundations: "bg-[#3dc3ff]/10 text-[#3dc3ff] border-[#3dc3ff]/30",
+  foundations: "bg-[#6ba3c7]/10 text-[#6ba3c7] border-[#6ba3c7]/30",
   editing_2:   "bg-amber-100 dark:bg-amber-600/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-600/30",
   editing_4:   "bg-amber-100 dark:bg-amber-600/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-600/30",
   mastery_2:   "bg-purple-100 dark:bg-purple-600/20 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-600/30",
@@ -80,15 +80,15 @@ const TIER_COLORS: Record<string, string> = {
 };
 
 // ── Design system class helpers ──────────────────────────────────────────────
-const txt   = "text-[#1e2a38] dark:text-[#e2e8f0]";
-const muted = "text-[#1e2a38]/60 dark:text-[#94a3b8]";
-const dim   = "text-[#1e2a38]/30 dark:text-[#64748b]";
-const card  = "bg-white dark:bg-[#242b3d] rounded-xl border border-gray-200 dark:border-[#2d3748] shadow-sm";
-const thCls = "px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#1e2a38]/50 dark:text-[#94a3b8] bg-gray-50 dark:bg-[#1e2530]";
-const rowCls = "border-b border-gray-100 dark:border-[#2d3748]/60 hover:bg-gray-50 dark:hover:bg-[#1a1f2e] transition-colors";
+const txt   = "text-[#2f3437] dark:text-[#e2e8f0]";
+const muted = "text-[#2f3437]/60 dark:text-[#94a3b8]";
+const dim   = "text-[#2f3437]/30 dark:text-[#64748b]";
+const card  = "bg-white dark:bg-[#1a1a1a] rounded-lg border border-gray-200 dark:border-[#2a2a2a]";
+const thCls = "px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#2f3437]/50 dark:text-[#94a3b8] bg-gray-50 dark:bg-[#1e2530]";
+const rowCls = "border-b border-gray-100 dark:border-[#2a2a2a]/60 hover:bg-gray-50 dark:hover:bg-[#1e2a38] transition-colors";
 
 function scoreColor(score: number | null) {
-  if (score === null) return "text-[#1e2a38]/30 dark:text-[#64748b]";
+  if (score === null) return "text-[#2f3437]/30 dark:text-[#64748b]";
   if (score >= 7) return "text-emerald-600 dark:text-emerald-400";
   if (score >= 5) return "text-yellow-600 dark:text-yellow-400";
   return "text-[#ff0033] dark:text-red-400";
@@ -113,11 +113,11 @@ export default function MemberAnalyticsDetailPage({ params }: { params: Promise<
   const chartGrid    = isDark ? "rgba(45,55,72,0.5)"   : "rgba(30,42,56,0.06)";
   const chartTick    = isDark ? "#64748b"               : "rgba(30,42,56,0.45)";
   const chartTooltip = {
-    background:   isDark ? "#242b3d" : "#fff",
-    border:       `1px solid ${isDark ? "#2d3748" : "#e5e7eb"}`,
+    background:   isDark ? "#1a1a1a" : "#fff",
+    border:       `1px solid ${isDark ? "#2a2a2a" : "#e5e7eb"}`,
     borderRadius: 8,
     fontSize:     12,
-    color:        isDark ? "#e2e8f0" : "#1e2a38",
+    color:        isDark ? "#e2e8f0" : "#2f3437",
   };
 
   const [data, setData] = useState<MemberData | null>(null);
@@ -185,7 +185,7 @@ export default function MemberAnalyticsDetailPage({ params }: { params: Promise<
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <Link href="/admin/analytics" className={`flex items-center gap-1 text-sm ${muted} hover:text-[#3dc3ff] mb-4 transition`}>
+        <Link href="/admin/analytics" className={`flex items-center gap-1 text-sm ${muted} hover:text-[#6ba3c7] mb-4 transition`}>
           <ArrowLeftIcon className="w-4 h-4" />
           Back to Analytics
         </Link>
@@ -193,7 +193,7 @@ export default function MemberAnalyticsDetailPage({ params }: { params: Promise<
           <div>
             <div className="flex items-center gap-3 flex-wrap">
               <h1 className={`text-2xl font-bold ${txt}`}>{user.fullName || "Unknown Member"}</h1>
-              <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${TIER_COLORS[user.serviceTier] || "bg-gray-100 dark:bg-gray-700 text-[#1e2a38]/60 dark:text-gray-300 border-gray-200 dark:border-gray-600"}`}>
+              <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${TIER_COLORS[user.serviceTier] || "bg-gray-100 dark:bg-gray-700 text-[#2f3437]/60 dark:text-gray-300 border-gray-200 dark:border-gray-600"}`}>
                 {TIER_LABELS[user.serviceTier] || user.serviceTier}
               </span>
             </div>
@@ -202,7 +202,7 @@ export default function MemberAnalyticsDetailPage({ params }: { params: Promise<
                 href={user.youtubeChannelUrl || `https://youtube.com/${user.youtubeHandle}`}
                 target="_blank"
                 rel="noreferrer"
-                className="text-sm text-[#3dc3ff] hover:underline mt-1 block"
+                className="text-sm text-[#6ba3c7] hover:underline mt-1 block"
               >
                 {user.youtubeHandle || user.youtubeChannelUrl}
               </a>
@@ -219,7 +219,7 @@ export default function MemberAnalyticsDetailPage({ params }: { params: Promise<
             <button
               onClick={handleRefresh}
               disabled={refreshing}
-              className={`flex items-center gap-2 border border-gray-200 dark:border-[#2d3748] bg-white dark:bg-[#242b3d] hover:bg-gray-50 dark:hover:bg-[#1a1f2e] disabled:opacity-60 ${txt} text-sm px-4 py-2 rounded-lg transition`}
+              className={`flex items-center gap-2 border border-gray-200 dark:border-[#2a2a2a] bg-white dark:bg-[#1a1a1a] hover:bg-gray-50 dark:hover:bg-[#1e2a38] disabled:opacity-60 ${txt} text-sm px-4 py-2 rounded-lg transition`}
             >
               <ArrowPathIcon className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
               {refreshing ? "Refreshing…" : "Refresh Channel"}
@@ -292,7 +292,7 @@ export default function MemberAnalyticsDetailPage({ params }: { params: Promise<
                     <button
                       onClick={() => handleRunAudit(video)}
                       disabled={runningAudit[video.id]}
-                      className="text-xs bg-[#3dc3ff] hover:bg-[#29b0f0] disabled:opacity-60 text-white rounded-lg px-3 py-1.5 transition whitespace-nowrap"
+                      className="text-xs bg-[#6ba3c7] hover:bg-[#29b0f0] disabled:opacity-60 text-white rounded-lg px-3 py-1.5 transition whitespace-nowrap"
                     >
                       {runningAudit[video.id] ? "Starting…" : "Run Audit"}
                     </button>
@@ -341,7 +341,7 @@ export default function MemberAnalyticsDetailPage({ params }: { params: Promise<
           <div className="space-y-4 mb-6">
             {campaigns.map((campaign) => (
               <div key={campaign.id} className={`${card} overflow-hidden`}>
-                <div className={`px-4 py-3 border-b border-gray-100 dark:border-[#2d3748] text-sm font-semibold ${txt}`}>{campaign.name}</div>
+                <div className={`px-4 py-3 border-b border-gray-100 dark:border-[#2a2a2a] text-sm font-semibold ${txt}`}>{campaign.name}</div>
                 {campaign.links.length > 0 ? (
                   <table className="w-full text-sm">
                     <thead>
@@ -381,7 +381,7 @@ export default function MemberAnalyticsDetailPage({ params }: { params: Promise<
                 <XAxis dataKey="date" tick={{ fontSize: 10, fill: chartTick }} tickFormatter={(v) => v.slice(5)} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 10, fill: chartTick }} axisLine={false} tickLine={false} />
                 <Tooltip contentStyle={chartTooltip} />
-                <Bar dataKey="clicks" fill="#3dc3ff" radius={[2, 2, 0, 0]} />
+                <Bar dataKey="clicks" fill="#6ba3c7" radius={[2, 2, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -399,7 +399,7 @@ export default function MemberAnalyticsDetailPage({ params }: { params: Promise<
                 <XAxis dataKey="date" tick={{ fontSize: 10, fill: chartTick }} tickFormatter={(v) => v.slice(5)} axisLine={false} tickLine={false} />
                 <YAxis domain={[0, 10]} tick={{ fontSize: 10, fill: chartTick }} axisLine={false} tickLine={false} />
                 <Tooltip contentStyle={chartTooltip} />
-                <Line type="monotone" dataKey="overallScore" stroke="#3dc3ff" strokeWidth={2.5} dot={{ r: 3, fill: "#3dc3ff" }} />
+                <Line type="monotone" dataKey="overallScore" stroke="#6ba3c7" strokeWidth={2.5} dot={{ r: 3, fill: "#6ba3c7" }} />
               </LineChart>
             </ResponsiveContainer>
           </div>

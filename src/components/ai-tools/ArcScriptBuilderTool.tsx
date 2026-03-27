@@ -61,17 +61,17 @@ export default function ArcScriptBuilderTool({ basePath, isAdmin }: Props) {
       <div className="mb-6">
         <Link
           href={basePath}
-          className="inline-flex items-center gap-1.5 text-sm text-[#1e2a38]/50 hover:text-[#3dc3ff] transition-colors mb-4"
+          className="inline-flex items-center gap-1.5 text-sm text-[#2f3437]/50 hover:text-[#6ba3c7] transition-colors mb-4"
         >
           <ArrowLeftIcon className="w-4 h-4" />
           AI Tools
         </Link>
-        <h1 className="text-2xl font-bold text-[#1e2a38]">ARC Script Builder</h1>
-        <p className="text-sm text-[#1e2a38]/60 mt-1">{subtitle}</p>
+        <h1 className="text-2xl font-bold text-[#2f3437]">ARC Script Builder</h1>
+        <p className="text-sm text-[#2f3437]/60 mt-1">{subtitle}</p>
       </div>
 
       {usage && pct >= 50 && (
-        <div className={`mb-5 flex items-start gap-3 border rounded-xl p-4 ${
+        <div className={`mb-5 flex items-start gap-3 border rounded-lg p-4 ${
           pct >= 90 ? "bg-red-50 border-red-200" : pct >= 75 ? "bg-amber-50 border-amber-200" : "bg-blue-50 border-blue-200"
         }`}>
           <span className="text-lg">{pct >= 90 ? "🚫" : pct >= 75 ? "⚠️" : "ℹ️"}</span>
@@ -84,19 +84,19 @@ export default function ArcScriptBuilderTool({ basePath, isAdmin }: Props) {
       )}
 
       {isLocked && phase === "upload" ? (
-        <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-8 text-center">
+        <div className="bg-white border border-[#2f3437]/10 rounded-lg p-8 text-center">
           <p className="text-2xl mb-3">🚫</p>
-          <p className="font-semibold text-[#1e2a38] mb-1">Monthly limit reached</p>
-          <p className="text-sm text-[#1e2a38]/60">
+          <p className="font-semibold text-[#2f3437] mb-1">Monthly limit reached</p>
+          <p className="text-sm text-[#2f3437]/60">
             Your AI usage resets on {usage?.resetsAt}. Come back then to build your next script.
           </p>
         </div>
       ) : phase === "upload" ? (
-        <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-6">
+        <div className="bg-white border border-[#2f3437]/10 rounded-lg p-6">
           <ArcScriptUploadPhase onStartBuilding={handleStartBuilding} isAdmin={isAdmin} />
         </div>
       ) : uploadData ? (
-        <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-6" style={{ minHeight: "70vh" }}>
+        <div className="bg-white border border-[#2f3437]/10 rounded-lg p-6" style={{ minHeight: "70vh" }}>
           <ArcScriptChatPhase initialData={uploadData} onReset={handleReset} />
         </div>
       ) : null}

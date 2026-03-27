@@ -26,7 +26,7 @@ function renderInline(text: string): React.ReactNode[] {
   while ((match = regex.exec(text)) !== null) {
     if (match.index > last) parts.push(text.slice(last, match.index));
     if (match[2] !== undefined) {
-      parts.push(<strong key={key++} className="font-semibold text-[#1e2a38] dark:text-[#e2e8f0]">{match[2]}</strong>);
+      parts.push(<strong key={key++} className="font-semibold text-[#2f3437] dark:text-[#e2e8f0]">{match[2]}</strong>);
     } else if (match[3] !== undefined) {
       parts.push(<em key={key++}>{match[3]}</em>);
     }
@@ -45,7 +45,7 @@ function MarkdownPreview({ text }: { text: string }) {
   function flushList() {
     if (listItems.length === 0) return;
     nodes.push(
-      <ul key={key++} className="list-disc list-inside space-y-1 my-2 text-sm text-[#1e2a38]/80 dark:text-[#a0aec0]">
+      <ul key={key++} className="list-disc list-inside space-y-1 my-2 text-sm text-[#2f3437]/80 dark:text-[#a0aec0]">
         {listItems.map((item, i) => (
           <li key={i}>{renderInline(item)}</li>
         ))}
@@ -59,16 +59,16 @@ function MarkdownPreview({ text }: { text: string }) {
 
     if (/^####\s+/.test(line)) {
       flushList();
-      nodes.push(<h4 key={key++} className="text-xs font-bold uppercase tracking-widest text-[#1e2a38]/40 dark:text-[#718096] mt-5 mb-1">{renderInline(line.replace(/^####\s+/, ""))}</h4>);
+      nodes.push(<h4 key={key++} className="text-xs font-bold uppercase tracking-widest text-[#2f3437]/40 dark:text-[#718096] mt-5 mb-1">{renderInline(line.replace(/^####\s+/, ""))}</h4>);
     } else if (/^###\s+/.test(line)) {
       flushList();
-      nodes.push(<h3 key={key++} className="text-sm font-bold text-[#1e2a38] dark:text-[#e2e8f0] mt-5 mb-1 border-b border-[#1e2a38]/10 dark:border-white/10 pb-1">{renderInline(line.replace(/^###\s+/, ""))}</h3>);
+      nodes.push(<h3 key={key++} className="text-sm font-bold text-[#2f3437] dark:text-[#e2e8f0] mt-5 mb-1 border-b border-[#2f3437]/10 dark:border-white/10 pb-1">{renderInline(line.replace(/^###\s+/, ""))}</h3>);
     } else if (/^##\s+/.test(line)) {
       flushList();
-      nodes.push(<h2 key={key++} className="text-base font-bold text-[#1e2a38] dark:text-[#e2e8f0] mt-6 mb-2 border-b-2 border-[#3dc3ff]/40 pb-1">{renderInline(line.replace(/^##\s+/, ""))}</h2>);
+      nodes.push(<h2 key={key++} className="text-base font-bold text-[#2f3437] dark:text-[#e2e8f0] mt-6 mb-2 border-b-2 border-[#6ba3c7]/40 pb-1">{renderInline(line.replace(/^##\s+/, ""))}</h2>);
     } else if (/^#\s+/.test(line)) {
       flushList();
-      nodes.push(<h1 key={key++} className="text-lg font-bold text-[#1e2a38] dark:text-[#e2e8f0] mt-6 mb-2">{renderInline(line.replace(/^#\s+/, ""))}</h1>);
+      nodes.push(<h1 key={key++} className="text-lg font-bold text-[#2f3437] dark:text-[#e2e8f0] mt-6 mb-2">{renderInline(line.replace(/^#\s+/, ""))}</h1>);
     } else if (/^[-*]\s+/.test(line)) {
       listItems.push(line.replace(/^[-*]\s+/, ""));
     } else if (line.trim() === "") {
@@ -76,7 +76,7 @@ function MarkdownPreview({ text }: { text: string }) {
       if (nodes.length > 0) nodes.push(<div key={key++} className="h-2" />);
     } else {
       flushList();
-      nodes.push(<p key={key++} className="text-sm text-[#1e2a38]/80 dark:text-[#a0aec0] leading-relaxed">{renderInline(line)}</p>);
+      nodes.push(<p key={key++} className="text-sm text-[#2f3437]/80 dark:text-[#a0aec0] leading-relaxed">{renderInline(line)}</p>);
     }
   }
   flushList();
@@ -187,32 +187,32 @@ export default function MemberSettingsPage() {
   return (
     <div className="space-y-6">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-[#1e2a38] dark:text-[#e2e8f0]">Settings</h1>
-        <p className="text-[#1e2a38]/60 dark:text-[#a0aec0] mt-1">Manage your profile and AI personalisation</p>
+        <h1 className="text-2xl font-bold text-[#2f3437] dark:text-[#e2e8f0]">Settings</h1>
+        <p className="text-[#2f3437]/60 dark:text-[#a0aec0] mt-1">Manage your profile and AI personalisation</p>
       </div>
 
       {/* Avatar Profile Section */}
-      <div className="bg-white dark:bg-[#242b3d] border border-[#1e2a38]/10 dark:border-[#2d3748] rounded-2xl overflow-hidden">
-        <div className="px-6 py-5 border-b border-[#1e2a38]/10 dark:border-[#2d3748]">
-          <h2 className="font-semibold text-[#1e2a38] dark:text-[#e2e8f0]">Avatar Profile</h2>
-          <p className="text-sm text-[#1e2a38]/50 dark:text-[#718096] mt-0.5">
+      <div className="bg-white dark:bg-[#1a1a1a] border border-[#2f3437]/10 dark:border-[#2a2a2a] rounded-lg overflow-hidden">
+        <div className="px-6 py-5 border-b border-[#2f3437]/10 dark:border-[#2a2a2a]">
+          <h2 className="font-semibold text-[#2f3437] dark:text-[#e2e8f0]">Avatar Profile</h2>
+          <p className="text-sm text-[#2f3437]/50 dark:text-[#718096] mt-0.5">
             Your ideal client avatar. All AI Tools pull from this automatically.
           </p>
         </div>
         <div className="p-6">
           {loading ? (
-            <p className="text-sm text-[#1e2a38]/40 dark:text-[#718096] animate-pulse">Loading...</p>
+            <p className="text-sm text-[#2f3437]/40 dark:text-[#718096] animate-pulse">Loading...</p>
           ) : hasAvatar ? (
             <div className="space-y-5">
               {/* Header row */}
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <h3 className="font-bold text-[#1e2a38] dark:text-[#e2e8f0] text-lg">{avatar?.avatarName ?? "Your Avatar"}</h3>
+                  <h3 className="font-bold text-[#2f3437] dark:text-[#e2e8f0] text-lg">{avatar?.avatarName ?? "Your Avatar"}</h3>
                   {avatar?.updatedAt && (
-                    <p className="text-xs text-[#1e2a38]/40 dark:text-[#718096] mt-0.5">Last updated {new Date(avatar.updatedAt).toLocaleDateString()}</p>
+                    <p className="text-xs text-[#2f3437]/40 dark:text-[#718096] mt-0.5">Last updated {new Date(avatar.updatedAt).toLocaleDateString()}</p>
                   )}
                 </div>
-                <Link href="/member/ai-tools/avatar-architect" className="text-xs text-[#3dc3ff] border border-[#3dc3ff]/30 px-3 py-1.5 rounded-lg hover:bg-[#3dc3ff]/10 transition-colors whitespace-nowrap">
+                <Link href="/member/ai-tools/avatar-architect" className="text-xs text-[#6ba3c7] border border-[#6ba3c7]/30 px-3 py-1.5 rounded-lg hover:bg-[#6ba3c7]/10 transition-colors whitespace-nowrap">
                   Rebuild Avatar
                 </Link>
               </div>
@@ -220,7 +220,7 @@ export default function MemberSettingsPage() {
               {/* Content themes */}
               {themes.length > 0 && (
                 <div>
-                  <p className="text-xs font-semibold text-[#1e2a38]/40 dark:text-[#718096] uppercase tracking-wide mb-2">Content Themes</p>
+                  <p className="text-xs font-semibold text-[#2f3437]/40 dark:text-[#718096] uppercase tracking-wide mb-2">Content Themes</p>
                   <div className="flex flex-wrap gap-2">
                     {themes.map((t, i) => {
                       const label = typeof t === "string"
@@ -229,7 +229,7 @@ export default function MemberSettingsPage() {
                           ? `${(t as any).emoji ?? ""} ${(t as any).name ?? ""}`.trim()
                           : null;
                       return label ? (
-                        <span key={i} className="bg-[#3dc3ff]/10 text-[#3dc3ff] text-xs font-medium px-3 py-1 rounded-full">{label}</span>
+                        <span key={i} className="bg-[#6ba3c7]/10 text-[#6ba3c7] text-xs font-medium px-3 py-1 rounded-full">{label}</span>
                       ) : null;
                     })}
                   </div>
@@ -237,42 +237,42 @@ export default function MemberSettingsPage() {
               )}
 
               {/* Preview / Edit tabs */}
-              <div className="border border-[#1e2a38]/10 dark:border-[#2d3748] rounded-xl overflow-hidden">
-                <div className="flex border-b border-[#1e2a38]/10 dark:border-[#2d3748]">
+              <div className="border border-[#2f3437]/10 dark:border-[#2a2a2a] rounded-lg overflow-hidden">
+                <div className="flex border-b border-[#2f3437]/10 dark:border-[#2a2a2a]">
                   <button
                     onClick={() => setAvatarTab("preview")}
-                    className={`px-4 py-2.5 text-sm font-medium transition-colors ${avatarTab === "preview" ? "bg-[#f1f1ef] dark:bg-[#1a1f2e] text-[#1e2a38] dark:text-[#e2e8f0]" : "text-[#1e2a38]/50 dark:text-[#718096] hover:text-[#1e2a38] dark:hover:text-[#e2e8f0]"}`}
+                    className={`px-4 py-2.5 text-sm font-medium transition-colors ${avatarTab === "preview" ? "bg-[#f7f6f3] dark:bg-[#0f1419] text-[#2f3437] dark:text-[#e2e8f0]" : "text-[#2f3437]/50 dark:text-[#718096] hover:text-[#2f3437] dark:hover:text-[#e2e8f0]"}`}
                   >
                     Preview
                   </button>
                   <button
                     onClick={() => setAvatarTab("edit")}
-                    className={`px-4 py-2.5 text-sm font-medium transition-colors ${avatarTab === "edit" ? "bg-[#f1f1ef] dark:bg-[#1a1f2e] text-[#1e2a38] dark:text-[#e2e8f0]" : "text-[#1e2a38]/50 dark:text-[#718096] hover:text-[#1e2a38] dark:hover:text-[#e2e8f0]"}`}
+                    className={`px-4 py-2.5 text-sm font-medium transition-colors ${avatarTab === "edit" ? "bg-[#f7f6f3] dark:bg-[#0f1419] text-[#2f3437] dark:text-[#e2e8f0]" : "text-[#2f3437]/50 dark:text-[#718096] hover:text-[#2f3437] dark:hover:text-[#e2e8f0]"}`}
                   >
                     Edit
                   </button>
                 </div>
 
                 {avatarTab === "preview" ? (
-                  <div className="p-5 max-h-[500px] overflow-y-auto bg-[#f1f1ef]/50 dark:bg-[#1a1f2e]/50">
+                  <div className="p-5 max-h-[500px] overflow-y-auto bg-[#f7f6f3]/50 dark:bg-[#0f1419]/50">
                     {avatarText.trim() ? (
                       <MarkdownPreview text={avatarText} />
                     ) : (
-                      <p className="text-sm text-[#1e2a38]/40 dark:text-[#718096]">No content yet.</p>
+                      <p className="text-sm text-[#2f3437]/40 dark:text-[#718096]">No content yet.</p>
                     )}
                   </div>
                 ) : (
-                  <div className="p-3 bg-[#f1f1ef]/30 dark:bg-[#1a1f2e]/30">
+                  <div className="p-3 bg-[#f7f6f3]/30 dark:bg-[#0f1419]/30">
                     <textarea
                       value={avatarText}
                       onChange={(e) => setAvatarText(e.target.value)}
                       rows={16}
-                      className="w-full border border-[#1e2a38]/20 dark:border-[#2d3748] rounded-xl px-4 py-3 text-sm text-[#1e2a38] dark:text-[#e2e8f0] font-mono bg-white dark:bg-[#242b3d] focus:outline-none focus:border-[#3dc3ff] resize-y"
+                      className="w-full border border-[#2f3437]/20 dark:border-[#2a2a2a] rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-[#e2e8f0] font-mono bg-white dark:bg-[#1a1a1a] focus:outline-none focus:border-[#6ba3c7] resize-y"
                     />
                     <div className="flex items-center justify-between mt-3">
                       {saved && <span className="flex items-center gap-1.5 text-sm text-green-600"><CheckIcon className="w-4 h-4" /> Saved</span>}
                       <div className="ml-auto">
-                        <button onClick={saveAvatar} disabled={saving || !avatarText.trim()} className="bg-[#3dc3ff] text-white px-5 py-2 rounded-xl text-sm font-semibold hover:bg-[#3dc3ff]/90 disabled:opacity-50 transition-colors">
+                        <button onClick={saveAvatar} disabled={saving || !avatarText.trim()} className="bg-[#6ba3c7] text-white px-5 py-2 rounded-lg text-sm font-semibold hover:bg-[#6ba3c7]/90 disabled:opacity-50 transition-colors">
                           {saving ? "Saving..." : "Save Avatar"}
                         </button>
                       </div>
@@ -283,7 +283,7 @@ export default function MemberSettingsPage() {
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/40 rounded-xl p-4 flex items-start gap-3">
+              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/40 rounded-lg p-4 flex items-start gap-3">
                 <span className="text-xl">🎯</span>
                 <div>
                   <p className="font-semibold text-amber-800 dark:text-amber-400 text-sm">No avatar profile yet</p>
@@ -295,18 +295,18 @@ export default function MemberSettingsPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-semibold text-[#1e2a38] dark:text-[#e2e8f0] mb-2">Paste your existing avatar document</label>
+                <label className="block text-sm font-semibold text-[#2f3437] dark:text-[#e2e8f0] mb-2">Paste your existing avatar document</label>
                 <textarea
                   value={avatarText}
                   onChange={(e) => setAvatarText(e.target.value)}
                   rows={10}
                   placeholder="Paste your avatar document here..."
-                  className="w-full border border-[#1e2a38]/20 dark:border-[#2d3748] rounded-xl px-4 py-3 text-sm text-[#1e2a38] dark:text-[#e2e8f0] placeholder-[#1e2a38]/30 dark:bg-[#242b3d] focus:outline-none focus:border-[#3dc3ff] resize-y"
+                  className="w-full border border-[#2f3437]/20 dark:border-[#2a2a2a] rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-[#e2e8f0] placeholder-[#2f3437]/30 dark:bg-[#1a1a1a] focus:outline-none focus:border-[#6ba3c7] resize-y"
                 />
                 <div className="flex items-center justify-between mt-3">
                   {saved && <span className="flex items-center gap-1.5 text-sm text-green-600"><CheckIcon className="w-4 h-4" /> Saved</span>}
                   <div className="ml-auto">
-                    <button onClick={saveAvatar} disabled={saving || !avatarText.trim()} className="bg-[#3dc3ff] text-white px-5 py-2 rounded-xl text-sm font-semibold hover:bg-[#3dc3ff]/90 disabled:opacity-50 transition-colors">
+                    <button onClick={saveAvatar} disabled={saving || !avatarText.trim()} className="bg-[#6ba3c7] text-white px-5 py-2 rounded-lg text-sm font-semibold hover:bg-[#6ba3c7]/90 disabled:opacity-50 transition-colors">
                       {saving ? "Saving..." : "Save Avatar"}
                     </button>
                   </div>
@@ -318,21 +318,21 @@ export default function MemberSettingsPage() {
       </div>
 
       {/* YouTube Channel Section */}
-      <div className="bg-white dark:bg-[#242b3d] border border-[#1e2a38]/10 dark:border-[#2d3748] rounded-2xl overflow-hidden">
-        <div className="px-6 py-5 border-b border-[#1e2a38]/10 dark:border-[#2d3748]">
-          <h2 className="font-semibold text-[#1e2a38] dark:text-[#e2e8f0]">YouTube Channel</h2>
-          <p className="text-sm text-[#1e2a38]/50 dark:text-[#718096] mt-0.5">
+      <div className="bg-white dark:bg-[#1a1a1a] border border-[#2f3437]/10 dark:border-[#2a2a2a] rounded-lg overflow-hidden">
+        <div className="px-6 py-5 border-b border-[#2f3437]/10 dark:border-[#2a2a2a]">
+          <h2 className="font-semibold text-[#2f3437] dark:text-[#e2e8f0]">YouTube Channel</h2>
+          <p className="text-sm text-[#2f3437]/50 dark:text-[#718096] mt-0.5">
             Your channel URL is used for audits, top video tracking, and AI tools.
           </p>
         </div>
         <div className="p-6">
           {loading ? (
-            <p className="text-sm text-[#1e2a38]/40 dark:text-[#718096] animate-pulse">Loading...</p>
+            <p className="text-sm text-[#2f3437]/40 dark:text-[#718096] animate-pulse">Loading...</p>
           ) : channelLocked ? (
             <div className="space-y-4">
               {/* Locked: read-only display */}
-              <div className="flex items-center gap-3 bg-[#f1f1ef] dark:bg-[#1a1f2e] rounded-xl px-4 py-3">
-                <div className="w-10 h-10 rounded-full flex-shrink-0 overflow-hidden bg-gray-200 dark:bg-[#2d3748]">
+              <div className="flex items-center gap-3 bg-[#f7f6f3] dark:bg-[#0f1419] rounded-lg px-4 py-3">
+                <div className="w-10 h-10 rounded-full flex-shrink-0 overflow-hidden bg-gray-200 dark:bg-[#2a2a2a]">
                   {channelThumbnail ? (
                     <img src={channelThumbnail} alt={channelName ?? "Channel"} className="w-full h-full object-cover" />
                   ) : (
@@ -344,24 +344,24 @@ export default function MemberSettingsPage() {
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-[#1e2a38] dark:text-[#e2e8f0] truncate">
+                  <p className="text-sm font-semibold text-[#2f3437] dark:text-[#e2e8f0] truncate">
                     {channelName || channelHandle || channelUrl}
                   </p>
                   {channelHandle && channelName && (
-                    <p className="text-xs text-[#1e2a38]/50 dark:text-[#718096]">{channelHandle}</p>
+                    <p className="text-xs text-[#2f3437]/50 dark:text-[#718096]">{channelHandle}</p>
                   )}
-                  <p className="text-xs text-[#1e2a38]/40 dark:text-[#718096] font-mono truncate mt-0.5">{channelUrl}</p>
+                  <p className="text-xs text-[#2f3437]/40 dark:text-[#718096] font-mono truncate mt-0.5">{channelUrl}</p>
                 </div>
                 <a
                   href={channelUrl || `https://youtube.com/${channelHandle}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs text-[#3dc3ff] hover:underline whitespace-nowrap"
+                  className="text-xs text-[#6ba3c7] hover:underline whitespace-nowrap"
                 >
                   View →
                 </a>
               </div>
-              <div className="flex items-start gap-2.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/40 rounded-xl px-4 py-3">
+              <div className="flex items-start gap-2.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/40 rounded-lg px-4 py-3">
                 <svg className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
                 </svg>
@@ -374,7 +374,7 @@ export default function MemberSettingsPage() {
             <div className="space-y-4">
               {/* Not yet set: allow first-time entry */}
               <div>
-                <label className="block text-sm font-semibold text-[#1e2a38] dark:text-[#e2e8f0] mb-2">
+                <label className="block text-sm font-semibold text-[#2f3437] dark:text-[#e2e8f0] mb-2">
                   Channel URL
                 </label>
                 <input
@@ -382,9 +382,9 @@ export default function MemberSettingsPage() {
                   value={channelUrl}
                   onChange={(e) => setChannelUrl(e.target.value)}
                   placeholder="https://www.youtube.com/@YourHandle"
-                  className="w-full border border-[#1e2a38]/20 dark:border-[#2d3748] rounded-xl px-4 py-3 text-sm text-[#1e2a38] dark:text-[#e2e8f0] placeholder-[#1e2a38]/30 dark:bg-[#242b3d] focus:outline-none focus:border-[#3dc3ff]"
+                  className="w-full border border-[#2f3437]/20 dark:border-[#2a2a2a] rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-[#e2e8f0] placeholder-[#2f3437]/30 dark:bg-[#1a1a1a] focus:outline-none focus:border-[#6ba3c7]"
                 />
-                <p className="text-xs text-[#1e2a38]/40 dark:text-[#718096] mt-1.5">
+                <p className="text-xs text-[#2f3437]/40 dark:text-[#718096] mt-1.5">
                   Paste your full channel URL, e.g. <span className="font-mono">https://www.youtube.com/@YourHandle</span>. Once saved, only your admin can change this.
                 </p>
               </div>
@@ -398,7 +398,7 @@ export default function MemberSettingsPage() {
                   <button
                     onClick={saveChannel}
                     disabled={savingChannel || !channelUrl.trim()}
-                    className="bg-[#3dc3ff] text-white px-5 py-2 rounded-xl text-sm font-semibold hover:bg-[#3dc3ff]/90 disabled:opacity-50 transition-colors"
+                    className="bg-[#6ba3c7] text-white px-5 py-2 rounded-lg text-sm font-semibold hover:bg-[#6ba3c7]/90 disabled:opacity-50 transition-colors"
                   >
                     {savingChannel ? "Saving..." : "Save Channel"}
                   </button>
@@ -410,16 +410,16 @@ export default function MemberSettingsPage() {
       </div>
 
       {/* Your Credentials Section */}
-      <div className="bg-white dark:bg-[#242b3d] border border-[#1e2a38]/10 dark:border-[#2d3748] rounded-2xl overflow-hidden">
-        <div className="px-6 py-5 border-b border-[#1e2a38]/10 dark:border-[#2d3748]">
-          <h2 className="font-semibold text-[#1e2a38] dark:text-[#e2e8f0]">Your Credentials</h2>
-          <p className="text-sm text-[#1e2a38]/50 dark:text-[#718096] mt-0.5">
+      <div className="bg-white dark:bg-[#1a1a1a] border border-[#2f3437]/10 dark:border-[#2a2a2a] rounded-lg overflow-hidden">
+        <div className="px-6 py-5 border-b border-[#2f3437]/10 dark:border-[#2a2a2a]">
+          <h2 className="font-semibold text-[#2f3437] dark:text-[#e2e8f0]">Your Credentials</h2>
+          <p className="text-sm text-[#2f3437]/50 dark:text-[#718096] mt-0.5">
             Years of experience, number of clients helped, designations, brokerage, specialities. The ARC Script Builder uses this automatically.
           </p>
         </div>
         <div className="p-6">
           {loading ? (
-            <p className="text-sm text-[#1e2a38]/40 dark:text-[#718096] animate-pulse">Loading...</p>
+            <p className="text-sm text-[#2f3437]/40 dark:text-[#718096] animate-pulse">Loading...</p>
           ) : (
             <>
               <textarea
@@ -427,12 +427,12 @@ export default function MemberSettingsPage() {
                 onChange={(e) => setCredentials(e.target.value)}
                 rows={5}
                 placeholder="e.g. Licensed for 12 years, helped 300+ families buy and sell in the Denver metro. Certified Luxury Home Specialist (CLHMS). Top 1% at RE/MAX Colorado. Expert in first-time buyers and relocation."
-                className="w-full border border-[#1e2a38]/20 dark:border-[#2d3748] rounded-xl px-4 py-3 text-sm text-[#1e2a38] dark:text-[#e2e8f0] placeholder-[#1e2a38]/30 dark:bg-[#242b3d] focus:outline-none focus:border-[#3dc3ff] resize-y"
+                className="w-full border border-[#2f3437]/20 dark:border-[#2a2a2a] rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-[#e2e8f0] placeholder-[#2f3437]/30 dark:bg-[#1a1a1a] focus:outline-none focus:border-[#6ba3c7] resize-y"
               />
               <div className="flex items-center justify-between mt-3">
                 {savedCredentials && <span className="flex items-center gap-1.5 text-sm text-green-600"><CheckIcon className="w-4 h-4" /> Saved</span>}
                 <div className="ml-auto">
-                  <button onClick={saveCredentials} disabled={savingCredentials} className="bg-[#3dc3ff] text-white px-5 py-2 rounded-xl text-sm font-semibold hover:bg-[#3dc3ff]/90 disabled:opacity-50 transition-colors">
+                  <button onClick={saveCredentials} disabled={savingCredentials} className="bg-[#6ba3c7] text-white px-5 py-2 rounded-lg text-sm font-semibold hover:bg-[#6ba3c7]/90 disabled:opacity-50 transition-colors">
                     {savingCredentials ? "Saving..." : "Save Credentials"}
                   </button>
                 </div>

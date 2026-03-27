@@ -1,0 +1,53 @@
+ ▎ Two UI Bugs to Fix (still on design-preview     
+  branch)                              
+                                                    
+  ▎ Bug 1: Resources modal — "Watch in Fathom"      
+  button styling broken in both light and dark mode
+                                                    
+  ▎ On the Resources page (/member/resources), when 
+  you click into a resource card and the detail     
+  modal opens, the "Watch in Fathom" button has the 
+  wrong styling. It's showing a bright blue/cyan 
+  fill that doesn't match the new design system. The
+   modal card itself also looks off in dark mode —
+  the background blends into the page instead of
+  standing out.
+
+  ▎ Fix:
+  ▎ - "Watch in Fathom" button should use the 
+  primary button style: bg-[#1e2a38] text-white     
+  hover:bg-[#2a3a4d] — not blue/cyan
+  ▎ - The "Jump to 20:00" tip box below it should   
+  have a subtle background (bg-[#f7f6f3] in light,  
+  bg-[#1a1f2e] in dark) with a clear border      
+  ▎ - Make sure the modal card background is clearly
+   distinct from the backdrop in both light and dark
+   mode (white card on dimmed background in light, 
+  dark surface card on darker backdrop in dark)     
+  ▎ - The "Save" button should be the secondary 
+  style: bg-white border border-[#eaeaea]           
+  text-[#2f3437]
+                                                    
+  ▎ Bug 2: Map pushes modal/content off screen on   
+  campaign detail pages                          
+                                                    
+  ▎ On campaign detail pages (e.g.,                 
+  /member/campaigns/[id]), when you click "+ New 
+  Link" or any action that opens a modal/dialog, the
+   Click Map (Leaflet map) has a higher z-index and 
+  pushes above everything. The modal appears BEHIND 
+  the map, making it unusable.
+
+  ▎ Fix:
+  ▎ - The map container needs a lower z-index: add 
+  z-0 or z-[1] to the map's wrapper div             
+  ▎ - Any modal/dialog overlay needs z-50 to ensure 
+  it sits above the map                             
+  ▎ - Check that the modal backdrop (the dark 
+  overlay) also has a z-index higher than the map   
+  ▎ - This likely affects both 
+  /member/campaigns/[id] and /admin/campaigns/[id]  
+  pages — fix both
+                                                    
+  ▎ Stay on design-preview branch. Do NOT merge to  
+  main.  

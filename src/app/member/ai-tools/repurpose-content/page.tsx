@@ -205,18 +205,18 @@ function ResultCard({
 }) {
   const [expanded, setExpanded] = useState(defaultExpanded);
   return (
-    <div className="bg-white dark:bg-[#242b3d] border border-[#1e2a38]/10 dark:border-white/10 rounded-2xl overflow-hidden">
+    <div className="bg-white dark:bg-[#1a1a1a] border border-[#2f3437]/10 dark:border-white/10 rounded-lg overflow-hidden">
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
         className="w-full flex items-center justify-between px-5 py-4 text-left"
       >
-        <span className="font-semibold text-[#1e2a38] dark:text-white text-sm">{title}</span>
+        <span className="font-semibold text-[#2f3437] dark:text-white text-sm">{title}</span>
         {expanded
-          ? <ChevronUpIcon className="w-4 h-4 text-[#1e2a38]/40 dark:text-white/40" />
-          : <ChevronDownIcon className="w-4 h-4 text-[#1e2a38]/40 dark:text-white/40" />}
+          ? <ChevronUpIcon className="w-4 h-4 text-[#2f3437]/40 dark:text-white/40" />
+          : <ChevronDownIcon className="w-4 h-4 text-[#2f3437]/40 dark:text-white/40" />}
       </button>
-      {expanded && <div className="px-5 pb-5 border-t border-[#1e2a38]/8 dark:border-white/8 pt-4">{children}</div>}
+      {expanded && <div className="px-5 pb-5 border-t border-[#2f3437]/8 dark:border-white/8 pt-4">{children}</div>}
     </div>
   );
 }
@@ -232,7 +232,7 @@ function CopyButton({ text, rich, label = "Copy" }: { text: string; rich?: boole
     <button
       type="button"
       onClick={handleCopy}
-      className="flex items-center gap-1.5 border border-[#1e2a38]/20 dark:border-white/20 text-[#1e2a38] dark:text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-[#1e2a38]/5 dark:hover:bg-white/5 transition-colors"
+      className="flex items-center gap-1.5 border border-[#2f3437]/20 dark:border-white/20 text-[#2f3437] dark:text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-[#111]/5 dark:hover:bg-white/5 transition-colors"
     >
       {copied ? <CheckIcon className="w-3.5 h-3.5 text-green-500" /> : <ClipboardDocumentIcon className="w-3.5 h-3.5" />}
       {copied ? "Copied!" : label}
@@ -246,7 +246,7 @@ function SaveButton({ onSave, saving, saved }: { onSave: () => void; saving: boo
       type="button"
       onClick={onSave}
       disabled={saving}
-      className="flex items-center gap-1.5 bg-[#3dc3ff] text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-[#3dc3ff]/90 disabled:opacity-60 transition-colors min-w-[100px] justify-center"
+      className="flex items-center gap-1.5 bg-[#6ba3c7] text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-[#6ba3c7]/90 disabled:opacity-60 transition-colors min-w-[100px] justify-center"
     >
       {saving
         ? <><span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />Saving…</>
@@ -652,10 +652,10 @@ export default function RepurposeContentPage() {
     return (
       <div className="max-w-2xl mx-auto px-4 py-6">
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-[#1e2a38] dark:text-white">♻️ Repurpose Content</h1>
-          <p className="text-[#1e2a38]/60 dark:text-white/60 mt-1">Turn your video transcript into multiple content formats</p>
+          <h1 className="text-2xl font-bold text-[#2f3437] dark:text-white">♻️ Repurpose Content</h1>
+          <p className="text-[#2f3437]/60 dark:text-white/60 mt-1">Turn your video transcript into multiple content formats</p>
         </div>
-        <div className="bg-white dark:bg-[#242b3d] border border-[#1e2a38]/10 dark:border-white/10 rounded-2xl p-6 text-center text-[#1e2a38]/40 dark:text-white/40">
+        <div className="bg-white dark:bg-[#1a1a1a] border border-[#2f3437]/10 dark:border-white/10 rounded-lg p-6 text-center text-[#2f3437]/40 dark:text-white/40">
           Loading...
         </div>
       </div>
@@ -665,37 +665,37 @@ export default function RepurposeContentPage() {
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-[#1e2a38] dark:text-white">♻️ Repurpose Content</h1>
-        <p className="text-[#1e2a38]/60 dark:text-white/60 mt-1">Turn your video transcript into a newsletter, LinkedIn article, Facebook post, blog post, or neighbourhood postcard</p>
+        <h1 className="text-2xl font-bold text-[#2f3437] dark:text-white">♻️ Repurpose Content</h1>
+        <p className="text-[#2f3437]/60 dark:text-white/60 mt-1">Turn your video transcript into a newsletter, LinkedIn article, Facebook post, blog post, or neighbourhood postcard</p>
       </div>
 
       {!isSetup && (
-        <div className="bg-white dark:bg-[#242b3d] border border-[#1e2a38]/10 dark:border-white/10 rounded-2xl p-6">
-          <h2 className="font-semibold text-[#1e2a38] dark:text-white mb-4">Quick Setup</h2>
-          <p className="text-sm text-[#1e2a38]/60 dark:text-white/60 mb-5">We need a few details to personalise your outputs. You only need to do this once.</p>
+        <div className="bg-white dark:bg-[#1a1a1a] border border-[#2f3437]/10 dark:border-white/10 rounded-lg p-6">
+          <h2 className="font-semibold text-[#2f3437] dark:text-white mb-4">Quick Setup</h2>
+          <p className="text-sm text-[#2f3437]/60 dark:text-white/60 mb-5">We need a few details to personalise your outputs. You only need to do this once.</p>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-semibold text-[#1e2a38] dark:text-white mb-1">Your Name</label>
-              <input type="text" value={profile.name} onChange={(e) => setProfile({ ...profile, name: e.target.value })} placeholder="e.g. Jared Chamberlain" className="w-full border border-[#1e2a38]/20 dark:border-white/20 bg-white dark:bg-[#1a1f2e] rounded-xl px-4 py-3 text-sm text-[#1e2a38] dark:text-white placeholder-[#1e2a38]/30 dark:placeholder-white/30 focus:outline-none focus:border-[#3dc3ff]" />
+              <label className="block text-sm font-semibold text-[#2f3437] dark:text-white mb-1">Your Name</label>
+              <input type="text" value={profile.name} onChange={(e) => setProfile({ ...profile, name: e.target.value })} placeholder="e.g. Jared Chamberlain" className="w-full border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#0f1419] rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-white placeholder-[#2f3437]/30 dark:placeholder-white/30 focus:outline-none focus:border-[#6ba3c7]" />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-[#1e2a38] dark:text-white mb-1">Business Name</label>
-              <input type="text" value={profile.business} onChange={(e) => setProfile({ ...profile, business: e.target.value })} placeholder="e.g. Chamberlain Real Estate Group" className="w-full border border-[#1e2a38]/20 dark:border-white/20 bg-white dark:bg-[#1a1f2e] rounded-xl px-4 py-3 text-sm text-[#1e2a38] dark:text-white placeholder-[#1e2a38]/30 dark:placeholder-white/30 focus:outline-none focus:border-[#3dc3ff]" />
+              <label className="block text-sm font-semibold text-[#2f3437] dark:text-white mb-1">Business Name</label>
+              <input type="text" value={profile.business} onChange={(e) => setProfile({ ...profile, business: e.target.value })} placeholder="e.g. Chamberlain Real Estate Group" className="w-full border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#0f1419] rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-white placeholder-[#2f3437]/30 dark:placeholder-white/30 focus:outline-none focus:border-[#6ba3c7]" />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-[#1e2a38] dark:text-white mb-1">Email List Size <span className="font-normal text-[#1e2a38]/40 dark:text-white/40">(optional)</span></label>
-              <input type="text" value={profile.listSize} onChange={(e) => setProfile({ ...profile, listSize: e.target.value })} placeholder="e.g. 5,000" className="w-full border border-[#1e2a38]/20 dark:border-white/20 bg-white dark:bg-[#1a1f2e] rounded-xl px-4 py-3 text-sm text-[#1e2a38] dark:text-white placeholder-[#1e2a38]/30 dark:placeholder-white/30 focus:outline-none focus:border-[#3dc3ff]" />
+              <label className="block text-sm font-semibold text-[#2f3437] dark:text-white mb-1">Email List Size <span className="font-normal text-[#2f3437]/40 dark:text-white/40">(optional)</span></label>
+              <input type="text" value={profile.listSize} onChange={(e) => setProfile({ ...profile, listSize: e.target.value })} placeholder="e.g. 5,000" className="w-full border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#0f1419] rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-white placeholder-[#2f3437]/30 dark:placeholder-white/30 focus:outline-none focus:border-[#6ba3c7]" />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-[#1e2a38] dark:text-white mb-1">Voice Style</label>
-              <select value={profile.voice} onChange={(e) => setProfile({ ...profile, voice: e.target.value })} className="w-full border border-[#1e2a38]/20 dark:border-white/20 bg-white dark:bg-[#1a1f2e] rounded-xl px-4 py-3 text-sm text-[#1e2a38] dark:text-white focus:outline-none focus:border-[#3dc3ff]">
+              <label className="block text-sm font-semibold text-[#2f3437] dark:text-white mb-1">Voice Style</label>
+              <select value={profile.voice} onChange={(e) => setProfile({ ...profile, voice: e.target.value })} className="w-full border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#0f1419] rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-white focus:outline-none focus:border-[#6ba3c7]">
                 <option value="">Select a voice style...</option>
                 <option value="direct">Direct & Data-Driven</option>
                 <option value="warm">Warm & Conversational</option>
                 <option value="authoritative">Authoritative & Educational</option>
               </select>
             </div>
-            <button onClick={saveProfile} disabled={savingProfile || !profile.name || !profile.business || !profile.voice} className="w-full bg-[#3dc3ff] text-white py-3 rounded-xl font-semibold hover:bg-[#3dc3ff]/90 disabled:opacity-50 transition-colors">
+            <button onClick={saveProfile} disabled={savingProfile || !profile.name || !profile.business || !profile.voice} className="w-full bg-[#6ba3c7] text-white py-3 rounded-lg font-semibold hover:bg-[#6ba3c7]/90 disabled:opacity-50 transition-colors">
               {savingProfile ? "Saving..." : "Save & Continue"}
             </button>
           </div>
@@ -704,24 +704,24 @@ export default function RepurposeContentPage() {
 
       {isSetup && !hasResults && (
         <div className="space-y-5">
-          <div className="bg-white dark:bg-[#242b3d] border border-[#1e2a38]/10 dark:border-white/10 rounded-2xl p-6">
+          <div className="bg-white dark:bg-[#1a1a1a] border border-[#2f3437]/10 dark:border-white/10 rounded-lg p-6">
             <div className="space-y-5">
               <div>
-                <label className="block text-sm font-semibold text-[#1e2a38] dark:text-white mb-2">Video Title</label>
-                <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Paste your video title here..." className="w-full border border-[#1e2a38]/20 dark:border-white/20 bg-white dark:bg-[#1a1f2e] rounded-xl px-4 py-3 text-sm text-[#1e2a38] dark:text-white placeholder-[#1e2a38]/30 dark:placeholder-white/30 focus:outline-none focus:border-[#3dc3ff] transition-colors" />
+                <label className="block text-sm font-semibold text-[#2f3437] dark:text-white mb-2">Video Title</label>
+                <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Paste your video title here..." className="w-full border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#0f1419] rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-white placeholder-[#2f3437]/30 dark:placeholder-white/30 focus:outline-none focus:border-[#6ba3c7] transition-colors" />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-[#1e2a38] dark:text-white mb-2">
+                <label className="block text-sm font-semibold text-[#2f3437] dark:text-white mb-2">
                   Transcript
-                  <span className={`font-normal ml-2 ${overLimit ? "text-red-500" : "text-[#1e2a38]/40 dark:text-white/40"}`}>
+                  <span className={`font-normal ml-2 ${overLimit ? "text-red-500" : "text-[#2f3437]/40 dark:text-white/40"}`}>
                     {transcriptLength.toLocaleString()}/50,000
                   </span>
                 </label>
-                <textarea value={transcript} onChange={(e) => setTranscript(e.target.value)} placeholder="Paste your video transcript here..." rows={10} className="w-full border border-[#1e2a38]/20 dark:border-white/20 bg-white dark:bg-[#1a1f2e] rounded-xl px-4 py-3 text-sm text-[#1e2a38] dark:text-white placeholder-[#1e2a38]/30 dark:placeholder-white/30 focus:outline-none focus:border-[#3dc3ff] transition-colors resize-y" />
+                <textarea value={transcript} onChange={(e) => setTranscript(e.target.value)} placeholder="Paste your video transcript here..." rows={10} className="w-full border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#0f1419] rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-white placeholder-[#2f3437]/30 dark:placeholder-white/30 focus:outline-none focus:border-[#6ba3c7] transition-colors resize-y" />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-[#1e2a38] dark:text-white mb-3">Generate</label>
+                <label className="block text-sm font-semibold text-[#2f3437] dark:text-white mb-3">Generate</label>
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                   {[
                     { key: "newsletter" as const, label: "Newsletter", value: generateNewsletter, setter: setGenerateNewsletter },
@@ -735,16 +735,16 @@ export default function RepurposeContentPage() {
                         type="checkbox"
                         checked={value}
                         onChange={(e) => setter(e.target.checked)}
-                        className="w-4 h-4 rounded border-[#1e2a38]/20 text-[#3dc3ff] focus:ring-[#3dc3ff] shrink-0"
+                        className="w-4 h-4 rounded border-[#2f3437]/20 text-[#6ba3c7] focus:ring-[#6ba3c7] shrink-0"
                       />
-                      <span className="text-sm text-[#1e2a38] dark:text-white leading-tight">{label}</span>
+                      <span className="text-sm text-[#2f3437] dark:text-white leading-tight">{label}</span>
                     </label>
                   ))}
                 </div>
 
                 {generatePostcard && (
                   <div className="mt-3">
-                    <label className="block text-xs font-semibold text-[#1e2a38] dark:text-white mb-1.5">
+                    <label className="block text-xs font-semibold text-[#2f3437] dark:text-white mb-1.5">
                       What neighbourhood are you sending this to? <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -752,35 +752,35 @@ export default function RepurposeContentPage() {
                       value={neighbourhood}
                       onChange={(e) => setNeighbourhood(e.target.value)}
                       placeholder="e.g. Aspen Woods, Tuscany, Bridgeland"
-                      className="w-full border border-[#1e2a38]/20 dark:border-white/20 bg-white dark:bg-[#1a1f2e] rounded-xl px-4 py-2.5 text-sm text-[#1e2a38] dark:text-white placeholder-[#1e2a38]/30 dark:placeholder-white/30 focus:outline-none focus:border-[#3dc3ff] transition-colors"
+                      className="w-full border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#0f1419] rounded-lg px-4 py-2.5 text-sm text-[#2f3437] dark:text-white placeholder-[#2f3437]/30 dark:placeholder-white/30 focus:outline-none focus:border-[#6ba3c7] transition-colors"
                     />
                   </div>
                 )}
               </div>
 
               {generateLinkedIn && (
-                <div className="border-t border-[#1e2a38]/10 dark:border-white/10 pt-5 space-y-4">
+                <div className="border-t border-[#2f3437]/10 dark:border-white/10 pt-5 space-y-4">
                   {/* Header */}
                   <div className="flex items-center justify-between">
-                    <label className="text-sm font-semibold text-[#1e2a38] dark:text-white">Links for Article</label>
-                    <button onClick={() => setShowLinkManager(!showLinkManager)} className="text-xs text-[#3dc3ff] hover:underline">
+                    <label className="text-sm font-semibold text-[#2f3437] dark:text-white">Links for Article</label>
+                    <button onClick={() => setShowLinkManager(!showLinkManager)} className="text-xs text-[#6ba3c7] hover:underline">
                       {showLinkManager ? "Done" : "Manage Saved Links"}
                     </button>
                   </div>
 
                   {/* Saved link manager (edit mode) */}
                   {showLinkManager && (
-                    <div className="bg-[#f1f1ef] dark:bg-[#1a1f2e] rounded-xl p-4 space-y-2">
+                    <div className="bg-[#f7f6f3] dark:bg-[#0f1419] rounded-lg p-4 space-y-2">
                       {savedLinks.map((link, i) => (
                         <div key={i} className="flex gap-2">
-                          <input type="text" value={link.label} onChange={(e) => { const u = [...savedLinks]; u[i] = { ...u[i], label: e.target.value }; setSavedLinks(u); }} placeholder="Label" className="flex-1 border border-[#1e2a38]/20 dark:border-white/20 bg-white dark:bg-[#242b3d] text-[#1e2a38] dark:text-white rounded-lg px-3 py-2 text-sm" />
-                          <input type="text" value={link.url} onChange={(e) => { const u = [...savedLinks]; u[i] = { ...u[i], url: e.target.value }; setSavedLinks(u); }} placeholder="URL" className="flex-1 border border-[#1e2a38]/20 dark:border-white/20 bg-white dark:bg-[#242b3d] text-[#1e2a38] dark:text-white rounded-lg px-3 py-2 text-sm" />
+                          <input type="text" value={link.label} onChange={(e) => { const u = [...savedLinks]; u[i] = { ...u[i], label: e.target.value }; setSavedLinks(u); }} placeholder="Label" className="flex-1 border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#1a1a1a] text-[#2f3437] dark:text-white rounded-lg px-3 py-2 text-sm" />
+                          <input type="text" value={link.url} onChange={(e) => { const u = [...savedLinks]; u[i] = { ...u[i], url: e.target.value }; setSavedLinks(u); }} placeholder="URL" className="flex-1 border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#1a1a1a] text-[#2f3437] dark:text-white rounded-lg px-3 py-2 text-sm" />
                           <button onClick={() => setSavedLinks(savedLinks.filter((_, j) => j !== i))} className="text-red-500 text-sm px-2">Remove</button>
                         </div>
                       ))}
                       <div className="flex gap-2 pt-1">
-                        <button onClick={() => setSavedLinks([...savedLinks, { label: "", url: "" }])} className="text-sm text-[#3dc3ff] hover:underline">+ Add Link</button>
-                        <button onClick={() => saveLinks(savedLinks.filter((l) => l.label && l.url))} className="text-sm bg-[#3dc3ff] text-white px-3 py-1 rounded-lg hover:bg-[#3dc3ff]/90">Save Links</button>
+                        <button onClick={() => setSavedLinks([...savedLinks, { label: "", url: "" }])} className="text-sm text-[#6ba3c7] hover:underline">+ Add Link</button>
+                        <button onClick={() => saveLinks(savedLinks.filter((l) => l.label && l.url))} className="text-sm bg-[#6ba3c7] text-white px-3 py-1 rounded-lg hover:bg-[#6ba3c7]/90">Save Links</button>
                       </div>
                     </div>
                   )}
@@ -790,9 +790,9 @@ export default function RepurposeContentPage() {
                     <div className="space-y-1.5">
                       {savedLinks.map((link, i) => (
                         <label key={i} className="flex items-center gap-2 cursor-pointer">
-                          <input type="checkbox" checked={selectedLinkIndexes.includes(i)} onChange={(e) => setSelectedLinkIndexes(e.target.checked ? [...selectedLinkIndexes, i] : selectedLinkIndexes.filter((idx) => idx !== i))} className="w-4 h-4 rounded border-[#1e2a38]/20 text-[#3dc3ff] focus:ring-[#3dc3ff]" />
-                          <span className="text-sm text-[#1e2a38] dark:text-white">{link.label}</span>
-                          <span className="text-xs text-[#1e2a38]/40 dark:text-white/40 truncate">{link.url}</span>
+                          <input type="checkbox" checked={selectedLinkIndexes.includes(i)} onChange={(e) => setSelectedLinkIndexes(e.target.checked ? [...selectedLinkIndexes, i] : selectedLinkIndexes.filter((idx) => idx !== i))} className="w-4 h-4 rounded border-[#2f3437]/20 text-[#6ba3c7] focus:ring-[#6ba3c7]" />
+                          <span className="text-sm text-[#2f3437] dark:text-white">{link.label}</span>
+                          <span className="text-xs text-[#2f3437]/40 dark:text-white/40 truncate">{link.url}</span>
                         </label>
                       ))}
                     </div>
@@ -802,12 +802,12 @@ export default function RepurposeContentPage() {
                   {activeCampaignLinks.length > 0 && (
                     <div className="space-y-1.5">
                       {activeCampaignLinks.map((l) => (
-                        <div key={l.linkId} className="flex items-center gap-2 bg-[#3dc3ff]/8 dark:bg-[#3dc3ff]/15 border border-[#3dc3ff]/20 rounded-lg px-3 py-2">
-                          <span className="text-xs font-medium text-[#3dc3ff] shrink-0">Campaign</span>
-                          <span className="text-xs text-[#1e2a38]/50 dark:text-white/50 shrink-0">{l.campaignName}</span>
-                          <span className="text-xs font-medium text-[#1e2a38] dark:text-white flex-1 truncate">{l.linkName}</span>
+                        <div key={l.linkId} className="flex items-center gap-2 bg-[#6ba3c7]/8 dark:bg-[#6ba3c7]/15 border border-[#6ba3c7]/20 rounded-lg px-3 py-2">
+                          <span className="text-xs font-medium text-[#6ba3c7] shrink-0">Campaign</span>
+                          <span className="text-xs text-[#2f3437]/50 dark:text-white/50 shrink-0">{l.campaignName}</span>
+                          <span className="text-xs font-medium text-[#2f3437] dark:text-white flex-1 truncate">{l.linkName}</span>
                           {l.isNew && <span className="text-[10px] font-semibold text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-1.5 py-0.5 rounded-full shrink-0">New</span>}
-                          <button onClick={() => setActiveCampaignLinks((prev) => prev.filter((x) => x.linkId !== l.linkId))} className="text-[#1e2a38]/30 dark:text-white/30 hover:text-red-500 text-sm shrink-0 ml-1">✕</button>
+                          <button onClick={() => setActiveCampaignLinks((prev) => prev.filter((x) => x.linkId !== l.linkId))} className="text-[#2f3437]/30 dark:text-white/30 hover:text-red-500 text-sm shrink-0 ml-1">✕</button>
                         </div>
                       ))}
                     </div>
@@ -815,24 +815,24 @@ export default function RepurposeContentPage() {
 
                   {/* Campaign picker inline */}
                   {showCampaignPicker ? (
-                    <div className="bg-[#f1f1ef] dark:bg-[#1a1f2e] rounded-xl p-4 space-y-3">
+                    <div className="bg-[#f7f6f3] dark:bg-[#0f1419] rounded-lg p-4 space-y-3">
                       <div className="flex items-center justify-between">
-                        <p className="text-xs font-semibold text-[#1e2a38] dark:text-white">Add Campaign Link</p>
-                        <button onClick={() => { setShowCampaignPicker(false); setPickerCampaignId(""); setCampaignPickerLinks([]); setNewLinkMode(false); }} className="text-xs text-[#1e2a38]/40 dark:text-white/40 hover:text-[#1e2a38] dark:hover:text-white">Cancel</button>
+                        <p className="text-xs font-semibold text-[#2f3437] dark:text-white">Add Campaign Link</p>
+                        <button onClick={() => { setShowCampaignPicker(false); setPickerCampaignId(""); setCampaignPickerLinks([]); setNewLinkMode(false); }} className="text-xs text-[#2f3437]/40 dark:text-white/40 hover:text-[#2f3437] dark:hover:text-white">Cancel</button>
                       </div>
 
                       {/* Campaign dropdown */}
                       <div>
-                        <label className="block text-xs text-[#1e2a38]/60 dark:text-white/60 mb-1">Select Campaign</label>
+                        <label className="block text-xs text-[#2f3437]/60 dark:text-white/60 mb-1">Select Campaign</label>
                         {campaignsLoading ? (
-                          <p className="text-xs text-[#1e2a38]/40 dark:text-white/40">Loading campaigns…</p>
+                          <p className="text-xs text-[#2f3437]/40 dark:text-white/40">Loading campaigns…</p>
                         ) : campaigns.length === 0 ? (
-                          <p className="text-xs text-[#1e2a38]/40 dark:text-white/40">No campaigns found. <a href="/member/campaigns" className="text-[#3dc3ff] hover:underline">Create one →</a></p>
+                          <p className="text-xs text-[#2f3437]/40 dark:text-white/40">No campaigns found. <a href="/member/campaigns" className="text-[#6ba3c7] hover:underline">Create one →</a></p>
                         ) : (
                           <select
                             value={pickerCampaignId}
                             onChange={(e) => handlePickerCampaignChange(e.target.value)}
-                            className="w-full border border-[#1e2a38]/20 dark:border-white/20 bg-white dark:bg-[#242b3d] text-[#1e2a38] dark:text-white rounded-lg px-3 py-2 text-sm"
+                            className="w-full border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#1a1a1a] text-[#2f3437] dark:text-white rounded-lg px-3 py-2 text-sm"
                           >
                             <option value="">Choose a campaign…</option>
                             {campaigns.map((c) => (
@@ -846,12 +846,12 @@ export default function RepurposeContentPage() {
                       {pickerCampaignId && (
                         <div className="space-y-2">
                           {campaignPickerLinksLoading ? (
-                            <p className="text-xs text-[#1e2a38]/40 dark:text-white/40">Loading links…</p>
+                            <p className="text-xs text-[#2f3437]/40 dark:text-white/40">Loading links…</p>
                           ) : (
                             <>
                               {campaignPickerLinks.length > 0 && !newLinkMode && (
                                 <div className="space-y-1">
-                                  <p className="text-xs text-[#1e2a38]/60 dark:text-white/60">Existing links — pick one or create new</p>
+                                  <p className="text-xs text-[#2f3437]/60 dark:text-white/60">Existing links — pick one or create new</p>
                                   {campaignPickerLinks.map((link) => {
                                     const alreadyAdded = activeCampaignLinks.some((l) => l.linkId === link.id);
                                     return (
@@ -859,10 +859,10 @@ export default function RepurposeContentPage() {
                                         key={link.id}
                                         onClick={() => !alreadyAdded && addExistingCampaignLink(link)}
                                         disabled={alreadyAdded}
-                                        className={`w-full text-left flex items-center justify-between gap-2 rounded-lg px-3 py-2 border transition-colors ${alreadyAdded ? "border-[#1e2a38]/10 dark:border-white/10 opacity-40 cursor-not-allowed" : "border-[#1e2a38]/15 dark:border-white/15 hover:border-[#3dc3ff] hover:bg-[#3dc3ff]/5 cursor-pointer"}`}
+                                        className={`w-full text-left flex items-center justify-between gap-2 rounded-lg px-3 py-2 border transition-colors ${alreadyAdded ? "border-[#2f3437]/10 dark:border-white/10 opacity-40 cursor-not-allowed" : "border-[#2f3437]/15 dark:border-white/15 hover:border-[#6ba3c7] hover:bg-[#6ba3c7]/5 cursor-pointer"}`}
                                       >
-                                        <span className="text-sm text-[#1e2a38] dark:text-white truncate">{link.name}</span>
-                                        <span className="text-xs text-[#1e2a38]/40 dark:text-white/40 shrink-0">{link.clicks} clicks</span>
+                                        <span className="text-sm text-[#2f3437] dark:text-white truncate">{link.name}</span>
+                                        <span className="text-xs text-[#2f3437]/40 dark:text-white/40 shrink-0">{link.clicks} clicks</span>
                                       </button>
                                     );
                                   })}
@@ -871,28 +871,28 @@ export default function RepurposeContentPage() {
 
                               {/* Create new link */}
                               {!newLinkMode ? (
-                                <button onClick={() => { setNewLinkMode(true); setNewLinkName(title ? `${title} — LinkedIn Article` : ""); }} className="text-xs text-[#3dc3ff] hover:underline">
+                                <button onClick={() => { setNewLinkMode(true); setNewLinkName(title ? `${title} — LinkedIn Article` : ""); }} className="text-xs text-[#6ba3c7] hover:underline">
                                   + Create new link in this campaign
                                 </button>
                               ) : (
-                                <div className="space-y-2 pt-1 border-t border-[#1e2a38]/10 dark:border-white/10">
-                                  <p className="text-xs text-[#1e2a38]/60 dark:text-white/60">Name this link (tracks clicks from this specific content)</p>
+                                <div className="space-y-2 pt-1 border-t border-[#2f3437]/10 dark:border-white/10">
+                                  <p className="text-xs text-[#2f3437]/60 dark:text-white/60">Name this link (tracks clicks from this specific content)</p>
                                   <input
                                     type="text"
                                     value={newLinkName}
                                     onChange={(e) => setNewLinkName(e.target.value)}
                                     placeholder="e.g. How to Buy Without Selling First — LinkedIn Article"
-                                    className="w-full border border-[#1e2a38]/20 dark:border-white/20 bg-white dark:bg-[#242b3d] text-[#1e2a38] dark:text-white rounded-lg px-3 py-2 text-sm"
+                                    className="w-full border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#1a1a1a] text-[#2f3437] dark:text-white rounded-lg px-3 py-2 text-sm"
                                   />
                                   <div className="flex gap-2">
                                     <button
                                       onClick={createCampaignLink}
                                       disabled={creatingLink || !newLinkName.trim()}
-                                      className="bg-[#3dc3ff] text-white text-xs font-semibold px-4 py-2 rounded-lg hover:bg-[#3dc3ff]/90 disabled:opacity-50 transition-colors"
+                                      className="bg-[#6ba3c7] text-white text-xs font-semibold px-4 py-2 rounded-lg hover:bg-[#6ba3c7]/90 disabled:opacity-50 transition-colors"
                                     >
                                       {creatingLink ? "Creating…" : "Create & Add Link"}
                                     </button>
-                                    <button onClick={() => setNewLinkMode(false)} className="text-xs text-[#1e2a38]/40 dark:text-white/40 hover:text-[#1e2a38] dark:hover:text-white px-2">
+                                    <button onClick={() => setNewLinkMode(false)} className="text-xs text-[#2f3437]/40 dark:text-white/40 hover:text-[#2f3437] dark:hover:text-white px-2">
                                       Back
                                     </button>
                                   </div>
@@ -904,22 +904,22 @@ export default function RepurposeContentPage() {
                       )}
                     </div>
                   ) : (
-                    <button onClick={openCampaignPicker} className="text-xs text-[#3dc3ff] hover:underline">
+                    <button onClick={openCampaignPicker} className="text-xs text-[#6ba3c7] hover:underline">
                       + Add Campaign Link
                     </button>
                   )}
 
                   {/* One-off links */}
                   <div>
-                    <p className="text-xs text-[#1e2a38]/40 dark:text-white/40 mb-2">Add links for this article only:</p>
+                    <p className="text-xs text-[#2f3437]/40 dark:text-white/40 mb-2">Add links for this article only:</p>
                     {oneOffLinks.map((link, i) => (
                       <div key={i} className="flex gap-2 mb-2">
-                        <input type="text" value={link.label} onChange={(e) => { const u = [...oneOffLinks]; u[i] = { ...u[i], label: e.target.value }; setOneOffLinks(u); }} placeholder="Label" className="flex-1 border border-[#1e2a38]/20 dark:border-white/20 bg-white dark:bg-[#1a1f2e] text-[#1e2a38] dark:text-white rounded-lg px-3 py-2 text-sm" />
-                        <input type="text" value={link.url} onChange={(e) => { const u = [...oneOffLinks]; u[i] = { ...u[i], url: e.target.value }; setOneOffLinks(u); }} placeholder="URL" className="flex-1 border border-[#1e2a38]/20 dark:border-white/20 bg-white dark:bg-[#1a1f2e] text-[#1e2a38] dark:text-white rounded-lg px-3 py-2 text-sm" />
+                        <input type="text" value={link.label} onChange={(e) => { const u = [...oneOffLinks]; u[i] = { ...u[i], label: e.target.value }; setOneOffLinks(u); }} placeholder="Label" className="flex-1 border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#0f1419] text-[#2f3437] dark:text-white rounded-lg px-3 py-2 text-sm" />
+                        <input type="text" value={link.url} onChange={(e) => { const u = [...oneOffLinks]; u[i] = { ...u[i], url: e.target.value }; setOneOffLinks(u); }} placeholder="URL" className="flex-1 border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#0f1419] text-[#2f3437] dark:text-white rounded-lg px-3 py-2 text-sm" />
                         <button onClick={() => setOneOffLinks(oneOffLinks.filter((_, j) => j !== i))} className="text-red-500 text-sm px-2">Remove</button>
                       </div>
                     ))}
-                    <button onClick={() => setOneOffLinks([...oneOffLinks, { label: "", url: "" }])} className="text-xs text-[#3dc3ff] hover:underline">+ Add one-off link</button>
+                    <button onClick={() => setOneOffLinks([...oneOffLinks, { label: "", url: "" }])} className="text-xs text-[#6ba3c7] hover:underline">+ Add one-off link</button>
                   </div>
                 </div>
               )}
@@ -927,7 +927,7 @@ export default function RepurposeContentPage() {
               <button
                 onClick={generate}
                 disabled={loading || !title.trim() || !transcript.trim() || overLimit || !anySelected || (generatePostcard && !neighbourhood.trim())}
-                className="w-full bg-[#3dc3ff] text-white py-3 rounded-xl font-semibold hover:bg-[#3dc3ff]/90 disabled:opacity-50 transition-colors"
+                className="w-full bg-[#6ba3c7] text-white py-3 rounded-lg font-semibold hover:bg-[#6ba3c7]/90 disabled:opacity-50 transition-colors"
               >
                 {loading ? "Generating..." : "Generate"}
               </button>
@@ -935,24 +935,24 @@ export default function RepurposeContentPage() {
           </div>
 
           {sessions.length > 0 && (
-            <div className="bg-white dark:bg-[#242b3d] border border-[#1e2a38]/10 dark:border-white/10 rounded-2xl overflow-hidden">
+            <div className="bg-white dark:bg-[#1a1a1a] border border-[#2f3437]/10 dark:border-white/10 rounded-lg overflow-hidden">
               <button
                 onClick={() => setShowPastOutputs(!showPastOutputs)}
                 className="w-full flex items-center justify-between px-5 py-4 text-left"
               >
                 <div>
-                  <h2 className="font-semibold text-[#1e2a38] dark:text-white text-sm">Content Library</h2>
-                  <p className="text-xs text-[#1e2a38]/40 dark:text-white/40 mt-0.5">
+                  <h2 className="font-semibold text-[#2f3437] dark:text-white text-sm">Content Library</h2>
+                  <p className="text-xs text-[#2f3437]/40 dark:text-white/40 mt-0.5">
                     {sessions.length} video{sessions.length !== 1 ? "s" : ""} · saved for 60 days
                   </p>
                 </div>
                 {showPastOutputs
-                  ? <ChevronUpIcon className="w-4 h-4 text-[#1e2a38]/40 dark:text-white/40 shrink-0" />
-                  : <ChevronDownIcon className="w-4 h-4 text-[#1e2a38]/40 dark:text-white/40 shrink-0" />}
+                  ? <ChevronUpIcon className="w-4 h-4 text-[#2f3437]/40 dark:text-white/40 shrink-0" />
+                  : <ChevronDownIcon className="w-4 h-4 text-[#2f3437]/40 dark:text-white/40 shrink-0" />}
               </button>
 
               {showPastOutputs && (
-                <div className="border-t border-[#1e2a38]/8 dark:border-white/8 divide-y divide-[#1e2a38]/6 dark:divide-white/6">
+                <div className="border-t border-[#2f3437]/8 dark:border-white/8 divide-y divide-[#2f3437]/6 dark:divide-white/6">
                   {sessions.map((session) => {
                     const activeToolType = expandedSession?.key === session.key ? expandedSession.tool : null;
                     const activeRecord = activeToolType
@@ -962,10 +962,10 @@ export default function RepurposeContentPage() {
                     return (
                       <div key={session.key} className="px-5 py-4">
                         <div className="flex items-start justify-between gap-3 mb-3">
-                          <p className="text-sm font-medium text-[#1e2a38] dark:text-white leading-snug">
+                          <p className="text-sm font-medium text-[#2f3437] dark:text-white leading-snug">
                             {session.title}
                           </p>
-                          <span className="text-xs text-[#1e2a38]/35 dark:text-white/35 shrink-0 mt-0.5 whitespace-nowrap">
+                          <span className="text-xs text-[#2f3437]/35 dark:text-white/35 shrink-0 mt-0.5 whitespace-nowrap">
                             {session.date}
                           </span>
                         </div>
@@ -974,8 +974,8 @@ export default function RepurposeContentPage() {
                           {session.items.map((item) => {
                             const isActive = activeToolType === item.toolType;
                             const colors = TOOL_COLORS[item.toolType] ?? {
-                              base: "bg-[#1e2a38]/8 text-[#1e2a38]/60 dark:bg-white/10 dark:text-white/60 hover:bg-[#1e2a38]/15",
-                              active: "bg-[#3dc3ff] text-white",
+                              base: "bg-[#111]/8 text-[#2f3437]/60 dark:bg-white/10 dark:text-white/60 hover:bg-[#111]/15",
+                              active: "bg-[#6ba3c7] text-white",
                             };
                             return (
                               <button
@@ -996,17 +996,17 @@ export default function RepurposeContentPage() {
                         </div>
 
                         {activeRecord && (
-                          <div className="mt-3 bg-[#f8f9fa] dark:bg-[#1a1f2e] rounded-xl overflow-hidden">
+                          <div className="mt-3 bg-[#f8f9fa] dark:bg-[#0f1419] rounded-lg overflow-hidden">
                             <div className="max-h-72 overflow-y-auto p-4">
-                              <pre className="text-xs text-[#1e2a38] dark:text-white whitespace-pre-wrap leading-relaxed">
+                              <pre className="text-xs text-[#2f3437] dark:text-white whitespace-pre-wrap leading-relaxed">
                                 {pastOutputText(activeRecord)}
                               </pre>
                             </div>
-                            <div className="flex items-center justify-between px-4 py-3 border-t border-[#1e2a38]/8 dark:border-white/8">
+                            <div className="flex items-center justify-between px-4 py-3 border-t border-[#2f3437]/8 dark:border-white/8">
                               <CopyButton text={pastOutputText(activeRecord)} label="Copy" />
                               <button
                                 onClick={() => setExpandedSession(null)}
-                                className="text-xs text-[#1e2a38]/40 dark:text-white/40 hover:text-[#1e2a38] dark:hover:text-white transition-colors"
+                                className="text-xs text-[#2f3437]/40 dark:text-white/40 hover:text-[#2f3437] dark:hover:text-white transition-colors"
                               >
                                 Close
                               </button>
@@ -1028,7 +1028,7 @@ export default function RepurposeContentPage() {
           <div className="flex items-center justify-between">
             <button
               onClick={reset}
-              className="flex items-center gap-1.5 text-sm text-[#1e2a38]/55 dark:text-white/55 hover:text-[#3dc3ff] dark:hover:text-[#3dc3ff] transition-colors font-medium"
+              className="flex items-center gap-1.5 text-sm text-[#2f3437]/55 dark:text-white/55 hover:text-[#6ba3c7] dark:hover:text-[#6ba3c7] transition-colors font-medium"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -1036,14 +1036,14 @@ export default function RepurposeContentPage() {
               New content
             </button>
             {loading && (
-              <span className="text-sm text-[#1e2a38]/50 dark:text-white/50 animate-pulse">
+              <span className="text-sm text-[#2f3437]/50 dark:text-white/50 animate-pulse">
                 Generating — this may take a minute…
               </span>
             )}
           </div>
 
           {loading && !newsletterResult && !linkedInResult && !facebookResult && !blogResult && !postcardResult && (
-            <div className="text-center py-4 text-sm text-[#1e2a38]/50 dark:text-white/50 animate-pulse">
+            <div className="text-center py-4 text-sm text-[#2f3437]/50 dark:text-white/50 animate-pulse">
               Generating your content — this may take a minute for longer formats…
             </div>
           )}
@@ -1051,7 +1051,7 @@ export default function RepurposeContentPage() {
           {(generateNewsletter) && (
             <ResultCard title="Newsletter">
               {loading && !newsletterResult && !newsletterError && (
-                <div className="text-center py-8 text-[#1e2a38]/40 dark:text-white/40 text-sm animate-pulse">Generating newsletter…</div>
+                <div className="text-center py-8 text-[#2f3437]/40 dark:text-white/40 text-sm animate-pulse">Generating newsletter…</div>
               )}
               {newsletterError && (
                 <div className="text-center py-6">
@@ -1060,7 +1060,7 @@ export default function RepurposeContentPage() {
               )}
               {newsletterResult && (
                 <div className="space-y-3">
-                  <textarea value={editedNewsletter} onChange={(e) => setEditedNewsletter(e.target.value)} rows={16} className="w-full border border-[#1e2a38]/20 dark:border-white/20 bg-white dark:bg-[#1a1f2e] rounded-xl px-4 py-3 text-sm text-[#1e2a38] dark:text-white focus:outline-none focus:border-[#3dc3ff] transition-colors resize-y font-mono" />
+                  <textarea value={editedNewsletter} onChange={(e) => setEditedNewsletter(e.target.value)} rows={16} className="w-full border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#0f1419] rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-white focus:outline-none focus:border-[#6ba3c7] transition-colors resize-y font-mono" />
                   <div className="flex gap-2">
                     <CopyButton text={editedNewsletter} />
                     <SaveButton
@@ -1077,7 +1077,7 @@ export default function RepurposeContentPage() {
           {(generateLinkedIn) && (
             <ResultCard title={`LinkedIn Article${linkedInResult?.reading_time ? ` (${linkedInResult.reading_time})` : ""}`}>
               {loading && !linkedInResult && !linkedInError && (
-                <div className="text-center py-8 text-[#1e2a38]/40 dark:text-white/40 text-sm animate-pulse">Generating LinkedIn article…</div>
+                <div className="text-center py-8 text-[#2f3437]/40 dark:text-white/40 text-sm animate-pulse">Generating LinkedIn article…</div>
               )}
               {linkedInError && (
                 <div className="text-center py-6">
@@ -1086,8 +1086,8 @@ export default function RepurposeContentPage() {
               )}
               {linkedInResult && (
                 <div className="space-y-3">
-                  <textarea value={editedLinkedIn} onChange={(e) => setEditedLinkedIn(e.target.value)} rows={28} className="w-full border border-[#1e2a38]/20 dark:border-white/20 bg-white dark:bg-[#1a1f2e] rounded-xl px-4 py-3 text-sm text-[#1e2a38] dark:text-white focus:outline-none focus:border-[#3dc3ff] transition-colors resize-y" />
-                  <p className="text-xs text-[#1e2a38]/40 dark:text-white/40">Plain text — paste directly into LinkedIn&apos;s article editor.</p>
+                  <textarea value={editedLinkedIn} onChange={(e) => setEditedLinkedIn(e.target.value)} rows={28} className="w-full border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#0f1419] rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-white focus:outline-none focus:border-[#6ba3c7] transition-colors resize-y" />
+                  <p className="text-xs text-[#2f3437]/40 dark:text-white/40">Plain text — paste directly into LinkedIn&apos;s article editor.</p>
                   <div className="flex gap-2">
                     <CopyButton text={editedLinkedIn} label="Copy Article" />
                     <SaveButton
@@ -1104,7 +1104,7 @@ export default function RepurposeContentPage() {
           {(generateFacebook) && (
             <ResultCard title="Facebook Post">
               {loading && !facebookResult && !facebookError && (
-                <div className="text-center py-8 text-[#1e2a38]/40 dark:text-white/40 text-sm animate-pulse">Generating Facebook post…</div>
+                <div className="text-center py-8 text-[#2f3437]/40 dark:text-white/40 text-sm animate-pulse">Generating Facebook post…</div>
               )}
               {facebookError && (
                 <div className="text-center py-6">
@@ -1114,18 +1114,18 @@ export default function RepurposeContentPage() {
               {facebookResult && (
                 <div className="space-y-4">
                   <div>
-                    <p className="text-xs font-semibold text-[#1e2a38]/50 dark:text-white/50 uppercase tracking-wide mb-1.5">Post body</p>
-                    <textarea value={editedFacebookBody} onChange={(e) => setEditedFacebookBody(e.target.value)} rows={8} className="w-full border border-[#1e2a38]/20 dark:border-white/20 bg-white dark:bg-[#1a1f2e] rounded-xl px-4 py-3 text-sm text-[#1e2a38] dark:text-white focus:outline-none focus:border-[#3dc3ff] transition-colors resize-y" />
+                    <p className="text-xs font-semibold text-[#2f3437]/50 dark:text-white/50 uppercase tracking-wide mb-1.5">Post body</p>
+                    <textarea value={editedFacebookBody} onChange={(e) => setEditedFacebookBody(e.target.value)} rows={8} className="w-full border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#0f1419] rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-white focus:outline-none focus:border-[#6ba3c7] transition-colors resize-y" />
                   </div>
                   <div>
-                    <p className="text-xs font-semibold text-[#1e2a38]/50 dark:text-white/50 uppercase tracking-wide mb-1.5">Paste this as your first comment</p>
-                    <textarea value={editedFacebookComment} onChange={(e) => setEditedFacebookComment(e.target.value)} rows={2} className="w-full border border-[#1e2a38]/20 dark:border-white/20 bg-white dark:bg-[#1a1f2e] rounded-xl px-4 py-3 text-sm text-[#1e2a38] dark:text-white focus:outline-none focus:border-[#3dc3ff] transition-colors resize-y" />
-                    <p className="text-xs text-[#1e2a38]/40 dark:text-white/40 mt-1">Facebook suppresses reach for posts with links in the body — paste this as the first comment instead.</p>
+                    <p className="text-xs font-semibold text-[#2f3437]/50 dark:text-white/50 uppercase tracking-wide mb-1.5">Paste this as your first comment</p>
+                    <textarea value={editedFacebookComment} onChange={(e) => setEditedFacebookComment(e.target.value)} rows={2} className="w-full border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#0f1419] rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-white focus:outline-none focus:border-[#6ba3c7] transition-colors resize-y" />
+                    <p className="text-xs text-[#2f3437]/40 dark:text-white/40 mt-1">Facebook suppresses reach for posts with links in the body — paste this as the first comment instead.</p>
                   </div>
                   {facebookResult.hashtags?.length > 0 && (
                     <div>
-                      <p className="text-xs font-semibold text-[#1e2a38]/50 dark:text-white/50 uppercase tracking-wide mb-1">Hashtags</p>
-                      <p className="text-sm text-[#3dc3ff]">{facebookResult.hashtags.map((h) => `#${h}`).join(" ")}</p>
+                      <p className="text-xs font-semibold text-[#2f3437]/50 dark:text-white/50 uppercase tracking-wide mb-1">Hashtags</p>
+                      <p className="text-sm text-[#6ba3c7]">{facebookResult.hashtags.map((h) => `#${h}`).join(" ")}</p>
                     </div>
                   )}
                   <div className="flex gap-2 flex-wrap">
@@ -1148,7 +1148,7 @@ export default function RepurposeContentPage() {
           {(generateBlog) && (
             <ResultCard title={`Blog Post (AI-Optimized)${blogResult?.reading_time ? ` — ${blogResult.reading_time}` : ""}`}>
               {loading && !blogResult && !blogError && (
-                <div className="text-center py-8 text-[#1e2a38]/40 dark:text-white/40 text-sm animate-pulse">Generating blog post…</div>
+                <div className="text-center py-8 text-[#2f3437]/40 dark:text-white/40 text-sm animate-pulse">Generating blog post…</div>
               )}
               {blogError && (
                 <div className="text-center py-6">
@@ -1158,18 +1158,18 @@ export default function RepurposeContentPage() {
               {blogResult && (
                 <div className="space-y-4">
                   <div>
-                    <p className="text-xs font-semibold text-[#1e2a38]/50 dark:text-white/50 uppercase tracking-wide mb-1.5">Blog title</p>
-                    <input value={editedBlogTitle} onChange={(e) => setEditedBlogTitle(e.target.value)} className="w-full border border-[#1e2a38]/20 dark:border-white/20 bg-white dark:bg-[#1a1f2e] rounded-xl px-4 py-2.5 text-sm font-semibold text-[#1e2a38] dark:text-white focus:outline-none focus:border-[#3dc3ff] transition-colors" />
+                    <p className="text-xs font-semibold text-[#2f3437]/50 dark:text-white/50 uppercase tracking-wide mb-1.5">Blog title</p>
+                    <input value={editedBlogTitle} onChange={(e) => setEditedBlogTitle(e.target.value)} className="w-full border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#0f1419] rounded-lg px-4 py-2.5 text-sm font-semibold text-[#2f3437] dark:text-white focus:outline-none focus:border-[#6ba3c7] transition-colors" />
                   </div>
                   <div>
-                    <p className="text-xs font-semibold text-[#1e2a38]/50 dark:text-white/50 uppercase tracking-wide mb-1.5">Full article</p>
-                    <textarea value={editedBlogArticle} onChange={(e) => setEditedBlogArticle(e.target.value)} rows={32} className="w-full border border-[#1e2a38]/20 dark:border-white/20 bg-white dark:bg-[#1a1f2e] rounded-xl px-4 py-3 text-sm text-[#1e2a38] dark:text-white focus:outline-none focus:border-[#3dc3ff] transition-colors resize-y" />
+                    <p className="text-xs font-semibold text-[#2f3437]/50 dark:text-white/50 uppercase tracking-wide mb-1.5">Full article</p>
+                    <textarea value={editedBlogArticle} onChange={(e) => setEditedBlogArticle(e.target.value)} rows={32} className="w-full border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#0f1419] rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-white focus:outline-none focus:border-[#6ba3c7] transition-colors resize-y" />
                   </div>
                   <div>
-                    <p className="text-xs font-semibold text-[#1e2a38]/50 dark:text-white/50 uppercase tracking-wide mb-1.5">Meta description <span className="font-normal normal-case text-[#1e2a38]/30 dark:text-white/30">({editedBlogMeta.length}/160 chars)</span></p>
-                    <textarea value={editedBlogMeta} onChange={(e) => setEditedBlogMeta(e.target.value)} rows={2} className="w-full border border-[#1e2a38]/20 dark:border-white/20 bg-white dark:bg-[#1a1f2e] rounded-xl px-4 py-3 text-sm text-[#1e2a38] dark:text-white focus:outline-none focus:border-[#3dc3ff] transition-colors resize-none" />
+                    <p className="text-xs font-semibold text-[#2f3437]/50 dark:text-white/50 uppercase tracking-wide mb-1.5">Meta description <span className="font-normal normal-case text-[#2f3437]/30 dark:text-white/30">({editedBlogMeta.length}/160 chars)</span></p>
+                    <textarea value={editedBlogMeta} onChange={(e) => setEditedBlogMeta(e.target.value)} rows={2} className="w-full border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#0f1419] rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-white focus:outline-none focus:border-[#6ba3c7] transition-colors resize-none" />
                   </div>
-                  <p className="text-xs text-[#1e2a38]/40 dark:text-white/40">Plain text — paste directly into WordPress, Squarespace, Wix, or any CMS editor.</p>
+                  <p className="text-xs text-[#2f3437]/40 dark:text-white/40">Plain text — paste directly into WordPress, Squarespace, Wix, or any CMS editor.</p>
                   <div className="flex gap-2">
                     <CopyButton text={`${editedBlogTitle}\n\n${editedBlogArticle}`} label="Copy Article" />
                     <SaveButton
@@ -1189,7 +1189,7 @@ export default function RepurposeContentPage() {
           {(generatePostcard) && (
             <ResultCard title={`Neighbourhood Postcard${neighbourhood ? ` — ${neighbourhood}` : ""}`}>
               {loading && !postcardResult && !postcardError && (
-                <div className="text-center py-8 text-[#1e2a38]/40 dark:text-white/40 text-sm animate-pulse">Generating postcard copy…</div>
+                <div className="text-center py-8 text-[#2f3437]/40 dark:text-white/40 text-sm animate-pulse">Generating postcard copy…</div>
               )}
               {postcardError && (
                 <div className="text-center py-6">
@@ -1199,31 +1199,31 @@ export default function RepurposeContentPage() {
               {postcardResult && (
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="bg-[#1e2a38] dark:bg-[#0f1520] rounded-2xl p-5 text-white min-h-[140px] flex flex-col justify-between">
+                    <div className="bg-[#111] dark:bg-[#0f1520] rounded-lg p-5 text-white min-h-[140px] flex flex-col justify-between">
                       <div>
                         <p className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-3">Front</p>
                         <p className="font-bold text-base leading-snug mb-2">{editedPostcardFrontHeadline}</p>
                         <p className="text-sm text-white/80 leading-relaxed">{editedPostcardFrontHook}</p>
                       </div>
                     </div>
-                    <div className="bg-[#f1f1ef] dark:bg-[#242b3d] border border-[#1e2a38]/10 dark:border-white/10 rounded-2xl p-5 min-h-[140px] flex flex-col justify-between">
+                    <div className="bg-[#f7f6f3] dark:bg-[#1a1a1a] border border-[#2f3437]/10 dark:border-white/10 rounded-lg p-5 min-h-[140px] flex flex-col justify-between">
                       <div>
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-[#1e2a38]/40 dark:text-white/40 mb-3">Back</p>
-                        <p className="text-sm text-[#1e2a38] dark:text-white leading-relaxed">{editedPostcardBack}</p>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-[#2f3437]/40 dark:text-white/40 mb-3">Back</p>
+                        <p className="text-sm text-[#2f3437] dark:text-white leading-relaxed">{editedPostcardBack}</p>
                       </div>
-                      <p className="text-xs text-[#3dc3ff] mt-3 font-medium">{postcardResult.video_url_placeholder}</p>
+                      <p className="text-xs text-[#6ba3c7] mt-3 font-medium">{postcardResult.video_url_placeholder}</p>
                     </div>
                   </div>
-                  <p className="text-xs text-[#1e2a38]/40 dark:text-white/40">Copy this text into your postcard design tool (Canva, etc.)</p>
+                  <p className="text-xs text-[#2f3437]/40 dark:text-white/40">Copy this text into your postcard design tool (Canva, etc.)</p>
                   <div className="space-y-3">
                     <div>
-                      <p className="text-xs font-semibold text-[#1e2a38]/50 dark:text-white/50 uppercase tracking-wide mb-1.5">Edit front copy</p>
-                      <input value={editedPostcardFrontHeadline} onChange={(e) => setEditedPostcardFrontHeadline(e.target.value)} placeholder="Front headline" className="w-full border border-[#1e2a38]/20 dark:border-white/20 bg-white dark:bg-[#1a1f2e] rounded-xl px-4 py-2.5 text-sm text-[#1e2a38] dark:text-white focus:outline-none focus:border-[#3dc3ff] transition-colors mb-2" />
-                      <textarea value={editedPostcardFrontHook} onChange={(e) => setEditedPostcardFrontHook(e.target.value)} rows={2} placeholder="Front hook" className="w-full border border-[#1e2a38]/20 dark:border-white/20 bg-white dark:bg-[#1a1f2e] rounded-xl px-4 py-2.5 text-sm text-[#1e2a38] dark:text-white focus:outline-none focus:border-[#3dc3ff] transition-colors resize-none" />
+                      <p className="text-xs font-semibold text-[#2f3437]/50 dark:text-white/50 uppercase tracking-wide mb-1.5">Edit front copy</p>
+                      <input value={editedPostcardFrontHeadline} onChange={(e) => setEditedPostcardFrontHeadline(e.target.value)} placeholder="Front headline" className="w-full border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#0f1419] rounded-lg px-4 py-2.5 text-sm text-[#2f3437] dark:text-white focus:outline-none focus:border-[#6ba3c7] transition-colors mb-2" />
+                      <textarea value={editedPostcardFrontHook} onChange={(e) => setEditedPostcardFrontHook(e.target.value)} rows={2} placeholder="Front hook" className="w-full border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#0f1419] rounded-lg px-4 py-2.5 text-sm text-[#2f3437] dark:text-white focus:outline-none focus:border-[#6ba3c7] transition-colors resize-none" />
                     </div>
                     <div>
-                      <p className="text-xs font-semibold text-[#1e2a38]/50 dark:text-white/50 uppercase tracking-wide mb-1.5">Edit back copy</p>
-                      <textarea value={editedPostcardBack} onChange={(e) => setEditedPostcardBack(e.target.value)} rows={3} className="w-full border border-[#1e2a38]/20 dark:border-white/20 bg-white dark:bg-[#1a1f2e] rounded-xl px-4 py-2.5 text-sm text-[#1e2a38] dark:text-white focus:outline-none focus:border-[#3dc3ff] transition-colors resize-none" />
+                      <p className="text-xs font-semibold text-[#2f3437]/50 dark:text-white/50 uppercase tracking-wide mb-1.5">Edit back copy</p>
+                      <textarea value={editedPostcardBack} onChange={(e) => setEditedPostcardBack(e.target.value)} rows={3} className="w-full border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#0f1419] rounded-lg px-4 py-2.5 text-sm text-[#2f3437] dark:text-white focus:outline-none focus:border-[#6ba3c7] transition-colors resize-none" />
                     </div>
                   </div>
                   <div className="flex gap-2">
@@ -1242,7 +1242,7 @@ export default function RepurposeContentPage() {
             </ResultCard>
           )}
 
-          <button onClick={reset} className="w-full border border-[#1e2a38]/20 dark:border-white/20 text-[#1e2a38] dark:text-white py-3 rounded-xl font-semibold hover:bg-[#1e2a38]/5 dark:hover:bg-white/5 transition-colors">
+          <button onClick={reset} className="w-full border border-[#2f3437]/20 dark:border-white/20 text-[#2f3437] dark:text-white py-3 rounded-lg font-semibold hover:bg-[#111]/5 dark:hover:bg-white/5 transition-colors">
             Generate Another
           </button>
         </div>

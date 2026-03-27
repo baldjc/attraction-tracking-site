@@ -60,7 +60,7 @@ function scoreBg(score: number) {
 }
 
 function scoreBgBlock(score: number) {
-  if (score >= 7) return "bg-[#e8f7ff] border-[#3dc3ff]/30";
+  if (score >= 7) return "bg-[#e8f7ff] border-[#6ba3c7]/30";
   if (score >= 5) return "bg-[#fef3c7] border-amber-200";
   return "bg-[#ffe5ea] border-[#ff0033]/20";
 }
@@ -123,18 +123,18 @@ function ResultDisplay({ r, baselineScores }: { r: ReviewResult; baselineScores:
   return (
     <div className="space-y-5">
       {reportContent.one_sentence_diagnosis && (
-        <div className="bg-[#1e2a38] rounded-xl p-5">
-          <p className="text-xs font-semibold text-[#3dc3ff] uppercase tracking-wider mb-2">Diagnosis</p>
+        <div className="bg-[#111] rounded-lg p-5">
+          <p className="text-xs font-semibold text-[#6ba3c7] uppercase tracking-wider mb-2">Diagnosis</p>
           <p className="text-sm font-medium text-white leading-relaxed italic">"{reportContent.one_sentence_diagnosis}"</p>
         </div>
       )}
 
-      <div className={`rounded-xl p-6 text-center border ${scoreBgBlock(overallScore)}`}>
-        <p className="text-xs font-semibold uppercase tracking-wider mb-1 text-[#1e2a38]/60">Script Attraction Score</p>
+      <div className={`rounded-lg p-6 text-center border ${scoreBgBlock(overallScore)}`}>
+        <p className="text-xs font-semibold uppercase tracking-wider mb-1 text-[#2f3437]/60">Script Attraction Score</p>
         <p className={`text-6xl font-black ${scoreText(overallScore)}`}>{overallScore.toFixed(1)}</p>
-        <p className="text-base font-medium mt-1 text-[#1e2a38]/40">/ 10</p>
+        <p className="text-base font-medium mt-1 text-[#2f3437]/40">/ 10</p>
         {delta != null && baselineAvg != null && (
-          <p className="text-sm mt-2 text-[#1e2a38]/60">
+          <p className="text-sm mt-2 text-[#2f3437]/60">
             Baseline: <span className="font-semibold">{baselineAvg.toFixed(1)}</span>
             {" — this script scores "}
             <span className={`font-semibold ${deltaColor(delta)}`}>
@@ -149,8 +149,8 @@ function ResultDisplay({ r, baselineScores }: { r: ReviewResult; baselineScores:
           {DIMENSIONS.map(({ key, label }) => {
             const s = (dims as any)[key] ?? 0;
             return (
-              <div key={key} className={`rounded-xl p-4 border text-center ${scoreBgBlock(s)}`}>
-                <p className="text-xs text-[#1e2a38]/50 mb-1">{label}</p>
+              <div key={key} className={`rounded-lg p-4 border text-center ${scoreBgBlock(s)}`}>
+                <p className="text-xs text-[#2f3437]/50 mb-1">{label}</p>
                 <p className={`text-2xl font-bold ${scoreText(s)}`}>{s.toFixed(1)}</p>
               </div>
             );
@@ -158,18 +158,18 @@ function ResultDisplay({ r, baselineScores }: { r: ReviewResult; baselineScores:
         </div>
       )}
 
-      <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-        <h3 className="text-sm font-semibold text-[#1e2a38] mb-3">16-Principle Scorecard</h3>
+      <div className="bg-white rounded-lg border border-gray-200 p-5">
+        <h3 className="text-sm font-semibold text-[#2f3437] mb-3">16-Principle Scorecard</h3>
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
               <tr className="border-b border-gray-100">
-                <th className="text-left py-1.5 pr-2 text-[#1e2a38]/50 font-semibold uppercase tracking-wider">Principle</th>
-                <th className="text-center py-1.5 px-2 text-[#1e2a38]/50 font-semibold uppercase tracking-wider">Script</th>
+                <th className="text-left py-1.5 pr-2 text-[#2f3437]/50 font-semibold uppercase tracking-wider">Principle</th>
+                <th className="text-center py-1.5 px-2 text-[#2f3437]/50 font-semibold uppercase tracking-wider">Script</th>
                 {baselineScores && (
                   <>
-                    <th className="text-center py-1.5 px-2 text-[#1e2a38]/50 font-semibold uppercase tracking-wider">Baseline</th>
-                    <th className="text-center py-1.5 pl-2 text-[#1e2a38]/50 font-semibold uppercase tracking-wider">Δ</th>
+                    <th className="text-center py-1.5 px-2 text-[#2f3437]/50 font-semibold uppercase tracking-wider">Baseline</th>
+                    <th className="text-center py-1.5 pl-2 text-[#2f3437]/50 font-semibold uppercase tracking-wider">Δ</th>
                   </>
                 )}
               </tr>
@@ -181,7 +181,7 @@ function ResultDisplay({ r, baselineScores }: { r: ReviewResult; baselineScores:
                 const d = base != null ? curr - base : null;
                 return (
                   <tr key={key} className="border-b border-gray-50 last:border-0">
-                    <td className="py-1.5 pr-2 text-[#1e2a38]">{PRINCIPLE_LABELS[key]}</td>
+                    <td className="py-1.5 pr-2 text-[#2f3437]">{PRINCIPLE_LABELS[key]}</td>
                     <td className="py-1.5 px-2 text-center">
                       <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${scoreBg(curr)}`}>{curr.toFixed(1)}</span>
                     </td>
@@ -204,7 +204,7 @@ function ResultDisplay({ r, baselineScores }: { r: ReviewResult; baselineScores:
       </div>
 
       {reportContent.whats_working?.length > 0 && (
-        <div className="bg-green-50 border border-green-200 rounded-xl p-5">
+        <div className="bg-green-50 border border-green-200 rounded-lg p-5">
           <h3 className="text-sm font-semibold text-green-800 mb-3">✅ What&apos;s Working</h3>
           <div className="space-y-3">
             {reportContent.whats_working.map((item, i) => (
@@ -221,35 +221,35 @@ function ResultDisplay({ r, baselineScores }: { r: ReviewResult; baselineScores:
       )}
 
       {reportContent.three_improvements?.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-          <h3 className="text-sm font-semibold text-[#1e2a38] mb-4">💡 Three Ideas for Improvement</h3>
+        <div className="bg-white rounded-lg border border-gray-200 p-5">
+          <h3 className="text-sm font-semibold text-[#2f3437] mb-4">💡 Three Ideas for Improvement</h3>
           <div className="space-y-5">
             {reportContent.three_improvements.map((item, i) => {
               const principleKey = Object.entries(PRINCIPLE_LABELS).find(([, v]) => v.toLowerCase() === (item.principle ?? "").toLowerCase())?.[0];
               const lesson = item.lesson ?? (principleKey ? LEARNING_PATH[principleKey] : null);
               const score = item.score ?? (principleKey ? extractScore(scores[principleKey]) : null);
               return (
-                <div key={i} className="border-l-4 border-[#3dc3ff] pl-4">
+                <div key={i} className="border-l-4 border-[#6ba3c7] pl-4">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xs font-bold text-[#3dc3ff] uppercase tracking-wider">{i + 1}. {item.principle}</span>
+                    <span className="text-xs font-bold text-[#6ba3c7] uppercase tracking-wider">{i + 1}. {item.principle}</span>
                     {score != null && score > 0 && (
                       <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${scoreBg(score)}`}>{score.toFixed(1)}</span>
                     )}
                     {lesson && (
-                      <span className="text-xs text-[#1e2a38]/40 ml-auto">{lesson}</span>
+                      <span className="text-xs text-[#2f3437]/40 ml-auto">{lesson}</span>
                     )}
                   </div>
                   <div className="space-y-2">
                     <div className="bg-[#ffe5ea] rounded-lg px-3 py-2">
                       <p className="text-xs font-semibold text-[#ff0033] mb-1">Current</p>
-                      <p className="text-xs text-[#1e2a38]/80 italic">"{item.current}"</p>
+                      <p className="text-xs text-[#2f3437]/80 italic">"{item.current}"</p>
                     </div>
                     <div className="bg-[#e8f7ff] rounded-lg px-3 py-2">
-                      <p className="text-xs font-semibold text-[#3dc3ff] mb-1">Improved</p>
-                      <p className="text-xs text-[#1e2a38]/80 italic">"{item.improved}"</p>
+                      <p className="text-xs font-semibold text-[#6ba3c7] mb-1">Improved</p>
+                      <p className="text-xs text-[#2f3437]/80 italic">"{item.improved}"</p>
                     </div>
                     {item.why && (
-                      <p className="text-xs text-[#1e2a38]/60 italic">{item.why}</p>
+                      <p className="text-xs text-[#2f3437]/60 italic">{item.why}</p>
                     )}
                   </div>
                 </div>
@@ -260,7 +260,7 @@ function ResultDisplay({ r, baselineScores }: { r: ReviewResult; baselineScores:
       )}
 
       {reportContent.quick_win && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-5">
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-5">
           <h3 className="text-sm font-semibold text-amber-800 mb-2">⚡ Quick Win — Do This Before You Record</h3>
           <p className="text-sm text-amber-900 leading-relaxed">{reportContent.quick_win}</p>
         </div>
@@ -440,23 +440,23 @@ export default function ScriptReviewUI({ fetchBaseline = false, isAdmin = false 
   return (
     <div className="max-w-2xl space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-[#1e2a38]">Script Review</h1>
-        <p className="text-sm text-[#1e2a38]/60 mt-1">
+        <h1 className="text-2xl font-bold text-[#2f3437]">Script Review</h1>
+        <p className="text-sm text-[#2f3437]/60 mt-1">
           Paste a script or transcript to score it against the 16 Attraction principles before recording.
         </p>
       </div>
 
       {isAdmin && (
-        <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm space-y-3">
-          <p className="text-xs font-semibold text-[#1e2a38]/50 uppercase tracking-wider">Comparison Mode</p>
+        <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-3">
+          <p className="text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wider">Comparison Mode</p>
           <div className="flex gap-2">
             <button
               type="button"
               onClick={() => handleModeToggle("self")}
               className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium border transition-colors ${
                 adminMode === "self"
-                  ? "bg-[#1e2a38] text-white border-[#1e2a38]"
-                  : "bg-white text-[#1e2a38]/60 border-gray-200 hover:border-gray-300"
+                  ? "bg-[#111] text-white border-[#2f3437]"
+                  : "bg-white text-[#2f3437]/60 border-gray-200 hover:border-gray-300"
               }`}
             >
               No comparison
@@ -466,8 +466,8 @@ export default function ScriptReviewUI({ fetchBaseline = false, isAdmin = false 
               onClick={() => handleModeToggle("member")}
               className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium border transition-colors flex items-center justify-center gap-1.5 ${
                 adminMode === "member"
-                  ? "bg-[#3dc3ff] text-white border-[#3dc3ff]"
-                  : "bg-white text-[#1e2a38]/60 border-gray-200 hover:border-gray-300"
+                  ? "bg-[#6ba3c7] text-white border-[#6ba3c7]"
+                  : "bg-white text-[#2f3437]/60 border-gray-200 hover:border-gray-300"
               }`}
             >
               <UserCircleIcon className="w-4 h-4" />
@@ -477,12 +477,12 @@ export default function ScriptReviewUI({ fetchBaseline = false, isAdmin = false 
           {adminMode === "member" && (
             <div>
               {membersLoading ? (
-                <p className="text-xs text-[#1e2a38]/40 py-2">Loading members…</p>
+                <p className="text-xs text-[#2f3437]/40 py-2">Loading members…</p>
               ) : (
                 <select
                   value={selectedMemberId}
                   onChange={(e) => handleMemberSelect(e.target.value)}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-[#1e2a38] focus:outline-none focus:ring-2 focus:ring-[#3dc3ff]/40"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40"
                 >
                   <option value="">— Select a member —</option>
                   {members.map((m) => (
@@ -493,7 +493,7 @@ export default function ScriptReviewUI({ fetchBaseline = false, isAdmin = false 
                 </select>
               )}
               {selectedMemberId && (
-                <p className="text-xs mt-1.5 text-[#1e2a38]/50">
+                <p className="text-xs mt-1.5 text-[#2f3437]/50">
                   {memberBaselineLoading
                     ? "Loading baseline…"
                     : memberBaseline
@@ -506,9 +506,9 @@ export default function ScriptReviewUI({ fetchBaseline = false, isAdmin = false 
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm space-y-4">
+      <form onSubmit={handleSubmit} className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
         <div>
-          <label className="block text-sm font-medium text-[#1e2a38] mb-1.5">Video Title</label>
+          <label className="block text-sm font-medium text-[#2f3437] mb-1.5">Video Title</label>
           <input
             type="text"
             value={videoTitle}
@@ -516,11 +516,11 @@ export default function ScriptReviewUI({ fetchBaseline = false, isAdmin = false 
             placeholder="What's the working title?"
             required
             disabled={loading}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-[#1e2a38] placeholder-[#1e2a38]/30 focus:outline-none focus:ring-2 focus:ring-[#3dc3ff]/40 disabled:opacity-60"
+            className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-[#2f3437] placeholder-[#2f3437]/30 focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40 disabled:opacity-60"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-[#1e2a38] mb-1.5">Script / Transcript</label>
+          <label className="block text-sm font-medium text-[#2f3437] mb-1.5">Script / Transcript</label>
           <textarea
             value={scriptText}
             onChange={(e) => setScriptText(e.target.value)}
@@ -528,9 +528,9 @@ export default function ScriptReviewUI({ fetchBaseline = false, isAdmin = false 
             required
             disabled={loading}
             rows={12}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-[#1e2a38] placeholder-[#1e2a38]/30 focus:outline-none focus:ring-2 focus:ring-[#3dc3ff]/40 resize-y disabled:opacity-60"
+            className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-[#2f3437] placeholder-[#2f3437]/30 focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40 resize-y disabled:opacity-60"
           />
-          <p className="text-xs text-[#1e2a38]/40 mt-1">
+          <p className="text-xs text-[#2f3437]/40 mt-1">
             {scriptText.length > 0 ? `${scriptText.split(/\s+/).filter(Boolean).length} words` : "Paste at least a paragraph for best results"}
           </p>
         </div>
@@ -540,7 +540,7 @@ export default function ScriptReviewUI({ fetchBaseline = false, isAdmin = false 
         <button
           type="submit"
           disabled={loading || !videoTitle.trim() || !scriptText.trim()}
-          className="w-full bg-[#3dc3ff] hover:bg-[#2ab0ec] text-white font-semibold text-sm py-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="w-full bg-[#6ba3c7] hover:bg-[#2ab0ec] text-white font-semibold text-sm py-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
           {loading ? (
             <>
@@ -552,21 +552,21 @@ export default function ScriptReviewUI({ fetchBaseline = false, isAdmin = false 
           )}
         </button>
         {loading && (
-          <p className="text-xs text-center text-[#1e2a38]/40">Usually takes 20–40 seconds…</p>
+          <p className="text-xs text-center text-[#2f3437]/40">Usually takes 20–40 seconds…</p>
         )}
       </form>
 
       {activeResult && (
         <div id="sr-results" className="space-y-5">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-[#1e2a38]">
+            <h2 className="text-lg font-bold text-[#2f3437]">
               {viewedResult ? `Review: "${viewedResult.videoTitle}"` : "Results"}
             </h2>
             {result && !viewedResult && (
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => { setResult(null); setSavedId(null); }}
-                  className="text-sm px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-[#1e2a38]/70 transition-colors"
+                  className="text-sm px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-[#2f3437]/70 transition-colors"
                 >
                   Review Again
                 </button>
@@ -579,7 +579,7 @@ export default function ScriptReviewUI({ fetchBaseline = false, isAdmin = false 
                   <button
                     onClick={handleSave}
                     disabled={saving}
-                    className="inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg bg-[#1e2a38] hover:bg-[#1e2a38]/90 text-white transition-colors disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg bg-[#111] hover:bg-[#111]/90 text-white transition-colors disabled:opacity-50"
                   >
                     <BookmarkSquareIcon className="w-4 h-4" />
                     {saving ? "Saving…" : "Save Review"}
@@ -590,7 +590,7 @@ export default function ScriptReviewUI({ fetchBaseline = false, isAdmin = false 
             {viewedResult && (
               <button
                 onClick={() => { setViewingId(null); setViewedResult(null); }}
-                className="text-sm text-[#1e2a38]/50 hover:text-[#1e2a38]"
+                className="text-sm text-[#2f3437]/50 hover:text-[#2f3437]"
               >
                 ← Back
               </button>
@@ -602,13 +602,13 @@ export default function ScriptReviewUI({ fetchBaseline = false, isAdmin = false 
 
       {history.length > 0 && (
         <div className="space-y-3">
-          <h2 className="text-base font-semibold text-[#1e2a38]">Saved Reviews</h2>
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <h2 className="text-base font-semibold text-[#2f3437]">Saved Reviews</h2>
+          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
             {history.map((rev, i) => (
               <div key={rev.id} className={`flex items-center gap-3 px-4 py-3 ${i < history.length - 1 ? "border-b border-gray-100" : ""}`}>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-[#1e2a38] truncate">{rev.videoTitle}</p>
-                  <p className="text-xs text-[#1e2a38]/40 mt-0.5">{fmt(rev.createdAt)}</p>
+                  <p className="text-sm font-medium text-[#2f3437] truncate">{rev.videoTitle}</p>
+                  <p className="text-xs text-[#2f3437]/40 mt-0.5">{fmt(rev.createdAt)}</p>
                 </div>
                 <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold shrink-0 ${scoreBg(rev.overallScore)}`}>
                   {Number(rev.overallScore).toFixed(1)}
@@ -618,8 +618,8 @@ export default function ScriptReviewUI({ fetchBaseline = false, isAdmin = false 
                   disabled={viewLoading && viewingId === rev.id}
                   className={`text-xs px-3 py-1.5 rounded-lg border transition-colors shrink-0 ${
                     viewingId === rev.id
-                      ? "border-[#3dc3ff] bg-[#e8f7ff] text-[#3dc3ff]"
-                      : "border-gray-200 hover:bg-gray-50 text-[#1e2a38]/70"
+                      ? "border-[#6ba3c7] bg-[#e8f7ff] text-[#6ba3c7]"
+                      : "border-gray-200 hover:bg-gray-50 text-[#2f3437]/70"
                   }`}
                 >
                   {viewLoading && viewingId === rev.id ? "Loading…" : viewingId === rev.id ? "Close" : "View"}

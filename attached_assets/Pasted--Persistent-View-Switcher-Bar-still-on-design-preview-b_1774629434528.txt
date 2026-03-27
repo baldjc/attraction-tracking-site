@@ -1,0 +1,45 @@
+  ▎ Persistent View Switcher Bar (still on          
+  design-preview branch)                            
+                                                    
+  ▎ The red "MEMBER VIEW" banner at the top of the  
+  sidebar currently only shows when impersonating a 
+  member. I want it to ALWAYS be visible as a view  
+  switcher — for both admin mode and member         
+  impersonation mode.                            
+
+  ▎ When viewing as Admin (default):                
+  ▎ - Bar shows at the top of the sidebar, always 
+  visible                                           
+  ▎ - Background: soft brand blue #6ba3c7 (or 
+  lighter variant like #d0e4f0 with dark text)      
+  ▎ - Label: "ADMIN VIEW" with the admin's name
+  ▎ - Dropdown to switch to any member's view (same 
+  member picker that exists now)                    
+                                                    
+  ▎ When impersonating a Member:                    
+  ▎ - Bar turns red (keep the current red styling, 
+  e.g. #c0392b or #e63946)                          
+  ▎ - Label: "MEMBER VIEW" with the member's name
+  ▎ - "Exit" button to return to admin view (same as
+   current behaviour)                               
+  ▎ - Dropdown to switch directly to a different 
+  member without exiting first                      
+                  
+  ▎ Behaviour:                                      
+  ▎ - The bar is always the FIRST element in the 
+  sidebar, above the logo                           
+  ▎ - It should be compact — one row with the label 
+  + name + dropdown arrow                           
+  ▎ - Clicking the dropdown opens the existing 
+  member picker modal                               
+  ▎ - When in admin view and you select a member, it
+   switches to member view (bar turns red)          
+  ▎ - When in member view and you click "Exit", it 
+  returns to admin view (bar turns blue)            
+  ▎ - Editors should see the same bar but only be 
+  able to pick members they have access to          
+  ▎ - Regular members (non-admin, non-editor) should
+   NOT see this bar at all                          
+                  
+  ▎ Stay on design-preview branch. Do NOT merge to  
+  main.

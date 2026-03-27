@@ -12,7 +12,7 @@ interface Props {
   colors?: string[];
 }
 
-const DEFAULT_COLORS = ["#3dc3ff", "#1e2a38", "#ff0033", "#22c55e", "#f59e0b", "#a78bfa"];
+const DEFAULT_COLORS = ["#6ba3c7", "#2f3437", "#ff0033", "#22c55e", "#f59e0b", "#a78bfa"];
 
 export function DonutChart({ data, colors = DEFAULT_COLORS }: Props) {
   const nonZero = data.filter((d) => d.value > 0);
@@ -36,7 +36,7 @@ export function DonutChart({ data, colors = DEFAULT_COLORS }: Props) {
           ))}
         </Pie>
         <Tooltip
-          contentStyle={{ background: "#fff", border: "1px solid #1e2a3815", borderRadius: 10, fontSize: 12 }}
+          contentStyle={{ background: "#fff", border: "1px solid #2f343715", borderRadius: 10, fontSize: 12 }}
         />
         <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12 }} />
       </PieChart>

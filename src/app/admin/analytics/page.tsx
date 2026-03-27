@@ -59,12 +59,12 @@ const TIER_LABELS: Record<string, string> = {
 };
 
 // ── Design system class helpers ──────────────────────────────────────────────
-const txt   = "text-[#1e2a38] dark:text-[#e2e8f0]";
-const muted = "text-[#1e2a38]/60 dark:text-[#94a3b8]";
-const dim   = "text-[#1e2a38]/30 dark:text-[#64748b]";
-const card  = "bg-white dark:bg-[#242b3d] rounded-xl border border-gray-200 dark:border-[#2d3748] shadow-sm";
-const thCls = "px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#1e2a38]/50 dark:text-[#94a3b8] bg-gray-50 dark:bg-[#1e2530] whitespace-nowrap";
-const rowHover = "border-b border-gray-100 dark:border-[#2d3748]/60 hover:bg-gray-50 dark:hover:bg-[#1a1f2e] transition-colors";
+const txt   = "text-[#2f3437] dark:text-[#e2e8f0]";
+const muted = "text-[#2f3437]/60 dark:text-[#94a3b8]";
+const dim   = "text-[#2f3437]/30 dark:text-[#64748b]";
+const card  = "bg-white dark:bg-[#1a1a1a] rounded-lg border border-gray-200 dark:border-[#2a2a2a]";
+const thCls = "px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#2f3437]/50 dark:text-[#94a3b8] bg-gray-50 dark:bg-[#1e2530] whitespace-nowrap";
+const rowHover = "border-b border-gray-100 dark:border-[#2a2a2a]/60 hover:bg-gray-50 dark:hover:bg-[#1e2a38] transition-colors";
 
 function scoreColor(score: number | null) {
   if (score === null) return muted;
@@ -183,9 +183,9 @@ export default function AnalyticsPage() {
   function SortIcon({ col }: { col: SortKey }) {
     if (sortKey !== col) return <span className={`${dim} ml-1`}>↕</span>;
     return sortDir === "asc" ? (
-      <ChevronUpIcon className="w-3 h-3 inline ml-1 text-[#3dc3ff]" />
+      <ChevronUpIcon className="w-3 h-3 inline ml-1 text-[#6ba3c7]" />
     ) : (
-      <ChevronDownIcon className="w-3 h-3 inline ml-1 text-[#3dc3ff]" />
+      <ChevronDownIcon className="w-3 h-3 inline ml-1 text-[#6ba3c7]" />
     );
   }
 
@@ -228,7 +228,7 @@ export default function AnalyticsPage() {
         <button
           onClick={handleRefreshAll}
           disabled={syncing}
-          className="flex items-center gap-2 bg-[#3dc3ff] hover:bg-[#29b0f0] disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg transition"
+          className="flex items-center gap-2 bg-[#6ba3c7] hover:bg-[#29b0f0] disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg transition"
         >
           <ArrowPathIcon className={`w-4 h-4 ${syncing ? "animate-spin" : ""}`} />
           {syncing ? "Syncing…" : "Refresh All Channels"}
@@ -236,7 +236,7 @@ export default function AnalyticsPage() {
       </div>
 
       {syncMsg && (
-        <div className="bg-[#3dc3ff]/10 border border-[#3dc3ff]/30 text-[#1e2a38] dark:text-[#e2e8f0] text-sm px-4 py-3 rounded-lg">
+        <div className="bg-[#6ba3c7]/10 border border-[#6ba3c7]/30 text-[#2f3437] dark:text-[#e2e8f0] text-sm px-4 py-3 rounded-lg">
           {syncMsg}
         </div>
       )}
@@ -246,7 +246,7 @@ export default function AnalyticsPage() {
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
           <div className={`${card} p-4`}>
             <div className="flex items-center gap-3 mb-3">
-              <VideoCameraIcon className="w-5 h-5 text-[#3dc3ff]" />
+              <VideoCameraIcon className="w-5 h-5 text-[#6ba3c7]" />
               <span className={`text-xs uppercase tracking-wide font-semibold ${muted}`}>Videos This Week</span>
             </div>
             <div className={`text-3xl font-bold ${txt}`}>{cards.videosThisWeek}</div>
@@ -267,7 +267,7 @@ export default function AnalyticsPage() {
           </div>
           <div className={`${card} p-4`}>
             <div className="flex items-center gap-3 mb-3">
-              <CursorArrowRaysIcon className="w-5 h-5 text-[#3dc3ff]" />
+              <CursorArrowRaysIcon className="w-5 h-5 text-[#6ba3c7]" />
               <span className={`text-xs uppercase tracking-wide font-semibold ${muted}`}>Link Clicks (7d)</span>
             </div>
             <div className={`text-3xl font-bold ${txt}`}>{cards.linkClicks7d}</div>
@@ -307,7 +307,7 @@ export default function AnalyticsPage() {
                     </div>
                   )}
                   <div className="p-3 flex flex-col gap-2 flex-1">
-                    <div className="text-xs text-[#3dc3ff] font-medium truncate">{video.user.fullName || "Unknown"}</div>
+                    <div className="text-xs text-[#6ba3c7] font-medium truncate">{video.user.fullName || "Unknown"}</div>
                     <div className={`text-sm ${txt} font-medium line-clamp-2 leading-snug`}>{video.title}</div>
                     <div className={`text-xs ${dim}`}>{fmtDate(video.publishedAt)} · {video.viewCount.toLocaleString()} views</div>
                     <div className="mt-auto">
@@ -324,7 +324,7 @@ export default function AnalyticsPage() {
                         <button
                           onClick={() => handleRunAudit(video)}
                           disabled={runningAudit[video.id]}
-                          className="w-full text-xs bg-[#3dc3ff] hover:bg-[#29b0f0] disabled:opacity-60 text-white rounded-lg px-3 py-1.5 transition"
+                          className="w-full text-xs bg-[#6ba3c7] hover:bg-[#29b0f0] disabled:opacity-60 text-white rounded-lg px-3 py-1.5 transition"
                         >
                           {runningAudit[video.id] ? "Starting…" : "Run Audit"}
                         </button>
@@ -349,8 +349,8 @@ export default function AnalyticsPage() {
                 onClick={() => { setStatusFilter(s); setPage(1); }}
                 className={`text-xs px-3 py-1.5 rounded-lg border transition ${
                   statusFilter === s
-                    ? "bg-[#3dc3ff] border-[#3dc3ff] text-white"
-                    : "bg-white dark:bg-[#242b3d] border-gray-200 dark:border-[#2d3748] text-[#1e2a38]/60 dark:text-[#94a3b8] hover:border-[#3dc3ff]/50"
+                    ? "bg-[#6ba3c7] border-[#6ba3c7] text-white"
+                    : "bg-white dark:bg-[#1a1a1a] border-gray-200 dark:border-[#2a2a2a] text-[#2f3437]/60 dark:text-[#94a3b8] hover:border-[#6ba3c7]/50"
                 }`}
               >
                 {s === "all" ? "All" : s === "at_risk" ? "At Risk" : s.charAt(0).toUpperCase() + s.slice(1)}
@@ -359,7 +359,7 @@ export default function AnalyticsPage() {
             <select
               value={tierFilter}
               onChange={(e) => { setTierFilter(e.target.value); setPage(1); }}
-              className={`text-xs bg-white dark:bg-[#242b3d] border border-gray-200 dark:border-[#2d3748] ${txt} rounded-lg px-3 py-1.5 ml-2 focus:outline-none focus:border-[#3dc3ff]`}
+              className={`text-xs bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#2a2a2a] ${txt} rounded-lg px-3 py-1.5 ml-2 focus:outline-none focus:border-[#6ba3c7]`}
             >
               <option value="all">All Tiers</option>
               {Object.entries(TIER_LABELS).map(([v, l]) => (
@@ -404,7 +404,7 @@ export default function AnalyticsPage() {
                   paginated.map((m) => (
                     <tr key={m.id} className={rowHover}>
                       <td className="px-4 py-3">
-                        <Link href={`/admin/analytics/members/${m.id}`} className="text-[#3dc3ff] hover:underline font-medium">
+                        <Link href={`/admin/analytics/members/${m.id}`} className="text-[#6ba3c7] hover:underline font-medium">
                           {m.fullName || "Unknown"}
                         </Link>
                         <div className={`text-xs ${dim}`}>{TIER_LABELS[m.serviceTier] || m.serviceTier}</div>
@@ -428,7 +428,7 @@ export default function AnalyticsPage() {
           </div>
 
           {/* Pagination */}
-          <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 dark:border-[#2d3748]">
+          <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 dark:border-[#2a2a2a]">
             <span className={`text-xs ${dim}`}>
               Showing {filtered.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length}
             </span>
@@ -436,14 +436,14 @@ export default function AnalyticsPage() {
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
-                className={`text-xs px-3 py-1.5 bg-gray-100 dark:bg-[#1e2530] border border-gray-200 dark:border-[#2d3748] rounded-lg disabled:opacity-40 hover:bg-gray-200 dark:hover:bg-[#2d3748] transition ${muted}`}
+                className={`text-xs px-3 py-1.5 bg-gray-100 dark:bg-[#1e2530] border border-gray-200 dark:border-[#2a2a2a] rounded-lg disabled:opacity-40 hover:bg-gray-200 dark:hover:bg-[#2a2a2a] transition ${muted}`}
               >
                 Previous
               </button>
               <button
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
-                className={`text-xs px-3 py-1.5 bg-gray-100 dark:bg-[#1e2530] border border-gray-200 dark:border-[#2d3748] rounded-lg disabled:opacity-40 hover:bg-gray-200 dark:hover:bg-[#2d3748] transition ${muted}`}
+                className={`text-xs px-3 py-1.5 bg-gray-100 dark:bg-[#1e2530] border border-gray-200 dark:border-[#2a2a2a] rounded-lg disabled:opacity-40 hover:bg-gray-200 dark:hover:bg-[#2a2a2a] transition ${muted}`}
               >
                 Next
               </button>

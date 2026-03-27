@@ -122,8 +122,8 @@ export default function AdminCampaignDetailPage({ params }: { params: Promise<{ 
     setTimeout(() => setCopied(null), 2000);
   }
 
-  if (loading) return <div className="text-center py-16 text-[#1e2a38]/40">Loading...</div>;
-  if (!campaign) return <div className="text-center py-16 text-[#1e2a38]/40">Campaign not found.</div>;
+  if (loading) return <div className="text-center py-16 text-[#2f3437]/40">Loading...</div>;
+  if (!campaign) return <div className="text-center py-16 text-[#2f3437]/40">Campaign not found.</div>;
 
   const src = SOURCE_LABELS[campaign.sourceType] ?? SOURCE_LABELS.OTHER;
   const memberName = campaign.member?.fullName ?? campaign.member?.email ?? "—";
@@ -140,7 +140,7 @@ export default function AdminCampaignDetailPage({ params }: { params: Promise<{ 
   return (
     <div className="space-y-6">
       <div className="mb-2">
-        <Link href="/admin/campaigns" className="text-sm text-[#1e2a38]/40 hover:text-[#1e2a38] transition-colors">
+        <Link href="/admin/campaigns" className="text-sm text-[#2f3437]/40 hover:text-[#2f3437] transition-colors">
           ← Campaigns
         </Link>
       </div>
@@ -149,20 +149,20 @@ export default function AdminCampaignDetailPage({ params }: { params: Promise<{ 
       <div className="flex items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <h1 className="text-2xl font-bold text-[#1e2a38]">{campaign.name}</h1>
+            <h1 className="text-2xl font-bold text-[#2f3437]">{campaign.name}</h1>
             <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${src.color}`}>{src.label}</span>
           </div>
-          <p className="text-sm text-[#1e2a38]/50">
-            Member: <span className="text-[#1e2a38]/80">{memberName}</span>
+          <p className="text-sm text-[#2f3437]/50">
+            Member: <span className="text-[#2f3437]/80">{memberName}</span>
             {campaign.member?.email && campaign.member.fullName && (
-              <> · <span className="text-[#1e2a38]/40">{campaign.member.email}</span></>
+              <> · <span className="text-[#2f3437]/40">{campaign.member.email}</span></>
             )}
           </p>
           <a
             href={campaign.destinationUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm text-[#3dc3ff] hover:underline"
+            className="text-sm text-[#6ba3c7] hover:underline"
           >
             {campaign.destinationUrl}
           </a>
@@ -173,64 +173,64 @@ export default function AdminCampaignDetailPage({ params }: { params: Promise<{ 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {isEmailNewsletter ? (
           <>
-            <div className="bg-white border border-[#1e2a38]/10 rounded-xl p-4 text-center">
-              <div className="text-xl font-bold text-[#1e2a38]">{campaign.totalClicks.toLocaleString()}</div>
-              <div className="text-xs text-[#1e2a38]/40 mt-0.5">Clicks</div>
+            <div className="bg-white border border-[#2f3437]/10 rounded-lg p-4 text-center">
+              <div className="text-xl font-bold text-[#2f3437]">{campaign.totalClicks.toLocaleString()}</div>
+              <div className="text-xs text-[#2f3437]/40 mt-0.5">Clicks</div>
             </div>
-            <div className="bg-white border border-[#1e2a38]/10 rounded-xl p-4 text-center">
-              <div className="text-xl font-bold text-[#3dc3ff]">{campaign.totalUniqueClicks.toLocaleString()}</div>
-              <div className="text-xs text-[#1e2a38]/40 mt-0.5">Unique Clicks</div>
+            <div className="bg-white border border-[#2f3437]/10 rounded-lg p-4 text-center">
+              <div className="text-xl font-bold text-[#6ba3c7]">{campaign.totalUniqueClicks.toLocaleString()}</div>
+              <div className="text-xs text-[#2f3437]/40 mt-0.5">Unique Clicks</div>
             </div>
           </>
         ) : isYoutube ? (
           <>
             {campaign.totalViews !== null && (
-              <div className="bg-white border border-[#1e2a38]/10 rounded-xl p-4 text-center">
-                <div className="text-xl font-bold text-[#1e2a38]">{campaign.totalViews.toLocaleString()}</div>
-                <div className="text-xs text-[#1e2a38]/40 mt-0.5">Views</div>
+              <div className="bg-white border border-[#2f3437]/10 rounded-lg p-4 text-center">
+                <div className="text-xl font-bold text-[#2f3437]">{campaign.totalViews.toLocaleString()}</div>
+                <div className="text-xs text-[#2f3437]/40 mt-0.5">Views</div>
               </div>
             )}
-            <div className="bg-white border border-[#1e2a38]/10 rounded-xl p-4 text-center">
-              <div className="text-xl font-bold text-[#1e2a38]">{campaign.totalClicks.toLocaleString()}</div>
-              <div className="text-xs text-[#1e2a38]/40 mt-0.5">Clicks</div>
+            <div className="bg-white border border-[#2f3437]/10 rounded-lg p-4 text-center">
+              <div className="text-xl font-bold text-[#2f3437]">{campaign.totalClicks.toLocaleString()}</div>
+              <div className="text-xs text-[#2f3437]/40 mt-0.5">Clicks</div>
             </div>
-            <div className="bg-white border border-[#1e2a38]/10 rounded-xl p-4 text-center">
-              <div className="text-xl font-bold text-[#1e2a38]">{campaign.totalLeads.toLocaleString()}</div>
-              <div className="text-xs text-[#1e2a38]/40 mt-0.5">Leads</div>
+            <div className="bg-white border border-[#2f3437]/10 rounded-lg p-4 text-center">
+              <div className="text-xl font-bold text-[#2f3437]">{campaign.totalLeads.toLocaleString()}</div>
+              <div className="text-xs text-[#2f3437]/40 mt-0.5">Leads</div>
             </div>
-            <div className="bg-white border border-[#1e2a38]/10 rounded-xl p-4 text-center">
-              <div className="text-xl font-bold text-[#3dc3ff]">{convRate}%</div>
-              <div className="text-xs text-[#1e2a38]/40 mt-0.5">Conversion Rate</div>
+            <div className="bg-white border border-[#2f3437]/10 rounded-lg p-4 text-center">
+              <div className="text-xl font-bold text-[#6ba3c7]">{convRate}%</div>
+              <div className="text-xs text-[#2f3437]/40 mt-0.5">Conversion Rate</div>
             </div>
           </>
         ) : (
           <>
-            <div className="bg-white border border-[#1e2a38]/10 rounded-xl p-4 text-center">
-              <div className="text-xl font-bold text-[#1e2a38]">{campaign.totalClicks.toLocaleString()}</div>
-              <div className="text-xs text-[#1e2a38]/40 mt-0.5">Clicks</div>
+            <div className="bg-white border border-[#2f3437]/10 rounded-lg p-4 text-center">
+              <div className="text-xl font-bold text-[#2f3437]">{campaign.totalClicks.toLocaleString()}</div>
+              <div className="text-xs text-[#2f3437]/40 mt-0.5">Clicks</div>
             </div>
-            <div className="bg-white border border-[#1e2a38]/10 rounded-xl p-4 text-center">
-              <div className="text-xl font-bold text-[#1e2a38]">{campaign.totalLeads.toLocaleString()}</div>
-              <div className="text-xs text-[#1e2a38]/40 mt-0.5">Leads</div>
+            <div className="bg-white border border-[#2f3437]/10 rounded-lg p-4 text-center">
+              <div className="text-xl font-bold text-[#2f3437]">{campaign.totalLeads.toLocaleString()}</div>
+              <div className="text-xs text-[#2f3437]/40 mt-0.5">Leads</div>
             </div>
-            <div className="bg-white border border-[#1e2a38]/10 rounded-xl p-4 text-center">
-              <div className="text-xl font-bold text-[#3dc3ff]">{convRate}%</div>
-              <div className="text-xs text-[#1e2a38]/40 mt-0.5">Conversion Rate</div>
+            <div className="bg-white border border-[#2f3437]/10 rounded-lg p-4 text-center">
+              <div className="text-xl font-bold text-[#6ba3c7]">{convRate}%</div>
+              <div className="text-xs text-[#2f3437]/40 mt-0.5">Conversion Rate</div>
             </div>
           </>
         )}
       </div>
 
       {/* Analytics Chart */}
-      <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-5">
+      <div className="bg-white border border-[#2f3437]/10 rounded-lg p-5">
         <div className="flex items-center justify-between mb-5">
-          <h2 className="font-semibold text-[#1e2a38]">Analytics</h2>
+          <h2 className="font-semibold text-[#2f3437]">Analytics</h2>
           <div className="flex gap-1">
             {PERIODS.map((p) => (
               <button
                 key={p.value}
                 onClick={() => setPeriod(p.value)}
-                className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${period === p.value ? "bg-[#1e2a38] text-white" : "text-[#1e2a38]/50 hover:text-[#1e2a38]"}`}
+                className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${period === p.value ? "bg-[#111] text-white" : "text-[#2f3437]/50 hover:text-[#2f3437]"}`}
               >
                 {p.label}
               </button>
@@ -238,12 +238,12 @@ export default function AdminCampaignDetailPage({ params }: { params: Promise<{ 
           </div>
         </div>
         {analyticsLoading ? (
-          <div className="h-[220px] bg-[#1e2a38]/5 rounded-xl animate-pulse" />
+          <div className="h-[220px] bg-[#111]/5 rounded-lg animate-pulse" />
         ) : !hasAnalyticsData ? (
           <ChartEmpty />
         ) : (
           <div>
-            <p className="text-xs font-medium text-[#1e2a38]/50 mb-3">
+            <p className="text-xs font-medium text-[#2f3437]/50 mb-3">
               {isEmailNewsletter ? "Clicks Per Day" : "Clicks & Leads Per Day"}
             </p>
             <DailyLineChart data={analytics!.daily} hideLeads={isEmailNewsletter} />
@@ -252,9 +252,9 @@ export default function AdminCampaignDetailPage({ params }: { params: Promise<{ 
       </div>
 
       {/* Click Map + Location Table */}
-      <div className="bg-white border border-[#1e2a38]/10 rounded-2xl p-5">
+      <div className="relative z-0 bg-white border border-[#2f3437]/10 rounded-lg p-5">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-semibold text-[#1e2a38]">Click Map</h2>
+          <h2 className="font-semibold text-[#2f3437]">Click Map</h2>
           {geoData && geoData.links.length > 1 && (
             <select
               value={geoLinkFilter}
@@ -263,7 +263,7 @@ export default function AdminCampaignDetailPage({ params }: { params: Promise<{ 
                 setGeoLinkFilter(val);
                 loadGeoData(val === "all" ? undefined : val);
               }}
-              className="text-xs border border-[#1e2a38]/20 rounded-lg px-2 py-1.5 text-[#1e2a38]/60 focus:outline-none"
+              className="text-xs border border-[#2f3437]/20 rounded-lg px-2 py-1.5 text-[#2f3437]/60 focus:outline-none"
             >
               <option value="all">All Links</option>
               {geoData.links.map((l) => (
@@ -273,21 +273,21 @@ export default function AdminCampaignDetailPage({ params }: { params: Promise<{ 
           )}
         </div>
         <ClickMap markers={filteredMarkers} height={400} />
-        <div className="mt-5 border-t border-[#1e2a38]/10 pt-4">
-          <h3 className="text-sm font-semibold text-[#1e2a38] mb-3">Location Breakdown</h3>
+        <div className="mt-5 border-t border-[#2f3437]/10 pt-4">
+          <h3 className="text-sm font-semibold text-[#2f3437] mb-3">Location Breakdown</h3>
           <LocationTable locations={filteredLocations} isEmail={isEmailNewsletter} />
         </div>
       </div>
 
       {/* Tracking Links */}
-      <div className="bg-white border border-[#1e2a38]/10 rounded-2xl overflow-hidden">
-        <div className="px-5 py-4 border-b border-[#1e2a38]/10">
-          <h2 className="font-semibold text-[#1e2a38]">Tracking Links ({campaign.links.length})</h2>
+      <div className="bg-white border border-[#2f3437]/10 rounded-lg overflow-hidden">
+        <div className="px-5 py-4 border-b border-[#2f3437]/10">
+          <h2 className="font-semibold text-[#2f3437]">Tracking Links ({campaign.links.length})</h2>
         </div>
         {campaign.links.length === 0 ? (
-          <div className="p-10 text-center text-[#1e2a38]/40 text-sm">No tracking links yet.</div>
+          <div className="p-10 text-center text-[#2f3437]/40 text-sm">No tracking links yet.</div>
         ) : (
-          <div className="divide-y divide-[#1e2a38]/5">
+          <div className="divide-y divide-[#2f3437]/5">
             {campaign.links.map((link) => (
               <div key={link.id} className="p-5">
                 <div className="flex items-start gap-3">
@@ -299,19 +299,19 @@ export default function AdminCampaignDetailPage({ params }: { params: Promise<{ 
                     />
                   )}
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-[#1e2a38] text-sm">{link.name}</p>
+                    <p className="font-medium text-[#2f3437] text-sm">{link.name}</p>
                     <div className="mt-2 space-y-1.5">
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-semibold text-[#1e2a38]/40 uppercase tracking-wide w-16 flex-shrink-0">Direct</span>
-                        <p className="text-xs text-[#1e2a38]/50 truncate flex-1 font-mono">{link.trackedUrl}</p>
-                        <button onClick={() => copy(link.trackedUrl, `${link.id}-direct`)} className="text-xs text-[#3dc3ff] hover:text-[#2bb0ec] flex-shrink-0 font-medium">
+                        <span className="text-[10px] font-semibold text-[#2f3437]/40 uppercase tracking-wide w-16 flex-shrink-0">Direct</span>
+                        <p className="text-xs text-[#2f3437]/50 truncate flex-1 font-mono">{link.trackedUrl}</p>
+                        <button onClick={() => copy(link.trackedUrl, `${link.id}-direct`)} className="text-xs text-[#6ba3c7] hover:text-[#2bb0ec] flex-shrink-0 font-medium">
                           {copied === `${link.id}-direct` ? "Copied!" : "Copy"}
                         </button>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-semibold text-[#1e2a38]/40 uppercase tracking-wide w-16 flex-shrink-0">Short</span>
-                        <p className="text-xs text-[#1e2a38]/50 truncate flex-1 font-mono">https://members.attractionbyvideo.com/r/{link.refCode}</p>
-                        <button onClick={() => copy(`https://members.attractionbyvideo.com/r/${link.refCode}`, `${link.id}-short`)} className="text-xs text-[#3dc3ff] hover:text-[#2bb0ec] flex-shrink-0 font-medium">
+                        <span className="text-[10px] font-semibold text-[#2f3437]/40 uppercase tracking-wide w-16 flex-shrink-0">Short</span>
+                        <p className="text-xs text-[#2f3437]/50 truncate flex-1 font-mono">https://members.attractionbyvideo.com/r/{link.refCode}</p>
+                        <button onClick={() => copy(`https://members.attractionbyvideo.com/r/${link.refCode}`, `${link.id}-short`)} className="text-xs text-[#6ba3c7] hover:text-[#2bb0ec] flex-shrink-0 font-medium">
                           {copied === `${link.id}-short` ? "Copied!" : "Copy"}
                         </button>
                       </div>
@@ -321,21 +321,21 @@ export default function AdminCampaignDetailPage({ params }: { params: Promise<{ 
                 <div className="grid grid-cols-3 gap-3 mt-3 text-center">
                   {link.youtubeVideoId && (
                     <div>
-                      <div className="text-sm font-semibold text-[#1e2a38]">{link.youtubeViewCount.toLocaleString()}</div>
-                      <div className="text-xs text-[#1e2a38]/40">Views</div>
+                      <div className="text-sm font-semibold text-[#2f3437]">{link.youtubeViewCount.toLocaleString()}</div>
+                      <div className="text-xs text-[#2f3437]/40">Views</div>
                     </div>
                   )}
                   <div>
-                    <div className="text-sm font-semibold text-[#1e2a38]">{link.clicks}</div>
-                    <div className="text-xs text-[#1e2a38]/40">Clicks</div>
+                    <div className="text-sm font-semibold text-[#2f3437]">{link.clicks}</div>
+                    <div className="text-xs text-[#2f3437]/40">Clicks</div>
                   </div>
                   <div>
-                    <div className="text-sm font-semibold text-[#1e2a38]">{link.leads}</div>
-                    <div className="text-xs text-[#1e2a38]/40">Leads</div>
+                    <div className="text-sm font-semibold text-[#2f3437]">{link.leads}</div>
+                    <div className="text-xs text-[#2f3437]/40">Leads</div>
                   </div>
                   <div>
-                    <div className="text-sm font-semibold text-[#3dc3ff]">{link.conversionRate}%</div>
-                    <div className="text-xs text-[#1e2a38]/40">Conv. Rate</div>
+                    <div className="text-sm font-semibold text-[#6ba3c7]">{link.conversionRate}%</div>
+                    <div className="text-xs text-[#2f3437]/40">Conv. Rate</div>
                   </div>
                 </div>
               </div>

@@ -20,7 +20,7 @@ export default async function AdminLayout({
   }
 
   return (
-    <div className="min-h-screen bg-[#f1f1ef] dark:bg-[#1a1f2e]">
+    <div className="min-h-screen bg-[#f7f6f3] dark:bg-[#0f1419]">
       <div className="print:hidden">
         <Sidebar
           role={role}
@@ -30,7 +30,9 @@ export default async function AdminLayout({
       </div>
       <main className="lg:pl-[260px] print:pl-0">
         <div className="pt-14 lg:pt-0 print:pt-0">
-          <div className="p-6 lg:p-8 print:p-0">{children}</div>
+          <div className="p-6 lg:p-8 print:p-0">
+            <div className="animate-fade-in-up">{children}</div>
+          </div>
         </div>
       </main>
     </div>

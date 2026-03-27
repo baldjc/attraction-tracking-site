@@ -43,26 +43,26 @@ export function LinkBarChart({ data }: Props) {
   return (
     <ResponsiveContainer width="100%" height={220}>
       <BarChart data={chartData} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#1e2a3810" vertical={false} />
+        <CartesianGrid strokeDasharray="3 3" stroke="#2f343710" vertical={false} />
         <XAxis
           dataKey="name"
-          tick={{ fontSize: 11, fill: "#1e2a3860" }}
+          tick={{ fontSize: 11, fill: "#2f343760" }}
           axisLine={false}
           tickLine={false}
         />
         <YAxis
-          tick={{ fontSize: 11, fill: "#1e2a3860" }}
+          tick={{ fontSize: 11, fill: "#2f343760" }}
           axisLine={false}
           tickLine={false}
           allowDecimals={false}
         />
         <Tooltip
-          contentStyle={{ background: "#fff", border: "1px solid #1e2a3815", borderRadius: 10, fontSize: 12 }}
+          contentStyle={{ background: "#fff", border: "1px solid #2f343715", borderRadius: 10, fontSize: 12 }}
         />
         <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12 }} />
         {hasViews && <Bar dataKey="Views" fill="#e0f7ff" radius={[4, 4, 0, 0]} />}
-        <Bar dataKey="Clicks" fill="#3dc3ff" radius={[4, 4, 0, 0]} />
-        <Bar dataKey="Leads" fill="#1e2a38" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="Clicks" fill="#6ba3c7" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="Leads" fill="#2f3437" radius={[4, 4, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
   );

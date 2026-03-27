@@ -53,24 +53,24 @@ export default function ContentEnginePage() {
 
   if (state === "loading") {
     return (
-      <div className="min-h-screen bg-[#f1f1ef] flex items-center justify-center">
-        <div className="text-[#1e2a38]/40 text-sm animate-pulse">Loading Content Engine...</div>
+      <div className="min-h-screen bg-[#f7f6f3] flex items-center justify-center">
+        <div className="text-[#2f3437]/40 text-sm animate-pulse">Loading Content Engine...</div>
       </div>
     );
   }
 
   if (state === "no-avatar") {
     return (
-      <div className="min-h-screen bg-[#f1f1ef] flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl border border-[#1e2a38]/10 shadow-sm p-8 max-w-sm w-full text-center">
+      <div className="min-h-screen bg-[#f7f6f3] flex items-center justify-center p-4">
+        <div className="bg-white rounded-lg border border-[#2f3437]/10 p-8 max-w-sm w-full text-center">
           <p className="text-3xl mb-4">🎯</p>
-          <h2 className="font-bold text-[#1e2a38] text-lg mb-2">Build your avatar first</h2>
-          <p className="text-sm text-[#1e2a38]/60 mb-6">
+          <h2 className="font-bold text-[#2f3437] text-lg mb-2">Build your avatar first</h2>
+          <p className="text-sm text-[#2f3437]/60 mb-6">
             Your Content Engine needs an avatar to work. Build yours now — it only takes a few minutes and powers every AI tool.
           </p>
           <Link
             href="/member/ai-tools/avatar-architect"
-            className="inline-block bg-[#3dc3ff] hover:bg-[#2bb0ec] text-white font-semibold text-sm px-6 py-2.5 rounded-lg transition-colors"
+            className="inline-block bg-[#6ba3c7] hover:bg-[#2bb0ec] text-white font-semibold text-sm px-6 py-2.5 rounded-lg transition-colors"
           >
             Build your avatar →
           </Link>
@@ -81,7 +81,7 @@ export default function ContentEnginePage() {
 
   if (state === "niche-setup") {
     return (
-      <div className="min-h-screen bg-[#f1f1ef] flex items-center justify-center p-4">
+      <div className="min-h-screen bg-[#f7f6f3] flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           <NicheSetup
             onSaved={(niche, city) => {
@@ -97,7 +97,7 @@ export default function ContentEnginePage() {
   const themes = (avatarData?.contentThemes ?? []) as Array<unknown>;
 
   return (
-    <div className="min-h-screen bg-[#f1f1ef]">
+    <div className="min-h-screen bg-[#f7f6f3]">
       <div className="max-w-4xl mx-auto px-4 py-8">
         <ThemeDashboard
           themes={themes as never}
