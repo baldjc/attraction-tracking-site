@@ -57,7 +57,7 @@ async function requireAdmin() {
 export async function GET() {
   if (!await requireAdmin()) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const lessons = await prisma.courseLesson.findMany({
+  const lessons = await prisma.fathomLesson.findMany({
     orderBy: [{ sessionNumber: "asc" }, { lessonNumber: "asc" }],
   });
 
@@ -65,7 +65,7 @@ export async function GET() {
   if (lessons.length === 0) {
     const seeded = await prisma.$transaction(
       SEED_LESSONS.map((l) =>
-        prisma.courseLesson.create({
+        prisma.fathomLesson.create({
           data: { ...l, fullTranscript: "" },
         })
       )
@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "title, lessonNumber, and sessionNumber are required" }, { status: 400 });
   }
 
-  const lesson = await prisma.courseLesson.create({
+  const lesson = await prisma.fathomLesson.create({
     data: { title, lessonNumber, sessionNumber, skoolUrl: skoolUrl ?? "", principles: principles ?? [], fullTranscript: fullTranscript ?? "" },
   });
 

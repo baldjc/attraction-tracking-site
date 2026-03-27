@@ -14,7 +14,7 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
   if (!await requireAdmin()) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { id } = await params;
 
-  const lesson = await prisma.courseLesson.findUnique({ where: { id } });
+  const lesson = await prisma.fathomLesson.findUnique({ where: { id } });
   if (!lesson) return NextResponse.json({ error: "Not found" }, { status: 404 });
   if (!lesson.fullTranscript.trim()) return NextResponse.json({ error: "No transcript to process" }, { status: 400 });
 

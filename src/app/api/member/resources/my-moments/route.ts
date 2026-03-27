@@ -23,7 +23,7 @@ export async function GET() {
       ? prisma.qACall.findMany({ where: { id: { in: callIds } }, select: { id: true, title: true, callDate: true, fathomShareUrl: true } })
       : [],
     lessonIds.length > 0
-      ? prisma.courseLesson.findMany({ where: { id: { in: lessonIds } }, select: { id: true, title: true, lessonNumber: true, skoolUrl: true } })
+      ? prisma.fathomLesson.findMany({ where: { id: { in: lessonIds } }, select: { id: true, title: true, lessonNumber: true, skoolUrl: true } })
       : [],
   ]);
 

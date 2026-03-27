@@ -52,7 +52,7 @@ export async function GET(req: NextRequest) {
 
   const [lessons, calls] = await Promise.all([
     lessonIds.length > 0
-      ? prisma.courseLesson.findMany({ where: { id: { in: lessonIds } }, select: { id: true, title: true, lessonNumber: true, skoolUrl: true } })
+      ? prisma.fathomLesson.findMany({ where: { id: { in: lessonIds } }, select: { id: true, title: true, lessonNumber: true, skoolUrl: true } })
       : [],
     callIds.length > 0
       ? prisma.qACall.findMany({ where: { id: { in: callIds } }, select: { id: true, title: true, callDate: true, fathomShareUrl: true } })
