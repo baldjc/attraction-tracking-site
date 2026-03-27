@@ -270,6 +270,7 @@ export default function LessonClient({
   const [homeworkItems, setHomeworkItems] = useState<{ label: string; completed: boolean }[]>([]);
   const [completed, setCompleted] = useState(false);
   const [markingComplete, setMarkingComplete] = useState(false);
+  const [justCompleted, setJustCompleted] = useState(false);
 
   useEffect(() => {
     fetch(`/api/member/academy/lessons/${lessonSlug}`)
@@ -297,11 +298,16 @@ export default function LessonClient({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ response }),
       });
-      setSaveStatus(res.ok ? "saved" : "error");
-      setTimeout(() => setSaveStatus("idle"), 2000);
+      if (res.ok) {
+        setSaveStatus("saved");
+        setTimeout(() => setSaveStatus("idle"), 2500);
+      } else {
+        setSaveStatus("error");
+        setTimeout(() => setSaveStatus("idle"), 5000);
+      }
     } catch {
       setSaveStatus("error");
-      setTimeout(() => setSaveStatus("idle"), 2000);
+      setTimeout(() => setSaveStatus("idle"), 5000);
     }
   }, []);
 
@@ -329,6 +335,10 @@ export default function LessonClient({
         body: JSON.stringify({ completed: next }),
       });
       setCompleted(next);
+      if (next) {
+        setJustCompleted(true);
+        setTimeout(() => setJustCompleted(false), 700);
+      }
     } finally {
       setMarkingComplete(false);
     }
@@ -472,8 +482,8 @@ export default function LessonClient({
               "text-[#2f3437]/20 dark:text-white/20"
             }`}>
               {saveStatus === "saving" && "Saving…"}
-              {saveStatus === "saved" && "All changes saved"}
-              {saveStatus === "error" && "Error saving"}
+              {saveStatus === "saved" && "✓ All changes saved"}
+              {saveStatus === "error" && "⚠ Save failed — your changes may not have been saved"}
               {saveStatus === "idle" && "Auto-saves as you type"}
             </span>
           </div>
@@ -585,14 +595,14 @@ export default function LessonClient({
         <button
           onClick={toggleComplete}
           disabled={markingComplete}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50 ${
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all disabled:opacity-50 ${
             completed
               ? "bg-green-500 hover:bg-green-600 text-white"
               : "border border-[#eaeaea] dark:border-white/20 text-[#2f3437] dark:text-white hover:border-green-500 hover:text-green-600 dark:hover:text-green-400"
-          }`}
+          } ${justCompleted ? "scale-105 ring-2 ring-green-400 ring-offset-2" : ""}`}
         >
-          <CheckCircleIcon className="w-5 h-5" />
-          {completed ? "Completed!" : "Mark as Complete"}
+          <CheckCircleIcon className={`w-5 h-5 ${justCompleted ? "animate-bounce" : ""}`} />
+          {markingComplete ? "Saving…" : completed ? "Completed!" : "Mark as Complete"}
         </button>
 
         {lesson.nextLesson ? (

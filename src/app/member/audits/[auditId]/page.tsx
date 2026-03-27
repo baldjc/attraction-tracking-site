@@ -5,6 +5,13 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeftIcon, ArrowTopRightOnSquareIcon } from "@heroicons/react/24/outline";
 
+const AUDIT_KEY_TO_ACADEMY_SLUG: Record<string, string> = {
+  lead_magnet_system: "lead_magnet",
+};
+function toAcademySlug(key: string): string {
+  return AUDIT_KEY_TO_ACADEMY_SLUG[key] ?? key;
+}
+
 const PRINCIPLE_LABELS: Record<string, string> = {
   avatar_clarity: "Avatar Clarity",
   themes_over_topics: "Themes Over Topics",
@@ -70,12 +77,27 @@ export default function MemberAuditReportPage() {
   const [audit, setAudit] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [principlesWithLessons, setPrinciplesWithLessons] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetch(`/api/audits/${auditId}`)
       .then((r) => r.json())
       .then((d) => { setAudit(d.audit); setLoading(false); });
   }, [auditId]);
+
+  useEffect(() => {
+    fetch("/api/member/academy/principles")
+      .then((r) => r.json())
+      .then((d) => {
+        const slugs = new Set<string>(
+          (d.principles ?? [])
+            .filter((p: any) => p.lessonCount > 0)
+            .map((p: any) => p.slug)
+        );
+        setPrinciplesWithLessons(slugs);
+      })
+      .catch(() => {});
+  }, []);
 
   if (loading) return <div className="flex items-center justify-center h-64 text-[#2f3437]/40">Loading report…</div>;
   if (!audit) return <div className="text-center py-20 text-[#2f3437]/50">Report not found.</div>;
@@ -151,9 +173,17 @@ export default function MemberAuditReportPage() {
                     <span className="text-[#2f3437]/30 text-xs">{isOpen ? "▲" : "▼"}</span>
                   </div>
                 </button>
-                {isOpen && val.evidence && (
-                  <div className="mx-3 mb-1 px-3 py-2 bg-gray-50 rounded-lg text-xs text-[#2f3437]/70 italic">
-                    {val.evidence}
+                {isOpen && (val.evidence || principlesWithLessons.has(toAcademySlug(key))) && (
+                  <div className="mx-3 mb-1 px-3 py-2 bg-gray-50 rounded-lg text-xs text-[#2f3437]/70 space-y-1">
+                    {val.evidence && <p className="italic">{val.evidence}</p>}
+                    {principlesWithLessons.has(toAcademySlug(key)) && (
+                      <Link
+                        href={`/member/academy/principles?tag=${toAcademySlug(key)}`}
+                        className="inline-block font-semibold text-[#6ba3c7] hover:underline"
+                      >
+                        See lessons →
+                      </Link>
+                    )}
                   </div>
                 )}
               </div>
@@ -203,7 +233,16 @@ export default function MemberAuditReportPage() {
                   <span className="text-sm text-[#2f3437]">{PRINCIPLE_LABELS[key]}</span>
                   <span className={`ml-2 text-xs font-bold ${scoreBg(val.score)} px-1.5 py-0.5 rounded-full`}>{val.score.toFixed(1)}</span>
                 </div>
-                <span className="text-xs text-[#6ba3c7] font-semibold">{LEARNING_PATH[key]}</span>
+                {principlesWithLessons.has(toAcademySlug(key)) ? (
+                  <Link
+                    href={`/member/academy/principles?tag=${toAcademySlug(key)}`}
+                    className="text-xs text-[#6ba3c7] font-semibold hover:underline shrink-0"
+                  >
+                    See lessons →
+                  </Link>
+                ) : (
+                  <span className="text-xs text-[#6ba3c7] font-semibold shrink-0">{LEARNING_PATH[key] ?? "—"}</span>
+                )}
               </div>
             ))}
           </div>

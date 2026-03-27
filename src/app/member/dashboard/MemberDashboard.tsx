@@ -126,6 +126,11 @@ export default function MemberDashboard() {
   const [topVideos, setTopVideos] = useState<TopVideo[] | null>(null);
   const [videosLoading, setVideosLoading] = useState(true);
   const [noUploadsIn30Days, setNoUploadsIn30Days] = useState(false);
+  const [academyData, setAcademyData] = useState<{
+    totalLessons: number;
+    completedLessons: number;
+    continueSection: string | null;
+  } | null>(null);
 
   useEffect(() => {
     fetch("/api/member/dashboard")
@@ -142,6 +147,23 @@ export default function MemberDashboard() {
         setVideosLoading(false);
       })
       .catch(() => { setTopVideos([]); setVideosLoading(false); });
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/member/academy/sections")
+      .then((r) => r.json())
+      .then((d) => {
+        const sections = d.sections ?? [];
+        const totalLessons = sections.reduce((sum: number, s: any) => sum + s.lessonCount, 0);
+        const completedLessons = sections.reduce((sum: number, s: any) => sum + s.completedCount, 0);
+        const firstIncomplete = sections.find((s: any) => s.completedCount < s.lessonCount && s.lessonCount > 0);
+        setAcademyData({
+          totalLessons,
+          completedLessons,
+          continueSection: firstIncomplete?.slug ?? null,
+        });
+      })
+      .catch(() => {});
   }, []);
 
   const card = "bg-white dark:bg-[#1a1a1a] rounded-lg border border-gray-200 dark:border-[#2a2a2a]";
@@ -329,6 +351,59 @@ export default function MemberDashboard() {
           )}
         </Link>
       </div>
+
+      {/* Academy Card */}
+      {academyData && academyData.totalLessons > 0 && (
+        <div className={`${card} p-5`}>
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex-1 min-w-0">
+              <p className={`text-xs font-semibold uppercase tracking-wider ${muted} mb-1`}>The Foundations Library</p>
+              {academyData.completedLessons === academyData.totalLessons ? (
+                <p className="text-sm font-semibold text-green-600 dark:text-green-400">
+                  🎉 All {academyData.totalLessons} lessons complete — well done!
+                </p>
+              ) : (
+                <>
+                  <p className={`text-sm font-semibold ${txt}`}>
+                    {academyData.completedLessons}/{academyData.totalLessons} lessons complete
+                  </p>
+                  <div className="mt-2 h-1.5 bg-gray-100 dark:bg-[#0f1419] rounded-full overflow-hidden max-w-xs">
+                    <div
+                      className="h-full bg-[#6ba3c7] rounded-full transition-all"
+                      style={{ width: `${Math.round((academyData.completedLessons / academyData.totalLessons) * 100)}%` }}
+                    />
+                  </div>
+                  <p className={`text-xs ${muted} mt-1`}>
+                    {Math.round((academyData.completedLessons / academyData.totalLessons) * 100)}% complete
+                  </p>
+                </>
+              )}
+            </div>
+            {academyData.completedLessons < academyData.totalLessons && academyData.continueSection ? (
+              <Link
+                href={`/member/academy/foundations/${academyData.continueSection}`}
+                className="shrink-0 flex items-center gap-1.5 bg-[#6ba3c7] hover:bg-[#5490b5] text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+              >
+                Continue Learning →
+              </Link>
+            ) : academyData.completedLessons === academyData.totalLessons ? (
+              <Link
+                href="/member/academy"
+                className="shrink-0 text-sm font-semibold text-[#6ba3c7] hover:underline transition-colors"
+              >
+                View Academy →
+              </Link>
+            ) : (
+              <Link
+                href="/member/academy/foundations"
+                className="shrink-0 flex items-center gap-1.5 bg-[#6ba3c7] hover:bg-[#5490b5] text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+              >
+                Start Learning →
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Row 2 — Strengths/Gaps + Right panel */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">

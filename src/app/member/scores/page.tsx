@@ -13,6 +13,13 @@ import {
 } from "recharts";
 import { ArrowPathIcon } from "@heroicons/react/24/outline";
 
+const AUDIT_KEY_TO_ACADEMY_SLUG: Record<string, string> = {
+  lead_magnet_system: "lead_magnet",
+};
+function toAcademySlug(key: string): string {
+  return AUDIT_KEY_TO_ACADEMY_SLUG[key] ?? key;
+}
+
 const PRINCIPLE_LABELS: Record<string, string> = {
   avatar_clarity: "Avatar Clarity",
   themes_over_topics: "Themes Over Topics",
@@ -77,6 +84,7 @@ export default function MemberScoresPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [principlesWithLessons, setPrinciplesWithLessons] = useState<Set<string>>(new Set());
 
   function load() {
     setLoading(true);
@@ -86,6 +94,20 @@ export default function MemberScoresPage() {
   }
 
   useEffect(() => { load(); }, []);
+
+  useEffect(() => {
+    fetch("/api/member/academy/principles")
+      .then((r) => r.json())
+      .then((d) => {
+        const slugs = new Set<string>(
+          (d.principles ?? [])
+            .filter((p: any) => p.lessonCount > 0)
+            .map((p: any) => p.slug)
+        );
+        setPrinciplesWithLessons(slugs);
+      })
+      .catch(() => {});
+  }, []);
 
   const txt = "text-[#2f3437] dark:text-[#e2e8f0]";
   const muted = "text-[#2f3437]/60 dark:text-[#94a3b8]";
@@ -317,8 +339,17 @@ export default function MemberScoresPage() {
                           )}
                         </span>
                       </td>
-                      <td className={`${tdClass} text-xs ${muted}`}>
-                        {LEARNING_PATH[key] ?? "—"}
+                      <td className={`${tdClass} text-xs`}>
+                        {principlesWithLessons.has(toAcademySlug(key)) ? (
+                          <Link
+                            href={`/member/academy/principles?tag=${toAcademySlug(key)}`}
+                            className="text-[#6ba3c7] hover:underline font-medium"
+                          >
+                            See lessons →
+                          </Link>
+                        ) : (
+                          <span className={muted}>{LEARNING_PATH[key] ?? "—"}</span>
+                        )}
                       </td>
                       <td className={tdClass}>
                         <div className="flex items-center gap-2">
@@ -403,8 +434,17 @@ export default function MemberScoresPage() {
                         {val.score?.toFixed(1)}
                       </span>
                     </td>
-                    <td className={`${tdClass} text-xs text-[#6ba3c7] font-semibold`}>
-                      {LEARNING_PATH[key] ?? "—"}
+                    <td className={`${tdClass} text-xs`}>
+                      {principlesWithLessons.has(toAcademySlug(key)) ? (
+                        <Link
+                          href={`/member/academy/principles?tag=${toAcademySlug(key)}`}
+                          className="text-[#6ba3c7] font-semibold hover:underline"
+                        >
+                          See lessons →
+                        </Link>
+                      ) : (
+                        <span className="text-[#6ba3c7] font-semibold">{LEARNING_PATH[key] ?? "—"}</span>
+                      )}
                     </td>
                   </tr>
                 ))}
