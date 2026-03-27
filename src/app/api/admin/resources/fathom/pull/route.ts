@@ -24,14 +24,14 @@ export async function POST() {
   const titleFilter = (await getSetting("fathom_title_filter")) ?? "Q&A";
 
   try {
-    // Paginate through all pages to get every matching call, not just the last 2 weeks
+    // Step 1: List meetings WITHOUT transcripts (lightweight) then fetch transcripts individually on import
     const allMeetings: FathomMeeting[] = [];
     let cursor: string | null = null;
     let pageCount = 0;
-    const MAX_PAGES = 20; // safety cap
+    const MAX_PAGES = 10; // safety cap
 
     do {
-      const params = new URLSearchParams({ include_transcript: "true", limit: "50" });
+      const params = new URLSearchParams({ limit: "20" });
       if (recordingEmail) params.append("recorded_by[]", recordingEmail);
       if (cursor) params.set("cursor", cursor);
 
@@ -77,7 +77,7 @@ export async function POST() {
         alreadyImported: !!existingMap[fId],
         existingId: existingMap[fId] ?? null,
         fathomShareUrl: (m.share_url ?? m.url ?? "").split("#")[0],
-        transcript: extractTranscript(m),
+        transcript: "", // transcripts fetched individually during import
       };
     });
 
@@ -86,25 +86,6 @@ export async function POST() {
     console.error("[fathom-pull]", err);
     return NextResponse.json({ error: "Failed to connect to Fathom API" }, { status: 502 });
   }
-}
-
-function extractTranscript(m: FathomMeeting): string {
-  // Fathom returns transcript as an array of segment objects or a plain string
-  if (typeof m.transcript === "string") return m.transcript;
-  if (Array.isArray(m.transcript)) {
-    return m.transcript.map((seg: any) => {
-      // Fathom format: { speaker: { display_name: "..." }, text: "...", timestamp: "..." }
-      const speaker =
-        seg.speaker?.display_name ??
-        seg.speaker_name ??
-        (typeof seg.speaker === "string" ? seg.speaker : "") ??
-        "";
-      const text = seg.text ?? seg.content ?? "";
-      return speaker ? `${speaker}: ${text}` : text;
-    }).filter(Boolean).join("\n");
-  }
-  if (typeof m.full_transcript === "string") return m.full_transcript;
-  return "";
 }
 
 interface FathomMeeting {

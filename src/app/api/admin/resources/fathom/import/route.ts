@@ -13,8 +13,36 @@ async function requireAdmin() {
   return session.user;
 }
 
+async function getSetting(key: string): Promise<string | null> {
+  const s = await prisma.appSetting.findUnique({ where: { key } });
+  return s?.value ?? null;
+}
+
+async function fetchTranscriptFromFathom(fathomId: string, apiKey: string): Promise<string> {
+  const res = await fetch(`https://api.fathom.ai/external/v1/meetings/${fathomId}?include_transcript=true`, {
+    headers: { "X-Api-Key": apiKey },
+  });
+  if (!res.ok) {
+    throw new Error(`Fathom API error ${res.status} fetching transcript for ${fathomId}`);
+  }
+  const m = await res.json();
+  if (typeof m.transcript === "string") return m.transcript;
+  if (Array.isArray(m.transcript)) {
+    return m.transcript.map((seg: any) => {
+      const speaker = seg.speaker?.display_name ?? seg.speaker_name ?? (typeof seg.speaker === "string" ? seg.speaker : "") ?? "";
+      const text = seg.text ?? seg.content ?? "";
+      return speaker ? `${speaker}: ${text}` : text;
+    }).filter(Boolean).join("\n");
+  }
+  if (typeof m.full_transcript === "string") return m.full_transcript;
+  return "";
+}
+
 export async function POST(req: NextRequest) {
   if (!await requireAdmin()) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const apiKey = await getSetting("fathom_api_key");
+  if (!apiKey) return NextResponse.json({ error: "Fathom API key not configured." }, { status: 400 });
 
   const { calls } = await req.json() as {
     calls: Array<{
@@ -22,7 +50,7 @@ export async function POST(req: NextRequest) {
       title: string;
       callDate: string;
       fathomShareUrl: string;
-      transcript: string;
+      transcript?: string;
     }>;
   };
 
@@ -32,6 +60,12 @@ export async function POST(req: NextRequest) {
 
   for (const call of calls) {
     try {
+      // Fetch transcript individually from Fathom if not already provided
+      let transcript = call.transcript ?? "";
+      if (!transcript.trim()) {
+        transcript = await fetchTranscriptFromFathom(call.fathomId, apiKey);
+      }
+
       // Create QACall record
       const qaCall = await prisma.qACall.upsert({
         where: { fathomId: call.fathomId },
@@ -40,25 +74,25 @@ export async function POST(req: NextRequest) {
           title: call.title,
           callDate: new Date(call.callDate),
           fathomShareUrl: call.fathomShareUrl,
-          fullTranscript: call.transcript,
+          fullTranscript: transcript,
           status: "pending_review",
         },
         update: {
           title: call.title,
           fathomShareUrl: call.fathomShareUrl,
-          fullTranscript: call.transcript,
+          fullTranscript: transcript,
           status: "pending_review",
           errorMessage: null,
         },
       });
 
-      if (!call.transcript?.trim()) {
+      if (!transcript.trim()) {
         results.push({ fathomId: call.fathomId, status: "imported", momentCount: 0 });
         continue;
       }
 
       // Extract moments with Claude
-      const moments = await extractMomentsWithClaude(qaCall.id, call.transcript, call.title);
+      const moments = await extractMomentsWithClaude(qaCall.id, transcript, call.title);
 
       // Get all members for fuzzy matching
       const members = await prisma.user.findMany({
