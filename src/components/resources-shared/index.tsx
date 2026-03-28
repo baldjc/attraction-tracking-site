@@ -156,7 +156,8 @@ export function EntryCard({
   const [saving, setSaving] = useState(false);
 
   const isLesson = entry.sourceType === "course_lesson";
-  const hasVideo = !isLesson && !!entry.source?.fathomShareUrl;
+  const isFoundations = entry.sourceType === "foundations_lesson";
+  const hasVideo = !isLesson && !isFoundations && !!entry.source?.fathomShareUrl;
 
   async function toggleSave() {
     setSaving(true);
@@ -196,28 +197,46 @@ export function EntryCard({
     );
   }
 
+  const borderClass = isFoundations ? "border-teal-100" : isLesson ? "border-blue-100" : "border-violet-100";
+  const headerClass = isFoundations
+    ? "bg-teal-50 dark:bg-teal-900/10 border-teal-100 dark:border-teal-900/20"
+    : isLesson
+      ? "bg-blue-50 dark:bg-blue-900/10 border-blue-100 dark:border-blue-900/20"
+      : "bg-violet-50 dark:bg-violet-900/10 border-violet-100 dark:border-violet-900/20";
+
+  // Build academy lesson URL for foundations entries
+  const academyUrl = isFoundations && (entry as any).sectionSlug && (entry as any).lessonSlug
+    ? `/member/academy/foundations/${(entry as any).sectionSlug}/${(entry as any).lessonSlug}`
+    : null;
+
   return (
-    <div className={`bg-white dark:bg-[#1a1a1a] rounded-lg border dark:border-white/10 overflow-hidden hover:shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-shadow ${
-      isLesson ? "border-blue-100" : "border-violet-100"
-    }`}>
-      <div className={`flex items-center justify-between px-4 py-2 border-b ${
-        isLesson
-          ? "bg-blue-50 dark:bg-blue-900/10 border-blue-100 dark:border-blue-900/20"
-          : "bg-violet-50 dark:bg-violet-900/10 border-violet-100 dark:border-violet-900/20"
-      }`}>
+    <div className={`bg-white dark:bg-[#1a1a1a] rounded-lg border dark:border-white/10 overflow-hidden hover:shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-shadow ${borderClass}`}>
+      <div className={`flex items-center justify-between px-4 py-2 border-b ${headerClass}`}>
         <div className="flex items-center gap-2 min-w-0">
-          {isLesson
-            ? <AcademicCapIcon className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
-            : <VideoCameraIcon className="w-3.5 h-3.5 text-violet-500 flex-shrink-0" />
+          {isFoundations
+            ? <AcademicCapIcon className="w-3.5 h-3.5 text-teal-600 flex-shrink-0" />
+            : isLesson
+              ? <AcademicCapIcon className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
+              : <VideoCameraIcon className="w-3.5 h-3.5 text-violet-500 flex-shrink-0" />
           }
           <span className="text-xs font-medium text-[#2f3437]/60 dark:text-white/50 truncate">
-            {isLesson
-              ? entry.source ? `Lesson ${entry.source.lessonNumber} — ${entry.source.title}` : "Course Lesson"
-              : entry.source ? `Q&A Call · ${fmtDate(entry.source.callDate)}` : "Q&A Call"
+            {isFoundations
+              ? (entry as any).sectionTitle ? `Foundations · ${(entry as any).sectionTitle}` : "Foundations Library"
+              : isLesson
+                ? entry.source ? `Lesson ${entry.source.lessonNumber} — ${entry.source.title}` : "Course Lesson"
+                : entry.source ? `Q&A Call · ${fmtDate(entry.source.callDate)}` : "Q&A Call"
             }
           </span>
         </div>
         <div className="flex items-center gap-1 flex-shrink-0 ml-2">
+          {isFoundations && academyUrl && (
+            <a
+              href={academyUrl}
+              className="text-[10px] text-teal-600 hover:underline flex items-center gap-0.5"
+            >
+              View lesson <ChevronRightIcon className="w-3 h-3" />
+            </a>
+          )}
           {isLesson && entry.source?.skoolUrl && (
             <a
               href={entry.source.skoolUrl}
@@ -254,6 +273,16 @@ export function EntryCard({
         </div>
 
         <div className="flex items-center gap-2 mt-3 pt-3 border-t border-[#2f3437]/5 dark:border-white/5">
+          {isFoundations && academyUrl && (
+            <a
+              href={academyUrl}
+              className="flex items-center gap-1.5 text-xs font-semibold text-teal-600 dark:text-teal-400 hover:text-teal-700 transition-colors"
+            >
+              <AcademicCapIcon className="w-4 h-4" />
+              Go to lesson
+              <ChevronRightIcon className="w-3 h-3" />
+            </a>
+          )}
           {hasVideo && (
             <button
               onClick={() => onPlay(entry)}
@@ -271,17 +300,19 @@ export function EntryCard({
             </button>
           )}
           <div className="flex-1" />
-          <button
-            onClick={toggleSave}
-            disabled={saving}
-            title={saved ? "Remove bookmark" : "Bookmark this moment"}
-            className="p-1.5 rounded-lg hover:bg-[#111]/5 dark:hover:bg-white/5 transition-colors disabled:opacity-50"
-          >
-            {saved
-              ? <BookmarkSolid className="w-4 h-4 text-[#6ba3c7]" />
-              : <BookmarkOutline className="w-4 h-4 text-[#2f3437]/30 dark:text-white/30" />
-            }
-          </button>
+          {!isFoundations && (
+            <button
+              onClick={toggleSave}
+              disabled={saving}
+              title={saved ? "Remove bookmark" : "Bookmark this moment"}
+              className="p-1.5 rounded-lg hover:bg-[#111]/5 dark:hover:bg-white/5 transition-colors disabled:opacity-50"
+            >
+              {saved
+                ? <BookmarkSolid className="w-4 h-4 text-[#6ba3c7]" />
+                : <BookmarkOutline className="w-4 h-4 text-[#2f3437]/30 dark:text-white/30" />
+              }
+            </button>
+          )}
         </div>
       </div>
     </div>

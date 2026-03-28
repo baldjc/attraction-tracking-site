@@ -397,15 +397,56 @@ function BrowseTab({
   const [entries, setEntries] = useState<Entry[]>([]);
   const [loading, setLoading] = useState(true);
   const [principle, setPrinciple] = useState<string | null>(null);
-  const [sourceType, setSourceType] = useState<"" | "course_lesson" | "qa_call">("");
+  const [sourceType, setSourceType] = useState<"" | "foundations_lesson" | "qa_call">("");
 
   const load = useCallback(async () => {
     setLoading(true);
-    const params = new URLSearchParams();
-    if (principle) params.set("principle", principle);
-    if (sourceType) params.set("sourceType", sourceType);
-    const res = await fetch(`/api/member/resources?${params}`);
-    if (res.ok) setEntries(await res.json());
+
+    // Fetch KB entries (skip if filtering to foundations only)
+    const kbPromise = sourceType === "foundations_lesson"
+      ? Promise.resolve([])
+      : (async () => {
+          const params = new URLSearchParams();
+          if (principle) params.set("principle", principle);
+          if (sourceType) params.set("sourceType", sourceType);
+          const res = await fetch(`/api/member/resources?${params}`);
+          return res.ok ? res.json() : [];
+        })();
+
+    // Fetch academy foundations lessons (skip if filtering to Q&A only)
+    const flPromise = sourceType === "qa_call"
+      ? Promise.resolve([])
+      : (async () => {
+          const params = new URLSearchParams();
+          if (principle) params.set("principle", principle);
+          const res = await fetch(`/api/member/academy/browse-lessons?${params}`);
+          if (!res.ok) return [];
+          const lessons = await res.json();
+          // Convert academy lessons to Entry format
+          return (lessons as any[]).map((l: any) => ({
+            id: l.id,
+            sourceType: "foundations_lesson",
+            sourceId: l.id,
+            principles: l.principles ?? [],
+            subTopic: l.title,
+            summary: l.description ?? "",
+            searchableText: null,
+            timestampStart: null,
+            timestampEnd: null,
+            isGeneralTeaching: true,
+            isSaved: false,
+            source: null,
+            // Extra fields for foundations card rendering
+            sectionSlug: l.sectionSlug,
+            sectionTitle: l.sectionTitle,
+            lessonSlug: l.slug,
+          }));
+        })();
+
+    const [kbEntries, flEntries] = await Promise.all([kbPromise, flPromise]);
+
+    // Merge: foundations lessons first, then KB entries
+    setEntries([...flEntries, ...kbEntries]);
     setLoading(false);
   }, [principle, sourceType]);
 
@@ -415,7 +456,7 @@ function BrowseTab({
     <div className="space-y-5">
       <div className="space-y-3">
         <div className="flex gap-2">
-          {(["", "course_lesson", "qa_call"] as const).map((s) => (
+          {(["", "foundations_lesson", "qa_call"] as const).map((s) => (
             <button
               key={s}
               onClick={() => setSourceType(s)}
@@ -426,7 +467,7 @@ function BrowseTab({
               }`}
             >
               {s === "" && "All Content"}
-              {s === "course_lesson" && <><AcademicCapIcon className="w-3.5 h-3.5" /> Course Lessons</>}
+              {s === "foundations_lesson" && <><AcademicCapIcon className="w-3.5 h-3.5" /> Foundations Library</>}
               {s === "qa_call" && <><VideoCameraIcon className="w-3.5 h-3.5" /> Q&A Calls</>}
             </button>
           ))}
