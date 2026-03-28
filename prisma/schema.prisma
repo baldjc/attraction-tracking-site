@@ -72,6 +72,11 @@ model User {
   youtubeChannelName      String?
   youtubeChannelThumbnail String?
   serviceTier         ServiceTier @default(foundations)
+  stripeCustomerId        String?   @unique
+  stripeSubscriptionId    String?
+  subscriptionStatus      String?
+  stripePlanName          String?
+  stripeCurrentPeriodEnd  DateTime?
   slackUserId       String?
   skoolProfile      String?
   coachingNotes          String?
