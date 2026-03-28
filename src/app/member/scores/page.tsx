@@ -138,7 +138,7 @@ export default function MemberScoresPage() {
     );
   }
 
-  const { latestAudit, baselineAudit, audits, channelBannerUrl, channelName, youtubeChannelUrl } = data;
+  const { latestAudit, baselineAudit, audits, channelBannerUrl, channelThumbnailUrl, channelName, youtubeChannelUrl } = data;
 
   // Current Attraction Score: exclude single video audits — they are per-video checks, not overall channel scores
   // Only baseline or monthly audits represent a full channel score.
@@ -648,13 +648,19 @@ export default function MemberScoresPage() {
                         alt={title}
                         className="w-[72px] h-[41px] rounded object-cover"
                       />
+                    ) : channelThumbnailUrl ? (
+                      <img
+                        src={channelThumbnailUrl}
+                        alt={channelName ?? "Channel"}
+                        className="w-[41px] h-[41px] rounded-full object-cover"
+                      />
                     ) : (
-                      <div className={`w-[72px] h-[41px] rounded flex items-center justify-center text-xs font-bold ${
+                      <div className={`w-[41px] h-[41px] rounded-full flex items-center justify-center text-xs font-bold ${
                         a.auditType === "baseline"
                           ? "bg-[#6ba3c7]/15 text-[#6ba3c7]"
                           : "bg-purple-100 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400"
                       }`}>
-                        {a.auditType === "baseline" ? "BASE" : "MO"}
+                        {a.auditType === "baseline" ? "B" : "M"}
                       </div>
                     )}
                   </div>

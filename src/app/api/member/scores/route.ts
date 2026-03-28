@@ -40,6 +40,7 @@ export async function GET() {
 
   // Fetch YouTube channel banner if the member has a handle
   let channelBannerUrl: string | null = null;
+  let channelThumbnailUrl: string | null = null;
   let channelName: string | null = dbUser?.youtubeChannelName ?? null;
   const handle = dbUser?.youtubeHandle ?? null;
 
@@ -47,6 +48,7 @@ export async function GET() {
     try {
       const info = await getChannelInfo(handle);
       channelBannerUrl = info.bannerUrl;
+      channelThumbnailUrl = info.thumbnailUrl;
       if (!channelName) channelName = info.title;
     } catch {
       // Not critical — page still works without banner
@@ -59,6 +61,7 @@ export async function GET() {
       baselineAudit: null,
       audits: [],
       channelBannerUrl,
+      channelThumbnailUrl,
       channelName,
       youtubeHandle: handle,
       youtubeChannelUrl: dbUser?.youtubeChannelUrl ?? null,
@@ -73,6 +76,7 @@ export async function GET() {
     baselineAudit,
     audits,
     channelBannerUrl,
+    channelThumbnailUrl,
     channelName,
     youtubeHandle: handle,
     youtubeChannelUrl: dbUser?.youtubeChannelUrl ?? null,
