@@ -41,16 +41,16 @@ export async function GET(req: Request) {
             customer: c.id,
             status: "all",
             limit: 1,
-            expand: ["data.items.data.price.product"],
           });
           const sub = subs.data[0];
           if (sub) {
             let planName: string | null = null;
             const priceItem = sub.items.data[0];
-            if (priceItem?.price?.product && typeof priceItem.price.product !== "string") {
-              planName = (priceItem.price.product as any).name ?? null;
-            } else if (priceItem?.price?.product && typeof priceItem.price.product === "string") {
-              const prod = await stripe.products.retrieve(priceItem.price.product);
+            const productId = typeof priceItem?.price?.product === "string"
+              ? priceItem.price.product
+              : (priceItem?.price?.product as any)?.id ?? null;
+            if (productId) {
+              const prod = await stripe.products.retrieve(productId);
               planName = prod.name;
             }
             subscription = { planName, status: sub.status };

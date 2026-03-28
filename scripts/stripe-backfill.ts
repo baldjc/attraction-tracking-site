@@ -6,9 +6,19 @@
  */
 
 import Stripe from "stripe";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "../src/generated/prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
 
-const prisma = new PrismaClient();
+const NEON_URL =
+  "postgresql://neondb_owner:npg_A0Xneoz5xFhd@ep-odd-dream-amrl8l3f-pooler.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require";
+
+function createPrisma() {
+  const connectionString = (process.env.NEON_DATABASE_URL ?? NEON_URL).replace(/\s+/g, "");
+  const adapter = new PrismaPg({ connectionString });
+  return new PrismaClient({ adapter });
+}
+
+const prisma = createPrisma();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2024-12-18.acacia",
 });
@@ -55,7 +65,6 @@ async function main() {
         customer: customer.id,
         status: "all",
         limit: 1,
-        expand: ["data.items.data.price.product"],
       });
 
       const sub = subscriptions.data[0];
@@ -72,14 +81,15 @@ async function main() {
 
       matched++;
 
-      // Get product name
+      // Get product name — always a string ID in list responses
       let planName: string | null = null;
       try {
         const priceItem = sub.items.data[0];
-        if (priceItem?.price?.product && typeof priceItem.price.product !== "string") {
-          planName = (priceItem.price.product as Stripe.Product).name;
-        } else if (priceItem?.price?.product && typeof priceItem.price.product === "string") {
-          const product = await stripe.products.retrieve(priceItem.price.product);
+        const productId = typeof priceItem?.price?.product === "string"
+          ? priceItem.price.product
+          : (priceItem?.price?.product as any)?.id ?? null;
+        if (productId) {
+          const product = await stripe.products.retrieve(productId);
           planName = product.name;
         }
       } catch {

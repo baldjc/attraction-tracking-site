@@ -25,7 +25,6 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       customer: stripeCustomerId,
       status: "all",
       limit: 1,
-      expand: ["data.items.data.price.product"],
     });
 
     const sub = subs.data[0] ?? null;
@@ -39,11 +38,14 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       subscriptionStatus = sub.status;
       periodEnd = new Date(sub.current_period_end * 1000);
       const priceItem = sub.items.data[0];
-      if (priceItem?.price?.product && typeof priceItem.price.product !== "string") {
-        planName = (priceItem.price.product as any).name ?? null;
-      } else if (priceItem?.price?.product && typeof priceItem.price.product === "string") {
-        const prod = await stripe.products.retrieve(priceItem.price.product);
-        planName = prod.name;
+      const productId = typeof priceItem?.price?.product === "string"
+        ? priceItem.price.product
+        : (priceItem?.price?.product as any)?.id ?? null;
+      if (productId) {
+        try {
+          const prod = await stripe.products.retrieve(productId);
+          planName = prod.name;
+        } catch { /* ignore */ }
       }
     }
 
