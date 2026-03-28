@@ -67,7 +67,7 @@ function ProductionCard({ onGetStarted }: { onGetStarted: () => void }) {
 
   return (
     <div className="bg-white dark:bg-[#1a2433] rounded-xl border border-[#eaeaea] dark:border-white/10 flex flex-col p-5">
-      <p className="text-[10px] font-bold uppercase tracking-widest text-[#2f3437]/40 dark:text-white/30 mb-2">Production</p>
+      <p className="text-[10px] font-bold uppercase tracking-widest text-[#2f3437]/40 dark:text-white/30 mb-2">🎬 Production</p>
       <h3 className="text-base font-bold text-[#2f3437] dark:text-white leading-tight">We edit. You publish.</h3>
       <div className="mt-3 mb-4">
         <VideoToggle value={videos} onChange={setVideos} />
@@ -128,7 +128,7 @@ function GrowthCard({ onGetStarted }: { onGetStarted: () => void }) {
         </span>
       </div>
 
-      <p className="text-[10px] font-bold uppercase tracking-widest text-[#8B5CF6]/60 mb-2 mt-1">Growth</p>
+      <p className="text-[10px] font-bold uppercase tracking-widest text-[#8B5CF6]/60 mb-2 mt-1">📈 Growth</p>
       <h3 className="text-base font-bold text-[#2f3437] dark:text-white leading-tight">Editing + strategy + funnels.</h3>
       <div className="mt-3 mb-4">
         <VideoToggle value={videos} onChange={setVideos} />
@@ -170,7 +170,7 @@ function DoneWithYouCard({ onGetStarted }: { onGetStarted: () => void }) {
   return (
     <div className="bg-white dark:bg-[#1a2433] rounded-xl border border-[#eaeaea] dark:border-white/10 flex flex-col p-5">
       <div className="flex items-center justify-between mb-2">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-[#2f3437]/40 dark:text-white/30">Done With You</p>
+        <p className="text-[10px] font-bold uppercase tracking-widest text-[#2f3437]/40 dark:text-white/30">💎 Done With You</p>
         <span className="text-[10px] font-bold uppercase tracking-widest bg-[#2f3437] dark:bg-white text-white dark:text-[#1e2a38] px-2 py-0.5 rounded-full">
           Full Service
         </span>
