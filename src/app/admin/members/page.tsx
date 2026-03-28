@@ -223,7 +223,7 @@ export default function MembersPage() {
   const [sortKey, setSortKey] = useState<SortKey>("fullName");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [page, setPage] = useState(1);
-  const [videosOpen, setVideosOpen] = useState(true);
+  const [videosOpen, setVideosOpen] = useState(false);
 
   const fetchMembers = useCallback(async () => {
     setLoading(true);
