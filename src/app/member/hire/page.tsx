@@ -165,6 +165,7 @@ const ULTIMATE_PACKAGE: UltimatePackage = {
   ],
   features: [
     "Everything in Mastery 4 included",
+    "2 lead magnet funnels built per month",
     "Local market research — what's ranking and trending in your city",
     "SEO-optimised descriptions and tags for every video",
     "A/B thumbnail variants per video",
