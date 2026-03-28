@@ -40,9 +40,10 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     if (sub) {
       subscriptionId = sub.id;
       subscriptionStatus = sub.status;
-      periodEnd = sub.current_period_end ? new Date(sub.current_period_end * 1000) : null;
+      const subAny = sub as any;
+      periodEnd = subAny.current_period_end ? new Date(subAny.current_period_end * 1000) : null;
 
-      console.log(`[stripe-link] Sub ${sub.id} status=${sub.status} period_end=${sub.current_period_end}`);
+      console.log(`[stripe-link] Sub ${sub.id} status=${sub.status} period_end=${subAny.current_period_end}`);
 
       const priceItem = sub.items.data[0];
       const productId = typeof priceItem?.price?.product === "string"

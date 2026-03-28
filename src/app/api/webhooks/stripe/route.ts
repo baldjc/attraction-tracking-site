@@ -63,7 +63,7 @@ export async function POST(req: Request) {
     const subscription = event.data.object as Stripe.Subscription;
     const customerId = subscription.customer as string;
     const status = subscription.status;
-    const periodEnd = new Date(subscription.current_period_end * 1000);
+    const periodEnd = new Date((subscription as any).current_period_end * 1000);
 
     // Get product name, price amount, and currency
     let planName: string | null = null;
