@@ -207,6 +207,14 @@ export default function MemberScoresPage() {
         title="My Scores"
         description="See where you stand and where to focus next."
         colour="#F59E0B"
+        action={
+          <button
+            onClick={load}
+            className={`shrink-0 flex items-center gap-2 px-3 py-1.5 border border-gray-200 dark:border-[#2a2a2a] rounded-lg text-sm ${txt} hover:bg-gray-50 dark:hover:bg-[#1e2a38] transition-colors`}
+          >
+            <ArrowPathIcon className="w-4 h-4" /> Refresh
+          </button>
+        }
       />
       {/* YouTube Channel Banner */}
       {channelBannerUrl && (
@@ -242,16 +250,6 @@ export default function MemberScoresPage() {
           </div>
         </div>
       )}
-
-      {/* Header */}
-      <div className="flex items-center justify-end">
-        <button
-          onClick={load}
-          className={`flex items-center gap-2 px-4 py-2.5 border border-gray-200 dark:border-[#2a2a2a] rounded-lg text-sm ${txt} hover:bg-gray-50 dark:hover:bg-[#1e2a38] transition-colors`}
-        >
-          <ArrowPathIcon className="w-4 h-4" /> Refresh
-        </button>
-      </div>
 
       {/* Row 1: Score Hero + Chart */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
