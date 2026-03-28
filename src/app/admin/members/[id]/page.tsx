@@ -79,9 +79,9 @@ const DIMENSIONS = [
 ];
 
 const TABS = [
+  { id: "profile",    label: "Profile" },
   { id: "overview",   label: "Overview" },
   { id: "analytics",  label: "Analytics" },
-  { id: "profile",    label: "Profile" },
   { id: "progress",   label: "Audits & Progress" },
   { id: "campaigns",  label: "Campaigns" },
 ] as const;
@@ -150,7 +150,7 @@ export default function MemberDetailPage() {
 
   const [member, setMember] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<TabId>("overview");
+  const [activeTab, setActiveTab] = useState<TabId>("profile");
 
   const [editing, setEditing] = useState(false);
   const [editFields, setEditFields] = useState<any>({});
