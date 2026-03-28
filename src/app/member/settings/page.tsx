@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams, useRouter } from "next/navigation";
 import { CheckIcon, LinkIcon } from "@heroicons/react/24/outline";
 import LinkTrackingPage from "@/app/member/link-tracking/page";
 
@@ -85,7 +86,27 @@ function MarkdownPreview({ text }: { text: string }) {
   return <div className="space-y-0.5">{nodes}</div>;
 }
 
-export default function MemberSettingsPage() {
+const SETTINGS_TABS = [
+  { id: "general", label: "General Settings" },
+  { id: "link-tracking", label: "Link Tracking Setup" },
+] as const;
+type SettingsTab = (typeof SETTINGS_TABS)[number]["id"];
+
+function MemberSettingsPageInner() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const activeTab: SettingsTab = searchParams.get("tab") === "link-tracking" ? "link-tracking" : "general";
+
+  function switchTab(id: SettingsTab) {
+    const url = new URL(window.location.href);
+    if (id === "general") {
+      url.searchParams.delete("tab");
+    } else {
+      url.searchParams.set("tab", id);
+    }
+    router.push(url.pathname + url.search, { scroll: false });
+  }
+
   const [avatar, setAvatar] = useState<AvatarData | null>(null);
   const [avatarText, setAvatarText] = useState("");
   const [saving, setSaving] = useState(false);
@@ -187,10 +208,33 @@ export default function MemberSettingsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="mb-8">
+      <div className="mb-2">
         <h1 className="text-2xl font-bold text-[#2f3437] dark:text-[#e2e8f0]">Settings</h1>
         <p className="text-[#2f3437]/60 dark:text-[#a0aec0] mt-1">Manage your profile and AI personalisation</p>
       </div>
+
+      {/* Tab bar */}
+      <div className="flex gap-1 bg-[#111]/5 dark:bg-white/5 rounded-lg p-1 w-fit overflow-x-auto scrollbar-hide">
+        {SETTINGS_TABS.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => switchTab(t.id)}
+            className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              activeTab === t.id
+                ? "bg-white dark:bg-[#1a1a1a] text-[#2f3437] dark:text-white shadow-sm"
+                : "text-[#2f3437]/50 dark:text-white/40 hover:text-[#2f3437] dark:hover:text-white"
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Link Tracking tab */}
+      {activeTab === "link-tracking" && <LinkTrackingPage />}
+
+      {/* General Settings tab */}
+      {activeTab === "general" && <>
 
       {/* Avatar Profile Section */}
       <div className="bg-white dark:bg-[#1a1a1a] border border-[#2f3437]/10 dark:border-[#2a2a2a] rounded-lg overflow-hidden">
@@ -443,8 +487,23 @@ export default function MemberSettingsPage() {
         </div>
       </div>
 
-      {/* Link Tracking Setup Section */}
-      <LinkTrackingPage />
+      </>}
     </div>
+  );
+}
+
+export default function MemberSettingsPage() {
+  return (
+    <Suspense fallback={
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-[#2f3437] dark:text-[#e2e8f0]">Settings</h1>
+          <p className="text-[#2f3437]/60 dark:text-[#a0aec0] mt-1">Manage your profile and AI personalisation</p>
+        </div>
+        <div className="h-12 bg-[#111]/5 dark:bg-white/5 rounded-lg animate-pulse w-72" />
+      </div>
+    }>
+      <MemberSettingsPageInner />
+    </Suspense>
   );
 }
