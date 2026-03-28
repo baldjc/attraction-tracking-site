@@ -20,7 +20,8 @@ function createPrisma() {
 
 const prisma = createPrisma();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2024-12-18.acacia",
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  apiVersion: "2024-12-18.acacia" as any,
 });
 
 type ServiceTierValue = "foundations" | "editing_2" | "editing_4" | "mastery_2" | "mastery_4";

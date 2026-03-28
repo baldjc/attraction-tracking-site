@@ -185,7 +185,8 @@ export async function GET() {
   const activeMembers = memberRows.filter((m) => m.status === "active").length;
   const inactiveMembers = memberRows.filter((m) => m.status === "inactive").length;
   const videosThisWeek = memberRows.reduce((sum, m) => sum + m.videos7d, 0);
-  const USD_TO_CAD = 1.38;
+  const rateSetting = await prisma.appSetting.findUnique({ where: { key: "usd_to_cad_rate" } });
+  const USD_TO_CAD = rateSetting ? parseFloat(rateSetting.value) : 1.38;
   const mrr = memberRows
     .filter((m) => (m.subscriptionStatus === "active" || m.subscriptionStatus === "past_due") && m.stripePriceAmount)
     .reduce((sum, m) => {
@@ -203,6 +204,7 @@ export async function GET() {
       linkClicks7d: clicksResult._count,
       topLead,
       mrr,
+      usdToCadRate: USD_TO_CAD,
     },
     recentVideos,
     lastSyncedAt: latestSync?.toISOString() ?? null,

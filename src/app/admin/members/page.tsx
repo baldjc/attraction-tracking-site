@@ -22,6 +22,7 @@ interface SummaryCards {
   linkClicks7d: number;
   topLead: { userId: string; fullName: string; conversions: number } | null;
   mrr: number;
+  usdToCadRate: number;
 }
 
 interface RecentVideo {
@@ -66,7 +67,6 @@ type SortKey = "fullName" | "videos7d" | "clicks7d" | "conversions7d" | "toolUse
 type SortDir = "asc" | "desc";
 
 const PAGE_SIZE = 200;
-const USD_TO_CAD = 1.38;
 
 const tierLabels: Record<string, string> = {
   foundations: "Foundations",
@@ -497,7 +497,7 @@ export default function MembersPage() {
               <div>
                 <div className={`text-2xl font-bold text-emerald-700`}>{fmtPrice(cards.mrr)}</div>
                 <div className={`text-[9px] ${dim} mt-0.5`}>
-                  {backfillingPrices ? "Updating…" : "~CAD · USD at 1.38"}
+                  {backfillingPrices ? "Updating…" : `~CAD · USD at ${cards.usdToCadRate ?? 1.38}`}
                 </div>
               </div>
             ) : (
@@ -746,8 +746,9 @@ export default function MembersPage() {
                               {subStatusBadge(m.subscriptionStatus)}
                               {fmtPrice(m.stripePriceAmount) && (() => {
                                 const isUSD = (m.stripeCurrency ?? "USD").toUpperCase() === "USD";
+                                const rate = cards?.usdToCadRate ?? 1.38;
                                 const cadAmount = isUSD && m.stripePriceAmount
-                                  ? Math.round(m.stripePriceAmount * USD_TO_CAD)
+                                  ? Math.round(m.stripePriceAmount * rate)
                                   : m.stripePriceAmount;
                                 return (
                                   <span className="text-xs font-semibold text-emerald-700">

@@ -853,6 +853,72 @@ function AIScoringPromptSection() {
   );
 }
 
+// ─── Currency Rate ────────────────────────────────────────────────────────────
+
+function CurrencyRateSection() {
+  const [rate, setRate] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/settings?key=usd_to_cad_rate")
+      .then((r) => r.json())
+      .then((d) => { setRate(d.value ?? "1.38"); setLoading(false); });
+  }, []);
+
+  async function handleSave() {
+    const parsed = parseFloat(rate);
+    if (isNaN(parsed) || parsed <= 0) return;
+    setSaving(true);
+    setSaved(false);
+    await fetch("/api/settings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key: "usd_to_cad_rate", value: parsed.toString() }),
+    });
+    setSaving(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 3000);
+  }
+
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <h2 className="text-base font-semibold text-[#2f3437] mb-1">USD → CAD Exchange Rate</h2>
+      <p className="text-xs text-[#2f3437]/50 mb-4">
+        Used to convert USD subscription amounts to CAD across the Members page and MRR card. Update whenever the rate changes.
+      </p>
+      {loading ? (
+        <div className="h-10 bg-gray-50 rounded-lg animate-pulse w-40" />
+      ) : (
+        <div className="flex items-center gap-3">
+          <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden w-40">
+            <span className="px-3 py-2.5 text-sm text-[#2f3437]/50 bg-gray-50 border-r border-gray-200 select-none">1 USD =</span>
+            <input
+              type="number"
+              step="0.01"
+              min="0.01"
+              value={rate}
+              onChange={(e) => setRate(e.target.value)}
+              className="w-full px-3 py-2.5 text-sm text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30"
+              placeholder="1.38"
+            />
+          </div>
+          <span className="text-sm text-[#2f3437]/50">CAD</span>
+          <button
+            onClick={handleSave}
+            disabled={saving || loading}
+            className="bg-[#6ba3c7] hover:bg-[#5490b5] disabled:opacity-50 text-white font-semibold px-4 py-2.5 rounded-lg text-sm transition-colors"
+          >
+            {saving ? "Saving…" : "Save"}
+          </button>
+          {saved && <span className="text-sm text-green-600 font-medium">✓ Saved</span>}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
@@ -872,6 +938,7 @@ export default function SettingsPage() {
         <h1 className="text-2xl font-bold text-[#2f3437]">Settings</h1>
         <p className="text-[#2f3437]/60 mt-1 text-sm">Configure platform preferences and AI scoring.</p>
       </div>
+      <CurrencyRateSection />
       <StaffAccessSection />
       <FeatureVisibilitySection />
       <AIScoringPromptSection />
