@@ -24,12 +24,16 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     links.map((l) => {
       const clicks = l.clicks.length;
       const leads = l.clicks.filter((c) => c.lead).length;
+      const destUrl = (l.destinationOverride === "lead_magnet" && campaign.leadMagnetUrl)
+        ? campaign.leadMagnetUrl
+        : campaign.destinationUrl;
       return {
         id: l.id,
         name: l.name,
         source: l.source,
+        destinationOverride: l.destinationOverride,
         refCode: l.refCode,
-        trackedUrl: buildTrackedUrl(campaign.destinationUrl, l.refCode),
+        trackedUrl: buildTrackedUrl(destUrl, l.refCode),
         youtubeVideoUrl: l.youtubeVideoUrl,
         youtubeVideoId: l.youtubeVideoId,
         youtubeThumbnailUrl: l.youtubeThumbnailUrl,
@@ -54,10 +58,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   });
   if (!campaign) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const { name, source, youtubeVideoUrl } = await req.json();
+  const { name, source, destinationOverride, youtubeVideoUrl } = await req.json();
   if (!name) return NextResponse.json({ error: "name is required" }, { status: 400 });
 
   const linkSource: string = source ?? "youtube";
+  const linkDest: string = (destinationOverride === "lead_magnet" && campaign.leadMagnetUrl) ? "lead_magnet" : "landing_page";
   const refCode = await generateUniqueRefCode();
   const youtubeVideoId = linkSource === "youtube" && youtubeVideoUrl ? extractYoutubeVideoId(youtubeVideoUrl) : null;
 
@@ -84,6 +89,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       campaignId: id,
       name: resolvedName,
       source: linkSource,
+      destinationOverride: linkDest,
       refCode,
       youtubeVideoUrl: linkSource === "youtube" ? (youtubeVideoUrl ?? null) : null,
       youtubeVideoId,
@@ -93,10 +99,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     },
   });
 
+  const destUrl = (linkDest === "lead_magnet" && campaign.leadMagnetUrl) ? campaign.leadMagnetUrl : campaign.destinationUrl;
   return NextResponse.json(
     {
       ...link,
-      trackedUrl: buildTrackedUrl(campaign.destinationUrl, refCode),
+      trackedUrl: buildTrackedUrl(destUrl, refCode),
       clicks: 0,
       leads: 0,
       conversionRate: 0,

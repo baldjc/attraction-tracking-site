@@ -43,6 +43,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       id: l.id,
       name: l.name,
       source: l.source,
+      destinationOverride: l.destinationOverride,
       refCode: l.refCode,
       youtubeVideoUrl: l.youtubeVideoUrl,
       youtubeVideoId: l.youtubeVideoId,
@@ -50,7 +51,12 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       youtubeViewCount: l.youtubeViewCount,
       youtubeViewsUpdatedAt: l.youtubeViewsUpdatedAt,
       createdAt: l.createdAt,
-      trackedUrl: `${normalizeUrl(campaign.destinationUrl)}${normalizeUrl(campaign.destinationUrl).includes("?") ? "&" : "?"}ref=${l.refCode}`,
+      trackedUrl: (() => {
+        const destBase = (l.destinationOverride === "lead_magnet" && campaign.leadMagnetUrl)
+          ? normalizeUrl(campaign.leadMagnetUrl)
+          : normalizeUrl(campaign.destinationUrl);
+        return `${destBase}${destBase.includes("?") ? "&" : "?"}ref=${l.refCode}`;
+      })(),
       clicks,
       leads,
       conversionRate: clicks > 0 ? Math.round((leads / clicks) * 100) : 0,

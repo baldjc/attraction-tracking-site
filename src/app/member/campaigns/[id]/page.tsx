@@ -12,6 +12,7 @@ interface TrackingLinkData {
   id: string;
   name: string;
   source: string;
+  destinationOverride: string;
   refCode: string;
   trackedUrl: string;
   youtubeVideoUrl: string | null;
@@ -124,6 +125,7 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
   const [showNewLink, setShowNewLink] = useState(false);
   const [linkForm, setLinkForm] = useState({ name: "", youtubeVideoUrl: "" });
   const [linkSource, setLinkSource] = useState("youtube");
+  const [linkDestination, setLinkDestination] = useState("landing_page");
   const [creating, setCreating] = useState(false);
   const [fetchingYtInfo, setFetchingYtInfo] = useState(false);
   const [previewThumb, setPreviewThumb] = useState<string | null>(null);
@@ -133,6 +135,7 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
   const [editingLink, setEditingLink] = useState<TrackingLinkData | null>(null);
   const [editForm, setEditForm] = useState({ name: "", youtubeVideoUrl: "" });
   const [editLinkSource, setEditLinkSource] = useState("youtube");
+  const [editLinkDestination, setEditLinkDestination] = useState("landing_page");
   const [saving, setSaving] = useState(false);
   const [fetchingYtEdit, setFetchingYtEdit] = useState(false);
   const [editPreviewThumb, setEditPreviewThumb] = useState<string | null>(null);
@@ -218,6 +221,7 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
       body: JSON.stringify({
         name: linkForm.name,
         source: linkSource,
+        destinationOverride: linkDestination,
         youtubeVideoUrl: linkSource === "youtube" ? (linkForm.youtubeVideoUrl || undefined) : undefined,
       }),
     });
@@ -225,6 +229,7 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
       setShowNewLink(false);
       setLinkForm({ name: "", youtubeVideoUrl: "" });
       setLinkSource("youtube");
+      setLinkDestination("landing_page");
       setPreviewThumb(null);
       setNameTouchedNew(false);
       loadCampaign();
@@ -236,6 +241,7 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
   function openEdit(link: TrackingLinkData) {
     setEditingLink(link);
     setEditLinkSource(link.source ?? "youtube");
+    setEditLinkDestination(link.destinationOverride ?? "landing_page");
     setEditForm({ name: link.name, youtubeVideoUrl: link.youtubeVideoUrl ?? "" });
     setEditPreviewThumb(link.youtubeThumbnailUrl ?? null);
     setNameTouchedEdit(false);
@@ -250,6 +256,7 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
       body: JSON.stringify({
         name: editForm.name,
         source: editLinkSource,
+        destinationOverride: editLinkDestination,
         youtubeVideoUrl: editLinkSource === "youtube" ? (editForm.youtubeVideoUrl || null) : null,
       }),
     });
@@ -437,59 +444,6 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
         </div>
       </div>
 
-      {/* Analytics Charts */}
-      <div className="bg-white border border-[#2f3437]/10 rounded-lg p-5">
-        <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
-          <h2 className="font-semibold text-[#2f3437]">Analytics</h2>
-          <div className="flex items-center gap-2 flex-wrap">
-            <select
-              value={analyticsSourceFilter}
-              onChange={(e) => setAnalyticsSourceFilter(e.target.value)}
-              className="text-xs border border-[#2f3437]/20 rounded-lg px-2 py-1.5 text-[#2f3437]/60 focus:outline-none"
-            >
-              <option value="all">All Sources</option>
-              {LINK_SOURCES.map((s) => (
-                <option key={s.value} value={s.value}>{s.label}</option>
-              ))}
-            </select>
-            <div className="flex gap-1">
-              {PERIODS.map((p) => (
-                <button
-                  key={p.value}
-                  onClick={() => setPeriod(p.value)}
-                  className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${period === p.value ? "bg-[#111] text-white" : "text-[#2f3437]/50 hover:text-[#2f3437]"}`}
-                >
-                  {p.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {analyticsLoading ? (
-          <div className="space-y-6">
-            <ChartSkeleton />
-            <ChartSkeleton />
-          </div>
-        ) : !hasAnalyticsData ? (
-          <ChartEmpty />
-        ) : (
-          <div className="space-y-6">
-            <div>
-              <p className="text-xs font-medium text-[#2f3437]/50 mb-3">Clicks &amp; Leads Per Day</p>
-              <DailyLineChart data={analytics!.daily} />
-            </div>
-
-            {analytics!.byLink.length > 1 && (
-              <div>
-                <p className="text-xs font-medium text-[#2f3437]/50 mb-3">Performance by Tracking Link</p>
-                <LinkBarChart data={analytics!.byLink} />
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
       {/* Tracking Links */}
       <div className="bg-white border border-[#2f3437]/10 rounded-lg overflow-hidden">
         <div className="px-5 py-4 border-b border-[#2f3437]/10 flex items-center justify-between">
@@ -520,6 +474,9 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                       <div className="flex items-center gap-2 min-w-0">
                         <p className="font-medium text-[#2f3437] text-sm truncate">{link.name}</p>
                         {(() => { const s = LINK_SOURCE_STYLES[link.source] ?? LINK_SOURCE_STYLES.other; return <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0 ${s.color}`}>{s.label}</span>; })()}
+                        {campaign.leadMagnetUrl && link.destinationOverride === "lead_magnet" && (
+                          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0 bg-violet-100 text-violet-700">Lead Magnet</span>
+                        )}
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
                         <button onClick={() => openEdit(link)} className="text-[#2f3437]/30 hover:text-[#6ba3c7] transition-colors" title="Edit link">
@@ -574,6 +531,59 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                 </div>
               </div>
             ))}
+          </div>
+        )}
+      </div>
+
+      {/* Analytics Charts */}
+      <div className="bg-white border border-[#2f3437]/10 rounded-lg p-5">
+        <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
+          <h2 className="font-semibold text-[#2f3437]">Analytics</h2>
+          <div className="flex items-center gap-2 flex-wrap">
+            <select
+              value={analyticsSourceFilter}
+              onChange={(e) => setAnalyticsSourceFilter(e.target.value)}
+              className="text-xs border border-[#2f3437]/20 rounded-lg px-2 py-1.5 text-[#2f3437]/60 focus:outline-none"
+            >
+              <option value="all">All Sources</option>
+              {LINK_SOURCES.map((s) => (
+                <option key={s.value} value={s.value}>{s.label}</option>
+              ))}
+            </select>
+            <div className="flex gap-1">
+              {PERIODS.map((p) => (
+                <button
+                  key={p.value}
+                  onClick={() => setPeriod(p.value)}
+                  className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${period === p.value ? "bg-[#111] text-white" : "text-[#2f3437]/50 hover:text-[#2f3437]"}`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {analyticsLoading ? (
+          <div className="space-y-6">
+            <ChartSkeleton />
+            <ChartSkeleton />
+          </div>
+        ) : !hasAnalyticsData ? (
+          <ChartEmpty />
+        ) : (
+          <div className="space-y-6">
+            <div>
+              <p className="text-xs font-medium text-[#2f3437]/50 mb-3">Clicks &amp; Leads Per Day</p>
+              <DailyLineChart data={analytics!.daily} />
+            </div>
+
+            {analytics!.byLink.length > 1 && (
+              <div>
+                <p className="text-xs font-medium text-[#2f3437]/50 mb-3">Performance by Tracking Link</p>
+                <LinkBarChart data={analytics!.byLink} />
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -655,7 +665,7 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                 <p className="text-xs text-[#2f3437]/40 mt-0.5">Add a unique link to track within this campaign</p>
               </div>
               <button
-                onClick={() => { setShowNewLink(false); setPreviewThumb(null); setNameTouchedNew(false); setLinkForm({ name: "", youtubeVideoUrl: "" }); setLinkSource("youtube"); }}
+                onClick={() => { setShowNewLink(false); setPreviewThumb(null); setNameTouchedNew(false); setLinkForm({ name: "", youtubeVideoUrl: "" }); setLinkSource("youtube"); setLinkDestination("landing_page"); }}
                 className="text-[#2f3437]/40 hover:text-[#2f3437] text-xl"
               >✕</button>
             </div>
@@ -680,6 +690,31 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                   })}
                 </div>
               </div>
+
+              {/* Destination picker — only when lead magnet URL exists */}
+              {campaign.leadMagnetUrl && (
+                <div>
+                  <label className="block text-sm font-semibold text-[#2f3437] mb-2">Destination</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setLinkDestination("landing_page")}
+                      className={`text-left px-3 py-2.5 rounded-lg border text-xs transition-colors ${linkDestination === "landing_page" ? "border-[#6ba3c7] bg-[#6ba3c7]/5 text-[#2f3437]" : "border-[#2f3437]/15 text-[#2f3437]/50 hover:text-[#2f3437]"}`}
+                    >
+                      <div className="font-semibold mb-0.5">Landing Page</div>
+                      <div className="text-[#2f3437]/40 truncate">{campaign.destinationUrl}</div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setLinkDestination("lead_magnet")}
+                      className={`text-left px-3 py-2.5 rounded-lg border text-xs transition-colors ${linkDestination === "lead_magnet" ? "border-[#6ba3c7] bg-[#6ba3c7]/5 text-[#2f3437]" : "border-[#2f3437]/15 text-[#2f3437]/50 hover:text-[#2f3437]"}`}
+                    >
+                      <div className="font-semibold mb-0.5">Lead Magnet</div>
+                      <div className="text-[#2f3437]/40 truncate">{campaign.leadMagnetUrl}</div>
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Link name */}
               <div>
@@ -720,7 +755,10 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
               {/* URL preview */}
               <div className="bg-[#f8f9fa] rounded-lg p-3 text-xs text-[#2f3437]/50">
                 <p className="font-medium text-[#2f3437]/70 mb-1">Tracked URL preview</p>
-                <p className="break-all font-mono">{campaign.destinationUrl}{campaign.destinationUrl.includes("?") ? "&" : "?"}ref=<span className="text-[#6ba3c7]">xxxxxxxx</span></p>
+                {(() => {
+                  const dest = (linkDestination === "lead_magnet" && campaign.leadMagnetUrl) ? campaign.leadMagnetUrl : campaign.destinationUrl;
+                  return <p className="break-all font-mono">{dest}{dest.includes("?") ? "&" : "?"}ref=<span className="text-[#6ba3c7]">xxxxxxxx</span></p>;
+                })()}
               </div>
 
               <button
@@ -766,6 +804,31 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                   })}
                 </div>
               </div>
+              {/* Destination picker — only when lead magnet URL exists */}
+              {campaign.leadMagnetUrl && (
+                <div>
+                  <label className="block text-sm font-semibold text-[#2f3437] mb-2">Destination</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setEditLinkDestination("landing_page")}
+                      className={`text-left px-3 py-2.5 rounded-lg border text-xs transition-colors ${editLinkDestination === "landing_page" ? "border-[#6ba3c7] bg-[#6ba3c7]/5 text-[#2f3437]" : "border-[#2f3437]/15 text-[#2f3437]/50 hover:text-[#2f3437]"}`}
+                    >
+                      <div className="font-semibold mb-0.5">Landing Page</div>
+                      <div className="text-[#2f3437]/40 truncate">{campaign.destinationUrl}</div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditLinkDestination("lead_magnet")}
+                      className={`text-left px-3 py-2.5 rounded-lg border text-xs transition-colors ${editLinkDestination === "lead_magnet" ? "border-[#6ba3c7] bg-[#6ba3c7]/5 text-[#2f3437]" : "border-[#2f3437]/15 text-[#2f3437]/50 hover:text-[#2f3437]"}`}
+                    >
+                      <div className="font-semibold mb-0.5">Lead Magnet</div>
+                      <div className="text-[#2f3437]/40 truncate">{campaign.leadMagnetUrl}</div>
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <div>
                 <label className="block text-sm font-semibold text-[#2f3437] mb-1.5">
                   {editLinkSource === "youtube" ? "Video Name" : "Link Name"} <span className="font-normal text-[#2f3437]/40 text-xs">— what is this link for?</span>

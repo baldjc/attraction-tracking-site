@@ -13,7 +13,8 @@ export async function GET(
     select: {
       id: true,
       refCode: true,
-      campaign: { select: { destinationUrl: true } },
+      destinationOverride: true,
+      campaign: { select: { destinationUrl: true, leadMagnetUrl: true } },
     },
   });
 
@@ -43,7 +44,8 @@ export async function GET(
     })
     .catch(console.error);
 
-  const raw = link.campaign.destinationUrl;
+  const useLeadMagnet = link.destinationOverride === "lead_magnet" && !!link.campaign.leadMagnetUrl;
+  const raw = useLeadMagnet ? link.campaign.leadMagnetUrl! : link.campaign.destinationUrl;
   const dest = raw.startsWith("http://") || raw.startsWith("https://") ? raw : `https://${raw}`;
   const separator = dest.includes("?") ? "&" : "?";
   const redirectUrl = `${dest}${separator}ref=${link.refCode}`;
