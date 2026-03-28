@@ -160,6 +160,15 @@ export default function MemberDetailPage() {
   // Academy progress
   const [academyProgress, setAcademyProgress] = useState<any>(null);
 
+  // Stripe
+  const [stripeLinkOpen, setStripeLinkOpen] = useState(false);
+  const [stripeSearchQ, setStripeSearchQ] = useState("");
+  const [stripeSearchResults, setStripeSearchResults] = useState<any[]>([]);
+  const [stripeSearchLoading, setStripeSearchLoading] = useState(false);
+  const [stripeSearchDone, setStripeSearchDone] = useState(false);
+  const [linking, setLinking] = useState(false);
+  const [unlinking, setUnlinking] = useState(false);
+
   // Top videos — last 30 days
   const [topVideos, setTopVideos] = useState<any[]>([]);
   const [topVideosLoading, setTopVideosLoading] = useState(false);
@@ -307,6 +316,39 @@ export default function MemberDetailPage() {
     setTierSaving(false);
     setTierSaved(true);
     setTimeout(() => setTierSaved(false), 2000);
+  }
+
+  async function searchStripeCustomers() {
+    if (!stripeSearchQ.trim()) return;
+    setStripeSearchLoading(true);
+    setStripeSearchDone(false);
+    const res = await fetch(`/api/admin/members/stripe-search?q=${encodeURIComponent(stripeSearchQ)}`);
+    const data = await res.json();
+    setStripeSearchResults(data.customers ?? []);
+    setStripeSearchLoading(false);
+    setStripeSearchDone(true);
+  }
+
+  async function handleStripeLink(stripeCustomerId: string) {
+    setLinking(true);
+    await fetch(`/api/admin/members/${id}/stripe-link`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ stripeCustomerId }),
+    });
+    await fetchMember();
+    setLinking(false);
+    setStripeLinkOpen(false);
+    setStripeSearchQ("");
+    setStripeSearchResults([]);
+    setStripeSearchDone(false);
+  }
+
+  async function handleStripeUnlink() {
+    setUnlinking(true);
+    await fetch(`/api/admin/members/${id}/stripe-unlink`, { method: "PUT" });
+    await fetchMember();
+    setUnlinking(false);
   }
 
   async function handleDeleteAudit(auditId: string) {
@@ -1396,6 +1438,78 @@ export default function MemberDetailPage() {
             </div>
           </div>
 
+          {/* Stripe */}
+          {!isEditorRole && (
+            <div className="bg-white rounded-lg border border-gray-200 p-5">
+              <h2 className="text-sm font-semibold text-[#2f3437] mb-3">Stripe</h2>
+              {member.stripeCustomerId ? (
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="text-[#2f3437]/50 text-xs shrink-0">Customer</span>
+                    <a
+                      href={`https://dashboard.stripe.com/customers/${member.stripeCustomerId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[#6ba3c7] hover:underline font-mono text-xs truncate text-right"
+                    >
+                      {member.stripeCustomerId}
+                    </a>
+                  </div>
+                  {member.stripePlanName && (
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[#2f3437]/50 text-xs">Plan</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-semibold text-[#2f3437]">{member.stripePlanName}</span>
+                        {member.subscriptionStatus && (() => {
+                          const cfg: Record<string, { dot: string; label: string; cls: string }> = {
+                            active:    { dot: "bg-green-500",  label: "Active",   cls: "text-green-700 bg-green-50 border-green-200" },
+                            trialing:  { dot: "bg-blue-400",   label: "Trial",    cls: "text-blue-700 bg-blue-50 border-blue-200" },
+                            past_due:  { dot: "bg-amber-400",  label: "Past Due", cls: "text-amber-700 bg-amber-50 border-amber-200" },
+                            cancelled: { dot: "bg-red-500",    label: "Cancelled",cls: "text-red-700 bg-red-50 border-red-200" },
+                          };
+                          const c = cfg[member.subscriptionStatus] ?? { dot: "bg-gray-400", label: member.subscriptionStatus, cls: "text-gray-600 bg-gray-50 border-gray-200" };
+                          return (
+                            <span className={`inline-flex items-center gap-1 text-[11px] font-semibold border px-1.5 py-0.5 rounded-full ${c.cls}`}>
+                              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${c.dot}`} />
+                              {c.label}
+                            </span>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                  )}
+                  {member.stripeCurrentPeriodEnd && (
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[#2f3437]/50 text-xs">
+                        {member.subscriptionStatus === "cancelled" ? "Ended" : "Renews"}
+                      </span>
+                      <span className="text-xs text-[#2f3437]">
+                        {new Date(member.stripeCurrentPeriodEnd).toLocaleDateString("en-CA", { year: "numeric", month: "short", day: "numeric" })}
+                      </span>
+                    </div>
+                  )}
+                  <button
+                    onClick={handleStripeUnlink}
+                    disabled={unlinking}
+                    className="w-full mt-1 text-xs font-medium text-red-600 border border-red-200 hover:bg-red-50 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    {unlinking ? "Unlinking…" : "Unlink Stripe"}
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <p className="text-xs text-[#2f3437]/40 mb-2">No Stripe customer linked.</p>
+                  <button
+                    onClick={() => setStripeLinkOpen(true)}
+                    className="w-full text-xs font-medium text-[#6ba3c7] border border-[#6ba3c7]/30 hover:bg-[#6ba3c7]/5 px-3 py-1.5 rounded-lg transition-colors"
+                  >
+                    Link Stripe Customer
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="bg-white rounded-lg border border-gray-200 p-5 sticky top-6">
             <h2 className="text-sm font-semibold text-[#2f3437] mb-4">Quick Actions</h2>
             <div className="space-y-2">
@@ -1591,6 +1705,89 @@ export default function MemberDetailPage() {
                   Run Audit
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Stripe Link Modal */}
+      {stripeLinkOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-2xl w-full max-w-lg flex flex-col max-h-[80vh]">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <div>
+                <h2 className="text-base font-bold text-[#2f3437]">Link Stripe Customer</h2>
+                <p className="text-xs text-[#2f3437]/50 mt-0.5">Search by name or email to find the matching Stripe customer</p>
+              </div>
+              <button
+                onClick={() => { setStripeLinkOpen(false); setStripeSearchQ(""); setStripeSearchResults([]); setStripeSearchDone(false); }}
+                className="text-[#2f3437]/40 hover:text-[#2f3437]"
+              >
+                <XMarkIcon className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Search */}
+            <div className="px-6 py-4 border-b border-gray-100">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={stripeSearchQ}
+                  onChange={(e) => setStripeSearchQ(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && searchStripeCustomers()}
+                  placeholder="Name or email…"
+                  className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30"
+                />
+                <button
+                  onClick={searchStripeCustomers}
+                  disabled={stripeSearchLoading || !stripeSearchQ.trim()}
+                  className="px-4 py-2 bg-[#6ba3c7] hover:bg-[#5490b5] text-white text-sm font-semibold rounded-lg disabled:opacity-50 transition-colors"
+                >
+                  {stripeSearchLoading ? "…" : "Search"}
+                </button>
+              </div>
+            </div>
+
+            {/* Results */}
+            <div className="overflow-y-auto flex-1 px-6 py-4">
+              {stripeSearchLoading && (
+                <div className="flex justify-center py-8">
+                  <div className="animate-spin rounded-full h-6 w-6 border-2 border-gray-200 border-t-[#6ba3c7]" />
+                </div>
+              )}
+              {!stripeSearchLoading && stripeSearchDone && stripeSearchResults.length === 0 && (
+                <p className="text-sm text-center text-[#2f3437]/40 py-8">No Stripe customers found.</p>
+              )}
+              {!stripeSearchLoading && stripeSearchResults.length > 0 && (
+                <div className="space-y-2">
+                  {stripeSearchResults.map((c: any) => (
+                    <div key={c.id} className="flex items-center justify-between gap-3 border border-gray-100 rounded-lg px-4 py-3 hover:border-gray-200 hover:bg-gray-50 transition-colors">
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-[#2f3437] truncate">{c.name ?? "—"}</p>
+                        <p className="text-xs text-[#2f3437]/50 truncate">{c.email ?? "—"}</p>
+                        {c.subscription ? (
+                          <p className="text-xs text-[#2f3437]/40 mt-0.5">
+                            {c.subscription.planName ?? "Unknown plan"} · <span className="capitalize">{c.subscription.status}</span>
+                          </p>
+                        ) : (
+                          <p className="text-xs text-[#2f3437]/30 mt-0.5 italic">No subscription</p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => handleStripeLink(c.id)}
+                        disabled={linking}
+                        className="shrink-0 px-3 py-1.5 text-xs font-semibold bg-[#2f3437] hover:bg-[#1e2a38] text-white rounded-lg disabled:opacity-50 transition-colors"
+                      >
+                        {linking ? "Linking…" : "Link"}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {!stripeSearchDone && !stripeSearchLoading && (
+                <p className="text-xs text-center text-[#2f3437]/30 py-6">Type a name or email above and click Search.</p>
+              )}
             </div>
           </div>
         </div>

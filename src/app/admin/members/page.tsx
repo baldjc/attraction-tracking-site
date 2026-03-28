@@ -19,6 +19,10 @@ interface Member {
   _count?: { audits: number };
   latestAuditScore?: number | null;
   latestAuditDate?: string | null;
+  stripeCustomerId: string | null;
+  subscriptionStatus: string | null;
+  stripePlanName: string | null;
+  stripeCurrentPeriodEnd: string | null;
 }
 
 const tierLabels: Record<string, string> = {
@@ -59,13 +63,46 @@ function tierBadge(tier: string) {
   );
 }
 
+function subStatusBadge(status: string | null) {
+  if (!status) return null;
+  const cfg: Record<string, { dot: string; label: string; cls: string }> = {
+    active:    { dot: "bg-green-500",  label: "Active",   cls: "text-green-700 bg-green-50 border-green-200" },
+    trialing:  { dot: "bg-blue-400",   label: "Trial",    cls: "text-blue-700 bg-blue-50 border-blue-200" },
+    past_due:  { dot: "bg-amber-400",  label: "Past Due", cls: "text-amber-700 bg-amber-50 border-amber-200" },
+    cancelled: { dot: "bg-red-500",    label: "Cancelled",cls: "text-red-700 bg-red-50 border-red-200" },
+  };
+  const c = cfg[status] ?? { dot: "bg-gray-400", label: status, cls: "text-gray-600 bg-gray-50 border-gray-200" };
+  return (
+    <span className={`inline-flex items-center gap-1 text-[11px] font-semibold border px-2 py-0.5 rounded-full ${c.cls}`}>
+      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${c.dot}`} />
+      {c.label}
+    </span>
+  );
+}
+
+function fmtPeriodEnd(iso: string | null, status: string | null) {
+  if (!iso) return null;
+  const d = new Date(iso);
+  const formatted = d.toLocaleDateString("en-CA", { month: "short", day: "numeric" });
+  return status === "cancelled" ? `Ended ${formatted}` : `Renews ${formatted}`;
+}
+
 type TierFilter = "all" | "foundations" | "editing" | "mastery";
+type SubFilter = "all" | "active" | "past_due" | "cancelled" | "none";
 
 const TIER_FILTERS: { value: TierFilter; label: string }[] = [
-  { value: "all", label: "All" },
+  { value: "all",         label: "All" },
   { value: "foundations", label: "Foundations" },
-  { value: "editing", label: "Editing" },
-  { value: "mastery", label: "Mastery" },
+  { value: "editing",     label: "Editing" },
+  { value: "mastery",     label: "Mastery" },
+];
+
+const SUB_FILTERS: { value: SubFilter; label: string }[] = [
+  { value: "all",       label: "All" },
+  { value: "active",    label: "Active" },
+  { value: "past_due",  label: "Past Due" },
+  { value: "cancelled", label: "Cancelled" },
+  { value: "none",      label: "No Subscription" },
 ];
 
 function matchesTierFilter(tier: string, filter: TierFilter) {
@@ -74,6 +111,12 @@ function matchesTierFilter(tier: string, filter: TierFilter) {
   if (filter === "editing") return tier === "editing_2" || tier === "editing_4";
   if (filter === "mastery") return tier === "mastery_2" || tier === "mastery_4";
   return true;
+}
+
+function matchesSubFilter(m: Member, filter: SubFilter) {
+  if (filter === "all") return true;
+  if (filter === "none") return !m.stripePlanName;
+  return m.subscriptionStatus === filter;
 }
 
 function subtitleLabel(filter: TierFilter, count: number) {
@@ -97,6 +140,7 @@ export default function MembersPage() {
   const [flaggedInactive, setFlaggedInactive] = useState<{ email: string; name: string }[]>([]);
   const [search, setSearch] = useState("");
   const [tierFilter, setTierFilter] = useState<TierFilter>("all");
+  const [subFilter, setSubFilter] = useState<SubFilter>("all");
 
   useEffect(() => {
     fetchMembers();
@@ -140,8 +184,7 @@ export default function MembersPage() {
       m.fullName?.toLowerCase().includes(search.toLowerCase()) ||
       m.email.toLowerCase().includes(search.toLowerCase()) ||
       m.youtubeHandle?.toLowerCase().includes(search.toLowerCase());
-    const matchesTier = matchesTierFilter(m.serviceTier, tierFilter);
-    return matchesSearch && matchesTier;
+    return matchesSearch && matchesTierFilter(m.serviceTier, tierFilter) && matchesSubFilter(m, subFilter);
   });
 
   return (
@@ -193,7 +236,7 @@ export default function MembersPage() {
         </div>
       )}
 
-      {/* Search + Tier Filters */}
+      {/* Search + Filters */}
       <div className="flex flex-wrap items-center gap-3 mb-4">
         <input
           type="text"
@@ -202,6 +245,8 @@ export default function MembersPage() {
           onChange={(e) => setSearch(e.target.value)}
           className="w-full max-w-sm px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6ba3c7] focus:border-transparent outline-none text-[#2f3437] bg-white text-sm"
         />
+
+        {/* Tier filter */}
         <div className="flex items-center gap-1.5">
           {TIER_FILTERS.map((f) => (
             <button
@@ -223,6 +268,30 @@ export default function MembersPage() {
             </button>
           ))}
         </div>
+
+        {/* Subscription filter */}
+        <div className="flex items-center gap-1">
+          <span className="text-xs font-semibold text-[#2f3437]/40 mr-1 uppercase tracking-wider">Sub:</span>
+          {SUB_FILTERS.map((f) => (
+            <button
+              key={f.value}
+              onClick={() => setSubFilter(f.value)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
+                subFilter === f.value
+                  ? f.value === "active"
+                    ? "bg-green-600 text-white border-green-600"
+                    : f.value === "past_due"
+                    ? "bg-amber-500 text-white border-amber-500"
+                    : f.value === "cancelled"
+                    ? "bg-red-500 text-white border-red-500"
+                    : "bg-[#111] text-white border-[#2f3437]"
+                  : "bg-white text-[#2f3437]/60 border-gray-200 hover:border-gray-300 hover:text-[#2f3437]"
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Mobile list */}
@@ -236,10 +305,11 @@ export default function MembersPage() {
         ) : (
           filtered.map((m) => (
             <Link key={m.id} href={`/admin/members/${m.id}`} className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors">
-              <div className="flex items-center gap-2.5 min-w-0">
+              <div className="flex items-center gap-2 min-w-0 flex-wrap">
                 <div className="w-1.5 h-1.5 bg-green-500 rounded-full shrink-0" />
                 <span className="font-medium text-[#2f3437] text-sm truncate">{m.fullName || "—"}</span>
                 <span className="shrink-0">{tierBadge(m.serviceTier)}</span>
+                {m.subscriptionStatus && <span className="shrink-0">{subStatusBadge(m.subscriptionStatus)}</span>}
               </div>
               <span className="text-xs font-semibold text-[#2f3437]/50 shrink-0 ml-2">
                 {m.latestAuditScore != null ? `${m.latestAuditScore.toFixed(1)}` : "—"}
@@ -258,15 +328,16 @@ export default function MembersPage() {
                 <th className="text-left px-6 py-3 text-xs font-semibold text-[#2f3437]/60 uppercase tracking-wider">Name</th>
                 <th className="text-left px-6 py-3 text-xs font-semibold text-[#2f3437]/60 uppercase tracking-wider">YouTube</th>
                 <th className="text-left px-6 py-3 text-xs font-semibold text-[#2f3437]/60 uppercase tracking-wider">Tier</th>
+                <th className="text-left px-6 py-3 text-xs font-semibold text-[#2f3437]/60 uppercase tracking-wider">Subscription</th>
                 <th className="text-left px-6 py-3 text-xs font-semibold text-[#2f3437]/60 uppercase tracking-wider">Score</th>
                 <th className="text-left px-6 py-3 text-xs font-semibold text-[#2f3437]/60 uppercase tracking-wider">Email</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {loading ? (
-                <tr><td colSpan={5} className="px-6 py-12 text-center text-[#2f3437]/40">Loading...</td></tr>
+                <tr><td colSpan={6} className="px-6 py-12 text-center text-[#2f3437]/40">Loading...</td></tr>
               ) : filtered.length === 0 ? (
-                <tr><td colSpan={5} className="px-6 py-12 text-center text-[#2f3437]/40">
+                <tr><td colSpan={6} className="px-6 py-12 text-center text-[#2f3437]/40">
                   {members.length === 0 ? 'No members yet. Click "Sync from GHL" to import.' : "No members match your search."}
                 </td></tr>
               ) : (
@@ -284,6 +355,23 @@ export default function MembersPage() {
                       ) : "—"}
                     </td>
                     <td className="px-6 py-4">{tierBadge(m.serviceTier)}</td>
+                    <td className="px-6 py-4">
+                      {m.stripePlanName ? (
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-sm font-medium text-[#2f3437]">{m.stripePlanName}</span>
+                            {subStatusBadge(m.subscriptionStatus)}
+                          </div>
+                          {fmtPeriodEnd(m.stripeCurrentPeriodEnd, m.subscriptionStatus) && (
+                            <p className="text-[11px] text-[#2f3437]/40">
+                              {fmtPeriodEnd(m.stripeCurrentPeriodEnd, m.subscriptionStatus)}
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-sm text-[#2f3437]/30">—</span>
+                      )}
+                    </td>
                     <td className="px-6 py-4 text-sm text-[#2f3437]/70">
                       {m.latestAuditScore != null ? `${m.latestAuditScore.toFixed(1)}/10` : "—"}
                     </td>

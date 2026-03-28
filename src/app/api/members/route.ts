@@ -43,6 +43,11 @@ export async function GET() {
     _count: m._count,
     latestAuditScore: m.audits[0]?.overallScore ?? null,
     latestAuditDate: m.audits[0]?.createdAt?.toISOString() ?? null,
+    stripeCustomerId: m.stripeCustomerId ?? null,
+    stripeSubscriptionId: m.stripeSubscriptionId ?? null,
+    subscriptionStatus: m.subscriptionStatus ?? null,
+    stripePlanName: m.stripePlanName ?? null,
+    stripeCurrentPeriodEnd: m.stripeCurrentPeriodEnd?.toISOString() ?? null,
   }));
 
   return NextResponse.json({ members: formatted });
