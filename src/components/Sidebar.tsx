@@ -70,13 +70,13 @@ const editorLinks = [
 ];
 
 const memberLinks = [
-  { href: "/member/dashboard", label: "Dashboard", icon: HomeIcon, featureKey: null },
-  { href: "/member/scores", label: "My Scores", icon: StarIcon, featureKey: null },
-  { href: "/member/academy", label: "Academy", icon: AcademicCapIcon, featureKey: null },
-  { href: "/member/ai-tools", label: "AI Tools", icon: SparklesIcon, featureKey: "ai_tools" },
-  { href: "/member/generate-leads", label: "Generate Leads", icon: RocketLaunchIcon, featureKey: "campaigns" },
-  { href: "/member/hire", label: "Hire a Human", icon: UserGroupIcon, featureKey: null },
-  { href: "/member/settings", label: "Settings", icon: Cog6ToothIcon, featureKey: null },
+  { href: "/member/dashboard", label: "Dashboard", icon: HomeIcon, featureKey: null, colour: "#6ba3c7" },
+  { href: "/member/scores", label: "My Scores", icon: StarIcon, featureKey: null, colour: "#F59E0B" },
+  { href: "/member/academy", label: "Academy", icon: AcademicCapIcon, featureKey: null, colour: "#10B981" },
+  { href: "/member/ai-tools", label: "AI Tools", icon: SparklesIcon, featureKey: "ai_tools", colour: "#6ba3c7" },
+  { href: "/member/generate-leads", label: "Generate Leads", icon: RocketLaunchIcon, featureKey: "campaigns", colour: "#E63946" },
+  { href: "/member/hire", label: "Hire a Human", icon: UserGroupIcon, featureKey: null, colour: "#8B5CF6" },
+  { href: "/member/settings", label: "Settings", icon: Cog6ToothIcon, featureKey: null, colour: "#6ba3c7" },
 ];
 
 interface ImpersonateState {
@@ -254,6 +254,7 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
               );
             })() : null;
 
+            const linkColour = (link as any).colour as string | undefined;
             return (
               <div key={link.href}>
                 {sectionHeader}
@@ -261,9 +262,10 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
                   href={link.href}
                   className={`flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-colors duration-200 border-l-2 ${
                     active
-                      ? "border-[#6ba3c7] bg-white/10 text-white"
+                      ? "bg-white/10 text-white"
                       : "border-transparent text-white/60 hover:text-white hover:bg-white/8"
                   } ${sectionLabel ? "pl-6" : ""}`}
+                  style={active && linkColour ? { borderLeftColor: linkColour } : undefined}
                 >
                   <Icon className="w-5 h-5 shrink-0" />
                   <span className="leading-tight flex-1">{link.label}</span>

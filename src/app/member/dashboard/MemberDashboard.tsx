@@ -59,36 +59,42 @@ const NAV_CARDS = [
     description: "Master the Attraction system, one lesson at a time.",
     href: "/member/academy",
     icon: AcademicCapIcon,
+    colour: "#10B981",
   },
   {
     title: "My Avatar",
     description: "Work on your perfect avatar.",
     href: "/member/ai-tools/avatar-architect",
     icon: SparklesIcon,
+    colour: "#6ba3c7",
   },
   {
     title: "Create Content",
     description: "Generate ideas, scripts, and titles with AI.",
     href: "/member/ai-tools",
     icon: PencilSquareIcon,
+    colour: "#6ba3c7",
   },
   {
     title: "Generate Leads",
     description: "Track your links, clicks, and conversions.",
     href: "/member/campaigns",
     icon: ChartBarIcon,
+    colour: "#E63946",
   },
   {
     title: "My Scores",
     description: "See how your content stacks up.",
     href: "/member/scores",
     icon: TrophyIcon,
+    colour: "#F59E0B",
   },
   {
     title: "Hire a Human",
     description: "Hire us to help you grow faster.",
     href: "/member/hire",
     icon: UserGroupIcon,
+    colour: "#8B5CF6",
   },
 ];
 
@@ -151,20 +157,23 @@ export default function MemberDashboard() {
 
       {/* ── 6-Card Nav Grid ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {NAV_CARDS.map(({ title, description, href, icon: Icon }) => (
+        {NAV_CARDS.map(({ title, description, href, icon: Icon, colour }) => (
           <Link
             key={href}
             href={href}
-            className={`${card} p-6 flex flex-col gap-4 hover:ring-2 hover:ring-[#6ba3c7]/40 hover:shadow-md transition-all group`}
+            className={`${card} overflow-hidden flex flex-col hover:shadow-md transition-all group`}
           >
-            <div className="p-2.5 bg-[#6ba3c7]/10 rounded-xl w-fit">
-              <Icon className="w-8 h-8 text-[#6ba3c7]" />
-            </div>
-            <div>
-              <p className={`text-base font-bold ${txt} group-hover:text-[#6ba3c7] transition-colors`}>
-                {title}
-              </p>
-              <p className={`text-sm mt-1 ${muted} leading-snug`}>{description}</p>
+            <div className="h-1 rounded-t-xl" style={{ backgroundColor: colour }} />
+            <div className="p-6 flex flex-col gap-4 flex-1">
+              <div className="p-2.5 rounded-xl w-fit" style={{ backgroundColor: `${colour}1a` }}>
+                <Icon className="w-8 h-8" style={{ color: colour }} />
+              </div>
+              <div>
+                <p className={`text-base font-bold ${txt} transition-colors`}>
+                  {title}
+                </p>
+                <p className={`text-sm mt-1 ${muted} leading-snug`}>{description}</p>
+              </div>
             </div>
           </Link>
         ))}

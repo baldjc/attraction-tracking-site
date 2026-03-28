@@ -3,7 +3,8 @@
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { CheckCircleIcon } from "@heroicons/react/24/outline";
+import { CheckCircleIcon, RocketLaunchIcon } from "@heroicons/react/24/outline";
+import PageHeader from "@/components/PageHeader";
 import CampaignsPage from "@/app/member/campaigns/page";
 import AnalyticsPage from "@/app/member/analytics/page";
 
@@ -160,13 +161,12 @@ function GenerateLeadsPageInner() {
 
   return (
     <div>
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-[#2f3437] dark:text-white">Generate Leads</h1>
-        <p className="text-sm text-[#2f3437]/50 dark:text-white/50 mt-0.5">
-          Train, track campaigns, and analyze lead performance — all in one place
-        </p>
-      </div>
+      <PageHeader
+        icon={RocketLaunchIcon}
+        title="Generate Leads"
+        description="Turn every video into a lead machine."
+        colour="#E63946"
+      />
 
       {/* Tabs */}
       <div className="flex gap-1 bg-[#111]/5 dark:bg-white/5 rounded-lg p-1 w-fit overflow-x-auto scrollbar-hide mb-6">

@@ -11,7 +11,8 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { ArrowPathIcon } from "@heroicons/react/24/outline";
+import { ArrowPathIcon, StarIcon } from "@heroicons/react/24/outline";
+import PageHeader from "@/components/PageHeader";
 
 const AUDIT_KEY_TO_ACADEMY_SLUG: Record<string, string> = {
   lead_magnet_system: "lead_magnet",
@@ -196,6 +197,12 @@ export default function MemberScoresPage() {
 
   return (
     <div className="space-y-5 pb-10">
+      <PageHeader
+        icon={StarIcon}
+        title="My Scores"
+        description="See where you stand and where to focus next."
+        colour="#F59E0B"
+      />
       {/* YouTube Channel Banner */}
       {channelBannerUrl && (
         <div className="rounded-lg overflow-hidden border border-gray-200 dark:border-[#2a2a2a] relative">
