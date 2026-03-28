@@ -395,7 +395,7 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
       {/* Destination URL */}
       <div className="bg-white border border-[#2f3437]/10 rounded-lg px-4 py-3 flex items-center gap-3">
         <div className="flex-1 min-w-0">
-          <p className="text-[10px] font-semibold text-[#2f3437]/40 uppercase tracking-wide mb-0.5">Lead Magnet URL</p>
+          <p className="text-[10px] font-semibold text-[#2f3437]/40 uppercase tracking-wide mb-0.5">Landing Page URL</p>
           <p className="text-sm text-[#2f3437] font-mono truncate">{campaign.destinationUrl}</p>
         </div>
         <button
