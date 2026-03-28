@@ -3,6 +3,15 @@
 /* ── Class-based dark mode for dark: Tailwind variants ───────── */
 @custom-variant dark (&:is(.dark *));
 
+/* ── Scrollbar hide utility ──────────────────────────────────── */
+@utility scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 /* ── App colour tokens ───────────────────────────────────────── */
 :root {
   --atbv-bg: #f7f6f3;
