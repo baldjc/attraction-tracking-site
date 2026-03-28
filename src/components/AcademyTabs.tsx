@@ -397,7 +397,11 @@ function BrowseTab({
   const searchParams = useSearchParams();
   const [entries, setEntries] = useState<Entry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [principle, setPrinciple] = useState<string | null>(searchParams.get("tag") ?? null);
+  const [principle, setPrinciple] = useState<string | null>(() => {
+    const tag = searchParams.get("tag");
+    if (!tag) return null;
+    return ACAD_PRINCIPLE_NAMES[tag] ?? null;
+  });
   const [sourceType, setSourceType] = useState<"" | "foundations_lesson" | "qa_call">("");
 
   const load = useCallback(async () => {
