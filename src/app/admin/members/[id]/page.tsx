@@ -13,10 +13,14 @@ import {
   EnvelopeIcon,
   ChevronDownIcon,
   PhoneIcon,
+  VideoCameraIcon,
+  ArrowPathIcon,
 } from "@heroicons/react/24/outline";
 import {
   LineChart,
   Line,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -24,6 +28,7 @@ import {
   ResponsiveContainer,
   ReferenceDot,
 } from "recharts";
+import { useTheme } from "@/components/ThemeProvider";
 
 const GHL_LOCATION_ID = process.env.NEXT_PUBLIC_GHL_LOCATION_ID ?? "";
 
@@ -73,6 +78,15 @@ const DIMENSIONS = [
   },
 ];
 
+const TABS = [
+  { id: "overview",   label: "Overview" },
+  { id: "analytics",  label: "Analytics" },
+  { id: "profile",    label: "Profile" },
+  { id: "progress",   label: "Progress" },
+  { id: "campaigns",  label: "Campaigns" },
+] as const;
+type TabId = typeof TABS[number]["id"];
+
 function tierColors(tier: string) {
   if (tier === "foundations") return { badge: "bg-[#6ba3c7]/20 text-[#6ba3c7]", dot: "#6ba3c7" };
   if (tier === "editing_2" || tier === "editing_4") return { badge: "bg-amber-100 text-amber-700", dot: "#f59e0b" };
@@ -107,6 +121,13 @@ function tierLabel(value: string) {
   return SERVICE_TIERS.find((t) => t.value === value)?.label ?? value;
 }
 
+function Delta({ val }: { val: number | null }) {
+  const dim = "text-[#2f3437]/30";
+  if (val === null) return <span className={`text-xs ${dim}`}>—</span>;
+  const color = val > 0 ? "text-emerald-600" : val < 0 ? "text-[#ff0033]" : "text-[#2f3437]/50";
+  return <span className={`text-xs font-medium ${color}`}>{val > 0 ? "+" : ""}{val.toLocaleString()}</span>;
+}
+
 export default function MemberDetailPage() {
   const { data: sessionData } = useSession();
   const currentRole = (sessionData?.user as any)?.role ?? "admin";
@@ -114,42 +135,48 @@ export default function MemberDetailPage() {
 
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+
+  const chartGrid    = isDark ? "rgba(45,55,72,0.5)"   : "rgba(30,42,56,0.06)";
+  const chartTick    = isDark ? "#64748b"               : "rgba(30,42,56,0.45)";
+  const chartTooltip = {
+    background:   isDark ? "#1a1a1a" : "#fff",
+    border:       `1px solid ${isDark ? "#2a2a2a" : "#e5e7eb"}`,
+    borderRadius: 8,
+    fontSize:     12,
+    color:        isDark ? "#e2e8f0" : "#2f3437",
+  };
+
   const [member, setMember] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<TabId>("overview");
 
-  // Edit state
   const [editing, setEditing] = useState(false);
   const [editFields, setEditFields] = useState<any>({});
   const [saving, setSaving] = useState(false);
 
-  // Audit deletion
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [deletingAuditId, setDeletingAuditId] = useState<string | null>(null);
 
-  // Member deletion
   const [confirmDeleteMember, setConfirmDeleteMember] = useState(false);
   const [deletingMember, setDeletingMember] = useState(false);
 
-  // Quick tier change
   const [quickTier, setQuickTier] = useState<string>("");
   const [tierSaving, setTierSaving] = useState(false);
   const [tierSaved, setTierSaved] = useState(false);
 
-  // Notes state
   const [notes, setNotes] = useState("");
   const [notesSaving, setNotesSaving] = useState(false);
   const [notesUpdated, setNotesUpdated] = useState<string | null>(null);
 
-  // Audit dropdown + job polling (separate state for header vs sidebar)
   const [auditOpenHeader, setAuditOpenHeader] = useState(false);
-  const [auditOpenSidebar, setAuditOpenSidebar] = useState(false);
   const [breakdownOpen, setBreakdownOpen] = useState(false);
   const [jobId, setJobId] = useState<string | null>(null);
   const [jobStatus, setJobStatus] = useState<string>("");
   const [jobMessage, setJobMessage] = useState<string>("");
   const [jobError, setJobError] = useState<string | null>(null);
 
-  // Avatar profile admin editing
   const [avatarText, setAvatarText] = useState("");
   const [avatarSaving, setAvatarSaving] = useState(false);
   const [avatarSaved, setAvatarSaved] = useState(false);
@@ -157,10 +184,8 @@ export default function MemberDetailPage() {
     scriptsCount: number; analysesCount: number; lastActivity: string | null;
   } | null>(null);
 
-  // Academy progress
   const [academyProgress, setAcademyProgress] = useState<any>(null);
 
-  // Stripe
   const [stripeLinkOpen, setStripeLinkOpen] = useState(false);
   const [stripeSearchQ, setStripeSearchQ] = useState("");
   const [stripeSearchResults, setStripeSearchResults] = useState<any[]>([]);
@@ -169,18 +194,22 @@ export default function MemberDetailPage() {
   const [linking, setLinking] = useState(false);
   const [unlinking, setUnlinking] = useState(false);
 
-  // Top videos — last 30 days
   const [topVideos, setTopVideos] = useState<any[]>([]);
   const [topVideosLoading, setTopVideosLoading] = useState(false);
   const [topVideosNoChannel, setTopVideosNoChannel] = useState(false);
   const [topVideosNoUploads, setTopVideosNoUploads] = useState(false);
 
-  // Single video selection modal
   const [showVideoModal, setShowVideoModal] = useState(false);
   const [videoModalLoading, setVideoModalLoading] = useState(false);
   const [videoModalVideos, setVideoModalVideos] = useState<any[]>([]);
   const [videoModalError, setVideoModalError] = useState<string | null>(null);
   const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
+
+  const [analyticsData, setAnalyticsData] = useState<any>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(true);
+  const [refreshingChannel, setRefreshingChannel] = useState(false);
+  const [runningAudit, setRunningAudit] = useState<Record<string, boolean>>({});
+  const [auditDone, setAuditDone] = useState<Record<string, string>>({});
 
   const fetchMember = useCallback(async () => {
     setLoading(true);
@@ -193,9 +222,21 @@ export default function MemberDetailPage() {
     setLoading(false);
   }, [id]);
 
+  const fetchAnalytics = useCallback(async () => {
+    setAnalyticsLoading(true);
+    try {
+      const res = await fetch(`/api/admin/analytics/members/${id}`);
+      const d = await res.json();
+      setAnalyticsData(d);
+    } catch { /* silent */ } finally {
+      setAnalyticsLoading(false);
+    }
+  }, [id]);
+
   useEffect(() => {
     fetchMember();
-  }, [fetchMember]);
+    fetchAnalytics();
+  }, [fetchMember, fetchAnalytics]);
 
   useEffect(() => {
     if (!member?.id) return;
@@ -221,7 +262,6 @@ export default function MemberDetailPage() {
 
   useEffect(() => {
     if (!member?.id) return;
-    // Populate avatar text from member data
     if (member.avatarProfile) {
       try {
         setAvatarText(typeof member.avatarProfile === "string"
@@ -231,7 +271,6 @@ export default function MemberDetailPage() {
     } else {
       setAvatarText("");
     }
-    // Fetch AI tools usage counts
     fetch(`/api/admin/member-tools-usage/${member.id}`)
       .then((r) => r.json())
       .then((data) => setToolsUsage(data))
@@ -367,7 +406,6 @@ export default function MemberDetailPage() {
 
   async function runAudit(auditType: string, videoId?: string) {
     setAuditOpenHeader(false);
-    setAuditOpenSidebar(false);
     setJobId(null);
     setJobStatus("queued");
     setJobMessage("Queued — waiting to start…");
@@ -390,11 +428,39 @@ export default function MemberDetailPage() {
     setJobId(newJobId);
   }
 
-  // Poll job status
+  async function handleRunVideoAudit(video: any) {
+    if (!analyticsData) return;
+    setRunningAudit((p) => ({ ...p, [video.id]: true }));
+    try {
+      const res = await fetch("/api/audits/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ memberId: analyticsData.user.id, auditType: "single_video", videoId: video.videoId }),
+      });
+      const d = await res.json();
+      if (d.jobId) setAuditDone((p) => ({ ...p, [video.id]: d.jobId }));
+    } finally {
+      setRunningAudit((p) => ({ ...p, [video.id]: false }));
+    }
+  }
+
+  async function handleRefreshChannel() {
+    setRefreshingChannel(true);
+    try {
+      await fetch("/api/admin/youtube/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: id }),
+      });
+      await fetchAnalytics();
+    } finally {
+      setRefreshingChannel(false);
+    }
+  }
+
   useEffect(() => {
     if (!jobId) return;
     const TERMINAL = ["complete", "failed"];
-
     const interval = setInterval(async () => {
       const res = await fetch(`/api/audits/jobs/${jobId}`);
       const data = await res.json();
@@ -408,32 +474,25 @@ export default function MemberDetailPage() {
         clearInterval(interval);
         fetchMember();
       }
-      if (TERMINAL.includes(data.status)) {
-        clearInterval(interval);
-      }
+      if (TERMINAL.includes(data.status)) clearInterval(interval);
     }, 2500);
-
     return () => clearInterval(interval);
   }, [jobId, fetchMember]);
 
   async function openVideoModal() {
     setAuditOpenHeader(false);
-    setAuditOpenSidebar(false);
     setShowVideoModal(true);
     setVideoModalLoading(true);
     setVideoModalError(null);
     setVideoModalVideos([]);
     setSelectedVideoId(null);
-
     const res = await fetch(`/api/youtube/channel-videos?memberId=${id}`);
     const data = await res.json();
-
     if (!res.ok || !data.videos?.length) {
       setVideoModalError(data.error ?? "Could not fetch videos — check that this member has a valid YouTube channel set");
       setVideoModalLoading(false);
       return;
     }
-
     setVideoModalVideos(data.videos);
     setVideoModalLoading(false);
   }
@@ -469,10 +528,7 @@ export default function MemberDetailPage() {
     .reverse()
     .filter((a: any) => a.overallScore != null)
     .map((a: any) => ({
-      date: new Date(a.createdAt).toLocaleDateString("en-CA", {
-        month: "short",
-        day: "numeric",
-      }),
+      date: new Date(a.createdAt).toLocaleDateString("en-CA", { month: "short", day: "numeric" }),
       score: parseFloat(Number(a.overallScore).toFixed(1)),
       type: a.auditType,
     }));
@@ -481,10 +537,7 @@ export default function MemberDetailPage() {
     .filter((a: any) => a.auditType === "single_video" && a.overallScore != null)
     .reverse()
     .map((a: any) => ({
-      date: new Date(a.createdAt).toLocaleDateString("en-CA", {
-        month: "short",
-        day: "numeric",
-      }),
+      date: new Date(a.createdAt).toLocaleDateString("en-CA", { month: "short", day: "numeric" }),
       score: parseFloat(Number(a.overallScore).toFixed(1)),
       title: (a.videosAnalysed as any)?.[0]?.title ?? "Single Video",
     }));
@@ -499,12 +552,16 @@ export default function MemberDetailPage() {
   }
 
   const rawLatestScores = typeof latestAudit?.scores === "object" && latestAudit?.scores
-    ? (latestAudit.scores as any)
-    : null;
-
+    ? (latestAudit.scores as any) : null;
   const rawBaselineScores = typeof baselineAudit?.scores === "object" && baselineAudit?.scores
-    ? (baselineAudit.scores as any)
-    : null;
+    ? (baselineAudit.scores as any) : null;
+
+  const subCfg: Record<string, { dot: string; label: string; cls: string }> = {
+    active:    { dot: "bg-green-500",  label: "Active",    cls: "text-green-700 bg-green-50 border-green-200" },
+    trialing:  { dot: "bg-blue-400",   label: "Trial",     cls: "text-blue-700 bg-blue-50 border-blue-200" },
+    past_due:  { dot: "bg-amber-400",  label: "Past Due",  cls: "text-amber-700 bg-amber-50 border-amber-200" },
+    cancelled: { dot: "bg-red-500",    label: "Cancelled", cls: "text-red-700 bg-red-50 border-red-200" },
+  };
 
   return (
     <div className="max-w-5xl space-y-6">
@@ -538,7 +595,12 @@ export default function MemberDetailPage() {
               {jobStatus === "failed" ? (jobError ?? "Audit failed") : jobMessage}
             </span>
           </div>
-          <button onClick={() => { setJobId(null); setJobStatus(""); setJobMessage(""); setJobError(null); }} className="text-xs text-[#2f3437]/40 hover:text-[#2f3437]">Dismiss</button>
+          <button
+            onClick={() => { setJobId(null); setJobStatus(""); setJobMessage(""); setJobError(null); }}
+            className="text-xs text-[#2f3437]/40 hover:text-[#2f3437]"
+          >
+            Dismiss
+          </button>
         </div>
       )}
 
@@ -561,19 +623,58 @@ export default function MemberDetailPage() {
               <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full shrink-0 ${tierColors(member.serviceTier).badge}`}>
                 {tierLabel(member.serviceTier)}
               </span>
+              {member.stripePlanName && member.subscriptionStatus && (() => {
+                const cfg = subCfg[member.subscriptionStatus];
+                if (!cfg) return null;
+                return (
+                  <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full border ${cfg.cls}`}>
+                    {member.stripePlanName} · {cfg.label}
+                  </span>
+                );
+              })()}
             </div>
           </div>
-          {member.youtubeChannelUrl && (
-            <a
-              href={member.youtubeChannelUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 bg-white text-[#2f3437] text-sm font-semibold px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors self-start"
-            >
-              <ArrowTopRightOnSquareIcon className="w-4 h-4" />
-              View Channel
-            </a>
-          )}
+          <div className="flex items-center gap-2 flex-wrap">
+            {member.youtubeChannelUrl && (
+              <a
+                href={member.youtubeChannelUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 bg-white text-[#2f3437] text-sm font-semibold px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                <ArrowTopRightOnSquareIcon className="w-4 h-4" />
+                View Channel
+              </a>
+            )}
+            {!isEditorRole && (
+              <div className="relative">
+                <button
+                  onClick={() => setAuditOpenHeader((o) => !o)}
+                  className="inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/20 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors border border-white/20"
+                >
+                  Run Audit
+                  <ChevronDownIcon className="w-4 h-4" />
+                </button>
+                {auditOpenHeader && (
+                  <div className="absolute left-0 mt-1 w-44 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                    {[
+                      { label: "Baseline", value: "baseline" },
+                      { label: "Monthly", value: "monthly" },
+                      { label: "Single Video", value: "single_video" },
+                    ].map(({ label, value }) => (
+                      <button
+                        key={value}
+                        onClick={() => value === "single_video" ? openVideoModal() : runAudit(value)}
+                        className="w-full text-left px-4 py-2.5 text-sm text-[#2f3437] hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg"
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -582,626 +683,50 @@ export default function MemberDetailPage() {
         {[
           {
             label: "Current Score",
-            value: latestAudit?.overallScore != null
-              ? Number(latestAudit.overallScore).toFixed(1)
-              : "—",
+            value: latestAudit?.overallScore != null ? Number(latestAudit.overallScore).toFixed(1) : "—",
             colored: true,
             score: latestAudit?.overallScore != null ? Number(latestAudit.overallScore) : null,
           },
           { label: "Member Since", value: fmt(member.invitedAt ?? member.createdAt) },
           { label: "Last Audit", value: fmt(latestAudit?.createdAt) },
-          {
-            label: "Total Audits",
-            value: member.audits?.length ?? 0,
-          },
+          { label: "Total Audits", value: member.audits?.length ?? 0 },
         ].map((stat) => (
-          <div
-            key={stat.label}
-            className="bg-white rounded-lg border border-gray-200 p-4"
-          >
-            <p className="text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wider mb-1">
-              {stat.label}
-            </p>
-            <p
-              className={`text-2xl font-bold ${
-                stat.colored ? scoreColor(stat.score) : "text-[#2f3437]"
-              }`}
-            >
+          <div key={stat.label} className="bg-white rounded-lg border border-gray-200 p-4">
+            <p className="text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wider mb-1">{stat.label}</p>
+            <p className={`text-2xl font-bold ${stat.colored ? scoreColor(stat.score) : "text-[#2f3437]"}`}>
               {stat.value}
             </p>
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* LEFT COLUMN */}
-        <div className="lg:col-span-2 space-y-6 order-2 lg:order-1">
-          {/* MEMBER INFO CARD */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-semibold text-[#2f3437]">Member Info</h2>
-              {!isEditorRole && (
-                !editing ? (
-                  <button
-                    onClick={() => {
-                      setEditFields({
-                        fullName: member.fullName ?? "",
-                        email: member.email ?? "",
-                        phone: member.phone ?? "",
-                        youtubeChannelUrl: member.youtubeChannelUrl ?? "",
-                        youtubeHandle: member.youtubeHandle ?? "",
-                        youtubeChannelName: member.youtubeChannelName ?? "",
-                        serviceTier: member.serviceTier ?? "foundations",
-                        ghlContactId: member.ghlContactId ?? "",
-                      });
-                      setEditing(true);
-                    }}
-                    className="flex items-center gap-1.5 text-sm text-[#6ba3c7] hover:text-[#5490b5]"
-                  >
-                    <PencilIcon className="w-4 h-4" /> Edit
-                  </button>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={handleSaveEdit}
-                      disabled={saving}
-                      className="flex items-center gap-1 text-sm text-green-600 hover:text-green-700 font-medium"
-                    >
-                      <CheckIcon className="w-4 h-4" />
-                      {saving ? "Saving…" : "Save"}
-                    </button>
-                    <button
-                      onClick={() => setEditing(false)}
-                      className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600"
-                    >
-                      <XMarkIcon className="w-4 h-4" /> Cancel
-                    </button>
-                  </div>
-                )
-              )}
-            </div>
+      {/* TAB BAR */}
+      <div className="flex gap-1 bg-white border border-gray-200 rounded-lg p-1 w-fit overflow-x-auto">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setActiveTab(t.id)}
+            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap ${
+              activeTab === t.id
+                ? "bg-[#2f3437] text-white"
+                : "text-[#2f3437]/60 hover:text-[#2f3437] hover:bg-gray-50"
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
 
-            <div className="space-y-3 text-sm">
-              {/* Full Name */}
-              <div className="flex flex-col sm:flex-row sm:items-center gap-1">
-                <span className="text-[#2f3437]/50 w-40 shrink-0">Full Name</span>
-                {editing ? (
-                  <input value={editFields.fullName ?? ""} onChange={(e) => setEditFields((f: any) => ({ ...f, fullName: e.target.value }))} className="flex-1 border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30" />
-                ) : (
-                  <span className="text-[#2f3437]">{member.fullName || <span className="text-gray-400">—</span>}</span>
-                )}
-              </div>
-
-              {/* Email */}
-              <div className="flex flex-col sm:flex-row sm:items-center gap-1">
-                <span className="text-[#2f3437]/50 w-40 shrink-0">Email</span>
-                {editing ? (
-                  <input value={editFields.email ?? ""} onChange={(e) => setEditFields((f: any) => ({ ...f, email: e.target.value }))} className="flex-1 border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30" />
-                ) : (
-                  <span className="text-[#2f3437]">{member.email || <span className="text-gray-400">—</span>}</span>
-                )}
-              </div>
-
-              {/* Phone */}
-              <div className="flex flex-col sm:flex-row sm:items-center gap-1">
-                <span className="text-[#2f3437]/50 w-40 shrink-0">Phone</span>
-                {editing ? (
-                  <input value={editFields.phone ?? ""} onChange={(e) => setEditFields((f: any) => ({ ...f, phone: e.target.value }))} className="flex-1 border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30" placeholder="+1 555 000 0000" />
-                ) : (
-                  <span className="text-[#2f3437]">
-                    {member.phone ? (
-                      <a href={`tel:${member.phone}`} className="text-[#6ba3c7] hover:underline">{member.phone}</a>
-                    ) : <span className="text-gray-400">—</span>}
-                  </span>
-                )}
-              </div>
-
-              {/* YouTube Channel */}
-              <div className="flex flex-col sm:flex-row sm:items-center gap-1">
-                <span className="text-[#2f3437]/50 w-40 shrink-0">YouTube Channel</span>
-                {editing ? (
-                  <div className="flex-1 space-y-1.5">
-                    <input value={editFields.youtubeChannelUrl ?? ""} onChange={(e) => setEditFields((f: any) => ({ ...f, youtubeChannelUrl: e.target.value }))} className="w-full border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30" placeholder="YouTube URL" />
-                    <input value={editFields.youtubeHandle ?? ""} onChange={(e) => setEditFields((f: any) => ({ ...f, youtubeHandle: e.target.value }))} className="w-full border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30" placeholder="Handle (@channel)" />
-                    <input value={editFields.youtubeChannelName ?? ""} onChange={(e) => setEditFields((f: any) => ({ ...f, youtubeChannelName: e.target.value }))} className="w-full border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30" placeholder="Channel name" />
-                  </div>
-                ) : (
-                  <span className="text-[#2f3437] break-all">
-                    {member.youtubeChannelUrl ? (
-                      <a href={member.youtubeChannelUrl} target="_blank" rel="noopener noreferrer" className="text-[#6ba3c7] hover:underline flex items-center gap-1">
-                        {member.youtubeChannelName
-                          ? (member.youtubeHandle && !isRawChannelId(member.youtubeHandle)
-                              ? `${member.youtubeChannelName} (${member.youtubeHandle})`
-                              : member.youtubeChannelName)
-                          : (!isRawChannelId(member.youtubeHandle)
-                              ? (member.youtubeHandle ?? member.youtubeChannelUrl)
-                              : member.youtubeChannelUrl)}
-                        <ArrowTopRightOnSquareIcon className="w-3.5 h-3.5 shrink-0" />
-                      </a>
-                    ) : <span className="text-gray-400">—</span>}
-                  </span>
-                )}
-              </div>
-
-              {/* GHL Contact ID */}
-              <div className="flex flex-col sm:flex-row sm:items-center gap-1">
-                <span className="text-[#2f3437]/50 w-40 shrink-0">GHL Contact ID</span>
-                {editing ? (
-                  <input value={editFields.ghlContactId ?? ""} onChange={(e) => setEditFields((f: any) => ({ ...f, ghlContactId: e.target.value }))} className="flex-1 border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30" />
-                ) : (
-                  <span className="text-[#2f3437] break-all">
-                    {member.ghlContactId ? (
-                      <a href={`https://app.gohighlevel.com/v2/location/${GHL_LOCATION_ID}/contacts/detail/${member.ghlContactId}`} target="_blank" rel="noopener noreferrer" className="text-[#6ba3c7] hover:underline">
-                        {member.ghlContactId}
-                      </a>
-                    ) : <span className="text-gray-400">—</span>}
-                  </span>
-                )}
-              </div>
-
-              {/* Membership Level */}
-              <div className="flex flex-col sm:flex-row sm:items-center gap-1">
-                <span className="text-[#2f3437]/50 w-40 shrink-0">Membership Level</span>
-                {editing ? (
-                  <select
-                    value={editFields.serviceTier ?? "foundations"}
-                    onChange={(e) => setEditFields((f: any) => ({ ...f, serviceTier: e.target.value }))}
-                    className="border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30"
-                  >
-                    {SERVICE_TIERS.map((t) => (
-                      <option key={t.value} value={t.value}>{t.label}</option>
-                    ))}
-                  </select>
-                ) : (
-                  <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold ${tierColors(member.serviceTier).badge}`}>
-                    {tierLabel(member.serviceTier)}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* AUDIT HISTORY */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-semibold text-[#2f3437]">Audit History</h2>
-              {!isEditorRole && (
-                <div className="relative">
-                  <button
-                    onClick={() => setAuditOpenHeader((o) => !o)}
-                    className="flex items-center gap-1.5 bg-[#6ba3c7] hover:bg-[#5490b5] text-white text-sm font-semibold px-3 py-2 rounded-lg transition-colors"
-                  >
-                    Run Audit
-                    <ChevronDownIcon className="w-4 h-4" />
-                  </button>
-                  {auditOpenHeader && (
-                    <div className="absolute right-0 mt-1 w-44 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-                      {[
-                        { label: "Baseline", value: "baseline" },
-                        { label: "Monthly", value: "monthly" },
-                        { label: "Single Video", value: "single_video" },
-                      ].map(({ label, value }) => (
-                        <button
-                          key={value}
-                          onClick={() => value === "single_video" ? openVideoModal() : runAudit(value)}
-                          className="w-full text-left px-4 py-2.5 text-sm text-[#2f3437] hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg"
-                        >
-                          {label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {member.audits?.length === 0 ? (
-              <p className="text-sm text-[#2f3437]/50 text-center py-8">
-                No audits yet — use the Run Audit button to generate the first baseline.
-              </p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-gray-100">
-                      <th className="text-left py-2 pr-4 text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wider">Date</th>
-                      <th className="text-left py-2 pr-4 text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wider">Type</th>
-                      <th className="text-left py-2 pr-4 text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wider">Score</th>
-                      <th className="text-right py-2 text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wider">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {member.audits.map((audit: any) => (
-                      <tr key={audit.id} className="border-b border-gray-50 last:border-0">
-                        <td className="py-3 pr-4 text-[#2f3437]/70">{fmt(audit.createdAt)}</td>
-                        <td className="py-3 pr-4 text-[#2f3437]">
-                          {audit.auditType === "single_video" ? (() => {
-                            const vid = (audit.videosAnalysed as any)?.[0];
-                            const videoId = vid?.videoId;
-                            const title = vid?.title ?? "Single Video";
-                            const truncated = title.length > 50 ? title.slice(0, 50) + "…" : title;
-                            return (
-                              <div className="flex items-center gap-2">
-                                {videoId && (
-                                  <img
-                                    src={`https://img.youtube.com/vi/${videoId}/mqdefault.jpg`}
-                                    alt=""
-                                    className="w-12 h-[34px] rounded object-cover shrink-0"
-                                  />
-                                )}
-                                <span className="text-sm leading-tight">{truncated}</span>
-                              </div>
-                            );
-                          })() : (
-                            <span className="capitalize">{audit.auditType.replace("_", " ")}</span>
-                          )}
-                        </td>
-                        <td className="py-3 pr-4">
-                          {audit.overallScore != null ? (
-                            <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${scoreBg(Number(audit.overallScore))}`}>
-                              {Number(audit.overallScore).toFixed(1)}
-                            </span>
-                          ) : (
-                            <span className="text-gray-400">—</span>
-                          )}
-                        </td>
-                        <td className="py-3 text-right">
-                          {!isEditorRole && confirmDeleteId === audit.id ? (
-                            <span className="inline-flex items-center gap-2">
-                              <span className="text-xs text-[#2f3437]/50">Delete?</span>
-                              <button
-                                onClick={() => handleDeleteAudit(audit.id)}
-                                disabled={deletingAuditId === audit.id}
-                                className="text-xs text-[#ff0033] font-semibold hover:underline"
-                              >
-                                {deletingAuditId === audit.id ? "Deleting…" : "Yes"}
-                              </button>
-                              <button
-                                onClick={() => setConfirmDeleteId(null)}
-                                className="text-xs text-gray-400 hover:text-gray-600"
-                              >
-                                No
-                              </button>
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-3">
-                              <Link
-                                href={`/admin/audits/${audit.id}`}
-                                className="text-[#6ba3c7] hover:underline text-xs"
-                              >
-                                View →
-                              </Link>
-                              {!isEditorRole && (
-                                <button
-                                  onClick={() => setConfirmDeleteId(audit.id)}
-                                  className="text-xs text-gray-300 hover:text-[#ff0033] transition-colors"
-                                >
-                                  Delete
-                                </button>
-                              )}
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-
-          {/* TOP VIDEOS — last 30 days */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <h2 className="text-base font-semibold text-[#2f3437] mb-4">Most Viewed — Last 30 Days</h2>
-            {topVideosLoading ? (
-              <p className="text-sm text-[#2f3437]/50 text-center py-6">Loading videos…</p>
-            ) : topVideosNoChannel ? (
-              <p className="text-sm text-[#2f3437]/50 text-center py-6">No YouTube channel connected.</p>
-            ) : topVideosNoUploads ? (
-              <p className="text-sm text-amber-500 text-center py-6">No uploads in the last 30 days.</p>
-            ) : topVideos.length === 0 ? (
-              <p className="text-sm text-[#2f3437]/50 text-center py-6">No videos found.</p>
-            ) : (
-              <div className="space-y-3">
-                {topVideos.map((v, i) => (
-                  <a
-                    key={v.videoId}
-                    href={v.watchUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors group"
-                  >
-                    <span className="text-xs font-bold text-[#2f3437]/30 w-4 shrink-0">{i + 1}</span>
-                    <img
-                      src={v.thumbnailUrl}
-                      alt={v.title}
-                      className="w-20 h-[45px] object-cover rounded shrink-0"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-[#2f3437] leading-snug line-clamp-2 group-hover:text-[#6ba3c7] transition-colors">
-                        {v.title}
-                      </p>
-                      <p className="text-xs text-[#2f3437]/40 mt-0.5">
-                        {Number(v.viewCount).toLocaleString()} views
-                        {v.uploadDate && (
-                          <span className="ml-2">{new Date(v.uploadDate).toLocaleDateString()}</span>
-                        )}
-                      </p>
-                    </div>
-                  </a>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* SCORE TREND — two charts */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-6">
-
-            {/* Chart 1: Channel Score Trend (baseline + monthly only) */}
-            <div>
-              <h2 className="text-base font-semibold text-[#2f3437] mb-3">Channel Score Trend</h2>
-              {chartData.length === 0 ? (
-                <p className="text-sm text-[#2f3437]/50 text-center py-6">
-                  Scores will appear after the first audit.
-                </p>
-              ) : chartData.length === 1 ? (
-                <div>
-                  <ResponsiveContainer width="100%" height={150}>
-                    <LineChart data={chartData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                      <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-                      <YAxis domain={[0, 10]} tick={{ fontSize: 11 }} />
-                      <ReferenceDot
-                        x={chartData[0].date}
-                        y={chartData[0].score}
-                        r={5}
-                        fill="#6ba3c7"
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                  <p className="text-xs text-[#2f3437]/40 text-center mt-2">
-                    More data points will appear after monthly audits.
-                  </p>
-                </div>
-              ) : (
-                <ResponsiveContainer width="100%" height={180}>
-                  <LineChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-                    <YAxis domain={[0, 10]} tick={{ fontSize: 11 }} />
-                    <Tooltip
-                      formatter={(val) => [typeof val === "number" ? val.toFixed(1) : String(val ?? ""), "Score"]}
-                      contentStyle={{ fontSize: 12, borderRadius: 8 }}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="score"
-                      stroke="#6ba3c7"
-                      strokeWidth={2.5}
-                      dot={{ r: 4, fill: "#6ba3c7" }}
-                      activeDot={{ r: 6 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              )}
-            </div>
-
-            <div className="border-t border-gray-100" />
-
-            {/* Chart 2: Video Audit Scores (single_video only) */}
-            <div>
-              <h2 className="text-base font-semibold text-[#2f3437] mb-1">Video Audit Scores</h2>
-              <p className="text-xs text-[#2f3437]/40 mb-3">Individual video scores — expect variation above and below the channel baseline.</p>
-              {videoAuditData.length === 0 ? (
-                <p className="text-sm text-[#2f3437]/50 text-center py-6">
-                  No video audits yet.
-                </p>
-              ) : (
-                <ResponsiveContainer width="100%" height={180}>
-                  <LineChart data={videoAuditData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-                    <YAxis domain={[0, 10]} tick={{ fontSize: 11 }} />
-                    <Tooltip
-                      content={({ active, payload }: any) => {
-                        if (!active || !payload?.length) return null;
-                        const d = payload[0].payload;
-                        return (
-                          <div className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs max-w-[220px]">
-                            <p className="font-semibold text-[#2f3437] mb-0.5">{d.title}</p>
-                            <p className="text-[#2f3437]/60">{d.date} · Score: <span className="font-bold text-[#2f3437]">{d.score.toFixed(1)}</span></p>
-                          </div>
-                        );
-                      }}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="score"
-                      stroke="#94a3b8"
-                      strokeWidth={2}
-                      strokeDasharray="4 3"
-                      dot={{ r: 4, fill: "#94a3b8", stroke: "#fff", strokeWidth: 1.5 }}
-                      activeDot={{ r: 6, fill: "#64748b" }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              )}
-            </div>
-          </div>
-
-          {/* 16-PRINCIPLE BREAKDOWN */}
-          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-            <button
-              onClick={() => setBreakdownOpen((o) => !o)}
-              className="w-full flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition-colors"
-            >
-              <span className="text-base font-semibold text-[#2f3437]">16-Principle Breakdown</span>
-              <div className="flex items-center gap-2">
-                {latestAudit && (
-                  <span className="text-xs text-[#2f3437]/40 font-medium">
-                    {DIMENSIONS.length} categories
-                  </span>
-                )}
-                <ChevronDownIcon
-                  className={`w-4 h-4 text-[#2f3437]/40 transition-transform duration-200 ${breakdownOpen ? "rotate-180" : ""}`}
-                />
-              </div>
-            </button>
-
-            {breakdownOpen && (
-              <div className="px-6 pb-6 border-t border-gray-100">
-            {!latestAudit ? (
-              <p className="text-sm text-[#2f3437]/50 text-center py-8">
-                Scores will appear after the first audit.
-              </p>
-            ) : (
-              <div className="space-y-6 pt-4">
-                {DIMENSIONS.map((dim) => {
-                  const dimScores = dim.keys
-                    .map((k) => extractScore(rawLatestScores, k))
-                    .filter((s): s is number => s != null);
-                  const dimAvg =
-                    dimScores.length > 0
-                      ? dimScores.reduce((a, b) => a + b, 0) / dimScores.length
-                      : null;
-
-                  return (
-                    <div key={dim.label}>
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-sm font-semibold text-[#2f3437]">{dim.label}</h3>
-                        {dimAvg != null && (
-                          <span
-                            className={`text-xs font-bold px-2 py-0.5 rounded-full ${scoreBg(dimAvg)}`}
-                          >
-                            Avg {dimAvg.toFixed(1)}
-                          </span>
-                        )}
-                      </div>
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="border-b border-gray-100">
-                            <th className="text-left pb-1.5 text-xs text-[#2f3437]/40 font-medium">
-                              Principle
-                            </th>
-                            <th className="text-center pb-1.5 text-xs text-[#2f3437]/40 font-medium">
-                              Score
-                            </th>
-                            <th className="text-center pb-1.5 text-xs text-[#2f3437]/40 font-medium">
-                              Δ Baseline
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {dim.keys.map((key) => {
-                            const score = extractScore(rawLatestScores, key);
-                            const base = extractScore(rawBaselineScores, key);
-                            const principle = PRINCIPLE_LABELS[key] ?? key;
-                            const delta =
-                              score != null && base != null ? score - base : null;
-                            return (
-                              <tr key={principle} className="border-b border-gray-50 last:border-0">
-                                <td className="py-2 text-[#2f3437]">{principle}</td>
-                                <td className="py-2 text-center">
-                                  {score != null ? (
-                                    <span
-                                      className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${scoreBg(score)}`}
-                                    >
-                                      {score.toFixed(1)}
-                                    </span>
-                                  ) : (
-                                    <span className="text-gray-400">—</span>
-                                  )}
-                                </td>
-                                <td className="py-2 text-center text-xs font-semibold">
-                                  {delta == null ? (
-                                    <span className="text-gray-400">—</span>
-                                  ) : delta > 0 ? (
-                                    <span className="text-green-600">+{delta.toFixed(1)}</span>
-                                  ) : delta < 0 ? (
-                                    <span className="text-[#ff0033]">{delta.toFixed(1)}</span>
-                                  ) : (
-                                    <span className="text-gray-400">0.0</span>
-                                  )}
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-              </div>
-            )}
-          </div>
-
-          {/* TRACKING LINKS */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-semibold text-[#2f3437]">Tracking Links</h2>
-              <button className="text-sm text-[#6ba3c7] hover:text-[#5490b5] font-medium">
-                + Create Link
-              </button>
-            </div>
-            {member.links?.length === 0 ? (
-              <p className="text-sm text-[#2f3437]/50 text-center py-6">
-                No tracking links yet.
-              </p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-gray-100">
-                      {["Link Name", "Short URL", "Clicks", "Conversions", "Conv. Rate"].map(
-                        (h) => (
-                          <th
-                            key={h}
-                            className="text-left py-2 pr-4 text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wider last:text-right"
-                          >
-                            {h}
-                          </th>
-                        )
-                      )}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {member.links.map((link: any) => {
-                      const clicks = link.clicks?.length ?? 0;
-                      const conversions = link.clicks?.filter(
-                        (c: any) => c.lead
-                      ).length ?? 0;
-                      const rate =
-                        clicks > 0 ? ((conversions / clicks) * 100).toFixed(1) + "%" : "—";
-                      return (
-                        <tr key={link.id} className="border-b border-gray-50 last:border-0">
-                          <td className="py-3 pr-4 text-[#2f3437]">{link.name}</td>
-                          <td className="py-3 pr-4">
-                            <span className="text-[#6ba3c7] font-mono text-xs">
-                              /{link.refCode}
-                            </span>
-                          </td>
-                          <td className="py-3 pr-4 text-[#2f3437]">{clicks}</td>
-                          <td className="py-3 pr-4 text-[#2f3437]">{conversions}</td>
-                          <td className="py-3 text-right text-[#2f3437]">{rate}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
+      {/* ── OVERVIEW TAB ──────────────────────────────────────────── */}
+      {activeTab === "overview" && (
+        <div className="space-y-6">
 
           {/* COACHING NOTES */}
           <div className="bg-white rounded-lg border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-base font-semibold text-[#2f3437]">Coaching Notes</h2>
               {notesUpdated && (
-                <span className="text-xs text-[#2f3437]/40">
-                  Last saved {fmt(notesUpdated)}
-                </span>
+                <span className="text-xs text-[#2f3437]/40">Last saved {fmt(notesUpdated)}</span>
               )}
             </div>
             {isEditorRole ? (
@@ -1228,93 +753,859 @@ export default function MemberDetailPage() {
             )}
           </div>
 
-          {/* Avatar Profile */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-semibold text-[#2f3437]">Avatar Profile</h2>
-              {member?.avatarName && (
-                <span className="text-xs text-[#6ba3c7] bg-[#6ba3c7]/10 px-2.5 py-1 rounded-full font-medium">
-                  {member.avatarName}
-                </span>
+          {/* SCORE TREND */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-6">
+            <div>
+              <h2 className="text-base font-semibold text-[#2f3437] mb-3">Channel Score Trend</h2>
+              {chartData.length === 0 ? (
+                <p className="text-sm text-[#2f3437]/50 text-center py-6">Scores will appear after the first audit.</p>
+              ) : chartData.length === 1 ? (
+                <div>
+                  <ResponsiveContainer width="100%" height={150}>
+                    <LineChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                      <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                      <YAxis domain={[0, 10]} tick={{ fontSize: 11 }} />
+                      <ReferenceDot x={chartData[0].date} y={chartData[0].score} r={5} fill="#6ba3c7" />
+                    </LineChart>
+                  </ResponsiveContainer>
+                  <p className="text-xs text-center text-[#2f3437]/40 mt-1">
+                    Only 1 audit — add another to see a trend.
+                  </p>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height={180}>
+                  <LineChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                    <YAxis domain={[0, 10]} tick={{ fontSize: 11 }} />
+                    <Tooltip
+                      content={({ active, payload }: any) => {
+                        if (!active || !payload?.length) return null;
+                        const d = payload[0].payload;
+                        return (
+                          <div className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs">
+                            <p className="font-semibold capitalize">{d.type.replace("_", " ")}</p>
+                            <p className="text-[#2f3437]/60">{d.date} · Score: <strong>{d.score.toFixed(1)}</strong></p>
+                          </div>
+                        );
+                      }}
+                    />
+                    <Line
+                      type="monotone" dataKey="score" stroke="#6ba3c7" strokeWidth={2.5}
+                      dot={({ cx, cy, payload }: any) => (
+                        <circle
+                          key={`dot-${cx}-${cy}`}
+                          cx={cx} cy={cy} r={4}
+                          fill={payload.type === "baseline" ? "#2f3437" : "#6ba3c7"}
+                          stroke="#fff" strokeWidth={1.5}
+                        />
+                      )}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
               )}
             </div>
-            {!member?.avatarProfile ? (
-              <p className="text-sm text-[#2f3437]/40 mb-3">No avatar saved for this member yet.</p>
-            ) : (
-              <>
-                {member.avatarSummary && (
-                  <p className="text-sm text-[#2f3437]/70 mb-3 leading-relaxed">{member.avatarSummary}</p>
+
+            {videoAuditData.length > 0 && (
+              <div>
+                <h2 className="text-base font-semibold text-[#2f3437] mb-3">Single Video Audits</h2>
+                {videoAuditData.length === 1 ? (
+                  <p className="text-sm text-[#2f3437]/50 text-center py-4">Need at least 2 video audits to show a trend.</p>
+                ) : (
+                  <ResponsiveContainer width="100%" height={180}>
+                    <LineChart data={videoAuditData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                      <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                      <YAxis domain={[0, 10]} tick={{ fontSize: 11 }} />
+                      <Tooltip
+                        content={({ active, payload }: any) => {
+                          if (!active || !payload?.length) return null;
+                          const d = payload[0].payload;
+                          return (
+                            <div className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs max-w-[220px]">
+                              <p className="font-semibold text-[#2f3437] mb-0.5">{d.title}</p>
+                              <p className="text-[#2f3437]/60">{d.date} · Score: <span className="font-bold text-[#2f3437]">{d.score.toFixed(1)}</span></p>
+                            </div>
+                          );
+                        }}
+                      />
+                      <Line
+                        type="monotone" dataKey="score" stroke="#94a3b8" strokeWidth={2}
+                        strokeDasharray="4 3"
+                        dot={{ r: 4, fill: "#94a3b8", stroke: "#fff", strokeWidth: 1.5 }}
+                        activeDot={{ r: 6, fill: "#64748b" }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
                 )}
-                {Array.isArray(member.contentThemes) && member.contentThemes.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mb-4">
-                    {(member.contentThemes as unknown[]).map((t, i) => {
-                      const label = typeof t === "string"
-                        ? t
-                        : t && typeof t === "object" && "name" in t
-                          ? `${(t as any).emoji ?? ""} ${(t as any).name ?? ""}`.trim()
-                          : null;
-                      return label ? (
-                        <span key={i} className="text-xs bg-[#6ba3c7]/10 text-[#6ba3c7] px-2.5 py-1 rounded-full font-medium">{label}</span>
-                      ) : null;
-                    })}
-                  </div>
-                )}
-              </>
-            )}
-            {isEditorRole ? (
-              avatarText ? (
-                <div className="text-sm text-[#2f3437] whitespace-pre-wrap bg-gray-50 rounded-lg px-4 py-3 font-mono max-h-48 overflow-y-auto">
-                  {avatarText}
-                </div>
-              ) : null
-            ) : (
-              <>
-                <textarea
-                  value={avatarText}
-                  onChange={(e) => setAvatarText(e.target.value)}
-                  rows={6}
-                  placeholder="No avatar document saved. You can paste or edit one here."
-                  className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-[#2f3437] font-mono focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30 resize-none"
-                />
-                <div className="flex items-center justify-between mt-2">
-                  {avatarSaved && <span className="text-xs text-green-600 font-medium">Saved</span>}
-                  <button
-                    onClick={handleSaveAdminAvatar}
-                    disabled={avatarSaving || !avatarText.trim()}
-                    className="ml-auto bg-[#111] hover:bg-[#2a3a4d] disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
-                  >
-                    {avatarSaving ? "Saving…" : "Save Avatar"}
-                  </button>
-                </div>
-              </>
+              </div>
             )}
           </div>
 
-          {/* ACADEMY PROGRESS */}
+          {/* TOP VIDEOS */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <h2 className="text-base font-semibold text-[#2f3437] mb-4">Most Viewed — Last 30 Days</h2>
+            {topVideosLoading ? (
+              <p className="text-sm text-[#2f3437]/50 text-center py-6">Loading videos…</p>
+            ) : topVideosNoChannel ? (
+              <p className="text-sm text-[#2f3437]/50 text-center py-6">No YouTube channel connected.</p>
+            ) : topVideosNoUploads ? (
+              <p className="text-sm text-amber-500 text-center py-6">No uploads in the last 30 days.</p>
+            ) : topVideos.length === 0 ? (
+              <p className="text-sm text-[#2f3437]/50 text-center py-6">No videos found.</p>
+            ) : (
+              <div className="space-y-3">
+                {topVideos.map((v, i) => (
+                  <a
+                    key={v.videoId}
+                    href={v.watchUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors group"
+                  >
+                    <span className="text-xs font-bold text-[#2f3437]/30 w-4 shrink-0">{i + 1}</span>
+                    <img src={v.thumbnailUrl} alt={v.title} className="w-20 h-[45px] object-cover rounded shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-[#2f3437] leading-snug line-clamp-2 group-hover:text-[#6ba3c7] transition-colors">
+                        {v.title}
+                      </p>
+                      <p className="text-xs text-[#2f3437]/40 mt-0.5">
+                        {Number(v.viewCount).toLocaleString()} views
+                        {v.uploadDate && <span className="ml-2">{new Date(v.uploadDate).toLocaleDateString()}</span>}
+                      </p>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── ANALYTICS TAB ─────────────────────────────────────────── */}
+      {activeTab === "analytics" && (
+        <div className="space-y-6">
+          {analyticsLoading ? (
+            <div className="flex items-center justify-center h-48 text-[#2f3437]/40">
+              <ArrowPathIcon className="w-5 h-5 animate-spin mr-2" />
+              Loading analytics…
+            </div>
+          ) : !analyticsData || analyticsData.error ? (
+            <p className="text-sm text-[#2f3437]/50 text-center py-12">No analytics data available.</p>
+          ) : (
+            <>
+              {/* Channel Stats */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-base font-semibold text-[#2f3437]">YouTube Activity</h2>
+                  <button
+                    onClick={handleRefreshChannel}
+                    disabled={refreshingChannel}
+                    className="flex items-center gap-1.5 border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-60 text-[#2f3437] text-xs font-medium px-3 py-1.5 rounded-lg transition"
+                  >
+                    <ArrowPathIcon className={`w-3.5 h-3.5 ${refreshingChannel ? "animate-spin" : ""}`} />
+                    {refreshingChannel ? "Refreshing…" : "Refresh Channel"}
+                  </button>
+                </div>
+                {analyticsData.channelStats ? (
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="bg-white rounded-lg border border-gray-200 p-4">
+                      <div className="text-xs text-[#2f3437]/50 uppercase tracking-wide mb-1">Subscribers</div>
+                      <div className="text-2xl font-bold text-[#2f3437]">{analyticsData.channelStats.subscriberCount.toLocaleString()}</div>
+                      <div className="mt-1 flex items-center gap-1.5">
+                        <Delta val={analyticsData.channelStats.subscriberChange30d} />
+                        <span className="text-xs text-[#2f3437]/30">30d</span>
+                      </div>
+                    </div>
+                    <div className="bg-white rounded-lg border border-gray-200 p-4">
+                      <div className="text-xs text-[#2f3437]/50 uppercase tracking-wide mb-1">Total Views</div>
+                      <div className="text-2xl font-bold text-[#2f3437]">{analyticsData.channelStats.totalViewCount.toLocaleString()}</div>
+                      <div className="mt-1 flex items-center gap-1.5">
+                        <Delta val={analyticsData.channelStats.viewChange30d} />
+                        <span className="text-xs text-[#2f3437]/30">30d</span>
+                      </div>
+                    </div>
+                    <div className="bg-white rounded-lg border border-gray-200 p-4">
+                      <div className="text-xs text-[#2f3437]/50 uppercase tracking-wide mb-1">Videos/Week</div>
+                      <div className="text-2xl font-bold text-[#2f3437]">{analyticsData.channelStats.videosPerWeek30d ?? "—"}</div>
+                      <div className="text-xs text-[#2f3437]/30 mt-1">30d avg</div>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-[#2f3437]/50 bg-white border border-gray-200 rounded-lg p-6 text-center">
+                    No channel snapshot yet. Click Refresh Channel to sync.
+                  </p>
+                )}
+              </div>
+
+              {/* Recent Videos */}
+              {analyticsData.videos?.length > 0 && (
+                <div>
+                  <h2 className="text-base font-semibold text-[#2f3437] mb-3">Recent Videos</h2>
+                  <div className="space-y-3">
+                    {analyticsData.videos.slice(0, 10).map((video: any) => {
+                      const latestAuditV = video.audits?.[0];
+                      const started = auditDone[video.id];
+                      return (
+                        <div key={video.id} className="flex items-center gap-4 bg-white border border-gray-200 rounded-lg p-3">
+                          {video.thumbnailUrl ? (
+                            <img src={video.thumbnailUrl} alt={video.title} className="w-24 h-14 object-cover rounded-lg flex-shrink-0" />
+                          ) : (
+                            <div className="w-24 h-14 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                              <VideoCameraIcon className="w-6 h-6 text-[#2f3437]/30" />
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm text-[#2f3437] font-medium truncate">{video.title}</div>
+                            <div className="text-xs text-[#2f3437]/40 mt-0.5">{fmt(video.publishedAt)} · {video.viewCount.toLocaleString()} views</div>
+                          </div>
+                          <div className="flex-shrink-0">
+                            {latestAuditV ? (
+                              <Link
+                                href={`/admin/audits/${latestAuditV.id}`}
+                                className="text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg px-3 py-1.5 hover:bg-emerald-100 transition whitespace-nowrap"
+                              >
+                                View Audit {latestAuditV.overallScore !== null ? `(${Number(latestAuditV.overallScore).toFixed(1)})` : ""}
+                              </Link>
+                            ) : started ? (
+                              <span className="text-xs text-[#2f3437]/30">Queued…</span>
+                            ) : (
+                              <button
+                                onClick={() => handleRunVideoAudit(video)}
+                                disabled={runningAudit[video.id]}
+                                className="text-xs bg-[#6ba3c7] hover:bg-[#29b0f0] disabled:opacity-60 text-white rounded-lg px-3 py-1.5 transition whitespace-nowrap"
+                              >
+                                {runningAudit[video.id] ? "Starting…" : "Run Audit"}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Click Trend */}
+              {analyticsData.campaigns?.length > 0 && (
+                <div>
+                  <h2 className="text-base font-semibold text-[#2f3437] mb-3">Campaign Performance</h2>
+                  <div className="space-y-4 mb-4">
+                    {analyticsData.campaigns.map((campaign: any) => (
+                      <div key={campaign.id} className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                        <div className="px-4 py-3 border-b border-gray-100 text-sm font-semibold text-[#2f3437]">{campaign.name}</div>
+                        {campaign.links.length > 0 ? (
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr>
+                                {["Link", "Clicks (7d)", "Clicks (All)", "Conv. (7d)", "Conv. (All)"].map((h) => (
+                                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#2f3437]/50 bg-gray-50">{h}</th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {campaign.links.map((link: any) => (
+                                <tr key={link.id} className="border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors">
+                                  <td className="px-4 py-2 text-[#2f3437]/70">{link.name}</td>
+                                  <td className="px-4 py-2 text-[#2f3437]/70">{link.clicks7d}</td>
+                                  <td className="px-4 py-2 text-[#2f3437]/70">{link.clicksAllTime}</td>
+                                  <td className="px-4 py-2 text-[#2f3437]/70">{link.conversions7d}</td>
+                                  <td className="px-4 py-2 text-[#2f3437]/70">{link.conversionsAllTime}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        ) : (
+                          <div className="px-4 py-3 text-sm text-[#2f3437]/30">No links yet.</div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  {analyticsData.clickTrend30d?.length > 0 && (
+                    <div className="bg-white border border-gray-200 rounded-lg p-4">
+                      <div className="text-sm font-semibold text-[#2f3437] mb-3">Click Trend (30 days)</div>
+                      <ResponsiveContainer width="100%" height={160}>
+                        <BarChart data={analyticsData.clickTrend30d} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke={chartGrid} />
+                          <XAxis dataKey="date" tick={{ fontSize: 10, fill: chartTick }} tickFormatter={(v) => v.slice(5)} axisLine={false} tickLine={false} />
+                          <YAxis tick={{ fontSize: 10, fill: chartTick }} axisLine={false} tickLine={false} />
+                          <Tooltip contentStyle={chartTooltip} />
+                          <Bar dataKey="clicks" fill="#6ba3c7" radius={[2, 2, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Tool Usage */}
+              {analyticsData.toolUsage?.length > 0 && (
+                <div>
+                  <h2 className="text-base font-semibold text-[#2f3437] mb-3">Tool Usage</h2>
+                  <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr>
+                          {["Tool", "Uses (7d)", "All Time", "Last Used"].map((h) => (
+                            <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#2f3437]/50 bg-gray-50">{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {analyticsData.toolUsage.map((t: any) => (
+                          <tr key={t.tool} className="border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors">
+                            <td className="px-4 py-3 font-medium text-[#2f3437]">{t.tool}</td>
+                            <td className="px-4 py-3 text-[#2f3437]/70">{t.uses7d}</td>
+                            <td className="px-4 py-3 text-[#2f3437]/70">{t.usesAllTime}</td>
+                            <td className="px-4 py-3 text-xs text-[#2f3437]/40">{fmt(t.lastUsed)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ── PROFILE TAB ───────────────────────────────────────────── */}
+      {activeTab === "profile" && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            {/* Member Info */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-base font-semibold text-[#2f3437]">Member Info</h2>
+                {!isEditorRole && (
+                  !editing ? (
+                    <button
+                      onClick={() => {
+                        setEditFields({
+                          fullName: member.fullName ?? "",
+                          email: member.email ?? "",
+                          phone: member.phone ?? "",
+                          youtubeChannelUrl: member.youtubeChannelUrl ?? "",
+                          youtubeHandle: member.youtubeHandle ?? "",
+                          youtubeChannelName: member.youtubeChannelName ?? "",
+                          serviceTier: member.serviceTier ?? "foundations",
+                          ghlContactId: member.ghlContactId ?? "",
+                        });
+                        setEditing(true);
+                      }}
+                      className="flex items-center gap-1.5 text-sm text-[#6ba3c7] hover:text-[#5490b5]"
+                    >
+                      <PencilIcon className="w-4 h-4" /> Edit
+                    </button>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <button onClick={handleSaveEdit} disabled={saving} className="flex items-center gap-1 text-sm text-green-600 hover:text-green-700 font-medium">
+                        <CheckIcon className="w-4 h-4" />
+                        {saving ? "Saving…" : "Save"}
+                      </button>
+                      <button onClick={() => setEditing(false)} className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600">
+                        <XMarkIcon className="w-4 h-4" /> Cancel
+                      </button>
+                    </div>
+                  )
+                )}
+              </div>
+              <div className="space-y-3 text-sm">
+                {[
+                  { label: "Full Name", field: "fullName", type: "text" as const, placeholder: "" },
+                  { label: "Email", field: "email", type: "text" as const, placeholder: "" },
+                  { label: "Phone", field: "phone", type: "text" as const, placeholder: "+1 555 000 0000" },
+                ].map(({ label, field, placeholder }) => (
+                  <div key={field} className="flex flex-col sm:flex-row sm:items-center gap-1">
+                    <span className="text-[#2f3437]/50 w-40 shrink-0">{label}</span>
+                    {editing ? (
+                      <input value={editFields[field] ?? ""} onChange={(e) => setEditFields((f: any) => ({ ...f, [field]: e.target.value }))} placeholder={placeholder} className="flex-1 border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30" />
+                    ) : (
+                      <span className="text-[#2f3437]">{member[field] || <span className="text-gray-400">—</span>}</span>
+                    )}
+                  </div>
+                ))}
+
+                {/* YouTube Channel */}
+                <div className="flex flex-col sm:flex-row sm:items-center gap-1">
+                  <span className="text-[#2f3437]/50 w-40 shrink-0">YouTube Channel</span>
+                  {editing ? (
+                    <div className="flex-1 space-y-1.5">
+                      <input value={editFields.youtubeChannelUrl ?? ""} onChange={(e) => setEditFields((f: any) => ({ ...f, youtubeChannelUrl: e.target.value }))} className="w-full border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30" placeholder="YouTube URL" />
+                      <input value={editFields.youtubeHandle ?? ""} onChange={(e) => setEditFields((f: any) => ({ ...f, youtubeHandle: e.target.value }))} className="w-full border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30" placeholder="Handle (@channel)" />
+                      <input value={editFields.youtubeChannelName ?? ""} onChange={(e) => setEditFields((f: any) => ({ ...f, youtubeChannelName: e.target.value }))} className="w-full border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30" placeholder="Channel name" />
+                    </div>
+                  ) : (
+                    <span className="text-[#2f3437] break-all">
+                      {member.youtubeChannelUrl ? (
+                        <a href={member.youtubeChannelUrl} target="_blank" rel="noopener noreferrer" className="text-[#6ba3c7] hover:underline flex items-center gap-1">
+                          {member.youtubeChannelName
+                            ? (member.youtubeHandle && !isRawChannelId(member.youtubeHandle)
+                                ? `${member.youtubeChannelName} (${member.youtubeHandle})`
+                                : member.youtubeChannelName)
+                            : (!isRawChannelId(member.youtubeHandle)
+                                ? (member.youtubeHandle ?? member.youtubeChannelUrl)
+                                : member.youtubeChannelUrl)}
+                          <ArrowTopRightOnSquareIcon className="w-3.5 h-3.5 shrink-0" />
+                        </a>
+                      ) : <span className="text-gray-400">—</span>}
+                    </span>
+                  )}
+                </div>
+
+                {/* GHL */}
+                <div className="flex flex-col sm:flex-row sm:items-center gap-1">
+                  <span className="text-[#2f3437]/50 w-40 shrink-0">GHL Contact ID</span>
+                  {editing ? (
+                    <input value={editFields.ghlContactId ?? ""} onChange={(e) => setEditFields((f: any) => ({ ...f, ghlContactId: e.target.value }))} className="flex-1 border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30" />
+                  ) : (
+                    <span className="text-[#2f3437] break-all">
+                      {member.ghlContactId ? (
+                        <a href={`https://app.gohighlevel.com/v2/location/${GHL_LOCATION_ID}/contacts/detail/${member.ghlContactId}`} target="_blank" rel="noopener noreferrer" className="text-[#6ba3c7] hover:underline">{member.ghlContactId}</a>
+                      ) : <span className="text-gray-400">—</span>}
+                    </span>
+                  )}
+                </div>
+
+                {/* Membership Level */}
+                <div className="flex flex-col sm:flex-row sm:items-center gap-1">
+                  <span className="text-[#2f3437]/50 w-40 shrink-0">Membership Level</span>
+                  {editing ? (
+                    <select value={editFields.serviceTier ?? "foundations"} onChange={(e) => setEditFields((f: any) => ({ ...f, serviceTier: e.target.value }))} className="border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30">
+                      {SERVICE_TIERS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                    </select>
+                  ) : (
+                    <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold ${tierColors(member.serviceTier).badge}`}>
+                      {tierLabel(member.serviceTier)}
+                    </span>
+                  )}
+                </div>
+
+                {/* Account info */}
+                <div className="flex flex-col sm:flex-row sm:items-center gap-1 pt-1 border-t border-gray-100">
+                  <span className="text-[#2f3437]/50 w-40 shrink-0">Member Since</span>
+                  <span className="text-[#2f3437]">{fmt(member.invitedAt ?? member.createdAt)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Avatar Profile */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-base font-semibold text-[#2f3437]">Avatar Profile</h2>
+                {member?.avatarName && (
+                  <span className="text-xs text-[#6ba3c7] bg-[#6ba3c7]/10 px-2.5 py-1 rounded-full font-medium">{member.avatarName}</span>
+                )}
+              </div>
+              {!member?.avatarProfile ? (
+                <p className="text-sm text-[#2f3437]/40 mb-3">No avatar saved for this member yet.</p>
+              ) : (
+                <>
+                  {member.avatarSummary && (
+                    <p className="text-sm text-[#2f3437]/70 mb-3 leading-relaxed">{member.avatarSummary}</p>
+                  )}
+                  {Array.isArray(member.contentThemes) && member.contentThemes.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mb-4">
+                      {(member.contentThemes as unknown[]).map((t, i) => {
+                        const label = typeof t === "string" ? t
+                          : t && typeof t === "object" && "name" in t
+                            ? `${(t as any).emoji ?? ""} ${(t as any).name ?? ""}`.trim() : null;
+                        return label ? (
+                          <span key={i} className="text-xs bg-[#6ba3c7]/10 text-[#6ba3c7] px-2.5 py-1 rounded-full font-medium">{label}</span>
+                        ) : null;
+                      })}
+                    </div>
+                  )}
+                </>
+              )}
+              {isEditorRole ? (
+                avatarText ? (
+                  <div className="text-sm text-[#2f3437] whitespace-pre-wrap bg-gray-50 rounded-lg px-4 py-3 font-mono max-h-48 overflow-y-auto">{avatarText}</div>
+                ) : null
+              ) : (
+                <>
+                  <textarea
+                    value={avatarText}
+                    onChange={(e) => setAvatarText(e.target.value)}
+                    rows={6}
+                    placeholder="No avatar document saved. You can paste or edit one here."
+                    className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-[#2f3437] font-mono focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30 resize-none"
+                  />
+                  <div className="flex items-center justify-between mt-2">
+                    {avatarSaved && <span className="text-xs text-green-600 font-medium">Saved</span>}
+                    <button
+                      onClick={handleSaveAdminAvatar}
+                      disabled={avatarSaving || !avatarText.trim()}
+                      className="ml-auto bg-[#111] hover:bg-[#2a3a4d] disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+                    >
+                      {avatarSaving ? "Saving…" : "Save Avatar"}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* RIGHT SIDEBAR */}
+          <div className="space-y-4">
+            {/* Membership Level quick selector */}
+            {!isEditorRole && (
+              <div className="bg-white rounded-lg border border-gray-200 p-5">
+                <h2 className="text-sm font-semibold text-[#2f3437] mb-3">Membership Level</h2>
+                <select
+                  value={quickTier}
+                  onChange={(e) => { setQuickTier(e.target.value); setTierSaved(false); }}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30 mb-2"
+                >
+                  {SERVICE_TIERS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                </select>
+                <button
+                  onClick={handleQuickTierSave}
+                  disabled={tierSaving || quickTier === member.serviceTier}
+                  className={`w-full text-sm font-semibold px-4 py-2 rounded-lg transition-colors ${
+                    tierSaved ? "bg-green-100 text-green-700"
+                    : quickTier === member.serviceTier ? "bg-gray-100 text-gray-400 cursor-default"
+                    : "bg-[#111] hover:bg-[#2a3a4d] text-white"
+                  }`}
+                >
+                  {tierSaved ? "Saved" : tierSaving ? "Saving…" : "Save Tier"}
+                </button>
+              </div>
+            )}
+
+            {/* AI Tools Usage */}
+            <div className="bg-white rounded-lg border border-gray-200 p-5">
+              <h2 className="text-sm font-semibold text-[#2f3437] mb-3">AI Tools Usage</h2>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-[#2f3437]/50">Avatar saved</span>
+                  <span className={`text-xs font-semibold ${member?.avatarName ? "text-green-600" : "text-[#2f3437]/30"}`}>
+                    {member?.avatarName ? `✓ ${member.avatarName}` : "None"}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-[#2f3437]/50">Scripts built</span>
+                  <span className="text-xs font-semibold text-[#2f3437]">{toolsUsage?.scriptsCount ?? "—"}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-[#2f3437]/50">Title analyses</span>
+                  <span className="text-xs font-semibold text-[#2f3437]">{toolsUsage?.analysesCount ?? "—"}</span>
+                </div>
+                {toolsUsage?.lastActivity && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-[#2f3437]/50">Last active</span>
+                    <span className="text-xs font-semibold text-[#2f3437]">{new Date(toolsUsage.lastActivity).toLocaleDateString()}</span>
+                  </div>
+                )}
+                {!member?.avatarName && !toolsUsage?.scriptsCount && (
+                  <p className="text-xs text-[#2f3437]/30 italic pt-1">No AI tool activity yet</p>
+                )}
+              </div>
+            </div>
+
+            {/* Stripe */}
+            {!isEditorRole && (
+              <div className="bg-white rounded-lg border border-gray-200 p-5">
+                <h2 className="text-sm font-semibold text-[#2f3437] mb-3">Stripe</h2>
+                {member.stripeCustomerId ? (
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="text-[#2f3437]/50 text-xs shrink-0">Customer</span>
+                      <a
+                        href={`https://dashboard.stripe.com/customers/${member.stripeCustomerId}`}
+                        target="_blank" rel="noopener noreferrer"
+                        className="text-[#6ba3c7] hover:underline font-mono text-xs truncate text-right"
+                      >
+                        {member.stripeCustomerId}
+                      </a>
+                    </div>
+                    {member.stripePlanName && (
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[#2f3437]/50 text-xs">Plan</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-semibold text-[#2f3437]">{member.stripePlanName}</span>
+                          {member.subscriptionStatus && (() => {
+                            const cfg = subCfg[member.subscriptionStatus];
+                            if (!cfg) return null;
+                            return (
+                              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full border ${cfg.cls}`}>
+                                {cfg.label}
+                              </span>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                    )}
+                    {member.stripeCurrentPeriodEnd && (
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[#2f3437]/50 text-xs">
+                          {member.subscriptionStatus === "cancelled" ? "Ended" : "Renews"}
+                        </span>
+                        <span className="text-xs text-[#2f3437]/70">
+                          {new Date(member.stripeCurrentPeriodEnd).toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" })}
+                        </span>
+                      </div>
+                    )}
+                    <button
+                      onClick={handleStripeUnlink}
+                      disabled={unlinking}
+                      className="w-full mt-1 text-xs text-red-500 border border-red-200 hover:bg-red-50 px-3 py-1.5 rounded-lg transition-colors"
+                    >
+                      {unlinking ? "Unlinking…" : "Unlink Stripe"}
+                    </button>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-xs text-[#2f3437]/40 mb-2">No Stripe customer linked.</p>
+                    <button
+                      onClick={() => setStripeLinkOpen(true)}
+                      className="w-full text-xs font-medium text-[#6ba3c7] border border-[#6ba3c7]/30 hover:bg-[#6ba3c7]/5 px-3 py-1.5 rounded-lg transition-colors"
+                    >
+                      Link Stripe Customer
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Quick Actions */}
+            <div className="bg-white rounded-lg border border-gray-200 p-5">
+              <h2 className="text-sm font-semibold text-[#2f3437] mb-4">Quick Actions</h2>
+              <div className="space-y-2">
+                {member.youtubeChannelUrl && (
+                  <a href={member.youtubeChannelUrl} target="_blank" rel="noopener noreferrer"
+                    className="w-full flex items-center gap-2 border border-gray-200 hover:bg-gray-50 text-[#2f3437] text-sm font-medium px-4 py-2.5 rounded-lg transition-colors"
+                  >
+                    <ArrowTopRightOnSquareIcon className="w-4 h-4 text-[#6ba3c7]" />
+                    View on YouTube
+                  </a>
+                )}
+                <a href={`mailto:${member.email}`}
+                  className="w-full flex items-center gap-2 border border-gray-200 hover:bg-gray-50 text-[#2f3437] text-sm font-medium px-4 py-2.5 rounded-lg transition-colors"
+                >
+                  <EnvelopeIcon className="w-4 h-4 text-[#6ba3c7]" />
+                  Email Member
+                </a>
+                {member.phone && (
+                  <a href={`tel:${member.phone}`}
+                    className="w-full flex items-center gap-2 border border-gray-200 hover:bg-gray-50 text-[#2f3437] text-sm font-medium px-4 py-2.5 rounded-lg transition-colors"
+                  >
+                    <PhoneIcon className="w-4 h-4 text-[#6ba3c7]" />
+                    Call Member
+                  </a>
+                )}
+                {member.ghlContactId && (
+                  <a
+                    href={`https://app.gohighlevel.com/v2/location/${GHL_LOCATION_ID}/contacts/detail/${member.ghlContactId}`}
+                    target="_blank" rel="noopener noreferrer"
+                    className="w-full flex items-center gap-2 border border-gray-200 hover:bg-gray-50 text-[#2f3437] text-sm font-medium px-4 py-2.5 rounded-lg transition-colors"
+                  >
+                    <ArrowTopRightOnSquareIcon className="w-4 h-4 text-gray-400" />
+                    View in GHL
+                  </a>
+                )}
+              </div>
+            </div>
+
+            {/* Danger Zone */}
+            {!isEditorRole && (
+              <div className="bg-white rounded-lg border border-red-200 p-5">
+                <h2 className="text-sm font-semibold text-red-600 mb-3">Danger Zone</h2>
+                {!confirmDeleteMember ? (
+                  <button
+                    onClick={() => setConfirmDeleteMember(true)}
+                    className="w-full text-sm font-medium text-red-600 border border-red-200 hover:bg-red-50 px-4 py-2.5 rounded-lg transition-colors"
+                  >
+                    Delete Member
+                  </button>
+                ) : (
+                  <div className="space-y-2">
+                    <p className="text-xs text-red-600">
+                      This will permanently delete <strong>{member.fullName || member.email}</strong> and all their data. This cannot be undone.
+                    </p>
+                    <div className="flex gap-2">
+                      <button onClick={handleDeleteMember} disabled={deletingMember} className="flex-1 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 px-4 py-2.5 rounded-lg transition-colors disabled:opacity-50">
+                        {deletingMember ? "Deleting…" : "Yes, Delete"}
+                      </button>
+                      <button onClick={() => setConfirmDeleteMember(false)} className="flex-1 text-sm font-medium text-[#2f3437] border border-gray-200 hover:bg-gray-50 px-4 py-2.5 rounded-lg transition-colors">
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── PROGRESS TAB ──────────────────────────────────────────── */}
+      {activeTab === "progress" && (
+        <div className="space-y-6">
+          {/* Audit History */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-semibold text-[#2f3437]">Audit History</h2>
+            </div>
+            {member.audits?.length === 0 ? (
+              <p className="text-sm text-[#2f3437]/50 text-center py-8">
+                No audits yet — use the Run Audit button in the header to generate the first baseline.
+              </p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-100">
+                      {["Date", "Type", "Score", "Actions"].map((h, i) => (
+                        <th key={h} className={`py-2 pr-4 text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wider ${i === 3 ? "text-right" : "text-left"}`}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {member.audits.map((audit: any) => (
+                      <tr key={audit.id} className="border-b border-gray-50 last:border-0">
+                        <td className="py-3 pr-4 text-[#2f3437]/70">{fmt(audit.createdAt)}</td>
+                        <td className="py-3 pr-4 text-[#2f3437]">
+                          {audit.auditType === "single_video" ? (() => {
+                            const vid = (audit.videosAnalysed as any)?.[0];
+                            const videoId = vid?.videoId;
+                            const title = vid?.title ?? "Single Video";
+                            const truncated = title.length > 50 ? title.slice(0, 50) + "…" : title;
+                            return (
+                              <div className="flex items-center gap-2">
+                                {videoId && (
+                                  <img src={`https://img.youtube.com/vi/${videoId}/mqdefault.jpg`} alt="" className="w-12 h-[34px] rounded object-cover shrink-0" />
+                                )}
+                                <span className="text-sm leading-tight">{truncated}</span>
+                              </div>
+                            );
+                          })() : (
+                            <span className="capitalize">{audit.auditType.replace("_", " ")}</span>
+                          )}
+                        </td>
+                        <td className="py-3 pr-4">
+                          {audit.overallScore != null ? (
+                            <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${scoreBg(Number(audit.overallScore))}`}>
+                              {Number(audit.overallScore).toFixed(1)}
+                            </span>
+                          ) : <span className="text-gray-400">—</span>}
+                        </td>
+                        <td className="py-3 text-right">
+                          {!isEditorRole && confirmDeleteId === audit.id ? (
+                            <span className="inline-flex items-center gap-2">
+                              <span className="text-xs text-[#2f3437]/50">Delete?</span>
+                              <button onClick={() => handleDeleteAudit(audit.id)} disabled={deletingAuditId === audit.id} className="text-xs text-[#ff0033] font-semibold hover:underline">
+                                {deletingAuditId === audit.id ? "Deleting…" : "Yes"}
+                              </button>
+                              <button onClick={() => setConfirmDeleteId(null)} className="text-xs text-gray-400 hover:text-gray-600">No</button>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-3">
+                              <Link href={`/admin/audits/${audit.id}`} className="text-[#6ba3c7] hover:underline text-xs">View →</Link>
+                              {!isEditorRole && (
+                                <button onClick={() => setConfirmDeleteId(audit.id)} className="text-xs text-gray-300 hover:text-[#ff0033] transition-colors">Delete</button>
+                              )}
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {/* 16-Principle Breakdown */}
+          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+            <button
+              onClick={() => setBreakdownOpen((o) => !o)}
+              className="w-full flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition-colors"
+            >
+              <span className="text-base font-semibold text-[#2f3437]">16-Principle Breakdown</span>
+              <div className="flex items-center gap-2">
+                {latestAudit && <span className="text-xs text-[#2f3437]/40 font-medium">{DIMENSIONS.length} categories</span>}
+                <ChevronDownIcon className={`w-4 h-4 text-[#2f3437]/40 transition-transform duration-200 ${breakdownOpen ? "rotate-180" : ""}`} />
+              </div>
+            </button>
+            {breakdownOpen && (
+              <div className="px-6 pb-6 border-t border-gray-100">
+                {!latestAudit ? (
+                  <p className="text-sm text-[#2f3437]/50 text-center py-8">Scores will appear after the first audit.</p>
+                ) : (
+                  <div className="space-y-6 pt-4">
+                    {DIMENSIONS.map((dim) => {
+                      const dimScores = dim.keys.map((k) => extractScore(rawLatestScores, k)).filter((s): s is number => s != null);
+                      const dimAvg = dimScores.length > 0 ? dimScores.reduce((a, b) => a + b, 0) / dimScores.length : null;
+                      return (
+                        <div key={dim.label}>
+                          <div className="flex items-center justify-between mb-2">
+                            <h3 className="text-sm font-semibold text-[#2f3437]">{dim.label}</h3>
+                            {dimAvg != null && (
+                              <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${scoreBg(dimAvg)}`}>Avg {dimAvg.toFixed(1)}</span>
+                            )}
+                          </div>
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="border-b border-gray-100">
+                                <th className="text-left pb-1.5 text-xs text-[#2f3437]/40 font-medium">Principle</th>
+                                <th className="text-center pb-1.5 text-xs text-[#2f3437]/40 font-medium">Score</th>
+                                <th className="text-center pb-1.5 text-xs text-[#2f3437]/40 font-medium">Δ Baseline</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {dim.keys.map((key) => {
+                                const score = extractScore(rawLatestScores, key);
+                                const base = extractScore(rawBaselineScores, key);
+                                const principle = PRINCIPLE_LABELS[key] ?? key;
+                                const delta = score != null && base != null ? score - base : null;
+                                return (
+                                  <tr key={principle} className="border-b border-gray-50 last:border-0">
+                                    <td className="py-2 text-[#2f3437]">{principle}</td>
+                                    <td className="py-2 text-center">
+                                      {score != null ? (
+                                        <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${scoreBg(score)}`}>{score.toFixed(1)}</span>
+                                      ) : <span className="text-gray-400">—</span>}
+                                    </td>
+                                    <td className="py-2 text-center text-xs font-semibold">
+                                      {delta == null ? <span className="text-gray-400">—</span>
+                                        : delta > 0 ? <span className="text-green-600">+{delta.toFixed(1)}</span>
+                                        : delta < 0 ? <span className="text-[#ff0033]">{delta.toFixed(1)}</span>
+                                        : <span className="text-gray-400">0.0</span>}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Academy Progress */}
           {academyProgress && (
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-base font-semibold text-[#2f3437]">Academy Progress</h2>
-                <span className="text-sm font-bold text-[#6ba3c7]">
-                  {academyProgress.overall?.pct ?? 0}%
-                </span>
+                <span className="text-sm font-bold text-[#6ba3c7]">{academyProgress.overall?.pct ?? 0}%</span>
               </div>
-
-              {/* Overall bar */}
               <div className="mb-5">
                 <div className="flex items-center justify-between text-xs text-[#2f3437]/50 mb-1">
                   <span>Overall</span>
                   <span>{academyProgress.overall?.completed ?? 0}/{academyProgress.overall?.total ?? 0} lessons</span>
                 </div>
                 <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-[#6ba3c7] rounded-full transition-all"
-                    style={{ width: `${academyProgress.overall?.pct ?? 0}%` }}
-                  />
+                  <div className="h-full bg-[#6ba3c7] rounded-full transition-all" style={{ width: `${academyProgress.overall?.pct ?? 0}%` }} />
                 </div>
               </div>
-
-              {/* Per section */}
               {Array.isArray(academyProgress.sections) && academyProgress.sections.length > 0 && (
                 <div className="space-y-2 mb-5">
                   {academyProgress.sections.map((sec: any) => {
@@ -1326,18 +1617,13 @@ export default function MemberDetailPage() {
                           <span className="shrink-0 ml-2">{sec.completed}/{sec.total}</span>
                         </div>
                         <div className="h-1 bg-gray-100 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full rounded-full ${pct === 100 ? "bg-green-500" : "bg-[#6ba3c7]"}`}
-                            style={{ width: `${pct}%` }}
-                          />
+                          <div className={`h-full rounded-full ${pct === 100 ? "bg-green-500" : "bg-[#6ba3c7]"}`} style={{ width: `${pct}%` }} />
                         </div>
                       </div>
                     );
                   })}
                 </div>
               )}
-
-              {/* Workbook + Homework stats */}
               <div className="grid grid-cols-2 gap-3 mb-4">
                 <div className="bg-gray-50 rounded-lg p-3 text-center">
                   <p className="text-lg font-bold text-[#2f3437]">
@@ -1354,8 +1640,6 @@ export default function MemberDetailPage() {
                   <p className="text-xs text-[#2f3437]/50 mt-0.5">Homework items</p>
                 </div>
               </div>
-
-              {/* Last lesson */}
               {academyProgress.lastLesson && (
                 <div className="border-t border-gray-100 pt-3">
                   <p className="text-xs text-[#2f3437]/50 mb-0.5">Last completed lesson</p>
@@ -1367,263 +1651,56 @@ export default function MemberDetailPage() {
                   )}
                 </div>
               )}
-
               {academyProgress.overall?.total === 0 && (
                 <p className="text-sm text-[#2f3437]/40 italic">No academy content published yet.</p>
               )}
             </div>
           )}
         </div>
+      )}
 
-        {/* RIGHT SIDEBAR — QUICK ACTIONS */}
-        <div className="space-y-4 order-1 lg:order-2">
-          {/* Membership Level — always-visible quick selector (admin only) */}
-          {!isEditorRole && (
-            <div className="bg-white rounded-lg border border-gray-200 p-5">
-              <h2 className="text-sm font-semibold text-[#2f3437] mb-3">Membership Level</h2>
-              <select
-                value={quickTier}
-                onChange={(e) => { setQuickTier(e.target.value); setTierSaved(false); }}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30 mb-2"
-              >
-                {SERVICE_TIERS.map((t) => (
-                  <option key={t.value} value={t.value}>{t.label}</option>
-                ))}
-              </select>
-              <button
-                onClick={handleQuickTierSave}
-                disabled={tierSaving || quickTier === member.serviceTier}
-                className={`w-full text-sm font-semibold px-4 py-2 rounded-lg transition-colors ${
-                  tierSaved
-                    ? "bg-green-100 text-green-700"
-                    : quickTier === member.serviceTier
-                    ? "bg-gray-100 text-gray-400 cursor-default"
-                    : "bg-[#111] hover:bg-[#2a3a4d] text-white"
-                }`}
-              >
-                {tierSaved ? "Saved" : tierSaving ? "Saving…" : "Save Tier"}
-              </button>
+      {/* ── CAMPAIGNS TAB ─────────────────────────────────────────── */}
+      {activeTab === "campaigns" && (
+        <div className="space-y-6">
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-semibold text-[#2f3437]">Tracking Links</h2>
+              <button className="text-sm text-[#6ba3c7] hover:text-[#5490b5] font-medium">+ Create Link</button>
             </div>
-          )}
-
-          {/* AI Tools Usage */}
-          <div className="bg-white rounded-lg border border-gray-200 p-5">
-            <h2 className="text-sm font-semibold text-[#2f3437] mb-3">AI Tools Usage</h2>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-[#2f3437]/50">Avatar saved</span>
-                <span className={`text-xs font-semibold ${member?.avatarName ? "text-green-600" : "text-[#2f3437]/30"}`}>
-                  {member?.avatarName ? `✓ ${member.avatarName}` : "None"}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-[#2f3437]/50">Scripts built</span>
-                <span className="text-xs font-semibold text-[#2f3437]">{toolsUsage?.scriptsCount ?? "—"}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-[#2f3437]/50">Title analyses</span>
-                <span className="text-xs font-semibold text-[#2f3437]">{toolsUsage?.analysesCount ?? "—"}</span>
-              </div>
-              {toolsUsage?.lastActivity && (
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-[#2f3437]/50">Last active</span>
-                  <span className="text-xs font-semibold text-[#2f3437]">
-                    {new Date(toolsUsage.lastActivity).toLocaleDateString()}
-                  </span>
-                </div>
-              )}
-              {!member?.avatarName && !toolsUsage?.scriptsCount && (
-                <p className="text-xs text-[#2f3437]/30 italic pt-1">No AI tool activity yet</p>
-              )}
-            </div>
-          </div>
-
-          {/* Stripe */}
-          {!isEditorRole && (
-            <div className="bg-white rounded-lg border border-gray-200 p-5">
-              <h2 className="text-sm font-semibold text-[#2f3437] mb-3">Stripe</h2>
-              {member.stripeCustomerId ? (
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-start justify-between gap-2">
-                    <span className="text-[#2f3437]/50 text-xs shrink-0">Customer</span>
-                    <a
-                      href={`https://dashboard.stripe.com/customers/${member.stripeCustomerId}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[#6ba3c7] hover:underline font-mono text-xs truncate text-right"
-                    >
-                      {member.stripeCustomerId}
-                    </a>
-                  </div>
-                  {member.stripePlanName && (
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-[#2f3437]/50 text-xs">Plan</span>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-semibold text-[#2f3437]">{member.stripePlanName}</span>
-                        {member.subscriptionStatus && (() => {
-                          const cfg: Record<string, { dot: string; label: string; cls: string }> = {
-                            active:    { dot: "bg-green-500",  label: "Active",   cls: "text-green-700 bg-green-50 border-green-200" },
-                            trialing:  { dot: "bg-blue-400",   label: "Trial",    cls: "text-blue-700 bg-blue-50 border-blue-200" },
-                            past_due:  { dot: "bg-amber-400",  label: "Past Due", cls: "text-amber-700 bg-amber-50 border-amber-200" },
-                            cancelled: { dot: "bg-red-500",    label: "Cancelled",cls: "text-red-700 bg-red-50 border-red-200" },
-                          };
-                          const c = cfg[member.subscriptionStatus] ?? { dot: "bg-gray-400", label: member.subscriptionStatus, cls: "text-gray-600 bg-gray-50 border-gray-200" };
-                          return (
-                            <span className={`inline-flex items-center gap-1 text-[11px] font-semibold border px-1.5 py-0.5 rounded-full ${c.cls}`}>
-                              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${c.dot}`} />
-                              {c.label}
-                            </span>
-                          );
-                        })()}
-                      </div>
-                    </div>
-                  )}
-                  {member.stripeCurrentPeriodEnd && (
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-[#2f3437]/50 text-xs">
-                        {member.subscriptionStatus === "cancelled" ? "Ended" : "Renews"}
-                      </span>
-                      <span className="text-xs text-[#2f3437]">
-                        {new Date(member.stripeCurrentPeriodEnd).toLocaleDateString("en-CA", { year: "numeric", month: "short", day: "numeric" })}
-                      </span>
-                    </div>
-                  )}
-                  <button
-                    onClick={handleStripeUnlink}
-                    disabled={unlinking}
-                    className="w-full mt-1 text-xs font-medium text-red-600 border border-red-200 hover:bg-red-50 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
-                  >
-                    {unlinking ? "Unlinking…" : "Unlink Stripe"}
-                  </button>
-                </div>
-              ) : (
-                <div>
-                  <p className="text-xs text-[#2f3437]/40 mb-2">No Stripe customer linked.</p>
-                  <button
-                    onClick={() => setStripeLinkOpen(true)}
-                    className="w-full text-xs font-medium text-[#6ba3c7] border border-[#6ba3c7]/30 hover:bg-[#6ba3c7]/5 px-3 py-1.5 rounded-lg transition-colors"
-                  >
-                    Link Stripe Customer
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-
-          <div className="bg-white rounded-lg border border-gray-200 p-5 sticky top-6">
-            <h2 className="text-sm font-semibold text-[#2f3437] mb-4">Quick Actions</h2>
-            <div className="space-y-2">
-              {/* Run Audit */}
-              {!isEditorRole && (
-                <div className="relative">
-                  <button
-                    onClick={() => setAuditOpenSidebar((o) => !o)}
-                    className="w-full flex items-center justify-between bg-[#6ba3c7] hover:bg-[#5490b5] text-white text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors"
-                  >
-                    Run Audit
-                    <ChevronDownIcon className="w-4 h-4" />
-                  </button>
-                  {auditOpenSidebar && (
-                    <div className="absolute left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-                      {[
-                        { label: "Baseline", value: "baseline" },
-                        { label: "Monthly", value: "monthly" },
-                        { label: "Single Video", value: "single_video" },
-                      ].map(({ label, value }) => (
-                        <button
-                          key={value}
-                          onClick={() => value === "single_video" ? openVideoModal() : runAudit(value)}
-                          className="w-full text-left px-4 py-2.5 text-sm text-[#2f3437] hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg"
-                        >
-                          {label}
-                        </button>
+            {member.links?.length === 0 ? (
+              <p className="text-sm text-[#2f3437]/50 text-center py-6">No tracking links yet.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-100">
+                      {["Link Name", "Short URL", "Clicks", "Conversions", "Conv. Rate"].map((h) => (
+                        <th key={h} className="text-left py-2 pr-4 text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wider last:text-right">{h}</th>
                       ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {member.youtubeChannelUrl && (
-                <a
-                  href={member.youtubeChannelUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full flex items-center gap-2 border border-gray-200 hover:bg-gray-50 text-[#2f3437] text-sm font-medium px-4 py-2.5 rounded-lg transition-colors"
-                >
-                  <ArrowTopRightOnSquareIcon className="w-4 h-4 text-[#6ba3c7]" />
-                  View on YouTube
-                </a>
-              )}
-
-              <a
-                href={`mailto:${member.email}`}
-                className="w-full flex items-center gap-2 border border-gray-200 hover:bg-gray-50 text-[#2f3437] text-sm font-medium px-4 py-2.5 rounded-lg transition-colors"
-              >
-                <EnvelopeIcon className="w-4 h-4 text-[#6ba3c7]" />
-                Email Member
-              </a>
-
-              {member.phone && (
-                <a
-                  href={`tel:${member.phone}`}
-                  className="w-full flex items-center gap-2 border border-gray-200 hover:bg-gray-50 text-[#2f3437] text-sm font-medium px-4 py-2.5 rounded-lg transition-colors"
-                >
-                  <PhoneIcon className="w-4 h-4 text-[#6ba3c7]" />
-                  Call Member
-                </a>
-              )}
-
-              {member.ghlContactId && (
-                <a
-                  href={`https://app.gohighlevel.com/v2/location/${GHL_LOCATION_ID}/contacts/detail/${member.ghlContactId}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full flex items-center gap-2 border border-gray-200 hover:bg-gray-50 text-[#2f3437] text-sm font-medium px-4 py-2.5 rounded-lg transition-colors"
-                >
-                  <ArrowTopRightOnSquareIcon className="w-4 h-4 text-gray-400" />
-                  View in GHL
-                </a>
-              )}
-            </div>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {member.links.map((link: any) => {
+                      const clicks = link.clicks?.length ?? 0;
+                      const conversions = link.clicks?.filter((c: any) => c.lead).length ?? 0;
+                      const rate = clicks > 0 ? ((conversions / clicks) * 100).toFixed(1) + "%" : "—";
+                      return (
+                        <tr key={link.id} className="border-b border-gray-50 last:border-0">
+                          <td className="py-3 pr-4 text-[#2f3437]">{link.name}</td>
+                          <td className="py-3 pr-4"><span className="text-[#6ba3c7] font-mono text-xs">/{link.refCode}</span></td>
+                          <td className="py-3 pr-4 text-[#2f3437]">{clicks}</td>
+                          <td className="py-3 pr-4 text-[#2f3437]">{conversions}</td>
+                          <td className="py-3 text-right text-[#2f3437]">{rate}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
-
-          {/* Danger Zone — admin only */}
-          {!isEditorRole && (
-            <div className="bg-white rounded-lg border border-red-200 p-5">
-              <h2 className="text-sm font-semibold text-red-600 mb-3">Danger Zone</h2>
-              {!confirmDeleteMember ? (
-                <button
-                  onClick={() => setConfirmDeleteMember(true)}
-                  className="w-full text-sm font-medium text-red-600 border border-red-200 hover:bg-red-50 px-4 py-2.5 rounded-lg transition-colors"
-                >
-                  Delete Member
-                </button>
-              ) : (
-                <div className="space-y-2">
-                  <p className="text-xs text-red-600">
-                    This will permanently delete <strong>{member.fullName || member.email}</strong> and all their data (audits, links, scripts, etc.). This cannot be undone.
-                  </p>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={handleDeleteMember}
-                      disabled={deletingMember}
-                      className="flex-1 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 px-4 py-2.5 rounded-lg transition-colors disabled:opacity-50"
-                    >
-                      {deletingMember ? "Deleting…" : "Yes, Delete"}
-                    </button>
-                    <button
-                      onClick={() => setConfirmDeleteMember(false)}
-                      className="flex-1 text-sm font-medium text-[#2f3437] border border-gray-200 hover:bg-gray-50 px-4 py-2.5 rounded-lg transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
         </div>
-      </div>
+      )}
 
       {/* Single Video Selection Modal */}
       {showVideoModal && (
@@ -1638,7 +1715,6 @@ export default function MemberDetailPage() {
                 <XMarkIcon className="w-5 h-5" />
               </button>
             </div>
-
             <div className="overflow-y-auto flex-1 p-4">
               {videoModalLoading && (
                 <div className="flex flex-col items-center justify-center h-48 gap-3">
@@ -1647,9 +1723,7 @@ export default function MemberDetailPage() {
                 </div>
               )}
               {videoModalError && (
-                <div className="bg-[#ffe5ea] border border-[#ff0033]/20 text-[#ff0033] rounded-lg p-4 text-sm">
-                  {videoModalError}
-                </div>
+                <div className="bg-[#ffe5ea] border border-[#ff0033]/20 text-[#ff0033] rounded-lg p-4 text-sm">{videoModalError}</div>
               )}
               {!videoModalLoading && !videoModalError && (
                 <div className="space-y-2">
@@ -1658,47 +1732,30 @@ export default function MemberDetailPage() {
                       key={v.videoId}
                       onClick={() => setSelectedVideoId(v.videoId)}
                       className={`w-full flex items-center gap-3 p-3 rounded-lg border-2 text-left transition-colors ${
-                        selectedVideoId === v.videoId
-                          ? "border-[#6ba3c7] bg-[#e8f7ff]"
-                          : "border-gray-100 hover:border-gray-200 hover:bg-gray-50"
+                        selectedVideoId === v.videoId ? "border-[#6ba3c7] bg-[#e8f7ff]" : "border-gray-100 hover:border-gray-200 hover:bg-gray-50"
                       }`}
                     >
-                      <img
-                        src={v.thumbnailUrl}
-                        alt=""
-                        className="w-24 h-14 rounded object-cover shrink-0 bg-gray-100"
-                      />
+                      <img src={v.thumbnailUrl} alt="" className="w-24 h-14 rounded object-cover shrink-0 bg-gray-100" />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-[#2f3437] line-clamp-2 leading-snug">{v.title}</p>
                         <p className="text-xs text-[#2f3437]/50 mt-1">
                           {v.durationFormatted} · {new Date(v.uploadDate).toLocaleDateString("en-CA", { year: "numeric", month: "short", day: "numeric" })} · {v.viewCount?.toLocaleString()} views
                         </p>
                       </div>
-                      {selectedVideoId === v.videoId && (
-                        <CheckIcon className="w-5 h-5 text-[#6ba3c7] shrink-0" />
-                      )}
+                      {selectedVideoId === v.videoId && <CheckIcon className="w-5 h-5 text-[#6ba3c7] shrink-0" />}
                     </button>
                   ))}
                 </div>
               )}
             </div>
-
             <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between gap-3">
               <p className="text-xs text-[#2f3437]/40">
                 {selectedVideoId ? "Video selected — ready to audit" : "Click a video to select it"}
               </p>
               <div className="flex gap-3">
+                <button onClick={() => setShowVideoModal(false)} className="px-4 py-2 text-sm font-medium text-[#2f3437] hover:bg-gray-50 rounded-lg transition-colors">Cancel</button>
                 <button
-                  onClick={() => setShowVideoModal(false)}
-                  className="px-4 py-2 text-sm font-medium text-[#2f3437] hover:bg-gray-50 rounded-lg transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => {
-                    setShowVideoModal(false);
-                    runAudit("single_video", selectedVideoId!);
-                  }}
+                  onClick={() => { setShowVideoModal(false); runAudit("single_video", selectedVideoId!); }}
                   disabled={!selectedVideoId}
                   className="px-4 py-2 text-sm font-semibold bg-[#6ba3c7] hover:bg-[#5490b5] text-white rounded-lg disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
@@ -1714,21 +1771,15 @@ export default function MemberDetailPage() {
       {stripeLinkOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg shadow-2xl w-full max-w-lg flex flex-col max-h-[80vh]">
-            {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
               <div>
                 <h2 className="text-base font-bold text-[#2f3437]">Link Stripe Customer</h2>
                 <p className="text-xs text-[#2f3437]/50 mt-0.5">Search by name or email to find the matching Stripe customer</p>
               </div>
-              <button
-                onClick={() => { setStripeLinkOpen(false); setStripeSearchQ(""); setStripeSearchResults([]); setStripeSearchDone(false); }}
-                className="text-[#2f3437]/40 hover:text-[#2f3437]"
-              >
+              <button onClick={() => { setStripeLinkOpen(false); setStripeSearchQ(""); setStripeSearchResults([]); setStripeSearchDone(false); }} className="text-[#2f3437]/40 hover:text-[#2f3437]">
                 <XMarkIcon className="w-5 h-5" />
               </button>
             </div>
-
-            {/* Search */}
             <div className="px-6 py-4 border-b border-gray-100">
               <div className="flex gap-2">
                 <input
@@ -1748,8 +1799,6 @@ export default function MemberDetailPage() {
                 </button>
               </div>
             </div>
-
-            {/* Results */}
             <div className="overflow-y-auto flex-1 px-6 py-4">
               {stripeSearchLoading && (
                 <div className="flex justify-center py-8">
@@ -1767,9 +1816,7 @@ export default function MemberDetailPage() {
                         <p className="text-sm font-semibold text-[#2f3437] truncate">{c.name ?? "—"}</p>
                         <p className="text-xs text-[#2f3437]/50 truncate">{c.email ?? "—"}</p>
                         {c.subscription ? (
-                          <p className="text-xs text-[#2f3437]/40 mt-0.5">
-                            {c.subscription.planName ?? "Unknown plan"} · <span className="capitalize">{c.subscription.status}</span>
-                          </p>
+                          <p className="text-xs text-[#2f3437]/40 mt-0.5">{c.subscription.planName ?? "Unknown plan"} · <span className="capitalize">{c.subscription.status}</span></p>
                         ) : (
                           <p className="text-xs text-[#2f3437]/30 mt-0.5 italic">No subscription</p>
                         )}
