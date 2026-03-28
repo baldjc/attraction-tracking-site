@@ -405,7 +405,7 @@ export default function MemberScoresPage() {
             {recentVideoAudits.length === 0 ? (
               <div className="px-5 py-10 text-center">
                 <p className={`text-sm font-medium ${txt}`}>No video audits in the last 60 days</p>
-                <p className={`text-xs ${muted} mt-1`}>Run a single video audit to see how individual videos score.</p>
+                <p className={`text-xs ${muted} mt-1`}>When the Attraction team runs a single video audit, you will see them show up here.</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
