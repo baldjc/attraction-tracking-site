@@ -65,13 +65,17 @@ export async function POST(req: Request) {
     const status = subscription.status;
     const periodEnd = new Date(subscription.current_period_end * 1000);
 
-    // Get product name
+    // Get product name and price amount
     let planName: string | null = null;
+    let priceAmount: number | null = null;
     try {
       const priceItem = subscription.items.data[0];
-      if (priceItem?.price?.product) {
-        const product = await stripe.products.retrieve(priceItem.price.product as string);
-        planName = product.name;
+      if (priceItem?.price) {
+        priceAmount = priceItem.price.unit_amount ?? null;
+        if (priceItem.price.product) {
+          const product = await stripe.products.retrieve(priceItem.price.product as string);
+          planName = product.name;
+        }
       }
     } catch {
       // product not retrievable
@@ -88,6 +92,7 @@ export async function POST(req: Request) {
           subscriptionStatus: status,
           stripePlanName: planName,
           stripeCurrentPeriodEnd: periodEnd,
+          ...(priceAmount !== null ? { stripePriceAmount: priceAmount } : {}),
           ...(status === "active" && tier ? { serviceTier: tier } : {}),
         },
       });

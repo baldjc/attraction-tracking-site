@@ -11,6 +11,7 @@ import {
   ExclamationTriangleIcon,
   CursorArrowRaysIcon,
   TrophyIcon,
+  BanknotesIcon,
 } from "@heroicons/react/24/outline";
 import { useSession } from "next-auth/react";
 
@@ -20,6 +21,7 @@ interface SummaryCards {
   inactiveMembers: number;
   linkClicks7d: number;
   topLead: { userId: string; fullName: string; conversions: number } | null;
+  mrr: number;
 }
 
 interface RecentVideo {
@@ -42,9 +44,11 @@ interface Member {
   serviceTier: string;
   latestAuditScore: number | null;
   stripeCustomerId: string | null;
+  stripeSubscriptionId: string | null;
   subscriptionStatus: string | null;
   stripePlanName: string | null;
   stripeCurrentPeriodEnd: string | null;
+  stripePriceAmount: number | null;
   lastVideoAt: string | null;
   videos7d: number;
   clicks7d: number;
@@ -136,6 +140,14 @@ function StatusDot({ status }: { status: string }) {
   );
 }
 
+function fmtPrice(cents: number | null) {
+  if (!cents) return null;
+  const dollars = cents / 100;
+  return dollars % 1 === 0
+    ? `$${dollars.toLocaleString("en-CA")}`
+    : `$${dollars.toLocaleString("en-CA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
 function fmtDate(iso: string | null) {
   if (!iso) return "—";
   return new Date(iso).toLocaleDateString("en-CA", { month: "short", day: "numeric" });
@@ -197,6 +209,7 @@ export default function MembersPage() {
   const [flaggedInactive, setFlaggedInactive] = useState<{ email: string; name: string }[]>([]);
 
   const [refreshing, setRefreshing] = useState(false);
+  const [backfillingPrices, setBackfillingPrices] = useState(false);
   const [refreshMsg, setRefreshMsg] = useState<string | null>(null);
 
   const [runningAudit, setRunningAudit] = useState<Record<string, boolean>>({});
@@ -217,10 +230,25 @@ export default function MembersPage() {
     try {
       const res = await fetch("/api/members");
       const data = await res.json();
-      setMembers(data.members || []);
+      const memberList: Member[] = data.members || [];
+      setMembers(memberList);
       setCards(data.cards || null);
       setRecentVideos(data.recentVideos || []);
       setLastSyncedAt(data.lastSyncedAt || null);
+      const needsBackfill = memberList.some(
+        (m) => m.stripeSubscriptionId && m.stripePriceAmount === null
+      );
+      if (needsBackfill) {
+        setBackfillingPrices(true);
+        fetch("/api/admin/stripe/backfill-prices", { method: "POST" })
+          .then(() => fetch("/api/members"))
+          .then((r) => r.json())
+          .then((d) => {
+            setMembers(d.members || []);
+            setCards(d.cards || null);
+          })
+          .finally(() => setBackfillingPrices(false));
+      }
     } finally {
       setLoading(false);
     }
@@ -399,13 +427,13 @@ export default function MembersPage() {
 
       {/* KPI Cards */}
       {loading ? (
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-          {[...Array(5)].map((_, i) => (
+        <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
+          {[...Array(6)].map((_, i) => (
             <div key={i} className={`${card} p-4 h-24 animate-pulse bg-gray-100`} />
           ))}
         </div>
       ) : cards && (
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
           <div className={`${card} p-4`}>
             <div className="flex items-center gap-2 mb-3">
               <VideoCameraIcon className="w-5 h-5 text-[#6ba3c7] shrink-0" />
@@ -446,6 +474,20 @@ export default function MembersPage() {
               </>
             ) : (
               <div className={`text-sm ${dim}`}>—</div>
+            )}
+          </div>
+          <div className={`${card} p-4`}>
+            <div className="flex items-center gap-2 mb-3">
+              <BanknotesIcon className="w-5 h-5 text-emerald-600 shrink-0" />
+              <span className={`text-xs uppercase tracking-wide font-semibold ${muted}`}>Monthly Revenue</span>
+            </div>
+            {cards.mrr > 0 ? (
+              <>
+                <div className={`text-3xl font-bold text-emerald-700`}>{fmtPrice(cards.mrr)}</div>
+                {backfillingPrices && <div className={`text-[10px] ${dim} mt-1`}>Updating…</div>}
+              </>
+            ) : (
+              <div className={`text-sm ${dim}`}>{backfillingPrices ? "Loading…" : "—"}</div>
             )}
           </div>
         </div>
@@ -675,7 +717,12 @@ export default function MembersPage() {
                       <td className="px-4 py-3">
                         {m.subscriptionStatus ? (
                           <div className="flex flex-col gap-0.5">
-                            {subStatusBadge(m.subscriptionStatus)}
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              {subStatusBadge(m.subscriptionStatus)}
+                              {fmtPrice(m.stripePriceAmount) && (
+                                <span className="text-xs font-semibold text-emerald-700">{fmtPrice(m.stripePriceAmount)}/mo</span>
+                              )}
+                            </div>
                             {fmtPeriodEnd(m.stripeCurrentPeriodEnd, m.subscriptionStatus) && (
                               <span className={`text-[10px] ${dim}`}>
                                 {fmtPeriodEnd(m.stripeCurrentPeriodEnd, m.subscriptionStatus)}

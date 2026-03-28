@@ -164,6 +164,7 @@ export async function GET() {
         subscriptionStatus: member.subscriptionStatus ?? null,
         stripePlanName: member.stripePlanName ?? null,
         stripeCurrentPeriodEnd: member.stripeCurrentPeriodEnd?.toISOString() ?? null,
+        stripePriceAmount: member.stripePriceAmount ?? null,
         lastVideoAt: lastVideoDate?.toISOString() ?? null,
         videos7d: member.youtubeVideos.length,
         clicks7d,
@@ -182,6 +183,9 @@ export async function GET() {
   const activeMembers = memberRows.filter((m) => m.status === "active").length;
   const inactiveMembers = memberRows.filter((m) => m.status === "inactive").length;
   const videosThisWeek = memberRows.reduce((sum, m) => sum + m.videos7d, 0);
+  const mrr = memberRows
+    .filter((m) => m.subscriptionStatus === "active" && m.stripePriceAmount)
+    .reduce((sum, m) => sum + (m.stripePriceAmount ?? 0), 0);
 
   return NextResponse.json({
     members: memberRows,
@@ -191,6 +195,7 @@ export async function GET() {
       inactiveMembers,
       linkClicks7d: clicksResult._count,
       topLead,
+      mrr,
     },
     recentVideos,
     lastSyncedAt: latestSync?.toISOString() ?? null,
