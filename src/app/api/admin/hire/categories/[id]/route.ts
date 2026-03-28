@@ -15,7 +15,9 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
   const { id } = await params;
   const body = await req.json();
-  const { name, slug, description, icon, accentColour, sortOrder, published } = body;
+  const { name, slug, description, icon, accentColour, sortOrder, published,
+          emoji, tagline, highlighted, includesRef, cardExtras, addonLabel,
+          addonPriceNote, footerNote, jaredIncludedNote } = body;
 
   const category = await prisma.serviceCategory.update({
     where: { id },
@@ -27,6 +29,15 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       ...(accentColour !== undefined && { accentColour }),
       ...(sortOrder !== undefined && { sortOrder }),
       ...(published !== undefined && { published }),
+      ...(emoji !== undefined && { emoji }),
+      ...(tagline !== undefined && { tagline }),
+      ...(highlighted !== undefined && { highlighted }),
+      ...(includesRef !== undefined && { includesRef }),
+      ...(cardExtras !== undefined && { cardExtras }),
+      ...(addonLabel !== undefined && { addonLabel }),
+      ...(addonPriceNote !== undefined && { addonPriceNote }),
+      ...(footerNote !== undefined && { footerNote }),
+      ...(jaredIncludedNote !== undefined && { jaredIncludedNote }),
     },
   });
 

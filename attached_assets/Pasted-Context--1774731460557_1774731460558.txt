@@ -1,0 +1,188 @@
+Context                                                                                                                                                    
+                                                                                                                                                             
+  The Hire a Human member page (/member/hire/page.tsx) currently hardcodes all card content (names, prices, features, copy). It only reads stripeUrl and     
+  waitlist from the database. The admin page (/admin/hire/page.tsx) has full CRUD for ServiceCategory and ServicePackage, but edits don't flow through to    
+  what members see.
+                                                                                                                                                             
+  We're making the member page fully dynamic so everything comes from the database. This first prompt handles the schema changes and seed data update.       
+   
+  Task 1: Prisma Schema Changes                                                                                                                              
+                                                                                                                                                           
+  Add these fields to ServiceCategory in prisma/schema.prisma:                                                                                               
+                                                                                                                                                           
+  emoji             String?
+  tagline           String?
+  highlighted       Boolean  @default(false)                                                                                                                 
+  includesRef       String?
+  cardExtras        Json?                                                                                                                                    
+  addonLabel        String?                                                                                                                                
+  addonPriceNote    String?
+  footerNote        String?
+  jaredIncludedNote String?                                                                                                                                  
+   
+  Add these fields to ServicePackage:                                                                                                                        
+                                                                                                                                                           
+  videoCount       Int?
+  isAddonVariant   Boolean  @default(false)
+  priceAmount      Int?                                                                                                                                      
+   
+  Run npx prisma migrate dev to create the migration.                                                                                                        
+                                                                                                                                                           
+  Task 2: Update API Routes                                                                                                                                  
+   
+  The existing hire API routes need to include the new fields in their responses and accept them in updates:                                                 
+                                                                                                                                                           
+  - GET /api/member/hire/categories — already returns all category + package fields, so new fields should come through automatically via Prisma. Verify this.
+  - GET /api/admin/hire/categories — same, verify new fields are included.                                                                                 
+  - POST/PUT /api/admin/hire/categories/[id] — accept the new category fields in the request body.                                                           
+  - POST/PUT /api/admin/hire/packages/[id] — accept videoCount, isAddonVariant, priceAmount in the request body.                                             
+                                                                                                                                                             
+  Task 3: Rewrite Seed Data                                                                                                                                  
+                                                                                                                                                             
+  Rewrite prisma/seed-services.ts completely. The new seed must use upserts (same pattern as current) and update the category slugs.                         
+   
+  Category: Production (was "editing")                                                                                                                       
+                                                                                                                                                           
+  {
+    slug: "production",
+    name: "Production",                                                                                                                                      
+    description: "Stop spending 4-6 hours editing every video. Hand us the raw footage and get back a polished, publish-ready video.",
+    icon: "FilmIcon",                                                                                                                                        
+    accentColour: "blue",                                                                                                                                  
+    emoji: "🎬",                                                                                                                                             
+    tagline: "We edit. You publish.",                                                                                                                      
+    highlighted: false,                                                                                                                                      
+    includesRef: null,                                                                                                                                     
+    addonLabel: "Add Jared's personal feedback",
+    addonPriceNote: "1-on-1 coaching call + video-by-video review",                                                                                          
+    footerNote: "Added to your Foundations membership",
+    jaredIncludedNote: null,                                                                                                                                 
+    cardExtras: null,                                                                                                                                      
+    sortOrder: 1,                                                                                                                                            
+    published: true,                                                                                                                                       
+  }
+
+  Packages (IDs stay the same for Stripe link continuity):                                                                                                   
+   
+  ┌──────────┬───────────┬──────────┬──────┬───────┬──────┬──────┬─────────┬─────────┬───────────┬───────────────────────────────────────────────┐           
+  │          │           │          │ Pric │ Price │ Vide │ Addo │         │ Feature │ Highlight │                                               │         
+  │    ID    │   Name    │  Price   │  e   │  Amou │ o Co │  n   │  Badge  │    s    │  Features │                  Stripe URL                   │           
+  │          │           │          │ Note │  nt   │ unt  │      │         │         │           │                                               │         
+  ├──────────┼───────────┼──────────┼──────┼───────┼──────┼──────┼─────────┼─────────┼───────────┼───────────────────────────────────────────────┤           
+  │ editing- │ Productio │          │      │       │      │ fals │         │ [shared │           │ https://buy.stripe.com/9B67sLcWv9ojf4RcLp0Ny0 │           
+  │ 1        │ n 2       │ $500/mo  │ USD  │ 50000 │ 2    │ e    │ null    │  list   │ null      │ k                                             │         
+  │          │           │          │      │       │      │      │         │ below]  │           │                                               │           
+  ├──────────┼───────────┼──────────┼──────┼───────┼──────┼──────┼─────────┼─────────┼───────────┼───────────────────────────────────────────────┤         
+  │          │ Productio │          │      │       │      │      │ +       │ [shared │ [jared hi │                                               │         
+  │ editing- │ n 2 +     │ $800/mo  │ USD  │ 80000 │ 2    │ true │ Jared's │  list   │ ghlights  │ https://buy.stripe.com/bJeeVd4pZdEzcWJbHl0Ny0 │           
+  │ 2        │ Jared     │          │      │       │      │      │  Feedba │ below]  │ below]    │ l                                             │         
+  │          │           │          │      │       │      │      │ ck      │         │           │                                               │           
+  ├──────────┼───────────┼──────────┼──────┼───────┼──────┼──────┼─────────┼─────────┼───────────┼───────────────────────────────────────────────┤         
+  │ editing- │ Productio │ $1,000/m │      │ 10000 │      │ fals │         │ [shared │           │ https://buy.stripe.com/14AaEXe0zfMHaOB26L0Ny0 │           
+  │ 3        │ n 4       │ o        │ USD  │ 0     │ 4    │ e    │ null    │  list   │ null      │ m                                             │
+  │          │           │          │      │       │      │      │         │ below]  │           │                                               │           
+  ├──────────┼───────────┼──────────┼──────┼───────┼──────┼──────┼─────────┼─────────┼───────────┼───────────────────────────────────────────────┤         
+  │          │ Productio │          │      │       │      │      │ +       │ [shared │ [jared hi │                                               │
+  │ editing- │ n 4 +     │ $1,600/m │ USD  │ 16000 │ 4    │ true │ Jared's │  list   │ ghlights  │ https://buy.stripe.com/28EfZh8Gf2ZVf4ReTx0Ny0 │           
+  │ 4        │ Jared     │ o        │      │ 0     │      │      │  Feedba │ below]  │ below]    │ n                                             │
+  │          │           │          │      │       │      │      │ ck      │         │           │                                               │           
+  └──────────┴───────────┴──────────┴──────┴───────┴──────┴──────┴─────────┴─────────┴───────────┴───────────────────────────────────────────────┘         
+
+  Shared features: ["Professional editing, graphics, titles, and b-roll", "Music and asset licensing", "Upload to Frame.io for review", "2–3 revisions per   
+  video", "Onboarding call to customise to your brand"]
+                                                                                                                                                             
+  Jared highlight features: ["Comprehensive review of shooting, setup, and delivery", "Editing suggestions delivered in Frame.io", "Ideas for future content 
+  improvements", "15-minute coaching call"]
+                                                                                                                                                             
+  Category: Growth (was "mastery")                                                                                                                         
+
+  {
+    slug: "growth",
+    name: "Growth",
+    description: "The full system built with you. Everything in Production plus strategy, funnels, coaching, and implementation.",
+    icon: "RocketLaunchIcon",                                                                                                                                
+    accentColour: "slate",
+    emoji: "📈",                                                                                                                                             
+    tagline: "Editing + strategy + funnels.",                                                                                                              
+    highlighted: true,                                                                                                                                       
+    includesRef: "Includes everything in Production, plus:",                                                                                               
+    addonLabel: null,                                                                                                                                        
+    addonPriceNote: null,
+    footerNote: "Added to your Foundations membership",                                                                                                      
+    jaredIncludedNote: "Jared's feedback included",                                                                                                        
+    cardExtras: null,                                                                                                                                        
+    sortOrder: 2,
+    published: true,                                                                                                                                         
+  }                                                                                                                                                        
+
+  Packages:
+
+  ┌─────────┬───────┬─────────┬──────┬───────┬──────┬──────┬─────────────┬─────────┬─────────┬──────────┬──────────────────────────────────────────┐         
+  │         │       │         │ Pric │ Price │ Vide │ Addo │             │ Subtitl │ Feature │ Highligh │                                          │
+  │   ID    │ Name  │  Price  │  e   │  Amou │ o Co │  n   │    Badge    │    e    │    s    │    t     │                Stripe URL                │         
+  │         │       │         │ Note │  nt   │ unt  │      │             │         │         │ Features │                                          │       
+  ├─────────┼───────┼─────────┼──────┼───────┼──────┼──────┼─────────────┼─────────┼─────────┼──────────┼──────────────────────────────────────────┤
+  │         │       │         │      │       │      │      │             │ 2 long- │ [growth │ [growth  │                                          │         
+  │ mastery │ Growt │ $1,995/ │ USD  │ 19950 │ 2    │ fals │ null        │ form    │  featur │ highligh │ https://buy.stripe.com/aFa8wP7Cb9ojf4R5i │
+  │ -1      │ h 2   │ mo      │      │ 0     │      │ e    │             │ video e │ es      │ ts       │ X0Ny0q                                   │         
+  │         │       │         │      │       │      │      │             │ dits/mo │ below]  │ below]   │                                          │       
+  ├─────────┼───────┼─────────┼──────┼───────┼──────┼──────┼─────────────┼─────────┼─────────┼──────────┼──────────────────────────────────────────┤
+  │         │       │         │      │       │      │      │             │ 4 long- │ [growth │ [growth  │                                          │
+  │ mastery │ Growt │ $2,995/ │ USD  │ 29950 │ 4    │ fals │ Most Compre │ form    │  featur │ highligh │ https://buy.stripe.com/fZu7sLg8HcAvg8VbH │         
+  │ -2      │ h 4   │ mo      │      │ 0     │      │ e    │ hensive     │ video e │ es      │ ts       │ l0Ny0r                                   │
+  │         │       │         │      │       │      │      │             │ dits/mo │ below]  │ below]   │                                          │         
+  └─────────┴───────┴─────────┴──────┴───────┴──────┴──────┴─────────────┴─────────┴─────────┴──────────┴──────────────────────────────────────────┘       
+
+  Growth features: ["Full funnel built at launch", "Lead magnet strategy and setup", "Monthly strategy session with Jared", "Content calendar planning"]     
+   
+  Growth highlights for Growth 2: ["2 long-form video edits per month", "1 full funnel built at launch"]                                                     
+  Growth highlights for Growth 4: ["4 long-form video edits per month", "2 full funnels built at launch"]                                                  
+                                                                                                                                                             
+  Category: Done With You (was "ultimate")                                                                                                                 
+                                                                                                                                                             
+  {                                                                                                                                                        
+    slug: "done-with-you",
+    name: "Done With You",
+    description: "You show up, film, and close deals. We do literally everything else.",
+    icon: "SparklesIcon",                                                                                                                                    
+    accentColour: "purple",                                                                                                                                  
+    emoji: "💎",                                                                                                                                             
+    tagline: "You film and close deals. We build your entire YouTube engine.",                                                                               
+    highlighted: false,                                                                                                                                    
+    includesRef: "Includes everything in Growth, plus:",                                                                                                     
+    addonLabel: null,
+    addonPriceNote: null,                                                                                                                                    
+    footerNote: "Added to your Foundations membership",                                                                                                    
+    jaredIncludedNote: null,
+    cardExtras: ["We own your entire content pipeline — from raw footage to live video", "You get back 15–20+ hours per month to focus on clients", "Your    
+  channel never misses a week, even when life gets busy"],                                                                                                   
+    sortOrder: 3,                                                                                                                                            
+    published: true,                                                                                                                                         
+  }                                                                                                                                                        
+
+  Package:                                                                                                                                                   
+   
+  ┌────────────┬────────────┬───────────┬──────────┬────────────┬───────────┬───────┬────────────┬──────────────────┬────────────────────┬──────────┐        
+  │     ID     │    Name    │   Price   │  Price   │   Price    │  Video    │ Addon │   Badge    │     Features     │ Highlight Features │ Stripe   │      
+  │            │            │           │   Note   │   Amount   │   Count   │       │            │                  │                    │   URL    │        
+  ├────────────┼────────────┼───────────┼──────────┼────────────┼───────────┼───────┼────────────┼──────────────────┼────────────────────┼──────────┤
+  │ ultimate-1 │ Done With  │ $4,500/mo │ USD      │ 450000     │ null      │ false │ Full       │ [dwu features    │ [dwu highlights    │ null     │        
+  │            │ You        │           │          │            │           │       │ Service    │ below]           │ below]             │          │        
+  └────────────┴────────────┴───────────┴──────────┴────────────┴───────────┴───────┴────────────┴──────────────────┴────────────────────┴──────────┘
+                                                                                                                                                             
+  DWU features: ["Unlimited video edits (no monthly cap)", "Full YouTube channel management", "Thumbnail design and A/B testing", "SEO optimisation,         
+  descriptions, and publishing", "Weekly performance reporting"]
+                                                                                                                                                             
+  DWU highlight features: ["4 long-form video edits per month", "2 full funnels built at launch", "Ready-to-film scripts researched and written for you"]    
+   
+  Category: Add-Ons (unchanged)                                                                                                                              
+                                                                                                                                                           
+  Keep the existing Add-Ons category and its 3 packages exactly as they are in the current seed. Just add the new fields with null/default values.           
+   
+  Important Notes                                                                                                                                            
+                                                                                                                                                           
+  - The old category slugs ("editing", "mastery", "ultimate") are being replaced. The seed upserts by slug, so create new records with the new slugs. If     
+  there's existing data with old slugs, the seed should handle cleanup (delete old categories after creating new ones, or upsert by ID instead).
+  - Package IDs (editing-1, mastery-1, ultimate-1, etc.) stay the same to preserve Stripe link associations.                                                 
+  - All prices use Canadian spelling in features (e.g., "customise", "optimisation").                                                                        
+  - Run the seed after migration to verify everything works: npx prisma db seed  

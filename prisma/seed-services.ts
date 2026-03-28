@@ -9,158 +9,390 @@ const pool = new pg.Pool({
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter } as any);
 
+const PRODUCTION_FEATURES = [
+  "Professional editing, graphics, titles, and b-roll",
+  "Music and asset licensing",
+  "Upload to Frame.io for review",
+  "2–3 revisions per video",
+  "Onboarding call to customise to your brand",
+];
+
+const JARED_HIGHLIGHTS = [
+  "Comprehensive review of shooting, setup, and delivery",
+  "Editing suggestions delivered in Frame.io",
+  "Ideas for future content improvements",
+  "15-minute coaching call",
+];
+
+const GROWTH_FEATURES = [
+  "Full funnel built at launch",
+  "Lead magnet strategy and setup",
+  "Monthly strategy session with Jared",
+  "Content calendar planning",
+];
+
+const DWU_FEATURES = [
+  "Unlimited video edits (no monthly cap)",
+  "Full YouTube channel management",
+  "Thumbnail design and A/B testing",
+  "SEO optimisation, descriptions, and publishing",
+  "Weekly performance reporting",
+];
+
+const DWU_HIGHLIGHTS = [
+  "4 long-form video edits per month",
+  "2 full funnels built at launch",
+  "Ready-to-film scripts researched and written for you",
+];
+
 async function main() {
   console.log("Seeding service categories and packages...");
 
-  // ── Category 1: Attraction Editing ──────────────────────────
-  const editing = await prisma.serviceCategory.upsert({
-    where: { slug: "editing" },
+  // ── Category 1: Production ──────────────────────────────────
+  const production = await prisma.serviceCategory.upsert({
+    where: { slug: "production" },
     update: {
-      name: "Attraction Editing",
+      name: "Production",
       description: "Stop spending 4-6 hours editing every video. Hand us the raw footage and get back a polished, publish-ready video.",
       icon: "FilmIcon",
       accentColour: "blue",
+      emoji: "🎬",
+      tagline: "We edit. You publish.",
+      highlighted: false,
+      includesRef: null,
+      addonLabel: "Add Jared's personal feedback",
+      addonPriceNote: "1-on-1 coaching call + video-by-video review",
+      footerNote: "Added to your Foundations membership",
+      jaredIncludedNote: null,
+      cardExtras: null,
       sortOrder: 1,
       published: true,
     },
     create: {
-      name: "Attraction Editing",
-      slug: "editing",
+      name: "Production",
+      slug: "production",
       description: "Stop spending 4-6 hours editing every video. Hand us the raw footage and get back a polished, publish-ready video.",
       icon: "FilmIcon",
       accentColour: "blue",
+      emoji: "🎬",
+      tagline: "We edit. You publish.",
+      highlighted: false,
+      includesRef: null,
+      addonLabel: "Add Jared's personal feedback",
+      addonPriceNote: "1-on-1 coaching call + video-by-video review",
+      footerNote: "Added to your Foundations membership",
+      jaredIncludedNote: null,
+      cardExtras: null,
       sortOrder: 1,
       published: true,
     },
   });
 
-  const editingPackages = [
-    {
-      name: "2 Video Package",
+  await prisma.servicePackage.upsert({
+    where: { id: "editing-1" },
+    update: {
+      categoryId: production.id,
+      name: "Production 2",
       price: "$500/mo",
       priceNote: "USD",
+      priceAmount: 50000,
+      videoCount: 2,
+      isAddonVariant: false,
       badge: null,
       subtitle: null,
       sortOrder: 1,
-      features: ["Professional editing by ABV team", "Music and asset licensing", "Graphics, titles, and b-roll", "Upload to Frame.io for review", "2-3 revisions per video", "Onboarding call to customise to your brand"],
+      features: PRODUCTION_FEATURES,
       highlightFeatures: null,
       stripeUrl: "https://buy.stripe.com/9B67sLcWv9ojf4RcLp0Ny0k",
+      published: true,
     },
-    {
-      name: "2 Video + Jared",
+    create: {
+      id: "editing-1",
+      categoryId: production.id,
+      name: "Production 2",
+      price: "$500/mo",
+      priceNote: "USD",
+      priceAmount: 50000,
+      videoCount: 2,
+      isAddonVariant: false,
+      badge: null,
+      subtitle: null,
+      sortOrder: 1,
+      features: PRODUCTION_FEATURES,
+      highlightFeatures: null,
+      stripeUrl: "https://buy.stripe.com/9B67sLcWv9ojf4RcLp0Ny0k",
+      published: true,
+    },
+  });
+
+  await prisma.servicePackage.upsert({
+    where: { id: "editing-2" },
+    update: {
+      categoryId: production.id,
+      name: "Production 2 + Jared",
       price: "$800/mo",
       priceNote: "USD",
+      priceAmount: 80000,
+      videoCount: 2,
+      isAddonVariant: true,
       badge: "+ Jared's Feedback",
       subtitle: null,
       sortOrder: 2,
-      features: ["Professional editing by ABV team", "Music and asset licensing", "Graphics, titles, and b-roll", "Upload to Frame.io for review", "2-3 revisions per video", "Onboarding call to customise to your brand"],
-      highlightFeatures: ["Comprehensive review of shooting, setup, and delivery", "Editing suggestions delivered in Frame.io", "Ideas for future content improvements", "15-minute coaching call"],
+      features: PRODUCTION_FEATURES,
+      highlightFeatures: JARED_HIGHLIGHTS,
       stripeUrl: "https://buy.stripe.com/bJeeVd4pZdEzcWJbHl0Ny0l",
+      published: true,
     },
-    {
-      name: "4 Video Package",
+    create: {
+      id: "editing-2",
+      categoryId: production.id,
+      name: "Production 2 + Jared",
+      price: "$800/mo",
+      priceNote: "USD",
+      priceAmount: 80000,
+      videoCount: 2,
+      isAddonVariant: true,
+      badge: "+ Jared's Feedback",
+      subtitle: null,
+      sortOrder: 2,
+      features: PRODUCTION_FEATURES,
+      highlightFeatures: JARED_HIGHLIGHTS,
+      stripeUrl: "https://buy.stripe.com/bJeeVd4pZdEzcWJbHl0Ny0l",
+      published: true,
+    },
+  });
+
+  await prisma.servicePackage.upsert({
+    where: { id: "editing-3" },
+    update: {
+      categoryId: production.id,
+      name: "Production 4",
       price: "$1,000/mo",
       priceNote: "USD",
+      priceAmount: 100000,
+      videoCount: 4,
+      isAddonVariant: false,
       badge: null,
       subtitle: null,
       sortOrder: 3,
-      features: ["Professional editing by ABV team", "Music and asset licensing", "Graphics, titles, and b-roll", "Upload to Frame.io for review", "2-3 revisions per video", "Onboarding call to customise to your brand"],
+      features: PRODUCTION_FEATURES,
       highlightFeatures: null,
       stripeUrl: "https://buy.stripe.com/14AaEXe0zfMHaOB26L0Ny0m",
+      published: true,
     },
-    {
-      name: "4 Video + Jared",
-      price: "$1,500/mo",
+    create: {
+      id: "editing-3",
+      categoryId: production.id,
+      name: "Production 4",
+      price: "$1,000/mo",
       priceNote: "USD",
+      priceAmount: 100000,
+      videoCount: 4,
+      isAddonVariant: false,
+      badge: null,
+      subtitle: null,
+      sortOrder: 3,
+      features: PRODUCTION_FEATURES,
+      highlightFeatures: null,
+      stripeUrl: "https://buy.stripe.com/14AaEXe0zfMHaOB26L0Ny0m",
+      published: true,
+    },
+  });
+
+  await prisma.servicePackage.upsert({
+    where: { id: "editing-4" },
+    update: {
+      categoryId: production.id,
+      name: "Production 4 + Jared",
+      price: "$1,600/mo",
+      priceNote: "USD",
+      priceAmount: 160000,
+      videoCount: 4,
+      isAddonVariant: true,
       badge: "+ Jared's Feedback",
       subtitle: null,
       sortOrder: 4,
-      features: ["Professional editing by ABV team", "Music and asset licensing", "Graphics, titles, and b-roll", "Upload to Frame.io for review", "2-3 revisions per video", "Onboarding call to customise to your brand"],
-      highlightFeatures: ["Comprehensive review of shooting, setup, and delivery", "Editing suggestions delivered in Frame.io", "Ideas for future content improvements", "15-minute coaching call"],
+      features: PRODUCTION_FEATURES,
+      highlightFeatures: JARED_HIGHLIGHTS,
       stripeUrl: "https://buy.stripe.com/28EfZh8Gf2ZVf4ReTx0Ny0n",
+      published: true,
     },
-  ];
+    create: {
+      id: "editing-4",
+      categoryId: production.id,
+      name: "Production 4 + Jared",
+      price: "$1,600/mo",
+      priceNote: "USD",
+      priceAmount: 160000,
+      videoCount: 4,
+      isAddonVariant: true,
+      badge: "+ Jared's Feedback",
+      subtitle: null,
+      sortOrder: 4,
+      features: PRODUCTION_FEATURES,
+      highlightFeatures: JARED_HIGHLIGHTS,
+      stripeUrl: "https://buy.stripe.com/28EfZh8Gf2ZVf4ReTx0Ny0n",
+      published: true,
+    },
+  });
 
-  for (const pkg of editingPackages) {
-    await prisma.servicePackage.upsert({
-      where: { id: `editing-${pkg.sortOrder}` },
-      update: { ...pkg, features: pkg.features, highlightFeatures: pkg.highlightFeatures ?? undefined },
-      create: { id: `editing-${pkg.sortOrder}`, categoryId: editing.id, ...pkg, features: pkg.features, highlightFeatures: pkg.highlightFeatures ?? undefined },
-    });
-  }
-
-  // ── Category 2: Attraction Mastery ──────────────────────────
-  const mastery = await prisma.serviceCategory.upsert({
-    where: { slug: "mastery" },
+  // ── Category 2: Growth ──────────────────────────────────────
+  const growth = await prisma.serviceCategory.upsert({
+    where: { slug: "growth" },
     update: {
-      name: "Attraction Mastery",
-      description: "The full system built with you. Everything in Editing plus strategy, funnels, coaching, and implementation — all under one monthly investment.",
+      name: "Growth",
+      description: "The full system built with you. Everything in Production plus strategy, funnels, coaching, and implementation.",
       icon: "RocketLaunchIcon",
       accentColour: "slate",
+      emoji: "📈",
+      tagline: "Editing + strategy + funnels.",
+      highlighted: true,
+      includesRef: "Includes everything in Production, plus:",
+      addonLabel: null,
+      addonPriceNote: null,
+      footerNote: "Added to your Foundations membership",
+      jaredIncludedNote: "Jared's feedback included",
+      cardExtras: null,
       sortOrder: 2,
       published: true,
     },
     create: {
-      name: "Attraction Mastery",
-      slug: "mastery",
-      description: "The full system built with you. Everything in Editing plus strategy, funnels, coaching, and implementation — all under one monthly investment.",
+      name: "Growth",
+      slug: "growth",
+      description: "The full system built with you. Everything in Production plus strategy, funnels, coaching, and implementation.",
       icon: "RocketLaunchIcon",
       accentColour: "slate",
+      emoji: "📈",
+      tagline: "Editing + strategy + funnels.",
+      highlighted: true,
+      includesRef: "Includes everything in Production, plus:",
+      addonLabel: null,
+      addonPriceNote: null,
+      footerNote: "Added to your Foundations membership",
+      jaredIncludedNote: "Jared's feedback included",
+      cardExtras: null,
       sortOrder: 2,
       published: true,
     },
   });
 
-  const masteryPackages = [
-    {
-      name: "Mastery 2",
-      price: "$2,495/mo",
+  await prisma.servicePackage.upsert({
+    where: { id: "mastery-1" },
+    update: {
+      categoryId: growth.id,
+      name: "Growth 2",
+      price: "$1,995/mo",
       priceNote: "USD",
+      priceAmount: 199500,
+      videoCount: 2,
+      isAddonVariant: false,
       badge: null,
       subtitle: "2 long-form video edits/mo",
       sortOrder: 1,
-      features: ["Foundational Membership Benefits included", "1 new funnel every 90 days", "Custom thumbnails per video", "GoHighLevel account (lead capture, follow-up, pipeline)", "Title & thumbnail review via Slack (1-1 with Jared)", "Priority Slack responses", "Every video scored & reviewed", "Strategy call with Jared (30 min) — 1/month"],
+      features: GROWTH_FEATURES,
       highlightFeatures: ["2 long-form video edits per month", "1 full funnel built at launch"],
       stripeUrl: "https://buy.stripe.com/aFa8wP7Cb9ojf4R5iX0Ny0q",
+      published: true,
     },
-    {
-      name: "Mastery 4",
-      price: "$3,495/mo",
+    create: {
+      id: "mastery-1",
+      categoryId: growth.id,
+      name: "Growth 2",
+      price: "$1,995/mo",
       priceNote: "USD",
+      priceAmount: 199500,
+      videoCount: 2,
+      isAddonVariant: false,
+      badge: null,
+      subtitle: "2 long-form video edits/mo",
+      sortOrder: 1,
+      features: GROWTH_FEATURES,
+      highlightFeatures: ["2 long-form video edits per month", "1 full funnel built at launch"],
+      stripeUrl: "https://buy.stripe.com/aFa8wP7Cb9ojf4R5iX0Ny0q",
+      published: true,
+    },
+  });
+
+  await prisma.servicePackage.upsert({
+    where: { id: "mastery-2" },
+    update: {
+      categoryId: growth.id,
+      name: "Growth 4",
+      price: "$2,995/mo",
+      priceNote: "USD",
+      priceAmount: 299500,
+      videoCount: 4,
+      isAddonVariant: false,
       badge: "Most Comprehensive",
       subtitle: "4 long-form video edits/mo",
       sortOrder: 2,
-      features: ["Foundational Membership Benefits included", "1 new funnel every 90 days", "Custom thumbnails per video", "GoHighLevel account (lead capture, follow-up, pipeline)", "Title & thumbnail review via Slack (1-1 with Jared)", "Priority Slack responses", "Every video scored & reviewed", "Strategy call with Jared (30 min) — 1/month"],
+      features: GROWTH_FEATURES,
       highlightFeatures: ["4 long-form video edits per month", "2 full funnels built at launch"],
       stripeUrl: "https://buy.stripe.com/fZu7sLg8HcAvg8VbHl0Ny0r",
+      published: true,
     },
-  ];
+    create: {
+      id: "mastery-2",
+      categoryId: growth.id,
+      name: "Growth 4",
+      price: "$2,995/mo",
+      priceNote: "USD",
+      priceAmount: 299500,
+      videoCount: 4,
+      isAddonVariant: false,
+      badge: "Most Comprehensive",
+      subtitle: "4 long-form video edits/mo",
+      sortOrder: 2,
+      features: GROWTH_FEATURES,
+      highlightFeatures: ["4 long-form video edits per month", "2 full funnels built at launch"],
+      stripeUrl: "https://buy.stripe.com/fZu7sLg8HcAvg8VbHl0Ny0r",
+      published: true,
+    },
+  });
 
-  for (const pkg of masteryPackages) {
-    await prisma.servicePackage.upsert({
-      where: { id: `mastery-${pkg.sortOrder}` },
-      update: { ...pkg, features: pkg.features, highlightFeatures: pkg.highlightFeatures ?? undefined },
-      create: { id: `mastery-${pkg.sortOrder}`, categoryId: mastery.id, ...pkg, features: pkg.features, highlightFeatures: pkg.highlightFeatures ?? undefined },
-    });
-  }
-
-  // ── Category 3: Ultimate Mastery ────────────────────────────
-  const ultimate = await prisma.serviceCategory.upsert({
-    where: { slug: "ultimate" },
+  // ── Category 3: Done With You ───────────────────────────────
+  const dwy = await prisma.serviceCategory.upsert({
+    where: { slug: "done-with-you" },
     update: {
-      name: "Ultimate Mastery",
+      name: "Done With You",
       description: "You show up, film, and close deals. We do literally everything else.",
       icon: "SparklesIcon",
       accentColour: "purple",
+      emoji: "💎",
+      tagline: "You film and close deals. We build your entire YouTube engine.",
+      highlighted: false,
+      includesRef: "Includes everything in Growth, plus:",
+      addonLabel: null,
+      addonPriceNote: null,
+      footerNote: "Added to your Foundations membership",
+      jaredIncludedNote: null,
+      cardExtras: [
+        "We own your entire content pipeline — from raw footage to live video",
+        "You get back 15–20+ hours per month to focus on clients",
+        "Your channel never misses a week, even when life gets busy",
+      ],
       sortOrder: 3,
       published: true,
     },
     create: {
-      name: "Ultimate Mastery",
-      slug: "ultimate",
+      name: "Done With You",
+      slug: "done-with-you",
       description: "You show up, film, and close deals. We do literally everything else.",
       icon: "SparklesIcon",
       accentColour: "purple",
+      emoji: "💎",
+      tagline: "You film and close deals. We build your entire YouTube engine.",
+      highlighted: false,
+      includesRef: "Includes everything in Growth, plus:",
+      addonLabel: null,
+      addonPriceNote: null,
+      footerNote: "Added to your Foundations membership",
+      jaredIncludedNote: null,
+      cardExtras: [
+        "We own your entire content pipeline — from raw footage to live video",
+        "You get back 15–20+ hours per month to focus on clients",
+        "Your channel never misses a week, even when life gets busy",
+      ],
       sortOrder: 3,
       published: true,
     },
@@ -169,32 +401,41 @@ async function main() {
   await prisma.servicePackage.upsert({
     where: { id: "ultimate-1" },
     update: {
-      name: "Ultimate Mastery",
-      price: "$4,999/mo",
+      categoryId: dwy.id,
+      name: "Done With You",
+      price: "$4,500/mo",
       priceNote: "USD",
+      priceAmount: 450000,
+      videoCount: null,
+      isAddonVariant: false,
       badge: "Full Service",
       subtitle: null,
       sortOrder: 1,
-      features: ["Everything in Mastery 4 included", "2 lead magnet funnels built per month", "Local market research — what's ranking and trending in your city", "SEO-optimised descriptions and tags for every video", "A/B thumbnail variants per video", "Ongoing content calendar management and updates", "Strategy session with Jared (60 min) — every 2 weeks", "Quarterly 16-principle channel audit with written report", "Priority everything — fastest turnaround, same-day responses", "Community post and pinned comment strategy written and scheduled"],
-      highlightFeatures: ["4 long-form video edits per month", "2 full funnels built at launch", "Ready-to-film scripts researched and written for you"],
+      features: DWU_FEATURES,
+      highlightFeatures: DWU_HIGHLIGHTS,
       stripeUrl: null,
+      published: true,
     },
     create: {
       id: "ultimate-1",
-      categoryId: ultimate.id,
-      name: "Ultimate Mastery",
-      price: "$4,999/mo",
+      categoryId: dwy.id,
+      name: "Done With You",
+      price: "$4,500/mo",
       priceNote: "USD",
+      priceAmount: 450000,
+      videoCount: null,
+      isAddonVariant: false,
       badge: "Full Service",
       subtitle: null,
       sortOrder: 1,
-      features: ["Everything in Mastery 4 included", "2 lead magnet funnels built per month", "Local market research — what's ranking and trending in your city", "SEO-optimised descriptions and tags for every video", "A/B thumbnail variants per video", "Ongoing content calendar management and updates", "Strategy session with Jared (60 min) — every 2 weeks", "Quarterly 16-principle channel audit with written report", "Priority everything — fastest turnaround, same-day responses", "Community post and pinned comment strategy written and scheduled"],
-      highlightFeatures: ["4 long-form video edits per month", "2 full funnels built at launch", "Ready-to-film scripts researched and written for you"],
+      features: DWU_FEATURES,
+      highlightFeatures: DWU_HIGHLIGHTS,
       stripeUrl: null,
+      published: true,
     },
   });
 
-  // ── Category 4: Add-Ons ─────────────────────────────────────
+  // ── Category 4: Add-Ons (unchanged) ────────────────────────
   const addons = await prisma.serviceCategory.upsert({
     where: { slug: "add-ons" },
     update: {
@@ -202,6 +443,15 @@ async function main() {
       description: "Available extras to complement your package.",
       icon: "PuzzlePieceIcon",
       accentColour: "gray",
+      emoji: null,
+      tagline: null,
+      highlighted: false,
+      includesRef: null,
+      addonLabel: null,
+      addonPriceNote: null,
+      footerNote: null,
+      jaredIncludedNote: null,
+      cardExtras: null,
       sortOrder: 4,
       published: true,
     },
@@ -211,6 +461,15 @@ async function main() {
       description: "Available extras to complement your package.",
       icon: "PuzzlePieceIcon",
       accentColour: "gray",
+      emoji: null,
+      tagline: null,
+      highlighted: false,
+      includesRef: null,
+      addonLabel: null,
+      addonPriceNote: null,
+      footerNote: null,
+      jaredIncludedNote: null,
+      cardExtras: null,
       sortOrder: 4,
       published: true,
     },
@@ -218,9 +477,13 @@ async function main() {
 
   const addonPackages = [
     {
+      id: "addon-1",
       name: "Custom Thumbnails",
       price: "$100 – $150",
       priceNote: null,
+      priceAmount: null,
+      videoCount: null,
+      isAddonVariant: false,
       badge: null,
       subtitle: "$100 with Editing/Mastery, $150 standalone",
       sortOrder: 1,
@@ -229,20 +492,31 @@ async function main() {
       stripeUrl: null,
     },
     {
+      id: "addon-2",
       name: "Lead Magnet Creation",
       price: "~$1,000 USD",
       priceNote: null,
+      priceAmount: null,
+      videoCount: null,
+      isAddonVariant: false,
       badge: null,
       subtitle: null,
       sortOrder: 2,
-      features: ["Buyer guides, relocation guides, market reports, or any PDF built for your market", "Includes writing, design, and delivery setup"],
+      features: [
+        "Buyer guides, relocation guides, market reports, or any PDF built for your market",
+        "Includes writing, design, and delivery setup",
+      ],
       highlightFeatures: null,
       stripeUrl: null,
     },
     {
+      id: "addon-3",
       name: "Rush Funnel",
       price: "$950",
       priceNote: null,
+      priceAmount: null,
+      videoCount: null,
+      isAddonVariant: false,
       badge: null,
       subtitle: "Available to Mastery members only",
       sortOrder: 3,
@@ -253,11 +527,26 @@ async function main() {
   ];
 
   for (const pkg of addonPackages) {
+    const { id, ...rest } = pkg;
     await prisma.servicePackage.upsert({
-      where: { id: `addon-${pkg.sortOrder}` },
-      update: { ...pkg, features: pkg.features, highlightFeatures: pkg.highlightFeatures ?? undefined },
-      create: { id: `addon-${pkg.sortOrder}`, categoryId: addons.id, ...pkg, features: pkg.features, highlightFeatures: pkg.highlightFeatures ?? undefined },
+      where: { id },
+      update: { ...rest, features: rest.features, highlightFeatures: rest.highlightFeatures ?? undefined },
+      create: { id, categoryId: addons.id, ...rest, features: rest.features, highlightFeatures: rest.highlightFeatures ?? undefined },
     });
+  }
+
+  // ── Cleanup: delete old categories now that packages are re-assigned ──
+  for (const oldSlug of ["editing", "mastery", "ultimate"]) {
+    const old = await prisma.serviceCategory.findUnique({ where: { slug: oldSlug } });
+    if (old) {
+      const pkgCount = await prisma.servicePackage.count({ where: { categoryId: old.id } });
+      if (pkgCount === 0) {
+        await prisma.serviceCategory.delete({ where: { id: old.id } });
+        console.log(`  Deleted old category: ${oldSlug}`);
+      } else {
+        console.log(`  Skipped deleting ${oldSlug} — still has ${pkgCount} package(s)`);
+      }
+    }
   }
 
   console.log("✅ Service seed complete.");

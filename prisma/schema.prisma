@@ -595,17 +595,26 @@ model MemberHomework {
 }
 
 model ServiceCategory {
-  id           String   @id @default(uuid())
-  name         String
-  slug         String   @unique
-  description  String?
-  icon         String   @default("PuzzlePieceIcon")
-  accentColour String   @default("blue")
-  sortOrder    Int      @default(0)
-  published    Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  packages     ServicePackage[]
+  id                String   @id @default(uuid())
+  name              String
+  slug              String   @unique
+  description       String?
+  icon              String   @default("PuzzlePieceIcon")
+  accentColour      String   @default("blue")
+  sortOrder         Int      @default(0)
+  published         Boolean  @default(true)
+  emoji             String?
+  tagline           String?
+  highlighted       Boolean  @default(false)
+  includesRef       String?
+  cardExtras        Json?
+  addonLabel        String?
+  addonPriceNote    String?
+  footerNote        String?
+  jaredIncludedNote String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  packages          ServicePackage[]
 
   @@map("service_categories")
 }
@@ -624,6 +633,9 @@ model ServicePackage {
   waitlist          Boolean  @default(false)
   sortOrder         Int      @default(0)
   published         Boolean  @default(true)
+  videoCount        Int?
+  isAddonVariant    Boolean  @default(false)
+  priceAmount       Int?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
   category          ServiceCategory @relation(fields: [categoryId], references: [id])
