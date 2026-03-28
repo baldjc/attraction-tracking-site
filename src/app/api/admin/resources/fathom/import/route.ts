@@ -23,6 +23,7 @@ export async function POST(req: NextRequest) {
       callDate: string;
       fathomShareUrl: string;
       transcript: string;
+      duration?: number | null;
     }>;
   };
 
@@ -41,12 +42,14 @@ export async function POST(req: NextRequest) {
           callDate: new Date(call.callDate),
           fathomShareUrl: call.fathomShareUrl,
           fullTranscript: call.transcript,
+          duration: call.duration ?? null,
           status: "pending_review",
         },
         update: {
           title: call.title,
           fathomShareUrl: call.fathomShareUrl,
           fullTranscript: call.transcript,
+          duration: call.duration ?? null,
           status: "pending_review",
           errorMessage: null,
         },

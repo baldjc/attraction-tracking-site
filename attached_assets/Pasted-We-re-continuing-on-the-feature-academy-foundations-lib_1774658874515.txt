@@ -1,0 +1,314 @@
+We're continuing on the                             
+  "feature/academy-foundations-library" branch. Make  
+  sure you're on that branch. This is the             
+  Academy-Resources integration — Part 1 of 3.        
+                                                 
+  We're merging the Resources page into the Academy
+  page. Academy becomes a tabbed interface that       
+  contains BOTH the Foundations Library AND the
+  Resources content.                                  
+                  
+  CRITICAL RULES:                                
+  - Do NOT modify any existing API routes under
+  /api/member/resources/ or /api/admin/resources/     
+  - Do NOT modify the QACall, KnowledgeBaseEntry,
+  ResourceLesson, or SavedItem models (except the one 
+  addition noted below)                               
+  - Do NOT modify existing Academy models        
+  (CourseSection, CourseLesson, etc.)                 
+  - All existing functionality must continue working —
+   we're reorganising the UI, not rebuilding the      
+  backend                                             
+         
+  === CHANGE 1: ADD duration FIELD TO QACall ===      
+                                                      
+  Add a nullable duration field to the QACall model in
+   prisma/schema.prisma:                              
+                                                      
+  model QACall {                                 
+    // ... existing fields stay exactly the same ...
+    duration    Int?     // Duration in seconds, from
+  Fathom API                                          
+    // ... rest stays the same ...
+  }                                                   
+                  
+  Then update the Fathom import route at              
+  src/app/api/admin/resources/fathom/import/route.ts:
+  - In the upsert create/update blocks, add: duration:
+   call.duration ?? null                              
+  - This requires the import request body to include
+  duration — update the type to accept it             
+                                                      
+  And update the Fathom pull route at            
+  src/app/api/admin/resources/fathom/pull/route.ts:   
+  - In the calls mapping, add: duration: m.duration ??
+   null                                               
+  - This is already available from the Fathom API
+  response                                            
+                  
+  Run prisma migrate after this change.          
+                                                      
+  === CHANGE 2: NEW API ROUTES FOR LIVE CALLS ===     
+                                                      
+  Create two new API routes:                          
+                                                 
+  1. GET /api/member/academy/live-calls               
+   
+  Auth: any logged-in member (use the same auth       
+  pattern as existing member routes).
+                                                      
+  Returns all QACalls with status "processed",        
+  enriched with aggregated data from their       
+  KnowledgeBaseEntries.                               
+                  
+  Logic:                                         
+  - Fetch all QACalls where status = "processed",
+  ordered by callDate desc                            
+  - For each call, fetch its KnowledgeBaseEntries
+  where sourceType = "qa_call" AND sourceId = call.id 
+  AND status = "approved"                             
+  - For privacy: only include entries where      
+  isGeneralTeaching = true OR memberId = current      
+  user's ID                                           
+  - Aggregate: collect all unique principles across
+  the call's entries, take the first 1-2 general      
+  teaching entries' summaries as the call summary,    
+  count total moments                             
+  - Group results by month (use callDate)             
+                  
+  Response shape:                                     
+  {
+    months: [                                         
+      {           
+        label: "March 2026",                          
+        calls: [  
+          {                                      
+            id: string,
+            title: string,
+            callDate: string (ISO),                   
+            duration: number | null,
+            fathomShareUrl: string,                   
+            summary: string,                          
+            principles: string[],                
+            momentCount: number                       
+          }       
+        ]                                        
+      }
+    ]
+  }
+
+  2. GET /api/member/academy/live-calls/[callId]      
+   
+  Auth: any logged-in member.                         
+                  
+  Returns full detail for a single Q&A call.          
+   
+  Logic:                                              
+  - Fetch the QACall by id (must have status =
+  "processed")                                   
+  - Fetch all KnowledgeBaseEntries for this call
+  (sourceType = "qa_call", sourceId = callId, status =
+   "approved")                                        
+  - Privacy filter: only include entries where
+  isGeneralTeaching = true OR memberId = current user 
+  ID. Admin users see everything.                     
+  - Redact other member names in searchableText for
+  non-admin users (use the same redaction pattern from
+   the existing /api/member/resources route — find the
+   redactForMember function and reuse it)             
+  - Collect all unique principles from the entries    
+  - Find related Foundations Library lessons: query
+  CourseLesson records (from the academy_lessons 
+  table) whose principleTags JSON array contains ANY  
+  of the call's principles. Include section title via
+  the CourseSection relation.                         
+                  
+  Response shape:                                
+  {
+    call: {
+      id: string,
+      title: string,
+      callDate: string (ISO),
+      duration: number | null,
+      fathomShareUrl: string,                         
+      principles: string[]
+    },                                                
+    moments: [    
+      {                                          
+        id: string,
+        subTopic: string,
+        summary: string,
+        principles: string[],
+        timestampStart: number | null,                
+        timestampEnd: number | null,
+        isGeneralTeaching: boolean,                   
+        isMine: boolean
+      }                                               
+    ],
+    relatedLessons: [                                 
+      {           
+        id: string,                              
+        title: string,
+        slug: string,
+        sectionTitle: string,
+        sectionSlug: string,                          
+        principleTags: string[]
+      }                                               
+    ]             
+  }                                              
+
+  === CHANGE 3: CONVERT ACADEMY PAGE TO TABBED        
+  INTERFACE ===
+                                                      
+  Modify the Academy page at                          
+  src/app/member/academy/page.tsx to be a tabbed 
+  interface.                                          
+                  
+  The current Academy page shows the Foundations      
+  Library view (progress card, sections, etc.). This
+  content stays — it just becomes the first tab.      
+                  
+  Tab bar with 6 tabs (in this exact order):          
+  1. Foundations Library (default, no tab param or
+  ?tab=foundations)                                   
+  2. Live Calls (?tab=live-calls)
+  3. Browse Library (?tab=browse)                     
+  4. Search (?tab=search)        
+  5. My Coaching Moments (?tab=moments)               
+  6. My Saved (?tab=saved)             
+                                                      
+  Tab state persists via URL query parameter so tabs
+  are bookmarkable.                                   
+   
+  Page title: "Academy"                               
+  Subtitle: "Your complete Attraction by Video
+  learning library."                                  
+   
+  Tab styling: match the existing tab bar style from  
+  the Resources page (Browse Library / Search / My
+  Coaching Moments / My Saved tabs). Use the same     
+  component pattern.
+                                                 
+  For each tab's content:
+
+  TAB 1 — Foundations Library:                        
+  - Render the EXISTING Academy page content (the
+  Foundations Library progress card, sections list,   
+  Browse All Sections, Browse by Principle buttons).
+  Just move the current page.tsx content into a       
+  component and render it in this tab.
+                                                 
+  TAB 2 — Live Calls:
+  - Fetch from GET /api/member/academy/live-calls
+  - Display calls grouped by month with section       
+  headers (e.g., "March 2026")                 
+  - Each call rendered as a card matching the existing
+   Resources card styling:                            
+    - "Q&A Call · [formatted date]" label             
+    - Duration badge (format seconds as "HH:MM" or
+  "MM:SS") — show only if duration is not null        
+    - Title                                           
+    - Summary text (1-2 sentences)                    
+    - Principle tag badges (use the same              
+  PRINCIPLE_COLORS from the Resources page)      
+    - "Watch on Fathom" link with play icon           
+  - Clicking a card navigates to           
+  /member/academy/calls/[callId]                      
+                                                      
+  TAB 3 — Browse Library:                             
+  - This is the EXISTING Browse Library tab content   
+  from the Resources page                             
+  (src/app/member/resources/page.tsx)            
+  - Move/copy the browse tab logic: fetches from GET  
+  /api/member/resources (no changes to this API)    
+  - Include the content type filter pills (All Content
+   / Course Lessons / Q&A Calls)                      
+  - Include the principle tag filter bar              
+  - Include the card grid               
+                                                      
+  TAB 4 — Search:                                     
+  - Move/copy the search tab from the Resources page
+  - Fetches from GET /api/member/resources with search
+   params (no API changes)
+                                                      
+  TAB 5 — My Coaching Moments:
+  - Move/copy the moments tab from the Resources page 
+  - Fetches from GET /api/member/resources/my-moments
+  (no API changes)                               
+                                                      
+  TAB 6 — My Saved:
+  - Move/copy the saved tab from the Resources page   
+  - Fetches from GET /api/member/resources/saved (no
+  API changes)                                      
+                                                      
+  IMPORTANT: The Resources page at
+  src/app/member/resources/page.tsx has all the       
+  component code for Browse Library, Search, My
+  Coaching Moments, and My Saved tabs. Extract this   
+  code into reusable components and render them within
+   the Academy tabs. Do NOT duplicate the code — share
+   it.
+
+  === CHANGE 4: LIVE CALL DETAIL PAGE ===
+
+  Create a new page at                                
+  src/app/member/academy/calls/[callId]/page.tsx
+                                                      
+  Fetches from GET
+  /api/member/academy/live-calls/[callId]        
+
+  Layout (top to bottom):                             
+   
+  1. Back navigation: "← Back to Live Calls" link     
+  (goes to /member/academy?tab=live-calls)
+  2. Header:                                          
+    - Call title (large heading)                      
+    - Date (formatted nicely, e.g., "March 26, 2026")
+    - Duration (if available, formatted as            
+  hours/minutes)                                      
+    - Aggregate principle tags as badges              
+  3. "Watch on Fathom" button — prominent, styled as a
+   primary action button. Links to fathomShareUrl     
+  (opens in new tab).                                 
+  4. Key Talking Points section:                      
+    - Heading: "Key Talking Points"                   
+    - Each moment rendered as a card:            
+        - Sub-topic as the card heading               
+      - Summary text
+      - Principle tag badges                          
+      - Timestamp formatted as "@ 12:30" (convert
+  seconds to MM:SS)                                   
+      - If isMine is true, show a subtle "Your
+  coaching moment" indicator                          
+    - Moments ordered by timestampStart (earliest
+  first)                                              
+  5. Related Foundations Lessons section:
+    - Heading: "Related Lessons"                      
+    - Only show if relatedLessons array is not empty
+    - Each lesson as a small card/link:               
+        - Section name (small label)                  
+      - Lesson title (linked to /member/academy/founda
+  tions/[sectionSlug]/[lessonSlug])                   
+      - Principle tag badges                          
+                                                      
+  Style everything to match the existing site design
+  system.                                             
+                  
+  === CHANGE 5: SIDEBAR + REDIRECT ===                
+   
+  In src/components/Sidebar.tsx:                      
+  - REMOVE the "Resources" link from the member
+  sidebar (the one pointing to /member/resources)     
+  - The "Academy" link should already be there — keep
+  it as-is                                            
+                                                      
+  Create a redirect: when someone visits         
+  /member/resources, redirect them to /member/academy 
+  - You can do this in
+  src/app/member/resources/page.tsx — replace the     
+  component with a redirect to /member/academy   
+  - Use Next.js redirect() from next/navigation       
+                                               
+  IMPORTANT: Commit your work on the                  
+  feature/academy-foundations-library branch. Do NOT  
+  merge to main.

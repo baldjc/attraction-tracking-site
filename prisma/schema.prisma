@@ -144,6 +144,7 @@ model QACall {
   callDate       DateTime
   fathomShareUrl String
   fullTranscript String   @db.Text
+  duration       Int?
   status         String   @default("pending_review")
   errorMessage   String?
   createdAt      DateTime @default(now())
