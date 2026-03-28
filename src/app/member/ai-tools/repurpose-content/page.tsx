@@ -308,7 +308,15 @@ export default function RepurposeContentPage() {
   const [newLinkMode, setNewLinkMode] = useState(false);
   const [newLinkName, setNewLinkName] = useState("");
   const [creatingLink, setCreatingLink] = useState(false);
+
   const [lastPickedCampaignId, setLastPickedCampaignId] = useState<string>("");
+
+  useEffect(() => {
+    if (newLinkMode && pickerForOutput) {
+      const suffix = OUTPUT_CONFIG[pickerForOutput].labelSuffix;
+      setNewLinkName(title ? `${title} — ${suffix}` : "");
+    }
+  }, [newLinkMode, pickerForOutput]);
 
   const [loading, setLoading] = useState(false);
 
