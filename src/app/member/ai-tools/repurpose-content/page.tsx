@@ -72,8 +72,18 @@ interface CampaignInfo {
   id: string;
   name: string;
   destinationUrl: string;
+  leadMagnetUrl: string | null;
   linkCount: number;
 }
+
+type OutputType = "newsletter" | "linkedin" | "facebook" | "blog";
+
+const OUTPUT_CONFIG: Record<OutputType, { source: string; destinationOverride: string; labelSuffix: string; multiLink: boolean }> = {
+  newsletter: { source: "email",    destinationOverride: "lead_magnet", labelSuffix: "Newsletter",      multiLink: false },
+  linkedin:   { source: "linkedin", destinationOverride: "landing_page", labelSuffix: "LinkedIn Article", multiLink: true  },
+  facebook:   { source: "facebook", destinationOverride: "landing_page", labelSuffix: "Facebook Post",   multiLink: false },
+  blog:       { source: "blog",     destinationOverride: "landing_page", labelSuffix: "Blog Post",       multiLink: true  },
+};
 
 interface CampaignLinkInfo {
   id: string;
@@ -275,7 +285,19 @@ export default function RepurposeContentPage() {
   const [oneOffLinks, setOneOffLinks] = useState<SavedLink[]>([]);
   const [showLinkManager, setShowLinkManager] = useState(false);
 
+  // LinkedIn multi-links (existing)
   const [activeCampaignLinks, setActiveCampaignLinks] = useState<ActiveCampaignLink[]>([]);
+  // Blog multi-links (new)
+  const [blogActiveCampaignLinks, setBlogActiveCampaignLinks] = useState<ActiveCampaignLink[]>([]);
+  const [blogSelectedLinkIndexes, setBlogSelectedLinkIndexes] = useState<number[]>([]);
+  const [blogOneOffLinks, setBlogOneOffLinks] = useState<SavedLink[]>([]);
+  const [showBlogLinkManager, setShowBlogLinkManager] = useState(false);
+  // Newsletter + Facebook single links
+  const [newsletterActiveLink, setNewsletterActiveLink] = useState<ActiveCampaignLink | null>(null);
+  const [facebookActiveLink, setFacebookActiveLink] = useState<ActiveCampaignLink | null>(null);
+
+  // Shared campaign picker state
+  const [pickerForOutput, setPickerForOutput] = useState<OutputType | null>(null);
   const [showCampaignPicker, setShowCampaignPicker] = useState(false);
   const [campaigns, setCampaigns] = useState<CampaignInfo[]>([]);
   const [campaignsLoading, setCampaignsLoading] = useState(false);
@@ -286,6 +308,7 @@ export default function RepurposeContentPage() {
   const [newLinkMode, setNewLinkMode] = useState(false);
   const [newLinkName, setNewLinkName] = useState("");
   const [creatingLink, setCreatingLink] = useState(false);
+  const [lastPickedCampaignId, setLastPickedCampaignId] = useState<string>("");
 
   const [loading, setLoading] = useState(false);
 
@@ -376,11 +399,13 @@ export default function RepurposeContentPage() {
     });
   }
 
-  async function openCampaignPicker() {
+  async function openCampaignPicker(outputType: OutputType) {
+    setPickerForOutput(outputType);
     setShowCampaignPicker(true);
     setNewLinkMode(false);
     setNewLinkName("");
-    setPickerCampaignId("");
+    const preselect = lastPickedCampaignId || "";
+    setPickerCampaignId(preselect);
     setCampaignPickerLinks([]);
     if (!campaignsLoaded) {
       setCampaignsLoading(true);
@@ -389,66 +414,95 @@ export default function RepurposeContentPage() {
       setCampaignsLoaded(true);
       setCampaignsLoading(false);
     }
+    if (preselect) {
+      setCampaignPickerLinksLoading(true);
+      const res = await fetch(`/api/campaigns/${preselect}/links`);
+      if (res.ok) setCampaignPickerLinks(await res.json());
+      setCampaignPickerLinksLoading(false);
+    }
   }
 
   async function handlePickerCampaignChange(campaignId: string) {
     setPickerCampaignId(campaignId);
     setNewLinkMode(false);
-    setNewLinkName(title ? `${title} — LinkedIn Article` : "");
+    const suffix = pickerForOutput ? OUTPUT_CONFIG[pickerForOutput].labelSuffix : "LinkedIn Article";
+    setNewLinkName(title ? `${title} — ${suffix}` : "");
     setCampaignPickerLinks([]);
     if (!campaignId) return;
+    setLastPickedCampaignId(campaignId);
     setCampaignPickerLinksLoading(true);
     const res = await fetch(`/api/campaigns/${campaignId}/links`);
     if (res.ok) setCampaignPickerLinks(await res.json());
     setCampaignPickerLinksLoading(false);
   }
 
-  function addExistingCampaignLink(link: CampaignLinkInfo) {
-    const campaign = campaigns.find((c) => c.id === pickerCampaignId);
-    if (activeCampaignLinks.some((l) => l.linkId === link.id)) return;
-    setActiveCampaignLinks((prev) => [
-      ...prev,
-      {
-        campaignId: pickerCampaignId,
-        campaignName: campaign?.name ?? "",
-        linkId: link.id,
-        linkName: link.name,
-        trackedUrl: link.trackedUrl,
-        isNew: false,
-      },
-    ]);
+  function closePicker() {
     setShowCampaignPicker(false);
     setPickerCampaignId("");
     setCampaignPickerLinks([]);
+    setNewLinkMode(false);
+    setPickerForOutput(null);
+  }
+
+  function addExistingCampaignLink(link: CampaignLinkInfo) {
+    const campaign = campaigns.find((c) => c.id === pickerCampaignId);
+    const newEntry: ActiveCampaignLink = {
+      campaignId: pickerCampaignId,
+      campaignName: campaign?.name ?? "",
+      linkId: link.id,
+      linkName: link.name,
+      trackedUrl: link.trackedUrl,
+      isNew: false,
+    };
+    if (pickerForOutput === "linkedin") {
+      if (activeCampaignLinks.some((l) => l.linkId === link.id)) return;
+      setActiveCampaignLinks((prev) => [...prev, newEntry]);
+    } else if (pickerForOutput === "blog") {
+      if (blogActiveCampaignLinks.some((l) => l.linkId === link.id)) return;
+      setBlogActiveCampaignLinks((prev) => [...prev, newEntry]);
+    } else if (pickerForOutput === "newsletter") {
+      setNewsletterActiveLink(newEntry);
+    } else if (pickerForOutput === "facebook") {
+      setFacebookActiveLink(newEntry);
+    }
+    closePicker();
   }
 
   async function createCampaignLink() {
     if (!pickerCampaignId || !newLinkName.trim()) return;
     setCreatingLink(true);
+    const cfg = pickerForOutput ? OUTPUT_CONFIG[pickerForOutput] : OUTPUT_CONFIG.linkedin;
     const res = await fetch(`/api/campaigns/${pickerCampaignId}/links`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: newLinkName.trim() }),
+      body: JSON.stringify({
+        name: newLinkName.trim(),
+        source: cfg.source,
+        destinationOverride: cfg.destinationOverride,
+      }),
     });
     if (res.ok) {
       const link = await res.json();
       const campaign = campaigns.find((c) => c.id === pickerCampaignId);
-      setActiveCampaignLinks((prev) => [
-        ...prev,
-        {
-          campaignId: pickerCampaignId,
-          campaignName: campaign?.name ?? "",
-          linkId: link.id,
-          linkName: link.name,
-          trackedUrl: link.trackedUrl,
-          isNew: true,
-        },
-      ]);
-      setShowCampaignPicker(false);
-      setPickerCampaignId("");
+      const newEntry: ActiveCampaignLink = {
+        campaignId: pickerCampaignId,
+        campaignName: campaign?.name ?? "",
+        linkId: link.id,
+        linkName: link.name,
+        trackedUrl: link.trackedUrl,
+        isNew: true,
+      };
+      if (pickerForOutput === "linkedin") {
+        setActiveCampaignLinks((prev) => [...prev, newEntry]);
+      } else if (pickerForOutput === "blog") {
+        setBlogActiveCampaignLinks((prev) => [...prev, newEntry]);
+      } else if (pickerForOutput === "newsletter") {
+        setNewsletterActiveLink(newEntry);
+      } else if (pickerForOutput === "facebook") {
+        setFacebookActiveLink(newEntry);
+      }
+      closePicker();
       setNewLinkName("");
-      setCampaignPickerLinks([]);
-      setNewLinkMode(false);
     }
     setCreatingLink(false);
   }
@@ -492,7 +546,11 @@ export default function RepurposeContentPage() {
         fetch("/api/ai-tools/repurpose-newsletter", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ transcript, title }),
+          body: JSON.stringify({
+            transcript,
+            title,
+            newsletterUrl: newsletterActiveLink?.trackedUrl || null,
+          }),
         })
           .then((r) => r.json())
           .then((data) => {
@@ -542,7 +600,13 @@ export default function RepurposeContentPage() {
         fetch("/api/ai-tools/repurpose-facebook", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ transcript, title }),
+          body: JSON.stringify({
+            transcript,
+            title,
+            link: facebookActiveLink
+              ? { label: facebookActiveLink.linkName, url: facebookActiveLink.trackedUrl }
+              : null,
+          }),
         })
           .then((r) => r.json())
           .then((data) => {
@@ -560,11 +624,18 @@ export default function RepurposeContentPage() {
     }
 
     if (toolFlags.blog && generateBlog) {
+      const blogSavedLinksForApi = blogSelectedLinkIndexes.map((i) => savedLinks[i]).filter(Boolean);
+      const blogCampaignLinksForApi = blogActiveCampaignLinks.map((l) => ({ label: l.linkName, url: l.trackedUrl }));
       promises.push(
         fetch("/api/ai-tools/repurpose-blog", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ transcript, title }),
+          body: JSON.stringify({
+            transcript,
+            title,
+            selectedLinks: blogSavedLinksForApi,
+            oneOffLinks: [...blogOneOffLinks.filter((l) => l.label && l.url), ...blogCampaignLinksForApi],
+          }),
         })
           .then((r) => r.json())
           .then((data) => {
@@ -620,7 +691,10 @@ export default function RepurposeContentPage() {
     setNewsletterRecordId(null); setLinkedInRecordId(null); setFacebookRecordId(null); setBlogRecordId(null); setPostcardRecordId(null);
     setSavedNewsletter(false); setSavedLinkedIn(false); setSavedFacebook(false); setSavedBlog(false); setSavedPostcard(false);
     setSelectedLinkIndexes([]); setOneOffLinks([]); setActiveCampaignLinks([]);
+    setBlogActiveCampaignLinks([]); setBlogSelectedLinkIndexes([]); setBlogOneOffLinks([]);
+    setNewsletterActiveLink(null); setFacebookActiveLink(null);
     setShowCampaignPicker(false); setPickerCampaignId(""); setCampaignPickerLinks([]);
+    setPickerForOutput(null); setLastPickedCampaignId("");
   }
 
   const hasResults = newsletterResult || linkedInResult || facebookResult || blogResult || postcardResult
@@ -758,169 +832,248 @@ export default function RepurposeContentPage() {
                 )}
               </div>
 
-              {generateLinkedIn && (
-                <div className="border-t border-[#2f3437]/10 dark:border-white/10 pt-5 space-y-4">
-                  {/* Header */}
-                  <div className="flex items-center justify-between">
-                    <label className="text-sm font-semibold text-[#2f3437] dark:text-white">Links for Article</label>
-                    <button onClick={() => setShowLinkManager(!showLinkManager)} className="text-xs text-[#6ba3c7] hover:underline">
-                      {showLinkManager ? "Done" : "Manage Saved Links"}
-                    </button>
-                  </div>
-
-                  {/* Saved link manager (edit mode) */}
-                  {showLinkManager && (
-                    <div className="bg-[#f7f6f3] dark:bg-[#0f1419] rounded-lg p-4 space-y-2">
-                      {savedLinks.map((link, i) => (
-                        <div key={i} className="flex gap-2">
-                          <input type="text" value={link.label} onChange={(e) => { const u = [...savedLinks]; u[i] = { ...u[i], label: e.target.value }; setSavedLinks(u); }} placeholder="Label" className="flex-1 border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#1a1a1a] text-[#2f3437] dark:text-white rounded-lg px-3 py-2 text-sm" />
-                          <input type="text" value={link.url} onChange={(e) => { const u = [...savedLinks]; u[i] = { ...u[i], url: e.target.value }; setSavedLinks(u); }} placeholder="URL" className="flex-1 border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#1a1a1a] text-[#2f3437] dark:text-white rounded-lg px-3 py-2 text-sm" />
-                          <button onClick={() => setSavedLinks(savedLinks.filter((_, j) => j !== i))} className="text-red-500 text-sm px-2">Remove</button>
-                        </div>
-                      ))}
-                      <div className="flex gap-2 pt-1">
-                        <button onClick={() => setSavedLinks([...savedLinks, { label: "", url: "" }])} className="text-sm text-[#6ba3c7] hover:underline">+ Add Link</button>
-                        <button onClick={() => saveLinks(savedLinks.filter((l) => l.label && l.url))} className="text-sm bg-[#6ba3c7] text-white px-3 py-1 rounded-lg hover:bg-[#6ba3c7]/90">Save Links</button>
-                      </div>
+              {/* ── Shared campaign picker panel ── */}
+              {showCampaignPicker && (
+                <div className="border-t border-[#2f3437]/10 dark:border-white/10 pt-5">
+                  <div className="bg-[#f7f6f3] dark:bg-[#0f1419] rounded-lg p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-semibold text-[#2f3437] dark:text-white">Add Campaign Link</p>
+                      <button onClick={closePicker} className="text-xs text-[#2f3437]/40 dark:text-white/40 hover:text-[#2f3437] dark:hover:text-white">Cancel</button>
                     </div>
-                  )}
-
-                  {/* Saved links checklist */}
-                  {savedLinks.length > 0 && !showLinkManager && (
-                    <div className="space-y-1.5">
-                      {savedLinks.map((link, i) => (
-                        <label key={i} className="flex items-center gap-2 cursor-pointer">
-                          <input type="checkbox" checked={selectedLinkIndexes.includes(i)} onChange={(e) => setSelectedLinkIndexes(e.target.checked ? [...selectedLinkIndexes, i] : selectedLinkIndexes.filter((idx) => idx !== i))} className="w-4 h-4 rounded border-[#2f3437]/20 text-[#6ba3c7] focus:ring-[#6ba3c7]" />
-                          <span className="text-sm text-[#2f3437] dark:text-white">{link.label}</span>
-                          <span className="text-xs text-[#2f3437]/40 dark:text-white/40 truncate">{link.url}</span>
-                        </label>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Active campaign links */}
-                  {activeCampaignLinks.length > 0 && (
-                    <div className="space-y-1.5">
-                      {activeCampaignLinks.map((l) => (
-                        <div key={l.linkId} className="flex items-center gap-2 bg-[#6ba3c7]/8 dark:bg-[#6ba3c7]/15 border border-[#6ba3c7]/20 rounded-lg px-3 py-2">
-                          <span className="text-xs font-medium text-[#6ba3c7] shrink-0">Campaign</span>
-                          <span className="text-xs text-[#2f3437]/50 dark:text-white/50 shrink-0">{l.campaignName}</span>
-                          <span className="text-xs font-medium text-[#2f3437] dark:text-white flex-1 truncate">{l.linkName}</span>
-                          {l.isNew && <span className="text-[10px] font-semibold text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-1.5 py-0.5 rounded-full shrink-0">New</span>}
-                          <button onClick={() => setActiveCampaignLinks((prev) => prev.filter((x) => x.linkId !== l.linkId))} className="text-[#2f3437]/30 dark:text-white/30 hover:text-red-500 text-sm shrink-0 ml-1">✕</button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Campaign picker inline */}
-                  {showCampaignPicker ? (
-                    <div className="bg-[#f7f6f3] dark:bg-[#0f1419] rounded-lg p-4 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <p className="text-xs font-semibold text-[#2f3437] dark:text-white">Add Campaign Link</p>
-                        <button onClick={() => { setShowCampaignPicker(false); setPickerCampaignId(""); setCampaignPickerLinks([]); setNewLinkMode(false); }} className="text-xs text-[#2f3437]/40 dark:text-white/40 hover:text-[#2f3437] dark:hover:text-white">Cancel</button>
-                      </div>
-
-                      {/* Campaign dropdown */}
-                      <div>
-                        <label className="block text-xs text-[#2f3437]/60 dark:text-white/60 mb-1">Select Campaign</label>
-                        {campaignsLoading ? (
-                          <p className="text-xs text-[#2f3437]/40 dark:text-white/40">Loading campaigns…</p>
-                        ) : campaigns.length === 0 ? (
-                          <p className="text-xs text-[#2f3437]/40 dark:text-white/40">No campaigns found. <a href="/member/campaigns" className="text-[#6ba3c7] hover:underline">Create one →</a></p>
-                        ) : (
-                          <select
-                            value={pickerCampaignId}
-                            onChange={(e) => handlePickerCampaignChange(e.target.value)}
-                            className="w-full border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#1a1a1a] text-[#2f3437] dark:text-white rounded-lg px-3 py-2 text-sm"
-                          >
-                            <option value="">Choose a campaign…</option>
-                            {campaigns.map((c) => (
-                              <option key={c.id} value={c.id}>{c.name}</option>
-                            ))}
-                          </select>
-                        )}
-                      </div>
-
-                      {/* Links in selected campaign */}
-                      {pickerCampaignId && (
-                        <div className="space-y-2">
-                          {campaignPickerLinksLoading ? (
-                            <p className="text-xs text-[#2f3437]/40 dark:text-white/40">Loading links…</p>
-                          ) : (
-                            <>
-                              {campaignPickerLinks.length > 0 && !newLinkMode && (
-                                <div className="space-y-1">
-                                  <p className="text-xs text-[#2f3437]/60 dark:text-white/60">Existing links — pick one or create new</p>
-                                  {campaignPickerLinks.map((link) => {
-                                    const alreadyAdded = activeCampaignLinks.some((l) => l.linkId === link.id);
-                                    return (
-                                      <button
-                                        key={link.id}
-                                        onClick={() => !alreadyAdded && addExistingCampaignLink(link)}
-                                        disabled={alreadyAdded}
-                                        className={`w-full text-left flex items-center justify-between gap-2 rounded-lg px-3 py-2 border transition-colors ${alreadyAdded ? "border-[#2f3437]/10 dark:border-white/10 opacity-40 cursor-not-allowed" : "border-[#2f3437]/15 dark:border-white/15 hover:border-[#6ba3c7] hover:bg-[#6ba3c7]/5 cursor-pointer"}`}
-                                      >
-                                        <span className="text-sm text-[#2f3437] dark:text-white truncate">{link.name}</span>
-                                        <span className="text-xs text-[#2f3437]/40 dark:text-white/40 shrink-0">{link.clicks} clicks</span>
-                                      </button>
-                                    );
-                                  })}
-                                </div>
-                              )}
-
-                              {/* Create new link */}
-                              {!newLinkMode ? (
-                                <button onClick={() => { setNewLinkMode(true); setNewLinkName(title ? `${title} — LinkedIn Article` : ""); }} className="text-xs text-[#6ba3c7] hover:underline">
-                                  + Create new link in this campaign
-                                </button>
-                              ) : (
-                                <div className="space-y-2 pt-1 border-t border-[#2f3437]/10 dark:border-white/10">
-                                  <p className="text-xs text-[#2f3437]/60 dark:text-white/60">Name this link (tracks clicks from this specific content)</p>
-                                  <input
-                                    type="text"
-                                    value={newLinkName}
-                                    onChange={(e) => setNewLinkName(e.target.value)}
-                                    placeholder="e.g. How to Buy Without Selling First — LinkedIn Article"
-                                    className="w-full border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#1a1a1a] text-[#2f3437] dark:text-white rounded-lg px-3 py-2 text-sm"
-                                  />
-                                  <div className="flex gap-2">
-                                    <button
-                                      onClick={createCampaignLink}
-                                      disabled={creatingLink || !newLinkName.trim()}
-                                      className="bg-[#6ba3c7] text-white text-xs font-semibold px-4 py-2 rounded-lg hover:bg-[#6ba3c7]/90 disabled:opacity-50 transition-colors"
-                                    >
-                                      {creatingLink ? "Creating…" : "Create & Add Link"}
-                                    </button>
-                                    <button onClick={() => setNewLinkMode(false)} className="text-xs text-[#2f3437]/40 dark:text-white/40 hover:text-[#2f3437] dark:hover:text-white px-2">
-                                      Back
-                                    </button>
-                                  </div>
-                                </div>
-                              )}
-                            </>
-                          )}
-                        </div>
+                    <div>
+                      <label className="block text-xs text-[#2f3437]/60 dark:text-white/60 mb-1">Select Campaign</label>
+                      {campaignsLoading ? (
+                        <p className="text-xs text-[#2f3437]/40 dark:text-white/40">Loading campaigns…</p>
+                      ) : campaigns.length === 0 ? (
+                        <p className="text-xs text-[#2f3437]/40 dark:text-white/40">No campaigns found. <a href="/member/campaigns" className="text-[#6ba3c7] hover:underline">Create one →</a></p>
+                      ) : (
+                        <select value={pickerCampaignId} onChange={(e) => handlePickerCampaignChange(e.target.value)} className="w-full border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#1a1a1a] text-[#2f3437] dark:text-white rounded-lg px-3 py-2 text-sm">
+                          <option value="">Choose a campaign…</option>
+                          {campaigns.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
+                        </select>
                       )}
                     </div>
-                  ) : (
-                    <button onClick={openCampaignPicker} className="text-xs text-[#6ba3c7] hover:underline">
-                      + Add Campaign Link
-                    </button>
+                    {pickerCampaignId && (
+                      <div className="space-y-2">
+                        {campaignPickerLinksLoading ? (
+                          <p className="text-xs text-[#2f3437]/40 dark:text-white/40">Loading links…</p>
+                        ) : (
+                          <>
+                            {campaignPickerLinks.length > 0 && !newLinkMode && (
+                              <div className="space-y-1">
+                                <p className="text-xs text-[#2f3437]/60 dark:text-white/60">Existing links — pick one or create new</p>
+                                {campaignPickerLinks.map((link) => {
+                                  const currentLinks = pickerForOutput === "linkedin" ? activeCampaignLinks : pickerForOutput === "blog" ? blogActiveCampaignLinks : [];
+                                  const alreadyAdded = currentLinks.some((l) => l.linkId === link.id);
+                                  return (
+                                    <button key={link.id} onClick={() => !alreadyAdded && addExistingCampaignLink(link)} disabled={alreadyAdded}
+                                      className={`w-full text-left flex items-center justify-between gap-2 rounded-lg px-3 py-2 border transition-colors ${alreadyAdded ? "border-[#2f3437]/10 dark:border-white/10 opacity-40 cursor-not-allowed" : "border-[#2f3437]/15 dark:border-white/15 hover:border-[#6ba3c7] hover:bg-[#6ba3c7]/5 cursor-pointer"}`}>
+                                      <span className="text-sm text-[#2f3437] dark:text-white truncate">{link.name}</span>
+                                      <span className="text-xs text-[#2f3437]/40 dark:text-white/40 shrink-0">{link.clicks} clicks</span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            )}
+                            {!newLinkMode ? (
+                              <button onClick={() => { setNewLinkMode(true); const suffix = pickerForOutput ? OUTPUT_CONFIG[pickerForOutput].labelSuffix : ""; setNewLinkName(title ? `${title} — ${suffix}` : ""); }} className="text-xs text-[#6ba3c7] hover:underline">
+                                + Create new link in this campaign
+                              </button>
+                            ) : (
+                              <div className="space-y-2 pt-1 border-t border-[#2f3437]/10 dark:border-white/10">
+                                <p className="text-xs text-[#2f3437]/60 dark:text-white/60">Name this link (tracks clicks from this specific content)</p>
+                                <input type="text" value={newLinkName} onChange={(e) => setNewLinkName(e.target.value)} placeholder={`e.g. ${title || "Video Title"} — ${pickerForOutput ? OUTPUT_CONFIG[pickerForOutput].labelSuffix : ""}`} className="w-full border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#1a1a1a] text-[#2f3437] dark:text-white rounded-lg px-3 py-2 text-sm" />
+                                <div className="flex gap-2">
+                                  <button onClick={createCampaignLink} disabled={creatingLink || !newLinkName.trim()} className="bg-[#6ba3c7] text-white text-xs font-semibold px-4 py-2 rounded-lg hover:bg-[#6ba3c7]/90 disabled:opacity-50 transition-colors">
+                                    {creatingLink ? "Creating…" : "Create & Add Link"}
+                                  </button>
+                                  <button onClick={() => setNewLinkMode(false)} className="text-xs text-[#2f3437]/40 dark:text-white/40 hover:text-[#2f3437] dark:hover:text-white px-2">Back</button>
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* ── Per-output link sections ── */}
+              {(generateNewsletter || generateLinkedIn || generateFacebook || generateBlog) && !showCampaignPicker && (
+                <div className="border-t border-[#2f3437]/10 dark:border-white/10 pt-5 space-y-5">
+
+                  {/* Newsletter link */}
+                  {generateNewsletter && (
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold text-[#2f3437] dark:text-white">Newsletter Link <span className="font-normal text-[#2f3437]/40 dark:text-white/40">(optional)</span></p>
+                      {(() => {
+                        const camp = campaigns.find((c) => c.id === newsletterActiveLink?.campaignId);
+                        const noLeadMagnet = camp && !camp.leadMagnetUrl;
+                        return (
+                          <>
+                            {newsletterActiveLink ? (
+                              <div className="flex items-center gap-2 bg-[#6ba3c7]/8 dark:bg-[#6ba3c7]/15 border border-[#6ba3c7]/20 rounded-lg px-3 py-2">
+                                <span className="text-xs font-medium text-[#6ba3c7] shrink-0">Campaign</span>
+                                <span className="text-xs text-[#2f3437]/50 dark:text-white/50 shrink-0">{newsletterActiveLink.campaignName}</span>
+                                <span className="text-xs font-medium text-[#2f3437] dark:text-white flex-1 truncate">{newsletterActiveLink.linkName}</span>
+                                {newsletterActiveLink.isNew && <span className="text-[10px] font-semibold text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-1.5 py-0.5 rounded-full shrink-0">New</span>}
+                                <button onClick={() => setNewsletterActiveLink(null)} className="text-[#2f3437]/30 dark:text-white/30 hover:text-red-500 text-sm shrink-0 ml-1">✕</button>
+                              </div>
+                            ) : (
+                              <button onClick={() => openCampaignPicker("newsletter")} className="text-xs text-[#6ba3c7] hover:underline">+ Add Campaign Link</button>
+                            )}
+                            {noLeadMagnet && (
+                              <p className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/40 rounded-lg px-3 py-2">
+                                This campaign has no Lead Magnet URL set. The newsletter link will point to the Landing Page instead. <a href={`/member/campaigns/${camp!.id}`} className="underline">Update campaign →</a>
+                              </p>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </div>
                   )}
 
-                  {/* One-off links */}
-                  <div>
-                    <p className="text-xs text-[#2f3437]/40 dark:text-white/40 mb-2">Add links for this article only:</p>
-                    {oneOffLinks.map((link, i) => (
-                      <div key={i} className="flex gap-2 mb-2">
-                        <input type="text" value={link.label} onChange={(e) => { const u = [...oneOffLinks]; u[i] = { ...u[i], label: e.target.value }; setOneOffLinks(u); }} placeholder="Label" className="flex-1 border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#0f1419] text-[#2f3437] dark:text-white rounded-lg px-3 py-2 text-sm" />
-                        <input type="text" value={link.url} onChange={(e) => { const u = [...oneOffLinks]; u[i] = { ...u[i], url: e.target.value }; setOneOffLinks(u); }} placeholder="URL" className="flex-1 border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#0f1419] text-[#2f3437] dark:text-white rounded-lg px-3 py-2 text-sm" />
-                        <button onClick={() => setOneOffLinks(oneOffLinks.filter((_, j) => j !== i))} className="text-red-500 text-sm px-2">Remove</button>
+                  {/* LinkedIn links */}
+                  {generateLinkedIn && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-semibold text-[#2f3437] dark:text-white">LinkedIn Article Links <span className="font-normal text-[#2f3437]/40 dark:text-white/40">(optional)</span></p>
+                        <button onClick={() => setShowLinkManager(!showLinkManager)} className="text-xs text-[#6ba3c7] hover:underline">{showLinkManager ? "Done" : "Manage Saved Links"}</button>
                       </div>
-                    ))}
-                    <button onClick={() => setOneOffLinks([...oneOffLinks, { label: "", url: "" }])} className="text-xs text-[#6ba3c7] hover:underline">+ Add one-off link</button>
-                  </div>
+                      {showLinkManager && (
+                        <div className="bg-[#f7f6f3] dark:bg-[#0f1419] rounded-lg p-4 space-y-2">
+                          {savedLinks.map((link, i) => (
+                            <div key={i} className="flex gap-2">
+                              <input type="text" value={link.label} onChange={(e) => { const u = [...savedLinks]; u[i] = { ...u[i], label: e.target.value }; setSavedLinks(u); }} placeholder="Label" className="flex-1 border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#1a1a1a] text-[#2f3437] dark:text-white rounded-lg px-3 py-2 text-sm" />
+                              <input type="text" value={link.url} onChange={(e) => { const u = [...savedLinks]; u[i] = { ...u[i], url: e.target.value }; setSavedLinks(u); }} placeholder="URL" className="flex-1 border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#1a1a1a] text-[#2f3437] dark:text-white rounded-lg px-3 py-2 text-sm" />
+                              <button onClick={() => setSavedLinks(savedLinks.filter((_, j) => j !== i))} className="text-red-500 text-sm px-2">Remove</button>
+                            </div>
+                          ))}
+                          <div className="flex gap-2 pt-1">
+                            <button onClick={() => setSavedLinks([...savedLinks, { label: "", url: "" }])} className="text-sm text-[#6ba3c7] hover:underline">+ Add Link</button>
+                            <button onClick={() => saveLinks(savedLinks.filter((l) => l.label && l.url))} className="text-sm bg-[#6ba3c7] text-white px-3 py-1 rounded-lg hover:bg-[#6ba3c7]/90">Save Links</button>
+                          </div>
+                        </div>
+                      )}
+                      {savedLinks.length > 0 && !showLinkManager && (
+                        <div className="space-y-1.5">
+                          {savedLinks.map((link, i) => (
+                            <label key={i} className="flex items-center gap-2 cursor-pointer">
+                              <input type="checkbox" checked={selectedLinkIndexes.includes(i)} onChange={(e) => setSelectedLinkIndexes(e.target.checked ? [...selectedLinkIndexes, i] : selectedLinkIndexes.filter((idx) => idx !== i))} className="w-4 h-4 rounded border-[#2f3437]/20 text-[#6ba3c7] focus:ring-[#6ba3c7]" />
+                              <span className="text-sm text-[#2f3437] dark:text-white">{link.label}</span>
+                              <span className="text-xs text-[#2f3437]/40 dark:text-white/40 truncate">{link.url}</span>
+                            </label>
+                          ))}
+                        </div>
+                      )}
+                      {activeCampaignLinks.length > 0 && (
+                        <div className="space-y-1.5">
+                          {activeCampaignLinks.map((l) => (
+                            <div key={l.linkId} className="flex items-center gap-2 bg-[#6ba3c7]/8 dark:bg-[#6ba3c7]/15 border border-[#6ba3c7]/20 rounded-lg px-3 py-2">
+                              <span className="text-xs font-medium text-[#6ba3c7] shrink-0">Campaign</span>
+                              <span className="text-xs text-[#2f3437]/50 dark:text-white/50 shrink-0">{l.campaignName}</span>
+                              <span className="text-xs font-medium text-[#2f3437] dark:text-white flex-1 truncate">{l.linkName}</span>
+                              {l.isNew && <span className="text-[10px] font-semibold text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-1.5 py-0.5 rounded-full shrink-0">New</span>}
+                              <button onClick={() => setActiveCampaignLinks((prev) => prev.filter((x) => x.linkId !== l.linkId))} className="text-[#2f3437]/30 dark:text-white/30 hover:text-red-500 text-sm shrink-0 ml-1">✕</button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <button onClick={() => openCampaignPicker("linkedin")} className="text-xs text-[#6ba3c7] hover:underline">+ Add Campaign Link</button>
+                      <div>
+                        <p className="text-xs text-[#2f3437]/40 dark:text-white/40 mb-2">Add links for this article only:</p>
+                        {oneOffLinks.map((link, i) => (
+                          <div key={i} className="flex gap-2 mb-2">
+                            <input type="text" value={link.label} onChange={(e) => { const u = [...oneOffLinks]; u[i] = { ...u[i], label: e.target.value }; setOneOffLinks(u); }} placeholder="Label" className="flex-1 border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#0f1419] text-[#2f3437] dark:text-white rounded-lg px-3 py-2 text-sm" />
+                            <input type="text" value={link.url} onChange={(e) => { const u = [...oneOffLinks]; u[i] = { ...u[i], url: e.target.value }; setOneOffLinks(u); }} placeholder="URL" className="flex-1 border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#0f1419] text-[#2f3437] dark:text-white rounded-lg px-3 py-2 text-sm" />
+                            <button onClick={() => setOneOffLinks(oneOffLinks.filter((_, j) => j !== i))} className="text-red-500 text-sm px-2">Remove</button>
+                          </div>
+                        ))}
+                        <button onClick={() => setOneOffLinks([...oneOffLinks, { label: "", url: "" }])} className="text-xs text-[#6ba3c7] hover:underline">+ Add one-off link</button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Facebook link */}
+                  {generateFacebook && (
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold text-[#2f3437] dark:text-white">Facebook Post Link <span className="font-normal text-[#2f3437]/40 dark:text-white/40">(optional — placed in first comment)</span></p>
+                      {facebookActiveLink ? (
+                        <div className="flex items-center gap-2 bg-[#6ba3c7]/8 dark:bg-[#6ba3c7]/15 border border-[#6ba3c7]/20 rounded-lg px-3 py-2">
+                          <span className="text-xs font-medium text-[#6ba3c7] shrink-0">Campaign</span>
+                          <span className="text-xs text-[#2f3437]/50 dark:text-white/50 shrink-0">{facebookActiveLink.campaignName}</span>
+                          <span className="text-xs font-medium text-[#2f3437] dark:text-white flex-1 truncate">{facebookActiveLink.linkName}</span>
+                          {facebookActiveLink.isNew && <span className="text-[10px] font-semibold text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-1.5 py-0.5 rounded-full shrink-0">New</span>}
+                          <button onClick={() => setFacebookActiveLink(null)} className="text-[#2f3437]/30 dark:text-white/30 hover:text-red-500 text-sm shrink-0 ml-1">✕</button>
+                        </div>
+                      ) : (
+                        <button onClick={() => openCampaignPicker("facebook")} className="text-xs text-[#6ba3c7] hover:underline">+ Add Campaign Link</button>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Blog links */}
+                  {generateBlog && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-semibold text-[#2f3437] dark:text-white">Blog Post Links <span className="font-normal text-[#2f3437]/40 dark:text-white/40">(optional)</span></p>
+                        <button onClick={() => setShowBlogLinkManager(!showBlogLinkManager)} className="text-xs text-[#6ba3c7] hover:underline">{showBlogLinkManager ? "Done" : "Manage Saved Links"}</button>
+                      </div>
+                      {showBlogLinkManager && (
+                        <div className="bg-[#f7f6f3] dark:bg-[#0f1419] rounded-lg p-4 space-y-2">
+                          {savedLinks.map((link, i) => (
+                            <div key={i} className="flex gap-2">
+                              <input type="text" value={link.label} onChange={(e) => { const u = [...savedLinks]; u[i] = { ...u[i], label: e.target.value }; setSavedLinks(u); }} placeholder="Label" className="flex-1 border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#1a1a1a] text-[#2f3437] dark:text-white rounded-lg px-3 py-2 text-sm" />
+                              <input type="text" value={link.url} onChange={(e) => { const u = [...savedLinks]; u[i] = { ...u[i], url: e.target.value }; setSavedLinks(u); }} placeholder="URL" className="flex-1 border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#1a1a1a] text-[#2f3437] dark:text-white rounded-lg px-3 py-2 text-sm" />
+                              <button onClick={() => setSavedLinks(savedLinks.filter((_, j) => j !== i))} className="text-red-500 text-sm px-2">Remove</button>
+                            </div>
+                          ))}
+                          <div className="flex gap-2 pt-1">
+                            <button onClick={() => setSavedLinks([...savedLinks, { label: "", url: "" }])} className="text-sm text-[#6ba3c7] hover:underline">+ Add Link</button>
+                            <button onClick={() => saveLinks(savedLinks.filter((l) => l.label && l.url))} className="text-sm bg-[#6ba3c7] text-white px-3 py-1 rounded-lg hover:bg-[#6ba3c7]/90">Save Links</button>
+                          </div>
+                        </div>
+                      )}
+                      {savedLinks.length > 0 && !showBlogLinkManager && (
+                        <div className="space-y-1.5">
+                          {savedLinks.map((link, i) => (
+                            <label key={i} className="flex items-center gap-2 cursor-pointer">
+                              <input type="checkbox" checked={blogSelectedLinkIndexes.includes(i)} onChange={(e) => setBlogSelectedLinkIndexes(e.target.checked ? [...blogSelectedLinkIndexes, i] : blogSelectedLinkIndexes.filter((idx) => idx !== i))} className="w-4 h-4 rounded border-[#2f3437]/20 text-[#6ba3c7] focus:ring-[#6ba3c7]" />
+                              <span className="text-sm text-[#2f3437] dark:text-white">{link.label}</span>
+                              <span className="text-xs text-[#2f3437]/40 dark:text-white/40 truncate">{link.url}</span>
+                            </label>
+                          ))}
+                        </div>
+                      )}
+                      {blogActiveCampaignLinks.length > 0 && (
+                        <div className="space-y-1.5">
+                          {blogActiveCampaignLinks.map((l) => (
+                            <div key={l.linkId} className="flex items-center gap-2 bg-[#6ba3c7]/8 dark:bg-[#6ba3c7]/15 border border-[#6ba3c7]/20 rounded-lg px-3 py-2">
+                              <span className="text-xs font-medium text-[#6ba3c7] shrink-0">Campaign</span>
+                              <span className="text-xs text-[#2f3437]/50 dark:text-white/50 shrink-0">{l.campaignName}</span>
+                              <span className="text-xs font-medium text-[#2f3437] dark:text-white flex-1 truncate">{l.linkName}</span>
+                              {l.isNew && <span className="text-[10px] font-semibold text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-1.5 py-0.5 rounded-full shrink-0">New</span>}
+                              <button onClick={() => setBlogActiveCampaignLinks((prev) => prev.filter((x) => x.linkId !== l.linkId))} className="text-[#2f3437]/30 dark:text-white/30 hover:text-red-500 text-sm shrink-0 ml-1">✕</button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <button onClick={() => openCampaignPicker("blog")} className="text-xs text-[#6ba3c7] hover:underline">+ Add Campaign Link</button>
+                      <div>
+                        <p className="text-xs text-[#2f3437]/40 dark:text-white/40 mb-2">Add links for this post only:</p>
+                        {blogOneOffLinks.map((link, i) => (
+                          <div key={i} className="flex gap-2 mb-2">
+                            <input type="text" value={link.label} onChange={(e) => { const u = [...blogOneOffLinks]; u[i] = { ...u[i], label: e.target.value }; setBlogOneOffLinks(u); }} placeholder="Label" className="flex-1 border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#0f1419] text-[#2f3437] dark:text-white rounded-lg px-3 py-2 text-sm" />
+                            <input type="text" value={link.url} onChange={(e) => { const u = [...blogOneOffLinks]; u[i] = { ...u[i], url: e.target.value }; setBlogOneOffLinks(u); }} placeholder="URL" className="flex-1 border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#0f1419] text-[#2f3437] dark:text-white rounded-lg px-3 py-2 text-sm" />
+                            <button onClick={() => setBlogOneOffLinks(blogOneOffLinks.filter((_, j) => j !== i))} className="text-red-500 text-sm px-2">Remove</button>
+                          </div>
+                        ))}
+                        <button onClick={() => setBlogOneOffLinks([...blogOneOffLinks, { label: "", url: "" }])} className="text-xs text-[#6ba3c7] hover:underline">+ Add one-off link</button>
+                      </div>
+                    </div>
+                  )}
+
                 </div>
               )}
 

@@ -17,7 +17,7 @@ Every email must include:
 3. An opening line that names what the reader is already thinking or feeling
 4. One central insight from the transcript — not a summary, a revelation
 5. Can include one small section of up to 3 bullet points max, but short thoughts only
-6. One URL placeholder: [INSERT URL]
+6. One URL: use {{NEWSLETTER_URL}} exactly as provided. If it says '[INSERT URL]', keep it as a placeholder for the member to replace later. Otherwise use the exact URL — do not modify, shorten, or wrap it.
 7. A P.S. line that functions as a second hook for skimmers
 8. Sign off personally as {{MEMBER_NAME}}, not a team signature
 9. Total length: 150-250 words maximum in the body
@@ -180,6 +180,7 @@ export function applyNewsletterTokens(
     listSizeText: string;
     voiceStyle: string;
     avatarText: string;
+    newsletterUrl?: string;
   }
 ): string {
   return template
@@ -187,7 +188,8 @@ export function applyNewsletterTokens(
     .replace(/\{\{BUSINESS_NAME\}\}/g, tokens.businessName)
     .replace(/\{\{LIST_SIZE_TEXT\}\}/g, tokens.listSizeText)
     .replace(/\{\{VOICE_STYLE\}\}/g, tokens.voiceStyle)
-    .replace(/\{\{AVATAR_TEXT\}\}/g, tokens.avatarText);
+    .replace(/\{\{AVATAR_TEXT\}\}/g, tokens.avatarText)
+    .replace(/\{\{NEWSLETTER_URL\}\}/g, tokens.newsletterUrl || "[INSERT URL]");
 }
 
 export function applyLinkedInTokens(

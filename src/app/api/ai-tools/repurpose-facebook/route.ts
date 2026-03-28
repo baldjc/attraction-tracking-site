@@ -15,7 +15,11 @@ export async function POST(req: NextRequest) {
   const user = await resolveUserFromSession();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { transcript, title } = await req.json();
+  const { transcript, title, link } = await req.json() as {
+    transcript: string;
+    title: string;
+    link?: { label: string; url: string };
+  };
   if (!transcript || !title) {
     return NextResponse.json({ error: "Missing transcript or title" }, { status: 400 });
   }
@@ -38,13 +42,17 @@ export async function POST(req: NextRequest) {
   const voiceStyle = VOICE_MAP[dbUser?.repurposeVoice || "direct"] || VOICE_MAP.direct;
   const avatarText = dbUser?.avatarProfile ? JSON.stringify(dbUser.avatarProfile) : "No avatar saved";
 
+  const linkInstruction = link
+    ? `\nLINK TO INCLUDE: ${link.label} — ${link.url}\nInclude this link naturally in the first_comment field. Frame it as a helpful resource, not a sales pitch.\n`
+    : "";
+
   const systemPrompt = `You are a Facebook content writer for ${memberName} at ${businessName}.
 
 MEMBER AVATAR:
 ${avatarText}
 
 VOICE STYLE: ${voiceStyle}
-
+${linkInstruction}
 Write a Facebook post based on the video transcript provided.
 
 RULES:

@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
   const user = await resolveUserFromSession();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { transcript, title } = await req.json();
+  const { transcript, title, newsletterUrl } = await req.json();
   if (!transcript || !title) {
     return NextResponse.json({ error: "Missing transcript or title" }, { status: 400 });
   }
@@ -52,6 +52,7 @@ export async function POST(req: NextRequest) {
     listSizeText,
     voiceStyle,
     avatarText,
+    newsletterUrl: newsletterUrl || undefined,
   });
 
   const response = await client.messages.create({

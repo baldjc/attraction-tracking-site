@@ -75,6 +75,8 @@ const LINK_SOURCE_STYLES: Record<string, { label: string; color: string }> = {
   linkedin:  { label: "LinkedIn",  color: "bg-blue-100 text-blue-700" },
   instagram: { label: "Instagram", color: "bg-pink-100 text-pink-700" },
   email:     { label: "Email",     color: "bg-teal-100 text-teal-700" },
+  facebook:  { label: "Facebook",  color: "bg-indigo-100 text-indigo-700" },
+  blog:      { label: "Blog",      color: "bg-amber-100 text-amber-700" },
   other:     { label: "Other",     color: "bg-gray-100 text-gray-600" },
 };
 
@@ -83,6 +85,8 @@ const LINK_SOURCES = [
   { value: "linkedin",  label: "LinkedIn" },
   { value: "instagram", label: "Instagram" },
   { value: "email",     label: "Email" },
+  { value: "facebook",  label: "Facebook" },
+  { value: "blog",      label: "Blog" },
   { value: "other",     label: "Other" },
 ];
 

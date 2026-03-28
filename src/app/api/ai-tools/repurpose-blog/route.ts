@@ -15,7 +15,12 @@ export async function POST(req: NextRequest) {
   const user = await resolveUserFromSession();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { transcript, title } = await req.json();
+  const { transcript, title, selectedLinks, oneOffLinks } = await req.json() as {
+    transcript: string;
+    title: string;
+    selectedLinks?: { label: string; url: string }[];
+    oneOffLinks?: { label: string; url: string }[];
+  };
   if (!transcript || !title) {
     return NextResponse.json({ error: "Missing transcript or title" }, { status: 400 });
   }
@@ -40,6 +45,11 @@ export async function POST(req: NextRequest) {
 
   const currentYear = new Date().getFullYear();
 
+  const allLinks = [...(selectedLinks || []), ...(oneOffLinks || [])].filter((l) => l.label && l.url);
+  const linksSection = allLinks.length > 0
+    ? `\nAVAILABLE LINKS (use maximum 5 in the article, choose strategically):\n${allLinks.map((l) => `- ${l.label}: ${l.url}`).join("\n")}\n`
+    : "";
+
   const systemPrompt = `You are an AI-optimized content writer for ${memberName} at ${businessName}.
 
 CURRENT YEAR: ${currentYear}. Use this exact year whenever referencing the current year. Never use a past year such as 2024 or 2023.
@@ -48,7 +58,7 @@ MEMBER AVATAR:
 ${avatarText}
 
 VOICE STYLE: ${voiceStyle}
-
+${linksSection}
 Write an AI-optimized blog article based on the video transcript. This article is NOT written for traditional SEO — it is written to be cited by AI tools like ChatGPT, Claude, Perplexity, and Google AI Overviews.
 
 OUTPUT FORMAT RULES — CRITICAL:
