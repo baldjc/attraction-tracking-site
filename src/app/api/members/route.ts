@@ -187,7 +187,7 @@ export async function GET() {
   const videosThisWeek = memberRows.reduce((sum, m) => sum + m.videos7d, 0);
   const USD_TO_CAD = 1.38;
   const mrr = memberRows
-    .filter((m) => m.subscriptionStatus === "active" && m.stripePriceAmount)
+    .filter((m) => (m.subscriptionStatus === "active" || m.subscriptionStatus === "past_due") && m.stripePriceAmount)
     .reduce((sum, m) => {
       const amount = m.stripePriceAmount ?? 0;
       const currency = (m.stripeCurrency ?? "USD").toUpperCase();
