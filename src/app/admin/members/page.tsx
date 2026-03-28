@@ -1,9 +1,37 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { ArrowPathIcon, CheckCircleIcon } from "@heroicons/react/24/solid";
+import {
+  ArrowPathIcon,
+  ChevronUpIcon,
+  ChevronDownIcon,
+  VideoCameraIcon,
+  UserGroupIcon,
+  ExclamationTriangleIcon,
+  CursorArrowRaysIcon,
+  TrophyIcon,
+} from "@heroicons/react/24/outline";
 import { useSession } from "next-auth/react";
+
+interface SummaryCards {
+  videosThisWeek: number;
+  activeMembers: number;
+  inactiveMembers: number;
+  linkClicks7d: number;
+  topLead: { userId: string; fullName: string; conversions: number } | null;
+}
+
+interface RecentVideo {
+  id: string;
+  videoId: string;
+  title: string;
+  thumbnailUrl: string | null;
+  publishedAt: string;
+  viewCount: number;
+  user: { id: string; fullName: string | null };
+  audits: { id: string; overallScore: number | null }[];
+}
 
 interface Member {
   id: string;
@@ -12,18 +40,26 @@ interface Member {
   youtubeHandle: string | null;
   youtubeChannelUrl: string | null;
   serviceTier: string;
-  slackUserId: string | null;
-  skoolProfile: string | null;
-  ghlContactId: string | null;
-  createdAt: string;
-  _count?: { audits: number };
-  latestAuditScore?: number | null;
-  latestAuditDate?: string | null;
+  latestAuditScore: number | null;
   stripeCustomerId: string | null;
   subscriptionStatus: string | null;
   stripePlanName: string | null;
   stripeCurrentPeriodEnd: string | null;
+  lastVideoAt: string | null;
+  videos7d: number;
+  clicks7d: number;
+  conversions7d: number;
+  toolUses7d: number;
+  status: string;
 }
+
+type TierFilter = "all" | "foundations" | "editing" | "mastery";
+type SubFilter = "all" | "active" | "past_due" | "cancelled" | "none";
+type StatusFilter = "all" | "active" | "at_risk" | "inactive";
+type SortKey = "fullName" | "videos7d" | "clicks7d" | "conversions7d" | "toolUses7d" | "latestAuditScore" | "status" | "lastVideoAt";
+type SortDir = "asc" | "desc";
+
+const PAGE_SIZE = 20;
 
 const tierLabels: Record<string, string> = {
   foundations: "Foundations",
@@ -33,43 +69,34 @@ const tierLabels: Record<string, string> = {
   mastery_4: "Mastery 4",
 };
 
+const txt   = "text-[#2f3437]";
+const muted = "text-[#2f3437]/60";
+const dim   = "text-[#2f3437]/30";
+const card  = "bg-white rounded-lg border border-gray-200";
+const thCls = "px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#2f3437]/50 bg-gray-50 whitespace-nowrap select-none cursor-pointer";
+
 function tierBadge(tier: string) {
   const label = tierLabels[tier] || tier;
-  if (tier === "foundations") {
-    return (
-      <span className="text-xs font-semibold bg-[#6ba3c7] text-white px-2.5 py-1 rounded-full">
-        {label}
-      </span>
-    );
-  }
-  if (tier === "editing_2" || tier === "editing_4") {
-    return (
-      <span className="text-xs font-semibold bg-[#f59e0b] text-white px-2.5 py-1 rounded-full">
-        {label}
-      </span>
-    );
-  }
-  if (tier === "mastery_2" || tier === "mastery_4") {
-    return (
-      <span className="text-xs font-semibold bg-[#8b5cf6] text-white px-2.5 py-1 rounded-full">
-        {label}
-      </span>
-    );
-  }
+  const cls =
+    tier === "foundations"
+      ? "bg-[#6ba3c7] text-white"
+      : tier === "editing_2" || tier === "editing_4"
+      ? "bg-[#f59e0b] text-white"
+      : tier === "mastery_2" || tier === "mastery_4"
+      ? "bg-[#8b5cf6] text-white"
+      : "bg-gray-200 text-gray-700";
   return (
-    <span className="text-xs font-semibold bg-gray-200 text-gray-700 px-2.5 py-1 rounded-full">
-      {label}
-    </span>
+    <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${cls}`}>{label}</span>
   );
 }
 
 function subStatusBadge(status: string | null) {
   if (!status) return null;
   const cfg: Record<string, { dot: string; label: string; cls: string }> = {
-    active:    { dot: "bg-green-500",  label: "Active",   cls: "text-green-700 bg-green-50 border-green-200" },
-    trialing:  { dot: "bg-blue-400",   label: "Trial",    cls: "text-blue-700 bg-blue-50 border-blue-200" },
-    past_due:  { dot: "bg-amber-400",  label: "Past Due", cls: "text-amber-700 bg-amber-50 border-amber-200" },
-    cancelled: { dot: "bg-red-500",    label: "Cancelled",cls: "text-red-700 bg-red-50 border-red-200" },
+    active:    { dot: "bg-green-500",  label: "Active",    cls: "text-green-700 bg-green-50 border-green-200" },
+    trialing:  { dot: "bg-blue-400",   label: "Trial",     cls: "text-blue-700 bg-blue-50 border-blue-200" },
+    past_due:  { dot: "bg-amber-400",  label: "Past Due",  cls: "text-amber-700 bg-amber-50 border-amber-200" },
+    cancelled: { dot: "bg-red-500",    label: "Cancelled", cls: "text-red-700 bg-red-50 border-red-200" },
   };
   const c = cfg[status] ?? { dot: "bg-gray-400", label: status, cls: "text-gray-600 bg-gray-50 border-gray-200" };
   return (
@@ -87,8 +114,50 @@ function fmtPeriodEnd(iso: string | null, status: string | null) {
   return status === "cancelled" ? `Ended ${formatted}` : `Renews ${formatted}`;
 }
 
-type TierFilter = "all" | "foundations" | "editing" | "mastery";
-type SubFilter = "all" | "active" | "past_due" | "cancelled" | "none";
+function scoreColor(score: number | null) {
+  if (score === null) return muted;
+  if (score >= 7) return "text-emerald-600 font-semibold";
+  if (score >= 5) return "text-yellow-600 font-semibold";
+  return "text-red-500 font-semibold";
+}
+
+function StatusDot({ status }: { status: string }) {
+  const cfg: Record<string, { color: string; label: string }> = {
+    active:   { color: "bg-emerald-500", label: "Active" },
+    at_risk:  { color: "bg-yellow-400",  label: "At Risk" },
+    inactive: { color: "bg-red-400",     label: "Inactive" },
+  };
+  const c = cfg[status] ?? { color: "bg-gray-400", label: status };
+  return (
+    <span className="flex items-center gap-1.5 whitespace-nowrap">
+      <span className={`w-2 h-2 rounded-full shrink-0 ${c.color}`} />
+      <span className={`text-xs ${muted}`}>{c.label}</span>
+    </span>
+  );
+}
+
+function fmtDate(iso: string | null) {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleDateString("en-CA", { month: "short", day: "numeric" });
+}
+
+function matchesTierFilter(tier: string, filter: TierFilter) {
+  if (filter === "all") return true;
+  if (filter === "foundations") return tier === "foundations";
+  if (filter === "editing") return tier === "editing_2" || tier === "editing_4";
+  if (filter === "mastery") return tier === "mastery_2" || tier === "mastery_4";
+  return true;
+}
+
+function matchesSubFilter(m: Member, filter: SubFilter) {
+  if (filter === "all") return true;
+  if (filter === "none") return !m.subscriptionStatus;
+  return m.subscriptionStatus === filter;
+}
+
+function subtitleLabel(count: number) {
+  return `${count} Member${count !== 1 ? "s" : ""}`;
+}
 
 const TIER_FILTERS: { value: TierFilter; label: string }[] = [
   { value: "all",         label: "All" },
@@ -102,31 +171,15 @@ const SUB_FILTERS: { value: SubFilter; label: string }[] = [
   { value: "active",    label: "Active" },
   { value: "past_due",  label: "Past Due" },
   { value: "cancelled", label: "Cancelled" },
-  { value: "none",      label: "No Subscription" },
+  { value: "none",      label: "No Sub" },
 ];
 
-function matchesTierFilter(tier: string, filter: TierFilter) {
-  if (filter === "all") return true;
-  if (filter === "foundations") return tier === "foundations";
-  if (filter === "editing") return tier === "editing_2" || tier === "editing_4";
-  if (filter === "mastery") return tier === "mastery_2" || tier === "mastery_4";
-  return true;
-}
-
-function matchesSubFilter(m: Member, filter: SubFilter) {
-  if (filter === "all") return true;
-  if (filter === "none") return !m.stripePlanName;
-  return m.subscriptionStatus === filter;
-}
-
-function subtitleLabel(filter: TierFilter, count: number) {
-  const s = count !== 1 ? "s" : "";
-  if (filter === "all") return `${count} Member${s}`;
-  if (filter === "foundations") return `${count} Foundations Member${s}`;
-  if (filter === "editing") return `${count} Editing Member${s}`;
-  if (filter === "mastery") return `${count} Mastery Member${s}`;
-  return `${count} Member${s}`;
-}
+const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
+  { value: "all",      label: "All" },
+  { value: "active",   label: "Active" },
+  { value: "at_risk",  label: "At Risk" },
+  { value: "inactive", label: "Inactive" },
+];
 
 export default function MembersPage() {
   const { data: session } = useSession();
@@ -134,25 +187,46 @@ export default function MembersPage() {
   const isEditorRole = role === "editor";
 
   const [members, setMembers] = useState<Member[]>([]);
+  const [cards, setCards] = useState<SummaryCards | null>(null);
+  const [recentVideos, setRecentVideos] = useState<RecentVideo[]>([]);
+  const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<string | null>(null);
   const [flaggedInactive, setFlaggedInactive] = useState<{ email: string; name: string }[]>([]);
+
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshMsg, setRefreshMsg] = useState<string | null>(null);
+
+  const [runningAudit, setRunningAudit] = useState<Record<string, boolean>>({});
+  const [auditDone, setAuditDone] = useState<Record<string, string>>({});
+
   const [search, setSearch] = useState("");
   const [tierFilter, setTierFilter] = useState<TierFilter>("all");
   const [subFilter, setSubFilter] = useState<SubFilter>("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
 
-  useEffect(() => {
-    fetchMembers();
+  const [sortKey, setSortKey] = useState<SortKey>("fullName");
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
+  const [page, setPage] = useState(1);
+  const [videosOpen, setVideosOpen] = useState(true);
+
+  const fetchMembers = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/members");
+      const data = await res.json();
+      setMembers(data.members || []);
+      setCards(data.cards || null);
+      setRecentVideos(data.recentVideos || []);
+      setLastSyncedAt(data.lastSyncedAt || null);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  async function fetchMembers() {
-    setLoading(true);
-    const res = await fetch("/api/members");
-    const data = await res.json();
-    setMembers(data.members || []);
-    setLoading(false);
-  }
+  useEffect(() => { fetchMembers(); }, [fetchMembers]);
 
   async function handleSync() {
     setSyncing(true);
@@ -164,12 +238,8 @@ export default function MembersPage() {
       if (data.error) {
         setSyncResult(`Error: ${data.error}${data.details ? ` — ${data.details}` : ""}`);
       } else {
-        setSyncResult(
-          `Synced: ${data.created} new, ${data.updated} updated, ${data.skipped} unchanged`
-        );
-        if (data.flaggedInactive?.length > 0) {
-          setFlaggedInactive(data.flaggedInactive);
-        }
+        setSyncResult(`Synced: ${data.created} new, ${data.updated} updated, ${data.skipped} unchanged`);
+        if (data.flaggedInactive?.length > 0) setFlaggedInactive(data.flaggedInactive);
         fetchMembers();
       }
     } catch {
@@ -178,48 +248,139 @@ export default function MembersPage() {
     setSyncing(false);
   }
 
-  const filtered = members.filter((m) => {
-    const matchesSearch =
-      !search ||
-      m.fullName?.toLowerCase().includes(search.toLowerCase()) ||
-      m.email.toLowerCase().includes(search.toLowerCase()) ||
-      m.youtubeHandle?.toLowerCase().includes(search.toLowerCase());
-    return matchesSearch && matchesTierFilter(m.serviceTier, tierFilter) && matchesSubFilter(m, subFilter);
-  });
+  async function handleRefreshAll() {
+    setRefreshing(true);
+    setRefreshMsg(null);
+    try {
+      const res = await fetch("/api/admin/youtube/sync", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) });
+      const d = await res.json();
+      setRefreshMsg(`Synced ${d.membersPolled ?? 0} members — ${d.newVideosFound ?? 0} new videos found.`);
+      fetchMembers();
+    } catch {
+      setRefreshMsg("Sync failed. Please try again.");
+    }
+    setRefreshing(false);
+  }
+
+  async function handleRunAudit(video: RecentVideo) {
+    setRunningAudit((p) => ({ ...p, [video.id]: true }));
+    try {
+      const res = await fetch("/api/audits/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ memberId: video.user.id, auditType: "single_video", videoId: video.videoId }),
+      });
+      const d = await res.json();
+      if (d.jobId) setAuditDone((p) => ({ ...p, [video.id]: d.jobId }));
+    } finally {
+      setRunningAudit((p) => ({ ...p, [video.id]: false }));
+    }
+  }
+
+  function toggleSort(key: SortKey) {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+    setPage(1);
+  }
+
+  function SortIcon({ col }: { col: SortKey }) {
+    if (sortKey !== col) return <span className={`${dim} ml-1`}>↕</span>;
+    return sortDir === "asc"
+      ? <ChevronUpIcon className="w-3 h-3 inline ml-1 text-[#6ba3c7]" />
+      : <ChevronDownIcon className="w-3 h-3 inline ml-1 text-[#6ba3c7]" />;
+  }
+
+  function FilterBtn({ active, label, activeClass, onClick }: { active: boolean; label: string; activeClass: string; onClick: () => void }) {
+    return (
+      <button
+        onClick={onClick}
+        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
+          active ? activeClass : "bg-white text-[#2f3437]/60 border-gray-200 hover:border-gray-300 hover:text-[#2f3437]"
+        }`}
+      >
+        {label}
+      </button>
+    );
+  }
+
+  const filtered = members
+    .filter((m) => {
+      if (!search) return true;
+      const q = search.toLowerCase();
+      return (
+        m.fullName?.toLowerCase().includes(q) ||
+        m.email.toLowerCase().includes(q) ||
+        m.youtubeHandle?.toLowerCase().includes(q)
+      );
+    })
+    .filter((m) => matchesTierFilter(m.serviceTier, tierFilter))
+    .filter((m) => matchesSubFilter(m, subFilter))
+    .filter((m) => statusFilter === "all" || m.status === statusFilter)
+    .sort((a, b) => {
+      let av: any = a[sortKey];
+      let bv: any = b[sortKey];
+      if (av === null || av === undefined) av = sortDir === "asc" ? Infinity : -Infinity;
+      if (bv === null || bv === undefined) bv = sortDir === "asc" ? Infinity : -Infinity;
+      if (typeof av === "string" && typeof bv === "string")
+        return sortDir === "asc" ? av.localeCompare(bv) : bv.localeCompare(av);
+      return sortDir === "asc" ? av - bv : bv - av;
+    });
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold text-[#2f3437]">Members</h1>
-          <p className="text-[#2f3437]/60 mt-1">{subtitleLabel(tierFilter, filtered.length)}</p>
+          <h1 className={`text-2xl font-bold ${txt}`}>Members</h1>
+          <p className={`${muted} mt-1`}>
+            {loading ? "Loading…" : subtitleLabel(filtered.length)}
+            {lastSyncedAt && !loading && (
+              <span className="ml-2 text-xs">· Last channel sync {fmtDate(lastSyncedAt)}</span>
+            )}
+          </p>
         </div>
-        {!isEditorRole && (
-          <button
-            onClick={handleSync}
-            disabled={syncing}
-            className="flex items-center gap-2 bg-[#6ba3c7] hover:bg-[#5490b5] text-white px-4 py-2.5 rounded-lg font-medium transition-colors disabled:opacity-50"
-          >
-            <ArrowPathIcon className={`w-5 h-5 ${syncing ? "animate-spin" : ""}`} />
-            {syncing ? "Syncing from GHL..." : "Sync from GHL"}
-          </button>
-        )}
+        <div className="flex items-center gap-2 flex-wrap">
+          {!isEditorRole && (
+            <button
+              onClick={handleRefreshAll}
+              disabled={refreshing}
+              className="flex items-center gap-2 bg-white hover:bg-gray-50 text-[#2f3437] border border-gray-200 px-4 py-2.5 rounded-lg font-medium transition-colors disabled:opacity-50 text-sm"
+            >
+              <ArrowPathIcon className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
+              {refreshing ? "Syncing…" : "Refresh All Channels"}
+            </button>
+          )}
+          {!isEditorRole && (
+            <button
+              onClick={handleSync}
+              disabled={syncing}
+              className="flex items-center gap-2 bg-[#6ba3c7] hover:bg-[#5490b5] text-white px-4 py-2.5 rounded-lg font-medium transition-colors disabled:opacity-50 text-sm"
+            >
+              <ArrowPathIcon className={`w-4 h-4 ${syncing ? "animate-spin" : ""}`} />
+              {syncing ? "Syncing from GHL…" : "Sync from GHL"}
+            </button>
+          )}
+        </div>
       </div>
 
+      {/* Notifications */}
       {!isEditorRole && syncResult && (
-        <div
-          className={`mb-4 text-sm px-4 py-3 rounded-lg ${
-            syncResult.startsWith("Error") || syncResult.startsWith("Sync failed")
-              ? "bg-[#ff0033]/10 text-[#ff0033]"
-              : "bg-[#6ba3c7]/10 text-[#2f3437]"
-          }`}
-        >
+        <div className={`text-sm px-4 py-3 rounded-lg ${syncResult.startsWith("Error") || syncResult.startsWith("Sync failed") ? "bg-red-50 text-red-700" : "bg-[#6ba3c7]/10 text-[#2f3437]"}`}>
           {syncResult}
         </div>
       )}
-
+      {!isEditorRole && refreshMsg && (
+        <div className="text-sm px-4 py-3 rounded-lg bg-[#6ba3c7]/10 text-[#2f3437]">{refreshMsg}</div>
+      )}
       {!isEditorRole && flaggedInactive.length > 0 && (
-        <div className="mb-4 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
+        <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
           <p className="text-sm font-semibold text-amber-800 mb-2">
             These members no longer have the &ldquo;foundations - weekly coaching&rdquo; tag in GHL:
           </p>
@@ -236,60 +397,181 @@ export default function MembersPage() {
         </div>
       )}
 
-      {/* Search + Filters */}
-      <div className="flex flex-wrap items-center gap-3 mb-4">
-        <input
-          type="text"
-          placeholder="Search by name, email, or YouTube handle..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full max-w-sm px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6ba3c7] focus:border-transparent outline-none text-[#2f3437] bg-white text-sm"
-        />
-
-        {/* Tier filter */}
-        <div className="flex items-center gap-1.5">
-          {TIER_FILTERS.map((f) => (
-            <button
-              key={f.value}
-              onClick={() => setTierFilter(f.value)}
-              className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-colors border ${
-                tierFilter === f.value
-                  ? f.value === "foundations"
-                    ? "bg-[#6ba3c7] text-white border-[#6ba3c7]"
-                    : f.value === "editing"
-                    ? "bg-[#f59e0b] text-white border-[#f59e0b]"
-                    : f.value === "mastery"
-                    ? "bg-[#8b5cf6] text-white border-[#8b5cf6]"
-                    : "bg-[#111] text-white border-[#2f3437]"
-                  : "bg-white text-[#2f3437]/60 border-gray-200 hover:border-gray-300 hover:text-[#2f3437]"
-              }`}
-            >
-              {f.label}
-            </button>
+      {/* KPI Cards */}
+      {loading ? (
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className={`${card} p-4 h-24 animate-pulse bg-gray-100`} />
           ))}
         </div>
+      ) : cards && (
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className={`${card} p-4`}>
+            <div className="flex items-center gap-2 mb-3">
+              <VideoCameraIcon className="w-5 h-5 text-[#6ba3c7] shrink-0" />
+              <span className={`text-xs uppercase tracking-wide font-semibold ${muted}`}>Videos This Week</span>
+            </div>
+            <div className={`text-3xl font-bold ${txt}`}>{cards.videosThisWeek}</div>
+          </div>
+          <div className={`${card} p-4`}>
+            <div className="flex items-center gap-2 mb-3">
+              <UserGroupIcon className="w-5 h-5 text-emerald-500 shrink-0" />
+              <span className={`text-xs uppercase tracking-wide font-semibold ${muted}`}>Active Members</span>
+            </div>
+            <div className={`text-3xl font-bold ${txt}`}>{cards.activeMembers}</div>
+          </div>
+          <div className={`${card} p-4`}>
+            <div className="flex items-center gap-2 mb-3">
+              <ExclamationTriangleIcon className="w-5 h-5 text-red-500 shrink-0" />
+              <span className={`text-xs uppercase tracking-wide font-semibold ${muted}`}>Inactive</span>
+            </div>
+            <div className={`text-3xl font-bold ${txt}`}>{cards.inactiveMembers}</div>
+          </div>
+          <div className={`${card} p-4`}>
+            <div className="flex items-center gap-2 mb-3">
+              <CursorArrowRaysIcon className="w-5 h-5 text-[#6ba3c7] shrink-0" />
+              <span className={`text-xs uppercase tracking-wide font-semibold ${muted}`}>Link Clicks (7d)</span>
+            </div>
+            <div className={`text-3xl font-bold ${txt}`}>{cards.linkClicks7d}</div>
+          </div>
+          <div className={`${card} p-4`}>
+            <div className="flex items-center gap-2 mb-3">
+              <TrophyIcon className="w-5 h-5 text-yellow-500 shrink-0" />
+              <span className={`text-xs uppercase tracking-wide font-semibold ${muted}`}>Top Lead Performer</span>
+            </div>
+            {cards.topLead ? (
+              <>
+                <div className={`text-sm font-semibold ${txt} truncate`}>{cards.topLead.fullName}</div>
+                <div className={`text-xs ${muted}`}>{cards.topLead.conversions} conversions</div>
+              </>
+            ) : (
+              <div className={`text-sm ${dim}`}>—</div>
+            )}
+          </div>
+        </div>
+      )}
 
-        {/* Subscription filter */}
-        <div className="flex items-center gap-1">
-          <span className="text-xs font-semibold text-[#2f3437]/40 mr-1 uppercase tracking-wider">Sub:</span>
+      {/* Recent Videos */}
+      {!loading && recentVideos.length > 0 && (
+        <section className={`${card} overflow-hidden`}>
+          <button
+            onClick={() => setVideosOpen((o) => !o)}
+            className="w-full flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition-colors"
+          >
+            <span className={`text-base font-semibold ${txt}`}>
+              Videos Published This Week
+              <span className={`ml-2 text-sm font-normal ${muted}`}>({recentVideos.length})</span>
+            </span>
+            {videosOpen
+              ? <ChevronUpIcon className="w-4 h-4 text-[#2f3437]/40" />
+              : <ChevronDownIcon className="w-4 h-4 text-[#2f3437]/40" />}
+          </button>
+          {videosOpen && (
+            <div className="px-6 pb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 border-t border-gray-100">
+              {recentVideos.map((video) => {
+                const latestAudit = video.audits[0];
+                const started = auditDone[video.id];
+                return (
+                  <div key={video.id} className="mt-4 rounded-lg border border-gray-200 overflow-hidden flex flex-col">
+                    {video.thumbnailUrl ? (
+                      <img src={video.thumbnailUrl} alt={video.title} className="w-full aspect-video object-cover" />
+                    ) : (
+                      <div className="w-full aspect-video bg-gray-100 flex items-center justify-center">
+                        <VideoCameraIcon className={`w-8 h-8 ${dim}`} />
+                      </div>
+                    )}
+                    <div className="p-3 flex flex-col gap-2 flex-1">
+                      <div className="text-xs text-[#6ba3c7] font-medium truncate">{video.user.fullName || "Unknown"}</div>
+                      <div className={`text-sm ${txt} font-medium line-clamp-2 leading-snug`}>{video.title}</div>
+                      <div className={`text-xs ${dim}`}>{fmtDate(video.publishedAt)} · {video.viewCount.toLocaleString()} views</div>
+                      <div className="mt-auto">
+                        {latestAudit ? (
+                          <Link
+                            href={`/admin/audits/${latestAudit.id}`}
+                            className="block text-center text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg px-3 py-1.5 hover:bg-emerald-100 transition"
+                          >
+                            View Audit {latestAudit.overallScore !== null ? `(${Number(latestAudit.overallScore).toFixed(1)})` : ""}
+                          </Link>
+                        ) : started ? (
+                          <div className={`text-center text-xs ${dim} py-1.5`}>Audit queued…</div>
+                        ) : (
+                          <button
+                            onClick={() => handleRunAudit(video)}
+                            disabled={runningAudit[video.id]}
+                            className="w-full text-xs bg-[#6ba3c7] hover:bg-[#5490b5] disabled:opacity-60 text-white rounded-lg px-3 py-1.5 transition"
+                          >
+                            {runningAudit[video.id] ? "Starting…" : "Run Audit"}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* Filters */}
+      <div className="space-y-2">
+        <div className="flex flex-wrap items-center gap-3">
+          <input
+            type="text"
+            placeholder="Search by name, email, or YouTube handle…"
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            className="w-full max-w-sm px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6ba3c7] focus:border-transparent outline-none text-[#2f3437] bg-white text-sm"
+          />
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {TIER_FILTERS.map((f) => (
+              <FilterBtn
+                key={f.value}
+                active={tierFilter === f.value}
+                label={f.label}
+                activeClass={
+                  f.value === "foundations" ? "bg-[#6ba3c7] text-white border-[#6ba3c7]"
+                  : f.value === "editing" ? "bg-[#f59e0b] text-white border-[#f59e0b]"
+                  : f.value === "mastery" ? "bg-[#8b5cf6] text-white border-[#8b5cf6]"
+                  : "bg-[#111] text-white border-[#111]"
+                }
+                onClick={() => { setTierFilter(f.value as TierFilter); setPage(1); }}
+              />
+            ))}
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-semibold text-[#2f3437]/40 uppercase tracking-wider w-12">Sub:</span>
           {SUB_FILTERS.map((f) => (
-            <button
+            <FilterBtn
               key={f.value}
-              onClick={() => setSubFilter(f.value)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
-                subFilter === f.value
-                  ? f.value === "active"
-                    ? "bg-green-600 text-white border-green-600"
-                    : f.value === "past_due"
-                    ? "bg-amber-500 text-white border-amber-500"
-                    : f.value === "cancelled"
-                    ? "bg-red-500 text-white border-red-500"
-                    : "bg-[#111] text-white border-[#2f3437]"
-                  : "bg-white text-[#2f3437]/60 border-gray-200 hover:border-gray-300 hover:text-[#2f3437]"
-              }`}
-            >
-              {f.label}
-            </button>
+              active={subFilter === f.value}
+              label={f.label}
+              activeClass={
+                f.value === "active" ? "bg-green-600 text-white border-green-600"
+                : f.value === "past_due" ? "bg-amber-500 text-white border-amber-500"
+                : f.value === "cancelled" ? "bg-red-500 text-white border-red-500"
+                : "bg-[#111] text-white border-[#111]"
+              }
+              onClick={() => { setSubFilter(f.value as SubFilter); setPage(1); }}
+            />
+          ))}
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-semibold text-[#2f3437]/40 uppercase tracking-wider w-12">Status:</span>
+          {STATUS_FILTERS.map((f) => (
+            <FilterBtn
+              key={f.value}
+              active={statusFilter === f.value}
+              label={f.label}
+              activeClass={
+                f.value === "active" ? "bg-emerald-600 text-white border-emerald-600"
+                : f.value === "at_risk" ? "bg-yellow-500 text-white border-yellow-500"
+                : f.value === "inactive" ? "bg-red-500 text-white border-red-500"
+                : "bg-[#111] text-white border-[#111]"
+              }
+              onClick={() => { setStatusFilter(f.value as StatusFilter); setPage(1); }}
+            />
           ))}
         </div>
       </div>
@@ -297,87 +579,152 @@ export default function MembersPage() {
       {/* Mobile list */}
       <div className="md:hidden bg-white rounded-lg border border-gray-200 divide-y divide-gray-100">
         {loading ? (
-          <div className="px-4 py-10 text-center text-[#2f3437]/40 text-sm">Loading...</div>
+          <div className="px-4 py-10 text-center text-[#2f3437]/40 text-sm">Loading…</div>
         ) : filtered.length === 0 ? (
           <div className="px-4 py-10 text-center text-[#2f3437]/40 text-sm">
-            {members.length === 0 ? 'No members yet. Sync from GHL to import.' : "No members match your search."}
+            {members.length === 0 ? "No members yet. Sync from GHL to import." : "No members match your search."}
           </div>
         ) : (
-          filtered.map((m) => (
+          paginated.map((m) => (
             <Link key={m.id} href={`/admin/members/${m.id}`} className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors">
               <div className="flex items-center gap-2 min-w-0 flex-wrap">
-                <div className="w-1.5 h-1.5 bg-green-500 rounded-full shrink-0" />
+                <StatusDot status={m.status} />
                 <span className="font-medium text-[#2f3437] text-sm truncate">{m.fullName || "—"}</span>
                 <span className="shrink-0">{tierBadge(m.serviceTier)}</span>
-                {m.subscriptionStatus && <span className="shrink-0">{subStatusBadge(m.subscriptionStatus)}</span>}
               </div>
-              <span className="text-xs font-semibold text-[#2f3437]/50 shrink-0 ml-2">
-                {m.latestAuditScore != null ? `${m.latestAuditScore.toFixed(1)}` : "—"}
-              </span>
+              <div className="text-right shrink-0 ml-2">
+                <div className={`text-xs font-semibold ${scoreColor(m.latestAuditScore)}`}>
+                  {m.latestAuditScore != null ? `${m.latestAuditScore.toFixed(1)}/10` : "—"}
+                </div>
+                <div className={`text-xs ${muted}`}>{m.videos7d}v</div>
+              </div>
             </Link>
           ))
         )}
       </div>
 
       {/* Desktop table */}
-      <div className="hidden md:block bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="bg-gray-50 border-b border-gray-200">
-                <th className="text-left px-6 py-3 text-xs font-semibold text-[#2f3437]/60 uppercase tracking-wider">Name</th>
-                <th className="text-center px-4 py-3 text-xs font-semibold text-[#2f3437]/60 uppercase tracking-wider">YT</th>
-                <th className="text-left px-6 py-3 text-xs font-semibold text-[#2f3437]/60 uppercase tracking-wider">Tier</th>
-                <th className="text-left px-6 py-3 text-xs font-semibold text-[#2f3437]/60 uppercase tracking-wider">Subscription</th>
-                <th className="text-left px-6 py-3 text-xs font-semibold text-[#2f3437]/60 uppercase tracking-wider">Score</th>
-                <th className="text-left px-6 py-3 text-xs font-semibold text-[#2f3437]/60 uppercase tracking-wider">Email</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {loading ? (
-                <tr><td colSpan={6} className="px-6 py-12 text-center text-[#2f3437]/40">Loading...</td></tr>
-              ) : filtered.length === 0 ? (
-                <tr><td colSpan={6} className="px-6 py-12 text-center text-[#2f3437]/40">
-                  {members.length === 0 ? 'No members yet. Click "Sync from GHL" to import.' : "No members match your search."}
-                </td></tr>
-              ) : (
-                filtered.map((m) => (
-                  <tr key={m.id} className="hover:bg-gray-50 cursor-pointer transition-colors">
-                    <td className="px-6 py-4">
-                      <Link href={`/admin/members/${m.id}`} className="flex items-center gap-3">
-                        <div className="w-2 h-2 bg-green-500 rounded-full shrink-0" />
-                        <span className="font-medium text-[#2f3437] hover:text-[#6ba3c7] transition-colors">{m.fullName || "—"}</span>
-                      </Link>
-                    </td>
-                    <td className="px-4 py-4 text-center">
-                      {m.youtubeHandle
-                        ? <CheckCircleIcon className="w-5 h-5 text-green-500 mx-auto" />
-                        : <span className="text-[#2f3437]/25 text-sm">—</span>}
-                    </td>
-                    <td className="px-6 py-4">{tierBadge(m.serviceTier)}</td>
-                    <td className="px-6 py-4">
-                      {m.subscriptionStatus ? (
-                        <div className="flex flex-col gap-0.5">
-                          {subStatusBadge(m.subscriptionStatus)}
-                          {fmtPeriodEnd(m.stripeCurrentPeriodEnd, m.subscriptionStatus) && (
-                            <p className="text-[11px] text-[#2f3437]/40 mt-0.5">
-                              {fmtPeriodEnd(m.stripeCurrentPeriodEnd, m.subscriptionStatus)}
-                            </p>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-sm text-[#2f3437]/30">—</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-[#2f3437]/70">
-                      {m.latestAuditScore != null ? `${m.latestAuditScore.toFixed(1)}/10` : "—"}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-[#2f3437]/70">{m.email}</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+      <div className="hidden md:block">
+        <div className={`${card} overflow-hidden`}>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-200">
+                  <th className={thCls} onClick={() => toggleSort("fullName")}>
+                    Name <SortIcon col="fullName" />
+                  </th>
+                  <th className={`${thCls} cursor-default`}>YouTube</th>
+                  <th className={`${thCls} cursor-default`}>Tier</th>
+                  <th className={`${thCls} cursor-default`}>Subscription</th>
+                  <th className={thCls} onClick={() => toggleSort("latestAuditScore")}>
+                    Score <SortIcon col="latestAuditScore" />
+                  </th>
+                  <th className={thCls} onClick={() => toggleSort("videos7d")}>
+                    Videos (7d) <SortIcon col="videos7d" />
+                  </th>
+                  <th className={thCls} onClick={() => toggleSort("clicks7d")}>
+                    Clicks (7d) <SortIcon col="clicks7d" />
+                  </th>
+                  <th className={thCls} onClick={() => toggleSort("conversions7d")}>
+                    Conv. (7d) <SortIcon col="conversions7d" />
+                  </th>
+                  <th className={thCls} onClick={() => toggleSort("toolUses7d")}>
+                    Tools (7d) <SortIcon col="toolUses7d" />
+                  </th>
+                  <th className={thCls} onClick={() => toggleSort("status")}>
+                    Status <SortIcon col="status" />
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {loading ? (
+                  <tr><td colSpan={10} className={`px-6 py-12 text-center ${muted}`}>Loading…</td></tr>
+                ) : paginated.length === 0 ? (
+                  <tr><td colSpan={10} className={`px-6 py-12 text-center ${muted}`}>
+                    {members.length === 0 ? "No members yet. Click \"Sync from GHL\" to import." : "No members match your filters."}
+                  </td></tr>
+                ) : (
+                  paginated.map((m) => (
+                    <tr key={m.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-3">
+                        <Link href={`/admin/members/${m.id}`} className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-green-500 rounded-full shrink-0" />
+                          <span className={`font-medium ${txt} hover:text-[#6ba3c7] transition-colors`}>{m.fullName || "—"}</span>
+                        </Link>
+                        <div className={`text-xs ${dim} ml-4`}>{m.email}</div>
+                      </td>
+                      <td className="px-4 py-3">
+                        {m.youtubeHandle ? (
+                          <a
+                            href={m.youtubeChannelUrl || `https://youtube.com/${m.youtubeHandle}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-[#6ba3c7] hover:underline"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {m.youtubeHandle}
+                          </a>
+                        ) : (
+                          <span className={`text-sm ${dim}`}>—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">{tierBadge(m.serviceTier)}</td>
+                      <td className="px-4 py-3">
+                        {m.subscriptionStatus ? (
+                          <div className="flex flex-col gap-0.5">
+                            {m.stripePlanName && (
+                              <span className={`text-xs font-medium ${txt} leading-tight`}>{m.stripePlanName}</span>
+                            )}
+                            {subStatusBadge(m.subscriptionStatus)}
+                            {fmtPeriodEnd(m.stripeCurrentPeriodEnd, m.subscriptionStatus) && (
+                              <span className={`text-[11px] ${dim}`}>
+                                {fmtPeriodEnd(m.stripeCurrentPeriodEnd, m.subscriptionStatus)}
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className={`text-sm ${dim}`}>—</span>
+                        )}
+                      </td>
+                      <td className={`px-4 py-3 ${scoreColor(m.latestAuditScore)}`}>
+                        {m.latestAuditScore != null ? `${Number(m.latestAuditScore).toFixed(1)}/10` : <span className={dim}>—</span>}
+                      </td>
+                      <td className={`px-4 py-3 ${muted}`}>{m.videos7d || <span className={dim}>0</span>}</td>
+                      <td className={`px-4 py-3 ${muted}`}>{m.clicks7d || <span className={dim}>0</span>}</td>
+                      <td className={`px-4 py-3 ${muted}`}>{m.conversions7d || <span className={dim}>0</span>}</td>
+                      <td className={`px-4 py-3 ${muted}`}>{m.toolUses7d || <span className={dim}>0</span>}</td>
+                      <td className="px-4 py-3"><StatusDot status={m.status} /></td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          {!loading && filtered.length > PAGE_SIZE && (
+            <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100">
+              <span className={`text-xs ${dim}`}>
+                Showing {filtered.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length}
+              </span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className={`text-xs px-3 py-1.5 bg-gray-100 border border-gray-200 rounded-lg disabled:opacity-40 hover:bg-gray-200 transition ${muted}`}
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                  className={`text-xs px-3 py-1.5 bg-gray-100 border border-gray-200 rounded-lg disabled:opacity-40 hover:bg-gray-200 transition ${muted}`}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

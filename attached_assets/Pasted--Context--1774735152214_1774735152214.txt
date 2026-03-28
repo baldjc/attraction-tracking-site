@@ -1,0 +1,101 @@
+  Context                                                                                                                                                    
+                                                                                                                                                             
+  The admin currently has two separate pages for member data that overlap significantly:                                                                     
+                                                                                                                                                             
+  - Foundations Members (/admin/members) — member directory with name, email, YouTube, tier, score. Click into a member for profile editing, coaching notes, 
+  avatar, audit history, academy progress, campaigns.                                                                                                        
+  - Member Analytics (/admin/analytics) — engagement dashboard with KPI cards, recent videos grid, and a member table with 7-day activity stats (videos, tool
+   uses, clicks, conversions, active/at-risk/inactive status).                                                                                               
+   
+  These need to be merged into one unified Members page.                                                                                                     
+                                                                                                                                                           
+  Task 1: Merge the Members Table                                                                                                                            
+                                                                                                                                                           
+  Combine both member tables into one on /admin/members. The unified table should include the best columns from both pages.                                  
+   
+  Desktop table columns (in order):                                                                                                                          
+                                                                                                                                                           
+  ┌──────────────┬───────────────────────┬──────────────────────────────────────────────────────────────────────┐                                            
+  │    Column    │        Source         │                                Notes                                 │                                          
+  ├──────────────┼───────────────────────┼──────────────────────────────────────────────────────────────────────┤                                            
+  │ Name         │ members page          │ Clickable link to member detail, with green dot                      │                                          
+  ├──────────────┼───────────────────────┼──────────────────────────────────────────────────────────────────────┤
+  │ YouTube      │ members page          │ @handle as link                                                      │                                            
+  ├──────────────┼───────────────────────┼──────────────────────────────────────────────────────────────────────┤                                            
+  │ Tier         │ members page          │ Colour-coded badge                                                   │                                            
+  ├──────────────┼───────────────────────┼──────────────────────────────────────────────────────────────────────┤                                            
+  │ Subscription │ members page (Stripe) │ Plan name + status badge (from the Stripe integration we just added) │                                          
+  ├──────────────┼───────────────────────┼──────────────────────────────────────────────────────────────────────┤                                            
+  │ Score        │ both                  │ Latest audit score, colour-coded (green ≥7, yellow ≥5, red <5)       │
+  ├──────────────┼───────────────────────┼──────────────────────────────────────────────────────────────────────┤                                            
+  │ Videos (7d)  │ analytics page        │ Count of videos published in past 7 days                             │                                          
+  ├──────────────┼───────────────────────┼──────────────────────────────────────────────────────────────────────┤                                            
+  │ Clicks (7d)  │ analytics page        │ Link tracker clicks in past 7 days                                   │                                          
+  ├──────────────┼───────────────────────┼──────────────────────────────────────────────────────────────────────┤                                            
+  │ Conv. (7d)   │ analytics page        │ Conversions from links in past 7 days                                │                                          
+  ├──────────────┼───────────────────────┼──────────────────────────────────────────────────────────────────────┤                                            
+  │ Tools (7d)   │ analytics page        │ Count of AI tool uses in past 7 days                                 │                                          
+  ├──────────────┼───────────────────────┼──────────────────────────────────────────────────────────────────────┤                                            
+  │ Status       │ analytics page        │ Active/At Risk/Inactive with colour dot                              │                                          
+  └──────────────┴───────────────────────┴──────────────────────────────────────────────────────────────────────┘                                            
+   
+  Mobile view: Name (with tier badge + status dot) + score + videos 7d                                                                                       
+                                                                                                                                                           
+  Task 2: Add KPI Cards                                                                                                                                      
+                                                                                                                                                           
+  Move the 5 KPI summary cards from the analytics page to the top of the unified members page:                                                               
+                                                                                                                                                           
+  1. Videos This Week                                                                                                                                        
+  2. Active Members                                                                                                                                        
+  3. Inactive Members
+  4. Link Clicks (7d)
+  5. Top Lead Performer
+                                                                                                                                                             
+  Keep the same card styling and data source.                                                                                                                
+                                                                                                                                                             
+  Task 3: Add Recent Videos Section                                                                                                                          
+                                                                                                                                                           
+  Add the Recent Videos grid from the analytics page below the KPI cards and above the member table. Show up to 20 videos published this week with thumbnail,
+   title, member name, publish date, view count, and audit score/link.
+                                                                                                                                                             
+  Make this section collapsible (default expanded) so it doesn't overwhelm the page when the admin just wants the member table.                              
+   
+  Task 4: Combine All Filters                                                                                                                                
+                                                                                                                                                           
+  The unified page should have all filter options:                                                                                                           
+                                                                                                                                                           
+  - Search — by name, email, or YouTube handle (from members page)                                                                                           
+  - Tier filter — All / Foundations / Editing / Mastery (from members page)
+  - Subscription filter — All / Active / Past Due / Cancelled / No Subscription (from Stripe integration)                                                    
+  - Status filter — All / Active / At Risk / Inactive (from analytics page)                                                                                  
+                                                                                                                                                             
+  Filters should work together (e.g., show only "Mastery" tier + "At Risk" status + "Active" subscription).                                                  
+                                                                                                                                                             
+  Task 5: Merge the API                                                                                                                                      
+                                                                                                                                                           
+  The current /api/admin/members route returns basic member data. The /api/admin/analytics route returns engagement stats. Merge them so the members page    
+  gets everything in one call.                                                                                                                             
+                                                                                                                                                             
+  Either:                                                                                                                                                  
+  - Extend /api/admin/members to include the 7-day engagement stats (videos, clicks, conversions, tool uses, status) and the KPI card data
+  - Or have the members page call both endpoints and merge client-side                                                                                       
+                                                                      
+  The first option is cleaner. Include the KPI card data in the response as a summary object alongside the members array.                                    
+                                                                                                                                                             
+  Keep the "Refresh All Channels" button from the analytics page — add it next to the existing "Sync from GHL" button.                                       
+                                                                                                                                                             
+  Task 6: Update Sidebar                                                                                                                                     
+                                                                                                                                                           
+  In the admin sidebar (src/components/Sidebar.tsx), remove the "Member Analytics" nav item. Keep only "Members" (or rename "Foundations Members" to just    
+  "Members").
+                                                                                                                                                             
+  Add a redirect: /admin/analytics → /admin/members so any bookmarks still work.                                                                             
+   
+  Important Notes                                                                                                                                            
+                                                                                                                                                           
+  - The analytics page had its own member detail page at /admin/analytics/members/[id]. Don't delete it yet — we'll merge the detail pages in the next       
+  prompt.                                                                                                                                                  
+  - The member table should be sortable by any column (the analytics page already had sorting — carry that over).                                            
+  - Pagination from the analytics page (20 per page) should apply to the unified table.                                                                      
+  - Keep all existing functionality from both pages — nothing should be lost in the merge.                                                                   
+  - Canadian spelling throughout. 

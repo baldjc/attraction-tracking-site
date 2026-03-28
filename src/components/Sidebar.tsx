@@ -10,7 +10,6 @@ import {
   ClipboardDocumentListIcon,
   ChatBubbleLeftRightIcon,
   LinkIcon,
-  ChartBarIcon,
   Cog6ToothIcon,
   StarIcon,
   BookOpenIcon,
@@ -50,7 +49,7 @@ interface SidebarProps {
 
 const adminLinks = [
   { href: "/admin", label: "Dashboard", icon: HomeIcon },
-  { href: "/admin/members", label: "Foundations Members", icon: UsersIcon },
+  { href: "/admin/members", label: "Members", icon: UsersIcon },
   { href: "/admin/audits", label: "Audits", icon: ClipboardDocumentListIcon },
   { href: "/admin/qa-prep", label: "Q&A Prep", icon: ChatBubbleLeftRightIcon },
   { href: "/admin/academy", label: "Academy", icon: AcademicCapIcon },
@@ -58,7 +57,6 @@ const adminLinks = [
   { href: "/admin/ai-tools", label: "AI Tools", icon: SparklesIcon },
   { href: "/admin/hire", label: "Hire a Human", icon: UserGroupIcon, badgeKey: "hireWaitlist" },
   { href: "/admin/generate-leads", label: "Generate Leads", icon: RocketLaunchIcon },
-  { href: "/admin/analytics", label: "Member Analytics", icon: ChartBarIcon },
   { href: "/admin/settings", label: "Settings", icon: Cog6ToothIcon },
 ];
 
