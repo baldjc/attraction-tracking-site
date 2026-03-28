@@ -3,7 +3,7 @@ import { ReactNode } from "react";
 interface PageHeaderProps {
   emoji: string;
   title: string;
-  description: string;
+  description?: string;
   action?: ReactNode;
 }
 
@@ -15,7 +15,7 @@ export default function PageHeader({ emoji, title, description, action }: PageHe
         <h1 className="text-2xl font-bold text-[#2f3437] dark:text-white flex-1">{title}</h1>
         {action}
       </div>
-      <p className="text-sm text-[#2f3437]/55 dark:text-white/50">{description}</p>
+      {description && <p className="text-sm text-[#2f3437]/55 dark:text-white/50">{description}</p>}
     </div>
   );
 }

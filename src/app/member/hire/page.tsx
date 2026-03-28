@@ -221,7 +221,6 @@ export default function HireAHumanPage() {
           <PageHeader
             emoji="🤝"
             title="Hire a Human"
-            description="Get the right people doing the things they're better at than you are."
           />
 
           <p className="text-2xl font-bold text-[#2f3437] dark:text-white leading-snug max-w-2xl mb-6">
