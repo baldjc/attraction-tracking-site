@@ -6,7 +6,7 @@ import { ARC_MASTER_SYSTEM_PROMPT } from "@/lib/arc-script-builder-prompt";
 
 export default function AdminArcScriptBuilderPage() {
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6">
+    <div className="max-w-2xl mx-auto">
       <PromptEditor
         toolKey="prompt_arc_script_builder"
         defaultPrompt={ARC_MASTER_SYSTEM_PROMPT}

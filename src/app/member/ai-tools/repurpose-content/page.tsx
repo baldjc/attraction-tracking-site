@@ -650,7 +650,7 @@ export default function RepurposeContentPage() {
 
   if (isSetup === null) {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-6">
+      <div className="max-w-2xl mx-auto">
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-[#2f3437] dark:text-white">♻️ Repurpose Content</h1>
           <p className="text-[#2f3437]/60 dark:text-white/60 mt-1">Turn your video transcript into multiple content formats</p>
@@ -663,7 +663,7 @@ export default function RepurposeContentPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6">
+    <div className="max-w-2xl mx-auto">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-[#2f3437] dark:text-white">♻️ Repurpose Content</h1>
         <p className="text-[#2f3437]/60 dark:text-white/60 mt-1">Turn your video transcript into a newsletter, LinkedIn article, Facebook post, blog post, or neighbourhood postcard</p>

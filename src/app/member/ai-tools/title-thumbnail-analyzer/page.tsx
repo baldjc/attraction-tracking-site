@@ -383,7 +383,7 @@ export default function TitleThumbnailAnalyzerPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6">
+    <div className="max-w-2xl mx-auto">
       <div className="mb-5">
         <Link
           href="/member/ai-tools"

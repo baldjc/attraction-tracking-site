@@ -88,7 +88,7 @@ export default async function AIToolsUsagePage() {
   const recentFeed = conversations.slice(0, 30);
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-6 space-y-8">
+    <div className="max-w-5xl space-y-8">
       <div>
         <Link
           href="/admin/ai-tools"

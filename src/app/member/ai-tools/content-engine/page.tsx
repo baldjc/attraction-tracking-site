@@ -53,16 +53,16 @@ export default function ContentEnginePage() {
 
   if (state === "loading") {
     return (
-      <div className="min-h-screen bg-[#f7f6f3] flex items-center justify-center">
-        <div className="text-[#2f3437]/40 text-sm animate-pulse">Loading Content Engine...</div>
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="text-[#2f3437]/40 dark:text-white/30 text-sm animate-pulse">Loading Content Engine...</div>
       </div>
     );
   }
 
   if (state === "no-avatar") {
     return (
-      <div className="min-h-screen bg-[#f7f6f3] flex items-center justify-center p-4">
-        <div className="bg-white rounded-lg border border-[#2f3437]/10 p-8 max-w-sm w-full text-center">
+      <div className="flex items-center justify-center min-h-[50vh] p-4">
+        <div className="bg-white dark:bg-[#1a1a1a] rounded-lg border border-[#2f3437]/10 dark:border-white/10 p-8 max-w-sm w-full text-center">
           <p className="text-3xl mb-4">🎯</p>
           <h2 className="font-bold text-[#2f3437] text-lg mb-2">Build your avatar first</h2>
           <p className="text-sm text-[#2f3437]/60 mb-6">
@@ -81,7 +81,7 @@ export default function ContentEnginePage() {
 
   if (state === "niche-setup") {
     return (
-      <div className="min-h-screen bg-[#f7f6f3] flex items-center justify-center p-4">
+      <div className="flex items-center justify-center min-h-[50vh] p-4">
         <div className="w-full max-w-md">
           <NicheSetup
             onSaved={(niche, city) => {
@@ -97,17 +97,15 @@ export default function ContentEnginePage() {
   const themes = (avatarData?.contentThemes ?? []) as Array<unknown>;
 
   return (
-    <div className="min-h-screen bg-[#f7f6f3]">
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <ThemeDashboard
-          themes={themes as never}
-          niche={avatarData?.niche ?? null}
-          city={avatarData?.city ?? null}
-          hasImported={importedTotal > 0}
-          importedCount={importedTotal}
-          importedIdeas={importedIdeas}
-        />
-      </div>
+    <div className="max-w-4xl">
+      <ThemeDashboard
+        themes={themes as never}
+        niche={avatarData?.niche ?? null}
+        city={avatarData?.city ?? null}
+        hasImported={importedTotal > 0}
+        importedCount={importedTotal}
+        importedIdeas={importedIdeas}
+      />
     </div>
   );
 }

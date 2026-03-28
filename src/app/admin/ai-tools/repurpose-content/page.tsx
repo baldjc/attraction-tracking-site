@@ -8,7 +8,7 @@ import RepurposeContentPage from "@/app/member/ai-tools/repurpose-content/page";
 export default function AdminRepurposeContentPage() {
   return (
     <div>
-      <div className="max-w-2xl mx-auto px-4 pt-4 pb-0">
+      <div className="max-w-2xl mx-auto">
         <Link
           href="/admin/ai-tools"
           className="flex items-center gap-1.5 text-xs text-[#2f3437]/50 hover:text-[#6ba3c7] transition-colors"
