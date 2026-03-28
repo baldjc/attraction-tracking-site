@@ -1,0 +1,51 @@
+Redesign the Hire a Human page header. The current version has too much plain text
+  that reads like a blog post. We want something visually engaging that sells without  
+  feeling like a wall of copy.
+                                                                                       
+  Replace everything between the PageHeader and the packages section with this layout:
+
+  LAYER 1: PageHeader (already exists, keep as-is)                                     
+  Icon pill (purple) + "Hire a Human" bold heading
+                                                                                       
+  LAYER 2: Hero statement                                                           
+  Large, bold text — same weight/size as the other page headers' title but used for the
+   hook line:
+
+  "You didn't get to where you are only to spend your weekends and evenings editing    
+  videos."
+                                                                                       
+  This should feel like a pull quote — big, confident, takes up space intentionally.
+  Not paragraph text. Think billboard, not blog.
+
+  LAYER 3: Three punchy lines
+  Below the hero statement, three short lines with generous vertical spacing between
+  them (not a dense paragraph). Each line has one bold phrase that carries the weight —
+   the rest is regular weight:
+                                                                                       
+  Line 1: "You know what to say on camera. It's everything after you hit stop that  
+  kills your momentum."
+  Line 2: "One skipped week becomes two. Then a month. Then you're starting over."
+  Line 3: "The agents who grow fastest aren't better on camera — they just never stop  
+  publishing."
+                                                                                       
+  Style these as individual lines (not a <p> block), with ~16-20px of space between    
+  each. Text size should be smaller than the hero statement — body size, muted colour
+  (same grey as page subtitles on other pages). The bold phrases should be dark/full   
+  weight to pop against the muted surrounding text.                                 
+
+  Add a subtle left border accent (3px, purple #8B5CF6 at ~30% opacity) running along  
+  the left side of these three lines — similar to a blockquote. This visually separates
+   the hook from the packages below.                                                   
+                                                                                    
+  LAYER 4: Packages section
+  Starts immediately below with normal spacing. No extra dividers needed.
+                                                                                       
+  Delete all the old sales copy paragraphs between the header and packages.            
+                                                                                       
+  Spacing: PageHeader → hero: 24px. Hero → three lines: 24px. Between lines: 16px.     
+  Lines → packages: 32-40px. Packages should be partially visible on desktop without
+  scrolling.                                                                           
+                                                                                    
+  Dark mode: Hero text: text-[#2f3437] dark:text-white. Lines muted: text-[#2f3437]/60 
+  dark:text-white/60. Bold phrases: text-[#2f3437] dark:text-white. Left border:
+  #8B5CF6 at 30% opacity in both modes. 

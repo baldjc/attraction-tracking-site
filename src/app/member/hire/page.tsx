@@ -328,27 +328,35 @@ export default function HireAHumanPage() {
       <div className="space-y-8 max-w-7xl pb-12">
         {/* Header */}
         <div>
+          {/* Layer 1: PageHeader */}
           <PageHeader
             icon={UserGroupIcon}
             title="Hire a Human"
             description="Get the right people doing the things they're better at than you are."
             colour="#8B5CF6"
           />
-          <div className="space-y-3 max-w-2xl -mt-2">
-            <p className="text-sm leading-relaxed text-[#2f3437]/60 dark:text-white/50">
-              You didn&apos;t get to where you are only to spend your weekends and evenings editing videos.
+
+          {/* Layer 2: Hero statement */}
+          <p className="text-2xl font-bold text-[#2f3437] dark:text-white leading-snug max-w-2xl mb-6">
+            You didn&apos;t get to where you are only to spend your weekends and evenings editing videos.
+          </p>
+
+          {/* Layer 3: Three punchy lines */}
+          <div
+            className="pl-5 max-w-2xl"
+            style={{ borderLeft: "3px solid rgba(139,92,246,0.30)" }}
+          >
+            <p className="text-sm text-[#2f3437]/60 dark:text-white/60 leading-relaxed">
+              <span className="font-semibold text-[#2f3437] dark:text-white">You know what to say on camera.</span>{" "}
+              It&apos;s everything after you hit stop that kills your momentum.
             </p>
-            <p className="text-sm leading-relaxed text-[#2f3437]/60 dark:text-white/50">
-              The biggest thing holding most agents back from consistent content isn&apos;t strategy — it&apos;s everything that comes after you hit record. The editing, the thumbnails, the SEO, the publishing. That&apos;s where the procrastination creeps in, and that&apos;s where your content calendar dies.
+            <p className="text-sm text-[#2f3437]/60 dark:text-white/60 leading-relaxed mt-4">
+              <span className="font-semibold text-[#2f3437] dark:text-white">One skipped week becomes two.</span>{" "}
+              Then a month. Then you&apos;re starting over.
             </p>
-            <p className="text-sm leading-relaxed text-[#2f3437]/60 dark:text-white/50">
-              The most successful agents we work with figured out the same thing:{" "}
-              <span className="font-semibold text-[#2f3437]/80 dark:text-white/75">
-                you don&apos;t need to do it all yourself — you need the right people doing the things they&apos;re better at than you are.
-              </span>
-            </p>
-            <p className="text-sm leading-relaxed text-[#2f3437]/60 dark:text-white/50">
-              That&apos;s what Hire a Human is. You keep doing what only you can do — showing up on camera with your expertise and your personality. We handle everything else.
+            <p className="text-sm text-[#2f3437]/60 dark:text-white/60 leading-relaxed mt-4">
+              The agents who grow fastest aren&apos;t better on camera —{" "}
+              <span className="font-semibold text-[#2f3437] dark:text-white">they just never stop publishing.</span>
             </p>
           </div>
         </div>
