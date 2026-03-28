@@ -1,0 +1,344 @@
+We're building the DB-backed "Hire a Human" feature. There's already a hardcoded member page at src/app/member/hire/page.tsx — we're replacing it with a dynamic version that reads from the database, plus building an admin CRUD page.
+
+
+=== STEP 1: PRISMA SCHEMA ===
+
+Add these two models to prisma/schema.prisma:
+
+model ServiceCategory {
+  id            String   @id @default(uuid())
+  name          String
+  slug          String   @unique
+  description   String?
+  icon          String   @default("PuzzlePieceIcon")
+  accentColour  String   @default("blue")
+  sortOrder     Int      @default(0)
+  published     Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  packages      ServicePackage[]
+
+  @@map("service_categories")
+}
+
+model ServicePackage {
+  id                String   @id @default(uuid())
+  categoryId        String
+  name              String
+  price             String
+  priceNote         String?
+  badge             String?
+  subtitle          String?
+  features          Json     @default("[]")
+  highlightFeatures Json?
+  stripeUrl         String?
+  sortOrder         Int      @default(0)
+  published         Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  category          ServiceCategory @relation(fields: [categoryId], references: [id])
+
+  @@map("service_packages")
+}
+
+Run: npx prisma migrate dev --name add-service-categories-packages
+
+
+=== STEP 2: SEED DATA ===
+
+Create a seed script at prisma/seed-services.ts (separate from main seed). Run it once after migration.
+
+Here is the EXACT seed data to insert. Use upsert on slug/name so it's idempotent.
+
+CATEGORY 1: Attraction Editing
+- slug: "editing"
+- icon: "FilmIcon"
+- accentColour: "blue"
+- description: "Stop spending 4-6 hours editing every video. Hand us the raw footage and get back a polished, publish-ready video."
+- sortOrder: 1
+- published: true
+
+Packages (all under "editing" category):
+
+1. name: "2 Video Package"
+   price: "$500/mo", priceNote: "USD", sortOrder: 1
+   features: ["Professional editing by ABV team", "Music and asset licensing", "Graphics, titles, and b-roll", "Upload to Frame.io for review", "2-3 revisions per video", "Onboarding call to customise to your brand"]
+   stripeUrl: "https://buy.stripe.com/9B67sLcWv9ojf4RcLp0Ny0k"
+
+2. name: "2 Video + Jared"
+   price: "$800/mo", priceNote: "USD", badge: "+ Jared's Feedback", sortOrder: 2
+   features: ["Professional editing by ABV team", "Music and asset licensing", "Graphics, titles, and b-roll", "Upload to Frame.io for review", "2-3 revisions per video", "Onboarding call to customise to your brand"]
+   highlightFeatures: ["Comprehensive review of shooting, setup, and delivery", "Editing suggestions delivered in Frame.io", "Ideas for future content improvements", "15-minute coaching call"]
+   stripeUrl: "https://buy.stripe.com/bJeeVd4pZdEzcWJbHl0Ny0l"
+
+3. name: "4 Video Package"
+   price: "$1,000/mo", priceNote: "USD", sortOrder: 3
+   features: ["Professional editing by ABV team", "Music and asset licensing", "Graphics, titles, and b-roll", "Upload to Frame.io for review", "2-3 revisions per video", "Onboarding call to customise to your brand"]
+   stripeUrl: "https://buy.stripe.com/14AaEXe0zfMHaOB26L0Ny0m"
+
+4. name: "4 Video + Jared"
+   price: "$1,500/mo", priceNote: "USD", badge: "+ Jared's Feedback", sortOrder: 4
+   features: ["Professional editing by ABV team", "Music and asset licensing", "Graphics, titles, and b-roll", "Upload to Frame.io for review", "2-3 revisions per video", "Onboarding call to customise to your brand"]
+   highlightFeatures: ["Comprehensive review of shooting, setup, and delivery", "Editing suggestions delivered in Frame.io", "Ideas for future content improvements", "15-minute coaching call"]
+   stripeUrl: "https://buy.stripe.com/28EfZh8Gf2ZVf4ReTx0Ny0n"
+
+
+CATEGORY 2: Attraction Mastery
+- slug: "mastery"
+- icon: "RocketLaunchIcon"
+- accentColour: "slate"
+- description: "The full system built with you. Everything in Editing plus strategy, funnels, coaching, and implementation — all under one monthly investment."
+- sortOrder: 2
+- published: true
+
+Packages:
+
+1. name: "Mastery 2"
+   price: "$2,495/mo", priceNote: "USD", subtitle: "2 long-form video edits/mo", sortOrder: 1
+   highlightFeatures: ["2 long-form video edits per month", "1 full funnel built at launch"]
+   features: ["Foundational Membership Benefits included", "1 new funnel every 90 days", "Custom thumbnails per video", "GoHighLevel account (lead capture, follow-up, pipeline)", "Title & thumbnail review via Slack (1-1 with Jared)", "Priority Slack responses", "Every video scored & reviewed", "Strategy call with Jared (30 min) — 1/month"]
+   stripeUrl: "https://buy.stripe.com/aFa8wP7Cb9ojf4R5iX0Ny0q"
+
+2. name: "Mastery 4"
+   price: "$3,495/mo", priceNote: "USD", subtitle: "4 long-form video edits/mo", badge: "Most Comprehensive", sortOrder: 2
+   highlightFeatures: ["4 long-form video edits per month", "2 full funnels built at launch"]
+   features: ["Foundational Membership Benefits included", "1 new funnel every 90 days", "Custom thumbnails per video", "GoHighLevel account (lead capture, follow-up, pipeline)", "Title & thumbnail review via Slack (1-1 with Jared)", "Priority Slack responses", "Every video scored & reviewed", "Strategy call with Jared (30 min) — 1/month"]
+   stripeUrl: "https://buy.stripe.com/fZu7sLg8HcAvg8VbHl0Ny0r"
+
+
+CATEGORY 3: Ultimate Mastery
+- slug: "ultimate"
+- icon: "SparklesIcon"
+- accentColour: "purple"
+- description: "You show up, film, and close deals. We do literally everything else."
+- sortOrder: 3
+- published: true
+
+Packages:
+
+1. name: "Ultimate Mastery"
+   price: "$4,999/mo", priceNote: "USD", badge: "Full Service", sortOrder: 1
+   highlightFeatures: ["4 long-form video edits per month", "2 full funnels built at launch", "Ready-to-film scripts researched and written for you"]
+   features: ["Everything in Mastery 4 included", "2 lead magnet funnels built per month", "Local market research — what's ranking and trending in your city", "SEO-optimised descriptions and tags for every video", "A/B thumbnail variants per video", "Ongoing content calendar management and updates", "Strategy session with Jared (60 min) — every 2 weeks", "Quarterly 16-principle channel audit with written report", "Priority everything — fastest turnaround, same-day responses", "Community post and pinned comment strategy written and scheduled"]
+   stripeUrl: null
+
+
+CATEGORY 4: Add-Ons
+- slug: "add-ons"
+- icon: "PuzzlePieceIcon"
+- accentColour: "gray"
+- description: "Available extras to complement your package."
+- sortOrder: 4
+- published: true
+
+Packages:
+
+1. name: "Custom Thumbnails"
+   price: "$100 – $150", subtitle: "$100 with Editing/Mastery, $150 standalone", sortOrder: 1
+   features: ["Professional, click-worthy thumbnails designed for your brand and audience"]
+   stripeUrl: null
+
+2. name: "Lead Magnet Creation"
+   price: "~$1,000 USD", sortOrder: 2
+   features: ["Buyer guides, relocation guides, market reports, or any PDF built for your market", "Includes writing, design, and delivery setup"]
+   stripeUrl: null
+
+3. name: "Rush Funnel"
+   price: "$950", subtitle: "Available to Mastery members only", sortOrder: 3
+   features: ["Need a funnel faster than the 90-day cadence? We'll build it on a priority timeline"]
+   stripeUrl: null
+
+
+=== STEP 3: API ROUTES ===
+
+Create these API routes:
+
+--- Member API ---
+
+GET /api/member/hire/categories
+- Auth required (session check)
+- Returns all published categories with their published packages
+- Ordered by category.sortOrder, then package.sortOrder
+- Response shape:
+  {
+    categories: [
+      {
+        id, name, slug, description, icon, accentColour, sortOrder,
+        packages: [
+          { id, name, price, priceNote, badge, subtitle, features, highlightFeatures, stripeUrl, sortOrder }
+        ]
+      }
+    ]
+  }
+
+
+--- Admin API ---
+
+GET /api/admin/hire/categories
+- Admin auth required
+- Returns ALL categories (including unpublished) with ALL packages (including unpublished)
+- Same shape as member API but with published field included
+
+POST /api/admin/hire/categories
+- Create a new category
+- Body: { name, slug, description?, icon?, accentColour? }
+- Auto-set sortOrder to max + 1
+- Returns the created category
+
+PUT /api/admin/hire/categories/[id]
+- Update category fields
+- Body: any subset of { name, slug, description, icon, accentColour, sortOrder, published }
+- Returns updated category
+
+DELETE /api/admin/hire/categories/[id]
+- Delete a category
+- FAIL with 400 if it has any packages (force admin to delete packages first)
+- Returns { success: true }
+
+POST /api/admin/hire/packages
+- Create a new package
+- Body: { categoryId, name, price, priceNote?, badge?, subtitle?, features, highlightFeatures?, stripeUrl? }
+- Auto-set sortOrder to max within category + 1
+- Returns created package
+
+PUT /api/admin/hire/packages/[id]
+- Update package fields
+- Body: any subset of { categoryId, name, price, priceNote, badge, subtitle, features, highlightFeatures, stripeUrl, sortOrder, published }
+- Returns updated package
+
+DELETE /api/admin/hire/packages/[id]
+- Delete a package
+- Returns { success: true }
+
+PUT /api/admin/hire/reorder
+- Reorder categories OR packages
+- Body: { type: "category" | "package", items: [{ id, sortOrder }] }
+- Updates sortOrder for each item
+- Returns { success: true }
+
+
+=== STEP 4: MEMBER PAGE (REPLACE EXISTING) ===
+
+Replace the existing hardcoded src/app/member/hire/page.tsx with a dynamic version.
+
+Make it a "use client" component that fetches from GET /api/member/hire/categories on mount.
+
+The page layout stays the same as current:
+- Hero section at top with UserGroupIcon, "Hire a Human" title, subtitle
+- Each category renders as a section with icon + name header + description
+- Packages render as cards in a responsive grid (2 columns on desktop, 1 on mobile)
+
+Card styling rules based on accentColour:
+
+"blue" (Editing):
+- Border: border-[#eaeaea] (standard)
+- Highlight check icons: amber (for Jared's feedback packages with highlightFeatures)
+- CTA button: bg-[#6ba3c7] hover:bg-[#5490b5]
+- Badge: bg-amber-100 text-amber-700
+
+"slate" (Mastery):
+- Border: border-2 border-slate-200 dark:border-slate-600/40
+- "Includes everything in Editing, plus:" callout box: bg-slate-50 border-slate-200
+- Highlight check icons: text-slate-600
+- CTA button: bg-slate-800 hover:bg-slate-900
+- Badge: bg-slate-100 text-slate-700
+
+"purple" (Ultimate):
+- Border: border-2 border-purple-200 dark:border-purple-700/40
+- "Includes everything in Mastery 4, plus:" callout box: bg-purple-50 border-purple-200
+- Highlight check icons: text-purple-600
+- CTA button: bg-purple-700 hover:bg-purple-800
+- Badge: bg-purple-100 text-purple-700
+
+"gray" (Add-Ons):
+- Smaller cards, simpler layout
+- No CTA button if stripeUrl is null — show "Message us to get started" text with ChatBubbleLeftRightIcon instead
+
+For any accentColour not in the above list, fall back to the "blue" styling.
+
+All cards show:
+- Package name (bold, large)
+- Badge as a pill in the top-right if present
+- Subtitle under the name if present
+- Price displayed large and bold, with priceNote smaller beside it
+- highlightFeatures (if present) as bold text with accent-coloured check icons
+- features as normal text with green check icons
+- CTA: if stripeUrl exists, "Get Started" button opening stripeUrl in new tab. If stripeUrl is null, show "Message us to get started" text.
+
+Show a loading skeleton while fetching. If no categories returned, show an empty state.
+
+Important: Use the icon NAME from the database (e.g. "FilmIcon", "RocketLaunchIcon") to render the actual Heroicon component. Create a simple icon mapping object at the top of the file:
+
+const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+  FilmIcon,
+  RocketLaunchIcon,
+  SparklesIcon,
+  PuzzlePieceIcon,
+  UserGroupIcon,
+  AcademicCapIcon,
+  // add more as needed
+};
+
+Then look up the icon: const IconComponent = ICON_MAP[category.icon] || PuzzlePieceIcon;
+
+
+=== STEP 5: ADMIN PAGE ===
+
+Create src/app/admin/hire/page.tsx — the admin CRUD page for managing categories and packages.
+
+Add "Hire a Human" to the admin sidebar in src/components/Sidebar.tsx in the adminLinks array. Use UserGroupIcon. Place it after the existing AI Tools link and before Campaigns. The href should be "/admin/hire".
+
+The admin page should follow the same UI patterns as the Academy Manager page (src/app/admin/academy-manager/page.tsx). Look at that file for styling reference — card-based layout, inline editing, modals for create/edit.
+
+Layout:
+- Page title: "Hire a Human Manager"
+- Subtitle: "Manage service categories and packages"
+- "Add Category" button at the top
+
+Each category shows as an expandable card/section:
+- Category header row showing: name, slug, icon name, accentColour, published toggle, edit button, delete button
+- Sort order arrows (up/down) to reorder categories
+- When expanded: shows all packages within that category
+- "Add Package" button within each category
+
+Each package shows as a row/card within its category:
+- Name, price, badge (if any), published toggle, edit button, delete button
+- Sort order arrows to reorder within category
+
+Edit/Create modals:
+
+Category modal fields:
+- Name (text input)
+- Slug (text input, auto-generated from name on create)
+- Description (textarea)
+- Icon (text input — type the Heroicon name, e.g. "FilmIcon")
+- Accent Colour (dropdown: blue, slate, purple, gray, amber, green, red)
+- Published (checkbox)
+
+Package modal fields:
+- Name (text input)
+- Price (text input, e.g. "$500/mo")
+- Price Note (text input, e.g. "USD")
+- Badge (text input, optional)
+- Subtitle (text input, optional)
+- Features (textarea — one feature per line, stored as JSON array)
+- Highlight Features (textarea — one per line, optional, stored as JSON array)
+- Stripe URL (text input, optional — leave empty for "Message Us" CTA)
+- Published (checkbox)
+
+Delete confirmation:
+- Categories: show confirmation dialog, fail if category has packages (show error message telling admin to delete packages first)
+- Packages: show confirmation dialog, delete on confirm
+
+The admin page should refetch data after any create/update/delete operation.
+
+
+=== STEP 6: VERIFY ===
+
+After building everything:
+1. Run the seed script to populate initial data
+2. Check the member page at /member/hire — should show all 4 categories with their packages, matching the current hardcoded design but now reading from DB
+3. Check the admin page at /admin/hire — should show all categories and packages with full CRUD
+4. Test: edit a package price in admin, verify it shows the new price on the member page
+5. Test: toggle a package to unpublished in admin, verify it disappears from member page
+6. Test: create a new category and package in admin, verify it appears on member page

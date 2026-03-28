@@ -589,3 +589,39 @@ model MemberHomework {
   @@unique([userId, lessonId])
   @@map("member_homework")
 }
+
+model ServiceCategory {
+  id           String   @id @default(uuid())
+  name         String
+  slug         String   @unique
+  description  String?
+  icon         String   @default("PuzzlePieceIcon")
+  accentColour String   @default("blue")
+  sortOrder    Int      @default(0)
+  published    Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  packages     ServicePackage[]
+
+  @@map("service_categories")
+}
+
+model ServicePackage {
+  id                String   @id @default(uuid())
+  categoryId        String
+  name              String
+  price             String
+  priceNote         String?
+  badge             String?
+  subtitle          String?
+  features          Json     @default("[]")
+  highlightFeatures Json?
+  stripeUrl         String?
+  sortOrder         Int      @default(0)
+  published         Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  category          ServiceCategory @relation(fields: [categoryId], references: [id])
+
+  @@map("service_packages")
+}
