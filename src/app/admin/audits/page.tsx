@@ -517,10 +517,11 @@ export default function AuditsPage() {
                 <tr><td colSpan={5} className="px-6 py-12 text-center text-[#2f3437]/40">No audits found.</td></tr>
               ) : filtered.map((a) => {
                 const isSingleVideo = a.auditType === "single_video";
-                const videoId = a.youtubeVideoId;
-                const videoTitle = (a.videosAnalysed as any)?.[0]?.title ?? null;
-                const thumbUrl = videoId
-                  ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`
+                const firstVideo = (a.videosAnalysed as any)?.[0] ?? null;
+                const videoYtId = firstVideo?.videoId ?? null;
+                const videoTitle = firstVideo?.title ?? null;
+                const thumbUrl = videoYtId
+                  ? `https://img.youtube.com/vi/${videoYtId}/mqdefault.jpg`
                   : null;
                 const channelThumb = a.user?.youtubeChannelThumbnail ?? null;
 
