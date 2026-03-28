@@ -38,6 +38,7 @@ export async function GET() {
         features: p.features,
         highlightFeatures: p.highlightFeatures,
         stripeUrl: p.stripeUrl,
+        waitlist: p.waitlist,
         sortOrder: p.sortOrder,
       })),
     })),

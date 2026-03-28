@@ -56,7 +56,7 @@ const adminLinks = [
   { href: "/admin/academy", label: "Academy", icon: AcademicCapIcon },
   { href: "/admin/academy-manager", label: "Academy Manager", icon: WrenchScrewdriverIcon, badgeKey: "qaCallsPending" },
   { href: "/admin/ai-tools", label: "AI Tools", icon: SparklesIcon },
-  { href: "/admin/hire", label: "Hire a Human", icon: UserGroupIcon },
+  { href: "/admin/hire", label: "Hire a Human", icon: UserGroupIcon, badgeKey: "hireWaitlist" },
   { href: "/admin/generate-leads", label: "Generate Leads", icon: RocketLaunchIcon },
   { href: "/admin/analytics", label: "Member Analytics", icon: ChartBarIcon },
   { href: "/admin/settings", label: "Settings", icon: Cog6ToothIcon },
@@ -93,6 +93,7 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
   const [impersonate, setImpersonate] = useState<ImpersonateState | null>(null);
   const [showSwitch, setShowSwitch] = useState(false);
   const [qaCallsPending, setQaCallsPending] = useState(0);
+  const [hireWaitlist, setHireWaitlist] = useState(0);
 
   const isStaff = role === "admin" || role === "editor";
   const isImpersonating = !!impersonate;
@@ -102,6 +103,10 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
       fetch("/api/admin/resources/review-queue?status=pending")
         .then((r) => r.ok ? r.json() : null)
         .then((d) => d && setQaCallsPending(d.entries?.length ?? 0))
+        .catch(() => {});
+      fetch("/api/admin/hire/waitlist/count")
+        .then((r) => r.ok ? r.json() : null)
+        .then((d) => d && setHireWaitlist(d.count ?? 0))
         .catch(() => {});
     }
   }, [role, pathname]);
@@ -231,7 +236,7 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
 
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
         {(() => {
-          const badges: Record<string, number> = { qaCallsPending };
+          const badges: Record<string, number> = { qaCallsPending, hireWaitlist };
           const renderedSections = new Set<string>();
           return links.map((link) => {
             const Icon = link.icon;

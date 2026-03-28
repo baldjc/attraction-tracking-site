@@ -15,7 +15,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
   const { id } = await params;
   const body = await req.json();
-  const { categoryId, name, price, priceNote, badge, subtitle, features, highlightFeatures, stripeUrl, sortOrder, published } = body;
+  const { categoryId, name, price, priceNote, badge, subtitle, features, highlightFeatures, stripeUrl, waitlist, sortOrder, published } = body;
 
   const pkg = await prisma.servicePackage.update({
     where: { id },
@@ -29,6 +29,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       ...(features !== undefined && { features }),
       ...(highlightFeatures !== undefined && { highlightFeatures: highlightFeatures && highlightFeatures.length > 0 ? highlightFeatures : null }),
       ...(stripeUrl !== undefined && { stripeUrl }),
+      ...(waitlist !== undefined && { waitlist }),
       ...(sortOrder !== undefined && { sortOrder }),
       ...(published !== undefined && { published }),
     },

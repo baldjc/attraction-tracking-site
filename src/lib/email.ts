@@ -75,3 +75,62 @@ export async function sendLoginCode(to: string, code: string, name?: string | nu
     throw new Error("Failed to send email");
   }
 }
+
+export async function sendWaitlistNotification(
+  memberName: string,
+  memberEmail: string,
+  packageName: string,
+  categoryName: string
+) {
+  const { error } = await resend.emails.send({
+    from: FROM_EMAIL,
+    to: "jared@attractionbyvideo.com",
+    subject: `New Waitlist Request — ${packageName}`,
+    html: `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /></head>
+<body style="margin:0;padding:0;background:#f1f1ef;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f1ef;padding:40px 16px;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;">
+          <tr>
+            <td align="center" style="padding-bottom:32px;">
+              <div style="display:inline-block;background:#1e2a38;border-radius:16px;padding:12px;">
+                <span style="font-size:28px;">📹</span>
+              </div>
+              <div style="margin-top:12px;font-size:18px;font-weight:700;color:#1e2a38;">Attraction by Video</div>
+            </td>
+          </tr>
+          <tr>
+            <td style="background:#ffffff;border-radius:16px;padding:40px 36px;border:1px solid #e5e7eb;">
+              <p style="margin:0 0 16px;font-size:15px;color:#1e2a38;font-weight:600;">New Waitlist Request</p>
+              <p style="margin:0 0 24px;font-size:15px;color:#374151;">
+                <strong>${memberName}</strong> (${memberEmail}) is interested in the <strong>${packageName}</strong> package (${categoryName}) and would like to learn more and join the waitlist.
+              </p>
+              <div style="background:#f1f1ef;border-radius:12px;padding:16px 20px;">
+                <p style="margin:0 0 6px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:#6b7280;">Package</p>
+                <p style="margin:0;font-size:15px;font-weight:700;color:#1e2a38;">${packageName}</p>
+                <p style="margin:4px 0 0;font-size:13px;color:#6b7280;">${categoryName}</p>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding-top:24px;">
+              <p style="margin:0;font-size:12px;color:#9ca3af;">© ${new Date().getFullYear()} Attraction by Video</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+    `.trim(),
+  });
+
+  if (error) {
+    console.error("[email] Failed to send waitlist notification:", error);
+  }
+}

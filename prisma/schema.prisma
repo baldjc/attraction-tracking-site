@@ -120,6 +120,7 @@ model User {
   workbookResponses    MemberWorkbookResponse[]
   lessonProgress       MemberLessonProgress[]
   homework             MemberHomework[]
+  waitlistEntries      ServiceWaitlistEntry[]
 
   @@map("users")
 }
@@ -617,11 +618,26 @@ model ServicePackage {
   features          Json     @default("[]")
   highlightFeatures Json?
   stripeUrl         String?
+  waitlist          Boolean  @default(false)
   sortOrder         Int      @default(0)
   published         Boolean  @default(true)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
   category          ServiceCategory @relation(fields: [categoryId], references: [id])
+  waitlistEntries   ServiceWaitlistEntry[]
 
   @@map("service_packages")
+}
+
+model ServiceWaitlistEntry {
+  id        String   @id @default(uuid())
+  packageId String
+  userId    String
+  message   String?
+  createdAt DateTime @default(now())
+  package   ServicePackage @relation(fields: [packageId], references: [id])
+  user      User           @relation(fields: [userId], references: [id])
+
+  @@unique([packageId, userId])
+  @@map("service_waitlist_entries")
 }

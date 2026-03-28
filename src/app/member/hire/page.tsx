@@ -11,6 +11,7 @@ import {
   ChatBubbleLeftRightIcon,
   UserGroupIcon,
   AcademicCapIcon,
+  ClockIcon,
 } from "@heroicons/react/24/outline";
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -32,6 +33,7 @@ interface Package {
   features: string[];
   highlightFeatures: string[] | null;
   stripeUrl: string | null;
+  waitlist: boolean;
   sortOrder: number;
 }
 
@@ -57,6 +59,7 @@ interface AccentConfig {
   badgeBg: string;
   badgeText: string;
   button: string;
+  waitlistBtn: string;
 }
 
 const ACCENT: Record<string, AccentConfig> = {
@@ -69,6 +72,7 @@ const ACCENT: Record<string, AccentConfig> = {
     badgeBg: "bg-amber-100 dark:bg-amber-900/30",
     badgeText: "text-amber-700 dark:text-amber-300",
     button: "bg-[#6ba3c7] hover:bg-[#5490b5] text-white",
+    waitlistBtn: "border border-[#6ba3c7] text-[#6ba3c7] hover:bg-[#6ba3c7]/5",
   },
   slate: {
     border: "border-2 border-slate-200 dark:border-slate-600/40",
@@ -79,6 +83,7 @@ const ACCENT: Record<string, AccentConfig> = {
     badgeBg: "bg-slate-100 dark:bg-slate-700/50",
     badgeText: "text-slate-700 dark:text-slate-200",
     button: "bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 text-white",
+    waitlistBtn: "border border-slate-600 text-slate-700 dark:border-slate-400 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/30",
   },
   purple: {
     border: "border-2 border-purple-200 dark:border-purple-700/40",
@@ -89,6 +94,7 @@ const ACCENT: Record<string, AccentConfig> = {
     badgeBg: "bg-purple-100 dark:bg-purple-800/40",
     badgeText: "text-purple-700 dark:text-purple-200",
     button: "bg-purple-700 hover:bg-purple-800 dark:bg-purple-600 dark:hover:bg-purple-500 text-white",
+    waitlistBtn: "border border-purple-500 text-purple-700 dark:border-purple-400 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/10",
   },
   gray: {
     border: "border border-[#eaeaea] dark:border-white/10",
@@ -99,6 +105,7 @@ const ACCENT: Record<string, AccentConfig> = {
     badgeBg: "bg-gray-100 dark:bg-gray-700/50",
     badgeText: "text-gray-700 dark:text-gray-200",
     button: "bg-[#6ba3c7] hover:bg-[#5490b5] text-white",
+    waitlistBtn: "border border-[#6ba3c7] text-[#6ba3c7] hover:bg-[#6ba3c7]/5",
   },
 };
 
@@ -108,10 +115,27 @@ function getAccent(colour: string): AccentConfig {
 
 // ── Package Card ──────────────────────────────────────────────
 
-function PackageCard({ pkg, accentColour }: { pkg: Package; accentColour: string }) {
+function PackageCard({
+  pkg,
+  accentColour,
+  onWaitlist,
+  onJoinWaitlist,
+}: {
+  pkg: Package;
+  accentColour: string;
+  onWaitlist: boolean;
+  onJoinWaitlist: (id: string) => Promise<void>;
+}) {
   const accent = getAccent(accentColour);
   const isGray = accentColour === "gray";
   const hasCallout = !isGray && accent.calloutBg && pkg.highlightFeatures && pkg.highlightFeatures.length > 0;
+  const [joining, setJoining] = useState(false);
+
+  async function handleJoin() {
+    setJoining(true);
+    await onJoinWaitlist(pkg.id);
+    setJoining(false);
+  }
 
   return (
     <div className={`bg-white dark:bg-[#1a2433] rounded-xl ${accent.border} overflow-hidden flex flex-col relative`}>
@@ -125,7 +149,7 @@ function PackageCard({ pkg, accentColour }: { pkg: Package; accentColour: string
       )}
 
       <div className={`px-6 pt-6 ${isGray ? "pb-3" : "pb-4"}`}>
-        <h3 className={`font-bold text-[#2f3437] dark:text-white ${isGray ? "text-sm" : "text-lg"}`}>{pkg.name}</h3>
+        <h3 className={`font-bold text-[#2f3437] dark:text-white ${isGray ? "text-sm" : "text-lg"} ${pkg.badge ? "pr-28" : ""}`}>{pkg.name}</h3>
         {pkg.subtitle && (
           <p className="text-sm text-[#2f3437]/50 dark:text-white/40 mt-0.5">{pkg.subtitle}</p>
         )}
@@ -137,7 +161,7 @@ function PackageCard({ pkg, accentColour }: { pkg: Package; accentColour: string
         </p>
       </div>
 
-      {/* Callout box for highlight features (slate/purple) */}
+      {/* Callout box */}
       {hasCallout && (
         <div className={`mx-6 px-3 py-2 rounded-lg ${accent.calloutBg} ${accent.calloutBorder} mb-4`}>
           <p className={`text-xs font-medium ${accent.calloutText}`}>
@@ -179,7 +203,31 @@ function PackageCard({ pkg, accentColour }: { pkg: Package; accentColour: string
 
       {/* CTA */}
       <div className="px-6 pb-6">
-        {pkg.stripeUrl ? (
+        {/* Priority 1: waitlist=true */}
+        {pkg.waitlist ? (
+          onWaitlist ? (
+            <span className="flex items-center gap-2 w-full justify-center text-sm font-semibold py-3 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800/40 text-green-700 dark:text-green-400 cursor-default">
+              <CheckCircleIcon className="w-4 h-4" />
+              On Waitlist ✓
+            </span>
+          ) : (
+            <button
+              onClick={handleJoin}
+              disabled={joining}
+              className={`flex items-center justify-center gap-2 w-full font-bold text-sm py-3 rounded-lg transition-colors bg-transparent disabled:opacity-50 ${accent.waitlistBtn}`}
+            >
+              {joining ? (
+                "Joining…"
+              ) : (
+                <>
+                  <ClockIcon className="w-4 h-4" />
+                  Join Waitlist
+                </>
+              )}
+            </button>
+          )
+        ) : pkg.stripeUrl ? (
+          /* Priority 2: stripeUrl */
           <a
             href={pkg.stripeUrl}
             target="_blank"
@@ -190,6 +238,7 @@ function PackageCard({ pkg, accentColour }: { pkg: Package; accentColour: string
             <ArrowTopRightOnSquareIcon className="w-4 h-4" />
           </a>
         ) : (
+          /* Priority 3: message us */
           <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#6ba3c7]">
             <ChatBubbleLeftRightIcon className="w-3.5 h-3.5" />
             Message us to get started
@@ -205,13 +254,28 @@ function PackageCard({ pkg, accentColour }: { pkg: Package; accentColour: string
 export default function HireAHumanPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const [waitlistIds, setWaitlistIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    fetch("/api/member/hire/categories")
-      .then((r) => r.json())
-      .then((d) => setCategories(d.categories ?? []))
-      .finally(() => setLoading(false));
+    Promise.all([
+      fetch("/api/member/hire/categories").then((r) => r.ok ? r.json() : { categories: [] }),
+      fetch("/api/member/hire/waitlist").then((r) => r.ok ? r.json() : { packageIds: [] }),
+    ]).then(([catData, wlData]) => {
+      setCategories(catData.categories ?? []);
+      setWaitlistIds(new Set(wlData.packageIds ?? []));
+    }).catch(() => {}).finally(() => setLoading(false));
   }, []);
+
+  async function handleJoinWaitlist(packageId: string) {
+    const res = await fetch("/api/member/hire/waitlist", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ packageId }),
+    });
+    if (res.ok) {
+      setWaitlistIds((prev) => new Set([...prev, packageId]));
+    }
+  }
 
   if (loading) {
     return (
@@ -278,7 +342,13 @@ export default function HireAHumanPage() {
             )}
             <div className={`grid gap-5 ${isGray ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-1 md:grid-cols-2"}`}>
               {category.packages.map((pkg) => (
-                <PackageCard key={pkg.id} pkg={pkg} accentColour={category.accentColour} />
+                <PackageCard
+                  key={pkg.id}
+                  pkg={pkg}
+                  accentColour={category.accentColour}
+                  onWaitlist={waitlistIds.has(pkg.id)}
+                  onJoinWaitlist={handleJoinWaitlist}
+                />
               ))}
             </div>
           </section>
