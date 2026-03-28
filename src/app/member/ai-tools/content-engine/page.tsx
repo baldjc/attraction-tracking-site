@@ -97,7 +97,7 @@ export default function ContentEnginePage() {
   const themes = (avatarData?.contentThemes ?? []) as Array<unknown>;
 
   return (
-    <div className="max-w-4xl">
+    <div className="max-w-4xl mx-auto">
       <ThemeDashboard
         themes={themes as never}
         niche={avatarData?.niche ?? null}
