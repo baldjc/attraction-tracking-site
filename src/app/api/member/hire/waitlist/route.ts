@@ -18,6 +18,7 @@ export async function GET() {
 }
 
 async function sendSlackNotification(memberName: string, memberEmail: string, packageName: string, categoryName: string) {
+  console.log("[hire] SLACK_WEBHOOK_URL:", process.env.SLACK_WEBHOOK_URL ? "SET" : "NOT SET");
   const webhookUrl = process.env.SLACK_WEBHOOK_URL;
   if (!webhookUrl) return;
   try {
