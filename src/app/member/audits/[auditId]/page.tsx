@@ -178,7 +178,7 @@ export default function MemberAuditReportPage() {
                     {val.evidence && <p className="italic">{val.evidence}</p>}
                     {principlesWithLessons.has(toAcademySlug(key)) && (
                       <Link
-                        href={`/member/academy/principles?tag=${toAcademySlug(key)}`}
+                        href={`/member/academy?tab=browse&tag=${toAcademySlug(key)}`}
                         className="inline-block font-semibold text-[#6ba3c7] hover:underline"
                       >
                         See lessons →
@@ -235,7 +235,7 @@ export default function MemberAuditReportPage() {
                 </div>
                 {principlesWithLessons.has(toAcademySlug(key)) ? (
                   <Link
-                    href={`/member/academy/principles?tag=${toAcademySlug(key)}`}
+                    href={`/member/academy?tab=browse&tag=${toAcademySlug(key)}`}
                     className="text-xs text-[#6ba3c7] font-semibold hover:underline shrink-0"
                   >
                     See lessons →

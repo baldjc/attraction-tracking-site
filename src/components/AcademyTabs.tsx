@@ -394,9 +394,10 @@ function BrowseTab({
   onPlay: (e: Entry) => void;
   onSaved: (id: string, saved: boolean) => void;
 }) {
+  const searchParams = useSearchParams();
   const [entries, setEntries] = useState<Entry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [principle, setPrinciple] = useState<string | null>(null);
+  const [principle, setPrinciple] = useState<string | null>(searchParams.get("tag") ?? null);
   const [sourceType, setSourceType] = useState<"" | "foundations_lesson" | "qa_call">("");
 
   const load = useCallback(async () => {

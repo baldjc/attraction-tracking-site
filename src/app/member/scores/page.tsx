@@ -342,7 +342,7 @@ export default function MemberScoresPage() {
                       <td className={`${tdClass} text-xs`}>
                         {principlesWithLessons.has(toAcademySlug(key)) ? (
                           <Link
-                            href={`/member/academy/principles?tag=${toAcademySlug(key)}`}
+                            href={`/member/academy?tab=browse&tag=${toAcademySlug(key)}`}
                             className="text-[#6ba3c7] hover:underline font-medium"
                           >
                             See lessons →
@@ -437,7 +437,7 @@ export default function MemberScoresPage() {
                     <td className={`${tdClass} text-xs`}>
                       {principlesWithLessons.has(toAcademySlug(key)) ? (
                         <Link
-                          href={`/member/academy/principles?tag=${toAcademySlug(key)}`}
+                          href={`/member/academy?tab=browse&tag=${toAcademySlug(key)}`}
                           className="text-[#6ba3c7] font-semibold hover:underline"
                         >
                           See lessons →
