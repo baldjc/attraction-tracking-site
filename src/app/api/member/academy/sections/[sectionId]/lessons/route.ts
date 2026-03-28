@@ -27,6 +27,7 @@ export async function GET(
       id: true,
       title: true,
       slug: true,
+      description: true,
       youtubeUrl: true,
       sortOrder: true,
       principleTags: true,

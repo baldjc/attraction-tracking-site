@@ -108,7 +108,7 @@ async function main() {
       aiToolLink: null,
       aiToolLabel: null,
     },
-    update: { title: "Your Why — Workbook", sortOrder: 1 },
+    update: { title: "Your Why — Workbook", sortOrder: 1, description: "Define your purpose, set commitment boundaries, and build accountability before diving into content creation." },
   });
 
   // Section 2 — Positioning Your Channel (4 lessons)
@@ -139,7 +139,7 @@ async function main() {
       aiToolLink: null,
       aiToolLabel: null,
     },
-    update: { title: "What Do You Want", sortOrder: 1 },
+    update: { title: "What Do You Want", sortOrder: 1, description: "Move beyond SMART goals and clarify what you genuinely want from your YouTube journey — rooted in who you're becoming, not external metrics." },
   });
 
   const l2_2 = await prisma.courseLesson.upsert({
@@ -169,7 +169,7 @@ async function main() {
       aiToolLink: "/member/ai-tools/avatar-architect",
       aiToolLabel: "Build Your Avatar",
     },
-    update: { title: "Who Do You Want", sortOrder: 2 },
+    update: { title: "Who Do You Want", sortOrder: 2, description: "Define a single perfect client avatar so your content speaks directly to one person instead of being generic and forgettable." },
   });
 
   const l2_3 = await prisma.courseLesson.upsert({
@@ -199,7 +199,7 @@ async function main() {
       aiToolLink: null,
       aiToolLabel: null,
     },
-    update: { title: "Finding Your Themes", sortOrder: 3 },
+    update: { title: "Finding Your Themes", sortOrder: 3, description: "Identify repeatable content themes from your avatar's questions — 1 to 3 core buckets that sustain a consistent publishing schedule indefinitely." },
   });
 
   const l2_4 = await prisma.courseLesson.upsert({
@@ -229,7 +229,7 @@ async function main() {
       aiToolLink: null,
       aiToolLabel: null,
     },
-    update: { title: "The Client Journey and Building Trust", sortOrder: 4 },
+    update: { title: "The Client Journey and Building Trust", sortOrder: 4, description: "Map the three-stage client journey and learn four trust-building techniques that turn viewers into clients during the Consumption phase." },
   });
 
   // Section 3 — On-Camera Confidence (8 lessons)
@@ -260,7 +260,7 @@ async function main() {
       aiToolLink: null,
       aiToolLabel: null,
     },
-    update: { title: "Finding Your Authentic Self on Camera", sortOrder: 1 },
+    update: { title: "Finding Your Authentic Self on Camera", sortOrder: 1, description: "Authenticity is discovered through volume, not planning. Learn why every video raises your baseline and how to embrace the awkward early stage." },
   });
 
   const l3_2 = await prisma.courseLesson.upsert({
@@ -290,7 +290,7 @@ async function main() {
       aiToolLink: null,
       aiToolLabel: null,
     },
-    update: { title: "Connection Language", sortOrder: 2 },
+    update: { title: "Connection Language", sortOrder: 2, description: "Replace generic phrases with language patterns that build real connection — from eliminating 'why' bombs to speaking at a Grade 5 level." },
   });
 
   const l3_3 = await prisma.courseLesson.upsert({
@@ -320,7 +320,7 @@ async function main() {
       aiToolLink: null,
       aiToolLabel: null,
     },
-    update: { title: "80% Rule — Just Publish", sortOrder: 3 },
+    update: { title: "80% Rule — Just Publish", sortOrder: 3, description: "Perfectionism is the biggest obstacle to YouTube progress. Your 80% today will be surpassed by your 80% in a year — just publish." },
   });
 
   const l3_4 = await prisma.courseLesson.upsert({
@@ -350,7 +350,7 @@ async function main() {
       aiToolLink: null,
       aiToolLabel: null,
     },
-    update: { title: "Content Prep & Batch Shooting", sortOrder: 4 },
+    update: { title: "Content Prep & Batch Shooting", sortOrder: 4, description: "Thorough preparation drives on-camera confidence. Learn the 70/30 prep-to-shoot ratio and batch shooting for efficiency." },
   });
 
   const l3_5 = await prisma.courseLesson.upsert({
@@ -388,7 +388,7 @@ async function main() {
       aiToolLink: "/member/ai-tools/arc-script-builder",
       aiToolLabel: "Write Your Script",
     },
-    update: { title: "Content Frameworks PSL & ARC", sortOrder: 5 },
+    update: { title: "Content Frameworks PSL & ARC", sortOrder: 5, description: "Master the two core frameworks: PSL (Point, Story, Lesson) for simpler videos and ARC (Attention, Revelation, Connection) for deeper content." },
   });
 
   const l3_6 = await prisma.courseLesson.upsert({
@@ -418,7 +418,7 @@ async function main() {
       aiToolLink: null,
       aiToolLabel: null,
     },
-    update: { title: "How to Present on Camera", sortOrder: 6 },
+    update: { title: "How to Present on Camera", sortOrder: 6, description: "The physical mechanics of great on-camera presence — body positioning, eye contact, energy projection, and why you need to bring 130% to land at 100%." },
   });
 
   const l3_7 = await prisma.courseLesson.upsert({
@@ -448,7 +448,7 @@ async function main() {
       aiToolLink: null,
       aiToolLabel: null,
     },
-    update: { title: "Practical Tips for Shooting", sortOrder: 7 },
+    update: { title: "Practical Tips for Shooting", sortOrder: 7, description: "Production tips that save time: using your phone for notes, talking to your editor on-camera, B-roll libraries, and why audio quality matters most." },
   });
 
   const l3_8 = await prisma.courseLesson.upsert({
@@ -478,7 +478,7 @@ async function main() {
       aiToolLink: null,
       aiToolLabel: null,
     },
-    update: { title: "Get in Your Reps — Homework", sortOrder: 8 },
+    update: { title: "Get in Your Reps — Homework", sortOrder: 8, description: "Shoot a 6+ minute monologue answering five personal questions. This builds your on-camera muscle and deepens group connection." },
   });
 
   // Section 4 — Creation (5 lessons)
@@ -510,7 +510,7 @@ async function main() {
       aiToolLink: null,
       aiToolLabel: null,
     },
-    update: { title: "How to Do YouTube Research", sortOrder: 1 },
+    update: { title: "How to Do YouTube Research", sortOrder: 1, description: "Create a fresh Gmail account and train the algorithm to show you exactly what your avatar sees — then study what's already working." },
   });
 
   const l4_2 = await prisma.courseLesson.upsert({
@@ -549,7 +549,7 @@ async function main() {
       aiToolLink: "/member/ai-tools/arc-script-builder",
       aiToolLabel: "Write Your Script",
     },
-    update: { title: "ARC Scripting with Custom GPT", sortOrder: 2 },
+    update: { title: "ARC Scripting with Custom GPT", sortOrder: 2, description: "Live walkthrough of using the ARC Method GPT to build a full video script, from avatar definition through hook selection and connection language." },
   });
 
   const l4_2a = await prisma.courseLesson.upsert({
@@ -585,7 +585,7 @@ async function main() {
       aiToolLink: "/member/ai-tools/arc-script-builder",
       aiToolLabel: "Write Your Script",
     },
-    update: { title: "ARC Method for Claude", sortOrder: 3 },
+    update: { title: "ARC Method for Claude", sortOrder: 3, description: "Set up Claude as your ARC script writing tool using Projects — install, configure with the framework and avatar doc, and generate scripts." },
   });
 
   const l4_3 = await prisma.courseLesson.upsert({
@@ -616,7 +616,7 @@ async function main() {
       aiToolLink: null,
       aiToolLabel: null,
     },
-    update: { title: "Studio Setup", sortOrder: 4 },
+    update: { title: "Studio Setup", sortOrder: 4, description: "From phone-only filming to a full multi-camera studio — lighting diagrams, key light positioning, Log profiles, and why audio matters most." },
   });
 
   const l4_4 = await prisma.courseLesson.upsert({
@@ -653,7 +653,7 @@ async function main() {
       aiToolLink: "/member/ai-tools/title-creator",
       aiToolLabel: "Generate Title Ideas",
     },
-    update: { title: "Your First Two Videos", sortOrder: 5 },
+    update: { title: "Your First Two Videos", sortOrder: 5, description: "Brainstorm 20 video ideas using title frameworks, select two topics from your primary theme, and script them using PSL or ARC." },
   });
 
   // Section 5 — Packaging (3 lessons)
@@ -684,7 +684,7 @@ async function main() {
       aiToolLink: "/member/ai-tools/title-analyzer",
       aiToolLabel: "Analyse Your Packaging",
     },
-    update: { title: "Packaging Principle & Building Tension", sortOrder: 1 },
+    update: { title: "Packaging Principle & Building Tension", sortOrder: 1, description: "Without packaging, even great content never gets seen. Learn the dissonance principle — title and thumbnail must create tension that compels clicks." },
   });
 
   const l5_2 = await prisma.courseLesson.upsert({
@@ -714,7 +714,7 @@ async function main() {
       aiToolLink: "/member/ai-tools/title-creator",
       aiToolLabel: "Generate Title Ideas",
     },
-    update: { title: "Creating Titles", sortOrder: 2 },
+    update: { title: "Creating Titles", sortOrder: 2, description: "Hands-on demonstration of using the Title Creator to generate and refine video titles from your full script through framework-organised options." },
   });
 
   const l5_3 = await prisma.courseLesson.upsert({
@@ -745,7 +745,7 @@ async function main() {
       aiToolLink: "/member/ai-tools/title-analyzer",
       aiToolLabel: "Analyse Your Packaging",
     },
-    update: { title: "Building Thumbnails", sortOrder: 3 },
+    update: { title: "Building Thumbnails", sortOrder: 3, description: "Canva-based thumbnail creation with templates — the three essential thumbnail elements and analysis of thumbnails from successful channels." },
   });
 
   // Section 6 — Your First 10 Videos (1 lesson, workbook only)
@@ -766,7 +766,7 @@ async function main() {
       aiToolLink: null,
       aiToolLabel: null,
     },
-    update: { title: "Your First 10 Videos — Planning", sortOrder: 1 },
+    update: { title: "Your First 10 Videos — Planning", sortOrder: 1, description: "Plan your first 10 videos strategically — brainstorm by theme, select topics, draft titles, and set a realistic publishing schedule." },
   });
 
   console.log("✓ Lessons created (22 total)");

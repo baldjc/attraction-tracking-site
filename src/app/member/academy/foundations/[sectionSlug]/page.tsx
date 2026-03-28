@@ -9,6 +9,7 @@ interface Lesson {
   id: string;
   title: string;
   slug: string;
+  description: string | null;
   youtubeUrl: string | null;
   sortOrder: number;
   completed: boolean;
@@ -113,6 +114,11 @@ export default function SectionPage({ params }: { params: Promise<{ sectionSlug:
                     {lesson.title}
                   </p>
                 </div>
+                {lesson.description && (
+                  <p className="text-xs text-[#2f3437]/55 dark:text-white/45 mt-1 leading-relaxed line-clamp-2">
+                    {lesson.description}
+                  </p>
+                )}
                 <div className="flex items-center gap-1.5 mt-2 flex-wrap">
                   {lesson.youtubeUrl ? (
                     <span className="flex items-center gap-1 text-[10px] text-[#2f3437]/40 dark:text-white/40">

@@ -12,6 +12,8 @@ import {
   XMarkIcon,
   CalendarDaysIcon,
   VideoCameraIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
 } from "@heroicons/react/24/outline";
 
 import {
@@ -29,6 +31,11 @@ import {
   TranscriptMatchCard,
   MomentDetailModal,
 } from "@/components/resources-shared";
+
+import {
+  PRINCIPLE_NAMES as ACAD_PRINCIPLE_NAMES,
+  PRINCIPLE_COLORS as ACAD_PRINCIPLE_COLORS,
+} from "@/lib/academy-constants";
 
 type AcademyTab = "foundations" | "live-calls" | "browse" | "search" | "moments" | "saved";
 
@@ -57,9 +64,21 @@ interface LiveCallMonth {
   calls: LiveCall[];
 }
 
+interface SectionLesson {
+  id: string;
+  title: string;
+  slug: string;
+  description: string | null;
+  completed: boolean;
+  principleTags: string[];
+}
+
 function FoundationsTab() {
   const [sections, setSections] = useState<Section[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [lessonMap, setLessonMap] = useState<Map<string, SectionLesson[]>>(new Map());
+  const [loadingIds, setLoadingIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetch("/api/member/academy/sections")
@@ -67,6 +86,24 @@ function FoundationsTab() {
       .then((d) => setSections(d.sections ?? []))
       .finally(() => setLoading(false));
   }, []);
+
+  async function toggleSection(section: Section) {
+    const isOpen = expandedIds.has(section.id);
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      isOpen ? next.delete(section.id) : next.add(section.id);
+      return next;
+    });
+    if (!isOpen && !lessonMap.has(section.id)) {
+      setLoadingIds((prev) => new Set([...prev, section.id]));
+      try {
+        const data = await fetch(`/api/member/academy/sections/${section.slug}/lessons`).then((r) => r.json());
+        setLessonMap((prev) => new Map([...prev, [section.id, data.lessons ?? []]]));
+      } finally {
+        setLoadingIds((prev) => { const n = new Set(prev); n.delete(section.id); return n; });
+      }
+    }
+  }
 
   const totalLessons = sections.reduce((s, sec) => s + sec.lessonCount, 0);
   const totalCompleted = sections.reduce((s, sec) => s + sec.completedCount, 0);
@@ -137,33 +174,109 @@ function FoundationsTab() {
           <h3 className="text-sm font-semibold text-[#2f3437]/60 dark:text-white/60 uppercase tracking-wider mb-3">
             Sections
           </h3>
-          <div className="space-y-2">
+          <div className="space-y-1">
             {sections.map((s) => {
               const pct = s.lessonCount > 0 ? Math.round((s.completedCount / s.lessonCount) * 100) : 0;
               const done = s.completedCount === s.lessonCount && s.lessonCount > 0;
+              const isExpanded = expandedIds.has(s.id);
+              const isLoadingLessons = loadingIds.has(s.id);
+              const lessons = lessonMap.get(s.id) ?? [];
+
               return (
-                <Link
-                  key={s.id}
-                  href={`/member/academy/foundations/${s.slug}`}
-                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-[#f7f6f3] dark:hover:bg-white/5 transition-colors group"
-                >
-                  {done ? (
-                    <CheckCircleIcon className="w-5 h-5 text-green-500 shrink-0" />
-                  ) : (
-                    <div className="w-5 h-5 rounded-full border-2 border-[#eaeaea] dark:border-white/20 shrink-0" />
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-[#2f3437] dark:text-white group-hover:text-[#6ba3c7] transition-colors truncate">
-                      {s.sortOrder}. {s.title}
-                    </p>
+                <div key={s.id} className="rounded-lg border border-transparent hover:border-[#eaeaea] dark:hover:border-white/10 transition-colors">
+                  <button
+                    onClick={() => toggleSection(s)}
+                    className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-[#f7f6f3] dark:hover:bg-white/5 transition-colors group text-left"
+                  >
+                    {isExpanded ? (
+                      <ChevronDownIcon className="w-4 h-4 text-[#2f3437]/40 dark:text-white/40 shrink-0 transition-transform" />
+                    ) : (
+                      <ChevronRightIcon className="w-4 h-4 text-[#2f3437]/40 dark:text-white/40 shrink-0 transition-transform" />
+                    )}
+                    {done ? (
+                      <CheckCircleIcon className="w-5 h-5 text-green-500 shrink-0" />
+                    ) : (
+                      <div className="w-5 h-5 rounded-full border-2 border-[#eaeaea] dark:border-white/20 shrink-0" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-[#2f3437] dark:text-white group-hover:text-[#6ba3c7] transition-colors truncate">
+                        {s.sortOrder}. {s.title}
+                      </p>
+                    </div>
+                    <span className="text-xs text-[#2f3437]/40 dark:text-white/40 shrink-0">
+                      {s.completedCount}/{s.lessonCount}
+                    </span>
+                    <div className="w-16 h-1.5 bg-[#eaeaea] dark:bg-white/10 rounded-full overflow-hidden shrink-0">
+                      <div className="h-full bg-[#6ba3c7] rounded-full" style={{ width: `${pct}%` }} />
+                    </div>
+                  </button>
+
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateRows: isExpanded ? "1fr" : "0fr",
+                      transition: "grid-template-rows 250ms ease",
+                    }}
+                  >
+                    <div style={{ overflow: "hidden" }}>
+                      <div className="pb-2 px-3">
+                        {isLoadingLessons ? (
+                          <div className="space-y-2 py-2">
+                            {[...Array(3)].map((_, i) => (
+                              <div key={i} className="h-10 rounded bg-[#f7f6f3] dark:bg-white/5 animate-pulse" />
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="border-l-2 border-[#eaeaea] dark:border-white/10 ml-2 pl-4 space-y-0.5 py-1">
+                            {lessons.map((lesson, i) => (
+                              <Link
+                                key={lesson.id}
+                                href={`/member/academy/foundations/${s.slug}/${lesson.slug}`}
+                                className="flex items-start gap-3 py-2.5 px-2 rounded-lg hover:bg-[#f7f6f3] dark:hover:bg-white/5 transition-colors group/lesson"
+                              >
+                                <div className="shrink-0 mt-0.5">
+                                  {lesson.completed ? (
+                                    <CheckCircleIcon className="w-4.5 h-4.5 text-green-500" style={{ width: "1.125rem", height: "1.125rem" }} />
+                                  ) : (
+                                    <div className="w-[1.125rem] h-[1.125rem] rounded-full border-2 border-[#d0d0d0] dark:border-white/20" />
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium text-[#2f3437] dark:text-white group-hover/lesson:text-[#6ba3c7] transition-colors leading-snug">
+                                    <span className="text-[#2f3437]/30 dark:text-white/30 font-normal mr-1">{i + 1}.</span>
+                                    {lesson.title}
+                                  </p>
+                                  {lesson.description && (
+                                    <p className="text-xs text-[#2f3437]/50 dark:text-white/40 mt-0.5 leading-relaxed line-clamp-2">
+                                      {lesson.description}
+                                    </p>
+                                  )}
+                                  {(lesson.principleTags as string[]).length > 0 && (
+                                    <div className="flex items-center gap-1 mt-1.5 flex-wrap">
+                                      {(lesson.principleTags as string[]).slice(0, 3).map((tag) => (
+                                        <span
+                                          key={tag}
+                                          className={`inline-flex text-[10px] px-1.5 py-0.5 rounded-full font-medium ${ACAD_PRINCIPLE_COLORS[tag] ?? "bg-gray-100 text-gray-600"}`}
+                                        >
+                                          {ACAD_PRINCIPLE_NAMES[tag] ?? tag}
+                                        </span>
+                                      ))}
+                                      {(lesson.principleTags as string[]).length > 3 && (
+                                        <span className="text-[10px] text-[#2f3437]/30 dark:text-white/30">
+                                          +{(lesson.principleTags as string[]).length - 3}
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              </Link>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <span className="text-xs text-[#2f3437]/40 dark:text-white/40 shrink-0">
-                    {s.completedCount}/{s.lessonCount}
-                  </span>
-                  <div className="w-16 h-1.5 bg-[#eaeaea] dark:bg-white/10 rounded-full overflow-hidden shrink-0">
-                    <div className="h-full bg-[#6ba3c7] rounded-full" style={{ width: `${pct}%` }} />
-                  </div>
-                </Link>
+                </div>
               );
             })}
           </div>
