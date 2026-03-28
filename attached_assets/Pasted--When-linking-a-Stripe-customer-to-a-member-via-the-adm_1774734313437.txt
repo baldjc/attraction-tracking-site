@@ -1,0 +1,14 @@
+  When linking a Stripe customer to a member via the admin page, the customer gets linked (stripeCustomerId is saved) but subscription data isn't being      
+  pulled. The member shows "No Subscription" even though the Stripe customer has an active subscription.                                                     
+                                                                                                                                                             
+  Debug the PUT /api/admin/members/[id]/stripe-link route:                                                                                                   
+                                                                                                                                                             
+  1. After saving the stripeCustomerId, it should be fetching the customer's active subscriptions via stripe.subscriptions.list({ customer: stripeCustomerId,
+   status: 'active' }) (or status: 'all' to catch trialing/past_due too)                                                                                     
+  2. If a subscription is found, it should update the user with stripeSubscriptionId, subscriptionStatus, stripePlanName, and stripeCurrentPeriodEnd         
+  3. To get the plan name, it needs to fetch the product: stripe.products.retrieve(subscription.items.data[0].price.product) and use product.name            
+  4. Log what Stripe returns so we can see if subscriptions are being found                                                                                  
+  5. Also check that the API version in src/lib/stripe.ts matches or is compatible with the version in Stripe (dashboard shows 2025-04-30.basil) — if there's
+   a version mismatch it could cause issues. Use the latest stable version or remove the apiVersion parameter to use the account's default.                  
+                                                                                                                                                             
+  Fix until: linking a Stripe customer with an active subscription populates all subscription fields on the member. 
