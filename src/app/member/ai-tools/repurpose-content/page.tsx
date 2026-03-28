@@ -586,7 +586,7 @@ export default function RepurposeContentPage() {
             transcript,
             title,
             selectedLinks: linksForApi,
-            oneOffLinks: [...oneOffLinks.filter((l) => l.label && l.url), ...campaignLinksForApi],
+            oneOffLinks: campaignLinksForApi,
           }),
         })
           .then((r) => r.json())
@@ -642,7 +642,7 @@ export default function RepurposeContentPage() {
             transcript,
             title,
             selectedLinks: blogSavedLinksForApi,
-            oneOffLinks: [...blogOneOffLinks.filter((l) => l.label && l.url), ...blogCampaignLinksForApi],
+            oneOffLinks: blogCampaignLinksForApi,
           }),
         })
           .then((r) => r.json())
@@ -989,17 +989,6 @@ export default function RepurposeContentPage() {
                         </div>
                       )}
                       <button onClick={() => openCampaignPicker("linkedin")} className="text-xs text-[#6ba3c7] hover:underline">+ Add Campaign Link</button>
-                      <div>
-                        <p className="text-xs text-[#2f3437]/40 dark:text-white/40 mb-2">Add links for this article only:</p>
-                        {oneOffLinks.map((link, i) => (
-                          <div key={i} className="flex gap-2 mb-2">
-                            <input type="text" value={link.label} onChange={(e) => { const u = [...oneOffLinks]; u[i] = { ...u[i], label: e.target.value }; setOneOffLinks(u); }} placeholder="Label" className="flex-1 border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#0f1419] text-[#2f3437] dark:text-white rounded-lg px-3 py-2 text-sm" />
-                            <input type="text" value={link.url} onChange={(e) => { const u = [...oneOffLinks]; u[i] = { ...u[i], url: e.target.value }; setOneOffLinks(u); }} placeholder="URL" className="flex-1 border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#0f1419] text-[#2f3437] dark:text-white rounded-lg px-3 py-2 text-sm" />
-                            <button onClick={() => setOneOffLinks(oneOffLinks.filter((_, j) => j !== i))} className="text-red-500 text-sm px-2">Remove</button>
-                          </div>
-                        ))}
-                        <button onClick={() => setOneOffLinks([...oneOffLinks, { label: "", url: "" }])} className="text-xs text-[#6ba3c7] hover:underline">+ Add one-off link</button>
-                      </div>
                     </div>
                   )}
 
@@ -1068,17 +1057,6 @@ export default function RepurposeContentPage() {
                         </div>
                       )}
                       <button onClick={() => openCampaignPicker("blog")} className="text-xs text-[#6ba3c7] hover:underline">+ Add Campaign Link</button>
-                      <div>
-                        <p className="text-xs text-[#2f3437]/40 dark:text-white/40 mb-2">Add links for this post only:</p>
-                        {blogOneOffLinks.map((link, i) => (
-                          <div key={i} className="flex gap-2 mb-2">
-                            <input type="text" value={link.label} onChange={(e) => { const u = [...blogOneOffLinks]; u[i] = { ...u[i], label: e.target.value }; setBlogOneOffLinks(u); }} placeholder="Label" className="flex-1 border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#0f1419] text-[#2f3437] dark:text-white rounded-lg px-3 py-2 text-sm" />
-                            <input type="text" value={link.url} onChange={(e) => { const u = [...blogOneOffLinks]; u[i] = { ...u[i], url: e.target.value }; setBlogOneOffLinks(u); }} placeholder="URL" className="flex-1 border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#0f1419] text-[#2f3437] dark:text-white rounded-lg px-3 py-2 text-sm" />
-                            <button onClick={() => setBlogOneOffLinks(blogOneOffLinks.filter((_, j) => j !== i))} className="text-red-500 text-sm px-2">Remove</button>
-                          </div>
-                        ))}
-                        <button onClick={() => setBlogOneOffLinks([...blogOneOffLinks, { label: "", url: "" }])} className="text-xs text-[#6ba3c7] hover:underline">+ Add one-off link</button>
-                      </div>
                     </div>
                   )}
 
