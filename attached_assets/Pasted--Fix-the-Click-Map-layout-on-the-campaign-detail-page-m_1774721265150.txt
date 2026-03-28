@@ -1,0 +1,21 @@
+  Fix the Click Map layout on the campaign detail page (/member/campaigns/[id]):                                             
+                                                                                                                             
+  The Click Map currently takes up the full width of the page and is very tall, pushing the tracking links and results below
+  the fold. This needs to be reorganised.                                                                                    
+                                                                                                                           
+  New layout:                                                                                                                
+                                                                                                                           
+  Put the Click Map in a 2-column layout:
+  - Left side (1/2 or 3/5 width): A "Top Locations" list showing the cities/regions where clicks are coming from, ranked by
+  count. Simple list with city name and click count. If no geo data yet, show a muted empty state.                           
+  - Right side (1/2 or 2/5 width): The map, but much shorter — cap the height to around 250-300px max. Keep it functional
+  (zoom, pan) but compact.                                                                                                   
+                                                                                                                             
+  Priority: The individual tracking links and their click/lead results are more important than the map. The map should never
+  push the links list below the fold on desktop. If the page scrolls, a member should see their links and stats first, map   
+  second.                                                                                                                  
+                                                                                                                             
+  If there are 0 clicks and no geo data, collapse the entire Click Map section by default so it doesn't waste space.         
+   
+  Don't change the stats bar (Clicks, Leads, Conversion Rate), the Analytics chart, or the tracking links list below — just  
+  reorganise the Click Map section.

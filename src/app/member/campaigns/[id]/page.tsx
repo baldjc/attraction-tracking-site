@@ -468,34 +468,6 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
         )}
       </div>
 
-      {/* Click Map + Location Table */}
-      <div className="relative z-0 bg-white border border-[#2f3437]/10 rounded-lg p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-semibold text-[#2f3437]">Click Map</h2>
-          {geoData && geoData.links.length > 1 && (
-            <select
-              value={geoLinkFilter}
-              onChange={(e) => {
-                const val = e.target.value;
-                setGeoLinkFilter(val);
-                loadGeoData(val === "all" ? undefined : val);
-              }}
-              className="text-xs border border-[#2f3437]/20 rounded-lg px-2 py-1.5 text-[#2f3437]/60 focus:outline-none"
-            >
-              <option value="all">All Links</option>
-              {geoData.links.map((l) => (
-                <option key={l.id} value={l.id}>{l.name}</option>
-              ))}
-            </select>
-          )}
-        </div>
-        <ClickMap markers={filteredMarkers} height={400} />
-        <div className="mt-5 border-t border-[#2f3437]/10 pt-4">
-          <h3 className="text-sm font-semibold text-[#2f3437] mb-3">Location Breakdown</h3>
-          <LocationTable locations={filteredLocations} isEmail={isEmailNewsletter} />
-        </div>
-      </div>
-
       {/* Tracking Links */}
       <div className="bg-white border border-[#2f3437]/10 rounded-lg overflow-hidden">
         <div className="px-5 py-4 border-b border-[#2f3437]/10 flex items-center justify-between">
@@ -582,6 +554,60 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
           </div>
         )}
       </div>
+
+      {/* Click Map — bottom of page, collapsed when no data */}
+      {(filteredMarkers.length > 0 || filteredLocations.length > 0) && (
+        <div className="relative z-0 bg-white border border-[#2f3437]/10 rounded-lg p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-semibold text-[#2f3437]">Click Map</h2>
+            {geoData && geoData.links.length > 1 && (
+              <select
+                value={geoLinkFilter}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setGeoLinkFilter(val);
+                  loadGeoData(val === "all" ? undefined : val);
+                }}
+                className="text-xs border border-[#2f3437]/20 rounded-lg px-2 py-1.5 text-[#2f3437]/60 focus:outline-none"
+              >
+                <option value="all">All Links</option>
+                {geoData.links.map((l) => (
+                  <option key={l.id} value={l.id}>{l.name}</option>
+                ))}
+              </select>
+            )}
+          </div>
+          <div className="flex flex-col md:flex-row gap-5">
+            {/* Left: Top Locations list */}
+            <div className="md:w-3/5">
+              <p className="text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wide mb-3">Top Locations</p>
+              {filteredLocations.length === 0 ? (
+                <p className="text-sm text-[#2f3437]/40">No location data yet.</p>
+              ) : (
+                <div className="space-y-1">
+                  {filteredLocations.slice(0, 15).map((loc, i) => (
+                    <div key={i} className="flex items-center justify-between py-1.5 border-b border-[#2f3437]/5 last:border-0">
+                      <span className="text-sm text-[#2f3437]">
+                        {loc.city}
+                        {(loc.province || loc.country) && (
+                          <span className="text-[#2f3437]/50 ml-1 text-xs">
+                            {[loc.province, loc.country].filter(Boolean).join(", ")}
+                          </span>
+                        )}
+                      </span>
+                      <span className="text-sm font-semibold text-[#2f3437] ml-4 shrink-0">{loc.count.toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            {/* Right: compact map */}
+            <div className="md:w-2/5">
+              <ClickMap markers={filteredMarkers} height={260} />
+            </div>
+          </div>
+        </div>
+      )}
 
       {campaign.hasYoutube && (
         <div className="flex items-center justify-center gap-2">
