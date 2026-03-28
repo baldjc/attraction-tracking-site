@@ -242,7 +242,7 @@ export default function MembersPage() {
       setRecentVideos(data.recentVideos || []);
       setLastSyncedAt(data.lastSyncedAt || null);
       const needsBackfill = memberList.some(
-        (m) => m.stripeSubscriptionId && m.stripePriceAmount === null
+        (m) => m.stripeSubscriptionId && (m.stripePriceAmount === null || m.stripeCurrency === null)
       );
       if (needsBackfill) {
         setBackfillingPrices(true);
