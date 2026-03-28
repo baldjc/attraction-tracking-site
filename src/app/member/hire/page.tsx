@@ -1,6 +1,7 @@
 import {
   FilmIcon,
   RocketLaunchIcon,
+  SparklesIcon,
   PuzzlePieceIcon,
   CheckCircleIcon,
   ArrowTopRightOnSquareIcon,
@@ -74,7 +75,7 @@ const EDITING_PACKAGES: EditingPackage[] = [
   },
   {
     name: "4 Video + Jared",
-    price: "$1,600/mo",
+    price: "$1,500/mo",
     videos: "4 long-form videos/mo",
     hasJared: true,
     stripeUrl: "https://buy.stripe.com/28EfZh8Gf2ZVf4ReTx0Ny0n",
@@ -108,7 +109,7 @@ interface MasteryPackage {
 const MASTERY_PACKAGES: MasteryPackage[] = [
   {
     name: "Mastery 2",
-    price: "$1,995/mo",
+    price: "$2,495/mo",
     videos: "2 long-form video edits/mo",
     funnels: "1 full funnel built at launch",
     stripeUrl: "https://buy.stripe.com/aFa8wP7Cb9ojf4R5iX0Ny0q",
@@ -125,7 +126,7 @@ const MASTERY_PACKAGES: MasteryPackage[] = [
   },
   {
     name: "Mastery 4",
-    price: "$2,995/mo",
+    price: "$3,495/mo",
     videos: "4 long-form video edits/mo",
     funnels: "2 full funnels built at launch",
     badge: "Most Comprehensive",
@@ -142,6 +143,38 @@ const MASTERY_PACKAGES: MasteryPackage[] = [
     ],
   },
 ];
+
+interface UltimatePackage {
+  name: string;
+  price: string;
+  badge: string;
+  stripeUrl: string;
+  highlightFeatures: string[];
+  features: string[];
+}
+
+const ULTIMATE_PACKAGE: UltimatePackage = {
+  name: "Ultimate Mastery",
+  price: "$4,999/mo",
+  badge: "Full Service",
+  stripeUrl: "#", // Stripe link to be added
+  highlightFeatures: [
+    "4 long-form video edits per month",
+    "2 full funnels built at launch",
+    "Ready-to-film scripts researched and written for you",
+  ],
+  features: [
+    "Everything in Mastery 4 included",
+    "Local market research — what's ranking and trending in your city",
+    "SEO-optimised descriptions and tags for every video",
+    "A/B thumbnail variants per video",
+    "Ongoing content calendar management and updates",
+    "Strategy session with Jared (60 min) — every 2 weeks",
+    "Quarterly 16-principle channel audit with written report",
+    "Priority everything — fastest turnaround, same-day responses",
+    "Community post and pinned comment strategy written and scheduled",
+  ],
+};
 
 interface AddOn {
   name: string;
@@ -175,7 +208,6 @@ const ADD_ONS: AddOn[] = [
 function EditingCard({ pkg }: { pkg: EditingPackage }) {
   return (
     <div className="bg-white dark:bg-[#1a2433] rounded-xl border border-[#eaeaea] dark:border-white/10 overflow-hidden flex flex-col">
-      {/* Header */}
       <div className="px-6 pt-6 pb-4">
         <div className="flex items-center justify-between mb-1">
           <h3 className="text-lg font-bold text-[#2f3437] dark:text-white">{pkg.name}</h3>
@@ -192,7 +224,6 @@ function EditingCard({ pkg }: { pkg: EditingPackage }) {
         </p>
       </div>
 
-      {/* Features */}
       <div className="px-6 pb-4 flex-1">
         <ul className="space-y-2">
           {pkg.features.map((f) => (
@@ -220,7 +251,6 @@ function EditingCard({ pkg }: { pkg: EditingPackage }) {
         )}
       </div>
 
-      {/* CTA */}
       <div className="px-6 pb-6">
         <a
           href={pkg.stripeUrl}
@@ -238,17 +268,15 @@ function EditingCard({ pkg }: { pkg: EditingPackage }) {
 
 function MasteryCard({ pkg }: { pkg: MasteryPackage }) {
   return (
-    <div className="bg-white dark:bg-[#1a2433] rounded-xl border-2 border-amber-200 dark:border-amber-700/40 overflow-hidden flex flex-col relative">
-      {/* Badge */}
+    <div className="bg-white dark:bg-[#1a2433] rounded-xl border-2 border-slate-200 dark:border-slate-600/40 overflow-hidden flex flex-col relative">
       {pkg.badge && (
         <div className="absolute top-4 right-4">
-          <span className="text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+          <span className="text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 dark:bg-slate-700/50 dark:text-slate-200">
             {pkg.badge}
           </span>
         </div>
       )}
 
-      {/* Header */}
       <div className="px-6 pt-6 pb-4">
         <h3 className="text-lg font-bold text-[#2f3437] dark:text-white">{pkg.name}</h3>
         <p className="text-sm text-[#2f3437]/50 dark:text-white/40 mt-0.5">{pkg.videos}</p>
@@ -258,21 +286,19 @@ function MasteryCard({ pkg }: { pkg: MasteryPackage }) {
         </p>
       </div>
 
-      {/* Includes note */}
-      <div className="mx-6 px-3 py-2 rounded-lg bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-800/30 mb-4">
-        <p className="text-xs font-medium text-amber-700 dark:text-amber-300">
+      <div className="mx-6 px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800/30 border border-slate-200 dark:border-slate-700/40 mb-4">
+        <p className="text-xs font-medium text-slate-600 dark:text-slate-300">
           Includes everything in Editing, plus:
         </p>
       </div>
 
-      {/* Key highlights */}
       <div className="px-6 pb-4 flex-1">
         <div className="flex items-start gap-2 text-sm font-medium text-[#2f3437] dark:text-white mb-2">
-          <CheckCircleIcon className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+          <CheckCircleIcon className="w-4 h-4 text-slate-600 dark:text-slate-300 mt-0.5 shrink-0" />
           <span>{pkg.videos}</span>
         </div>
         <div className="flex items-start gap-2 text-sm font-medium text-[#2f3437] dark:text-white mb-4">
-          <CheckCircleIcon className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+          <CheckCircleIcon className="w-4 h-4 text-slate-600 dark:text-slate-300 mt-0.5 shrink-0" />
           <span>{pkg.funnels}</span>
         </div>
 
@@ -286,13 +312,71 @@ function MasteryCard({ pkg }: { pkg: MasteryPackage }) {
         </ul>
       </div>
 
-      {/* CTA */}
       <div className="px-6 pb-6">
         <a
           href={pkg.stripeUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center justify-center gap-2 w-full bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm py-3 rounded-lg transition-colors"
+          className="flex items-center justify-center gap-2 w-full bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 text-white font-bold text-sm py-3 rounded-lg transition-colors"
+        >
+          Get Started
+          <ArrowTopRightOnSquareIcon className="w-4 h-4" />
+        </a>
+      </div>
+    </div>
+  );
+}
+
+function UltimateCard({ pkg }: { pkg: UltimatePackage }) {
+  return (
+    <div className="bg-white dark:bg-[#1a2433] rounded-xl border-2 border-purple-200 dark:border-purple-700/40 overflow-hidden flex flex-col relative">
+      <div className="absolute top-4 right-4">
+        <span className="text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-800/40 dark:text-purple-200">
+          {pkg.badge}
+        </span>
+      </div>
+
+      <div className="px-6 pt-6 pb-4">
+        <h3 className="text-lg font-bold text-[#2f3437] dark:text-white">{pkg.name}</h3>
+        <p className="text-sm text-[#2f3437]/50 dark:text-white/40 mt-0.5">You show up, film, and close deals. We do everything else.</p>
+        <p className="text-3xl font-extrabold text-[#2f3437] dark:text-white mt-3">
+          {pkg.price}
+          <span className="text-sm font-normal text-[#2f3437]/40 dark:text-white/30 ml-1">USD</span>
+        </p>
+      </div>
+
+      <div className="mx-6 px-3 py-2 rounded-lg bg-purple-50 dark:bg-purple-900/10 border border-purple-200 dark:border-purple-800/30 mb-4">
+        <p className="text-xs font-medium text-purple-700 dark:text-purple-300">
+          Includes everything in Mastery 4, plus:
+        </p>
+      </div>
+
+      <div className="px-6 pb-4 flex-1">
+        {pkg.highlightFeatures.map((f) => (
+          <div key={f} className="flex items-start gap-2 text-sm font-medium text-[#2f3437] dark:text-white mb-2">
+            <CheckCircleIcon className="w-4 h-4 text-purple-600 dark:text-purple-400 mt-0.5 shrink-0" />
+            <span>{f}</span>
+          </div>
+        ))}
+
+        <div className="mt-2" />
+
+        <ul className="space-y-2">
+          {pkg.features.map((f) => (
+            <li key={f} className="flex items-start gap-2 text-sm text-[#2f3437]/70 dark:text-white/60">
+              <CheckCircleIcon className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
+              <span>{f}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div className="px-6 pb-6">
+        <a
+          href={pkg.stripeUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-center gap-2 w-full bg-purple-700 hover:bg-purple-800 dark:bg-purple-600 dark:hover:bg-purple-500 text-white font-bold text-sm py-3 rounded-lg transition-colors"
         >
           Get Started
           <ArrowTopRightOnSquareIcon className="w-4 h-4" />
@@ -358,7 +442,7 @@ export default function HireAHumanPage() {
       {/* ── Mastery Section ── */}
       <section>
         <div className="flex items-center gap-3 mb-2">
-          <RocketLaunchIcon className="w-5 h-5 text-amber-500" />
+          <RocketLaunchIcon className="w-5 h-5 text-slate-700 dark:text-slate-300" />
           <h2 className="text-xl font-bold text-[#2f3437] dark:text-white">Attraction Mastery</h2>
         </div>
         <p className="text-sm text-[#2f3437]/50 dark:text-white/40 mb-6 max-w-2xl">
@@ -368,6 +452,20 @@ export default function HireAHumanPage() {
           {MASTERY_PACKAGES.map((pkg) => (
             <MasteryCard key={pkg.name} pkg={pkg} />
           ))}
+        </div>
+      </section>
+
+      {/* ── Ultimate Mastery Section ── */}
+      <section>
+        <div className="flex items-center gap-3 mb-2">
+          <SparklesIcon className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+          <h2 className="text-xl font-bold text-[#2f3437] dark:text-white">Ultimate Mastery</h2>
+        </div>
+        <p className="text-sm text-[#2f3437]/50 dark:text-white/40 mb-6 max-w-2xl">
+          You show up, film, and close deals. We do literally everything else.
+        </p>
+        <div className="max-w-xl">
+          <UltimateCard pkg={ULTIMATE_PACKAGE} />
         </div>
       </section>
 
