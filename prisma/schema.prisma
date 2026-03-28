@@ -78,6 +78,7 @@ model User {
   stripePlanName          String?
   stripeCurrentPeriodEnd  DateTime?
   stripePriceAmount       Int?
+  stripeCurrency          String?
   slackUserId       String?
   skoolProfile      String?
   coachingNotes          String?

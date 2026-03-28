@@ -16,7 +16,7 @@ export async function POST() {
   const subscribers = await prisma.user.findMany({
     where: {
       stripeSubscriptionId: { not: null },
-      stripePriceAmount: null,
+      OR: [{ stripePriceAmount: null }, { stripeCurrency: null }],
     },
     select: { id: true, email: true, stripeSubscriptionId: true },
   });
@@ -29,11 +29,16 @@ export async function POST() {
       const sub = await stripe.subscriptions.retrieve(user.stripeSubscriptionId!, {
         expand: ["items.data.price"],
       });
-      const priceAmount = sub.items.data[0]?.price?.unit_amount ?? null;
-      if (priceAmount !== null) {
+      const price = sub.items.data[0]?.price;
+      const priceAmount = price?.unit_amount ?? null;
+      const currency = price?.currency ? price.currency.toUpperCase() : null;
+      if (priceAmount !== null || currency !== null) {
         await prisma.user.update({
           where: { id: user.id },
-          data: { stripePriceAmount: priceAmount },
+          data: {
+            ...(priceAmount !== null ? { stripePriceAmount: priceAmount } : {}),
+            ...(currency !== null ? { stripeCurrency: currency } : {}),
+          },
         });
         updated++;
       }

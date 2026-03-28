@@ -50,6 +50,7 @@ interface Member {
   stripePlanName: string | null;
   stripeCurrentPeriodEnd: string | null;
   stripePriceAmount: number | null;
+  stripeCurrency: string | null;
   lastVideoAt: string | null;
   videos7d: number;
   clicks7d: number;
@@ -731,7 +732,12 @@ export default function MembersPage() {
                             <div className="flex items-center gap-1.5 flex-wrap">
                               {subStatusBadge(m.subscriptionStatus)}
                               {fmtPrice(m.stripePriceAmount) && (
-                                <span className="text-xs font-semibold text-emerald-700">{fmtPrice(m.stripePriceAmount)}/mo</span>
+                                <span className="text-xs font-semibold text-emerald-700">
+                                  {fmtPrice(m.stripePriceAmount)}/mo
+                                  {m.stripeCurrency && (
+                                    <span className="ml-1 font-normal text-gray-400">{m.stripeCurrency}</span>
+                                  )}
+                                </span>
                               )}
                             </div>
                             {fmtPeriodEnd(m.stripeCurrentPeriodEnd, m.subscriptionStatus) && (
