@@ -439,7 +439,7 @@ export default function MemberScoresPage() {
                             {title}
                           </p>
                           <div className="flex items-center justify-between mt-1.5">
-                            <span className={`text-xs ${muted}`}>{fmt(a.createdAt)}</span>
+                            <span className={`text-xs ${muted}`}>{v?.uploadDate ? fmt(v.uploadDate) : fmt(a.createdAt)}</span>
                             {a.overallScore != null && (
                               <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${scoreBadge(Number(a.overallScore))}`}>
                                 {Number(a.overallScore).toFixed(1)}
