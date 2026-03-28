@@ -85,7 +85,11 @@ export async function syncMemberChannel(userId: string): Promise<SyncResult> {
 
     await prisma.user.update({
       where: { id: user.id },
-      data: { lastYoutubeSyncAt: new Date() },
+      data: {
+        lastYoutubeSyncAt: new Date(),
+        ...(channelInfo.thumbnailUrl ? { youtubeChannelThumbnail: channelInfo.thumbnailUrl } : {}),
+        ...(channelInfo.title ? { youtubeChannelName: channelInfo.title } : {}),
+      },
     });
 
     return { userId: user.id, fullName: user.fullName || "Unknown", success: true, newVideos: newCount };

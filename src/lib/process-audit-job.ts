@@ -143,6 +143,7 @@ export async function processAuditJob(jobId: string, selectedVideoId?: string) {
             title: channelInfo.title,
             handle: channelInfo.handle,
             bannerUrl: channelInfo.bannerUrl,
+            thumbnailUrl: channelInfo.thumbnailUrl,
           } : null,
           baselineScores,
           lastMonthScores,
@@ -150,6 +151,14 @@ export async function processAuditJob(jobId: string, selectedVideoId?: string) {
         videosAnalysed: videosAnalysed as any,
       },
     });
+
+    // Persist channel thumbnail on the user record so it's available without re-fetching
+    if (channelInfo?.thumbnailUrl) {
+      await prisma.user.update({
+        where: { id: member.id },
+        data: { youtubeChannelThumbnail: channelInfo.thumbnailUrl },
+      });
+    }
 
     // Link audit to YouTubeVideo if it was a single_video audit
     if (job.auditType === "single_video" && selectedVideoId && member.id) {
