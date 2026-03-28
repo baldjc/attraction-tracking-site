@@ -59,7 +59,7 @@ interface Member {
   status: string;
 }
 
-type TierFilter = "all" | "foundations" | "editing" | "mastery";
+type TierFilter = "all" | "foundations" | "production" | "growth" | "done_with_you";
 type SubFilter = "all" | "active" | "past_due" | "cancelled" | "none";
 type StatusFilter = "all" | "active" | "at_risk" | "inactive";
 type SortKey = "fullName" | "videos7d" | "clicks7d" | "conversions7d" | "toolUses7d" | "latestAuditScore" | "status" | "lastVideoAt";
@@ -69,10 +69,11 @@ const PAGE_SIZE = 200;
 
 const tierLabels: Record<string, string> = {
   foundations: "Foundations",
-  editing_2: "Editing 2",
-  editing_4: "Editing 4",
-  mastery_2: "Mastery 2",
-  mastery_4: "Mastery 4",
+  editing_2: "Production (2)",
+  editing_4: "Production (4)",
+  mastery_2: "Growth (2)",
+  mastery_4: "Growth (4)",
+  done_with_you: "Done-With-You",
 };
 
 const txt   = "text-[#2f3437]";
@@ -90,6 +91,8 @@ function tierBadge(tier: string) {
       ? "bg-[#f59e0b] text-white"
       : tier === "mastery_2" || tier === "mastery_4"
       ? "bg-[#8b5cf6] text-white"
+      : tier === "done_with_you"
+      ? "bg-[#1e2a38] text-white"
       : "bg-gray-200 text-gray-700";
   return (
     <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${cls}`}>{label}</span>
@@ -158,8 +161,9 @@ function fmtDate(iso: string | null) {
 function matchesTierFilter(tier: string, filter: TierFilter) {
   if (filter === "all") return true;
   if (filter === "foundations") return tier === "foundations";
-  if (filter === "editing") return tier === "editing_2" || tier === "editing_4";
-  if (filter === "mastery") return tier === "mastery_2" || tier === "mastery_4";
+  if (filter === "production") return tier === "editing_2" || tier === "editing_4";
+  if (filter === "growth") return tier === "mastery_2" || tier === "mastery_4";
+  if (filter === "done_with_you") return tier === "done_with_you";
   return true;
 }
 
@@ -174,10 +178,11 @@ function subtitleLabel(count: number) {
 }
 
 const TIER_FILTERS: { value: TierFilter; label: string }[] = [
-  { value: "all",         label: "All" },
-  { value: "foundations", label: "Foundations" },
-  { value: "editing",     label: "Editing" },
-  { value: "mastery",     label: "Mastery" },
+  { value: "all",          label: "All" },
+  { value: "foundations",  label: "Foundations" },
+  { value: "production",   label: "Production" },
+  { value: "growth",       label: "Growth" },
+  { value: "done_with_you", label: "Done-With-You" },
 ];
 
 const SUB_FILTERS: { value: SubFilter; label: string }[] = [
@@ -574,9 +579,10 @@ export default function MembersPage() {
                 active={tierFilter === f.value}
                 label={f.label}
                 activeClass={
-                  f.value === "foundations" ? "bg-[#6ba3c7] text-white border-[#6ba3c7]"
-                  : f.value === "editing" ? "bg-[#f59e0b] text-white border-[#f59e0b]"
-                  : f.value === "mastery" ? "bg-[#8b5cf6] text-white border-[#8b5cf6]"
+                  f.value === "foundations"  ? "bg-[#6ba3c7] text-white border-[#6ba3c7]"
+                  : f.value === "production" ? "bg-[#f59e0b] text-white border-[#f59e0b]"
+                  : f.value === "growth"     ? "bg-[#8b5cf6] text-white border-[#8b5cf6]"
+                  : f.value === "done_with_you" ? "bg-[#1e2a38] text-white border-[#1e2a38]"
                   : "bg-[#111] text-white border-[#111]"
                 }
                 onClick={() => { setTierFilter(f.value as TierFilter); setPage(1); }}

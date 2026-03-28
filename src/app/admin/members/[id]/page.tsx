@@ -34,10 +34,11 @@ const GHL_LOCATION_ID = process.env.NEXT_PUBLIC_GHL_LOCATION_ID ?? "";
 
 const SERVICE_TIERS = [
   { value: "foundations", label: "Foundations" },
-  { value: "editing_2", label: "Editing 2" },
-  { value: "editing_4", label: "Editing 4" },
-  { value: "mastery_2", label: "Mastery 2" },
-  { value: "mastery_4", label: "Mastery 4" },
+  { value: "editing_2", label: "Production (2)" },
+  { value: "editing_4", label: "Production (4)" },
+  { value: "mastery_2", label: "Growth (2)" },
+  { value: "mastery_4", label: "Growth (4)" },
+  { value: "done_with_you", label: "Done-With-You" },
 ];
 
 const PRINCIPLE_LABELS: Record<string, string> = {
