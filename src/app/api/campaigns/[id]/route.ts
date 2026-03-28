@@ -66,6 +66,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     id: campaign.id,
     name: campaign.name,
     destinationUrl: campaign.destinationUrl,
+    leadMagnetUrl: campaign.leadMagnetUrl ?? null,
     sourceType: campaign.sourceType,
     createdAt: campaign.createdAt,
     member: isAdmin ? campaign.user : undefined,
@@ -87,13 +88,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const campaign = await getCampaignForUser(id, user.id);
   if (!campaign) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const { name, destinationUrl, sourceType } = await req.json();
+  const { name, destinationUrl, leadMagnetUrl, sourceType } = await req.json();
   try {
     const updated = await prisma.campaign.update({
       where: { id },
       data: {
         ...(name && { name }),
         ...(destinationUrl && { destinationUrl: normalizeUrl(destinationUrl) }),
+        ...(leadMagnetUrl !== undefined && { leadMagnetUrl: leadMagnetUrl || null }),
         ...(sourceType && { sourceType }),
       },
     });

@@ -29,6 +29,7 @@ interface CampaignData {
   id: string;
   name: string;
   destinationUrl: string;
+  leadMagnetUrl: string | null;
   sourceType: string;
   createdAt: string;
   links: TrackingLinkData[];
@@ -140,7 +141,7 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
 
   // Edit campaign
   const [showEditCampaign, setShowEditCampaign] = useState(false);
-  const [campaignEditForm, setCampaignEditForm] = useState({ name: "", destinationUrl: "", sourceType: "" });
+  const [campaignEditForm, setCampaignEditForm] = useState({ name: "", destinationUrl: "", leadMagnetUrl: "", sourceType: "" });
   const [savingCampaign, setSavingCampaign] = useState(false);
   const [campaignEditError, setCampaignEditError] = useState<string | null>(null);
 
@@ -274,7 +275,7 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
 
   function openEditCampaign() {
     if (!campaign) return;
-    setCampaignEditForm({ name: campaign.name, destinationUrl: campaign.destinationUrl, sourceType: campaign.sourceType });
+    setCampaignEditForm({ name: campaign.name, destinationUrl: campaign.destinationUrl, leadMagnetUrl: campaign.leadMagnetUrl ?? "", sourceType: campaign.sourceType });
     setCampaignEditError(null);
     setShowEditCampaign(true);
   }
@@ -287,7 +288,7 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
       const res = await fetch(`/api/campaigns/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(campaignEditForm),
+        body: JSON.stringify({ ...campaignEditForm, leadMagnetUrl: campaignEditForm.leadMagnetUrl || null }),
       });
       if (res.ok) {
         setShowEditCampaign(false);
@@ -386,6 +387,22 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
           {copied === "destination-url" ? "Copied!" : "Copy"}
         </button>
       </div>
+
+      {/* Lead Magnet URL — only shown when set */}
+      {campaign.leadMagnetUrl && (
+        <div className="bg-white border border-[#2f3437]/10 rounded-lg px-4 py-3 flex items-center gap-3">
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-semibold text-[#2f3437]/40 uppercase tracking-wide mb-0.5">Lead Magnet URL</p>
+            <p className="text-sm text-[#2f3437] font-mono truncate">{campaign.leadMagnetUrl}</p>
+          </div>
+          <button
+            onClick={() => copy(campaign.leadMagnetUrl!, "lead-magnet-url")}
+            className="text-xs text-[#6ba3c7] hover:text-[#5490b5] font-medium flex-shrink-0 transition-colors"
+          >
+            {copied === "lead-magnet-url" ? "Copied!" : "Copy"}
+          </button>
+        </div>
+      )}
 
       {/* Stats Bar — source-type-aware */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -755,6 +772,10 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
               <div>
                 <label className="block text-sm font-semibold text-[#2f3437] mb-1.5">Destination URL</label>
                 <input type="text" value={campaignEditForm.destinationUrl} onChange={(e) => setCampaignEditForm({ ...campaignEditForm, destinationUrl: e.target.value })} placeholder="https://yoursite.com/free-guide" className={INPUT_CLS} />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-[#2f3437] mb-1.5">Lead Magnet URL <span className="font-normal text-[#2f3437]/40">(optional)</span></label>
+                <input type="url" value={campaignEditForm.leadMagnetUrl} onChange={(e) => setCampaignEditForm({ ...campaignEditForm, leadMagnetUrl: e.target.value })} placeholder="e.g., Google Drive link to your guide" className={INPUT_CLS} />
               </div>
               <div>
                 <label className="block text-sm font-semibold text-[#2f3437] mb-1.5">Traffic Source</label>

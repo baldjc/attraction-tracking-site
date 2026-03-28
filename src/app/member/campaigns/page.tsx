@@ -48,7 +48,7 @@ export default function CampaignsPage() {
   const [loading, setLoading] = useState(true);
   const [analytics, setAnalytics] = useState<AnalyticsSummary | null>(null);
   const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState({ name: "", destinationUrl: "", sourceType: "YOUTUBE" });
+  const [form, setForm] = useState({ name: "", destinationUrl: "", leadMagnetUrl: "", sourceType: "YOUTUBE" });
   const [creating, setCreating] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -84,7 +84,7 @@ export default function CampaignsPage() {
       if (res.ok) {
         const campaign = await res.json();
         setShowModal(false);
-        setForm({ name: "", destinationUrl: "", sourceType: "YOUTUBE" });
+        setForm({ name: "", destinationUrl: "", leadMagnetUrl: "", sourceType: "YOUTUBE" });
         window.location.href = `/member/campaigns/${campaign.id}`;
       } else {
         const data = await res.json().catch(() => ({}));
@@ -317,6 +317,10 @@ export default function CampaignsPage() {
                 <label className="block text-sm font-semibold text-[#2f3437] mb-1.5">Destination URL</label>
                 <input type="text" value={form.destinationUrl} onChange={(e) => setForm({ ...form, destinationUrl: e.target.value })} placeholder="https://yoursite.com/free-guide" className={INPUT_CLS} />
                 <p className="text-xs text-[#2f3437]/40 mt-1">The lead magnet or landing page URL</p>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-[#2f3437] mb-1.5">Lead Magnet URL <span className="font-normal text-[#2f3437]/40">(optional)</span></label>
+                <input type="url" value={form.leadMagnetUrl} onChange={(e) => setForm({ ...form, leadMagnetUrl: e.target.value })} placeholder="e.g., Google Drive link to your guide" className={INPUT_CLS} />
               </div>
               <div>
                 <label className="block text-sm font-semibold text-[#2f3437] mb-1.5">Traffic Source</label>

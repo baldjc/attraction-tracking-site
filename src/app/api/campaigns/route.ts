@@ -43,6 +43,7 @@ export async function GET() {
       id: c.id,
       name: c.name,
       destinationUrl: c.destinationUrl,
+      leadMagnetUrl: c.leadMagnetUrl ?? null,
       sourceType: c.sourceType,
       createdAt: c.createdAt,
       totalClicks,
@@ -63,7 +64,7 @@ export async function POST(req: NextRequest) {
   const user = await resolveUserFromSession();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { name, destinationUrl, sourceType } = await req.json();
+  const { name, destinationUrl, leadMagnetUrl, sourceType } = await req.json();
   if (!name || !destinationUrl) {
     return NextResponse.json({ error: "name and destinationUrl are required" }, { status: 400 });
   }
@@ -74,6 +75,7 @@ export async function POST(req: NextRequest) {
         userId: user.id,
         name,
         destinationUrl: normalizeUrl(destinationUrl),
+        leadMagnetUrl: leadMagnetUrl || null,
         sourceType: sourceType ?? "YOUTUBE",
       },
     });
