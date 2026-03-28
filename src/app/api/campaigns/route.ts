@@ -39,12 +39,14 @@ export async function GET() {
     const totalUniqueClicks = uniqueIps.size;
     const totalViews = c.links.reduce((sum, l) => sum + l.youtubeViewCount, 0);
     const hasYoutube = c.links.some((l) => l.youtubeVideoId);
+    const linkSources = [...new Set(c.links.map((l) => l.source))];
     return {
       id: c.id,
       name: c.name,
       destinationUrl: c.destinationUrl,
       leadMagnetUrl: c.leadMagnetUrl ?? null,
       sourceType: c.sourceType,
+      linkSources,
       createdAt: c.createdAt,
       totalClicks,
       totalLeads,

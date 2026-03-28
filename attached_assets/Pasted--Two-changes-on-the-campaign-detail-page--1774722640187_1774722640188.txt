@@ -1,0 +1,25 @@
+  Two changes on the campaign detail page:                                                                               
+                                          
+  1. Destination picker when creating/editing a link
+                                                                                                                             
+  When a campaign has both a Destination URL (landing page) and a Lead Magnet URL saved, show a toggle or radio selector in  
+  the New Link / Edit Link modal that lets the member choose which URL this tracking link should point to:                   
+                                                                                                                             
+  - Landing Page — for YouTube descriptions, social posts, etc. where you want to capture new leads                          
+  - Lead Magnet — for newsletters, emails, etc. where the person already subscribed and just needs the resource
+                                                                                                                             
+  If the campaign only has a Destination URL (no Lead Magnet URL), don't show the picker — just default to the landing page  
+  like it does now. The selected destination determines where the ?ref= and /r/[shortCode] redirect point to.                
+                                                                                                                             
+  2. Reorder the campaign detail page sections                                                                               
+   
+  Current order: Stats bar → Analytics chart → Click Map → Tracking Links                                                    
+                                                                                                                           
+  New order:                                                                                                                 
+  1. Stats bar (Clicks, Leads, Conversion Rate)                                                                            
+  2. Tracking Links                                                                                                          
+  3. Analytics chart
+  4. Click Map (at the very bottom)                                                                                          
+                                                                                                                           
+  The links and their results are the most important thing on this page — they should be right below the stats, not buried   
+  under the chart and map. 

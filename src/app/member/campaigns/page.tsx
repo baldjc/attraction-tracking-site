@@ -10,6 +10,7 @@ interface Campaign {
   name: string;
   destinationUrl: string;
   sourceType: string;
+  linkSources: string[];
   createdAt: string;
   totalClicks: number;
   totalLeads: number;
@@ -31,14 +32,12 @@ interface AnalyticsSummary {
   topLink: { name: string; campaignName: string; leads: number } | null;
 }
 
-const SOURCE_LABELS: Record<string, { label: string; color: string }> = {
-  YOUTUBE:          { label: "YouTube",          color: "bg-red-100 text-red-700" },
-  EMAIL_NEWSLETTER: { label: "Email Newsletter", color: "bg-amber-100 text-amber-700" },
-  GOOGLE_ADS:       { label: "Google Ads",       color: "bg-blue-100 text-blue-700" },
-  META_ADS:         { label: "Meta Ads",          color: "bg-indigo-100 text-indigo-700" },
-  DIRECT_MAIL:      { label: "Direct Mail",       color: "bg-purple-100 text-purple-700" },
-  BLOG_POSTS:       { label: "Blog Posts",        color: "bg-emerald-100 text-emerald-700" },
-  OTHER:            { label: "Other",             color: "bg-gray-100 text-gray-600" },
+const LINK_SOURCE_STYLES: Record<string, { label: string; color: string }> = {
+  youtube:   { label: "YouTube",   color: "bg-red-100 text-red-700" },
+  linkedin:  { label: "LinkedIn",  color: "bg-blue-100 text-blue-700" },
+  instagram: { label: "Instagram", color: "bg-pink-100 text-pink-700" },
+  email:     { label: "Email",     color: "bg-teal-100 text-teal-700" },
+  other:     { label: "Other",     color: "bg-gray-100 text-gray-600" },
 };
 
 const INPUT_CLS = "w-full border border-[#2f3437]/20 rounded-lg px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-[#6ba3c7]";
@@ -48,11 +47,10 @@ export default function CampaignsPage() {
   const [loading, setLoading] = useState(true);
   const [analytics, setAnalytics] = useState<AnalyticsSummary | null>(null);
   const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState({ name: "", destinationUrl: "", leadMagnetUrl: "", sourceType: "YOUTUBE" });
+  const [form, setForm] = useState({ name: "", destinationUrl: "", leadMagnetUrl: "" });
   const [creating, setCreating] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-  const [typeFilter, setTypeFilter] = useState<string>("all");
   const [hasTyUrl, setHasTyUrl] = useState<boolean | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
 
@@ -84,7 +82,7 @@ export default function CampaignsPage() {
       if (res.ok) {
         const campaign = await res.json();
         setShowModal(false);
-        setForm({ name: "", destinationUrl: "", leadMagnetUrl: "", sourceType: "YOUTUBE" });
+        setForm({ name: "", destinationUrl: "", leadMagnetUrl: "" });
         window.location.href = `/member/campaigns/${campaign.id}`;
       } else {
         const data = await res.json().catch(() => ({}));
@@ -105,10 +103,6 @@ export default function CampaignsPage() {
   }
 
   const confirmingName = campaigns.find((c) => c.id === confirmDeleteId)?.name ?? "";
-
-  const availableTypes = Array.from(new Set(campaigns.map((c) => c.sourceType)));
-  const visibleCampaigns = typeFilter === "all" ? campaigns : campaigns.filter((c) => c.sourceType === typeFilter);
-
   const convRateDelta = analytics ? analytics.conversionRate - analytics.previousConversionRate : 0;
 
   return (
@@ -137,7 +131,6 @@ export default function CampaignsPage() {
       {/* Summary Dashboard */}
       {analytics && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-          {/* Total Clicks */}
           <Link href="/member/analytics?tab=overview" className="bg-white border border-[#2f3437]/10 rounded-lg p-4 hover:border-[#6ba3c7]/40 hover:shadow-sm transition-all block">
             <p className="text-xs text-[#2f3437]/50 font-medium mb-1">Clicks (30d)</p>
             <p className="text-2xl font-bold text-[#2f3437]">{analytics.totalClicks.toLocaleString()}</p>
@@ -145,7 +138,6 @@ export default function CampaignsPage() {
               <MiniSparkline data={analytics.sparkline.map((s) => ({ value: s.clicks }))} color="#6ba3c7" />
             </div>
           </Link>
-          {/* Total Leads */}
           <Link href="/member/analytics?tab=conversions" className="bg-white border border-[#2f3437]/10 rounded-lg p-4 hover:border-[#6ba3c7]/40 hover:shadow-sm transition-all block">
             <p className="text-xs text-[#2f3437]/50 font-medium mb-1">Leads (30d)</p>
             <p className="text-2xl font-bold text-[#2f3437]">{analytics.totalLeads.toLocaleString()}</p>
@@ -153,7 +145,6 @@ export default function CampaignsPage() {
               <MiniSparkline data={(analytics.leadsSparkline ?? []).map((s) => ({ value: s.leads }))} color="#2f3437" />
             </div>
           </Link>
-          {/* Conversion Rate */}
           <Link href="/member/analytics?tab=overview" className="bg-white border border-[#2f3437]/10 rounded-lg p-4 hover:border-[#6ba3c7]/40 hover:shadow-sm transition-all block">
             <p className="text-xs text-[#2f3437]/50 font-medium mb-1">Conv. Rate (30d)</p>
             <p className="text-2xl font-bold text-[#6ba3c7]">{analytics.conversionRate}%</p>
@@ -166,7 +157,6 @@ export default function CampaignsPage() {
               </div>
             )}
           </Link>
-          {/* Top Performing Link */}
           <Link href="/member/analytics?tab=videos" className="bg-white border border-[#2f3437]/10 rounded-lg p-4 hover:border-[#6ba3c7]/40 hover:shadow-sm transition-all block">
             <p className="text-xs text-[#2f3437]/50 font-medium mb-1">Top Link (30d)</p>
             {analytics.topLink ? (
@@ -182,30 +172,6 @@ export default function CampaignsPage() {
         </div>
       )}
 
-      {/* Type filter pills */}
-      {campaigns.length > 0 && (
-        <div className="flex items-center gap-2 flex-wrap mb-5">
-          <button
-            onClick={() => setTypeFilter("all")}
-            className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${typeFilter === "all" ? "bg-[#111] text-white dark:bg-white dark:text-[#2f3437]" : "bg-white dark:bg-white/10 border border-[#2f3437]/15 dark:border-white/15 text-[#2f3437]/60 dark:text-white/60 hover:text-[#2f3437] dark:hover:text-white"}`}
-          >
-            All
-          </button>
-          {availableTypes.map((type) => {
-            const src = SOURCE_LABELS[type] ?? SOURCE_LABELS.OTHER;
-            return (
-              <button
-                key={type}
-                onClick={() => setTypeFilter(type)}
-                className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${typeFilter === type ? "bg-[#111] text-white dark:bg-white dark:text-[#2f3437]" : "bg-white dark:bg-white/10 border border-[#2f3437]/15 dark:border-white/15 text-[#2f3437]/60 dark:text-white/60 hover:text-[#2f3437] dark:hover:text-white"}`}
-              >
-                {src.label}
-              </button>
-            );
-          })}
-        </div>
-      )}
-
       {loading ? (
         <div className="text-center py-16 text-[#2f3437]/40">Loading...</div>
       ) : campaigns.length === 0 ? (
@@ -217,74 +183,49 @@ export default function CampaignsPage() {
             Create your first campaign
           </button>
         </div>
-      ) : visibleCampaigns.length === 0 ? (
-        <div className="bg-white dark:bg-[#1a1a1a] border border-[#2f3437]/10 dark:border-white/10 rounded-lg p-8 text-center">
-          <p className="text-sm text-[#2f3437]/50 dark:text-white/50">No {SOURCE_LABELS[typeFilter]?.label ?? ""} campaigns found.</p>
-          <button onClick={() => setTypeFilter("all")} className="mt-3 text-xs text-[#6ba3c7] hover:underline">Clear filter</button>
-        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {visibleCampaigns.map((c) => {
-            const src = SOURCE_LABELS[c.sourceType] ?? SOURCE_LABELS.OTHER;
+          {campaigns.map((c) => {
             const memberName = c.member?.fullName || c.member?.email;
+            const sources = Array.from(new Set(c.linkSources ?? []));
             return (
               <div key={c.id} className="relative group bg-white border border-[#2f3437]/10 rounded-lg hover:border-[#6ba3c7]/40 hover:shadow-sm transition-all">
                 <Link href={`/member/campaigns/${c.id}`} className="block p-5">
                   <div className="flex items-start justify-between gap-3 mb-1">
                     <h3 className="font-semibold text-[#2f3437]">{c.name}</h3>
-                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0 ${src.color}`}>{src.label}</span>
+                    {sources.length > 0 && (
+                      <div className="flex items-center gap-1 flex-shrink-0 flex-wrap justify-end">
+                        {sources.map((s) => {
+                          const style = LINK_SOURCE_STYLES[s] ?? LINK_SOURCE_STYLES.other;
+                          return <span key={s} className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${style.color}`}>{style.label}</span>;
+                        })}
+                      </div>
+                    )}
                   </div>
                   <p className="text-xs text-[#2f3437]/40 truncate mb-4">{c.destinationUrl}</p>
-                  {c.sourceType === "EMAIL_NEWSLETTER" ? (
-                    <div className="grid grid-cols-2 gap-2 text-center">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-center">
+                    {c.totalViews !== null && (
                       <div>
-                        <div className="text-lg font-bold text-[#2f3437]">{c.totalClicks}</div>
-                        <div className="text-xs text-[#2f3437]/40">Clicks</div>
+                        <div className="text-lg font-bold text-[#2f3437]">{c.totalViews.toLocaleString()}</div>
+                        <div className="text-xs text-[#2f3437]/40">Views</div>
                       </div>
-                      <div>
-                        <div className="text-lg font-bold text-[#6ba3c7]">{c.totalUniqueClicks}</div>
-                        <div className="text-xs text-[#2f3437]/40">Unique Clicks</div>
-                      </div>
+                    )}
+                    <div>
+                      <div className="text-lg font-bold text-[#2f3437]">{c.totalClicks}</div>
+                      <div className="text-xs text-[#2f3437]/40">Clicks</div>
                     </div>
-                  ) : c.sourceType === "YOUTUBE" ? (
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-center">
-                      {c.totalViews !== null && (
-                        <div>
-                          <div className="text-lg font-bold text-[#2f3437]">{c.totalViews.toLocaleString()}</div>
-                          <div className="text-xs text-[#2f3437]/40">Views</div>
-                        </div>
-                      )}
-                      <div>
-                        <div className="text-lg font-bold text-[#2f3437]">{c.totalClicks}</div>
-                        <div className="text-xs text-[#2f3437]/40">Clicks</div>
-                      </div>
-                      <div>
-                        <div className="text-lg font-bold text-[#2f3437]">{c.totalLeads}</div>
-                        <div className="text-xs text-[#2f3437]/40">Leads</div>
-                      </div>
-                      <div>
-                        <div className="text-lg font-bold text-[#6ba3c7]">{c.conversionRate}%</div>
-                        <div className="text-xs text-[#2f3437]/40">Conv. Rate</div>
-                      </div>
+                    <div>
+                      <div className="text-lg font-bold text-[#2f3437]">{c.totalLeads}</div>
+                      <div className="text-xs text-[#2f3437]/40">Leads</div>
                     </div>
-                  ) : (
-                    <div className="grid grid-cols-3 gap-2 text-center">
-                      <div>
-                        <div className="text-lg font-bold text-[#2f3437]">{c.totalClicks}</div>
-                        <div className="text-xs text-[#2f3437]/40">Clicks</div>
-                      </div>
-                      <div>
-                        <div className="text-lg font-bold text-[#2f3437]">{c.totalLeads}</div>
-                        <div className="text-xs text-[#2f3437]/40">Leads</div>
-                      </div>
-                      <div>
-                        <div className="text-lg font-bold text-[#6ba3c7]">{c.conversionRate}%</div>
-                        <div className="text-xs text-[#2f3437]/40">Conv. Rate</div>
-                      </div>
+                    <div>
+                      <div className="text-lg font-bold text-[#6ba3c7]">{c.conversionRate}%</div>
+                      <div className="text-xs text-[#2f3437]/40">Conv. Rate</div>
                     </div>
-                  )}
-                  <div className="mt-3 pt-3 border-t border-[#2f3437]/5 text-xs text-[#2f3437]/40">
-                    {c.linkCount} tracking link{c.linkCount !== 1 ? "s" : ""}
+                  </div>
+                  <div className="mt-3 pt-3 border-t border-[#2f3437]/5 flex items-center justify-between text-xs text-[#2f3437]/40">
+                    <span>{c.linkCount} tracking link{c.linkCount !== 1 ? "s" : ""}</span>
+                    {memberName && <span className="truncate ml-2">{memberName}</span>}
                   </div>
                 </Link>
                 <button
@@ -321,18 +262,6 @@ export default function CampaignsPage() {
               <div>
                 <label className="block text-sm font-semibold text-[#2f3437] mb-1.5">Lead Magnet URL <span className="font-normal text-[#2f3437]/40">(optional)</span></label>
                 <input type="url" value={form.leadMagnetUrl} onChange={(e) => setForm({ ...form, leadMagnetUrl: e.target.value })} placeholder="e.g., Google Drive link to your guide" className={INPUT_CLS} />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-[#2f3437] mb-1.5">Traffic Source</label>
-                <select value={form.sourceType} onChange={(e) => setForm({ ...form, sourceType: e.target.value })} className={`${INPUT_CLS} bg-white`}>
-                  <option value="YOUTUBE">YouTube</option>
-                  <option value="EMAIL_NEWSLETTER">Email Newsletter</option>
-                  <option value="GOOGLE_ADS">Google Ads</option>
-                  <option value="META_ADS">Meta Ads</option>
-                  <option value="DIRECT_MAIL">Direct Mail</option>
-                  <option value="BLOG_POSTS">Blog Posts</option>
-                  <option value="OTHER">Other</option>
-                </select>
               </div>
               {hasTyUrl === false && (
                 <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5">

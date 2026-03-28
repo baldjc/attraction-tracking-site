@@ -42,6 +42,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     return {
       id: l.id,
       name: l.name,
+      source: l.source,
       refCode: l.refCode,
       youtubeVideoUrl: l.youtubeVideoUrl,
       youtubeVideoId: l.youtubeVideoId,

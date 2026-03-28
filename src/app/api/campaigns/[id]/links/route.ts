@@ -27,6 +27,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       return {
         id: l.id,
         name: l.name,
+        source: l.source,
         refCode: l.refCode,
         trackedUrl: buildTrackedUrl(campaign.destinationUrl, l.refCode),
         youtubeVideoUrl: l.youtubeVideoUrl,
@@ -53,11 +54,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   });
   if (!campaign) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const { name, youtubeVideoUrl } = await req.json();
+  const { name, source, youtubeVideoUrl } = await req.json();
   if (!name) return NextResponse.json({ error: "name is required" }, { status: 400 });
 
+  const linkSource: string = source ?? "youtube";
   const refCode = await generateUniqueRefCode();
-  const youtubeVideoId = youtubeVideoUrl ? extractYoutubeVideoId(youtubeVideoUrl) : null;
+  const youtubeVideoId = linkSource === "youtube" && youtubeVideoUrl ? extractYoutubeVideoId(youtubeVideoUrl) : null;
 
   let youtubeThumbnailUrl: string | null = youtubeVideoId
     ? `https://img.youtube.com/vi/${youtubeVideoId}/mqdefault.jpg`
@@ -81,8 +83,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     data: {
       campaignId: id,
       name: resolvedName,
+      source: linkSource,
       refCode,
-      youtubeVideoUrl: youtubeVideoUrl ?? null,
+      youtubeVideoUrl: linkSource === "youtube" ? (youtubeVideoUrl ?? null) : null,
       youtubeVideoId,
       youtubeThumbnailUrl,
       youtubeViewCount,

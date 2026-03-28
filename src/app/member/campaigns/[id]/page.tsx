@@ -11,6 +11,7 @@ import LocationTable from "@/components/campaigns/LocationTable";
 interface TrackingLinkData {
   id: string;
   name: string;
+  source: string;
   refCode: string;
   trackedUrl: string;
   youtubeVideoUrl: string | null;
@@ -68,15 +69,21 @@ interface AnalyticsData {
   byLink: { linkId: string; name: string; clicks: number; leads: number; youtubeViews: number | null }[];
 }
 
-const SOURCE_LABELS: Record<string, { label: string; color: string }> = {
-  YOUTUBE:          { label: "YouTube",          color: "bg-red-100 text-red-700" },
-  EMAIL_NEWSLETTER: { label: "Email Newsletter", color: "bg-amber-100 text-amber-700" },
-  GOOGLE_ADS:       { label: "Google Ads",       color: "bg-blue-100 text-blue-700" },
-  META_ADS:         { label: "Meta Ads",          color: "bg-indigo-100 text-indigo-700" },
-  DIRECT_MAIL:      { label: "Direct Mail",       color: "bg-purple-100 text-purple-700" },
-  BLOG_POSTS:       { label: "Blog Posts",        color: "bg-emerald-100 text-emerald-700" },
-  OTHER:            { label: "Other",             color: "bg-gray-100 text-gray-600" },
+const LINK_SOURCE_STYLES: Record<string, { label: string; color: string }> = {
+  youtube:   { label: "YouTube",   color: "bg-red-100 text-red-700" },
+  linkedin:  { label: "LinkedIn",  color: "bg-blue-100 text-blue-700" },
+  instagram: { label: "Instagram", color: "bg-pink-100 text-pink-700" },
+  email:     { label: "Email",     color: "bg-teal-100 text-teal-700" },
+  other:     { label: "Other",     color: "bg-gray-100 text-gray-600" },
 };
+
+const LINK_SOURCES = [
+  { value: "youtube",   label: "YouTube" },
+  { value: "linkedin",  label: "LinkedIn" },
+  { value: "instagram", label: "Instagram" },
+  { value: "email",     label: "Email" },
+  { value: "other",     label: "Other" },
+];
 
 const PERIODS = [
   { label: "7d", value: "7d" },
@@ -116,6 +123,7 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
   // New link modal
   const [showNewLink, setShowNewLink] = useState(false);
   const [linkForm, setLinkForm] = useState({ name: "", youtubeVideoUrl: "" });
+  const [linkSource, setLinkSource] = useState("youtube");
   const [creating, setCreating] = useState(false);
   const [fetchingYtInfo, setFetchingYtInfo] = useState(false);
   const [previewThumb, setPreviewThumb] = useState<string | null>(null);
@@ -124,6 +132,7 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
   // Edit link modal
   const [editingLink, setEditingLink] = useState<TrackingLinkData | null>(null);
   const [editForm, setEditForm] = useState({ name: "", youtubeVideoUrl: "" });
+  const [editLinkSource, setEditLinkSource] = useState("youtube");
   const [saving, setSaving] = useState(false);
   const [fetchingYtEdit, setFetchingYtEdit] = useState(false);
   const [editPreviewThumb, setEditPreviewThumb] = useState<string | null>(null);
@@ -141,7 +150,8 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
 
   // Edit campaign
   const [showEditCampaign, setShowEditCampaign] = useState(false);
-  const [campaignEditForm, setCampaignEditForm] = useState({ name: "", destinationUrl: "", leadMagnetUrl: "", sourceType: "" });
+  const [campaignEditForm, setCampaignEditForm] = useState({ name: "", destinationUrl: "", leadMagnetUrl: "" });
+  const [analyticsSourceFilter, setAnalyticsSourceFilter] = useState("all");
   const [savingCampaign, setSavingCampaign] = useState(false);
   const [campaignEditError, setCampaignEditError] = useState<string | null>(null);
 
@@ -152,9 +162,10 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
     setLoading(false);
   }, [id]);
 
-  const loadAnalytics = useCallback(async (p: string) => {
+  const loadAnalytics = useCallback(async (p: string, src = "all") => {
     setAnalyticsLoading(true);
-    const res = await fetch(`/api/campaigns/${id}/analytics?period=${p}`);
+    const qs = src !== "all" ? `&source=${src}` : "";
+    const res = await fetch(`/api/campaigns/${id}/analytics?period=${p}${qs}`);
     if (res.ok) setAnalytics(await res.json());
     setAnalyticsLoading(false);
   }, [id]);
@@ -176,7 +187,7 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
     }).catch(() => {});
   }, [loadCampaign, loadGeoData]);
 
-  useEffect(() => { loadAnalytics(period); }, [period, loadAnalytics]);
+  useEffect(() => { loadAnalytics(period, analyticsSourceFilter); }, [period, analyticsSourceFilter, loadAnalytics]);
 
   async function fetchYtInfoForUrl(url: string, { isEdit = false } = {}) {
     const videoId = extractVideoId(url);
@@ -206,22 +217,25 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         name: linkForm.name,
-        youtubeVideoUrl: linkForm.youtubeVideoUrl || undefined,
+        source: linkSource,
+        youtubeVideoUrl: linkSource === "youtube" ? (linkForm.youtubeVideoUrl || undefined) : undefined,
       }),
     });
     if (res.ok) {
       setShowNewLink(false);
       setLinkForm({ name: "", youtubeVideoUrl: "" });
+      setLinkSource("youtube");
       setPreviewThumb(null);
       setNameTouchedNew(false);
       loadCampaign();
-      loadAnalytics(period);
+      loadAnalytics(period, analyticsSourceFilter);
     }
     setCreating(false);
   }
 
   function openEdit(link: TrackingLinkData) {
     setEditingLink(link);
+    setEditLinkSource(link.source ?? "youtube");
     setEditForm({ name: link.name, youtubeVideoUrl: link.youtubeVideoUrl ?? "" });
     setEditPreviewThumb(link.youtubeThumbnailUrl ?? null);
     setNameTouchedEdit(false);
@@ -233,7 +247,11 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
     const res = await fetch(`/api/campaigns/${id}/links/${editingLink.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: editForm.name, youtubeVideoUrl: editForm.youtubeVideoUrl || null }),
+      body: JSON.stringify({
+        name: editForm.name,
+        source: editLinkSource,
+        youtubeVideoUrl: editLinkSource === "youtube" ? (editForm.youtubeVideoUrl || null) : null,
+      }),
     });
     setSaving(false);
     if (res.ok) { setEditingLink(null); loadCampaign(); }
@@ -275,7 +293,7 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
 
   function openEditCampaign() {
     if (!campaign) return;
-    setCampaignEditForm({ name: campaign.name, destinationUrl: campaign.destinationUrl, leadMagnetUrl: campaign.leadMagnetUrl ?? "", sourceType: campaign.sourceType });
+    setCampaignEditForm({ name: campaign.name, destinationUrl: campaign.destinationUrl, leadMagnetUrl: campaign.leadMagnetUrl ?? "" });
     setCampaignEditError(null);
     setShowEditCampaign(true);
   }
@@ -306,12 +324,6 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
   if (loading) return <div className="text-center py-16 text-[#2f3437]/40">Loading...</div>;
   if (!campaign) return <div className="text-center py-16 text-[#2f3437]/40">Campaign not found.</div>;
 
-  const isYoutube = campaign.sourceType === "YOUTUBE";
-  const isEmailNewsletter = campaign.sourceType === "EMAIL_NEWSLETTER";
-  const linkLabel = isYoutube ? "Video Name" : "Link Name";
-  const linkPlaceholder = isYoutube ? "e.g. Buyers Guide Video — March" : "e.g. Email Newsletter — April";
-
-  const src = SOURCE_LABELS[campaign.sourceType] ?? SOURCE_LABELS.OTHER;
   const ctr = campaign.totalViews && campaign.totalViews > 0
     ? Math.round((campaign.totalClicks / campaign.totalViews) * 100)
     : null;
@@ -356,7 +368,6 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
           <div>
             <div className="flex items-center gap-2 mb-1">
               <h1 className="text-2xl font-bold text-[#2f3437]">{campaign.name}</h1>
-              <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${src.color}`}>{src.label}</span>
               <button onClick={openEditCampaign} title="Edit campaign" className="text-[#2f3437]/30 hover:text-[#6ba3c7] transition-colors">
                 <PencilIcon className="w-4 h-4" />
               </button>
@@ -404,72 +415,54 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
         </div>
       )}
 
-      {/* Stats Bar — source-type-aware */}
+      {/* Stats Bar */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {isEmailNewsletter ? (
-          <>
-            <div className="bg-white border border-[#2f3437]/10 rounded-lg p-4 text-center">
-              <div className="text-xl font-bold text-[#2f3437]">{campaign.totalClicks.toLocaleString()}</div>
-              <div className="text-xs text-[#2f3437]/40 mt-0.5">Clicks</div>
-            </div>
-            <div className="bg-white border border-[#2f3437]/10 rounded-lg p-4 text-center">
-              <div className="text-xl font-bold text-[#6ba3c7]">{campaign.totalUniqueClicks.toLocaleString()}</div>
-              <div className="text-xs text-[#2f3437]/40 mt-0.5">Unique Clicks</div>
-            </div>
-          </>
-        ) : isYoutube ? (
-          <>
-            {campaign.totalViews !== null && (
-              <div className="bg-white border border-[#2f3437]/10 rounded-lg p-4 text-center">
-                <div className="text-xl font-bold text-[#2f3437]">{campaign.totalViews.toLocaleString()}</div>
-                <div className="text-xs text-[#2f3437]/40 mt-0.5">Views</div>
-              </div>
-            )}
-            <div className="bg-white border border-[#2f3437]/10 rounded-lg p-4 text-center">
-              <div className="text-xl font-bold text-[#2f3437]">{campaign.totalClicks.toLocaleString()}</div>
-              <div className="text-xs text-[#2f3437]/40 mt-0.5">Clicks</div>
-            </div>
-            <div className="bg-white border border-[#2f3437]/10 rounded-lg p-4 text-center">
-              <div className="text-xl font-bold text-[#2f3437]">{campaign.totalLeads.toLocaleString()}</div>
-              <div className="text-xs text-[#2f3437]/40 mt-0.5">Leads</div>
-            </div>
-            <div className="bg-white border border-[#2f3437]/10 rounded-lg p-4 text-center">
-              <div className="text-xl font-bold text-[#6ba3c7]">{convRate}%</div>
-              <div className="text-xs text-[#2f3437]/40 mt-0.5">Conversion Rate</div>
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="bg-white border border-[#2f3437]/10 rounded-lg p-4 text-center">
-              <div className="text-xl font-bold text-[#2f3437]">{campaign.totalClicks.toLocaleString()}</div>
-              <div className="text-xs text-[#2f3437]/40 mt-0.5">Clicks</div>
-            </div>
-            <div className="bg-white border border-[#2f3437]/10 rounded-lg p-4 text-center">
-              <div className="text-xl font-bold text-[#2f3437]">{campaign.totalLeads.toLocaleString()}</div>
-              <div className="text-xs text-[#2f3437]/40 mt-0.5">Leads</div>
-            </div>
-            <div className="bg-white border border-[#2f3437]/10 rounded-lg p-4 text-center">
-              <div className="text-xl font-bold text-[#6ba3c7]">{convRate}%</div>
-              <div className="text-xs text-[#2f3437]/40 mt-0.5">Conversion Rate</div>
-            </div>
-          </>
+        {campaign.totalViews !== null && (
+          <div className="bg-white border border-[#2f3437]/10 rounded-lg p-4 text-center">
+            <div className="text-xl font-bold text-[#2f3437]">{campaign.totalViews.toLocaleString()}</div>
+            <div className="text-xs text-[#2f3437]/40 mt-0.5">Views</div>
+          </div>
         )}
+        <div className="bg-white border border-[#2f3437]/10 rounded-lg p-4 text-center">
+          <div className="text-xl font-bold text-[#2f3437]">{campaign.totalClicks.toLocaleString()}</div>
+          <div className="text-xs text-[#2f3437]/40 mt-0.5">Clicks</div>
+        </div>
+        <div className="bg-white border border-[#2f3437]/10 rounded-lg p-4 text-center">
+          <div className="text-xl font-bold text-[#2f3437]">{campaign.totalLeads.toLocaleString()}</div>
+          <div className="text-xs text-[#2f3437]/40 mt-0.5">Leads</div>
+        </div>
+        <div className="bg-white border border-[#2f3437]/10 rounded-lg p-4 text-center">
+          <div className="text-xl font-bold text-[#6ba3c7]">{convRate}%</div>
+          <div className="text-xs text-[#2f3437]/40 mt-0.5">Conversion Rate</div>
+        </div>
       </div>
 
       {/* Analytics Charts */}
       <div className="bg-white border border-[#2f3437]/10 rounded-lg p-5">
-        <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
           <h2 className="font-semibold text-[#2f3437]">Analytics</h2>
-          <div className="flex gap-1">
-            {PERIODS.map((p) => (
-              <button
-                key={p.value}
-                onClick={() => setPeriod(p.value)}
-                className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${period === p.value ? "bg-[#111] text-white" : "text-[#2f3437]/50 hover:text-[#2f3437]"}`}
-              >
-                {p.label}
-              </button>
-            ))}
+          <div className="flex items-center gap-2 flex-wrap">
+            <select
+              value={analyticsSourceFilter}
+              onChange={(e) => setAnalyticsSourceFilter(e.target.value)}
+              className="text-xs border border-[#2f3437]/20 rounded-lg px-2 py-1.5 text-[#2f3437]/60 focus:outline-none"
+            >
+              <option value="all">All Sources</option>
+              {LINK_SOURCES.map((s) => (
+                <option key={s.value} value={s.value}>{s.label}</option>
+              ))}
+            </select>
+            <div className="flex gap-1">
+              {PERIODS.map((p) => (
+                <button
+                  key={p.value}
+                  onClick={() => setPeriod(p.value)}
+                  className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${period === p.value ? "bg-[#111] text-white" : "text-[#2f3437]/50 hover:text-[#2f3437]"}`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -483,10 +476,8 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
         ) : (
           <div className="space-y-6">
             <div>
-              <p className="text-xs font-medium text-[#2f3437]/50 mb-3">
-                {isEmailNewsletter ? "Clicks Per Day" : "Clicks & Leads Per Day"}
-              </p>
-              <DailyLineChart data={analytics!.daily} hideLeads={isEmailNewsletter} />
+              <p className="text-xs font-medium text-[#2f3437]/50 mb-3">Clicks &amp; Leads Per Day</p>
+              <DailyLineChart data={analytics!.daily} />
             </div>
 
             {analytics!.byLink.length > 1 && (
@@ -521,13 +512,14 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
             {sortedLinks.map((link) => (
               <div key={link.id} className="p-5">
                 <div className="flex items-start gap-3">
-                  {link.youtubeThumbnailUrl && (
+                  {link.source === "youtube" && link.youtubeThumbnailUrl && (
                     <img src={link.youtubeThumbnailUrl} alt={link.name} className="w-20 h-14 object-cover rounded-lg flex-shrink-0" />
                   )}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
-                      <div className="min-w-0">
+                      <div className="flex items-center gap-2 min-w-0">
                         <p className="font-medium text-[#2f3437] text-sm truncate">{link.name}</p>
+                        {(() => { const s = LINK_SOURCE_STYLES[link.source] ?? LINK_SOURCE_STYLES.other; return <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0 ${s.color}`}>{s.label}</span>; })()}
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
                         <button onClick={() => openEdit(link)} className="text-[#2f3437]/30 hover:text-[#6ba3c7] transition-colors" title="Edit link">
@@ -553,7 +545,7 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                         </button>
                       </div>
                     </div>
-                    {isYoutube && !link.youtubeVideoId && (
+                    {link.source === "youtube" && !link.youtubeVideoId && (
                       <button onClick={() => openEdit(link)} className="mt-1.5 text-xs text-amber-500 hover:text-amber-600 font-medium">
                         + Attach YouTube URL
                       </button>
@@ -561,7 +553,7 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                   </div>
                 </div>
                 <div className="grid grid-cols-3 gap-3 mt-3 text-center">
-                  {link.youtubeVideoId && (
+                  {link.source === "youtube" && link.youtubeVideoId && (
                     <div>
                       <div className="text-sm font-semibold text-[#2f3437]">{link.youtubeViewCount.toLocaleString()}</div>
                       <div className="text-xs text-[#2f3437]/40">Views</div>
@@ -663,45 +655,67 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                 <p className="text-xs text-[#2f3437]/40 mt-0.5">Add a unique link to track within this campaign</p>
               </div>
               <button
-                onClick={() => { setShowNewLink(false); setPreviewThumb(null); setNameTouchedNew(false); setLinkForm({ name: "", youtubeVideoUrl: "" }); }}
+                onClick={() => { setShowNewLink(false); setPreviewThumb(null); setNameTouchedNew(false); setLinkForm({ name: "", youtubeVideoUrl: "" }); setLinkSource("youtube"); }}
                 className="text-[#2f3437]/40 hover:text-[#2f3437] text-xl"
               >✕</button>
             </div>
 
             <div className="space-y-5">
+              {/* Source picker */}
+              <div>
+                <label className="block text-sm font-semibold text-[#2f3437] mb-2">Source Platform</label>
+                <div className="flex flex-wrap gap-2">
+                  {LINK_SOURCES.map((s) => {
+                    const style = LINK_SOURCE_STYLES[s.value];
+                    return (
+                      <button
+                        key={s.value}
+                        type="button"
+                        onClick={() => { setLinkSource(s.value); if (s.value !== "youtube") setPreviewThumb(null); }}
+                        className={`text-xs px-3 py-1.5 rounded-full font-semibold border transition-colors ${linkSource === s.value ? `${style.color} border-transparent` : "border-[#2f3437]/15 text-[#2f3437]/50 hover:text-[#2f3437]"}`}
+                      >
+                        {s.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               {/* Link name */}
               <div>
                 <label className="block text-sm font-semibold text-[#2f3437] mb-1.5">
-                  Link Name <span className="font-normal text-[#2f3437]/40 text-xs">— what is this link for?</span>
+                  {linkSource === "youtube" ? "Video Name" : "Link Name"} <span className="font-normal text-[#2f3437]/40 text-xs">— what is this link for?</span>
                 </label>
                 <input
                   type="text"
                   value={linkForm.name}
                   onChange={(e) => { setLinkForm({ ...linkForm, name: e.target.value }); setNameTouchedNew(true); }}
-                  placeholder={isYoutube ? "e.g. Buyers Guide Video — March" : "e.g. Spring Newsletter — March 2026"}
+                  placeholder={linkSource === "youtube" ? "e.g. Buyers Guide Video — March" : "e.g. Spring Newsletter — March 2026"}
                   className={INPUT_CLS}
                 />
               </div>
 
-              {/* YouTube URL */}
-              <div>
-                <label className="block text-sm font-semibold text-[#2f3437] mb-1.5">
-                  YouTube Video URL <span className="font-normal text-[#2f3437]/40">(optional)</span>
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="url"
-                    value={linkForm.youtubeVideoUrl}
-                    onChange={(e) => setLinkForm({ ...linkForm, youtubeVideoUrl: e.target.value })}
-                    onBlur={(e) => { if (e.target.value) fetchYtInfoForUrl(e.target.value); }}
-                    placeholder="https://youtube.com/watch?v=..."
-                    className={INPUT_CLS}
-                  />
-                  {fetchingYtInfo && <span className="w-5 h-5 mt-2.5 border-2 border-[#6ba3c7] border-t-transparent rounded-full animate-spin flex-shrink-0" />}
+              {/* YouTube URL — only when source is youtube */}
+              {linkSource === "youtube" && (
+                <div>
+                  <label className="block text-sm font-semibold text-[#2f3437] mb-1.5">
+                    YouTube Video URL <span className="font-normal text-[#2f3437]/40">(optional)</span>
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="url"
+                      value={linkForm.youtubeVideoUrl}
+                      onChange={(e) => setLinkForm({ ...linkForm, youtubeVideoUrl: e.target.value })}
+                      onBlur={(e) => { if (e.target.value) fetchYtInfoForUrl(e.target.value); }}
+                      placeholder="https://youtube.com/watch?v=..."
+                      className={INPUT_CLS}
+                    />
+                    {fetchingYtInfo && <span className="w-5 h-5 mt-2.5 border-2 border-[#6ba3c7] border-t-transparent rounded-full animate-spin flex-shrink-0" />}
+                  </div>
+                  {previewThumb && <img src={previewThumb} alt="thumbnail" className="mt-2 w-full h-28 object-cover rounded-lg" />}
+                  <p className="text-xs text-[#2f3437]/40 mt-1">Links view count and thumbnail to this tracking link.</p>
                 </div>
-                {previewThumb && <img src={previewThumb} alt="thumbnail" className="mt-2 w-full h-28 object-cover rounded-lg" />}
-                <p className="text-xs text-[#2f3437]/40 mt-1">Links view count and thumbnail to this tracking link.</p>
-              </div>
+              )}
 
               {/* URL preview */}
               <div className="bg-[#f8f9fa] rounded-lg p-3 text-xs text-[#2f3437]/50">
@@ -724,25 +738,51 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
       {/* Edit Link Modal */}
       {editingLink && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg border border-[#2f3437]/10 shadow-xl w-full max-w-md p-6">
+          <div className="bg-white rounded-lg border border-[#2f3437]/10 shadow-xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-5">
-              <h2 className="font-bold text-[#2f3437]">Edit Link</h2>
+              <div>
+                <h2 className="font-bold text-[#2f3437]">Edit Tracking Link</h2>
+                <p className="text-xs text-[#2f3437]/40 mt-0.5">Update the name, source, or attached YouTube video</p>
+              </div>
               <button onClick={() => setEditingLink(null)} className="text-[#2f3437]/40 hover:text-[#2f3437] text-xl">✕</button>
             </div>
-            <div className="space-y-4">
+            <div className="space-y-5">
+              {/* Source picker */}
               <div>
-                <label className="block text-sm font-semibold text-[#2f3437] mb-1.5">YouTube Video URL <span className="font-normal text-[#2f3437]/40">(optional)</span></label>
-                <div className="flex gap-2">
-                  <input type="url" value={editForm.youtubeVideoUrl} onChange={(e) => setEditForm({ ...editForm, youtubeVideoUrl: e.target.value })} onBlur={(e) => { if (e.target.value) fetchYtInfoForUrl(e.target.value, { isEdit: true }); }} placeholder="https://youtube.com/watch?v=..." className={INPUT_CLS} />
-                  {fetchingYtEdit && <span className="w-5 h-5 mt-2.5 border-2 border-[#6ba3c7] border-t-transparent rounded-full animate-spin flex-shrink-0" />}
+                <label className="block text-sm font-semibold text-[#2f3437] mb-2">Source Platform</label>
+                <div className="flex flex-wrap gap-2">
+                  {LINK_SOURCES.map((s) => {
+                    const style = LINK_SOURCE_STYLES[s.value];
+                    return (
+                      <button
+                        key={s.value}
+                        type="button"
+                        onClick={() => { setEditLinkSource(s.value); if (s.value !== "youtube") setEditPreviewThumb(null); }}
+                        className={`text-xs px-3 py-1.5 rounded-full font-semibold border transition-colors ${editLinkSource === s.value ? `${style.color} border-transparent` : "border-[#2f3437]/15 text-[#2f3437]/50 hover:text-[#2f3437]"}`}
+                      >
+                        {s.label}
+                      </button>
+                    );
+                  })}
                 </div>
-                {editPreviewThumb && <img src={editPreviewThumb} alt="thumbnail" className="mt-2 w-full h-28 object-cover rounded-lg" />}
-                <p className="text-xs text-[#2f3437]/40 mt-1">Adding a URL links views data and the video thumbnail to this tracking link.</p>
               </div>
               <div>
-                <label className="block text-sm font-semibold text-[#2f3437] mb-1.5">{linkLabel}</label>
-                <input type="text" value={editForm.name} onChange={(e) => { setEditForm({ ...editForm, name: e.target.value }); setNameTouchedEdit(true); }} placeholder={linkPlaceholder} className={INPUT_CLS} />
+                <label className="block text-sm font-semibold text-[#2f3437] mb-1.5">
+                  {editLinkSource === "youtube" ? "Video Name" : "Link Name"} <span className="font-normal text-[#2f3437]/40 text-xs">— what is this link for?</span>
+                </label>
+                <input type="text" value={editForm.name} onChange={(e) => { setEditForm({ ...editForm, name: e.target.value }); setNameTouchedEdit(true); }} placeholder={editLinkSource === "youtube" ? "e.g. Buyers Guide Video — March" : "e.g. Spring Newsletter — March 2026"} className={INPUT_CLS} />
               </div>
+              {editLinkSource === "youtube" && (
+                <div>
+                  <label className="block text-sm font-semibold text-[#2f3437] mb-1.5">YouTube Video URL <span className="font-normal text-[#2f3437]/40">(optional)</span></label>
+                  <div className="flex gap-2">
+                    <input type="url" value={editForm.youtubeVideoUrl} onChange={(e) => setEditForm({ ...editForm, youtubeVideoUrl: e.target.value })} onBlur={(e) => { if (e.target.value) fetchYtInfoForUrl(e.target.value, { isEdit: true }); }} placeholder="https://youtube.com/watch?v=..." className={INPUT_CLS} />
+                    {fetchingYtEdit && <span className="w-5 h-5 mt-2.5 border-2 border-[#6ba3c7] border-t-transparent rounded-full animate-spin flex-shrink-0" />}
+                  </div>
+                  {editPreviewThumb && <img src={editPreviewThumb} alt="thumbnail" className="mt-2 w-full h-28 object-cover rounded-lg" />}
+                  <p className="text-xs text-[#2f3437]/40 mt-1">Adding a URL links views data and the video thumbnail to this tracking link.</p>
+                </div>
+              )}
               <div className="flex gap-3">
                 <button onClick={saveEdit} disabled={saving || !editForm.name} className="flex-1 bg-[#6ba3c7] text-white py-2.5 rounded-lg font-semibold text-sm hover:bg-[#6ba3c7]/90 disabled:opacity-50 transition-colors">
                   {saving ? "Saving..." : "Save Changes"}
@@ -776,18 +816,6 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
               <div>
                 <label className="block text-sm font-semibold text-[#2f3437] mb-1.5">Lead Magnet URL <span className="font-normal text-[#2f3437]/40">(optional)</span></label>
                 <input type="url" value={campaignEditForm.leadMagnetUrl} onChange={(e) => setCampaignEditForm({ ...campaignEditForm, leadMagnetUrl: e.target.value })} placeholder="e.g., Google Drive link to your guide" className={INPUT_CLS} />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-[#2f3437] mb-1.5">Traffic Source</label>
-                <select value={campaignEditForm.sourceType} onChange={(e) => setCampaignEditForm({ ...campaignEditForm, sourceType: e.target.value })} className={`${INPUT_CLS} bg-white`}>
-                  <option value="YOUTUBE">YouTube</option>
-                  <option value="EMAIL_NEWSLETTER">Email Newsletter</option>
-                  <option value="GOOGLE_ADS">Google Ads</option>
-                  <option value="META_ADS">Meta Ads</option>
-                  <option value="DIRECT_MAIL">Direct Mail</option>
-                  <option value="BLOG_POSTS">Blog Posts</option>
-                  <option value="OTHER">Other</option>
-                </select>
               </div>
               {campaignEditError && (
                 <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{campaignEditError}</p>

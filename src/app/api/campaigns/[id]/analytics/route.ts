@@ -40,17 +40,22 @@ export async function GET(
     include: {
       links: {
         where: { deletedAt: null },
-        select: { id: true, name: true, youtubeViewCount: true, youtubeVideoId: true },
+        select: { id: true, name: true, source: true, youtubeViewCount: true, youtubeVideoId: true },
       },
     },
   });
   if (!campaign) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const period = req.nextUrl.searchParams.get("period") ?? "30d";
+  const sourceFilter = req.nextUrl.searchParams.get("source") ?? "all";
   const now = new Date();
   const periodStart = getPeriodStart(period);
 
-  const linkIds = campaign.links.map((l) => l.id);
+  const filteredLinks = sourceFilter === "all"
+    ? campaign.links
+    : campaign.links.filter((l) => l.source === sourceFilter);
+
+  const linkIds = filteredLinks.map((l) => l.id);
 
   const clicks = await prisma.click.findMany({
     where: {
@@ -78,12 +83,13 @@ export async function GET(
     .map(([date, data]) => ({ date, ...data }));
 
   // Per-link breakdown
-  const byLink = campaign.links.map((link) => {
+  const byLink = filteredLinks.map((link) => {
     const linkClicks = clicks.filter((c) => c.trackingLinkId === link.id);
     const linkLeads = linkClicks.filter((c) => c.lead).length;
     return {
       linkId: link.id,
       name: link.name,
+      source: link.source,
       clicks: linkClicks.length,
       leads: linkLeads,
       youtubeViews: link.youtubeVideoId ? link.youtubeViewCount : null,

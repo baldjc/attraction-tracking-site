@@ -31,13 +31,15 @@ export async function PATCH(
   });
   if (!link) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const { name, youtubeVideoUrl } = await req.json() as {
+  const { name, source, youtubeVideoUrl } = await req.json() as {
     name?: string;
+    source?: string;
     youtubeVideoUrl?: string | null;
   };
 
   const updateData: Record<string, unknown> = {};
   if (name !== undefined) updateData.name = name;
+  if (source !== undefined) updateData.source = source;
 
   if (youtubeVideoUrl !== undefined) {
     const trimmed = youtubeVideoUrl?.trim() || null;
