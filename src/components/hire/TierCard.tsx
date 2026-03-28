@@ -296,9 +296,21 @@ export default function TierCard({
 
       {/* Features list */}
       {activePackage && (
-        <ul className={`space-y-2 ${cardExtras && cardExtras.length > 0 ? "mb-3" : "mb-4 flex-1"}`}>
+        <ul className={`space-y-2 ${cardExtras && cardExtras.length > 0 ? "mb-3" : activePackage.highlightFeatures && activePackage.highlightFeatures.length > 0 ? "mb-2" : "mb-4 flex-1"}`}>
           {activePackage.features.map((f) => (
             <Feature key={f}>{f}</Feature>
+          ))}
+        </ul>
+      )}
+
+      {/* Highlight features */}
+      {activePackage?.highlightFeatures && activePackage.highlightFeatures.length > 0 && (
+        <ul className={`space-y-2 ${cardExtras && cardExtras.length > 0 ? "mb-3" : "mb-4 flex-1"}`}>
+          {activePackage.highlightFeatures.map((f) => (
+            <li key={f} className="flex items-start gap-2">
+              <CheckCircleIcon className="w-3.5 h-3.5 text-[#8B5CF6] mt-0.5 shrink-0" />
+              <span className="text-[13px] text-[#2f3437]/70 dark:text-white/60 leading-snug">{f}</span>
+            </li>
           ))}
         </ul>
       )}
