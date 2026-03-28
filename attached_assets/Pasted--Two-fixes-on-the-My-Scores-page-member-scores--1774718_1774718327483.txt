@@ -1,0 +1,21 @@
+  Two fixes on the My Scores page (/member/scores):                                                                          
+                                                                                                                             
+  1. Current Attraction Score — exclude single video audits                                                                  
+                                                                                                                             
+  The "Current Attraction Score" circle and the "from [date]" label should only pull from baseline or monthly audits — never 
+  single video audits. Single video audits are point-in-time checks on individual videos and don't represent the member's    
+  overall channel score. Filter the query to only look at audits where type is baseline or monthly when determining the      
+  current score.                                                                                                           
+
+  2. Score Over Time chart — two lines                                                                                       
+  
+  The Score Over Time chart currently shows one line mixing all audit types together. Split it into two separate lines on the
+   same chart:                                                                                                             
+                                                                                                                             
+  - Channel Score (solid line, brand blue #6ba3c7) — only baseline and monthly audits                                        
+  - Video Scores (dashed or dotted line, lighter colour like gray or muted blue) — only single video audits
+                                                                                                                             
+  Add a small legend below or inside the chart labelling the two lines. The channel score line is the "official" trend. The  
+  video scores line shows how individual videos compare but shouldn't visually dominate — keep it secondary.                 
+                                                                                                                             
+  Don't change anything else on the page.  

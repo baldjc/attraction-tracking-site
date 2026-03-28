@@ -139,16 +139,48 @@ export default function MemberScoresPage() {
   }
 
   const { latestAudit, baselineAudit, audits, channelBannerUrl, channelName, youtubeChannelUrl } = data;
-  const scores = (latestAudit.scores ?? {}) as Record<string, { score: number | null; evidence?: string }>;
+
+  // Current Attraction Score: exclude single video audits — they are per-video checks, not overall channel scores
+  const latestChannelAudit =
+    (audits ?? []).find((a: any) => a.auditType === "baseline" || a.auditType === "monthly") ??
+    latestAudit;
+
+  const scores = (latestChannelAudit.scores ?? {}) as Record<string, { score: number | null; evidence?: string }>;
   const baselineScores = (baselineAudit?.scores as any) ?? null;
 
-  const chartData = [...(audits ?? [])]
-    .reverse()
+  // Build merged chart data with two separate series
+  const allAuditsChron = [...(audits ?? [])]
     .filter((a: any) => a.overallScore != null)
+    .reverse();
+
+  // Use an ordered array keeping each audit as its own point (multiple on same day are separate)
+  const channelChartData = allAuditsChron
+    .filter((a: any) => a.auditType === "baseline" || a.auditType === "monthly")
     .map((a: any) => ({
       date: new Date(a.createdAt).toLocaleDateString("en-CA", { month: "short", day: "numeric" }),
-      score: parseFloat(Number(a.overallScore).toFixed(1)),
+      channelScore: parseFloat(Number(a.overallScore).toFixed(1)),
     }));
+
+  const videoChartData = allAuditsChron
+    .filter((a: any) => a.auditType === "single_video")
+    .map((a: any) => ({
+      date: new Date(a.createdAt).toLocaleDateString("en-CA", { month: "short", day: "numeric" }),
+      videoScore: parseFloat(Number(a.overallScore).toFixed(1)),
+    }));
+
+  // Merge into a unified date axis for Recharts
+  const mergedDates = Array.from(
+    new Set(
+      [...channelChartData, ...videoChartData].map((d) => d.date)
+    )
+  );
+  const chartData = mergedDates.map((date) => ({
+    date,
+    channelScore: channelChartData.find((d) => d.date === date)?.channelScore ?? null,
+    videoScore: videoChartData.find((d) => d.date === date)?.videoScore ?? null,
+  }));
+  const hasChannelLine = channelChartData.length >= 1;
+  const hasVideoLine = videoChartData.length >= 1;
 
   const principleRows = Object.entries(scores).map(([key, val]) => {
     const base = baselineScores?.[key]?.score ?? null;
@@ -220,27 +252,27 @@ export default function MemberScoresPage() {
           </p>
           <div
             className={`w-36 h-36 rounded-full flex flex-col items-center justify-center border-4 ${
-              latestAudit.overallScore >= 7
+              latestChannelAudit.overallScore >= 7
                 ? "border-green-400 bg-green-50 dark:bg-green-900/20"
-                : latestAudit.overallScore >= 5
+                : latestChannelAudit.overallScore >= 5
                 ? "border-yellow-400 bg-yellow-50 dark:bg-yellow-900/20"
                 : "border-[#ff0033] bg-red-50 dark:bg-red-900/20"
             }`}
           >
             <span
               className={`text-5xl font-black ${
-                latestAudit.overallScore >= 7
+                latestChannelAudit.overallScore >= 7
                   ? "text-green-600 dark:text-green-400"
-                  : latestAudit.overallScore >= 5
+                  : latestChannelAudit.overallScore >= 5
                   ? "text-yellow-600 dark:text-yellow-400"
                   : "text-[#ff0033]"
               }`}
             >
-              {Number(latestAudit.overallScore).toFixed(1)}
+              {Number(latestChannelAudit.overallScore).toFixed(1)}
             </span>
             <span className={`text-xs font-medium ${muted} mt-0.5`}>/ 10</span>
           </div>
-          <p className={`text-xs ${muted} mt-4`}>from {fmt(latestAudit.createdAt)}</p>
+          <p className={`text-xs ${muted} mt-4`}>from {fmt(latestChannelAudit.createdAt)}</p>
           {baselineAudit && (
             <p className={`text-xs ${muted} mt-1`}>
               Baseline:{" "}
@@ -255,41 +287,82 @@ export default function MemberScoresPage() {
         <div className={`lg:col-span-3 ${card} p-6`}>
           <h2 className={`text-sm font-semibold ${txt} mb-4`}>Score Over Time</h2>
           {chartData.length >= 2 ? (
-            <ResponsiveContainer width="100%" height={180}>
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} />
-                <XAxis dataKey="date" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
-                <YAxis
-                  domain={[0, 10]}
-                  tick={{ fontSize: 11, fill: "#94a3b8" }}
-                  axisLine={false}
-                  tickLine={false}
-                  width={28}
-                />
-                <Tooltip
-                  formatter={(v) => [typeof v === "number" ? v.toFixed(1) : v, "Score"]}
-                  contentStyle={{
-                    background: "#1a1a1a",
-                    border: "1px solid #2a2a2a",
-                    borderRadius: 8,
-                    fontSize: 12,
-                    color: "#e2e8f0",
-                  }}
-                  cursor={{ stroke: "#6ba3c7", strokeWidth: 1, strokeDasharray: "4 4" }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="score"
-                  stroke="#6ba3c7"
-                  strokeWidth={2.5}
-                  dot={{ r: 4, fill: "#6ba3c7", strokeWidth: 0 }}
-                  activeDot={{ r: 6, fill: "#6ba3c7" }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+            <>
+              <ResponsiveContainer width="100%" height={170}>
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} />
+                  <XAxis dataKey="date" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+                  <YAxis
+                    domain={[0, 10]}
+                    tick={{ fontSize: 11, fill: "#94a3b8" }}
+                    axisLine={false}
+                    tickLine={false}
+                    width={28}
+                  />
+                  <Tooltip
+                    formatter={(v, name) => [
+                      typeof v === "number" ? v.toFixed(1) : v,
+                      name === "channelScore" ? "Channel Score" : "Video Score",
+                    ]}
+                    contentStyle={{
+                      background: "#1a1a1a",
+                      border: "1px solid #2a2a2a",
+                      borderRadius: 8,
+                      fontSize: 12,
+                      color: "#e2e8f0",
+                    }}
+                    cursor={{ stroke: "#6ba3c7", strokeWidth: 1, strokeDasharray: "4 4" }}
+                  />
+                  {hasChannelLine && (
+                    <Line
+                      type="monotone"
+                      dataKey="channelScore"
+                      stroke="#6ba3c7"
+                      strokeWidth={2.5}
+                      dot={{ r: 4, fill: "#6ba3c7", strokeWidth: 0 }}
+                      activeDot={{ r: 6, fill: "#6ba3c7" }}
+                      connectNulls
+                    />
+                  )}
+                  {hasVideoLine && (
+                    <Line
+                      type="monotone"
+                      dataKey="videoScore"
+                      stroke="#94a3b8"
+                      strokeWidth={1.5}
+                      strokeDasharray="5 3"
+                      dot={{ r: 3, fill: "#94a3b8", strokeWidth: 0 }}
+                      activeDot={{ r: 5, fill: "#94a3b8" }}
+                      connectNulls
+                    />
+                  )}
+                </LineChart>
+              </ResponsiveContainer>
+              {/* Legend */}
+              <div className="flex items-center justify-center gap-5 mt-2">
+                {hasChannelLine && (
+                  <div className="flex items-center gap-1.5">
+                    <svg width="20" height="8" className="shrink-0">
+                      <line x1="0" y1="4" x2="20" y2="4" stroke="#6ba3c7" strokeWidth="2.5" />
+                    </svg>
+                    <span className={`text-xs ${muted}`}>Channel Score</span>
+                  </div>
+                )}
+                {hasVideoLine && (
+                  <div className="flex items-center gap-1.5">
+                    <svg width="20" height="8" className="shrink-0">
+                      <line x1="0" y1="4" x2="20" y2="4" stroke="#94a3b8" strokeWidth="1.5" strokeDasharray="5 3" />
+                    </svg>
+                    <span className={`text-xs ${muted}`}>Video Scores</span>
+                  </div>
+                )}
+              </div>
+            </>
           ) : chartData.length === 1 ? (
             <div className="flex flex-col items-center justify-center h-44 text-center">
-              <p className={`text-4xl font-black ${txt}`}>{chartData[0].score.toFixed(1)}</p>
+              <p className={`text-4xl font-black ${txt}`}>
+                {(chartData[0].channelScore ?? chartData[0].videoScore ?? 0).toFixed(1)}
+              </p>
               <p className={`text-sm ${muted} mt-2`}>
                 1 audit completed — more will build the trend line
               </p>
