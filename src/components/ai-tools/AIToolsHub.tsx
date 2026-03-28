@@ -251,12 +251,6 @@ export default function AIToolsHub({ basePath, featureFlags }: Props) {
         </div>
       )}
 
-      {!loading && usage && (
-        <div className="mb-6">
-          <UsageCard usage={usage} />
-        </div>
-      )}
-
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
         {tools.map((tool) => (
           <Link
@@ -280,6 +274,12 @@ export default function AIToolsHub({ basePath, featureFlags }: Props) {
           </Link>
         ))}
       </div>
+
+      {!loading && usage && (
+        <div className="mt-6">
+          <UsageCard usage={usage} />
+        </div>
+      )}
     </div>
   );
 }
