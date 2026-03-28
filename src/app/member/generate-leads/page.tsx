@@ -162,10 +162,9 @@ function GenerateLeadsPageInner() {
   return (
     <div>
       <PageHeader
-        icon={RocketLaunchIcon}
+        emoji="🚀"
         title="Generate Leads"
         description="Turn every video into a lead machine."
-        colour="#E63946"
       />
 
       {/* Tabs */}

@@ -1,25 +1,17 @@
-import { ComponentType, ReactNode, SVGProps } from "react";
-
-type IconComponent = ComponentType<SVGProps<SVGSVGElement> & { className?: string }>;
+import { ReactNode } from "react";
 
 interface PageHeaderProps {
-  icon: IconComponent;
+  emoji: string;
   title: string;
   description: string;
-  colour: string;
   action?: ReactNode;
 }
 
-export default function PageHeader({ icon: Icon, title, description, colour, action }: PageHeaderProps) {
+export default function PageHeader({ emoji, title, description, action }: PageHeaderProps) {
   return (
     <div className="mb-8">
       <div className="flex items-center gap-3 mb-2">
-        <div
-          className="p-2 rounded-lg shrink-0"
-          style={{ backgroundColor: `${colour}1a` }}
-        >
-          <Icon className="w-5 h-5" style={{ color: colour }} />
-        </div>
+        <span className="text-2xl leading-none shrink-0">{emoji}</span>
         <h1 className="text-2xl font-bold text-[#2f3437] dark:text-white flex-1">{title}</h1>
         {action}
       </div>

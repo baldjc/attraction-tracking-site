@@ -129,10 +129,9 @@ export default function MemberScoresPage() {
     return (
       <div>
         <PageHeader
-          icon={StarIcon}
+          emoji="🏆"
           title="My Scores"
           description="See where you stand and where to focus next."
-          colour="#F59E0B"
         />
         <div className="bg-[#6ba3c7]/10 border border-[#6ba3c7]/30 rounded-lg p-10 text-center">
           <p className={`font-medium ${txt} mb-2`}>No audits yet</p>
@@ -203,10 +202,9 @@ export default function MemberScoresPage() {
   return (
     <div className="space-y-5 pb-10">
       <PageHeader
-        icon={StarIcon}
+        emoji="🏆"
         title="My Scores"
         description="See where you stand and where to focus next."
-        colour="#F59E0B"
         action={
           <button
             onClick={load}

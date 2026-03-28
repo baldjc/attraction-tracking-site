@@ -5,7 +5,6 @@ import {
   CheckCircleIcon,
   XMarkIcon,
   InformationCircleIcon,
-  UserGroupIcon,
 } from "@heroicons/react/24/outline";
 import PageHeader from "@/components/PageHeader";
 
@@ -220,10 +219,9 @@ export default function HireAHumanPage() {
         {/* Header */}
         <div>
           <PageHeader
-            icon={UserGroupIcon}
+            emoji="🤝"
             title="Hire a Human"
             description="Get the right people doing the things they're better at than you are."
-            colour="#8B5CF6"
           />
 
           <p className="text-2xl font-bold text-[#2f3437] dark:text-white leading-snug max-w-2xl mb-6">

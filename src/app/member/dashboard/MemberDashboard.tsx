@@ -3,11 +3,6 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
-  AcademicCapIcon,
-  PencilSquareIcon,
-  ChartBarIcon,
-  TrophyIcon,
-  UserGroupIcon,
   PlayCircleIcon,
   VideoCameraIcon,
 } from "@heroicons/react/24/outline";
@@ -53,49 +48,12 @@ interface TopVideo {
 // ── Nav Cards ─────────────────────────────────────────────────
 
 const NAV_CARDS = [
-  {
-    title: "Academy",
-    description: "Master the Attraction system, one lesson at a time.",
-    href: "/member/academy",
-    icon: AcademicCapIcon,
-    colour: "#10B981",
-  },
-  {
-    title: "My Avatar",
-    description: "Work on your perfect avatar.",
-    href: "/member/ai-tools/avatar-architect",
-    icon: null,
-    emoji: "🎯",
-    colour: "#EF4444",
-  },
-  {
-    title: "Create Content",
-    description: "Generate ideas, scripts, and titles with AI.",
-    href: "/member/ai-tools",
-    icon: PencilSquareIcon,
-    colour: "#6ba3c7",
-  },
-  {
-    title: "Generate Leads",
-    description: "Track your links, clicks, and conversions.",
-    href: "/member/campaigns",
-    icon: ChartBarIcon,
-    colour: "#E63946",
-  },
-  {
-    title: "My Scores",
-    description: "See how your content stacks up.",
-    href: "/member/scores",
-    icon: TrophyIcon,
-    colour: "#F59E0B",
-  },
-  {
-    title: "Hire a Human",
-    description: "Hire us to help you grow faster.",
-    href: "/member/hire",
-    icon: UserGroupIcon,
-    colour: "#8B5CF6",
-  },
+  { title: "Academy",        description: "Master the Attraction system, one lesson at a time.", href: "/member/academy",                     emoji: "🎓", colour: "#10B981" },
+  { title: "My Avatar",      description: "Work on your perfect avatar.",                        href: "/member/ai-tools/avatar-architect",   emoji: "🎯", colour: "#EF4444" },
+  { title: "Create Content", description: "Generate ideas, scripts, and titles with AI.",        href: "/member/ai-tools",                    emoji: "✨", colour: "#6ba3c7" },
+  { title: "Generate Leads", description: "Track your links, clicks, and conversions.",          href: "/member/campaigns",                   emoji: "🚀", colour: "#E63946" },
+  { title: "My Scores",      description: "See how your content stacks up.",                     href: "/member/scores",                      emoji: "🏆", colour: "#F59E0B" },
+  { title: "Hire a Human",   description: "Hire us to help you grow faster.",                    href: "/member/hire",                        emoji: "🤝", colour: "#8B5CF6" },
 ];
 
 // ── Component ─────────────────────────────────────────────────
@@ -157,9 +115,7 @@ export default function MemberDashboard() {
 
       {/* ── 6-Card Nav Grid ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {NAV_CARDS.map(({ title, description, href, icon: Icon, colour, ...rest }) => {
-          const emoji = (rest as any).emoji as string | undefined;
-          return (
+        {NAV_CARDS.map(({ title, description, href, emoji, colour }) => (
           <Link
             key={href}
             href={href}
@@ -168,21 +124,13 @@ export default function MemberDashboard() {
             onMouseEnter={(e) => { e.currentTarget.style.borderLeftColor = colour; }}
             onMouseLeave={(e) => { e.currentTarget.style.borderLeftColor = "transparent"; }}
           >
-            <div className="p-2.5 rounded-xl w-fit" style={{ backgroundColor: `${colour}1a` }}>
-              {emoji
-                ? <span className="text-2xl leading-none block w-8 h-8 flex items-center justify-center">{emoji}</span>
-                : Icon && <Icon className="w-8 h-8" style={{ color: colour }} />
-              }
-            </div>
+            <span className="text-3xl leading-none">{emoji}</span>
             <div>
-              <p className={`text-base font-bold ${txt} transition-colors`}>
-                {title}
-              </p>
+              <p className={`text-base font-bold ${txt} transition-colors`}>{title}</p>
               <p className={`text-sm mt-1 ${muted} leading-snug`}>{description}</p>
             </div>
           </Link>
-          );
-        })}
+        ))}
       </div>
 
       {/* ── Bottom Info Row ── */}
