@@ -330,9 +330,20 @@ export default function HireAHumanPage() {
             </div>
             <h1 className="text-2xl font-bold text-[#2f3437] dark:text-white">Hire a Human</h1>
           </div>
-          <p className="text-sm text-[#2f3437]/50 dark:text-white/40 mt-2 max-w-2xl">
-            You film, we handle the rest. Add editing, coaching, or full implementation support based on how fast you want to grow.
-          </p>
+          <div className="mt-3 max-w-2xl space-y-3">
+            <p className="text-base font-semibold text-[#2f3437]/80 dark:text-white/80">
+              You didn&apos;t get to where you are only to spend your weekends and evenings editing videos.
+            </p>
+            <p className="text-sm text-[#2f3437]/50 dark:text-white/40">
+              The biggest thing holding most agents back from consistent content isn&apos;t strategy — it&apos;s everything that comes after you hit record. The editing, the thumbnails, the SEO, the publishing. That&apos;s where the procrastination creeps in, and that&apos;s where your content calendar dies.
+            </p>
+            <p className="text-sm text-[#2f3437]/50 dark:text-white/40">
+              The most successful agents we work with figured out the same thing: <strong className="font-semibold text-[#2f3437]/70 dark:text-white/60">you don&apos;t need to do it all yourself — you need the right people doing the things they&apos;re better at than you are.</strong>
+            </p>
+            <p className="text-sm text-[#2f3437]/50 dark:text-white/40">
+              That&apos;s what Hire a Human is. You keep doing what only you can do — showing up on camera with your expertise and your personality. We handle everything else.
+            </p>
+          </div>
         </div>
 
         {/* Info banner */}
