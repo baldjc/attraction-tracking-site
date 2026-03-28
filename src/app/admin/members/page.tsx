@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ArrowPathIcon } from "@heroicons/react/24/outline";
+import { ArrowPathIcon, CheckCircleIcon } from "@heroicons/react/24/solid";
 import { useSession } from "next-auth/react";
 
 interface Member {
@@ -326,7 +326,7 @@ export default function MembersPage() {
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
                 <th className="text-left px-6 py-3 text-xs font-semibold text-[#2f3437]/60 uppercase tracking-wider">Name</th>
-                <th className="text-left px-6 py-3 text-xs font-semibold text-[#2f3437]/60 uppercase tracking-wider">YouTube</th>
+                <th className="text-center px-4 py-3 text-xs font-semibold text-[#2f3437]/60 uppercase tracking-wider">YT</th>
                 <th className="text-left px-6 py-3 text-xs font-semibold text-[#2f3437]/60 uppercase tracking-wider">Tier</th>
                 <th className="text-left px-6 py-3 text-xs font-semibold text-[#2f3437]/60 uppercase tracking-wider">Subscription</th>
                 <th className="text-left px-6 py-3 text-xs font-semibold text-[#2f3437]/60 uppercase tracking-wider">Score</th>
@@ -349,21 +349,18 @@ export default function MembersPage() {
                         <span className="font-medium text-[#2f3437] hover:text-[#6ba3c7] transition-colors">{m.fullName || "—"}</span>
                       </Link>
                     </td>
-                    <td className="px-6 py-4 text-sm text-[#2f3437]/70">
-                      {m.youtubeHandle ? (
-                        <a href={`https://youtube.com/${m.youtubeHandle}`} target="_blank" rel="noopener noreferrer" className="text-[#6ba3c7] hover:underline">{m.youtubeHandle}</a>
-                      ) : "—"}
+                    <td className="px-4 py-4 text-center">
+                      {m.youtubeHandle
+                        ? <CheckCircleIcon className="w-5 h-5 text-green-500 mx-auto" />
+                        : <span className="text-[#2f3437]/25 text-sm">—</span>}
                     </td>
                     <td className="px-6 py-4">{tierBadge(m.serviceTier)}</td>
                     <td className="px-6 py-4">
-                      {m.stripePlanName ? (
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-sm font-medium text-[#2f3437]">{m.stripePlanName}</span>
-                            {subStatusBadge(m.subscriptionStatus)}
-                          </div>
+                      {m.subscriptionStatus ? (
+                        <div className="flex flex-col gap-0.5">
+                          {subStatusBadge(m.subscriptionStatus)}
                           {fmtPeriodEnd(m.stripeCurrentPeriodEnd, m.subscriptionStatus) && (
-                            <p className="text-[11px] text-[#2f3437]/40">
+                            <p className="text-[11px] text-[#2f3437]/40 mt-0.5">
                               {fmtPeriodEnd(m.stripeCurrentPeriodEnd, m.subscriptionStatus)}
                             </p>
                           )}
