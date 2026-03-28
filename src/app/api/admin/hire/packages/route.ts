@@ -14,7 +14,8 @@ export async function POST(req: Request) {
   }
 
   const body = await req.json();
-  const { categoryId, name, price, priceNote, badge, subtitle, features, highlightFeatures, stripeUrl, waitlist } = body;
+  const { categoryId, name, price, priceNote, badge, subtitle, features, highlightFeatures, stripeUrl, waitlist,
+          videoCount, isAddonVariant, priceAmount } = body;
 
   const max = await prisma.servicePackage.aggregate({
     where: { categoryId },
@@ -35,6 +36,9 @@ export async function POST(req: Request) {
       stripeUrl: stripeUrl ?? null,
       waitlist: waitlist ?? false,
       sortOrder,
+      videoCount: videoCount ?? null,
+      isAddonVariant: isAddonVariant ?? false,
+      priceAmount: priceAmount ?? null,
     },
   });
 

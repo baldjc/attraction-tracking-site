@@ -30,6 +30,15 @@ export async function GET() {
       accentColour: c.accentColour,
       sortOrder: c.sortOrder,
       published: c.published,
+      emoji: c.emoji,
+      tagline: c.tagline,
+      highlighted: c.highlighted,
+      includesRef: c.includesRef,
+      cardExtras: c.cardExtras,
+      addonLabel: c.addonLabel,
+      addonPriceNote: c.addonPriceNote,
+      footerNote: c.footerNote,
+      jaredIncludedNote: c.jaredIncludedNote,
       packages: c.packages.map((p) => ({
         id: p.id,
         name: p.name,
@@ -43,6 +52,9 @@ export async function GET() {
         waitlist: p.waitlist,
         sortOrder: p.sortOrder,
         published: p.published,
+        videoCount: p.videoCount,
+        isAddonVariant: p.isAddonVariant,
+        priceAmount: p.priceAmount,
       })),
     })),
   });
@@ -56,7 +68,9 @@ export async function POST(req: Request) {
   }
 
   const body = await req.json();
-  const { name, slug, description, icon, accentColour } = body;
+  const { name, slug, description, icon, accentColour, published,
+          emoji, tagline, highlighted, includesRef, cardExtras, addonLabel,
+          addonPriceNote, footerNote, jaredIncludedNote } = body;
 
   const max = await prisma.serviceCategory.aggregate({ _max: { sortOrder: true } });
   const sortOrder = (max._max.sortOrder ?? 0) + 1;
@@ -69,6 +83,16 @@ export async function POST(req: Request) {
       icon: icon ?? "PuzzlePieceIcon",
       accentColour: accentColour ?? "blue",
       sortOrder,
+      published: published ?? true,
+      emoji: emoji ?? null,
+      tagline: tagline ?? null,
+      highlighted: highlighted ?? false,
+      includesRef: includesRef ?? null,
+      cardExtras: cardExtras ?? undefined,
+      addonLabel: addonLabel ?? null,
+      addonPriceNote: addonPriceNote ?? null,
+      footerNote: footerNote ?? null,
+      jaredIncludedNote: jaredIncludedNote ?? null,
     },
   });
 
