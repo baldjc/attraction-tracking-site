@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from "react";
 import {
   CheckCircleIcon,
   XMarkIcon,
-  InformationCircleIcon,
   ArrowTopRightOnSquareIcon,
   ChatBubbleLeftRightIcon,
 } from "@heroicons/react/24/outline";
@@ -171,6 +170,7 @@ function ProductionCard({
         <span className="text-sm text-[#2f3437]/40 dark:text-white/30 ml-1">/mo</span>
         <span className="text-[11px] font-semibold text-[#2f3437]/30 dark:text-white/25 ml-1.5">USD</span>
       </div>
+      <p className="text-[12px] text-[#2f3437]/40 dark:text-white/30 -mt-2 mb-4">Added to your Foundations membership</p>
 
       <ul className="space-y-2 mb-4 flex-1">
         <Feature>Professional editing, graphics, titles, and b-roll</Feature>
@@ -245,6 +245,7 @@ function GrowthCard({
         <span className="text-sm text-[#2f3437]/40 dark:text-white/30 ml-1">/mo</span>
         <span className="text-[11px] font-semibold text-[#2f3437]/30 dark:text-white/25 ml-1.5">USD</span>
       </div>
+      <p className="text-[12px] text-[#2f3437]/40 dark:text-white/30 -mt-2 mb-4">Added to your Foundations membership</p>
 
       <p className="text-[11px] font-semibold text-[#2f3437]/50 dark:text-white/40 uppercase tracking-wide mb-2">
         Includes everything in Production, plus:
@@ -300,6 +301,7 @@ function DoneWithYouCard({
         <span className="text-sm text-[#2f3437]/40 dark:text-white/30 ml-1">/mo</span>
         <span className="text-[11px] font-semibold text-[#2f3437]/30 dark:text-white/25 ml-1.5">USD</span>
       </div>
+      <p className="text-[12px] text-[#2f3437]/40 dark:text-white/30 -mt-2 mb-4">Added to your Foundations membership</p>
 
       <p className="text-[11px] font-semibold text-[#2f3437]/50 dark:text-white/40 uppercase tracking-wide mb-2">
         Includes everything in Growth, plus:
@@ -427,15 +429,6 @@ export default function HireAHumanPage() {
             <DoneWithYouCard packages={packages} interested={interestedIds} onInterested={handleInterested} />
           </div>
         )}
-
-        {/* Info banner */}
-        <div className="flex items-start gap-3 bg-[#6ba3c7]/8 border border-[#6ba3c7]/20 rounded-lg px-5 py-4">
-          <InformationCircleIcon className="w-4 h-4 text-[#6ba3c7] shrink-0 mt-0.5" />
-          <p className="text-sm text-[#2f3437]/70 dark:text-white/60">
-            <span className="font-semibold text-[#2f3437] dark:text-white">All packages are added to your existing Foundations membership</span>
-            {" "}— one invoice, one billing date.
-          </p>
-        </div>
 
       </div>
 
