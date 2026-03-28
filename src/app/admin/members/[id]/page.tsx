@@ -1237,6 +1237,12 @@ export default function MemberDetailPage() {
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
+                  <span className="text-xs text-[#2f3437]/50">Themes saved</span>
+                  <span className={`text-xs font-semibold ${member?.videoThemes ? "text-green-600" : "text-[#2f3437]/30"}`}>
+                    {member?.videoThemes ? "✓ Yes" : "None"}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
                   <span className="text-xs text-[#2f3437]/50">Scripts built</span>
                   <span className="text-xs font-semibold text-[#2f3437]">{toolsUsage?.scriptsCount ?? "—"}</span>
                 </div>
