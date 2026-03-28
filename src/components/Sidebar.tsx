@@ -29,6 +29,7 @@ import {
   VideoCameraIcon,
   WrenchScrewdriverIcon,
   UserGroupIcon,
+  RocketLaunchIcon,
 } from "@heroicons/react/24/outline";
 import { useState, useEffect, useRef } from "react";
 import { IMPERSONATE_LS_KEY, IMPERSONATE_COOKIE } from "@/lib/impersonate-constants";
@@ -74,9 +75,7 @@ const memberLinks = [
   { href: "/member/scores", label: "My Scores", icon: StarIcon, featureKey: null },
   { href: "/member/academy", label: "Academy", icon: AcademicCapIcon, featureKey: null },
   { href: "/member/ai-tools", label: "AI Tools", icon: SparklesIcon, featureKey: "ai_tools" },
-  { href: "/member/campaigns", label: "Campaigns", icon: LinkIcon, featureKey: "campaigns" },
-  { href: "/member/analytics", label: "Lead Analytics", icon: ChartBarIcon, featureKey: "campaigns" },
-  { href: "/member/link-tracking", label: "Link Tracking Settings", icon: LinkIcon, featureKey: "campaigns" },
+  { href: "/member/generate-leads", label: "Generate Leads", icon: RocketLaunchIcon, featureKey: "campaigns" },
   { href: "/member/hire", label: "Hire a Human", icon: UserGroupIcon, featureKey: null },
   { href: "/member/settings", label: "Settings", icon: Cog6ToothIcon, featureKey: null },
 ];

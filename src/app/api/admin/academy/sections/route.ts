@@ -14,6 +14,7 @@ export async function GET() {
   }
 
   const sections = await prisma.courseSection.findMany({
+    where: { moduleType: "foundations" },
     orderBy: { sortOrder: "asc" },
     include: { _count: { select: { lessons: true } } },
   });

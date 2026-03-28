@@ -497,6 +497,7 @@ model CourseSection {
   description String?  @db.Text
   sortOrder   Int
   published   Boolean  @default(true)
+  moduleType  String   @default("foundations")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

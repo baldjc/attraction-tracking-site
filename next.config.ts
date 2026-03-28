@@ -9,6 +9,13 @@ const nextConfig: NextConfig = {
     "*.repl.co",
     ...(devDomain ? [devDomain] : []),
   ],
+  async redirects() {
+    return [
+      { source: "/member/campaigns", destination: "/member/generate-leads?section=campaigns", permanent: false },
+      { source: "/member/analytics", destination: "/member/generate-leads?section=analytics", permanent: false },
+      { source: "/member/link-tracking", destination: "/member/settings", permanent: false },
+    ];
+  },
   async rewrites() {
     return [
       { source: "/t.js", destination: "/api/t.js" },

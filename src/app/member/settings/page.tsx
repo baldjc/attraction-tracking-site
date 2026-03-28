@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { CheckIcon } from "@heroicons/react/24/outline";
+import { CheckIcon, LinkIcon } from "@heroicons/react/24/outline";
+import LinkTrackingPage from "@/app/member/link-tracking/page";
 
 interface AvatarData {
   avatarProfile?: Record<string, unknown> | null;
@@ -441,6 +442,9 @@ export default function MemberSettingsPage() {
           )}
         </div>
       </div>
+
+      {/* Link Tracking Setup Section */}
+      <LinkTrackingPage />
     </div>
   );
 }
