@@ -491,7 +491,9 @@ export default function MembersPage() {
             {cards.mrr > 0 ? (
               <>
                 <div className={`text-3xl font-bold text-emerald-700`}>{fmtPrice(cards.mrr)}</div>
-                {backfillingPrices && <div className={`text-[10px] ${dim} mt-1`}>Updating…</div>}
+                <div className={`text-[10px] ${dim} mt-1`}>
+                  {backfillingPrices ? "Updating…" : "~CAD · USD converted at 1.38"}
+                </div>
               </>
             ) : (
               <div className={`text-sm ${dim}`}>{backfillingPrices ? "Loading…" : "—"}</div>

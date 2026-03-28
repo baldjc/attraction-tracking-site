@@ -185,9 +185,14 @@ export async function GET() {
   const activeMembers = memberRows.filter((m) => m.status === "active").length;
   const inactiveMembers = memberRows.filter((m) => m.status === "inactive").length;
   const videosThisWeek = memberRows.reduce((sum, m) => sum + m.videos7d, 0);
+  const USD_TO_CAD = 1.38;
   const mrr = memberRows
     .filter((m) => m.subscriptionStatus === "active" && m.stripePriceAmount)
-    .reduce((sum, m) => sum + (m.stripePriceAmount ?? 0), 0);
+    .reduce((sum, m) => {
+      const amount = m.stripePriceAmount ?? 0;
+      const currency = (m.stripeCurrency ?? "CAD").toUpperCase();
+      return sum + (currency === "USD" ? Math.round(amount * USD_TO_CAD) : amount);
+    }, 0);
 
   return NextResponse.json({
     members: memberRows,
