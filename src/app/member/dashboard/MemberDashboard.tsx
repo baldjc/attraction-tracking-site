@@ -17,7 +17,8 @@ import {
 
 function fmtThursday(dateStr: string) {
   const d = new Date(dateStr + "T12:00:00");
-  const label = d.toLocaleDateString("en-CA", { weekday: "long", month: "long", day: "numeric" });
+  const datePart = d.toLocaleDateString("en-CA", { weekday: "long", month: "long", day: "numeric" });
+  const label = `${datePart} at 1:30 PM MST`;
   const today = new Date();
   const diff = Math.ceil((d.getTime() - today.getTime()) / 86400000);
   const relative = diff === 0 ? "Today" : diff === 1 ? "Tomorrow" : `in ${diff} days`;
@@ -127,7 +128,7 @@ export default function MemberDashboard() {
   const coaching = nextCoachingCall ? fmtThursday(nextCoachingCall.date) : null;
 
   return (
-    <div className="space-y-10 pb-12 max-w-5xl">
+    <div className="space-y-10 pb-12 max-w-5xl mx-auto">
 
       {/* ── Greeting ── */}
       <div className="pt-2 text-center">
