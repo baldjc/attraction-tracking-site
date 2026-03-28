@@ -82,7 +82,7 @@ const TABS = [
   { id: "overview",   label: "Overview" },
   { id: "analytics",  label: "Analytics" },
   { id: "profile",    label: "Profile" },
-  { id: "progress",   label: "Progress" },
+  { id: "progress",   label: "Audits & Progress" },
   { id: "campaigns",  label: "Campaigns" },
 ] as const;
 type TabId = typeof TABS[number]["id"];
@@ -605,7 +605,7 @@ export default function MemberDetailPage() {
       )}
 
       {/* HEADER BANNER */}
-      <div className="rounded-lg overflow-hidden bg-gradient-to-r from-[#2f3437] via-[#2c4a6e] to-[#6ba3c7] p-6 pt-10">
+      <div className="rounded-lg bg-gradient-to-r from-[#2f3437] via-[#2c4a6e] to-[#6ba3c7] p-6 pt-10">
         <div className="flex flex-col gap-3">
           <div className="min-w-0">
             <h1 className="text-xl sm:text-2xl font-bold text-white leading-snug break-words">
@@ -706,13 +706,20 @@ export default function MemberDetailPage() {
           <button
             key={t.id}
             onClick={() => setActiveTab(t.id)}
-            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap ${
+            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap flex items-center gap-1.5 ${
               activeTab === t.id
                 ? "bg-[#2f3437] text-white"
                 : "text-[#2f3437]/60 hover:text-[#2f3437] hover:bg-gray-50"
             }`}
           >
             {t.label}
+            {t.id === "progress" && (member.audits?.length ?? 0) > 0 && (
+              <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${
+                activeTab === t.id ? "bg-white/20 text-white" : "bg-[#6ba3c7]/15 text-[#6ba3c7]"
+              }`}>
+                {member.audits.length}
+              </span>
+            )}
           </button>
         ))}
       </div>
