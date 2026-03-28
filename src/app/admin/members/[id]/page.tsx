@@ -83,6 +83,7 @@ const TABS = [
   { id: "analytics",  label: "Analytics" },
   { id: "progress",   label: "Audits & Progress" },
   { id: "campaigns",  label: "Campaigns" },
+  { id: "ai_inputs",  label: "AI Inputs" },
 ] as const;
 type TabId = typeof TABS[number]["id"];
 
@@ -179,6 +180,10 @@ export default function MemberDetailPage() {
   const [avatarText, setAvatarText] = useState("");
   const [avatarSaving, setAvatarSaving] = useState(false);
   const [avatarSaved, setAvatarSaved] = useState(false);
+
+  const [videoThemes, setVideoThemes] = useState("");
+  const [videoThemesSaving, setVideoThemesSaving] = useState(false);
+  const [videoThemesSaved, setVideoThemesSaved] = useState(false);
   const [toolsUsage, setToolsUsage] = useState<{
     scriptsCount: number; analysesCount: number; lastActivity: string | null;
   } | null>(null);
@@ -270,6 +275,7 @@ export default function MemberDetailPage() {
     } else {
       setAvatarText("");
     }
+    setVideoThemes(member.videoThemes ?? "");
     fetch(`/api/admin/member-tools-usage/${member.id}`)
       .then((r) => r.json())
       .then((data) => setToolsUsage(data))
@@ -291,6 +297,21 @@ export default function MemberDetailPage() {
     setAvatarSaving(false);
     setAvatarSaved(true);
     setTimeout(() => setAvatarSaved(false), 3000);
+  }
+
+  async function handleSaveVideoThemes() {
+    if (!member?.id) return;
+    setVideoThemesSaving(true);
+    setVideoThemesSaved(false);
+    await fetch(`/api/members/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ videoThemes }),
+    });
+    await fetchMember();
+    setVideoThemesSaving(false);
+    setVideoThemesSaved(true);
+    setTimeout(() => setVideoThemesSaved(false), 3000);
   }
 
   function isRawChannelId(handle: string | null | undefined): boolean {
@@ -1144,62 +1165,6 @@ export default function MemberDetailPage() {
               </div>
             </div>
 
-            {/* Avatar Profile */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-base font-semibold text-[#2f3437]">Avatar Profile</h2>
-                {member?.avatarName && (
-                  <span className="text-xs text-[#6ba3c7] bg-[#6ba3c7]/10 px-2.5 py-1 rounded-full font-medium">{member.avatarName}</span>
-                )}
-              </div>
-              {!member?.avatarProfile ? (
-                <p className="text-sm text-[#2f3437]/40 mb-3">No avatar saved for this member yet.</p>
-              ) : (
-                <>
-                  {member.avatarSummary && (
-                    <p className="text-sm text-[#2f3437]/70 mb-3 leading-relaxed">{member.avatarSummary}</p>
-                  )}
-                  {Array.isArray(member.contentThemes) && member.contentThemes.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 mb-4">
-                      {(member.contentThemes as unknown[]).map((t, i) => {
-                        const label = typeof t === "string" ? t
-                          : t && typeof t === "object" && "name" in t
-                            ? `${(t as any).emoji ?? ""} ${(t as any).name ?? ""}`.trim() : null;
-                        return label ? (
-                          <span key={i} className="text-xs bg-[#6ba3c7]/10 text-[#6ba3c7] px-2.5 py-1 rounded-full font-medium">{label}</span>
-                        ) : null;
-                      })}
-                    </div>
-                  )}
-                </>
-              )}
-              {isEditorRole ? (
-                avatarText ? (
-                  <div className="text-sm text-[#2f3437] whitespace-pre-wrap bg-gray-50 rounded-lg px-4 py-3 font-mono max-h-48 overflow-y-auto">{avatarText}</div>
-                ) : null
-              ) : (
-                <>
-                  <textarea
-                    value={avatarText}
-                    onChange={(e) => setAvatarText(e.target.value)}
-                    rows={6}
-                    placeholder="No avatar document saved. You can paste or edit one here."
-                    className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-[#2f3437] font-mono focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30 resize-none"
-                  />
-                  <div className="flex items-center justify-between mt-2">
-                    {avatarSaved && <span className="text-xs text-green-600 font-medium">Saved</span>}
-                    <button
-                      onClick={handleSaveAdminAvatar}
-                      disabled={avatarSaving || !avatarText.trim()}
-                      className="ml-auto bg-[#111] hover:bg-[#2a3a4d] disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
-                    >
-                      {avatarSaving ? "Saving…" : "Save Avatar"}
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-
             {/* COACHING NOTES */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-3">
@@ -1681,6 +1646,106 @@ export default function MemberDetailPage() {
                   </tbody>
                 </table>
               </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── AI INPUTS TAB ─────────────────────────────────── */}
+      {activeTab === "ai_inputs" && (
+        <div className="space-y-6">
+          {/* Avatar Profile */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-base font-semibold text-[#2f3437]">Avatar Profile</h2>
+                <p className="text-xs text-[#2f3437]/50 mt-0.5">The ideal customer avatar document used as AI context</p>
+              </div>
+              {member?.avatarName && (
+                <span className="text-xs text-[#6ba3c7] bg-[#6ba3c7]/10 px-2.5 py-1 rounded-full font-medium">{member.avatarName}</span>
+              )}
+            </div>
+            {member?.avatarProfile && (
+              <div className="mb-4">
+                {member.avatarSummary && (
+                  <p className="text-sm text-[#2f3437]/70 mb-3 leading-relaxed">{member.avatarSummary}</p>
+                )}
+                {Array.isArray(member.contentThemes) && member.contentThemes.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mb-4">
+                    {(member.contentThemes as unknown[]).map((t, i) => {
+                      const label = typeof t === "string" ? t
+                        : t && typeof t === "object" && "name" in t
+                          ? `${(t as any).emoji ?? ""} ${(t as any).name ?? ""}`.trim() : null;
+                      return label ? (
+                        <span key={i} className="text-xs bg-[#6ba3c7]/10 text-[#6ba3c7] px-2.5 py-1 rounded-full font-medium">{label}</span>
+                      ) : null;
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+            {!member?.avatarProfile && (
+              <p className="text-sm text-[#2f3437]/40 mb-3">No avatar saved for this member yet.</p>
+            )}
+            {isEditorRole ? (
+              avatarText ? (
+                <div className="text-sm text-[#2f3437] whitespace-pre-wrap bg-gray-50 rounded-lg px-4 py-3 font-mono max-h-72 overflow-y-auto">{avatarText}</div>
+              ) : (
+                <p className="text-sm text-[#2f3437]/30 italic">No avatar document saved.</p>
+              )
+            ) : (
+              <>
+                <textarea
+                  value={avatarText}
+                  onChange={(e) => setAvatarText(e.target.value)}
+                  rows={10}
+                  placeholder="Paste or type the avatar document here. You can use plain text or JSON."
+                  className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-[#2f3437] font-mono focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30 resize-none"
+                />
+                <div className="flex items-center justify-between mt-2">
+                  {avatarSaved && <span className="text-xs text-green-600 font-medium">Saved</span>}
+                  <button
+                    onClick={handleSaveAdminAvatar}
+                    disabled={avatarSaving}
+                    className="ml-auto bg-[#111] hover:bg-[#2a3a4d] disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+                  >
+                    {avatarSaving ? "Saving…" : "Save Avatar"}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Video Themes */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="mb-4">
+              <h2 className="text-base font-semibold text-[#2f3437]">Video Themes</h2>
+              <p className="text-xs text-[#2f3437]/50 mt-0.5">Recurring themes and content pillars for this member&apos;s channel — used as AI context</p>
+            </div>
+            {isEditorRole ? (
+              <div className="text-sm text-[#2f3437] whitespace-pre-wrap bg-gray-50 rounded-lg px-4 py-3 min-h-[120px] leading-relaxed">
+                {videoThemes || <span className="text-[#2f3437]/30 italic">No themes saved yet.</span>}
+              </div>
+            ) : (
+              <>
+                <textarea
+                  value={videoThemes}
+                  onChange={(e) => setVideoThemes(e.target.value)}
+                  rows={8}
+                  placeholder={"Describe the recurring themes and content pillars for this channel.\n\nExamples:\n- Real estate tips for first-time buyers in Calgary\n- Behind-the-scenes of listing a luxury home\n- Local market updates and trends\n- Neighbourhood spotlights"}
+                  className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30 resize-none"
+                />
+                <div className="flex items-center justify-between mt-2">
+                  {videoThemesSaved && <span className="text-xs text-green-600 font-medium">Saved</span>}
+                  <button
+                    onClick={handleSaveVideoThemes}
+                    disabled={videoThemesSaving}
+                    className="ml-auto bg-[#111] hover:bg-[#2a3a4d] disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+                  >
+                    {videoThemesSaving ? "Saving…" : "Save Themes"}
+                  </button>
+                </div>
+              </>
             )}
           </div>
         </div>

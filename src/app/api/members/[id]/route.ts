@@ -79,6 +79,7 @@ export async function PATCH(
     "avatarName",
     "avatarSummary",
     "contentThemes",
+    "videoThemes",
   ];
   const updates: Record<string, unknown> = {};
   for (const key of allowed) {

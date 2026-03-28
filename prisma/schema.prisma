@@ -90,6 +90,7 @@ model User {
   allowedMemberIds  Json?
 
   avatarProfile   Json?
+  videoThemes     String?
   avatarName      String?
   avatarSummary   String?
   contentThemes   Json?
