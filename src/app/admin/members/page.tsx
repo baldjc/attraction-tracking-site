@@ -59,7 +59,7 @@ type StatusFilter = "all" | "active" | "at_risk" | "inactive";
 type SortKey = "fullName" | "videos7d" | "clicks7d" | "conversions7d" | "toolUses7d" | "latestAuditScore" | "status" | "lastVideoAt";
 type SortDir = "asc" | "desc";
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 200;
 
 const tierLabels: Record<string, string> = {
   foundations: "Foundations",
@@ -613,7 +613,7 @@ export default function MembersPage() {
                   <th className={thCls} onClick={() => toggleSort("fullName")}>
                     Name <SortIcon col="fullName" />
                   </th>
-                  <th className={`${thCls} cursor-default`}>YouTube</th>
+                  <th className={`${thCls} cursor-default text-center`}>YT</th>
                   <th className={`${thCls} cursor-default`}>Tier</th>
                   <th className={`${thCls} cursor-default`}>Subscription</th>
                   <th className={thCls} onClick={() => toggleSort("latestAuditScore")}>
@@ -653,16 +653,19 @@ export default function MembersPage() {
                         </Link>
                         <div className={`text-xs ${dim} ml-4`}>{m.email}</div>
                       </td>
-                      <td className="px-4 py-3">
-                        {m.youtubeHandle ? (
+                      <td className="px-4 py-3 text-center">
+                        {m.youtubeChannelUrl ? (
                           <a
-                            href={m.youtubeChannelUrl || `https://youtube.com/${m.youtubeHandle}`}
+                            href={m.youtubeChannelUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-xs text-[#6ba3c7] hover:underline"
+                            title={m.youtubeHandle || m.youtubeChannelUrl}
                             onClick={(e) => e.stopPropagation()}
+                            className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-red-50 hover:bg-red-100 transition-colors"
                           >
-                            {m.youtubeHandle}
+                            <svg className="w-3.5 h-3.5 text-red-600" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M23.5 6.19a3.02 3.02 0 0 0-2.12-2.14C19.54 3.5 12 3.5 12 3.5s-7.54 0-9.38.55A3.02 3.02 0 0 0 .5 6.19C0 8.04 0 12 0 12s0 3.96.5 5.81a3.02 3.02 0 0 0 2.12 2.14C4.46 20.5 12 20.5 12 20.5s7.54 0 9.38-.55a3.02 3.02 0 0 0 2.12-2.14C24 15.96 24 12 24 12s0-3.96-.5-5.81zM9.75 15.02V8.98L15.5 12l-5.75 3.02z"/>
+                            </svg>
                           </a>
                         ) : (
                           <span className={`text-sm ${dim}`}>—</span>
@@ -672,12 +675,9 @@ export default function MembersPage() {
                       <td className="px-4 py-3">
                         {m.subscriptionStatus ? (
                           <div className="flex flex-col gap-0.5">
-                            {m.stripePlanName && (
-                              <span className={`text-xs font-medium ${txt} leading-tight`}>{m.stripePlanName}</span>
-                            )}
                             {subStatusBadge(m.subscriptionStatus)}
                             {fmtPeriodEnd(m.stripeCurrentPeriodEnd, m.subscriptionStatus) && (
-                              <span className={`text-[11px] ${dim}`}>
+                              <span className={`text-[10px] ${dim}`}>
                                 {fmtPeriodEnd(m.stripeCurrentPeriodEnd, m.subscriptionStatus)}
                               </span>
                             )}
