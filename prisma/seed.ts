@@ -797,14 +797,14 @@ async function main() {
           label: f.label,
           placeholderText: f.placeholderText ?? null,
           sortOrder: i + 1,
-          config: f.config ?? null,
+          config: f.config ?? undefined,
         },
         update: {
           fieldType: f.fieldType,
           label: f.label,
           placeholderText: f.placeholderText ?? null,
           sortOrder: i + 1,
-          config: f.config ?? null,
+          config: f.config ?? undefined,
         },
       });
     }
