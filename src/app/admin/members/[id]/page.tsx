@@ -80,7 +80,6 @@ const DIMENSIONS = [
 
 const TABS = [
   { id: "profile",    label: "Profile" },
-  { id: "overview",   label: "Overview" },
   { id: "analytics",  label: "Analytics" },
   { id: "progress",   label: "Audits & Progress" },
   { id: "campaigns",  label: "Campaigns" },
@@ -724,172 +723,6 @@ export default function MemberDetailPage() {
         ))}
       </div>
 
-      {/* ── OVERVIEW TAB ──────────────────────────────────────────── */}
-      {activeTab === "overview" && (
-        <div className="space-y-6">
-
-          {/* COACHING NOTES */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-base font-semibold text-[#2f3437]">Coaching Notes</h2>
-              {notesUpdated && (
-                <span className="text-xs text-[#2f3437]/40">Last saved {fmt(notesUpdated)}</span>
-              )}
-            </div>
-            {isEditorRole ? (
-              <div className="text-sm text-[#2f3437] whitespace-pre-wrap bg-gray-50 rounded-lg px-4 py-3 min-h-[80px]">
-                {notes || <span className="text-[#2f3437]/30 italic">No coaching notes yet.</span>}
-              </div>
-            ) : (
-              <>
-                <textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  rows={6}
-                  placeholder="Private coaching notes about this member…"
-                  className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30 resize-none"
-                />
-                <button
-                  onClick={handleSaveNotes}
-                  disabled={notesSaving}
-                  className="mt-2 bg-[#111] hover:bg-[#2a3a4d] disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
-                >
-                  {notesSaving ? "Saving…" : "Save Notes"}
-                </button>
-              </>
-            )}
-          </div>
-
-          {/* SCORE TREND */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-6">
-            <div>
-              <h2 className="text-base font-semibold text-[#2f3437] mb-3">Channel Score Trend</h2>
-              {chartData.length === 0 ? (
-                <p className="text-sm text-[#2f3437]/50 text-center py-6">Scores will appear after the first audit.</p>
-              ) : chartData.length === 1 ? (
-                <div>
-                  <ResponsiveContainer width="100%" height={150}>
-                    <LineChart data={chartData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                      <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-                      <YAxis domain={[0, 10]} tick={{ fontSize: 11 }} />
-                      <ReferenceDot x={chartData[0].date} y={chartData[0].score} r={5} fill="#6ba3c7" />
-                    </LineChart>
-                  </ResponsiveContainer>
-                  <p className="text-xs text-center text-[#2f3437]/40 mt-1">
-                    Only 1 audit — add another to see a trend.
-                  </p>
-                </div>
-              ) : (
-                <ResponsiveContainer width="100%" height={180}>
-                  <LineChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-                    <YAxis domain={[0, 10]} tick={{ fontSize: 11 }} />
-                    <Tooltip
-                      content={({ active, payload }: any) => {
-                        if (!active || !payload?.length) return null;
-                        const d = payload[0].payload;
-                        return (
-                          <div className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs">
-                            <p className="font-semibold capitalize">{d.type.replace("_", " ")}</p>
-                            <p className="text-[#2f3437]/60">{d.date} · Score: <strong>{d.score.toFixed(1)}</strong></p>
-                          </div>
-                        );
-                      }}
-                    />
-                    <Line
-                      type="monotone" dataKey="score" stroke="#6ba3c7" strokeWidth={2.5}
-                      dot={({ cx, cy, payload }: any) => (
-                        <circle
-                          key={`dot-${cx}-${cy}`}
-                          cx={cx} cy={cy} r={4}
-                          fill={payload.type === "baseline" ? "#2f3437" : "#6ba3c7"}
-                          stroke="#fff" strokeWidth={1.5}
-                        />
-                      )}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              )}
-            </div>
-
-            {videoAuditData.length > 0 && (
-              <div>
-                <h2 className="text-base font-semibold text-[#2f3437] mb-3">Single Video Audits</h2>
-                {videoAuditData.length === 1 ? (
-                  <p className="text-sm text-[#2f3437]/50 text-center py-4">Need at least 2 video audits to show a trend.</p>
-                ) : (
-                  <ResponsiveContainer width="100%" height={180}>
-                    <LineChart data={videoAuditData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                      <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-                      <YAxis domain={[0, 10]} tick={{ fontSize: 11 }} />
-                      <Tooltip
-                        content={({ active, payload }: any) => {
-                          if (!active || !payload?.length) return null;
-                          const d = payload[0].payload;
-                          return (
-                            <div className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs max-w-[220px]">
-                              <p className="font-semibold text-[#2f3437] mb-0.5">{d.title}</p>
-                              <p className="text-[#2f3437]/60">{d.date} · Score: <span className="font-bold text-[#2f3437]">{d.score.toFixed(1)}</span></p>
-                            </div>
-                          );
-                        }}
-                      />
-                      <Line
-                        type="monotone" dataKey="score" stroke="#94a3b8" strokeWidth={2}
-                        strokeDasharray="4 3"
-                        dot={{ r: 4, fill: "#94a3b8", stroke: "#fff", strokeWidth: 1.5 }}
-                        activeDot={{ r: 6, fill: "#64748b" }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* TOP VIDEOS */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <h2 className="text-base font-semibold text-[#2f3437] mb-4">Most Viewed — Last 30 Days</h2>
-            {topVideosLoading ? (
-              <p className="text-sm text-[#2f3437]/50 text-center py-6">Loading videos…</p>
-            ) : topVideosNoChannel ? (
-              <p className="text-sm text-[#2f3437]/50 text-center py-6">No YouTube channel connected.</p>
-            ) : topVideosNoUploads ? (
-              <p className="text-sm text-amber-500 text-center py-6">No uploads in the last 30 days.</p>
-            ) : topVideos.length === 0 ? (
-              <p className="text-sm text-[#2f3437]/50 text-center py-6">No videos found.</p>
-            ) : (
-              <div className="space-y-3">
-                {topVideos.map((v, i) => (
-                  <a
-                    key={v.videoId}
-                    href={v.watchUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors group"
-                  >
-                    <span className="text-xs font-bold text-[#2f3437]/30 w-4 shrink-0">{i + 1}</span>
-                    <img src={v.thumbnailUrl} alt={v.title} className="w-20 h-[45px] object-cover rounded shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-[#2f3437] leading-snug line-clamp-2 group-hover:text-[#6ba3c7] transition-colors">
-                        {v.title}
-                      </p>
-                      <p className="text-xs text-[#2f3437]/40 mt-0.5">
-                        {Number(v.viewCount).toLocaleString()} views
-                        {v.uploadDate && <span className="ml-2">{new Date(v.uploadDate).toLocaleDateString()}</span>}
-                      </p>
-                    </div>
-                  </a>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
       {/* ── ANALYTICS TAB ─────────────────────────────────────────── */}
       {activeTab === "analytics" && (
         <div className="space-y-6">
@@ -943,6 +776,118 @@ export default function MemberDetailPage() {
                   <p className="text-sm text-[#2f3437]/50 bg-white border border-gray-200 rounded-lg p-6 text-center">
                     No channel snapshot yet. Click Refresh Channel to sync.
                   </p>
+                )}
+              </div>
+
+              {/* Score Trend */}
+              <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-6">
+                <div>
+                  <h2 className="text-base font-semibold text-[#2f3437] mb-3">Channel Score Trend</h2>
+                  {chartData.length === 0 ? (
+                    <p className="text-sm text-[#2f3437]/50 text-center py-6">Scores will appear after the first audit.</p>
+                  ) : chartData.length === 1 ? (
+                    <div>
+                      <ResponsiveContainer width="100%" height={150}>
+                        <LineChart data={chartData}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                          <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                          <YAxis domain={[0, 10]} tick={{ fontSize: 11 }} />
+                          <ReferenceDot x={chartData[0].date} y={chartData[0].score} r={5} fill="#6ba3c7" />
+                        </LineChart>
+                      </ResponsiveContainer>
+                      <p className="text-xs text-center text-[#2f3437]/40 mt-1">Only 1 audit — add another to see a trend.</p>
+                    </div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height={180}>
+                      <LineChart data={chartData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                        <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                        <YAxis domain={[0, 10]} tick={{ fontSize: 11 }} />
+                        <Tooltip
+                          content={({ active, payload }: any) => {
+                            if (!active || !payload?.length) return null;
+                            const d = payload[0].payload;
+                            return (
+                              <div className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs">
+                                <p className="font-semibold capitalize">{d.type.replace("_", " ")}</p>
+                                <p className="text-[#2f3437]/60">{d.date} · Score: <strong>{d.score.toFixed(1)}</strong></p>
+                              </div>
+                            );
+                          }}
+                        />
+                        <Line
+                          type="monotone" dataKey="score" stroke="#6ba3c7" strokeWidth={2.5}
+                          dot={({ cx, cy, payload }: any) => (
+                            <circle key={`dot-${cx}-${cy}`} cx={cx} cy={cy} r={4}
+                              fill={payload.type === "baseline" ? "#2f3437" : "#6ba3c7"}
+                              stroke="#fff" strokeWidth={1.5}
+                            />
+                          )}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  )}
+                </div>
+                {videoAuditData.length > 1 && (
+                  <div>
+                    <h2 className="text-base font-semibold text-[#2f3437] mb-3">Single Video Audits</h2>
+                    <ResponsiveContainer width="100%" height={180}>
+                      <LineChart data={videoAuditData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                        <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                        <YAxis domain={[0, 10]} tick={{ fontSize: 11 }} />
+                        <Tooltip
+                          content={({ active, payload }: any) => {
+                            if (!active || !payload?.length) return null;
+                            const d = payload[0].payload;
+                            return (
+                              <div className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs max-w-[220px]">
+                                <p className="font-semibold text-[#2f3437] mb-0.5">{d.title}</p>
+                                <p className="text-[#2f3437]/60">{d.date} · Score: <span className="font-bold text-[#2f3437]">{d.score.toFixed(1)}</span></p>
+                              </div>
+                            );
+                          }}
+                        />
+                        <Line type="monotone" dataKey="score" stroke="#94a3b8" strokeWidth={2}
+                          strokeDasharray="4 3"
+                          dot={{ r: 4, fill: "#94a3b8", stroke: "#fff", strokeWidth: 1.5 }}
+                          activeDot={{ r: 6, fill: "#64748b" }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+              </div>
+
+              {/* Most Viewed — Last 30 Days */}
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <h2 className="text-base font-semibold text-[#2f3437] mb-4">Most Viewed — Last 30 Days</h2>
+                {topVideosLoading ? (
+                  <p className="text-sm text-[#2f3437]/50 text-center py-6">Loading videos…</p>
+                ) : topVideosNoChannel ? (
+                  <p className="text-sm text-[#2f3437]/50 text-center py-6">No YouTube channel connected.</p>
+                ) : topVideosNoUploads ? (
+                  <p className="text-sm text-amber-500 text-center py-6">No uploads in the last 30 days.</p>
+                ) : topVideos.length === 0 ? (
+                  <p className="text-sm text-[#2f3437]/50 text-center py-6">No videos found.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {topVideos.map((v, i) => (
+                      <a key={v.videoId} href={v.watchUrl} target="_blank" rel="noopener noreferrer"
+                        className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors group"
+                      >
+                        <span className="text-xs font-bold text-[#2f3437]/30 w-4 shrink-0">{i + 1}</span>
+                        <img src={v.thumbnailUrl} alt={v.title} className="w-20 h-[45px] object-cover rounded shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-[#2f3437] leading-snug line-clamp-2 group-hover:text-[#6ba3c7] transition-colors">{v.title}</p>
+                          <p className="text-xs text-[#2f3437]/40 mt-0.5">
+                            {Number(v.viewCount).toLocaleString()} views
+                            {v.uploadDate && <span className="ml-2">{new Date(v.uploadDate).toLocaleDateString()}</span>}
+                          </p>
+                        </div>
+                      </a>
+                    ))}
+                  </div>
                 )}
               </div>
 
@@ -1251,6 +1196,38 @@ export default function MemberDetailPage() {
                       {avatarSaving ? "Saving…" : "Save Avatar"}
                     </button>
                   </div>
+                </>
+              )}
+            </div>
+
+            {/* COACHING NOTES */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-base font-semibold text-[#2f3437]">Coaching Notes</h2>
+                {notesUpdated && (
+                  <span className="text-xs text-[#2f3437]/40">Last saved {fmt(notesUpdated)}</span>
+                )}
+              </div>
+              {isEditorRole ? (
+                <div className="text-sm text-[#2f3437] whitespace-pre-wrap bg-gray-50 rounded-lg px-4 py-3 min-h-[80px]">
+                  {notes || <span className="text-[#2f3437]/30 italic">No coaching notes yet.</span>}
+                </div>
+              ) : (
+                <>
+                  <textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    rows={6}
+                    placeholder="Private coaching notes about this member…"
+                    className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30 resize-none"
+                  />
+                  <button
+                    onClick={handleSaveNotes}
+                    disabled={notesSaving}
+                    className="mt-2 bg-[#111] hover:bg-[#2a3a4d] disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+                  >
+                    {notesSaving ? "Saving…" : "Save Notes"}
+                  </button>
                 </>
               )}
             </div>
