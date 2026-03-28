@@ -399,7 +399,7 @@ export default function MemberScoresPage() {
           <div className={`${card} overflow-hidden`}>
             <div className={`px-5 py-4 border-b border-gray-200 dark:border-[#2a2a2a]`}>
               <h2 className={`text-sm font-semibold ${txt}`}>Recent Video Audits</h2>
-              <p className={`text-xs ${muted} mt-0.5`}>Single video audits from the last 60 days</p>
+              <p className={`text-xs ${muted} mt-0.5`}>Every video is audited for Editing and Mastery members. Foundations members receive audits when videos are reviewed on live Member Calls.</p>
             </div>
             {recentVideoAudits.length === 0 ? (
               <div className="px-5 py-10 text-center">
