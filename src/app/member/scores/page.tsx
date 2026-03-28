@@ -626,42 +626,51 @@ export default function MemberScoresPage() {
             <h2 className={`text-sm font-semibold ${txt}`}>Audit History</h2>
             <p className={`text-xs ${muted} mt-0.5`}>{audits.length} audit{audits.length !== 1 ? "s" : ""} completed</p>
           </div>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-200 dark:border-[#2a2a2a]">
-                <th className={thClass}>Date</th>
-                <th className={thClass}>Type</th>
-                <th className={thClass}>Score</th>
-                <th className={thClass}>Action</th>
-              </tr>
-            </thead>
-            <tbody className={`divide-y ${divider}`}>
-              {audits.map((a: any) => (
-                <tr key={a.id} className="hover:bg-gray-50 dark:hover:bg-[#1e2a38] transition-colors">
-                  <td className={`${tdClass} ${muted}`}>{fmt(a.createdAt)}</td>
-                  <td className={`${tdClass} ${txt}`}>
-                    {a.auditType === "single_video" ? (() => {
-                      const v = (a.videosAnalysed as any[])?.[0];
-                      const videoId = v?.videoId;
-                      const thumbUrl = videoId ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg` : null;
-                      const title = v?.title ?? "Single Video";
-                      return (
-                        <div className="flex items-center gap-2">
-                          {thumbUrl && (
-                            <img
-                              src={thumbUrl}
-                              alt={title}
-                              className="w-[60px] h-[34px] rounded object-cover shrink-0"
-                            />
-                          )}
-                          <span className="truncate max-w-[180px] text-sm">{title}</span>
-                        </div>
-                      );
-                    })() : (
-                      <span className="capitalize">{a.auditType.replace(/_/g, " ")}</span>
+          <div className={`divide-y ${divider}`}>
+            {audits.map((a: any) => {
+              const isSV = a.auditType === "single_video";
+              const v = isSV ? (a.videosAnalysed as any[])?.[0] : null;
+              const videoId = v?.videoId;
+              const thumbUrl = videoId ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg` : null;
+              const title = isSV ? (v?.title ?? "Single Video") : (a.auditType === "baseline" ? "Baseline Audit" : "Monthly Audit");
+              const uploadDate = v?.uploadDate;
+              return (
+                <Link
+                  key={a.id}
+                  href={`/member/audits/${a.id}`}
+                  className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 dark:hover:bg-[#1e2a38] transition-colors group"
+                >
+                  {/* Left: thumbnail or type icon */}
+                  <div className="shrink-0">
+                    {thumbUrl ? (
+                      <img
+                        src={thumbUrl}
+                        alt={title}
+                        className="w-[72px] h-[41px] rounded object-cover"
+                      />
+                    ) : (
+                      <div className={`w-[72px] h-[41px] rounded flex items-center justify-center text-xs font-bold ${
+                        a.auditType === "baseline"
+                          ? "bg-[#6ba3c7]/15 text-[#6ba3c7]"
+                          : "bg-purple-100 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400"
+                      }`}>
+                        {a.auditType === "baseline" ? "BASE" : "MO"}
+                      </div>
                     )}
-                  </td>
-                  <td className={tdClass}>
+                  </div>
+
+                  {/* Middle: title + date */}
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm font-medium ${txt} line-clamp-2 leading-snug group-hover:text-[#6ba3c7] transition-colors`}>
+                      {title}
+                    </p>
+                    <p className={`text-xs ${muted} mt-0.5`}>
+                      {uploadDate ? fmt(uploadDate) : fmt(a.createdAt)}
+                    </p>
+                  </div>
+
+                  {/* Right: score + link */}
+                  <div className="shrink-0 flex flex-col items-end gap-1.5">
                     {a.overallScore != null ? (
                       <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${scoreBadge(Number(a.overallScore))}`}>
                         {Number(a.overallScore).toFixed(1)}
@@ -669,19 +678,14 @@ export default function MemberScoresPage() {
                     ) : (
                       <span className={`text-xs ${muted}`}>—</span>
                     )}
-                  </td>
-                  <td className={tdClass}>
-                    <Link
-                      href={`/member/audits/${a.id}`}
-                      className="text-xs font-medium text-[#6ba3c7] hover:underline"
-                    >
+                    <span className="text-xs font-medium text-[#6ba3c7] group-hover:underline whitespace-nowrap">
                       View Report →
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    </span>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>
