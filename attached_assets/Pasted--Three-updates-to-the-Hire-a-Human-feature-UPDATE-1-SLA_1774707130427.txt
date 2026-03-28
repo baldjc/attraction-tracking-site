@@ -1,0 +1,107 @@
+  Three updates to the Hire a Human feature:
+
+
+  === UPDATE 1: SLACK NOTIFICATION ===
+
+  In the POST /api/member/hire/waitlist route (or whatever
+  the interest/waitlist endpoint is), after creating the
+  entry, send a Slack notification.
+
+  POST to process.env.SLACK_WEBHOOK_URL with JSON body:
+  {"text": "*New Enquiry*\n{memberName} ({memberEmail}) is
+  interested in *{packageName}* ({categoryName}) and would
+  like to learn more."}
+
+  If SLACK_WEBHOOK_URL env var is not set, skip silently —
+  don't fail the request. Same for any Slack errors — log
+  them but don't break the response.
+
+  Make sure SLACK_WEBHOOK_URL is read from
+  environment/secrets.
+
+
+  === UPDATE 2: RENAME WAITLIST → INTEREST/ENQUIRY (UI
+  LABELS ONLY) ===
+
+  The DB column stays "waitlist" — only change the
+  user-facing labels:
+
+  Member page (/member/hire):
+  - Button text: "Join Waitlist" → "I'm Interested"
+  - After clicking, button changes to "We'll be in touch ✓"
+  (disabled, bg-green-50 border-green-200 text-green-700
+  with a CheckCircleIcon)
+  - After clicking, show a TOAST notification that slides in
+   from the bottom of the screen. Toast message: "Thanks for
+   your interest in {Package Name}! Jared will reach out to
+  you shortly to get you set up." Auto-dismiss after 5
+  seconds. Style it as a dark rounded bar with white text
+  (similar to common toast patterns). Include an X button to
+   dismiss early.
+  - If user has already expressed interest (fetched on page
+  load from GET /api/member/hire/waitlist), show "We'll be
+  in touch ✓" immediately.
+
+  Admin page (/admin/hire):
+  - Package edit modal checkbox label: "Waitlist" →
+  "Interest Only"
+  - Package row badge: "Waitlist" → "Interest Only"
+  - Second tab name: "Waitlist" → "Enquiries"
+  - Tab content header: "X waitlist requests" → "X
+  enquiries"
+  - Empty state: "No waitlist requests yet" → "No enquiries
+  yet"
+  - Sidebar badge tooltip (if any): update to say
+  "enquiries" not "waitlist"
+
+
+  === UPDATE 3: UPDATE ALL PACKAGE DATA ===
+
+  Update every ServicePackage in the database. You can write
+   a quick prisma script, update the seed, or do it inline —
+   whatever works. These are the correct values:
+
+  Set ALL packages to: waitlist = true, stripeUrl = null
+
+  Updated prices:
+  - "2 Video Package": price = "$500/mo", priceNote = "USD"
+  - "2 Video + Jared": price = "$800/mo", priceNote = "USD"
+  - "4 Video Package": price = "$1,000/mo", priceNote =
+  "USD"
+  - "4 Video + Jared": price = "$1,500/mo", priceNote =
+  "USD"
+  - "Mastery 2": price = "$2,000/mo", priceNote = "USD"
+  - "Mastery 4": price = "$3,000/mo", priceNote = "USD"
+  - "Ultimate Mastery": price = "$4,500/mo", priceNote =
+  "USD"
+
+  Add-ons (Custom Thumbnails, Lead Magnet Creation, Rush
+  Funnel) keep their current prices but also set waitlist =
+  true so they show "I'm Interested" instead of "Message
+  Us".
+
+  Also add a banner/callout below the hero section on the
+  member page (/member/hire), above the first category.
+  Style it as a subtle info bar:
+  - bg-[#6ba3c7]/8 border border-[#6ba3c7]/20 rounded-lg
+  px-5 py-4
+  - Text: "All packages are added to your existing
+  Foundations membership — one invoice, one billing date."
+  - Bold the first part, muted colour for the second part
+
+
+  === VERIFY ===
+
+  1. Check member page shows all packages with "I'm
+  Interested" buttons and updated prices
+  2. Check the banner appears below the hero
+  3. Click "I'm Interested" on a package — verify toast
+  appears with correct message, button changes to "We'll be
+  in touch ✓"
+  4. Check admin Enquiries tab shows the entry
+  5. Check Slack notification was sent (if SLACK_WEBHOOK_URL
+   is set in secrets)
+  6. Check admin package edit modal shows "Interest Only"
+  checkbox
+  7. Reload member page — verify the package you already
+  clicked shows "We'll be in touch ✓" immediately

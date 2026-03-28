@@ -17,6 +17,22 @@ export async function GET() {
   return NextResponse.json({ packageIds: entries.map((e) => e.packageId) });
 }
 
+async function sendSlackNotification(memberName: string, memberEmail: string, packageName: string, categoryName: string) {
+  const webhookUrl = process.env.SLACK_WEBHOOK_URL;
+  if (!webhookUrl) return;
+  try {
+    await fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        text: `*New Enquiry*\n${memberName} (${memberEmail}) is interested in *${packageName}* (${categoryName}) and would like to learn more.`,
+      }),
+    });
+  } catch (e) {
+    console.error("[hire] Slack notification failed:", e);
+  }
+}
+
 export async function POST(req: Request) {
   const session = await auth();
   if (!session?.user?.id) {
@@ -55,16 +71,15 @@ export async function POST(req: Request) {
       select: { fullName: true, email: true },
     });
 
-    try {
-      await sendWaitlistNotification(
-        user?.fullName ?? "A member",
-        user?.email ?? session.user.email ?? "unknown",
-        pkg.name,
-        pkg.category.name
-      );
-    } catch (e) {
-      console.error("[waitlist] Email notification failed:", e);
-    }
+    const memberName = user?.fullName ?? "A member";
+    const memberEmail = user?.email ?? (session.user as { email?: string }).email ?? "unknown";
+
+    await Promise.allSettled([
+      sendWaitlistNotification(memberName, memberEmail, pkg.name, pkg.category.name).catch((e) =>
+        console.error("[hire] Email notification failed:", e)
+      ),
+      sendSlackNotification(memberName, memberEmail, pkg.name, pkg.category.name),
+    ]);
   }
 
   return NextResponse.json({ success: true, alreadyOnWaitlist });

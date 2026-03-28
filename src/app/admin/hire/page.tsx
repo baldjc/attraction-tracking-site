@@ -89,7 +89,7 @@ function TabPills({ active, onChange, waitlistCount }: { active: Tab; onChange: 
               : "text-[#2f3437]/50 dark:text-white/40 hover:text-[#2f3437] dark:hover:text-white"
           }`}
         >
-          {t === "packages" ? "Packages" : "Waitlist"}
+          {t === "packages" ? "Packages" : "Enquiries"}
           {t === "waitlist" && waitlistCount > 0 && (
             <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">
               {waitlistCount}
@@ -315,7 +315,7 @@ function PackageModal({ pkg, categoryId, onClose, onSave }: { pkg: Package | nul
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">
               <input id="pkg-waitlist" type="checkbox" checked={form.waitlist} onChange={(e) => set("waitlist", e.target.checked)} className="w-4 h-4 rounded accent-[#6ba3c7]" />
-              <label htmlFor="pkg-waitlist" className="text-sm text-[#2f3437]/70 dark:text-white/60 select-none">Enable Waitlist CTA</label>
+              <label htmlFor="pkg-waitlist" className="text-sm text-[#2f3437]/70 dark:text-white/60 select-none">Interest Only</label>
             </div>
             <div className="flex items-center gap-2">
               <input id="pkg-pub" type="checkbox" checked={form.published} onChange={(e) => set("published", e.target.checked)} className="w-4 h-4 rounded accent-[#6ba3c7]" />
@@ -345,7 +345,7 @@ function PackageRow({ pkg, onEdit, onDelete, onTogglePublish }: { pkg: Package; 
           {pkg.waitlist && (
             <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide bg-[#6ba3c7]/10 text-[#6ba3c7] px-2 py-0.5 rounded-full">
               <ClockIcon className="w-3 h-3" />
-              Waitlist
+              Interest Only
             </span>
           )}
           {!pkg.published && <span className="text-[10px] font-semibold text-[#2f3437]/30 dark:text-white/30 uppercase tracking-wide">Hidden</span>}
@@ -357,7 +357,7 @@ function PackageRow({ pkg, onEdit, onDelete, onTogglePublish }: { pkg: Package; 
         <p className="text-xs text-[#2f3437]/40 dark:text-white/30 mt-0.5">
           {pkg.features.length} feature{pkg.features.length !== 1 ? "s" : ""}
           {pkg.highlightFeatures && pkg.highlightFeatures.length > 0 ? ` · ${pkg.highlightFeatures.length} highlight${pkg.highlightFeatures.length !== 1 ? "s" : ""}` : ""}
-          {pkg.stripeUrl ? " · Stripe link" : pkg.waitlist ? " · Waitlist" : " · Message Us"}
+          {pkg.stripeUrl ? " · Stripe link" : pkg.waitlist ? " · Interest Only" : " · Message Us"}
         </p>
       </div>
       <div className="flex items-center gap-1 shrink-0">
@@ -500,14 +500,14 @@ function WaitlistTab() {
     return (
       <div className="text-center py-16 border border-dashed border-[#eaeaea] dark:border-white/10 rounded-xl">
         <ClockIcon className="w-8 h-8 text-[#2f3437]/20 dark:text-white/20 mx-auto mb-3" />
-        <p className="text-sm font-medium text-[#2f3437]/40 dark:text-white/30">No waitlist requests yet</p>
+        <p className="text-sm font-medium text-[#2f3437]/40 dark:text-white/30">No enquiries yet</p>
       </div>
     );
   }
 
   return (
     <div>
-      <p className="text-sm text-[#2f3437]/50 dark:text-white/40 mb-5">{entries.length} waitlist request{entries.length !== 1 ? "s" : ""}</p>
+      <p className="text-sm text-[#2f3437]/50 dark:text-white/40 mb-5">{entries.length} enquir{entries.length !== 1 ? "ies" : "y"}</p>
       <div className="space-y-2">
         {entries.map((entry) => (
           <div key={entry.id} className="flex items-center gap-4 px-4 py-3 bg-white dark:bg-[#1a2433] rounded-xl border border-[#eaeaea] dark:border-white/10">
