@@ -1,12 +1,35 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   CheckCircleIcon,
   XMarkIcon,
   InformationCircleIcon,
+  ArrowTopRightOnSquareIcon,
+  ChatBubbleLeftRightIcon,
 } from "@heroicons/react/24/outline";
 import PageHeader from "@/components/PageHeader";
+
+// ── Types ──────────────────────────────────────────────────────
+
+interface PackageData {
+  id: string;
+  stripeUrl: string | null;
+  waitlist: boolean;
+  name: string;
+}
+
+// ── Package ID mapping ─────────────────────────────────────────
+
+const PKG = {
+  prod2:      "editing-1",
+  prod2Jared: "editing-2",
+  prod4:      "editing-3",
+  prod4Jared: "editing-4",
+  growth2:    "mastery-1",
+  growth4:    "mastery-2",
+  dwu:        "ultimate-1",
+} as const;
 
 // ── Toast ─────────────────────────────────────────────────────
 
@@ -55,9 +78,74 @@ function Feature({ children }: { children: React.ReactNode }) {
   );
 }
 
+// ── CTA Button ────────────────────────────────────────────────
+
+function CtaButton({
+  pkg,
+  interested,
+  onInterested,
+  className,
+}: {
+  pkg: PackageData | undefined;
+  interested: boolean;
+  onInterested: (id: string, name: string) => Promise<void>;
+  className: string;
+}) {
+  const [submitting, setSubmitting] = useState(false);
+
+  if (!pkg) {
+    return (
+      <button disabled className={`${className} opacity-50 cursor-default`}>
+        Get Started
+      </button>
+    );
+  }
+
+  if (pkg.waitlist) {
+    if (interested) {
+      return (
+        <span className={`flex items-center justify-center gap-2 ${className} bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800/40 text-green-700 dark:text-green-400 cursor-default`}>
+          <CheckCircleIcon className="w-4 h-4" /> We&apos;ll be in touch ✓
+        </span>
+      );
+    }
+    return (
+      <button
+        onClick={async () => { setSubmitting(true); await onInterested(pkg.id, pkg.name); setSubmitting(false); }}
+        disabled={submitting}
+        className={`${className} disabled:opacity-50`}
+      >
+        {submitting ? "Sending…" : "I'm Interested"}
+      </button>
+    );
+  }
+
+  if (pkg.stripeUrl) {
+    return (
+      <a href={pkg.stripeUrl} target="_blank" rel="noopener noreferrer" className={`flex items-center justify-center gap-2 ${className}`}>
+        Get Started <ArrowTopRightOnSquareIcon className="w-4 h-4" />
+      </a>
+    );
+  }
+
+  return (
+    <span className={`flex items-center justify-center gap-1.5 text-xs font-semibold text-[#6ba3c7] cursor-default`}>
+      <ChatBubbleLeftRightIcon className="w-3.5 h-3.5" /> Message us to get started
+    </span>
+  );
+}
+
 // ── Production Card ───────────────────────────────────────────
 
-function ProductionCard({ onGetStarted }: { onGetStarted: () => void }) {
+function ProductionCard({
+  packages,
+  interested,
+  onInterested,
+}: {
+  packages: Map<string, PackageData>;
+  interested: Set<string>;
+  onInterested: (id: string, name: string) => Promise<void>;
+}) {
   const [videos, setVideos] = useState<2 | 4>(2);
   const [addJared, setAddJared] = useState(false);
 
@@ -65,8 +153,13 @@ function ProductionCard({ onGetStarted }: { onGetStarted: () => void }) {
   const jaredAddon = videos === 2 ? 300 : 500;
   const totalPrice = addJared ? basePrice + jaredAddon : basePrice;
 
+  const pkgId = videos === 2
+    ? (addJared ? PKG.prod2Jared : PKG.prod2)
+    : (addJared ? PKG.prod4Jared : PKG.prod4);
+  const pkg = packages.get(pkgId);
+
   return (
-    <div className="bg-white dark:bg-[#1a2433] rounded-xl border border-[#eaeaea] dark:border-white/10 flex flex-col p-5">
+    <div className="bg-white dark:bg-[#1a2433] rounded-xl border border-[#eaeaea] dark:border-white/10 flex flex-col h-full p-5">
       <p className="text-[10px] font-bold uppercase tracking-widest text-[#2f3437]/40 dark:text-white/30 mb-2">🎬 Production</p>
       <h3 className="text-base font-bold text-[#2f3437] dark:text-white leading-tight">We edit. You publish.</h3>
       <div className="mt-3 mb-4">
@@ -104,24 +197,36 @@ function ProductionCard({ onGetStarted }: { onGetStarted: () => void }) {
         </label>
       </div>
 
-      <button
-        onClick={onGetStarted}
-        className="w-full py-2.5 rounded-lg text-sm font-bold bg-[#2f3437] dark:bg-white text-white dark:text-[#1e2a38] hover:bg-[#1e2a38] dark:hover:bg-white/90 transition-colors"
-      >
-        Get Started
-      </button>
+      <div className="mt-auto">
+        <CtaButton
+          pkg={pkg}
+          interested={pkg ? interested.has(pkg.id) : false}
+          onInterested={onInterested}
+          className="w-full py-2.5 rounded-lg text-sm font-bold bg-[#2f3437] dark:bg-white text-white dark:text-[#1e2a38] hover:bg-[#1e2a38] dark:hover:bg-white/90 transition-colors"
+        />
+      </div>
     </div>
   );
 }
 
 // ── Growth Card ───────────────────────────────────────────────
 
-function GrowthCard({ onGetStarted }: { onGetStarted: () => void }) {
+function GrowthCard({
+  packages,
+  interested,
+  onInterested,
+}: {
+  packages: Map<string, PackageData>;
+  interested: Set<string>;
+  onInterested: (id: string, name: string) => Promise<void>;
+}) {
   const [videos, setVideos] = useState<2 | 4>(2);
   const price = videos === 2 ? 1996 : 2996;
+  const pkgId = videos === 2 ? PKG.growth2 : PKG.growth4;
+  const pkg = packages.get(pkgId);
 
   return (
-    <div className="bg-white dark:bg-[#1a2433] rounded-xl border-2 border-[#8B5CF6] flex flex-col p-5 relative">
+    <div className="bg-white dark:bg-[#1a2433] rounded-xl border-2 border-[#8B5CF6] flex flex-col h-full p-5 relative">
       <div className="absolute -top-3 left-1/2 -translate-x-1/2">
         <span className="text-[10px] font-bold uppercase tracking-widest bg-[#8B5CF6] text-white px-3 py-1 rounded-full">
           Most Popular
@@ -154,21 +259,33 @@ function GrowthCard({ onGetStarted }: { onGetStarted: () => void }) {
         <span className="text-[12px] font-medium text-[#8B5CF6]">Jared&apos;s feedback included</span>
       </div>
 
-      <button
-        onClick={onGetStarted}
-        className="w-full py-2.5 rounded-lg text-sm font-bold bg-[#8B5CF6] hover:bg-[#7c3aed] text-white transition-colors"
-      >
-        Get Started
-      </button>
+      <div className="mt-auto">
+        <CtaButton
+          pkg={pkg}
+          interested={pkg ? interested.has(pkg.id) : false}
+          onInterested={onInterested}
+          className="w-full py-2.5 rounded-lg text-sm font-bold bg-[#8B5CF6] hover:bg-[#7c3aed] text-white transition-colors"
+        />
+      </div>
     </div>
   );
 }
 
 // ── Done With You Card ────────────────────────────────────────
 
-function DoneWithYouCard({ onGetStarted }: { onGetStarted: () => void }) {
+function DoneWithYouCard({
+  packages,
+  interested,
+  onInterested,
+}: {
+  packages: Map<string, PackageData>;
+  interested: Set<string>;
+  onInterested: (id: string, name: string) => Promise<void>;
+}) {
+  const pkg = packages.get(PKG.dwu);
+
   return (
-    <div className="bg-white dark:bg-[#1a2433] rounded-xl border border-[#eaeaea] dark:border-white/10 flex flex-col p-5">
+    <div className="bg-white dark:bg-[#1a2433] rounded-xl border border-[#eaeaea] dark:border-white/10 flex flex-col h-full p-5">
       <div className="flex items-center justify-between mb-2">
         <p className="text-[10px] font-bold uppercase tracking-widest text-[#2f3437]/40 dark:text-white/30">💎 Done With You</p>
         <span className="text-[10px] font-bold uppercase tracking-widest bg-[#2f3437] dark:bg-white text-white dark:text-[#1e2a38] px-2 py-0.5 rounded-full">
@@ -191,12 +308,14 @@ function DoneWithYouCard({ onGetStarted }: { onGetStarted: () => void }) {
         <Feature>SEO optimisation and publishing</Feature>
       </ul>
 
-      <button
-        onClick={onGetStarted}
-        className="w-full py-2.5 rounded-lg text-sm font-bold bg-[#2f3437] dark:bg-white text-white dark:text-[#1e2a38] hover:bg-[#1e2a38] dark:hover:bg-white/90 transition-colors mt-auto"
-      >
-        Get Started
-      </button>
+      <div className="mt-auto">
+        <CtaButton
+          pkg={pkg}
+          interested={pkg ? interested.has(pkg.id) : false}
+          onInterested={onInterested}
+          className="w-full py-2.5 rounded-lg text-sm font-bold bg-[#2f3437] dark:bg-white text-white dark:text-[#1e2a38] hover:bg-[#1e2a38] dark:hover:bg-white/90 transition-colors"
+        />
+      </div>
     </div>
   );
 }
@@ -204,13 +323,39 @@ function DoneWithYouCard({ onGetStarted }: { onGetStarted: () => void }) {
 // ── Page ──────────────────────────────────────────────────────
 
 export default function HireAHumanPage() {
+  const [packages, setPackages] = useState<Map<string, PackageData>>(new Map());
+  const [interestedIds, setInterestedIds] = useState<Set<string>>(new Set());
   const [toast, setToast] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const dismissToast = useCallback(() => setToast(null), []);
 
-  function handleGetStarted() {
-    setToast("We'll reach out to get you set up — Jared will be in touch shortly.");
-    setTimeout(() => setToast(null), 6000);
-  }
+  useEffect(() => {
+    Promise.all([
+      fetch("/api/member/hire/categories").then((r) => r.ok ? r.json() : { categories: [] }),
+      fetch("/api/member/hire/waitlist").then((r) => r.ok ? r.json() : { packageIds: [] }),
+    ]).then(([catData, wlData]) => {
+      const map = new Map<string, PackageData>();
+      for (const cat of catData.categories ?? []) {
+        for (const pkg of cat.packages ?? []) {
+          map.set(pkg.id, { id: pkg.id, stripeUrl: pkg.stripeUrl, waitlist: pkg.waitlist, name: pkg.name });
+        }
+      }
+      setPackages(map);
+      setInterestedIds(new Set(wlData.packageIds ?? []));
+    }).catch(() => {}).finally(() => setLoading(false));
+  }, []);
+
+  const handleInterested = useCallback(async (packageId: string, packageName: string) => {
+    const res = await fetch("/api/member/hire/waitlist", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ packageId }),
+    });
+    if (res.ok) {
+      setInterestedIds((prev) => new Set([...prev, packageId]));
+      setToast(`Thanks for your interest in ${packageName}! Jared will reach out shortly.`);
+    }
+  }, []);
 
   return (
     <>
@@ -247,13 +392,21 @@ export default function HireAHumanPage() {
         </div>
 
         {/* 3-tier cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
-          <ProductionCard onGetStarted={handleGetStarted} />
-          <GrowthCard onGetStarted={handleGetStarted} />
-          <DoneWithYouCard onGetStarted={handleGetStarted} />
-        </div>
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-96 bg-[#eaeaea] dark:bg-white/10 rounded-xl animate-pulse" />
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-stretch">
+            <ProductionCard packages={packages} interested={interestedIds} onInterested={handleInterested} />
+            <GrowthCard packages={packages} interested={interestedIds} onInterested={handleInterested} />
+            <DoneWithYouCard packages={packages} interested={interestedIds} onInterested={handleInterested} />
+          </div>
+        )}
 
-        {/* Info banner — below the cards */}
+        {/* Info banner */}
         <div className="flex items-start gap-3 bg-[#6ba3c7]/8 border border-[#6ba3c7]/20 rounded-lg px-5 py-4">
           <InformationCircleIcon className="w-4 h-4 text-[#6ba3c7] shrink-0 mt-0.5" />
           <p className="text-sm text-[#2f3437]/70 dark:text-white/60">
