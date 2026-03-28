@@ -9,7 +9,15 @@ interface AuditRow {
   auditType: string;
   overallScore: number | null;
   createdAt: string;
-  user: { id: string; fullName: string | null; email: string } | null;
+  youtubeVideoId: string | null;
+  videosAnalysed: Array<{ videoId: string; title: string }> | null;
+  user: {
+    id: string;
+    fullName: string | null;
+    email: string;
+    youtubeChannelThumbnail: string | null;
+    youtubeChannelName: string | null;
+  } | null;
 }
 
 interface BatchStatus {
@@ -497,7 +505,7 @@ export default function AuditsPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
-                {["Date", "Member", "Type", "Score", "Action"].map((h) => (
+                {["Date", "Member", "Audit", "Score", "Action"].map((h) => (
                   <th key={h} className="text-left px-6 py-3 text-xs font-semibold text-[#2f3437]/60 uppercase tracking-wider">{h}</th>
                 ))}
               </tr>
@@ -507,17 +515,66 @@ export default function AuditsPage() {
                 <tr><td colSpan={5} className="px-6 py-12 text-center text-[#2f3437]/40">Loading…</td></tr>
               ) : filtered.length === 0 ? (
                 <tr><td colSpan={5} className="px-6 py-12 text-center text-[#2f3437]/40">No audits found.</td></tr>
-              ) : filtered.map((a) => (
+              ) : filtered.map((a) => {
+                const isSingleVideo = a.auditType === "single_video";
+                const videoId = a.youtubeVideoId;
+                const videoTitle = (a.videosAnalysed as any)?.[0]?.title ?? null;
+                const thumbUrl = videoId
+                  ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`
+                  : null;
+                const channelThumb = a.user?.youtubeChannelThumbnail ?? null;
+
+                return (
                 <tr key={a.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 text-[#2f3437]/70">{fmt(a.createdAt)}</td>
+                  <td className="px-6 py-4 text-[#2f3437]/70 whitespace-nowrap">{fmt(a.createdAt)}</td>
                   <td className="px-6 py-4">
                     {a.user ? (
-                      <Link href={`/admin/members/${a.user.id}`} className="text-[#6ba3c7] hover:underline font-medium">
+                      <Link href={`/admin/members/${a.user.id}`} className="text-[#6ba3c7] hover:underline font-medium whitespace-nowrap">
                         {a.user.fullName ?? a.user.email}
                       </Link>
                     ) : "—"}
                   </td>
-                  <td className="px-6 py-4 capitalize text-[#2f3437]">{a.auditType.replace("_", " ")}</td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      {/* Thumbnail / avatar */}
+                      {isSingleVideo ? (
+                        thumbUrl ? (
+                          <img
+                            src={thumbUrl}
+                            alt={videoTitle ?? "Video"}
+                            className="w-[72px] h-[41px] rounded object-cover shrink-0"
+                          />
+                        ) : (
+                          <div className="w-[72px] h-[41px] rounded bg-gray-100 shrink-0" />
+                        )
+                      ) : channelThumb ? (
+                        <img
+                          src={channelThumb}
+                          alt={a.user?.youtubeChannelName ?? "Channel"}
+                          className="w-[41px] h-[41px] rounded-full object-cover shrink-0"
+                        />
+                      ) : (
+                        <div className={`w-[41px] h-[41px] rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
+                          a.auditType === "baseline"
+                            ? "bg-[#6ba3c7]/15 text-[#6ba3c7]"
+                            : "bg-purple-100 text-purple-600"
+                        }`}>
+                          {a.auditType === "baseline" ? "B" : "M"}
+                        </div>
+                      )}
+                      {/* Type label + video title */}
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold text-[#2f3437]/60 uppercase tracking-wide">
+                          {a.auditType.replace("_", " ")}
+                        </p>
+                        {isSingleVideo && videoTitle && (
+                          <p className="text-sm text-[#2f3437] mt-0.5 line-clamp-2 max-w-[280px]">
+                            {videoTitle}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </td>
                   <td className="px-6 py-4">
                     {a.overallScore != null ? (
                       <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${scoreBg(Number(a.overallScore))}`}>
@@ -526,12 +583,13 @@ export default function AuditsPage() {
                     ) : "—"}
                   </td>
                   <td className="px-6 py-4">
-                    <Link href={`/admin/audits/${a.id}`} className="text-[#6ba3c7] hover:underline text-xs font-medium">
+                    <Link href={`/admin/audits/${a.id}`} className="text-[#6ba3c7] hover:underline text-xs font-medium whitespace-nowrap">
                       View Report →
                     </Link>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>

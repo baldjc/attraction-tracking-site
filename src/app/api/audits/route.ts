@@ -16,7 +16,16 @@ export async function GET() {
     where: tierFilter ? { user: tierFilter } : undefined,
     orderBy: { createdAt: "desc" },
     include: {
-      user: { select: { id: true, fullName: true, email: true, serviceTier: true } },
+      user: {
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          serviceTier: true,
+          youtubeChannelThumbnail: true,
+          youtubeChannelName: true,
+        },
+      },
     },
   });
 
