@@ -12,6 +12,7 @@ import {
   XMarkIcon,
   ClockIcon,
 } from "@heroicons/react/24/outline";
+import TierCard, { type TierCategory } from "@/components/hire/TierCard";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -28,6 +29,9 @@ interface Package {
   waitlist: boolean;
   sortOrder: number;
   published: boolean;
+  videoCount: number | null;
+  isAddonVariant: boolean;
+  priceAmount: number | null;
 }
 
 interface Category {
@@ -39,6 +43,15 @@ interface Category {
   accentColour: string;
   sortOrder: number;
   published: boolean;
+  emoji: string | null;
+  tagline: string | null;
+  highlighted: boolean;
+  includesRef: string | null;
+  cardExtras: string[] | null;
+  addonLabel: string | null;
+  addonPriceNote: string | null;
+  footerNote: string | null;
+  jaredIncludedNote: string | null;
   packages: Package[];
 }
 
@@ -65,21 +78,19 @@ const ICON_OPTIONS = [
 
 // ── Helpers ───────────────────────────────────────────────────
 
-function featuresToText(arr: string[]) {
-  return arr.join("\n");
-}
+function featuresToText(arr: string[]) { return arr.join("\n"); }
 function textToFeatures(text: string): string[] {
   return text.split("\n").map((l) => l.trim()).filter(Boolean);
 }
 
 // ── Tab pill ──────────────────────────────────────────────────
 
-type Tab = "packages" | "waitlist";
+type Tab = "packages" | "waitlist" | "preview";
 
 function TabPills({ active, onChange, waitlistCount }: { active: Tab; onChange: (t: Tab) => void; waitlistCount: number }) {
   return (
     <div className="flex gap-1 bg-[#111]/5 dark:bg-white/5 rounded-lg p-1 w-fit">
-      {(["packages", "waitlist"] as Tab[]).map((t) => (
+      {(["packages", "waitlist", "preview"] as Tab[]).map((t) => (
         <button
           key={t}
           onClick={() => onChange(t)}
@@ -89,7 +100,7 @@ function TabPills({ active, onChange, waitlistCount }: { active: Tab; onChange: 
               : "text-[#2f3437]/50 dark:text-white/40 hover:text-[#2f3437] dark:hover:text-white"
           }`}
         >
-          {t === "packages" ? "Packages" : "Enquiries"}
+          {t === "packages" ? "Packages" : t === "waitlist" ? "Enquiries" : "Preview"}
           {t === "waitlist" && waitlistCount > 0 && (
             <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">
               {waitlistCount}
@@ -110,6 +121,19 @@ interface CategoryFormState {
   icon: string;
   accentColour: string;
   published: boolean;
+  emoji: string;
+  tagline: string;
+  highlighted: boolean;
+  includesRef: string;
+  cardExtras: string;
+  addonLabel: string;
+  addonPriceNote: string;
+  footerNote: string;
+  jaredIncludedNote: string;
+}
+
+function inputCls() {
+  return "w-full border border-[#eaeaea] dark:border-white/10 rounded-lg px-3 py-2 text-sm bg-white dark:bg-[#111c2a] text-[#2f3437] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/50";
 }
 
 function CategoryModal({ category, onClose, onSave }: { category: Category | null; onClose: () => void; onSave: () => void }) {
@@ -120,6 +144,15 @@ function CategoryModal({ category, onClose, onSave }: { category: Category | nul
     icon: category?.icon ?? "PuzzlePieceIcon",
     accentColour: category?.accentColour ?? "blue",
     published: category?.published ?? true,
+    emoji: category?.emoji ?? "",
+    tagline: category?.tagline ?? "",
+    highlighted: category?.highlighted ?? false,
+    includesRef: category?.includesRef ?? "",
+    cardExtras: category?.cardExtras ? featuresToText(category.cardExtras) : "",
+    addonLabel: category?.addonLabel ?? "",
+    addonPriceNote: category?.addonPriceNote ?? "",
+    footerNote: category?.footerNote ?? "",
+    jaredIncludedNote: category?.jaredIncludedNote ?? "",
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -143,6 +176,15 @@ function CategoryModal({ category, onClose, onSave }: { category: Category | nul
           icon: form.icon,
           accentColour: form.accentColour,
           published: form.published,
+          emoji: form.emoji || null,
+          tagline: form.tagline || null,
+          highlighted: form.highlighted,
+          includesRef: form.includesRef || null,
+          cardExtras: form.cardExtras ? textToFeatures(form.cardExtras) : null,
+          addonLabel: form.addonLabel || null,
+          addonPriceNote: form.addonPriceNote || null,
+          footerNote: form.footerNote || null,
+          jaredIncludedNote: form.jaredIncludedNote || null,
         }),
       }
     );
@@ -151,9 +193,11 @@ function CategoryModal({ category, onClose, onSave }: { category: Category | nul
     setSaving(false);
   }
 
+  const ic = inputCls();
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-      <div className="bg-white dark:bg-[#1a2433] rounded-2xl shadow-2xl w-full max-w-lg p-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 overflow-y-auto">
+      <div className="bg-white dark:bg-[#1a2433] rounded-2xl shadow-2xl w-full max-w-lg p-6 my-8">
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-lg font-bold text-[#2f3437] dark:text-white">{category ? "Edit Category" : "New Category"}</h2>
           <button onClick={onClose} className="p-1 rounded hover:bg-[#f0f0f0] dark:hover:bg-white/10">
@@ -161,28 +205,29 @@ function CategoryModal({ category, onClose, onSave }: { category: Category | nul
           </button>
         </div>
         <div className="space-y-4">
+          {/* Basic fields */}
           <div>
             <label className="block text-xs font-semibold text-[#2f3437]/60 dark:text-white/40 mb-1">Name *</label>
-            <input className="w-full border border-[#eaeaea] dark:border-white/10 rounded-lg px-3 py-2 text-sm bg-white dark:bg-[#111c2a] text-[#2f3437] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/50" value={form.name} onChange={(e) => set("name", e.target.value)} />
+            <input className={ic} value={form.name} onChange={(e) => set("name", e.target.value)} />
           </div>
           <div>
             <label className="block text-xs font-semibold text-[#2f3437]/60 dark:text-white/40 mb-1">Slug</label>
-            <input className="w-full border border-[#eaeaea] dark:border-white/10 rounded-lg px-3 py-2 text-sm bg-white dark:bg-[#111c2a] text-[#2f3437] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/50" value={form.slug} onChange={(e) => set("slug", e.target.value)} placeholder="auto-generated from name" />
+            <input className={ic} value={form.slug} onChange={(e) => set("slug", e.target.value)} placeholder="auto-generated from name" />
           </div>
           <div>
             <label className="block text-xs font-semibold text-[#2f3437]/60 dark:text-white/40 mb-1">Description</label>
-            <textarea rows={2} className="w-full border border-[#eaeaea] dark:border-white/10 rounded-lg px-3 py-2 text-sm bg-white dark:bg-[#111c2a] text-[#2f3437] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/50 resize-none" value={form.description} onChange={(e) => set("description", e.target.value)} />
+            <textarea rows={2} className={`${ic} resize-none`} value={form.description} onChange={(e) => set("description", e.target.value)} />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-[#2f3437]/60 dark:text-white/40 mb-1">Icon</label>
-              <select className="w-full border border-[#eaeaea] dark:border-white/10 rounded-lg px-3 py-2 text-sm bg-white dark:bg-[#111c2a] text-[#2f3437] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/50" value={form.icon} onChange={(e) => set("icon", e.target.value)}>
+              <select className={ic} value={form.icon} onChange={(e) => set("icon", e.target.value)}>
                 {ICON_OPTIONS.map((i) => <option key={i} value={i}>{i.replace("Icon", "")}</option>)}
               </select>
             </div>
             <div>
               <label className="block text-xs font-semibold text-[#2f3437]/60 dark:text-white/40 mb-1">Accent Colour</label>
-              <select className="w-full border border-[#eaeaea] dark:border-white/10 rounded-lg px-3 py-2 text-sm bg-white dark:bg-[#111c2a] text-[#2f3437] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/50" value={form.accentColour} onChange={(e) => set("accentColour", e.target.value)}>
+              <select className={ic} value={form.accentColour} onChange={(e) => set("accentColour", e.target.value)}>
                 {ACCENT_OPTIONS.map((c) => <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>)}
               </select>
             </div>
@@ -191,6 +236,53 @@ function CategoryModal({ category, onClose, onSave }: { category: Category | nul
             <input id="cat-pub" type="checkbox" checked={form.published} onChange={(e) => set("published", e.target.checked)} className="w-4 h-4 rounded accent-[#6ba3c7]" />
             <label htmlFor="cat-pub" className="text-sm text-[#2f3437]/70 dark:text-white/60 select-none">Published</label>
           </div>
+
+          {/* Divider */}
+          <div className="border-t border-[#eaeaea] dark:border-white/10 pt-4">
+            <p className="text-xs font-bold text-[#2f3437]/40 dark:text-white/30 uppercase tracking-widest mb-4">Card Display</p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-[#2f3437]/60 dark:text-white/40 mb-1">Emoji</label>
+              <input className={ic} value={form.emoji} onChange={(e) => set("emoji", e.target.value)} placeholder="🎬" />
+            </div>
+            <div className="flex items-end pb-0.5">
+              <div className="flex items-center gap-2">
+                <input id="cat-highlighted" type="checkbox" checked={form.highlighted} onChange={(e) => set("highlighted", e.target.checked)} className="w-4 h-4 rounded accent-[#8B5CF6]" />
+                <label htmlFor="cat-highlighted" className="text-sm text-[#2f3437]/70 dark:text-white/60 select-none leading-tight">Highlighted (purple border + Most Popular pill)</label>
+              </div>
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-[#2f3437]/60 dark:text-white/40 mb-1">Tagline</label>
+            <input className={ic} value={form.tagline} onChange={(e) => set("tagline", e.target.value)} placeholder="We edit. You publish." />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-[#2f3437]/60 dark:text-white/40 mb-1">Includes Ref</label>
+            <input className={ic} value={form.includesRef} onChange={(e) => set("includesRef", e.target.value)} placeholder="Includes everything in X, plus:" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-[#2f3437]/60 dark:text-white/40 mb-1">Card Extras <span className="font-normal">(one bullet per line)</span></label>
+            <textarea rows={3} className={`${ic} resize-none font-mono`} value={form.cardExtras} onChange={(e) => set("cardExtras", e.target.value)} placeholder="One bullet point per line" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-[#2f3437]/60 dark:text-white/40 mb-1">Addon Label</label>
+            <input className={ic} value={form.addonLabel} onChange={(e) => set("addonLabel", e.target.value)} placeholder="Add Jared's personal feedback" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-[#2f3437]/60 dark:text-white/40 mb-1">Addon Price Note</label>
+            <input className={ic} value={form.addonPriceNote} onChange={(e) => set("addonPriceNote", e.target.value)} placeholder="1-on-1 coaching call + video-by-video review" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-[#2f3437]/60 dark:text-white/40 mb-1">Footer Note</label>
+            <input className={ic} value={form.footerNote} onChange={(e) => set("footerNote", e.target.value)} placeholder="Added to your Foundations membership" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-[#2f3437]/60 dark:text-white/40 mb-1">Jared Included Note</label>
+            <input className={ic} value={form.jaredIncludedNote} onChange={(e) => set("jaredIncludedNote", e.target.value)} placeholder="Jared's feedback included" />
+          </div>
+
           {error && <p className="text-xs text-red-500">{error}</p>}
         </div>
         <div className="flex gap-3 mt-6">
@@ -215,6 +307,9 @@ interface PackageFormState {
   stripeUrl: string;
   waitlist: boolean;
   published: boolean;
+  videoCount: string;
+  isAddonVariant: boolean;
+  priceAmount: string;
 }
 
 function PackageModal({ pkg, categoryId, onClose, onSave }: { pkg: Package | null; categoryId: string; onClose: () => void; onSave: () => void }) {
@@ -229,6 +324,9 @@ function PackageModal({ pkg, categoryId, onClose, onSave }: { pkg: Package | nul
     stripeUrl: pkg?.stripeUrl ?? "",
     waitlist: pkg?.waitlist ?? false,
     published: pkg?.published ?? true,
+    videoCount: pkg?.videoCount != null ? String(pkg.videoCount) : "none",
+    isAddonVariant: pkg?.isAddonVariant ?? false,
+    priceAmount: pkg?.priceAmount != null ? String(pkg.priceAmount / 100) : "",
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -258,6 +356,9 @@ function PackageModal({ pkg, categoryId, onClose, onSave }: { pkg: Package | nul
           stripeUrl: form.stripeUrl || null,
           waitlist: form.waitlist,
           published: form.published,
+          videoCount: form.videoCount === "none" ? null : Number(form.videoCount),
+          isAddonVariant: form.isAddonVariant,
+          priceAmount: form.priceAmount ? Math.round(Number(form.priceAmount) * 100) : null,
         }),
       }
     );
@@ -265,6 +366,8 @@ function PackageModal({ pkg, categoryId, onClose, onSave }: { pkg: Package | nul
     else { onSave(); }
     setSaving(false);
   }
+
+  const ic = inputCls();
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 overflow-y-auto">
@@ -278,40 +381,63 @@ function PackageModal({ pkg, categoryId, onClose, onSave }: { pkg: Package | nul
         <div className="space-y-4">
           <div>
             <label className="block text-xs font-semibold text-[#2f3437]/60 dark:text-white/40 mb-1">Package Name *</label>
-            <input className="w-full border border-[#eaeaea] dark:border-white/10 rounded-lg px-3 py-2 text-sm bg-white dark:bg-[#111c2a] text-[#2f3437] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/50" value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="e.g. 2 Video Package" />
+            <input className={ic} value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="e.g. Production 2" />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-[#2f3437]/60 dark:text-white/40 mb-1">Price *</label>
-              <input className="w-full border border-[#eaeaea] dark:border-white/10 rounded-lg px-3 py-2 text-sm bg-white dark:bg-[#111c2a] text-[#2f3437] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/50" value={form.price} onChange={(e) => set("price", e.target.value)} placeholder="e.g. $500/mo" />
+              <input className={ic} value={form.price} onChange={(e) => set("price", e.target.value)} placeholder="e.g. $500/mo" />
             </div>
             <div>
               <label className="block text-xs font-semibold text-[#2f3437]/60 dark:text-white/40 mb-1">Price Note</label>
-              <input className="w-full border border-[#eaeaea] dark:border-white/10 rounded-lg px-3 py-2 text-sm bg-white dark:bg-[#111c2a] text-[#2f3437] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/50" value={form.priceNote} onChange={(e) => set("priceNote", e.target.value)} placeholder="e.g. USD" />
+              <input className={ic} value={form.priceNote} onChange={(e) => set("priceNote", e.target.value)} placeholder="e.g. USD" />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-[#2f3437]/60 dark:text-white/40 mb-1">Badge</label>
-              <input className="w-full border border-[#eaeaea] dark:border-white/10 rounded-lg px-3 py-2 text-sm bg-white dark:bg-[#111c2a] text-[#2f3437] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/50" value={form.badge} onChange={(e) => set("badge", e.target.value)} placeholder="e.g. Most Popular" />
+              <input className={ic} value={form.badge} onChange={(e) => set("badge", e.target.value)} placeholder="e.g. Most Popular" />
             </div>
             <div>
               <label className="block text-xs font-semibold text-[#2f3437]/60 dark:text-white/40 mb-1">Subtitle</label>
-              <input className="w-full border border-[#eaeaea] dark:border-white/10 rounded-lg px-3 py-2 text-sm bg-white dark:bg-[#111c2a] text-[#2f3437] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/50" value={form.subtitle} onChange={(e) => set("subtitle", e.target.value)} placeholder="e.g. 2 videos/mo" />
+              <input className={ic} value={form.subtitle} onChange={(e) => set("subtitle", e.target.value)} placeholder="e.g. 2 videos/mo" />
             </div>
           </div>
           <div>
             <label className="block text-xs font-semibold text-[#2f3437]/60 dark:text-white/40 mb-1">Features <span className="font-normal">(one per line)</span></label>
-            <textarea rows={5} className="w-full border border-[#eaeaea] dark:border-white/10 rounded-lg px-3 py-2 text-sm bg-white dark:bg-[#111c2a] text-[#2f3437] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/50 resize-none font-mono" value={form.features} onChange={(e) => set("features", e.target.value)} placeholder={"Professional editing by ABV team\nMusic and asset licensing"} />
+            <textarea rows={5} className={`${ic} resize-none font-mono`} value={form.features} onChange={(e) => set("features", e.target.value)} placeholder={"Professional editing, graphics, titles, and b-roll\nMusic and asset licensing"} />
           </div>
           <div>
             <label className="block text-xs font-semibold text-[#2f3437]/60 dark:text-white/40 mb-1">Highlight Features <span className="font-normal">(one per line, optional)</span></label>
-            <textarea rows={3} className="w-full border border-[#eaeaea] dark:border-white/10 rounded-lg px-3 py-2 text-sm bg-white dark:bg-[#111c2a] text-[#2f3437] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/50 resize-none font-mono" value={form.highlightFeatures} onChange={(e) => set("highlightFeatures", e.target.value)} placeholder={"2 long-form video edits per month\n1 full funnel built at launch"} />
+            <textarea rows={3} className={`${ic} resize-none font-mono`} value={form.highlightFeatures} onChange={(e) => set("highlightFeatures", e.target.value)} placeholder={"2 long-form video edits per month\n1 full funnel built at launch"} />
           </div>
           <div>
             <label className="block text-xs font-semibold text-[#2f3437]/60 dark:text-white/40 mb-1">Stripe URL <span className="font-normal">(leave blank for "Message Us" or Waitlist CTA)</span></label>
-            <input className="w-full border border-[#eaeaea] dark:border-white/10 rounded-lg px-3 py-2 text-sm bg-white dark:bg-[#111c2a] text-[#2f3437] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/50" value={form.stripeUrl} onChange={(e) => set("stripeUrl", e.target.value)} placeholder="https://buy.stripe.com/..." />
+            <input className={ic} value={form.stripeUrl} onChange={(e) => set("stripeUrl", e.target.value)} placeholder="https://buy.stripe.com/..." />
           </div>
+
+          {/* New fields */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-[#2f3437]/60 dark:text-white/40 mb-1">Video Count (for toggle)</label>
+              <select className={ic} value={form.videoCount} onChange={(e) => set("videoCount", e.target.value)}>
+                <option value="none">None</option>
+                <option value="2">2</option>
+                <option value="4">4</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-[#2f3437]/60 dark:text-white/40 mb-1">Price in dollars (for addon calc)</label>
+              <input className={ic} type="number" value={form.priceAmount} onChange={(e) => set("priceAmount", e.target.value)} placeholder="500" />
+            </div>
+          </div>
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2">
+              <input id="pkg-addon" type="checkbox" checked={form.isAddonVariant} onChange={(e) => set("isAddonVariant", e.target.checked)} className="w-4 h-4 rounded accent-[#8B5CF6]" />
+              <label htmlFor="pkg-addon" className="text-sm text-[#2f3437]/70 dark:text-white/60 select-none">This is a +Jared variant</label>
+            </div>
+          </div>
+
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">
               <input id="pkg-waitlist" type="checkbox" checked={form.waitlist} onChange={(e) => set("waitlist", e.target.checked)} className="w-4 h-4 rounded accent-[#6ba3c7]" />
@@ -342,6 +468,7 @@ function PackageRow({ pkg, onEdit, onDelete, onTogglePublish }: { pkg: Package; 
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-sm font-semibold text-[#2f3437] dark:text-white">{pkg.name}</span>
           {pkg.badge && <span className="text-[10px] font-bold uppercase tracking-wide bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 px-2 py-0.5 rounded-full">{pkg.badge}</span>}
+          {pkg.isAddonVariant && <span className="text-[10px] font-bold uppercase tracking-wide bg-[#8B5CF6]/10 text-[#8B5CF6] px-2 py-0.5 rounded-full">+Jared</span>}
           {pkg.waitlist && (
             <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide bg-[#6ba3c7]/10 text-[#6ba3c7] px-2 py-0.5 rounded-full">
               <ClockIcon className="w-3 h-3" />
@@ -352,6 +479,7 @@ function PackageRow({ pkg, onEdit, onDelete, onTogglePublish }: { pkg: Package; 
         </div>
         <div className="flex items-center gap-3 mt-0.5">
           <span className="text-sm font-bold text-[#6ba3c7]">{pkg.price}</span>
+          {pkg.videoCount != null && <span className="text-xs text-[#2f3437]/40 dark:text-white/30">{pkg.videoCount} videos/mo</span>}
           {pkg.subtitle && <span className="text-xs text-[#2f3437]/40 dark:text-white/30">{pkg.subtitle}</span>}
         </div>
         <p className="text-xs text-[#2f3437]/40 dark:text-white/30 mt-0.5">
@@ -416,8 +544,10 @@ function CategoryCard({ category, onRefresh }: { category: Category; onRefresh: 
           <button onClick={() => setExpanded(!expanded)} className="flex items-center gap-3 flex-1 text-left min-w-0">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
+                {category.emoji && <span>{category.emoji}</span>}
                 <h3 className="font-bold text-[#2f3437] dark:text-white text-base">{category.name}</h3>
                 {!category.published && <span className="text-[10px] font-semibold text-[#2f3437]/30 dark:text-white/30 uppercase tracking-wide">Hidden</span>}
+                {category.highlighted && <span className="text-[10px] font-bold uppercase tracking-wide bg-[#8B5CF6]/10 text-[#8B5CF6] px-2 py-0.5 rounded-full">Highlighted</span>}
                 <span className="text-xs bg-[#f0f0f0] dark:bg-white/8 text-[#2f3437]/50 dark:text-white/40 px-2 py-0.5 rounded-full capitalize">{category.accentColour}</span>
               </div>
               {category.description && <p className="text-xs text-[#2f3437]/40 dark:text-white/30 mt-0.5 truncate">{category.description}</p>}
@@ -539,6 +669,42 @@ function WaitlistTab() {
   );
 }
 
+// ── Preview Tab ───────────────────────────────────────────────
+
+function PreviewTab({ categories }: { categories: Category[] }) {
+  const sorted = [...categories].sort((a, b) => a.sortOrder - b.sortOrder);
+
+  if (sorted.length === 0) {
+    return (
+      <div className="text-center py-16 border border-dashed border-[#eaeaea] dark:border-white/10 rounded-xl">
+        <p className="text-sm font-medium text-[#2f3437]/40 dark:text-white/30">No categories to preview</p>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <p className="text-xs text-[#2f3437]/40 dark:text-white/30 mb-5">
+        Preview shows all categories (including hidden). Unpublished categories have a "Hidden" overlay.
+      </p>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-stretch">
+        {sorted.map((cat) => (
+          <div key={cat.id} className="relative">
+            <TierCard category={cat as TierCategory} previewMode={true} />
+            {!cat.published && (
+              <div className="absolute inset-0 rounded-xl bg-white/60 dark:bg-[#1a2433]/60 flex items-start justify-end p-3 pointer-events-none">
+                <span className="text-[10px] font-bold uppercase tracking-widest bg-[#2f3437]/20 dark:bg-white/20 text-[#2f3437] dark:text-white px-2 py-0.5 rounded-full">
+                  Hidden
+                </span>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Main Page ─────────────────────────────────────────────────
 
 export default function AdminHirePage() {
@@ -562,7 +728,7 @@ export default function AdminHirePage() {
   useEffect(() => { load(); }, [load]);
 
   return (
-    <div className="max-w-3xl pb-16">
+    <div className="max-w-5xl pb-16">
       {/* Page header */}
       <div className="flex items-start justify-between mb-6">
         <div className="flex items-center gap-3">
@@ -609,6 +775,17 @@ export default function AdminHirePage() {
 
       {/* Waitlist tab */}
       {tab === "waitlist" && <WaitlistTab />}
+
+      {/* Preview tab */}
+      {tab === "preview" && (
+        loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[1, 2, 3].map((i) => <div key={i} className="h-96 bg-[#eaeaea] dark:bg-white/10 rounded-xl animate-pulse" />)}
+          </div>
+        ) : (
+          <PreviewTab categories={categories} />
+        )
+      )}
 
       {showNewCategory && (
         <CategoryModal category={null} onClose={() => setShowNewCategory(false)} onSave={() => { setShowNewCategory(false); load(); }} />

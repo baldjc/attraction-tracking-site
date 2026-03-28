@@ -1,0 +1,124 @@
+  Context                                                                                                                                                    
+                                                                                                                                                             
+  Prompt 1 added new fields to ServiceCategory (emoji, tagline, highlighted, includesRef, cardExtras, addonLabel, addonPriceNote, footerNote,                
+  jaredIncludedNote) and ServicePackage (videoCount, isAddonVariant, priceAmount). The seed data has been rewritten with correct names and prices. The       
+  database now has everything needed to render the member Hire a Human page dynamically.
+                                                                                                                                                             
+  This prompt rewrites the member page to be fully data-driven and updates the admin page to expose the new fields.                                          
+  
+  Task 1: Extract Shared TierCard Component                                                                                                                  
+                                                                                                                                                           
+  Extract a shared TierCard component to src/components/hire/TierCard.tsx. This component will be used by both the member page and the admin preview. Also   
+  move VideoToggle, Feature, and CtaButton into this file (or co-located files in the same folder).                                                        
+                                                                                                                                                             
+  TierCard receives a full category object (with its packages array), plus optional props:                                                                   
+  - previewMode (boolean, default false) — disables CTAs in admin preview
+  - interested (Set of package IDs)                                                                                                                          
+  - onInterested (callback)                                                                                                                                
+                                                                                                                                                             
+  TierCard Rendering Logic                                                                                                                                   
+  
+  1. Card wrapper: White bg, rounded-xl, border. If category.highlighted is true → border-2 border-[#8B5CF6] + absolute-positioned "Most Popular" pill at top
+   centre (same as current GrowthCard)                                                                                                                     
+  2. Label: category.emoji + category.name in uppercase text-[10px] font-bold tracking-widest. Use text-[#8B5CF6]/60 if highlighted, else text-[#2f3437]/40  
+  dark:text-white/30                                                                                                                                         
+  3. Tagline: category.tagline as text-base font-bold text-[#2f3437] dark:text-white leading-tight
+  4. Video toggle: Show only if the category's packages have more than one distinct videoCount value. Render VideoToggle with the available counts. Default  
+  to the lowest.                                                                                                                                             
+  5. Price display: From the active package's price field in text-3xl font-extrabold. Show priceNote (e.g., "USD") in text-[11px] next to it. Same layout as 
+  current.                                                                                                                                                   
+  6. Footer note: category.footerNote in text-[12px] text-[#2f3437]/40 dark:text-white/30                                                                  
+  7. Includes ref: If category.includesRef is set, show it as text-[11px] font-semibold uppercase tracking-wide text-[#2f3437]/50 dark:text-white/40 above   
+  the features list                                                                                                                                          
+  8. Features list: From active package's features array using the Feature component (green checkmark + text)                                                
+  9. Jared addon checkbox: Show only if category.addonLabel is set AND the category has packages where isAddonVariant is both true and false for the current 
+  videoCount. Label from addonLabel, subtitle from addonPriceNote. Addon price = (addon variant priceAmount - base variant priceAmount) / 100 displayed as   
+  +$X/mo in purple. Same checkbox + border-t section styling as current ProductionCard.                                                                      
+  10. Jared included callout: If category.jaredIncludedNote is set, render the purple pill: bg-[#8B5CF6]/8 rounded-lg px-3 py-2 with checkmark icon and text 
+  in text-[12px] font-medium text-[#8B5CF6]                                                                                                                  
+  11. Card extras: If category.cardExtras is set (JSON array of strings), render a border-t section with header "The real difference:" in uppercase subheader
+   style, then each item as 💎 emoji + text-[13px] font-medium text. Same as current DoneWithYouCard.                                                        
+  12. CTA button: From active package using CtaButton. If category.highlighted → purple button (bg-[#8B5CF6] hover:bg-[#7c3aed] text-white), else dark button
+   (bg-[#2f3437] dark:bg-white text-white dark:text-[#1e2a38]). In previewMode, render a disabled button with "Preview Only" text.                           
+                                                                                                                                                           
+  Active Package Selection                                                                                                                                   
+                                                                                                                                                           
+  const videoCounts = [...new Set(packages.map(p => p.videoCount).filter(Boolean))].sort((a, b) => a - b);                                                   
+  const hasToggle = videoCounts.length > 1;                                                                                                                  
+  const [selectedVideos, setSelectedVideos] = useState(videoCounts[0] ?? null);
+                                                                                                                                                             
+  const hasAddon = !!category.addonLabel && packages.some(p => p.isAddonVariant) && packages.some(p => !p.isAddonVariant);                                   
+  const [addJared, setAddJared] = useState(false);                                                                                                           
+                                                                                                                                                             
+  const activePackage = packages.find(p =>                                                                                                                   
+    (selectedVideos === null || p.videoCount === selectedVideos) &&                                                                                          
+    (!hasAddon || p.isAddonVariant === addJared)                                                                                                             
+  ) ?? packages[0];                                                                                                                                          
+  
+  Task 2: Rewrite Member Hire Page                                                                                                                           
+                                                                                                                                                           
+  Rewrite /member/hire/page.tsx:                                                                                                                             
+  
+  - Keep: The page header section (emoji, title, blockquote copy about "You didn't get to where you are..."), the Toast component, the loading skeleton, the 
+  waitlist POST logic, the animate-slide-up CSS                                                                                                            
+  - Remove: ProductionCard, GrowthCard, DoneWithYouCard, the hardcoded PKG mapping, the inline VideoToggle, Feature, CtaButton (now imported from shared     
+  component)                                                                                                                                                 
+  - Change the data fetch: Currently extracts only id, stripeUrl, waitlist, name from packages. Instead, pass full category objects (with all new fields) and
+   full package arrays through to TierCard.                                                                                                                  
+  - Render: One TierCard per published category, sorted by sortOrder, in the same grid-cols-1 md:grid-cols-3 gap-4 items-stretch grid. Pass interested and 
+  onInterested through.                                                                                                                                      
+                                                                                                                                                           
+  The visual output must be pixel-identical to the current hardcoded design. Same colours, spacing, typography, dark mode, responsive behaviour.             
+                                                                                                                                                           
+  Task 3: Update Admin Category Modal                                                                                                                        
+                                                                                                                                                           
+  In /admin/hire/page.tsx, update the CategoryFormState interface and CategoryModal to include all new fields.                                               
+                                                                                                                                                           
+  Add a "Card Display" section in the modal with a subtle divider separating it from the basic fields (name, slug, description, icon, accent colour,         
+  published). New fields in this section:                                                                                                                  
+                                                                                                                                                             
+  - Emoji — text input, placeholder "🎬"                                                                                                                     
+  - Tagline — text input, placeholder "We edit. You publish."
+  - Highlighted — checkbox, label "Highlighted (purple border + Most Popular pill)"                                                                          
+  - Includes Ref — text input, placeholder "Includes everything in X, plus:"                                                                                 
+  - Card Extras — textarea, one per line, placeholder "One bullet point per line". Convert to/from JSON array same way features work (join with newline for
+  display, split on newline for save).                                                                                                                       
+  - Addon Label — text input, placeholder "Add Jared's personal feedback"                                                                                  
+  - Addon Price Note — text input, placeholder "1-on-1 coaching call + video-by-video review"                                                                
+  - Footer Note — text input, placeholder "Added to your Foundations membership"                                                                           
+  - Jared Included Note — text input, placeholder "Jared's feedback included"                                                                                
+  
+  Wire up the save handler to include all new fields in the API call.                                                                                        
+                                                                                                                                                           
+  Task 4: Update Admin Package Modal                                                                                                                         
+                                                                                                                                                           
+  Update the PackageFormState interface and PackageModal to add:                                                                                             
+  
+  - Video Count — select dropdown: "None" (saves as null), "2", "4". Label: "Video Count (for toggle)"                                                       
+  - Is Addon Variant — checkbox, label "This is a +Jared variant"                                                                                          
+  - Price Amount — number input, label "Price in dollars (for addon calculations)", placeholder "500". Display as dollars in the form. Multiply by 100 before
+   saving (store as cents). Divide by 100 when loading into form.                                                                                            
+  
+  Add these below the existing Stripe URL field and above the waitlist/published checkboxes.                                                                 
+                                                                                                                                                           
+  Task 5: Admin Preview Tab                                                                                                                                  
+  
+  Add a "Preview" tab to the admin hire page alongside "Packages" and "Enquiries" in the existing TabPills component.                                        
+                                                                                                                                                           
+  The Preview tab:                                                                                                                                           
+  - Renders the same TierCard component imported from src/components/hire/TierCard.tsx                                                                     
+  - Uses the current database data (already fetched by the admin page)                                                                                       
+  - Passes previewMode={true} to disable CTAs                                                                                                              
+  - Shows ALL categories including unpublished ones — unpublished categories get a subtle semi-transparent overlay with "Hidden" badge so the admin can      
+  preview before publishing                                                                                                                                  
+  - Uses the same grid layout as the member page (grid-cols-1 md:grid-cols-3 gap-4)                                                                          
+                                                                                                                                                             
+  Important Notes                                                                                                                                            
+                                                                                                                                                           
+  - The visual output of the member page MUST be identical to the current hardcoded design. Same colours (#2f3437, #8B5CF6, #6ba3c7), same spacing, same     
+  typography, same dark mode, same responsive behaviour.                                                                                                   
+  - Canadian spelling throughout (customise, optimisation, colour).                                                                                          
+  - The VideoToggle component should accept dynamic video count options instead of hardcoded [2, 4].                                                         
+  - Don't break the existing waitlist functionality — the POST to /api/member/hire/waitlist must continue to work.                                           
+  - The page header section (the blockquote about "You didn't get to where you are...") stays hardcoded in the member page — it's page-level content, not    
+  tier-specific. 
