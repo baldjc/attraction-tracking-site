@@ -1,0 +1,57 @@
+  The dashboard nav cards and page headers currently mix Heroicons (outline style on
+  coloured pill backgrounds) with one emoji (My Avatar uses the 🎯 target). They don't 
+  match. Switch everything to emojis and drop the coloured icon pill backgrounds      
+  entirely.                                                                            
+                                                                                    
+  Dashboard nav cards (MemberDashboard.tsx NAV_CARDS):
+                                                                                       
+  Replace every icon with an emoji. Remove the coloured pill <div> wrapper around the  
+  icon. Just render the emoji at ~32px size directly in the card.                      
+                                                                                       
+  ┌────────────────┬─────────────────────────┐                                      
+  │      Card      │          Emoji          │
+  ├────────────────┼─────────────────────────┤
+  │ Academy        │ 🎓                      │
+  ├────────────────┼─────────────────────────┤
+  │ My Avatar      │ 🎯 (already using this) │
+  ├────────────────┼─────────────────────────┤                                         
+  │ Create Content │ ✨                      │
+  ├────────────────┼─────────────────────────┤                                         
+  │ Generate Leads │ 🚀                      │                                      
+  ├────────────────┼─────────────────────────┤                                         
+  │ My Scores      │ 🏆                      │
+  ├────────────────┼─────────────────────────┤                                         
+  │ Hire a Human   │ 🤝                      │                                      
+  └────────────────┴─────────────────────────┘
+
+  Remove the <div className="p-2.5 bg-[...]/10 rounded-xl w-fit"> wrapper and the      
+  Heroicon <Icon> component from each card. Replace with a <span> containing the emoji
+  at text-3xl or text-4xl (roughly 32-36px).                                           
+                                                                                    
+  Page headers (My Scores, Academy, AI Tools, Generate Leads, Hire a Human):           
+   
+  Same change — replace the Heroicon + coloured pill with just the emoji. The page     
+  header layout becomes:                                                            
+                                                                                       
+  🏆 My Scores (emoji inline with the bold heading, no background pill)                
+   
+  ┌────────────────┬───────┐                                                           
+  │      Page      │ Emoji │                                                        
+  ├────────────────┼───────┤                                                           
+  │ My Scores      │ 🏆    │                                                        
+  ├────────────────┼───────┤
+  │ Academy        │ 🎓    │
+  ├────────────────┼───────┤
+  │ AI Tools       │ ✨    │
+  ├────────────────┼───────┤
+  │ Generate Leads │ 🚀    │
+  ├────────────────┼───────┤
+  │ Hire a Human   │ 🤝    │
+  └────────────────┴───────┘                                                           
+   
+  Remove the coloured pill div from the PageHeader component (or from each page if it's
+   inlined). The emoji sits directly next to the heading text at the same visual size
+  as the heading.                                                                      
+                                                                                    
+  Sidebar — no change. Keep the Heroicons in the sidebar. Emojis at sidebar icon size  
+  (20px) look inconsistent across platforms. The outline icons work well there.

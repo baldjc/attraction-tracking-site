@@ -1,68 +1,17 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import {
-  FilmIcon,
-  RocketLaunchIcon,
-  SparklesIcon,
-  PuzzlePieceIcon,
   CheckCircleIcon,
-  ArrowTopRightOnSquareIcon,
-  ChatBubbleLeftRightIcon,
-  UserGroupIcon,
-  AcademicCapIcon,
   XMarkIcon,
   InformationCircleIcon,
+  UserGroupIcon,
 } from "@heroicons/react/24/outline";
 import PageHeader from "@/components/PageHeader";
 
-const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
-  FilmIcon,
-  RocketLaunchIcon,
-  SparklesIcon,
-  PuzzlePieceIcon,
-  UserGroupIcon,
-  AcademicCapIcon,
-};
-
-interface Package {
-  id: string;
-  name: string;
-  price: string;
-  priceNote: string | null;
-  badge: string | null;
-  subtitle: string | null;
-  features: string[];
-  highlightFeatures: string[] | null;
-  stripeUrl: string | null;
-  waitlist: boolean;
-  sortOrder: number;
-}
-
-interface Category {
-  id: string;
-  name: string;
-  slug: string;
-  description: string | null;
-  icon: string;
-  accentColour: string;
-  sortOrder: number;
-  packages: Package[];
-}
-
 // ── Toast ─────────────────────────────────────────────────────
 
-interface ToastProps {
-  message: string;
-  onDismiss: () => void;
-}
-
-function Toast({ message, onDismiss }: ToastProps) {
-  useEffect(() => {
-    const t = setTimeout(onDismiss, 5000);
-    return () => clearTimeout(t);
-  }, [onDismiss]);
-
+function Toast({ message, onDismiss }: { message: string; onDismiss: () => void }) {
   return (
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-[#1e2a38] text-white text-sm font-medium px-5 py-3.5 rounded-xl shadow-2xl max-w-md w-[calc(100vw-2rem)] animate-slide-up">
       <CheckCircleIcon className="w-5 h-5 text-green-400 shrink-0" />
@@ -74,183 +23,181 @@ function Toast({ message, onDismiss }: ToastProps) {
   );
 }
 
-// ── Accent config ─────────────────────────────────────────────
+// ── Segmented Toggle ──────────────────────────────────────────
 
-interface AccentConfig {
-  border: string;
-  calloutBg: string;
-  calloutBorder: string;
-  calloutText: string;
-  highlightIcon: string;
-  badgeBg: string;
-  badgeText: string;
-  button: string;
-  interestedBtn: string;
+function VideoToggle({ value, onChange }: { value: 2 | 4; onChange: (v: 2 | 4) => void }) {
+  return (
+    <div className="inline-flex rounded-lg border border-[#2f3437]/15 dark:border-white/15 overflow-hidden text-[11px] font-semibold">
+      {([2, 4] as const).map((n) => (
+        <button
+          key={n}
+          onClick={() => onChange(n)}
+          className={`px-3 py-1.5 transition-colors ${
+            value === n
+              ? "bg-[#2f3437] dark:bg-white text-white dark:text-[#1e2a38]"
+              : "text-[#2f3437]/50 dark:text-white/50 hover:text-[#2f3437] dark:hover:text-white"
+          }`}
+        >
+          {n} videos/mo
+        </button>
+      ))}
+    </div>
+  );
 }
 
-const ACCENT: Record<string, AccentConfig> = {
-  blue: {
-    border: "border border-[#eaeaea] dark:border-white/10",
-    calloutBg: "",
-    calloutBorder: "",
-    calloutText: "",
-    highlightIcon: "text-amber-500",
-    badgeBg: "bg-amber-100 dark:bg-amber-900/30",
-    badgeText: "text-amber-700 dark:text-amber-300",
-    button: "bg-[#6ba3c7] hover:bg-[#5490b5] text-white",
-    interestedBtn: "border border-[#6ba3c7] text-[#6ba3c7] hover:bg-[#6ba3c7]/5",
-  },
-  slate: {
-    border: "border-2 border-slate-200 dark:border-slate-600/40",
-    calloutBg: "bg-slate-50 dark:bg-slate-800/30",
-    calloutBorder: "border border-slate-200 dark:border-slate-700/40",
-    calloutText: "text-slate-600 dark:text-slate-300",
-    highlightIcon: "text-slate-600 dark:text-slate-300",
-    badgeBg: "bg-slate-100 dark:bg-slate-700/50",
-    badgeText: "text-slate-700 dark:text-slate-200",
-    button: "bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 text-white",
-    interestedBtn: "border border-slate-600 text-slate-700 dark:border-slate-400 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/30",
-  },
-  purple: {
-    border: "border-2 border-purple-200 dark:border-purple-700/40",
-    calloutBg: "bg-purple-50 dark:bg-purple-900/10",
-    calloutBorder: "border border-purple-200 dark:border-purple-800/30",
-    calloutText: "text-purple-700 dark:text-purple-300",
-    highlightIcon: "text-purple-600 dark:text-purple-400",
-    badgeBg: "bg-purple-100 dark:bg-purple-800/40",
-    badgeText: "text-purple-700 dark:text-purple-200",
-    button: "bg-purple-700 hover:bg-purple-800 dark:bg-purple-600 dark:hover:bg-purple-500 text-white",
-    interestedBtn: "border border-purple-500 text-purple-700 dark:border-purple-400 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/10",
-  },
-  gray: {
-    border: "border border-[#eaeaea] dark:border-white/10",
-    calloutBg: "",
-    calloutBorder: "",
-    calloutText: "",
-    highlightIcon: "text-gray-500",
-    badgeBg: "bg-gray-100 dark:bg-gray-700/50",
-    badgeText: "text-gray-700 dark:text-gray-200",
-    button: "bg-[#6ba3c7] hover:bg-[#5490b5] text-white",
-    interestedBtn: "border border-[#6ba3c7] text-[#6ba3c7] hover:bg-[#6ba3c7]/5",
-  },
-};
+// ── Feature Item ──────────────────────────────────────────────
 
-function getAccent(colour: string): AccentConfig {
-  return ACCENT[colour] ?? ACCENT.blue;
+function Feature({ children }: { children: React.ReactNode }) {
+  return (
+    <li className="flex items-start gap-2">
+      <CheckCircleIcon className="w-3.5 h-3.5 text-green-500 mt-0.5 shrink-0" />
+      <span className="text-[13px] text-[#2f3437]/70 dark:text-white/60 leading-snug">{children}</span>
+    </li>
+  );
 }
 
-// ── Package Card ──────────────────────────────────────────────
+// ── Production Card ───────────────────────────────────────────
 
-function PackageCard({
-  pkg,
-  accentColour,
-  interested,
-  onInterested,
-}: {
-  pkg: Package;
-  accentColour: string;
-  interested: boolean;
-  onInterested: (id: string, name: string) => Promise<void>;
-}) {
-  const accent = getAccent(accentColour);
-  const isGray = accentColour === "gray";
-  const hasCallout = !isGray && accent.calloutBg && pkg.highlightFeatures && pkg.highlightFeatures.length > 0;
-  const [submitting, setSubmitting] = useState(false);
+function ProductionCard({ onGetStarted }: { onGetStarted: () => void }) {
+  const [videos, setVideos] = useState<2 | 4>(2);
+  const [addJared, setAddJared] = useState(false);
 
-  async function handleInterested() {
-    setSubmitting(true);
-    await onInterested(pkg.id, pkg.name);
-    setSubmitting(false);
-  }
+  const basePrice = videos === 2 ? 500 : 1000;
+  const jaredAddon = videos === 2 ? 300 : 500;
+  const totalPrice = addJared ? basePrice + jaredAddon : basePrice;
 
   return (
-    <div className={`bg-white dark:bg-[#1a2433] rounded-xl ${accent.border} overflow-hidden flex flex-col relative`}>
-      {pkg.badge && (
-        <div className="absolute top-4 right-4">
-          <span className={`text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full ${accent.badgeBg} ${accent.badgeText}`}>
-            {pkg.badge}
-          </span>
-        </div>
-      )}
-
-      <div className={`px-6 pt-6 ${isGray ? "pb-3" : "pb-4"}`}>
-        <h3 className={`font-bold text-[#2f3437] dark:text-white ${isGray ? "text-sm" : "text-lg"} ${pkg.badge ? "pr-28" : ""}`}>{pkg.name}</h3>
-        {pkg.subtitle && <p className="text-sm text-[#2f3437]/50 dark:text-white/40 mt-0.5">{pkg.subtitle}</p>}
-        <p className={`font-extrabold text-[#2f3437] dark:text-white mt-3 ${isGray ? "text-xl" : "text-3xl"}`}>
-          {pkg.price}
-          {pkg.priceNote && <span className="text-sm font-normal text-[#2f3437]/40 dark:text-white/30 ml-1">{pkg.priceNote}</span>}
-        </p>
+    <div className="bg-white dark:bg-[#1a2433] rounded-xl border border-[#eaeaea] dark:border-white/10 flex flex-col p-5">
+      <p className="text-[10px] font-bold uppercase tracking-widest text-[#2f3437]/40 dark:text-white/30 mb-2">Production</p>
+      <h3 className="text-base font-bold text-[#2f3437] dark:text-white leading-tight">We edit. You publish.</h3>
+      <div className="mt-3 mb-4">
+        <VideoToggle value={videos} onChange={setVideos} />
       </div>
 
-      {hasCallout && (
-        <div className={`mx-6 px-3 py-2 rounded-lg ${accent.calloutBg} ${accent.calloutBorder} mb-4`}>
-          <p className={`text-xs font-medium ${accent.calloutText}`}>
-            {accentColour === "slate" ? "Includes everything in Editing, plus:" : "Includes everything in Mastery 4, plus:"}
-          </p>
-        </div>
-      )}
-
-      <div className="px-6 pb-4 flex-1">
-        {pkg.highlightFeatures && pkg.highlightFeatures.length > 0 && (
-          <div className={hasCallout ? "mb-4" : "mb-3 pb-3 border-b border-[#eaeaea] dark:border-white/10"}>
-            {!hasCallout && (
-              <p className={`text-xs font-semibold uppercase tracking-wide mb-2 ${accent.highlightIcon}`}>
-                {pkg.badge ?? "Highlights"}
-              </p>
-            )}
-            <ul className="space-y-2">
-              {pkg.highlightFeatures.map((f) => (
-                <li key={f} className="flex items-start gap-2 text-sm font-medium text-[#2f3437] dark:text-white">
-                  <CheckCircleIcon className={`w-4 h-4 mt-0.5 shrink-0 ${accent.highlightIcon}`} />
-                  <span>{f}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-        <ul className="space-y-2">
-          {pkg.features.map((f) => (
-            <li key={f} className={`flex items-start gap-2 text-sm ${isGray ? "text-[#2f3437]/60 dark:text-white/50" : "text-[#2f3437]/70 dark:text-white/60"}`}>
-              <CheckCircleIcon className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
-              <span>{f}</span>
-            </li>
-          ))}
-        </ul>
+      <div className="mb-4">
+        <span className="text-3xl font-extrabold text-[#2f3437] dark:text-white">${totalPrice.toLocaleString()}</span>
+        <span className="text-sm text-[#2f3437]/40 dark:text-white/30 ml-1">/mo</span>
       </div>
 
-      <div className="px-6 pb-6">
-        {pkg.waitlist ? (
-          interested ? (
-            <span className="flex items-center gap-2 w-full justify-center text-sm font-semibold py-3 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800/40 text-green-700 dark:text-green-400 cursor-default">
-              <CheckCircleIcon className="w-4 h-4" />
-              We&apos;ll be in touch ✓
+      <ul className="space-y-2 mb-4 flex-1">
+        <Feature>Professional editing, graphics, titles, and b-roll</Feature>
+        <Feature>Music and asset licensing</Feature>
+        <Feature>Upload to Frame.io for review</Feature>
+        <Feature>2–3 revisions per video</Feature>
+        <Feature>Onboarding call to customise to your brand</Feature>
+      </ul>
+
+      <div className="border-t border-[#eaeaea] dark:border-white/10 pt-3 mb-4">
+        <label className="flex items-start gap-2.5 cursor-pointer group">
+          <input
+            type="checkbox"
+            checked={addJared}
+            onChange={(e) => setAddJared(e.target.checked)}
+            className="mt-0.5 w-3.5 h-3.5 accent-[#8B5CF6] shrink-0 cursor-pointer"
+          />
+          <div>
+            <span className="text-[13px] text-[#2f3437] dark:text-white font-medium group-hover:text-[#8B5CF6] transition-colors">
+              Add Jared&apos;s personal feedback
             </span>
-          ) : (
-            <button
-              onClick={handleInterested}
-              disabled={submitting}
-              className={`flex items-center justify-center gap-2 w-full font-bold text-sm py-3 rounded-lg transition-colors bg-transparent disabled:opacity-50 ${accent.interestedBtn}`}
-            >
-              {submitting ? "Sending…" : "I'm Interested"}
-            </button>
-          )
-        ) : pkg.stripeUrl ? (
-          <a
-            href={pkg.stripeUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={`flex items-center justify-center gap-2 w-full font-bold text-sm py-3 rounded-lg transition-colors ${accent.button}`}
-          >
-            Get Started
-            <ArrowTopRightOnSquareIcon className="w-4 h-4" />
-          </a>
-        ) : (
-          <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#6ba3c7]">
-            <ChatBubbleLeftRightIcon className="w-3.5 h-3.5" />
-            Message us to get started
-          </span>
-        )}
+            <span className="text-[13px] text-[#8B5CF6] font-semibold ml-1">+${jaredAddon}/mo</span>
+            <p className="text-[11px] text-[#2f3437]/50 dark:text-white/40 mt-0.5">1-on-1 coaching call + video-by-video review</p>
+          </div>
+        </label>
       </div>
+
+      <button
+        onClick={onGetStarted}
+        className="w-full py-2.5 rounded-lg text-sm font-bold bg-[#2f3437] dark:bg-white text-white dark:text-[#1e2a38] hover:bg-[#1e2a38] dark:hover:bg-white/90 transition-colors"
+      >
+        Get Started
+      </button>
+    </div>
+  );
+}
+
+// ── Growth Card ───────────────────────────────────────────────
+
+function GrowthCard({ onGetStarted }: { onGetStarted: () => void }) {
+  const [videos, setVideos] = useState<2 | 4>(2);
+  const price = videos === 2 ? 1996 : 2996;
+
+  return (
+    <div className="bg-white dark:bg-[#1a2433] rounded-xl border-2 border-[#8B5CF6] flex flex-col p-5 relative">
+      <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+        <span className="text-[10px] font-bold uppercase tracking-widest bg-[#8B5CF6] text-white px-3 py-1 rounded-full">
+          Most Popular
+        </span>
+      </div>
+
+      <p className="text-[10px] font-bold uppercase tracking-widest text-[#8B5CF6]/60 mb-2 mt-1">Growth</p>
+      <h3 className="text-base font-bold text-[#2f3437] dark:text-white leading-tight">Editing + strategy + funnels.</h3>
+      <div className="mt-3 mb-4">
+        <VideoToggle value={videos} onChange={setVideos} />
+      </div>
+
+      <div className="mb-4">
+        <span className="text-3xl font-extrabold text-[#2f3437] dark:text-white">${price.toLocaleString()}</span>
+        <span className="text-sm text-[#2f3437]/40 dark:text-white/30 ml-1">/mo</span>
+      </div>
+
+      <p className="text-[11px] font-semibold text-[#2f3437]/50 dark:text-white/40 uppercase tracking-wide mb-2">
+        Includes everything in Production, plus:
+      </p>
+      <ul className="space-y-2 mb-4 flex-1">
+        <Feature>Full funnel built at launch</Feature>
+        <Feature>Lead magnet strategy and setup</Feature>
+        <Feature>Monthly strategy session with Jared</Feature>
+        <Feature>Content calendar planning</Feature>
+      </ul>
+
+      <div className="flex items-center gap-2 bg-[#8B5CF6]/8 rounded-lg px-3 py-2 mb-4">
+        <CheckCircleIcon className="w-3.5 h-3.5 text-[#8B5CF6] shrink-0" />
+        <span className="text-[12px] font-medium text-[#8B5CF6]">Jared&apos;s feedback included</span>
+      </div>
+
+      <button
+        onClick={onGetStarted}
+        className="w-full py-2.5 rounded-lg text-sm font-bold bg-[#8B5CF6] hover:bg-[#7c3aed] text-white transition-colors"
+      >
+        Get Started
+      </button>
+    </div>
+  );
+}
+
+// ── Done With You Card ────────────────────────────────────────
+
+function DoneWithYouCard({ onGetStarted }: { onGetStarted: () => void }) {
+  return (
+    <div className="bg-white dark:bg-[#1a2433] rounded-xl border border-[#eaeaea] dark:border-white/10 flex flex-col p-5">
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-[#2f3437]/40 dark:text-white/30">Done With You</p>
+        <span className="text-[10px] font-bold uppercase tracking-widest bg-[#2f3437] dark:bg-white text-white dark:text-[#1e2a38] px-2 py-0.5 rounded-full">
+          Full Service
+        </span>
+      </div>
+      <h3 className="text-base font-bold text-[#2f3437] dark:text-white leading-tight">You film. We handle everything else.</h3>
+      <div className="mt-3 mb-4">
+        <span className="text-3xl font-extrabold text-[#2f3437] dark:text-white">$4,500</span>
+        <span className="text-sm text-[#2f3437]/40 dark:text-white/30 ml-1">/mo</span>
+      </div>
+
+      <p className="text-[11px] font-semibold text-[#2f3437]/50 dark:text-white/40 uppercase tracking-wide mb-2">
+        Includes everything in Growth, plus:
+      </p>
+      <ul className="space-y-2 mb-4 flex-1">
+        <Feature>Unlimited video edits</Feature>
+        <Feature>Full YouTube channel management</Feature>
+        <Feature>Thumbnail design and A/B testing</Feature>
+        <Feature>SEO optimisation and publishing</Feature>
+      </ul>
+
+      <button
+        onClick={onGetStarted}
+        className="w-full py-2.5 rounded-lg text-sm font-bold bg-[#2f3437] dark:bg-white text-white dark:text-[#1e2a38] hover:bg-[#1e2a38] dark:hover:bg-white/90 transition-colors mt-auto"
+      >
+        Get Started
+      </button>
     </div>
   );
 }
@@ -258,77 +205,20 @@ function PackageCard({
 // ── Page ──────────────────────────────────────────────────────
 
 export default function HireAHumanPage() {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [interestedIds, setInterestedIds] = useState<Set<string>>(new Set());
   const [toast, setToast] = useState<string | null>(null);
-
-  useEffect(() => {
-    Promise.all([
-      fetch("/api/member/hire/categories").then((r) => r.ok ? r.json() : { categories: [] }),
-      fetch("/api/member/hire/waitlist").then((r) => r.ok ? r.json() : { packageIds: [] }),
-    ]).then(([catData, wlData]) => {
-      setCategories(catData.categories ?? []);
-      setInterestedIds(new Set(wlData.packageIds ?? []));
-    }).catch(() => {}).finally(() => setLoading(false));
-  }, []);
-
-  const handleInterested = useCallback(async (packageId: string, packageName: string) => {
-    const res = await fetch("/api/member/hire/waitlist", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ packageId }),
-    });
-    if (res.ok) {
-      setInterestedIds((prev) => new Set([...prev, packageId]));
-      setToast(`Thanks for your interest in ${packageName}! Jared will reach out to you shortly to get you set up.`);
-    }
-  }, []);
-
   const dismissToast = useCallback(() => setToast(null), []);
 
-  if (loading) {
-    return (
-      <div className="space-y-12 max-w-7xl pb-12">
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-9 h-9 bg-[#eaeaea] dark:bg-white/10 rounded-lg animate-pulse shrink-0" />
-            <div className="h-8 bg-[#eaeaea] dark:bg-white/10 rounded w-48 animate-pulse" />
-          </div>
-          <div className="h-4 bg-[#eaeaea] dark:bg-white/10 rounded w-64 animate-pulse" />
-        </div>
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="space-y-4">
-            <div className="h-6 bg-[#eaeaea] dark:bg-white/10 rounded w-40 animate-pulse" />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {[1, 2].map((j) => <div key={j} className="h-64 bg-[#eaeaea] dark:bg-white/10 rounded-xl animate-pulse" />)}
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  if (categories.length === 0) {
-    return (
-      <div className="max-w-7xl pb-12">
-        <PageHeader
-          icon={UserGroupIcon}
-          title="Hire a Human"
-          description="Get the right people doing the things they're better at than you are."
-          colour="#8B5CF6"
-        />
-        <p className="text-sm text-[#2f3437]/50 dark:text-white/40">No services available yet.</p>
-      </div>
-    );
+  function handleGetStarted() {
+    setToast("We'll reach out to get you set up — Jared will be in touch shortly.");
+    setTimeout(() => setToast(null), 6000);
   }
 
   return (
     <>
       <div className="space-y-8 max-w-7xl pb-12">
+
         {/* Header */}
         <div>
-          {/* Layer 1: PageHeader */}
           <PageHeader
             icon={UserGroupIcon}
             title="Hire a Human"
@@ -336,12 +226,10 @@ export default function HireAHumanPage() {
             colour="#8B5CF6"
           />
 
-          {/* Layer 2: Hero statement */}
           <p className="text-2xl font-bold text-[#2f3437] dark:text-white leading-snug max-w-2xl mb-6">
             You didn&apos;t get to where you are only to spend your weekends and evenings editing videos.
           </p>
 
-          {/* Layer 3: Three punchy lines */}
           <div
             className="pl-5 max-w-2xl"
             style={{ borderLeft: "3px solid rgba(139,92,246,0.30)" }}
@@ -361,7 +249,14 @@ export default function HireAHumanPage() {
           </div>
         </div>
 
-        {/* Info banner */}
+        {/* 3-tier cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
+          <ProductionCard onGetStarted={handleGetStarted} />
+          <GrowthCard onGetStarted={handleGetStarted} />
+          <DoneWithYouCard onGetStarted={handleGetStarted} />
+        </div>
+
+        {/* Info banner — below the cards */}
         <div className="flex items-start gap-3 bg-[#6ba3c7]/8 border border-[#6ba3c7]/20 rounded-lg px-5 py-4">
           <InformationCircleIcon className="w-4 h-4 text-[#6ba3c7] shrink-0 mt-0.5" />
           <p className="text-sm text-[#2f3437]/70 dark:text-white/60">
@@ -370,36 +265,8 @@ export default function HireAHumanPage() {
           </p>
         </div>
 
-        {categories.map((category) => {
-          const IconComponent = ICON_MAP[category.icon] ?? PuzzlePieceIcon;
-          const isGray = category.accentColour === "gray";
-
-          return (
-            <section key={category.id}>
-              <div className="flex items-center gap-3 mb-2">
-                <IconComponent className={`w-5 h-5 ${isGray ? "text-[#2f3437]/40 dark:text-white/40" : "text-[#6ba3c7]"}`} />
-                <h2 className={`font-bold text-[#2f3437] dark:text-white ${isGray ? "text-lg" : "text-xl"}`}>{category.name}</h2>
-              </div>
-              {category.description && (
-                <p className="text-sm text-[#2f3437]/50 dark:text-white/40 mb-6 max-w-2xl">{category.description}</p>
-              )}
-              <div className={`grid gap-5 ${isGray ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-1 md:grid-cols-2"}`}>
-                {category.packages.map((pkg) => (
-                  <PackageCard
-                    key={pkg.id}
-                    pkg={pkg}
-                    accentColour={category.accentColour}
-                    interested={interestedIds.has(pkg.id)}
-                    onInterested={handleInterested}
-                  />
-                ))}
-              </div>
-            </section>
-          );
-        })}
       </div>
 
-      {/* Toast */}
       {toast && <Toast message={toast} onDismiss={dismissToast} />}
 
       <style>{`
