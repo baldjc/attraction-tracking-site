@@ -15,6 +15,7 @@ export interface TierPackage {
   price: string;
   priceNote: string | null;
   badge: string | null;
+  subtitle?: string | null;
   features: string[];
   highlightFeatures: string[] | null;
   stripeUrl: string | null;
@@ -22,6 +23,7 @@ export interface TierPackage {
   videoCount: number | null;
   isAddonVariant: boolean;
   priceAmount: number | null;
+  published?: boolean;
 }
 
 export interface TierCategory {
@@ -30,6 +32,7 @@ export interface TierCategory {
   slug: string;
   emoji: string | null;
   tagline: string | null;
+  description?: string | null;
   highlighted: boolean;
   includesRef: string | null;
   cardExtras: string[] | null;
