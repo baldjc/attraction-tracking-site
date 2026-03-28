@@ -323,24 +323,35 @@ export default function HireAHumanPage() {
     <>
       <div className="space-y-12 max-w-7xl pb-12">
         {/* Hero */}
-        <div>
-          <div className="flex items-center gap-3 mb-1">
-            <div className="p-2 bg-[#6ba3c7]/10 rounded-lg">
-              <UserGroupIcon className="w-6 h-6 text-[#6ba3c7]" />
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#6ba3c7]/10 via-[#6ba3c7]/5 to-transparent dark:from-[#6ba3c7]/12 dark:via-[#6ba3c7]/5 dark:to-transparent border border-[#6ba3c7]/20 dark:border-[#6ba3c7]/15 px-8 py-8 md:px-10 md:py-10">
+          {/* Decorative background circle */}
+          <div className="pointer-events-none absolute -top-16 -right-16 w-64 h-64 rounded-full bg-[#6ba3c7]/8 dark:bg-[#6ba3c7]/6 blur-3xl" />
+
+          {/* Label + heading */}
+          <div className="flex items-center gap-2.5 mb-6">
+            <div className="p-2 bg-[#6ba3c7]/15 dark:bg-[#6ba3c7]/20 rounded-lg">
+              <UserGroupIcon className="w-5 h-5 text-[#6ba3c7]" />
             </div>
-            <h1 className="text-2xl font-bold text-[#2f3437] dark:text-white">Hire a Human</h1>
+            <span className="text-xs font-bold uppercase tracking-widest text-[#6ba3c7]">Hire a Human</span>
           </div>
-          <div className="mt-3 max-w-2xl space-y-3">
-            <p className="text-base font-semibold text-[#2f3437]/80 dark:text-white/80">
-              You didn&apos;t get to where you are only to spend your weekends and evenings editing videos.
-            </p>
-            <p className="text-sm text-[#2f3437]/50 dark:text-white/40">
+
+          {/* Hook */}
+          <h1 className="text-2xl md:text-3xl font-bold text-[#2f3437] dark:text-white leading-snug max-w-2xl mb-6">
+            You didn&apos;t get to where you are only to spend your weekends and evenings editing videos.
+          </h1>
+
+          {/* Body copy */}
+          <div className="max-w-2xl space-y-4 border-l-2 border-[#6ba3c7]/30 pl-5">
+            <p className="text-sm leading-relaxed text-[#2f3437]/60 dark:text-white/50">
               The biggest thing holding most agents back from consistent content isn&apos;t strategy — it&apos;s everything that comes after you hit record. The editing, the thumbnails, the SEO, the publishing. That&apos;s where the procrastination creeps in, and that&apos;s where your content calendar dies.
             </p>
-            <p className="text-sm text-[#2f3437]/50 dark:text-white/40">
-              The most successful agents we work with figured out the same thing: <strong className="font-semibold text-[#2f3437]/70 dark:text-white/60">you don&apos;t need to do it all yourself — you need the right people doing the things they&apos;re better at than you are.</strong>
+            <p className="text-sm leading-relaxed text-[#2f3437]/60 dark:text-white/50">
+              The most successful agents we work with figured out the same thing:{" "}
+              <span className="font-semibold text-[#2f3437]/80 dark:text-white/75">
+                you don&apos;t need to do it all yourself — you need the right people doing the things they&apos;re better at than you are.
+              </span>
             </p>
-            <p className="text-sm text-[#2f3437]/50 dark:text-white/40">
+            <p className="text-sm leading-relaxed text-[#2f3437]/60 dark:text-white/50">
               That&apos;s what Hire a Human is. You keep doing what only you can do — showing up on camera with your expertise and your personality. We handle everything else.
             </p>
           </div>
