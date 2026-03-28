@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   AcademicCapIcon,
-  SparklesIcon,
   PencilSquareIcon,
   ChartBarIcon,
   TrophyIcon,
@@ -65,8 +64,9 @@ const NAV_CARDS = [
     title: "My Avatar",
     description: "Work on your perfect avatar.",
     href: "/member/ai-tools/avatar-architect",
-    icon: SparklesIcon,
-    colour: "#6ba3c7",
+    icon: null,
+    emoji: "🎯",
+    colour: "#EF4444",
   },
   {
     title: "Create Content",
@@ -157,7 +157,9 @@ export default function MemberDashboard() {
 
       {/* ── 6-Card Nav Grid ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {NAV_CARDS.map(({ title, description, href, icon: Icon, colour }) => (
+        {NAV_CARDS.map(({ title, description, href, icon: Icon, colour, ...rest }) => {
+          const emoji = (rest as any).emoji as string | undefined;
+          return (
           <Link
             key={href}
             href={href}
@@ -167,7 +169,10 @@ export default function MemberDashboard() {
             onMouseLeave={(e) => { e.currentTarget.style.borderLeftColor = "transparent"; }}
           >
             <div className="p-2.5 rounded-xl w-fit" style={{ backgroundColor: `${colour}1a` }}>
-              <Icon className="w-8 h-8" style={{ color: colour }} />
+              {emoji
+                ? <span className="text-2xl leading-none block w-8 h-8 flex items-center justify-center">{emoji}</span>
+                : Icon && <Icon className="w-8 h-8" style={{ color: colour }} />
+              }
             </div>
             <div>
               <p className={`text-base font-bold ${txt} transition-colors`}>
@@ -176,7 +181,8 @@ export default function MemberDashboard() {
               <p className={`text-sm mt-1 ${muted} leading-snug`}>{description}</p>
             </div>
           </Link>
-        ))}
+          );
+        })}
       </div>
 
       {/* ── Bottom Info Row ── */}
