@@ -148,10 +148,8 @@ function StatusDot({ status }: { status: string }) {
 
 function fmtPrice(cents: number | null) {
   if (!cents) return null;
-  const dollars = cents / 100;
-  return dollars % 1 === 0
-    ? `$${dollars.toLocaleString("en-CA")}`
-    : `$${dollars.toLocaleString("en-CA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const dollars = Math.round(cents / 100);
+  return `$${dollars.toLocaleString("en-CA")}`;
 }
 
 function fmtDate(iso: string | null) {
@@ -497,7 +495,7 @@ export default function MembersPage() {
             </div>
             {cards.mrr > 0 ? (
               <div>
-                <div className={`text-3xl font-bold text-emerald-700`}>{fmtPrice(cards.mrr)}</div>
+                <div className={`text-2xl font-bold text-emerald-700`}>{fmtPrice(cards.mrr)}</div>
                 <div className={`text-[9px] ${dim} mt-0.5`}>
                   {backfillingPrices ? "Updating…" : "~CAD · USD at 1.38"}
                 </div>

@@ -1299,7 +1299,7 @@ export default function MemberDetailPage() {
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-[#2f3437]/50 text-xs">Amount</span>
                         <span className="text-xs font-semibold text-emerald-700">
-                          ${(member.stripePriceAmount / 100).toLocaleString("en-CA", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}/mo
+                          ${Math.round(member.stripePriceAmount / 100).toLocaleString("en-CA")}/mo
                           {member.stripeCurrency && (
                             <span className="ml-1 font-normal text-[#2f3437]/40">{member.stripeCurrency}</span>
                           )}
