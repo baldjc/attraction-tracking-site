@@ -1,0 +1,27 @@
+On the member Hire a Human page (/member/hire), add an Add-Ons section below the 3 tier cards. This section should pull from the "Add-Ons" category in the 
+  database (slug: "add-ons") using the same /api/member/hire/categories data that's already being fetched.                                                   
+                                                                                                                                                             
+  Layout                                                                                                                                                     
+                                                                                                                                                           
+  - Full-width section below the 3-card grid                                                                                                                 
+  - Section header: the category emoji + name (e.g., "🧩 Add-Ons") in the same label style as the tier cards, with the category description below it as a
+  subtitle                                                                                                                                                   
+  - Display each published package as a compact horizontal card in a grid (1 column on mobile, 3 columns on desktop)                                       
+  - Each add-on card shows:                                                                                                                                  
+    - Package name (bold)                                                                                                                                  
+    - Price + price note                                                                                                                                     
+    - Subtitle if present (e.g., "Available to Mastery members only")                                                                                      
+    - Features as small bullet points                                                                                                                        
+    - CTA: same logic as tier cards — Stripe URL → "Get Started", waitlist → "I'm Interested", neither → "Message Us"                                      
+  - Visual style should match the rest of the page — same colours, dark mode support, rounded-xl cards with border                                           
+                                                                                                                                                             
+  Implementation                                                                                                                                             
+                                                                                                                                                             
+  The TierCard component is designed for the main tier cards with toggles and checkboxes — don't try to force add-ons through it. Instead, create a simple   
+  AddOnsSection component in src/components/hire/AddOnsSection.tsx that renders the add-on packages.
+                                                                                                                                                             
+  In the member page, separate the categories: render categories with slug !== "add-ons" as TierCards in the grid, and render the "add-ons" category (if     
+  published) as the AddOnsSection below.
+                                                                                                                                                             
+  The add-ons section should also be editable from the admin side — it already is since add-on packages use the same ServicePackage CRUD. No admin changes   
+  needed.

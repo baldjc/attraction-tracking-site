@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { CheckCircleIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import PageHeader from "@/components/PageHeader";
 import TierCard, { type TierCategory } from "@/components/hire/TierCard";
+import AddOnsSection from "@/components/hire/AddOnsSection";
 
 // ── Toast ─────────────────────────────────────────────────────
 
@@ -22,7 +23,8 @@ function Toast({ message, onDismiss }: { message: string; onDismiss: () => void 
 // ── Page ──────────────────────────────────────────────────────
 
 export default function HireAHumanPage() {
-  const [categories, setCategories] = useState<TierCategory[]>([]);
+  const [tierCategories, setTierCategories] = useState<TierCategory[]>([]);
+  const [addOnsCategory, setAddOnsCategory] = useState<TierCategory | null>(null);
   const [interestedIds, setInterestedIds] = useState<Set<string>>(new Set());
   const [toast, setToast] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -34,10 +36,11 @@ export default function HireAHumanPage() {
       fetch("/api/member/hire/waitlist").then((r) => r.ok ? r.json() : { packageIds: [] }),
     ])
       .then(([catData, wlData]) => {
-        const published = (catData.categories ?? [] as TierCategory[])
+        const all = (catData.categories ?? [] as TierCategory[])
           .filter((c: TierCategory) => c.published)
           .sort((a: TierCategory, b: TierCategory) => (a as any).sortOrder - (b as any).sortOrder);
-        setCategories(published);
+        setTierCategories(all.filter((c: TierCategory) => c.slug !== "add-ons"));
+        setAddOnsCategory(all.find((c: TierCategory) => c.slug === "add-ons") ?? null);
         setInterestedIds(new Set(wlData.packageIds ?? []));
       })
       .catch(() => {})
@@ -93,7 +96,7 @@ export default function HireAHumanPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-stretch">
-            {categories.map((cat) => (
+            {tierCategories.map((cat) => (
               <TierCard
                 key={cat.id}
                 category={cat}
@@ -102,6 +105,15 @@ export default function HireAHumanPage() {
               />
             ))}
           </div>
+        )}
+
+        {/* Add-Ons */}
+        {!loading && addOnsCategory && (
+          <AddOnsSection
+            category={addOnsCategory}
+            interested={interestedIds}
+            onInterested={handleInterested}
+          />
         )}
 
       </div>
