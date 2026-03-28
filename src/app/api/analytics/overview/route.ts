@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
   const ids = campaigns.map((c) => c.id);
 
   if (!ids.length) {
-    return NextResponse.json({ totalViews: 0, totalClicks: 0, totalLeads: 0, convRate: 0, viewsDelta: 0, clicksDelta: 0, leadsDelta: 0, convRateDelta: 0, prevClicks: 0, prevLeads: 0, sparkline: [], leadsSparkline: [] });
+    return NextResponse.json({ totalViews: 0, totalClicks: 0, totalLeads: 0, newLeads: 0, newVisitors: 0, returningVisitors: 0, unknownVisitors: 0, convRate: 0, prevClicks: 0, prevLeads: 0, prevConvRate: 0, viewsDelta: 0, clicksDelta: 0, leadsDelta: 0, convRateDelta: 0, sparkline: [], leadsSparkline: [] });
   }
 
   const linkWhere = { campaignId: { in: ids }, deletedAt: null, ...(linkId !== "all" ? { id: linkId } : {}) };
