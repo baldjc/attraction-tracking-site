@@ -160,7 +160,7 @@ function FoundationsTab() {
               Browse All Sections
             </Link>
             <Link
-              href="/member/academy/principles"
+              href="/member/academy?tab=browse"
               className="flex items-center gap-2 border border-[#eaeaea] dark:border-white/10 text-[#2f3437] dark:text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-[#f7f6f3] dark:hover:bg-white/5 transition-colors"
             >
               Browse by Principle
