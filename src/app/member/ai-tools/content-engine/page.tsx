@@ -12,43 +12,26 @@ interface AvatarData {
   city?: string | null;
 }
 
-interface ImportedIdea {
-  id: string;
-  title: string;
-  talkingPoints: string[];
-  framework: string | null;
-  whyItWorks: string | null;
-  source: string;
-  createdAt: string;
-}
-
 type PageState = "loading" | "no-avatar" | "niche-setup" | "dashboard";
 
 export default function ContentEnginePage() {
   const [state, setState] = useState<PageState>("loading");
   const [avatarData, setAvatarData] = useState<AvatarData | null>(null);
-  const [importedIdeas, setImportedIdeas] = useState<ImportedIdea[]>([]);
-  const [importedTotal, setImportedTotal] = useState(0);
 
   useEffect(() => {
-    Promise.all([
-      fetch("/api/member/avatar").then((r) => r.json()).catch(() => ({})),
-      fetch("/api/ai-tools/content-engine/saved-ideas?theme=Imported&limit=50")
-        .then((r) => r.json())
-        .catch(() => ({ ideas: [], total: 0 })),
-    ]).then(([av, imp]) => {
-      setAvatarData(av);
-      setImportedIdeas(imp.ideas ?? []);
-      setImportedTotal(imp.total ?? 0);
-
-      if (!av?.avatarName) {
-        setState("no-avatar");
-      } else if (!av?.niche) {
-        setState("niche-setup");
-      } else {
-        setState("dashboard");
-      }
-    });
+    fetch("/api/member/avatar")
+      .then((r) => r.json())
+      .catch(() => ({}))
+      .then((av) => {
+        setAvatarData(av);
+        if (!av?.avatarName) {
+          setState("no-avatar");
+        } else if (!av?.niche) {
+          setState("niche-setup");
+        } else {
+          setState("dashboard");
+        }
+      });
   }, []);
 
   if (state === "loading") {
@@ -102,9 +85,6 @@ export default function ContentEnginePage() {
         themes={themes as never}
         niche={avatarData?.niche ?? null}
         city={avatarData?.city ?? null}
-        hasImported={importedTotal > 0}
-        importedCount={importedTotal}
-        importedIdeas={importedIdeas}
       />
     </div>
   );

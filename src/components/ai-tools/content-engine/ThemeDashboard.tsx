@@ -13,12 +13,9 @@ interface Props {
   themes: Array<ContentTheme | string>;
   niche: string | null;
   city: string | null;
-  hasImported: boolean;
-  importedCount: number;
-  importedIdeas: Array<{ id: string; title: string; talkingPoints: string[]; framework: string | null; whyItWorks: string | null; source: string; createdAt: string }>;
 }
 
-export default function ThemeDashboard({ themes, niche, city, hasImported, importedCount, importedIdeas }: Props) {
+export default function ThemeDashboard({ themes, niche, city }: Props) {
   const [chatTheme, setChatTheme] = useState<ContentTheme | string | null>(null);
   const [showNicheModal, setShowNicheModal] = useState(false);
   const [currentNiche, setCurrentNiche] = useState(niche);
@@ -227,31 +224,6 @@ export default function ThemeDashboard({ themes, niche, city, hasImported, impor
               initialIdeas={allGenerated[themeName(t)]}
             />
           ))}
-        </div>
-      )}
-
-      {hasImported && (
-        <div className="mt-6 bg-[#f8f8f6] dark:bg-[#0f1419] rounded-lg border border-[#2f3437]/10 dark:border-white/10 p-5">
-          <div className="flex items-center gap-2 mb-3">
-            <h3 className="font-semibold text-[#2f3437]/60 dark:text-white/60 text-sm">Imported Titles ({importedCount})</h3>
-            <span className="text-xs text-[#2f3437]/40 dark:text-white/40 bg-[#111]/5 dark:bg-white/5 px-2 py-0.5 rounded-full">Imported titles</span>
-          </div>
-          <p className="text-xs text-[#2f3437]/40 dark:text-white/40 mb-3">
-            These titles were imported into the Content Engine. You can keep them here or delete ones you no longer need.
-          </p>
-          <div className="space-y-2">
-            {importedIdeas.slice(0, 10).map((idea) => (
-              <div key={idea.id} className="flex items-center justify-between gap-2 text-sm text-[#2f3437]/70 dark:text-white/70 py-1 border-b border-[#2f3437]/5 dark:border-white/5 last:border-0">
-                <span className="truncate">{idea.title}</span>
-                {idea.framework && (
-                  <span className="text-xs text-[#2f3437]/40 dark:text-white/40 flex-shrink-0">{idea.framework}</span>
-                )}
-              </div>
-            ))}
-            {importedCount > 10 && (
-              <p className="text-xs text-[#2f3437]/40 dark:text-white/40 text-center pt-1">+{importedCount - 10} more</p>
-            )}
-          </div>
         </div>
       )}
 
