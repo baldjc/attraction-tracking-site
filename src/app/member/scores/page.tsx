@@ -302,6 +302,77 @@ export default function MemberScoresPage() {
         </div>
       </div>
 
+      {/* Recent Video Audits */}
+      {(() => {
+        const sixtyDaysAgo = new Date();
+        sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+        const recentVideoAudits = (audits ?? []).filter(
+          (a: any) => a.auditType === "single_video" && new Date(a.createdAt) >= sixtyDaysAgo
+        );
+        return (
+          <div className={`${card} overflow-hidden`}>
+            <div className={`px-5 py-4 border-b border-gray-200 dark:border-[#2a2a2a]`}>
+              <h2 className={`text-sm font-semibold ${txt}`}>Recent Video Audits</h2>
+              <p className={`text-xs ${muted} mt-0.5`}>Single video audits from the last 60 days</p>
+            </div>
+            {recentVideoAudits.length === 0 ? (
+              <div className="px-5 py-10 text-center">
+                <p className={`text-sm font-medium ${txt}`}>No video audits in the last 60 days</p>
+                <p className={`text-xs ${muted} mt-1`}>Run a single video audit to see how individual videos score.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <div className="flex gap-4 px-5 py-4" style={{ minWidth: "max-content" }}>
+                  {recentVideoAudits.map((a: any) => {
+                    const v = (a.videosAnalysed as any[])?.[0];
+                    const videoId = v?.videoId;
+                    const thumbUrl = videoId ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg` : null;
+                    const title = v?.title ?? "Untitled Video";
+                    return (
+                      <Link
+                        key={a.id}
+                        href={`/member/audits/${a.id}`}
+                        className="flex flex-col gap-2 w-52 shrink-0 group"
+                      >
+                        {thumbUrl ? (
+                          <img
+                            src={thumbUrl}
+                            alt={title}
+                            className="w-full rounded-lg object-cover"
+                            style={{ aspectRatio: "16/9" }}
+                          />
+                        ) : (
+                          <div
+                            className="w-full rounded-lg bg-gray-100 dark:bg-[#2a2a2a]"
+                            style={{ aspectRatio: "16/9" }}
+                          />
+                        )}
+                        <div>
+                          <p className={`text-xs font-medium ${txt} line-clamp-2 group-hover:text-[#6ba3c7] transition-colors leading-snug`}>
+                            {title}
+                          </p>
+                          <div className="flex items-center justify-between mt-1.5">
+                            <span className={`text-xs ${muted}`}>{fmt(a.createdAt)}</span>
+                            {a.overallScore != null && (
+                              <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${scoreBadge(Number(a.overallScore))}`}>
+                                {Number(a.overallScore).toFixed(1)}
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-xs text-[#6ba3c7] font-medium group-hover:underline mt-0.5 inline-block">
+                            View Report →
+                          </span>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
       {/* 16-Principle Breakdown Table */}
       <div className={`${card} overflow-hidden`}>
         <div className={`px-5 py-4 border-b border-gray-200 dark:border-[#2a2a2a]`}>
@@ -472,8 +543,27 @@ export default function MemberScoresPage() {
               {audits.map((a: any) => (
                 <tr key={a.id} className="hover:bg-gray-50 dark:hover:bg-[#1e2a38] transition-colors">
                   <td className={`${tdClass} ${muted}`}>{fmt(a.createdAt)}</td>
-                  <td className={`${tdClass} ${txt} capitalize`}>
-                    {a.auditType.replace(/_/g, " ")}
+                  <td className={`${tdClass} ${txt}`}>
+                    {a.auditType === "single_video" ? (() => {
+                      const v = (a.videosAnalysed as any[])?.[0];
+                      const videoId = v?.videoId;
+                      const thumbUrl = videoId ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg` : null;
+                      const title = v?.title ?? "Single Video";
+                      return (
+                        <div className="flex items-center gap-2">
+                          {thumbUrl && (
+                            <img
+                              src={thumbUrl}
+                              alt={title}
+                              className="w-[60px] h-[34px] rounded object-cover shrink-0"
+                            />
+                          )}
+                          <span className="truncate max-w-[180px] text-sm">{title}</span>
+                        </div>
+                      );
+                    })() : (
+                      <span className="capitalize">{a.auditType.replace(/_/g, " ")}</span>
+                    )}
                   </td>
                   <td className={tdClass}>
                     {a.overallScore != null ? (

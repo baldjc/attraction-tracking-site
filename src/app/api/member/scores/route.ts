@@ -33,6 +33,7 @@ export async function GET() {
         overallScore: true,
         scores: true,
         createdAt: true,
+        videosAnalysed: true,
       },
     }),
   ]);

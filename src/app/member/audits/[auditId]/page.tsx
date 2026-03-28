@@ -66,6 +66,12 @@ function fmt(date: string) {
   return new Date(date).toLocaleDateString("en-CA", { year: "numeric", month: "short", day: "numeric" });
 }
 
+function fmtViews(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M views`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K views`;
+  return `${n} views`;
+}
+
 function fmtDuration(secs: number) {
   const m = Math.floor(secs / 60);
   const s = secs % 60;
@@ -103,12 +109,13 @@ export default function MemberAuditReportPage() {
   if (!audit) return <div className="text-center py-20 text-[#2f3437]/50">Report not found.</div>;
 
   const report = audit.reportContent as any;
-  console.log("[MemberAuditReport] reportContent keys:", report ? Object.keys(report) : "null/undefined", "| audit.scores:", audit.scores);
   const rawScores = audit.scores ?? report?.audit_results ?? report?.scores ?? null;
   const scores = (rawScores ?? {}) as Record<string, { score: number; evidence?: string }>;
   const hasScores = Object.keys(scores).length > 0;
   const videos = (audit.videosAnalysed as any[]) ?? [];
   const baselineScores = report?.baselineScores as any;
+  const isSingleVideo = audit.auditType === "single_video";
+  const singleVideo = isSingleVideo && videos.length > 0 ? videos[0] : null;
 
   const typeLabel = audit.auditType === "baseline" ? "Baseline Audit"
     : audit.auditType === "monthly" ? "Monthly Audit"
@@ -117,34 +124,115 @@ export default function MemberAuditReportPage() {
   const gaps = Object.entries(scores).filter(([key, v]: [string, any]) => key !== "show_dont_tell" && v.score != null && v.score < 7);
 
   return (
-    <div className="max-w-3xl space-y-4 md:space-y-5">
+    <div className="max-w-4xl space-y-4 md:space-y-5">
       <Link href="/member/scores" className="inline-flex items-center gap-1.5 text-sm text-[#2f3437]/50 hover:text-[#2f3437]">
         <ArrowLeftIcon className="w-4 h-4" />
         Back to My Scores
       </Link>
 
-      {/* Score + Header — side-by-side on desktop */}
-      <div className="flex flex-col md:flex-row gap-4">
-        <div className={`rounded-lg p-4 md:p-5 text-center md:w-44 shrink-0 ${scoreBg(Number(audit.overallScore))}`}>
-          <p className="text-xs font-semibold uppercase tracking-wider mb-1 opacity-70">Attraction Score</p>
-          <p className={`text-5xl md:text-6xl font-black ${scoreText(Number(audit.overallScore))}`}>{audit.overallScore != null ? Number(audit.overallScore).toFixed(1) : "—"}</p>
-          <p className="text-sm font-medium mt-0.5 opacity-50">/ 10</p>
-          {report?.raw_average != null && (
-            <p className="text-xs opacity-40 mt-1">Avg: {Number(report.raw_average).toFixed(1)}</p>
-          )}
+      {isSingleVideo && singleVideo ? (
+        <>
+          {/* ── Single Video: Title + Stats Row ── */}
+          <div>
+            <h1 className="text-2xl font-bold text-[#2f3437] dark:text-[#e2e8f0] leading-tight">
+              {singleVideo.title ?? "Untitled Video"}
+            </h1>
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-2 text-sm text-[#2f3437]/50 dark:text-[#94a3b8]">
+              {singleVideo.viewCount != null && (
+                <span>{fmtViews(singleVideo.viewCount)}</span>
+              )}
+              {singleVideo.viewCount != null && singleVideo.uploadDate && (
+                <span>·</span>
+              )}
+              {singleVideo.uploadDate && (
+                <span>Published {new Date(singleVideo.uploadDate).toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" })}</span>
+              )}
+              {(singleVideo.viewCount != null || singleVideo.uploadDate) && <span>·</span>}
+              <a
+                href={`https://studio.youtube.com/video/${singleVideo.videoId}/edit`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-[#6ba3c7] hover:underline"
+              >
+                Edit in Studio
+                <ArrowTopRightOnSquareIcon className="w-3 h-3" />
+              </a>
+              <span>·</span>
+              <a
+                href={`https://youtube.com/watch?v=${singleVideo.videoId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-[#6ba3c7] hover:underline"
+              >
+                Watch on YouTube
+                <ArrowTopRightOnSquareIcon className="w-3 h-3" />
+              </a>
+            </div>
+          </div>
+
+          {/* ── Two-column: Left 1/3 (score+diagnosis) · Right 2/3 (embed) ── */}
+          <div className="flex flex-col md:flex-row gap-4 items-stretch">
+            {/* Left: Score + Diagnosis */}
+            <div className="flex flex-col gap-3 md:w-[34%] shrink-0">
+              <div className={`rounded-lg p-4 md:p-5 text-center ${scoreBg(Number(audit.overallScore))}`}>
+                <p className="text-xs font-semibold uppercase tracking-wider mb-1 opacity-70">Attraction Score</p>
+                <p className={`text-5xl md:text-6xl font-black ${scoreText(Number(audit.overallScore))}`}>
+                  {audit.overallScore != null ? Number(audit.overallScore).toFixed(1) : "—"}
+                </p>
+                <p className="text-sm font-medium mt-0.5 opacity-50">/ 10</p>
+                {report?.raw_average != null && (
+                  <p className="text-xs opacity-40 mt-1">Avg: {Number(report.raw_average).toFixed(1)}</p>
+                )}
+              </div>
+              <div className="bg-[#6ba3c7]/10 border border-[#6ba3c7]/30 rounded-lg p-4 md:p-5 flex-1 flex flex-col justify-center">
+                <p className="text-xs font-semibold text-[#6ba3c7] uppercase tracking-wider mb-1">Single Video Audit</p>
+                <p className="text-sm text-[#2f3437]/50 dark:text-[#94a3b8] mb-2">{fmt(audit.createdAt)}</p>
+                {report?.one_sentence_diagnosis && (
+                  <p className="text-sm italic text-[#2f3437]/80 dark:text-[#e2e8f0]/70">
+                    &ldquo;{report.one_sentence_diagnosis}&rdquo;
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Right: YouTube embed */}
+            <div className="flex-1 min-w-0">
+              <div className="relative w-full rounded-lg overflow-hidden bg-black" style={{ paddingBottom: "56.25%", height: 0 }}>
+                <iframe
+                  src={`https://www.youtube.com/embed/${singleVideo.videoId}`}
+                  className="absolute inset-0 w-full h-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  title={singleVideo.title ?? "Video"}
+                />
+              </div>
+            </div>
+          </div>
+        </>
+      ) : (
+        /* ── Non-single-video: original score + diagnosis layout ── */
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className={`rounded-lg p-4 md:p-5 text-center md:w-44 shrink-0 ${scoreBg(Number(audit.overallScore))}`}>
+            <p className="text-xs font-semibold uppercase tracking-wider mb-1 opacity-70">Attraction Score</p>
+            <p className={`text-5xl md:text-6xl font-black ${scoreText(Number(audit.overallScore))}`}>{audit.overallScore != null ? Number(audit.overallScore).toFixed(1) : "—"}</p>
+            <p className="text-sm font-medium mt-0.5 opacity-50">/ 10</p>
+            {report?.raw_average != null && (
+              <p className="text-xs opacity-40 mt-1">Avg: {Number(report.raw_average).toFixed(1)}</p>
+            )}
+          </div>
+          <div className="bg-[#6ba3c7]/10 border border-[#6ba3c7]/30 rounded-lg p-4 md:p-5 flex-1 flex flex-col justify-center">
+            <p className="text-xs font-semibold text-[#6ba3c7] uppercase tracking-wider mb-1">Attraction by Video — {typeLabel}</p>
+            <p className="text-sm text-[#2f3437]/50 mb-2">{fmt(audit.createdAt)}</p>
+            {report?.one_sentence_diagnosis && (
+              <p className="text-sm italic text-[#2f3437]/80">&ldquo;{report.one_sentence_diagnosis}&rdquo;</p>
+            )}
+          </div>
         </div>
-        <div className="bg-[#6ba3c7]/10 border border-[#6ba3c7]/30 rounded-lg p-4 md:p-5 flex-1 flex flex-col justify-center">
-          <p className="text-xs font-semibold text-[#6ba3c7] uppercase tracking-wider mb-1">Attraction by Video — {typeLabel}</p>
-          <p className="text-sm text-[#2f3437]/50 mb-2">{fmt(audit.createdAt)}</p>
-          {report?.one_sentence_diagnosis && (
-            <p className="text-sm italic text-[#2f3437]/80">"{report.one_sentence_diagnosis}"</p>
-          )}
-        </div>
-      </div>
+      )}
 
       {/* Scores */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h2 className="text-base font-semibold text-[#2f3437] mb-4">16-Principle Breakdown</h2>
+      <div className="bg-white dark:bg-[#1a1a1a] rounded-lg border border-gray-200 dark:border-[#2a2a2a] p-6">
+        <h2 className="text-base font-semibold text-[#2f3437] dark:text-[#e2e8f0] mb-4">16-Principle Breakdown</h2>
         {!hasScores ? (
           <p className="text-sm text-[#2f3437]/50 italic">Score data unavailable for this audit.</p>
         ) : (
@@ -158,9 +246,9 @@ export default function MemberAuditReportPage() {
               <div key={key}>
                 <button
                   onClick={() => setExpanded(isOpen ? null : key)}
-                  className="w-full flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="w-full flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-gray-50 dark:hover:bg-[#1e2a38] transition-colors"
                 >
-                  <span className={`text-sm text-left ${isNA ? "text-[#2f3437]/40" : "text-[#2f3437]"}`}>{PRINCIPLE_LABELS[key] ?? key}</span>
+                  <span className={`text-sm text-left ${isNA ? "text-[#2f3437]/40 dark:text-[#94a3b8]/40" : "text-[#2f3437] dark:text-[#e2e8f0]"}`}>{PRINCIPLE_LABELS[key] ?? key}</span>
                   <div className="flex items-center gap-2 shrink-0">
                     {!isNA && delta != null && (
                       <span className={`text-xs font-semibold ${delta > 0 ? "text-green-600" : delta < 0 ? "text-[#ff0033]" : "text-gray-400"}`}>
@@ -174,7 +262,7 @@ export default function MemberAuditReportPage() {
                   </div>
                 </button>
                 {isOpen && (val.evidence || principlesWithLessons.has(toAcademySlug(key))) && (
-                  <div className="mx-3 mb-1 px-3 py-2 bg-gray-50 rounded-lg text-xs text-[#2f3437]/70 space-y-1">
+                  <div className="mx-3 mb-1 px-3 py-2 bg-gray-50 dark:bg-[#1e2a38] rounded-lg text-xs text-[#2f3437]/70 dark:text-[#94a3b8] space-y-1">
                     {val.evidence && <p className="italic">{val.evidence}</p>}
                     {principlesWithLessons.has(toAcademySlug(key)) && (
                       <Link
@@ -195,11 +283,11 @@ export default function MemberAuditReportPage() {
 
       {/* Strengths */}
       {report?.strengths?.length > 0 && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-          <h2 className="text-base font-semibold text-green-800 mb-3">✅ What&apos;s Working</h2>
+        <div className="bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-800/30 rounded-lg p-6">
+          <h2 className="text-base font-semibold text-green-800 dark:text-green-400 mb-3">✅ What&apos;s Working</h2>
           <ul className="space-y-2">
             {report.strengths.map((s: string, i: number) => (
-              <li key={i} className="text-sm text-green-700 flex items-start gap-2">
+              <li key={i} className="text-sm text-green-700 dark:text-green-300 flex items-start gap-2">
                 <span className="mt-0.5">•</span>{s}
               </li>
             ))}
@@ -209,13 +297,13 @@ export default function MemberAuditReportPage() {
 
       {/* Gaps */}
       {report?.biggest_gaps?.length > 0 && (
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h2 className="text-base font-semibold text-[#2f3437] mb-3">🎯 Three Biggest Gaps</h2>
+        <div className="bg-white dark:bg-[#1a1a1a] rounded-lg border border-gray-200 dark:border-[#2a2a2a] p-6">
+          <h2 className="text-base font-semibold text-[#2f3437] dark:text-[#e2e8f0] mb-3">🎯 Three Biggest Gaps</h2>
           <ul className="space-y-3">
             {report.biggest_gaps.map((g: string, i: number) => (
               <li key={i} className="flex items-start gap-3">
                 <span className="bg-[#ff0033]/10 text-[#ff0033] text-xs font-bold px-2 py-0.5 rounded-full shrink-0 mt-0.5">{i + 1}</span>
-                <span className="text-sm text-[#2f3437]/80">{g}</span>
+                <span className="text-sm text-[#2f3437]/80 dark:text-[#e2e8f0]/70">{g}</span>
               </li>
             ))}
           </ul>
@@ -225,12 +313,12 @@ export default function MemberAuditReportPage() {
       {/* Learning Path */}
       {gaps.length > 0 && (
         <div className="bg-[#6ba3c7]/10 border border-[#6ba3c7]/30 rounded-lg p-6">
-          <h2 className="text-base font-semibold text-[#2f3437] mb-3">📚 Your Learning Path</h2>
+          <h2 className="text-base font-semibold text-[#2f3437] dark:text-[#e2e8f0] mb-3">📚 Your Learning Path</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {gaps.map(([key, val]: [string, any]) => (
-              <div key={key} className="flex items-center justify-between bg-white rounded-lg px-3 py-2">
+              <div key={key} className="flex items-center justify-between bg-white dark:bg-[#1a1a1a] rounded-lg px-3 py-2">
                 <div>
-                  <span className="text-sm text-[#2f3437]">{PRINCIPLE_LABELS[key]}</span>
+                  <span className="text-sm text-[#2f3437] dark:text-[#e2e8f0]">{PRINCIPLE_LABELS[key]}</span>
                   <span className={`ml-2 text-xs font-bold ${scoreBg(val.score)} px-1.5 py-0.5 rounded-full`}>{val.score.toFixed(1)}</span>
                 </div>
                 {principlesWithLessons.has(toAcademySlug(key)) ? (
@@ -249,10 +337,10 @@ export default function MemberAuditReportPage() {
         </div>
       )}
 
-      {/* Videos */}
-      {videos.length > 0 && (
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h2 className="text-base font-semibold text-[#2f3437] mb-4">Videos Analysed</h2>
+      {/* Videos Analysed — only for non-single-video audits */}
+      {!isSingleVideo && videos.length > 0 && (
+        <div className="bg-white dark:bg-[#1a1a1a] rounded-lg border border-gray-200 dark:border-[#2a2a2a] p-6">
+          <h2 className="text-base font-semibold text-[#2f3437] dark:text-[#e2e8f0] mb-4">Videos Analysed</h2>
           <ul className="space-y-2">
             {videos.map((v: any, i: number) => (
               <li key={i} className="flex items-center justify-between">
@@ -260,14 +348,14 @@ export default function MemberAuditReportPage() {
                   {v.title}
                   <ArrowTopRightOnSquareIcon className="w-3 h-3 shrink-0" />
                 </a>
-                <span className="text-xs text-[#2f3437]/50">{fmtDuration(v.durationSeconds)}</span>
+                <span className="text-xs text-[#2f3437]/50 dark:text-[#94a3b8]">{fmtDuration(v.durationSeconds)}</span>
               </li>
             ))}
           </ul>
         </div>
       )}
 
-      <div className="text-center py-6 text-sm text-[#2f3437]/40 border-t border-gray-200">
+      <div className="text-center py-6 text-sm text-[#2f3437]/40 border-t border-gray-200 dark:border-[#2a2a2a]">
         Prepared by Jared Chamberlain ~ Founder of Attraction by Video
       </div>
     </div>
