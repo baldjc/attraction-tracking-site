@@ -66,6 +66,7 @@ type SortKey = "fullName" | "videos7d" | "clicks7d" | "conversions7d" | "toolUse
 type SortDir = "asc" | "desc";
 
 const PAGE_SIZE = 200;
+const USD_TO_CAD = 1.38;
 
 const tierLabels: Record<string, string> = {
   foundations: "Foundations",
@@ -745,14 +746,28 @@ export default function MembersPage() {
                           <div className="flex flex-col gap-0.5">
                             <div className="flex items-center gap-1.5 flex-wrap">
                               {subStatusBadge(m.subscriptionStatus)}
-                              {fmtPrice(m.stripePriceAmount) && (
-                                <span className="text-xs font-semibold text-emerald-700">
-                                  {fmtPrice(m.stripePriceAmount)}/mo
-                                  {m.stripeCurrency && (
-                                    <span className="ml-1 font-normal text-gray-400">{m.stripeCurrency}</span>
-                                  )}
-                                </span>
-                              )}
+                              {fmtPrice(m.stripePriceAmount) && (() => {
+                                const isUSD = (m.stripeCurrency ?? "USD").toUpperCase() === "USD";
+                                const cadAmount = isUSD && m.stripePriceAmount
+                                  ? Math.round(m.stripePriceAmount * USD_TO_CAD)
+                                  : m.stripePriceAmount;
+                                return (
+                                  <span className="text-xs font-semibold text-emerald-700">
+                                    {isUSD ? (
+                                      <>
+                                        {fmtPrice(cadAmount)}/mo
+                                        <span className="ml-1 font-normal text-gray-400 text-[10px]">CAD</span>
+                                        <span className="ml-1 font-normal text-gray-300 text-[10px]">({fmtPrice(m.stripePriceAmount)} USD)</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        {fmtPrice(m.stripePriceAmount)}/mo
+                                        <span className="ml-1 font-normal text-gray-400 text-[10px]">CAD</span>
+                                      </>
+                                    )}
+                                  </span>
+                                );
+                              })()}
                             </div>
                             {fmtPeriodEnd(m.stripeCurrentPeriodEnd, m.subscriptionStatus) && (
                               <span className={`text-[10px] ${dim}`}>
