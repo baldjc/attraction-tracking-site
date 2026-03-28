@@ -436,65 +436,71 @@ export default function MembersPage() {
       {loading ? (
         <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
           {[...Array(6)].map((_, i) => (
-            <div key={i} className={`${card} p-4 h-24 animate-pulse bg-gray-100`} />
+            <div key={i} className={`${card} p-4 h-[100px] animate-pulse bg-gray-100`} />
           ))}
         </div>
       ) : cards && (
         <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
-          <div className={`${card} p-4`}>
-            <div className="flex items-center gap-2 mb-3">
-              <VideoCameraIcon className="w-5 h-5 text-[#6ba3c7] shrink-0" />
-              <span className={`text-xs uppercase tracking-wide font-semibold ${muted}`}>Videos This Week</span>
+          {/* Videos This Week */}
+          <div className={`${card} p-4 flex flex-col justify-between h-[100px]`}>
+            <div className="flex items-center gap-1.5">
+              <VideoCameraIcon className="w-4 h-4 text-[#6ba3c7] shrink-0" />
+              <span className={`text-[10px] uppercase tracking-widest font-semibold ${muted}`}>Videos This Week</span>
             </div>
             <div className={`text-3xl font-bold ${txt}`}>{cards.videosThisWeek}</div>
           </div>
-          <div className={`${card} p-4`}>
-            <div className="flex items-center gap-2 mb-3">
-              <UserGroupIcon className="w-5 h-5 text-emerald-500 shrink-0" />
-              <span className={`text-xs uppercase tracking-wide font-semibold ${muted}`}>Active Members</span>
+          {/* Active Members */}
+          <div className={`${card} p-4 flex flex-col justify-between h-[100px]`}>
+            <div className="flex items-center gap-1.5">
+              <UserGroupIcon className="w-4 h-4 text-emerald-500 shrink-0" />
+              <span className={`text-[10px] uppercase tracking-widest font-semibold ${muted}`}>Active Members</span>
             </div>
             <div className={`text-3xl font-bold ${txt}`}>{cards.activeMembers}</div>
           </div>
-          <div className={`${card} p-4`}>
-            <div className="flex items-center gap-2 mb-3">
-              <ExclamationTriangleIcon className="w-5 h-5 text-red-500 shrink-0" />
-              <span className={`text-xs uppercase tracking-wide font-semibold ${muted}`}>Inactive</span>
+          {/* Inactive */}
+          <div className={`${card} p-4 flex flex-col justify-between h-[100px]`}>
+            <div className="flex items-center gap-1.5">
+              <ExclamationTriangleIcon className="w-4 h-4 text-red-500 shrink-0" />
+              <span className={`text-[10px] uppercase tracking-widest font-semibold ${muted}`}>Inactive</span>
             </div>
             <div className={`text-3xl font-bold ${txt}`}>{cards.inactiveMembers}</div>
           </div>
-          <div className={`${card} p-4`}>
-            <div className="flex items-center gap-2 mb-3">
-              <CursorArrowRaysIcon className="w-5 h-5 text-[#6ba3c7] shrink-0" />
-              <span className={`text-xs uppercase tracking-wide font-semibold ${muted}`}>Link Clicks (7d)</span>
+          {/* Link Clicks */}
+          <div className={`${card} p-4 flex flex-col justify-between h-[100px]`}>
+            <div className="flex items-center gap-1.5">
+              <CursorArrowRaysIcon className="w-4 h-4 text-[#6ba3c7] shrink-0" />
+              <span className={`text-[10px] uppercase tracking-widest font-semibold ${muted}`}>Link Clicks (7d)</span>
             </div>
             <div className={`text-3xl font-bold ${txt}`}>{cards.linkClicks7d}</div>
           </div>
-          <div className={`${card} p-4`}>
-            <div className="flex items-center gap-2 mb-3">
-              <TrophyIcon className="w-5 h-5 text-yellow-500 shrink-0" />
-              <span className={`text-xs uppercase tracking-wide font-semibold ${muted}`}>Top Lead Performer</span>
+          {/* Top Lead */}
+          <div className={`${card} p-4 flex flex-col justify-between h-[100px]`}>
+            <div className="flex items-center gap-1.5">
+              <TrophyIcon className="w-4 h-4 text-yellow-500 shrink-0" />
+              <span className={`text-[10px] uppercase tracking-widest font-semibold ${muted}`}>Top Lead Performer</span>
             </div>
             {cards.topLead ? (
-              <>
-                <div className={`text-sm font-semibold ${txt} truncate`}>{cards.topLead.fullName}</div>
-                <div className={`text-xs ${muted}`}>{cards.topLead.conversions} conversions</div>
-              </>
+              <div>
+                <div className={`text-sm font-semibold ${txt} truncate leading-tight`}>{cards.topLead.fullName}</div>
+                <div className={`text-[11px] ${muted} mt-0.5`}>{cards.topLead.conversions} conversions</div>
+              </div>
             ) : (
               <div className={`text-sm ${dim}`}>—</div>
             )}
           </div>
-          <div className={`${card} p-4`}>
-            <div className="flex items-center gap-2 mb-3">
-              <BanknotesIcon className="w-5 h-5 text-emerald-600 shrink-0" />
-              <span className={`text-xs uppercase tracking-wide font-semibold ${muted}`}>Monthly Revenue</span>
+          {/* MRR */}
+          <div className={`${card} p-4 flex flex-col justify-between h-[100px]`}>
+            <div className="flex items-center gap-1.5">
+              <BanknotesIcon className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span className={`text-[10px] uppercase tracking-widest font-semibold ${muted}`}>Monthly Revenue</span>
             </div>
             {cards.mrr > 0 ? (
-              <>
+              <div>
                 <div className={`text-3xl font-bold text-emerald-700`}>{fmtPrice(cards.mrr)}</div>
-                <div className={`text-[10px] ${dim} mt-1`}>
-                  {backfillingPrices ? "Updating…" : "~CAD · USD converted at 1.38"}
+                <div className={`text-[9px] ${dim} mt-0.5`}>
+                  {backfillingPrices ? "Updating…" : "~CAD · USD at 1.38"}
                 </div>
-              </>
+              </div>
             ) : (
               <div className={`text-sm ${dim}`}>{backfillingPrices ? "Loading…" : "—"}</div>
             )}
