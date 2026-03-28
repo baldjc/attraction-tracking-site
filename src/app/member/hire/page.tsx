@@ -14,6 +14,7 @@ import {
   XMarkIcon,
   InformationCircleIcon,
 } from "@heroicons/react/24/outline";
+import PageHeader from "@/components/PageHeader";
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   FilmIcon,
@@ -289,9 +290,12 @@ export default function HireAHumanPage() {
   if (loading) {
     return (
       <div className="space-y-12 max-w-7xl pb-12">
-        <div>
-          <div className="h-8 bg-[#eaeaea] dark:bg-white/10 rounded w-48 animate-pulse mb-2" />
-          <div className="h-4 bg-[#eaeaea] dark:bg-white/10 rounded w-96 animate-pulse" />
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-9 h-9 bg-[#eaeaea] dark:bg-white/10 rounded-lg animate-pulse shrink-0" />
+            <div className="h-8 bg-[#eaeaea] dark:bg-white/10 rounded w-48 animate-pulse" />
+          </div>
+          <div className="h-4 bg-[#eaeaea] dark:bg-white/10 rounded w-64 animate-pulse" />
         </div>
         {[1, 2, 3].map((i) => (
           <div key={i} className="space-y-4">
@@ -308,12 +312,12 @@ export default function HireAHumanPage() {
   if (categories.length === 0) {
     return (
       <div className="max-w-7xl pb-12">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="p-2 bg-[#6ba3c7]/10 rounded-lg">
-            <UserGroupIcon className="w-6 h-6 text-[#6ba3c7]" />
-          </div>
-          <h1 className="text-2xl font-bold text-[#2f3437] dark:text-white">Hire a Human</h1>
-        </div>
+        <PageHeader
+          icon={UserGroupIcon}
+          title="Hire a Human"
+          description="Get the right people doing the things they're better at than you are."
+          colour="#8B5CF6"
+        />
         <p className="text-sm text-[#2f3437]/50 dark:text-white/40">No services available yet.</p>
       </div>
     );
@@ -321,27 +325,19 @@ export default function HireAHumanPage() {
 
   return (
     <>
-      <div className="space-y-12 max-w-7xl pb-12">
-        {/* Hero */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#6ba3c7]/10 via-[#6ba3c7]/5 to-transparent dark:from-[#6ba3c7]/12 dark:via-[#6ba3c7]/5 dark:to-transparent border border-[#6ba3c7]/20 dark:border-[#6ba3c7]/15 px-8 py-8 md:px-10 md:py-10">
-          {/* Decorative background circle */}
-          <div className="pointer-events-none absolute -top-16 -right-16 w-64 h-64 rounded-full bg-[#6ba3c7]/8 dark:bg-[#6ba3c7]/6 blur-3xl" />
-
-          {/* Label + heading */}
-          <div className="flex items-center gap-2.5 mb-6">
-            <div className="p-2 bg-[#6ba3c7]/15 dark:bg-[#6ba3c7]/20 rounded-lg">
-              <UserGroupIcon className="w-5 h-5 text-[#6ba3c7]" />
-            </div>
-            <span className="text-xs font-bold uppercase tracking-widest text-[#6ba3c7]">Hire a Human</span>
-          </div>
-
-          {/* Hook */}
-          <h1 className="text-2xl md:text-3xl font-bold text-[#2f3437] dark:text-white leading-snug max-w-2xl mb-6">
-            You didn&apos;t get to where you are only to spend your weekends and evenings editing videos.
-          </h1>
-
-          {/* Body copy */}
-          <div className="max-w-2xl space-y-4 border-l-2 border-[#6ba3c7]/30 pl-5">
+      <div className="space-y-8 max-w-7xl pb-12">
+        {/* Header */}
+        <div>
+          <PageHeader
+            icon={UserGroupIcon}
+            title="Hire a Human"
+            description="Get the right people doing the things they're better at than you are."
+            colour="#8B5CF6"
+          />
+          <div className="space-y-3 max-w-2xl -mt-2">
+            <p className="text-sm leading-relaxed text-[#2f3437]/60 dark:text-white/50">
+              You didn&apos;t get to where you are only to spend your weekends and evenings editing videos.
+            </p>
             <p className="text-sm leading-relaxed text-[#2f3437]/60 dark:text-white/50">
               The biggest thing holding most agents back from consistent content isn&apos;t strategy — it&apos;s everything that comes after you hit record. The editing, the thumbnails, the SEO, the publishing. That&apos;s where the procrastination creeps in, and that&apos;s where your content calendar dies.
             </p>

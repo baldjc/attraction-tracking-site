@@ -202,23 +202,6 @@ export default function AIToolsHub({ basePath, featureFlags }: Props) {
 
   return (
     <div>
-      <div className="mb-8 flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-[#2f3437] dark:text-white">AI Tools</h1>
-          <p className="text-[#2f3437]/60 dark:text-white/60 mt-1">
-            AI-powered tools built around the Attraction by Video framework.{" "}
-            {!avatar?.avatarName && "Build your avatar first for personalised results."}
-          </p>
-        </div>
-        {isAdmin && (
-          <Link
-            href={`${basePath}/usage`}
-            className="shrink-0 text-xs text-[#2f3437]/50 dark:text-white/50 hover:text-[#6ba3c7] border border-gray-200 dark:border-white/20 px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap"
-          >
-            📊 Usage
-          </Link>
-        )}
-      </div>
 
       {!loading && usage && (usage.percentUsed >= 50) && (
         <div className={`mb-5 flex items-start gap-3 border rounded-lg p-4 ${

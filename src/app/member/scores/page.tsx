@@ -128,7 +128,12 @@ export default function MemberScoresPage() {
   if (!data?.latestAudit) {
     return (
       <div>
-        <h1 className={`text-2xl font-bold ${txt} mb-2`}>My Scores</h1>
+        <PageHeader
+          icon={StarIcon}
+          title="My Scores"
+          description="See where you stand and where to focus next."
+          colour="#F59E0B"
+        />
         <div className="bg-[#6ba3c7]/10 border border-[#6ba3c7]/30 rounded-lg p-10 text-center">
           <p className={`font-medium ${txt} mb-2`}>No audits yet</p>
           <p className={`text-sm ${muted}`}>
@@ -239,11 +244,7 @@ export default function MemberScoresPage() {
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className={`text-2xl font-bold ${txt}`}>My Scores</h1>
-          <p className={`text-sm ${muted} mt-0.5`}>Your Attraction Score breakdown across all 16 principles</p>
-        </div>
+      <div className="flex items-center justify-end">
         <button
           onClick={load}
           className={`flex items-center gap-2 px-4 py-2.5 border border-gray-200 dark:border-[#2a2a2a] rounded-lg text-sm ${txt} hover:bg-gray-50 dark:hover:bg-[#1e2a38] transition-colors`}

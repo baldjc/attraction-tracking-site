@@ -822,13 +822,6 @@ function AcademyTabsInner({ routePath }: { routePath: string }) {
         />
       )}
 
-      <div>
-        <h1 className="text-2xl font-bold text-[#2f3437] dark:text-white">Academy</h1>
-        <p className="text-sm text-[#2f3437]/50 dark:text-white/40 mt-1">
-          Your complete Attraction by Video learning library.
-        </p>
-      </div>
-
       <div className="flex gap-1 bg-[#111]/5 dark:bg-white/5 rounded-lg p-1 w-fit overflow-x-auto scrollbar-hide">
         {TABS.map((t) => (
           <button
@@ -859,12 +852,6 @@ export default function AcademyTabs({ routePath }: { routePath: string }) {
   return (
     <Suspense fallback={
       <div className="space-y-6 max-w-7xl">
-        <div>
-          <h1 className="text-2xl font-bold text-[#2f3437] dark:text-white">Academy</h1>
-          <p className="text-sm text-[#2f3437]/50 dark:text-white/40 mt-1">
-            Your complete Attraction by Video learning library.
-          </p>
-        </div>
         <div className="h-12 bg-[#111]/5 rounded-lg animate-pulse w-full max-w-2xl" />
       </div>
     }>

@@ -161,19 +161,19 @@ export default function MemberDashboard() {
           <Link
             key={href}
             href={href}
-            className={`${card} overflow-hidden flex flex-col hover:shadow-md transition-all group`}
+            className={`${card} p-6 flex flex-col gap-4 hover:shadow-md transition-all group border-l-[3px]`}
+            style={{ borderLeftColor: "transparent" }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderLeftColor = colour; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderLeftColor = "transparent"; }}
           >
-            <div className="h-1 rounded-t-xl" style={{ backgroundColor: colour }} />
-            <div className="p-6 flex flex-col gap-4 flex-1">
-              <div className="p-2.5 rounded-xl w-fit" style={{ backgroundColor: `${colour}1a` }}>
-                <Icon className="w-8 h-8" style={{ color: colour }} />
-              </div>
-              <div>
-                <p className={`text-base font-bold ${txt} transition-colors`}>
-                  {title}
-                </p>
-                <p className={`text-sm mt-1 ${muted} leading-snug`}>{description}</p>
-              </div>
+            <div className="p-2.5 rounded-xl w-fit" style={{ backgroundColor: `${colour}1a` }}>
+              <Icon className="w-8 h-8" style={{ color: colour }} />
+            </div>
+            <div>
+              <p className={`text-base font-bold ${txt} transition-colors`}>
+                {title}
+              </p>
+              <p className={`text-sm mt-1 ${muted} leading-snug`}>{description}</p>
             </div>
           </Link>
         ))}
