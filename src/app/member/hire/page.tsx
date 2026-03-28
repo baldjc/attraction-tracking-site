@@ -292,7 +292,7 @@ function DoneWithYouCard({
           Full Service
         </span>
       </div>
-      <h3 className="text-base font-bold text-[#2f3437] dark:text-white leading-tight">You film. We handle everything else.</h3>
+      <h3 className="text-base font-bold text-[#2f3437] dark:text-white leading-tight">You film and close deals. We build your entire YouTube engine.</h3>
       <div className="mt-3 mb-4">
         <span className="text-3xl font-extrabold text-[#2f3437] dark:text-white">$4,500</span>
         <span className="text-sm text-[#2f3437]/40 dark:text-white/30 ml-1">/mo</span>
@@ -301,12 +301,31 @@ function DoneWithYouCard({
       <p className="text-[11px] font-semibold text-[#2f3437]/50 dark:text-white/40 uppercase tracking-wide mb-2">
         Includes everything in Growth, plus:
       </p>
-      <ul className="space-y-2 mb-4 flex-1">
-        <Feature>Unlimited video edits</Feature>
+      <ul className="space-y-2 mb-3">
+        <Feature>Unlimited video edits (no monthly cap)</Feature>
         <Feature>Full YouTube channel management</Feature>
         <Feature>Thumbnail design and A/B testing</Feature>
-        <Feature>SEO optimisation and publishing</Feature>
+        <Feature>SEO optimisation, descriptions, and publishing</Feature>
+        <Feature>Weekly performance reporting</Feature>
       </ul>
+
+      <div className="border-t border-[#eaeaea] dark:border-white/10 pt-3 mb-4 flex-1">
+        <p className="text-[11px] font-semibold text-[#2f3437]/50 dark:text-white/40 uppercase tracking-wide mb-2">
+          The real difference:
+        </p>
+        <ul className="space-y-2">
+          {[
+            "We own your entire content pipeline — from raw footage to live video",
+            "You get back 15–20+ hours per month to focus on clients",
+            "Your channel never misses a week, even when life gets busy",
+          ].map((text) => (
+            <li key={text} className="flex items-start gap-2">
+              <span className="text-sm leading-none mt-0.5 shrink-0">💎</span>
+              <span className="text-[13px] text-[#2f3437] dark:text-white/80 leading-snug font-medium">{text}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
 
       <div className="mt-auto">
         <CtaButton
