@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   MagnifyingGlassIcon,
   BookmarkIcon as BookmarkOutline,
@@ -112,9 +112,20 @@ export function PrincipleFilter({
   selected: string | null;
   onChange: (p: string | null) => void;
 }) {
+  const stripRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!stripRef.current) return;
+    const active = stripRef.current.querySelector<HTMLElement>("[data-active='true']");
+    if (active) {
+      active.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+    }
+  }, [selected]);
+
   return (
-    <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+    <div ref={stripRef} className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
       <button
+        data-active={selected === null ? "true" : "false"}
         onClick={() => onChange(null)}
         className={`flex-shrink-0 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all ${
           selected === null
@@ -127,6 +138,7 @@ export function PrincipleFilter({
       {PRINCIPLES.map((p) => (
         <button
           key={p}
+          data-active={selected === p ? "true" : "false"}
           onClick={() => onChange(selected === p ? null : p)}
           className={`flex-shrink-0 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all ${
             selected === p
