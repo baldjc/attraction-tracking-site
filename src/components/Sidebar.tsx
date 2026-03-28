@@ -56,10 +56,8 @@ const adminLinks = [
   { href: "/admin/academy", label: "Academy", icon: AcademicCapIcon },
   { href: "/admin/academy-manager", label: "Academy Manager", icon: WrenchScrewdriverIcon, badgeKey: "qaCallsPending" },
   { href: "/admin/ai-tools", label: "AI Tools", icon: SparklesIcon },
-  { href: "/member/campaigns", label: "Campaigns", icon: LinkIcon },
-  { href: "/member/analytics", label: "Lead Analytics", icon: ChartBarIcon },
+  { href: "/admin/generate-leads", label: "Generate Leads", icon: RocketLaunchIcon },
   { href: "/admin/analytics", label: "Member Analytics", icon: ChartBarIcon },
-  { href: "/member/link-tracking", label: "Link Tracking Settings", icon: LinkIcon },
   { href: "/admin/settings", label: "Settings", icon: Cog6ToothIcon },
 ];
 

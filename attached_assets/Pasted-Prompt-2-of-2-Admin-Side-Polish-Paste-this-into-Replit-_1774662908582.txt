@@ -1,0 +1,71 @@
+Prompt 2 of 2: Admin Side + Polish
+
+  Paste this into Replit Agent:
+
+  Continuing the Generate Leads build on main. This is Part 2 of 2 — admin side and polish.
+                                                                                                                                            
+   
+  === CHANGE 1: ADMIN SIDEBAR ===                                                                                                           
+                                                                                                                                          
+  In src/components/Sidebar.tsx, update the admin sidebar:                                                                                  
+   
+  REMOVE:                                                                                                                                   
+  - Any standalone admin links for "Campaigns" or "Member Analytics" that pointed to the old URLs                                         
+                                                                                                                                            
+  ADD (or keep if already present):
+  - "Generate Leads" in the admin sidebar — links to /admin/generate-leads (same position as where Campaigns was)                           
+                                                                                                                                            
+  The Academy Manager page needs a new tab for managing lead gen training content.                                                          
+                                                                                                                                            
+                                                                                                                                            
+  === CHANGE 2: ACADEMY MANAGER — ADD LEAD GEN TRAINING TAB ===                                                                           
+
+  In the Academy Manager page at /admin/academy-manager, add a third tab:                                                                   
+   
+  Tab bar becomes:                                                                                                                          
+  1. Foundations Library (default) — existing, no changes                                                                                 
+  2. Q&A Calls — existing, no changes                                                                                                       
+  3. Lead Gen Training (?tab=lead-gen)                                                                                                    
+                                                                                                                                            
+  The Lead Gen Training tab:
+  - Same UI as the Foundations Library tab (accordion sections, add section, add lessons, reorder, published toggles, edit buttons)         
+  - But it manages CourseSections with moduleType = "lead-generation"                                                                       
+  - "Add Section" creates sections with moduleType = "lead-generation"
+  - Edit section/lesson pages work the same way — reuse the same components                                                                 
+  - Section and lesson edit URLs: /admin/academy-manager/sections/[id] and /admin/academy-manager/lessons/[id] (same as foundations — the   
+  edit pages work for both module types)                                                                                                    
+                                                                                                                                            
+  Update the admin Academy API routes:                                                                                                      
+  - POST /api/admin/academy/sections — accept moduleType in the request body (default "foundations")                                      
+  - GET /api/admin/academy/sections — accept ?moduleType= query param to filter (default "foundations")                                     
+  - Ensure lesson CRUD routes don't need changes since lessons belong to sections which already have moduleType                             
+                                                                                                                                            
+                                                                                                                                            
+  === CHANGE 3: ADMIN GENERATE LEADS PAGE ===                                                                                               
+                                                                                                                                            
+  Create /admin/generate-leads/page.tsx                                                                                                   
+
+  Same concept as /admin/academy — an admin preview of what members see. Render the same Generate Leads tabbed component (How To Generate   
+  Leads, Campaigns, Lead Analytics) using the shared component.
+                                                                                                                                            
+                                                                                                                                          
+  === CHANGE 4: VERIFY AND POLISH ===
+
+  Test these flows:                                                                                                                         
+  
+  1. Member sidebar: "Generate Leads" is there, "Campaigns" / "Lead Analytics" / "Link Tracking Settings" are gone                          
+  2. /member/generate-leads — default tab shows "How To Generate Leads" with empty state (no lead gen sections exist yet)                 
+  3. /member/generate-leads?tab=campaigns — shows all existing campaigns, create/delete works                                               
+  4. /member/generate-leads?tab=analytics — shows full analytics dashboard with all 5 sub-tabs                                              
+  5. /member/settings — has the new "Link Tracking Setup" section with snippet, thank you page config, test installation                    
+  6. Redirects work: /member/campaigns → /member/generate-leads?tab=campaigns, /member/analytics → /member/generate-leads?tab=analytics,    
+  /member/link-tracking → /member/settings                                                                                                  
+  7. Academy Manager → Lead Gen Training tab — can add sections and lessons (test adding one, then delete it)                               
+  8. Admin sidebar updated correctly                                                                                                        
+  9. Mobile: tabs scroll horizontally, all content responsive                                                                             
+  10. Feature flags: "Generate Leads" uses the "campaigns" feature flag — members without campaigns enabled don't see it                    
+                                                                                                                                            
+  Fix anything that's broken. Make sure loading states and empty states work properly.                                                      
+                                                                                                                                            
+                                                                                                                                            
+  Commit on main. Do NOT create a PR. 

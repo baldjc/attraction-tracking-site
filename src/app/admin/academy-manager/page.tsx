@@ -44,7 +44,7 @@ interface Section {
   lessons?: Lesson[];
 }
 
-function FoundationsLibraryTab() {
+function FoundationsLibraryTab({ moduleType = "foundations" }: { moduleType?: string }) {
   const router = useRouter();
   const [sections, setSections] = useState<Section[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,11 +60,11 @@ function FoundationsLibraryTab() {
   const [error, setError] = useState<string | null>(null);
 
   const loadSections = useCallback(async () => {
-    const res = await fetch("/api/admin/academy/sections");
+    const res = await fetch(`/api/admin/academy/sections?moduleType=${moduleType}`);
     const data = await res.json();
     setSections(data.sections ?? []);
     setLoading(false);
-  }, []);
+  }, [moduleType]);
 
   useEffect(() => { loadSections(); }, [loadSections]);
 
@@ -161,7 +161,7 @@ function FoundationsLibraryTab() {
     const res = await fetch("/api/admin/academy/sections", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: newSectionTitle.trim(), sortOrder: sections.length + 1 }),
+      body: JSON.stringify({ title: newSectionTitle.trim(), sortOrder: sections.length + 1, moduleType }),
     });
     const data = await res.json();
     setCreatingSection(false);
@@ -1045,11 +1045,12 @@ function QACallsTab() {
 
 // ── Tab bar ───────────────────────────────────────────────────────────────────
 
-type ManagerTab = "foundations" | "qa-calls";
+type ManagerTab = "foundations" | "qa-calls" | "lead-gen";
 
 const MANAGER_TABS: { id: ManagerTab; label: string }[] = [
   { id: "foundations", label: "Foundations Library" },
   { id: "qa-calls", label: "Q&A Calls" },
+  { id: "lead-gen", label: "Lead Gen Training" },
 ];
 
 function AcademyManagerInner() {
@@ -1086,8 +1087,9 @@ function AcademyManagerInner() {
         ))}
       </div>
 
-      {tab === "foundations" && <FoundationsLibraryTab />}
+      {tab === "foundations" && <FoundationsLibraryTab moduleType="foundations" />}
       {tab === "qa-calls" && <QACallsTab />}
+      {tab === "lead-gen" && <FoundationsLibraryTab moduleType="lead-generation" />}
     </div>
   );
 }

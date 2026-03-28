@@ -6,15 +6,18 @@ function adminOnly(role: string | undefined) {
   return !role || role !== "admin";
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   const session = await auth();
   const role = (session?.user as { role?: string } | undefined)?.role;
   if (!session?.user || adminOnly(role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  const { searchParams } = new URL(req.url);
+  const moduleType = searchParams.get("moduleType") ?? "foundations";
+
   const sections = await prisma.courseSection.findMany({
-    where: { moduleType: "foundations" },
+    where: { moduleType },
     orderBy: { sortOrder: "asc" },
     include: { _count: { select: { lessons: true } } },
   });
@@ -40,7 +43,7 @@ export async function POST(req: Request) {
   }
 
   const body = await req.json();
-  const { title, slug, description, sortOrder, published } = body;
+  const { title, slug, description, sortOrder, published, moduleType } = body;
 
   const section = await prisma.courseSection.create({
     data: {
@@ -49,6 +52,7 @@ export async function POST(req: Request) {
       description: description ?? null,
       sortOrder: sortOrder ?? 0,
       published: published ?? false,
+      moduleType: moduleType ?? "foundations",
     },
   });
 
