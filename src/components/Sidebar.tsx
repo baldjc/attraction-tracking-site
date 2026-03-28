@@ -27,6 +27,7 @@ import {
   MoonIcon,
   AcademicCapIcon,
   VideoCameraIcon,
+  WrenchScrewdriverIcon,
 } from "@heroicons/react/24/outline";
 import { useState, useEffect, useRef } from "react";
 import { IMPERSONATE_LS_KEY, IMPERSONATE_COOKIE } from "@/lib/impersonate-constants";
@@ -50,15 +51,13 @@ const adminLinks = [
   { href: "/admin/members", label: "Foundations Members", icon: UsersIcon },
   { href: "/admin/audits", label: "Audits", icon: ClipboardDocumentListIcon },
   { href: "/admin/qa-prep", label: "Q&A Prep", icon: ChatBubbleLeftRightIcon },
-  { href: "/admin/course-manager", label: "Course Manager", icon: AcademicCapIcon },
+  { href: "/admin/academy", label: "Academy", icon: AcademicCapIcon },
+  { href: "/admin/academy-manager", label: "Academy Manager", icon: WrenchScrewdriverIcon, badgeKey: "qaCallsPending" },
   { href: "/admin/ai-tools", label: "AI Tools", icon: SparklesIcon },
   { href: "/member/campaigns", label: "Campaigns", icon: LinkIcon },
   { href: "/member/analytics", label: "Lead Analytics", icon: ChartBarIcon },
   { href: "/admin/analytics", label: "Member Analytics", icon: ChartBarIcon },
   { href: "/member/link-tracking", label: "Link Tracking Settings", icon: LinkIcon },
-  { href: "/member/resources", label: "Member Resources", icon: BookOpenIcon, section: "Resources" },
-  { href: "/admin/resources/lessons", label: "Course Lessons", icon: AcademicCapIcon, section: "Resources" },
-  { href: "/admin/resources/qa-calls", label: "Q&A Calls", icon: VideoCameraIcon, section: "Resources", badgeKey: "qaCallsPending" },
   { href: "/admin/settings", label: "Settings", icon: Cog6ToothIcon },
 ];
 
