@@ -141,11 +141,13 @@ export default function MemberScoresPage() {
   const { latestAudit, baselineAudit, audits, channelBannerUrl, channelName, youtubeChannelUrl } = data;
 
   // Current Attraction Score: exclude single video audits — they are per-video checks, not overall channel scores
-  const latestChannelAudit =
-    (audits ?? []).find((a: any) => a.auditType === "baseline" || a.auditType === "monthly") ??
-    latestAudit;
+  // Only baseline or monthly audits represent a full channel score.
+  // Single video audits have different scoring (no Consistency, different weighting)
+  // and must never feed the score circle, chart channel line, or 16-Principle table.
+  const latestChannelAudit: any =
+    (audits ?? []).find((a: any) => a.auditType === "baseline" || a.auditType === "monthly") ?? null;
 
-  const scores = (latestChannelAudit.scores ?? {}) as Record<string, { score: number | null; evidence?: string }>;
+  const scores = (latestChannelAudit?.scores ?? {}) as Record<string, { score: number | null; evidence?: string }>;
   const baselineScores = (baselineAudit?.scores as any) ?? null;
 
   // Build merged chart data with two separate series
@@ -250,29 +252,40 @@ export default function MemberScoresPage() {
           <p className={`text-xs font-semibold uppercase tracking-widest ${muted} mb-3`}>
             Current Attraction Score
           </p>
-          <div
-            className={`w-36 h-36 rounded-full flex flex-col items-center justify-center border-4 ${
-              latestChannelAudit.overallScore >= 7
-                ? "border-green-400 bg-green-50 dark:bg-green-900/20"
-                : latestChannelAudit.overallScore >= 5
-                ? "border-yellow-400 bg-yellow-50 dark:bg-yellow-900/20"
-                : "border-[#ff0033] bg-red-50 dark:bg-red-900/20"
-            }`}
-          >
-            <span
-              className={`text-5xl font-black ${
-                latestChannelAudit.overallScore >= 7
-                  ? "text-green-600 dark:text-green-400"
-                  : latestChannelAudit.overallScore >= 5
-                  ? "text-yellow-600 dark:text-yellow-400"
-                  : "text-[#ff0033]"
-              }`}
-            >
-              {Number(latestChannelAudit.overallScore).toFixed(1)}
-            </span>
-            <span className={`text-xs font-medium ${muted} mt-0.5`}>/ 10</span>
-          </div>
-          <p className={`text-xs ${muted} mt-4`}>from {fmt(latestChannelAudit.createdAt)}</p>
+          {latestChannelAudit ? (
+            <>
+              <div
+                className={`w-36 h-36 rounded-full flex flex-col items-center justify-center border-4 ${
+                  latestChannelAudit.overallScore >= 7
+                    ? "border-green-400 bg-green-50 dark:bg-green-900/20"
+                    : latestChannelAudit.overallScore >= 5
+                    ? "border-yellow-400 bg-yellow-50 dark:bg-yellow-900/20"
+                    : "border-[#ff0033] bg-red-50 dark:bg-red-900/20"
+                }`}
+              >
+                <span
+                  className={`text-5xl font-black ${
+                    latestChannelAudit.overallScore >= 7
+                      ? "text-green-600 dark:text-green-400"
+                      : latestChannelAudit.overallScore >= 5
+                      ? "text-yellow-600 dark:text-yellow-400"
+                      : "text-[#ff0033]"
+                  }`}
+                >
+                  {Number(latestChannelAudit.overallScore).toFixed(1)}
+                </span>
+                <span className={`text-xs font-medium ${muted} mt-0.5`}>/ 10</span>
+              </div>
+              <p className={`text-xs ${muted} mt-4`}>from {fmt(latestChannelAudit.createdAt)}</p>
+            </>
+          ) : (
+            <>
+              <div className="w-36 h-36 rounded-full flex flex-col items-center justify-center border-4 border-gray-200 dark:border-[#2a2a2a] bg-gray-50 dark:bg-[#1a1a1a]">
+                <span className="text-4xl font-black text-gray-300 dark:text-[#3a3a3a]">—</span>
+              </div>
+              <p className={`text-xs ${muted} mt-4`}>No channel audit yet</p>
+            </>
+          )}
           {baselineAudit && (
             <p className={`text-xs ${muted} mt-1`}>
               Baseline:{" "}
@@ -452,6 +465,14 @@ export default function MemberScoresPage() {
           <h2 className={`text-sm font-semibold ${txt}`}>16-Principle Breakdown</h2>
           <p className={`text-xs ${muted} mt-0.5`}>Click any row to see the evidence note from your audit</p>
         </div>
+        {principleRows.length === 0 ? (
+          <div className="px-5 py-10 text-center">
+            <p className={`text-sm font-medium ${txt}`}>No channel audit data yet</p>
+            <p className={`text-xs ${muted} mt-1`}>
+              Complete a full channel audit (baseline or monthly) to see your 16-principle breakdown.
+            </p>
+          </div>
+        ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -550,6 +571,7 @@ export default function MemberScoresPage() {
             </tbody>
           </table>
         </div>
+        )}
       </div>
 
       {/* Row 3: Learning Path + Audit History */}
