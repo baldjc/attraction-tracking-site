@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import prisma from "@/lib/prisma";
 import { parsePeriod, countryFlag } from "@/lib/analytics-utils";
@@ -7,8 +6,6 @@ import { parsePeriod, countryFlag } from "@/lib/analytics-utils";
 export async function GET(req: NextRequest) {
   const user = await resolveUserFromSession();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const session = await auth();
-  const isAdmin = (session?.user as { role?: string })?.role === "admin";
 
   const sp = req.nextUrl.searchParams;
   const p = parsePeriod(sp.get("period") ?? "30d", sp.get("from"), sp.get("to"));
@@ -19,7 +16,7 @@ export async function GET(req: NextRequest) {
   const campaigns = await prisma.campaign.findMany({
     where: {
       deletedAt: null,
-      ...(isAdmin ? {} : { userId: user.id }),
+      userId: user.id,
       ...(campaignId !== "all" ? { id: campaignId } : {}),
       ...(sourceType !== "all" ? { sourceType: sourceType as "YOUTUBE" | "GOOGLE_ADS" | "EMAIL" | "OTHER" } : {}),
     },
