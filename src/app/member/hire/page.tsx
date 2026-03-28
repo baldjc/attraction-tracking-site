@@ -169,6 +169,7 @@ function ProductionCard({
       <div className="mb-4">
         <span className="text-3xl font-extrabold text-[#2f3437] dark:text-white">${totalPrice.toLocaleString()}</span>
         <span className="text-sm text-[#2f3437]/40 dark:text-white/30 ml-1">/mo</span>
+        <span className="text-[11px] font-semibold text-[#2f3437]/30 dark:text-white/25 ml-1.5">USD</span>
       </div>
 
       <ul className="space-y-2 mb-4 flex-1">
@@ -242,6 +243,7 @@ function GrowthCard({
       <div className="mb-4">
         <span className="text-3xl font-extrabold text-[#2f3437] dark:text-white">${price.toLocaleString()}</span>
         <span className="text-sm text-[#2f3437]/40 dark:text-white/30 ml-1">/mo</span>
+        <span className="text-[11px] font-semibold text-[#2f3437]/30 dark:text-white/25 ml-1.5">USD</span>
       </div>
 
       <p className="text-[11px] font-semibold text-[#2f3437]/50 dark:text-white/40 uppercase tracking-wide mb-2">
@@ -296,6 +298,7 @@ function DoneWithYouCard({
       <div className="mt-3 mb-4">
         <span className="text-3xl font-extrabold text-[#2f3437] dark:text-white">$4,500</span>
         <span className="text-sm text-[#2f3437]/40 dark:text-white/30 ml-1">/mo</span>
+        <span className="text-[11px] font-semibold text-[#2f3437]/30 dark:text-white/25 ml-1.5">USD</span>
       </div>
 
       <p className="text-[11px] font-semibold text-[#2f3437]/50 dark:text-white/40 uppercase tracking-wide mb-2">
