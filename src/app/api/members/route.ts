@@ -190,7 +190,7 @@ export async function GET() {
     .filter((m) => m.subscriptionStatus === "active" && m.stripePriceAmount)
     .reduce((sum, m) => {
       const amount = m.stripePriceAmount ?? 0;
-      const currency = (m.stripeCurrency ?? "CAD").toUpperCase();
+      const currency = (m.stripeCurrency ?? "USD").toUpperCase();
       return sum + (currency === "USD" ? Math.round(amount * USD_TO_CAD) : amount);
     }, 0);
 
