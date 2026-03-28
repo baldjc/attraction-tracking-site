@@ -151,6 +151,7 @@ export async function GET() {
         fullName: member.fullName,
         youtubeHandle: member.youtubeHandle,
         youtubeChannelUrl: member.youtubeChannelUrl,
+        youtubeChannelThumbnail: member.youtubeChannelThumbnail ?? null,
         serviceTier: member.serviceTier,
         slackUserId: member.slackUserId,
         skoolProfile: member.skoolProfile,

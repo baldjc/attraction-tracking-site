@@ -41,6 +41,7 @@ interface Member {
   fullName: string | null;
   youtubeHandle: string | null;
   youtubeChannelUrl: string | null;
+  youtubeChannelThumbnail: string | null;
   serviceTier: string;
   latestAuditScore: number | null;
   stripeCustomerId: string | null;
@@ -703,11 +704,21 @@ export default function MembersPage() {
                             rel="noopener noreferrer"
                             title={m.youtubeHandle || m.youtubeChannelUrl}
                             onClick={(e) => e.stopPropagation()}
-                            className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-red-50 hover:bg-red-100 transition-colors"
+                            className="inline-block"
                           >
-                            <svg className="w-3.5 h-3.5 text-red-600" viewBox="0 0 24 24" fill="currentColor">
-                              <path d="M23.5 6.19a3.02 3.02 0 0 0-2.12-2.14C19.54 3.5 12 3.5 12 3.5s-7.54 0-9.38.55A3.02 3.02 0 0 0 .5 6.19C0 8.04 0 12 0 12s0 3.96.5 5.81a3.02 3.02 0 0 0 2.12 2.14C4.46 20.5 12 20.5 12 20.5s7.54 0 9.38-.55a3.02 3.02 0 0 0 2.12-2.14C24 15.96 24 12 24 12s0-3.96-.5-5.81zM9.75 15.02V8.98L15.5 12l-5.75 3.02z"/>
-                            </svg>
+                            {m.youtubeChannelThumbnail ? (
+                              <img
+                                src={m.youtubeChannelThumbnail}
+                                alt={m.youtubeHandle || "YouTube"}
+                                className="w-7 h-7 rounded-full object-cover ring-1 ring-gray-200 hover:ring-[#6ba3c7] transition-all"
+                              />
+                            ) : (
+                              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-red-50 hover:bg-red-100 transition-colors">
+                                <svg className="w-3.5 h-3.5 text-red-600" viewBox="0 0 24 24" fill="currentColor">
+                                  <path d="M23.5 6.19a3.02 3.02 0 0 0-2.12-2.14C19.54 3.5 12 3.5 12 3.5s-7.54 0-9.38.55A3.02 3.02 0 0 0 .5 6.19C0 8.04 0 12 0 12s0 3.96.5 5.81a3.02 3.02 0 0 0 2.12 2.14C4.46 20.5 12 20.5 12 20.5s7.54 0 9.38-.55a3.02 3.02 0 0 0 2.12-2.14C24 15.96 24 12 24 12s0-3.96-.5-5.81zM9.75 15.02V8.98L15.5 12l-5.75 3.02z"/>
+                                </svg>
+                              </span>
+                            )}
                           </a>
                         ) : (
                           <span className={`text-sm ${dim}`}>—</span>
