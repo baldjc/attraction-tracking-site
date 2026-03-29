@@ -25,7 +25,7 @@ export default function HelpWidget() {
 
       <button
         onClick={() => setOpen((v) => !v)}
-        aria-label={open ? "Close Jarvis assistant" : "Open Jarvis assistant"}
+        aria-label={open ? "Close Kit assistant" : "Open Kit assistant"}
         className={`fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full shadow-lg flex items-center justify-center hover:scale-105 transition-all ${
           open
             ? "bg-[#2f3437] dark:bg-white"
@@ -35,7 +35,7 @@ export default function HelpWidget() {
         {open ? (
           <XMarkIcon className="w-5 h-5 text-white dark:text-[#1a1a1a]" />
         ) : (
-          <span className="text-white font-bold italic text-lg font-serif">J</span>
+          <span className="text-white font-bold text-lg">K</span>
         )}
       </button>
     </>

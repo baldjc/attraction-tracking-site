@@ -45,12 +45,12 @@ export default function StepTour({ avatarPath, onFinish }: Props) {
 
       <div className="bg-[#6ba3c7]/5 border border-[#6ba3c7]/20 rounded-xl p-4 flex items-start gap-3">
         <div className="w-10 h-10 rounded-full bg-[#6ba3c7] flex items-center justify-center shrink-0">
-          <span className="text-white font-bold italic text-base font-serif">J</span>
+          <span className="text-white font-bold text-base">K</span>
         </div>
         <div>
-          <p className="text-sm font-semibold text-[#2f3437] dark:text-white">Meet Jarvis — your platform assistant</p>
+          <p className="text-sm font-semibold text-[#2f3437] dark:text-white">Meet Kit — your co-pilot</p>
           <p className="text-xs text-[#2f3437]/50 dark:text-white/40 mt-1 leading-relaxed">
-            Tap the J button in the bottom right corner of any page. Ask Jarvis anything — where to find things, how tools work, or what to do next.
+            Tap the K button in the bottom right corner of any page. Ask Kit anything — where to find things, how tools work, or what to do next.
           </p>
         </div>
       </div>

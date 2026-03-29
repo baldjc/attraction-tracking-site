@@ -99,9 +99,9 @@ export default function HelpChat({ onClose }: Props) {
       <div className="flex items-center justify-between px-4 py-3 border-b border-[#2f3437]/10 dark:border-[#2a2a2a] shrink-0">
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-full bg-[#6ba3c7] flex items-center justify-center shrink-0">
-            <span className="text-white font-bold italic text-xs font-serif">J</span>
+            <span className="text-white font-bold text-xs">K</span>
           </div>
-          <span className="font-semibold text-sm text-[#2f3437] dark:text-white">Jarvis</span>
+          <span className="font-semibold text-sm text-[#2f3437] dark:text-white">Kit</span>
         </div>
         <button
           onClick={onClose}
