@@ -487,6 +487,24 @@ function MemberSettingsPageInner() {
         </div>
       </div>
 
+      {/* Setup Wizard Section */}
+      <div className="bg-white dark:bg-[#1a1a1a] border border-[#2f3437]/10 dark:border-[#2a2a2a] rounded-lg">
+        <div className="px-6 py-5 flex items-center justify-between">
+          <div>
+            <p className="font-semibold text-[#2f3437] dark:text-[#e2e8f0]">Setup Wizard</p>
+            <p className="text-sm text-[#2f3437]/50 dark:text-[#718096] mt-0.5">
+              Re-run the onboarding wizard to update your goals and profile.
+            </p>
+          </div>
+          <a
+            href="/member/onboarding"
+            className="text-xs text-[#6ba3c7] border border-[#6ba3c7]/30 px-3 py-1.5 rounded-lg hover:bg-[#6ba3c7]/10 transition-colors shrink-0"
+          >
+            Run Again
+          </a>
+        </div>
+      </div>
+
       </>}
     </div>
   );

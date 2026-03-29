@@ -6,6 +6,7 @@ import {
   PlayCircleIcon,
   VideoCameraIcon,
 } from "@heroicons/react/24/outline";
+import OnboardingBanner from "@/components/onboarding/OnboardingBanner";
 
 // ── Helpers ───────────────────────────────────────────────────
 
@@ -93,6 +94,8 @@ export default function MemberDashboard() {
 
   return (
     <div className="space-y-10 pb-12 max-w-5xl mx-auto">
+
+      <OnboardingBanner />
 
       {/* ── Greeting ── */}
       <div className="pt-2 text-center">
