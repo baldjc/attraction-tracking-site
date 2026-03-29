@@ -389,6 +389,9 @@ export default function MemberDetailPage() {
       const data = await res.json();
       if (res.ok) {
         setReminderToast({ ok: true, msg: "Payment reminder SMS sent." });
+        if (data.sentAt) {
+          setMember((prev: any) => prev ? { ...prev, lastPaymentReminderSentAt: data.sentAt } : prev);
+        }
       } else {
         setReminderToast({ ok: false, msg: data.error ?? "Failed to send reminder." });
       }
@@ -718,13 +721,20 @@ export default function MemberDetailPage() {
               </div>
             )}
             {!isEditorRole && member.subscriptionStatus === "past_due" && (
-              <button
-                onClick={handleSendPaymentReminder}
-                disabled={sendingReminder}
-                className="inline-flex items-center gap-1.5 bg-amber-400 hover:bg-amber-500 disabled:opacity-60 text-[#2f3437] text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
-              >
-                {sendingReminder ? "Sending…" : "Send Payment Reminder"}
-              </button>
+              <div className="flex flex-col items-start gap-1">
+                <button
+                  onClick={handleSendPaymentReminder}
+                  disabled={sendingReminder}
+                  className="inline-flex items-center gap-1.5 bg-amber-400 hover:bg-amber-500 disabled:opacity-60 text-[#2f3437] text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+                >
+                  {sendingReminder ? "Sending…" : "Send Payment Reminder"}
+                </button>
+                {member.lastPaymentReminderSentAt && (
+                  <span className="text-white/50 text-xs pl-1">
+                    Last sent {fmt(member.lastPaymentReminderSentAt)}
+                  </span>
+                )}
+              </div>
             )}
           </div>
         </div>

@@ -56,5 +56,11 @@ export async function POST(
     return NextResponse.json({ error: userMsg }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true });
+  const sentAt = new Date();
+  await prisma.user.update({
+    where: { id },
+    data: { lastPaymentReminderSentAt: sentAt },
+  });
+
+  return NextResponse.json({ ok: true, sentAt: sentAt.toISOString() });
 }
