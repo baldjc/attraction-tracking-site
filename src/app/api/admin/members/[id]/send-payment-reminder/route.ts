@@ -37,11 +37,9 @@ export async function POST(
     return NextResponse.json({ error: "No GHL contact linked to this member" }, { status: 400 });
   }
 
-  if (!member.stripeCustomerId) {
-    return NextResponse.json({ error: "No Stripe customer linked to this member" }, { status: 400 });
-  }
-
-  const retryUrl = await getPaymentRetryUrl(member.stripeCustomerId);
+  const retryUrl = member.stripeCustomerId
+    ? await getPaymentRetryUrl(member.stripeCustomerId)
+    : null;
 
   const firstName = member.fullName?.split(" ")[0] ?? "there";
   const message = retryUrl
