@@ -95,7 +95,7 @@ model User {
   avatarName      String?
   avatarSummary   String?
   contentThemes   Json?
-  niche           String?
+  niche           Json?
   city            String?
   thankYouPageUrl     String?
   creatorCredentials  String?
@@ -107,6 +107,13 @@ model User {
   repurposeListSize String?
   repurposeVoice    String?
   savedLinks        Json?
+
+  // Onboarding
+  onboardingComplete     Boolean   @default(false)
+  onboardingDismissedAt  DateTime?
+  incomeGoal             String?
+  postingRhythm          Int?
+  biggestChallenge       String?
 
   lastYoutubeSyncAt    DateTime? @map("last_youtube_sync_at")
 
@@ -129,6 +136,7 @@ model User {
   lessonProgress       MemberLessonProgress[]
   homework             MemberHomework[]
   waitlistEntries      ServiceWaitlistEntry[]
+  helpConversations    HelpConversation[]
 
   @@map("users")
 }
@@ -663,4 +671,28 @@ model ServiceWaitlistEntry {
 
   @@unique([packageId, userId])
   @@map("service_waitlist_entries")
+}
+
+model HelpConversation {
+  id        String        @id @default(uuid())
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  HelpMessage[]
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([userId])
+  @@map("help_conversations")
+}
+
+model HelpMessage {
+  id             String           @id @default(uuid())
+  conversationId String
+  conversation   HelpConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           String
+  content        String           @db.Text
+  createdAt      DateTime         @default(now())
+
+  @@index([conversationId])
+  @@map("help_messages")
 }

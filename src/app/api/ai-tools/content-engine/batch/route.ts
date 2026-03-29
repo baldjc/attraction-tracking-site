@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
   let systemPrompt = buildBatchSystemPrompt({
     avatarProfile: dbUser?.avatarProfile ?? null,
     contentThemes: dbUser?.contentThemes ?? null,
-    niche: dbUser?.niche ?? null,
+    niche: (dbUser?.niche ?? null) as string | string[] | null,
     city: dbUser?.city ?? null,
     savedTitles: savedIdeas.map((i) => i.title),
     shownTitles,

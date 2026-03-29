@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 interface Props {
-  initialNiche?: string | null;
+  initialNiche?: string | string[] | null;
   initialCity?: string | null;
   onSaved: (niche: string, city: string | null) => void;
   isModal?: boolean;
@@ -16,7 +16,8 @@ const NICHES = [
 ];
 
 export default function NicheSetup({ initialNiche, initialCity, onSaved, isModal }: Props) {
-  const [niche, setNiche] = useState(initialNiche ?? "");
+  const nicheArr = Array.isArray(initialNiche) ? initialNiche : initialNiche ? [initialNiche] : [];
+  const [niche, setNiche] = useState(nicheArr[0] ?? "");
   const [city, setCity] = useState(initialCity ?? "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -29,7 +30,7 @@ export default function NicheSetup({ initialNiche, initialCity, onSaved, isModal
       const res = await fetch("/api/member/niche", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ niche, city: niche === "real_estate" ? city || null : null }),
+        body: JSON.stringify({ niche: niche ? [niche] : null, city: city || null }),
       });
       if (!res.ok) throw new Error("Failed to save");
       onSaved(niche, niche === "real_estate" ? city || null : null);

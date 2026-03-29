@@ -142,7 +142,7 @@ function extractActiveTheme(contentThemes: unknown, theme: string): { coreStress
 export function buildBatchSystemPrompt(opts: {
   avatarProfile: unknown;
   contentThemes: unknown;
-  niche: string | null;
+  niche: string | string[] | null;
   city: string | null;
   savedTitles: string[];
   shownTitles?: string[];
@@ -151,8 +151,16 @@ export function buildBatchSystemPrompt(opts: {
   const { avatarProfile, contentThemes, niche, city, savedTitles, shownTitles = [], theme } = opts;
   const currentYear = new Date().getFullYear();
 
-  const keywordKit = niche && KEYWORD_KITS[niche]
-    ? KEYWORD_KITS[niche]
+  // Normalise niche: array → joined string, legacy string → as-is, null → null
+  const nicheStr: string | null = Array.isArray(niche)
+    ? (niche.length > 0 ? niche.join(", ") : null)
+    : (niche ?? null);
+
+  // Use the first niche value for keyword kit lookup
+  const nichePrimary: string | null = Array.isArray(niche) ? (niche[0] ?? null) : niche;
+
+  const keywordKit = nichePrimary && KEYWORD_KITS[nichePrimary]
+    ? KEYWORD_KITS[nichePrimary]
         .map((k) => `  - "${k.keyword.replace("[CITY]", city ?? "your city").replace("[YEAR]", String(currentYear))}" (${k.priority})`)
         .join("\n")
     : "  No keyword kit — identify high-performing YouTube keywords for this niche based on search patterns.";
@@ -184,7 +192,7 @@ ALL CONTENT THEMES (for reference — generate ONLY for the active theme):
 ${JSON.stringify(contentThemes, null, 2)}
 ${activeThemeSection}
 
-MEMBER NICHE: ${niche ?? "general"}
+MEMBER NICHE: ${nicheStr ?? "real estate"}
 MEMBER CITY/MARKET: ${city ?? "not specified"}
 
 KEYWORD STARTER KIT:
@@ -254,7 +262,7 @@ OUTPUT FORMAT:
 export function buildChatSystemPrompt(opts: {
   avatarProfile: unknown;
   contentThemes: unknown;
-  niche: string | null;
+  niche: string | string[] | null;
   city: string | null;
   savedTitles: string[];
   theme: string;
