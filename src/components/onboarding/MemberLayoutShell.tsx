@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import OnboardingRedirect from "@/components/onboarding/OnboardingRedirect";
+import HelpWidget from "@/components/help/HelpWidget";
 
 interface Props {
   children: React.ReactNode;
@@ -32,6 +33,7 @@ export default function MemberLayoutShell({ children, role, userName, featureFla
           </div>
         </div>
       </main>
+      <HelpWidget />
     </div>
   );
 }
