@@ -35,7 +35,7 @@ export default function HelpWidget() {
         {open ? (
           <XMarkIcon className="w-5 h-5 text-white dark:text-[#1a1a1a]" />
         ) : (
-          <span className="text-white font-bold text-lg">K</span>
+          <span className="text-lg leading-none">🤖</span>
         )}
       </button>
     </>
