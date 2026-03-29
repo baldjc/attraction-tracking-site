@@ -28,16 +28,16 @@ export default function StepAboutYou({ initialCity, initialNiche, initialCredent
   const [otherText, setOtherText] = useState("");
   const [credentials, setCredentials] = useState(initialCredentials ?? "");
 
-  function toggleNiche(value: string) {
-    setSelectedNiches((prev) =>
-      prev.includes(value) ? prev.filter((n) => n !== value) : [...prev, value]
-    );
+  function selectNiche(value: string) {
+    setOtherActive(false);
+    setSelectedNiches((prev) => (prev[0] === value ? [] : [value]));
   }
 
   function handleContinue() {
-    const allNiches = [...selectedNiches];
-    if (otherActive && otherText.trim()) allNiches.push(otherText.trim());
-    onNext({ city, niche: allNiches, creatorCredentials: credentials });
+    const niche = otherActive && otherText.trim()
+      ? [otherText.trim()]
+      : selectedNiches;
+    onNext({ city, niche, creatorCredentials: credentials });
   }
 
   const chipBase = "rounded-full px-3 py-1.5 text-sm border cursor-pointer transition-colors select-none";
@@ -58,19 +58,19 @@ export default function StepAboutYou({ initialCity, initialNiche, initialCredent
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-[#2f3437] dark:text-white mb-2">Niche</label>
+        <label className="block text-sm font-medium text-[#2f3437] dark:text-white mb-2">Niche of your perfect client avatar</label>
         <div className="flex flex-wrap gap-2">
           {NICHE_OPTIONS.map((opt) => (
             <button
               key={opt.value}
-              onClick={() => toggleNiche(opt.value)}
-              className={`${chipBase} ${selectedNiches.includes(opt.value) ? chipSelected : chipUnselected}`}
+              onClick={() => selectNiche(opt.value)}
+              className={`${chipBase} ${selectedNiches[0] === opt.value ? chipSelected : chipUnselected}`}
             >
               {opt.label}
             </button>
           ))}
           <button
-            onClick={() => setOtherActive((v) => !v)}
+            onClick={() => { setSelectedNiches([]); setOtherActive((v) => !v); }}
             className={`${chipBase} ${otherActive ? chipSelected : chipUnselected}`}
           >
             Other
