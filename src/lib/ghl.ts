@@ -165,6 +165,23 @@ export async function updateContactCustomField(
   }
 }
 
+export async function sendSmsToContact(contactId: string, message: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${GHL_BASE_URL}/conversations/messages`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${getApiKey()}`,
+        Version: "2021-07-28",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ type: "SMS", contactId, message }),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 export async function fetchLocationCustomValues(): Promise<GHLCustomValue[]> {
   try {
     const res = await fetch(

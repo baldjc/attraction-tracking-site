@@ -199,6 +199,9 @@ export default function MemberDetailPage() {
   const [linking, setLinking] = useState(false);
   const [unlinking, setUnlinking] = useState(false);
 
+  const [sendingReminder, setSendingReminder] = useState(false);
+  const [reminderToast, setReminderToast] = useState<{ ok: boolean; msg: string } | null>(null);
+
   const [topVideos, setTopVideos] = useState<any[]>([]);
   const [topVideosLoading, setTopVideosLoading] = useState(false);
   const [topVideosNoChannel, setTopVideosNoChannel] = useState(false);
@@ -376,6 +379,25 @@ export default function MemberDetailPage() {
     setTierSaving(false);
     setTierSaved(true);
     setTimeout(() => setTierSaved(false), 2000);
+  }
+
+  async function handleSendPaymentReminder() {
+    setSendingReminder(true);
+    setReminderToast(null);
+    try {
+      const res = await fetch(`/api/admin/members/${id}/send-payment-reminder`, { method: "POST" });
+      const data = await res.json();
+      if (res.ok) {
+        setReminderToast({ ok: true, msg: "Payment reminder SMS sent." });
+      } else {
+        setReminderToast({ ok: false, msg: data.error ?? "Failed to send reminder." });
+      }
+    } catch {
+      setReminderToast({ ok: false, msg: "Network error — could not send reminder." });
+    } finally {
+      setSendingReminder(false);
+      setTimeout(() => setReminderToast(null), 5000);
+    }
   }
 
   async function searchStripeCustomers() {
@@ -695,9 +717,33 @@ export default function MemberDetailPage() {
                 )}
               </div>
             )}
+            {!isEditorRole && member.subscriptionStatus === "past_due" && (
+              <button
+                onClick={handleSendPaymentReminder}
+                disabled={sendingReminder}
+                className="inline-flex items-center gap-1.5 bg-amber-400 hover:bg-amber-500 disabled:opacity-60 text-[#2f3437] text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+              >
+                {sendingReminder ? "Sending…" : "Send Payment Reminder"}
+              </button>
+            )}
           </div>
         </div>
       </div>
+
+      {reminderToast && (
+        <div className={`rounded-lg px-5 py-3 flex items-center justify-between gap-4 ${
+          reminderToast.ok
+            ? "bg-green-50 border border-green-200"
+            : "bg-red-50 border border-[#ff0033]/20"
+        }`}>
+          <span className={`text-sm font-medium ${reminderToast.ok ? "text-green-700" : "text-[#ff0033]"}`}>
+            {reminderToast.msg}
+          </span>
+          <button onClick={() => setReminderToast(null)} className="text-xs text-[#2f3437]/40 hover:text-[#2f3437]">
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {/* STATS ROW */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
