@@ -46,10 +46,14 @@ export async function POST(
     ? `Hi ${firstName}, your Attraction by Video subscription payment is past due. Please update your payment details here: ${retryUrl}`
     : `Hi ${firstName}, your Attraction by Video subscription payment is past due. Please contact us to update your payment details and keep your access.`;
 
-  const sent = await sendSmsToContact(member.ghlContactId, message);
+  const result = await sendSmsToContact(member.ghlContactId, message);
 
-  if (!sent) {
-    return NextResponse.json({ error: "Failed to send SMS via GHL" }, { status: 500 });
+  if (!result.ok) {
+    const isScope = result.error?.includes("not authorized for this scope");
+    const userMsg = isScope
+      ? 'GHL API key is missing the "Conversations" scope. Go to GHL → Settings → Private Integrations, find the Attraction by Video key, and enable the Conversations scope, then regenerate the key.'
+      : (result.error ?? "Failed to send SMS via GHL");
+    return NextResponse.json({ error: userMsg }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true });

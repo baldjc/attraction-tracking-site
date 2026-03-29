@@ -165,7 +165,7 @@ export async function updateContactCustomField(
   }
 }
 
-export async function sendSmsToContact(contactId: string, message: string): Promise<boolean> {
+export async function sendSmsToContact(contactId: string, message: string): Promise<{ ok: boolean; error?: string }> {
   try {
     const res = await fetch(`${GHL_BASE_URL}/conversations/messages`, {
       method: "POST",
@@ -176,9 +176,15 @@ export async function sendSmsToContact(contactId: string, message: string): Prom
       },
       body: JSON.stringify({ type: "SMS", contactId, message }),
     });
-    return res.ok;
-  } catch {
-    return false;
+    const body = await res.text();
+    console.log(`[GHL SMS] status=${res.status} body=${body}`);
+    if (!res.ok) {
+      return { ok: false, error: `GHL ${res.status}: ${body}` };
+    }
+    return { ok: true };
+  } catch (e: any) {
+    console.error("[GHL SMS] fetch error:", e?.message);
+    return { ok: false, error: e?.message ?? "Unknown error" };
   }
 }
 
