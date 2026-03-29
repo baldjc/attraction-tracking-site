@@ -135,7 +135,7 @@ function MarkdownBlock({ content }: { content: string }) {
   return <div>{nodes}</div>;
 }
 
-// ─── Inline Avatar Profile Card ───────────────────────────────────────────────
+// ─── Avatar Profile Card (redesigned) ────────────────────────────────────────
 function AvatarProfileCard({
   avatar,
   onChange,
@@ -144,7 +144,7 @@ function AvatarProfileCard({
   onChange: (updated: SavedAvatar) => void;
 }) {
   const isEmpty = !avatar.avatarName;
-  const [editing, setEditing] = useState(isEmpty);
+  const [editing, setEditing] = useState(false);
   const [name, setName] = useState(avatar.avatarName ?? "");
   const [summary, setSummary] = useState(avatar.avatarSummary ?? "");
   const [themes, setThemes] = useState<string[]>(
@@ -168,9 +168,7 @@ function AvatarProfileCard({
 
   function addTheme() {
     const t = themeInput.trim();
-    if (t && !themes.includes(t)) {
-      setThemes((prev) => [...prev, t]);
-    }
+    if (t && !themes.includes(t)) setThemes((prev) => [...prev, t]);
     setThemeInput("");
   }
 
@@ -179,10 +177,7 @@ function AvatarProfileCard({
   }
 
   function handleThemeKeyDown(e: React.KeyboardEvent) {
-    if (e.key === "Enter" || e.key === ",") {
-      e.preventDefault();
-      addTheme();
-    }
+    if (e.key === "Enter" || e.key === ",") { e.preventDefault(); addTheme(); }
   }
 
   async function save() {
@@ -191,188 +186,137 @@ function AvatarProfileCard({
       const res = await fetch("/api/member/avatar", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          avatarName: name.trim(),
-          avatarSummary: summary.trim(),
-          contentThemes: themes,
-        }),
+        body: JSON.stringify({ avatarName: name.trim(), avatarSummary: summary.trim(), contentThemes: themes }),
       });
       if (res.ok) {
         const updated = await res.json();
-        onChange({
-          avatarName: updated.avatarName,
-          avatarSummary: updated.avatarSummary,
-          contentThemes: updated.contentThemes,
-          updatedAt: updated.updatedAt,
-        });
+        onChange({ avatarName: updated.avatarName, avatarSummary: updated.avatarSummary, contentThemes: updated.contentThemes, updatedAt: updated.updatedAt });
         setEditing(false);
         setThemeInput("");
-        setToast("Avatar updated");
+        setToast("Saved");
         setTimeout(() => setToast(null), 3000);
       }
-    } finally {
-      setSaving(false);
-    }
+    } finally { setSaving(false); }
   }
 
   const displayThemes = Array.isArray(avatar.contentThemes) ? avatar.contentThemes : [];
+  const hasThemes = displayThemes.length > 0;
   const lastUpdated = avatar.updatedAt
     ? new Date(avatar.updatedAt).toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" })
     : null;
 
-  return (
-    <div className="border border-[#6ba3c7]/30 rounded-lg overflow-hidden mb-6">
-      <div className="flex items-center justify-between px-4 py-3 bg-[#6ba3c7]/5">
-        <div className="flex items-center gap-2">
-          <span className="text-base">🎯</span>
-          <span className="text-xs font-semibold text-[#6ba3c7] uppercase tracking-wider">
-            {isEmpty ? "Save Your Avatar" : "Your Current Avatar"}
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          {toast && (
-            <span className="text-xs text-green-600 font-medium">{toast}</span>
-          )}
-          {!editing && (
-            <button
-              onClick={startEdit}
-              className="flex items-center gap-1 text-xs text-[#6ba3c7] hover:text-[#6ba3c7]/70 transition-colors font-medium"
-            >
-              <PencilIcon className="w-3.5 h-3.5" />
-              Edit
+  if (editing) {
+    return (
+      <div className="bg-white border border-[#6ba3c7]/30 rounded-xl overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-3 bg-[#6ba3c7]/5 border-b border-[#6ba3c7]/15">
+          <span className="text-xs font-semibold text-[#6ba3c7] uppercase tracking-wider">Edit Avatar</span>
+          <div className="flex items-center gap-2">
+            {toast && <span className="text-xs text-green-600 font-medium">{toast}</span>}
+            <button onClick={cancelEdit} disabled={saving} className="text-xs text-[#2f3437]/50 hover:text-[#2f3437] transition-colors">Cancel</button>
+            <button onClick={save} disabled={saving} className="px-3 py-1.5 bg-[#6ba3c7] text-white text-xs font-semibold rounded-lg hover:bg-[#6ba3c7]/90 disabled:opacity-50 transition-colors">
+              {saving ? "Saving…" : "Save Changes"}
             </button>
+          </div>
+        </div>
+        <div className="p-4 space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wider mb-1.5">Avatar Name</label>
+            <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Sarah the Suburban Mover"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wider mb-1.5">Summary</label>
+            <textarea value={summary} onChange={(e) => setSummary(e.target.value)} rows={4}
+              placeholder="A brief description of your avatar's situation, fears, and goals…"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40 resize-none" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wider mb-2">Content Themes</label>
+            <div className="space-y-2 mb-3">
+              {themes.map((t, i) => (
+                <div key={t} className="flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-[#6ba3c7]/10 text-[#6ba3c7] text-xs font-bold flex items-center justify-center shrink-0">{i + 1}</span>
+                  <input type="text" value={t} onChange={(e) => { const v = e.target.value; setThemes((prev) => prev.map((x, j) => j === i ? v : x)); }}
+                    className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40" />
+                  <button onClick={() => removeTheme(t)} className="p-1 text-[#2f3437]/30 hover:text-red-400 transition-colors"><XMarkIcon className="w-4 h-4" /></button>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <input type="text" value={themeInput} onChange={(e) => setThemeInput(e.target.value)} onKeyDown={handleThemeKeyDown}
+                placeholder="Add a theme and press Enter…"
+                className="flex-1 border border-dashed border-[#6ba3c7]/40 rounded-lg px-3 py-1.5 text-sm text-[#2f3437] placeholder-[#2f3437]/30 focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40" />
+              <button onClick={addTheme} className="px-3 py-1.5 bg-[#6ba3c7]/10 text-[#6ba3c7] text-xs font-semibold rounded-lg hover:bg-[#6ba3c7]/20 transition-colors flex items-center gap-1">
+                <PlusIcon className="w-3.5 h-3.5" /> Add
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {/* Identity card */}
+      <div className="bg-white border border-[#2f3437]/10 rounded-xl overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-2.5 bg-[#f7f6f3] border-b border-[#2f3437]/8">
+          <span className="text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wider">Client Avatar</span>
+          <div className="flex items-center gap-2">
+            {toast && <span className="text-xs text-green-600 font-medium">{toast}</span>}
+            {lastUpdated && <span className="text-xs text-[#2f3437]/30">Updated {lastUpdated}</span>}
+            <button onClick={startEdit} className="flex items-center gap-1 text-xs text-[#6ba3c7] hover:text-[#6ba3c7]/70 font-medium transition-colors">
+              <PencilIcon className="w-3 h-3" /> Edit
+            </button>
+          </div>
+        </div>
+        <div className="px-4 py-3">
+          {isEmpty ? (
+            <p className="text-sm text-[#2f3437]/40 italic">No avatar saved yet — start a session below to build one.</p>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-lg font-bold text-[#2f3437]">{avatar.avatarName}</p>
+              {avatar.avatarSummary && (
+                <p className="text-sm text-[#2f3437]/65 leading-relaxed line-clamp-3">{avatar.avatarSummary.replace(/\*\*/g, "")}</p>
+              )}
+            </div>
           )}
         </div>
       </div>
 
-      <div className="bg-white px-4 py-4">
-        {!editing ? (
-          <div className="space-y-3">
-            <div>
-              <p className="text-xs font-semibold text-[#2f3437]/40 uppercase tracking-wider mb-1">
-                Avatar Name
-              </p>
-              <p className="text-base font-bold text-[#2f3437]">
-                {avatar.avatarName || <span className="text-[#2f3437]/30 font-normal italic">Not set</span>}
-              </p>
-            </div>
-
-            {avatar.avatarSummary && (
-              <div>
-                <p className="text-xs font-semibold text-[#2f3437]/40 uppercase tracking-wider mb-2">
-                  Summary
-                </p>
-                <MarkdownBlock content={avatar.avatarSummary} />
-              </div>
-            )}
-
-            {displayThemes.length > 0 && (
-              <div>
-                <p className="text-xs font-semibold text-[#2f3437]/40 uppercase tracking-wider mb-1.5">
-                  Content Themes
-                </p>
-                <div className="flex flex-wrap gap-1.5">
-                  {displayThemes.map((t, i) => (
-                    <span
-                      key={i}
-                      className="text-xs bg-[#6ba3c7]/10 text-[#6ba3c7] font-medium px-2.5 py-1 rounded-full border border-[#6ba3c7]/20"
-                    >
-                      {getThemeEmoji(t) && <span className="mr-1">{getThemeEmoji(t)}</span>}
-                      {getThemeName(t)}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {lastUpdated && (
-              <p className="text-xs text-[#2f3437]/30">Last updated {lastUpdated}</p>
-            )}
+      {/* Content Themes — prominent separate card */}
+      <div className={`border rounded-xl overflow-hidden ${!hasThemes ? "border-amber-300" : "border-[#2f3437]/10"}`}>
+        <div className={`flex items-center justify-between px-4 py-2.5 border-b ${!hasThemes ? "bg-amber-50 border-amber-200" : "bg-[#f7f6f3] border-[#2f3437]/8"}`}>
+          <div>
+            <span className="text-xs font-semibold text-[#2f3437]/60 uppercase tracking-wider">Content Themes</span>
+            <p className="text-xs text-[#2f3437]/40 mt-0.5">Power the Content Engine with personalised video ideas</p>
+          </div>
+          {hasThemes && (
+            <button onClick={startEdit} className="flex items-center gap-1 text-xs text-[#6ba3c7] hover:text-[#6ba3c7]/70 font-medium transition-colors">
+              <PencilIcon className="w-3 h-3" /> Edit
+            </button>
+          )}
+        </div>
+        {!hasThemes ? (
+          <div className="bg-amber-50 px-4 py-4">
+            <p className="text-sm font-semibold text-amber-700 mb-1">⚠ No content themes set</p>
+            <p className="text-xs text-amber-600 leading-relaxed">
+              Themes are what the Content Engine uses to generate personalised video ideas for your avatar. Start or import an avatar session below — the AI will extract them automatically.
+            </p>
           </div>
         ) : (
-          <div className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold text-[#2f3437]/60 uppercase tracking-wider mb-1.5">
-                Avatar Name
-              </label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Sarah the Suburban Mover"
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-[#2f3437]/60 uppercase tracking-wider mb-1.5">
-                Summary
-              </label>
-              <textarea
-                value={summary}
-                onChange={(e) => setSummary(e.target.value)}
-                placeholder="A brief description of your avatar's situation, fears, and goals…"
-                rows={4}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40 resize-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-[#2f3437]/60 uppercase tracking-wider mb-1.5">
-                Content Themes
-              </label>
-              <div className="flex flex-wrap gap-1.5 mb-2">
-                {themes.map((t) => (
-                  <span
-                    key={t}
-                    className="flex items-center gap-1 text-xs bg-[#6ba3c7]/10 text-[#6ba3c7] font-medium px-2.5 py-1 rounded-full border border-[#6ba3c7]/20"
-                  >
-                    {t}
-                    <button
-                      onClick={() => removeTheme(t)}
-                      className="text-[#6ba3c7]/60 hover:text-[#ff0033] transition-colors"
-                    >
-                      <XMarkIcon className="w-3 h-3" />
-                    </button>
-                  </span>
-                ))}
+          <div className="bg-white divide-y divide-[#2f3437]/5">
+            {displayThemes.map((t, i) => (
+              <div key={i} className="flex items-center gap-3 px-4 py-3">
+                <span className="w-6 h-6 rounded-full bg-[#6ba3c7]/10 text-[#6ba3c7] text-xs font-bold flex items-center justify-center shrink-0">
+                  {i + 1}
+                </span>
+                <span className="text-sm font-medium text-[#2f3437]">
+                  {getThemeEmoji(t) && <span className="mr-1.5">{getThemeEmoji(t)}</span>}
+                  {getThemeName(t)}
+                </span>
               </div>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={themeInput}
-                  onChange={(e) => setThemeInput(e.target.value)}
-                  onKeyDown={handleThemeKeyDown}
-                  placeholder="Add a theme, press Enter…"
-                  className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40"
-                />
-                <button
-                  onClick={addTheme}
-                  className="p-2 bg-[#6ba3c7]/10 text-[#6ba3c7] rounded-lg hover:bg-[#6ba3c7]/20 transition-colors"
-                >
-                  <PlusIcon className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 pt-1">
-              <button
-                onClick={save}
-                disabled={saving}
-                className="px-4 py-2 bg-[#6ba3c7] text-white text-xs font-semibold rounded-lg hover:bg-[#6ba3c7]/90 disabled:opacity-50 transition-colors"
-              >
-                {saving ? "Saving…" : isEmpty ? "Save Avatar" : "Save Changes"}
-              </button>
-              {!isEmpty && (
-                <button
-                  onClick={cancelEdit}
-                  disabled={saving}
-                  className="px-4 py-2 border border-gray-200 text-[#2f3437]/60 text-xs font-semibold rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-              )}
-            </div>
+            ))}
           </div>
         )}
       </div>
@@ -552,50 +496,71 @@ export default function AvatarArchitectPage() {
 
   if (screen === "landing") {
     return (
-      <div className="max-w-xl mx-auto">
-        <div className="mb-5">
-          <Link
-            href="/member/ai-tools"
-            className="flex items-center gap-1.5 text-xs text-[#2f3437]/50 hover:text-[#6ba3c7] transition-colors mb-3"
-          >
+      <div className="max-w-5xl mx-auto">
+        {/* Header */}
+        <div className="mb-6">
+          <Link href="/member/ai-tools" className="flex items-center gap-1.5 text-xs text-[#2f3437]/50 hover:text-[#6ba3c7] transition-colors mb-3">
             <ArrowLeftIcon className="w-3.5 h-3.5" />
             Back to AI Tools
           </Link>
           <h1 className="text-2xl font-bold text-[#2f3437]">🎯 Avatar Architect</h1>
-          <p className="text-sm text-[#2f3437]/60 mt-1">Build your ideal client avatar through a guided coaching conversation</p>
+          <p className="text-sm text-[#2f3437]/60 mt-1">Build your ideal client avatar — it powers every AI tool on this platform</p>
         </div>
+
         <PromptEditor toolKey="avatar_architect_prompt" defaultPrompt="" placeholders={[]} />
-        <RecentConversations toolType="avatar_architect" refreshTrigger={refreshCounter} />
 
-        {!avatarLoading && (
-          <AvatarProfileCard avatar={savedAvatar ?? {}} onChange={setSavedAvatar} />
-        )}
+        {/* Two-column layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
 
-        {/* Existing avatar notice */}
-        {!avatarLoading && savedAvatar?.avatarName && (
-          <div className="mb-4 px-4 py-3 bg-[#6ba3c7]/8 border border-[#6ba3c7]/25 rounded-lg text-sm text-[#2f3437]/70">
-            You already have an avatar saved (<strong className="text-[#2f3437]">{savedAvatar.avatarName}</strong>). Starting either path will let you update it.
+          {/* Left — Avatar profile + themes (wider) */}
+          <div className="lg:col-span-3">
+            {avatarLoading ? (
+              <div className="h-48 bg-white border border-[#2f3437]/10 rounded-xl animate-pulse" />
+            ) : (
+              <AvatarProfileCard avatar={savedAvatar ?? {}} onChange={setSavedAvatar} />
+            )}
           </div>
-        )}
 
-        {/* Entry point cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2 mb-10">
-          <button
-            onClick={startFromScratch}
-            className="group text-left p-6 border-2 border-[#2f3437]/10 hover:border-[#6ba3c7]/50 bg-white hover:bg-[#6ba3c7]/3 rounded-lg transition-all duration-200 hover:shadow-[0_2px_8px_rgba(0,0,0,0.04)]"
-          >
-            <span className="text-3xl mb-3 block">🚀</span>
-            <p className="font-bold text-[#2f3437] text-base mb-1.5 group-hover:text-[#6ba3c7] transition-colors">Start from Scratch</p>
-            <p className="text-sm text-[#2f3437]/55 leading-relaxed">Build your avatar through a guided coaching conversation</p>
-          </button>
-          <button
-            onClick={() => setScreen("import")}
-            className="group text-left p-6 border-2 border-[#2f3437]/10 hover:border-[#6ba3c7]/50 bg-white hover:bg-[#6ba3c7]/3 rounded-lg transition-all duration-200 hover:shadow-[0_2px_8px_rgba(0,0,0,0.04)]"
-          >
-            <span className="text-3xl mb-3 block">📋</span>
-            <p className="font-bold text-[#2f3437] text-base mb-1.5 group-hover:text-[#6ba3c7] transition-colors">I Have an Existing Avatar</p>
-            <p className="text-sm text-[#2f3437]/55 leading-relaxed">Paste in notes, docs, or bullet points you already have and we&apos;ll build from there</p>
-          </button>
+          {/* Right — Actions + Recent */}
+          <div className="lg:col-span-2 space-y-4">
+            {!avatarLoading && savedAvatar?.avatarName && (
+              <div className="px-4 py-3 bg-[#6ba3c7]/8 border border-[#6ba3c7]/25 rounded-xl text-sm text-[#2f3437]/70 leading-relaxed">
+                You already have an avatar saved (<strong className="text-[#2f3437]">{savedAvatar.avatarName}</strong>). Either option below will let you update it.
+              </div>
+            )}
+
+            <div className="space-y-3">
+              <button
+                onClick={startFromScratch}
+                className="group w-full text-left p-5 border-2 border-[#2f3437]/10 hover:border-[#6ba3c7]/50 bg-white hover:bg-[#6ba3c7]/3 rounded-xl transition-all duration-200 hover:shadow-sm"
+              >
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl shrink-0">🚀</span>
+                  <div>
+                    <p className="font-bold text-[#2f3437] text-sm mb-1 group-hover:text-[#6ba3c7] transition-colors">
+                      {savedAvatar?.avatarName ? "Rebuild from Scratch" : "Start from Scratch"}
+                    </p>
+                    <p className="text-xs text-[#2f3437]/50 leading-relaxed">Guided coaching conversation — the AI will ask you questions and extract your avatar automatically</p>
+                  </div>
+                </div>
+              </button>
+
+              <button
+                onClick={() => setScreen("import")}
+                className="group w-full text-left p-5 border-2 border-[#2f3437]/10 hover:border-[#6ba3c7]/50 bg-white hover:bg-[#6ba3c7]/3 rounded-xl transition-all duration-200 hover:shadow-sm"
+              >
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl shrink-0">📋</span>
+                  <div>
+                    <p className="font-bold text-[#2f3437] text-sm mb-1 group-hover:text-[#6ba3c7] transition-colors">I Have an Existing Avatar</p>
+                    <p className="text-xs text-[#2f3437]/50 leading-relaxed">Paste in notes, docs, or bullet points — the AI will structure it and fill in the gaps</p>
+                  </div>
+                </div>
+              </button>
+            </div>
+
+            <RecentConversations toolType="avatar_architect" refreshTrigger={refreshCounter} />
+          </div>
         </div>
       </div>
     );
