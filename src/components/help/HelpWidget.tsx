@@ -29,7 +29,7 @@ export default function HelpWidget() {
         className={`fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full shadow-lg flex items-center justify-center hover:scale-105 transition-all ${
           open
             ? "bg-[#2f3437] dark:bg-white"
-            : `bg-black/25 hover:bg-black/40 backdrop-blur-sm ${pulse ? "ring-4 ring-white/20 animate-pulse" : ""}`
+            : `bg-black/10 hover:bg-black/20 backdrop-blur-sm ${pulse ? "ring-4 ring-white/10 animate-pulse" : ""}`
         }`}
       >
         {open ? (
