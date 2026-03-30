@@ -99,7 +99,7 @@ function elapsedLabel(createdAt: string) {
 const ACTIVE_STATUSES = ["queued", "downloading", "analysing", "generating"];
 
 export default function AuditsPage() {
-  const [tab, setTab] = useState<"requests" | "audits">("requests");
+  const [tab, setTab] = useState<"requests" | "audits">("audits");
 
   const [auditReqs, setAuditReqs] = useState<AuditRequestRow[]>([]);
   const [auditReqsLoading, setAuditReqsLoading] = useState(true);
@@ -351,13 +351,24 @@ export default function AuditsPage() {
       </div>
 
       {/* Tab bar */}
-      <div className="flex gap-1 mb-6 border-b border-gray-200">
+      <div className="inline-flex items-center gap-1 bg-[#eeecea] rounded-xl p-1 mb-6">
+        <button
+          onClick={() => setTab("audits")}
+          className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+            tab === "audits"
+              ? "bg-white text-[#2f3437] shadow-sm"
+              : "text-[#2f3437]/50 hover:text-[#2f3437]"
+          }`}
+        >
+          Member Audits
+          <span className="ml-2 text-xs text-[#2f3437]/40 font-normal">{audits.length}</span>
+        </button>
         <button
           onClick={() => setTab("requests")}
-          className={`px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
+          className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
             tab === "requests"
-              ? "border-[#6ba3c7] text-[#6ba3c7]"
-              : "border-transparent text-[#2f3437]/50 hover:text-[#2f3437]"
+              ? "bg-white text-[#2f3437] shadow-sm"
+              : "text-[#2f3437]/50 hover:text-[#2f3437]"
           }`}
         >
           Audit Requests
@@ -366,17 +377,6 @@ export default function AuditsPage() {
               {pendingCount}
             </span>
           )}
-        </button>
-        <button
-          onClick={() => setTab("audits")}
-          className={`px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
-            tab === "audits"
-              ? "border-[#6ba3c7] text-[#6ba3c7]"
-              : "border-transparent text-[#2f3437]/50 hover:text-[#2f3437]"
-          }`}
-        >
-          Member Audits
-          <span className="ml-2 text-xs text-[#2f3437]/40 font-normal">{audits.length}</span>
         </button>
       </div>
 
