@@ -147,17 +147,31 @@ function AvatarProfileCard({
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(avatar.avatarName ?? "");
   const [summary, setSummary] = useState(avatar.avatarSummary ?? "");
-  const [themes, setThemes] = useState<string[]>(
-    Array.isArray(avatar.contentThemes) ? avatar.contentThemes.map(getThemeName) : []
+  const [themes, setThemes] = useState<{ name: string; context: string }[]>(
+    Array.isArray(avatar.contentThemes)
+      ? avatar.contentThemes.map((t) => ({
+          name: getThemeName(t),
+          context: typeof t === "string" ? "" : (t.content_engine_prompt ?? ""),
+        }))
+      : []
   );
   const [themeInput, setThemeInput] = useState("");
+  const [buySideConstraint, setBuySideConstraint] = useState(false);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const MAX_THEMES = 4;
 
   function startEdit() {
     setName(avatar.avatarName ?? "");
     setSummary(avatar.avatarSummary ?? "");
-    setThemes(Array.isArray(avatar.contentThemes) ? avatar.contentThemes.map(getThemeName) : []);
+    setThemes(
+      Array.isArray(avatar.contentThemes)
+        ? avatar.contentThemes.map((t) => ({
+            name: getThemeName(t),
+            context: typeof t === "string" ? "" : (t.content_engine_prompt ?? ""),
+          }))
+        : []
+    );
     setEditing(true);
   }
 
@@ -168,12 +182,14 @@ function AvatarProfileCard({
 
   function addTheme() {
     const t = themeInput.trim();
-    if (t && !themes.includes(t)) setThemes((prev) => [...prev, t]);
+    if (t && themes.length < MAX_THEMES && !themes.some((th) => th.name === t)) {
+      setThemes((prev) => [...prev, { name: t, context: "" }]);
+    }
     setThemeInput("");
   }
 
-  function removeTheme(t: string) {
-    setThemes((prev) => prev.filter((x) => x !== t));
+  function removeTheme(idx: number) {
+    setThemes((prev) => prev.filter((_, j) => j !== idx));
   }
 
   function handleThemeKeyDown(e: React.KeyboardEvent) {
@@ -183,10 +199,15 @@ function AvatarProfileCard({
   async function save() {
     setSaving(true);
     try {
+      const BUY_SIDE_CONSTRAINT = "\n\n🚫 HARD CONSTRAINT — BUY-SIDE TITLES ONLY. This theme may involve sell-side stress, but the TITLE and FRAMING must be 100% buy-side. Sell-side content does not perform on YouTube. The viewer clicks because they're thinking about BUYING — the sell-side reality is revealed inside the content, never in the title.";
+      const themesToSave = themes.map((t) => ({
+        name: t.name,
+        content_engine_prompt: buySideConstraint ? (t.context + BUY_SIDE_CONSTRAINT) : t.context,
+      }));
       const res = await fetch("/api/member/avatar", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ avatarName: name.trim(), avatarSummary: summary.trim(), contentThemes: themes }),
+        body: JSON.stringify({ avatarName: name.trim(), avatarSummary: summary.trim(), contentThemes: themesToSave }),
       });
       if (res.ok) {
         const updated = await res.json();
@@ -225,31 +246,52 @@ function AvatarProfileCard({
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40" />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wider mb-1.5">Summary</label>
+            <label className="block text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wider mb-1.5">Avatar Description</label>
             <textarea value={summary} onChange={(e) => setSummary(e.target.value)} rows={4}
-              placeholder="A brief description of your avatar's situation, fears, and goals…"
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40 resize-none" />
+              placeholder="A description of your avatar's situation, fears, and goals…"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40 resize-y min-h-[100px]" />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wider mb-2">Content Themes</label>
-            <div className="space-y-2 mb-3">
+            <label className="block text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wider mb-2">Content Themes <span className="font-normal text-[#2f3437]/35">({themes.length}/{MAX_THEMES})</span></label>
+            <div className="space-y-4 mb-3">
               {themes.map((t, i) => (
-                <div key={t} className="flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-[#6ba3c7]/10 text-[#6ba3c7] text-xs font-bold flex items-center justify-center shrink-0">{i + 1}</span>
-                  <input type="text" value={t} onChange={(e) => { const v = e.target.value; setThemes((prev) => prev.map((x, j) => j === i ? v : x)); }}
-                    className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40" />
-                  <button onClick={() => removeTheme(t)} className="p-1 text-[#2f3437]/30 hover:text-red-400 transition-colors"><XMarkIcon className="w-4 h-4" /></button>
+                <div key={i} className="border border-[#6ba3c7]/20 rounded-lg overflow-hidden">
+                  <div className="flex items-center gap-2 px-3 py-2 bg-[#6ba3c7]/5">
+                    <span className="w-6 h-6 rounded-full bg-[#6ba3c7]/10 text-[#6ba3c7] text-xs font-bold flex items-center justify-center shrink-0">{i + 1}</span>
+                    <input type="text" value={t.name} onChange={(e) => { const v = e.target.value; setThemes((prev) => prev.map((x, j) => j === i ? { ...x, name: v } : x)); }}
+                      placeholder="Theme name…"
+                      className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm font-medium text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40 bg-white" />
+                    <button onClick={() => removeTheme(i)} className="p-1 text-[#2f3437]/30 hover:text-red-400 transition-colors"><XMarkIcon className="w-4 h-4" /></button>
+                  </div>
+                  <div className="px-3 py-2">
+                    <label className="block text-xs text-[#2f3437]/40 mb-1">AI Context &amp; Prompting</label>
+                    <textarea value={t.context} onChange={(e) => { const v = e.target.value; setThemes((prev) => prev.map((x, j) => j === i ? { ...x, context: v } : x)); }}
+                      rows={3}
+                      placeholder="Describe the stresses, angles, tone, and content engine prompting for this theme…"
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40 resize-y min-h-[60px]" />
+                  </div>
                 </div>
               ))}
             </div>
-            <div className="flex gap-2">
-              <input type="text" value={themeInput} onChange={(e) => setThemeInput(e.target.value)} onKeyDown={handleThemeKeyDown}
-                placeholder="Add a theme and press Enter…"
-                className="flex-1 border border-dashed border-[#6ba3c7]/40 rounded-lg px-3 py-1.5 text-sm text-[#2f3437] placeholder-[#2f3437]/30 focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40" />
-              <button onClick={addTheme} className="px-3 py-1.5 bg-[#6ba3c7]/10 text-[#6ba3c7] text-xs font-semibold rounded-lg hover:bg-[#6ba3c7]/20 transition-colors flex items-center gap-1">
-                <PlusIcon className="w-3.5 h-3.5" /> Add
-              </button>
-            </div>
+            {themes.length < MAX_THEMES && (
+              <div className="flex gap-2">
+                <input type="text" value={themeInput} onChange={(e) => setThemeInput(e.target.value)} onKeyDown={handleThemeKeyDown}
+                  placeholder="Add a theme and press Enter…"
+                  className="flex-1 border border-dashed border-[#6ba3c7]/40 rounded-lg px-3 py-1.5 text-sm text-[#2f3437] placeholder-[#2f3437]/30 focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40" />
+                <button onClick={addTheme} className="px-3 py-1.5 bg-[#6ba3c7]/10 text-[#6ba3c7] text-xs font-semibold rounded-lg hover:bg-[#6ba3c7]/20 transition-colors flex items-center gap-1">
+                  <PlusIcon className="w-3.5 h-3.5" /> Add
+                </button>
+              </div>
+            )}
+            {/* Buy-side constraint toggle */}
+            <label className="flex items-start gap-2 mt-3 cursor-pointer">
+              <input type="checkbox" checked={buySideConstraint} onChange={(e) => setBuySideConstraint(e.target.checked)}
+                className="mt-0.5 rounded border-gray-300 text-[#6ba3c7] focus:ring-[#6ba3c7]/40" />
+              <div>
+                <span className="text-xs font-semibold text-[#2f3437]/60">Enforce buy-side titles</span>
+                <p className="text-xs text-[#2f3437]/40 leading-relaxed mt-0.5">Automatically adds a constraint to all themes ensuring titles are framed from the buyer&apos;s perspective. Sell-side stress is revealed in the content, never in the title.</p>
+              </div>
+            </label>
           </div>
         </div>
       </div>
@@ -306,17 +348,25 @@ function AvatarProfileCard({
           </div>
         ) : (
           <div className="bg-white divide-y divide-[#2f3437]/5">
-            {displayThemes.map((t, i) => (
-              <div key={i} className="flex items-center gap-3 px-4 py-3">
-                <span className="w-6 h-6 rounded-full bg-[#6ba3c7]/10 text-[#6ba3c7] text-xs font-bold flex items-center justify-center shrink-0">
-                  {i + 1}
-                </span>
-                <span className="text-sm font-medium text-[#2f3437]">
-                  {getThemeEmoji(t) && <span className="mr-1.5">{getThemeEmoji(t)}</span>}
-                  {getThemeName(t)}
-                </span>
-              </div>
-            ))}
+            {displayThemes.map((t, i) => {
+              const prompt = typeof t === "string" ? null : (t.content_engine_prompt ?? null);
+              return (
+                <div key={i} className="px-4 py-3">
+                  <div className="flex items-center gap-3">
+                    <span className="w-6 h-6 rounded-full bg-[#6ba3c7]/10 text-[#6ba3c7] text-xs font-bold flex items-center justify-center shrink-0">
+                      {i + 1}
+                    </span>
+                    <span className="text-sm font-medium text-[#2f3437]">
+                      {getThemeEmoji(t) && <span className="mr-1.5">{getThemeEmoji(t)}</span>}
+                      {getThemeName(t)}
+                    </span>
+                  </div>
+                  {prompt && (
+                    <p className="text-xs text-[#2f3437]/45 leading-relaxed mt-1.5 ml-9 line-clamp-2">{prompt}</p>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -342,6 +392,15 @@ export default function AvatarArchitectPage() {
   const [refreshCounter, setRefreshCounter] = useState(0);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Theme Builder state
+  const [themeBuilderOpen, setThemeBuilderOpen] = useState<number | null>(null); // index of theme being built
+  const [themeMessages, setThemeMessages] = useState<Message[]>([]);
+  const [themeInput, setThemeInput] = useState("");
+  const [themeLoading, setThemeLoading] = useState(false);
+  const [pendingThemeData, setPendingThemeData] = useState<{ name: string; coreStress?: string; content_engine_prompt?: string } | null>(null);
+  const [themeSaved, setThemeSaved] = useState(false);
+  const themeBottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetch("/api/member/avatar")
@@ -494,6 +553,93 @@ export default function AvatarArchitectPage() {
     }
   }
 
+  // ─── Theme Builder functions ─────────────────────────────────────────────────
+  useEffect(() => {
+    themeBottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [themeMessages, themeLoading]);
+
+  async function startThemeBuilder(idx: number) {
+    const themes = Array.isArray(savedAvatar?.contentThemes) ? savedAvatar!.contentThemes! : [];
+    const theme = themes[idx];
+    const themeName = getThemeName(theme);
+    setThemeBuilderOpen(idx);
+    setThemeMessages([]);
+    setThemeInput("");
+    setPendingThemeData(null);
+    setThemeSaved(false);
+    setThemeLoading(true);
+
+    const avatarContext = `Avatar: ${savedAvatar?.avatarName ?? "Unknown"}\nSummary: ${savedAvatar?.avatarSummary ?? ""}`;
+    const startMsg: Message = { role: "user", content: "Start the theme builder session." };
+
+    const res = await fetch("/api/ai-tools/theme-builder", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages: [startMsg], themeName, avatarContext }),
+    });
+    const data = await res.json();
+    setThemeMessages([{ role: "assistant", content: data.message }]);
+    setThemeLoading(false);
+  }
+
+  async function sendThemeMessage() {
+    if (!themeInput.trim() || themeLoading || themeBuilderOpen === null) return;
+    const themes = Array.isArray(savedAvatar?.contentThemes) ? savedAvatar!.contentThemes! : [];
+    const theme = themes[themeBuilderOpen];
+    const themeName = getThemeName(theme);
+    const avatarContext = `Avatar: ${savedAvatar?.avatarName ?? "Unknown"}\nSummary: ${savedAvatar?.avatarSummary ?? ""}`;
+
+    const userMsg: Message = { role: "user", content: themeInput.trim() };
+    const newMessages = [...themeMessages, userMsg];
+    setThemeMessages(newMessages);
+    setThemeInput("");
+    setThemeLoading(true);
+
+    const res = await fetch("/api/ai-tools/theme-builder", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages: newMessages, themeName, avatarContext }),
+    });
+    const data = await res.json();
+    setThemeMessages([...newMessages, { role: "assistant", content: data.message }]);
+
+    // If theme data was extracted, store as pending for user to save
+    if (data.themeData) {
+      setPendingThemeData(data.themeData);
+      setThemeSaved(false);
+    }
+
+    setThemeLoading(false);
+  }
+
+  async function saveThemeData() {
+    if (!pendingThemeData || themeBuilderOpen === null) return;
+    const themes = Array.isArray(savedAvatar?.contentThemes) ? [...savedAvatar!.contentThemes!] : [];
+    const existing = themes[themeBuilderOpen];
+    const existingObj = typeof existing === "string" ? { name: existing } : { ...existing };
+    themes[themeBuilderOpen] = {
+      ...existingObj,
+      name: pendingThemeData.name ?? existingObj.name,
+      coreStress: pendingThemeData.coreStress ?? (existingObj as Record<string, unknown>).coreStress,
+      content_engine_prompt: pendingThemeData.content_engine_prompt ?? (existingObj as Record<string, unknown>).content_engine_prompt,
+    } as RawTheme;
+
+    await fetch("/api/member/avatar", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ contentThemes: themes }),
+    });
+    setSavedAvatar((prev) => prev ? { ...prev, contentThemes: themes } : prev);
+    setThemeSaved(true);
+  }
+
+  function handleThemeKey(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendThemeMessage();
+    }
+  }
+
   if (screen === "landing") {
     return (
       <div className="max-w-5xl mx-auto">
@@ -505,6 +651,27 @@ export default function AvatarArchitectPage() {
           </Link>
           <h1 className="text-2xl font-bold text-[#2f3437]">🎯 Avatar Architect</h1>
           <p className="text-sm text-[#2f3437]/60 mt-1">Build your ideal client avatar — it powers every AI tool on this platform</p>
+        </div>
+
+        {/* How it works — 2-step instructions */}
+        <div className="mb-6 bg-gradient-to-r from-[#6ba3c7]/5 to-[#6ba3c7]/10 border border-[#6ba3c7]/20 rounded-xl p-5">
+          <p className="text-xs font-semibold text-[#6ba3c7] uppercase tracking-wider mb-3">How it works</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="flex gap-3">
+              <span className="w-7 h-7 rounded-full bg-[#6ba3c7] text-white text-sm font-bold flex items-center justify-center shrink-0">1</span>
+              <div>
+                <p className="text-sm font-semibold text-[#2f3437]">Build Your Avatar</p>
+                <p className="text-xs text-[#2f3437]/55 leading-relaxed mt-0.5">Use the AI coach to create a deeply detailed profile of your ideal client — who they are, what stresses them, and how they think.</p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <span className="w-7 h-7 rounded-full bg-[#6ba3c7] text-white text-sm font-bold flex items-center justify-center shrink-0">2</span>
+              <div>
+                <p className="text-sm font-semibold text-[#2f3437]">Build Your Themes</p>
+                <p className="text-xs text-[#2f3437]/55 leading-relaxed mt-0.5">Use the Theme Builder to flesh out each of your content themes (up to 4) with the depth the Content Engine needs to generate personalised video ideas.</p>
+              </div>
+            </div>
+          </div>
         </div>
 
         <PromptEditor toolKey="avatar_architect_prompt" defaultPrompt="" placeholders={[]} />
@@ -562,6 +729,142 @@ export default function AvatarArchitectPage() {
             <RecentConversations toolType="avatar_architect" refreshTrigger={refreshCounter} />
           </div>
         </div>
+
+        {/* ─── Step 2: Theme Builder ──────────────────────────────────────────── */}
+        {!avatarLoading && savedAvatar?.avatarName && Array.isArray(savedAvatar.contentThemes) && savedAvatar.contentThemes.length > 0 && (
+          <div className="mt-8">
+            <div className="flex items-center gap-3 mb-4">
+              <span className="w-7 h-7 rounded-full bg-[#6ba3c7] text-white text-sm font-bold flex items-center justify-center shrink-0">2</span>
+              <div>
+                <h2 className="text-lg font-bold text-[#2f3437]">Theme Builder</h2>
+                <p className="text-xs text-[#2f3437]/55">Select a theme below to build out its depth with the AI coach — stresses, angles, tone, and Content Engine prompts.</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {savedAvatar.contentThemes.map((t, i) => {
+                const name = getThemeName(t);
+                const emoji = getThemeEmoji(t);
+                const hasPrompt = typeof t !== "string" && !!t.content_engine_prompt;
+                const isActive = themeBuilderOpen === i;
+                return (
+                  <button
+                    key={i}
+                    onClick={() => isActive ? setThemeBuilderOpen(null) : startThemeBuilder(i)}
+                    className={`group text-left p-4 border-2 rounded-xl transition-all duration-200 ${
+                      isActive
+                        ? "border-[#6ba3c7] bg-[#6ba3c7]/5 shadow-sm"
+                        : "border-[#2f3437]/10 hover:border-[#6ba3c7]/50 bg-white hover:bg-[#6ba3c7]/3 hover:shadow-sm"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="w-6 h-6 rounded-full bg-[#6ba3c7]/10 text-[#6ba3c7] text-xs font-bold flex items-center justify-center shrink-0">{i + 1}</span>
+                      {emoji && <span>{emoji}</span>}
+                      <span className="text-sm font-semibold text-[#2f3437] group-hover:text-[#6ba3c7] transition-colors">{name}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 ml-8">
+                      {hasPrompt ? (
+                        <span className="text-xs text-green-600 font-medium">Built</span>
+                      ) : (
+                        <span className="text-xs text-amber-600 font-medium">Needs depth</span>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Theme Builder Chat */}
+            {themeBuilderOpen !== null && (
+              <div className="mt-4 border border-[#6ba3c7]/30 rounded-xl overflow-hidden bg-white">
+                <div className="flex items-center justify-between px-4 py-3 bg-[#6ba3c7]/5 border-b border-[#6ba3c7]/15">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold text-[#6ba3c7] uppercase tracking-wider">
+                      Building: {getThemeName(savedAvatar.contentThemes[themeBuilderOpen])}
+                    </span>
+                  </div>
+                  <button onClick={() => setThemeBuilderOpen(null)} className="text-xs text-[#2f3437]/50 hover:text-[#2f3437] transition-colors">
+                    Close
+                  </button>
+                </div>
+
+                {/* Chat messages */}
+                <div className="max-h-[400px] overflow-y-auto p-4 space-y-3">
+                  {themeMessages.map((msg, i) => (
+                    <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                      <div
+                        className={`max-w-[85%] rounded-lg px-4 py-3 text-sm leading-relaxed ${
+                          msg.role === "user"
+                            ? "bg-[#111] text-white rounded-tr-sm whitespace-pre-wrap"
+                            : "bg-[#f7f6f3] border border-[#2f3437]/10 text-[#2f3437] rounded-tl-sm"
+                        }`}
+                      >
+                        {msg.role === "assistant" ? (
+                          <MarkdownMessage>{msg.content}</MarkdownMessage>
+                        ) : (
+                          msg.content
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  {themeLoading && (
+                    <div className="flex justify-start">
+                      <div className="bg-[#f7f6f3] border border-[#2f3437]/10 rounded-lg rounded-tl-sm px-4 py-3">
+                        <div className="flex gap-1.5">
+                          <span className="w-2 h-2 bg-[#6ba3c7]/40 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                          <span className="w-2 h-2 bg-[#6ba3c7]/40 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                          <span className="w-2 h-2 bg-[#6ba3c7]/40 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  <div ref={themeBottomRef} />
+                </div>
+
+                {/* Save theme banner */}
+                {pendingThemeData && !themeSaved && (
+                  <div className="mx-4 mb-2 flex items-center justify-between gap-3 bg-[#6ba3c7]/10 border border-[#6ba3c7]/30 rounded-lg p-3">
+                    <div>
+                      <p className="text-sm font-semibold text-[#2f3437]">Theme ready: <strong>{pendingThemeData.name}</strong></p>
+                      <p className="text-xs text-[#2f3437]/55 mt-0.5">Save it to your avatar profile so the Content Engine can use it.</p>
+                    </div>
+                    <button
+                      onClick={saveThemeData}
+                      className="px-4 py-2 bg-[#6ba3c7] text-white text-xs font-semibold rounded-lg hover:bg-[#6ba3c7]/90 transition-colors shrink-0"
+                    >
+                      Save Theme
+                    </button>
+                  </div>
+                )}
+                {themeSaved && (
+                  <div className="mx-4 mb-2 flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg p-3">
+                    <CheckIcon className="w-4 h-4 text-green-600" />
+                    <p className="text-sm font-medium text-green-800">Theme saved to your avatar profile.</p>
+                  </div>
+                )}
+
+                {/* Input */}
+                <div className="border-t border-[#2f3437]/10 p-3 flex gap-2">
+                  <textarea
+                    value={themeInput}
+                    onChange={(e) => setThemeInput(e.target.value)}
+                    onKeyDown={handleThemeKey}
+                    rows={2}
+                    placeholder="Type your response…"
+                    className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm text-[#2f3437] placeholder-[#2f3437]/30 focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40 resize-none"
+                  />
+                  <button
+                    onClick={sendThemeMessage}
+                    disabled={!themeInput.trim() || themeLoading}
+                    className="self-end px-4 py-2 bg-[#6ba3c7] text-white text-sm font-semibold rounded-lg hover:bg-[#6ba3c7]/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Send
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     );
   }

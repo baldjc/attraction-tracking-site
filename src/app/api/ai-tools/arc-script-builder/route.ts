@@ -303,7 +303,7 @@ export async function POST(req: NextRequest) {
 
   const dbUser = await prisma.user.findUnique({
     where: { id: sessionUser.id },
-    select: { id: true, role: true, avatarProfile: true, creatorCredentials: true, aiToolsMonthlyCapOverride: true },
+    select: { id: true, role: true, avatarProfile: true, contentThemes: true, creatorCredentials: true, aiToolsMonthlyCapOverride: true },
   });
   if (!dbUser) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
@@ -370,13 +370,21 @@ export async function POST(req: NextRequest) {
         "No avatar saved. Recommend the member build their avatar first using the Avatar Architect. Write to a general audience but note this in the Research & Strategy section.";
     }
 
-    const rawThemes = (avatarProfile?.contentThemes ?? avatarProfile?.content_themes ?? []) as any[];
+    // Prefer the direct contentThemes field (most up-to-date), fall back to avatarProfile blob
+    const rawThemes = (
+      Array.isArray(dbUser.contentThemes) && dbUser.contentThemes.length > 0
+        ? dbUser.contentThemes
+        : (avatarProfile?.contentThemes ?? avatarProfile?.content_themes ?? [])
+    ) as any[];
     const themesText =
       rawThemes.length > 0
         ? rawThemes
             .map((t: any) => {
               if (typeof t === "string") return `- ${t}`;
-              return `- ${t.name ?? t}${t.coreStress ? ` (${t.coreStress})` : ""}`;
+              let line = `- ${t.name ?? t}`;
+              if (t.coreStress) line += `\n  Core stress: "${t.coreStress}"`;
+              if (t.content_engine_prompt) line += `\n  Theme context: ${t.content_engine_prompt.slice(0, 300)}${t.content_engine_prompt.length > 300 ? "…" : ""}`;
+              return line;
             })
             .join("\n")
         : "(no content themes saved)";

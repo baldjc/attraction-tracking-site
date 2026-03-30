@@ -23,7 +23,7 @@ function extractTitles(text: string): string[] {
 async function getMemberContext(userId: string) {
   const dbUser = await prisma.user.findUnique({
     where: { id: userId },
-    select: { avatarProfile: true },
+    select: { avatarProfile: true, contentThemes: true },
   });
   const latestAudit = await prisma.audit.findFirst({
     where: { userId, auditType: "baseline" },
@@ -33,10 +33,26 @@ async function getMemberContext(userId: string) {
   const avatarText = dbUser?.avatarProfile
     ? JSON.stringify(dbUser.avatarProfile)
     : "No avatar saved";
+
+  // Build theme context for title evaluation
+  let themesText = "";
+  if (Array.isArray(dbUser?.contentThemes) && dbUser.contentThemes.length > 0) {
+    themesText = "\n\nCONTENT THEMES (use to evaluate if title speaks to the right theme):\n";
+    for (const t of dbUser.contentThemes as any[]) {
+      if (typeof t === "string") {
+        themesText += `- ${t}\n`;
+      } else {
+        themesText += `- ${t.name ?? t}`;
+        if (t.coreStress) themesText += ` — "${t.coreStress}"`;
+        themesText += "\n";
+      }
+    }
+  }
+
   const titleFrameworksScore = latestAudit?.scores
     ? (latestAudit.scores as any)?.title_frameworks?.score ?? "N/A"
     : "N/A";
-  return { avatarText, titleFrameworksScore };
+  return { avatarText: avatarText + themesText, titleFrameworksScore };
 }
 
 export async function POST(req: NextRequest) {

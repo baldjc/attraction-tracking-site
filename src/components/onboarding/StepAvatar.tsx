@@ -150,7 +150,7 @@ export default function StepAvatar({ existingAvatarName, existingContentThemes, 
         )}
         {extractedData?.avatar_summary && (
           <div>
-            <p className="text-xs font-semibold text-[#2f3437]/40 dark:text-white/30 uppercase tracking-wide">Summary</p>
+            <p className="text-xs font-semibold text-[#2f3437]/40 dark:text-white/30 uppercase tracking-wide">Avatar Description</p>
             <p className="text-sm text-[#2f3437]/70 dark:text-white/60 mt-0.5 line-clamp-3">{extractedData.avatar_summary}</p>
           </div>
         )}

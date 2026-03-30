@@ -31,12 +31,24 @@ function buildAvatarContext(user: any): { block: string; name: string | null } {
         ? JSON.parse(user.contentThemes)
         : user.contentThemes;
       if (Array.isArray(themes) && themes.length > 0) {
-        block += `Content Themes: ${themes.join(", ")}\n`;
+        block += "Content Themes:\n";
+        for (const t of themes) {
+          if (typeof t === "string") {
+            block += `  - ${t}\n`;
+          } else {
+            block += `  - ${t.name ?? t}`;
+            if (t.coreStress) block += ` — "${t.coreStress}"`;
+            block += "\n";
+            if (t.content_engine_prompt) {
+              block += `    Context: ${t.content_engine_prompt.slice(0, 200)}${t.content_engine_prompt.length > 200 ? "…" : ""}\n`;
+            }
+          }
+        }
       }
     } catch {
     }
   }
-  block += "Use the avatar context to calibrate your feedback — does the script speak to the right person?\n";
+  block += "Use the avatar context to calibrate your feedback — does the script speak to the right person and address the right theme's stresses?\n";
   return { block, name: user.avatarName ?? null };
 }
 
