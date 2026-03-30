@@ -1300,6 +1300,13 @@ function SettingsPageInner() {
         rows={50}
         icon={<SparklesIcon className="w-5 h-5 text-[#6ba3c7]" />}
       />
+      <PromptEditorSection
+        title="Theme Builder — System Prompt"
+        description="System prompt for the Theme Builder coaching tool inside Avatar Architect. Controls the coaching flow for building a single content theme into a complete content engine prompt, including buy-side framing rules and title framework examples. Reset to restore the built-in prompt."
+        settingKey="theme_builder_prompt"
+        rows={40}
+        icon={<SparklesIcon className="w-5 h-5 text-[#6ba3c7]" />}
+      />
       </>}
     </div>
   );
