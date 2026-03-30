@@ -188,6 +188,64 @@ export async function sendSmsToContact(contactId: string, message: string): Prom
   }
 }
 
+export async function updateGHLCustomValue(
+  ghlValueId: string,
+  value: string
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const res = await fetch(
+      `${GHL_BASE_URL}/locations/${getLocationId()}/customValues/${ghlValueId}`,
+      {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${getApiKey()}`,
+          "Content-Type": "application/json",
+          Version: "2021-07-28",
+        },
+        body: JSON.stringify({ value }),
+      }
+    );
+    if (!res.ok) {
+      const body = await res.text();
+      return { ok: false, error: body };
+    }
+    return { ok: true };
+  } catch (e: any) {
+    return { ok: false, error: e?.message ?? "Unknown error" };
+  }
+}
+
+export async function createGHLContact(data: {
+  firstName: string;
+  lastName?: string;
+  email: string;
+  phone?: string;
+  tags?: string[];
+}): Promise<{ ok: boolean; contactId?: string; error?: string }> {
+  try {
+    const res = await fetch(`${GHL_BASE_URL}/contacts/`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${getApiKey()}`,
+        "Content-Type": "application/json",
+        Version: "2021-07-28",
+      },
+      body: JSON.stringify({
+        locationId: getLocationId(),
+        ...data,
+      }),
+    });
+    if (!res.ok) {
+      const body = await res.text();
+      return { ok: false, error: body };
+    }
+    const d = await res.json();
+    return { ok: true, contactId: d.contact?.id };
+  } catch (e: any) {
+    return { ok: false, error: e?.message ?? "Unknown error" };
+  }
+}
+
 export async function fetchLocationCustomValues(): Promise<GHLCustomValue[]> {
   try {
     const res = await fetch(
