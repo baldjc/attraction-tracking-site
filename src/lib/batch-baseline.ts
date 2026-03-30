@@ -26,7 +26,7 @@ export async function runBaselineBatch() {
   // Find all members with YouTube set who have no baseline audit
   const allMembers = await prisma.user.findMany({
     where: {
-      role: { not: UserRole.admin },
+      role: { notIn: [UserRole.admin, UserRole.audit_lead] },
       OR: [
         { youtubeHandle: { not: null } },
         { youtubeChannelUrl: { not: null } },

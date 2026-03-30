@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
   // Count eligible members to return immediately
   const members = await prisma.user.findMany({
     where: {
-      role: { not: UserRole.admin },
+      role: { notIn: [UserRole.admin, UserRole.audit_lead] },
       OR: [
         { youtubeHandle: { not: null } },
         { youtubeChannelUrl: { not: null } },

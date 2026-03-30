@@ -766,6 +766,8 @@ export default function AuditsPage() {
           </table>
         </div>
       </div>
+      </div>
+      )}
     </div>
   );
 }
