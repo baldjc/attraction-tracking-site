@@ -11,6 +11,12 @@ enum UserRole {
   admin
   editor
   foundations_member
+  audit_lead
+}
+
+enum AuditRequestStatus {
+  pending
+  audited
 }
 
 enum ServiceTier {
@@ -696,4 +702,23 @@ model HelpMessage {
 
   @@index([conversationId])
   @@map("help_messages")
+}
+
+model AuditRequest {
+  id                   String             @id @default(uuid())
+  fullName             String
+  email                String
+  phone                String?
+  youtubeChannelUrl    String
+  currentYoutubeIncome String?
+  desiredYoutubeIncome String?
+  status               AuditRequestStatus @default(pending)
+  userId               String?
+  auditId              String?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  @@index([email])
+  @@index([status])
+  @@map("audit_requests")
 }

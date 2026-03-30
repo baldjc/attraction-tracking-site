@@ -4,6 +4,20 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { ArrowPathIcon, PlayIcon, CheckCircleIcon, XCircleIcon } from "@heroicons/react/24/outline";
 
+interface AuditRequestRow {
+  id: string;
+  fullName: string;
+  email: string;
+  phone: string | null;
+  youtubeChannelUrl: string;
+  currentYoutubeIncome: string | null;
+  desiredYoutubeIncome: string | null;
+  status: "pending" | "audited";
+  userId: string | null;
+  auditId: string | null;
+  createdAt: string;
+}
+
 interface AuditRow {
   id: string;
   auditType: string;
@@ -85,6 +99,12 @@ function elapsedLabel(createdAt: string) {
 const ACTIVE_STATUSES = ["queued", "downloading", "analysing", "generating"];
 
 export default function AuditsPage() {
+  const [tab, setTab] = useState<"requests" | "audits">("requests");
+
+  const [auditReqs, setAuditReqs] = useState<AuditRequestRow[]>([]);
+  const [auditReqsLoading, setAuditReqsLoading] = useState(true);
+  const [runningRequestId, setRunningRequestId] = useState<string | null>(null);
+
   const [audits, setAudits] = useState<AuditRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [typeFilter, setTypeFilter] = useState("");
@@ -105,6 +125,7 @@ export default function AuditsPage() {
   const [, forceUpdate] = useState(0);
 
   useEffect(() => {
+    fetchAuditRequests();
     fetchAudits();
     fetchBatchStatus();
     fetchBaselineBatchStatus();
@@ -167,6 +188,34 @@ export default function AuditsPage() {
       if (baselinePollRef.current) clearInterval(baselinePollRef.current);
     };
   }, [baselineBatchStatus?.status]);
+
+  async function fetchAuditRequests() {
+    setAuditReqsLoading(true);
+    try {
+      const res = await fetch("/api/admin/audit-requests");
+      const data = await res.json();
+      setAuditReqs(data.requests ?? []);
+    } finally {
+      setAuditReqsLoading(false);
+    }
+  }
+
+  async function handleRunAuditRequest(id: string) {
+    setRunningRequestId(id);
+    try {
+      const res = await fetch(`/api/admin/audit-requests/${id}/run`, { method: "POST" });
+      const data = await res.json();
+      if (data.error) {
+        alert(data.error);
+      } else {
+        await fetchAuditRequests();
+        await fetchActiveJobs();
+        setTab("audits");
+      }
+    } finally {
+      setRunningRequestId(null);
+    }
+  }
 
   async function fetchAudits() {
     setLoading(true);
@@ -273,12 +322,13 @@ export default function AuditsPage() {
   const isRunning = batchStatus?.status === "running";
   const isBaselineRunning = baselineBatchStatus?.status === "running";
 
+  const pendingCount = auditReqs.filter((r) => r.status === "pending").length;
+
   return (
     <div>
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
         <div>
           <h1 className="text-2xl font-bold text-[#2f3437]">Audits</h1>
-          <p className="text-[#2f3437]/60 mt-1">{audits.length} total audit{audits.length !== 1 ? "s" : ""}</p>
         </div>
         <div className="flex flex-wrap gap-2 shrink-0">
           <button
@@ -299,6 +349,127 @@ export default function AuditsPage() {
           </button>
         </div>
       </div>
+
+      {/* Tab bar */}
+      <div className="flex gap-1 mb-6 border-b border-gray-200">
+        <button
+          onClick={() => setTab("requests")}
+          className={`px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
+            tab === "requests"
+              ? "border-[#6ba3c7] text-[#6ba3c7]"
+              : "border-transparent text-[#2f3437]/50 hover:text-[#2f3437]"
+          }`}
+        >
+          Audit Requests
+          {pendingCount > 0 && (
+            <span className="ml-2 px-1.5 py-0.5 rounded-full bg-[#6ba3c7] text-white text-xs font-bold">
+              {pendingCount}
+            </span>
+          )}
+        </button>
+        <button
+          onClick={() => setTab("audits")}
+          className={`px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
+            tab === "audits"
+              ? "border-[#6ba3c7] text-[#6ba3c7]"
+              : "border-transparent text-[#2f3437]/50 hover:text-[#2f3437]"
+          }`}
+        >
+          Member Audits
+          <span className="ml-2 text-xs text-[#2f3437]/40 font-normal">{audits.length}</span>
+        </button>
+      </div>
+
+      {/* Audit Requests tab */}
+      {tab === "requests" && (
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm text-[#2f3437]/60">{auditReqs.length} request{auditReqs.length !== 1 ? "s" : ""}</p>
+            <button
+              onClick={fetchAuditRequests}
+              className="flex items-center gap-1.5 text-xs text-[#2f3437]/50 hover:text-[#2f3437] transition-colors"
+            >
+              <ArrowPathIcon className="w-3.5 h-3.5" /> Refresh
+            </button>
+          </div>
+          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-gray-50 border-b border-gray-200">
+                    {["Date", "Lead", "YouTube Channel", "Current Income", "Desired Income", "Status", "Action"].map((h) => (
+                      <th key={h} className="text-left px-5 py-3 text-xs font-semibold text-[#2f3437]/60 uppercase tracking-wider whitespace-nowrap">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {auditReqsLoading ? (
+                    <tr><td colSpan={7} className="px-6 py-12 text-center text-[#2f3437]/40">Loading…</td></tr>
+                  ) : auditReqs.length === 0 ? (
+                    <tr><td colSpan={7} className="px-6 py-12 text-center text-[#2f3437]/40">No audit requests yet.</td></tr>
+                  ) : auditReqs.map((r) => (
+                    <tr key={r.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-5 py-3 text-[#2f3437]/60 whitespace-nowrap text-xs">{fmt(r.createdAt)}</td>
+                      <td className="px-5 py-3">
+                        <p className="font-medium text-[#2f3437]">{r.fullName}</p>
+                        <p className="text-xs text-[#2f3437]/50">{r.email}</p>
+                        {r.phone && <p className="text-xs text-[#2f3437]/40">{r.phone}</p>}
+                      </td>
+                      <td className="px-5 py-3 max-w-[220px]">
+                        <a
+                          href={r.youtubeChannelUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[#6ba3c7] hover:underline text-xs truncate block"
+                        >
+                          {r.youtubeChannelUrl}
+                        </a>
+                      </td>
+                      <td className="px-5 py-3 text-xs text-[#2f3437]/70 whitespace-nowrap">{r.currentYoutubeIncome ?? "—"}</td>
+                      <td className="px-5 py-3 text-xs text-[#2f3437]/70 whitespace-nowrap">{r.desiredYoutubeIncome ?? "—"}</td>
+                      <td className="px-5 py-3">
+                        <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${
+                          r.status === "audited"
+                            ? "bg-green-100 text-green-700"
+                            : "bg-amber-100 text-amber-700"
+                        }`}>
+                          {r.status === "audited" ? "Audited" : "Pending"}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3">
+                        {r.status === "audited" ? (
+                          r.auditId ? (
+                            <Link href={`/admin/audits/${r.auditId}`} className="text-[#6ba3c7] hover:underline text-xs font-medium whitespace-nowrap">
+                              View Report →
+                            </Link>
+                          ) : r.userId ? (
+                            <Link href={`/admin/members/${r.userId}`} className="text-[#6ba3c7] hover:underline text-xs font-medium whitespace-nowrap">
+                              View Member →
+                            </Link>
+                          ) : <span className="text-xs text-[#2f3437]/40">Complete</span>
+                        ) : (
+                          <button
+                            onClick={() => handleRunAuditRequest(r.id)}
+                            disabled={runningRequestId === r.id}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[#6ba3c7] hover:bg-[#2ab0ec] text-white disabled:opacity-50 transition-colors whitespace-nowrap"
+                          >
+                            <PlayIcon className="w-3 h-3" />
+                            {runningRequestId === r.id ? "Starting…" : "Run Audit"}
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Member Audits tab */}
+      {tab === "audits" && (
+      <div>
 
       {/* Active Jobs section */}
       {activeJobs.length > 0 && (

@@ -50,7 +50,7 @@ interface SidebarProps {
 const adminLinks = [
   { href: "/admin", label: "Dashboard", icon: HomeIcon },
   { href: "/admin/members", label: "Members", icon: UsersIcon },
-  { href: "/admin/audits", label: "Audits", icon: ClipboardDocumentListIcon },
+  { href: "/admin/audits", label: "Audits", icon: ClipboardDocumentListIcon, badgeKey: "auditRequests" },
   { href: "/admin/qa-prep", label: "Q&A Prep", icon: ChatBubbleLeftRightIcon },
   { href: "/admin/academy", label: "Academy", icon: AcademicCapIcon },
   { href: "/admin/academy-manager", label: "Academy Manager", icon: WrenchScrewdriverIcon, badgeKey: "qaCallsPending" },
@@ -92,6 +92,7 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
   const [showSwitch, setShowSwitch] = useState(false);
   const [qaCallsPending, setQaCallsPending] = useState(0);
   const [hireWaitlist, setHireWaitlist] = useState(0);
+  const [auditRequests, setAuditRequests] = useState(0);
 
   const isStaff = role === "admin" || role === "editor";
   const isImpersonating = !!impersonate;
@@ -105,6 +106,10 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
       fetch("/api/admin/hire/waitlist/count")
         .then((r) => r.ok ? r.json() : null)
         .then((d) => d && setHireWaitlist(d.count ?? 0))
+        .catch(() => {});
+      fetch("/api/admin/audit-requests/count")
+        .then((r) => r.ok ? r.json() : null)
+        .then((d) => d && setAuditRequests(d.count ?? 0))
         .catch(() => {});
     }
   }, [role, pathname]);
@@ -234,7 +239,7 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
 
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
         {(() => {
-          const badges: Record<string, number> = { qaCallsPending, hireWaitlist };
+          const badges: Record<string, number> = { qaCallsPending, hireWaitlist, auditRequests };
           const renderedSections = new Set<string>();
           return links.map((link) => {
             const Icon = link.icon;
