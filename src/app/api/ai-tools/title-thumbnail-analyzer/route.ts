@@ -23,7 +23,7 @@ function extractTitles(text: string): string[] {
 async function getMemberContext(userId: string) {
   const dbUser = await prisma.user.findUnique({
     where: { id: userId },
-    select: { avatarProfile: true },
+    select: { avatarProfile: true, contentThemes: true },
   });
   const latestAudit = await prisma.audit.findFirst({
     where: { userId, auditType: "baseline" },
@@ -33,10 +33,26 @@ async function getMemberContext(userId: string) {
   const avatarText = dbUser?.avatarProfile
     ? JSON.stringify(dbUser.avatarProfile)
     : "No avatar saved";
+
+  // Build theme context for title evaluation
+  let themesText = "";
+  if (Array.isArray(dbUser?.contentThemes) && dbUser.contentThemes.length > 0) {
+    themesText = "\n\nCONTENT THEMES (use to evaluate if title speaks to the right theme):\n";
+    for (const t of dbUser.contentThemes as any[]) {
+      if (typeof t === "string") {
+        themesText += `- ${t}\n`;
+      } else {
+        themesText += `- ${t.name ?? t}`;
+        if (t.coreStress) themesText += ` — "${t.coreStress}"`;
+        themesText += "\n";
+      }
+    }
+  }
+
   const titleFrameworksScore = latestAudit?.scores
     ? (latestAudit.scores as any)?.title_frameworks?.score ?? "N/A"
     : "N/A";
-  return { avatarText, titleFrameworksScore };
+  return { avatarText: avatarText + themesText, titleFrameworksScore };
 }
 
 export async function POST(req: NextRequest) {
@@ -127,9 +143,11 @@ Your role: Help the member refine titles, create variations, adapt for different
     ? `\n\nA video intro transcript has also been provided. Additionally evaluate whether this intro "approves the click" — does it deliver on the promise made by the title and thumbnail, and would the viewer feel satisfied they clicked? Include an "intro" key in your JSON response with: {"intro": {"score": <0-20>, "approves_click": <bool>, "observations": ["..."], "improvements": ["..."]}}`
     : "";
 
+  const jsonReminder = `\n\nReturn ONLY valid JSON with the exact structure from your instructions — including "thumbnail", "title" (with "score", "attraction_scores", "observations", "alternatives"), "combined" (with "score", "avatar_would_click", "observations", "improvements", "redundancies", "thumbnail_concepts"), and "follow_up". Every field must be populated.`;
+
   const analysisText = thumbnailBase64
-    ? `Analyse this title and thumbnail combination.\n\nTitle: "${title}"${introTranscript ? `\n\nVideo intro transcript (first ~30-60 seconds):\n${introTranscript}` : ""}\n\nPlease provide your full analysis as JSON.${introInstructions}`
-    : `Analyse this title${introTranscript ? " and video intro" : ""} (no thumbnail provided — analyse title only).\n\nTitle: "${title}"${introTranscript ? `\n\nVideo intro transcript (first ~30-60 seconds):\n${introTranscript}` : ""}\n\nFor thumbnail fields, return score: 0 and note that no image was provided. Provide your full analysis as JSON.${introInstructions}`;
+    ? `Analyse this title and thumbnail combination.\n\nTitle: "${title}"${introTranscript ? `\n\nVideo intro transcript (first ~30-60 seconds):\n${introTranscript}` : ""}\n\nPlease provide your full analysis as JSON.${introInstructions}${jsonReminder}`
+    : `Analyse this title${introTranscript ? " and video intro" : ""} (no thumbnail provided — analyse title only).\n\nTitle: "${title}"${introTranscript ? `\n\nVideo intro transcript (first ~30-60 seconds):\n${introTranscript}` : ""}\n\nFor thumbnail fields, return score: 0 and note that no image was provided.${introInstructions}${jsonReminder}`;
 
   const userContent: Anthropic.MessageParam["content"] = thumbnailBase64
     ? [
@@ -174,6 +192,16 @@ Your role: Help the member refine titles, create variations, adapt for different
   try {
     const parsed = JSON.parse(extracted);
 
+    // Validate that essential fields exist — if not, the response was malformed
+    const hasScores = parsed.thumbnail?.score != null || parsed.title?.score != null || parsed.combined?.score != null;
+    if (!hasScores) {
+      console.error("[title-analyzer] Malformed response — missing scores. Raw:", rawText.slice(0, 500));
+      return NextResponse.json(
+        { error: "Analysis returned incomplete data. Please try again." },
+        { status: 500 }
+      );
+    }
+
     await prisma.titleAnalysis.create({
       data: {
         userId: user.id,
@@ -184,8 +212,9 @@ Your role: Help the member refine titles, create variations, adapt for different
 
     return NextResponse.json({ result: parsed });
   } catch {
+    console.error("[title-analyzer] JSON parse failed. Raw:", rawText.slice(0, 500));
     return NextResponse.json(
-      { error: "Failed to parse response", raw: rawText },
+      { error: "Failed to parse response. Please try again.", raw: rawText },
       { status: 500 }
     );
   }
