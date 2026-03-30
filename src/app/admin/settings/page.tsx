@@ -2,9 +2,11 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import { EyeSlashIcon, EyeIcon, UserGroupIcon, ChevronDownIcon, XMarkIcon, CheckIcon, SparklesIcon, EnvelopeIcon, PencilSquareIcon } from "@heroicons/react/24/outline";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense } from "react";
+import { EyeSlashIcon, EyeIcon, UserGroupIcon, ChevronDownIcon, XMarkIcon, CheckIcon, SparklesIcon, EnvelopeIcon, PencilSquareIcon, LinkIcon } from "@heroicons/react/24/outline";
 import { IMPERSONATE_LS_KEY } from "@/lib/impersonate-constants";
+import LinkTrackingPage from "@/app/member/link-tracking/page";
 
 // ─── Staff Access ─────────────────────────────────────────────────────────────
 
@@ -919,12 +921,32 @@ function CurrencyRateSection() {
   );
 }
 
+// ─── Tab definitions ─────────────────────────────────────────────────────────
+
+const ADMIN_SETTINGS_TABS = [
+  { id: "general", label: "Platform Settings" },
+  { id: "link-tracking", label: "My Link Tracking" },
+] as const;
+type AdminSettingsTab = (typeof ADMIN_SETTINGS_TABS)[number]["id"];
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default function SettingsPage() {
+function SettingsPageInner() {
   const { data: session } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const pageRole = (session?.user as any)?.role;
+  const activeTab: AdminSettingsTab = searchParams.get("tab") === "link-tracking" ? "link-tracking" : "general";
+
+  function switchTab(id: AdminSettingsTab) {
+    const url = new URL(window.location.href);
+    if (id === "general") {
+      url.searchParams.delete("tab");
+    } else {
+      url.searchParams.set("tab", id);
+    }
+    router.push(url.pathname + url.search, { scroll: false });
+  }
 
   useEffect(() => {
     if (session && pageRole === "editor") router.replace("/admin");
@@ -936,8 +958,32 @@ export default function SettingsPage() {
     <div className="max-w-3xl space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-[#2f3437]">Settings</h1>
-        <p className="text-[#2f3437]/60 mt-1 text-sm">Configure platform preferences and AI scoring.</p>
+        <p className="text-[#2f3437]/60 mt-1 text-sm">Configure platform preferences, AI scoring, and your own lead tracking.</p>
       </div>
+
+      {/* Tab bar */}
+      <div className="flex gap-1 bg-[#111]/5 dark:bg-white/5 rounded-lg p-1 w-fit overflow-x-auto scrollbar-hide">
+        {ADMIN_SETTINGS_TABS.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => switchTab(t.id)}
+            className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              activeTab === t.id
+                ? "bg-white dark:bg-[#1a1a1a] text-[#2f3437] dark:text-white shadow-sm"
+                : "text-[#2f3437]/50 dark:text-white/40 hover:text-[#2f3437] dark:hover:text-white"
+            }`}
+          >
+            {t.id === "link-tracking" && <LinkIcon className="w-4 h-4" />}
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* My Link Tracking tab */}
+      {activeTab === "link-tracking" && <LinkTrackingPage />}
+
+      {/* Platform Settings tab */}
+      {activeTab === "general" && <>
       <CurrencyRateSection />
       <StaffAccessSection />
       <FeatureVisibilitySection />
@@ -970,6 +1016,23 @@ export default function SettingsPage() {
         rows={50}
         icon={<SparklesIcon className="w-5 h-5 text-[#6ba3c7]" />}
       />
+      </>}
     </div>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <Suspense fallback={
+      <div className="max-w-3xl space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-[#2f3437]">Settings</h1>
+          <p className="text-[#2f3437]/60 mt-1 text-sm">Configure platform preferences, AI scoring, and your own lead tracking.</p>
+        </div>
+        <div className="h-12 bg-[#111]/5 dark:bg-white/5 rounded-lg animate-pulse w-72" />
+      </div>
+    }>
+      <SettingsPageInner />
+    </Suspense>
   );
 }
