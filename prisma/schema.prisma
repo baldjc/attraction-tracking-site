@@ -704,6 +704,21 @@ model HelpMessage {
   @@map("help_messages")
 }
 
+model SiteConfig {
+  id                Int      @id @default(autoincrement())
+  key               String   @unique
+  value             String
+  label             String?
+  fieldType         String   @default("text") @map("field_type")
+  category          String   @default("webinar")
+  ghlCustomValueKey String?  @map("ghl_custom_value_key")
+  sortOrder         Int      @default(0) @map("sort_order")
+  updatedAt         DateTime @default(now()) @updatedAt @map("updated_at")
+  updatedBy         String?  @map("updated_by")
+
+  @@map("site_config")
+}
+
 model AuditRequest {
   id                   String             @id @default(uuid())
   fullName             String

@@ -1,7 +1,7 @@
 # Attraction by Video — Platform Overview
 
 ## Project
-Full-stack Next.js 16 platform for YouTube channel audits, GHL member sync, link tracking, and admin/member dashboards for a real estate coaching program run by Jared Chamberlain.
+Full-stack Next.js 16 platform for YouTube channel audits, GHL member sync, link tracking, admin/member dashboards, webinar landing page config management, and payment reminders for a real estate coaching program run by Jared Chamberlain.
 
 ## Stack
 - **Framework:** Next.js 16 (App Router, Turbopack)
