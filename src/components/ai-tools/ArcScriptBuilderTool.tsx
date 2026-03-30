@@ -26,16 +26,39 @@ interface UsageData {
   resetsAt: string;
 }
 
+interface PrefillData {
+  title: string;
+  talkingPoints: string[];
+}
+
 export default function ArcScriptBuilderTool({ basePath, isAdmin }: Props) {
   const [phase, setPhase] = useState<"upload" | "chat">("upload");
   const [uploadData, setUploadData] = useState<UploadData | null>(null);
   const [usage, setUsage] = useState<UsageData | null>(null);
+  const [prefillData, setPrefillData] = useState<PrefillData | undefined>(undefined);
 
   useEffect(() => {
     fetch("/api/ai-tools/usage/me")
       .then((r) => r.json())
       .then((d) => { if (d?.percentUsed != null) setUsage(d); })
       .catch(() => {});
+  }, []);
+
+  // Read prefill data from Content Engine handoff
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("arc_prefill");
+      if (raw) {
+        sessionStorage.removeItem("arc_prefill");
+        const data = JSON.parse(raw);
+        if (data.title) {
+          setPrefillData({
+            title: data.title,
+            talkingPoints: Array.isArray(data.talkingPoints) ? data.talkingPoints : [],
+          });
+        }
+      }
+    } catch { /* ignore malformed data */ }
   }, []);
 
   const pct = usage?.percentUsed ?? 0;
@@ -93,7 +116,7 @@ export default function ArcScriptBuilderTool({ basePath, isAdmin }: Props) {
         </div>
       ) : phase === "upload" ? (
         <div className="bg-white border border-[#2f3437]/10 rounded-lg p-6">
-          <ArcScriptUploadPhase onStartBuilding={handleStartBuilding} isAdmin={isAdmin} />
+          <ArcScriptUploadPhase onStartBuilding={handleStartBuilding} isAdmin={isAdmin} prefillData={prefillData} />
         </div>
       ) : uploadData ? (
         <div className="bg-white border border-[#2f3437]/10 rounded-lg p-6" style={{ minHeight: "70vh" }}>
