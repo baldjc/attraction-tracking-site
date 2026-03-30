@@ -30,6 +30,48 @@ async function seedIfEmpty() {
 
 // ─── GHL sync ─────────────────────────────────────────────────────────────────
 
+/** Convert a GHL custom value display name to a slug for matching.
+ *  e.g. "Funnel Date and Time" → "funnel_date_and_time"
+ *       "Add Event Calendar"   → "add_event_calendar"
+ */
+function slugify(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_|_$/g, "");
+}
+
+
+async function fetchGHLCustomValueMap(
+  locationId: string,
+  apiKey: string
+): Promise<Record<string, string>> {
+  // Returns: { slug → ghl_uuid, uuid → ghl_uuid }
+  try {
+    const res = await fetch(
+      `https://services.leadconnectorhq.com/locations/${locationId}/customValues`,
+      {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          Version: "2021-07-28",
+        },
+      }
+    );
+    if (!res.ok) return {};
+    const data = await res.json();
+    const map: Record<string, string> = {};
+    for (const cv of data.customValues ?? []) {
+      if (cv.id && cv.name) {
+        map[slugify(cv.name)] = cv.id;
+        map[cv.id] = cv.id; // allow UUID passthrough
+      }
+    }
+    return map;
+  } catch {
+    return {};
+  }
+}
+
 async function syncToGHL(settings: { key: string; value: string; ghlCustomValueKey: string | null }[]) {
   const results = { synced: 0, failed: 0, errors: [] as string[] };
   const locationId = process.env.GHL_LOCATION_ID;
@@ -39,11 +81,26 @@ async function syncToGHL(settings: { key: string; value: string; ghlCustomValueK
     return { synced: 0, failed: settings.length, errors: ["GHL env vars not set"] };
   }
 
-  for (const setting of settings) {
-    if (!setting.ghlCustomValueKey) continue;
+  const toSync = settings.filter((s) => s.ghlCustomValueKey);
+  if (toSync.length === 0) return results;
+
+  // Fetch the GHL custom value map once: slug/uuid → real uuid
+  const ghlMap = await fetchGHLCustomValueMap(locationId, apiKey);
+
+  for (const setting of toSync) {
+    const key = setting.ghlCustomValueKey!;
+    // Resolve the real GHL UUID
+    const ghlId = ghlMap[key] ?? ghlMap[slugify(key)];
+
+    if (!ghlId) {
+      results.failed++;
+      results.errors.push(`${setting.key}: no GHL custom value found for key "${key}"`);
+      continue;
+    }
+
     try {
       const res = await fetch(
-        `https://services.leadconnectorhq.com/locations/${locationId}/customValues/${setting.ghlCustomValueKey}`,
+        `https://services.leadconnectorhq.com/locations/${locationId}/customValues/${ghlId}`,
         {
           method: "PUT",
           headers: {
@@ -57,8 +114,9 @@ async function syncToGHL(settings: { key: string; value: string; ghlCustomValueK
       if (res.ok) {
         results.synced++;
       } else {
+        const body = await res.text();
         results.failed++;
-        results.errors.push(`${setting.key}: ${res.status}`);
+        results.errors.push(`${setting.key}: ${res.status} — ${body.slice(0, 120)}`);
       }
     } catch (err: any) {
       results.failed++;
