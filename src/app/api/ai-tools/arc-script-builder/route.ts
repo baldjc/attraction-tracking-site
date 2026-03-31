@@ -276,7 +276,7 @@ Additional script requirements:
 - At least one analogy per major section
 - If story provided: one story woven through the whole script. If no story: "imagine that" metaphors in select insights (2 for 3 talking points, 3 for 5 talking points)
 - Specific curiosity bridges between every section
-- Target length: minimum 8 minutes of spoken content (~1,200-1,400 words per 8 minutes at a natural YouTube speaking pace of ~150 wpm). Aim for 1,400-2,000 words of script. If the script comes in under 1,200 words, expand the insights with deeper "Why" and "When" sections, richer analogies, and more detailed "What This Means For You" takeaways — do NOT pad with filler or repetition.
+- Target length: minimum 8 minutes of spoken content (~1,200 words at ~150 wpm). This is a HARD MINIMUM regardless of how many talking points there are — a 3-point script must hit 8 minutes just like a 5-point script. For 3 talking points, go deeper on each insight: expand the Why and When sections, add richer analogies, and write more detailed "What This Means For You" takeaways. For 5 talking points, each insight can be tighter. Aim for 1,400-2,000 words total. Do NOT pad with filler or repetition — add depth, not fluff.
 
 After the script, output a word count and estimated video runtime (at ~150 words per minute). If the script is under 1,200 words (~8 minutes), flag it and expand before proceeding. Then run the production requirements checklist (pass/fail for each of the 18 items above).
 
