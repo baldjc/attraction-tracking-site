@@ -36,7 +36,7 @@ These are not review criteria. These are constraints you must satisfy DURING gen
 1. Opening is ~20-25 seconds (Intro Pattern + Lead Magnet + Expertise Bridge)
 2. Intro pattern comes FIRST — no preamble, no throat-clearing
 3. Expertise bridge comes AFTER lead magnet — layers credibility into first insight
-4. Lead magnet mentioned exactly 3 times: Mention #1 in the opening, Mention #2 woven naturally into the "So What Do You Actually Do About This?" section (attached to a specific piece of advice — not a standalone pitch), Mention #3 in the closing paired with the next-video open loop.
+4. Lead magnet mentioned exactly 3 times: Mention #1 in the opening, Mention #2 woven naturally between insights (attached to the "What This Means For You" of the middle insight — not a standalone pitch), Mention #3 in the closing paired with the next-video hook.
 5. Each insight follows the Value Loop (What → Why → When → What This Means For You)
 6. No "how to implement" — that belongs in the consultation or lead magnet
 7. 4-5 connection phrases written as spoken dialogue, distributed throughout (not clustered)
@@ -178,13 +178,15 @@ Remember: the structure you proposed might not match the member's original order
 
 **5. CLOSING** (generate immediately after insights — do not wait for approval)
 
-The closing pairs Lead Magnet Mention #3 with the next-video open loop — one tight paragraph, maximum 3-4 sentences. Lead magnet first, then straight into the open loop. No recap. No summary. No wrap-up sentence. No value restatement. No connection phrases. That is the entire closing.
+The closing flows DIRECTLY out of the last insight — no recap, no summary, no transition paragraph, no "so to wrap up." The viewer should not feel the video ending.
 
-The next-video push is a FULL HOOK — not a throwaway line. Use one of the intro patterns (Contradiction, Confirmation, Empathy, or Stakes) to write a proper hook for the next video that makes the viewer feel they NEED to click. Connect it to what they just learned in THIS video — the next video should feel like the natural next step. This is the last thing the viewer hears, so it must land hard.
+Lead Magnet Mention #3: one sentence, right after the last insight lands. Then straight into the next-video hook.
+
+The next-video push is a FULL HOOK using one of the intro patterns (Contradiction, Confirmation, Empathy, or Stakes). Connect it to what they just learned in the last insight — the next video should feel like the conversation is still going and they NEED to click. This is the last thing the viewer hears, so it must land hard.
 
 Use {{LEAD_MAGNET}} for the lead magnet name and {{NEXT_VIDEO}} for the open loop topic. If the member did not provide a next video topic, ask for it before writing the closing — the open loop cannot be generic.
 
-Model closing: "I put together a free guide called [lead magnet] that walks you through exactly how to apply what we just covered — link's in the description, grab it now. And speaking of timing... most Calgary homebuyers obsess over interest rates and wait for the 'perfect' moment. But after helping families move every 27 hours last year, I can tell you — the ones who regret their purchase weren't wrong about the market. They were wrong about something way more important, and it's the one thing nobody talks about. That's exactly what I break down in this next video right here."
+Model closing (flows right out of last insight): "...and that's what separates the families who love their next home from the ones who regret it two years later. I put together a free guide called [lead magnet] that walks you through exactly this — link's in the description. Now, most Calgary homebuyers obsess over interest rates and wait for the 'perfect' moment. But after helping families move every 27 hours last year, I can tell you — the ones who regret their purchase weren't wrong about the market. They were wrong about something way more important. That's exactly what I break down in this next video right here."
 
 **6. LEAD MAGNET BRAINSTORM** (generate immediately — do not wait for approval)
 
@@ -236,26 +238,17 @@ Curiosity Bridge:
 
 ---
 
-(Repeat INSIGHT block for each insight)
+(Repeat INSIGHT block for each insight. Weave Lead Magnet Mention #2 into the "What This Means For You" of the middle insight — not as a separate section.)
 
 ---
 
-SO WHAT DO YOU ACTUALLY DO ABOUT THIS?
-
-[Conversational narrative paragraphs — NOT a numbered list or checklist. Each piece of advice is NEW guidance that deepens what was covered in the insights — not a recap or summary. The insights explain what's happening and why. This section tells the viewer how to think differently and what to actually do about it. Each point should be a mindset shift or specific action the viewer hasn't heard yet in the script, written in the same conversational voice as the rest of the video. Do NOT repeat or rephrase the insights — advance the conversation. If insight 1 explained WHY the rental backup plan is broken, this section says "let go of the backup plan — here's what that frees you to do instead." The viewer should feel like the insights gave them understanding and this section gives them clarity on what to do next.]
-
-Lead Magnet Mention #2:
-[Woven naturally into this section — attached to a specific piece of advice, not a standalone pitch]
-
----
-
-CLOSING — Next Video Push
+CLOSING — flows directly out of the last insight, no recap, no transition paragraph
 
 Lead Magnet Mention #3:
 [One sentence — link in the description, grab it now.]
 
 Next Video Hook (use an intro pattern — Contradiction, Confirmation, Empathy, or Stakes):
-[Full hook for the next video — connect it to what the viewer just learned, use pattern-based language to create urgency, make them feel they NEED to click. This is NOT a title drop — it's a proper hook that sells the next video the same way the opening sold this one.]
+[Full hook for the next video — connect it to what the viewer just learned in the last insight, use pattern-based language to create urgency, make them feel they NEED to click. This flows right out of the final point — no "wrapping up" or "in summary." The viewer should feel like the video is still going and they need to click the next one.]
 
 ---
 
