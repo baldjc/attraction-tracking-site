@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect, DragEvent, ChangeEvent } from "react";
 import { ChevronDownIcon, FilmIcon } from "@heroicons/react/24/outline";
-import { DocumentArrowUpIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { DocumentArrowUpIcon, XMarkIcon, ClipboardDocumentIcon, CheckIcon } from "@heroicons/react/24/outline";
 
 interface UploadedFile {
   file: File;
@@ -80,6 +80,9 @@ export default function ArcScriptUploadPhase({ onStartBuilding, prefillData, onS
   const [loading, setLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [avatarData, setAvatarData] = useState<any>(null);
+  const [researchPrompt, setResearchPrompt] = useState("");
+  const [researchPromptCopied, setResearchPromptCopied] = useState(false);
 
   useEffect(() => {
     function handleOutside(e: MouseEvent) {
@@ -90,6 +93,53 @@ export default function ArcScriptUploadPhase({ onStartBuilding, prefillData, onS
     document.addEventListener("mousedown", handleOutside);
     return () => document.removeEventListener("mousedown", handleOutside);
   }, []);
+
+  useEffect(() => {
+    fetch("/api/member/avatar").then((r) => r.json()).then(setAvatarData).catch(() => {});
+  }, []);
+
+  function generateResearchPrompt() {
+    const t = effectiveTitle.trim();
+    const tp = effectiveTalkingPoints.trim();
+    if (!t) return;
+
+    const avatarSection = avatarData?.avatarName
+      ? `=== TARGET AVATAR ===\nName: ${avatarData.avatarName}\n${avatarData.full_document || avatarData.avatarSummary || JSON.stringify(avatarData, null, 2)}`
+      : "(No avatar saved — write for a general real estate audience)";
+
+    const prompt = `I'm creating a YouTube video titled: "${t}"
+
+${tp ? `My key talking points:\n${tp}\n` : ""}
+${avatarSection}
+
+=== WHAT I NEED ===
+
+Research this topic and provide a structured research document I can use to build my script. For each talking point above, find:
+
+1. **REAL STATS & DATA** — Specific numbers, percentages, dollar amounts, year-over-year comparisons. Canadian/Calgary data preferred where available. Include the source (e.g., CREA 2025, CREB stats, StatsCan).
+
+2. **MAIN ARGUMENTS & UNIQUE ANGLES** — What point of view does the data support? What contrarian or surprising take could I make that's backed by evidence?
+
+3. **CLIENT PAIN POINTS & EMOTIONAL TRIGGERS** — Based on the avatar above, what fears, frustrations, or hopes does this topic speak to? What's the internal monologue of someone dealing with this?
+
+4. **MYTH OR MISCONCEPTION** — What does the average person believe about this topic that's wrong or incomplete? What's the counter-truth?
+
+5. **CONTENT IDEAS** — Specific angles, framings, or metaphors that could make each point land harder on camera.
+
+6. **CONVENTIONAL WISDOM** — What do competing sources, other agents, or mainstream advice say about this? (So I can position against it.)
+
+7. **NOTABLE QUOTES OR PHRASINGS** — Any standout language worth preserving or referencing.
+
+Format each talking point as its own section with all 7 categories. Preserve specific numbers and sources exactly. Be concise but complete.`;
+
+    setResearchPrompt(prompt);
+  }
+
+  async function copyResearchPrompt() {
+    await navigator.clipboard.writeText(researchPrompt);
+    setResearchPromptCopied(true);
+    setTimeout(() => setResearchPromptCopied(false), 2000);
+  }
 
   async function fetchYtVideos(userId?: string) {
     setYtError("");
@@ -317,6 +367,48 @@ export default function ArcScriptUploadPhase({ onStartBuilding, prefillData, onS
             rows={3}
             className="w-full bg-white dark:bg-[#0f1419] border border-[#2f3437]/20 dark:border-white/20 rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-white placeholder-[#2f3437]/30 dark:placeholder-white/30 resize-none focus:outline-none focus:border-[#6ba3c7] transition-colors"
           />
+        </div>
+      )}
+
+      {effectiveTitle.trim() && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-semibold text-[#2f3437] dark:text-white">
+                Research your topic
+              </p>
+              <p className="text-xs text-[#2f3437]/50 dark:text-white/50">
+                Generate a prompt to paste into ChatGPT, Perplexity, or any AI — then bring the research back here.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={generateResearchPrompt}
+              className="flex-shrink-0 px-4 py-2 text-sm font-medium bg-[#2f3437] dark:bg-white text-white dark:text-[#2f3437] rounded-lg hover:opacity-90 transition-opacity"
+            >
+              Generate Research Prompt
+            </button>
+          </div>
+          {researchPrompt && (
+            <div className="bg-[#f7f6f3] dark:bg-[#0f1419] border border-[#2f3437]/10 dark:border-white/10 rounded-lg overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-2 border-b border-[#2f3437]/10 dark:border-white/10">
+                <span className="text-xs font-semibold text-[#2f3437]/50 dark:text-white/50 uppercase tracking-wide">
+                  Copy this prompt → paste into your research tool → paste results below
+                </span>
+                <button
+                  type="button"
+                  onClick={copyResearchPrompt}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-[#6ba3c7] text-white rounded-md hover:bg-[#6ba3c7]/90 transition-colors"
+                >
+                  {researchPromptCopied ? <CheckIcon className="w-3.5 h-3.5" /> : <ClipboardDocumentIcon className="w-3.5 h-3.5" />}
+                  {researchPromptCopied ? "Copied!" : "Copy Prompt"}
+                </button>
+              </div>
+              <pre className="px-4 py-3 text-xs text-[#2f3437]/70 dark:text-white/70 whitespace-pre-wrap max-h-48 overflow-y-auto leading-relaxed">
+                {researchPrompt}
+              </pre>
+            </div>
+          )}
         </div>
       )}
 
