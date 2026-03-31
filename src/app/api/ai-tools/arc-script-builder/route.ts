@@ -173,11 +173,11 @@ Remember: the structure you proposed might not match the member's original order
 
 The closing pairs Lead Magnet Mention #3 with the next-video open loop — one tight paragraph, maximum 3-4 sentences. Lead magnet first, then straight into the open loop. No recap. No summary. No wrap-up sentence. No value restatement. No connection phrases. That is the entire closing.
 
-The open loop MUST include 1-2 sentences of context explaining WHY the viewer should watch the next video — what problem it addresses, what they'll discover, or what consequence they face. Don't just name-drop the title. Sell the click with a specific reason tied to what the viewer just learned in THIS video.
+The next-video push is a FULL HOOK — not a throwaway line. Use one of the intro patterns (Contradiction, Confirmation, Empathy, or Stakes) to write a proper hook for the next video that makes the viewer feel they NEED to click. Connect it to what they just learned in THIS video — the next video should feel like the natural next step. This is the last thing the viewer hears, so it must land hard.
 
 Use {{LEAD_MAGNET}} for the lead magnet name and {{NEXT_VIDEO}} for the open loop topic. If the member did not provide a next video topic, ask for it before writing the closing — the open loop cannot be generic.
 
-Model closing: "Most Calgary homebuyers obsess over market timing and interest rates, but after helping families move every 27 hours last year, I can tell you the ones who regret their purchase weren't wrong about the market — they were wrong about this… If you're considering a move in 2026, these five warning signs will save you from making a decision that looks smart on paper but falls apart in real life."
+Model closing: "I put together a free guide called [lead magnet] that walks you through exactly how to apply what we just covered — link's in the description, grab it now. And speaking of timing... most Calgary homebuyers obsess over interest rates and wait for the 'perfect' moment. But after helping families move every 27 hours last year, I can tell you — the ones who regret their purchase weren't wrong about the market. They were wrong about something way more important, and it's the one thing nobody talks about. That's exactly what I break down in this next video right here."
 
 **6. LEAD MAGNET BRAINSTORM**
 
@@ -247,8 +247,11 @@ Lead Magnet Mention #2:
 
 CLOSING — Next Video Push
 
-Lead Magnet Mention #3 + Open Loop:
-[One tight paragraph — max 3-4 sentences. Lead magnet first, then straight into the next-video open loop. The open loop MUST include 1-2 sentences of context explaining WHY the viewer needs to watch the next video — what problem it solves, what they'll learn, or what risk they face without it. Do not just drop the title — sell the click.]
+Lead Magnet Mention #3:
+[One sentence — link in the description, grab it now.]
+
+Next Video Hook (use an intro pattern — Contradiction, Confirmation, Empathy, or Stakes):
+[Full hook for the next video — connect it to what the viewer just learned, use pattern-based language to create urgency, make them feel they NEED to click. This is NOT a title drop — it's a proper hook that sells the next video the same way the opening sold this one.]
 
 ---
 
