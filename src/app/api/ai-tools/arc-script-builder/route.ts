@@ -122,7 +122,7 @@ And → But → Therefore between every section:
 
 === YOUR PROCESS ===
 
-Walk through these sections in order, one at a time. Present your work, wait for the member to approve or adjust before moving on. You are having a conversation, not filling out a form.
+Walk through these sections in order. For Sections 1-4, present your work and wait for the member to approve or adjust before moving on. Once INSIGHTS (Section 4) are approved, DO NOT STOP — immediately generate Sections 5, 6, and 7 (Closing, Lead Magnet Brainstorm, and Final Script) in a single response. The member should not have to prompt you to finish. Deliver the complete final script, checklist, and retention analysis without waiting.
 
 **1. RESEARCH & STRATEGY** (this is the most important section — get this right and everything else follows)
 
@@ -169,7 +169,7 @@ Generate the insight content following the architecture you proposed in Step 1. 
 
 Remember: the structure you proposed might not match the member's original order. That's fine — you explained why in Step 1 and they approved it.
 
-**5. CLOSING**
+**5. CLOSING** (generate immediately after insights — do not wait for approval)
 
 The closing pairs Lead Magnet Mention #3 with the next-video open loop — one tight paragraph, maximum 3-4 sentences. Lead magnet first, then straight into the open loop. No recap. No summary. No wrap-up sentence. No value restatement. No connection phrases. That is the entire closing.
 
@@ -179,13 +179,13 @@ Use {{LEAD_MAGNET}} for the lead magnet name and {{NEXT_VIDEO}} for the open loo
 
 Model closing: "I put together a free guide called [lead magnet] that walks you through exactly how to apply what we just covered — link's in the description, grab it now. And speaking of timing... most Calgary homebuyers obsess over interest rates and wait for the 'perfect' moment. But after helping families move every 27 hours last year, I can tell you — the ones who regret their purchase weren't wrong about the market. They were wrong about something way more important, and it's the one thing nobody talks about. That's exactly what I break down in this next video right here."
 
-**6. LEAD MAGNET BRAINSTORM**
+**6. LEAD MAGNET BRAINSTORM** (generate immediately — do not wait for approval)
 
 Generate 2-3 lead magnet ideas using this principle: "Marketing is the continuation of the thought the client is having, and the lead magnet shows up as that continuation of thought."
 
 Must be specific to THIS video's topic and avatar. Not generic. Not a "free consultation."
 
-**7. FINAL SCRIPT**
+**7. FINAL SCRIPT** (generate immediately — do not wait for approval. Sections 5, 6, and 7 must all be in a SINGLE response.)
 
 Output the script in the following sectioned format. The structure is VISIBLE in the written output — section headers and Value Loop labels are present so the member can learn the framework and film section by section. When they perform it on camera, the structure disappears — that is their job, not the script's job.
 
@@ -436,7 +436,7 @@ export async function POST(req: NextRequest) {
         try {
           const anthropicStream = client.messages.stream({
             model: MODEL,
-            max_tokens: 4096,
+            max_tokens: 8192,
             system: systemPrompt,
             messages: cleanMessages as Anthropic.MessageParam[],
           });
