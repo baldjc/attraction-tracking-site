@@ -9,6 +9,7 @@ import {
   AcademicCapIcon,
   MagnifyingGlassIcon,
 } from "@heroicons/react/24/outline";
+import { getSectionIcon } from "@/lib/academy-section-icons";
 
 interface Section {
   id: string;
@@ -68,7 +69,8 @@ export default function AcademyHome() {
           fetch("/api/member/academy/live-calls"),
         ]);
 
-        const sectionsData: Section[] = sectionsRes.ok ? await sectionsRes.json() : [];
+        const sectionsRaw = sectionsRes.ok ? await sectionsRes.json() : [];
+        const sectionsData: Section[] = Array.isArray(sectionsRaw) ? sectionsRaw : (sectionsRaw.sections ?? []);
         const callsData = callsRes.ok ? await callsRes.json() : [];
 
         setSections(sectionsData);
@@ -193,8 +195,9 @@ export default function AcademyHome() {
             <p className="text-xs font-semibold tracking-widest text-[#6ba3c7] uppercase mb-1">
               {isStarting ? "Start Learning" : "Continue Learning"}
             </p>
-            <p className="text-xs text-[#2f3437]/55 dark:text-white/40 mb-2">
-              Section {continueTarget.sectionSortOrder} &mdash; {continueTarget.sectionTitle}
+            <p className="text-xs text-[#2f3437]/55 dark:text-white/40 mb-2 flex items-center gap-1.5">
+              <span>{getSectionIcon(continueTarget.sectionSortOrder)}</span>
+              <span>Section {continueTarget.sectionSortOrder} &mdash; {continueTarget.sectionTitle}</span>
             </p>
             <p className="text-lg font-bold text-[#2f3437] dark:text-white leading-snug mb-4 truncate">
               {continueTarget.lessonTitle}
@@ -256,8 +259,8 @@ export default function AcademyHome() {
               >
                 {/* Header row */}
                 <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-[#6ba3c7]/10 dark:bg-[#6ba3c7]/15 flex items-center justify-center shrink-0 text-[#6ba3c7] font-bold text-sm">
-                    {sec.sortOrder}
+                  <div className="w-10 h-10 rounded-lg bg-[#6ba3c7]/10 dark:bg-[#6ba3c7]/15 flex items-center justify-center shrink-0 text-lg">
+                    {getSectionIcon(sec.sortOrder, sec.slug)}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-[#2f3437] dark:text-white leading-snug line-clamp-2">

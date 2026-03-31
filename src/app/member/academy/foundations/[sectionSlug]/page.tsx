@@ -3,6 +3,7 @@
 import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import { ArrowLeftIcon, CheckCircleIcon, PlayCircleIcon, DocumentTextIcon } from "@heroicons/react/24/outline";
+import { getSectionIcon } from "@/lib/academy-section-icons";
 
 interface Lesson {
   id: string;
@@ -67,10 +68,15 @@ export default function SectionPage({ params }: { params: Promise<{ sectionSlug:
 
       {section && (
         <div className="mb-6">
-          <p className="text-xs font-bold text-[#2f3437]/30 dark:text-white/30 uppercase tracking-wider mb-1">
-            Section {section.sortOrder}
-          </p>
-          <h1 className="text-2xl font-bold text-[#2f3437] dark:text-white">{section.title}</h1>
+          <div className="flex items-center gap-3 mb-2">
+            <span className="text-3xl">{getSectionIcon(section.sortOrder, section.slug)}</span>
+            <div>
+              <p className="text-xs font-bold text-[#2f3437]/30 dark:text-white/30 uppercase tracking-wider">
+                Section {section.sortOrder}
+              </p>
+              <h1 className="text-2xl font-bold text-[#2f3437] dark:text-white">{section.title}</h1>
+            </div>
+          </div>
           {section.description && (
             <p className="text-[#2f3437]/60 dark:text-white/60 mt-2 text-sm leading-relaxed">
               {section.description}

@@ -11,6 +11,13 @@ interface Props {
   isAdmin?: boolean;
 }
 
+interface ContentTheme {
+  name: string;
+  emoji?: string | null;
+  colour?: string | null;
+  content_engine_prompt?: string | null;
+}
+
 interface UploadData {
   title: string;
   talkingPoints: string;
@@ -18,6 +25,8 @@ interface UploadData {
   clientStory: string;
   leadMagnet: string;
   nextVideoPush: string;
+  themeName?: string;
+  themeContext?: string;
 }
 
 interface UsageData {
@@ -29,6 +38,11 @@ interface UsageData {
 interface PrefillData {
   title: string;
   talkingPoints: string[];
+  themeName?: string;
+}
+
+interface AvatarData {
+  contentThemes?: ContentTheme[];
 }
 
 export default function ArcScriptBuilderTool({ basePath, isAdmin }: Props) {
@@ -36,11 +50,23 @@ export default function ArcScriptBuilderTool({ basePath, isAdmin }: Props) {
   const [uploadData, setUploadData] = useState<UploadData | null>(null);
   const [usage, setUsage] = useState<UsageData | null>(null);
   const [prefillData, setPrefillData] = useState<PrefillData | undefined>(undefined);
+  const [avatarData, setAvatarData] = useState<AvatarData>({});
 
   useEffect(() => {
     fetch("/api/ai-tools/usage/me")
       .then((r) => r.json())
       .then((d) => { if (d?.percentUsed != null) setUsage(d); })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/member/avatar")
+      .then((r) => r.json())
+      .then((d) => {
+        if (Array.isArray(d?.contentThemes)) {
+          setAvatarData({ contentThemes: d.contentThemes });
+        }
+      })
       .catch(() => {});
   }, []);
 
@@ -55,6 +81,7 @@ export default function ArcScriptBuilderTool({ basePath, isAdmin }: Props) {
           setPrefillData({
             title: data.title,
             talkingPoints: Array.isArray(data.talkingPoints) ? data.talkingPoints : [],
+            themeName: typeof data.theme === "string" ? data.theme : undefined,
           });
         }
       }
@@ -116,7 +143,12 @@ export default function ArcScriptBuilderTool({ basePath, isAdmin }: Props) {
         </div>
       ) : phase === "upload" ? (
         <div className="bg-white border border-[#2f3437]/10 rounded-lg p-6">
-          <ArcScriptUploadPhase onStartBuilding={handleStartBuilding} isAdmin={isAdmin} prefillData={prefillData} />
+          <ArcScriptUploadPhase
+            onStartBuilding={handleStartBuilding}
+            isAdmin={isAdmin}
+            prefillData={prefillData}
+            contentThemes={avatarData.contentThemes ?? []}
+          />
         </div>
       ) : uploadData ? (
         <div className="bg-white border border-[#2f3437]/10 rounded-lg p-6" style={{ minHeight: "70vh" }}>

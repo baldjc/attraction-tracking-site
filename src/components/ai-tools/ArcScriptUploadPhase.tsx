@@ -10,6 +10,13 @@ interface UploadedFile {
   error?: string;
 }
 
+interface ContentTheme {
+  name: string;
+  emoji?: string | null;
+  colour?: string | null;
+  content_engine_prompt?: string | null;
+}
+
 interface StartBuildingData {
   title: string;
   talkingPoints: string;
@@ -17,11 +24,14 @@ interface StartBuildingData {
   clientStory: string;
   leadMagnet: string;
   nextVideoPush: string;
+  themeName?: string;
+  themeContext?: string;
 }
 
 interface PrefillData {
   title: string;
   talkingPoints: string[];
+  themeName?: string;
 }
 
 interface YouTubeVideoOption {
@@ -46,6 +56,7 @@ interface Props {
   prefillData?: PrefillData;
   onSkip?: () => void;
   isAdmin?: boolean;
+  contentThemes?: ContentTheme[];
 }
 
 function formatBytes(bytes: number): string {
@@ -58,9 +69,10 @@ const ALLOWED_EXTENSIONS = ["pdf", "docx", "txt", "md"];
 const MAX_FILES = 3;
 const MAX_BYTES = 10 * 1024 * 1024;
 
-export default function ArcScriptUploadPhase({ onStartBuilding, prefillData, onSkip, isAdmin }: Props) {
+export default function ArcScriptUploadPhase({ onStartBuilding, prefillData, onSkip, isAdmin, contentThemes = [] }: Props) {
   const [title, setTitle] = useState("");
   const [talkingPoints, setTalkingPoints] = useState("");
+  const [selectedThemeName, setSelectedThemeName] = useState<string>("");
   const [pastedNotes, setPastedNotes] = useState("");
   const [clientStory, setClientStory] = useState("");
   const [leadMagnet, setLeadMagnet] = useState("");
@@ -152,6 +164,12 @@ export default function ArcScriptUploadPhase({ onStartBuilding, prefillData, onS
   const isPrefilled = !!prefillData;
   const effectiveTitle = isPrefilled ? prefillData!.title : title;
   const effectiveTalkingPoints = isPrefilled ? prefillData!.talkingPoints.join("\n") : talkingPoints;
+
+  const activeThemeName = isPrefilled
+    ? (prefillData!.themeName ?? selectedThemeName)
+    : selectedThemeName;
+  const activeTheme = contentThemes.find((t) => t.name === activeThemeName) ?? null;
+  const activeThemeContext = activeTheme?.content_engine_prompt ?? null;
 
   const ext = (name: string) => name.split(".").pop()?.toLowerCase() ?? "";
 
@@ -260,6 +278,8 @@ export default function ArcScriptUploadPhase({ onStartBuilding, prefillData, onS
         clientStory: clientStory.trim(),
         leadMagnet: leadMagnet.trim(),
         nextVideoPush: nextVideoPush.trim(),
+        themeName: activeThemeName || undefined,
+        themeContext: activeThemeContext || undefined,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
@@ -271,7 +291,22 @@ export default function ArcScriptUploadPhase({ onStartBuilding, prefillData, onS
     <div className="max-w-2xl mx-auto space-y-5">
       {isPrefilled && (
         <div className="bg-[#6ba3c7]/8 border border-[#6ba3c7]/25 rounded-lg px-4 py-3 space-y-2">
-          <p className="text-xs font-semibold text-[#6ba3c7] uppercase tracking-wider">Building script for</p>
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <p className="text-xs font-semibold text-[#6ba3c7] uppercase tracking-wider">Building script for</p>
+            {activeThemeName && (
+              <span
+                className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full"
+                style={{
+                  backgroundColor: activeTheme?.colour ? `${activeTheme.colour}22` : "#6ba3c722",
+                  color: activeTheme?.colour ?? "#6ba3c7",
+                  border: `1px solid ${activeTheme?.colour ? `${activeTheme.colour}55` : "#6ba3c755"}`,
+                }}
+              >
+                {activeTheme?.emoji && <span>{activeTheme.emoji}</span>}
+                {activeThemeName}
+              </span>
+            )}
+          </div>
           <p className="text-sm font-semibold text-[#2f3437] dark:text-white leading-snug">{prefillData!.title}</p>
           {prefillData!.talkingPoints.length > 0 && (
             <ol className="space-y-0.5 mt-1">
@@ -298,6 +333,30 @@ export default function ArcScriptUploadPhase({ onStartBuilding, prefillData, onS
             placeholder="e.g. Why 90% of Real Estate Agents Fail in Year 2"
             className="w-full bg-white dark:bg-[#0f1419] border border-[#2f3437]/20 dark:border-white/20 rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-white placeholder-[#2f3437]/30 dark:placeholder-white/30 focus:outline-none focus:border-[#6ba3c7] transition-colors"
           />
+        </div>
+      )}
+
+      {!isPrefilled && contentThemes.length > 0 && (
+        <div>
+          <label className="block text-sm font-semibold text-[#2f3437] dark:text-white mb-1.5">
+            Content theme{" "}
+            <span className="text-[#2f3437]/40 dark:text-white/40 font-normal">(optional)</span>
+          </label>
+          <p className="text-xs text-[#2f3437]/50 dark:text-white/50 mb-2">
+            Selecting a theme tells the AI the content angle and buyer psychology context to write to.
+          </p>
+          <select
+            value={selectedThemeName}
+            onChange={(e) => setSelectedThemeName(e.target.value)}
+            className="w-full bg-white dark:bg-[#0f1419] border border-[#2f3437]/20 dark:border-white/20 rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-white focus:outline-none focus:border-[#6ba3c7] transition-colors"
+          >
+            <option value="">— No specific theme —</option>
+            {contentThemes.map((t) => (
+              <option key={t.name} value={t.name}>
+                {t.emoji ? `${t.emoji} ${t.name}` : t.name}
+              </option>
+            ))}
+          </select>
         </div>
       )}
 

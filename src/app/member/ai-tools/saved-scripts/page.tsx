@@ -1,0 +1,138 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { ArrowLeftIcon, DocumentTextIcon, ClockIcon, ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
+
+interface SavedScript {
+  id: string;
+  videoTitle: string;
+  arcScores: unknown;
+  createdAt: string;
+  scriptOpening: string;
+}
+
+function formatDate(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString("en-CA", { year: "numeric", month: "short", day: "numeric" });
+}
+
+function ScriptCard({ script }: { script: SavedScript }) {
+  const [expanded, setExpanded] = useState(false);
+  const hasPreview = script.scriptOpening.trim().length > 0;
+
+  return (
+    <div className="bg-white border border-[#2f3437]/10 rounded-xl overflow-hidden transition-shadow hover:shadow-sm">
+      <div className="px-5 py-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-3 min-w-0">
+            <div className="w-9 h-9 rounded-lg bg-[#6ba3c7]/10 flex items-center justify-center shrink-0 mt-0.5">
+              <DocumentTextIcon className="w-5 h-5 text-[#6ba3c7]" />
+            </div>
+            <div className="min-w-0">
+              <h3 className="text-sm font-semibold text-[#2f3437] leading-snug">{script.videoTitle}</h3>
+              <div className="flex items-center gap-1.5 mt-1">
+                <ClockIcon className="w-3.5 h-3.5 text-[#2f3437]/35 shrink-0" />
+                <span className="text-xs text-[#2f3437]/45">{formatDate(script.createdAt)}</span>
+              </div>
+            </div>
+          </div>
+
+          {hasPreview && (
+            <button
+              onClick={() => setExpanded((v) => !v)}
+              className="shrink-0 flex items-center gap-1 text-xs text-[#6ba3c7] hover:text-[#5490b5] font-medium transition-colors mt-1"
+            >
+              {expanded ? (
+                <>Hide preview <ChevronUpIcon className="w-3.5 h-3.5" /></>
+              ) : (
+                <>View script <ChevronDownIcon className="w-3.5 h-3.5" /></>
+              )}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {expanded && hasPreview && (
+        <div className="px-5 pb-5 pt-0">
+          <div className="bg-[#f7f6f3] rounded-lg p-4 border border-[#2f3437]/8">
+            <p className="text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wider mb-2">Script Preview</p>
+            <pre className="text-sm text-[#2f3437]/75 whitespace-pre-wrap font-sans leading-relaxed">
+              {script.scriptOpening}
+            </pre>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function SavedScriptsPage() {
+  const [scripts, setScripts] = useState<SavedScript[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    fetch("/api/ai-tools/saved-scripts")
+      .then((r) => r.json())
+      .then((d) => {
+        setScripts(d.scripts ?? []);
+      })
+      .catch(() => setError("Failed to load saved scripts."))
+      .finally(() => setLoading(false));
+  }, []);
+
+  return (
+    <div className="max-w-3xl mx-auto px-4 py-6">
+      <div className="mb-6">
+        <Link
+          href="/member/ai-tools"
+          className="inline-flex items-center gap-1.5 text-sm text-[#2f3437]/50 hover:text-[#6ba3c7] transition-colors mb-4"
+        >
+          <ArrowLeftIcon className="w-4 h-4" />
+          AI Tools
+        </Link>
+        <h1 className="text-2xl font-bold text-[#2f3437]">Saved Scripts</h1>
+        <p className="text-sm text-[#2f3437]/60 mt-1">Your last 30 ARC scripts — saved after completing the builder.</p>
+      </div>
+
+      {loading && (
+        <div className="space-y-3">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-20 bg-white border border-[#2f3437]/10 rounded-xl animate-pulse" />
+          ))}
+        </div>
+      )}
+
+      {!loading && error && (
+        <div className="bg-red-50 border border-red-200 rounded-xl px-5 py-4 text-sm text-red-700">
+          {error}
+        </div>
+      )}
+
+      {!loading && !error && scripts.length === 0 && (
+        <div className="bg-white border border-[#2f3437]/10 rounded-xl px-6 py-12 text-center">
+          <DocumentTextIcon className="w-10 h-10 text-[#2f3437]/20 mx-auto mb-3" />
+          <p className="font-semibold text-[#2f3437] mb-1">No scripts saved yet</p>
+          <p className="text-sm text-[#2f3437]/50 mb-5">
+            Complete an ARC Script Builder session and save your script to see it here.
+          </p>
+          <Link
+            href="/member/ai-tools/arc-script-builder"
+            className="inline-flex items-center gap-2 bg-[#6ba3c7] hover:bg-[#5490b5] text-white font-semibold px-5 py-2.5 rounded-lg text-sm transition-colors"
+          >
+            Start building
+          </Link>
+        </div>
+      )}
+
+      {!loading && !error && scripts.length > 0 && (
+        <div className="space-y-3">
+          {scripts.map((s) => (
+            <ScriptCard key={s.id} script={s} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

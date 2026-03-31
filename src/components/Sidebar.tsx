@@ -9,7 +9,6 @@ import {
   UsersIcon,
   ClipboardDocumentListIcon,
   ChatBubbleLeftRightIcon,
-  LinkIcon,
   Cog6ToothIcon,
   StarIcon,
   BookOpenIcon,
@@ -21,6 +20,8 @@ import {
   ArrowLeftIcon,
   EyeIcon,
   ChevronDownIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
   UserCircleIcon,
   SunIcon,
   MoonIcon,
@@ -29,10 +30,12 @@ import {
   WrenchScrewdriverIcon,
   UserGroupIcon,
   RocketLaunchIcon,
+  LinkIcon,
 } from "@heroicons/react/24/outline";
-import { useState, useEffect, useRef } from "react";
-import { IMPERSONATE_LS_KEY, IMPERSONATE_COOKIE } from "@/lib/impersonate-constants";
+import { useState, useEffect } from "react";
+import { IMPERSONATE_LS_KEY } from "@/lib/impersonate-constants";
 import { useTheme } from "@/components/ThemeProvider";
+import { useSidebar } from "@/components/SidebarContext";
 
 interface FeatureFlags {
   campaigns?: boolean;
@@ -50,7 +53,7 @@ interface SidebarProps {
 const adminLinks = [
   { href: "/admin", label: "Dashboard", icon: HomeIcon },
   { href: "/admin/members", label: "Members", icon: UsersIcon },
-  { href: "/admin/audits", label: "Audits", icon: ClipboardDocumentListIcon, badgeKey: "auditRequests" },
+  { href: "/admin/audits", label: "Audits", icon: ClipboardDocumentListIcon },
   { href: "/admin/qa-prep", label: "Q&A Prep", icon: ChatBubbleLeftRightIcon },
   { href: "/admin/academy", label: "Academy", icon: AcademicCapIcon },
   { href: "/admin/academy-manager", label: "Academy Manager", icon: WrenchScrewdriverIcon, badgeKey: "qaCallsPending" },
@@ -82,17 +85,16 @@ interface ImpersonateState {
   memberName: string;
 }
 
-
 export default function Sidebar({ role, userName, featureFlags }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { theme, toggle: toggleTheme } = useTheme();
+  const { collapsed, toggle: toggleCollapsed } = useSidebar();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [impersonate, setImpersonate] = useState<ImpersonateState | null>(null);
   const [showSwitch, setShowSwitch] = useState(false);
   const [qaCallsPending, setQaCallsPending] = useState(0);
   const [hireWaitlist, setHireWaitlist] = useState(0);
-  const [auditRequests, setAuditRequests] = useState(0);
 
   const isStaff = role === "admin" || role === "editor";
   const isImpersonating = !!impersonate;
@@ -106,10 +108,6 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
       fetch("/api/admin/hire/waitlist/count")
         .then((r) => r.ok ? r.json() : null)
         .then((d) => d && setHireWaitlist(d.count ?? 0))
-        .catch(() => {});
-      fetch("/api/admin/audit-requests/count")
-        .then((r) => r.ok ? r.json() : null)
-        .then((d) => d && setAuditRequests(d.count ?? 0))
         .catch(() => {});
     }
   }, [role, pathname]);
@@ -164,7 +162,6 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
     router.push("/admin");
   }
 
-
   const homeHref = isStaffOnMemberView
     ? "/member/dashboard"
     : role === "admin" || role === "editor"
@@ -182,19 +179,16 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
   const sidebarInner = (
     <div className="flex flex-col h-full">
       {/* Persistent view switcher bar — admin and editor only */}
-      {isStaff && (
+      {isStaff && !collapsed && (
         <div
           className={`flex-shrink-0 px-3 py-2 flex items-center gap-2 ${
             isImpersonating ? "bg-[#e63946]" : "bg-[#6ba3c7]/20"
           }`}
         >
-          {/* Label */}
           <EyeIcon className={`w-3.5 h-3.5 shrink-0 ${isImpersonating ? "text-white/80" : "text-white/50"}`} />
           <span className={`text-[10px] font-bold uppercase tracking-widest shrink-0 ${isImpersonating ? "text-white" : "text-white/60"}`}>
             {isImpersonating ? "Member" : "Admin"}
           </span>
-
-          {/* Name + dropdown */}
           <button
             onClick={() => setShowSwitch((s) => !s)}
             className={`flex items-center gap-1.5 flex-1 min-w-0 text-left rounded-md px-2 py-1 transition-colors ${
@@ -208,8 +202,6 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
             </span>
             <ChevronDownIcon className={`w-3 h-3 shrink-0 transition-transform ${showSwitch ? "rotate-180" : ""} ${isImpersonating ? "text-white/80" : "text-white/50"}`} />
           </button>
-
-          {/* Exit button — impersonation only */}
           {isImpersonating && (
             <button
               onClick={exitImpersonation}
@@ -221,25 +213,50 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
         </div>
       )}
 
+      {/* Collapsed view switcher — icon only */}
+      {isStaff && collapsed && (
+        <div
+          className={`flex-shrink-0 py-2 flex justify-center ${
+            isImpersonating ? "bg-[#e63946]" : "bg-[#6ba3c7]/20"
+          }`}
+        >
+          {isImpersonating ? (
+            <button
+              onClick={exitImpersonation}
+              title="Exit member view"
+              className="text-white/80 hover:text-white transition-colors"
+            >
+              <ArrowLeftIcon className="w-4 h-4" />
+            </button>
+          ) : (
+            <EyeIcon className="w-4 h-4 text-white/50" />
+          )}
+        </div>
+      )}
+
       {showSwitch && (
         <MemberPickerModal onClose={() => setShowSwitch(false)} />
       )}
 
-      <div className="px-4 py-4 border-b border-white/10 flex-shrink-0">
-        <Link href={homeHref} className="flex items-center gap-3">
+      {/* Logo */}
+      <div className={`border-b border-white/10 flex-shrink-0 flex items-center ${collapsed ? "px-3 py-4 justify-center" : "px-4 py-4"}`}>
+        <Link href={homeHref} className="flex items-center gap-3 min-w-0">
           <img src="/logo-icon.png" alt="" className="h-10 w-10 rounded-lg object-cover shrink-0" />
-          <img
-            src="/logo-transparent.png"
-            alt="Attraction by Video"
-            className="h-8 w-auto object-contain"
-            style={{ filter: "brightness(0) invert(1)" }}
-          />
+          {!collapsed && (
+            <img
+              src="/logo-transparent.png"
+              alt="Attraction by Video"
+              className="h-8 w-auto object-contain"
+              style={{ filter: "brightness(0) invert(1)" }}
+            />
+          )}
         </Link>
       </div>
 
-      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+      {/* Nav */}
+      <nav className="flex-1 px-2 py-4 space-y-0.5 overflow-y-auto">
         {(() => {
-          const badges: Record<string, number> = { qaCallsPending, hireWaitlist, auditRequests };
+          const badges: Record<string, number> = { qaCallsPending, hireWaitlist };
           const renderedSections = new Set<string>();
           return links.map((link) => {
             const Icon = link.icon;
@@ -248,7 +265,7 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
             const badgeKey = (link as any).badgeKey as string | undefined;
             const badgeCount = badgeKey ? (badges[badgeKey] ?? 0) : 0;
 
-            const sectionHeader = sectionLabel && !renderedSections.has(sectionLabel) ? (() => {
+            const sectionHeader = !collapsed && sectionLabel && !renderedSections.has(sectionLabel) ? (() => {
               renderedSections.add(sectionLabel);
               return (
                 <div key={`section-${sectionLabel}`} className="px-3 pt-4 pb-1">
@@ -262,18 +279,28 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
                 {sectionHeader}
                 <Link
                   href={link.href}
-                  className={`flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-colors duration-200 border-l-2 ${
+                  title={collapsed ? link.label : undefined}
+                  className={`flex items-center gap-3 py-2.5 text-sm font-medium transition-colors duration-200 border-l-2 rounded-r-md ${
+                    collapsed ? "px-3 justify-center border-l-0" : "px-3"
+                  } ${
                     active
                       ? "border-[#6ba3c7] bg-white/10 text-white"
                       : "border-transparent text-white/60 hover:text-white hover:bg-white/8"
-                  } ${sectionLabel ? "pl-6" : ""}`}
+                  } ${sectionLabel && !collapsed ? "pl-6" : ""}`}
                 >
                   <Icon className="w-5 h-5 shrink-0" />
-                  <span className="leading-tight flex-1">{link.label}</span>
-                  {badgeCount > 0 && (
-                    <span className="bg-amber-500 text-amber-900 text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">
-                      {badgeCount}
-                    </span>
+                  {!collapsed && (
+                    <>
+                      <span className="leading-tight flex-1">{link.label}</span>
+                      {badgeCount > 0 && (
+                        <span className="bg-amber-500 text-amber-900 text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">
+                          {badgeCount}
+                        </span>
+                      )}
+                    </>
+                  )}
+                  {collapsed && badgeCount > 0 && (
+                    <span className="absolute top-1 right-1 w-2 h-2 bg-amber-500 rounded-full" />
                   )}
                 </Link>
               </div>
@@ -282,27 +309,49 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
         })()}
       </nav>
 
-      <div className="px-3 py-4 border-t border-white/10 flex-shrink-0">
-        <div className="px-3 py-2 mb-1">
-          <p className="text-sm font-semibold text-white truncate">{userName}</p>
-          <p className="text-xs text-white/40 mt-0.5">{roleLabel}</p>
-        </div>
+      {/* Bottom: user info + actions */}
+      <div className={`border-t border-white/10 flex-shrink-0 py-3 ${collapsed ? "px-2" : "px-3"}`}>
+        {!collapsed && (
+          <div className="px-3 py-2 mb-1">
+            <p className="text-sm font-semibold text-white truncate">{userName}</p>
+            <p className="text-xs text-white/40 mt-0.5">{roleLabel}</p>
+          </div>
+        )}
         <button
           onClick={toggleTheme}
-          className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-white/50 hover:text-white hover:bg-white/5 transition-colors duration-200 w-full"
-          aria-label="Toggle dark mode"
+          title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+          className={`flex items-center gap-3 py-2.5 text-sm font-medium text-white/50 hover:text-white hover:bg-white/5 transition-colors duration-200 w-full rounded-md ${collapsed ? "px-3 justify-center" : "px-3"}`}
         >
           {theme === "dark"
             ? <SunIcon className="w-5 h-5 shrink-0" />
             : <MoonIcon className="w-5 h-5 shrink-0" />}
-          <span>{theme === "dark" ? "Light mode" : "Dark mode"}</span>
+          {!collapsed && <span>{theme === "dark" ? "Light mode" : "Dark mode"}</span>}
         </button>
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}
-          className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-white/50 hover:text-white hover:bg-white/5 transition-colors duration-200 w-full"
+          title={collapsed ? "Sign out" : undefined}
+          className={`flex items-center gap-3 py-2.5 text-sm font-medium text-white/50 hover:text-white hover:bg-white/5 transition-colors duration-200 w-full rounded-md ${collapsed ? "px-3 justify-center" : "px-3"}`}
         >
           <ArrowRightOnRectangleIcon className="w-5 h-5 shrink-0" />
-          <span>Sign out</span>
+          {!collapsed && <span>Sign out</span>}
+        </button>
+      </div>
+
+      {/* Collapse toggle — desktop only, bottom of sidebar */}
+      <div className={`flex-shrink-0 border-t border-white/5 py-2 ${collapsed ? "flex justify-center" : "px-3"}`}>
+        <button
+          onClick={toggleCollapsed}
+          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          className={`flex items-center gap-2 py-2 text-xs text-white/30 hover:text-white/70 transition-colors duration-200 rounded-md hover:bg-white/5 ${collapsed ? "px-3" : "px-3 w-full"}`}
+        >
+          {collapsed ? (
+            <ChevronRightIcon className="w-4 h-4 shrink-0" />
+          ) : (
+            <>
+              <ChevronLeftIcon className="w-4 h-4 shrink-0" />
+              <span>Collapse</span>
+            </>
+          )}
         </button>
       </div>
     </div>
@@ -362,7 +411,11 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
       </aside>
 
       {/* Desktop fixed sidebar */}
-      <aside className="hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 lg:left-0 lg:w-[260px] bg-[#1e2a38] z-30">
+      <aside
+        className={`hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 lg:left-0 bg-[#1e2a38] z-30 transition-all duration-300 ease-in-out ${
+          collapsed ? "lg:w-16" : "lg:w-[260px]"
+        }`}
+      >
         {sidebarInner}
       </aside>
     </>

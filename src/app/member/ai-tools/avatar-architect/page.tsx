@@ -23,19 +23,6 @@ interface Message {
 
 type RawTheme = string | { name: string; emoji?: string | null; colour?: string | null; coreStress?: string | null; content_engine_prompt?: string | null };
 
-const BUY_SIDE_CONSTRAINT = "\n\n🚫 HARD CONSTRAINT — BUY-SIDE TITLES ONLY. This theme may involve sell-side stress, but the TITLE and FRAMING must be 100% buy-side. Sell-side content does not perform on YouTube. The viewer clicks because they're thinking about BUYING — the sell-side reality is revealed inside the content, never in the title.";
-
-function parseThemeEntry(t: RawTheme): { name: string; context: string; buySide: boolean } {
-  if (typeof t === "string") return { name: t, context: "", buySide: false };
-  const raw = t.content_engine_prompt ?? "";
-  const hasBuySide = raw.includes(BUY_SIDE_CONSTRAINT);
-  return {
-    name: t.name,
-    context: hasBuySide ? raw.replace(BUY_SIDE_CONSTRAINT, "") : raw,
-    buySide: hasBuySide,
-  };
-}
-
 interface AvatarData {
   avatar_name: string;
   avatar_summary: string;
@@ -160,12 +147,16 @@ function AvatarProfileCard({
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(avatar.avatarName ?? "");
   const [summary, setSummary] = useState(avatar.avatarSummary ?? "");
-  const [themes, setThemes] = useState<{ name: string; context: string; buySide: boolean }[]>(
+  const [themes, setThemes] = useState<{ name: string; context: string }[]>(
     Array.isArray(avatar.contentThemes)
-      ? avatar.contentThemes.map(parseThemeEntry)
+      ? avatar.contentThemes.map((t) => ({
+          name: getThemeName(t),
+          context: typeof t === "string" ? "" : (t.content_engine_prompt ?? ""),
+        }))
       : []
   );
   const [themeInput, setThemeInput] = useState("");
+  const [buySideConstraint, setBuySideConstraint] = useState(false);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const MAX_THEMES = 4;
@@ -175,7 +166,10 @@ function AvatarProfileCard({
     setSummary(avatar.avatarSummary ?? "");
     setThemes(
       Array.isArray(avatar.contentThemes)
-        ? avatar.contentThemes.map(parseThemeEntry)
+        ? avatar.contentThemes.map((t) => ({
+            name: getThemeName(t),
+            context: typeof t === "string" ? "" : (t.content_engine_prompt ?? ""),
+          }))
         : []
     );
     setEditing(true);
@@ -189,7 +183,7 @@ function AvatarProfileCard({
   function addTheme() {
     const t = themeInput.trim();
     if (t && themes.length < MAX_THEMES && !themes.some((th) => th.name === t)) {
-      setThemes((prev) => [...prev, { name: t, context: "", buySide: false }]);
+      setThemes((prev) => [...prev, { name: t, context: "" }]);
     }
     setThemeInput("");
   }
@@ -205,9 +199,10 @@ function AvatarProfileCard({
   async function save() {
     setSaving(true);
     try {
+      const BUY_SIDE_CONSTRAINT = "\n\n🚫 HARD CONSTRAINT — BUY-SIDE TITLES ONLY. This theme may involve sell-side stress, but the TITLE and FRAMING must be 100% buy-side. Sell-side content does not perform on YouTube. The viewer clicks because they're thinking about BUYING — the sell-side reality is revealed inside the content, never in the title.";
       const themesToSave = themes.map((t) => ({
         name: t.name,
-        content_engine_prompt: t.buySide ? (t.context + BUY_SIDE_CONSTRAINT) : t.context,
+        content_engine_prompt: buySideConstraint ? (t.context + BUY_SIDE_CONSTRAINT) : t.context,
       }));
       const res = await fetch("/api/member/avatar", {
         method: "PUT",
@@ -275,20 +270,6 @@ function AvatarProfileCard({
                       placeholder="Describe the stresses, angles, tone, and content engine prompting for this theme…"
                       className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40 resize-y min-h-[60px]" />
                   </div>
-                  <div className="px-3 pb-2.5">
-                    <label className="flex items-start gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={t.buySide}
-                        onChange={(e) => { const v = e.target.checked; setThemes((prev) => prev.map((x, j) => j === i ? { ...x, buySide: v } : x)); }}
-                        className="mt-0.5 rounded border-gray-300 text-[#6ba3c7] focus:ring-[#6ba3c7]/40"
-                      />
-                      <div>
-                        <span className="text-xs font-semibold text-[#2f3437]/60">Enforce buy-side titles</span>
-                        <p className="text-xs text-[#2f3437]/40 leading-relaxed mt-0.5">Adds a hard constraint ensuring titles for this theme are framed from the buyer&apos;s perspective. Sell-side stress is revealed in the content, never the title.</p>
-                      </div>
-                    </label>
-                  </div>
                 </div>
               ))}
             </div>
@@ -302,6 +283,15 @@ function AvatarProfileCard({
                 </button>
               </div>
             )}
+            {/* Buy-side constraint toggle */}
+            <label className="flex items-start gap-2 mt-3 cursor-pointer">
+              <input type="checkbox" checked={buySideConstraint} onChange={(e) => setBuySideConstraint(e.target.checked)}
+                className="mt-0.5 rounded border-gray-300 text-[#6ba3c7] focus:ring-[#6ba3c7]/40" />
+              <div>
+                <span className="text-xs font-semibold text-[#2f3437]/60">Enforce buy-side titles</span>
+                <p className="text-xs text-[#2f3437]/40 leading-relaxed mt-0.5">Automatically adds a constraint to all themes ensuring titles are framed from the buyer&apos;s perspective. Sell-side stress is revealed in the content, never in the title.</p>
+              </div>
+            </label>
           </div>
         </div>
       </div>
@@ -359,9 +349,7 @@ function AvatarProfileCard({
         ) : (
           <div className="bg-white divide-y divide-[#2f3437]/5">
             {displayThemes.map((t, i) => {
-              const rawPrompt = typeof t === "string" ? null : (t.content_engine_prompt ?? null);
-              const hasBuySide = rawPrompt ? rawPrompt.includes(BUY_SIDE_CONSTRAINT) : false;
-              const prompt = rawPrompt ? rawPrompt.replace(BUY_SIDE_CONSTRAINT, "").trim() : null;
+              const prompt = typeof t === "string" ? null : (t.content_engine_prompt ?? null);
               return (
                 <div key={i} className="px-4 py-3">
                   <div className="flex items-center gap-3">
@@ -372,9 +360,6 @@ function AvatarProfileCard({
                       {getThemeEmoji(t) && <span className="mr-1.5">{getThemeEmoji(t)}</span>}
                       {getThemeName(t)}
                     </span>
-                    {hasBuySide && (
-                      <span className="text-xs font-semibold text-[#6ba3c7] bg-[#6ba3c7]/10 px-2 py-0.5 rounded-full">Buy-side</span>
-                    )}
                   </div>
                   {prompt && (
                     <p className="text-xs text-[#2f3437]/45 leading-relaxed mt-1.5 ml-9 line-clamp-2">{prompt}</p>

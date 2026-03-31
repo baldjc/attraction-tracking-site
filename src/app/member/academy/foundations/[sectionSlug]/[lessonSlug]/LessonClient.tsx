@@ -16,6 +16,7 @@ import {
   ChevronDownIcon,
 } from "@heroicons/react/24/outline";
 import { PRINCIPLE_NAMES, PRINCIPLE_COLORS } from "@/lib/academy-constants";
+import { getSectionIcon } from "@/lib/academy-section-icons";
 
 interface WorkbookField {
   id: string;
@@ -280,11 +281,16 @@ function LessonSidebar({
       <div className="mb-3">
         <Link
           href={`/member/academy/foundations/${sectionSlug}`}
-          className="text-xs font-semibold text-[#2f3437]/40 dark:text-white/40 uppercase tracking-wider hover:text-[#6ba3c7] transition-colors"
+          className="flex items-center gap-2 group"
         >
-          Section {sectionSortOrder}
+          <span className="text-xl leading-none">{getSectionIcon(sectionSortOrder, sectionSlug)}</span>
+          <div>
+            <p className="text-xs font-semibold text-[#2f3437]/40 dark:text-white/40 uppercase tracking-wider group-hover:text-[#6ba3c7] transition-colors">
+              Section {sectionSortOrder}
+            </p>
+            <p className="text-sm font-bold text-[#2f3437] dark:text-white mt-0.5 leading-snug group-hover:text-[#6ba3c7] transition-colors">{sectionTitle}</p>
+          </div>
         </Link>
-        <p className="text-sm font-bold text-[#2f3437] dark:text-white mt-0.5 leading-snug">{sectionTitle}</p>
       </div>
       {lessons.map((l, i) => {
         const isCurrent = l.id === currentLessonId;
@@ -459,7 +465,10 @@ export default function LessonClient({
         {/* Mobile section dropdown */}
         <details className="lg:hidden mb-4 bg-white dark:bg-[#1a2433] border border-[#eaeaea] dark:border-white/10 rounded-lg">
           <summary className="px-4 py-3 text-sm font-medium text-[#2f3437] dark:text-white cursor-pointer flex items-center justify-between">
-            <span>Section {lesson.section.sortOrder}: {lesson.section.title}</span>
+            <span className="flex items-center gap-2">
+              <span>{getSectionIcon(lesson.section.sortOrder, lesson.section.slug)}</span>
+              <span>Section {lesson.section.sortOrder}: {lesson.section.title}</span>
+            </span>
             <ChevronDownIcon className="w-4 h-4 text-[#2f3437]/40 dark:text-white/40" />
           </summary>
           <div className="px-2 pb-2">
@@ -493,14 +502,21 @@ export default function LessonClient({
 
         {/* Title + tags */}
         <div className="mb-5">
-          <h1 className="text-2xl font-bold text-[#2f3437] dark:text-white mb-2">{lesson.title}</h1>
-          <div className="flex flex-wrap gap-1.5">
-            {(lesson.principleTags as string[]).map((tag) => (
-              <span key={tag} className={`text-xs px-2 py-0.5 rounded-full font-medium ${PRINCIPLE_COLORS[tag] ?? "bg-gray-100 text-gray-600"}`}>
-                {PRINCIPLE_NAMES[tag] ?? tag}
-              </span>
-            ))}
-          </div>
+          <h1 className="text-2xl font-bold text-[#2f3437] dark:text-white mb-3">{lesson.title}</h1>
+          {(lesson.principleTags as string[]).length > 0 && (
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#2f3437]/40 dark:text-white/40 mb-1.5">
+                Attraction Principles in this video
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {(lesson.principleTags as string[]).map((tag) => (
+                  <span key={tag} className={`text-xs px-2 py-0.5 rounded-full font-medium ${PRINCIPLE_COLORS[tag] ?? "bg-gray-100 text-gray-600"}`}>
+                    {PRINCIPLE_NAMES[tag] ?? tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* YouTube embed */}

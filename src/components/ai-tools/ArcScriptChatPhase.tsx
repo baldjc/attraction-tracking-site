@@ -8,6 +8,7 @@ import {
   ArrowPathIcon,
   ChevronUpIcon,
 } from "@heroicons/react/24/outline";
+import Link from "next/link";
 import ArcProgressBar, { SECTIONS } from "@/components/ai-tools/ArcProgressBar";
 
 interface Message {
@@ -29,6 +30,8 @@ interface Props {
     clientStory: string;
     leadMagnet: string;
     nextVideoPush: string;
+    themeName?: string;
+    themeContext?: string;
   };
   onReset: () => void;
 }
@@ -280,6 +283,12 @@ export default function ArcScriptChatPhase({ initialData, onReset }: Props) {
     initialized.current = true;
     const firstMessage = [
       `Let's build the ARC script for: "${initialData.title}"`,
+      initialData.themeName
+        ? `\n\nCONTENT THEME: ${initialData.themeName}`
+        : "",
+      initialData.themeContext
+        ? `\nTHEME CONTEXT (apply this framing throughout the script):\n${initialData.themeContext}`
+        : "",
       initialData.talkingPoints
         ? `\nKey talking points I want to cover:\n${initialData.talkingPoints}`
         : "",
@@ -444,6 +453,14 @@ export default function ArcScriptChatPhase({ initialData, onReset }: Props) {
             {saved ? <CheckIcon className="w-4 h-4" /> : null}
             {saving ? "Saving…" : saved ? "Saved!" : "Save Script"}
           </button>
+          {saved && (
+            <Link
+              href="saved-scripts"
+              className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium border border-[#6ba3c7]/40 text-[#6ba3c7] rounded-lg hover:bg-[#6ba3c7]/5 transition-colors"
+            >
+              View all saved scripts →
+            </Link>
+          )}
           <button
             onClick={onReset}
             className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium border border-[#2f3437]/15 dark:border-white/15 rounded-lg hover:bg-[#111]/5 dark:hover:bg-white/5 transition-colors text-[#2f3437] dark:text-white"
