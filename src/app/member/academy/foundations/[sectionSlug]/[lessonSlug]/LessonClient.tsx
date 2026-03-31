@@ -10,7 +10,11 @@ import {
   CheckIcon,
   SparklesIcon,
 } from "@heroicons/react/24/solid";
-import { ArrowLeftIcon as ArrowLeftOutline } from "@heroicons/react/24/outline";
+import {
+  ArrowLeftIcon as ArrowLeftOutline,
+  PlayCircleIcon,
+  ChevronDownIcon,
+} from "@heroicons/react/24/outline";
 import { PRINCIPLE_NAMES, PRINCIPLE_COLORS } from "@/lib/academy-constants";
 
 interface WorkbookField {
@@ -41,6 +45,7 @@ interface LessonData {
   completedAt: string | null;
   prevLesson: { id: string; slug: string; sectionSlug: string } | null;
   nextLesson: { id: string; slug: string; sectionSlug: string } | null;
+  sectionLessons: { id: string; slug: string; title: string; completed: boolean }[];
 }
 
 function getYouTubeEmbedUrl(url: string): string | null {
@@ -254,6 +259,77 @@ function TableField({
   );
 }
 
+// ── Lesson sidebar component ─────────────────────────────────────────────────
+
+function LessonSidebar({
+  sectionTitle,
+  sectionSlug,
+  sectionSortOrder,
+  lessons,
+  currentLessonId,
+}: {
+  sectionTitle: string;
+  sectionSlug: string;
+  sectionSortOrder: number;
+  lessons: { id: string; slug: string; title: string; completed: boolean }[];
+  currentLessonId: string;
+}) {
+  const completedCount = lessons.filter((l) => l.completed).length;
+  return (
+    <nav className="space-y-1">
+      <div className="mb-3">
+        <Link
+          href={`/member/academy/foundations/${sectionSlug}`}
+          className="text-xs font-semibold text-[#2f3437]/40 dark:text-white/40 uppercase tracking-wider hover:text-[#6ba3c7] transition-colors"
+        >
+          Section {sectionSortOrder}
+        </Link>
+        <p className="text-sm font-bold text-[#2f3437] dark:text-white mt-0.5 leading-snug">{sectionTitle}</p>
+      </div>
+      {lessons.map((l, i) => {
+        const isCurrent = l.id === currentLessonId;
+        return (
+          <Link
+            key={l.id}
+            href={`/member/academy/foundations/${sectionSlug}/${l.slug}`}
+            className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
+              isCurrent
+                ? "bg-[#6ba3c7]/10 text-[#6ba3c7] font-medium"
+                : "text-[#2f3437]/70 dark:text-white/60 hover:bg-[#f7f6f3] dark:hover:bg-white/5"
+            }`}
+          >
+            <div className="shrink-0">
+              {l.completed ? (
+                <CheckCircleIcon className="w-4 h-4 text-green-500" />
+              ) : isCurrent ? (
+                <PlayCircleIcon className="w-4 h-4 text-[#6ba3c7]" />
+              ) : (
+                <div className="w-4 h-4 rounded-full border-2 border-[#d0d0d0] dark:border-white/20" />
+              )}
+            </div>
+            <span className="truncate">
+              <span className="text-[#2f3437]/30 dark:text-white/30 mr-1">{i + 1}.</span>
+              {l.title}
+            </span>
+          </Link>
+        );
+      })}
+      <div className="pt-3 mt-2 border-t border-[#eaeaea] dark:border-white/10">
+        <div className="flex items-center justify-between text-xs text-[#2f3437]/40 dark:text-white/40 mb-1">
+          <span>Progress</span>
+          <span>{completedCount}/{lessons.length}</span>
+        </div>
+        <div className="h-1.5 bg-[#eaeaea] dark:bg-white/10 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-[#6ba3c7] rounded-full transition-all"
+            style={{ width: `${lessons.length > 0 ? Math.round((completedCount / lessons.length) * 100) : 0}%` }}
+          />
+        </div>
+      </div>
+    </nav>
+  );
+}
+
 // ── Main lesson client component ──────────────────────────────────────────────
 
 export default function LessonClient({
@@ -265,7 +341,6 @@ export default function LessonClient({
 }) {
   const [lesson, setLesson] = useState<LessonData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"overview" | "workbook">("overview");
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [homeworkItems, setHomeworkItems] = useState<{ label: string; completed: boolean }[]>([]);
   const [completed, setCompleted] = useState(false);
@@ -348,7 +423,7 @@ export default function LessonClient({
 
   if (loading) {
     return (
-      <div className="max-w-3xl">
+      <div className="max-w-5xl">
         <div className="animate-pulse space-y-4">
           <div className="h-4 bg-[#eaeaea] dark:bg-white/10 rounded w-2/3" />
           <div className="h-8 bg-[#eaeaea] dark:bg-white/10 rounded w-full" />
@@ -360,83 +435,88 @@ export default function LessonClient({
 
   if (!lesson) {
     return (
-      <div className="max-w-3xl">
+      <div className="max-w-5xl">
         <p className="text-sm text-[#2f3437]/50 dark:text-white/50">Lesson not found.</p>
       </div>
     );
   }
 
   return (
-    <div className="max-w-3xl">
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-2 mb-5 flex-wrap text-sm">
-        <Link href="/member/academy" className="flex items-center gap-1 text-[#2f3437]/50 dark:text-white/50 hover:text-[#2f3437] dark:hover:text-white transition-colors">
-          <ArrowLeftOutline className="w-4 h-4" />
-          Academy
-        </Link>
-        <span className="text-[#2f3437]/30 dark:text-white/30">/</span>
-        <Link href="/member/academy/foundations" className="text-[#2f3437]/50 dark:text-white/50 hover:text-[#2f3437] dark:hover:text-white transition-colors">
-          Foundations
-        </Link>
-        <span className="text-[#2f3437]/30 dark:text-white/30">/</span>
-        <Link href={`/member/academy/foundations/${sectionSlug}`} className="text-[#2f3437]/50 dark:text-white/50 hover:text-[#2f3437] dark:hover:text-white transition-colors truncate">
-          {lesson.section.title}
-        </Link>
-        <span className="text-[#2f3437]/30 dark:text-white/30">/</span>
-        <span className="text-[#2f3437] dark:text-white font-medium truncate">{lesson.title}</span>
-      </div>
+    <div className="flex gap-8 max-w-5xl">
+      {/* Sidebar — hidden on mobile */}
+      <aside className="hidden lg:block w-64 shrink-0 sticky top-6 self-start">
+        <LessonSidebar
+          sectionTitle={lesson.section.title}
+          sectionSlug={sectionSlug}
+          sectionSortOrder={lesson.section.sortOrder}
+          lessons={lesson.sectionLessons ?? []}
+          currentLessonId={lesson.id}
+        />
+      </aside>
 
-      {/* Title + tags */}
-      <div className="mb-5">
-        <h1 className="text-2xl font-bold text-[#2f3437] dark:text-white mb-2">{lesson.title}</h1>
-        <div className="flex flex-wrap gap-1.5">
-          {(lesson.principleTags as string[]).map((tag) => (
-            <span key={tag} className={`text-xs px-2 py-0.5 rounded-full font-medium ${PRINCIPLE_COLORS[tag] ?? "bg-gray-100 text-gray-600"}`}>
-              {PRINCIPLE_NAMES[tag] ?? tag}
-            </span>
-          ))}
+      {/* Main content */}
+      <div className="flex-1 min-w-0">
+        {/* Mobile section dropdown */}
+        <details className="lg:hidden mb-4 bg-white dark:bg-[#1a2433] border border-[#eaeaea] dark:border-white/10 rounded-lg">
+          <summary className="px-4 py-3 text-sm font-medium text-[#2f3437] dark:text-white cursor-pointer flex items-center justify-between">
+            <span>Section {lesson.section.sortOrder}: {lesson.section.title}</span>
+            <ChevronDownIcon className="w-4 h-4 text-[#2f3437]/40 dark:text-white/40" />
+          </summary>
+          <div className="px-2 pb-2">
+            <LessonSidebar
+              sectionTitle={lesson.section.title}
+              sectionSlug={sectionSlug}
+              sectionSortOrder={lesson.section.sortOrder}
+              lessons={lesson.sectionLessons ?? []}
+              currentLessonId={lesson.id}
+            />
+          </div>
+        </details>
+
+        {/* Breadcrumb */}
+        <div className="flex items-center gap-2 mb-5 flex-wrap text-sm">
+          <Link href="/member/academy" className="flex items-center gap-1 text-[#2f3437]/50 dark:text-white/50 hover:text-[#2f3437] dark:hover:text-white transition-colors">
+            <ArrowLeftOutline className="w-4 h-4" />
+            Academy
+          </Link>
+          <span className="text-[#2f3437]/30 dark:text-white/30">/</span>
+          <Link href="/member/academy/foundations" className="text-[#2f3437]/50 dark:text-white/50 hover:text-[#2f3437] dark:hover:text-white transition-colors">
+            Foundations
+          </Link>
+          <span className="text-[#2f3437]/30 dark:text-white/30">/</span>
+          <Link href={`/member/academy/foundations/${sectionSlug}`} className="text-[#2f3437]/50 dark:text-white/50 hover:text-[#2f3437] dark:hover:text-white transition-colors truncate">
+            {lesson.section.title}
+          </Link>
+          <span className="text-[#2f3437]/30 dark:text-white/30">/</span>
+          <span className="text-[#2f3437] dark:text-white font-medium truncate">{lesson.title}</span>
         </div>
-      </div>
 
-      {/* YouTube embed */}
-      {embedUrl && (
-        <div className="relative pb-[56.25%] h-0 rounded-lg overflow-hidden mb-6 bg-black">
-          <iframe
-            src={embedUrl}
-            title={lesson.title}
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-            className="absolute top-0 left-0 w-full h-full"
-          />
+        {/* Title + tags */}
+        <div className="mb-5">
+          <h1 className="text-2xl font-bold text-[#2f3437] dark:text-white mb-2">{lesson.title}</h1>
+          <div className="flex flex-wrap gap-1.5">
+            {(lesson.principleTags as string[]).map((tag) => (
+              <span key={tag} className={`text-xs px-2 py-0.5 rounded-full font-medium ${PRINCIPLE_COLORS[tag] ?? "bg-gray-100 text-gray-600"}`}>
+                {PRINCIPLE_NAMES[tag] ?? tag}
+              </span>
+            ))}
+          </div>
         </div>
-      )}
 
-      {/* Tabs */}
-      <div className="border-b border-[#eaeaea] dark:border-white/10 mb-6">
-        <div className="flex gap-0">
-          {(["overview", "workbook"] as const).map((t) => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={`px-5 py-2.5 text-sm font-medium capitalize border-b-2 transition-colors ${
-                tab === t
-                  ? "border-[#6ba3c7] text-[#6ba3c7]"
-                  : "border-transparent text-[#2f3437]/50 dark:text-white/50 hover:text-[#2f3437] dark:hover:text-white"
-              }`}
-            >
-              {t}
-              {t === "workbook" && lesson.workbookFields.length > 0 && (
-                <span className="ml-1.5 text-xs bg-[#6ba3c7]/10 text-[#6ba3c7] px-1.5 py-0.5 rounded-full">
-                  {lesson.workbookFields.length}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
-      </div>
+        {/* YouTube embed */}
+        {embedUrl && (
+          <div className="relative pb-[56.25%] h-0 rounded-lg overflow-hidden mb-6 bg-black">
+            <iframe
+              src={embedUrl}
+              title={lesson.title}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              className="absolute top-0 left-0 w-full h-full"
+            />
+          </div>
+        )}
 
-      {/* Overview tab */}
-      {tab === "overview" && (
+        {/* Merged content — single scroll (description, takeaways, workbook, action items) */}
         <div className="space-y-6">
           {lesson.description && (
             <div className="bg-white dark:bg-[#1a2433] rounded-lg border border-[#eaeaea] dark:border-white/10 p-6">
@@ -455,6 +535,37 @@ export default function LessonClient({
             </div>
           )}
 
+          {lesson.workbookFields.length > 0 && (
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-bold text-[#2f3437] dark:text-white uppercase tracking-wider">
+                  Workbook
+                </h3>
+                <span className={`text-xs font-medium ${
+                  saveStatus === "saving" ? "text-[#2f3437]/40 dark:text-white/40" :
+                  saveStatus === "saved" ? "text-green-600 dark:text-green-400" :
+                  saveStatus === "error" ? "text-[#e63946]" :
+                  "text-[#2f3437]/20 dark:text-white/20"
+                }`}>
+                  {saveStatus === "saving" && "Saving\u2026"}
+                  {saveStatus === "saved" && "\u2713 All changes saved"}
+                  {saveStatus === "error" && "\u26A0 Save failed"}
+                  {saveStatus === "idle" && "Auto-saves as you type"}
+                </span>
+              </div>
+              <div className="space-y-5">
+                {lesson.workbookFields.map((field) => (
+                  <div key={field.id} className="bg-white dark:bg-[#1a2433] rounded-lg border border-[#eaeaea] dark:border-white/10 p-5">
+                    {field.fieldType === "short_text" && <ShortTextField field={field} onSave={saveWorkbookField} />}
+                    {field.fieldType === "long_text" && <LongTextField field={field} onSave={saveWorkbookField} />}
+                    {field.fieldType === "checklist" && <ChecklistField field={field} onSave={saveWorkbookField} />}
+                    {field.fieldType === "table" && <TableField field={field} onSave={saveWorkbookField} />}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {lesson.actionItems && (
             <div className="bg-white dark:bg-[#1a2433] rounded-lg border border-[#eaeaea] dark:border-white/10 p-6">
               <h3 className="text-sm font-bold text-[#2f3437] dark:text-white uppercase tracking-wider mb-3">
@@ -466,162 +577,115 @@ export default function LessonClient({
             </div>
           )}
         </div>
-      )}
 
-      {/* Workbook tab */}
-      {tab === "workbook" && (
-        <div>
-          <div className="flex items-center justify-between mb-5">
-            <h3 className="text-sm font-semibold text-[#2f3437]/60 dark:text-white/60 uppercase tracking-wider">
-              Your Workbook
+        {/* Homework section */}
+        {homeworkItems.length > 0 && (
+          <div className="mt-8 bg-white dark:bg-[#1a2433] rounded-lg border border-[#eaeaea] dark:border-white/10 p-6">
+            <h3 className="text-sm font-bold text-[#2f3437] dark:text-white uppercase tracking-wider mb-4">
+              Homework
             </h3>
-            <span className={`text-xs font-medium ${
-              saveStatus === "saving" ? "text-[#2f3437]/40 dark:text-white/40" :
-              saveStatus === "saved" ? "text-green-600 dark:text-green-400" :
-              saveStatus === "error" ? "text-[#e63946]" :
-              "text-[#2f3437]/20 dark:text-white/20"
-            }`}>
-              {saveStatus === "saving" && "Saving…"}
-              {saveStatus === "saved" && "✓ All changes saved"}
-              {saveStatus === "error" && "⚠ Save failed — your changes may not have been saved"}
-              {saveStatus === "idle" && "Auto-saves as you type"}
-            </span>
-          </div>
-
-          {lesson.workbookFields.length === 0 ? (
-            <div className="bg-white dark:bg-[#1a2433] rounded-lg border border-[#eaeaea] dark:border-white/10 p-8 text-center text-sm text-[#2f3437]/40 dark:text-white/40">
-              No workbook fields for this lesson.
-            </div>
-          ) : (
-            <div className="space-y-5">
-              {lesson.workbookFields.map((field) => (
-                <div key={field.id} className="bg-white dark:bg-[#1a2433] rounded-lg border border-[#eaeaea] dark:border-white/10 p-5">
-                  {field.fieldType === "short_text" && (
-                    <ShortTextField field={field} onSave={saveWorkbookField} />
-                  )}
-                  {field.fieldType === "long_text" && (
-                    <LongTextField field={field} onSave={saveWorkbookField} />
-                  )}
-                  {field.fieldType === "checklist" && (
-                    <ChecklistField field={field} onSave={saveWorkbookField} />
-                  )}
-                  {field.fieldType === "table" && (
-                    <TableField field={field} onSave={saveWorkbookField} />
-                  )}
-                </div>
+            <div className="space-y-3">
+              {homeworkItems.map((item, i) => (
+                <label key={i} className="flex items-start gap-3 cursor-pointer group">
+                  <div
+                    onClick={() => toggleHomework(i)}
+                    className={`mt-0.5 w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors cursor-pointer ${
+                      item.completed
+                        ? "bg-[#6ba3c7] border-[#6ba3c7]"
+                        : "border-[#eaeaea] dark:border-white/30 group-hover:border-[#6ba3c7]"
+                    }`}
+                  >
+                    {item.completed && <CheckIcon className="w-3 h-3 text-white" />}
+                  </div>
+                  <span
+                    onClick={() => toggleHomework(i)}
+                    className={`text-sm leading-relaxed ${
+                      item.completed
+                        ? "line-through text-[#2f3437]/40 dark:text-white/40"
+                        : "text-[#2f3437] dark:text-white"
+                    }`}
+                  >
+                    {item.label}
+                  </span>
+                </label>
               ))}
             </div>
-          )}
-        </div>
-      )}
-
-      {/* Homework section */}
-      {homeworkItems.length > 0 && (
-        <div className="mt-8 bg-white dark:bg-[#1a2433] rounded-lg border border-[#eaeaea] dark:border-white/10 p-6">
-          <h3 className="text-sm font-bold text-[#2f3437] dark:text-white uppercase tracking-wider mb-4">
-            Homework
-          </h3>
-          <div className="space-y-3">
-            {homeworkItems.map((item, i) => (
-              <label key={i} className="flex items-start gap-3 cursor-pointer group">
-                <div
-                  onClick={() => toggleHomework(i)}
-                  className={`mt-0.5 w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors cursor-pointer ${
-                    item.completed
-                      ? "bg-[#6ba3c7] border-[#6ba3c7]"
-                      : "border-[#eaeaea] dark:border-white/30 group-hover:border-[#6ba3c7]"
-                  }`}
-                >
-                  {item.completed && <CheckIcon className="w-3 h-3 text-white" />}
-                </div>
-                <span
-                  onClick={() => toggleHomework(i)}
-                  className={`text-sm leading-relaxed ${
-                    item.completed
-                      ? "line-through text-[#2f3437]/40 dark:text-white/40"
-                      : "text-[#2f3437] dark:text-white"
-                  }`}
-                >
-                  {item.label}
-                </span>
-              </label>
-            ))}
           </div>
-        </div>
-      )}
+        )}
 
-      {/* AI Tool CTA */}
-      {lesson.aiToolLink && lesson.aiToolLabel && (
-        <div className="mt-6 bg-[#6ba3c7]/8 dark:bg-[#6ba3c7]/10 border border-[#6ba3c7]/20 rounded-lg p-5 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-[#6ba3c7]/15 rounded-lg shrink-0">
-              <SparklesIcon className="w-5 h-5 text-[#6ba3c7]" />
+        {/* AI Tool CTA */}
+        {lesson.aiToolLink && lesson.aiToolLabel && (
+          <div className="mt-6 bg-[#6ba3c7]/8 dark:bg-[#6ba3c7]/10 border border-[#6ba3c7]/20 rounded-lg p-5 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-[#6ba3c7]/15 rounded-lg shrink-0">
+                <SparklesIcon className="w-5 h-5 text-[#6ba3c7]" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-[#2f3437] dark:text-white">
+                  Ready to put this into practice?
+                </p>
+                <p className="text-xs text-[#2f3437]/50 dark:text-white/50 mt-0.5">
+                  Use the {lesson.aiToolLabel} tool to apply what you've learned.
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-semibold text-[#2f3437] dark:text-white">
-                Ready to put this into practice?
-              </p>
-              <p className="text-xs text-[#2f3437]/50 dark:text-white/50 mt-0.5">
-                Use the {lesson.aiToolLabel} tool to apply what you've learned.
-              </p>
-            </div>
-          </div>
-          <Link
-            href={lesson.aiToolLink}
-            className="shrink-0 flex items-center gap-1.5 bg-[#6ba3c7] hover:bg-[#5490b5] text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
-          >
-            {lesson.aiToolLabel}
-            <ArrowRightIcon className="w-4 h-4" />
-          </Link>
-        </div>
-      )}
-
-      {/* Mark as Complete + Navigation */}
-      <div className="mt-8 pt-6 border-t border-[#eaeaea] dark:border-white/10 flex items-center justify-between gap-4 flex-wrap">
-        <div className="flex items-center gap-3">
-          {lesson.prevLesson ? (
             <Link
-              href={`/member/academy/foundations/${lesson.prevLesson.sectionSlug}/${lesson.prevLesson.slug}`}
-              className="flex items-center gap-1.5 text-sm text-[#2f3437]/60 dark:text-white/60 hover:text-[#2f3437] dark:hover:text-white transition-colors"
+              href={lesson.aiToolLink}
+              className="shrink-0 flex items-center gap-1.5 bg-[#6ba3c7] hover:bg-[#5490b5] text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
             >
-              <ArrowLeftIcon className="w-4 h-4" />
-              Previous
+              {lesson.aiToolLabel}
+              <ArrowRightIcon className="w-4 h-4" />
+            </Link>
+          </div>
+        )}
+
+        {/* Mark as Complete + Navigation */}
+        <div className="mt-8 pt-6 border-t border-[#eaeaea] dark:border-white/10 flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-3">
+            {lesson.prevLesson ? (
+              <Link
+                href={`/member/academy/foundations/${lesson.prevLesson.sectionSlug}/${lesson.prevLesson.slug}`}
+                className="flex items-center gap-1.5 text-sm text-[#2f3437]/60 dark:text-white/60 hover:text-[#2f3437] dark:hover:text-white transition-colors"
+              >
+                <ArrowLeftIcon className="w-4 h-4" />
+                Previous
+              </Link>
+            ) : (
+              <span />
+            )}
+          </div>
+
+          <button
+            onClick={toggleComplete}
+            disabled={markingComplete}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all disabled:opacity-50 ${
+              completed
+                ? "bg-green-500 hover:bg-green-600 text-white"
+                : "border border-[#eaeaea] dark:border-white/20 text-[#2f3437] dark:text-white hover:border-green-500 hover:text-green-600 dark:hover:text-green-400"
+            } ${justCompleted ? "scale-105 ring-2 ring-green-400 ring-offset-2" : ""}`}
+          >
+            <CheckCircleIcon className={`w-5 h-5 ${justCompleted ? "animate-bounce" : ""}`} />
+            {markingComplete ? "Saving\u2026" : completed ? "Completed!" : "Mark as Complete"}
+          </button>
+
+          {lesson.nextLesson ? (
+            <Link
+              href={`/member/academy/foundations/${lesson.nextLesson.sectionSlug}/${lesson.nextLesson.slug}`}
+              className="flex items-center gap-1.5 text-sm text-[#2f3437]/60 dark:text-white/60 hover:text-[#6ba3c7] transition-colors"
+            >
+              Next Lesson
+              <ArrowRightIcon className="w-4 h-4" />
             </Link>
           ) : (
-            <span />
+            <Link
+              href="/member/academy/foundations"
+              className="flex items-center gap-1.5 text-sm text-[#6ba3c7] hover:text-[#5490b5] transition-colors"
+            >
+              All Sections
+              <ArrowRightIcon className="w-4 h-4" />
+            </Link>
           )}
         </div>
-
-        <button
-          onClick={toggleComplete}
-          disabled={markingComplete}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all disabled:opacity-50 ${
-            completed
-              ? "bg-green-500 hover:bg-green-600 text-white"
-              : "border border-[#eaeaea] dark:border-white/20 text-[#2f3437] dark:text-white hover:border-green-500 hover:text-green-600 dark:hover:text-green-400"
-          } ${justCompleted ? "scale-105 ring-2 ring-green-400 ring-offset-2" : ""}`}
-        >
-          <CheckCircleIcon className={`w-5 h-5 ${justCompleted ? "animate-bounce" : ""}`} />
-          {markingComplete ? "Saving…" : completed ? "Completed!" : "Mark as Complete"}
-        </button>
-
-        {lesson.nextLesson ? (
-          <Link
-            href={`/member/academy/foundations/${lesson.nextLesson.sectionSlug}/${lesson.nextLesson.slug}`}
-            className="flex items-center gap-1.5 text-sm text-[#2f3437]/60 dark:text-white/60 hover:text-[#6ba3c7] transition-colors"
-          >
-            Next Lesson
-            <ArrowRightIcon className="w-4 h-4" />
-          </Link>
-        ) : (
-          <Link
-            href="/member/academy/foundations"
-            className="flex items-center gap-1.5 text-sm text-[#6ba3c7] hover:text-[#5490b5] transition-colors"
-          >
-            All Sections
-            <ArrowRightIcon className="w-4 h-4" />
-          </Link>
-        )}
       </div>
     </div>
   );
