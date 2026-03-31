@@ -3,7 +3,6 @@
 import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import { ArrowLeftIcon, CheckCircleIcon, PlayCircleIcon, DocumentTextIcon } from "@heroicons/react/24/outline";
-import { PRINCIPLE_NAMES, PRINCIPLE_COLORS } from "@/lib/academy-constants";
 
 interface Lesson {
   id: string;
@@ -129,19 +128,6 @@ export default function SectionPage({ params }: { params: Promise<{ sectionSlug:
                     <span className="flex items-center gap-1 text-[10px] text-[#2f3437]/40 dark:text-white/40">
                       <DocumentTextIcon className="w-3.5 h-3.5" />
                       Workbook
-                    </span>
-                  )}
-                  {(lesson.principleTags as string[]).slice(0, 3).map((tag) => (
-                    <span
-                      key={tag}
-                      className={`inline-flex text-[10px] px-1.5 py-0.5 rounded-full font-medium ${PRINCIPLE_COLORS[tag] ?? "bg-gray-100 text-gray-600"}`}
-                    >
-                      {PRINCIPLE_NAMES[tag] ?? tag}
-                    </span>
-                  ))}
-                  {(lesson.principleTags as string[]).length > 3 && (
-                    <span className="text-[10px] text-[#2f3437]/30 dark:text-white/30">
-                      +{(lesson.principleTags as string[]).length - 3}
                     </span>
                   )}
                 </div>
