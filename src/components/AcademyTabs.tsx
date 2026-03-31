@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   AcademicCapIcon,
+  ArrowLeftIcon,
   ArrowRightIcon,
   CheckCircleIcon,
   PlayCircleIcon,
@@ -820,6 +821,16 @@ function AcademyTabsInner({ routePath }: { routePath: string }) {
           onClose={() => setPlayerEntry(null)}
           onSaved={handleSaved}
         />
+      )}
+
+      {routePath === "/member/academy" && (
+        <Link
+          href="/member/academy"
+          className="flex items-center gap-1.5 text-xs text-[#2f3437]/50 dark:text-white/50 hover:text-[#6ba3c7] transition-colors mb-3"
+        >
+          <ArrowLeftIcon className="w-3.5 h-3.5" />
+          Back to Academy
+        </Link>
       )}
 
       <div className="flex gap-1 bg-[#111]/5 dark:bg-white/5 rounded-lg p-1 w-fit overflow-x-auto scrollbar-hide">
