@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
-import { EyeSlashIcon, EyeIcon, UserGroupIcon, ChevronDownIcon, XMarkIcon, CheckIcon, SparklesIcon, EnvelopeIcon, PencilSquareIcon, LinkIcon } from "@heroicons/react/24/outline";
+import { EyeSlashIcon, EyeIcon, UserGroupIcon, ChevronDownIcon, XMarkIcon, CheckIcon, SparklesIcon, EnvelopeIcon, PencilSquareIcon, LinkIcon, Cog6ToothIcon, ArrowTopRightOnSquareIcon, CloudArrowUpIcon } from "@heroicons/react/24/outline";
 import { IMPERSONATE_LS_KEY } from "@/lib/impersonate-constants";
 import LinkTrackingPage from "@/app/member/link-tracking/page";
 
@@ -921,11 +921,269 @@ function CurrencyRateSection() {
   );
 }
 
+// ─── Landing Page Settings ────────────────────────────────────────────────────
+
+interface SiteConfigRow {
+  id: number;
+  key: string;
+  value: string;
+  label: string | null;
+  fieldType: string;
+  category: string;
+  ghlCustomValueKey: string | null;
+  sortOrder: number;
+}
+
+function LandingPageSettingsSection() {
+  const [rows, setRows] = useState<SiteConfigRow[]>([]);
+  const [values, setValues] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState<{ msg: string; type: "success" | "warn" | "error" } | null>(null);
+
+  useEffect(() => {
+    fetch("/api/admin/site-config")
+      .then((r) => r.json())
+      .then((d) => {
+        const r: SiteConfigRow[] = d.settings ?? [];
+        setRows(r);
+        const v: Record<string, string> = {};
+        for (const row of r) v[row.key] = row.value;
+        setValues(v);
+      })
+      .catch(() => setToast({ msg: "Failed to load settings.", type: "error" }))
+      .finally(() => setLoading(false));
+  }, []);
+
+  function showToast(msg: string, type: "success" | "warn" | "error") {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 5000);
+  }
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      const settings = Object.entries(values).map(([key, value]) => ({ key, value }));
+      const res = await fetch("/api/admin/site-config", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ settings }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showToast(data.error ?? "Save failed.", "error");
+        return;
+      }
+      const { ghlSync } = data;
+      if (ghlSync?.failed > 0) {
+        showToast(
+          `Settings saved. GHL sync: ${ghlSync.synced} ok, ${ghlSync.failed} failed (${ghlSync.errors?.join(", ")}).`,
+          "warn"
+        );
+      } else {
+        showToast("Settings saved. GHL custom values updated.", "success");
+      }
+      // Reload to show updated computed values
+      const fresh = await fetch("/api/admin/site-config").then((r) => r.json());
+      const r2: SiteConfigRow[] = fresh.settings ?? [];
+      setRows(r2);
+      const v2: Record<string, string> = {};
+      for (const row of r2) v2[row.key] = row.value;
+      setValues(v2);
+    } catch {
+      showToast("An unexpected error occurred.", "error");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const webinarRows = rows.filter((r) => r.category === "webinar").sort((a, b) => a.sortOrder - b.sortOrder);
+  const computedRows = rows.filter((r) => r.category === "webinar_computed").sort((a, b) => a.sortOrder - b.sortOrder);
+
+  if (loading) {
+    return (
+      <div className="space-y-3">
+        {[...Array(6)].map((_, i) => (
+          <div key={i} className="h-12 bg-[#111]/5 dark:bg-white/5 rounded-lg animate-pulse" />
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Toast */}
+      {toast && (
+        <div
+          className={`rounded-xl px-5 py-3.5 text-sm font-medium flex items-start gap-3 ${
+            toast.type === "success"
+              ? "bg-green-50 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+              : toast.type === "warn"
+              ? "bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
+              : "bg-red-50 text-red-800 dark:bg-red-900/30 dark:text-red-300"
+          }`}
+        >
+          <span className="shrink-0 mt-0.5">
+            {toast.type === "success" ? "✓" : toast.type === "warn" ? "⚠" : "✕"}
+          </span>
+          <span>{toast.msg}</span>
+        </div>
+      )}
+
+      {/* Webinar Configuration card */}
+      <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl shadow-sm border border-[#111]/8 dark:border-white/8 overflow-hidden">
+        <div className="px-6 py-5 border-b border-[#111]/8 dark:border-white/8 flex items-center gap-3">
+          <div className="w-9 h-9 rounded-lg bg-[#6ba3c7]/10 flex items-center justify-center shrink-0">
+            <Cog6ToothIcon className="w-5 h-5 text-[#6ba3c7]" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-[#2f3437] dark:text-white">Webinar Configuration</h3>
+            <p className="text-xs text-[#2f3437]/50 dark:text-white/40 mt-0.5">
+              These values feed the public landing page and GHL custom values.
+            </p>
+          </div>
+        </div>
+        <div className="divide-y divide-[#111]/5 dark:divide-white/5">
+          {webinarRows.map((row) => (
+            <div key={row.key} className="px-6 py-4">
+              <label className="block text-xs font-semibold text-[#2f3437]/70 dark:text-white/50 mb-1.5 uppercase tracking-wide">
+                {row.label ?? row.key}
+                {row.ghlCustomValueKey && (
+                  <span className="ml-2 normal-case tracking-normal font-normal text-[#6ba3c7]/70">
+                    → GHL: {row.ghlCustomValueKey}
+                  </span>
+                )}
+              </label>
+              {row.fieldType === "toggle" ? (
+                <button
+                  onClick={() =>
+                    setValues((v) => ({
+                      ...v,
+                      [row.key]: v[row.key] === "true" ? "false" : "true",
+                    }))
+                  }
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+                    values[row.key] === "true" ? "bg-[#6ba3c7]" : "bg-[#111]/20 dark:bg-white/20"
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                      values[row.key] === "true" ? "translate-x-6" : "translate-x-1"
+                    }`}
+                  />
+                </button>
+              ) : row.fieldType === "url" ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="url"
+                    value={values[row.key] ?? ""}
+                    onChange={(e) => setValues((v) => ({ ...v, [row.key]: e.target.value }))}
+                    className="flex-1 text-sm text-[#2f3437] dark:text-white bg-[#f7f6f3] dark:bg-white/5 border border-[#111]/10 dark:border-white/10 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30 font-mono"
+                    placeholder="https://"
+                  />
+                  {values[row.key] && (
+                    <a
+                      href={values[row.key]}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[#6ba3c7] hover:text-[#5490b5] shrink-0"
+                      title="Open URL"
+                    >
+                      <ArrowTopRightOnSquareIcon className="w-4 h-4" />
+                    </a>
+                  )}
+                </div>
+              ) : (
+                <input
+                  type="text"
+                  value={values[row.key] ?? ""}
+                  onChange={(e) => setValues((v) => ({ ...v, [row.key]: e.target.value }))}
+                  className="w-full text-sm text-[#2f3437] dark:text-white bg-[#f7f6f3] dark:bg-white/5 border border-[#111]/10 dark:border-white/10 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30"
+                />
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Computed values card (collapsible) */}
+      {computedRows.length > 0 && (
+        <ComputedValuesCard rows={computedRows} values={values} />
+      )}
+
+      {/* Save button */}
+      <div className="flex justify-end">
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="inline-flex items-center gap-2 bg-[#6ba3c7] hover:bg-[#5490b5] disabled:opacity-50 text-white font-semibold px-6 py-2.5 rounded-xl text-sm transition-colors"
+        >
+          <CloudArrowUpIcon className="w-4 h-4" />
+          {saving ? "Saving…" : "Save & Sync to GHL"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ComputedValuesCard({
+  rows,
+  values,
+}: {
+  rows: SiteConfigRow[];
+  values: Record<string, string>;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl shadow-sm border border-[#111]/8 dark:border-white/8 overflow-hidden">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="w-full px-6 py-5 flex items-center justify-between text-left"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-lg bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center shrink-0">
+            <SparklesIcon className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-[#2f3437] dark:text-white">Computed Values</h3>
+            <p className="text-xs text-[#2f3437]/50 dark:text-white/40 mt-0.5">
+              Auto-generated on save — read-only preview of what gets pushed to GHL.
+            </p>
+          </div>
+        </div>
+        <ChevronDownIcon
+          className={`w-4 h-4 text-[#2f3437]/40 dark:text-white/30 transition-transform ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+      {open && (
+        <div className="border-t border-[#111]/8 dark:border-white/8 divide-y divide-[#111]/5 dark:divide-white/5">
+          {rows.map((row) => (
+            <div key={row.key} className="px-6 py-4">
+              <label className="block text-xs font-semibold text-[#2f3437]/70 dark:text-white/50 mb-1.5 uppercase tracking-wide">
+                {row.label ?? row.key}
+                {row.ghlCustomValueKey && (
+                  <span className="ml-2 normal-case tracking-normal font-normal text-[#6ba3c7]/70">
+                    → GHL: {row.ghlCustomValueKey}
+                  </span>
+                )}
+              </label>
+              <div className="text-sm text-[#2f3437]/60 dark:text-white/40 bg-[#f7f6f3] dark:bg-white/5 border border-[#111]/8 dark:border-white/8 rounded-lg px-3 py-2 font-mono">
+                {values[row.key] || <span className="italic">will be computed on next save</span>}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Tab definitions ─────────────────────────────────────────────────────────
 
 const ADMIN_SETTINGS_TABS = [
   { id: "general", label: "Platform Settings" },
   { id: "link-tracking", label: "My Link Tracking" },
+  { id: "landing-page", label: "Landing Page" },
 ] as const;
 type AdminSettingsTab = (typeof ADMIN_SETTINGS_TABS)[number]["id"];
 
@@ -936,7 +1194,13 @@ function SettingsPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const pageRole = (session?.user as any)?.role;
-  const activeTab: AdminSettingsTab = searchParams.get("tab") === "link-tracking" ? "link-tracking" : "general";
+  const tabParam = searchParams.get("tab");
+  const activeTab: AdminSettingsTab =
+    tabParam === "link-tracking"
+      ? "link-tracking"
+      : tabParam === "landing-page"
+      ? "landing-page"
+      : "general";
 
   function switchTab(id: AdminSettingsTab) {
     const url = new URL(window.location.href);
@@ -974,6 +1238,7 @@ function SettingsPageInner() {
             }`}
           >
             {t.id === "link-tracking" && <LinkIcon className="w-4 h-4" />}
+            {t.id === "landing-page" && <Cog6ToothIcon className="w-4 h-4" />}
             {t.label}
           </button>
         ))}
@@ -981,6 +1246,25 @@ function SettingsPageInner() {
 
       {/* My Link Tracking tab */}
       {activeTab === "link-tracking" && <LinkTrackingPage />}
+
+      {/* Landing Page tab */}
+      {activeTab === "landing-page" && (
+        <div className="space-y-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[#6ba3c7]/10 flex items-center justify-center">
+              <Cog6ToothIcon className="w-5 h-5 text-[#6ba3c7]" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-[#6ba3c7] uppercase tracking-widest">Settings</p>
+              <h2 className="text-lg font-bold text-[#2f3437] dark:text-white">Landing Page Settings</h2>
+            </div>
+          </div>
+          <p className="text-sm text-[#2f3437]/60 dark:text-white/40 -mt-2">
+            Manage dynamic content for the public landing pages. Changes sync to GHL custom values automatically.
+          </p>
+          <LandingPageSettingsSection />
+        </div>
+      )}
 
       {/* Platform Settings tab */}
       {activeTab === "general" && <>
@@ -1014,6 +1298,13 @@ function SettingsPageInner() {
         description="Full system prompt for the Avatar Architect coaching conversation. Controls the 4-phase flow, question bank, avatar document template, stress theme format, content engine prompt rules, and title frameworks. Reset to restore the built-in prompt."
         settingKey="avatar_architect_prompt"
         rows={50}
+        icon={<SparklesIcon className="w-5 h-5 text-[#6ba3c7]" />}
+      />
+      <PromptEditorSection
+        title="Theme Builder — System Prompt"
+        description="System prompt for the Theme Builder coaching tool inside Avatar Architect. Controls the coaching flow for building a single content theme into a complete content engine prompt, including buy-side framing rules and title framework examples. Reset to restore the built-in prompt."
+        settingKey="theme_builder_prompt"
+        rows={40}
         icon={<SparklesIcon className="w-5 h-5 text-[#6ba3c7]" />}
       />
       </>}

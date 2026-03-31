@@ -33,11 +33,14 @@ interface AnalyticsSummary {
 }
 
 const LINK_SOURCE_STYLES: Record<string, { label: string; color: string }> = {
-  youtube:   { label: "YouTube",   color: "bg-red-100 text-red-700" },
-  linkedin:  { label: "LinkedIn",  color: "bg-blue-100 text-blue-700" },
-  instagram: { label: "Instagram", color: "bg-pink-100 text-pink-700" },
-  email:     { label: "Email",     color: "bg-teal-100 text-teal-700" },
-  other:     { label: "Other",     color: "bg-gray-100 text-gray-600" },
+  youtube:    { label: "YouTube",    color: "bg-red-100 text-red-700" },
+  linkedin:   { label: "LinkedIn",   color: "bg-blue-100 text-blue-700" },
+  instagram:  { label: "Instagram",  color: "bg-pink-100 text-pink-700" },
+  email:      { label: "Email",      color: "bg-teal-100 text-teal-700" },
+  facebook:   { label: "Facebook",   color: "bg-indigo-100 text-indigo-700" },
+  google_ads: { label: "Google Ads", color: "bg-green-100 text-green-700" },
+  blog:       { label: "Blog",       color: "bg-amber-100 text-amber-700" },
+  other:      { label: "Other",      color: "bg-gray-100 text-gray-600" },
 };
 
 const INPUT_CLS = "w-full border border-[#2f3437]/20 rounded-lg px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-[#6ba3c7]";

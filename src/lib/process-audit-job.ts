@@ -178,6 +178,21 @@ export async function processAuditJob(jobId: string, selectedVideoId?: string) {
     }
 
     await prisma.auditJob.update({ where: { id: jobId }, data: { status: "complete", auditId: audit.id } });
+
+    // Auto-link completed audit to any pending AuditRequest for this user
+    try {
+      const pendingRequest = await prisma.auditRequest.findFirst({
+        where: { userId: member.id, status: "pending", auditId: null },
+      });
+      if (pendingRequest) {
+        await prisma.auditRequest.update({
+          where: { id: pendingRequest.id },
+          data: { auditId: audit.id, status: "audited" },
+        });
+      }
+    } catch {
+      // non-critical — don't fail the audit job if linking fails
+    }
   } catch (err: any) {
     console.error(`[audit job ${jobId}] failed:`, err.message);
     await prisma.auditJob.update({ where: { id: jobId }, data: { status: "failed", errorMessage: err.message } });

@@ -11,6 +11,12 @@ enum UserRole {
   admin
   editor
   foundations_member
+  audit_lead
+}
+
+enum AuditRequestStatus {
+  pending
+  audited
 }
 
 enum ServiceTier {
@@ -79,6 +85,7 @@ model User {
   stripeCurrentPeriodEnd  DateTime?
   stripePriceAmount       Int?
   stripeCurrency          String?
+  lastPaymentReminderSentAt DateTime?
   slackUserId       String?
   skoolProfile      String?
   coachingNotes          String?
@@ -695,4 +702,38 @@ model HelpMessage {
 
   @@index([conversationId])
   @@map("help_messages")
+}
+
+model SiteConfig {
+  id                Int      @id @default(autoincrement())
+  key               String   @unique
+  value             String
+  label             String?
+  fieldType         String   @default("text") @map("field_type")
+  category          String   @default("webinar")
+  ghlCustomValueKey String?  @map("ghl_custom_value_key")
+  sortOrder         Int      @default(0) @map("sort_order")
+  updatedAt         DateTime @default(now()) @updatedAt @map("updated_at")
+  updatedBy         String?  @map("updated_by")
+
+  @@map("site_config")
+}
+
+model AuditRequest {
+  id                   String             @id @default(uuid())
+  fullName             String
+  email                String
+  phone                String?
+  youtubeChannelUrl    String
+  currentYoutubeIncome String?
+  desiredYoutubeIncome String?
+  status               AuditRequestStatus @default(pending)
+  userId               String?
+  auditId              String?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  @@index([email])
+  @@index([status])
+  @@map("audit_requests")
 }

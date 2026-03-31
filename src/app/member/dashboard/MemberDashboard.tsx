@@ -30,6 +30,53 @@ function fmtUploadDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" });
 }
 
+// ── Payment Banner ────────────────────────────────────────────
+
+function PaymentBanner() {
+  const [pastDue, setPastDue] = useState(false);
+  const [retryUrl, setRetryUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/member/payment-retry-url")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.pastDue) {
+          setPastDue(true);
+          setRetryUrl(d.url ?? null);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  if (!pastDue) return null;
+
+  return (
+    <div className="rounded-lg bg-amber-50 border border-amber-300 px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:justify-between">
+      <div>
+        <p className="font-semibold text-amber-800 text-sm">Your subscription payment is past due</p>
+        <p className="text-amber-700 text-sm mt-0.5">Please update your payment details to keep your access.</p>
+      </div>
+      {retryUrl ? (
+        <a
+          href={retryUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="shrink-0 inline-block bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+        >
+          Update Payment
+        </a>
+      ) : (
+        <a
+          href="mailto:support@attractionbyvideo.com"
+          className="shrink-0 inline-block bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+        >
+          Contact Support
+        </a>
+      )}
+    </div>
+  );
+}
+
 // ── Types ─────────────────────────────────────────────────────
 
 interface DashboardData {
@@ -96,6 +143,8 @@ export default function MemberDashboard() {
     <div className="space-y-10 pb-12 max-w-5xl mx-auto">
 
       <OnboardingBanner />
+
+      <PaymentBanner />
 
       {/* ── Greeting ── */}
       <div className="pt-2 text-center">
