@@ -454,7 +454,7 @@ export default function ArcScriptUploadPhase({ onStartBuilding, prefillData, onS
 
       <div>
         <label className="block text-sm font-semibold text-[#2f3437] dark:text-white mb-1.5">
-          {isPrefilled ? "Paste research notes" : "Paste your research notes"}{" "}
+          Paste your research notes{" "}
           <span className="text-[#2f3437]/40 dark:text-white/40 font-normal">(or paste content from scanned PDFs)</span>
         </label>
         <textarea
