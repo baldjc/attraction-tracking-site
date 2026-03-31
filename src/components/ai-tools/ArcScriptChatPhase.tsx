@@ -283,6 +283,9 @@ export default function ArcScriptChatPhase({ initialData, onReset }: Props) {
       initialData.talkingPoints
         ? `\nKey talking points I want to cover:\n${initialData.talkingPoints}`
         : "",
+      initialData.researchSummary
+        ? `\n\n=== RESEARCH I UPLOADED (use this data in the script) ===\n${initialData.researchSummary}`
+        : "",
       initialData.clientStory
         ? `\nClient story / personal experience:\n${initialData.clientStory}`
         : "",

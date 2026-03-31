@@ -256,7 +256,7 @@ export default function ArcScriptUploadPhase({ onStartBuilding, prefillData, onS
       onStartBuilding({
         title: effectiveTitle.trim(),
         talkingPoints: effectiveTalkingPoints.trim(),
-        researchSummary: summaryData.summary ?? researchText,
+        researchSummary: summaryData.summary || researchText,
         clientStory: clientStory.trim(),
         leadMagnet: leadMagnet.trim(),
         nextVideoPush: nextVideoPush.trim(),
