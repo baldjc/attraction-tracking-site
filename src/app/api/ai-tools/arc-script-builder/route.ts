@@ -408,14 +408,9 @@ export async function POST(req: NextRequest) {
       ? dbUser.creatorCredentials
       : "(no credentials saved — member should add these in Settings > Your Credentials)";
 
-    const customPromptSetting = await prisma.appSetting.findUnique({
-      where: { key: "prompt_arc_script_builder" },
-    });
-
-    const systemPromptTemplate =
-      customPromptSetting?.value && customPromptSetting.value.trim().length > 10
-        ? customPromptSetting.value
-        : DEFAULT_SYSTEM_PROMPT;
+    // Always use the code-based prompt — DB overrides caused stale prompts
+    // that silently ignored all code-level improvements.
+    const systemPromptTemplate = DEFAULT_SYSTEM_PROMPT;
 
     const leadMagnetText = leadMagnet?.trim() || "(not provided — brainstorm options in Section 6)";
     const nextVideoText = nextVideoPush?.trim() || "(not provided — ask the member before writing the closing)";
