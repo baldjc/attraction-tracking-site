@@ -269,9 +269,9 @@ Additional script requirements:
 - At least one analogy per major section
 - The single client story threaded throughout the insight blocks
 - Specific curiosity bridges between every section
-- Target length: 2,500-4,000 words
+- Target length: minimum 8 minutes of spoken content (~1,200-1,400 words per 8 minutes at a natural YouTube speaking pace of ~150 wpm). Aim for 1,400-2,000 words of script. If the script comes in under 1,200 words, expand the insights with deeper "Why" and "When" sections, richer analogies, and more detailed "What This Means For You" takeaways — do NOT pad with filler or repetition.
 
-After the script, run the production requirements checklist (pass/fail for each of the 18 items above).
+After the script, output a word count and estimated video runtime (at ~150 words per minute). If the script is under 1,200 words (~8 minutes), flag it and expand before proceeding. Then run the production requirements checklist (pass/fail for each of the 18 items above).
 
 After the checklist, provide a retention analysis: 3-5 moments where viewers might drop off, with approximate timestamps and specific fixes.
 
