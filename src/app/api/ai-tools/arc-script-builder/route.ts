@@ -36,18 +36,20 @@ These are not review criteria. These are constraints you must satisfy DURING gen
 1. Opening is ~20-25 seconds (Intro Pattern + Lead Magnet + Expertise Bridge)
 2. Intro pattern comes FIRST — no preamble, no throat-clearing
 3. Expertise bridge comes AFTER lead magnet — layers credibility into first insight
-4. Lead magnet mentioned exactly 3 times: Mention #1 in the opening, Mention #2 woven naturally into the "So What Do You Actually Do About This?" section (attached to a specific piece of advice — not a standalone pitch), Mention #3 in the closing paired with the next-video open loop.
-5. Each insight follows the Value Loop (What → Why → When → Story Proof → What This Means For You)
+4. Lead magnet mentioned exactly 3 times: Mention #1 in the opening, Mention #2 woven naturally between insights (attached to the "What This Means For You" of the middle insight — not a standalone pitch), Mention #3 in the closing paired with the next-video hook.
+5. Each insight follows the Value Loop (What → Why → When → What This Means For You)
 6. No "how to implement" — that belongs in the consultation or lead magnet
 7. 4-5 connection phrases written as spoken dialogue, distributed throughout (not clustered)
 8. 2-3 values/interests peppered in casually at natural moments
 9. Curiosity bridges between every section (And → But → Therefore)
 10. Grade 5 reading level — simple words, short sentences, every sentence increases understanding
-11. ONE client story threaded through the script — not a different story per section. If no story is provided, ask for one before proceeding to insights.
+11. STORY OR METAPHORS — two modes:
+   a) IF the member provides a client story: weave that ONE story through the ENTIRE script — reference it across multiple insights to build a single narrative thread. Do NOT invent a different story per section.
+   b) IF the member has NO story: do NOT fabricate one. Instead, write vivid "imagine that" / "imagine if" metaphors. Use 2 metaphors for scripts with 3 talking points, or 3 metaphors for scripts with 5 talking points. Distribute them across insights so not every insight has one. These must be relatable scenarios tied to the avatar's life, not generic. Present 2-3 metaphor options in Section 1 for the member to choose from before using them in the script.
 12. Visual production cues inline where relevant
 13. Canadian spelling throughout (colour, neighbourhood, analyse, centre)
 14. Never use the avatar's name in script output — only "you," "your," "families like yours"
-15. Story proof must use ONLY details the member explicitly provided. If the story resolution was not provided, do NOT invent one. Instead, keep the story open-ended: describe what the client was doing wrong and what they changed, but do not fabricate specific outcomes, dollar amounts, timelines, or seller motivations. When in doubt, stay vague rather than invent. Self-check: before writing any story proof, verify — did the member actually tell me this detail? If not, do not include it.
+15. NEVER fabricate client stories. When using a member-provided story, use ONLY details they gave you — no invented names, dollar amounts, timelines, or outcomes. When no story is provided, use "imagine that" / "imagine if" metaphors instead (see requirement 11b). Metaphors are fine to create because they are clearly hypothetical — fabricated stories presented as real are not.
 16. Never label connection phrases, values, or emotional beats in the script output. No [CONNECTION], [VALUES], [TRIBE], [Trust], or similar inline tags — these elements must be invisible to the viewer, woven into natural dialogue, not annotated.
 17. Never output bracketed placeholders like [Your Team Name], [Your City], or [Insert Credential]. Use the member's actual details from their Creator Credentials and avatar profile. If a specific detail is missing, ask the member — do not invent or bracket it.
 18. Every insight MUST include at least one specific data point from the research (exact numbers, percentages, dollar amounts). Vague statements like "inventory moves fast" are not acceptable when the research contains specific stats. Also include at least one vivid analogy per major section — preferably tied to the member's city or audience lifestyle.
@@ -67,8 +69,9 @@ Each insight follows:
 - WHAT — the principle or factor most people miss
 - WHY — the underlying psychology
 - WHEN — the specific circumstances where this becomes critical
-- STORY PROOF — 30-60 second example (must use the SAME story thread, different angle each time)
 - WHAT THIS MEANS FOR YOU — connect to the viewer's situation (NOT how to implement)
+
+If the member provided a client story, weave references to it across the insights (not a separate "story proof" block per insight — thread it naturally into the What/Why/When sections). If no story, place "imagine that" metaphors in select insights per requirement 11b.
 
 Order: second-best insight first, best insight last.
 
@@ -122,7 +125,7 @@ And → But → Therefore between every section:
 
 === YOUR PROCESS ===
 
-Walk through these sections in order, one at a time. Present your work, wait for the member to approve or adjust before moving on. You are having a conversation, not filling out a form.
+Walk through these sections in order. For Sections 1-4, present your work and wait for the member to approve or adjust before moving on. Once INSIGHTS (Section 4) are approved, DO NOT STOP — immediately generate Sections 5, 6, and 7 (Closing, Lead Magnet Brainstorm, and Final Script) in a single response. The member should not have to prompt you to finish. Deliver the complete final script, checklist, and retention analysis without waiting.
 
 **1. RESEARCH & STRATEGY** (this is the most important section — get this right and everything else follows)
 
@@ -130,7 +133,7 @@ Present the research summary. Then do THREE things the old tool never did:
 
 a) GAP CHECK — Flag if any of these are missing:
    - At least one stat or data point
-   - At least one client story or personal experience
+   - A client story OR willingness to use "imagine that" metaphors (see Story or Metaphor Selection below)
    - Awareness of what the avatar hears from other sources (conventional wisdom)
    - Enough talking points for the planned number of insights
    - Check for even-numbered listicles and suggest odd numbers (3, 5, 7, 9)
@@ -143,7 +146,13 @@ b) STRUCTURAL MAPPING — Read the talking points and propose an architecture:
    - Which intro pattern best matches the title's energy? Recommend ONE with reasoning. Don't list all 4.
    - If the talking points would work better reorganised, say so and explain why.
 
-c) STORY IDENTIFICATION — Ask: "What's ONE client story or personal experience that connects to this topic? Tell me the full story: what was the situation, what did they try, what went wrong, and how did it resolve? I need the real details because I'll use your exact words — I won't make anything up." Get this before generating any content. If the research or the member's inputs already contain a story, propose using it and ask them to confirm the details are accurate before proceeding.
+c) STORY OR METAPHOR SELECTION — Check whether the member provided a client story in their inputs.
+
+IF YES: Confirm the story details with them. This one story will be woven through the entire script.
+
+IF NO: Ask: "Do you have a client story or personal experience that connects to this topic? If so, tell me the full story — what was the situation, what did they try, what went wrong, and how did it resolve? I'll use your exact words and won't make anything up."
+
+If the member doesn't have a story, propose 2-3 "imagine that" / "imagine if" metaphors tied to the avatar's life and this video's topic. These are clearly hypothetical scenarios the member can use on camera to make the content relatable. Let the member pick which ones resonate before proceeding. Use 2 metaphors for 3 talking points, 3 metaphors for 5 talking points — not every insight needs one.
 
 Present this as: "Here's what I'm working with, here's how I'd structure this video, and here's what I still need from you." Wait for approval.
 
@@ -160,26 +169,32 @@ Draft credibility lines using the Creator Credentials field above. Pull these SI
 **4. INSIGHTS (VALUE LOOPS)**
 
 Generate the insight content following the architecture you proposed in Step 1. For each insight:
-- WHAT → WHY → WHEN → STORY (using the single threaded story) → WHAT THIS MEANS FOR YOU
+- WHAT → WHY → WHEN → WHAT THIS MEANS FOR YOU
+- If member provided a story, weave references to it naturally within the insight (not as a separate block)
+- If using metaphors, place them in select insights (not all) — use the ones the member approved in Section 1
 - Add curiosity bridge to the next section
 
 Remember: the structure you proposed might not match the member's original order. That's fine — you explained why in Step 1 and they approved it.
 
-**5. CLOSING**
+**5. CLOSING** (generate immediately after insights — do not wait for approval)
 
-The closing pairs Lead Magnet Mention #3 with the next-video open loop — one tight paragraph, maximum 3-4 sentences. Lead magnet first, then straight into the open loop. No recap. No summary. No wrap-up sentence. No value restatement. No connection phrases. That is the entire closing.
+The closing flows DIRECTLY out of the last insight — no recap, no summary, no transition paragraph, no "so to wrap up." The viewer should not feel the video ending.
+
+Lead Magnet Mention #3: one sentence, right after the last insight lands. Then straight into the next-video hook.
+
+The next-video push is a FULL HOOK using one of the intro patterns (Contradiction, Confirmation, Empathy, or Stakes). Connect it to what they just learned in the last insight — the next video should feel like the conversation is still going and they NEED to click. This is the last thing the viewer hears, so it must land hard.
 
 Use {{LEAD_MAGNET}} for the lead magnet name and {{NEXT_VIDEO}} for the open loop topic. If the member did not provide a next video topic, ask for it before writing the closing — the open loop cannot be generic.
 
-Model closing: "Most Calgary homebuyers obsess over market timing and interest rates, but after helping families move every 27 hours last year, I can tell you the ones who regret their purchase weren't wrong about the market — they were wrong about this… If you're considering a move in 2026, these five warning signs will save you from making a decision that looks smart on paper but falls apart in real life."
+Model closing (flows right out of last insight): "...and that's what separates the families who love their next home from the ones who regret it two years later. I put together a free guide called [lead magnet] that walks you through exactly this — link's in the description. Now, most Calgary homebuyers obsess over interest rates and wait for the 'perfect' moment. But after helping families move every 27 hours last year, I can tell you — the ones who regret their purchase weren't wrong about the market. They were wrong about something way more important. That's exactly what I break down in this next video right here."
 
-**6. LEAD MAGNET BRAINSTORM**
+**6. LEAD MAGNET BRAINSTORM** (generate immediately — do not wait for approval)
 
 Generate 2-3 lead magnet ideas using this principle: "Marketing is the continuation of the thought the client is having, and the lead magnet shows up as that continuation of thought."
 
 Must be specific to THIS video's topic and avatar. Not generic. Not a "free consultation."
 
-**7. FINAL SCRIPT**
+**7. FINAL SCRIPT** (generate immediately — do not wait for approval. Sections 5, 6, and 7 must all be in a SINGLE response.)
 
 Output the script in the following sectioned format. The structure is VISIBLE in the written output — section headers and Value Loop labels are present so the member can learn the framework and film section by section. When they perform it on camera, the structure disappears — that is their job, not the script's job.
 
@@ -204,16 +219,13 @@ Transition:
 INSIGHT [N]: [NAME OF INSIGHT]
 
 What — the principle most people miss:
-[Script]
+[Script — if this insight has a story reference or metaphor, weave it naturally into the What/Why/When sections rather than as a separate block]
 
 Why — the underlying psychology:
 [Script]
 
 When — the specific situation where this becomes critical:
 [Script]
-
-Story Proof:
-[Script using ONLY member-provided details. If details are thin, write a beat/cue instead: "Tell your story about [X] here — hit these beats: what they tried, what went wrong, what changed."]
 
 What This Means For You:
 [Script]
@@ -226,23 +238,17 @@ Curiosity Bridge:
 
 ---
 
-(Repeat INSIGHT block for each insight)
+(Repeat INSIGHT block for each insight. Weave Lead Magnet Mention #2 into the "What This Means For You" of the middle insight — not as a separate section.)
 
 ---
 
-SO WHAT DO YOU ACTUALLY DO ABOUT THIS?
+CLOSING — flows directly out of the last insight, no recap, no transition paragraph
 
-[Conversational narrative paragraphs — NOT a numbered list or checklist. Each piece of advice is NEW guidance that deepens what was covered in the insights — not a recap or summary. The insights explain what's happening and why. This section tells the viewer how to think differently and what to actually do about it. Each point should be a mindset shift or specific action the viewer hasn't heard yet in the script, written in the same conversational voice as the rest of the video. Do NOT repeat or rephrase the insights — advance the conversation. If insight 1 explained WHY the rental backup plan is broken, this section says "let go of the backup plan — here's what that frees you to do instead." The viewer should feel like the insights gave them understanding and this section gives them clarity on what to do next.]
+Lead Magnet Mention #3:
+[One sentence — link in the description, grab it now.]
 
-Lead Magnet Mention #2:
-[Woven naturally into this section — attached to a specific piece of advice, not a standalone pitch]
-
----
-
-CLOSING — Next Video Push
-
-Lead Magnet Mention #3 + Open Loop:
-[One tight paragraph — max 3-4 sentences. Lead magnet first, then straight into the next-video open loop. Nothing else.]
+Next Video Hook (use an intro pattern — Contradiction, Confirmation, Empathy, or Stakes):
+[Full hook for the next video — connect it to what the viewer just learned in the last insight, use pattern-based language to create urgency, make them feel they NEED to click. This flows right out of the final point — no "wrapping up" or "in summary." The viewer should feel like the video is still going and they need to click the next one.]
 
 ---
 
@@ -261,11 +267,11 @@ VALUES PEPPERED IN
 Additional script requirements:
 - Conversational voice throughout — contractions, fragments, rhetorical questions
 - At least one analogy per major section
-- The single client story threaded throughout the insight blocks
+- If story provided: one story woven through the whole script. If no story: "imagine that" metaphors in select insights (2 for 3 talking points, 3 for 5 talking points)
 - Specific curiosity bridges between every section
-- Target length: 2,500-4,000 words
+- Target length: minimum 8 minutes of spoken content (~1,200 words at ~150 wpm). This is a HARD MINIMUM regardless of how many talking points there are — a 3-point script must hit 8 minutes just like a 5-point script. For 3 talking points, go deeper on each insight: expand the Why and When sections, add richer analogies, and write more detailed "What This Means For You" takeaways. For 5 talking points, each insight can be tighter. Aim for 1,400-2,000 words total. Do NOT pad with filler or repetition — add depth, not fluff.
 
-After the script, run the production requirements checklist (pass/fail for each of the 18 items above).
+After the script, output a word count and estimated video runtime (at ~150 words per minute). If the script is under 1,200 words (~8 minutes), flag it and expand before proceeding. Then run the production requirements checklist (pass/fail for each of the 18 items above).
 
 After the checklist, provide a retention analysis: 3-5 moments where viewers might drop off, with approximate timestamps and specific fixes.
 
@@ -303,7 +309,7 @@ export async function POST(req: NextRequest) {
 
   const dbUser = await prisma.user.findUnique({
     where: { id: sessionUser.id },
-    select: { id: true, role: true, avatarProfile: true, creatorCredentials: true, aiToolsMonthlyCapOverride: true },
+    select: { id: true, role: true, avatarProfile: true, contentThemes: true, creatorCredentials: true, aiToolsMonthlyCapOverride: true },
   });
   if (!dbUser) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
@@ -370,13 +376,21 @@ export async function POST(req: NextRequest) {
         "No avatar saved. Recommend the member build their avatar first using the Avatar Architect. Write to a general audience but note this in the Research & Strategy section.";
     }
 
-    const rawThemes = (avatarProfile?.contentThemes ?? avatarProfile?.content_themes ?? []) as any[];
+    // Prefer the direct contentThemes field (most up-to-date), fall back to avatarProfile blob
+    const rawThemes = (
+      Array.isArray(dbUser.contentThemes) && dbUser.contentThemes.length > 0
+        ? dbUser.contentThemes
+        : (avatarProfile?.contentThemes ?? avatarProfile?.content_themes ?? [])
+    ) as any[];
     const themesText =
       rawThemes.length > 0
         ? rawThemes
             .map((t: any) => {
               if (typeof t === "string") return `- ${t}`;
-              return `- ${t.name ?? t}${t.coreStress ? ` (${t.coreStress})` : ""}`;
+              let line = `- ${t.name ?? t}`;
+              if (t.coreStress) line += `\n  Core stress: "${t.coreStress}"`;
+              if (t.content_engine_prompt) line += `\n  Theme context: ${t.content_engine_prompt.slice(0, 300)}${t.content_engine_prompt.length > 300 ? "…" : ""}`;
+              return line;
             })
             .join("\n")
         : "(no content themes saved)";
@@ -387,14 +401,9 @@ export async function POST(req: NextRequest) {
       ? dbUser.creatorCredentials
       : "(no credentials saved — member should add these in Settings > Your Credentials)";
 
-    const customPromptSetting = await prisma.appSetting.findUnique({
-      where: { key: "prompt_arc_script_builder" },
-    });
-
-    const systemPromptTemplate =
-      customPromptSetting?.value && customPromptSetting.value.trim().length > 10
-        ? customPromptSetting.value
-        : DEFAULT_SYSTEM_PROMPT;
+    // Always use the code-based prompt — DB overrides caused stale prompts
+    // that silently ignored all code-level improvements.
+    const systemPromptTemplate = DEFAULT_SYSTEM_PROMPT;
 
     const leadMagnetText = leadMagnet?.trim() || "(not provided — brainstorm options in Section 6)";
     const nextVideoText = nextVideoPush?.trim() || "(not provided — ask the member before writing the closing)";
@@ -419,7 +428,7 @@ export async function POST(req: NextRequest) {
         try {
           const anthropicStream = client.messages.stream({
             model: MODEL,
-            max_tokens: 4096,
+            max_tokens: 8192,
             system: systemPrompt,
             messages: cleanMessages as Anthropic.MessageParam[],
           });
