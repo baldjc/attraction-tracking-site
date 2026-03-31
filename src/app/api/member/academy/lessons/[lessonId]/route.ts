@@ -56,7 +56,7 @@ export async function GET(
       lessons: {
         where: { published: true },
         orderBy: { sortOrder: "asc" },
-        select: { id: true, slug: true, sectionId: true },
+        select: { id: true, slug: true, title: true, sortOrder: true, sectionId: true },
       },
     },
   });
@@ -71,6 +71,30 @@ export async function GET(
   const idx = flatLessons.findIndex((l) => l.id === lesson.id);
   const prevLesson = idx > 0 ? flatLessons[idx - 1] : null;
   const nextLesson = idx < flatLessons.length - 1 ? flatLessons[idx + 1] : null;
+
+  // Build sectionLessons — all sibling lessons in the current section with completion status
+  const currentSection = allSections.find((sec) => sec.id === lesson.sectionId);
+  const siblingLessons = currentSection?.lessons ?? [];
+  const siblingLessonIds = siblingLessons.map((l) => l.id);
+
+  const siblingProgressRecords = await prisma.memberLessonProgress.findMany({
+    where: {
+      userId: user.id,
+      lessonId: { in: siblingLessonIds },
+      completed: true,
+    },
+    select: { lessonId: true },
+  });
+
+  const completedSiblingIds = new Set(siblingProgressRecords.map((p) => p.lessonId));
+
+  const sectionLessons = siblingLessons.map((l) => ({
+    id: l.id,
+    slug: l.slug,
+    title: l.title,
+    sortOrder: l.sortOrder,
+    completed: completedSiblingIds.has(l.id),
+  }));
 
   return NextResponse.json({
     lesson: {
@@ -91,6 +115,7 @@ export async function GET(
       completedAt: progressRecord?.completedAt ?? null,
       prevLesson,
       nextLesson,
+      sectionLessons,
     },
   });
 }
