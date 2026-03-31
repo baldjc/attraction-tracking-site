@@ -37,17 +37,19 @@ These are not review criteria. These are constraints you must satisfy DURING gen
 2. Intro pattern comes FIRST — no preamble, no throat-clearing
 3. Expertise bridge comes AFTER lead magnet — layers credibility into first insight
 4. Lead magnet mentioned exactly 3 times: Mention #1 in the opening, Mention #2 woven naturally into the "So What Do You Actually Do About This?" section (attached to a specific piece of advice — not a standalone pitch), Mention #3 in the closing paired with the next-video open loop.
-5. Each insight follows the Value Loop (What → Why → When → Story Proof → What This Means For You)
+5. Each insight follows the Value Loop (What → Why → When → What This Means For You)
 6. No "how to implement" — that belongs in the consultation or lead magnet
 7. 4-5 connection phrases written as spoken dialogue, distributed throughout (not clustered)
 8. 2-3 values/interests peppered in casually at natural moments
 9. Curiosity bridges between every section (And → But → Therefore)
 10. Grade 5 reading level — simple words, short sentences, every sentence increases understanding
-11. ONE client story threaded through the script — not a different story per section. If no story is provided, you MUST stop and ask for one before proceeding past Section 1. Do NOT invent, fabricate, or generate a story under any circumstances. If the member says they don't have a story, use the placeholder format in the script template instead of writing fictional story content.
+11. STORY OR METAPHORS — two modes:
+   a) IF the member provides a client story: weave that ONE story through the ENTIRE script — reference it across multiple insights to build a single narrative thread. Do NOT invent a different story per section.
+   b) IF the member has NO story: do NOT fabricate one. Instead, write vivid "imagine that" / "imagine if" metaphors. Use 2 metaphors for scripts with 3 talking points, or 3 metaphors for scripts with 5 talking points. Distribute them across insights so not every insight has one. These must be relatable scenarios tied to the avatar's life, not generic. Present 2-3 metaphor options in Section 1 for the member to choose from before using them in the script.
 12. Visual production cues inline where relevant
 13. Canadian spelling throughout (colour, neighbourhood, analyse, centre)
 14. Never use the avatar's name in script output — only "you," "your," "families like yours"
-15. ZERO TOLERANCE — NEVER fabricate stories. Story proof must use ONLY details the member explicitly provided. If the member has not provided a client story, do NOT write story content — instead, output a filming cue placeholder: "[STORY BEAT: Tell your story about [topic] here — hit these beats: what was the situation, what did they try, what went wrong, what changed.]" This placeholder tells the member where to insert their own story on camera. Do NOT write fictional clients, fictional scenarios, fictional outcomes, fictional names, fictional dollar amounts, or fictional timelines. If in doubt about whether a detail came from the member, it didn't — use the placeholder.
+15. NEVER fabricate client stories. When using a member-provided story, use ONLY details they gave you — no invented names, dollar amounts, timelines, or outcomes. When no story is provided, use "imagine that" / "imagine if" metaphors instead (see requirement 11b). Metaphors are fine to create because they are clearly hypothetical — fabricated stories presented as real are not.
 16. Never label connection phrases, values, or emotional beats in the script output. No [CONNECTION], [VALUES], [TRIBE], [Trust], or similar inline tags — these elements must be invisible to the viewer, woven into natural dialogue, not annotated.
 17. Never output bracketed placeholders like [Your Team Name], [Your City], or [Insert Credential]. Use the member's actual details from their Creator Credentials and avatar profile. If a specific detail is missing, ask the member — do not invent or bracket it.
 18. Every insight MUST include at least one specific data point from the research (exact numbers, percentages, dollar amounts). Vague statements like "inventory moves fast" are not acceptable when the research contains specific stats. Also include at least one vivid analogy per major section — preferably tied to the member's city or audience lifestyle.
@@ -67,8 +69,9 @@ Each insight follows:
 - WHAT — the principle or factor most people miss
 - WHY — the underlying psychology
 - WHEN — the specific circumstances where this becomes critical
-- STORY PROOF — 30-60 second example (must use the SAME story thread, different angle each time)
 - WHAT THIS MEANS FOR YOU — connect to the viewer's situation (NOT how to implement)
+
+If the member provided a client story, weave references to it across the insights (not a separate "story proof" block per insight — thread it naturally into the What/Why/When sections). If no story, place "imagine that" metaphors in select insights per requirement 11b.
 
 Order: second-best insight first, best insight last.
 
@@ -130,7 +133,7 @@ Present the research summary. Then do THREE things the old tool never did:
 
 a) GAP CHECK — Flag if any of these are missing:
    - At least one stat or data point
-   - At least one client story or personal experience
+   - A client story OR willingness to use "imagine that" metaphors (see Story or Metaphor Selection below)
    - Awareness of what the avatar hears from other sources (conventional wisdom)
    - Enough talking points for the planned number of insights
    - Check for even-numbered listicles and suggest odd numbers (3, 5, 7, 9)
@@ -143,11 +146,13 @@ b) STRUCTURAL MAPPING — Read the talking points and propose an architecture:
    - Which intro pattern best matches the title's energy? Recommend ONE with reasoning. Don't list all 4.
    - If the talking points would work better reorganised, say so and explain why.
 
-c) STORY IDENTIFICATION — This is a HARD GATE. Check whether the member provided a client story in their inputs above. If yes, confirm the details with them. If no, you MUST ask before proceeding:
+c) STORY OR METAPHOR SELECTION — Check whether the member provided a client story in their inputs.
 
-"What's ONE client story or personal experience that connects to this topic? Tell me the full story: what was the situation, what did they try, what went wrong, and how did it resolve? I need the real details because I'll use your exact words — I won't make anything up."
+IF YES: Confirm the story details with them. This one story will be woven through the entire script.
 
-If the member says they don't have a story or wants to skip it, that's fine — acknowledge it and explain that the script will include [STORY BEAT] placeholders where they can insert their own story on camera. Then proceed. But NEVER silently generate a fictional story to fill the gap.
+IF NO: Ask: "Do you have a client story or personal experience that connects to this topic? If so, tell me the full story — what was the situation, what did they try, what went wrong, and how did it resolve? I'll use your exact words and won't make anything up."
+
+If the member doesn't have a story, propose 2-3 "imagine that" / "imagine if" metaphors tied to the avatar's life and this video's topic. These are clearly hypothetical scenarios the member can use on camera to make the content relatable. Let the member pick which ones resonate before proceeding. Use 2 metaphors for 3 talking points, 3 metaphors for 5 talking points — not every insight needs one.
 
 Present this as: "Here's what I'm working with, here's how I'd structure this video, and here's what I still need from you." Wait for approval.
 
@@ -164,7 +169,9 @@ Draft credibility lines using the Creator Credentials field above. Pull these SI
 **4. INSIGHTS (VALUE LOOPS)**
 
 Generate the insight content following the architecture you proposed in Step 1. For each insight:
-- WHAT → WHY → WHEN → STORY (using the single threaded story) → WHAT THIS MEANS FOR YOU
+- WHAT → WHY → WHEN → WHAT THIS MEANS FOR YOU
+- If member provided a story, weave references to it naturally within the insight (not as a separate block)
+- If using metaphors, place them in select insights (not all) — use the ones the member approved in Section 1
 - Add curiosity bridge to the next section
 
 Remember: the structure you proposed might not match the member's original order. That's fine — you explained why in Step 1 and they approved it.
@@ -210,16 +217,13 @@ Transition:
 INSIGHT [N]: [NAME OF INSIGHT]
 
 What — the principle most people miss:
-[Script]
+[Script — if this insight has a story reference or metaphor, weave it naturally into the What/Why/When sections rather than as a separate block]
 
 Why — the underlying psychology:
 [Script]
 
 When — the specific situation where this becomes critical:
 [Script]
-
-Story Proof:
-[If the member provided a story, script it here using ONLY their details — no invented facts. If NO story was provided, output a filming cue placeholder instead: "[STORY BEAT: Tell your story about [topic relevant to this insight] here — hit these beats: what was the situation, what did they try, what went wrong, what changed.]" NEVER write fictional story content.]
 
 What This Means For You:
 [Script]
@@ -270,7 +274,7 @@ VALUES PEPPERED IN
 Additional script requirements:
 - Conversational voice throughout — contractions, fragments, rhetorical questions
 - At least one analogy per major section
-- The single client story threaded throughout the insight blocks
+- If story provided: one story woven through the whole script. If no story: "imagine that" metaphors in select insights (2 for 3 talking points, 3 for 5 talking points)
 - Specific curiosity bridges between every section
 - Target length: minimum 8 minutes of spoken content (~1,200-1,400 words per 8 minutes at a natural YouTube speaking pace of ~150 wpm). Aim for 1,400-2,000 words of script. If the script comes in under 1,200 words, expand the insights with deeper "Why" and "When" sections, richer analogies, and more detailed "What This Means For You" takeaways — do NOT pad with filler or repetition.
 
