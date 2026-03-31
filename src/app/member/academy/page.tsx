@@ -1,4 +1,4 @@
-import AcademyTabs from "@/components/AcademyTabs";
+import AcademyHome from "@/components/AcademyHome";
 import PageHeader from "@/components/PageHeader";
 
 export default function AcademyPage() {
@@ -9,7 +9,7 @@ export default function AcademyPage() {
         title="Academy"
         description="Master the system that turns viewers into clients."
       />
-      <AcademyTabs routePath="/member/academy" />
+      <AcademyHome />
     </>
   );
 }
