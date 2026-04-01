@@ -309,7 +309,7 @@ export async function POST(req: NextRequest) {
 
   const dbUser = await prisma.user.findUnique({
     where: { id: sessionUser.id },
-    select: { id: true, role: true, avatarProfile: true, contentThemes: true, creatorCredentials: true, aiToolsMonthlyCapOverride: true },
+    select: { id: true, role: true, avatarName: true, avatarSummary: true, avatarProfile: true, contentThemes: true, creatorCredentials: true, aiToolsMonthlyCapOverride: true },
   });
   if (!dbUser) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
@@ -367,13 +367,19 @@ export async function POST(req: NextRequest) {
 
     const avatarProfile = dbUser?.avatarProfile as any;
     let avatarText: string;
-    if (avatarProfile?.full_document) {
-      avatarText = avatarProfile.full_document;
-    } else if (avatarProfile) {
-      avatarText = JSON.stringify(avatarProfile, null, 2);
-    } else {
+    if (!avatarProfile && !dbUser?.avatarName && !dbUser?.avatarSummary) {
       avatarText =
         "No avatar saved. Recommend the member build their avatar first using the Avatar Architect. Write to a general audience but note this in the Research & Strategy section.";
+    } else {
+      const parts: string[] = [];
+      if (dbUser?.avatarName) parts.push(`Avatar Name: ${dbUser.avatarName}`);
+      if (dbUser?.avatarSummary) parts.push(`Avatar Summary: ${dbUser.avatarSummary}`);
+      if (avatarProfile?.full_document) {
+        parts.push(`\nFull Avatar Document:\n${avatarProfile.full_document}`);
+      } else if (avatarProfile) {
+        parts.push(`\nFull Avatar Profile:\n${JSON.stringify(avatarProfile, null, 2)}`);
+      }
+      avatarText = parts.join("\n");
     }
 
     // Prefer the direct contentThemes field (most up-to-date), fall back to avatarProfile blob
