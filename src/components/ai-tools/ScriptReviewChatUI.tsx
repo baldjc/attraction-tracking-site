@@ -423,7 +423,7 @@ export default function ScriptReviewChatUI({ basePath, noAvatar }: Props) {
           </button>
         </div>
       ) : (
-        <div className="flex flex-col h-[70vh]">
+        <div className="flex flex-col">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-[#2f3437] dark:text-white truncate max-w-[70%]">
               {videoTitle}
@@ -453,7 +453,7 @@ export default function ScriptReviewChatUI({ basePath, noAvatar }: Props) {
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto space-y-4 pr-1">
+          <div className="space-y-4 pr-1">
             {messages.map((msg, i) => (
               <div
                 key={i}
