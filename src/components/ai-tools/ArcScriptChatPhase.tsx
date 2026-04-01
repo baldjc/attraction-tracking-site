@@ -119,6 +119,7 @@ export default function ArcScriptChatPhase({ initialData, onReset }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const initialized = useRef(false);
   const currentSectionRef = useRef("research_strategy");
+  const autoSavedRef = useRef(false);
 
   const turnCount = messages.length;
   const atTurnLimit = turnCount >= MAX_TURNS;
@@ -127,6 +128,33 @@ export default function ArcScriptChatPhase({ initialData, onReset }: Props) {
   const finalScriptText = finalScriptDone
     ? cleanContent(messages.findLast((m) => m.role === "assistant")?.content ?? "")
     : "";
+
+  useEffect(() => {
+    if (!finalScriptDone || !finalScriptText || autoSavedRef.current) return;
+    autoSavedRef.current = true;
+    setSaving(true);
+    setSaveError("");
+    fetch("/api/ai-tools/save-script", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        videoTitle: initialData.title,
+        scriptOutline: {
+          fullScript: finalScriptText,
+          researchSummary: initialData.researchSummary,
+          talkingPoints: initialData.talkingPoints,
+          clientStory: initialData.clientStory,
+          approvedSections: sectionApprovals,
+        },
+      }),
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("Save failed");
+        setSaved(true);
+      })
+      .catch(() => setSaveError("Auto-save failed. Use the save button below to retry."))
+      .finally(() => setSaving(false));
+  }, [finalScriptDone, finalScriptText]);
 
   useEffect(() => {
     const container = scrollRef.current;
@@ -348,9 +376,8 @@ export default function ArcScriptChatPhase({ initialData, onReset }: Props) {
       });
       if (!res.ok) throw new Error("Save failed");
       setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
     } catch {
-      setSaveError("Failed to save. Please try again.");
+      setSaveError("Save failed. Please try again.");
     }
     setSaving(false);
   }
@@ -437,38 +464,46 @@ export default function ArcScriptChatPhase({ initialData, onReset }: Props) {
       )}
 
       {finalScriptDone && (
-        <div className="flex gap-2 mb-3 flex-wrap">
-          <button
-            onClick={handleCopy}
-            className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium border border-[#2f3437]/15 dark:border-white/15 rounded-lg hover:bg-[#111]/5 dark:hover:bg-white/5 transition-colors text-[#2f3437] dark:text-white"
-          >
-            {copied ? <CheckIcon className="w-4 h-4 text-green-500" /> : <ClipboardDocumentIcon className="w-4 h-4" />}
-            {copied ? "Copied!" : "Copy Script"}
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={saving || saved}
-            className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-[#6ba3c7] text-white rounded-lg hover:bg-[#6ba3c7]/90 disabled:opacity-50 transition-colors"
-          >
-            {saved ? <CheckIcon className="w-4 h-4" /> : null}
-            {saving ? "Saving…" : saved ? "Saved!" : "Save Script"}
-          </button>
-          {saved && (
-            <Link
-              href="saved-scripts"
-              className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium border border-[#6ba3c7]/40 text-[#6ba3c7] rounded-lg hover:bg-[#6ba3c7]/5 transition-colors"
-            >
-              View all saved scripts →
-            </Link>
+        <div className="flex flex-col gap-2 mb-3">
+          {saving && (
+            <p className="text-xs text-[#2f3437]/45 dark:text-white/35 px-1">Saving your script…</p>
           )}
-          <button
-            onClick={onReset}
-            className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium border border-[#2f3437]/15 dark:border-white/15 rounded-lg hover:bg-[#111]/5 dark:hover:bg-white/5 transition-colors text-[#2f3437] dark:text-white"
-          >
-            <ArrowPathIcon className="w-4 h-4" />
-            Build Another Script
-          </button>
-          {saveError && <p className="text-xs text-red-500 self-center">{saveError}</p>}
+          {saved && (
+            <div className="flex items-center gap-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-500/30 rounded-lg px-4 py-3">
+              <CheckIcon className="w-4 h-4 text-green-600 dark:text-green-400 shrink-0" />
+              <p className="text-sm text-green-700 dark:text-green-300 font-medium">
+                Script saved! You can find it in My Scripts above.
+              </p>
+            </div>
+          )}
+          {saveError && (
+            <div className="flex items-center gap-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg px-4 py-3">
+              <p className="text-sm text-red-600 dark:text-red-400 flex-1">{saveError}</p>
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="shrink-0 text-xs font-semibold text-white bg-red-500 hover:bg-red-600 px-3 py-1.5 rounded-md transition-colors disabled:opacity-50"
+              >
+                Retry save
+              </button>
+            </div>
+          )}
+          <div className="flex gap-2 flex-wrap">
+            <button
+              onClick={handleCopy}
+              className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-[#6ba3c7] text-white rounded-lg hover:bg-[#5490b5] transition-colors"
+            >
+              {copied ? <CheckIcon className="w-4 h-4" /> : <ClipboardDocumentIcon className="w-4 h-4" />}
+              {copied ? "Copied!" : "Copy to Clipboard"}
+            </button>
+            <button
+              onClick={onReset}
+              className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium border border-[#2f3437]/15 dark:border-white/15 rounded-lg hover:bg-[#111]/5 dark:hover:bg-white/5 transition-colors text-[#2f3437] dark:text-white"
+            >
+              <ArrowPathIcon className="w-4 h-4" />
+              Build Another Script
+            </button>
+          </div>
         </div>
       )}
 
