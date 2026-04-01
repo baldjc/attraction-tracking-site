@@ -7,6 +7,7 @@ export const SECTIONS = [
   { key: "insights", label: "Insights" },
   { key: "closing", label: "Closing" },
   { key: "lead_magnets", label: "Lead Magnets" },
+  { key: "story_prompt", label: "Story / Scenario" },
   { key: "final_script", label: "Final Script" },
   { key: "assembly_pass", label: "Assembly Pass" },
 ] as const;
