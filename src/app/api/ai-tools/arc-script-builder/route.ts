@@ -275,19 +275,60 @@ After the script, output a word count and estimated video runtime (at ~150 words
 
 After the checklist, provide a retention analysis: 3-5 moments where viewers might drop off, with approximate timestamps and specific fixes.
 
-When you have delivered the complete script, checklist, and retention analysis, set sectionApproved: true in your SECTION_DATA tag to signal that the final script is ready.
+When you have delivered the complete script, checklist, and retention analysis, immediately begin the Assembly Pass without waiting for approval — set currentSection: "assembly_pass", sectionApproved: false.
+
+**8. ASSEMBLY PASS** (begin immediately after delivering the final script — do not wait for approval)
+
+The Assembly Pass reviews the full assembled script end-to-end in four sequential steps. Complete all four steps before marking the script complete.
+
+**Step 1 — Story / Scenario Prompt (run once only)**
+
+Check whether any of the Insight sections contain a real client story, relatable scenario, or grounding example. If any insight is missing one, present this prompt to the member exactly:
+
+> "Can you think of any real client stories that could work in this video? A specific situation, outcome, or conversation that relates to the insights you're teaching?"
+
+Give the member two options:
+- **Yes, I have a story** — the member provides it, you identify the strongest insight to weave it into and rewrite that section to include it, using only details the member gave you.
+- **No, use hypothetical examples instead** — generate relatable hypothetical scenarios using "Imagine if..." or "Picture this..." framing, tied specifically to the avatar profile data and this video's topic. Place them in the insight sections that need grounding. Let the member approve the placements before finalising.
+
+If all insight sections already have a story or scenario, skip this step and note that.
+
+**Step 2 — Curiosity Bridge Transitions**
+
+Review every major section transition in the full script end-to-end. Rewrite any transition that doesn't use an And/But/Therefore curiosity bridge. Present a before/after comparison for each rewritten transition. The member approves the final set.
+
+**Step 3 — Lead Magnet 3× Placement Check**
+
+Verify the lead magnet appears in all three required placements:
+1. **Opening** — within the first 15-20 seconds, right after the intro pattern
+2. **Mid-roll** — at approximately the 2/3 mark, tied naturally to a curiosity bridge or "What This Means For You" moment
+3. **Closing** — paired with the next-video push
+
+If any placement is missing, write it now and present it to the member. The member can accept, edit, or write their own version.
+
+**Step 4 — Grade 5 Language Scan**
+
+Scan the full script for:
+- Real estate jargon or industry terms a non-agent viewer wouldn't immediately understand
+- Complex sentence structures that could be simplified
+- Any language that sounds like a listing description or corporate communication rather than peer-to-peer conversation
+
+For each flagged item, present a simpler alternative side-by-side. The member accepts or rejects each suggestion individually.
+
+After all four steps are complete and approved, deliver the final updated script in full and set sectionApproved: true — this signals the script is finished and unlocks Copy Script and Save Script.
 
 === SECTION TRACKING ===
 
 Each AI message must end with:
 <SECTION_DATA>
-{"currentSection": "research_strategy|opening|credibility|insights|closing|lead_magnets|final_script", "sectionApproved": true|false}
+{"currentSection": "research_strategy|opening|credibility|insights|closing|lead_magnets|final_script|assembly_pass", "sectionApproved": true|false}
 </SECTION_DATA>
 
 Rules:
 - While working on a section (presenting, iterating, answering questions), set sectionApproved: false and currentSection to the section you are currently working on.
 - When the member approves a section and you are moving to the next, set sectionApproved: true and currentSection to the NEXT section (the one you are now beginning). Example: when lead_magnets is approved, your NEXT response begins with currentSection: "final_script", sectionApproved: false — you are now working on it.
-- For final_script specifically: use sectionApproved: false on EVERY response while writing, revising, or presenting the script. Only set sectionApproved: true in a response that contains the COMPLETE script, the full 17-item production checklist (pass/fail), AND the retention analysis. Do not set sectionApproved: true until all three are present in the same response. This is the signal that unlocks the Copy Script and Save Script buttons.`;
+- For final_script specifically: use sectionApproved: false on EVERY response while writing, revising, or presenting the script. When the complete script, full production checklist, and retention analysis are all in the same response, set currentSection: "assembly_pass", sectionApproved: false — this transitions immediately into the Assembly Pass without waiting for approval.
+- For assembly_pass: use sectionApproved: false while working through any of the four steps (story/scenario, curiosity bridges, lead magnet 3x, Grade 5 scan). Only set sectionApproved: true in the response that delivers the FINAL updated complete script with all Assembly Pass changes applied. This is the signal that unlocks the Copy Script and Save Script buttons.`;
 
 const SUMMARIZE_PROMPT = `You are a research analyst helping a real estate YouTube content creator prepare a structured brief for a video script.
 

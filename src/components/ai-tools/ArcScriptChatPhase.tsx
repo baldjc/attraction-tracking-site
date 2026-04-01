@@ -122,7 +122,7 @@ export default function ArcScriptChatPhase({ initialData, onReset }: Props) {
 
   const turnCount = messages.length;
   const atTurnLimit = turnCount >= MAX_TURNS;
-  const isFinalScript = currentSection === "final_script";
+  const isFinalScript = currentSection === "final_script" || currentSection === "assembly_pass";
 
   const finalScriptText = finalScriptDone
     ? cleanContent(messages.findLast((m) => m.role === "assistant")?.content ?? "")
@@ -228,10 +228,10 @@ export default function ArcScriptChatPhase({ initialData, onReset }: Props) {
                 if (payload.sectionData) {
                   const { currentSection: nextSection, sectionApproved } = payload.sectionData;
                   if (sectionApproved) {
-                    // Detect final script completion: sectionApproved: true on final_script
-                    // means the complete script + checklist + retention analysis are in this response.
-                    // This fires whether Claude delivers it in one shot or after multiple turns.
-                    if (nextSection === "final_script") {
+                    // Detect script completion:
+                    // - Legacy flow: sectionApproved: true on final_script (old conversations)
+                    // - New flow: sectionApproved: true on assembly_pass (after all 4 assembly steps done)
+                    if (nextSection === "final_script" || nextSection === "assembly_pass") {
                       setFinalScriptDone(true);
                     }
                     const prevIdx = SECTIONS.findIndex((s) => s.key === nextSection) - 1;

@@ -8,6 +8,7 @@ export const SECTIONS = [
   { key: "closing", label: "Closing" },
   { key: "lead_magnets", label: "Lead Magnets" },
   { key: "final_script", label: "Final Script" },
+  { key: "assembly_pass", label: "Assembly Pass" },
 ] as const;
 
 interface Props {
