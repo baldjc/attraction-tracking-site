@@ -6,8 +6,7 @@ import prisma from "@/lib/prisma";
 
 const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-// Change 1: Fixed invalid model string — was "claude-sonnet-4-20250514" (non-existent)
-const MODEL = "claude-3-5-sonnet-latest";
+const MODEL = "claude-sonnet-4-20250514";
 
 async function getSystemPromptForMode(userId: string, mode: "analysis" | "chat", avatar: string): Promise<string> {
   const key = mode === "analysis" ? "script_review_analysis_prompt" : "script_review_chat_prompt";
