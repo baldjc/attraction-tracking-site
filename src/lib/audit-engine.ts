@@ -534,7 +534,6 @@ Produce a Markdown report in EXACTLY this structure:
 
 # ARC Framework Script Review: "[Video Title]"
 
-**Reviewer:** Jared Chamberlain
 **Target Audience:** [Describe the avatar based on the avatar profile provided, or infer from the script]
 **Framework:** Attraction by Video (ARC Method)
 
