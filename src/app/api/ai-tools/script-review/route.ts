@@ -12,11 +12,11 @@ async function getSystemPromptForMode(userId: string, mode: "analysis" | "chat",
 
   const setting = await prisma.appSetting.findUnique({ where: { key } });
   const prompt = setting?.value ?? defaultPrompt;
-  return prompt.replace("{{AVATAR_CONTEXT}}", avatar);
+  return prompt.replace("{{AVATAR_CONTEXT}}", avatar).replace("{{FULL_AVATAR_PROFILE}}", avatar);
 }
 
 function buildAvatarContext(user: any): { block: string; name: string | null } {
-  if (!user.avatarSummary && !user.avatarName) {
+  if (!user.avatarSummary && !user.avatarName && !user.avatarProfile) {
     return {
       block: "",
       name: null,
@@ -25,13 +25,30 @@ function buildAvatarContext(user: any): { block: string; name: string | null } {
   let block = "MEMBER AVATAR CONTEXT:\n";
   if (user.avatarName) block += `Avatar Name: ${user.avatarName}\n`;
   if (user.avatarSummary) block += `Avatar Summary: ${user.avatarSummary}\n`;
+
+  // Include the full avatar profile if available (rich structured data from Avatar Architect)
+  if (user.avatarProfile) {
+    try {
+      const profile = typeof user.avatarProfile === "string"
+        ? JSON.parse(user.avatarProfile)
+        : user.avatarProfile;
+      block += "\nFull Avatar Profile:\n";
+      block += JSON.stringify(profile, null, 2) + "\n";
+    } catch {
+      // If it's a plain string, include it directly
+      if (typeof user.avatarProfile === "string") {
+        block += `\nFull Avatar Profile:\n${user.avatarProfile}\n`;
+      }
+    }
+  }
+
   if (user.contentThemes) {
     try {
       const themes = typeof user.contentThemes === "string"
         ? JSON.parse(user.contentThemes)
         : user.contentThemes;
       if (Array.isArray(themes) && themes.length > 0) {
-        block += "Content Themes:\n";
+        block += "\nContent Themes:\n";
         for (const t of themes) {
           if (typeof t === "string") {
             block += `  - ${t}\n`;
@@ -40,7 +57,7 @@ function buildAvatarContext(user: any): { block: string; name: string | null } {
             if (t.coreStress) block += ` — "${t.coreStress}"`;
             block += "\n";
             if (t.content_engine_prompt) {
-              block += `    Context: ${t.content_engine_prompt.slice(0, 200)}${t.content_engine_prompt.length > 200 ? "…" : ""}\n`;
+              block += `    Context: ${t.content_engine_prompt.slice(0, 300)}${t.content_engine_prompt.length > 300 ? "…" : ""}\n`;
             }
           }
         }
@@ -48,7 +65,7 @@ function buildAvatarContext(user: any): { block: string; name: string | null } {
     } catch {
     }
   }
-  block += "Use the avatar context to calibrate your feedback — does the script speak to the right person and address the right theme's stresses?\n";
+  block += "\nUse this avatar context to evaluate Avatar Alignment and Values Peppering — does the script speak directly to this person's pain points, values, and aspirations?\n";
   return { block, name: user.avatarName ?? null };
 }
 
@@ -58,7 +75,7 @@ export async function POST(req: NextRequest) {
 
   const dbUser = await prisma.user.findUnique({
     where: { id: user.id },
-    select: { avatarName: true, avatarSummary: true, contentThemes: true },
+    select: { avatarName: true, avatarSummary: true, avatarProfile: true, contentThemes: true },
   });
 
   const { videoTitle, scriptText, messages, conversationId } = await req.json();
@@ -73,32 +90,18 @@ export async function POST(req: NextRequest) {
 
     const response = await claude.messages.create({
       model: "claude-sonnet-4-20250514",
-      max_tokens: 4000,
+      max_tokens: 8000,
       system: systemPrompt,
       messages: [{ role: "user", content: userMessage }],
     });
 
-    const raw = response.content[0].type === "text" ? response.content[0].text : "";
-
-    let analysis: any = null;
-    try {
-      const cleaned = raw.replace(/^```json?\s*/i, "").replace(/```\s*$/i, "").trim();
-      analysis = JSON.parse(cleaned);
-    } catch {
-      return NextResponse.json(
-        { error: "AI returned invalid JSON. Please try again.", raw },
-        { status: 422 }
-      );
-    }
-
-    const overallScore = analysis.overall_score ?? analysis.overallScore ?? null;
+    const markdownReport = response.content[0].type === "text" ? response.content[0].text : "";
 
     const conversationMessages = [
       { role: "user", content: `**Video Title:** ${videoTitle}\n\n**Script:**\n${scriptText}`, hidden: true },
       {
         role: "assistant",
-        content: analysis.one_sentence_diagnosis ?? "Script reviewed.",
-        analysis,
+        content: markdownReport,
         hidden: false,
       },
     ];
@@ -110,11 +113,11 @@ export async function POST(req: NextRequest) {
         toolType: "script_review",
         title,
         messages: conversationMessages as any,
-        metadata: { overallScore, avatarName: avatar.name },
+        metadata: { avatarName: avatar.name },
       },
     });
 
-    return NextResponse.json({ analysis, conversationId: conv.id, overallScore });
+    return NextResponse.json({ markdownReport, conversationId: conv.id });
   }
 
   if (!conversationId || !messages?.length) {
@@ -138,9 +141,7 @@ export async function POST(req: NextRequest) {
         .filter((m) => !m.hidden)
         .map((m) => ({
           role: m.role as "user" | "assistant",
-          content: m.role === "assistant" && m.analysis
-            ? `[ANALYSIS SUMMARY] Score: ${(conversation.metadata as any)?.overallScore}/10. Diagnosis: ${m.analysis.one_sentence_diagnosis ?? ""}`
-            : String(m.content),
+          content: String(m.content),
         }))
     : [];
 
