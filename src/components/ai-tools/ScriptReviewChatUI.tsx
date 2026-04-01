@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   ArrowUpIcon,
   ArrowDownTrayIcon,
@@ -9,217 +9,11 @@ import {
 } from "@heroicons/react/24/solid";
 import RecentConversations from "./RecentConversations";
 import PromptEditor from "./PromptEditor";
-import ResourceRecommendations from "@/components/ResourceRecommendations";
-
-const PRINCIPLES: Record<string, string> = {
-  avatar_clarity: "Avatar Clarity",
-  themes_over_topics: "Themes Over Topics",
-  arc_attention: "ARC Attention",
-  arc_revelation: "ARC Revelation",
-  arc_connection: "ARC Connection",
-  title_frameworks: "Title Frameworks",
-  approve_the_click: "Approve the Click",
-  lead_magnet_system: "Lead Magnet System",
-  curiosity_bridges: "Curiosity Bridges",
-  values_peppering: "Values Peppering",
-  connection_language: "Connection Language",
-  story_proof: "Story Proof",
-  grade_5_language: "Grade 5 Language",
-  binge_architecture: "Binge Architecture",
-};
-
-function scoreColor(score: number) {
-  if (score >= 7) return "text-green-600";
-  if (score >= 5) return "text-[#f59e0b]";
-  return "text-[#ff0033]";
-}
-
-function scoreBg(score: number) {
-  if (score >= 7) return "bg-green-50 border-green-200";
-  if (score >= 5) return "bg-yellow-50 border-yellow-200";
-  return "bg-red-50 border-red-100";
-}
-
-interface AnalysisResult {
-  scores: Record<string, { score: number; evidence: string }>;
-  overall_score: number;
-  one_sentence_diagnosis: string;
-  whats_working: { strength: string; evidence: string }[];
-  three_improvements: {
-    principle: string;
-    score: number;
-    current: string;
-    improved: string;
-    arc_breakdown?: { attention: string; revelation: string; connection: string } | null;
-    why: string;
-    lesson: string;
-  }[];
-  visual_suggestions: { moment: string; suggestion: string; why: string }[];
-  quick_win: string;
-}
+import MarkdownMessage from "@/components/MarkdownMessage";
 
 interface ChatMessage {
   role: "user" | "assistant";
   content: string;
-  analysis?: AnalysisResult;
-}
-
-function ScorecardCard({ analysis, onDownload }: { analysis: AnalysisResult; onDownload?: () => void }) {
-  const [expandedImprovement, setExpandedImprovement] = useState<number | null>(null);
-  const overallScore = analysis.overall_score ?? 0;
-
-  return (
-    <div className="space-y-5">
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex-1">
-          <p className="text-base font-medium text-[#2f3437] dark:text-white leading-snug">
-            {analysis.one_sentence_diagnosis}
-          </p>
-        </div>
-        <div className="shrink-0 text-center">
-          <div className={`text-4xl font-black ${scoreColor(overallScore)}`}>
-            {Number(overallScore).toFixed(1)}
-          </div>
-          <div className="text-xs text-[#2f3437]/40 dark:text-white/40 font-medium">/ 10</div>
-          <div className="text-[11px] text-[#2f3437]/40 dark:text-white/40">Script Score</div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-        {Object.entries(analysis.scores ?? {})
-          .filter(([k]) => k !== "show_dont_tell" && k in PRINCIPLES)
-          .map(([key, val]) => (
-            <div
-              key={key}
-              className={`rounded-lg border px-2.5 py-2 ${scoreBg(val.score)}`}
-              title={val.evidence}
-            >
-              <div className="text-[10px] font-medium text-[#2f3437]/60 dark:text-white/60 truncate">
-                {PRINCIPLES[key]}
-              </div>
-              <div className={`text-lg font-black mt-0.5 ${scoreColor(val.score)}`}>
-                {Number(val.score).toFixed(1)}
-              </div>
-            </div>
-          ))}
-      </div>
-
-      {analysis.whats_working?.length > 0 && (
-        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 space-y-2">
-          <p className="text-xs font-semibold text-green-800 dark:text-green-300 uppercase tracking-wider">
-            ✅ What&apos;s Working
-          </p>
-          {analysis.whats_working.map((w, i) => (
-            <div key={i}>
-              <p className="text-sm font-semibold text-green-900 dark:text-green-200">{w.strength}</p>
-              <p className="text-xs text-green-800/70 dark:text-green-300/70 italic mt-0.5">&ldquo;{w.evidence}&rdquo;</p>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {analysis.three_improvements?.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-xs font-semibold text-[#2f3437]/60 dark:text-white/60 uppercase tracking-wider">
-            🔧 Top 3 Improvements
-          </p>
-          {analysis.three_improvements.map((imp, i) => (
-            <div key={i} className="border border-gray-200 dark:border-white/10 rounded-lg overflow-hidden">
-              <button
-                onClick={() => setExpandedImprovement(expandedImprovement === i ? null : i)}
-                className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-[#0f1419] hover:bg-gray-100 dark:hover:bg-white/5 transition-colors text-left"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-[#2f3437] dark:text-white">{imp.principle}</span>
-                  <span className={`text-sm font-bold ${scoreColor(imp.score)}`}>
-                    {Number(imp.score).toFixed(1)}
-                  </span>
-                </div>
-                <span className="text-xs text-[#6ba3c7]">
-                  {expandedImprovement === i ? "Hide" : "Show"} rewrite
-                </span>
-              </button>
-              {expandedImprovement === i && (
-                <div className="px-4 py-3 space-y-3 bg-white dark:bg-[#1a1a1a]">
-                  <div>
-                    <p className="text-[10px] font-semibold text-[#2f3437]/50 dark:text-white/50 uppercase tracking-wider mb-1">
-                      Current
-                    </p>
-                    <p className="text-sm text-[#2f3437]/70 dark:text-white/70 italic">&ldquo;{imp.current}&rdquo;</p>
-                  </div>
-                  <div className="bg-[#6ba3c7]/5 border border-[#6ba3c7]/20 rounded-lg px-3 py-3">
-                    <p className="text-[10px] font-semibold text-[#6ba3c7] uppercase tracking-wider mb-1">
-                      Rewritten
-                    </p>
-                    <p className="text-sm text-[#2f3437] dark:text-white leading-relaxed">{imp.improved}</p>
-                  </div>
-                  {imp.arc_breakdown && (
-                    <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded-lg px-3 py-2.5 space-y-1.5">
-                      <p className="text-[10px] font-semibold text-purple-700 dark:text-purple-300 uppercase tracking-wider">
-                        ARC Breakdown
-                      </p>
-                      <p className="text-xs text-purple-900 dark:text-purple-200">
-                        <span className="font-semibold">⚡ Attention:</span>{" "}
-                        {imp.arc_breakdown.attention}
-                      </p>
-                      <p className="text-xs text-purple-900 dark:text-purple-200">
-                        <span className="font-semibold">💡 Revelation:</span>{" "}
-                        {imp.arc_breakdown.revelation}
-                      </p>
-                      <p className="text-xs text-purple-900 dark:text-purple-200">
-                        <span className="font-semibold">🤝 Connection:</span>{" "}
-                        {imp.arc_breakdown.connection}
-                      </p>
-                    </div>
-                  )}
-                  <p className="text-xs text-[#2f3437]/60 dark:text-white/60">{imp.why}</p>
-                  <p className="text-[10px] text-[#6ba3c7]/80 font-medium">📚 {imp.lesson}</p>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {analysis.visual_suggestions?.length > 0 && (
-        <div className="border border-[#6ba3c7]/30 rounded-lg overflow-hidden">
-          <div className="px-4 py-2.5 bg-[#6ba3c7]/5 border-b border-[#6ba3c7]/20">
-            <p className="text-xs font-semibold text-[#6ba3c7] uppercase tracking-wider">
-              🎬 Visual Suggestions
-            </p>
-          </div>
-          <div className="divide-y divide-gray-50 dark:divide-white/5">
-            {analysis.visual_suggestions.map((vs, i) => (
-              <div key={i} className="px-4 py-3 space-y-1">
-                <p className="text-xs text-[#2f3437]/50 dark:text-white/50 italic">&ldquo;{vs.moment}&rdquo;</p>
-                <p className="text-sm font-medium text-[#2f3437] dark:text-white">{vs.suggestion}</p>
-                <p className="text-xs text-[#2f3437]/60 dark:text-white/60">{vs.why}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {analysis.quick_win && (
-        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg px-4 py-3">
-          <p className="text-xs font-semibold text-yellow-800 dark:text-yellow-300 uppercase tracking-wider mb-1">
-            ⚡ Quick Win
-          </p>
-          <p className="text-sm text-yellow-900 dark:text-yellow-200">{analysis.quick_win}</p>
-        </div>
-      )}
-
-      {onDownload && (
-        <button
-          onClick={onDownload}
-          className="flex items-center gap-1.5 text-xs text-[#2f3437]/50 hover:text-[#6ba3c7] transition-colors"
-        >
-          <ArrowDownTrayIcon className="w-3.5 h-3.5" />
-          Download full report
-        </button>
-      )}
-    </div>
-  );
 }
 
 function AssistantBubble({
@@ -229,18 +23,20 @@ function AssistantBubble({
   message: ChatMessage;
   onDownload?: () => void;
 }) {
-  if (message.analysis) {
-    return (
-      <div className="bg-white dark:bg-[#1a1a1a] rounded-lg rounded-tl-sm border border-gray-200 dark:border-white/10 p-4 max-w-full">
-        <ScorecardCard analysis={message.analysis} onDownload={onDownload} />
-      </div>
-    );
-  }
   return (
     <div className="bg-white dark:bg-[#1a1a1a] rounded-lg rounded-tl-sm border border-gray-200 dark:border-white/10 px-4 py-3 max-w-full">
-      <p className="text-sm text-[#2f3437] dark:text-white whitespace-pre-wrap leading-relaxed">
+      <MarkdownMessage className="text-sm text-[#2f3437] dark:text-white leading-relaxed">
         {message.content}
-      </p>
+      </MarkdownMessage>
+      {onDownload && (
+        <button
+          onClick={onDownload}
+          className="flex items-center gap-1.5 text-xs text-[#2f3437]/50 hover:text-[#6ba3c7] transition-colors mt-3 pt-3 border-t border-gray-100 dark:border-white/10"
+        >
+          <ArrowDownTrayIcon className="w-3.5 h-3.5" />
+          Download full report
+        </button>
+      )}
     </div>
   );
 }
@@ -279,8 +75,7 @@ export default function ScriptReviewChatUI({ basePath, noAvatar }: Props) {
 
       const assistantMsg: ChatMessage = {
         role: "assistant",
-        content: data.analysis?.one_sentence_diagnosis ?? "Script analysed.",
-        analysis: data.analysis,
+        content: data.markdownReport ?? "Script analysed.",
       };
       setMessages([assistantMsg]);
       setConversationId(data.conversationId);
@@ -322,17 +117,6 @@ export default function ScriptReviewChatUI({ basePath, noAvatar }: Props) {
     }
   }
 
-  const weakScriptPrinciples = useMemo(() => {
-    const analysis = messages[0]?.analysis;
-    if (!analysis?.scores) return "";
-    return Object.entries(analysis.scores)
-      .filter(([, v]) => v.score < 7)
-      .sort(([, a], [, b]) => a.score - b.score)
-      .slice(0, 5)
-      .map(([key]) => key)
-      .join(",");
-  }, [messages]);
-
   function handleReset() {
     setPhase("input");
     setVideoTitle("");
@@ -353,7 +137,6 @@ export default function ScriptReviewChatUI({ basePath, noAvatar }: Props) {
       .map((m: any) => ({
         role: m.role,
         content: m.content,
-        analysis: m.analysis,
       }));
     setMessages(visible);
     setConversationId(conv.id);
@@ -366,7 +149,10 @@ export default function ScriptReviewChatUI({ basePath, noAvatar }: Props) {
       <PromptEditor
         toolKey="script_review_analysis_prompt"
         defaultPrompt=""
-        placeholders={[{ key: "{{AVATAR_CONTEXT}}", description: "Injected avatar context for the member" }]}
+        placeholders={[
+          { key: "{{FULL_AVATAR_PROFILE}}", description: "Full avatar profile data (name, summary, profile, themes)" },
+          { key: "{{AVATAR_CONTEXT}}", description: "Same as FULL_AVATAR_PROFILE (legacy alias)" },
+        ]}
       />
 
       <RecentConversations
@@ -487,15 +273,6 @@ export default function ScriptReviewChatUI({ basePath, noAvatar }: Props) {
             )}
             <div ref={messagesEndRef} />
           </div>
-
-          {weakScriptPrinciples && (
-            <ResourceRecommendations
-              principles={weakScriptPrinciples}
-              limitPerPrinciple={2}
-              heading="📚 Resources for Your Weakest Areas"
-              className="pt-3 border-t border-gray-100 dark:border-white/10 mt-1"
-            />
-          )}
 
           <div className="flex gap-2 mt-3 border-t border-gray-100 dark:border-white/10 pt-3">
             <textarea
