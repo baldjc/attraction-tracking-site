@@ -396,18 +396,22 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
 
       {/* Mobile drawer */}
       <aside
-        className={`lg:hidden fixed inset-y-0 left-0 z-50 w-[260px] bg-[#1e2a38] shadow-2xl transform transition-transform duration-300 ease-in-out ${
+        className={`lg:hidden fixed inset-y-0 left-0 z-50 w-[260px] bg-[#1e2a38] shadow-2xl flex flex-col transform transition-transform duration-300 ease-in-out ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <button
-          onClick={() => setMobileOpen(false)}
-          className="absolute top-4 right-4 text-white/50 hover:text-white transition-colors z-10"
-          aria-label="Close menu"
-        >
-          <XMarkIcon className="w-5 h-5" />
-        </button>
-        {sidebarInner}
+        <div className="flex justify-end px-3 pt-3 pb-1 flex-shrink-0">
+          <button
+            onClick={() => setMobileOpen(false)}
+            className="text-white/50 hover:text-white transition-colors p-1 rounded-md hover:bg-white/10"
+            aria-label="Close menu"
+          >
+            <XMarkIcon className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto min-h-0">
+          {sidebarInner}
+        </div>
       </aside>
 
       {/* Desktop fixed sidebar */}
