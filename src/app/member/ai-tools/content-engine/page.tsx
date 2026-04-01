@@ -78,12 +78,15 @@ export default function ContentEnginePage() {
   }
 
   const themes = (avatarData?.contentThemes ?? []) as Array<unknown>;
+  const nicheValue = Array.isArray(avatarData?.niche)
+    ? ((avatarData?.niche as string[])[0] ?? null)
+    : (avatarData?.niche ?? null);
 
   return (
     <div className="max-w-4xl mx-auto">
       <ThemeDashboard
         themes={themes as never}
-        niche={avatarData?.niche ?? null}
+        niche={nicheValue}
         city={avatarData?.city ?? null}
       />
     </div>
