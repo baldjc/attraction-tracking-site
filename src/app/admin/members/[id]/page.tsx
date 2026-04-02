@@ -202,6 +202,9 @@ export default function MemberDetailPage() {
   const [sendingReminder, setSendingReminder] = useState(false);
   const [reminderToast, setReminderToast] = useState<{ ok: boolean; msg: string } | null>(null);
 
+  const [syncingStripe, setSyncingStripe] = useState(false);
+  const [stripeSyncToast, setStripeSyncToast] = useState<{ ok: boolean; msg: string } | null>(null);
+
   const [topVideos, setTopVideos] = useState<any[]>([]);
   const [topVideosLoading, setTopVideosLoading] = useState(false);
   const [topVideosNoChannel, setTopVideosNoChannel] = useState(false);
@@ -434,6 +437,23 @@ export default function MemberDetailPage() {
     await fetch(`/api/admin/members/${id}/stripe-unlink`, { method: "PUT" });
     await fetchMember();
     setUnlinking(false);
+  }
+
+  async function handleStripeSync() {
+    setSyncingStripe(true);
+    setStripeSyncToast(null);
+    try {
+      const res = await fetch(`/api/admin/members/${id}/stripe-sync`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Sync failed");
+      await fetchMember();
+      setStripeSyncToast({ ok: true, msg: `Synced — status is now: ${data.subscriptionStatus ?? "unknown"}` });
+    } catch (err: unknown) {
+      setStripeSyncToast({ ok: false, msg: err instanceof Error ? err.message : "Sync failed" });
+    } finally {
+      setSyncingStripe(false);
+      setTimeout(() => setStripeSyncToast(null), 6000);
+    }
   }
 
   async function handleDeleteAudit(auditId: string) {
@@ -736,9 +756,34 @@ export default function MemberDetailPage() {
                 )}
               </div>
             )}
+            {!isEditorRole && member.stripeCustomerId && (
+              <button
+                onClick={handleStripeSync}
+                disabled={syncingStripe}
+                className="inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/20 disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors border border-white/20"
+                title="Pull latest subscription status directly from Stripe"
+              >
+                {syncingStripe ? "Syncing…" : "Sync Stripe Status"}
+              </button>
+            )}
           </div>
         </div>
       </div>
+
+      {stripeSyncToast && (
+        <div className={`rounded-lg px-5 py-3 flex items-center justify-between gap-4 ${
+          stripeSyncToast.ok
+            ? "bg-green-50 border border-green-200"
+            : "bg-red-50 border border-[#ff0033]/20"
+        }`}>
+          <span className={`text-sm font-medium ${stripeSyncToast.ok ? "text-green-700" : "text-[#ff0033]"}`}>
+            {stripeSyncToast.msg}
+          </span>
+          <button onClick={() => setStripeSyncToast(null)} className="text-xs text-[#2f3437]/40 hover:text-[#2f3437]">
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {reminderToast && (
         <div className={`rounded-lg px-5 py-3 flex items-center justify-between gap-4 ${
