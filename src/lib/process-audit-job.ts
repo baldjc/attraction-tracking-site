@@ -60,7 +60,7 @@ export async function processAuditJob(jobId: string, selectedVideoId?: string) {
 
       if (job.auditType === "monthly") {
         const lastAudit = await prisma.audit.findFirst({
-          where: { userId: member.id },
+          where: { userId: member.id, auditType: { in: ["baseline", "monthly"] } },
           orderBy: { createdAt: "desc" },
         });
         if (!lastAudit) throw new Error("No baseline audit found. Run a Baseline audit first.");

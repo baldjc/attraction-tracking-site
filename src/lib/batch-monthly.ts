@@ -86,9 +86,9 @@ export async function runMonthlyBatch() {
       continue;
     }
 
-    // Find last audit date (for sinceDate)
+    // Find last audit date (for sinceDate) — baseline/monthly only, not single video audits
     const lastAudit = await prisma.audit.findFirst({
-      where: { userId: member.id },
+      where: { userId: member.id, auditType: { in: ["baseline", "monthly"] } },
       orderBy: { createdAt: "desc" },
     });
     const sinceDate = lastAudit?.createdAt;
