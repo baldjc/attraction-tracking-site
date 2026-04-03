@@ -25,8 +25,8 @@ export async function POST(
     return NextResponse.json({ driveFolderLink: plan.driveFolderLink });
   }
 
-  const member = await prisma.user.findUnique({ where: { id }, select: { name: true, email: true } });
-  const memberName = member?.name || member?.email || id;
+  const member = await prisma.user.findUnique({ where: { id }, select: { fullName: true, email: true } });
+  const memberName = member?.fullName || member?.email || id;
 
   let driveFolderLink: string;
   try {
