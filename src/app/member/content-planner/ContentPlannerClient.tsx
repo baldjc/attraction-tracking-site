@@ -93,6 +93,7 @@ export default function ContentPlannerClient({
         <ContentPlanTable
           apiBase={apiBase}
           forcedServiceTier={serviceTier}
+          isAdmin={isAdminView}
         />
       )}
 
