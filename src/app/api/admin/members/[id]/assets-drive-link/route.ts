@@ -1,0 +1,28 @@
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
+import prisma from "@/lib/prisma";
+
+async function checkAdmin() {
+  const session = await auth();
+  const role = (session?.user as any)?.role;
+  return session?.user && (role === "admin" || role === "editor") ? session : null;
+}
+
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await checkAdmin();
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { id } = await params;
+  const { assetsDriveLink } = await req.json();
+
+  const user = await prisma.user.update({
+    where: { id },
+    data: { assetsDriveLink: assetsDriveLink ?? null },
+    select: { id: true, assetsDriveLink: true },
+  });
+
+  return NextResponse.json({ user });
+}

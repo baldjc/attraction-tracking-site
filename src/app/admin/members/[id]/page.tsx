@@ -30,6 +30,8 @@ import {
 } from "recharts";
 import { useTheme } from "@/components/ThemeProvider";
 import ContentPlanTable from "@/components/content-planner/ContentPlanTable";
+import AdminCallsTab from "@/components/admin/AdminCallsTab";
+import AdminClientHubTab from "@/components/admin/AdminClientHubTab";
 
 const GHL_LOCATION_ID = process.env.NEXT_PUBLIC_GHL_LOCATION_ID ?? "";
 
@@ -80,13 +82,17 @@ const DIMENSIONS = [
   },
 ];
 
+const PRODUCTION_TIERS = ["editing_2", "editing_4", "mastery_2", "mastery_4", "done_with_you"];
+
 const TABS = [
-  { id: "profile",          label: "Profile" },
-  { id: "analytics",        label: "Analytics" },
-  { id: "progress",         label: "Audits & Progress" },
-  { id: "campaigns",        label: "Campaigns" },
-  { id: "ai_inputs",        label: "AI Inputs" },
-  { id: "content_planner",  label: "Content Planner" },
+  { id: "profile",          label: "Profile",          tierRequired: null },
+  { id: "analytics",        label: "Analytics",        tierRequired: null },
+  { id: "progress",         label: "Audits & Progress",tierRequired: null },
+  { id: "campaigns",        label: "Campaigns",        tierRequired: null },
+  { id: "ai_inputs",        label: "AI Inputs",        tierRequired: null },
+  { id: "content_planner",  label: "Content Planner",  tierRequired: null },
+  { id: "calls",            label: "Calls",            tierRequired: null },
+  { id: "client_hub",       label: "Client Hub",       tierRequired: PRODUCTION_TIERS },
 ] as const;
 type TabId = typeof TABS[number]["id"];
 
@@ -826,7 +832,7 @@ export default function MemberDetailPage() {
 
       {/* TAB BAR */}
       <div className="flex gap-1 bg-white border border-gray-200 rounded-lg p-1 w-fit overflow-x-auto">
-        {TABS.map((t) => (
+        {TABS.filter((t) => !t.tierRequired || t.tierRequired.includes(member.serviceTier)).map((t) => (
           <button
             key={t.id}
             onClick={() => setActiveTab(t.id)}
@@ -2019,6 +2025,19 @@ export default function MemberDetailPage() {
             apiBase={`/api/admin/members/${member.id}/content-plans`}
             isAdmin
           />
+        </div>
+      )}
+
+      {activeTab === "calls" && member && (
+        <div className="bg-white rounded-lg border border-gray-200 p-5">
+          <AdminCallsTab memberId={member.id} />
+        </div>
+      )}
+
+      {activeTab === "client_hub" && member && PRODUCTION_TIERS.includes(member.serviceTier) && (
+        <div className="bg-white rounded-lg border border-gray-200 p-5">
+          <h2 className="text-sm font-semibold text-[#2f3437] mb-4">Client Hub Settings</h2>
+          <AdminClientHubTab memberId={member.id} serviceTier={member.serviceTier} />
         </div>
       )}
     </div>

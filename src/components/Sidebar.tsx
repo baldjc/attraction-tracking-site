@@ -32,6 +32,7 @@ import {
   RocketLaunchIcon,
   LinkIcon,
   CalendarDaysIcon,
+  Squares2X2Icon,
 } from "@heroicons/react/24/outline";
 import { useState, useEffect } from "react";
 import { IMPERSONATE_LS_KEY } from "@/lib/impersonate-constants";
@@ -71,15 +72,19 @@ const editorLinks = [
   { href: "/admin/qa-prep", label: "Q&A Prep", icon: ChatBubbleLeftRightIcon },
 ];
 
+const PRODUCTION_TIERS = ["editing_2", "editing_4", "mastery_2", "mastery_4", "done_with_you"];
+
 const memberLinks = [
-  { href: "/member/dashboard", label: "Dashboard", icon: HomeIcon, featureKey: null, colour: "#6ba3c7" },
-  { href: "/member/scores", label: "My Scores", icon: StarIcon, featureKey: null, colour: "#F59E0B" },
-  { href: "/member/academy", label: "Academy", icon: AcademicCapIcon, featureKey: null, colour: "#10B981" },
-  { href: "/member/ai-tools", label: "AI Tools", icon: SparklesIcon, featureKey: "ai_tools", colour: "#6ba3c7" },
-  { href: "/member/content-planner", label: "Content Planner", icon: CalendarDaysIcon, featureKey: null, colour: "#6ba3c7" },
-  { href: "/member/generate-leads", label: "Generate Leads", icon: RocketLaunchIcon, featureKey: "campaigns", colour: "#E63946" },
-  { href: "/member/hire", label: "Hire a Human", icon: UserGroupIcon, featureKey: null, colour: "#8B5CF6" },
-  { href: "/member/settings", label: "Settings", icon: Cog6ToothIcon, featureKey: null, colour: "#6ba3c7" },
+  { href: "/member/dashboard",       label: "Dashboard",      icon: HomeIcon,         featureKey: null,        colour: "#6ba3c7", tierRequired: null },
+  { href: "/member/scores",          label: "My Scores",      icon: StarIcon,         featureKey: null,        colour: "#F59E0B", tierRequired: null },
+  { href: "/member/academy",         label: "Academy",        icon: AcademicCapIcon,  featureKey: null,        colour: "#10B981", tierRequired: null },
+  { href: "/member/ai-tools",        label: "AI Tools",       icon: SparklesIcon,     featureKey: "ai_tools",  colour: "#6ba3c7", tierRequired: null },
+  { href: "/member/content-planner", label: "Content Planner",icon: CalendarDaysIcon, featureKey: null,        colour: "#6ba3c7", tierRequired: null },
+  { href: "/member/my-calls",        label: "My Calls",       icon: VideoCameraIcon,  featureKey: null,        colour: "#6ba3c7", tierRequired: null },
+  { href: "/member/client-hub",      label: "Client Hub",     icon: Squares2X2Icon,   featureKey: null,        colour: "#6ba3c7", tierRequired: PRODUCTION_TIERS },
+  { href: "/member/generate-leads",  label: "Generate Leads", icon: RocketLaunchIcon, featureKey: "campaigns", colour: "#E63946", tierRequired: null },
+  { href: "/member/hire",            label: "Hire a Human",   icon: UserGroupIcon,    featureKey: null,        colour: "#8B5CF6", tierRequired: null },
+  { href: "/member/settings",        label: "Settings",       icon: Cog6ToothIcon,    featureKey: null,        colour: "#6ba3c7", tierRequired: null },
 ];
 
 interface ImpersonateState {
@@ -97,9 +102,19 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
   const [showSwitch, setShowSwitch] = useState(false);
   const [qaCallsPending, setQaCallsPending] = useState(0);
   const [hireWaitlist, setHireWaitlist] = useState(0);
+  const [memberTier, setMemberTier] = useState<string | null>(null);
 
   const isStaff = role === "admin" || role === "editor";
   const isImpersonating = !!impersonate;
+
+  useEffect(() => {
+    if (role === "member") {
+      fetch("/api/member/tier")
+        .then((r) => r.ok ? r.json() : null)
+        .then((d) => d && setMemberTier(d.serviceTier ?? null))
+        .catch(() => {});
+    }
+  }, [role]);
 
   useEffect(() => {
     if (role === "admin") {
@@ -136,8 +151,9 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
   const isStaffOnMemberView = isStaff && isImpersonating;
 
   const baseMemberLinks = memberLinks.filter((link) => {
-    if (!link.featureKey || !featureFlags) return true;
-    return featureFlags[link.featureKey] !== false;
+    if (link.featureKey && featureFlags && featureFlags[link.featureKey] === false) return false;
+    if (link.tierRequired && memberTier && !link.tierRequired.includes(memberTier)) return false;
+    return true;
   });
 
   const links = isStaffOnMemberView
