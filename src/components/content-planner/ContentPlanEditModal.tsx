@@ -21,6 +21,7 @@ export interface ContentPlan {
   priority: string | null;
   notes: string | null;
   script: string | null;
+  researchNotes: string | null;
   thumbnailWords: string | null;
   footageLink: string | null;
   driveFolderLink: string | null;
@@ -53,6 +54,7 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
     priority: plan.priority ?? "",
     notes: plan.notes ?? "",
     script: plan.script ?? "",
+    researchNotes: plan.researchNotes ?? "",
     thumbnailWords: plan.thumbnailWords ?? "",
     footageLink: plan.footageLink ?? "",
   });
@@ -92,6 +94,7 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
           priority: form.priority || null,
           notes: form.notes || null,
           script: form.script || null,
+          researchNotes: form.researchNotes || null,
           thumbnailWords: form.thumbnailWords || null,
           footageLink: form.footageLink || null,
         }),
@@ -202,6 +205,14 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
           <div>
             <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Script</label>
             <textarea value={form.script} onChange={(e) => setForm((f) => ({ ...f, script: e.target.value }))} rows={6} className={`${field} resize-y`} placeholder="Write your video script here…" />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">
+              Research Notes
+              <span className="ml-1 font-normal text-[#2f3437]/40">(paste notes, stats, talking points)</span>
+            </label>
+            <textarea value={form.researchNotes} onChange={(e) => setForm((f) => ({ ...f, researchNotes: e.target.value }))} rows={5} className={`${field} resize-y`} placeholder="Paste your research here — statistics, sources, talking points, ChatGPT/Perplexity output…" />
           </div>
 
           <div className={`grid gap-3 ${useDrive ? "grid-cols-1" : "grid-cols-2"}`}>

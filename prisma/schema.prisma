@@ -759,6 +759,7 @@ model ContentPlan {
   priority        String?
   notes           String?   @db.Text
   script          String?   @db.Text
+  researchNotes   String?   @db.Text
   thumbnailWords  String?
   footageLink     String?
   driveFolderLink String?
