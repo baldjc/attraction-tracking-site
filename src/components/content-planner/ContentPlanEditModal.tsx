@@ -212,7 +212,7 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
               Research Notes
               <span className="ml-1 font-normal text-[#2f3437]/40">(paste notes, stats, talking points)</span>
             </label>
-            <textarea value={form.researchNotes} onChange={(e) => setForm((f) => ({ ...f, researchNotes: e.target.value }))} rows={5} className={`${field} resize-y`} placeholder="Paste your research here — statistics, sources, talking points, ChatGPT/Perplexity output…" />
+            <textarea value={form.researchNotes} onChange={(e) => setForm((f) => ({ ...f, researchNotes: e.target.value }))} rows={5} className={`${field} resize-y`} placeholder="Paste your research here — statistics, sources, talking points, Manus/Perplexity output…" />
           </div>
 
           <div className={`grid gap-3 ${useDrive ? "grid-cols-1" : "grid-cols-2"}`}>
