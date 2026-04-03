@@ -29,6 +29,8 @@ interface Props {
   plan: ContentPlan;
   serviceTier: string;
   apiBase: string;
+  isAdmin?: boolean;
+  memberId?: string;
   onClose: () => void;
   onSaved: (updated: ContentPlan) => void;
   onDeleted?: (id: string) => void;
@@ -39,7 +41,7 @@ function toDateInput(val: string | null) {
   return new Date(val).toISOString().slice(0, 10);
 }
 
-export default function ContentPlanEditModal({ plan, serviceTier, apiBase, onClose, onSaved, onDeleted }: Props) {
+export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdmin, memberId, onClose, onSaved, onDeleted }: Props) {
   const [form, setForm] = useState({
     title: plan.title,
     status: plan.status,
@@ -53,10 +55,13 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, onClo
     thumbnailWords: plan.thumbnailWords ?? "",
     footageLink: plan.footageLink ?? "",
   });
+  const [driveFolderLink, setDriveFolderLink] = useState(plan.driveFolderLink);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [creatingFolder, setCreatingFolder] = useState(false);
+  const [folderError, setFolderError] = useState("");
 
   const showEditDue = hasEditDueDate(serviceTier);
   const statusOptions = getStatusOptions(serviceTier);
@@ -107,6 +112,23 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, onClo
       onClose();
     } catch { setError("Failed to delete"); } finally {
       setDeleting(false);
+    }
+  }
+
+  async function handleCreateFolder() {
+    setCreatingFolder(true);
+    setFolderError("");
+    try {
+      const mid = memberId ?? apiBase.match(/members\/([^/]+)/)?.[1];
+      if (!mid) throw new Error("Cannot determine member ID");
+      const res = await fetch(`/api/admin/members/${mid}/content-plans/${plan.id}/drive-folder`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed to create folder");
+      setDriveFolderLink(data.driveFolderLink);
+    } catch (e: unknown) {
+      setFolderError(e instanceof Error ? e.message : "Failed to create folder");
+    } finally {
+      setCreatingFolder(false);
     }
   }
 
@@ -189,6 +211,50 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, onClo
               <input type="text" value={form.footageLink} onChange={(e) => setForm((f) => ({ ...f, footageLink: e.target.value }))} className={field} placeholder="https://…" />
             </div>
           </div>
+
+          {isAdmin && (
+            <div>
+              <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Google Drive Folder</label>
+              {driveFolderLink ? (
+                <a
+                  href={driveFolderLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 px-3 py-2 text-sm text-[#6ba3c7] bg-blue-50 border border-blue-100 rounded-lg hover:bg-blue-100 transition-colors w-full truncate"
+                >
+                  <svg className="w-4 h-4 shrink-0" viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg">
+                    <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
+                    <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#00ac47"/>
+                    <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/>
+                    <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
+                    <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
+                    <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 27h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
+                  </svg>
+                  Open Drive Folder
+                </a>
+              ) : (
+                <div>
+                  <button
+                    type="button"
+                    onClick={handleCreateFolder}
+                    disabled={creatingFolder}
+                    className="flex items-center gap-2 px-3 py-2 text-sm text-[#2f3437]/70 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50"
+                  >
+                    <svg className="w-4 h-4 shrink-0" viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg">
+                      <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
+                      <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#00ac47"/>
+                      <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/>
+                      <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
+                      <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
+                      <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 27h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
+                    </svg>
+                    {creatingFolder ? "Creating folder…" : "Create Drive Folder"}
+                  </button>
+                  {folderError && <p className="text-xs text-red-600 mt-1">{folderError}</p>}
+                </div>
+              )}
+            </div>
+          )}
 
           {error && <p className="text-sm text-red-600">{error}</p>}
         </div>

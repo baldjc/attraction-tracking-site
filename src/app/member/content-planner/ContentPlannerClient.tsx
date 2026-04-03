@@ -101,6 +101,7 @@ export default function ContentPlannerClient({
           apiBase={apiBase}
           calendarType="publish"
           serviceTier={serviceTier}
+          isAdmin={isAdminView}
         />
       )}
 
@@ -109,6 +110,7 @@ export default function ContentPlannerClient({
           apiBase={apiBase}
           calendarType="shoot"
           serviceTier={serviceTier}
+          isAdmin={isAdminView}
         />
       )}
 
@@ -117,6 +119,7 @@ export default function ContentPlannerClient({
           apiBase={apiBase}
           calendarType="edit_due"
           serviceTier={serviceTier}
+          isAdmin={isAdminView}
         />
       )}
 
@@ -124,6 +127,7 @@ export default function ContentPlannerClient({
         <BoardView
           apiBase={apiBase}
           serviceTier={serviceTier}
+          isAdmin={isAdminView}
         />
       )}
 

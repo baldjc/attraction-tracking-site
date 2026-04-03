@@ -21,6 +21,7 @@ import ContentPlanEditModal, { type ContentPlan } from "./ContentPlanEditModal";
 interface Props {
   apiBase: string;
   serviceTier: string;
+  isAdmin?: boolean;
 }
 
 const COLUMN_COLOURS = [
@@ -108,7 +109,7 @@ function DroppableColumn({ id, children, isOver }: { id: string; children: React
   );
 }
 
-export default function BoardView({ apiBase, serviceTier }: Props) {
+export default function BoardView({ apiBase, serviceTier, isAdmin }: Props) {
   const [plans,   setPlans]   = useState<ContentPlan[]>([]);
   const [themes,  setThemes]  = useState<ThemeObj[]>([]);
   const [loading, setLoading] = useState(true);
@@ -321,6 +322,7 @@ export default function BoardView({ apiBase, serviceTier }: Props) {
           plan={editingPlan}
           serviceTier={serviceTier}
           apiBase={apiBase}
+          isAdmin={isAdmin}
           onClose={() => setEditingPlan(null)}
           onSaved={handlePlanSaved}
           onDeleted={handlePlanDeleted}

@@ -22,6 +22,7 @@ interface Props {
   apiBase: string;
   calendarType: "publish" | "shoot" | "edit_due";
   serviceTier: string;
+  isAdmin?: boolean;
 }
 
 const DATE_FIELD: Record<string, keyof ContentPlan> = {
@@ -91,7 +92,7 @@ function DroppableDay({ id, children, isOver }: { id: string; children: React.Re
   );
 }
 
-export default function CalendarView({ apiBase, calendarType, serviceTier }: Props) {
+export default function CalendarView({ apiBase, calendarType, serviceTier, isAdmin }: Props) {
   const today = new Date();
   const [year,  setYear]  = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
@@ -317,6 +318,7 @@ export default function CalendarView({ apiBase, calendarType, serviceTier }: Pro
           plan={editingPlan}
           serviceTier={serviceTier}
           apiBase={apiBase}
+          isAdmin={isAdmin}
           onClose={() => setEditingPlan(null)}
           onSaved={handlePlanSaved}
           onDeleted={handlePlanDeleted}
