@@ -293,6 +293,17 @@ export default function TitleThumbnailAnalyzerPage() {
   const [refreshCounter, setRefreshCounter] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("title_prefill");
+      if (raw) {
+        sessionStorage.removeItem("title_prefill");
+        const data = JSON.parse(raw);
+        if (data.title) setTitle(data.title);
+      }
+    } catch {}
+  }, []);
+
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;

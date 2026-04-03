@@ -58,6 +58,18 @@ export default function ScriptReviewChatUI({ basePath, noAvatar }: Props) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("script_review_prefill");
+      if (raw) {
+        sessionStorage.removeItem("script_review_prefill");
+        const data = JSON.parse(raw);
+        if (data.title) setVideoTitle(data.title);
+        if (data.script) setScriptText(data.script);
+      }
+    } catch {}
+  }, []);
+
+  useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 

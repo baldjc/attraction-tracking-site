@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import {
   STATUS_STYLES,
@@ -51,6 +52,7 @@ function toDateInput(val: string | null) {
 }
 
 export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdmin, memberId, themes = [], onClose, onSaved, onDeleted }: Props) {
+  const router = useRouter();
   const [form, setForm] = useState({
     title: plan.title,
     status: plan.status,
@@ -147,6 +149,20 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
 
   const field = "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30";
 
+  function pushToAITool(tool: "title" | "script-builder" | "script-review") {
+    if (tool === "title") {
+      sessionStorage.setItem("title_prefill", JSON.stringify({ title: form.title }));
+      router.push("/member/ai-tools/title-thumbnail-analyzer");
+    } else if (tool === "script-builder") {
+      const talkingPoints = form.notes.split("\n").map((l) => l.trim()).filter(Boolean);
+      sessionStorage.setItem("arc_prefill", JSON.stringify({ title: form.title, talkingPoints }));
+      router.push("/member/ai-tools/arc-script-builder");
+    } else {
+      sessionStorage.setItem("script_review_prefill", JSON.stringify({ title: form.title, script: form.script }));
+      router.push("/member/ai-tools/script-review");
+    }
+  }
+
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-start justify-center p-4 overflow-y-auto">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-lg my-8">
@@ -159,7 +175,10 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
 
         <div className="px-6 py-5 space-y-4">
           <div>
-            <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Title</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-medium text-[#2f3437]/60">Title</label>
+              <button type="button" onClick={() => pushToAITool("title")} className="text-xs text-[#6ba3c7] hover:underline">Analyse Title →</button>
+            </div>
             <input type="text" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} className={field} />
           </div>
 
@@ -223,12 +242,18 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
           )}
 
           <div>
-            <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Talking Points / Outline of Video</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-medium text-[#2f3437]/60">Talking Points / Outline of Video</label>
+              <button type="button" onClick={() => pushToAITool("script-builder")} className="text-xs text-[#6ba3c7] hover:underline">Build Script →</button>
+            </div>
             <textarea value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} rows={3} className={`${field} resize-y`} placeholder="Key details, action items…" />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Script</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-medium text-[#2f3437]/60">Script</label>
+              <button type="button" onClick={() => pushToAITool("script-review")} className="text-xs text-[#6ba3c7] hover:underline">Script Review →</button>
+            </div>
             <textarea value={form.script} onChange={(e) => setForm((f) => ({ ...f, script: e.target.value }))} rows={6} className={`${field} resize-y`} placeholder="Write your video script here…" />
           </div>
 
