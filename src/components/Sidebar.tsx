@@ -31,6 +31,7 @@ import {
   UserGroupIcon,
   RocketLaunchIcon,
   LinkIcon,
+  CalendarDaysIcon,
 } from "@heroicons/react/24/outline";
 import { useState, useEffect } from "react";
 import { IMPERSONATE_LS_KEY } from "@/lib/impersonate-constants";
@@ -75,6 +76,7 @@ const memberLinks = [
   { href: "/member/scores", label: "My Scores", icon: StarIcon, featureKey: null, colour: "#F59E0B" },
   { href: "/member/academy", label: "Academy", icon: AcademicCapIcon, featureKey: null, colour: "#10B981" },
   { href: "/member/ai-tools", label: "AI Tools", icon: SparklesIcon, featureKey: "ai_tools", colour: "#6ba3c7" },
+  { href: "/member/content-planner", label: "Content Planner", icon: CalendarDaysIcon, featureKey: null, colour: "#6ba3c7" },
   { href: "/member/generate-leads", label: "Generate Leads", icon: RocketLaunchIcon, featureKey: "campaigns", colour: "#E63946" },
   { href: "/member/hire", label: "Hire a Human", icon: UserGroupIcon, featureKey: null, colour: "#8B5CF6" },
   { href: "/member/settings", label: "Settings", icon: Cog6ToothIcon, featureKey: null, colour: "#6ba3c7" },

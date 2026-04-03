@@ -124,6 +124,9 @@ model User {
 
   lastYoutubeSyncAt    DateTime? @map("last_youtube_sync_at")
 
+  assetsDriveLink  String?
+  calendarToken    String?  @unique
+
   audits               Audit[]
   auditJobs            AuditJob[]
   campaigns            Campaign[]
@@ -144,6 +147,10 @@ model User {
   homework             MemberHomework[]
   waitlistEntries      ServiceWaitlistEntry[]
   helpConversations    HelpConversation[]
+  contentPlans         ContentPlan[]
+  clientCalls          ClientCall[]     @relation("ClientCalls")
+  createdCalls         ClientCall[]     @relation("CallCreator")
+  quickLinks           ClientQuickLink[]
 
   @@map("users")
 }
@@ -736,4 +743,71 @@ model AuditRequest {
   @@index([email])
   @@index([status])
   @@map("audit_requests")
+}
+
+model ContentPlan {
+  id              String    @id @default(uuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title           String
+  status          String    @default("Idea")
+  theme           String?
+  shootDate       DateTime?
+  publishDate     DateTime?
+  editDueDate     DateTime?
+  priority        String?
+  notes           String?   @db.Text
+  thumbnailWords  String?
+  footageLink     String?
+  driveFolderLink String?
+
+  linkedIdeaId    String?
+  linkedScriptId  String?
+  youtubeVideoId  String?
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([userId, status])
+  @@index([userId, publishDate])
+  @@map("content_plans")
+}
+
+model ClientCall {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation("ClientCalls", fields: [userId], references: [id], onDelete: Cascade)
+
+  fathomUrl   String
+  callDate    DateTime
+  topic       String?
+  notes       String?  @db.Text
+
+  createdById String
+  createdBy   User     @relation("CallCreator", fields: [createdById], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([userId, callDate])
+  @@map("client_calls")
+}
+
+model ClientQuickLink {
+  id        String @id @default(uuid())
+  userId    String
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  label     String
+  url       String
+  sortOrder Int    @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("client_quick_links")
 }

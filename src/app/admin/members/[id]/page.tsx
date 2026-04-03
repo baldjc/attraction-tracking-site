@@ -29,6 +29,7 @@ import {
   ReferenceDot,
 } from "recharts";
 import { useTheme } from "@/components/ThemeProvider";
+import ContentPlanTable from "@/components/content-planner/ContentPlanTable";
 
 const GHL_LOCATION_ID = process.env.NEXT_PUBLIC_GHL_LOCATION_ID ?? "";
 
@@ -80,11 +81,12 @@ const DIMENSIONS = [
 ];
 
 const TABS = [
-  { id: "profile",    label: "Profile" },
-  { id: "analytics",  label: "Analytics" },
-  { id: "progress",   label: "Audits & Progress" },
-  { id: "campaigns",  label: "Campaigns" },
-  { id: "ai_inputs",  label: "AI Inputs" },
+  { id: "profile",          label: "Profile" },
+  { id: "analytics",        label: "Analytics" },
+  { id: "progress",         label: "Audits & Progress" },
+  { id: "campaigns",        label: "Campaigns" },
+  { id: "ai_inputs",        label: "AI Inputs" },
+  { id: "content_planner",  label: "Content Planner" },
 ] as const;
 type TabId = typeof TABS[number]["id"];
 
@@ -2007,6 +2009,16 @@ export default function MemberDetailPage() {
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {activeTab === "content_planner" && member && (
+        <div className="bg-[#0f1a27] rounded-xl border border-white/10 p-5">
+          <h2 className="text-sm font-semibold text-white mb-4">Content Planner</h2>
+          <ContentPlanTable
+            apiBase={`/api/admin/members/${member.id}/content-plans`}
+            isAdmin
+          />
         </div>
       )}
     </div>
