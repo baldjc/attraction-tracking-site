@@ -81,16 +81,17 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   });
 
   // Auto-create Google Drive folder for Production/Growth/DWY members
-  if (member && PRODUCTION_TIERS.includes(member.serviceTier ?? "") && member.assetsDriveLink && member.fullName) {
+  if (member && PRODUCTION_TIERS.includes(member.serviceTier ?? "") && member.fullName) {
     try {
-      const folderUrl = await createVideoFolder(member.fullName, plan.title);
-      if (folderUrl) {
-        await prisma.contentPlan.update({
-          where: { id: plan.id },
-          data: { driveFolderLink: folderUrl },
-        });
-        (plan as any).driveFolderLink = folderUrl;
+      const { videoFolderUrl, memberFolderUrl } = await createVideoFolder(member.fullName, plan.title);
+      const updates: Promise<unknown>[] = [
+        prisma.contentPlan.update({ where: { id: plan.id }, data: { driveFolderLink: videoFolderUrl } }),
+      ];
+      if (!member.assetsDriveLink) {
+        updates.push(prisma.user.update({ where: { id }, data: { assetsDriveLink: memberFolderUrl } }));
       }
+      await Promise.all(updates);
+      (plan as any).driveFolderLink = videoFolderUrl;
     } catch (err) {
       console.error("[admin content-plans] Drive folder creation failed:", err);
     }

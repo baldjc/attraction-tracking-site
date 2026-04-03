@@ -42,10 +42,15 @@ async function findOrCreateFolder(
   return folder.data.id!;
 }
 
+export interface VideoFolderResult {
+  memberFolderUrl: string;
+  videoFolderUrl: string;
+}
+
 export async function createVideoFolder(
   memberName: string,
   videoTitle: string
-): Promise<string> {
+): Promise<VideoFolderResult> {
   const rootFolderId = process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID;
   if (!rootFolderId) throw new Error("GOOGLE_DRIVE_ROOT_FOLDER_ID is not set");
 
@@ -54,5 +59,8 @@ export async function createVideoFolder(
   const memberFolderId = await findOrCreateFolder(drive, memberName, rootFolderId);
   const videoFolderId = await findOrCreateFolder(drive, videoTitle, memberFolderId);
 
-  return `https://drive.google.com/drive/folders/${videoFolderId}`;
+  return {
+    memberFolderUrl: `https://drive.google.com/drive/folders/${memberFolderId}`,
+    videoFolderUrl: `https://drive.google.com/drive/folders/${videoFolderId}`,
+  };
 }

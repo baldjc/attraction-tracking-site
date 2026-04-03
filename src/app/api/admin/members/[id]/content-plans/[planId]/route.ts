@@ -47,10 +47,16 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     !plan.driveFolderLink
   ) {
     try {
-      const member = await prisma.user.findUnique({ where: { id }, select: { fullName: true, email: true } });
+      const member = await prisma.user.findUnique({ where: { id }, select: { fullName: true, email: true, assetsDriveLink: true } });
       const memberName = member?.fullName || member?.email || id;
-      const link = await createVideoFolder(memberName, plan.title);
-      plan = await prisma.contentPlan.update({ where: { id: planId }, data: { driveFolderLink: link } });
+      const { videoFolderUrl, memberFolderUrl } = await createVideoFolder(memberName, plan.title);
+      const updates: Promise<unknown>[] = [
+        prisma.contentPlan.update({ where: { id: planId }, data: { driveFolderLink: videoFolderUrl } }).then((p) => { plan = p; }),
+      ];
+      if (!member?.assetsDriveLink) {
+        updates.push(prisma.user.update({ where: { id }, data: { assetsDriveLink: memberFolderUrl } }));
+      }
+      await Promise.all(updates);
     } catch {
     }
   }
