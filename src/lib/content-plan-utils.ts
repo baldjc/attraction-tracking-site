@@ -43,21 +43,21 @@ export function hasDriveFolder(serviceTier: string): boolean {
 }
 
 export const STATUS_STYLES: Record<string, { bg: string; text: string }> = {
-  "Idea":              { bg: "#2a2a3e", text: "#888" },
-  "Future Idea":       { bg: "#2a2a3e", text: "#888" },
-  "Scripted":          { bg: "#1a2a4a", text: "#5b9bf5" },
-  "Not Started":       { bg: "#1a2a4a", text: "#5b9bf5" },
-  "Needs Research":    { bg: "#3a1a1a", text: "#f55b5b" },
-  "Ready to Shoot":    { bg: "#2a1a3a", text: "#b57cfc" },
-  "Filmed":            { bg: "#3a1a2a", text: "#f57cb5" },
-  "Shooting":          { bg: "#3a1a2a", text: "#f57cb5" },
-  "Editing":           { bg: "#3a3a1a", text: "#f5d55b" },
-  "Shot - In Post":    { bg: "#3a3a1a", text: "#f5d55b" },
-  "Edited":            { bg: "#1a3a1a", text: "#5bf57c" },
-  "Scheduled":         { bg: "#3a2a1a", text: "#f5a55b" },
-  "Scheduled on YT":   { bg: "#3a2a1a", text: "#f5a55b" },
-  "Published":         { bg: "#1a3a2a", text: "#5bf5a5" },
-  "Live on YT":        { bg: "#1a3a2a", text: "#5bf5a5" },
+  "Idea":              { bg: "#f3f4f6", text: "#6b7280" },
+  "Future Idea":       { bg: "#f3f4f6", text: "#6b7280" },
+  "Scripted":          { bg: "#dbeafe", text: "#1d4ed8" },
+  "Not Started":       { bg: "#dbeafe", text: "#1d4ed8" },
+  "Needs Research":    { bg: "#fee2e2", text: "#b91c1c" },
+  "Ready to Shoot":    { bg: "#ede9fe", text: "#6d28d9" },
+  "Filmed":            { bg: "#fce7f3", text: "#be185d" },
+  "Shooting":          { bg: "#fce7f3", text: "#be185d" },
+  "Editing":           { bg: "#fef9c3", text: "#a16207" },
+  "Shot - In Post":    { bg: "#fef9c3", text: "#a16207" },
+  "Edited":            { bg: "#dcfce7", text: "#15803d" },
+  "Scheduled":         { bg: "#ffedd5", text: "#c2410c" },
+  "Scheduled on YT":   { bg: "#ffedd5", text: "#c2410c" },
+  "Published":         { bg: "#d1fae5", text: "#065f46" },
+  "Live on YT":        { bg: "#d1fae5", text: "#065f46" },
 };
 
 export const PRIORITY_OPTIONS = ["High", "Medium", "Low"];
