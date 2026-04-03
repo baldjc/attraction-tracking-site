@@ -125,6 +125,7 @@ model User {
   lastYoutubeSyncAt    DateTime? @map("last_youtube_sync_at")
 
   assetsDriveLink  String?
+  clientHubEnabled Boolean  @default(true)
   calendarToken    String?  @unique
 
   audits               Audit[]

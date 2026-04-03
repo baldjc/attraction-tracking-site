@@ -18,6 +18,9 @@ interface Props {
 const GROWTH_DWY = ["mastery_2", "mastery_4", "done_with_you"];
 
 export default function AdminClientHubTab({ memberId, serviceTier }: Props) {
+  const [clientHubEnabled, setClientHubEnabled] = useState(true);
+  const [hubToggleSaving, setHubToggleSaving] = useState(false);
+
   const [assetsDriveLink, setAssetsDriveLink] = useState("");
   const [assetsSaving, setAssetsSaving] = useState(false);
   const [assetsSaved, setAssetsSaved] = useState(false);
@@ -37,9 +40,26 @@ export default function AdminClientHubTab({ memberId, serviceTier }: Props) {
   useEffect(() => {
     fetch(`/api/members/${memberId}`)
       .then((r) => r.json())
-      .then((d) => setAssetsDriveLink(d.member?.assetsDriveLink ?? ""))
+      .then((d) => {
+        setAssetsDriveLink(d.member?.assetsDriveLink ?? "");
+        setClientHubEnabled(d.member?.clientHubEnabled ?? true);
+      })
       .catch(() => {});
   }, [memberId]);
+
+  async function handleHubToggle(val: boolean) {
+    setHubToggleSaving(true);
+    setClientHubEnabled(val);
+    try {
+      await fetch(`/api/admin/members/${memberId}/client-hub-enabled`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clientHubEnabled: val }),
+      });
+    } catch { setClientHubEnabled(!val); } finally {
+      setHubToggleSaving(false);
+    }
+  }
 
   useEffect(() => {
     if (!showQuickLinks) { setLinksLoading(false); return; }
@@ -142,6 +162,33 @@ export default function AdminClientHubTab({ memberId, serviceTier }: Props) {
 
   return (
     <div className="space-y-6">
+      <div className="bg-gray-50 border border-gray-200 rounded-xl p-5">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-semibold text-[#2f3437]">Client Hub Access</h3>
+            <p className="text-xs text-[#2f3437]/50 mt-0.5">
+              {clientHubEnabled
+                ? "Client Hub is visible to this member."
+                : "Client Hub is hidden from this member."}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => handleHubToggle(!clientHubEnabled)}
+            disabled={hubToggleSaving}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none disabled:opacity-50 ${
+              clientHubEnabled ? "bg-[#6ba3c7]" : "bg-gray-300"
+            }`}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                clientHubEnabled ? "translate-x-6" : "translate-x-1"
+              }`}
+            />
+          </button>
+        </div>
+      </div>
+
       <div className="bg-gray-50 border border-gray-200 rounded-xl p-5">
         <h3 className="text-sm font-semibold text-[#2f3437] mb-3">Assets Drive Folder URL</h3>
         <div className="flex gap-2">

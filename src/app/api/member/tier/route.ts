@@ -8,8 +8,11 @@ export async function GET() {
 
   const dbUser = await prisma.user.findUnique({
     where: { id: user.id },
-    select: { serviceTier: true },
+    select: { serviceTier: true, clientHubEnabled: true },
   });
 
-  return NextResponse.json({ serviceTier: dbUser?.serviceTier ?? "foundations" });
+  return NextResponse.json({
+    serviceTier: dbUser?.serviceTier ?? "foundations",
+    clientHubEnabled: dbUser?.clientHubEnabled ?? true,
+  });
 }

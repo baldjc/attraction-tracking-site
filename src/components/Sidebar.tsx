@@ -104,6 +104,7 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
   const [qaCallsPending, setQaCallsPending] = useState(0);
   const [hireWaitlist, setHireWaitlist] = useState(0);
   const [memberTier, setMemberTier] = useState<string | null>(null);
+  const [clientHubEnabled, setClientHubEnabled] = useState(true);
 
   const isStaff = role === "admin" || role === "editor";
   const isImpersonating = !!impersonate;
@@ -112,7 +113,12 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
     if (role === "member") {
       fetch("/api/member/tier")
         .then((r) => r.ok ? r.json() : null)
-        .then((d) => d && setMemberTier(d.serviceTier ?? null))
+        .then((d) => {
+          if (d) {
+            setMemberTier(d.serviceTier ?? null);
+            setClientHubEnabled(d.clientHubEnabled ?? true);
+          }
+        })
         .catch(() => {});
     }
   }, [role]);
@@ -153,6 +159,7 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
 
   const baseMemberLinks = memberLinks.filter((link) => {
     if (link.featureKey && featureFlags && featureFlags[link.featureKey] === false) return false;
+    if (link.href === "/member/client-hub") return clientHubEnabled;
     if (link.tierRequired && memberTier && !link.tierRequired.includes(memberTier)) return false;
     return true;
   });

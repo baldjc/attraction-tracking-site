@@ -92,7 +92,7 @@ const TABS = [
   { id: "ai_inputs",        label: "AI Inputs",        tierRequired: null },
   { id: "content_planner",  label: "Content Planner",  tierRequired: null },
   { id: "calls",            label: "Calls",            tierRequired: null },
-  { id: "client_hub",       label: "Client Hub",       tierRequired: PRODUCTION_TIERS },
+  { id: "client_hub",       label: "Client Hub",       tierRequired: null },
 ] as const;
 type TabId = typeof TABS[number]["id"];
 
@@ -2034,7 +2034,7 @@ export default function MemberDetailPage() {
         </div>
       )}
 
-      {activeTab === "client_hub" && member && PRODUCTION_TIERS.includes(member.serviceTier) && (
+      {activeTab === "client_hub" && member && (
         <div className="bg-white rounded-lg border border-gray-200 p-5">
           <h2 className="text-sm font-semibold text-[#2f3437] mb-4">Client Hub Settings</h2>
           <AdminClientHubTab memberId={member.id} serviceTier={member.serviceTier} />
