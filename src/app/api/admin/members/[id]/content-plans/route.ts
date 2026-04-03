@@ -25,7 +25,15 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const raw = member?.contentThemes;
   let themes: string[] = ["Theme 1", "Theme 2", "Theme 3", "Theme 4"];
   if (Array.isArray(raw) && raw.length > 0) {
-    themes = raw.filter((t) => typeof t === "string");
+    const extracted = raw.map((t: unknown) => {
+      if (typeof t === "string") return t.trim() || null;
+      if (t && typeof t === "object") {
+        const obj = t as Record<string, unknown>;
+        return typeof obj.name === "string" ? obj.name.trim() || null : null;
+      }
+      return null;
+    }).filter((t): t is string => t !== null);
+    if (extracted.length > 0) themes = extracted;
   }
 
   return NextResponse.json({ plans, serviceTier: member?.serviceTier ?? "foundations", themes });

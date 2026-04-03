@@ -2013,8 +2013,8 @@ export default function MemberDetailPage() {
       )}
 
       {activeTab === "content_planner" && member && (
-        <div className="bg-[#0f1a27] rounded-xl border border-white/10 p-5">
-          <h2 className="text-sm font-semibold text-white mb-4">Content Planner</h2>
+        <div className="bg-white rounded-lg border border-gray-200 p-5">
+          <h2 className="text-sm font-semibold text-[#2f3437] mb-4">Content Planner</h2>
           <ContentPlanTable
             apiBase={`/api/admin/members/${member.id}/content-plans`}
             isAdmin
