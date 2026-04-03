@@ -2,9 +2,6 @@ import { NextResponse } from "next/server";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import prisma from "@/lib/prisma";
 
-const PRODUCTION_ONLY_STATUSES = ["Filmed", "Editing", "Scheduled"];
-const GROWTH_DWY_STATUSES = ["Shot - In Post", "Edited", "Scheduled on YT"];
-
 export async function GET() {
   const user = await resolveUserFromSession();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -25,14 +22,10 @@ export async function GET() {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const activeStatuses = productionOnlyTiers.includes(tier)
-    ? PRODUCTION_ONLY_STATUSES
-    : GROWTH_DWY_STATUSES;
-
   const [productionPlans, quickLinks] = await Promise.all([
     prisma.contentPlan.findMany({
-      where: { userId: user.id, status: { in: activeStatuses } },
-      orderBy: { publishDate: "asc" },
+      where: { userId: user.id },
+      orderBy: [{ publishDate: "asc" }, { createdAt: "desc" }],
     }),
     growthDwyTiers.includes(tier)
       ? prisma.clientQuickLink.findMany({

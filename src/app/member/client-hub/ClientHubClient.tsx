@@ -8,6 +8,7 @@ interface ContentPlan {
   id: string;
   title: string;
   status: string;
+  shootDate: string | null;
   editDueDate: string | null;
   driveFolderLink: string | null;
 }
@@ -26,12 +27,19 @@ interface HubData {
 }
 
 const STATUS_COLOURS: Record<string, string> = {
-  "Filmed":          "bg-blue-50 text-blue-700",
-  "Editing":         "bg-purple-50 text-purple-700",
-  "Scheduled":       "bg-green-50 text-green-700",
-  "Shot - In Post":  "bg-blue-50 text-blue-700",
-  "Edited":          "bg-purple-50 text-purple-700",
-  "Scheduled on YT": "bg-green-50 text-green-700",
+  "Idea":               "bg-gray-100 text-gray-600",
+  "Not Started":        "bg-gray-100 text-gray-600",
+  "Scripted":           "bg-yellow-50 text-yellow-700",
+  "Script Approved":    "bg-yellow-100 text-yellow-800",
+  "Ready to Shoot":     "bg-orange-50 text-orange-700",
+  "Shooting":           "bg-orange-100 text-orange-800",
+  "Shot - In Post":     "bg-blue-50 text-blue-700",
+  "Filmed":             "bg-blue-50 text-blue-700",
+  "Editing":            "bg-purple-50 text-purple-700",
+  "Edited":             "bg-purple-100 text-purple-800",
+  "Scheduled":          "bg-green-50 text-green-700",
+  "Scheduled on YT":    "bg-green-100 text-green-800",
+  "Published":          "bg-emerald-50 text-emerald-700",
 };
 
 const GROWTH_DWY = ["mastery_2", "mastery_4", "done_with_you"];
@@ -109,9 +117,9 @@ export default function ClientHubClient() {
       </div>
 
       <div className="bg-white border border-gray-200 rounded-xl p-6">
-        <h2 className="text-base font-semibold text-[#2f3437] mb-4">Production Status</h2>
+        <h2 className="text-base font-semibold text-[#2f3437] mb-4">Content Pipeline</h2>
         {data.productionPlans.length === 0 ? (
-          <p className="text-sm text-[#2f3437]/40">No videos currently in production.</p>
+          <p className="text-sm text-[#2f3437]/40">No videos in your pipeline yet.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -119,6 +127,7 @@ export default function ClientHubClient() {
                 <tr className="border-b border-gray-100">
                   <th className="text-left text-xs font-medium text-[#2f3437]/50 py-2 pr-4">Title</th>
                   <th className="text-left text-xs font-medium text-[#2f3437]/50 py-2 pr-4">Status</th>
+                  <th className="text-left text-xs font-medium text-[#2f3437]/50 py-2 pr-4">Shoot Date</th>
                   {showEditDue && (
                     <th className="text-left text-xs font-medium text-[#2f3437]/50 py-2 pr-4">Edit Due</th>
                   )}
@@ -133,6 +142,11 @@ export default function ClientHubClient() {
                       <span className={`inline-block text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_COLOURS[plan.status] ?? "bg-gray-100 text-gray-600"}`}>
                         {plan.status}
                       </span>
+                    </td>
+                    <td className="py-2.5 pr-4 text-[#2f3437]/60">
+                      {plan.shootDate
+                        ? new Date(plan.shootDate).toLocaleDateString("en-CA", { month: "short", day: "numeric", timeZone: "UTC" })
+                        : "—"}
                     </td>
                     {showEditDue && (
                       <td className="py-2.5 pr-4 text-[#2f3437]/60">
