@@ -27,12 +27,19 @@ export interface ContentPlan {
   driveFolderLink: string | null;
 }
 
+interface ThemeOption {
+  name: string;
+  emoji?: string | null;
+  colour?: string | null;
+}
+
 interface Props {
   plan: ContentPlan;
   serviceTier: string;
   apiBase: string;
   isAdmin?: boolean;
   memberId?: string;
+  themes?: ThemeOption[];
   onClose: () => void;
   onSaved: (updated: ContentPlan) => void;
   onDeleted?: (id: string) => void;
@@ -43,7 +50,7 @@ function toDateInput(val: string | null) {
   return new Date(val).toISOString().slice(0, 10);
 }
 
-export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdmin, memberId, onClose, onSaved, onDeleted }: Props) {
+export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdmin, memberId, themes = [], onClose, onSaved, onDeleted }: Props) {
   const [form, setForm] = useState({
     title: plan.title,
     status: plan.status,
@@ -176,7 +183,18 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
 
           <div>
             <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Theme</label>
-            <input type="text" value={form.theme} onChange={(e) => setForm((f) => ({ ...f, theme: e.target.value }))} className={field} placeholder="e.g., Neighbourhood Expertise" />
+            {themes.length > 0 ? (
+              <select value={form.theme} onChange={(e) => setForm((f) => ({ ...f, theme: e.target.value }))} className={field}>
+                <option value="">— none —</option>
+                {themes.map((t) => (
+                  <option key={t.name} value={t.name}>
+                    {t.emoji ? `${t.emoji} ${t.name}` : t.name}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input type="text" value={form.theme} onChange={(e) => setForm((f) => ({ ...f, theme: e.target.value }))} className={field} placeholder="e.g., Neighbourhood Expertise" />
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-3">

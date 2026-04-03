@@ -18,11 +18,18 @@ import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 import { STATUS_STYLES } from "@/lib/content-plan-utils";
 import ContentPlanEditModal, { type ContentPlan } from "./ContentPlanEditModal";
 
+interface ThemeOption {
+  name: string;
+  emoji?: string | null;
+  colour?: string | null;
+}
+
 interface Props {
   apiBase: string;
   calendarType: "publish" | "shoot" | "edit_due";
   serviceTier: string;
   isAdmin?: boolean;
+  themes?: ThemeOption[];
 }
 
 const DATE_FIELD: Record<string, keyof ContentPlan> = {
@@ -92,17 +99,19 @@ function DroppableDay({ id, children, isOver }: { id: string; children: React.Re
   );
 }
 
-export default function CalendarView({ apiBase, calendarType, serviceTier, isAdmin }: Props) {
+export default function CalendarView({ apiBase, calendarType, serviceTier, isAdmin, themes = [] }: Props) {
   const today = new Date();
   const [year,  setYear]  = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
   const [plans, setPlans] = useState<ContentPlan[]>([]);
+  const [localThemes, setLocalThemes] = useState<ThemeOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingPlan, setEditingPlan] = useState<ContentPlan | null>(null);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
 
+  const resolvedThemes = themes.length > 0 ? themes : localThemes;
   const dateField = DATE_FIELD[calendarType];
 
   const sensors = useSensors(
@@ -116,6 +125,10 @@ export default function CalendarView({ apiBase, calendarType, serviceTier, isAdm
       .then((d) => setPlans(d.plans ?? []))
       .catch(() => {})
       .finally(() => setLoading(false));
+    fetch(`${apiBase}/themes`)
+      .then((r) => r.json())
+      .then((d) => { if (d.themes?.length > 0) setLocalThemes(d.themes); })
+      .catch(() => {});
   }, [apiBase]);
 
   function prevMonth() {
@@ -319,6 +332,7 @@ export default function CalendarView({ apiBase, calendarType, serviceTier, isAdm
           serviceTier={serviceTier}
           apiBase={apiBase}
           isAdmin={isAdmin}
+          themes={resolvedThemes}
           onClose={() => setEditingPlan(null)}
           onSaved={handlePlanSaved}
           onDeleted={handlePlanDeleted}

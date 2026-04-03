@@ -543,6 +543,7 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
           serviceTier={serviceTier}
           apiBase={apiBase}
           isAdmin={isAdmin}
+          themes={themes}
           onClose={() => setEditingPlan(null)}
           onSaved={(updated) => {
             setPlans((prev) => prev.map((p) => (p.id === updated.id ? { ...p, ...updated } : p)));

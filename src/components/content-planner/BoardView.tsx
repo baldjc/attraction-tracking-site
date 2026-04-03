@@ -323,6 +323,7 @@ export default function BoardView({ apiBase, serviceTier, isAdmin }: Props) {
           serviceTier={serviceTier}
           apiBase={apiBase}
           isAdmin={isAdmin}
+          themes={themes}
           onClose={() => setEditingPlan(null)}
           onSaved={handlePlanSaved}
           onDeleted={handlePlanDeleted}
