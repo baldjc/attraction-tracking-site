@@ -42,6 +42,7 @@ FROM_EMAIL = "Attraction by Video <noreply@attractionbyvideo.com>"
 AUTH_TRUST_HOST = "true"
 AUTH_URL = "https://attraction-tracking-site.replit.app"
 NEXT_PUBLIC_GHL_LOCATION_ID = "vEIiKAjpBkCDrabeDre7"
+GOOGLE_DRIVE_ROOT_FOLDER_ID = "1cHV_V8D2XjZL10AvXH1ipCW1eS2OM7un"
 
 [nix]
 channel = "stable-25_05"
