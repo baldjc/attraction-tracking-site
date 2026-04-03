@@ -23,6 +23,7 @@ interface ContentPlan {
   editDueDate: string | null;
   priority: string | null;
   notes: string | null;
+  script: string | null;
   thumbnailWords: string | null;
   footageLink: string | null;
   driveFolderLink: string | null;

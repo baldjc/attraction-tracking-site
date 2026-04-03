@@ -19,6 +19,7 @@ export interface ContentPlan {
   editDueDate: string | null;
   priority: string | null;
   notes: string | null;
+  script: string | null;
   thumbnailWords: string | null;
   footageLink: string | null;
   driveFolderLink: string | null;
@@ -48,6 +49,7 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, onClo
     editDueDate: toDateInput(plan.editDueDate),
     priority: plan.priority ?? "",
     notes: plan.notes ?? "",
+    script: plan.script ?? "",
     thumbnailWords: plan.thumbnailWords ?? "",
     footageLink: plan.footageLink ?? "",
   });
@@ -82,6 +84,7 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, onClo
           editDueDate: form.editDueDate || null,
           priority: form.priority || null,
           notes: form.notes || null,
+          script: form.script || null,
           thumbnailWords: form.thumbnailWords || null,
           footageLink: form.footageLink || null,
         }),
@@ -169,6 +172,11 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, onClo
           <div>
             <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Notes</label>
             <textarea value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} rows={3} className={`${field} resize-none`} placeholder="Key details, action items…" />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Script</label>
+            <textarea value={form.script} onChange={(e) => setForm((f) => ({ ...f, script: e.target.value }))} rows={6} className={`${field} resize-y`} placeholder="Write your video script here…" />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
