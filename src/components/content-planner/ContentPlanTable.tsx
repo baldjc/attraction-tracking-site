@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { PlusIcon, TrashIcon, ArrowTopRightOnSquareIcon } from "@heroicons/react/24/outline";
+import { PlusIcon, TrashIcon, ArrowTopRightOnSquareIcon, PencilSquareIcon } from "@heroicons/react/24/outline";
 import { CheckIcon, XMarkIcon } from "@heroicons/react/24/solid";
+import ContentPlanEditModal from "./ContentPlanEditModal";
 import {
   STATUS_STYLES,
   PRIORITY_OPTIONS,
@@ -75,6 +76,7 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
   const [addLoading, setAddLoading] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [expandedNotes, setExpandedNotes] = useState<string | null>(null);
+  const [editingPlan, setEditingPlan] = useState<ContentPlan | null>(null);
   const inputRef = useRef<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null>(null);
 
   const allStatusOptions = isAdmin ? [...FOUNDATIONS_STATUSES, ...GROWTH_DWY_STATUSES] : getStatusOptions(serviceTier);
@@ -413,16 +415,25 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
                   {showDriveFolder && <td className="px-4 py-2.5 text-center">{renderCell(plan, "driveFolderLink")}</td>}
                   <td className="px-4 py-2.5">{renderCell(plan, "notes")}</td>
                   <td className="px-4 py-2.5">
-                    {confirmDelete === plan.id ? (
-                      <div className="flex items-center gap-1">
-                        <button onClick={() => deletePlan(plan.id)} className="text-red-500 hover:text-red-700 p-0.5"><CheckIcon className="w-4 h-4" /></button>
-                        <button onClick={() => setConfirmDelete(null)} className="text-[#2f3437]/40 hover:text-[#2f3437] p-0.5"><XMarkIcon className="w-4 h-4" /></button>
-                      </div>
-                    ) : (
-                      <button onClick={() => setConfirmDelete(plan.id)} className="text-[#2f3437]/20 hover:text-red-500 transition-colors p-0.5">
-                        <TrashIcon className="w-4 h-4" />
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => setEditingPlan(plan)}
+                        className="text-[#2f3437]/20 hover:text-[#6ba3c7] transition-colors p-0.5"
+                        title="Edit video"
+                      >
+                        <PencilSquareIcon className="w-4 h-4" />
                       </button>
-                    )}
+                      {confirmDelete === plan.id ? (
+                        <>
+                          <button onClick={() => deletePlan(plan.id)} className="text-red-500 hover:text-red-700 p-0.5"><CheckIcon className="w-4 h-4" /></button>
+                          <button onClick={() => setConfirmDelete(null)} className="text-[#2f3437]/40 hover:text-[#2f3437] p-0.5"><XMarkIcon className="w-4 h-4" /></button>
+                        </>
+                      ) : (
+                        <button onClick={() => setConfirmDelete(plan.id)} className="text-[#2f3437]/20 hover:text-red-500 transition-colors p-0.5">
+                          <TrashIcon className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -525,6 +536,24 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
             </div>
           </div>
         </div>
+      )}
+
+      {editingPlan && (
+        <ContentPlanEditModal
+          plan={editingPlan}
+          serviceTier={serviceTier}
+          apiBase={apiBase}
+          isAdmin={isAdmin}
+          onClose={() => setEditingPlan(null)}
+          onSaved={(updated) => {
+            setPlans((prev) => prev.map((p) => (p.id === updated.id ? { ...p, ...updated } : p)));
+            setEditingPlan(null);
+          }}
+          onDeleted={(id) => {
+            setPlans((prev) => prev.filter((p) => p.id !== id));
+            setEditingPlan(null);
+          }}
+        />
       )}
     </div>
   );
