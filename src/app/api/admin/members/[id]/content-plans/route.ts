@@ -23,16 +23,22 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   ]);
 
   const raw = member?.contentThemes;
-  let themes: string[] = ["Theme 1", "Theme 2", "Theme 3", "Theme 4"];
+  let themes: Array<{ name: string; emoji: string | null; colour: string | null }> = [];
   if (Array.isArray(raw) && raw.length > 0) {
     const extracted = raw.map((t: unknown) => {
-      if (typeof t === "string") return t.trim() || null;
+      if (typeof t === "string") return t.trim() ? { name: t.trim(), emoji: null, colour: null } : null;
       if (t && typeof t === "object") {
         const obj = t as Record<string, unknown>;
-        return typeof obj.name === "string" ? obj.name.trim() || null : null;
+        const name = typeof obj.name === "string" ? obj.name.trim() : null;
+        if (!name) return null;
+        return {
+          name,
+          emoji: typeof obj.emoji === "string" ? obj.emoji : null,
+          colour: typeof obj.colour === "string" ? obj.colour : null,
+        };
       }
       return null;
-    }).filter((t): t is string => t !== null);
+    }).filter((t): t is { name: string; emoji: string | null; colour: string | null } => t !== null);
     if (extracted.length > 0) themes = extracted;
   }
 

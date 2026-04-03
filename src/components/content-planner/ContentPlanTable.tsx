@@ -83,7 +83,7 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
 
   useEffect(() => {
     fetchPlans();
-    if (!isAdmin) fetchThemes();
+    fetchThemes();
   }, [apiBase]);
 
   useEffect(() => {
@@ -101,7 +101,7 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
       if (!res.ok) throw new Error(data.error ?? "Failed to load");
       setPlans(data.plans ?? []);
       if (!forcedServiceTier && data.serviceTier) setServiceTier(data.serviceTier);
-      if (data.themes) setThemes(data.themes);
+      if (data.themes?.length > 0) setThemes(data.themes);
     } catch (e: any) {
       setError(e.message);
     } finally {
