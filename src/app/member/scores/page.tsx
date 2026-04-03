@@ -403,7 +403,7 @@ export default function MemberScoresPage() {
           <div className={`${card} overflow-hidden`}>
             <div className={`px-5 py-4 border-b border-gray-200 dark:border-[#2a2a2a]`}>
               <h2 className={`text-sm font-semibold ${txt}`}>Recent Video Audits</h2>
-              <p className={`text-xs ${muted} mt-0.5`}>Every video is audited for Editing and Mastery members. Foundations members receive audits when videos are reviewed on live Member Calls.</p>
+              <p className={`text-xs ${muted} mt-0.5`}>Every video is audited for Production and Growth members. Foundations members receive audits when videos are reviewed on live Member Calls.</p>
               <p className={`text-xs font-semibold ${muted} mt-0.5`}>If you'd like your video reviewed DM Jared in Slack with the URL of the last video</p>
             </div>
             {recentVideoAudits.length === 0 ? (

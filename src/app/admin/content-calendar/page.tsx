@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { CalendarDaysIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
 import ContentPlannerClient from "@/app/member/content-planner/ContentPlannerClient";
+import { formatTierLabel } from "@/lib/content-plan-utils";
 
 interface Member {
   id: string;
@@ -123,8 +124,8 @@ export default function AdminContentCalendarPage() {
         </div>
 
         {selected && (
-          <span className="text-xs bg-gray-100 text-[#2f3437]/60 px-2 py-1 rounded-full capitalize shrink-0">
-            {selected.serviceTier.replace(/_/g, " ")}
+          <span className="text-xs bg-gray-100 text-[#2f3437]/60 px-2 py-1 rounded-full shrink-0">
+            {formatTierLabel(selected.serviceTier)}
           </span>
         )}
       </div>

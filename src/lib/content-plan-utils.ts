@@ -2,6 +2,19 @@ export const FOUNDATIONS_PRODUCTION_TIERS = ["foundations", "editing_2", "editin
 export const GROWTH_DWY_TIERS = ["mastery_2", "mastery_4", "done_with_you"];
 export const PRODUCTION_TIERS = ["editing_2", "editing_4", "mastery_2", "mastery_4", "done_with_you"];
 
+export const TIER_LABELS: Record<string, string> = {
+  foundations:   "Foundations",
+  editing_2:     "Production (2)",
+  editing_4:     "Production (4)",
+  mastery_2:     "Growth (2)",
+  mastery_4:     "Growth (4)",
+  done_with_you: "Done-With-You",
+};
+
+export function formatTierLabel(tier: string): string {
+  return TIER_LABELS[tier] ?? tier;
+}
+
 export const FOUNDATIONS_STATUSES = [
   "Idea",
   "Scripted",
