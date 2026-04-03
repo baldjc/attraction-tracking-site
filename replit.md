@@ -163,7 +163,9 @@ src/app/
 - Shared utility: `src/lib/content-plan-utils.ts` (tier helpers, status lists, STATUS_STYLES map)
 - API: `GET/POST /api/member/content-plans`, `GET/PUT/DELETE /api/member/content-plans/[id]`, `GET /api/member/content-plans/themes`
 - Admin API: `GET/POST /api/admin/members/[id]/content-plans`, `PUT/DELETE /api/admin/members/[id]/content-plans/[planId]`
-- Calendar views (Publish, Shoot, Edit Due), Board view (By Theme) — stubs show "Coming soon" (Phase 3/4)
+- Calendar views (Publish Calendar, Shoot Calendar, Edit Due) — monthly grid with @dnd-kit drag-and-drop to reschedule; mobile list view; click pill → edit modal (`src/components/content-planner/CalendarView.tsx`)
+- Board view (By Theme) — kanban columns per avatar theme; @dnd-kit drag between columns to reassign theme; mobile stacked; Unassigned column when needed (`src/components/content-planner/BoardView.tsx`)
+- Shared edit modal for calendar/board (`src/components/content-planner/ContentPlanEditModal.tsx`) — all fields, delete with confirmation
 
 ## Deduplication
 - Chris Troke has 25+ duplicate GHL records — sync deduplicates by email

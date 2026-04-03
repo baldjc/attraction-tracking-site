@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { CalendarDaysIcon, ClipboardDocumentIcon, CheckIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import ContentPlanTable from "@/components/content-planner/ContentPlanTable";
+import CalendarView from "@/components/content-planner/CalendarView";
+import BoardView from "@/components/content-planner/BoardView";
 import { hasEditDueDate } from "@/lib/content-plan-utils";
 
 type ViewId = "publish_cal" | "shoot_cal" | "edit_due" | "table" | "by_theme";
@@ -10,8 +12,6 @@ type ViewId = "publish_cal" | "shoot_cal" | "edit_due" | "table" | "by_theme";
 interface Props {
   serviceTier: string;
 }
-
-const COMING_SOON_VIEWS: ViewId[] = ["publish_cal", "shoot_cal", "edit_due", "by_theme"];
 
 export default function ContentPlannerClient({ serviceTier }: Props) {
   const [view, setView] = useState<ViewId>("table");
@@ -54,6 +54,8 @@ export default function ContentPlannerClient({ serviceTier }: Props) {
     });
   }
 
+  const API_BASE = "/api/member/content-plans";
+
   return (
     <div>
       <div className="flex items-center justify-between gap-3 mb-5 flex-wrap">
@@ -81,15 +83,41 @@ export default function ContentPlannerClient({ serviceTier }: Props) {
         </button>
       </div>
 
-      {COMING_SOON_VIEWS.includes(view) ? (
-        <div className="bg-white rounded-lg border border-gray-200 p-12 text-center text-[#2f3437]/40 text-sm">
-          <CalendarDaysIcon className="w-10 h-10 mx-auto mb-3 text-[#2f3437]/20" />
-          <p>This view is coming soon.</p>
-        </div>
-      ) : (
+      {view === "table" && (
         <ContentPlanTable
-          apiBase="/api/member/content-plans"
+          apiBase={API_BASE}
           forcedServiceTier={serviceTier}
+        />
+      )}
+
+      {view === "publish_cal" && (
+        <CalendarView
+          apiBase={API_BASE}
+          calendarType="publish"
+          serviceTier={serviceTier}
+        />
+      )}
+
+      {view === "shoot_cal" && (
+        <CalendarView
+          apiBase={API_BASE}
+          calendarType="shoot"
+          serviceTier={serviceTier}
+        />
+      )}
+
+      {view === "edit_due" && showEditDueTab && (
+        <CalendarView
+          apiBase={API_BASE}
+          calendarType="edit_due"
+          serviceTier={serviceTier}
+        />
+      )}
+
+      {view === "by_theme" && (
+        <BoardView
+          apiBase={API_BASE}
+          serviceTier={serviceTier}
         />
       )}
 
