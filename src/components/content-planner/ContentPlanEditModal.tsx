@@ -7,6 +7,7 @@ import {
   PRIORITY_OPTIONS,
   getStatusOptions,
   hasEditDueDate,
+  hasDriveFolder,
 } from "@/lib/content-plan-utils";
 
 export interface ContentPlan {
@@ -64,6 +65,7 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
   const [folderError, setFolderError] = useState("");
 
   const showEditDue = hasEditDueDate(serviceTier);
+  const useDrive = hasDriveFolder(serviceTier);
   const statusOptions = getStatusOptions(serviceTier);
 
   useEffect(() => {
@@ -202,18 +204,20 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
             <textarea value={form.script} onChange={(e) => setForm((f) => ({ ...f, script: e.target.value }))} rows={6} className={`${field} resize-y`} placeholder="Write your video script here…" />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className={`grid gap-3 ${useDrive ? "grid-cols-1" : "grid-cols-2"}`}>
             <div>
               <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Thumbnail Words</label>
               <input type="text" value={form.thumbnailWords} onChange={(e) => setForm((f) => ({ ...f, thumbnailWords: e.target.value }))} className={field} placeholder="3–5 words" />
             </div>
-            <div>
-              <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Footage Link</label>
-              <input type="text" value={form.footageLink} onChange={(e) => setForm((f) => ({ ...f, footageLink: e.target.value }))} className={field} placeholder="https://…" />
-            </div>
+            {!useDrive && (
+              <div>
+                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Footage Link</label>
+                <input type="text" value={form.footageLink} onChange={(e) => setForm((f) => ({ ...f, footageLink: e.target.value }))} className={field} placeholder="https://…" />
+              </div>
+            )}
           </div>
 
-          {isAdmin && (
+          {useDrive && (
             <div>
               <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Google Drive Folder</label>
               {driveFolderLink ? (
@@ -233,7 +237,7 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
                   </svg>
                   Open Drive Folder
                 </a>
-              ) : (
+              ) : isAdmin ? (
                 <div>
                   <button
                     type="button"
@@ -253,6 +257,8 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
                   </button>
                   {folderError && <p className="text-xs text-red-600 mt-1">{folderError}</p>}
                 </div>
+              ) : (
+                <p className="text-xs text-[#2f3437]/50 italic">Your folder will be created automatically when the status is set to Ready to Shoot, Shooting, or Shot - In Post.</p>
               )}
             </div>
           )}
