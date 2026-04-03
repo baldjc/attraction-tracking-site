@@ -80,7 +80,7 @@ const memberLinks = [
   { href: "/member/scores",          label: "My Scores",      icon: StarIcon,         featureKey: null,        colour: "#F59E0B", tierRequired: null },
   { href: "/member/academy",         label: "Academy",        icon: AcademicCapIcon,  featureKey: null,        colour: "#10B981", tierRequired: null },
   { href: "/member/ai-tools",        label: "AI Tools",       icon: SparklesIcon,     featureKey: "ai_tools",  colour: "#6ba3c7", tierRequired: null },
-  { href: "/member/content-planner", label: "Content Planner",icon: CalendarDaysIcon, featureKey: null,        colour: "#6ba3c7", tierRequired: null },
+  { href: "/member/content-planner", label: "Content Planner",icon: CalendarDaysIcon, featureKey: "content_calendar", colour: "#6ba3c7", tierRequired: null },
   { href: "/member/my-calls",        label: "My Calls",       icon: VideoCameraIcon,  featureKey: null,        colour: "#6ba3c7", tierRequired: null },
   { href: "/member/client-hub",      label: "Client Hub",     icon: Squares2X2Icon,   featureKey: null,        colour: "#6ba3c7", tierRequired: PRODUCTION_TIERS },
   { href: "/member/generate-leads",  label: "Generate Leads", icon: RocketLaunchIcon, featureKey: "campaigns", colour: "#E63946", tierRequired: null },
