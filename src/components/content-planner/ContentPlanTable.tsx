@@ -372,6 +372,7 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
           <table className="w-full text-sm border-collapse">
             <thead>
               <tr className="border-b border-gray-200 bg-gray-50 text-[#2f3437]/50 text-xs uppercase tracking-wide">
+                <th className="px-3 py-2.5 w-8" />
                 <th className="text-left px-4 py-2.5 font-medium whitespace-nowrap">Title</th>
                 <th className="text-left px-4 py-2.5 font-medium whitespace-nowrap">Status</th>
                 <th className="text-left px-4 py-2.5 font-medium whitespace-nowrap">Theme</th>
@@ -388,6 +389,15 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
             <tbody className="divide-y divide-gray-100">
               {plans.map((plan) => (
                 <tr key={plan.id} className="hover:bg-[#6ba3c7]/5 transition-colors">
+                  <td className="px-3 py-2.5">
+                    <button
+                      onClick={() => setEditingPlan(plan)}
+                      className="text-[#2f3437]/20 hover:text-[#6ba3c7] transition-colors p-0.5"
+                      title="Edit video"
+                    >
+                      <PencilSquareIcon className="w-4 h-4" />
+                    </button>
+                  </td>
                   <td className="px-4 py-2.5">
                     {editingCell?.id === plan.id && editingCell?.field === "title" ? (
                       <input
@@ -415,25 +425,16 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
                   {showDriveFolder && <td className="px-4 py-2.5 text-center">{renderCell(plan, "driveFolderLink")}</td>}
                   <td className="px-4 py-2.5">{renderCell(plan, "notes")}</td>
                   <td className="px-4 py-2.5">
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => setEditingPlan(plan)}
-                        className="text-[#2f3437]/20 hover:text-[#6ba3c7] transition-colors p-0.5"
-                        title="Edit video"
-                      >
-                        <PencilSquareIcon className="w-4 h-4" />
+                    {confirmDelete === plan.id ? (
+                      <div className="flex items-center gap-1">
+                        <button onClick={() => deletePlan(plan.id)} className="text-red-500 hover:text-red-700 p-0.5"><CheckIcon className="w-4 h-4" /></button>
+                        <button onClick={() => setConfirmDelete(null)} className="text-[#2f3437]/40 hover:text-[#2f3437] p-0.5"><XMarkIcon className="w-4 h-4" /></button>
+                      </div>
+                    ) : (
+                      <button onClick={() => setConfirmDelete(plan.id)} className="text-[#2f3437]/20 hover:text-red-500 transition-colors p-0.5">
+                        <TrashIcon className="w-4 h-4" />
                       </button>
-                      {confirmDelete === plan.id ? (
-                        <>
-                          <button onClick={() => deletePlan(plan.id)} className="text-red-500 hover:text-red-700 p-0.5"><CheckIcon className="w-4 h-4" /></button>
-                          <button onClick={() => setConfirmDelete(null)} className="text-[#2f3437]/40 hover:text-[#2f3437] p-0.5"><XMarkIcon className="w-4 h-4" /></button>
-                        </>
-                      ) : (
-                        <button onClick={() => setConfirmDelete(plan.id)} className="text-[#2f3437]/20 hover:text-red-500 transition-colors p-0.5">
-                          <TrashIcon className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
+                    )}
                   </td>
                 </tr>
               ))}
