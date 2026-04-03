@@ -51,6 +51,8 @@ export default function ArcScriptBuilderTool({ basePath, isAdmin }: Props) {
   const [usage, setUsage] = useState<UsageData | null>(null);
   const [prefillData, setPrefillData] = useState<PrefillData | undefined>(undefined);
   const [avatarData, setAvatarData] = useState<AvatarData>({});
+  const [savingToPlanner, setSavingToPlanner] = useState(false);
+  const [savedToPlanner, setSavedToPlanner] = useState(false);
 
   useEffect(() => {
     fetch("/api/ai-tools/usage/me")
@@ -94,11 +96,34 @@ export default function ArcScriptBuilderTool({ basePath, isAdmin }: Props) {
   function handleStartBuilding(data: UploadData) {
     setUploadData(data);
     setPhase("chat");
+    setSavedToPlanner(false);
   }
 
   function handleReset() {
     setUploadData(null);
     setPhase("upload");
+    setSavedToPlanner(false);
+  }
+
+  async function handleSaveToPlanner() {
+    if (!uploadData || savedToPlanner || savingToPlanner) return;
+    setSavingToPlanner(true);
+    try {
+      await fetch("/api/member/content-plans", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: uploadData.title,
+          status: "Scripted",
+          ...(uploadData.themeName ? { theme: uploadData.themeName } : {}),
+        }),
+      });
+      setSavedToPlanner(true);
+    } catch {
+      /* silently fail */
+    } finally {
+      setSavingToPlanner(false);
+    }
   }
 
   const subtitle =
@@ -116,8 +141,26 @@ export default function ArcScriptBuilderTool({ basePath, isAdmin }: Props) {
           <ArrowLeftIcon className="w-4 h-4" />
           AI Tools
         </Link>
-        <h1 className="text-2xl font-bold text-[#2f3437]">ARC Script Builder</h1>
-        <p className="text-sm text-[#2f3437]/60 mt-1">{subtitle}</p>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold text-[#2f3437]">ARC Script Builder</h1>
+            <p className="text-sm text-[#2f3437]/60 mt-1">{subtitle}</p>
+          </div>
+          {phase === "chat" && uploadData && (
+            <button
+              onClick={handleSaveToPlanner}
+              disabled={savedToPlanner || savingToPlanner}
+              className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${
+                savedToPlanner
+                  ? "bg-green-50 border-green-200 text-green-600 cursor-default"
+                  : "bg-white border-[#2f3437]/15 text-[#2f3437]/70 hover:border-[#6ba3c7] hover:text-[#6ba3c7]"
+              }`}
+            >
+              <span>{savedToPlanner ? "✓" : "📅"}</span>
+              {savingToPlanner ? "Saving…" : savedToPlanner ? "In Planner" : "Save to Planner"}
+            </button>
+          )}
+        </div>
       </div>
 
       {usage && pct >= 50 && (

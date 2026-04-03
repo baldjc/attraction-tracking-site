@@ -29,6 +29,8 @@ export default function IdeaCard({ idea, theme, onSaved, savedId, onDelete }: Pr
   const [deleting, setDeleting] = useState(false);
   const [localSavedId, setLocalSavedId] = useState<string | null>(savedId ?? null);
   const [selectedIdx, setSelectedIdx] = useState(0);
+  const [addingToPlanner, setAddingToPlanner] = useState(false);
+  const [addedToPlanner, setAddedToPlanner] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -73,6 +75,32 @@ export default function IdeaCard({ idea, theme, onSaved, savedId, onDelete }: Pr
       await onDelete();
     } finally {
       setDeleting(false);
+    }
+  }
+
+  async function handleAddToPlanner() {
+    if (addedToPlanner || addingToPlanner) return;
+    setAddingToPlanner(true);
+    try {
+      const notes = idea.talkingPoints.length > 0
+        ? "• " + idea.talkingPoints.join("\n• ")
+        : undefined;
+      await fetch("/api/member/content-plans", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: selectedOption.title,
+          theme,
+          status: "Idea",
+          ...(notes ? { notes } : {}),
+          ...(localSavedId ? { linkedIdeaId: localSavedId } : {}),
+        }),
+      });
+      setAddedToPlanner(true);
+    } catch {
+      /* silently fail */
+    } finally {
+      setAddingToPlanner(false);
     }
   }
 
@@ -205,14 +233,26 @@ export default function IdeaCard({ idea, theme, onSaved, savedId, onDelete }: Pr
         </p>
       )}
 
-      {/* Build Script */}
-      <div className="border-t border-[#2f3437]/5 dark:border-white/5 pt-2">
+      {/* Build Script + Add to Planner */}
+      <div className="border-t border-[#2f3437]/5 dark:border-white/5 pt-2 flex gap-2">
         <button
           onClick={handleBuildScript}
-          className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-semibold text-[#2f3437] dark:text-white bg-[#111]/5 dark:bg-white/5 hover:bg-[#6ba3c7]/10 hover:text-[#6ba3c7] dark:hover:text-[#6ba3c7] rounded-lg transition-colors"
+          className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-semibold text-[#2f3437] dark:text-white bg-[#111]/5 dark:bg-white/5 hover:bg-[#6ba3c7]/10 hover:text-[#6ba3c7] dark:hover:text-[#6ba3c7] rounded-lg transition-colors"
         >
           <span>🎬</span>
           Build Script
+        </button>
+        <button
+          onClick={handleAddToPlanner}
+          disabled={addedToPlanner || addingToPlanner}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-semibold rounded-lg transition-colors ${
+            addedToPlanner
+              ? "bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400 cursor-default"
+              : "text-[#2f3437] dark:text-white bg-[#111]/5 dark:bg-white/5 hover:bg-[#6ba3c7]/10 hover:text-[#6ba3c7] dark:hover:text-[#6ba3c7]"
+          }`}
+        >
+          <span>{addedToPlanner ? "✓" : "📅"}</span>
+          {addingToPlanner ? "Adding…" : addedToPlanner ? "In Planner" : "Add to Planner"}
         </button>
       </div>
     </div>

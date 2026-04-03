@@ -39,16 +39,16 @@ export async function POST(req: NextRequest) {
   const serviceTier = dbUser?.serviceTier ?? "foundations";
 
   const body = await req.json();
-  const { title, status, theme, shootDate, publishDate, editDueDate, priority, notes, thumbnailWords, footageLink } = body;
+  const { title, status, theme, shootDate, publishDate, editDueDate, priority, notes, thumbnailWords, footageLink, linkedIdeaId, linkedScriptId, youtubeVideoId } = body;
 
   if (!title || typeof title !== "string" || !title.trim()) {
     return NextResponse.json({ error: "Title is required" }, { status: 400 });
   }
 
-  const finalStatus = status ?? "Idea";
-  if (!isValidStatus(finalStatus, serviceTier)) {
-    return NextResponse.json({ error: "Invalid status for your membership tier" }, { status: 400 });
-  }
+  const requestedStatus = status ?? "Idea";
+  const finalStatus = isValidStatus(requestedStatus, serviceTier)
+    ? requestedStatus
+    : getStatusOptions(serviceTier)[0] ?? "Idea";
 
   const plan = await prisma.contentPlan.create({
     data: {
@@ -63,6 +63,9 @@ export async function POST(req: NextRequest) {
       notes: notes ?? null,
       thumbnailWords: thumbnailWords ?? null,
       footageLink: footageLink ?? null,
+      linkedIdeaId: linkedIdeaId ?? null,
+      linkedScriptId: linkedScriptId ?? null,
+      youtubeVideoId: youtubeVideoId ?? null,
     },
   });
 

@@ -1,5 +1,6 @@
 import prisma from "@/lib/prisma";
 import { getChannelInfo, getLatestLongFormVideos } from "@/lib/youtube";
+import { GROWTH_DWY_TIERS } from "@/lib/content-plan-utils";
 
 interface SyncResult {
   userId: string;
@@ -19,7 +20,7 @@ interface SyncSummary {
 export async function syncMemberChannel(userId: string): Promise<SyncResult> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true, fullName: true, youtubeChannelUrl: true, youtubeHandle: true },
+    select: { id: true, fullName: true, youtubeChannelUrl: true, youtubeHandle: true, serviceTier: true },
   });
 
   if (!user) {
@@ -79,6 +80,27 @@ export async function syncMemberChannel(userId: string): Promise<SyncResult> {
             thumbnailUrl,
           },
         });
+
+        const existingPlan = await prisma.contentPlan.findFirst({
+          where: { userId: user.id, youtubeVideoId: video.videoId },
+          select: { id: true },
+        });
+
+        if (!existingPlan) {
+          const publishedStatus = GROWTH_DWY_TIERS.includes(user.serviceTier ?? "")
+            ? "Live on YT"
+            : "Published";
+          await prisma.contentPlan.create({
+            data: {
+              userId: user.id,
+              title: video.title,
+              status: publishedStatus,
+              publishDate: new Date(video.uploadDate),
+              youtubeVideoId: video.videoId,
+            },
+          });
+        }
+
         newCount++;
       }
     }

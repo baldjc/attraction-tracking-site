@@ -19,7 +19,30 @@ function formatDate(iso: string): string {
 
 function ScriptCard({ script }: { script: SavedScript }) {
   const [expanded, setExpanded] = useState(false);
+  const [addingToPlanner, setAddingToPlanner] = useState(false);
+  const [addedToPlanner, setAddedToPlanner] = useState(false);
   const hasPreview = script.scriptOpening.trim().length > 0;
+
+  async function handleAddToPlanner() {
+    if (addedToPlanner || addingToPlanner) return;
+    setAddingToPlanner(true);
+    try {
+      await fetch("/api/member/content-plans", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: script.videoTitle,
+          status: "Scripted",
+          linkedScriptId: script.id,
+        }),
+      });
+      setAddedToPlanner(true);
+    } catch {
+      /* silently fail */
+    } finally {
+      setAddingToPlanner(false);
+    }
+  }
 
   return (
     <div className="bg-white border border-[#2f3437]/10 rounded-xl overflow-hidden transition-shadow hover:shadow-sm">
@@ -38,18 +61,32 @@ function ScriptCard({ script }: { script: SavedScript }) {
             </div>
           </div>
 
-          {hasPreview && (
+          <div className="flex items-center gap-2 shrink-0">
             <button
-              onClick={() => setExpanded((v) => !v)}
-              className="shrink-0 flex items-center gap-1 text-xs text-[#6ba3c7] hover:text-[#5490b5] font-medium transition-colors mt-1"
+              onClick={handleAddToPlanner}
+              disabled={addedToPlanner || addingToPlanner}
+              className={`inline-flex items-center gap-1 text-xs font-medium transition-colors mt-1 ${
+                addedToPlanner
+                  ? "text-green-600 cursor-default"
+                  : "text-[#2f3437]/45 hover:text-[#6ba3c7]"
+              }`}
             >
-              {expanded ? (
-                <>Hide preview <ChevronUpIcon className="w-3.5 h-3.5" /></>
-              ) : (
-                <>View script <ChevronDownIcon className="w-3.5 h-3.5" /></>
-              )}
+              <span>{addedToPlanner ? "✓" : "📅"}</span>
+              {addingToPlanner ? "Adding…" : addedToPlanner ? "In Planner" : "Add to Planner"}
             </button>
-          )}
+            {hasPreview && (
+              <button
+                onClick={() => setExpanded((v) => !v)}
+                className="flex items-center gap-1 text-xs text-[#6ba3c7] hover:text-[#5490b5] font-medium transition-colors mt-1"
+              >
+                {expanded ? (
+                  <>Hide preview <ChevronUpIcon className="w-3.5 h-3.5" /></>
+                ) : (
+                  <>View script <ChevronDownIcon className="w-3.5 h-3.5" /></>
+                )}
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
