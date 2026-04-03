@@ -57,7 +57,7 @@ export default function ContentPlannerClient({ serviceTier }: Props) {
   return (
     <div>
       <div className="flex items-center justify-between gap-3 mb-5 flex-wrap">
-        <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg p-1 shadow-sm">
+        <div className="flex items-center flex-wrap gap-1 bg-white border border-gray-200 rounded-lg p-1 shadow-sm">
           {TABS.map((tab) => (
             <button
               key={tab.id}
