@@ -96,6 +96,7 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to save");
+      if (data.plan?.driveFolderLink) setDriveFolderLink(data.plan.driveFolderLink);
       onSaved(data.plan);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to save");

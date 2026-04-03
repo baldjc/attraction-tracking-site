@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { createVideoFolder } from "@/lib/google-drive";
+
+const DRIVE_TRIGGER_STATUSES = ["Ready to Shoot", "Shooting", "Shot - In Post"];
 
 async function checkAdmin() {
   const session = await auth();
@@ -19,7 +22,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const body = await req.json();
   const { title, status, theme, shootDate, publishDate, editDueDate, priority, notes, script, thumbnailWords, footageLink, driveFolderLink } = body;
 
-  const plan = await prisma.contentPlan.update({
+  let plan = await prisma.contentPlan.update({
     where: { id: planId },
     data: {
       ...(title !== undefined && { title: title.trim() }),
@@ -36,6 +39,20 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       ...(driveFolderLink !== undefined && { driveFolderLink: driveFolderLink ?? null }),
     },
   });
+
+  if (
+    status !== undefined &&
+    DRIVE_TRIGGER_STATUSES.includes(status) &&
+    !plan.driveFolderLink
+  ) {
+    try {
+      const member = await prisma.user.findUnique({ where: { id }, select: { fullName: true, email: true } });
+      const memberName = member?.fullName || member?.email || id;
+      const link = await createVideoFolder(memberName, plan.title);
+      plan = await prisma.contentPlan.update({ where: { id: planId }, data: { driveFolderLink: link } });
+    } catch {
+    }
+  }
 
   return NextResponse.json({ plan });
 }

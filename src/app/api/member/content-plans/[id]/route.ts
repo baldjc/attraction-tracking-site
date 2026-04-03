@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import prisma from "@/lib/prisma";
 import { isValidStatus } from "@/lib/content-plan-utils";
+import { createVideoFolder } from "@/lib/google-drive";
+
+const DRIVE_TRIGGER_STATUSES = ["Ready to Shoot", "Shooting", "Shot - In Post"];
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await resolveUserFromSession();
@@ -35,7 +38,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: "Invalid status for your membership tier" }, { status: 400 });
   }
 
-  const plan = await prisma.contentPlan.update({
+  let plan = await prisma.contentPlan.update({
     where: { id },
     data: {
       ...(title !== undefined && { title: title.trim() }),
@@ -52,6 +55,20 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       ...(driveFolderLink !== undefined && { driveFolderLink: driveFolderLink ?? null }),
     },
   });
+
+  if (
+    status !== undefined &&
+    DRIVE_TRIGGER_STATUSES.includes(status) &&
+    !plan.driveFolderLink
+  ) {
+    try {
+      const member = await prisma.user.findUnique({ where: { id: user.id }, select: { fullName: true, email: true } });
+      const memberName = member?.fullName || member?.email || user.id;
+      const link = await createVideoFolder(memberName, plan.title);
+      plan = await prisma.contentPlan.update({ where: { id }, data: { driveFolderLink: link } });
+    } catch {
+    }
+  }
 
   return NextResponse.json({ plan });
 }
