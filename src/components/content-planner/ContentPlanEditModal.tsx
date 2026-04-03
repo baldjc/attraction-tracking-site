@@ -206,7 +206,7 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
 
           <div>
             <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Talking Points / Outline of Video</label>
-            <textarea value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} rows={3} className={`${field} resize-none`} placeholder="Key details, action items…" />
+            <textarea value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} rows={3} className={`${field} resize-y`} placeholder="Key details, action items…" />
           </div>
 
           <div>
