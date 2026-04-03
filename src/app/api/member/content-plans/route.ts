@@ -69,5 +69,5 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  return NextResponse.json({ plan }, { status: 201 });
+  return NextResponse.json({ plan, serviceTier }, { status: 201 });
 }

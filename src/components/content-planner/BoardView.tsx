@@ -28,6 +28,12 @@ const COLUMN_COLOURS = [
   "#f57cb5", "#b57cfc", "#f5a55b", "#5bf57c", "#5b9bf5",
 ];
 
+interface ThemeObj {
+  name: string;
+  emoji?: string | null;
+  colour?: string | null;
+}
+
 function DraggableCard({
   plan,
   onEdit,
@@ -104,7 +110,7 @@ function DroppableColumn({ id, children, isOver }: { id: string; children: React
 
 export default function BoardView({ apiBase, serviceTier }: Props) {
   const [plans,   setPlans]   = useState<ContentPlan[]>([]);
-  const [themes,  setThemes]  = useState<string[]>([]);
+  const [themes,  setThemes]  = useState<ThemeObj[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingPlan,  setEditingPlan]  = useState<ContentPlan | null>(null);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
@@ -181,14 +187,16 @@ export default function BoardView({ apiBase, serviceTier }: Props) {
   }
 
   const hasNoThemes = themes.length === 0;
-  const unassigned  = plans.filter((p) => !p.theme || !themes.includes(p.theme));
+  const unassigned  = plans.filter((p) => !p.theme || !themes.some((t) => t.name === p.theme));
   const activePlan  = plans.find((p) => p.id === activeDragId);
 
-  const columns: { id: string; label: string; colourIdx: number }[] = themes.map((t, i) => ({
-    id: t, label: t, colourIdx: i,
+  const columns: { id: string; label: string; colour: string }[] = themes.map((t, i) => ({
+    id: t.name,
+    label: t.emoji ? `${t.emoji} ${t.name}` : t.name,
+    colour: t.colour ?? COLUMN_COLOURS[i % COLUMN_COLOURS.length],
   }));
   if (unassigned.length > 0) {
-    columns.push({ id: "__unassigned__", label: "Unassigned", colourIdx: themes.length });
+    columns.push({ id: "__unassigned__", label: "Unassigned", colour: "#d1d5db" });
   }
 
   if (hasNoThemes && plans.length === 0) {
@@ -216,10 +224,9 @@ export default function BoardView({ apiBase, serviceTier }: Props) {
             const colPlans = col.id === "__unassigned__"
               ? unassigned
               : plans.filter((p) => p.theme === col.id);
-            const colour = COLUMN_COLOURS[col.colourIdx % COLUMN_COLOURS.length];
             return (
               <div key={col.id} className="w-64 shrink-0 bg-white border border-gray-200 rounded-xl overflow-hidden">
-                <div className="h-1" style={{ backgroundColor: colour }} />
+                <div className="h-1" style={{ backgroundColor: col.colour }} />
                 <div className="flex items-center justify-between px-3 py-2.5 border-b border-gray-100">
                   <span className="text-xs font-semibold text-[#2f3437] truncate">{col.label}</span>
                   <span className="text-xs font-medium bg-gray-100 text-[#2f3437]/60 px-1.5 py-0.5 rounded-full shrink-0 ml-1">
@@ -248,10 +255,9 @@ export default function BoardView({ apiBase, serviceTier }: Props) {
             const colPlans = col.id === "__unassigned__"
               ? unassigned
               : plans.filter((p) => p.theme === col.id);
-            const colour = COLUMN_COLOURS[col.colourIdx % COLUMN_COLOURS.length];
             return (
               <div key={col.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-                <div className="h-1" style={{ backgroundColor: colour }} />
+                <div className="h-1" style={{ backgroundColor: col.colour }} />
                 <div className="flex items-center justify-between px-3 py-2.5 border-b border-gray-100">
                   <span className="text-xs font-semibold text-[#2f3437]">{col.label}</span>
                   <span className="text-xs font-medium bg-gray-100 text-[#2f3437]/60 px-1.5 py-0.5 rounded-full">

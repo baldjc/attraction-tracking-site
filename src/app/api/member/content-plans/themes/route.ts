@@ -2,14 +2,33 @@ import { NextResponse } from "next/server";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import prisma from "@/lib/prisma";
 
-const DEFAULT_THEMES = ["Theme 1", "Theme 2", "Theme 3", "Theme 4"];
+interface ThemeObj {
+  name: string;
+  emoji?: string | null;
+  colour?: string | null;
+}
 
-function extractThemeName(t: unknown): string | null {
-  if (typeof t === "string") return t.trim() || null;
+const DEFAULT_THEMES: ThemeObj[] = [
+  { name: "Theme 1", emoji: null, colour: null },
+  { name: "Theme 2", emoji: null, colour: null },
+  { name: "Theme 3", emoji: null, colour: null },
+  { name: "Theme 4", emoji: null, colour: null },
+];
+
+function extractTheme(t: unknown): ThemeObj | null {
+  if (typeof t === "string") {
+    const name = t.trim();
+    return name ? { name, emoji: null, colour: null } : null;
+  }
   if (t && typeof t === "object") {
     const obj = t as Record<string, unknown>;
     const name = typeof obj.name === "string" ? obj.name.trim() : null;
-    return name || null;
+    if (!name) return null;
+    return {
+      name,
+      emoji: typeof obj.emoji === "string" ? obj.emoji : null,
+      colour: typeof obj.colour === "string" ? obj.colour : null,
+    };
   }
   return null;
 }
@@ -24,10 +43,10 @@ export async function GET() {
   });
 
   const raw = dbUser?.contentThemes;
-  let themes: string[] = DEFAULT_THEMES;
+  let themes: ThemeObj[] = DEFAULT_THEMES;
 
   if (Array.isArray(raw) && raw.length > 0) {
-    const extracted = raw.map(extractThemeName).filter((t): t is string => t !== null);
+    const extracted = raw.map(extractTheme).filter((t): t is ThemeObj => t !== null);
     if (extracted.length > 0) themes = extracted;
   }
 

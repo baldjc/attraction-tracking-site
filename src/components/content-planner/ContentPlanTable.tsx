@@ -62,7 +62,9 @@ type EditingCell = { id: string; field: string } | null;
 export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServiceTier }: Props) {
   const [plans, setPlans] = useState<ContentPlan[]>([]);
   const [serviceTier, setServiceTier] = useState<string>(forcedServiceTier ?? "foundations");
-  const [themes, setThemes] = useState<string[]>(["Theme 1", "Theme 2", "Theme 3", "Theme 4"]);
+  const [themes, setThemes] = useState<Array<{ name: string; emoji?: string | null; colour?: string | null }>>([
+    { name: "Theme 1" }, { name: "Theme 2" }, { name: "Theme 3" }, { name: "Theme 4" },
+  ]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editingCell, setEditingCell] = useState<EditingCell>(null);
@@ -219,7 +221,7 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
             className={selectCls}
           >
             <option value="">— None —</option>
-            {themes.map((t) => <option key={t} value={t}>{t}</option>)}
+            {themes.map((t) => <option key={t.name} value={t.name}>{t.emoji ? `${t.emoji} ${t.name}` : t.name}</option>)}
           </select>
         );
       }
@@ -480,7 +482,7 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
                   className="w-full border border-gray-200 text-[#2f3437] text-sm rounded-lg px-3 py-2 focus:border-[#6ba3c7] focus:outline-none"
                 >
                   <option value="">Select theme...</option>
-                  {themes.map((t) => <option key={t} value={t}>{t}</option>)}
+                  {themes.map((t) => <option key={t.name} value={t.name}>{t.emoji ? `${t.emoji} ${t.name}` : t.name}</option>)}
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-3">

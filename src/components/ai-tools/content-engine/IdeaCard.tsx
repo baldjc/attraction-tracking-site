@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
+import ContentPlanEditModal, { type ContentPlan } from "@/components/content-planner/ContentPlanEditModal";
 
 export interface TitleOption {
   title: string;
@@ -31,6 +33,8 @@ export default function IdeaCard({ idea, theme, onSaved, savedId, onDelete }: Pr
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [addingToPlanner, setAddingToPlanner] = useState(false);
   const [addedToPlanner, setAddedToPlanner] = useState(false);
+  const [createdPlan, setCreatedPlan] = useState<ContentPlan | null>(null);
+  const [plannerServiceTier, setPlannerServiceTier] = useState("foundations");
   const router = useRouter();
   const pathname = usePathname();
 
@@ -85,7 +89,7 @@ export default function IdeaCard({ idea, theme, onSaved, savedId, onDelete }: Pr
       const notes = idea.talkingPoints.length > 0
         ? "• " + idea.talkingPoints.join("\n• ")
         : undefined;
-      await fetch("/api/member/content-plans", {
+      const res = await fetch("/api/member/content-plans", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -96,7 +100,14 @@ export default function IdeaCard({ idea, theme, onSaved, savedId, onDelete }: Pr
           ...(localSavedId ? { linkedIdeaId: localSavedId } : {}),
         }),
       });
-      setAddedToPlanner(true);
+      if (res.ok) {
+        const data = await res.json();
+        setAddedToPlanner(true);
+        if (data.plan) {
+          setPlannerServiceTier(data.serviceTier ?? "foundations");
+          setCreatedPlan(data.plan as ContentPlan);
+        }
+      }
     } catch {
       /* silently fail */
     } finally {
@@ -233,6 +244,17 @@ export default function IdeaCard({ idea, theme, onSaved, savedId, onDelete }: Pr
         </p>
       )}
 
+      {createdPlan && (
+        <ContentPlanEditModal
+          plan={createdPlan}
+          serviceTier={plannerServiceTier}
+          apiBase="/api/member/content-plans"
+          onClose={() => setCreatedPlan(null)}
+          onSaved={() => { setCreatedPlan(null); }}
+          onDeleted={() => { setCreatedPlan(null); setAddedToPlanner(false); }}
+        />
+      )}
+
       {/* Build Script + Add to Planner */}
       <div className="border-t border-[#2f3437]/5 dark:border-white/5 pt-2 flex gap-2">
         <button
@@ -242,18 +264,24 @@ export default function IdeaCard({ idea, theme, onSaved, savedId, onDelete }: Pr
           <span>🎬</span>
           Build Script
         </button>
-        <button
-          onClick={handleAddToPlanner}
-          disabled={addedToPlanner || addingToPlanner}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-semibold rounded-lg transition-colors ${
-            addedToPlanner
-              ? "bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400 cursor-default"
-              : "text-[#2f3437] dark:text-white bg-[#111]/5 dark:bg-white/5 hover:bg-[#6ba3c7]/10 hover:text-[#6ba3c7] dark:hover:text-[#6ba3c7]"
-          }`}
-        >
-          <span>{addedToPlanner ? "✓" : "📅"}</span>
-          {addingToPlanner ? "Adding…" : addedToPlanner ? "In Planner" : "Add to Planner"}
-        </button>
+        {addedToPlanner ? (
+          <Link
+            href={pathname.startsWith("/admin") ? "/admin/content-calendar" : "/member/content-planner"}
+            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-semibold rounded-lg bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400 hover:bg-green-100 transition-colors"
+          >
+            <span>✓</span>
+            In Planner →
+          </Link>
+        ) : (
+          <button
+            onClick={handleAddToPlanner}
+            disabled={addingToPlanner}
+            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-semibold rounded-lg transition-colors text-[#2f3437] dark:text-white bg-[#111]/5 dark:bg-white/5 hover:bg-[#6ba3c7]/10 hover:text-[#6ba3c7] dark:hover:text-[#6ba3c7]"
+          >
+            <span>📅</span>
+            {addingToPlanner ? "Adding…" : "Add to Planner"}
+          </button>
+        )}
       </div>
     </div>
   );
