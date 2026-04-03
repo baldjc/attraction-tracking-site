@@ -27,6 +27,7 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [
       { source: "/t.js", destination: "/api/t.js" },
+      { source: "/api/calendar/:token.ics", destination: "/api/calendar/:token" },
     ];
   },
   async headers() {

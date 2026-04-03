@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import ArcScriptUploadPhase from "@/components/ai-tools/ArcScriptUploadPhase";
 import ArcScriptChatPhase from "@/components/ai-tools/ArcScriptChatPhase";
+import { GROWTH_DWY_TIERS } from "@/lib/content-plan-utils";
 
 interface Props {
   basePath: string;
@@ -53,11 +54,16 @@ export default function ArcScriptBuilderTool({ basePath, isAdmin }: Props) {
   const [avatarData, setAvatarData] = useState<AvatarData>({});
   const [savingToPlanner, setSavingToPlanner] = useState(false);
   const [savedToPlanner, setSavedToPlanner] = useState(false);
+  const [serviceTier, setServiceTier] = useState<string>("foundations");
 
   useEffect(() => {
     fetch("/api/ai-tools/usage/me")
       .then((r) => r.json())
       .then((d) => { if (d?.percentUsed != null) setUsage(d); })
+      .catch(() => {});
+    fetch("/api/member/content-plans")
+      .then((r) => r.json())
+      .then((d) => { if (d?.serviceTier) setServiceTier(d.serviceTier); })
       .catch(() => {});
   }, []);
 
@@ -108,13 +114,14 @@ export default function ArcScriptBuilderTool({ basePath, isAdmin }: Props) {
   async function handleSaveToPlanner() {
     if (!uploadData || savedToPlanner || savingToPlanner) return;
     setSavingToPlanner(true);
+    const plannerStatus = GROWTH_DWY_TIERS.includes(serviceTier) ? "Not Started" : "Scripted";
     try {
       await fetch("/api/member/content-plans", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: uploadData.title,
-          status: "Scripted",
+          status: plannerStatus,
           ...(uploadData.themeName ? { theme: uploadData.themeName } : {}),
         }),
       });

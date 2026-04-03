@@ -95,7 +95,7 @@ export default function ClientHubClient() {
               <ArrowTopRightOnSquareIcon className="w-4 h-4" />
             </a>
             <p className="text-xs text-[#2f3437]/40 mt-3">
-              All video-specific folders are created automatically when videos are added to your Content Planner.
+              All video-specific folders are created automatically when videos are added to your Content Planner. If your assets folder hasn't been set up yet, contact your admin.
             </p>
           </div>
         ) : (

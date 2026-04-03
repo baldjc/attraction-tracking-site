@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { PRODUCTION_TIERS } from "@/lib/content-plan-utils";
+import { createVideoFolder } from "@/lib/google-drive";
 
 async function checkAdmin() {
   const session = await auth();
@@ -57,6 +59,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "Title is required" }, { status: 400 });
   }
 
+  const member = await prisma.user.findUnique({
+    where: { id },
+    select: { serviceTier: true, fullName: true, assetsDriveLink: true },
+  });
+
   const plan = await prisma.contentPlan.create({
     data: {
       userId: id,
@@ -72,6 +79,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       footageLink: footageLink ?? null,
     },
   });
+
+  // Auto-create Google Drive folder for Production/Growth/DWY members
+  if (member && PRODUCTION_TIERS.includes(member.serviceTier ?? "") && member.assetsDriveLink && member.fullName) {
+    try {
+      const folderUrl = await createVideoFolder(member.fullName, plan.title);
+      if (folderUrl) {
+        await prisma.contentPlan.update({
+          where: { id: plan.id },
+          data: { driveFolderLink: folderUrl },
+        });
+        (plan as any).driveFolderLink = folderUrl;
+      }
+    } catch (err) {
+      console.error("[admin content-plans] Drive folder creation failed:", err);
+    }
+  }
 
   return NextResponse.json({ plan }, { status: 201 });
 }

@@ -23,7 +23,7 @@ export async function GET() {
 
   const token = dbUser.calendarToken!;
   const baseUrl = process.env.NEXTAUTH_URL ?? "https://members.attractionbyvideo.com";
-  const url = `${baseUrl}/api/calendar/${token}`;
+  const url = `${baseUrl}/api/calendar/${token}.ics`;
 
   return NextResponse.json({ token, url });
 }
