@@ -10,8 +10,6 @@ import {
   getStatusOptions,
   hasEditDueDate,
   hasDriveFolder,
-  FOUNDATIONS_STATUSES,
-  GROWTH_DWY_STATUSES,
 } from "@/lib/content-plan-utils";
 
 interface ContentPlan {
@@ -79,7 +77,7 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
   const [editingPlan, setEditingPlan] = useState<ContentPlan | null>(null);
   const inputRef = useRef<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null>(null);
 
-  const allStatusOptions = isAdmin ? [...FOUNDATIONS_STATUSES, ...GROWTH_DWY_STATUSES] : getStatusOptions(serviceTier);
+  const allStatusOptions = getStatusOptions(serviceTier);
   const showEditDue = isAdmin || hasEditDueDate(serviceTier);
   const showDriveFolder = isAdmin || hasDriveFolder(serviceTier);
 
