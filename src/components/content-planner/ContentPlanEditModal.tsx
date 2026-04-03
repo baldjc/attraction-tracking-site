@@ -181,19 +181,26 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Publish Date</label>
-              <input type="date" value={form.publishDate} onChange={(e) => setForm((f) => ({ ...f, publishDate: e.target.value }))} className={field} />
-            </div>
-            <div>
               <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Shoot Date</label>
               <input type="date" value={form.shootDate} onChange={(e) => setForm((f) => ({ ...f, shootDate: e.target.value }))} className={field} />
             </div>
+            {showEditDue ? (
+              <div>
+                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Edit Due Date</label>
+                <input type="date" value={form.editDueDate} onChange={(e) => setForm((f) => ({ ...f, editDueDate: e.target.value }))} className={field} />
+              </div>
+            ) : (
+              <div>
+                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Publish Date</label>
+                <input type="date" value={form.publishDate} onChange={(e) => setForm((f) => ({ ...f, publishDate: e.target.value }))} className={field} />
+              </div>
+            )}
           </div>
 
           {showEditDue && (
             <div>
-              <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Edit Due Date</label>
-              <input type="date" value={form.editDueDate} onChange={(e) => setForm((f) => ({ ...f, editDueDate: e.target.value }))} className={field} />
+              <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Publish Date</label>
+              <input type="date" value={form.publishDate} onChange={(e) => setForm((f) => ({ ...f, publishDate: e.target.value }))} className={field} />
             </div>
           )}
 
