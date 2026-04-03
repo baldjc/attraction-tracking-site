@@ -17,7 +17,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const body = await req.json();
-  const { title, status, theme, shootDate, publishDate, editDueDate, priority, notes, thumbnailWords, footageLink, driveFolderLink } = body;
+  const { title, status, theme, shootDate, publishDate, editDueDate, priority, notes, script, thumbnailWords, footageLink, driveFolderLink } = body;
 
   const plan = await prisma.contentPlan.update({
     where: { id: planId },
@@ -30,6 +30,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       ...(editDueDate !== undefined && { editDueDate: editDueDate ? new Date(editDueDate) : null }),
       ...(priority !== undefined && { priority: priority ?? null }),
       ...(notes !== undefined && { notes: notes ?? null }),
+      ...(script !== undefined && { script: script ?? null }),
       ...(thumbnailWords !== undefined && { thumbnailWords: thumbnailWords ?? null }),
       ...(footageLink !== undefined && { footageLink: footageLink ?? null }),
       ...(driveFolderLink !== undefined && { driveFolderLink: driveFolderLink ?? null }),

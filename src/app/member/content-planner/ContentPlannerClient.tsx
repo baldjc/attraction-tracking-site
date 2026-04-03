@@ -11,9 +11,15 @@ type ViewId = "publish_cal" | "shoot_cal" | "edit_due" | "table" | "by_theme";
 
 interface Props {
   serviceTier: string;
+  apiBase?: string;
+  isAdminView?: boolean;
 }
 
-export default function ContentPlannerClient({ serviceTier }: Props) {
+export default function ContentPlannerClient({
+  serviceTier,
+  apiBase = "/api/member/content-plans",
+  isAdminView = false,
+}: Props) {
   const [view, setView] = useState<ViewId>("table");
   const [showCalModal, setShowCalModal] = useState(false);
   const [calUrl, setCalUrl] = useState<string | null>(null);
@@ -54,8 +60,6 @@ export default function ContentPlannerClient({ serviceTier }: Props) {
     });
   }
 
-  const API_BASE = "/api/member/content-plans";
-
   return (
     <div>
       <div className="flex items-center justify-between gap-3 mb-5 flex-wrap">
@@ -74,25 +78,27 @@ export default function ContentPlannerClient({ serviceTier }: Props) {
             </button>
           ))}
         </div>
-        <button
-          onClick={openCalModal}
-          className="flex items-center gap-1.5 text-sm text-[#2f3437]/70 border border-gray-200 bg-white px-3 py-1.5 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors"
-        >
-          <CalendarDaysIcon className="w-4 h-4" />
-          Subscribe to Calendar
-        </button>
+        {!isAdminView && (
+          <button
+            onClick={openCalModal}
+            className="flex items-center gap-1.5 text-sm text-[#2f3437]/70 border border-gray-200 bg-white px-3 py-1.5 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors"
+          >
+            <CalendarDaysIcon className="w-4 h-4" />
+            Subscribe to Calendar
+          </button>
+        )}
       </div>
 
       {view === "table" && (
         <ContentPlanTable
-          apiBase={API_BASE}
+          apiBase={apiBase}
           forcedServiceTier={serviceTier}
         />
       )}
 
       {view === "publish_cal" && (
         <CalendarView
-          apiBase={API_BASE}
+          apiBase={apiBase}
           calendarType="publish"
           serviceTier={serviceTier}
         />
@@ -100,7 +106,7 @@ export default function ContentPlannerClient({ serviceTier }: Props) {
 
       {view === "shoot_cal" && (
         <CalendarView
-          apiBase={API_BASE}
+          apiBase={apiBase}
           calendarType="shoot"
           serviceTier={serviceTier}
         />
@@ -108,7 +114,7 @@ export default function ContentPlannerClient({ serviceTier }: Props) {
 
       {view === "edit_due" && showEditDueTab && (
         <CalendarView
-          apiBase={API_BASE}
+          apiBase={apiBase}
           calendarType="edit_due"
           serviceTier={serviceTier}
         />
@@ -116,12 +122,12 @@ export default function ContentPlannerClient({ serviceTier }: Props) {
 
       {view === "by_theme" && (
         <BoardView
-          apiBase={API_BASE}
+          apiBase={apiBase}
           serviceTier={serviceTier}
         />
       )}
 
-      {showCalModal && (
+      {!isAdminView && showCalModal && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-lg p-6">
             <div className="flex items-center justify-between mb-5">

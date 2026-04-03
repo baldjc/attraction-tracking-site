@@ -55,6 +55,7 @@ interface SidebarProps {
 const adminLinks = [
   { href: "/admin", label: "Dashboard", icon: HomeIcon },
   { href: "/admin/members", label: "Members", icon: UsersIcon },
+  { href: "/admin/content-calendar", label: "Content Calendar", icon: CalendarDaysIcon },
   { href: "/admin/audits", label: "Audits", icon: ClipboardDocumentListIcon },
   { href: "/admin/qa-prep", label: "Q&A Prep", icon: ChatBubbleLeftRightIcon },
   { href: "/admin/academy", label: "Academy", icon: AcademicCapIcon },
