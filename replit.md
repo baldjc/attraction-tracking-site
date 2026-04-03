@@ -149,6 +149,22 @@ src/app/
 - `ScriptReview` DB model stores: userId, videoTitle, scriptText, scores (Json), overallScore, reportContent (Json)
 - Report pages show: big Attraction Score + "Raw Average: X.X / 10" in small text below (admin, shared, member views)
 
+## Content Planner (Phase 1+2 complete)
+- `ContentPlan` model: title, status, theme, shootDate, publishDate, editDueDate, priority, notes, thumbnailWords, footageLink, driveFolderLink
+- `ClientCall` model: fathomUrl, callDate, topic, notes (admin-created, member-scoped)
+- `ClientQuickLink` model: label, url, sortOrder (per-member quick links)
+- User fields added: `assetsDriveLink`, `calendarToken` (unique)
+- Status options are tier-gated: Foundations/Production get 7 statuses; Growth/DWY get 9 statuses
+- Edit Due Date column: visible only for mastery_2, mastery_4, done_with_you
+- Drive Folder column: visible only for editing_2, editing_4, mastery_2, mastery_4, done_with_you
+- Inline cell editing: click any cell → input/select appears → blur/enter saves via PUT
+- Member sidebar link added between AI Tools and Generate Leads
+- Admin member detail page: "Content Planner" tab with dark-themed table
+- Shared utility: `src/lib/content-plan-utils.ts` (tier helpers, status lists, STATUS_STYLES map)
+- API: `GET/POST /api/member/content-plans`, `GET/PUT/DELETE /api/member/content-plans/[id]`, `GET /api/member/content-plans/themes`
+- Admin API: `GET/POST /api/admin/members/[id]/content-plans`, `PUT/DELETE /api/admin/members/[id]/content-plans/[planId]`
+- Calendar views (Publish, Shoot, Edit Due), Board view (By Theme) — stubs show "Coming soon" (Phase 3/4)
+
 ## Deduplication
 - Chris Troke has 25+ duplicate GHL records — sync deduplicates by email
 ```
