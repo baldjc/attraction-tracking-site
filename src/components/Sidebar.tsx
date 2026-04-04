@@ -38,6 +38,7 @@ import { useState, useEffect } from "react";
 import { IMPERSONATE_LS_KEY } from "@/lib/impersonate-constants";
 import { useTheme } from "@/components/ThemeProvider";
 import { useSidebar } from "@/components/SidebarContext";
+import HelpChat from "@/components/help/HelpChat";
 
 interface FeatureFlags {
   campaigns?: boolean;
@@ -99,6 +100,7 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
   const { theme, toggle: toggleTheme } = useTheme();
   const { collapsed, toggle: toggleCollapsed } = useSidebar();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const [impersonate, setImpersonate] = useState<ImpersonateState | null>(null);
   const [showSwitch, setShowSwitch] = useState(false);
   const [qaCallsPending, setQaCallsPending] = useState(0);
@@ -347,6 +349,14 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
           </div>
         )}
         <button
+          onClick={() => setHelpOpen((v) => !v)}
+          title="Kit assistant"
+          className={`flex items-center gap-3 py-2.5 text-sm font-medium text-white/50 hover:text-white hover:bg-white/5 transition-colors duration-200 w-full rounded-md lg:hidden ${collapsed ? "px-3 justify-center" : "px-3"}`}
+        >
+          <span className="text-base leading-none shrink-0">🤖</span>
+          {!collapsed && <span>Kit assistant</span>}
+        </button>
+        <button
           onClick={toggleTheme}
           title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
           className={`flex items-center gap-3 py-2.5 text-sm font-medium text-white/50 hover:text-white hover:bg-white/5 transition-colors duration-200 w-full rounded-md ${collapsed ? "px-3 justify-center" : "px-3"}`}
@@ -388,6 +398,15 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
 
   return (
     <>
+      {/* Kit assistant panel — mobile only, triggered from sidebar */}
+      {helpOpen && (
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-[60] h-[80vh] animate-fade-in-up">
+          <div className="w-full h-full bg-white dark:bg-[#1a1a1a] border-t border-[#2f3437]/10 dark:border-[#2a2a2a] shadow-2xl overflow-hidden rounded-t-2xl">
+            <HelpChat onClose={() => setHelpOpen(false)} />
+          </div>
+        </div>
+      )}
+
       {/* Mobile top bar */}
       <div className={`lg:hidden fixed top-0 left-0 right-0 z-40 h-14 flex items-center px-4 gap-3 transition-colors ${isImpersonating ? "bg-[#e63946]" : "bg-[#1e2a38]"}`}>
         <button
