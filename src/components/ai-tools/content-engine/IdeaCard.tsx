@@ -16,6 +16,7 @@ export interface Idea {
   talkingPoints: string[];
   framework?: string | null;
   whyItWorks?: string | null;
+  dataToFind?: string | null;
 }
 
 interface Props {
@@ -242,6 +243,15 @@ export default function IdeaCard({ idea, theme, onSaved, savedId, onDelete }: Pr
         <p className="text-xs text-[#2f3437]/50 dark:text-white/50 italic border-t border-[#2f3437]/5 dark:border-white/5 pt-2">
           {idea.whyItWorks}
         </p>
+      )}
+
+      {idea.dataToFind && (
+        <div className="border-t border-[#2f3437]/5 dark:border-white/5 pt-2 mt-1">
+          <p className="text-xs font-medium text-[#2f3437]/60 dark:text-white/60 mb-1">Data to Find:</p>
+          <p className="text-xs text-[#2f3437]/50 dark:text-white/50">
+            {idea.dataToFind}
+          </p>
+        </div>
       )}
 
       {createdPlan && (

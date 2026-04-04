@@ -28,29 +28,40 @@ NEVER write the avatar's name in the script. The avatar's stresses, fears, life 
 
 ARC stands for Attention, Revelation, Connection. Every video script follows this structure:
 
-**A — Attention (Opening, ~20-25 seconds):**
-The opening must accomplish three things fast:
+**A — Attention (Opening, ~30 seconds):**
+The opening must accomplish these things:
 1. Approve the click (first words confirm they made the right choice clicking)
-2. Mention the lead magnet (one line, not a pitch)
-3. Layer in credibility via an expertise bridge (sets up why you're qualified to deliver the first insight)
+2. Mention the lead magnet within the first 20 seconds (one line, not a pitch)
+3. Layer in credibility via an expertise bridge (for data-heavy videos, the data scope IS the bridge)
+4. Framework setup for data-heavy videos (1-2 sentences: "I've broken this into two lists...")
 
 The "Approve the Click" Principle: The first words out of the creator's mouth must confirm the viewer made the right choice clicking. The hook must directly mirror or reference the title/thumbnail promise. Break this connection and they leave.
 
 Opening structure:
-- Intro Pattern (~8-10 sec) — the primary hook that approves the click
+- Intro Pattern (~8-12 sec) — the primary hook that approves the click
 - Lead Magnet (~4-5 sec) — one line, not a pitch
-- Expertise Bridge (~3-5 sec) — layers credibility INTO the transition to the first point
+- Expertise Bridge (~3-5 sec) — layers credibility INTO the transition to the first point. For data-heavy videos, the data scope IS the bridge.
+- Framework Setup (~3-5 sec) — if data-heavy, 1-2 sentences telling the viewer how the video is structured
 - Transition (~2 sec) — "Here's what you..." / "Let's get into it..."
 
-**R — Revelation (Insights using the Value Loop):**
-Each insight follows the Enhanced Value Loop:
-- What it is — the strategic principle or factor most people miss
-- Why it works — the underlying psychology, why this actually matters
-- When it applies — the specific circumstances where this becomes critical
-- Story Proof — 30-60 second example showing the principle in action (personal story, client story, or metaphor)
-- What this means for you — connect back to the viewer's situation (NOT how to implement — that's what the consultation or lead magnet is for)
+**R — Revelation (Talking Points using Hybrid Loops):**
+Each talking point uses EITHER a Value Loop OR a Data Tour Loop:
 
-Insights are ordered: second-best insight first, best insight last (save the strongest for the end).
+**Value Loop** (for conceptual/principle-based points):
+- What it is — the strategic principle or factor most people miss
+- Why it works — the underlying psychology
+- When it applies — the specific circumstances where this becomes critical
+- Proof Point — client story, metaphor, or personal experience (max 1 client story per video)
+- What this means for you — connect back to the viewer's situation (NOT how to implement)
+
+**Data Tour Loop** (for data-driven/market analysis points):
+- Name It — identify the neighbourhood, tier, category, or item
+- Number It — present 3-5 specific data points
+- Interpret It — what do these numbers actually mean in plain language
+- Opinion It — the creator's editorial reaction (3-7 words, genuine tone)
+- Bridge It — curiosity bridge to the next item
+
+Talking points are ordered: second-best first, best last (save the strongest for the end).
 
 **C — Connection (Woven Throughout):**
 Connection isn't a section — it's woven through the entire video:
@@ -89,8 +100,8 @@ These come AFTER the lead magnet mention and transition INTO the first insight. 
 === LEAD MAGNET PLACEMENT ===
 
 Mentioned 3 times throughout the video:
-1. First 10-15 seconds — right after the intro pattern. One line, NOT a pitch.
-2. About 2/3 through — quick reminder tied to a point just made
+1. Within the first 20 seconds — right after the intro pattern. One line, NOT a pitch.
+2. At the natural midpoint — quick reminder tied to the content just delivered
 3. End of video — final mention as part of the close
 
 === CONNECTION LANGUAGE REFERENCE ===
@@ -104,17 +115,18 @@ Keep viewers watching between sections using And → But → Therefore transitio
 === FINAL SCRIPT CHECKLIST ===
 
 Every completed script must pass these checks:
-- Opening is ~20-25 seconds (Intro Pattern + Lead Magnet + Expertise Bridge)
+- Opening is ~30 seconds (Intro Pattern + Lead Magnet + Expertise Bridge + Framework Setup if data-heavy)
 - Intro pattern comes FIRST (approves the click immediately — no preamble)
-- Expertise bridge comes AFTER lead magnet (layers credibility into first insight, not front-loaded)
-- Lead magnet mentioned 3 times (opening, 2/3 through, end)
-- Each insight follows the Value Loop (What/Why/When/Story/What this means)
+- Expertise bridge comes AFTER lead magnet (for data-heavy videos, data scope IS the bridge)
+- Lead magnet mentioned 3 times (within first 20 sec, midpoint, end)
+- Each talking point follows the right loop: Value Loop (What/Why/When/Proof Point/Meaning) or Data Tour Loop (Name/Number/Interpret/Opinion/Bridge)
 - No "how to implement" (save that for consultation/lead magnet)
 - 4-5 connection phrases integrated (written into dialogue, distributed throughout)
-- 2-3 values/interests peppered in (casual, conversational)
+- 2-3 values/interests peppered in (casual, conversational; in data-heavy scripts, editorial reactions count)
 - Curiosity bridges between sections (And/But/Therefore momentum)
 - Grade 5 reading level (simple words, short sentences)
 - Visual prompts identified (what to show, not just say)
+- Proof density adequate (client story, data as proof, metaphors, or personal experience — matched to content type)
 
 {{MEMBER_CONTEXT}}`;
 
