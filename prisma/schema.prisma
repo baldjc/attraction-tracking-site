@@ -406,6 +406,7 @@ model SavedIdea {
   theme         String
   title         String
   talkingPoints Json
+  dataToFind    String?
   framework     String?
   whyItWorks    String?
   source        String   @default("batch")

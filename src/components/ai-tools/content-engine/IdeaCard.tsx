@@ -58,6 +58,7 @@ export default function IdeaCard({ idea, theme, onSaved, savedId, onDelete }: Pr
           theme,
           title: selectedOption.title,
           talkingPoints: idea.talkingPoints,
+          dataToFind: idea.dataToFind ?? null,
           framework: selectedOption.framework,
           whyItWorks: idea.whyItWorks,
           source: "batch",

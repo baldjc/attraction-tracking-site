@@ -6,7 +6,7 @@ export async function POST(req: NextRequest) {
   const user = await resolveUserFromSession();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { theme, title, talkingPoints, framework, whyItWorks, source } = await req.json();
+  const { theme, title, talkingPoints, dataToFind, framework, whyItWorks, source } = await req.json();
 
   if (!theme || !title) {
     return NextResponse.json({ error: "Missing theme or title" }, { status: 400 });
@@ -18,6 +18,7 @@ export async function POST(req: NextRequest) {
       theme,
       title,
       talkingPoints: talkingPoints ?? [],
+      dataToFind: dataToFind ?? null,
       framework: framework ?? null,
       whyItWorks: whyItWorks ?? null,
       source: source ?? "batch",
