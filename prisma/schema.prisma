@@ -407,6 +407,7 @@ model SavedIdea {
   talkingPoints Json
   framework     String?
   whyItWorks    String?
+  dataToFind    String?
   source        String   @default("batch")
   createdAt     DateTime @default(now())
 

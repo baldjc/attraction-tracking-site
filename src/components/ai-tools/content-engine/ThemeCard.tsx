@@ -17,6 +17,7 @@ interface SavedIdea {
   talkingPoints: string[];
   framework: string | null;
   whyItWorks: string | null;
+  dataToFind: string | null;
   source: string;
   createdAt: string;
 }
@@ -245,6 +246,7 @@ export default function ThemeCard({ theme, index, onGoDeeper, initialIdeas }: Pr
                           talkingPoints: idea.talkingPoints ?? [],
                           framework: idea.framework ?? null,
                           whyItWorks: idea.whyItWorks ?? null,
+                          dataToFind: idea.dataToFind ?? null,
                           source: "batch",
                           createdAt: new Date().toISOString(),
                         };
@@ -276,7 +278,7 @@ export default function ThemeCard({ theme, index, onGoDeeper, initialIdeas }: Pr
                 {savedIdeas.map((idea) => (
                   <IdeaCard
                     key={idea.id}
-                    idea={{ title: idea.title, talkingPoints: idea.talkingPoints, framework: idea.framework, whyItWorks: idea.whyItWorks }}
+                    idea={{ title: idea.title, talkingPoints: idea.talkingPoints, framework: idea.framework, whyItWorks: idea.whyItWorks, dataToFind: idea.dataToFind }}
                     theme={t.name}
                     savedId={idea.id}
                     onDelete={() => handleDeleteSaved(idea.id)}
