@@ -7,6 +7,7 @@ import Link from "next/link";
 import PromptEditor from "@/components/ai-tools/PromptEditor";
 import RecentConversations from "@/components/ai-tools/RecentConversations";
 import ResourceRecommendations from "@/components/ResourceRecommendations";
+import MarkdownMessage from "@/components/MarkdownMessage";
 
 interface AnalysisResult {
   thumbnail?: {
@@ -205,7 +206,7 @@ function GoDeeperSection({
                 </div>
               ) : (
                 <div className="bg-[#f7f6f3] rounded-lg rounded-tl-sm px-4 py-3 max-w-full w-full space-y-3">
-                  <p className="text-sm text-[#2f3437] whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                  <MarkdownMessage className="text-sm text-[#2f3437] leading-relaxed">{msg.content}</MarkdownMessage>
                   {msg.titles && msg.titles.length > 0 && (
                     <div className="border-t border-[#2f3437]/10 pt-3 space-y-2">
                       <p className="text-xs font-semibold text-[#2f3437]/40 uppercase tracking-wide">

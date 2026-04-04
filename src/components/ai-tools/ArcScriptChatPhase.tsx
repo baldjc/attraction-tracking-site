@@ -10,6 +10,7 @@ import {
 } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import ArcProgressBar, { SECTIONS } from "@/components/ai-tools/ArcProgressBar";
+import MarkdownMessage from "@/components/MarkdownMessage";
 
 interface Message {
   role: "user" | "assistant";
@@ -43,48 +44,6 @@ function cleanContent(text: string): string {
   return text.replace(/<SECTION_DATA>[\s\S]*?<\/SECTION_DATA>/g, "").trim();
 }
 
-function renderInline(text: string): React.ReactNode[] {
-  const parts = text.split(/(\*\*[^*]+\*\*)/g);
-  return parts.map((p, i) =>
-    p.startsWith("**") && p.endsWith("**") ? <strong key={i}>{p.slice(2, -2)}</strong> : p
-  );
-}
-
-function MarkdownBlock({ content }: { content: string }) {
-  const lines = content.split("\n");
-  const nodes: React.ReactNode[] = [];
-  let i = 0;
-  while (i < lines.length) {
-    const line = lines[i];
-    const t = line.trim();
-    if (!t) { i++; continue; }
-    if (/^---+$/.test(t)) { nodes.push(<hr key={i} className="my-3 border-[#2f3437]/10 dark:border-white/10" />); i++; continue; }
-    if (t.startsWith("### ")) {
-      nodes.push(<h3 key={i} className="text-xs font-bold text-[#2f3437]/50 dark:text-white/50 uppercase tracking-wider mt-4 mb-1">{renderInline(t.slice(4))}</h3>);
-      i++; continue;
-    }
-    if (t.startsWith("## ")) {
-      nodes.push(<h2 key={i} className="text-sm font-bold text-[#2f3437] dark:text-white mt-5 mb-1.5">{renderInline(t.slice(3))}</h2>);
-      i++; continue;
-    }
-    if (t.startsWith("# ")) {
-      nodes.push(<h1 key={i} className="text-base font-bold text-[#2f3437] dark:text-white mt-2 mb-2">{renderInline(t.slice(2))}</h1>);
-      i++; continue;
-    }
-    if (t.startsWith("- ") || t.startsWith("* ")) {
-      const items: React.ReactNode[] = [];
-      while (i < lines.length && (lines[i].trim().startsWith("- ") || lines[i].trim().startsWith("* "))) {
-        items.push(<li key={i} className="text-sm text-[#2f3437]/80 dark:text-white/80 leading-relaxed">{renderInline(lines[i].trim().slice(2))}</li>);
-        i++;
-      }
-      nodes.push(<ul key={`ul-${i}`} className="list-disc list-inside space-y-0.5 my-1.5 ml-1">{items}</ul>);
-      continue;
-    }
-    nodes.push(<p key={i} className="text-sm text-[#2f3437]/80 dark:text-white/80 leading-relaxed my-1.5">{renderInline(t)}</p>);
-    i++;
-  }
-  return <div>{nodes}</div>;
-}
 
 function CostCapBanner({ level }: { level: "warning" | "critical" }) {
   if (level === "critical") {
@@ -430,7 +389,7 @@ export default function ArcScriptChatPhase({ initialData, onReset, onScriptCompl
                 {msg.role === "user" ? (
                   displayContent
                 ) : displayContent ? (
-                  <MarkdownBlock content={displayContent} />
+                  <MarkdownMessage className="text-sm">{displayContent}</MarkdownMessage>
                 ) : (
                   <div className="flex gap-1.5 items-center h-4">
                     {[0, 1, 2].map((i) => (

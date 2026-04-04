@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import IdeaCard, { Idea } from "./IdeaCard";
+import MarkdownMessage from "@/components/MarkdownMessage";
 
 interface ContentTheme {
   name: string;
@@ -125,9 +126,9 @@ export default function ContentEngineChat({ theme, onBack }: Props) {
                   seg.type === "idea" && seg.idea ? (
                     <IdeaCard key={j} idea={seg.idea} theme={themeName} />
                   ) : (
-                    <div key={j} className="text-sm text-[#2f3437]/80 dark:text-white/80 whitespace-pre-wrap leading-relaxed">
-                      {seg.text}
-                    </div>
+                    <MarkdownMessage key={j} className="text-sm text-[#2f3437]/80 dark:text-white/80 leading-relaxed">
+                      {seg.text ?? ""}
+                    </MarkdownMessage>
                   )
                 )}
               </div>
