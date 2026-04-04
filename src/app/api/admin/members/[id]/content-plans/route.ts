@@ -53,7 +53,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const { id } = await params;
   const body = await req.json();
-  const { title, status, theme, shootDate, publishDate, editDueDate, priority, notes, thumbnailWords, footageLink } = body;
+  const { title, status, theme, shootDate, publishDate, editDueDate, priority, notes, script, thumbnailWords, footageLink } = body;
 
   if (!title || typeof title !== "string" || !title.trim()) {
     return NextResponse.json({ error: "Title is required" }, { status: 400 });
@@ -75,6 +75,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       editDueDate: editDueDate ? new Date(editDueDate) : null,
       priority: priority ?? null,
       notes: notes ?? null,
+      script: script ?? null,
       thumbnailWords: thumbnailWords ?? null,
       footageLink: footageLink ?? null,
     },

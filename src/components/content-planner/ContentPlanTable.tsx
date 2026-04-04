@@ -168,6 +168,7 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
           priority: addForm.priority || null,
           thumbnailWords: addForm.thumbnailWords || null,
           notes: addForm.notes || null,
+          script: addForm.script || null,
           footageLink: addForm.footageLink || null,
         }),
       });
@@ -520,8 +521,10 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
                 <input type="url" value={addForm.footageLink ?? ""} onChange={(e) => setAddForm((f) => ({ ...f, footageLink: e.target.value }))} placeholder="https://..." className="w-full border border-gray-200 text-[#2f3437] text-sm rounded-lg px-3 py-2 focus:border-[#6ba3c7] focus:outline-none" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Notes</label>
-                <textarea value={addForm.notes ?? ""} onChange={(e) => setAddForm((f) => ({ ...f, notes: e.target.value }))} placeholder="Any notes..." rows={3} className="w-full border border-gray-200 text-[#2f3437] text-sm rounded-lg px-3 py-2 focus:border-[#6ba3c7] focus:outline-none resize-none" />
+                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Talking Points</label>
+                <textarea value={addForm.notes ?? ""} onChange={(e) => setAddForm((f) => ({ ...f, notes: e.target.value }))} placeholder="One talking point per line…" rows={3} className="w-full border border-gray-200 text-[#2f3437] text-sm rounded-lg px-3 py-2 focus:border-[#6ba3c7] focus:outline-none resize-none" />
+                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1 mt-3">Script</label>
+                <textarea value={addForm.script ?? ""} onChange={(e) => setAddForm((f) => ({ ...f, script: e.target.value }))} placeholder="Paste your script here…" rows={5} className="w-full border border-gray-200 text-[#2f3437] text-sm rounded-lg px-3 py-2 focus:border-[#6ba3c7] focus:outline-none resize-y" />
               </div>
               {addError && <p className="text-red-500 text-xs">{addError}</p>}
             </div>
