@@ -38,7 +38,7 @@ const DATE_FIELD: Record<string, keyof ContentPlan> = {
   edit_due:  "editDueDate",
 };
 
-const WEEK_DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const WEEK_DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
 function dayKey(year: number, month: number, day: number) {
@@ -53,7 +53,7 @@ function planDateKey(dateStr: string | null) {
 function getMonthGrid(year: number, month: number): (number | null)[][] {
   const firstDay = new Date(year, month, 1);
   const lastDay  = new Date(year, month + 1, 0);
-  const startDow = (firstDay.getDay() + 6) % 7; // Mon = 0
+  const startDow = firstDay.getDay(); // Sun = 0
   const days: (number | null)[] = [];
   for (let i = 0; i < startDow; i++) days.push(null);
   for (let d = 1; d <= lastDay.getDate(); d++) days.push(d);
