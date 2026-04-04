@@ -15,6 +15,10 @@ const DEFAULT_THEMES: ThemeObj[] = [
   { name: "Theme 4", emoji: null, colour: null },
 ];
 
+const PINNED_THEMES: ThemeObj[] = [
+  { name: "Monthly Market Update", emoji: "📊", colour: null },
+];
+
 function extractTheme(t: unknown): ThemeObj | null {
   if (typeof t === "string") {
     const name = t.trim();
@@ -50,5 +54,10 @@ export async function GET() {
     if (extracted.length > 0) themes = extracted;
   }
 
-  return NextResponse.json({ themes });
+  const allThemes = [
+    ...themes,
+    ...PINNED_THEMES.filter((p) => !themes.some((t) => t.name === p.name)),
+  ];
+
+  return NextResponse.json({ themes: allThemes });
 }
