@@ -105,7 +105,6 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
   const [hireWaitlist, setHireWaitlist] = useState(0);
   const [memberTier, setMemberTier] = useState<string | null>(null);
   const [clientHubEnabled, setClientHubEnabled] = useState(true);
-  const [liveFlags, setLiveFlags] = useState<typeof featureFlags>(featureFlags);
 
   const isStaff = role === "admin" || role === "editor";
   const isImpersonating = !!impersonate;
@@ -147,19 +146,6 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
     setShowSwitch(false);
   }, [pathname]);
 
-  // When staff impersonates a member, fetch the real global feature flags
-  // so the member-view sidebar respects the admin toggles correctly.
-  useEffect(() => {
-    if (isStaff && isImpersonating) {
-      fetch("/api/admin/feature-visibility")
-        .then((r) => r.ok ? r.json() : null)
-        .then((d) => { if (d) setLiveFlags(d); })
-        .catch(() => {});
-    } else {
-      setLiveFlags(featureFlags);
-    }
-  }, [isStaff, isImpersonating, featureFlags]);
-
   useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
@@ -172,9 +158,9 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
   const isStaffOnMemberView = isStaff && isImpersonating;
 
   const baseMemberLinks = memberLinks.filter((link) => {
-    if (link.featureKey && liveFlags && liveFlags[link.featureKey] === false) return false;
+    if (link.featureKey && featureFlags && featureFlags[link.featureKey] === false) return false;
     if (link.href === "/member/client-hub") {
-      if (liveFlags && liveFlags["client_hub"] === false) return false;
+      if (featureFlags && featureFlags["client_hub"] === false) return false;
       return clientHubEnabled;
     }
     if (link.tierRequired && memberTier && !link.tierRequired.includes(memberTier)) return false;
