@@ -37,6 +37,7 @@ interface UsageData {
 }
 
 interface PrefillData {
+  planId?: string;
   title: string;
   talkingPoints: string[];
   themeName?: string;
@@ -55,6 +56,8 @@ export default function ArcScriptBuilderTool({ basePath, isAdmin }: Props) {
   const [savingToPlanner, setSavingToPlanner] = useState(false);
   const [savedToPlanner, setSavedToPlanner] = useState(false);
   const [serviceTier, setServiceTier] = useState<string>("foundations");
+  const [linkedPlanId, setLinkedPlanId] = useState<string | null>(null);
+  const [finalScript, setFinalScript] = useState<string>("");
 
   useEffect(() => {
     fetch("/api/ai-tools/usage/me")
@@ -87,10 +90,12 @@ export default function ArcScriptBuilderTool({ basePath, isAdmin }: Props) {
         const data = JSON.parse(raw);
         if (data.title) {
           setPrefillData({
+            planId: typeof data.planId === "string" ? data.planId : undefined,
             title: data.title,
             talkingPoints: Array.isArray(data.talkingPoints) ? data.talkingPoints : [],
             themeName: typeof data.theme === "string" ? data.theme : undefined,
           });
+          if (typeof data.planId === "string") setLinkedPlanId(data.planId);
         }
       }
     } catch { /* ignore malformed data */ }
@@ -114,17 +119,27 @@ export default function ArcScriptBuilderTool({ basePath, isAdmin }: Props) {
   async function handleSaveToPlanner() {
     if (!uploadData || savedToPlanner || savingToPlanner) return;
     setSavingToPlanner(true);
-    const plannerStatus = GROWTH_DWY_TIERS.includes(serviceTier) ? "Not Started" : "Scripted";
     try {
-      await fetch("/api/member/content-plans", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: uploadData.title,
-          status: plannerStatus,
-          ...(uploadData.themeName ? { theme: uploadData.themeName } : {}),
-        }),
-      });
+      if (linkedPlanId) {
+        // Update existing plan's script
+        await fetch(`/api/member/content-plans/${linkedPlanId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ script: finalScript || null }),
+        });
+      } else {
+        // Create new plan entry
+        const plannerStatus = GROWTH_DWY_TIERS.includes(serviceTier) ? "Not Started" : "Scripted";
+        await fetch("/api/member/content-plans", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: uploadData.title,
+            status: plannerStatus,
+            ...(uploadData.themeName ? { theme: uploadData.themeName } : {}),
+          }),
+        });
+      }
       setSavedToPlanner(true);
     } catch {
       /* silently fail */
@@ -164,7 +179,11 @@ export default function ArcScriptBuilderTool({ basePath, isAdmin }: Props) {
               }`}
             >
               <span>{savedToPlanner ? "✓" : "📅"}</span>
-              {savingToPlanner ? "Saving…" : savedToPlanner ? "In Planner" : "Save to Planner"}
+              {savingToPlanner
+                ? "Saving…"
+                : savedToPlanner
+                  ? (linkedPlanId ? "Script Saved" : "In Planner")
+                  : (linkedPlanId ? "Save Script to Plan" : "Save to Planner")}
             </button>
           )}
         </div>
@@ -202,7 +221,7 @@ export default function ArcScriptBuilderTool({ basePath, isAdmin }: Props) {
         </div>
       ) : uploadData ? (
         <div className="bg-white border border-[#2f3437]/10 rounded-lg p-6" style={{ minHeight: "70vh" }}>
-          <ArcScriptChatPhase initialData={uploadData} onReset={handleReset} />
+          <ArcScriptChatPhase initialData={uploadData} onReset={handleReset} onScriptComplete={(s) => setFinalScript(s)} />
         </div>
       ) : null}
     </div>

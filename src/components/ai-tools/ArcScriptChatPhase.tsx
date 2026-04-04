@@ -34,6 +34,7 @@ interface Props {
     themeContext?: string;
   };
   onReset: () => void;
+  onScriptComplete?: (script: string) => void;
 }
 
 const MAX_TURNS = 40;
@@ -100,7 +101,7 @@ function CostCapBanner({ level }: { level: "warning" | "critical" }) {
   );
 }
 
-export default function ArcScriptChatPhase({ initialData, onReset }: Props) {
+export default function ArcScriptChatPhase({ initialData, onReset, onScriptComplete }: Props) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -132,6 +133,7 @@ export default function ArcScriptChatPhase({ initialData, onReset }: Props) {
   useEffect(() => {
     if (!finalScriptDone || !finalScriptText || autoSavedRef.current) return;
     autoSavedRef.current = true;
+    onScriptComplete?.(finalScriptText);
     setSaving(true);
     setSaveError("");
     fetch("/api/ai-tools/save-script", {

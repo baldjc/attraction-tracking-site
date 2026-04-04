@@ -155,7 +155,7 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
       router.push("/member/ai-tools/title-thumbnail-analyzer");
     } else if (tool === "script-builder") {
       const talkingPoints = form.notes.split("\n").map((l) => l.trim()).filter(Boolean);
-      sessionStorage.setItem("arc_prefill", JSON.stringify({ title: form.title, talkingPoints }));
+      sessionStorage.setItem("arc_prefill", JSON.stringify({ planId: plan.id, title: form.title, talkingPoints }));
       router.push("/member/ai-tools/arc-script-builder");
     } else {
       sessionStorage.setItem("script_review_prefill", JSON.stringify({ title: form.title, script: form.script }));
