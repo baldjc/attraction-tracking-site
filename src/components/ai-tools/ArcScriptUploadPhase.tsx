@@ -218,6 +218,13 @@ Format each talking point as its own section with all 7 categories. Preserve spe
     setPickerOpen(false);
   }
 
+  // Pre-fill research notes with dataToFind from Content Engine
+  useEffect(() => {
+    if (prefillData?.dataToFind && !pastedNotes) {
+      setPastedNotes("--- Data to Find ---\n" + prefillData.dataToFind);
+    }
+  }, [prefillData]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const isPrefilled = !!prefillData;
   const effectiveTitle = isPrefilled ? prefillData!.title : title;
   const effectiveTalkingPoints = isPrefilled ? prefillData!.talkingPoints.join("\n") : talkingPoints;
