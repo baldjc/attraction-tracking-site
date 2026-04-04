@@ -55,9 +55,10 @@ function DraggableCard({
       ref={setNodeRef}
       style={style}
       {...attributes}
-      className={`bg-white border border-gray-200 rounded-lg p-3 cursor-grab active:cursor-grabbing transition-shadow ${isDragging ? "outline-dashed outline-2 outline-purple-300" : "hover:border-purple-300 hover:shadow-sm"}`}
+      onClick={onEdit}
+      className={`bg-white border border-gray-200 rounded-lg p-3 cursor-pointer transition-shadow ${isDragging ? "outline-dashed outline-2 outline-purple-300 opacity-40" : "hover:border-[#6ba3c7] hover:shadow-sm"}`}
     >
-      <div {...listeners} className="mb-2">
+      <div {...listeners} className="mb-2 cursor-grab active:cursor-grabbing">
         <p className="text-xs font-medium text-[#2f3437] leading-snug">{plan.title}</p>
       </div>
       <div className="flex items-center justify-between gap-2">
@@ -70,28 +71,18 @@ function DraggableCard({
           </span>
           {publishDate && <span className="text-xs text-[#2f3437]/40">{publishDate}</span>}
         </div>
-        <div className="flex items-center gap-1 shrink-0">
-          {plan.driveFolderLink && (
-            <a
-              href={plan.driveFolderLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className="text-[#6ba3c7] hover:text-[#5a8fb0] transition-colors"
-              title="Open folder"
-            >
-              <FolderIcon className="w-3.5 h-3.5" />
-            </a>
-          )}
-          <button
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={onEdit}
-            className="text-xs text-[#2f3437]/30 hover:text-[#6ba3c7] transition-colors leading-none"
-            title="Edit"
+        {plan.driveFolderLink && (
+          <a
+            href={plan.driveFolderLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="text-[#6ba3c7] hover:text-[#5a8fb0] transition-colors shrink-0"
+            title="Open folder"
           >
-            ···
-          </button>
-        </div>
+            <FolderIcon className="w-3.5 h-3.5" />
+          </a>
+        )}
       </div>
     </div>
   );
@@ -324,7 +315,7 @@ export default function BoardView({ apiBase, serviceTier, isAdmin }: Props) {
                       <div
                         key={plan.id}
                         onClick={() => setEditingPlan(plan)}
-                        className="bg-white border border-gray-200 rounded-lg p-3 cursor-pointer hover:border-purple-300 transition-colors"
+                        className="bg-white border border-gray-200 rounded-lg p-3 cursor-pointer hover:border-[#6ba3c7] hover:shadow-sm transition-colors"
                       >
                         <p className="text-xs font-medium text-[#2f3437] leading-snug mb-2">{plan.title}</p>
                         <div className="flex items-center gap-1.5 flex-wrap">
