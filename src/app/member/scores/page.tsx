@@ -155,15 +155,15 @@ export default function MemberScoresPage() {
   const scores = (latestChannelAudit?.scores ?? {}) as Record<string, { score: number | null; evidence?: string }>;
   const baselineScores = (baselineAudit?.scores as any) ?? null;
 
-  // Build merged chart data with two separate series
+  // Build merged chart data with two separate series, sorted chronologically
   const allAuditsChron = [...(audits ?? [])]
     .filter((a: any) => a.overallScore != null)
-    .reverse();
+    .sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
-  // Use an ordered array keeping each audit as its own point (multiple on same day are separate)
   const channelChartData = allAuditsChron
     .filter((a: any) => a.auditType === "baseline" || a.auditType === "monthly")
     .map((a: any) => ({
+      ts: new Date(a.createdAt).getTime(),
       date: new Date(a.createdAt).toLocaleDateString("en-CA", { month: "short", day: "numeric" }),
       channelScore: parseFloat(Number(a.overallScore).toFixed(1)),
     }));
@@ -171,17 +171,20 @@ export default function MemberScoresPage() {
   const videoChartData = allAuditsChron
     .filter((a: any) => a.auditType === "single_video")
     .map((a: any) => ({
+      ts: new Date(a.createdAt).getTime(),
       date: new Date(a.createdAt).toLocaleDateString("en-CA", { month: "short", day: "numeric" }),
       videoScore: parseFloat(Number(a.overallScore).toFixed(1)),
     }));
 
-  // Merge into a unified date axis for Recharts
-  const mergedDates = Array.from(
-    new Set(
-      [...channelChartData, ...videoChartData].map((d) => d.date)
-    )
+  // Merge into a unified date axis sorted by actual timestamp
+  const mergedPoints = Array.from(
+    new Map(
+      [...channelChartData, ...videoChartData]
+        .sort((a, b) => a.ts - b.ts)
+        .map((d) => [d.date, d])
+    ).values()
   );
-  const chartData = mergedDates.map((date) => ({
+  const chartData = mergedPoints.map(({ date }) => ({
     date,
     channelScore: channelChartData.find((d) => d.date === date)?.channelScore ?? null,
     videoScore: videoChartData.find((d) => d.date === date)?.videoScore ?? null,
