@@ -148,6 +148,9 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
           <div>
             <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Title</label>
             <input type="text" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} className={field} />
+            <p className={`text-xs mt-1 text-right ${form.title.length > 80 ? "text-red-500" : form.title.length > 60 ? "text-amber-500" : "text-[#2f3437]/40"}`}>
+              {form.title.length} / 60
+            </p>
           </div>
 
           <div className="grid grid-cols-2 gap-3">

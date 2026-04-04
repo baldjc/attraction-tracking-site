@@ -32,6 +32,7 @@ interface PrefillData {
   title: string;
   talkingPoints: string[];
   themeName?: string;
+  dataToFind?: string;
 }
 
 interface YouTubeVideoOption {
@@ -210,6 +211,13 @@ Format each talking point as its own section with all 7 categories. Preserve spe
     setNextVideoPush(v.title);
     setPickerOpen(false);
   }
+
+  // Pre-fill research notes with dataToFind from Content Engine
+  useEffect(() => {
+    if (prefillData?.dataToFind && !pastedNotes) {
+      setPastedNotes("--- Data to Find ---\n" + prefillData.dataToFind);
+    }
+  }, [prefillData]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const isPrefilled = !!prefillData;
   const effectiveTitle = isPrefilled ? prefillData!.title : title;

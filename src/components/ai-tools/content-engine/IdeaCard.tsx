@@ -87,9 +87,15 @@ export default function IdeaCard({ idea, theme, onSaved, savedId, onDelete }: Pr
     if (addedToPlanner || addingToPlanner) return;
     setAddingToPlanner(true);
     try {
-      const notes = idea.talkingPoints.length > 0
-        ? "• " + idea.talkingPoints.join("\n• ")
-        : undefined;
+      let notes: string | undefined;
+      if (idea.talkingPoints.length > 0) {
+        notes = "• " + idea.talkingPoints.join("\n• ");
+        if (idea.dataToFind) {
+          notes += "\n\n--- Data to Find ---\n" + idea.dataToFind;
+        }
+      } else if (idea.dataToFind) {
+        notes = "--- Data to Find ---\n" + idea.dataToFind;
+      }
       const res = await fetch("/api/member/content-plans", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -125,6 +131,7 @@ export default function IdeaCard({ idea, theme, onSaved, savedId, onDelete }: Pr
         theme,
         framework: selectedOption.framework,
         whyItWorks: idea.whyItWorks,
+        dataToFind: idea.dataToFind ?? null,
         ...(localSavedId ? { ideaId: localSavedId } : {}),
       })
     );

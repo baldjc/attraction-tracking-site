@@ -39,6 +39,7 @@ interface PrefillData {
   title: string;
   talkingPoints: string[];
   themeName?: string;
+  dataToFind?: string;
 }
 
 interface AvatarData {
@@ -84,6 +85,7 @@ export default function ArcScriptBuilderTool({ basePath, isAdmin }: Props) {
             title: data.title,
             talkingPoints: Array.isArray(data.talkingPoints) ? data.talkingPoints : [],
             themeName: typeof data.theme === "string" ? data.theme : undefined,
+            dataToFind: typeof data.dataToFind === "string" ? data.dataToFind : undefined,
           });
         }
       }
