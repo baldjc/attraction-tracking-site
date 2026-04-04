@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
       avatarProfile: true,
       descriptionBoilerplate: true,
       fullName: true,
-      channelName: true,
+      youtubeChannelName: true,
     },
   });
 
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
 
   const boilerplateText = dbUser?.descriptionBoilerplate || "";
   const creatorName = dbUser?.fullName || "the creator";
-  const brandName = dbUser?.channelName || creatorName;
+  const brandName = dbUser?.youtubeChannelName || creatorName;
 
   const userMessage = `VIDEO TITLE: "${title}"
 
