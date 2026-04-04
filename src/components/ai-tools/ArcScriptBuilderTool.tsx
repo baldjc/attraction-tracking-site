@@ -116,19 +116,34 @@ export default function ArcScriptBuilderTool({ basePath, isAdmin }: Props) {
     setSavedToPlanner(false);
   }
 
+  // Auto-save the completed script back to the linked content plan the moment assembly finishes
+  useEffect(() => {
+    if (!linkedPlanId || !finalScript || savedToPlanner || savingToPlanner) return;
+    setSavingToPlanner(true);
+    fetch(`/api/member/content-plans/${linkedPlanId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ script: finalScript }),
+    })
+      .then((r) => { if (!r.ok) throw new Error("save failed"); setSavedToPlanner(true); })
+      .catch(() => { /* leave button available for manual retry */ })
+      .finally(() => setSavingToPlanner(false));
+  }, [finalScript, linkedPlanId]); // eslint-disable-line react-hooks/exhaustive-deps
+
   async function handleSaveToPlanner() {
     if (!uploadData || savedToPlanner || savingToPlanner) return;
     setSavingToPlanner(true);
     try {
       if (linkedPlanId) {
-        // Update existing plan's script
-        await fetch(`/api/member/content-plans/${linkedPlanId}`, {
+        // Retry saving script to existing plan
+        const res = await fetch(`/api/member/content-plans/${linkedPlanId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ script: finalScript || null }),
         });
+        if (!res.ok) throw new Error("save failed");
       } else {
-        // Create new plan entry
+        // No linked plan — create a new content plan entry
         const plannerStatus = GROWTH_DWY_TIERS.includes(serviceTier) ? "Not Started" : "Scripted";
         await fetch("/api/member/content-plans", {
           method: "POST",
@@ -142,7 +157,7 @@ export default function ArcScriptBuilderTool({ basePath, isAdmin }: Props) {
       }
       setSavedToPlanner(true);
     } catch {
-      /* silently fail */
+      /* silently fail — user can retry */
     } finally {
       setSavingToPlanner(false);
     }

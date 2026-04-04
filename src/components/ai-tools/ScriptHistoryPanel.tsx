@@ -8,7 +8,14 @@ import {
   ClipboardDocumentIcon,
   ClipboardDocumentCheckIcon,
   ChevronRightIcon,
+  CalendarDaysIcon,
 } from "@heroicons/react/24/outline";
+
+interface ContentPlan {
+  id: string;
+  title: string;
+  status: string;
+}
 
 interface ScriptSummary {
   id: string;
@@ -42,6 +49,10 @@ function ScriptViewModal({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+  const [plans, setPlans] = useState<ContentPlan[]>([]);
+  const [selectedPlanId, setSelectedPlanId] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [savedToPlan, setSavedToPlan] = useState(false);
 
   useEffect(() => {
     fetch(`/api/ai-tools/saved-scripts/${scriptId}`)
@@ -54,6 +65,13 @@ function ScriptViewModal({
       .finally(() => setLoading(false));
   }, [scriptId]);
 
+  useEffect(() => {
+    fetch("/api/member/content-plans")
+      .then((r) => r.json())
+      .then((d) => setPlans(d.plans ?? []))
+      .catch(() => {});
+  }, []);
+
   const handleCopy = useCallback(() => {
     if (!detail?.fullScript) return;
     navigator.clipboard.writeText(detail.fullScript).then(() => {
@@ -61,6 +79,24 @@ function ScriptViewModal({
       setTimeout(() => setCopied(false), 2000);
     });
   }, [detail]);
+
+  async function handleSaveToPlan() {
+    if (!selectedPlanId || !detail?.fullScript || saving || savedToPlan) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/member/content-plans/${selectedPlanId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ script: detail.fullScript }),
+      });
+      if (!res.ok) throw new Error("failed");
+      setSavedToPlan(true);
+    } catch {
+      /* ignore */
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
@@ -132,6 +168,37 @@ function ScriptViewModal({
             <p className="text-sm text-[#2f3437]/45">No script text found for this entry.</p>
           )}
         </div>
+
+        {/* Save to content plan */}
+        {!loading && !error && detail?.fullScript && plans.length > 0 && (
+          <div className="px-6 pb-5 pt-0 border-t border-[#2f3437]/8 mt-0">
+            <p className="text-xs font-medium text-[#2f3437]/50 mb-2 mt-4">Save script to a content plan</p>
+            <div className="flex gap-2 items-center">
+              <select
+                value={selectedPlanId}
+                onChange={(e) => { setSelectedPlanId(e.target.value); setSavedToPlan(false); }}
+                className="flex-1 text-sm border border-[#2f3437]/15 rounded-lg px-3 py-1.5 text-[#2f3437] focus:outline-none focus:border-[#6ba3c7] bg-white"
+              >
+                <option value="">Select a video…</option>
+                {plans.map((p) => (
+                  <option key={p.id} value={p.id}>{p.title}</option>
+                ))}
+              </select>
+              <button
+                onClick={handleSaveToPlan}
+                disabled={!selectedPlanId || saving || savedToPlan}
+                className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                  savedToPlan
+                    ? "bg-green-50 border border-green-200 text-green-600 cursor-default"
+                    : "bg-[#6ba3c7] hover:bg-[#5490b5] text-white disabled:opacity-40 disabled:cursor-not-allowed"
+                }`}
+              >
+                <CalendarDaysIcon className="w-3.5 h-3.5" />
+                {saving ? "Saving…" : savedToPlan ? "Saved!" : "Save"}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
