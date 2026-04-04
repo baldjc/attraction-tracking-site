@@ -398,21 +398,9 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
                     </button>
                   </td>
                   <td className="px-4 py-2.5">
-                    {editingCell?.id === plan.id && editingCell?.field === "title" ? (
-                      <input
-                        ref={inputRef as any}
-                        type="text"
-                        value={cellValue}
-                        onChange={(e) => setCellValue(e.target.value)}
-                        onBlur={commitEdit}
-                        onKeyDown={(e) => { if (e.key === "Enter") commitEdit(); if (e.key === "Escape") setEditingCell(null); }}
-                        className={`${inputCls} min-w-[140px]`}
-                      />
-                    ) : (
-                      <div className="cursor-pointer text-sm text-[#2f3437] font-medium hover:text-[#6ba3c7] transition-colors max-w-[200px] truncate" onClick={() => startEdit(plan.id, "title", plan.title)}>
-                        {plan.title}
-                      </div>
-                    )}
+                    <div className="cursor-pointer text-sm text-[#2f3437] font-medium hover:text-[#6ba3c7] transition-colors max-w-[200px] truncate" onClick={() => setEditingPlan(plan)}>
+                      {plan.title}
+                    </div>
                   </td>
                   <td className="px-4 py-2.5">{renderCell(plan, "status")}</td>
                   <td className="px-4 py-2.5">{renderCell(plan, "theme")}</td>
