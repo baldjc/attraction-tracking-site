@@ -7,6 +7,7 @@ export interface FeatureFlags {
   ai_tools: boolean;
   resources: boolean;
   content_calendar: boolean;
+  client_hub: boolean;
   tool_avatar_architect: boolean;
   tool_content_engine: boolean;
   tool_arc_script_builder: boolean;
@@ -28,6 +29,7 @@ export const DEFAULT_FLAGS: FeatureFlags = {
   ai_tools: true,
   resources: true,
   content_calendar: true,
+  client_hub: true,
   tool_avatar_architect: true,
   tool_content_engine: true,
   tool_arc_script_builder: true,

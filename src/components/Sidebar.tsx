@@ -159,7 +159,10 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
 
   const baseMemberLinks = memberLinks.filter((link) => {
     if (link.featureKey && featureFlags && featureFlags[link.featureKey] === false) return false;
-    if (link.href === "/member/client-hub") return clientHubEnabled;
+    if (link.href === "/member/client-hub") {
+      if (featureFlags && featureFlags["client_hub"] === false) return false;
+      return clientHubEnabled;
+    }
     if (link.tierRequired && memberTier && !link.tierRequired.includes(memberTier)) return false;
     return true;
   });

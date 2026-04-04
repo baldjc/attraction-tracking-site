@@ -497,6 +497,7 @@ interface FeatureFlags {
   ai_tools: boolean;
   resources: boolean;
   content_calendar: boolean;
+  client_hub: boolean;
   tool_avatar_architect: boolean;
   tool_content_engine: boolean;
   tool_arc_script_builder: boolean;
@@ -519,6 +520,7 @@ const FEATURE_DEFS = [
       { key: "ai_tools", label: "AI Tools Hub", desc: "The entire AI tools section — also controls individual tools below" },
       { key: "resources", label: "Resources", desc: "Resource library page" },
       { key: "content_calendar", label: "Content Calendar", desc: "Content planner and video pipeline" },
+      { key: "client_hub", label: "Client Hub", desc: "Client Hub page for production-tier members" },
     ],
   },
   {
