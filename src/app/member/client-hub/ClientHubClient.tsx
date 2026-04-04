@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowTopRightOnSquareIcon, FolderIcon, ArrowRightIcon } from "@heroicons/react/24/outline";
+import { STATUS_STYLES } from "@/lib/content-plan-utils";
 
 interface ContentPlan {
   id: string;
@@ -25,22 +26,6 @@ interface HubData {
   quickLinks: QuickLink[];
   serviceTier: string;
 }
-
-const STATUS_COLOURS: Record<string, string> = {
-  "Idea":               "bg-gray-100 text-gray-600",
-  "Not Started":        "bg-gray-100 text-gray-600",
-  "Scripted":           "bg-yellow-50 text-yellow-700",
-  "Script Approved":    "bg-yellow-100 text-yellow-800",
-  "Ready to Shoot":     "bg-orange-50 text-orange-700",
-  "Shooting":           "bg-orange-100 text-orange-800",
-  "Shot - In Post":     "bg-blue-50 text-blue-700",
-  "Filmed":             "bg-blue-50 text-blue-700",
-  "Editing":            "bg-purple-50 text-purple-700",
-  "Edited":             "bg-purple-100 text-purple-800",
-  "Scheduled":          "bg-green-50 text-green-700",
-  "Scheduled on YT":    "bg-green-100 text-green-800",
-  "Published":          "bg-emerald-50 text-emerald-700",
-};
 
 const GROWTH_DWY = ["mastery_2", "mastery_4", "done_with_you"];
 
@@ -139,7 +124,13 @@ export default function ClientHubClient() {
                   <tr key={plan.id} className="border-b border-gray-50 last:border-0">
                     <td className="py-2.5 pr-4 font-medium text-[#2f3437]">{plan.title}</td>
                     <td className="py-2.5 pr-4">
-                      <span className={`inline-block text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_COLOURS[plan.status] ?? "bg-gray-100 text-gray-600"}`}>
+                      <span
+                        className="inline-block text-xs font-medium px-2 py-0.5 rounded-full"
+                        style={{
+                          background: STATUS_STYLES[plan.status]?.bg ?? "#f3f4f6",
+                          color: STATUS_STYLES[plan.status]?.text ?? "#6b7280",
+                        }}
+                      >
                         {plan.status}
                       </span>
                     </td>
