@@ -32,6 +32,7 @@ interface PrefillData {
   title: string;
   talkingPoints: string[];
   themeName?: string;
+  dataToFind?: string;
 }
 
 interface YouTubeVideoOption {
@@ -109,6 +110,12 @@ export default function ArcScriptUploadPhase({ onStartBuilding, prefillData, onS
   useEffect(() => {
     fetch("/api/member/avatar").then((r) => r.json()).then(setAvatarData).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (prefillData?.dataToFind) {
+      setPastedNotes(`--- Data to Find ---\n${prefillData.dataToFind}`);
+    }
+  }, [prefillData?.dataToFind]);
 
   function generateResearchPrompt() {
     const t = effectiveTitle.trim();

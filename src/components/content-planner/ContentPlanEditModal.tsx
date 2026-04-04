@@ -180,6 +180,11 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
               <button type="button" onClick={() => pushToAITool("title")} className="text-xs text-[#6ba3c7] hover:underline">Analyse Title →</button>
             </div>
             <input type="text" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} className={field} />
+            <div className="flex justify-end mt-1">
+              <span className={`text-xs ${form.title.length > 80 ? "text-red-500" : form.title.length > 60 ? "text-amber-500" : "text-[#2f3437]/40"}`}>
+                {form.title.length} / 60
+              </span>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
