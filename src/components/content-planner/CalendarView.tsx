@@ -14,8 +14,8 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
-import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
-import { STATUS_STYLES } from "@/lib/content-plan-utils";
+import { ChevronLeftIcon, ChevronRightIcon, PlusIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { STATUS_STYLES, getStatusOptions, PRIORITY_OPTIONS, hasEditDueDate } from "@/lib/content-plan-utils";
 import ContentPlanEditModal, { type ContentPlan } from "./ContentPlanEditModal";
 
 interface ThemeOption {
@@ -110,8 +110,14 @@ export default function CalendarView({ apiBase, calendarType, serviceTier, isAdm
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addForm, setAddForm] = useState<Record<string, string>>({});
+  const [addLoading, setAddLoading] = useState(false);
+  const [addError, setAddError] = useState<string | null>(null);
 
   const resolvedThemes = themes.length > 0 ? themes : localThemes;
+  const allStatusOptions = getStatusOptions(serviceTier);
+  const showEditDue = isAdmin || hasEditDueDate(serviceTier);
   const dateField = DATE_FIELD[calendarType];
 
   const sensors = useSensors(
@@ -201,6 +207,37 @@ export default function CalendarView({ apiBase, calendarType, serviceTier, isAdm
     setEditingPlan(null);
   }
 
+  async function handleAddSubmit() {
+    if (!addForm.title?.trim()) { setAddError("Title is required"); return; }
+    setAddLoading(true);
+    setAddError(null);
+    try {
+      const res = await fetch(apiBase, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: addForm.title,
+          status: addForm.status || allStatusOptions[0],
+          theme: addForm.theme || null,
+          shootDate: addForm.shootDate || null,
+          publishDate: addForm.publishDate || null,
+          editDueDate: addForm.editDueDate || null,
+          priority: addForm.priority || null,
+          notes: addForm.notes || null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed to add");
+      setPlans((prev) => [data.plan, ...prev]);
+      setShowAddModal(false);
+      setAddForm({});
+    } catch (e: any) {
+      setAddError(e.message);
+    } finally {
+      setAddLoading(false);
+    }
+  }
+
   if (loading) {
     return <div className="h-96 bg-white rounded-xl border border-gray-200 animate-pulse" />;
   }
@@ -230,6 +267,13 @@ export default function CalendarView({ apiBase, calendarType, serviceTier, isAdm
           </div>
           <div className="flex items-center gap-2">
             {errorMsg && <span className="text-xs text-red-500">{errorMsg}</span>}
+            <button
+              onClick={() => { setAddForm({ status: allStatusOptions[0] }); setAddError(null); setShowAddModal(true); }}
+              className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 bg-[#6ba3c7] hover:bg-[#5a92b6] text-white rounded-lg transition-colors"
+            >
+              <PlusIcon className="w-3.5 h-3.5" />
+              Add Video
+            </button>
             <button onClick={goToday} className="text-xs px-3 py-1.5 border border-gray-200 rounded-lg hover:bg-gray-50 text-[#2f3437]/70 transition-colors">
               Today
             </button>
@@ -337,6 +381,94 @@ export default function CalendarView({ apiBase, calendarType, serviceTier, isAdm
           onSaved={handlePlanSaved}
           onDeleted={handlePlanDeleted}
         />
+      )}
+
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl border border-gray-200 shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-5 border-b border-gray-100">
+              <h2 className="text-base font-semibold text-[#2f3437]">Add Video</h2>
+              <button onClick={() => setShowAddModal(false)} className="text-[#2f3437]/40 hover:text-[#2f3437]">
+                <XMarkIcon className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Title <span className="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  value={addForm.title ?? ""}
+                  onChange={(e) => setAddForm((f) => ({ ...f, title: e.target.value }))}
+                  placeholder="Video title..."
+                  className="w-full border border-gray-200 text-[#2f3437] text-sm rounded-lg px-3 py-2 focus:border-[#6ba3c7] focus:outline-none"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Status</label>
+                  <select
+                    value={addForm.status ?? allStatusOptions[0]}
+                    onChange={(e) => setAddForm((f) => ({ ...f, status: e.target.value }))}
+                    className="w-full border border-gray-200 text-[#2f3437] text-sm rounded-lg px-3 py-2 focus:border-[#6ba3c7] focus:outline-none"
+                  >
+                    {allStatusOptions.map((s) => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Priority</label>
+                  <select
+                    value={addForm.priority ?? ""}
+                    onChange={(e) => setAddForm((f) => ({ ...f, priority: e.target.value }))}
+                    className="w-full border border-gray-200 text-[#2f3437] text-sm rounded-lg px-3 py-2 focus:border-[#6ba3c7] focus:outline-none"
+                  >
+                    <option value="">None</option>
+                    {PRIORITY_OPTIONS.map((p) => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Theme</label>
+                <select
+                  value={addForm.theme ?? ""}
+                  onChange={(e) => setAddForm((f) => ({ ...f, theme: e.target.value }))}
+                  className="w-full border border-gray-200 text-[#2f3437] text-sm rounded-lg px-3 py-2 focus:border-[#6ba3c7] focus:outline-none"
+                >
+                  <option value="">Select theme...</option>
+                  {resolvedThemes.map((t) => <option key={t.name} value={t.name}>{t.emoji ? `${t.emoji} ${t.name}` : t.name}</option>)}
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Shoot Date</label>
+                  <input type="date" value={addForm.shootDate ?? ""} onChange={(e) => setAddForm((f) => ({ ...f, shootDate: e.target.value }))} className="w-full border border-gray-200 text-[#2f3437] text-sm rounded-lg px-3 py-2 focus:border-[#6ba3c7] focus:outline-none" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Publish Date</label>
+                  <input type="date" value={addForm.publishDate ?? ""} onChange={(e) => setAddForm((f) => ({ ...f, publishDate: e.target.value }))} className="w-full border border-gray-200 text-[#2f3437] text-sm rounded-lg px-3 py-2 focus:border-[#6ba3c7] focus:outline-none" />
+                </div>
+              </div>
+              {showEditDue && (
+                <div>
+                  <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Edit Due Date</label>
+                  <input type="date" value={addForm.editDueDate ?? ""} onChange={(e) => setAddForm((f) => ({ ...f, editDueDate: e.target.value }))} className="w-full border border-gray-200 text-[#2f3437] text-sm rounded-lg px-3 py-2 focus:border-[#6ba3c7] focus:outline-none" />
+                </div>
+              )}
+              <div>
+                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Talking Points / Notes</label>
+                <textarea value={addForm.notes ?? ""} onChange={(e) => setAddForm((f) => ({ ...f, notes: e.target.value }))} placeholder="One talking point per line…" rows={3} className="w-full border border-gray-200 text-[#2f3437] text-sm rounded-lg px-3 py-2 focus:border-[#6ba3c7] focus:outline-none resize-none" />
+              </div>
+              {addError && <p className="text-red-500 text-xs">{addError}</p>}
+            </div>
+            <div className="flex gap-3 p-5 pt-0">
+              <button onClick={() => setShowAddModal(false)} className="flex-1 text-sm text-[#2f3437]/60 border border-gray-200 hover:bg-gray-50 px-4 py-2.5 rounded-lg transition-colors">
+                Cancel
+              </button>
+              <button onClick={handleAddSubmit} disabled={addLoading} className="flex-1 text-sm font-medium bg-[#6ba3c7] hover:bg-[#5a92b6] text-white px-4 py-2.5 rounded-lg transition-colors disabled:opacity-50">
+                {addLoading ? "Adding…" : "Add Video"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );
