@@ -44,6 +44,7 @@ const TOOL_LABELS: Record<string, string> = {
   content_engine: "Content Engine",
   title_thumbnail_analyzer: "Title & Thumbnail Analyzer",
   script_review: "Script Review",
+  description_generator: "Description Generator",
 };
 
 function UsageCard({ usage }: { usage: UsageData }) {
@@ -193,6 +194,15 @@ export default function AIToolsHub({ basePath, featureFlags }: Props) {
       description: "Turn your video transcript into a newsletter, LinkedIn article, Facebook post, blog post, or neighbourhood postcard",
       extra: "Generate both in one click",
       badge: "blue" as const,
+    },
+    {
+      href: `${basePath}/description-generator`,
+      featureKey: "tool_description_generator",
+      icon: "📝",
+      title: "Description Generator",
+      description: "Generate SEO-optimised YouTube descriptions from your video transcript",
+      extra: avatarStatus,
+      badge: avatar?.avatarName ? "green" : "amber",
     },
   ];
 

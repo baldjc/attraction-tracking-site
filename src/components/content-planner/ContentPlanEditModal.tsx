@@ -63,6 +63,7 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
     priority: plan.priority ?? "",
     notes: plan.notes ?? "",
     script: plan.script ?? "",
+    youtubeDescription: (plan as any).youtubeDescription ?? "",
     researchNotes: plan.researchNotes ?? "",
     thumbnailWords: plan.thumbnailWords ?? "",
     footageLink: plan.footageLink ?? "",
@@ -104,6 +105,7 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
           priority: form.priority || null,
           notes: form.notes || null,
           script: form.script || null,
+          youtubeDescription: form.youtubeDescription || null,
           researchNotes: form.researchNotes || null,
           thumbnailWords: form.thumbnailWords || null,
           footageLink: form.footageLink || null,
@@ -320,6 +322,35 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
                 )}
               </div>
             )}
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-medium text-[#2f3437]/60">YouTube Description</label>
+              {!form.youtubeDescription && form.script && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    sessionStorage.setItem("description_prefill", JSON.stringify({
+                      title: form.title || "",
+                      transcript: form.script || "",
+                      contentPlanId: plan.id,
+                    }));
+                    window.location.href = "/member/ai-tools/description-generator";
+                  }}
+                  className="text-[10px] text-[#6ba3c7] hover:underline"
+                >
+                  Generate with AI →
+                </button>
+              )}
+            </div>
+            <textarea
+              value={form.youtubeDescription}
+              onChange={(e) => setForm((f) => ({ ...f, youtubeDescription: e.target.value }))}
+              rows={4}
+              className={`${field} resize-y`}
+              placeholder="YouTube video description…"
+            />
           </div>
 
           <div>

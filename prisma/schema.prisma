@@ -40,6 +40,7 @@ enum AIToolType {
   title_thumbnail_analyzer
   arc_script_builder
   script_review
+  description_generator
 }
 
 enum JobStatus {
@@ -114,6 +115,7 @@ model User {
   repurposeListSize String?
   repurposeVoice    String?
   savedLinks        Json?
+  descriptionBoilerplate String? @db.Text
 
   // Onboarding
   onboardingComplete     Boolean   @default(false)
@@ -761,6 +763,7 @@ model ContentPlan {
   priority        String?
   notes           String?   @db.Text
   script          String?   @db.Text
+  youtubeDescription String? @db.Text
   researchNotes   String?   @db.Text
   thumbnailWords  String?
   footageLink     String?

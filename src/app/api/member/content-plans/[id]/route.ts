@@ -32,7 +32,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const serviceTier = dbUser?.serviceTier ?? "foundations";
 
   const body = await req.json();
-  const { title, status, theme, shootDate, publishDate, editDueDate, priority, notes, script, researchNotes, thumbnailWords, footageLink, driveFolderLink } = body;
+  const { title, status, theme, shootDate, publishDate, editDueDate, priority, notes, script, researchNotes, thumbnailWords, footageLink, driveFolderLink, youtubeDescription } = body;
 
   if (status !== undefined && !isValidStatus(status, serviceTier)) {
     return NextResponse.json({ error: "Invalid status for your membership tier" }, { status: 400 });
@@ -54,6 +54,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       ...(thumbnailWords !== undefined && { thumbnailWords: thumbnailWords ?? null }),
       ...(footageLink !== undefined && { footageLink: footageLink ?? null }),
       ...(driveFolderLink !== undefined && { driveFolderLink: driveFolderLink ?? null }),
+      ...(youtubeDescription !== undefined && { youtubeDescription: youtubeDescription ?? null }),
     },
   });
 

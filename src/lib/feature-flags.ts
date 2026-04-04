@@ -19,6 +19,7 @@ export interface FeatureFlags {
   tool_repurpose_facebook: boolean;
   tool_repurpose_blog: boolean;
   tool_repurpose_postcard: boolean;
+  tool_description_generator: boolean;
   [key: string]: boolean;
 }
 
@@ -41,6 +42,7 @@ export const DEFAULT_FLAGS: FeatureFlags = {
   tool_repurpose_facebook: true,
   tool_repurpose_blog: true,
   tool_repurpose_postcard: true,
+  tool_description_generator: true,
 };
 
 export async function getFeatureFlags(): Promise<FeatureFlags> {
