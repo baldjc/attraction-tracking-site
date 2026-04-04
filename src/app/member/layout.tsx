@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
-import { getFeatureFlags } from "@/lib/feature-flags";
+import { getFeatureFlags, DEFAULT_FLAGS } from "@/lib/feature-flags";
 import MemberLayoutShell from "@/components/onboarding/MemberLayoutShell";
 
 export default async function MemberLayout({
@@ -14,11 +14,18 @@ export default async function MemberLayout({
     redirect("/login");
   }
 
-  const featureFlags = await getFeatureFlags();
+  const role = (session.user as any).role as string;
+
+  // Admins and editors always see every feature — feature visibility
+  // toggles only apply to regular members.
+  const featureFlags =
+    role === "admin" || role === "editor"
+      ? { ...DEFAULT_FLAGS }
+      : await getFeatureFlags();
 
   return (
     <MemberLayoutShell
-      role={(session.user as any).role}
+      role={role}
       userName={session.user.name || session.user.email || "Member"}
       featureFlags={featureFlags}
     >
