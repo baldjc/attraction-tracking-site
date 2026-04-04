@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import prisma from "@/lib/prisma";
-import { getStatusOptions, isValidStatus, PRODUCTION_TIERS } from "@/lib/content-plan-utils";
+import { getStatusOptions, isValidStatus, PRODUCTION_TIERS, PRE_PRODUCTION_STATUSES } from "@/lib/content-plan-utils";
 import { createVideoFolder } from "@/lib/google-drive";
 
 export async function GET(req: NextRequest) {
@@ -71,8 +71,8 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  // Auto-create Google Drive folder for Production/Growth/DWY members
-  if (PRODUCTION_TIERS.includes(serviceTier) && dbUser?.fullName) {
+  // Auto-create Google Drive folder for Production/Growth/DWY members — only once the plan is in production (Ready to Shoot or beyond)
+  if (PRODUCTION_TIERS.includes(serviceTier) && dbUser?.fullName && !PRE_PRODUCTION_STATUSES.includes(plan.status)) {
     try {
       const { videoFolderUrl, memberFolderUrl } = await createVideoFolder(dbUser.fullName, plan.title);
       const updates: Promise<unknown>[] = [

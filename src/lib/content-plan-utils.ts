@@ -55,6 +55,14 @@ export function hasDriveFolder(serviceTier: string): boolean {
   return PRODUCTION_TIERS.includes(serviceTier);
 }
 
+export const PRE_PRODUCTION_STATUSES = [
+  "Idea",
+  "Future Idea",
+  "Not Started",
+  "Needs Research",
+  "Scripted",
+];
+
 export const STATUS_STYLES: Record<string, { bg: string; text: string }> = {
   "Idea":              { bg: "#f3f4f6", text: "#6b7280" },
   "Future Idea":       { bg: "#f3f4f6", text: "#6b7280" },
