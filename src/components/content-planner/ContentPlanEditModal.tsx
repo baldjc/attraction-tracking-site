@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { XMarkIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
 import {
   STATUS_STYLES,
   PRIORITY_OPTIONS,
@@ -74,6 +74,7 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
   const [deleting, setDeleting] = useState(false);
   const [creatingFolder, setCreatingFolder] = useState(false);
   const [folderError, setFolderError] = useState("");
+  const [showDownloadMenu, setShowDownloadMenu] = useState(false);
 
   const showEditDue = hasEditDueDate(serviceTier);
   const useDrive = hasDriveFolder(serviceTier);
@@ -160,6 +161,41 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
     } else {
       sessionStorage.setItem("script_review_prefill", JSON.stringify({ title: form.title, script: form.script }));
       router.push("/member/ai-tools/script-review");
+    }
+  }
+
+  function downloadScript(format: "md" | "txt" | "pdf") {
+    setShowDownloadMenu(false);
+    const title = form.title || "script";
+    const script = form.script || "";
+    const safeName = title.replace(/[^a-z0-9]+/gi, "-").toLowerCase();
+
+    if (format === "md") {
+      const content = `# ${title}\n\n${script}`;
+      const blob = new Blob([content], { type: "text/markdown" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = `${safeName}.md`; a.click();
+      URL.revokeObjectURL(url);
+    } else if (format === "txt") {
+      const content = `${title}\n${"=".repeat(title.length)}\n\n${script}`;
+      const blob = new Blob([content], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = `${safeName}.txt`; a.click();
+      URL.revokeObjectURL(url);
+    } else {
+      const win = window.open("", "_blank");
+      if (!win) return;
+      win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title><style>
+        body { font-family: Georgia, serif; max-width: 700px; margin: 40px auto; padding: 0 20px; color: #1a1a1a; line-height: 1.7; }
+        h1 { font-size: 1.6rem; margin-bottom: 1.5rem; border-bottom: 2px solid #eee; padding-bottom: 0.5rem; }
+        pre { white-space: pre-wrap; word-break: break-word; font-family: inherit; font-size: 1rem; margin: 0; }
+        @media print { body { margin: 20px; } }
+      </style></head><body><h1>${title}</h1><pre>${script.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</pre></body></html>`);
+      win.document.close();
+      win.focus();
+      setTimeout(() => { win.print(); }, 300);
     }
   }
 
@@ -258,6 +294,32 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
               <button type="button" onClick={() => pushToAITool("script-review")} className="text-xs text-[#6ba3c7] hover:underline">Script Review →</button>
             </div>
             <textarea value={form.script} onChange={(e) => setForm((f) => ({ ...f, script: e.target.value }))} rows={6} className={`${field} resize-y`} placeholder="Write your video script here…" />
+            {form.script.trim() && (
+              <div className="relative mt-1.5 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setShowDownloadMenu((v) => !v)}
+                  className="flex items-center gap-1.5 text-xs text-[#2f3437]/50 hover:text-[#6ba3c7] transition-colors"
+                >
+                  <ArrowDownTrayIcon className="w-3.5 h-3.5" />
+                  Download Script
+                </button>
+                {showDownloadMenu && (
+                  <div className="absolute right-0 top-6 z-10 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[130px]">
+                    {(["md", "txt", "pdf"] as const).map((fmt) => (
+                      <button
+                        key={fmt}
+                        type="button"
+                        onClick={() => downloadScript(fmt)}
+                        className="w-full text-left px-3 py-1.5 text-xs text-[#2f3437] hover:bg-gray-50 transition-colors"
+                      >
+                        .{fmt}{fmt === "pdf" ? " (print)" : ""}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div>
