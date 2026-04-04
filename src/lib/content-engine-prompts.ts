@@ -230,6 +230,7 @@ RULES:
 - Broad appeal: multiple viewer types should want to click
 - Talking points: exactly 5 short bullet points (never fewer) the creator would actually say on camera. Format each as a 2-3 word label followed by a dash and one sentence explaining the point. Example: "Capacity panic — life is already full, adding a major transaction feels impossible without everything else falling apart." These are NOT sub-headlines or additional titles. They are the actual content of the video — what you would say to the viewer.
 - "Why this works": one line connecting the idea to the avatar's emotional landscape AND to the specific stresses of "${theme}"
+- "dataToFind": for every idea, include a "Data to Find" section that tells the creator: (1) What specific stats or numbers would make this video data-rich, (2) Where to find those numbers (MLS board stats, monthly stats package, Google Trends, CREA data, local board reports, etc.), (3) What the "wow" data point might look like — the number that will surprise the viewer. Example for a neighbourhood comparison video: "Pull months of inventory (30-day and 90-day) for 8-10 target neighbourhoods from your MLS board. Look for neighbourhoods under 1.5 months of supply — those are your 'buy here' list. Also pull median price and days on market. The wow stat will be the contrast between the tightest and loosest neighbourhoods."
 - CRITICAL: Do NOT use any title, framework, or angle from the ⛔ ALREADY SHOWN OR SAVED list above. If you have seen it before, it is completely off limits — even rephrased or reworded versions. Violating this is a failure.
 - Every idea in a batch must be completely unique — different title options, different framework, different angle. Never repeat or rephrase the same idea within a single batch AND the avoid list above.
 - You have 50+ frameworks available — rotate through them. Each regeneration is an opportunity to explore a completely different corner of the framework library.
@@ -253,7 +254,8 @@ OUTPUT FORMAT:
         "Partner misalignment — you think you're on the same page but you haven't actually had the real conversation yet",
         "Permission guilt — you already have a nice home, do you actually need this or are you just being greedy"
       ],
-      "whyItWorks": "Speaks directly to the fear that this process will take over a life they've carefully built — the title creates urgency while the content validates their hesitation."
+      "whyItWorks": "Speaks directly to the fear that this process will take over a life they've carefully built — the title creates urgency while the content validates their hesitation.",
+      "dataToFind": "Pull current mortgage stress test rates and compare to 2-3 years ago. Look for average household debt-to-income ratios in your city. The wow stat will be the gap between what families think they can afford vs. what the stress test says they qualify for."
     }
   ]
 }`;
