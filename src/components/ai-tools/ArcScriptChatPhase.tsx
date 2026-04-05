@@ -214,15 +214,20 @@ export default function ArcScriptChatPhase({ initialData, onReset, onScriptCompl
                   return updated;
                 });
 
+                // Text-pattern fallback: detect final script delivery even if sectionApproved signal is missing.
+                // "Final Word Count:" + "Final Runtime:" are only written once — in the completed final script.
+                const looksLikeFinalScript =
+                  displayText.includes("Final Word Count:") && displayText.includes("Final Runtime:");
+
                 if (payload.sectionData) {
                   const { currentSection: nextSection, sectionApproved } = payload.sectionData;
+                  const signalsDone =
+                    sectionApproved &&
+                    (nextSection === "final_script" || nextSection === "assembly_pass");
+                  if (signalsDone || looksLikeFinalScript) {
+                    setFinalScriptDone(true);
+                  }
                   if (sectionApproved) {
-                    // Detect script completion:
-                    // - Legacy flow: sectionApproved: true on final_script (old conversations)
-                    // - New flow: sectionApproved: true on assembly_pass (after all 4 assembly steps done)
-                    if (nextSection === "final_script" || nextSection === "assembly_pass") {
-                      setFinalScriptDone(true);
-                    }
                     const prevIdx = SECTIONS.findIndex((s) => s.key === nextSection) - 1;
                     if (prevIdx >= 0) {
                       const prevKey = SECTIONS[prevIdx].key;
@@ -237,6 +242,9 @@ export default function ArcScriptChatPhase({ initialData, onReset, onScriptCompl
                   }
                   currentSectionRef.current = nextSection;
                   setCurrentSection(nextSection);
+                } else if (looksLikeFinalScript) {
+                  // sectionData missing entirely but response clearly contains the final script
+                  setFinalScriptDone(true);
                 }
 
                 if (payload.costCapWarning) {
