@@ -25,6 +25,7 @@ enum ServiceTier {
   editing_4
   mastery_2
   mastery_4
+  done_with_you
 }
 
 enum AuditType {
@@ -812,4 +813,175 @@ model ClientQuickLink {
 
   @@index([userId])
   @@map("client_quick_links")
+}
+
+// ── Radar — YouTube Intelligence System ─────────────────────────────────────
+
+enum RadarOutlierTier {
+  performing  // 1.5x–3x
+  strong      // 3x–10x
+  viral       // 10x–50x
+  extreme     // 50x–100x
+  legendary   // 100x+
+}
+
+model RadarChannel {
+  id              String   @id @default(uuid())
+  channelId       String   @unique            // YouTube channel ID
+  name            String
+  handle          String?
+  subscriberCount Int      @default(0)
+  location        String?
+  nicheTags       String[] @default([])
+  avgViews90d     Float    @default(0)
+  isActive        Boolean  @default(true)
+  lastSyncedAt    DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  videos RadarVideo[]
+
+  @@map("radar_channels")
+}
+
+model RadarVideo {
+  id                    String          @id @default(uuid())
+  videoId               String          @unique          // YouTube video ID
+  channelId             String
+  channel               RadarChannel    @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  title                 String
+  publishDate           DateTime
+  viewCount             Int             @default(0)
+  likeCount             Int             @default(0)
+  commentCount          Int             @default(0)
+  durationSeconds       Int             @default(0)
+  thumbnailUrl          String?
+  descriptionExcerpt    String?         @db.Text
+  tags                  String[]        @default([])
+  transcriptText        String?         @db.Text
+  transcriptTimestamped Json?
+  outlierMultiplier     Float?
+  outlierTier           RadarOutlierTier?
+  transcriptPulledAt    DateTime?
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+
+  analysis RadarVideoAnalysis?
+
+  @@index([channelId])
+  @@index([outlierMultiplier])
+  @@index([outlierTier])
+  @@index([publishDate])
+  @@map("radar_videos")
+}
+
+model RadarVideoAnalysis {
+  id                      String   @id @default(uuid())
+  videoId                 String   @unique
+  video                   RadarVideo @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  hookType                String?
+  hookTypeSecondary       String?
+  openingLengthSeconds    Int?
+  dataPointCount          Int?
+  dataPointExamples       String[] @default([])
+  proofMechanism          String?
+  leadMagnetPresent       Boolean  @default(false)
+  leadMagnetPlacements    String[] @default([])
+  videoType               String?
+  videoTypeSecondary      String[] @default([])
+  valueVsDataRatio        Float?
+  titlePattern            String?
+  titleEmotionalAmplifiers String[] @default([])
+  thumbnailApproach       String?
+  arcScore                Int?
+  outlierHypothesis       String?  @db.Text
+  keyPhrases              String[] @default([])
+  ctaType                 String?
+  modelVersion            String?
+  analyzedAt              DateTime @default(now())
+
+  @@map("radar_video_analyses")
+}
+
+model RadarHookPattern {
+  id                    String   @id @default(uuid())
+  hookType              String   @unique
+  exampleHooks          String[] @default([])
+  avgOutlierMultiplier  Float    @default(0)
+  frequencyCount        Int      @default(0)
+  topVideoIds           String[] @default([])
+  lastUpdatedAt         DateTime @default(now())
+
+  @@map("radar_hook_patterns")
+}
+
+model RadarTitlePattern {
+  id                    String   @id @default(uuid())
+  patternType           String   @unique
+  exampleTitles         String[] @default([])
+  templateStructure     String?
+  avgOutlierMultiplier  Float    @default(0)
+  frequencyCount        Int      @default(0)
+  topVideoIds           String[] @default([])
+  videoTypeTags         String[] @default([])
+  lastUpdatedAt         DateTime @default(now())
+
+  @@map("radar_title_patterns")
+}
+
+model RadarThumbnailPattern {
+  id                    String   @id @default(uuid())
+  approachType          String   @unique
+  exampleThumbnailUrls  String[] @default([])
+  avgOutlierMultiplier  Float    @default(0)
+  frequencyCount        Int      @default(0)
+  notes                 String?  @db.Text
+  lastUpdatedAt         DateTime @default(now())
+
+  @@map("radar_thumbnail_patterns")
+}
+
+model RadarTopicTrend {
+  id              String   @id @default(uuid())
+  videoType       String
+  monthDate       DateTime @db.Date
+  outlierCount    Int      @default(0)
+  avgMultiplier   Float    @default(0)
+  trendingUp      Boolean  @default(false)
+  topVideoIds     String[] @default([])
+  notes           String?  @db.Text
+
+  @@unique([videoType, monthDate])
+  @@map("radar_topic_trends")
+}
+
+model RadarSwipeFileEntry {
+  id                String   @id @default(uuid())
+  videoId           String?
+  videoType         String?
+  hookType          String?
+  openingHookText   String?  @db.Text
+  structureNotes    String?  @db.Text
+  dataPointsUsed    String[] @default([])
+  outlierMultiplier Float?
+  curatedBy         String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("radar_swipe_file_entries")
+}
+
+model RadarPipelineRun {
+  id                String   @id @default(uuid())
+  status            String   @default("running")  // running, completed, failed
+  channelsProcessed Int      @default(0)
+  videosDiscovered  Int      @default(0)
+  outliersFound     Int      @default(0)
+  transcriptsPulled Int      @default(0)
+  analysesRun       Int      @default(0)
+  errorMessage      String?  @db.Text
+  startedAt         DateTime @default(now())
+  completedAt       DateTime?
+
+  @@map("radar_pipeline_runs")
 }
