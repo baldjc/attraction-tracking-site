@@ -292,6 +292,10 @@ export default function TitleThumbnailAnalyzerPage() {
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState("");
   const [refreshCounter, setRefreshCounter] = useState(0);
+  const [linkedPlanId, setLinkedPlanId] = useState<string | null>(null);
+  const [plannerSaving, setPlannerSaving] = useState(false);
+  const [plannerSaved, setPlannerSaved] = useState(false);
+  const [plannerSaveError, setPlannerSaveError] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -301,9 +305,29 @@ export default function TitleThumbnailAnalyzerPage() {
         sessionStorage.removeItem("title_prefill");
         const data = JSON.parse(raw);
         if (data.title) setTitle(data.title);
+        if (data.planId) setLinkedPlanId(data.planId);
       }
     } catch {}
   }, []);
+
+  async function handleSaveTitleToPlan(titleToSave: string) {
+    if (!linkedPlanId || !titleToSave.trim()) return;
+    setPlannerSaving(true);
+    setPlannerSaveError(false);
+    try {
+      const res = await fetch(`/api/member/content-plans/${linkedPlanId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: titleToSave.trim() }),
+      });
+      if (!res.ok) throw new Error("Save failed");
+      setPlannerSaved(true);
+    } catch {
+      setPlannerSaveError(true);
+    } finally {
+      setPlannerSaving(false);
+    }
+  }
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -751,6 +775,43 @@ export default function TitleThumbnailAnalyzerPage() {
 
           {/* Go Deeper section */}
           <GoDeeperSection title={title} result={result} introTranscript={introTranscript} />
+
+          {linkedPlanId && (
+            plannerSaved ? (
+              <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-lg px-4 py-3">
+                <svg className="w-4 h-4 text-green-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                <p className="text-sm text-green-700 font-medium flex-1">Title saved to your Content Plan.</p>
+                <a href="/member/content-planner" className="text-xs font-semibold text-green-700 underline hover:no-underline shrink-0">
+                  View in Planner →
+                </a>
+              </div>
+            ) : (
+              <div className="bg-[#6ba3c7]/5 border border-[#6ba3c7]/20 rounded-lg px-4 py-4 space-y-3">
+                <p className="text-xs font-semibold text-[#2f3437]/60 uppercase tracking-wide">
+                  📅 Save title back to Content Plan
+                </p>
+                <p className="text-xs text-[#2f3437]/50">
+                  Edit the title below if you want to save a refined version based on the AI feedback, then hit Save.
+                </p>
+                <input
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="w-full bg-white border border-[#2f3437]/20 rounded-lg px-3 py-2 text-sm text-[#2f3437] focus:outline-none focus:border-[#6ba3c7] transition-colors"
+                />
+                {plannerSaveError && (
+                  <p className="text-xs text-red-500">Save failed. Please try again.</p>
+                )}
+                <button
+                  onClick={() => handleSaveTitleToPlan(title)}
+                  disabled={plannerSaving || !title.trim()}
+                  className="w-full bg-[#6ba3c7] text-white py-2 rounded-lg text-sm font-semibold hover:bg-[#5490b5] disabled:opacity-50 transition-colors"
+                >
+                  {plannerSaving ? "Saving…" : "Save Title to Content Plan"}
+                </button>
+              </div>
+            )
+          )}
 
           <button
             onClick={reset}

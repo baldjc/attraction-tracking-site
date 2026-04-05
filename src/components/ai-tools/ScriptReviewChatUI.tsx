@@ -55,6 +55,10 @@ export default function ScriptReviewChatUI({ basePath, noAvatar }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [refreshCounter, setRefreshCounter] = useState(0);
+  const [linkedPlanId, setLinkedPlanId] = useState<string | null>(null);
+  const [plannerSaving, setPlannerSaving] = useState(false);
+  const [plannerSaved, setPlannerSaved] = useState(false);
+  const [plannerSaveError, setPlannerSaveError] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -65,9 +69,29 @@ export default function ScriptReviewChatUI({ basePath, noAvatar }: Props) {
         const data = JSON.parse(raw);
         if (data.title) setVideoTitle(data.title);
         if (data.script) setScriptText(data.script);
+        if (data.planId) setLinkedPlanId(data.planId);
       }
     } catch {}
   }, []);
+
+  async function handleSaveScriptToPlan(script: string) {
+    if (!linkedPlanId) return;
+    setPlannerSaving(true);
+    setPlannerSaveError(false);
+    try {
+      const res = await fetch(`/api/member/content-plans/${linkedPlanId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ script }),
+      });
+      if (!res.ok) throw new Error("Save failed");
+      setPlannerSaved(true);
+    } catch {
+      setPlannerSaveError(true);
+    } finally {
+      setPlannerSaving(false);
+    }
+  }
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -285,6 +309,36 @@ export default function ScriptReviewChatUI({ basePath, noAvatar }: Props) {
             )}
             <div ref={messagesEndRef} />
           </div>
+
+          {linkedPlanId && (
+            <div className="mt-3 pt-3 border-t border-gray-100 dark:border-white/10">
+              {plannerSaved ? (
+                <div className="flex items-center gap-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-500/30 rounded-lg px-4 py-2.5">
+                  <CheckCircleIcon className="w-4 h-4 text-green-600 dark:text-green-400 shrink-0" />
+                  <p className="text-sm text-green-700 dark:text-green-300 font-medium flex-1">Script saved to your Content Plan.</p>
+                  <a href="/member/content-planner" className="text-xs font-semibold text-green-700 dark:text-green-400 underline hover:no-underline shrink-0">
+                    View in Planner →
+                  </a>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="text-xs text-[#2f3437]/50 dark:text-white/40 flex-1">
+                    📅 Came from Content Planner — save your script back once you&apos;re happy with the review.
+                  </p>
+                  {plannerSaveError && (
+                    <p className="text-xs text-red-500 w-full">Save failed. Please try again.</p>
+                  )}
+                  <button
+                    onClick={() => handleSaveScriptToPlan(scriptText)}
+                    disabled={plannerSaving}
+                    className="shrink-0 px-3 py-1.5 text-xs font-semibold bg-[#6ba3c7] text-white rounded-md hover:bg-[#5490b5] disabled:opacity-50 transition-colors"
+                  >
+                    {plannerSaving ? "Saving…" : "Save Script to Content Plan"}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="flex gap-2 mt-3 border-t border-gray-100 dark:border-white/10 pt-3">
             <textarea
