@@ -48,17 +48,25 @@ interface AvatarData {
   contentThemes?: ContentTheme[];
 }
 
+interface ContentPlanOption {
+  id: string;
+  title: string;
+}
+
 export default function ArcScriptBuilderTool({ basePath, isAdmin }: Props) {
   const [phase, setPhase] = useState<"upload" | "chat">("upload");
   const [uploadData, setUploadData] = useState<UploadData | null>(null);
   const [usage, setUsage] = useState<UsageData | null>(null);
   const [prefillData, setPrefillData] = useState<PrefillData | undefined>(undefined);
   const [avatarData, setAvatarData] = useState<AvatarData>({});
-  const [savingToPlanner, setSavingToPlanner] = useState(false);
-  const [savedToPlanner, setSavedToPlanner] = useState(false);
+  const [plannerSaving, setPlannerSaving] = useState(false);
+  const [plannerSaved, setPlannerSaved] = useState(false);
+  const [plannerSaveError, setPlannerSaveError] = useState(false);
   const [serviceTier, setServiceTier] = useState<string>("foundations");
   const [linkedPlanId, setLinkedPlanId] = useState<string | null>(null);
   const [finalScript, setFinalScript] = useState<string>("");
+  const [contentPlans, setContentPlans] = useState<ContentPlanOption[]>([]);
+  const [plansLoaded, setPlansLoaded] = useState(false);
 
   useEffect(() => {
     fetch("/api/ai-tools/usage/me")
@@ -67,7 +75,15 @@ export default function ArcScriptBuilderTool({ basePath, isAdmin }: Props) {
       .catch(() => {});
     fetch("/api/member/content-plans")
       .then((r) => r.json())
-      .then((d) => { if (d?.serviceTier) setServiceTier(d.serviceTier); })
+      .then((d) => {
+        if (d?.serviceTier) setServiceTier(d.serviceTier);
+        if (Array.isArray(d?.plans)) {
+          setContentPlans(
+            (d.plans as { id: string; title: string }[]).map((p) => ({ id: p.id, title: p.title }))
+          );
+          setPlansLoaded(true);
+        }
+      })
       .catch(() => {});
   }, []);
 
@@ -82,7 +98,6 @@ export default function ArcScriptBuilderTool({ basePath, isAdmin }: Props) {
       .catch(() => {});
   }, []);
 
-  // Read prefill data from Content Engine handoff
   useEffect(() => {
     try {
       const raw = sessionStorage.getItem("arc_prefill");
@@ -103,67 +118,75 @@ export default function ArcScriptBuilderTool({ basePath, isAdmin }: Props) {
     } catch { /* ignore malformed data */ }
   }, []);
 
-  const pct = usage?.percentUsed ?? 0;
-  const isLocked = pct >= 100;
-
-  function handleStartBuilding(data: UploadData) {
-    setUploadData(data);
-    setPhase("chat");
-    setSavedToPlanner(false);
-  }
-
-  function handleReset() {
-    setUploadData(null);
-    setPhase("upload");
-    setSavedToPlanner(false);
-  }
-
-  // Auto-save the completed script back to the linked content plan the moment assembly finishes
+  // Auto-save to linked plan as soon as the final script is ready
   useEffect(() => {
-    if (!linkedPlanId || !finalScript || savedToPlanner || savingToPlanner) return;
-    setSavingToPlanner(true);
+    if (!linkedPlanId || !finalScript || plannerSaved || plannerSaving) return;
+    setPlannerSaving(true);
+    setPlannerSaveError(false);
     fetch(`/api/member/content-plans/${linkedPlanId}`, {
-      method: "PATCH",
+      method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ script: finalScript }),
     })
-      .then((r) => { if (!r.ok) throw new Error("save failed"); setSavedToPlanner(true); })
-      .catch(() => { /* leave button available for manual retry */ })
-      .finally(() => setSavingToPlanner(false));
+      .then((r) => {
+        if (!r.ok) throw new Error("save failed");
+        setPlannerSaved(true);
+      })
+      .catch(() => setPlannerSaveError(true))
+      .finally(() => setPlannerSaving(false));
   }, [finalScript, linkedPlanId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  async function handleSaveToPlanner() {
-    if (!uploadData || savedToPlanner || savingToPlanner) return;
-    setSavingToPlanner(true);
+  async function handleSaveToPlanner(planId?: string) {
+    if (plannerSaving) return;
+    setPlannerSaving(true);
+    setPlannerSaveError(false);
     try {
-      if (linkedPlanId) {
-        // Retry saving script to existing plan
-        const res = await fetch(`/api/member/content-plans/${linkedPlanId}`, {
-          method: "PATCH",
+      const targetPlanId = planId ?? linkedPlanId;
+      if (targetPlanId) {
+        const res = await fetch(`/api/member/content-plans/${targetPlanId}`, {
+          method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ script: finalScript || null }),
         });
         if (!res.ok) throw new Error("save failed");
-      } else {
-        // No linked plan — create a new content plan entry
+      } else if (uploadData) {
         const plannerStatus = GROWTH_DWY_TIERS.includes(serviceTier) ? "Not Started" : "Scripted";
-        await fetch("/api/member/content-plans", {
+        const res = await fetch("/api/member/content-plans", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             title: uploadData.title,
             status: plannerStatus,
+            script: finalScript || null,
             ...(uploadData.themeName ? { theme: uploadData.themeName } : {}),
           }),
         });
+        if (!res.ok) throw new Error("save failed");
       }
-      setSavedToPlanner(true);
+      setPlannerSaved(true);
     } catch {
-      /* silently fail — user can retry */
+      setPlannerSaveError(true);
     } finally {
-      setSavingToPlanner(false);
+      setPlannerSaving(false);
     }
   }
+
+  function handleStartBuilding(data: UploadData) {
+    setUploadData(data);
+    setPhase("chat");
+    setPlannerSaved(false);
+    setPlannerSaveError(false);
+  }
+
+  function handleReset() {
+    setUploadData(null);
+    setPhase("upload");
+    setPlannerSaved(false);
+    setPlannerSaveError(false);
+  }
+
+  const pct = usage?.percentUsed ?? 0;
+  const isLocked = pct >= 100;
 
   const subtitle =
     phase === "upload"
@@ -180,29 +203,9 @@ export default function ArcScriptBuilderTool({ basePath, isAdmin }: Props) {
           <ArrowLeftIcon className="w-4 h-4" />
           AI Tools
         </Link>
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-bold text-[#2f3437]">ARC Script Builder</h1>
-            <p className="text-sm text-[#2f3437]/60 mt-1">{subtitle}</p>
-          </div>
-          {phase === "chat" && uploadData && (
-            <button
-              onClick={handleSaveToPlanner}
-              disabled={savedToPlanner || savingToPlanner}
-              className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${
-                savedToPlanner
-                  ? "bg-green-50 border-green-200 text-green-600 cursor-default"
-                  : "bg-white border-[#2f3437]/15 text-[#2f3437]/70 hover:border-[#6ba3c7] hover:text-[#6ba3c7]"
-              }`}
-            >
-              <span>{savedToPlanner ? "✓" : "📅"}</span>
-              {savingToPlanner
-                ? "Saving…"
-                : savedToPlanner
-                  ? (linkedPlanId ? "Script Saved" : "In Planner")
-                  : (linkedPlanId ? "Save Script to Plan" : "Save to Planner")}
-            </button>
-          )}
+        <div>
+          <h1 className="text-2xl font-bold text-[#2f3437]">ARC Script Builder</h1>
+          <p className="text-sm text-[#2f3437]/60 mt-1">{subtitle}</p>
         </div>
       </div>
 
@@ -238,7 +241,17 @@ export default function ArcScriptBuilderTool({ basePath, isAdmin }: Props) {
         </div>
       ) : uploadData ? (
         <div className="bg-white border border-[#2f3437]/10 rounded-lg p-6" style={{ minHeight: "70vh" }}>
-          <ArcScriptChatPhase initialData={uploadData} onReset={handleReset} onScriptComplete={(s) => setFinalScript(s)} />
+          <ArcScriptChatPhase
+            initialData={uploadData}
+            onReset={handleReset}
+            onScriptComplete={(s) => setFinalScript(s)}
+            linkedPlanId={linkedPlanId}
+            plannerSaving={plannerSaving}
+            plannerSaved={plannerSaved}
+            plannerSaveError={plannerSaveError}
+            contentPlans={plansLoaded ? contentPlans : []}
+            onSaveToPlanner={handleSaveToPlanner}
+          />
         </div>
       ) : null}
     </div>

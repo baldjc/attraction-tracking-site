@@ -23,6 +23,11 @@ interface SectionApproval {
   snippet: string;
 }
 
+interface ContentPlanOption {
+  id: string;
+  title: string;
+}
+
 interface Props {
   initialData: {
     title: string;
@@ -36,6 +41,12 @@ interface Props {
   };
   onReset: () => void;
   onScriptComplete?: (script: string) => void;
+  linkedPlanId?: string | null;
+  plannerSaving?: boolean;
+  plannerSaved?: boolean;
+  plannerSaveError?: boolean;
+  contentPlans?: ContentPlanOption[];
+  onSaveToPlanner?: (planId?: string) => void;
 }
 
 const MAX_TURNS = 40;
@@ -60,7 +71,17 @@ function CostCapBanner({ level }: { level: "warning" | "critical" }) {
   );
 }
 
-export default function ArcScriptChatPhase({ initialData, onReset, onScriptComplete }: Props) {
+export default function ArcScriptChatPhase({
+  initialData,
+  onReset,
+  onScriptComplete,
+  linkedPlanId,
+  plannerSaving,
+  plannerSaved,
+  plannerSaveError,
+  contentPlans = [],
+  onSaveToPlanner,
+}: Props) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -74,6 +95,7 @@ export default function ArcScriptChatPhase({ initialData, onReset, onScriptCompl
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [finalScriptDone, setFinalScriptDone] = useState(false);
+  const [selectedPlanId, setSelectedPlanId] = useState<string>("");
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -457,6 +479,90 @@ export default function ArcScriptChatPhase({ initialData, onReset, onScriptCompl
               </button>
             </div>
           )}
+
+          {/* Content Planner save section */}
+          {linkedPlanId ? (
+            plannerSaved ? (
+              <div className="flex items-center gap-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-500/30 rounded-lg px-4 py-3">
+                <CheckIcon className="w-4 h-4 text-green-600 dark:text-green-400 shrink-0" />
+                <p className="text-sm text-green-700 dark:text-green-300 font-medium flex-1">
+                  Script saved to your Content Plan.
+                </p>
+                <a
+                  href="/member/content-planner"
+                  className="shrink-0 text-xs font-semibold text-green-700 dark:text-green-400 underline hover:no-underline"
+                >
+                  View in Planner →
+                </a>
+              </div>
+            ) : plannerSaving ? (
+              <p className="text-xs text-[#2f3437]/45 dark:text-white/35 px-1">Saving script to your Content Plan…</p>
+            ) : plannerSaveError ? (
+              <div className="flex items-center gap-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg px-4 py-3">
+                <p className="text-sm text-red-600 dark:text-red-400 flex-1">Could not save to Content Plan.</p>
+                <button
+                  onClick={() => onSaveToPlanner?.()}
+                  className="shrink-0 text-xs font-semibold text-white bg-red-500 hover:bg-red-600 px-3 py-1.5 rounded-md transition-colors"
+                >
+                  Retry
+                </button>
+              </div>
+            ) : null
+          ) : onSaveToPlanner ? (
+            plannerSaved ? (
+              <div className="flex items-center gap-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-500/30 rounded-lg px-4 py-3">
+                <CheckIcon className="w-4 h-4 text-green-600 dark:text-green-400 shrink-0" />
+                <p className="text-sm text-green-700 dark:text-green-300 font-medium flex-1">
+                  Script saved to your Content Plan.
+                </p>
+                <a
+                  href="/member/content-planner"
+                  className="shrink-0 text-xs font-semibold text-green-700 dark:text-green-400 underline hover:no-underline"
+                >
+                  View in Planner →
+                </a>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs font-medium text-[#2f3437]/60 dark:text-white/50 shrink-0">
+                  📅 Save script to Content Plan:
+                </span>
+                {contentPlans.length > 0 ? (
+                  <>
+                    <select
+                      value={selectedPlanId}
+                      onChange={(e) => setSelectedPlanId(e.target.value)}
+                      className="flex-1 min-w-0 bg-white dark:bg-[#0f1419] border border-[#2f3437]/20 dark:border-white/20 rounded-md px-3 py-1.5 text-xs text-[#2f3437] dark:text-white focus:outline-none focus:border-[#6ba3c7] transition-colors"
+                    >
+                      <option value="">— Choose a plan —</option>
+                      {contentPlans.map((p) => (
+                        <option key={p.id} value={p.id}>{p.title}</option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={() => { if (selectedPlanId) onSaveToPlanner(selectedPlanId); }}
+                      disabled={!selectedPlanId || plannerSaving}
+                      className="shrink-0 px-3 py-1.5 text-xs font-semibold bg-[#6ba3c7] text-white rounded-md hover:bg-[#5490b5] transition-colors disabled:opacity-40"
+                    >
+                      {plannerSaving ? "Saving…" : "Save"}
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => onSaveToPlanner()}
+                    disabled={plannerSaving}
+                    className="shrink-0 px-3 py-1.5 text-xs font-semibold bg-[#6ba3c7] text-white rounded-md hover:bg-[#5490b5] transition-colors disabled:opacity-40"
+                  >
+                    {plannerSaving ? "Saving…" : "Save to Planner"}
+                  </button>
+                )}
+                {plannerSaveError && (
+                  <p className="text-xs text-red-500 w-full">Save failed. Please try again.</p>
+                )}
+              </div>
+            )
+          ) : null}
+
           <div className="flex gap-2 flex-wrap">
             <button
               onClick={handleCopy}
