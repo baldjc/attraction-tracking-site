@@ -4,7 +4,7 @@ import { extractText } from "@/lib/text-extractor";
 
 const MAX_FILES = 3;
 const MAX_BYTES = 10 * 1024 * 1024; // 10 MB
-const ALLOWED_EXTENSIONS = new Set(["pdf", "docx", "txt", "md"]);
+const ALLOWED_EXTENSIONS = new Set(["pdf", "docx", "txt", "md", "csv", "xlsx", "xls"]);
 
 function ext(filename: string): string {
   return filename.split(".").pop()?.toLowerCase() ?? "";
@@ -59,6 +59,8 @@ export async function POST(req: NextRequest) {
       const msg = err instanceof Error ? err.message : String(err);
       if (msg.startsWith("SCANNED_PDF:")) {
         results.push({ filename, error: "This PDF appears to be a scanned image. Try copying and pasting the content instead." });
+      } else if (msg.startsWith("EMPTY_FILE:")) {
+        results.push({ filename, error: "The spreadsheet appears to be empty or could not be read." });
       } else if (msg.startsWith("UNSUPPORTED_FORMAT:")) {
         results.push({ filename, error: `Unsupported file type: .${fileExt}` });
       } else {

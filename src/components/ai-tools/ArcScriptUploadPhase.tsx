@@ -66,7 +66,7 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-const ALLOWED_EXTENSIONS = ["pdf", "docx", "txt", "md"];
+const ALLOWED_EXTENSIONS = ["pdf", "docx", "txt", "md", "csv", "xlsx", "xls"];
 const MAX_FILES = 3;
 const MAX_BYTES = 10 * 1024 * 1024;
 
@@ -247,7 +247,7 @@ Format each talking point as its own section with all 7 categories. Preserve spe
         break;
       }
       if (!ALLOWED_EXTENSIONS.includes(ext(file.name))) {
-        setError(`Unsupported file type: .${ext(file.name)}. Use PDF, DOCX, TXT, or MD.`);
+        setError(`Unsupported file type: .${ext(file.name)}. Use PDF, DOCX, XLSX, CSV, TXT, or MD.`);
         continue;
       }
       if (file.size > MAX_BYTES) {
@@ -501,12 +501,12 @@ Format each talking point as its own section with all 7 categories. Preserve spe
         {!isPrefilled && (
           <label className="block text-sm font-semibold text-[#2f3437] dark:text-white mb-1.5">
             Upload research files{" "}
-            <span className="text-[#2f3437]/40 dark:text-white/40 font-normal">(PDF, DOCX, TXT, MD — max 3 files, 10 MB each)</span>
+            <span className="text-[#2f3437]/40 dark:text-white/40 font-normal">(PDF, DOCX, XLSX, CSV, TXT, MD — max 3 files, 10 MB each)</span>
           </label>
         )}
         {isPrefilled && (
           <label className="block text-xs font-medium text-[#2f3437]/50 dark:text-white/50 mb-1.5">
-            PDF, DOCX, TXT, or MD — max 3 files, 10 MB each
+            PDF, DOCX, XLSX, CSV, TXT, or MD — max 3 files, 10 MB each
           </label>
         )}
 
@@ -530,7 +530,7 @@ Format each talking point as its own section with all 7 categories. Preserve spe
             ref={fileInputRef}
             type="file"
             multiple
-            accept=".pdf,.docx,.txt,.md"
+            accept=".pdf,.docx,.txt,.md,.csv,.xlsx,.xls"
             className="hidden"
             onChange={(e: ChangeEvent<HTMLInputElement>) => addFiles(e.target.files)}
           />
