@@ -54,11 +54,62 @@ export default function ContentEngineChat({ theme, onBack }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [draftId, setDraftId] = useState<string | null>(null);
+  const [draftChecked, setDraftChecked] = useState(false);
+  const [showResumeBanner, setShowResumeBanner] = useState(false);
+  const [resumeSnapshot, setResumeSnapshot] = useState<ChatMessage[] | null>(null);
+  const [resumeTimestamp, setResumeTimestamp] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Check for an in-progress draft on mount
+  useEffect(() => {
+    fetch(`/api/ai-tools/content-engine/chat/draft?theme=${encodeURIComponent(themeName)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.draft && Array.isArray(d.draft.messages) && d.draft.messages.length > 0) {
+          setDraftId(d.draft.id);
+          setResumeSnapshot(d.draft.messages as ChatMessage[]);
+          setResumeTimestamp(d.draft.updatedAt ?? null);
+          setShowResumeBanner(true);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setDraftChecked(true));
+  }, [themeName]);
+
+  function handleResumeDraft() {
+    if (!resumeSnapshot) return;
+    setMessages(resumeSnapshot);
+    setShowResumeBanner(false);
+  }
+
+  function handleDismissDraft() {
+    fetch(`/api/ai-tools/content-engine/chat/draft?theme=${encodeURIComponent(themeName)}`, { method: "DELETE" }).catch(() => {});
+    setDraftId(null);
+    setResumeSnapshot(null);
+    setShowResumeBanner(false);
+  }
+
+  async function saveDraft(updatedMessages: ChatMessage[]) {
+    if (updatedMessages.length < 2) return;
+    try {
+      const res = await fetch("/api/ai-tools/content-engine/chat/draft", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ theme: themeName, messages: updatedMessages }),
+      });
+      if (res.ok) {
+        const d = await res.json();
+        if (d?.draft?.id) setDraftId(d.draft.id);
+      }
+    } catch {
+      // silent — draft save is best-effort
+    }
+  }
 
   async function handleSend() {
     const text = input.trim();
@@ -76,7 +127,10 @@ export default function ContentEngineChat({ theme, onBack }: Props) {
         body: JSON.stringify({ theme: themeName, messages: next }),
       });
       const data = await res.json();
-      setMessages([...next, { role: "assistant", content: data.message ?? "Sorry, something went wrong." }]);
+      const assistantMsg: ChatMessage = { role: "assistant", content: data.message ?? "Sorry, something went wrong." };
+      const finalMessages = [...next, assistantMsg];
+      setMessages(finalMessages);
+      saveDraft(finalMessages);
     } catch {
       setMessages([...next, { role: "assistant", content: "Something went wrong. Please try again." }]);
     } finally {
@@ -102,6 +156,34 @@ export default function ContentEngineChat({ theme, onBack }: Props) {
         </div>
         <span className="text-xs text-[#2f3437]/40 dark:text-white/40">Go Deeper mode</span>
       </div>
+
+      {/* Resume draft banner */}
+      {draftChecked && showResumeBanner && resumeSnapshot && (
+        <div className="mb-4 bg-[#6ba3c7]/10 border border-[#6ba3c7]/30 rounded-lg p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <p className="font-semibold text-[#2f3437] dark:text-white text-sm">Resume previous conversation</p>
+            {resumeTimestamp && (
+              <p className="text-xs text-[#2f3437]/50 dark:text-white/50 mt-0.5">
+                Last saved {new Date(resumeTimestamp).toLocaleDateString("en-CA", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+              </p>
+            )}
+          </div>
+          <div className="flex gap-2 shrink-0">
+            <button
+              onClick={handleResumeDraft}
+              className="px-3 py-1.5 bg-[#6ba3c7] hover:bg-[#5490b5] text-white text-xs font-medium rounded-md transition-colors"
+            >
+              Resume
+            </button>
+            <button
+              onClick={handleDismissDraft}
+              className="px-3 py-1.5 border border-[#2f3437]/20 text-[#2f3437]/60 dark:text-white/50 hover:text-[#2f3437] dark:hover:text-white text-xs font-medium rounded-md transition-colors"
+            >
+              Start fresh
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="flex-1 overflow-y-auto space-y-4 pr-1">
         {messages.length === 0 && (

@@ -154,6 +154,8 @@ model User {
   clientCalls          ClientCall[]     @relation("ClientCalls")
   createdCalls         ClientCall[]     @relation("CallCreator")
   quickLinks           ClientQuickLink[]
+  scriptDrafts         ScriptDraft[]
+  contentEngineDrafts  ContentEngineDraft[]
 
   @@map("users")
 }
@@ -817,4 +819,36 @@ model ClientQuickLink {
 
   @@index([userId])
   @@map("client_quick_links")
+}
+
+model ScriptDraft {
+  id                String   @id @default(uuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  videoTitle        String
+  initialData       Json
+  messages          Json
+  currentSection    String   @default("research_strategy")
+  completedSections Json     @default("[]")
+  sectionApprovals  Json     @default("[]")
+  updatedAt         DateTime @updatedAt
+  createdAt         DateTime @default(now())
+
+  @@unique([userId, videoTitle])
+  @@index([userId])
+  @@map("script_drafts")
+}
+
+model ContentEngineDraft {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  theme     String
+  messages  Json
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  @@unique([userId, theme])
+  @@index([userId])
+  @@map("content_engine_drafts")
 }

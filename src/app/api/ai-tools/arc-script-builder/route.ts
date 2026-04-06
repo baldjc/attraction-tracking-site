@@ -227,7 +227,7 @@ The next-video push is a FULL HOOK using one of the intro patterns (Contradictio
 
 Use {{LEAD_MAGNET}} for the lead magnet name and {{NEXT_VIDEO}} for the open loop topic. If the member did not provide a next video topic, ask for it before writing the closing — the open loop cannot be generic.
 
-Model closing (flows right out of last insight): "...and that's what separates the families who love their next home from the ones who regret it two years later. I put together a free guide called [lead magnet] that walks you through exactly this — link's in the description. Now, most Calgary homebuyers obsess over interest rates and wait for the 'perfect' moment. But after helping families move every 27 hours last year, I can tell you — the ones who regret their purchase weren't wrong about the market. They were wrong about something way more important. That's exactly what I break down in this next video right here."
+Model closing (flows right out of last insight): "...and that's what separates the families who love their next home from the ones who regret it two years later. I put together a free guide called [lead magnet] that walks you through exactly this — link's in the description. Now, most homebuyers in {{MEMBER_CITY}} obsess over interest rates and wait for the 'perfect' moment. But after helping families move every 27 hours last year, I can tell you — the ones who regret their purchase weren't wrong about the market. They were wrong about something way more important. That's exactly what I break down in this next video right here."
 
 **6. LEAD MAGNET BRAINSTORM** (present to the member and wait for approval before proceeding)
 
@@ -431,7 +431,7 @@ export async function POST(req: NextRequest) {
 
   const dbUser = await prisma.user.findUnique({
     where: { id: sessionUser.id },
-    select: { id: true, role: true, avatarName: true, avatarSummary: true, avatarProfile: true, contentThemes: true, creatorCredentials: true, aiToolsMonthlyCapOverride: true },
+    select: { id: true, role: true, avatarName: true, avatarSummary: true, avatarProfile: true, contentThemes: true, creatorCredentials: true, aiToolsMonthlyCapOverride: true, city: true },
   });
   if (!dbUser) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
@@ -543,7 +543,8 @@ export async function POST(req: NextRequest) {
       .replace("{{NEXT_VIDEO}}", nextVideoText)
       .replace("{{CONTENT_THEMES}}", themesText)
       .replace("{{BASELINE_SCORES}}", baselineScores)
-      .replace("{{RESEARCH_SUMMARY}}", researchSummary || "(no research summary provided)");
+      .replace("{{RESEARCH_SUMMARY}}", researchSummary || "(no research summary provided)")
+      .replace("{{MEMBER_CITY}}", dbUser.city ?? "your market");
 
     const encoder = new TextEncoder();
 

@@ -7,6 +7,7 @@ import {
   CheckIcon,
   ArrowPathIcon,
   ChevronUpIcon,
+  BookmarkIcon,
 } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import ArcProgressBar, { SECTIONS } from "@/components/ai-tools/ArcProgressBar";
@@ -47,6 +48,11 @@ interface Props {
   plannerSaveError?: boolean;
   contentPlans?: ContentPlanOption[];
   onSaveToPlanner?: (planId?: string) => void;
+  resumeMessages?: Message[];
+  resumeCurrentSection?: string;
+  resumeCompletedSections?: string[];
+  resumeSectionApprovals?: SectionApproval[];
+  draftId?: string;
 }
 
 const MAX_TURNS = 40;
@@ -81,13 +87,18 @@ export default function ArcScriptChatPhase({
   plannerSaveError,
   contentPlans = [],
   onSaveToPlanner,
+  resumeMessages,
+  resumeCurrentSection,
+  resumeCompletedSections,
+  resumeSectionApprovals,
+  draftId,
 }: Props) {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>(resumeMessages ?? []);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [currentSection, setCurrentSection] = useState("research_strategy");
-  const [completedSections, setCompletedSections] = useState<string[]>([]);
-  const [sectionApprovals, setSectionApprovals] = useState<SectionApproval[]>([]);
+  const [currentSection, setCurrentSection] = useState(resumeCurrentSection ?? "research_strategy");
+  const [completedSections, setCompletedSections] = useState<string[]>(resumeCompletedSections ?? []);
+  const [sectionApprovals, setSectionApprovals] = useState<SectionApproval[]>(resumeSectionApprovals ?? []);
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [costCapWarning, setCostCapWarning] = useState<"warning" | "critical" | null>(null);
   const [copied, setCopied] = useState(false);
@@ -96,6 +107,10 @@ export default function ArcScriptChatPhase({
   const [saveError, setSaveError] = useState("");
   const [finalScriptDone, setFinalScriptDone] = useState(false);
   const [selectedPlanId, setSelectedPlanId] = useState<string>("");
+  const [draftSaving, setDraftSaving] = useState(false);
+  const [draftSaved, setDraftSaved] = useState(resumeMessages && resumeMessages.length > 0);
+  const [draftSaveError, setDraftSaveError] = useState(false);
+  const draftSavedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -134,10 +149,40 @@ export default function ArcScriptChatPhase({
       .then((res) => {
         if (!res.ok) throw new Error("Save failed");
         setSaved(true);
+        // Clean up draft — script is now saved permanently
+        fetch(`/api/ai-tools/arc-script-builder/draft?videoTitle=${encodeURIComponent(initialData.title)}`, { method: "DELETE" }).catch(() => {});
       })
       .catch(() => setSaveError("Auto-save failed. Use the save button below to retry."))
       .finally(() => setSaving(false));
-  }, [finalScriptDone, finalScriptText]);
+  }, [finalScriptDone, finalScriptText]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function handleSaveDraft(currentMessages: Message[], currentSec: string, completedSecs: string[], secApprovals: SectionApproval[]) {
+    if (draftSaving || finalScriptDone) return;
+    setDraftSaving(true);
+    setDraftSaveError(false);
+    if (draftSavedTimerRef.current) clearTimeout(draftSavedTimerRef.current);
+    try {
+      const res = await fetch("/api/ai-tools/arc-script-builder/draft", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          videoTitle: initialData.title,
+          initialData,
+          messages: currentMessages,
+          currentSection: currentSec,
+          completedSections: completedSecs,
+          sectionApprovals: secApprovals,
+        }),
+      });
+      if (!res.ok) throw new Error("Draft save failed");
+      setDraftSaved(true);
+      draftSavedTimerRef.current = setTimeout(() => setDraftSaved(false), 3000);
+    } catch {
+      setDraftSaveError(true);
+    } finally {
+      setDraftSaving(false);
+    }
+  }
 
   useEffect(() => {
     const container = scrollRef.current;
@@ -241,6 +286,10 @@ export default function ArcScriptChatPhase({
                 const looksLikeFinalScript =
                   displayText.includes("Final Word Count:") && displayText.includes("Final Runtime:");
 
+                let nextSectionForDraft = currentSectionRef.current;
+                let draftCompleted = [...completedSections];
+                let draftApprovals = [...sectionApprovals];
+
                 if (payload.sectionData) {
                   const { currentSection: nextSection, sectionApproved } = payload.sectionData;
                   const signalsDone =
@@ -253,24 +302,29 @@ export default function ArcScriptChatPhase({
                     const prevIdx = SECTIONS.findIndex((s) => s.key === nextSection) - 1;
                     if (prevIdx >= 0) {
                       const prevKey = SECTIONS[prevIdx].key;
-                      setCompletedSections((prev) =>
-                        prev.includes(prevKey) ? prev : [...prev, prevKey]
-                      );
-                      setSectionApprovals((prev) => {
-                        if (prev.find((a) => a.key === prevKey)) return prev;
-                        return [...prev, { key: prevKey, snippet: displayText.slice(0, 300) }];
-                      });
+                      if (!draftCompleted.includes(prevKey)) draftCompleted = [...draftCompleted, prevKey];
+                      if (!draftApprovals.find((a) => a.key === prevKey)) {
+                        draftApprovals = [...draftApprovals, { key: prevKey, snippet: displayText.slice(0, 300) }];
+                      }
+                      setCompletedSections(draftCompleted);
+                      setSectionApprovals(draftApprovals);
                     }
                   }
                   currentSectionRef.current = nextSection;
+                  nextSectionForDraft = nextSection;
                   setCurrentSection(nextSection);
                 } else if (looksLikeFinalScript) {
-                  // sectionData missing entirely but response clearly contains the final script
                   setFinalScriptDone(true);
                 }
 
                 if (payload.costCapWarning) {
                   setCostCapWarning(payload.costCapWarning);
+                }
+
+                // Auto-save draft after every assistant response (but not for the final script — that gets permanently saved)
+                if (!looksLikeFinalScript) {
+                  const msgsForDraft = [...historyWithNew, { role: "assistant" as const, content: displayText }];
+                  handleSaveDraft(msgsForDraft, nextSectionForDraft, draftCompleted, draftApprovals);
                 }
               } else if (payload.type === "error") {
                 setMessages((prev) => {
@@ -300,6 +354,8 @@ export default function ArcScriptChatPhase({
   useEffect(() => {
     if (initialized.current) return;
     initialized.current = true;
+    // When resuming from draft, skip the opening message — the conversation already exists
+    if (resumeMessages && resumeMessages.length > 0) return;
     const firstMessage = [
       `Let's build the ARC script for: "${initialData.title}"`,
       initialData.themeName
@@ -606,9 +662,27 @@ export default function ArcScriptChatPhase({
             </button>
           </div>
           <div className="flex justify-between mt-1.5">
-            <button onClick={onReset} className="text-xs text-[#2f3437]/30 dark:text-white/30 hover:text-[#2f3437]/60 dark:hover:text-white/60 flex items-center gap-1">
-              <ArrowPathIcon className="w-3 h-3" /> Start over
-            </button>
+            <div className="flex items-center gap-3">
+              <button onClick={onReset} className="text-xs text-[#2f3437]/30 dark:text-white/30 hover:text-[#2f3437]/60 dark:hover:text-white/60 flex items-center gap-1">
+                <ArrowPathIcon className="w-3 h-3" /> Start over
+              </button>
+              <button
+                onClick={() => handleSaveDraft(messages, currentSection, completedSections, sectionApprovals)}
+                disabled={draftSaving || messages.length < 2}
+                className="text-xs text-[#6ba3c7] hover:text-[#5490b5] dark:text-[#6ba3c7]/80 dark:hover:text-[#6ba3c7] flex items-center gap-1 transition-colors disabled:opacity-40"
+              >
+                {draftSaving ? (
+                  <span>Saving…</span>
+                ) : draftSaved ? (
+                  <><CheckIcon className="w-3 h-3" /> Saved</>
+                ) : (
+                  <><BookmarkIcon className="w-3 h-3" /> Save progress</>
+                )}
+              </button>
+              {draftSaveError && (
+                <span className="text-xs text-red-400">Save failed</span>
+              )}
+            </div>
             <span className="text-xs text-[#2f3437]/25 dark:text-white/25">{turnCount}/{MAX_TURNS} turns</span>
           </div>
         </div>

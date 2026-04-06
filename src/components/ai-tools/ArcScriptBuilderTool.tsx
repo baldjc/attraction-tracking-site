@@ -53,6 +53,17 @@ interface ContentPlanOption {
   title: string;
 }
 
+interface ScriptDraftResume {
+  id: string;
+  videoTitle: string;
+  initialData: UploadData;
+  messages: { role: "user" | "assistant"; content: string; researchSummary?: string }[];
+  currentSection: string;
+  completedSections: string[];
+  sectionApprovals: { key: string; snippet: string }[];
+  updatedAt: string;
+}
+
 export default function ArcScriptBuilderTool({ basePath, isAdmin }: Props) {
   const [phase, setPhase] = useState<"upload" | "chat">("upload");
   const [uploadData, setUploadData] = useState<UploadData | null>(null);
@@ -67,6 +78,8 @@ export default function ArcScriptBuilderTool({ basePath, isAdmin }: Props) {
   const [finalScript, setFinalScript] = useState<string>("");
   const [contentPlans, setContentPlans] = useState<ContentPlanOption[]>([]);
   const [plansLoaded, setPlansLoaded] = useState(false);
+  const [draftToResume, setDraftToResume] = useState<ScriptDraftResume | null>(null);
+  const [draftChecked, setDraftChecked] = useState(false);
 
   useEffect(() => {
     fetch("/api/ai-tools/usage/me")
@@ -85,6 +98,14 @@ export default function ArcScriptBuilderTool({ basePath, isAdmin }: Props) {
         }
       })
       .catch(() => {});
+    // Check for an in-progress draft
+    fetch("/api/ai-tools/arc-script-builder/draft")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.draft) setDraftToResume(d.draft as ScriptDraftResume);
+      })
+      .catch(() => {})
+      .finally(() => setDraftChecked(true));
   }, []);
 
   useEffect(() => {
@@ -173,6 +194,7 @@ export default function ArcScriptBuilderTool({ basePath, isAdmin }: Props) {
 
   function handleStartBuilding(data: UploadData) {
     setUploadData(data);
+    setDraftToResume(null);
     setPhase("chat");
     setPlannerSaved(false);
     setPlannerSaveError(false);
@@ -180,9 +202,24 @@ export default function ArcScriptBuilderTool({ basePath, isAdmin }: Props) {
 
   function handleReset() {
     setUploadData(null);
+    setDraftToResume(null);
     setPhase("upload");
     setPlannerSaved(false);
     setPlannerSaveError(false);
+  }
+
+  function handleResumeDraft() {
+    if (!draftToResume) return;
+    setUploadData(draftToResume.initialData);
+    setPhase("chat");
+    setPlannerSaved(false);
+    setPlannerSaveError(false);
+  }
+
+  function handleDismissDraft() {
+    if (!draftToResume) return;
+    fetch(`/api/ai-tools/arc-script-builder/draft?id=${draftToResume.id}`, { method: "DELETE" }).catch(() => {});
+    setDraftToResume(null);
   }
 
   const pct = usage?.percentUsed ?? 0;
@@ -222,6 +259,32 @@ export default function ArcScriptBuilderTool({ basePath, isAdmin }: Props) {
         </div>
       )}
 
+      {/* Resume draft banner */}
+      {draftChecked && draftToResume && phase === "upload" && (
+        <div className="mb-4 bg-[#6ba3c7]/10 border border-[#6ba3c7]/30 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <p className="font-semibold text-[#2f3437] text-sm">Resume your script in progress</p>
+            <p className="text-xs text-[#2f3437]/60 mt-0.5">
+              &ldquo;{draftToResume.videoTitle}&rdquo; — last saved {new Date(draftToResume.updatedAt).toLocaleDateString("en-CA", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+            </p>
+          </div>
+          <div className="flex gap-2 shrink-0">
+            <button
+              onClick={handleResumeDraft}
+              className="px-3 py-1.5 bg-[#6ba3c7] hover:bg-[#5490b5] text-white text-xs font-medium rounded-md transition-colors"
+            >
+              Resume
+            </button>
+            <button
+              onClick={handleDismissDraft}
+              className="px-3 py-1.5 border border-[#2f3437]/20 text-[#2f3437]/60 hover:text-[#2f3437] text-xs font-medium rounded-md transition-colors"
+            >
+              Start fresh
+            </button>
+          </div>
+        </div>
+      )}
+
       {isLocked && phase === "upload" ? (
         <div className="bg-white border border-[#2f3437]/10 rounded-lg p-8 text-center">
           <p className="text-2xl mb-3">🚫</p>
@@ -251,6 +314,11 @@ export default function ArcScriptBuilderTool({ basePath, isAdmin }: Props) {
             plannerSaveError={plannerSaveError}
             contentPlans={plansLoaded ? contentPlans : []}
             onSaveToPlanner={handleSaveToPlanner}
+            resumeMessages={draftToResume?.messages as Parameters<typeof ArcScriptChatPhase>[0]["resumeMessages"]}
+            resumeCurrentSection={draftToResume?.currentSection}
+            resumeCompletedSections={draftToResume?.completedSections}
+            resumeSectionApprovals={draftToResume?.sectionApprovals}
+            draftId={draftToResume?.id}
           />
         </div>
       ) : null}

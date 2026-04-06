@@ -135,7 +135,7 @@ ${avatarSection}
 
 Research this topic and provide a structured research document I can use to build my script. For each talking point above, find:
 
-1. **REAL STATS & DATA** — Specific numbers, percentages, dollar amounts, year-over-year comparisons. Canadian/Calgary data preferred where available. Include the source (e.g., CREA 2025, CREB stats, StatsCan).
+1. **REAL STATS & DATA** — Specific numbers, percentages, dollar amounts, year-over-year comparisons. Local data for the member's market preferred where available. Include the source (e.g., CREA 2025, local MLS board stats, StatsCan).
 
 2. **MAIN ARGUMENTS & UNIQUE ANGLES** — What point of view does the data support? What contrarian or surprising take could I make that's backed by evidence?
 
@@ -595,13 +595,13 @@ Format each talking point as its own section with all 7 categories. Preserve spe
           <span className="text-[#2f3437]/40 dark:text-white/40 font-normal">(optional)</span>
         </label>
         <p className="text-xs text-[#2f3437]/50 dark:text-white/50 mb-2">
-          The free resource you&apos;ll mention 3 times (e.g. &ldquo;Calgary Buyer&apos;s Reality Check&rdquo;, &ldquo;Neighbourhood Matchmaker GPT&rdquo;). If you don&apos;t have one yet, leave blank and the AI will brainstorm options.
+          The free resource you&apos;ll mention 3 times (e.g. &ldquo;First-Time Buyer&apos;s Reality Check&rdquo;, &ldquo;Neighbourhood Matchmaker GPT&rdquo;). If you don&apos;t have one yet, leave blank and the AI will brainstorm options.
         </p>
         <input
           type="text"
           value={leadMagnet}
           onChange={(e) => setLeadMagnet(e.target.value)}
-          placeholder="e.g. Calgary Home Seller's Readiness Checklist"
+          placeholder="e.g. Home Seller's Readiness Checklist"
           className="w-full bg-white dark:bg-[#0f1419] border border-[#2f3437]/20 dark:border-white/20 rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-white placeholder-[#2f3437]/30 dark:placeholder-white/30 focus:outline-none focus:border-[#6ba3c7] transition-colors"
         />
       </div>
@@ -719,7 +719,7 @@ Format each talking point as its own section with all 7 categories. Preserve spe
           value={nextVideoPush}
           onChange={(e) => setNextVideoPush(e.target.value)}
           rows={nextVideoPush.length > 80 ? 5 : 2}
-          placeholder="e.g. Why Calgary Buyers Are Regret-Proofing Their Offer Strategy in 2026"
+          placeholder="e.g. Why Buyers Are Regret-Proofing Their Offer Strategy in 2026"
           className="w-full bg-white dark:bg-[#0f1419] border border-[#2f3437]/20 dark:border-white/20 rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-white placeholder-[#2f3437]/30 dark:placeholder-white/30 resize-none focus:outline-none focus:border-[#6ba3c7] transition-colors"
         />
       </div>

@@ -243,9 +243,9 @@ OUTPUT FORMAT:
   "ideas": [
     {
       "titleOptions": [
-        { "title": "Do NOT Buy a Home in Calgary Until You Watch This", "framework": "Warning — Do NOT [Activity] Until You Watch This" },
-        { "title": "What Nobody Tells You About Buying in Calgary Right Now", "framework": "Curiosity — What Nobody Tells You About [Topic]" },
-        { "title": "The REALITY of Buying a Home in Calgary in ${currentYear}", "framework": "Reality — The REALITY of [Topic] in [Year]" }
+        { "title": "Do NOT Buy a Home in ${city ?? "[Your City]"} Until You Watch This", "framework": "Warning — Do NOT [Activity] Until You Watch This" },
+        { "title": "What Nobody Tells You About Buying in ${city ?? "[Your City]"} Right Now", "framework": "Curiosity — What Nobody Tells You About [Topic]" },
+        { "title": "The REALITY of Buying a Home in ${city ?? "[Your City]"} in ${currentYear}", "framework": "Reality — The REALITY of [Topic] in [Year]" }
       ],
       "talkingPoints": [
         "Capacity panic — life is already full, adding a major transaction feels impossible without everything else falling apart",
