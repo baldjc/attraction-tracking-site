@@ -171,12 +171,22 @@ src/app/
 - Chris Troke has 25+ duplicate GHL records — sync deduplicates by email
 
 ## SEO Intelligence Platform (10-phase build)
-- **Phase 0 COMPLETE**: Database schema (17 new Prisma models, 7 enums) + admin module shell
-- Admin route: `/admin/intelligence` — dashboard with module cards, recent runs, sub-navigation
-- Sub-routes: `/runs`, `/clients`, `/global/outliers`, `/global/patterns`, `/global/trends`, `/global/swipe-file`
-- Client CRUD: `NewClientForm` component + `POST /api/intelligence/clients`
-- Sidebar: "Intelligence" link added to admin nav (MagnifyingGlassCircleIcon)
-- Key models: `Client`, `IntelChannel`, `IntelVideo`, `IntelVideoAnalysis`, `HookPattern`, `TitlePattern`, `ThumbnailPattern`, `SeoSearch`, `SeoKeyword`, `SeoCluster`, `ContentIdea`, `IntelRun`, `ApiCache`, etc.
-- **Phases 1–10**: Client CRUD UI, DataForSEO + YouTube API, channel sync, ARC scoring refactor, outlier detection, pattern library, vocabulary engine, Auto Intelligence Run, content ideas, polish — PENDING
-- Env vars needed for future phases: `DATAFORSEO_LOGIN`, `DATAFORSEO_PASSWORD`, `RAPIDAPI_KEY` (plus existing `YOUTUBE_API_KEY`)
+- **Phase 0 COMPLETE**: Database schema (18 Prisma models incl. VocabularyProfile, 7 enums) + admin module shell
+- **Phase 1 COMPLETE**: Full client management, competitor tracking, keyword research, cluster management, vocabulary profiles, content ideas (manual + AI-generated), and intelligence runs per client
+- **Phase 2 COMPLETE**: Core execution engine — `syncChannel()` syncs up to 200 videos via YouTube API v3; `executeRun()` chains: syncChannel → outlier detection (2.5× median) → Supadata transcripts → Claude analysis (hookType, titleFramework, stressThemes, whyItWorked, keyTakeaway) → markdown report → DB save
+- Admin routes: `/admin/intelligence/*` — full sub-navigation
+  - `/runs` / `/runs/[runId]` — auto-polling run detail, tabbed report + outliers view, "Save to Swipe File" per outlier
+  - `/new-run` — functional form with client picker + channel URL
+  - `/clients/[clientId]/*` — competitors, keywords, clusters, ideas, vocabulary, runs sub-pages
+  - `/global/outliers` — live outlier feed with "Save to Swipe File", analysis tags
+  - `/global/patterns` — aggregated hook/title/theme patterns from Claude analyses
+  - `/global/trends` — bar charts of hook types, stress themes, title frameworks
+  - `/global/swipe-file` — interactive add/delete/filter/tag swipe file
+- API routes: `POST /runs`, `POST /runs/[runId]/execute` (202 fire-and-forget), `GET /runs/[runId]`, `GET/POST/DELETE competitors`, `GET/POST keywords`, `GET/POST/PATCH/DELETE clusters`, `GET/POST/PATCH ideas`, `GET/POST/DELETE vocabulary`, `POST swipe-file`, `DELETE swipe-file`, `POST channels/sync`, `GET global/outliers`
+- `src/lib/intel-channel.ts` — `syncChannel()`, `fetchAllChannelVideos()`, `computeOutlierMultiples()`
+- `src/lib/intel-run.ts` — `executeRun()` full pipeline with Claude analysis + markdown report generation
+- Outlier threshold: 2.5× channel median; max 5 outliers per run get deep Claude analysis
+- Model: `claude-sonnet-4-20250514`; Supadata API for transcripts (optional, gracefully skipped)
+- Requires `YOUTUBE_API_KEY` for channel sync; `ANTHROPIC_API_KEY` for analysis
+- `VocabularyProfile` model added: client-scoped term/definition/category/exampleUsage entries
 ```

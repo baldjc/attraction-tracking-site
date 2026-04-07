@@ -934,12 +934,13 @@ model Client {
   createdAt         DateTime   @default(now())
   updatedAt         DateTime   @updatedAt
 
-  seoSearches      SeoSearch[]
-  seoClusters      SeoCluster[]
-  competitors      ClientCompetitor[]
-  contentIdeas     ContentIdea[]
-  intelRuns        IntelRun[]
-  vocabularyTests  VocabularyTest[]
+  seoSearches        SeoSearch[]
+  seoClusters        SeoCluster[]
+  competitors        ClientCompetitor[]
+  contentIdeas       ContentIdea[]
+  intelRuns          IntelRun[]
+  vocabularyTests    VocabularyTest[]
+  vocabularyProfiles VocabularyProfile[]
 
   @@map("intel_clients")
 }
@@ -1235,6 +1236,20 @@ model IntelRun {
   @@index([clientId])
   @@index([status])
   @@map("intel_runs")
+}
+
+model VocabularyProfile {
+  id           String   @id @default(uuid())
+  clientId     String
+  client       Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  term         String
+  definition   String?  @db.Text
+  category     String?
+  exampleUsage String?  @db.Text
+  createdAt    DateTime @default(now())
+
+  @@index([clientId])
+  @@map("intel_vocabulary_profiles")
 }
 
 model ApiCache {
