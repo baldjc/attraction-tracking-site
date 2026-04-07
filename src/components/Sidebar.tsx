@@ -33,6 +33,7 @@ import {
   LinkIcon,
   CalendarDaysIcon,
   Squares2X2Icon,
+  MagnifyingGlassCircleIcon,
 } from "@heroicons/react/24/outline";
 import { useState, useEffect } from "react";
 import { IMPERSONATE_LS_KEY } from "@/lib/impersonate-constants";
@@ -62,6 +63,7 @@ const adminLinks = [
   { href: "/admin/academy", label: "Academy", icon: AcademicCapIcon },
   { href: "/admin/academy-manager", label: "Academy Manager", icon: WrenchScrewdriverIcon, badgeKey: "qaCallsPending" },
   { href: "/admin/ai-tools", label: "AI Tools", icon: SparklesIcon },
+  { href: "/admin/intelligence", label: "Intelligence", icon: MagnifyingGlassCircleIcon },
   { href: "/admin/hire", label: "Hire a Human", icon: UserGroupIcon, badgeKey: "hireWaitlist" },
   { href: "/admin/generate-leads", label: "Generate Leads", icon: RocketLaunchIcon },
   { href: "/admin/settings", label: "Settings", icon: Cog6ToothIcon },

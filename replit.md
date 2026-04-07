@@ -1,7 +1,7 @@
 # Attraction by Video — Platform Overview
 
 ## Project
-Full-stack Next.js 16 platform for YouTube channel audits, GHL member sync, link tracking, admin/member dashboards, webinar landing page config management, and payment reminders for a real estate coaching program run by Jared Chamberlain.
+Full-stack Next.js 16 platform for YouTube channel audits, GHL member sync, link tracking, admin/member dashboards, webinar landing page config management, payment reminders, AI tools suite, and a 10-phase SEO Intelligence Platform for a real estate coaching program run by Jared Chamberlain.
 
 ## Stack
 - **Framework:** Next.js 16 (App Router, Turbopack)
@@ -169,4 +169,14 @@ src/app/
 
 ## Deduplication
 - Chris Troke has 25+ duplicate GHL records — sync deduplicates by email
+
+## SEO Intelligence Platform (10-phase build)
+- **Phase 0 COMPLETE**: Database schema (17 new Prisma models, 7 enums) + admin module shell
+- Admin route: `/admin/intelligence` — dashboard with module cards, recent runs, sub-navigation
+- Sub-routes: `/runs`, `/clients`, `/global/outliers`, `/global/patterns`, `/global/trends`, `/global/swipe-file`
+- Client CRUD: `NewClientForm` component + `POST /api/intelligence/clients`
+- Sidebar: "Intelligence" link added to admin nav (MagnifyingGlassCircleIcon)
+- Key models: `Client`, `IntelChannel`, `IntelVideo`, `IntelVideoAnalysis`, `HookPattern`, `TitlePattern`, `ThumbnailPattern`, `SeoSearch`, `SeoKeyword`, `SeoCluster`, `ContentIdea`, `IntelRun`, `ApiCache`, etc.
+- **Phases 1–10**: Client CRUD UI, DataForSEO + YouTube API, channel sync, ARC scoring refactor, outlier detection, pattern library, vocabulary engine, Auto Intelligence Run, content ideas, polish — PENDING
+- Env vars needed for future phases: `DATAFORSEO_LOGIN`, `DATAFORSEO_PASSWORD`, `RAPIDAPI_KEY` (plus existing `YOUTUBE_API_KEY`)
 ```
