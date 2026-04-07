@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import {
   PaperAirplaneIcon,
   ArrowPathIcon,
@@ -33,7 +34,10 @@ interface AvatarData {
 interface SavedAvatar {
   avatarName?: string;
   avatarSummary?: string;
+  avatarProfile?: string;
   contentThemes?: RawTheme[];
+  city?: string;
+  niche?: string;
   updatedAt?: string;
 }
 
@@ -374,8 +378,15 @@ function AvatarProfileCard({
   );
 }
 
+// ─── Helpers ────────────────────────────────────────────────────────────────────
+function isEquityTheme(themeName: string): boolean {
+  const lower = themeName.toLowerCase();
+  return lower.includes("equity");
+}
+
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 export default function AvatarArchitectPage() {
+  const { data: session } = useSession();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -400,6 +411,7 @@ export default function AvatarArchitectPage() {
   const [themeLoading, setThemeLoading] = useState(false);
   const [pendingThemeData, setPendingThemeData] = useState<{ name: string; coreStress?: string; content_engine_prompt?: string } | null>(null);
   const [themeSaved, setThemeSaved] = useState(false);
+  const [enforceBuySideTitles, setEnforceBuySideTitles] = useState(false);
   const themeBottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -558,10 +570,28 @@ export default function AvatarArchitectPage() {
     themeBottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [themeMessages, themeLoading]);
 
+  function buildThemePayload(themeName: string) {
+    const avatarContext = savedAvatar?.avatarProfile
+      ? savedAvatar.avatarProfile
+      : [
+          `Avatar Name: ${savedAvatar?.avatarName ?? "Unknown"}`,
+          `Summary: ${savedAvatar?.avatarSummary ?? ""}`,
+        ].join("\n");
+    return {
+      themeName,
+      avatarContext,
+      memberName: (session?.user as any)?.name ?? (session?.user as any)?.email ?? "Member",
+      city: savedAvatar?.city ?? "Not specified",
+      enforceBuySideTitles,
+    };
+  }
+
   async function startThemeBuilder(idx: number) {
     const themes = Array.isArray(savedAvatar?.contentThemes) ? savedAvatar!.contentThemes! : [];
     const theme = themes[idx];
     const themeName = getThemeName(theme);
+    const autoEnforce = isEquityTheme(themeName);
+    setEnforceBuySideTitles(autoEnforce);
     setThemeBuilderOpen(idx);
     setThemeMessages([]);
     setThemeInput("");
@@ -569,13 +599,17 @@ export default function AvatarArchitectPage() {
     setThemeSaved(false);
     setThemeLoading(true);
 
-    const avatarContext = `Avatar: ${savedAvatar?.avatarName ?? "Unknown"}\nSummary: ${savedAvatar?.avatarSummary ?? ""}`;
     const startMsg: Message = { role: "user", content: "Start the theme builder session." };
+    const payload = {
+      messages: [startMsg],
+      ...buildThemePayload(themeName),
+      enforceBuySideTitles: autoEnforce,
+    };
 
     const res = await fetch("/api/ai-tools/theme-builder", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages: [startMsg], themeName, avatarContext }),
+      body: JSON.stringify(payload),
     });
     const data = await res.json();
     setThemeMessages([{ role: "assistant", content: data.message }]);
@@ -587,7 +621,6 @@ export default function AvatarArchitectPage() {
     const themes = Array.isArray(savedAvatar?.contentThemes) ? savedAvatar!.contentThemes! : [];
     const theme = themes[themeBuilderOpen];
     const themeName = getThemeName(theme);
-    const avatarContext = `Avatar: ${savedAvatar?.avatarName ?? "Unknown"}\nSummary: ${savedAvatar?.avatarSummary ?? ""}`;
 
     const userMsg: Message = { role: "user", content: themeInput.trim() };
     const newMessages = [...themeMessages, userMsg];
@@ -598,7 +631,7 @@ export default function AvatarArchitectPage() {
     const res = await fetch("/api/ai-tools/theme-builder", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages: newMessages, themeName, avatarContext }),
+      body: JSON.stringify({ messages: newMessages, ...buildThemePayload(themeName) }),
     });
     const data = await res.json();
     setThemeMessages([...newMessages, { role: "assistant", content: data.message }]);
@@ -777,15 +810,33 @@ export default function AvatarArchitectPage() {
             {/* Theme Builder Chat */}
             {themeBuilderOpen !== null && (
               <div className="mt-4 border border-[#6ba3c7]/30 rounded-xl overflow-hidden bg-white">
-                <div className="flex items-center justify-between px-4 py-3 bg-[#6ba3c7]/5 border-b border-[#6ba3c7]/15">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-[#6ba3c7] uppercase tracking-wider">
+                <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 bg-[#6ba3c7]/5 border-b border-[#6ba3c7]/15">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-xs font-semibold text-[#6ba3c7] uppercase tracking-wider truncate">
                       Building: {getThemeName(savedAvatar.contentThemes[themeBuilderOpen])}
                     </span>
                   </div>
-                  <button onClick={() => setThemeBuilderOpen(null)} className="text-xs text-[#2f3437]/50 hover:text-[#2f3437] transition-colors">
-                    Close
-                  </button>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                      <span className="text-xs text-[#2f3437]/60">Buy-side titles only</span>
+                      <button
+                        type="button"
+                        onClick={() => setEnforceBuySideTitles((v) => !v)}
+                        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                          enforceBuySideTitles ? "bg-[#6ba3c7]" : "bg-[#2f3437]/20"
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${
+                            enforceBuySideTitles ? "translate-x-4.5" : "translate-x-0.5"
+                          }`}
+                        />
+                      </button>
+                    </label>
+                    <button onClick={() => setThemeBuilderOpen(null)} className="text-xs text-[#2f3437]/50 hover:text-[#2f3437] transition-colors">
+                      Close
+                    </button>
+                  </div>
                 </div>
 
                 {/* Chat messages */}

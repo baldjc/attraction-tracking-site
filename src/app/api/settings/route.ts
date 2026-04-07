@@ -6,6 +6,7 @@ import {
   SCRIPT_REVIEW_PROMPT,
   SCRIPT_REVIEW_CHAT_SYSTEM_PROMPT,
   AVATAR_ARCHITECT_PROMPT,
+  THEME_BUILDER_PROMPT,
   TITLE_CREATOR_PROMPT,
   TITLE_THUMBNAIL_ANALYZER_PROMPT,
 } from "@/lib/audit-engine";
@@ -28,6 +29,7 @@ export async function GET(req: NextRequest) {
     script_review_analysis_prompt: SCRIPT_REVIEW_PROMPT,
     script_review_chat_prompt: SCRIPT_REVIEW_CHAT_SYSTEM_PROMPT,
     avatar_architect_prompt: AVATAR_ARCHITECT_PROMPT,
+    theme_builder_prompt: THEME_BUILDER_PROMPT,
     title_creator_prompt: TITLE_CREATOR_PROMPT,
     title_thumbnail_analyzer_prompt: TITLE_THUMBNAIL_ANALYZER_PROMPT,
     prompt_arc_script_builder: ARC_MASTER_SYSTEM_PROMPT,

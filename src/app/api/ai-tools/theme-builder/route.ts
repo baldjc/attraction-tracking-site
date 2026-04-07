@@ -25,10 +25,13 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { messages, themeName, avatarContext } = await req.json() as {
+  const { messages, themeName, avatarContext, memberName, city, enforceBuySideTitles } = await req.json() as {
     messages: Array<{ role: "user" | "assistant"; content: string }>;
     themeName?: string;
     avatarContext?: string;
+    memberName?: string;
+    city?: string;
+    enforceBuySideTitles?: boolean;
   };
   if (!messages || !Array.isArray(messages)) {
     return NextResponse.json({ error: "Missing messages" }, { status: 400 });
@@ -37,13 +40,17 @@ export async function POST(req: NextRequest) {
   const setting = await prisma.appSetting.findUnique({ where: { key: "theme_builder_prompt" } });
   const basePrompt = setting?.value ?? THEME_BUILDER_PROMPT;
 
-  let systemPrompt = basePrompt;
-  if (avatarContext) {
-    systemPrompt += `\n\n---\n\nMEMBER'S AVATAR CONTEXT:\n${avatarContext}`;
-  }
-  if (themeName) {
-    systemPrompt += `\n\nTHEME BEING BUILT: "${themeName}"`;
-  }
+  const buySideFlag = enforceBuySideTitles === true ? "true" : "false";
+  const systemPrompt = `${basePrompt}
+
+---
+
+SESSION CONTEXT:
+[ACTIVE_THEME]: ${themeName ?? "Not specified"}
+[AVATAR_PROFILE]: ${avatarContext ?? "Not provided"}
+[MEMBER_NAME]: ${memberName ?? "Member"}
+[CITY]: ${city ?? "Not specified"}
+[ENFORCE_BUY_SIDE_TITLES]: ${buySideFlag}`;
 
   try {
     const response = await client.messages.create({
