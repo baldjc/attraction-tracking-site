@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -7,15 +7,20 @@ export default function NewRunPage() {
   const router = useRouter();
   const [channelUrl, setChannelUrl] = useState("");
   const [clientId, setClientId] = useState("");
-  const [clients, setClients] = useState<{ id: string; name: string }[] | null>(null);
+  const [clients, setClients] = useState<{ id: string; name: string }[]>([]);
+  const [clientsLoading, setClientsLoading] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function loadClients() {
-    if (clients !== null) return;
-    const res = await fetch("/api/intelligence/clients");
-    if (res.ok) setClients(await res.json());
-  }
+  useEffect(() => {
+    fetch("/api/intelligence/clients")
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data)) setClients(data);
+      })
+      .catch(() => {})
+      .finally(() => setClientsLoading(false));
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -71,17 +76,31 @@ export default function NewRunPage() {
           <label className="block text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wider mb-1.5">
             Link to Client (optional)
           </label>
-          <select
-            value={clientId}
-            onFocus={loadClients}
-            onChange={(e) => setClientId(e.target.value)}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40 bg-white"
-          >
-            <option value="">— No client —</option>
-            {(clients ?? []).map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
+          {clientsLoading ? (
+            <div className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-[#2f3437]/40 bg-gray-50">
+              Loading clients…
+            </div>
+          ) : (
+            <select
+              value={clientId}
+              onChange={(e) => setClientId(e.target.value)}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40 bg-white"
+            >
+              <option value="">— No client —</option>
+              {clients.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          )}
+          {!clientsLoading && clients.length === 0 && (
+            <p className="text-xs text-[#2f3437]/40 mt-1">
+              No clients yet.{" "}
+              <Link href="/admin/intelligence/clients/new" className="text-[#6ba3c7] hover:underline">
+                Create a client
+              </Link>{" "}
+              to link this run.
+            </p>
+          )}
         </div>
 
         {error && (
