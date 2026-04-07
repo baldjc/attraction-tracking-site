@@ -128,15 +128,26 @@ The viewer is ALWAYS a buyer first — even if they have a home to sell. The sel
 
 This rule applies automatically whenever the content theme involves sell-side or transition stress. Buy-side themes (like "The Purchase") do not need this constraint.`;
 
-function extractActiveTheme(contentThemes: unknown, theme: string): { coreStress?: string; content_engine_prompt?: string } | null {
+function extractActiveTheme(contentThemes: unknown, theme: string): { coreStress?: string; content_engine_prompt?: string; enforceBuySideTitles?: boolean } | null {
   if (!Array.isArray(contentThemes)) return null;
   for (const t of contentThemes) {
     if (typeof t === "string") continue;
     if (t && typeof t === "object" && (t as Record<string, unknown>).name === theme) {
-      return t as { coreStress?: string; content_engine_prompt?: string };
+      return t as { coreStress?: string; content_engine_prompt?: string; enforceBuySideTitles?: boolean };
     }
   }
   return null;
+}
+
+export function getActiveThemeEnforceBuySide(contentThemes: unknown, theme: string): boolean {
+  const active = extractActiveTheme(contentThemes, theme);
+  if (!active) return false;
+  if (active.enforceBuySideTitles !== undefined) return active.enforceBuySideTitles;
+  const name = (active as Record<string, unknown>).name;
+  if (typeof name === "string") {
+    return /equity|sell|selling|list|listing/i.test(name);
+  }
+  return false;
 }
 
 export function buildBatchSystemPrompt(opts: {

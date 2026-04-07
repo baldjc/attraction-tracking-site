@@ -22,7 +22,7 @@ interface Message {
   content: string;
 }
 
-type RawTheme = string | { name: string; emoji?: string | null; colour?: string | null; coreStress?: string | null; content_engine_prompt?: string | null };
+type RawTheme = string | { name: string; emoji?: string | null; colour?: string | null; coreStress?: string | null; content_engine_prompt?: string | null; enforceBuySideTitles?: boolean };
 
 interface AvatarData {
   avatar_name: string;
@@ -151,16 +151,20 @@ function AvatarProfileCard({
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(avatar.avatarName ?? "");
   const [summary, setSummary] = useState(avatar.avatarSummary ?? "");
-  const [themes, setThemes] = useState<{ name: string; context: string }[]>(
+  const [themes, setThemes] = useState<{ name: string; context: string; enforceBuySideTitles: boolean }[]>(
     Array.isArray(avatar.contentThemes)
       ? avatar.contentThemes.map((t) => ({
           name: getThemeName(t),
           context: typeof t === "string" ? "" : (t.content_engine_prompt ?? ""),
+          enforceBuySideTitles: typeof t === "string" ? isEquityTheme(t) : (t.enforceBuySideTitles ?? isEquityTheme(getThemeName(t))),
         }))
       : []
   );
   const [themeInput, setThemeInput] = useState("");
-  const [buySideConstraint, setBuySideConstraint] = useState(false);
+  const [showMigrationBanner, setShowMigrationBanner] = useState(() =>
+    Array.isArray(avatar.contentThemes) &&
+    avatar.contentThemes.some((t) => typeof t !== "string" && (t as Record<string, unknown>).enforceBuySideTitles === undefined)
+  );
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const MAX_THEMES = 4;
@@ -173,6 +177,7 @@ function AvatarProfileCard({
         ? avatar.contentThemes.map((t) => ({
             name: getThemeName(t),
             context: typeof t === "string" ? "" : (t.content_engine_prompt ?? ""),
+            enforceBuySideTitles: typeof t === "string" ? isEquityTheme(t) : (t.enforceBuySideTitles ?? isEquityTheme(getThemeName(t))),
           }))
         : []
     );
@@ -187,7 +192,7 @@ function AvatarProfileCard({
   function addTheme() {
     const t = themeInput.trim();
     if (t && themes.length < MAX_THEMES && !themes.some((th) => th.name === t)) {
-      setThemes((prev) => [...prev, { name: t, context: "" }]);
+      setThemes((prev) => [...prev, { name: t, context: "", enforceBuySideTitles: isEquityTheme(t) }]);
     }
     setThemeInput("");
   }
@@ -203,10 +208,10 @@ function AvatarProfileCard({
   async function save() {
     setSaving(true);
     try {
-      const BUY_SIDE_CONSTRAINT = "\n\n🚫 HARD CONSTRAINT — BUY-SIDE TITLES ONLY. This theme may involve sell-side stress, but the TITLE and FRAMING must be 100% buy-side. Sell-side content does not perform on YouTube. The viewer clicks because they're thinking about BUYING — the sell-side reality is revealed inside the content, never in the title.";
       const themesToSave = themes.map((t) => ({
         name: t.name,
-        content_engine_prompt: buySideConstraint ? (t.context + BUY_SIDE_CONSTRAINT) : t.context,
+        content_engine_prompt: t.context,
+        enforceBuySideTitles: t.enforceBuySideTitles,
       }));
       const res = await fetch("/api/member/avatar", {
         method: "PUT",
@@ -262,7 +267,7 @@ function AvatarProfileCard({
                 <div key={i} className="border border-[#6ba3c7]/20 rounded-lg overflow-hidden">
                   <div className="flex items-center gap-2 px-3 py-2 bg-[#6ba3c7]/5">
                     <span className="w-6 h-6 rounded-full bg-[#6ba3c7]/10 text-[#6ba3c7] text-xs font-bold flex items-center justify-center shrink-0">{i + 1}</span>
-                    <input type="text" value={t.name} onChange={(e) => { const v = e.target.value; setThemes((prev) => prev.map((x, j) => j === i ? { ...x, name: v } : x)); }}
+                    <input type="text" value={t.name} onChange={(e) => { const v = e.target.value; setThemes((prev) => prev.map((x, j) => j === i ? { ...x, name: v, enforceBuySideTitles: x.enforceBuySideTitles !== undefined ? x.enforceBuySideTitles : isEquityTheme(v) } : x)); }}
                       placeholder="Theme name…"
                       className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm font-medium text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40 bg-white" />
                     <button onClick={() => removeTheme(i)} className="p-1 text-[#2f3437]/30 hover:text-red-400 transition-colors"><XMarkIcon className="w-4 h-4" /></button>
@@ -273,6 +278,17 @@ function AvatarProfileCard({
                       rows={3}
                       placeholder="Describe the stresses, angles, tone, and content engine prompting for this theme…"
                       className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40 resize-y min-h-[60px]" />
+                  </div>
+                  <div className="px-3 pb-3">
+                    <label className="flex items-start gap-2 cursor-pointer">
+                      <input type="checkbox" checked={t.enforceBuySideTitles}
+                        onChange={(e) => { const v = e.target.checked; setThemes((prev) => prev.map((x, j) => j === i ? { ...x, enforceBuySideTitles: v } : x)); }}
+                        className="mt-0.5 rounded border-gray-300 text-[#6ba3c7] focus:ring-[#6ba3c7]/40" />
+                      <div>
+                        <span className="text-xs font-semibold text-[#2f3437]/60">Enforce buy-side titles for this theme</span>
+                        <p className="text-xs text-[#2f3437]/40 leading-relaxed mt-0.5">Adds the buy-side hard constraint and title validation for this theme only. Use for sell-side or transition themes like The Equity.</p>
+                      </div>
+                    </label>
                   </div>
                 </div>
               ))}
@@ -287,15 +303,6 @@ function AvatarProfileCard({
                 </button>
               </div>
             )}
-            {/* Buy-side constraint toggle */}
-            <label className="flex items-start gap-2 mt-3 cursor-pointer">
-              <input type="checkbox" checked={buySideConstraint} onChange={(e) => setBuySideConstraint(e.target.checked)}
-                className="mt-0.5 rounded border-gray-300 text-[#6ba3c7] focus:ring-[#6ba3c7]/40" />
-              <div>
-                <span className="text-xs font-semibold text-[#2f3437]/60">Enforce buy-side titles</span>
-                <p className="text-xs text-[#2f3437]/40 leading-relaxed mt-0.5">Automatically adds a constraint to all themes ensuring titles are framed from the buyer&apos;s perspective. Sell-side stress is revealed in the content, never in the title.</p>
-              </div>
-            </label>
           </div>
         </div>
       </div>
@@ -304,6 +311,17 @@ function AvatarProfileCard({
 
   return (
     <div className="space-y-3">
+      {/* Migration banner — shown once for avatars created before per-theme buy-side was added */}
+      {showMigrationBanner && (
+        <div className="flex items-start justify-between gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+          <p className="text-xs text-amber-800 leading-relaxed">
+            <strong>Heads up:</strong> We&apos;ve added a per-theme buy-side title control. Your existing themes have been auto-set based on canonical defaults — review and adjust inside Edit if needed.
+          </p>
+          <button onClick={() => setShowMigrationBanner(false)} className="text-amber-500 hover:text-amber-700 shrink-0 mt-0.5">
+            <XMarkIcon className="w-4 h-4" />
+          </button>
+        </div>
+      )}
       {/* Identity card */}
       <div className="bg-white border border-[#2f3437]/10 rounded-xl overflow-hidden">
         <div className="flex items-center justify-between px-4 py-2.5 bg-[#f7f6f3] border-b border-[#2f3437]/8">
@@ -411,7 +429,6 @@ export default function AvatarArchitectPage() {
   const [themeLoading, setThemeLoading] = useState(false);
   const [pendingThemeData, setPendingThemeData] = useState<{ name: string; coreStress?: string; content_engine_prompt?: string } | null>(null);
   const [themeSaved, setThemeSaved] = useState(false);
-  const [enforceBuySideTitles, setEnforceBuySideTitles] = useState(false);
   const themeBottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -577,12 +594,18 @@ export default function AvatarArchitectPage() {
           `Avatar Name: ${savedAvatar?.avatarName ?? "Unknown"}`,
           `Summary: ${savedAvatar?.avatarSummary ?? ""}`,
         ].join("\n");
+    const themes = Array.isArray(savedAvatar?.contentThemes) ? savedAvatar!.contentThemes! : [];
+    const themeObj = themes.find((t) => getThemeName(t) === themeName);
+    const enforceBuySide =
+      themeObj && typeof themeObj !== "string" && themeObj.enforceBuySideTitles !== undefined
+        ? themeObj.enforceBuySideTitles
+        : isEquityTheme(themeName);
     return {
       themeName,
       avatarContext,
       memberName: (session?.user as any)?.name ?? (session?.user as any)?.email ?? "Member",
       city: savedAvatar?.city ?? "Not specified",
-      enforceBuySideTitles,
+      enforceBuySideTitles: enforceBuySide,
     };
   }
 
@@ -590,8 +613,6 @@ export default function AvatarArchitectPage() {
     const themes = Array.isArray(savedAvatar?.contentThemes) ? savedAvatar!.contentThemes! : [];
     const theme = themes[idx];
     const themeName = getThemeName(theme);
-    const autoEnforce = isEquityTheme(themeName);
-    setEnforceBuySideTitles(autoEnforce);
     setThemeBuilderOpen(idx);
     setThemeMessages([]);
     setThemeInput("");
@@ -603,7 +624,6 @@ export default function AvatarArchitectPage() {
     const payload = {
       messages: [startMsg],
       ...buildThemePayload(themeName),
-      enforceBuySideTitles: autoEnforce,
     };
 
     const res = await fetch("/api/ai-tools/theme-builder", {
@@ -817,22 +837,6 @@ export default function AvatarArchitectPage() {
                     </span>
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
-                    <label className="flex items-center gap-1.5 cursor-pointer select-none">
-                      <span className="text-xs text-[#2f3437]/60">Buy-side titles only</span>
-                      <button
-                        type="button"
-                        onClick={() => setEnforceBuySideTitles((v) => !v)}
-                        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                          enforceBuySideTitles ? "bg-[#6ba3c7]" : "bg-[#2f3437]/20"
-                        }`}
-                      >
-                        <span
-                          className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${
-                            enforceBuySideTitles ? "translate-x-4.5" : "translate-x-0.5"
-                          }`}
-                        />
-                      </button>
-                    </label>
                     <button onClick={() => setThemeBuilderOpen(null)} className="text-xs text-[#2f3437]/50 hover:text-[#2f3437] transition-colors">
                       Close
                     </button>
