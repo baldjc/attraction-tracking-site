@@ -63,7 +63,13 @@ export async function POST(req: Request) {
     const subscription = event.data.object as Stripe.Subscription;
     const customerId = subscription.customer as string;
     const status = subscription.status;
-    const periodEnd = new Date((subscription as any).current_period_end * 1000);
+    // current_period_end was removed from the top-level subscription object in Stripe API 2024-09-30+.
+    // It now lives on each subscription item's period. We try both places and skip if neither resolves.
+    const rawPeriodEnd: number | null | undefined =
+      (subscription as any).current_period_end ??
+      (subscription.items?.data?.[0] as any)?.period?.end ??
+      null;
+    const periodEnd = rawPeriodEnd ? new Date(rawPeriodEnd * 1000) : null;
 
     // Get product name, price amount, and currency
     let planName: string | null = null;
@@ -93,7 +99,7 @@ export async function POST(req: Request) {
           stripeSubscriptionId: subscription.id,
           subscriptionStatus: status,
           stripePlanName: planName,
-          stripeCurrentPeriodEnd: periodEnd,
+          ...(periodEnd ? { stripeCurrentPeriodEnd: periodEnd } : {}),
           ...(priceAmount !== null ? { stripePriceAmount: priceAmount } : {}),
           ...(priceCurrency !== null ? { stripeCurrency: priceCurrency } : {}),
           ...(status === "active" && tier ? { serviceTier: tier } : {}),
