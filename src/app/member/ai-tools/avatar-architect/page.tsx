@@ -542,8 +542,54 @@ export default function AvatarArchitectPage() {
   const [confirmReplace, setConfirmReplace] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [refreshCounter, setRefreshCounter] = useState(0);
+  const [chatError, setChatError] = useState<string | null>(null);
+  const convIdRef = useRef<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  async function persistConversation(msgs: Message[], avatarName?: string): Promise<void> {
+    try {
+      if (convIdRef.current) {
+        await fetch(`/api/ai-tools/conversations/${convIdRef.current}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ messages: msgs }),
+        });
+      } else {
+        const res = await fetch("/api/ai-tools/conversations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            toolType: "avatar_architect",
+            title: avatarName ?? "Avatar Session",
+            messages: msgs,
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          convIdRef.current = data.id;
+          setConversationId(data.id);
+          setRefreshCounter((n) => n + 1);
+        }
+      }
+    } catch {
+      // best-effort — never block the UI for persistence failures
+    }
+  }
+
+  function handleLoadConversation(conv: { id: string; messages: any[]; metadata?: any }) {
+    const msgs: Message[] = (conv.messages ?? []).filter(
+      (m: any) => m.role === "user" || m.role === "assistant"
+    );
+    convIdRef.current = conv.id;
+    setConversationId(conv.id);
+    setMessages(msgs);
+    setChatError(null);
+    setSaved(false);
+    setConfirmReplace(false);
+    setDetectedAvatar(null);
+    setScreen("chat");
+  }
 
   // Theme Builder state
   const [themeBuilderOpen, setThemeBuilderOpen] = useState<number | null>(null); // index of theme being built
@@ -610,24 +656,47 @@ export default function AvatarArchitectPage() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
+  async function callAvatarAPI(msgs: Message[], signal: AbortSignal) {
+    const res = await fetch("/api/ai-tools/avatar-architect", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages: msgs }),
+      signal,
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error ?? `HTTP ${res.status}`);
+    }
+    return res.json() as Promise<{ message: string; avatarData: AvatarData | null; themeSelection: { selectedThemes: ThemeSelectionItem[] } | null }>;
+  }
+
   async function startFromScratch() {
     setMessages([]);
     setDetectedAvatar(null);
     setSaved(false);
     setConfirmReplace(false);
+    setChatError(null);
+    convIdRef.current = null;
+    setConversationId(null);
     setScreen("chat");
     setLoading(true);
 
-    const res = await fetch("/api/ai-tools/avatar-architect", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages: [{ role: "user", content: "Start the session." }] }),
-    });
-    const data = await res.json();
-    setMessages([{ role: "assistant", content: data.message }]);
-    if (data.avatarData) setDetectedAvatar(data.avatarData);
-    if (data.themeSelection?.selectedThemes?.length) applyThemeSelection(data.themeSelection);
-    setLoading(false);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 90_000);
+    try {
+      const data = await callAvatarAPI([{ role: "user", content: "Start the session." }], controller.signal);
+      const aiMsg: Message = { role: "assistant", content: data.message };
+      setMessages([aiMsg]);
+      if (data.avatarData) setDetectedAvatar(data.avatarData);
+      if (data.themeSelection?.selectedThemes?.length) applyThemeSelection(data.themeSelection);
+      await persistConversation([aiMsg], data.avatarData?.avatar_name ?? "Avatar Session");
+    } catch (err: any) {
+      setChatError(err?.name === "AbortError" ? "Request timed out — please try again." : (err?.message ?? "Something went wrong — please try again."));
+      setScreen("landing");
+    } finally {
+      clearTimeout(timeout);
+      setLoading(false);
+    }
   }
 
   async function startFromImport() {
@@ -638,19 +707,29 @@ export default function AvatarArchitectPage() {
     setDetectedAvatar(null);
     setSaved(false);
     setConfirmReplace(false);
+    setChatError(null);
+    convIdRef.current = null;
+    setConversationId(null);
     setScreen("chat");
     setLoading(true);
 
-    const res = await fetch("/api/ai-tools/avatar-architect", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages: [userMsg] }),
-    });
-    const data = await res.json();
-    setMessages([userMsg, { role: "assistant", content: data.message }]);
-    if (data.avatarData) setDetectedAvatar(data.avatarData);
-    if (data.themeSelection?.selectedThemes?.length) applyThemeSelection(data.themeSelection);
-    setLoading(false);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 90_000);
+    try {
+      const data = await callAvatarAPI([userMsg], controller.signal);
+      const aiMsg: Message = { role: "assistant", content: data.message };
+      const finalMsgs: Message[] = [userMsg, aiMsg];
+      setMessages(finalMsgs);
+      if (data.avatarData) setDetectedAvatar(data.avatarData);
+      if (data.themeSelection?.selectedThemes?.length) applyThemeSelection(data.themeSelection);
+      await persistConversation(finalMsgs, data.avatarData?.avatar_name ?? "Avatar Session (Import)");
+    } catch (err: any) {
+      setChatError(err?.name === "AbortError" ? "Request timed out — please try again." : (err?.message ?? "Something went wrong — please try again."));
+      setScreen("landing");
+    } finally {
+      clearTimeout(timeout);
+      setLoading(false);
+    }
   }
 
   async function sendMessage() {
@@ -659,18 +738,50 @@ export default function AvatarArchitectPage() {
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
     setInput("");
+    setChatError(null);
     setLoading(true);
 
-    const res = await fetch("/api/ai-tools/avatar-architect", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages: newMessages }),
-    });
-    const data = await res.json();
-    setMessages([...newMessages, { role: "assistant", content: data.message }]);
-    if (data.avatarData) setDetectedAvatar(data.avatarData);
-    if (data.themeSelection?.selectedThemes?.length) applyThemeSelection(data.themeSelection);
-    setLoading(false);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 90_000);
+    try {
+      const data = await callAvatarAPI(newMessages, controller.signal);
+      const aiMsg: Message = { role: "assistant", content: data.message };
+      const finalMsgs = [...newMessages, aiMsg];
+      setMessages(finalMsgs);
+      if (data.avatarData) setDetectedAvatar(data.avatarData);
+      if (data.themeSelection?.selectedThemes?.length) applyThemeSelection(data.themeSelection);
+      await persistConversation(finalMsgs, data.avatarData?.avatar_name);
+    } catch (err: any) {
+      setChatError(err?.name === "AbortError" ? "Request timed out — please try again." : (err?.message ?? "Something went wrong — please try again."));
+    } finally {
+      clearTimeout(timeout);
+      setLoading(false);
+    }
+  }
+
+  async function retryLastMessage() {
+    if (loading || messages.length === 0) return;
+    const lastMsg = messages[messages.length - 1];
+    if (lastMsg.role !== "user") return;
+    setChatError(null);
+    setLoading(true);
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 90_000);
+    try {
+      const data = await callAvatarAPI(messages, controller.signal);
+      const aiMsg: Message = { role: "assistant", content: data.message };
+      const finalMsgs = [...messages, aiMsg];
+      setMessages(finalMsgs);
+      if (data.avatarData) setDetectedAvatar(data.avatarData);
+      if (data.themeSelection?.selectedThemes?.length) applyThemeSelection(data.themeSelection);
+      await persistConversation(finalMsgs, data.avatarData?.avatar_name);
+    } catch (err: any) {
+      setChatError(err?.name === "AbortError" ? "Still timing out — please wait a moment and try again." : (err?.message ?? "Something went wrong — please try again."));
+    } finally {
+      clearTimeout(timeout);
+      setLoading(false);
+    }
   }
 
   function cleanMessage(text: string) {
@@ -698,31 +809,7 @@ export default function AvatarArchitectPage() {
       }),
     });
 
-    try {
-      if (conversationId) {
-        await fetch(`/api/ai-tools/conversations/${conversationId}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages }),
-        });
-      } else {
-        const res = await fetch("/api/ai-tools/conversations", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            toolType: "avatar_architect",
-            title: detectedAvatar.avatar_name ?? "Avatar Session",
-            messages,
-            metadata: { avatarName: detectedAvatar.avatar_name },
-          }),
-        });
-        const data = await res.json();
-        setConversationId(data.id ?? null);
-        setRefreshCounter((n) => n + 1);
-      }
-    } catch {
-      // best-effort
-    }
+    await persistConversation(messages, detectedAvatar.avatar_name);
 
     setSaving(false);
     setSaved(true);
@@ -967,7 +1054,14 @@ export default function AvatarArchitectPage() {
               </button>
             </div>
 
-            <RecentConversations toolType="avatar_architect" refreshTrigger={refreshCounter} />
+            <RecentConversations
+              toolType="avatar_architect"
+              refreshTrigger={refreshCounter}
+              forceOpen={refreshCounter}
+              onLoad={handleLoadConversation}
+              label="Recent Sessions"
+              emptyLabel="No saved sessions yet — start a new avatar session above."
+            />
           </div>
         </div>
 
@@ -1191,7 +1285,7 @@ export default function AvatarArchitectPage() {
           <p className="text-sm text-[#2f3437]/50">Chat with your AI coach</p>
         </div>
         <button
-          onClick={() => { setScreen("landing"); setMessages([]); setDetectedAvatar(null); setSaved(false); setConfirmReplace(false); setImportText(""); }}
+          onClick={() => { setScreen("landing"); setMessages([]); setDetectedAvatar(null); setSaved(false); setConfirmReplace(false); setImportText(""); setChatError(null); convIdRef.current = null; setConversationId(null); }}
           className="flex items-center gap-2 text-sm text-[#2f3437]/60 hover:text-[#2f3437] border border-[#2f3437]/20 px-3 py-1.5 rounded-lg transition-colors"
         >
           <ArrowPathIcon className="w-4 h-4" />
@@ -1278,6 +1372,19 @@ export default function AvatarArchitectPage() {
                   />
                 ))}
               </div>
+            </div>
+          </div>
+        )}
+        {chatError && (
+          <div className="flex justify-start">
+            <div className="bg-red-50 border border-red-200 rounded-lg rounded-tl-sm px-4 py-3 max-w-[80%]">
+              <p className="text-sm text-red-700 leading-snug">{chatError}</p>
+              <button
+                onClick={retryLastMessage}
+                className="mt-2 text-xs font-semibold text-red-700 hover:text-red-900 underline"
+              >
+                Try again →
+              </button>
             </div>
           </div>
         )}

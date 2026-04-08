@@ -18,12 +18,25 @@ export async function POST(req: NextRequest) {
   const setting = await prisma.appSetting.findUnique({ where: { key: "avatar_architect_prompt" } });
   const systemPrompt = setting?.value ?? AVATAR_ARCHITECT_PROMPT;
 
-  const response = await client.messages.create({
-    model: "claude-sonnet-4-20250514",
-    max_tokens: 8192,
-    system: systemPrompt,
-    messages,
-  });
+  let response;
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 90_000);
+    try {
+      response = await client.messages.create(
+        { model: "claude-sonnet-4-20250514", max_tokens: 8192, system: systemPrompt, messages },
+        { signal: controller.signal as AbortSignal }
+      );
+    } finally {
+      clearTimeout(timeout);
+    }
+  } catch (err: any) {
+    const isTimeout = err?.name === "AbortError" || err?.message?.includes("abort");
+    return NextResponse.json(
+      { error: isTimeout ? "Request timed out — please try again." : "The AI service returned an error. Please try again." },
+      { status: 504 }
+    );
+  }
 
   const text = response.content[0].type === "text" ? response.content[0].text : "";
 
