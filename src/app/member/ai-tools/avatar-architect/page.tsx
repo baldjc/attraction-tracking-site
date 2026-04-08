@@ -878,6 +878,14 @@ export default function AvatarArchitectPage() {
       return;
     }
     setSaving(true);
+    // Strip content_engine_prompt and force state: "empty" — only the Theme Builder can flip themes to "built".
+    // This is a belt-and-suspenders guard in case an older prompt row in app_settings still emits the field.
+    const shellThemes = (detectedAvatar.content_themes ?? []).map((t: Record<string, unknown>) => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { content_engine_prompt: _strip, state: _s, builtAt: _b, ...rest } = t as Record<string, unknown>;
+      return { ...rest, content_engine_prompt: null, state: "empty" as const };
+    });
+
     await fetch("/api/member/avatar", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -885,7 +893,7 @@ export default function AvatarArchitectPage() {
         avatarProfile: detectedAvatar,
         avatarName: detectedAvatar.avatar_name,
         avatarSummary: detectedAvatar.avatar_summary,
-        contentThemes: detectedAvatar.content_themes,
+        contentThemes: shellThemes,
       }),
     });
 
@@ -1166,40 +1174,91 @@ export default function AvatarArchitectPage() {
                 const coreStress = tObj?.coreStress ?? null;
                 const whyThisFits = tObj?.whyThisFits ?? null;
                 const isActive = themeBuilderOpen === i;
+                const promptPreview = hasPrompt
+                  ? (tObj!.content_engine_prompt as string).replace(/\*\*/g, "").slice(0, 140).trim()
+                  : null;
+
+                if (slotState === "built") {
+                  return (
+                    <div
+                      key={i}
+                      className={`text-left border-2 rounded-xl transition-all duration-200 overflow-hidden ${
+                        isActive ? "border-[#6ba3c7] shadow-sm" : "border-green-200 bg-white hover:border-green-300 hover:shadow-sm"
+                      }`}
+                    >
+                      {/* Built header */}
+                      <div className="px-4 pt-4 pb-3">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="w-6 h-6 rounded-full bg-green-100 text-green-700 text-xs font-bold flex items-center justify-center shrink-0">{i + 1}</span>
+                          {emoji && <span className="text-base">{emoji}</span>}
+                          <span className="flex-1 text-sm font-semibold text-[#2f3437] leading-tight">{name}</span>
+                          <span className="text-xs text-green-600 font-semibold bg-green-50 border border-green-200 px-2 py-0.5 rounded-full shrink-0">Built ✓</span>
+                        </div>
+                        {coreStress && (
+                          <p className="text-xs text-[#2f3437]/55 italic leading-relaxed line-clamp-2 mb-2">"{coreStress}"</p>
+                        )}
+                        {promptPreview && (
+                          <p className="text-xs text-[#2f3437]/40 leading-relaxed line-clamp-2">{promptPreview}…</p>
+                        )}
+                      </div>
+                      {/* Built footer actions */}
+                      <div className="flex items-center gap-2 px-4 pb-3 pt-1 border-t border-green-100">
+                        <button
+                          onClick={() => isActive ? setThemeBuilderOpen(null) : startThemeBuilder(i)}
+                          className="text-xs font-semibold text-[#6ba3c7] hover:text-[#4a8ab0] transition-colors"
+                        >
+                          {isActive ? "Close" : "Edit / Rebuild →"}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                }
+
+                // Empty or in-progress state
                 return (
-                  <button
+                  <div
                     key={i}
-                    onClick={() => isActive ? setThemeBuilderOpen(null) : startThemeBuilder(i)}
-                    className={`group text-left p-4 border-2 rounded-xl transition-all duration-200 ${
+                    className={`text-left border-2 rounded-xl transition-all duration-200 overflow-hidden ${
                       isActive
                         ? "border-[#6ba3c7] bg-[#6ba3c7]/5 shadow-sm"
-                        : slotState === "built"
-                          ? "border-green-200 bg-white hover:border-[#6ba3c7]/50 hover:shadow-sm"
-                          : "border-[#2f3437]/10 hover:border-[#6ba3c7]/50 bg-white hover:bg-[#6ba3c7]/3 hover:shadow-sm"
+                        : slotState === "building"
+                          ? "border-amber-200 bg-amber-50/30 hover:border-[#6ba3c7]/50 hover:shadow-sm"
+                          : "border-dashed border-[#2f3437]/20 bg-white hover:border-[#6ba3c7]/50 hover:bg-[#6ba3c7]/3 hover:shadow-sm"
                     }`}
                   >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="w-6 h-6 rounded-full bg-[#6ba3c7]/10 text-[#6ba3c7] text-xs font-bold flex items-center justify-center shrink-0">{i + 1}</span>
-                      {emoji && <span>{emoji}</span>}
-                      <span className="flex-1 text-sm font-semibold text-[#2f3437] group-hover:text-[#6ba3c7] transition-colors leading-tight">{name}</span>
-                      {slotState === "built" ? (
-                        <span className="text-xs text-green-600 font-semibold shrink-0">Built ✓</span>
-                      ) : slotState === "building" ? (
-                        <span className="text-xs text-amber-600 font-semibold shrink-0">In progress</span>
-                      ) : (
-                        <span className="text-xs text-[#2f3437]/35 font-medium shrink-0">Not built yet</span>
+                    {/* Empty/building header */}
+                    <div className="px-4 pt-4 pb-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="w-6 h-6 rounded-full bg-[#2f3437]/8 text-[#2f3437]/50 text-xs font-bold flex items-center justify-center shrink-0">{i + 1}</span>
+                        {emoji && <span className="text-base">{emoji}</span>}
+                        <span className="flex-1 text-sm font-semibold text-[#2f3437] leading-tight">{name}</span>
+                        {slotState === "building" ? (
+                          <span className="text-xs text-amber-600 font-semibold bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full shrink-0">In progress</span>
+                        ) : (
+                          <span className="text-xs text-[#2f3437]/35 font-medium bg-[#2f3437]/5 border border-[#2f3437]/10 px-2 py-0.5 rounded-full shrink-0">Not built yet</span>
+                        )}
+                      </div>
+                      {coreStress && (
+                        <p className="text-xs text-[#2f3437]/45 italic leading-relaxed line-clamp-2 mb-1.5">"{coreStress}"</p>
+                      )}
+                      {whyThisFits && (
+                        <p className="text-xs text-[#2f3437]/40 leading-relaxed line-clamp-2">{whyThisFits}</p>
                       )}
                     </div>
-                    {slotState === "built" && coreStress && (
-                      <p className="text-xs text-[#2f3437]/50 italic leading-relaxed mt-1.5 line-clamp-2">"{coreStress}"</p>
-                    )}
-                    {slotState !== "built" && whyThisFits && (
-                      <p className="text-xs text-[#2f3437]/40 leading-relaxed mt-1.5 line-clamp-2">{whyThisFits}</p>
-                    )}
-                    {slotState !== "built" && !whyThisFits && (
-                      <p className="text-xs text-[#6ba3c7] font-medium mt-1.5">Start building →</p>
-                    )}
-                  </button>
+                    {/* Prominent CTA */}
+                    <div className="px-4 pb-4">
+                      <button
+                        onClick={() => isActive ? setThemeBuilderOpen(null) : startThemeBuilder(i)}
+                        className={`w-full py-2 rounded-lg text-xs font-semibold transition-colors ${
+                          isActive
+                            ? "bg-[#6ba3c7]/20 text-[#6ba3c7] hover:bg-[#6ba3c7]/30"
+                            : "bg-[#6ba3c7] text-white hover:bg-[#4a8ab0]"
+                        }`}
+                      >
+                        {isActive ? "Close Builder" : slotState === "building" ? "Continue Building →" : "Build This Theme →"}
+                      </button>
+                    </div>
+                  </div>
                 );
               })}
             </div>

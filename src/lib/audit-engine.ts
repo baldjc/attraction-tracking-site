@@ -1440,8 +1440,7 @@ The canonicalName MUST be exactly one of: "Market Updates Monthly", "The Pre-Buy
       "coreStress": "One sentence capturing the core emotional tension of this theme, in the avatar's own voice — a direct quote, not a description.",
       "emoji": "🌊",
       "colour": "#3B82F6",
-      "enforceBuySideTitles": false,
-      "content_engine_prompt": "The complete content engine prompt text for this theme, including the hard constraint if applicable, the reframes, angle, stresses to address, hyper-local hooks, and tone."
+      "enforceBuySideTitles": false
     }
   ],
   "full_document": "The complete avatar document as plain text, all 11 sections"
@@ -1450,7 +1449,9 @@ The canonicalName MUST be exactly one of: "Market Updates Monthly", "The Pre-Buy
 
 NEVER skip the <AVATAR_DATA> block when producing or updating the avatar document. This is critical for the save functionality to work.
 
-For content_themes: assign each theme a unique emoji that represents its emotional character, and a colour from this palette in order (cycling if needed): ["#3B82F6", "#F59E0B", "#EF4444", "#10B981", "#8B5CF6", "#EC4899", "#06B6D4", "#F97316"]. The coreStress must be a direct, specific quote in the avatar's own words. The content_engine_prompt must be the full text of the Content Engine Prompt block for that theme (plain text, no markdown formatting — just the instructions the Content Engine needs to generate titles for this theme).`;
+CRITICAL — DO NOT include "content_engine_prompt" in the content_themes array inside <AVATAR_DATA>. That field is populated exclusively by the Theme Builder, one theme at a time, through a separate deep-dive coaching session. The Avatar Architect's job is to create the theme shells only — name, canonicalName, coreStress, emoji, colour, and enforceBuySideTitles. Nothing else. If you include content_engine_prompt in the Avatar Architect output, it will prematurely mark themes as "Built" in the UI before the member has done the Theme Builder work.
+
+For content_themes: assign each theme a unique emoji that represents its emotional character, and a colour from this palette in order (cycling if needed): ["#3B82F6", "#F59E0B", "#EF4444", "#10B981", "#8B5CF6", "#EC4899", "#06B6D4", "#F97316"]. The coreStress must be a direct, specific quote in the avatar's own words.`;
 
 
 export const THEME_BUILDER_PROMPT = `You are the Theme Builder — a focused coaching tool inside the Avatar Architect that helps a member take ONE stress theme from the canonical 7 and build it out into a complete, production-ready Content Engine Prompt. You are the deep-dive companion to the main Avatar Architect, which produced the high-level avatar. Your job is to take a single theme and turn it into something the Content Engine can actually use.
