@@ -22,7 +22,35 @@ interface Message {
   content: string;
 }
 
-type RawTheme = string | { name: string; emoji?: string | null; colour?: string | null; coreStress?: string | null; content_engine_prompt?: string | null; enforceBuySideTitles?: boolean };
+type RawTheme = string | {
+  name: string;
+  canonicalName?: string | null;
+  emoji?: string | null;
+  colour?: string | null;
+  coreStress?: string | null;
+  content_engine_prompt?: string | null;
+  enforceBuySideTitles?: boolean;
+  whyThisFits?: string | null;
+  builtAt?: string | null;
+  state?: "empty" | "building" | "built";
+};
+
+interface ThemeSelectionItem {
+  canonicalName: string;
+  coreStress: string;
+  enforceBuySideTitles: boolean;
+  whyThisFits: string;
+}
+
+const CANONICAL_7 = [
+  "Market Updates Monthly",
+  "The Pre-Buying Decision",
+  "The Neighbourhoods",
+  "The Equity",
+  "The Education",
+  "The Numbers",
+  "The Relocation",
+] as const;
 
 interface AvatarData {
   avatar_name: string;
@@ -163,9 +191,22 @@ function AvatarProfileCard({
   const [themeInput, setThemeInput] = useState("");
   const [showMigrationBanner, setShowMigrationBanner] = useState(() =>
     Array.isArray(avatar.contentThemes) &&
-    avatar.contentThemes.some((t) => typeof t !== "string" && (t as Record<string, unknown>).enforceBuySideTitles === undefined)
+    avatar.contentThemes.length > 0 &&
+    avatar.contentThemes.some((t) => typeof t !== "string" && !t.canonicalName)
   );
+  const [showRemapModal, setShowRemapModal] = useState(false);
+  const [remapSelections, setRemapSelections] = useState<Record<number, string>>(() => {
+    if (!Array.isArray(avatar.contentThemes)) return {};
+    const initial: Record<number, string> = {};
+    avatar.contentThemes.forEach((t, i) => {
+      if (typeof t !== "string") {
+        initial[i] = t.canonicalName ?? t.name ?? "";
+      }
+    });
+    return initial;
+  });
   const [saving, setSaving] = useState(false);
+  const [remapSaving, setRemapSaving] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const MAX_THEMES = 4;
 
@@ -309,17 +350,85 @@ function AvatarProfileCard({
     );
   }
 
+  async function saveRemap() {
+    setRemapSaving(true);
+    const themes = Array.isArray(avatar.contentThemes) ? [...avatar.contentThemes] : [];
+    const updated = themes.map((t, i) => {
+      if (typeof t === "string") return { name: t, canonicalName: remapSelections[i] ?? t };
+      const canonicalName = remapSelections[i] ?? t.canonicalName ?? t.name;
+      return {
+        ...t,
+        canonicalName,
+        name: canonicalName,
+        enforceBuySideTitles: t.enforceBuySideTitles ?? (canonicalName === "The Equity"),
+        state: t.content_engine_prompt ? ("built" as const) : ("empty" as const),
+      };
+    });
+    const res = await fetch("/api/member/avatar", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ contentThemes: updated }),
+    });
+    if (res.ok) {
+      const d = await res.json();
+      onChange({ ...avatar, contentThemes: d.contentThemes });
+      setShowRemapModal(false);
+      setShowMigrationBanner(false);
+    }
+    setRemapSaving(false);
+  }
+
   return (
     <div className="space-y-3">
-      {/* Migration banner — shown once for avatars created before per-theme buy-side was added */}
+      {/* Legacy migration banner — shown for avatars with themes missing canonicalName */}
       {showMigrationBanner && (
         <div className="flex items-start justify-between gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
           <p className="text-xs text-amber-800 leading-relaxed">
-            <strong>Heads up:</strong> We&apos;ve added a per-theme buy-side title control. Your existing themes have been auto-set based on canonical defaults — review and adjust inside Edit if needed.
+            <strong>Theme update needed:</strong> This avatar was built before we locked in our 7 canonical content themes. Map your existing themes to the canonical list so the Theme Builder and Content Engine work properly.
           </p>
-          <button onClick={() => setShowMigrationBanner(false)} className="text-amber-500 hover:text-amber-700 shrink-0 mt-0.5">
-            <XMarkIcon className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <button onClick={() => setShowRemapModal(true)} className="text-xs font-semibold text-amber-800 hover:underline whitespace-nowrap">Remap Now</button>
+            <button onClick={() => setShowMigrationBanner(false)} className="text-amber-500 hover:text-amber-700 mt-0.5">
+              <XMarkIcon className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Remap modal */}
+      {showRemapModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[#2f3437]/10">
+              <h2 className="text-sm font-bold text-[#2f3437]">Map themes to canonical list</h2>
+              <button onClick={() => setShowRemapModal(false)} className="text-[#2f3437]/40 hover:text-[#2f3437]"><XMarkIcon className="w-5 h-5" /></button>
+            </div>
+            <div className="px-5 py-4 space-y-3 max-h-[60vh] overflow-y-auto">
+              <p className="text-xs text-[#2f3437]/60 leading-relaxed">Your existing theme prompts will be preserved — only the name/canonical mapping changes.</p>
+              {(Array.isArray(avatar.contentThemes) ? avatar.contentThemes : []).map((t, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <span className="text-sm text-[#2f3437]/60 shrink-0 w-40 truncate">{getThemeName(t)}</span>
+                  <span className="text-[#2f3437]/30">→</span>
+                  <select
+                    value={remapSelections[i] ?? ""}
+                    onChange={(e) => setRemapSelections((prev) => ({ ...prev, [i]: e.target.value }))}
+                    className="flex-1 border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40 bg-white"
+                  >
+                    <option value="">— choose canonical theme —</option>
+                    {CANONICAL_7.map((cn) => (
+                      <option key={cn} value={cn}>{cn}</option>
+                    ))}
+                  </select>
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center justify-end gap-3 px-5 py-4 border-t border-[#2f3437]/10">
+              <button onClick={() => setShowRemapModal(false)} className="text-sm text-[#2f3437]/50 hover:text-[#2f3437]">Cancel</button>
+              <button onClick={saveRemap} disabled={remapSaving} className="px-4 py-2 bg-[#6ba3c7] text-white text-sm font-semibold rounded-lg hover:bg-[#6ba3c7]/90 disabled:opacity-50 transition-colors">
+                {remapSaving ? "Saving…" : "Confirm Mapping"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
       {/* Identity card */}
@@ -371,20 +480,34 @@ function AvatarProfileCard({
         ) : (
           <div className="bg-white divide-y divide-[#2f3437]/5">
             {displayThemes.map((t, i) => {
-              const prompt = typeof t === "string" ? null : (t.content_engine_prompt ?? null);
+              const tObj = typeof t === "string" ? null : t;
+              const hasPrompt = !!tObj?.content_engine_prompt;
+              const slotState = tObj?.state ?? (hasPrompt ? "built" : "empty");
+              const coreStress = tObj?.coreStress ?? null;
+              const whyThisFits = tObj?.whyThisFits ?? null;
               return (
                 <div key={i} className="px-4 py-3">
                   <div className="flex items-center gap-3">
                     <span className="w-6 h-6 rounded-full bg-[#6ba3c7]/10 text-[#6ba3c7] text-xs font-bold flex items-center justify-center shrink-0">
                       {i + 1}
                     </span>
-                    <span className="text-sm font-medium text-[#2f3437]">
+                    <span className="flex-1 text-sm font-medium text-[#2f3437]">
                       {getThemeEmoji(t) && <span className="mr-1.5">{getThemeEmoji(t)}</span>}
                       {getThemeName(t)}
                     </span>
+                    {slotState === "built" ? (
+                      <span className="text-xs text-green-600 font-semibold">Built ✓</span>
+                    ) : slotState === "building" ? (
+                      <span className="text-xs text-amber-600 font-semibold">In progress</span>
+                    ) : (
+                      <span className="text-xs text-[#2f3437]/35 font-medium">Not built yet</span>
+                    )}
                   </div>
-                  {prompt && (
-                    <p className="text-xs text-[#2f3437]/45 leading-relaxed mt-1.5 ml-9 line-clamp-2">{prompt}</p>
+                  {slotState === "built" && coreStress && (
+                    <p className="text-xs text-[#2f3437]/50 leading-relaxed mt-1 ml-9 italic line-clamp-2">"{coreStress}"</p>
+                  )}
+                  {slotState === "empty" && whyThisFits && (
+                    <p className="text-xs text-[#2f3437]/40 leading-relaxed mt-1 ml-9 line-clamp-2">{whyThisFits}</p>
                   )}
                 </div>
               );
@@ -431,6 +554,46 @@ export default function AvatarArchitectPage() {
   const [themeSaved, setThemeSaved] = useState(false);
   const themeBottomRef = useRef<HTMLDivElement>(null);
 
+  function applyThemeSelection(themeSelection: { selectedThemes: ThemeSelectionItem[] }) {
+    const existing = Array.isArray(savedAvatar?.contentThemes) ? [...savedAvatar!.contentThemes!] : [];
+    const updated = [...existing];
+    for (const t of themeSelection.selectedThemes) {
+      const idx = updated.findIndex((e) => {
+        if (typeof e === "string") return e === t.canonicalName;
+        return e.canonicalName === t.canonicalName || e.name === t.canonicalName;
+      });
+      if (idx >= 0) {
+        const existing_t = updated[idx];
+        const obj = typeof existing_t === "string" ? { name: existing_t } : existing_t;
+        updated[idx] = {
+          ...obj,
+          canonicalName: t.canonicalName,
+          name: t.canonicalName,
+          coreStress: t.coreStress ?? obj.coreStress,
+          enforceBuySideTitles: t.enforceBuySideTitles,
+          whyThisFits: t.whyThisFits,
+          state: obj.content_engine_prompt ? ("built" as const) : ("empty" as const),
+        };
+      } else {
+        updated.push({
+          name: t.canonicalName,
+          canonicalName: t.canonicalName,
+          coreStress: t.coreStress,
+          enforceBuySideTitles: t.enforceBuySideTitles,
+          whyThisFits: t.whyThisFits,
+          content_engine_prompt: null,
+          state: "empty" as const,
+        });
+      }
+    }
+    fetch("/api/member/avatar", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ contentThemes: updated }),
+    });
+    setSavedAvatar((prev) => prev ? { ...prev, contentThemes: updated } : prev);
+  }
+
   useEffect(() => {
     fetch("/api/member/avatar")
       .then((r) => r.json())
@@ -461,9 +624,9 @@ export default function AvatarArchitectPage() {
       body: JSON.stringify({ messages: [{ role: "user", content: "Start the session." }] }),
     });
     const data = await res.json();
-    const aiMsg = cleanMessage(data.message);
-    setMessages([{ role: "assistant", content: aiMsg }]);
+    setMessages([{ role: "assistant", content: data.message }]);
     if (data.avatarData) setDetectedAvatar(data.avatarData);
+    if (data.themeSelection?.selectedThemes?.length) applyThemeSelection(data.themeSelection);
     setLoading(false);
   }
 
@@ -484,9 +647,9 @@ export default function AvatarArchitectPage() {
       body: JSON.stringify({ messages: [userMsg] }),
     });
     const data = await res.json();
-    const aiMsg = cleanMessage(data.message);
-    setMessages([userMsg, { role: "assistant", content: aiMsg }]);
+    setMessages([userMsg, { role: "assistant", content: data.message }]);
     if (data.avatarData) setDetectedAvatar(data.avatarData);
+    if (data.themeSelection?.selectedThemes?.length) applyThemeSelection(data.themeSelection);
     setLoading(false);
   }
 
@@ -504,14 +667,17 @@ export default function AvatarArchitectPage() {
       body: JSON.stringify({ messages: newMessages }),
     });
     const data = await res.json();
-    const aiMsg = cleanMessage(data.message);
-    setMessages([...newMessages, { role: "assistant", content: aiMsg }]);
+    setMessages([...newMessages, { role: "assistant", content: data.message }]);
     if (data.avatarData) setDetectedAvatar(data.avatarData);
+    if (data.themeSelection?.selectedThemes?.length) applyThemeSelection(data.themeSelection);
     setLoading(false);
   }
 
   function cleanMessage(text: string) {
-    return text.replace(/<AVATAR_DATA>[\s\S]*?<\/AVATAR_DATA>/g, "").trim();
+    return text
+      .replace(/<AVATAR_DATA>[\s\S]*?<\/AVATAR_DATA>/g, "")
+      .replace(/<THEME_SELECTION>[\s\S]*?<\/THEME_SELECTION>/g, "")
+      .trim();
   }
 
   async function saveAvatar() {
@@ -587,25 +753,44 @@ export default function AvatarArchitectPage() {
     themeBottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [themeMessages, themeLoading]);
 
-  function buildThemePayload(themeName: string) {
-    const avatarContext = savedAvatar?.avatarProfile
-      ? savedAvatar.avatarProfile
-      : [
-          `Avatar Name: ${savedAvatar?.avatarName ?? "Unknown"}`,
-          `Summary: ${savedAvatar?.avatarSummary ?? ""}`,
-        ].join("\n");
+  function buildThemePayload(themeName: string, themeIndex: number) {
+    const avatarDoc = savedAvatar?.avatarProfile
+      ? (typeof savedAvatar.avatarProfile === "string"
+          ? savedAvatar.avatarProfile
+          : JSON.stringify(savedAvatar.avatarProfile))
+      : [`Avatar Name: ${savedAvatar?.avatarName ?? "Unknown"}`, `Summary: ${savedAvatar?.avatarSummary ?? ""}`].join("\n");
+
     const themes = Array.isArray(savedAvatar?.contentThemes) ? savedAvatar!.contentThemes! : [];
-    const themeObj = themes.find((t) => getThemeName(t) === themeName);
+    const themeObj = themes[themeIndex];
     const enforceBuySide =
       themeObj && typeof themeObj !== "string" && themeObj.enforceBuySideTitles !== undefined
         ? themeObj.enforceBuySideTitles
         : isEquityTheme(themeName);
+    const coreStress = themeObj && typeof themeObj !== "string" ? (themeObj.coreStress ?? "") : "";
+
+    const avatarProfile = savedAvatar?.avatarProfile;
+    const audiencePrimary =
+      avatarProfile && typeof avatarProfile === "object"
+        ? ((avatarProfile as Record<string, unknown>).audiencePrimary as string | undefined) ?? ""
+        : "";
+
+    const priorBuiltThemes = themes
+      .filter((t, i) => i !== themeIndex && typeof t !== "string" && !!(t as Record<string, unknown>).content_engine_prompt)
+      .map((t) => ({
+        name: getThemeName(t),
+        content_engine_prompt: (typeof t !== "string" ? (t.content_engine_prompt ?? "") : ""),
+      }));
+
     return {
       themeName,
-      avatarContext,
+      coreStress,
+      avatarDoc,
+      avatarName: savedAvatar?.avatarName ?? "Avatar",
+      audiencePrimary,
       memberName: (session?.user as any)?.name ?? (session?.user as any)?.email ?? "Member",
       city: savedAvatar?.city ?? "Not specified",
       enforceBuySideTitles: enforceBuySide,
+      priorBuiltThemes,
     };
   }
 
@@ -623,7 +808,7 @@ export default function AvatarArchitectPage() {
     const startMsg: Message = { role: "user", content: "Start the theme builder session." };
     const payload = {
       messages: [startMsg],
-      ...buildThemePayload(themeName),
+      ...buildThemePayload(themeName, idx),
     };
 
     const res = await fetch("/api/ai-tools/theme-builder", {
@@ -651,7 +836,7 @@ export default function AvatarArchitectPage() {
     const res = await fetch("/api/ai-tools/theme-builder", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages: newMessages, ...buildThemePayload(themeName) }),
+      body: JSON.stringify({ messages: newMessages, ...buildThemePayload(themeName, themeBuilderOpen) }),
     });
     const data = await res.json();
     setThemeMessages([...newMessages, { role: "assistant", content: data.message }]);
@@ -673,8 +858,11 @@ export default function AvatarArchitectPage() {
     themes[themeBuilderOpen] = {
       ...existingObj,
       name: pendingThemeData.name ?? existingObj.name,
+      canonicalName: (existingObj as Record<string, unknown>).canonicalName ?? pendingThemeData.name ?? existingObj.name,
       coreStress: pendingThemeData.coreStress ?? (existingObj as Record<string, unknown>).coreStress,
       content_engine_prompt: pendingThemeData.content_engine_prompt ?? (existingObj as Record<string, unknown>).content_engine_prompt,
+      state: "built" as const,
+      builtAt: new Date().toISOString(),
     } as RawTheme;
 
     await fetch("/api/member/avatar", {
@@ -798,7 +986,11 @@ export default function AvatarArchitectPage() {
               {savedAvatar.contentThemes.map((t, i) => {
                 const name = getThemeName(t);
                 const emoji = getThemeEmoji(t);
-                const hasPrompt = typeof t !== "string" && !!t.content_engine_prompt;
+                const tObj = typeof t === "string" ? null : t;
+                const hasPrompt = !!tObj?.content_engine_prompt;
+                const slotState = tObj?.state ?? (hasPrompt ? "built" : "empty");
+                const coreStress = tObj?.coreStress ?? null;
+                const whyThisFits = tObj?.whyThisFits ?? null;
                 const isActive = themeBuilderOpen === i;
                 return (
                   <button
@@ -807,21 +999,32 @@ export default function AvatarArchitectPage() {
                     className={`group text-left p-4 border-2 rounded-xl transition-all duration-200 ${
                       isActive
                         ? "border-[#6ba3c7] bg-[#6ba3c7]/5 shadow-sm"
-                        : "border-[#2f3437]/10 hover:border-[#6ba3c7]/50 bg-white hover:bg-[#6ba3c7]/3 hover:shadow-sm"
+                        : slotState === "built"
+                          ? "border-green-200 bg-white hover:border-[#6ba3c7]/50 hover:shadow-sm"
+                          : "border-[#2f3437]/10 hover:border-[#6ba3c7]/50 bg-white hover:bg-[#6ba3c7]/3 hover:shadow-sm"
                     }`}
                   >
                     <div className="flex items-center gap-2 mb-1">
                       <span className="w-6 h-6 rounded-full bg-[#6ba3c7]/10 text-[#6ba3c7] text-xs font-bold flex items-center justify-center shrink-0">{i + 1}</span>
                       {emoji && <span>{emoji}</span>}
-                      <span className="text-sm font-semibold text-[#2f3437] group-hover:text-[#6ba3c7] transition-colors">{name}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 ml-8">
-                      {hasPrompt ? (
-                        <span className="text-xs text-green-600 font-medium">Built</span>
+                      <span className="flex-1 text-sm font-semibold text-[#2f3437] group-hover:text-[#6ba3c7] transition-colors leading-tight">{name}</span>
+                      {slotState === "built" ? (
+                        <span className="text-xs text-green-600 font-semibold shrink-0">Built ✓</span>
+                      ) : slotState === "building" ? (
+                        <span className="text-xs text-amber-600 font-semibold shrink-0">In progress</span>
                       ) : (
-                        <span className="text-xs text-amber-600 font-medium">Needs depth</span>
+                        <span className="text-xs text-[#2f3437]/35 font-medium shrink-0">Not built yet</span>
                       )}
                     </div>
+                    {slotState === "built" && coreStress && (
+                      <p className="text-xs text-[#2f3437]/50 italic leading-relaxed mt-1.5 line-clamp-2">"{coreStress}"</p>
+                    )}
+                    {slotState !== "built" && whyThisFits && (
+                      <p className="text-xs text-[#2f3437]/40 leading-relaxed mt-1.5 line-clamp-2">{whyThisFits}</p>
+                    )}
+                    {slotState !== "built" && !whyThisFits && (
+                      <p className="text-xs text-[#6ba3c7] font-medium mt-1.5">Start building →</p>
+                    )}
                   </button>
                 );
               })}

@@ -27,7 +27,6 @@ export async function POST(req: NextRequest) {
 
   const text = response.content[0].type === "text" ? response.content[0].text : "";
 
-  // Check if avatar data is present
   const avatarMatch = text.match(/<AVATAR_DATA>([\s\S]*?)<\/AVATAR_DATA>/);
   let avatarData = null;
   if (avatarMatch) {
@@ -38,5 +37,20 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ message: text, avatarData });
+  const themeSelectionMatch = text.match(/<THEME_SELECTION>([\s\S]*?)<\/THEME_SELECTION>/);
+  let themeSelection = null;
+  if (themeSelectionMatch) {
+    try {
+      themeSelection = JSON.parse(themeSelectionMatch[1].trim());
+    } catch {
+      // ignore parse error
+    }
+  }
+
+  const cleanText = text
+    .replace(/<AVATAR_DATA>[\s\S]*?<\/AVATAR_DATA>/g, "")
+    .replace(/<THEME_SELECTION>[\s\S]*?<\/THEME_SELECTION>/g, "")
+    .trim();
+
+  return NextResponse.json({ message: cleanText, avatarData, themeSelection });
 }
