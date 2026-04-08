@@ -959,59 +959,7 @@ For each stress theme, the output must include:
 5. A Content Engine Prompt block (see format below)
 6. 5 keyword-stacked title examples with framework labels
 
-Content Engine Prompt format for buy-side themes (no reframing needed):
-
-> Content Engine Prompt — Theme [#]: [Theme Name]
->
-> Generate content ideas for viewers who are [describe where they are in the journey]. This is a natural buy-side theme — no framing adjustment needed.
->
-> Angle: [What the content helps them with]
->
-> Stresses to address: [List the specific stresses from this theme]
->
-> Hyper-local hooks: [Specific locations, neighbourhoods, streets, school districts]
->
-> Tone: [How the content should feel]
-
-Content Engine Prompt format for sell-side or transition themes (BUY-SIDE FRAMING REQUIRED):
-
-> Content Engine Prompt — Theme [#]: [Theme Name]
->
-> 🚫 HARD CONSTRAINT — BUY-SIDE TITLES ONLY. This theme is about [sell-side/transition] stress, but the TITLE must be 100% buy-side. The viewer clicks because they're thinking about BUYING — the sell-side reality is revealed inside the content, never in the title.
->
-> Title validation rule: Before outputting any title, check: does this title contain "sell," "selling," "list," "listing," "staging," or any seller-first language? If YES → reject and reframe from the buyer's perspective.
->
-> The reframe: [4 examples of sell-side → buy-side reframes specific to this theme]
->
-> Angle: [What the content helps them with — framed as a buyer concern]
->
-> Stresses to address (reframed as buy-side concerns): [Reframed stresses]
->
-> Tone: [How the content should feel]
-
-How to determine if a theme needs buy-side framing:
-- Involves selling, listing, pricing, staging, or protecting equity on the sell side → YES
-- Involves the transition between selling and buying, timing, bridge financing → YES
-- Involves buying, searching, evaluating, choosing, neighbourhood discovery → NO, natural buy-side
-- Involves post-purchase concerns → Frame as buyer content, no sell language needed
-
-Title examples must use keyword stacking (2-4 high-performing keywords per title) from the Real Estate Keyword Starter Kit:
-
-| Keyword | Priority |
-|---|---|
-| "do not" | Critical |
-| "not buy" | Critical |
-| "home in [CITY]" | Critical |
-| "should you" | High |
-| "can you" | High |
-| "in [CITY]" | High |
-| "[CITY] real" | High |
-| "best neighbourhoods" | High |
-| "a home" | Good |
-| "buy a" | Good |
-| "buying a" | Good |
-
-Replace [CITY] with the member's market/city.
+Follow the Content Engine Prompt format and buy-side/sell-side framing rules defined in the CONTENT ENGINE PROMPT RULES section below. Use keyword stacking from the Real Estate Keyword Starter Kit in the TITLE FRAMEWORKS section below.
 
 CANONICAL STRESS THEMES (LOCKED LIST — DO NOT INVENT NEW ONES)
 
@@ -1368,20 +1316,6 @@ THEME SELECTION RULES
 4. Do NOT invent new themes, rename themes, or merge themes
 5. Do NOT use a theme if it doesn't genuinely fit the avatar — leaving a theme out is better than forcing it
 6. If the member's existing avatar (import mode) contains themes that don't map to this list, map them to the closest canonical theme and tell the member you've done so
-
-THEME-TO-AUDIENCE GUIDANCE
-
-| Audience | Recommended Themes |
-|---|---|
-| First-Time Buyer | 1, 2, 3, 5 |
-| Move-Up Buyer | 1, 2, 3, 4 |
-| Move-Down / Right-Sizer | 1, 4, 3 |
-| Seller | 1, 4 |
-| Investor | 1, 2, 6 |
-| Relocator | 1, 3, 7 |
-| Luxury Buyer/Seller | 1, 2, 3, 4, 7 |
-| New Construction Buyer | 1, 2, 5 |
-| Renter Considering Buying | 1, 2, 5 |
 
 ---
 

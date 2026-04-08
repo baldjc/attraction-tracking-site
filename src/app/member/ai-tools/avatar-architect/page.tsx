@@ -543,6 +543,7 @@ export default function AvatarArchitectPage() {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [refreshCounter, setRefreshCounter] = useState(0);
   const [chatError, setChatError] = useState<string | null>(null);
+  const [streamingContent, setStreamingContent] = useState<string | null>(null);
   const convIdRef = useRef<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -585,6 +586,7 @@ export default function AvatarArchitectPage() {
     setConversationId(conv.id);
     setMessages(msgs);
     setChatError(null);
+    setStreamingContent(null);
     setSaved(false);
     setConfirmReplace(false);
     setDetectedAvatar(null);
@@ -654,20 +656,72 @@ export default function AvatarArchitectPage() {
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, loading]);
+  }, [messages, loading, streamingContent]);
 
-  async function callAvatarAPI(msgs: Message[], signal: AbortSignal) {
+  type StreamResult = { message: string; avatarData: AvatarData | null; themeSelection: { selectedThemes: ThemeSelectionItem[] } | null };
+
+  async function streamAvatarAPI(
+    msgs: Message[],
+    hasBuild: boolean,
+    onChunk: (text: string) => void,
+    signal: AbortSignal,
+  ): Promise<StreamResult> {
     const res = await fetch("/api/ai-tools/avatar-architect", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages: msgs }),
+      body: JSON.stringify({ messages: msgs, hasBuild, messageCount: msgs.length }),
       signal,
     });
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      throw new Error(body.error ?? `HTTP ${res.status}`);
+
+    if (!res.ok || !res.body) {
+      const b = await res.json().catch(() => ({}));
+      throw new Error(b.error ?? `HTTP ${res.status}`);
     }
-    return res.json() as Promise<{ message: string; avatarData: AvatarData | null; themeSelection: { selectedThemes: ThemeSelectionItem[] } | null }>;
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let lastChunkAt = Date.now();
+
+    // Abort if no chunk arrives for 30 seconds
+    const chunkTimer = setInterval(() => {
+      if (Date.now() - lastChunkAt > 30_000) {
+        reader.cancel("no chunks for 30s");
+      }
+    }, 1000);
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        lastChunkAt = Date.now();
+
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          try {
+            const event = JSON.parse(line.slice(6)) as { type: string; text?: string; message?: string; avatarData?: AvatarData | null; themeSelection?: { selectedThemes: ThemeSelectionItem[] } | null; };
+            if (event.type === "chunk" && event.text) {
+              onChunk(event.text);
+            } else if (event.type === "done") {
+              clearInterval(chunkTimer);
+              return { message: event.message ?? "", avatarData: event.avatarData ?? null, themeSelection: event.themeSelection ?? null };
+            } else if (event.type === "error") {
+              throw new Error(event.message ?? "Unknown stream error");
+            }
+          } catch (parseErr: any) {
+            if (parseErr?.message && !parseErr.message.includes("JSON")) throw parseErr;
+          }
+        }
+      }
+      throw new Error("Stream ended without a completion event — please try again.");
+    } finally {
+      clearInterval(chunkTimer);
+    }
   }
 
   async function startFromScratch() {
@@ -676,25 +730,31 @@ export default function AvatarArchitectPage() {
     setSaved(false);
     setConfirmReplace(false);
     setChatError(null);
+    setStreamingContent("");
     convIdRef.current = null;
     setConversationId(null);
     setScreen("chat");
     setLoading(true);
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 90_000);
     try {
-      const data = await callAvatarAPI([{ role: "user", content: "Start the session." }], controller.signal);
+      const data = await streamAvatarAPI(
+        [{ role: "user", content: "Start the session." }],
+        false,
+        (chunk) => setStreamingContent((prev) => (prev ?? "") + chunk),
+        controller.signal,
+      );
       const aiMsg: Message = { role: "assistant", content: data.message };
       setMessages([aiMsg]);
+      setStreamingContent(null);
       if (data.avatarData) setDetectedAvatar(data.avatarData);
       if (data.themeSelection?.selectedThemes?.length) applyThemeSelection(data.themeSelection);
       await persistConversation([aiMsg], data.avatarData?.avatar_name ?? "Avatar Session");
     } catch (err: any) {
-      setChatError(err?.name === "AbortError" ? "Request timed out — please try again." : (err?.message ?? "Something went wrong — please try again."));
+      setChatError(err?.message ?? "Something went wrong — please try again.");
+      setStreamingContent(null);
       setScreen("landing");
     } finally {
-      clearTimeout(timeout);
       setLoading(false);
     }
   }
@@ -708,26 +768,32 @@ export default function AvatarArchitectPage() {
     setSaved(false);
     setConfirmReplace(false);
     setChatError(null);
+    setStreamingContent("");
     convIdRef.current = null;
     setConversationId(null);
     setScreen("chat");
     setLoading(true);
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 90_000);
     try {
-      const data = await callAvatarAPI([userMsg], controller.signal);
+      const data = await streamAvatarAPI(
+        [userMsg],
+        false,
+        (chunk) => setStreamingContent((prev) => (prev ?? "") + chunk),
+        controller.signal,
+      );
       const aiMsg: Message = { role: "assistant", content: data.message };
       const finalMsgs: Message[] = [userMsg, aiMsg];
       setMessages(finalMsgs);
+      setStreamingContent(null);
       if (data.avatarData) setDetectedAvatar(data.avatarData);
       if (data.themeSelection?.selectedThemes?.length) applyThemeSelection(data.themeSelection);
       await persistConversation(finalMsgs, data.avatarData?.avatar_name ?? "Avatar Session (Import)");
     } catch (err: any) {
-      setChatError(err?.name === "AbortError" ? "Request timed out — please try again." : (err?.message ?? "Something went wrong — please try again."));
+      setChatError(err?.message ?? "Something went wrong — please try again.");
+      setStreamingContent(null);
       setScreen("landing");
     } finally {
-      clearTimeout(timeout);
       setLoading(false);
     }
   }
@@ -739,22 +805,29 @@ export default function AvatarArchitectPage() {
     setMessages(newMessages);
     setInput("");
     setChatError(null);
+    setStreamingContent("");
     setLoading(true);
 
+    const hasBuild = detectedAvatar !== null || newMessages.some((m) => m.role === "assistant" && m.content.includes("<AVATAR_DATA>"));
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 90_000);
     try {
-      const data = await callAvatarAPI(newMessages, controller.signal);
+      const data = await streamAvatarAPI(
+        newMessages,
+        hasBuild,
+        (chunk) => setStreamingContent((prev) => (prev ?? "") + chunk),
+        controller.signal,
+      );
       const aiMsg: Message = { role: "assistant", content: data.message };
       const finalMsgs = [...newMessages, aiMsg];
       setMessages(finalMsgs);
+      setStreamingContent(null);
       if (data.avatarData) setDetectedAvatar(data.avatarData);
       if (data.themeSelection?.selectedThemes?.length) applyThemeSelection(data.themeSelection);
       await persistConversation(finalMsgs, data.avatarData?.avatar_name);
     } catch (err: any) {
-      setChatError(err?.name === "AbortError" ? "Request timed out — please try again." : (err?.message ?? "Something went wrong — please try again."));
+      setChatError(err?.message ?? "Something went wrong — please try again.");
+      setStreamingContent(null);
     } finally {
-      clearTimeout(timeout);
       setLoading(false);
     }
   }
@@ -764,22 +837,29 @@ export default function AvatarArchitectPage() {
     const lastMsg = messages[messages.length - 1];
     if (lastMsg.role !== "user") return;
     setChatError(null);
+    setStreamingContent("");
     setLoading(true);
 
+    const hasBuild = detectedAvatar !== null || messages.some((m) => m.role === "assistant" && m.content.includes("<AVATAR_DATA>"));
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 90_000);
     try {
-      const data = await callAvatarAPI(messages, controller.signal);
+      const data = await streamAvatarAPI(
+        messages,
+        hasBuild,
+        (chunk) => setStreamingContent((prev) => (prev ?? "") + chunk),
+        controller.signal,
+      );
       const aiMsg: Message = { role: "assistant", content: data.message };
       const finalMsgs = [...messages, aiMsg];
       setMessages(finalMsgs);
+      setStreamingContent(null);
       if (data.avatarData) setDetectedAvatar(data.avatarData);
       if (data.themeSelection?.selectedThemes?.length) applyThemeSelection(data.themeSelection);
       await persistConversation(finalMsgs, data.avatarData?.avatar_name);
     } catch (err: any) {
-      setChatError(err?.name === "AbortError" ? "Still timing out — please wait a moment and try again." : (err?.message ?? "Something went wrong — please try again."));
+      setChatError(err?.message ?? "Something went wrong — please try again.");
+      setStreamingContent(null);
     } finally {
-      clearTimeout(timeout);
       setLoading(false);
     }
   }
@@ -1285,7 +1365,7 @@ export default function AvatarArchitectPage() {
           <p className="text-sm text-[#2f3437]/50">Chat with your AI coach</p>
         </div>
         <button
-          onClick={() => { setScreen("landing"); setMessages([]); setDetectedAvatar(null); setSaved(false); setConfirmReplace(false); setImportText(""); setChatError(null); convIdRef.current = null; setConversationId(null); }}
+          onClick={() => { setScreen("landing"); setMessages([]); setDetectedAvatar(null); setSaved(false); setConfirmReplace(false); setImportText(""); setChatError(null); setStreamingContent(null); convIdRef.current = null; setConversationId(null); }}
           className="flex items-center gap-2 text-sm text-[#2f3437]/60 hover:text-[#2f3437] border border-[#2f3437]/20 px-3 py-1.5 rounded-lg transition-colors"
         >
           <ArrowPathIcon className="w-4 h-4" />
@@ -1360,7 +1440,15 @@ export default function AvatarArchitectPage() {
             </div>
           </div>
         ))}
-        {loading && (
+        {loading && streamingContent !== null && streamingContent.length > 0 && (
+          <div className="flex justify-start">
+            <div className="bg-white border border-[#2f3437]/10 rounded-lg rounded-tl-sm px-4 py-3 max-w-[85%] whitespace-pre-wrap text-sm leading-relaxed text-[#2f3437]">
+              {streamingContent}
+              <span className="inline-block w-1.5 h-4 bg-[#6ba3c7] ml-0.5 animate-pulse align-middle" />
+            </div>
+          </div>
+        )}
+        {loading && (streamingContent === null || streamingContent.length === 0) && (
           <div className="flex justify-start">
             <div className="bg-white border border-[#2f3437]/10 rounded-lg rounded-tl-sm px-4 py-3">
               <div className="flex gap-1.5 items-center h-4">
