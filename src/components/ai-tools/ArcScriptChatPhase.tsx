@@ -111,6 +111,13 @@ export default function ArcScriptChatPhase({
   const [draftSaved, setDraftSaved] = useState(resumeMessages && resumeMessages.length > 0);
   const [draftSaveError, setDraftSaveError] = useState(false);
   const draftSavedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [savedScriptId, setSavedScriptId] = useState<string | null>(null);
+  const [plannerOpen, setPlannerOpen] = useState(false);
+  const [plannerPlans, setPlannerPlans] = useState<Array<{ id: string; title: string; status: string }>>([]);
+  const [plannerLoading, setPlannerLoading] = useState(false);
+  const [plannerPushing, setPlannerPushing] = useState(false);
+  const [plannerPushed, setPlannerPushed] = useState(false);
+  const [plannerError, setPlannerError] = useState("");
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -146,8 +153,10 @@ export default function ArcScriptChatPhase({
         },
       }),
     })
-      .then((res) => {
+      .then(async (res) => {
         if (!res.ok) throw new Error("Save failed");
+        const data = await res.json();
+        if (data?.id) setSavedScriptId(data.id);
         setSaved(true);
         // Clean up draft — script is now saved permanently
         fetch(`/api/ai-tools/arc-script-builder/draft?videoTitle=${encodeURIComponent(initialData.title)}`, { method: "DELETE" }).catch(() => {});
@@ -402,6 +411,68 @@ export default function ArcScriptChatPhase({
     setTimeout(() => setCopied(false), 2000);
   }
 
+  async function openPlanner() {
+    setPlannerOpen(true);
+    setPlannerError("");
+    setPlannerLoading(true);
+    try {
+      const res = await fetch("/api/member/content-plans");
+      if (!res.ok) throw new Error("Failed to load plans");
+      const data = await res.json();
+      const active = (data.plans ?? []).filter(
+        (p: { status: string }) =>
+          !["Published", "Archived", "Done"].includes(p.status)
+      );
+      setPlannerPlans(active);
+    } catch {
+      setPlannerError("Couldn't load your content planner.");
+    } finally {
+      setPlannerLoading(false);
+    }
+  }
+
+  async function pushToPlanner(planId: string | null) {
+    if (!finalScriptText || plannerPushing) return;
+    setPlannerPushing(true);
+    setPlannerError("");
+    try {
+      if (planId) {
+        const res = await fetch(`/api/member/content-plans/${planId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ script: finalScriptText }),
+        });
+        if (!res.ok) throw new Error("Failed");
+      } else {
+        const res = await fetch("/api/member/content-plans", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: initialData.title,
+            status: "Idea",
+            notes: initialData.talkingPoints || undefined,
+            ...(savedScriptId ? { linkedScriptId: savedScriptId } : {}),
+          }),
+        });
+        if (!res.ok) throw new Error("Failed");
+        const data = await res.json();
+        if (data?.plan?.id) {
+          await fetch(`/api/member/content-plans/${data.plan.id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ script: finalScriptText }),
+          });
+        }
+      }
+      setPlannerPushed(true);
+      setPlannerOpen(false);
+    } catch {
+      setPlannerError("Push to planner failed. Try again.");
+    } finally {
+      setPlannerPushing(false);
+    }
+  }
+
   async function handleSave() {
     if (!finalScriptText) return;
     setSaving(true);
@@ -422,6 +493,8 @@ export default function ArcScriptChatPhase({
         }),
       });
       if (!res.ok) throw new Error("Save failed");
+      const data = await res.json();
+      if (data?.id) setSavedScriptId(data.id);
       setSaved(true);
     } catch {
       setSaveError("Save failed. Please try again.");
@@ -628,12 +701,77 @@ export default function ArcScriptChatPhase({
               {copied ? "Copied!" : "Copy to Clipboard"}
             </button>
             <button
+              onClick={handleSave}
+              disabled={saving || saved}
+              className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium border border-[#2f3437]/15 dark:border-white/15 rounded-lg hover:bg-[#111]/5 dark:hover:bg-white/5 transition-colors text-[#2f3437] dark:text-white disabled:opacity-50"
+            >
+              {saved ? <CheckIcon className="w-4 h-4" /> : <span>💾</span>}
+              {saved ? "Saved" : saving ? "Saving…" : "Save Script"}
+            </button>
+            <button
+              onClick={openPlanner}
+              disabled={plannerPushed}
+              className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium border border-[#2f3437]/15 dark:border-white/15 rounded-lg hover:bg-[#111]/5 dark:hover:bg-white/5 transition-colors text-[#2f3437] dark:text-white disabled:opacity-50"
+            >
+              <span>📅</span>
+              {plannerPushed ? "In Planner" : "Push to Content Planner"}
+            </button>
+            <button
               onClick={onReset}
               className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium border border-[#2f3437]/15 dark:border-white/15 rounded-lg hover:bg-[#111]/5 dark:hover:bg-white/5 transition-colors text-[#2f3437] dark:text-white"
             >
               <ArrowPathIcon className="w-4 h-4" />
               Build Another Script
             </button>
+          </div>
+        </div>
+      )}
+
+      {plannerOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => !plannerPushing && setPlannerOpen(false)}>
+          <div className="bg-white dark:bg-[#1a1a1a] rounded-lg border border-[#2f3437]/10 dark:border-white/10 max-w-md w-full max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="px-5 py-4 border-b border-[#2f3437]/10 dark:border-white/10">
+              <h3 className="text-sm font-bold text-[#2f3437] dark:text-white">Push to Content Planner</h3>
+              <p className="text-xs text-[#2f3437]/60 dark:text-white/60 mt-0.5">Add this script to an existing item or create a new one.</p>
+            </div>
+            <div className="flex-1 overflow-y-auto p-3 space-y-1.5">
+              <button
+                onClick={() => pushToPlanner(null)}
+                disabled={plannerPushing}
+                className="w-full text-left px-3 py-2.5 rounded-lg border border-dashed border-[#6ba3c7]/40 hover:bg-[#6ba3c7]/5 text-sm font-semibold text-[#6ba3c7] disabled:opacity-50"
+              >
+                + Create new planner item for &quot;{initialData.title}&quot;
+              </button>
+              {plannerLoading && (
+                <p className="text-xs text-[#2f3437]/50 dark:text-white/50 px-3 py-4 text-center">Loading…</p>
+              )}
+              {!plannerLoading && plannerPlans.length === 0 && (
+                <p className="text-xs text-[#2f3437]/50 dark:text-white/50 px-3 py-4 text-center">No active planner items yet.</p>
+              )}
+              {!plannerLoading && plannerPlans.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => pushToPlanner(p.id)}
+                  disabled={plannerPushing}
+                  className="w-full text-left px-3 py-2.5 rounded-lg border border-[#2f3437]/10 dark:border-white/10 hover:bg-[#111]/5 dark:hover:bg-white/5 disabled:opacity-50"
+                >
+                  <p className="text-sm font-medium text-[#2f3437] dark:text-white truncate">{p.title}</p>
+                  <p className="text-[10px] text-[#2f3437]/50 dark:text-white/50 mt-0.5 uppercase tracking-wide">{p.status}</p>
+                </button>
+              ))}
+            </div>
+            {plannerError && (
+              <p className="px-5 pb-2 text-xs text-red-500">{plannerError}</p>
+            )}
+            <div className="px-5 py-3 border-t border-[#2f3437]/10 dark:border-white/10 flex justify-end">
+              <button
+                onClick={() => setPlannerOpen(false)}
+                disabled={plannerPushing}
+                className="text-xs text-[#2f3437]/60 dark:text-white/60 hover:text-[#2f3437] dark:hover:text-white"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       )}

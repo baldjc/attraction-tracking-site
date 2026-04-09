@@ -61,6 +61,7 @@ export default function IdeaCard({ idea, theme, onSaved, savedId, onDelete }: Pr
           dataToFind: idea.dataToFind ?? null,
           framework: selectedOption.framework,
           whyItWorks: idea.whyItWorks,
+          dataToFind: idea.dataToFind ?? null,
           source: "batch",
         }),
       });
