@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { PlusIcon, TrashIcon, ArrowTopRightOnSquareIcon, PencilSquareIcon } from "@heroicons/react/24/outline";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { PlusIcon, TrashIcon, ArrowTopRightOnSquareIcon, PencilSquareIcon, ChevronUpIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
 import { CheckIcon, XMarkIcon } from "@heroicons/react/24/solid";
 import ContentPlanEditModal from "./ContentPlanEditModal";
 import {
@@ -76,6 +76,8 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
   const [expandedNotes, setExpandedNotes] = useState<string | null>(null);
   const [editingPlan, setEditingPlan] = useState<ContentPlan | null>(null);
   const inputRef = useRef<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null>(null);
+  const [sortKey, setSortKey] = useState<keyof ContentPlan | null>(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
   const allStatusOptions = getStatusOptions(serviceTier);
   const showEditDue = isAdmin || hasEditDueDate(serviceTier);
@@ -182,6 +184,53 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
     } finally {
       setAddLoading(false);
     }
+  }
+
+  const PRIORITY_ORDER: Record<string, number> = { High: 0, Medium: 1, Low: 2 };
+
+  function handleSort(key: keyof ContentPlan) {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  }
+
+  const sortedPlans = useMemo(() => {
+    if (!sortKey) return plans;
+    return [...plans].sort((a, b) => {
+      const aVal = a[sortKey];
+      const bVal = b[sortKey];
+      const mult = sortDir === "asc" ? 1 : -1;
+
+      if (sortKey === "shootDate" || sortKey === "publishDate" || sortKey === "editDueDate") {
+        if (!aVal && !bVal) return 0;
+        if (!aVal) return 1;
+        if (!bVal) return -1;
+        return mult * (new Date(aVal as string).getTime() - new Date(bVal as string).getTime());
+      }
+
+      if (sortKey === "priority") {
+        const aO = aVal ? (PRIORITY_ORDER[aVal as string] ?? 99) : 99;
+        const bO = bVal ? (PRIORITY_ORDER[bVal as string] ?? 99) : 99;
+        return mult * (aO - bO);
+      }
+
+      const aStr = (aVal as string | null) ?? "";
+      const bStr = (bVal as string | null) ?? "";
+      if (!aStr && !bStr) return 0;
+      if (!aStr) return 1;
+      if (!bStr) return -1;
+      return mult * aStr.localeCompare(bStr);
+    });
+  }, [plans, sortKey, sortDir]);
+
+  function SortIcon({ col }: { col: keyof ContentPlan }) {
+    if (sortKey !== col) return <ChevronUpIcon className="w-3 h-3 opacity-20 inline-block ml-0.5 -mt-0.5" />;
+    return sortDir === "asc"
+      ? <ChevronUpIcon className="w-3 h-3 text-[#6ba3c7] inline-block ml-0.5 -mt-0.5" />
+      : <ChevronDownIcon className="w-3 h-3 text-[#6ba3c7] inline-block ml-0.5 -mt-0.5" />;
   }
 
   const inputCls = "w-full bg-white text-[#2f3437] text-sm rounded border border-gray-300 px-2 py-1 focus:border-[#6ba3c7] focus:outline-none";
@@ -372,21 +421,55 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
             <thead>
               <tr className="border-b border-gray-200 bg-gray-50 text-[#2f3437]/50 text-xs uppercase tracking-wide">
                 <th className="px-3 py-2.5 w-8" />
-                <th className="text-left px-4 py-2.5 font-medium whitespace-nowrap">Title</th>
-                <th className="text-left px-4 py-2.5 font-medium whitespace-nowrap">Status</th>
-                <th className="text-left px-4 py-2.5 font-medium whitespace-nowrap">Theme</th>
-                <th className="text-left px-4 py-2.5 font-medium whitespace-nowrap">Shoot Date</th>
-                <th className="text-left px-4 py-2.5 font-medium whitespace-nowrap">Publish Date</th>
-                {showEditDue && <th className="text-left px-4 py-2.5 font-medium whitespace-nowrap">Edit Due</th>}
-                <th className="text-left px-4 py-2.5 font-medium whitespace-nowrap">Priority</th>
-                <th className="text-left px-4 py-2.5 font-medium whitespace-nowrap">Thumbnail Words</th>
+                <th className="text-left px-4 py-2.5 font-medium whitespace-nowrap">
+                  <button onClick={() => handleSort("title")} className="flex items-center gap-0.5 hover:text-[#2f3437] transition-colors">
+                    Title <SortIcon col="title" />
+                  </button>
+                </th>
+                <th className="text-left px-4 py-2.5 font-medium whitespace-nowrap">
+                  <button onClick={() => handleSort("status")} className="flex items-center gap-0.5 hover:text-[#2f3437] transition-colors">
+                    Status <SortIcon col="status" />
+                  </button>
+                </th>
+                <th className="text-left px-4 py-2.5 font-medium whitespace-nowrap">
+                  <button onClick={() => handleSort("theme")} className="flex items-center gap-0.5 hover:text-[#2f3437] transition-colors">
+                    Theme <SortIcon col="theme" />
+                  </button>
+                </th>
+                <th className="text-left px-4 py-2.5 font-medium whitespace-nowrap">
+                  <button onClick={() => handleSort("shootDate")} className="flex items-center gap-0.5 hover:text-[#2f3437] transition-colors">
+                    Shoot Date <SortIcon col="shootDate" />
+                  </button>
+                </th>
+                <th className="text-left px-4 py-2.5 font-medium whitespace-nowrap">
+                  <button onClick={() => handleSort("publishDate")} className="flex items-center gap-0.5 hover:text-[#2f3437] transition-colors">
+                    Publish Date <SortIcon col="publishDate" />
+                  </button>
+                </th>
+                {showEditDue && (
+                  <th className="text-left px-4 py-2.5 font-medium whitespace-nowrap">
+                    <button onClick={() => handleSort("editDueDate")} className="flex items-center gap-0.5 hover:text-[#2f3437] transition-colors">
+                      Edit Due <SortIcon col="editDueDate" />
+                    </button>
+                  </th>
+                )}
+                <th className="text-left px-4 py-2.5 font-medium whitespace-nowrap">
+                  <button onClick={() => handleSort("priority")} className="flex items-center gap-0.5 hover:text-[#2f3437] transition-colors">
+                    Priority <SortIcon col="priority" />
+                  </button>
+                </th>
+                <th className="text-left px-4 py-2.5 font-medium whitespace-nowrap">
+                  <button onClick={() => handleSort("thumbnailWords")} className="flex items-center gap-0.5 hover:text-[#2f3437] transition-colors">
+                    Thumbnail Words <SortIcon col="thumbnailWords" />
+                  </button>
+                </th>
                 {showDriveFolder && <th className="text-center px-4 py-2.5 font-medium whitespace-nowrap">Drive</th>}
                 <th className="text-left px-4 py-2.5 font-medium">Notes</th>
                 <th className="px-4 py-2.5 w-10" />
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {plans.map((plan) => (
+              {sortedPlans.map((plan) => (
                 <tr key={plan.id} className="hover:bg-[#6ba3c7]/5 transition-colors">
                   <td className="px-3 py-2.5">
                     <button
