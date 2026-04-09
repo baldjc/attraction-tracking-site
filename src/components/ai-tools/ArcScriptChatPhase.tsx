@@ -129,7 +129,7 @@ export default function ArcScriptChatPhase({
   const atTurnLimit = turnCount >= MAX_TURNS;
   const isFinalScript = currentSection === "final_script" || currentSection === "assembly_pass";
 
-  const finalScriptText = finalScriptDone
+  const finalScriptText = (finalScriptDone || isFinalScript)
     ? cleanContent(messages.findLast((m) => m.role === "assistant")?.content ?? "")
     : "";
 
@@ -583,7 +583,7 @@ export default function ArcScriptChatPhase({
         </div>
       )}
 
-      {finalScriptDone && (
+      {(finalScriptDone || isFinalScript) && (
         <div className="flex flex-col gap-2 mb-3">
           {saving && (
             <p className="text-xs text-[#2f3437]/45 dark:text-white/35 px-1">Saving your script…</p>
