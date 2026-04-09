@@ -1043,7 +1043,7 @@ export default function MemberDetailPage() {
                             <div className="text-sm text-[#2f3437] font-medium truncate">{video.title}</div>
                             <div className="text-xs text-[#2f3437]/40 mt-0.5">{fmt(video.publishedAt)} · {video.viewCount.toLocaleString()} views</div>
                           </div>
-                          <div className="flex-shrink-0">
+                          <div className="flex-shrink-0 flex items-center gap-2">
                             {latestAuditV ? (
                               <Link
                                 href={`/admin/audits/${latestAuditV.id}`}
@@ -1061,6 +1061,16 @@ export default function MemberDetailPage() {
                               >
                                 {runningAudit[video.id] ? "Starting…" : "Run Audit"}
                               </button>
+                            )}
+                            {video.videoId && (
+                              <a
+                                href={`https://www.youtube.com/watch?v=${video.videoId}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-[#2f3437]/50 border border-[#2f3437]/12 rounded-lg px-3 py-1.5 hover:text-[#2f3437] hover:border-[#2f3437]/25 hover:bg-gray-50 transition whitespace-nowrap"
+                              >
+                                View on YouTube ↗
+                              </a>
                             )}
                           </div>
                         </div>
