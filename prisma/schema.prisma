@@ -156,6 +156,7 @@ model User {
   quickLinks           ClientQuickLink[]
   scriptDrafts         ScriptDraft[]
   contentEngineDrafts  ContentEngineDraft[]
+  changelogViews       ChangelogEntryView[]
 
   @@map("users")
 }
@@ -1268,8 +1269,24 @@ model ChangelogEntry {
   title     String
   body      String
   emoji     String   @default("✨")
+  type      String   @default("changelog")
   createdAt DateTime @default(now())
   published Boolean  @default(true)
 
+  views     ChangelogEntryView[]
+
   @@map("changelog_entries")
+}
+
+model ChangelogEntryView {
+  id      String   @id @default(cuid())
+  entryId String
+  entry   ChangelogEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  userId  String
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  seenAt  DateTime @default(now())
+
+  @@unique([entryId, userId])
+  @@index([userId])
+  @@map("changelog_entry_views")
 }

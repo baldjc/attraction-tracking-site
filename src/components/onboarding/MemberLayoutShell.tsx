@@ -5,6 +5,7 @@ import Sidebar from "@/components/Sidebar";
 import OnboardingRedirect from "@/components/onboarding/OnboardingRedirect";
 import HelpWidget from "@/components/help/HelpWidget";
 import { SidebarProvider, useSidebar } from "@/components/SidebarContext";
+import AnnouncementModal from "@/components/announcements/AnnouncementModal";
 
 interface Props {
   children: React.ReactNode;
@@ -36,6 +37,7 @@ function MemberShellInner({ children, role, userName, featureFlags }: Props) {
         </div>
       </main>
       <HelpWidget />
+      <AnnouncementModal />
     </div>
   );
 }

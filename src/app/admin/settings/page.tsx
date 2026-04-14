@@ -4,9 +4,10 @@ import React, { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
-import { EyeSlashIcon, EyeIcon, UserGroupIcon, ChevronDownIcon, XMarkIcon, CheckIcon, SparklesIcon, EnvelopeIcon, PencilSquareIcon, LinkIcon, Cog6ToothIcon, ArrowTopRightOnSquareIcon, CloudArrowUpIcon } from "@heroicons/react/24/outline";
+import { EyeSlashIcon, EyeIcon, UserGroupIcon, ChevronDownIcon, XMarkIcon, CheckIcon, SparklesIcon, EnvelopeIcon, PencilSquareIcon, LinkIcon, Cog6ToothIcon, ArrowTopRightOnSquareIcon, CloudArrowUpIcon, MegaphoneIcon } from "@heroicons/react/24/outline";
 import { IMPERSONATE_LS_KEY } from "@/lib/impersonate-constants";
 import LinkTrackingPage from "@/app/member/link-tracking/page";
+import AnnouncementsSection from "@/components/admin/AnnouncementsSection";
 
 // ─── Staff Access ─────────────────────────────────────────────────────────────
 
@@ -1188,6 +1189,7 @@ const ADMIN_SETTINGS_TABS = [
   { id: "general", label: "Platform Settings" },
   { id: "link-tracking", label: "My Link Tracking" },
   { id: "landing-page", label: "Landing Page" },
+  { id: "announcements", label: "Announcements" },
 ] as const;
 type AdminSettingsTab = (typeof ADMIN_SETTINGS_TABS)[number]["id"];
 
@@ -1204,6 +1206,8 @@ function SettingsPageInner() {
       ? "link-tracking"
       : tabParam === "landing-page"
       ? "landing-page"
+      : tabParam === "announcements"
+      ? "announcements"
       : "general";
 
   function switchTab(id: AdminSettingsTab) {
@@ -1243,6 +1247,7 @@ function SettingsPageInner() {
           >
             {t.id === "link-tracking" && <LinkIcon className="w-4 h-4" />}
             {t.id === "landing-page" && <Cog6ToothIcon className="w-4 h-4" />}
+            {t.id === "announcements" && <MegaphoneIcon className="w-4 h-4" />}
             {t.label}
           </button>
         ))}
@@ -1269,6 +1274,9 @@ function SettingsPageInner() {
           <LandingPageSettingsSection />
         </div>
       )}
+
+      {/* Announcements tab */}
+      {activeTab === "announcements" && <AnnouncementsSection />}
 
       {/* Platform Settings tab */}
       {activeTab === "general" && <>

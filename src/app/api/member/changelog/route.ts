@@ -8,7 +8,7 @@ export async function GET() {
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const entries = await prisma.changelogEntry.findMany({
-    where: { published: true },
+    where: { published: true, type: "changelog" },
     orderBy: { createdAt: "desc" },
     take: 5,
   });
