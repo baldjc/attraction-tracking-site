@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { ArrowTopRightOnSquareIcon, ClipboardDocumentIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
+import { useToast } from "@/components/ToastProvider";
 
 function getNextThursday(): Date {
   const d = new Date();
@@ -34,6 +35,7 @@ function deltaStr(d: number) {
 }
 
 export default function QAPrepPage() {
+  const toast = useToast();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
@@ -113,6 +115,55 @@ export default function QAPrepPage() {
     });
   }
 
+  function copyForSlack() {
+    if (!data) return;
+    const dateLabel = fmtThursday(nextThursday);
+    let text = `*🎯 Q&A Call Prep — ${dateLabel}*\n\n`;
+
+    if (data.celebrate?.length) {
+      text += `*✅ Celebrate*\n`;
+      data.celebrate.forEach((m: any) => {
+        text += `• *${m.name}* — `;
+        text += (m.improvements || [])
+          .map((i: any) => `${i.principle}: ${Number(i.from).toFixed(1)}→${Number(i.to).toFixed(1)} (${deltaStr(i.delta)})`)
+          .join(", ");
+        text += "\n";
+      });
+      text += "\n";
+    }
+
+    if (data.address?.length) {
+      text += `*⚠️ Address*\n`;
+      data.address.forEach((m: any) => {
+        text += `• *${m.name}* — `;
+        text += (m.issues || [])
+          .map((i: any) => `${i.principle}: ${Number(i.score).toFixed(1)}/10`)
+          .join(", ");
+        text += "\n";
+      });
+      text += "\n";
+    }
+
+    if (data.commonGaps?.length) {
+      text += `*🔴 Common Gaps (Top 5)*\n`;
+      data.commonGaps.forEach((g: any) => {
+        text += `• ${g.principle}: avg ${Number(g.avgScore).toFixed(1)}/10 (${g.memberCount} members)\n`;
+      });
+      text += "\n";
+    }
+
+    if (data.perMember?.length) {
+      text += `*📋 Per-Member Notes*\n`;
+      data.perMember.slice(0, 10).forEach((m: any) => {
+        const gaps = (m.criticalGaps || m.topGaps || []).map((g: any) => g.principle).join(", ");
+        text += `• *${m.name}*: ${gaps || "No critical gaps"}\n`;
+      });
+      if (data.perMember.length > 10) text += `_...and ${data.perMember.length - 10} more_\n`;
+    }
+
+    navigator.clipboard.writeText(text).then(() => toast.success("Copied for Slack!"));
+  }
+
   return (
     <div className="space-y-6 max-w-4xl">
       {/* Header */}
@@ -129,6 +180,13 @@ export default function QAPrepPage() {
           >
             <ArrowPathIcon className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
             Regenerate
+          </button>
+          <button
+            onClick={copyForSlack}
+            disabled={!data || loading}
+            className="inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border border-[#2f3437]/20 hover:bg-gray-50 text-[#2f3437]/70 transition-colors disabled:opacity-40"
+          >
+            Copy for Slack
           </button>
           <button
             onClick={copyToClipboard}

@@ -83,6 +83,102 @@ function textToFeatures(text: string): string[] {
   return text.split("\n").map((l) => l.trim()).filter(Boolean);
 }
 
+function ChipListEditor({
+  items,
+  onChange,
+  placeholder,
+}: {
+  items: string[];
+  onChange: (items: string[]) => void;
+  placeholder?: string;
+}) {
+  const [input, setInput] = useState("");
+
+  function addItem() {
+    const trimmed = input.trim();
+    if (trimmed && !items.includes(trimmed)) {
+      onChange([...items, trimmed]);
+      setInput("");
+    }
+  }
+
+  function removeItem(index: number) {
+    onChange(items.filter((_, i) => i !== index));
+  }
+
+  function moveItem(from: number, direction: -1 | 1) {
+    const to = from + direction;
+    if (to < 0 || to >= items.length) return;
+    const arr = [...items];
+    [arr[from], arr[to]] = [arr[to], arr[from]];
+    onChange(arr);
+  }
+
+  return (
+    <div>
+      {items.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-2">
+          {items.map((item, i) => (
+            <div
+              key={i}
+              className="inline-flex items-center gap-1 bg-gray-100 dark:bg-white/10 rounded-md px-2.5 py-1 text-xs group"
+            >
+              {i > 0 && (
+                <button
+                  type="button"
+                  onClick={() => moveItem(i, -1)}
+                  className="opacity-0 group-hover:opacity-50 hover:!opacity-100 text-[10px] text-[#2f3437] dark:text-white"
+                >
+                  ↑
+                </button>
+              )}
+              <span className="text-[#2f3437] dark:text-[#e2e8f0]">{item}</span>
+              {i < items.length - 1 && (
+                <button
+                  type="button"
+                  onClick={() => moveItem(i, 1)}
+                  className="opacity-0 group-hover:opacity-50 hover:!opacity-100 text-[10px] text-[#2f3437] dark:text-white"
+                >
+                  ↓
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => removeItem(i)}
+                className="ml-1 text-red-400 hover:text-red-600 text-sm leading-none"
+              >
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="flex gap-2">
+        <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              addItem();
+            }
+          }}
+          placeholder={placeholder || "Type a feature and press Enter..."}
+          className="flex-1 border border-[#eaeaea] dark:border-white/10 bg-white dark:bg-[#111c2a] rounded-lg px-3 py-2 text-sm text-[#2f3437] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/50"
+        />
+        <button
+          type="button"
+          onClick={addItem}
+          disabled={!input.trim()}
+          className="px-3 py-2 text-xs bg-[#6ba3c7] text-white rounded-lg hover:bg-[#5490b5] disabled:opacity-50 transition-colors"
+        >
+          Add
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── Tab pill ──────────────────────────────────────────────────
 
 type Tab = "packages" | "waitlist" | "preview";
@@ -302,8 +398,8 @@ interface PackageFormState {
   priceNote: string;
   badge: string;
   subtitle: string;
-  features: string;
-  highlightFeatures: string;
+  features: string[];
+  highlightFeatures: string[];
   stripeUrl: string;
   waitlist: boolean;
   published: boolean;
@@ -319,8 +415,8 @@ function PackageModal({ pkg, categoryId, onClose, onSave }: { pkg: Package | nul
     priceNote: pkg?.priceNote ?? "",
     badge: pkg?.badge ?? "",
     subtitle: pkg?.subtitle ?? "",
-    features: pkg ? featuresToText(pkg.features) : "",
-    highlightFeatures: pkg?.highlightFeatures ? featuresToText(pkg.highlightFeatures) : "",
+    features: pkg ? pkg.features : [],
+    highlightFeatures: pkg?.highlightFeatures ?? [],
     stripeUrl: pkg?.stripeUrl ?? "",
     waitlist: pkg?.waitlist ?? false,
     published: pkg?.published ?? true,
@@ -351,8 +447,8 @@ function PackageModal({ pkg, categoryId, onClose, onSave }: { pkg: Package | nul
           priceNote: form.priceNote || null,
           badge: form.badge || null,
           subtitle: form.subtitle || null,
-          features: textToFeatures(form.features),
-          highlightFeatures: textToFeatures(form.highlightFeatures),
+          features: form.features,
+          highlightFeatures: form.highlightFeatures,
           stripeUrl: form.stripeUrl || null,
           waitlist: form.waitlist,
           published: form.published,
@@ -404,12 +500,20 @@ function PackageModal({ pkg, categoryId, onClose, onSave }: { pkg: Package | nul
             </div>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-[#2f3437]/60 dark:text-white/40 mb-1">Features <span className="font-normal">(one per line)</span></label>
-            <textarea rows={5} className={`${ic} resize-none font-mono`} value={form.features} onChange={(e) => set("features", e.target.value)} placeholder={"Professional editing, graphics, titles, and b-roll\nMusic and asset licensing"} />
+            <label className="block text-xs font-semibold text-[#2f3437]/60 dark:text-white/40 mb-1">Features</label>
+            <ChipListEditor
+              items={form.features}
+              onChange={(features) => set("features", features)}
+              placeholder="Add a feature and press Enter..."
+            />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-[#2f3437]/60 dark:text-white/40 mb-1">Highlight Features <span className="font-normal">(one per line, optional)</span></label>
-            <textarea rows={3} className={`${ic} resize-none font-mono`} value={form.highlightFeatures} onChange={(e) => set("highlightFeatures", e.target.value)} placeholder={"2 long-form video edits per month\n1 full funnel built at launch"} />
+            <label className="block text-xs font-semibold text-[#2f3437]/60 dark:text-white/40 mb-1">Highlight Features <span className="font-normal">(optional)</span></label>
+            <ChipListEditor
+              items={form.highlightFeatures}
+              onChange={(highlightFeatures) => set("highlightFeatures", highlightFeatures)}
+              placeholder="Add a highlight feature and press Enter..."
+            />
           </div>
           <div>
             <label className="block text-xs font-semibold text-[#2f3437]/60 dark:text-white/40 mb-1">Stripe URL <span className="font-normal">(leave blank for "Message Us" or Waitlist CTA)</span></label>

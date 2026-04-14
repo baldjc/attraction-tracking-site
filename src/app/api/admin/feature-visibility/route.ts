@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { FEATURE_SETTING_KEY, DEFAULT_FLAGS, FeatureFlags } from "@/lib/feature-flags";
+import { logAdminAction } from "@/lib/admin-log";
 
 export async function GET() {
   const session = await auth();
@@ -47,6 +48,14 @@ export async function PUT(req: NextRequest) {
     where: { key: FEATURE_SETTING_KEY },
     update: { value: JSON.stringify(updatedFlags) },
     create: { key: FEATURE_SETTING_KEY, value: JSON.stringify(updatedFlags) },
+  });
+
+  await logAdminAction({
+    actorId: (session.user as any).id ?? "",
+    actorEmail: session.user.email ?? "",
+    action: "feature_flag.changed",
+    targetType: "feature_flag",
+    details: { flag: key, value },
   });
 
   return NextResponse.json(updatedFlags);

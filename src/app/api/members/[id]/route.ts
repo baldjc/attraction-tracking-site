@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { isAdminOrEditor, isAdmin, canAccessTier } from "@/lib/auth-utils";
+import { logAdminAction } from "@/lib/admin-log";
 
 export async function GET(
   _req: NextRequest,
@@ -86,10 +87,29 @@ export async function PATCH(
     if (key in body) updates[key] = body[key];
   }
 
+  // Fetch old tier before update if a tier change is incoming
+  let oldTier: string | null = null;
+  if ("serviceTier" in body) {
+    const existing = await prisma.user.findUnique({ where: { id }, select: { serviceTier: true } });
+    oldTier = existing?.serviceTier ?? null;
+  }
+
   const member = await prisma.user.update({
     where: { id },
     data: updates,
   });
+
+  // Log tier change
+  if ("serviceTier" in body && body.serviceTier !== oldTier) {
+    await logAdminAction({
+      actorId: (session.user as any).id ?? "",
+      actorEmail: session.user.email ?? "",
+      action: "member.tier_changed",
+      targetType: "member",
+      targetId: id,
+      details: { from: oldTier, to: body.serviceTier },
+    });
+  }
 
   return NextResponse.json({ member });
 }
@@ -112,6 +132,15 @@ export async function DELETE(
 
   // Cascades to all related records (audits, links, scripts, etc.)
   await prisma.user.delete({ where: { id } });
+
+  await logAdminAction({
+    actorId: (session.user as any).id ?? "",
+    actorEmail: session.user.email ?? "",
+    action: "member.deleted",
+    targetType: "member",
+    targetId: id,
+    details: { name: member.fullName, email: member.email },
+  });
 
   return NextResponse.json({ success: true });
 }

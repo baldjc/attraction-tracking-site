@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 import { isAdmin } from "@/lib/auth-utils";
 import { sendSmsToContact } from "@/lib/ghl";
 import { getPaymentRetryUrl } from "@/lib/stripe";
+import { logAdminAction } from "@/lib/admin-log";
 
 export async function POST(
   _req: NextRequest,
@@ -60,6 +61,14 @@ export async function POST(
   await prisma.user.update({
     where: { id },
     data: { lastPaymentReminderSentAt: sentAt },
+  });
+
+  await logAdminAction({
+    actorId: (session.user as any).id ?? "",
+    actorEmail: session.user.email ?? "",
+    action: "payment_reminder.sent",
+    targetType: "member",
+    targetId: id,
   });
 
   return NextResponse.json({ ok: true, sentAt: sentAt.toISOString() });

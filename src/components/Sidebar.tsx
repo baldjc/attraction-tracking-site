@@ -36,6 +36,7 @@ import {
   MagnifyingGlassCircleIcon,
   LockClosedIcon,
   FolderIcon,
+  ClockIcon,
 } from "@heroicons/react/24/outline";
 import { useState, useEffect } from "react";
 import { IMPERSONATE_LS_KEY } from "@/lib/impersonate-constants";
@@ -68,6 +69,7 @@ const adminLinks = [
   { href: "/admin/intelligence", label: "Intelligence", icon: MagnifyingGlassCircleIcon, section: "Content" },
   { href: "/admin/generate-leads", label: "Generate Leads", icon: RocketLaunchIcon, section: "Growth" },
   { href: "/admin/hire", label: "Hire a Human", icon: UserGroupIcon, section: "Growth", badgeKey: "hireWaitlist" },
+  { href: "/admin/activity-log", label: "Activity Log", icon: ClockIcon, section: "System" },
   { href: "/admin/settings", label: "Settings", icon: Cog6ToothIcon, section: "System" },
 ];
 
