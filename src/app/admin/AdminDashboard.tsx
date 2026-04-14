@@ -24,6 +24,7 @@ interface StatCard {
   label: string;
   value: string | number;
   icon: React.ComponentType<{ className?: string }>;
+  href: string;
 }
 
 interface Activity {
@@ -103,10 +104,10 @@ export default function AdminDashboard() {
         ]);
 
         setStats([
-          { label: "Total Members", value: members.length, icon: UsersIcon },
-          { label: "Videos This Week", value: totalVideos, icon: VideoCameraIcon },
-          { label: "MRR", value: typeof mrr === "number" ? `$${mrr.toLocaleString()}` : mrr, icon: CurrencyDollarIcon },
-          { label: "Avg Audit Score", value: avgScore, icon: StarIcon },
+          { label: "Total Members", value: members.length, icon: UsersIcon, href: "/admin/members" },
+          { label: "Videos This Week", value: totalVideos, icon: VideoCameraIcon, href: "/admin/analytics" },
+          { label: "MRR", value: typeof mrr === "number" ? `$${mrr.toLocaleString()}` : mrr, icon: CurrencyDollarIcon, href: "/admin/members" },
+          { label: "Avg Audit Score", value: avgScore, icon: StarIcon, href: "/admin/audits" },
         ]);
 
         try {
@@ -181,9 +182,10 @@ export default function AdminDashboard() {
       {/* Quick Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {stats.map((s) => (
-          <div
+          <Link
             key={s.label}
-            className="bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-[#2a2a2a] p-4"
+            href={s.href}
+            className="bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-[#2a2a2a] p-4 hover:shadow-md transition-shadow"
           >
             <div className="flex items-center gap-2 mb-1">
               <s.icon className="w-4 h-4 text-[#6ba3c7]" />
@@ -192,7 +194,7 @@ export default function AdminDashboard() {
               </p>
             </div>
             <p className="text-2xl font-bold text-[#6ba3c7]">{s.value}</p>
-          </div>
+          </Link>
         ))}
       </div>
 
