@@ -16,7 +16,7 @@ export async function PUT(
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id, callId } = await params;
-  const { fathomUrl, callDate, topic, notes } = await req.json();
+  const { fathomUrl, loomUrl, callDate, topic, notes } = await req.json();
 
   const existing = await prisma.clientCall.findUnique({ where: { id: callId } });
   if (!existing || existing.userId !== id) {
@@ -26,7 +26,8 @@ export async function PUT(
   const call = await prisma.clientCall.update({
     where: { id: callId },
     data: {
-      ...(fathomUrl !== undefined && { fathomUrl }),
+      ...(fathomUrl !== undefined && { fathomUrl: fathomUrl || null }),
+      ...(loomUrl !== undefined && { loomUrl: loomUrl || null }),
       ...(callDate !== undefined && { callDate: new Date(callDate) }),
       ...(topic !== undefined && { topic }),
       ...(notes !== undefined && { notes }),

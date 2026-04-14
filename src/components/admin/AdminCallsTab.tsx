@@ -5,7 +5,8 @@ import { PencilIcon, TrashIcon, PlusIcon, XMarkIcon } from "@heroicons/react/24/
 
 interface Call {
   id: string;
-  fathomUrl: string;
+  fathomUrl: string | null;
+  loomUrl: string | null;
   callDate: string;
   topic: string | null;
   notes: string | null;
@@ -29,7 +30,13 @@ function callTitle(call: Call) {
   return `Strategy Call — ${formatDate(call.callDate)}`;
 }
 
-const EMPTY_FORM = { fathomUrl: "", callDate: "", topic: "", notes: "" };
+function loomEmbedUrl(url: string): string {
+  const match = url.match(/loom\.com\/(?:share|embed)\/([a-zA-Z0-9]+)/);
+  if (match) return `https://www.loom.com/embed/${match[1]}`;
+  return url;
+}
+
+const EMPTY_FORM = { fathomUrl: "", loomUrl: "", callDate: "", topic: "", notes: "" };
 
 export default function AdminCallsTab({ memberId }: Props) {
   const [calls, setCalls] = useState<Call[]>([]);
@@ -60,7 +67,8 @@ export default function AdminCallsTab({ memberId }: Props) {
   function openEdit(call: Call) {
     setEditing(call);
     setForm({
-      fathomUrl: call.fathomUrl,
+      fathomUrl: call.fathomUrl ?? "",
+      loomUrl: call.loomUrl ?? "",
       callDate: call.callDate.slice(0, 10),
       topic: call.topic ?? "",
       notes: call.notes ?? "",
@@ -70,8 +78,12 @@ export default function AdminCallsTab({ memberId }: Props) {
   }
 
   async function handleSave() {
-    if (!form.fathomUrl || !form.callDate) {
-      setError("Fathom URL and call date are required.");
+    if (!form.callDate) {
+      setError("Call date is required.");
+      return;
+    }
+    if (!form.fathomUrl && !form.loomUrl) {
+      setError("Please provide at least a Fathom URL or Loom URL.");
       return;
     }
     setSaving(true);
@@ -85,7 +97,8 @@ export default function AdminCallsTab({ memberId }: Props) {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          fathomUrl: form.fathomUrl,
+          fathomUrl: form.fathomUrl || null,
+          loomUrl: form.loomUrl || null,
           callDate: form.callDate,
           topic: form.topic || null,
           notes: form.notes || null,
@@ -114,7 +127,6 @@ export default function AdminCallsTab({ memberId }: Props) {
       setCalls((prev) => prev.filter((c) => c.id !== deleteTarget.id));
       setDeleteTarget(null);
     } catch {
-      // silent
     } finally {
       setDeleting(false);
     }
@@ -144,48 +156,12 @@ export default function AdminCallsTab({ memberId }: Props) {
       ) : (
         <div className="space-y-5">
           {calls.map((call) => (
-            <div key={call.id} className="bg-gray-50 border border-gray-200 rounded-xl overflow-hidden">
-              <div className="flex items-start justify-between px-5 pt-5 pb-3">
-                <div>
-                  <p className="text-xs font-medium text-[#6ba3c7] mb-0.5 uppercase tracking-wide">
-                    {formatDate(call.callDate)}
-                  </p>
-                  <h3 className="text-sm font-semibold text-[#2f3437]">{callTitle(call)}</h3>
-                </div>
-                <div className="flex items-center gap-1 shrink-0 ml-3">
-                  <button
-                    onClick={() => openEdit(call)}
-                    className="p-1.5 text-[#2f3437]/40 hover:text-[#2f3437] rounded-md hover:bg-gray-200 transition-colors"
-                    title="Edit"
-                  >
-                    <PencilIcon className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={() => setDeleteTarget(call)}
-                    className="p-1.5 text-[#2f3437]/40 hover:text-red-600 rounded-md hover:bg-red-50 transition-colors"
-                    title="Delete"
-                  >
-                    <TrashIcon className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-              <div className="px-5">
-                <iframe
-                  src={call.fathomUrl}
-                  width="100%"
-                  height="360"
-                  frameBorder="0"
-                  allowFullScreen
-                  className="rounded-lg border border-gray-200 bg-white"
-                />
-              </div>
-              {call.notes && (
-                <div className="px-5 py-4">
-                  <p className="text-sm text-[#2f3437]/60 whitespace-pre-line">{call.notes}</p>
-                </div>
-              )}
-              {!call.notes && <div className="pb-4" />}
-            </div>
+            <CallCard
+              key={call.id}
+              call={call}
+              onEdit={openEdit}
+              onDelete={setDeleteTarget}
+            />
           ))}
         </div>
       )}
@@ -202,16 +178,6 @@ export default function AdminCallsTab({ memberId }: Props) {
               </button>
             </div>
             <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Fathom URL *</label>
-                <input
-                  type="text"
-                  value={form.fathomUrl}
-                  onChange={(e) => setForm((f) => ({ ...f, fathomUrl: e.target.value }))}
-                  placeholder="https://fathom.video/share/..."
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30"
-                />
-              </div>
               <div>
                 <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Call Date *</label>
                 <input
@@ -230,6 +196,29 @@ export default function AdminCallsTab({ memberId }: Props) {
                   placeholder="e.g., Monthly Strategy Review"
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30"
                 />
+              </div>
+              <div className="border border-gray-100 rounded-lg p-3 space-y-3 bg-gray-50/50">
+                <p className="text-xs font-medium text-[#2f3437]/50">Video — add at least one</p>
+                <div>
+                  <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Fathom URL</label>
+                  <input
+                    type="text"
+                    value={form.fathomUrl}
+                    onChange={(e) => setForm((f) => ({ ...f, fathomUrl: e.target.value }))}
+                    placeholder="https://fathom.video/share/..."
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30 bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Loom URL</label>
+                  <input
+                    type="text"
+                    value={form.loomUrl}
+                    onChange={(e) => setForm((f) => ({ ...f, loomUrl: e.target.value }))}
+                    placeholder="https://www.loom.com/share/..."
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30 bg-white"
+                  />
+                </div>
               </div>
               <div>
                 <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Notes (optional)</label>
@@ -267,7 +256,7 @@ export default function AdminCallsTab({ memberId }: Props) {
           <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6">
             <h3 className="text-base font-semibold text-[#2f3437] mb-2">Delete call recording?</h3>
             <p className="text-sm text-[#2f3437]/60 mb-6">
-              The Fathom recording itself won't be affected.
+              The video recordings themselves won&apos;t be affected.
             </p>
             <div className="flex gap-2 justify-end">
               <button
@@ -287,6 +276,105 @@ export default function AdminCallsTab({ memberId }: Props) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function CallCard({
+  call,
+  onEdit,
+  onDelete,
+}: {
+  call: Call;
+  onEdit: (call: Call) => void;
+  onDelete: (call: Call) => void;
+}) {
+  const hasLoom = !!call.loomUrl;
+  const hasFathom = !!call.fathomUrl;
+  const hasBoth = hasLoom && hasFathom;
+  const [activeTab, setActiveTab] = useState<"loom" | "fathom">(hasLoom ? "loom" : "fathom");
+
+  return (
+    <div className="bg-gray-50 border border-gray-200 rounded-xl overflow-hidden">
+      <div className="flex items-start justify-between px-5 pt-5 pb-3">
+        <div>
+          <p className="text-xs font-medium text-[#6ba3c7] mb-0.5 uppercase tracking-wide">
+            {formatDate(call.callDate)}
+          </p>
+          <h3 className="text-sm font-semibold text-[#2f3437]">{callTitle(call)}</h3>
+        </div>
+        <div className="flex items-center gap-1 shrink-0 ml-3">
+          <button
+            onClick={() => onEdit(call)}
+            className="p-1.5 text-[#2f3437]/40 hover:text-[#2f3437] rounded-md hover:bg-gray-200 transition-colors"
+            title="Edit"
+          >
+            <PencilIcon className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={() => onDelete(call)}
+            className="p-1.5 text-[#2f3437]/40 hover:text-red-600 rounded-md hover:bg-red-50 transition-colors"
+            title="Delete"
+          >
+            <TrashIcon className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+
+      {hasBoth && (
+        <div className="px-5 pb-3 flex gap-2">
+          <button
+            onClick={() => setActiveTab("loom")}
+            className={`text-xs px-3 py-1 rounded-full border transition-colors ${
+              activeTab === "loom"
+                ? "bg-[#2f3437] text-white border-[#2f3437]"
+                : "text-[#2f3437]/50 border-gray-200 hover:border-[#2f3437]/30"
+            }`}
+          >
+            Loom
+          </button>
+          <button
+            onClick={() => setActiveTab("fathom")}
+            className={`text-xs px-3 py-1 rounded-full border transition-colors ${
+              activeTab === "fathom"
+                ? "bg-[#2f3437] text-white border-[#2f3437]"
+                : "text-[#2f3437]/50 border-gray-200 hover:border-[#2f3437]/30"
+            }`}
+          >
+            Fathom
+          </button>
+        </div>
+      )}
+
+      <div className="px-5">
+        {(activeTab === "loom" && call.loomUrl) && (
+          <iframe
+            src={loomEmbedUrl(call.loomUrl)}
+            width="100%"
+            height="360"
+            frameBorder="0"
+            allowFullScreen
+            className="rounded-lg border border-gray-200 bg-white"
+          />
+        )}
+        {(activeTab === "fathom" && call.fathomUrl) && (
+          <iframe
+            src={call.fathomUrl}
+            width="100%"
+            height="360"
+            frameBorder="0"
+            allowFullScreen
+            className="rounded-lg border border-gray-200 bg-white"
+          />
+        )}
+      </div>
+
+      {call.notes && (
+        <div className="px-5 py-4">
+          <p className="text-sm text-[#2f3437]/60 whitespace-pre-line">{call.notes}</p>
+        </div>
+      )}
+      {!call.notes && <div className="pb-4" />}
     </div>
   );
 }

@@ -791,7 +791,8 @@ model ClientCall {
   userId      String
   user        User     @relation("ClientCalls", fields: [userId], references: [id], onDelete: Cascade)
 
-  fathomUrl   String
+  fathomUrl   String?
+  loomUrl     String?
   callDate    DateTime
   topic       String?
   notes       String?  @db.Text

@@ -27,10 +27,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
-  const { fathomUrl, callDate, topic, notes } = await req.json();
+  const { fathomUrl, loomUrl, callDate, topic, notes } = await req.json();
 
-  if (!fathomUrl || !callDate) {
-    return NextResponse.json({ error: "fathomUrl and callDate are required" }, { status: 400 });
+  if (!callDate) {
+    return NextResponse.json({ error: "callDate is required" }, { status: 400 });
+  }
+  if (!fathomUrl && !loomUrl) {
+    return NextResponse.json({ error: "At least one video URL (Fathom or Loom) is required" }, { status: 400 });
   }
 
   const adminId = (session.user as any).id as string;
@@ -38,7 +41,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const call = await prisma.clientCall.create({
     data: {
       userId: id,
-      fathomUrl,
+      fathomUrl: fathomUrl || null,
+      loomUrl: loomUrl || null,
       callDate: new Date(callDate),
       topic: topic ?? null,
       notes: notes ?? null,
