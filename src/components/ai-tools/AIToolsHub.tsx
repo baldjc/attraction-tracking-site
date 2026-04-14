@@ -121,8 +121,8 @@ const SECTIONS = [
     icon: "📤",
     label: "Distribute",
     description: "Turn one video into content everywhere.",
-    tools: ["repurpose_content"],
-    columns: 1,
+    tools: ["repurpose_content", "description_generator"],
+    columns: 2,
   },
 ];
 
