@@ -1,16 +1,13 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { resolveUserFromSession } from "@/lib/session-utils";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const userId = session.user.id;
+  const user = await resolveUserFromSession();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const seenIds = await prisma.changelogEntryView.findMany({
-    where: { userId },
+    where: { userId: user.id },
     select: { entryId: true },
   });
   const seenSet = new Set(seenIds.map((v) => v.entryId));
@@ -28,15 +25,15 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const user = await resolveUserFromSession();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { entryId } = await req.json();
   if (!entryId) return NextResponse.json({ error: "entryId required" }, { status: 400 });
 
   await prisma.changelogEntryView.upsert({
-    where: { entryId_userId: { entryId, userId: session.user.id } },
-    create: { entryId, userId: session.user.id },
+    where: { entryId_userId: { entryId, userId: user.id } },
+    create: { entryId, userId: user.id },
     update: {},
   });
 
