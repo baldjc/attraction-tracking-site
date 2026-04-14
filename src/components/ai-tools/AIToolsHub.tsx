@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ChevronRightIcon } from "@heroicons/react/24/outline";
 import { useSession } from "next-auth/react";
 
 interface AvatarData {
@@ -92,6 +91,41 @@ function UsageCard({ usage }: { usage: UsageData }) {
   );
 }
 
+const SECTIONS = [
+  {
+    id: "start",
+    icon: "🏁",
+    label: "Get Started",
+    description: "Everything starts with knowing who you're talking to.",
+    tools: ["avatar_architect"],
+    columns: 1,
+  },
+  {
+    id: "create",
+    icon: "✍️",
+    label: "Create",
+    description: "Turn your avatar into ideas and scripts.",
+    tools: ["content_engine", "arc_script_builder"],
+    columns: 2,
+  },
+  {
+    id: "refine",
+    icon: "🔍",
+    label: "Refine",
+    description: "Score and improve before you publish.",
+    tools: ["title_analyzer", "script_review"],
+    columns: 2,
+  },
+  {
+    id: "distribute",
+    icon: "📤",
+    label: "Distribute",
+    description: "Turn one video into content everywhere.",
+    tools: ["repurpose_content"],
+    columns: 1,
+  },
+];
+
 export default function AIToolsHub({ basePath, featureFlags }: Props) {
   const { data: session } = useSession();
   const isAdmin = (session?.user as any)?.role === "admin";
@@ -157,16 +191,6 @@ export default function AIToolsHub({ basePath, featureFlags }: Props) {
       badge: avatar?.avatarName ? "green" : "amber",
     },
     {
-      href: `${basePath}/title-thumbnail-analyzer`,
-      id: "tool-title",
-      featureKey: "tool_title_analyzer",
-      icon: "🔍",
-      title: "Title & Thumbnail Analyzer",
-      description: "Score your title and thumbnail combination before you publish",
-      extra: avatarStatus,
-      badge: avatar?.avatarName ? "green" : "amber",
-    },
-    {
       href: `${basePath}/arc-script-builder`,
       id: "tool-script-builder",
       featureKey: "tool_arc_script_builder",
@@ -176,6 +200,16 @@ export default function AIToolsHub({ basePath, featureFlags }: Props) {
       extra: lastScript
         ? `Last script: ${new Date(lastScript.createdAt).toLocaleDateString()}`
         : avatarStatus,
+      badge: avatar?.avatarName ? "green" : "amber",
+    },
+    {
+      href: `${basePath}/title-thumbnail-analyzer`,
+      id: "tool-title",
+      featureKey: "tool_title_analyzer",
+      icon: "🔍",
+      title: "Title & Thumbnail Analyzer",
+      description: "Score your title and thumbnail combination before you publish",
+      extra: avatarStatus,
       badge: avatar?.avatarName ? "green" : "amber",
     },
     {
@@ -215,52 +249,21 @@ export default function AIToolsHub({ basePath, featureFlags }: Props) {
   ];
 
   const hasAvatar = !loading && !!avatar?.avatarName;
-  const hasIdeas = !loading && (savedIdeasCount ?? 0) > 0;
-  const hasScript = !loading && !!lastScript;
 
-  type StepStatus = "complete" | "current" | "upcoming";
-  const workflowSteps: { label: string; sublabel: string; status: StepStatus; targetId: string }[] = [
-    {
-      label: "Step 1",
-      sublabel: "Build Avatar",
-      status: hasAvatar ? "complete" : "current",
-      targetId: "tool-avatar",
-    },
-    {
-      label: "Step 2",
-      sublabel: "Generate Ideas",
-      status: hasAvatar && hasIdeas ? "complete" : hasAvatar ? "current" : "upcoming",
-      targetId: "tool-content-engine",
-    },
-    {
-      label: "Step 3",
-      sublabel: "Write Script",
-      status: hasIdeas && hasScript ? "complete" : hasIdeas ? "current" : "upcoming",
-      targetId: "tool-script-builder",
-    },
-    {
-      label: "Step 4",
-      sublabel: "Review & Package",
-      status: hasScript ? "current" : "upcoming",
-      targetId: "tool-review",
-    },
-    {
-      label: "Step 5",
-      sublabel: "Repurpose",
-      status: hasScript ? "current" : "upcoming",
-      targetId: "tool-repurpose",
-    },
-  ];
+  const toolMap: Record<string, typeof allTools[number]> = {};
+  allTools.forEach((t) => {
+    const key = t.featureKey.replace("tool_", "");
+    toolMap[key] = t;
+  });
 
-  const tools = featureFlags
-    ? allTools.filter((t) => featureFlags[t.featureKey] !== false)
-    : allTools;
+  let stepNum = 0;
 
   return (
-    <div>
+    <div className="space-y-8">
 
-      {!loading && usage && (usage.percentUsed >= 50) && (
-        <div className={`mb-5 flex items-start gap-3 border rounded-lg p-4 ${
+      {/* Usage warning banner */}
+      {!loading && usage && usage.percentUsed >= 50 && (
+        <div className={`flex items-start gap-3 border rounded-lg p-4 ${
           usage.percentUsed >= 90
             ? "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800"
             : usage.percentUsed >= 75
@@ -278,88 +281,126 @@ export default function AIToolsHub({ basePath, featureFlags }: Props) {
         </div>
       )}
 
-      {!loading && !avatar?.avatarName && (
-        <div className="mb-6 flex items-start gap-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
-          <span className="text-xl">💡</span>
-          <div>
-            <p className="font-semibold text-amber-800 dark:text-amber-300 text-sm">Start with the Avatar Architect</p>
-            <p className="text-amber-700 dark:text-amber-400 text-sm mt-0.5">
-              All tools work best when they know who you're speaking to. Build your avatar once and every tool uses it automatically.
-            </p>
-          </div>
-        </div>
-      )}
+      {/* Sections */}
+      {SECTIONS.map((section) => {
+        const sectionTools = section.tools
+          .map((key) => toolMap[key])
+          .filter(Boolean)
+          .filter((t) => !featureFlags || featureFlags[t.featureKey] !== false);
 
-      {!loading && (
-        <div className="mb-6">
-          <p className="text-[11px] font-semibold text-[#2f3437]/40 dark:text-white/40 uppercase tracking-widest mb-3">
-            Your Content Workflow
-          </p>
-          <div className="flex items-center gap-0 overflow-x-auto pb-1 -mx-1 px-1">
-            {workflowSteps.map((step, i) => (
-              <div key={step.targetId} className="flex items-center shrink-0">
-                <button
-                  onClick={() => {
-                    const el = document.getElementById(step.targetId);
-                    el?.scrollIntoView({ behavior: "smooth", block: "center" });
-                    el?.classList.add("ring-2", "ring-[#6ba3c7]", "ring-offset-2");
-                    setTimeout(() => el?.classList.remove("ring-2", "ring-[#6ba3c7]", "ring-offset-2"), 1800);
-                  }}
-                  className={`flex flex-col items-center px-3 py-2 rounded-lg text-center transition-colors ${
-                    step.status === "complete"
-                      ? "text-[#6ba3c7]"
-                      : step.status === "current"
-                      ? "bg-[#6ba3c7]/8 dark:bg-[#6ba3c7]/15 text-[#2f3437] dark:text-white"
-                      : "text-[#2f3437]/30 dark:text-white/30"
-                  }`}
-                >
-                  <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold mb-1 border transition-colors ${
-                    step.status === "complete"
-                      ? "bg-[#6ba3c7] border-[#6ba3c7] text-white"
-                      : step.status === "current"
-                      ? "bg-white dark:bg-[#1a1a1a] border-[#6ba3c7] text-[#6ba3c7]"
-                      : "bg-transparent border-[#2f3437]/20 dark:border-white/20 text-[#2f3437]/30 dark:text-white/30"
-                  }`}>
-                    {step.status === "complete" ? "✓" : i + 1}
-                  </span>
-                  <span className="text-[10px] font-semibold leading-tight whitespace-nowrap">{step.sublabel}</span>
-                </button>
-                {i < workflowSteps.length - 1 && (
-                  <ChevronRightIcon className="w-3.5 h-3.5 text-[#2f3437]/15 dark:text-white/15 shrink-0 mx-0.5" />
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+        if (sectionTools.length === 0) return null;
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-        {tools.map((tool) => (
-          <Link
-            key={tool.href}
-            id={tool.id}
-            href={tool.href}
-            className="group bg-white dark:bg-[#1a1a1a] rounded-lg border border-[#2f3437]/10 dark:border-white/10 p-6 hover:border-[#6ba3c7]/50 hover:shadow-lg transition-all duration-200"
-          >
-            <div className="flex items-start gap-4">
-              <span className="text-3xl">{tool.icon}</span>
-              <div className="flex-1 min-w-0">
-                <h2 className="font-semibold text-[#2f3437] dark:text-white group-hover:text-[#6ba3c7] transition-colors">
-                  {tool.title}
+        return (
+          <div key={section.id}>
+            {/* Section header */}
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-base">{section.icon}</span>
+              <div>
+                <h2 className="text-sm font-semibold text-[#2f3437] dark:text-[#e2e8f0] uppercase tracking-wider">
+                  {section.label}
                 </h2>
-                <p className="text-sm text-[#2f3437]/60 dark:text-white/60 mt-1">{tool.description}</p>
-                <p className={`text-xs mt-3 font-medium ${tool.badge === "green" ? "text-[#6ba3c7]" : tool.badge === "blue" ? "text-[#2f3437]/50 dark:text-white/50" : "text-amber-600 dark:text-amber-400"}`}>
-                  {tool.extra}
+                <p className="text-xs text-[#2f3437]/40 dark:text-white/30">
+                  {section.description}
                 </p>
               </div>
-              <span className="text-[#2f3437]/20 dark:text-white/20 group-hover:text-[#6ba3c7]/50 transition-colors text-lg">→</span>
             </div>
-          </Link>
-        ))}
-      </div>
 
+            {/* Tool cards */}
+            <div className={`grid gap-3 ${
+              section.columns === 1 ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-2"
+            }`}>
+              {sectionTools.map((tool) => {
+                stepNum++;
+                const isAvatarTool = tool.featureKey === "tool_avatar_architect";
+                const isLocked = !isAvatarTool && !hasAvatar && !loading;
+                const currentStep = stepNum;
+
+                if (isLocked) {
+                  return (
+                    <div
+                      key={tool.href}
+                      className="relative bg-white dark:bg-[#1a1a1a] rounded-xl border border-[#2f3437]/10 dark:border-white/10 p-5 opacity-50 cursor-not-allowed select-none"
+                    >
+                      <div className="flex items-start gap-4">
+                        <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-white/10 flex items-center justify-center shrink-0">
+                          <span className="text-xs font-bold text-[#2f3437]/30 dark:text-white/20">{currentStep}</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xl grayscale">{tool.icon}</span>
+                            <h3 className="font-semibold text-[#2f3437]/40 dark:text-white/30 text-sm">
+                              {tool.title}
+                            </h3>
+                          </div>
+                          <p className="text-xs text-[#2f3437]/30 dark:text-white/20 mt-1">{tool.description}</p>
+                        </div>
+                      </div>
+                      <div className="mt-3 flex items-center gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-lg px-3 py-2">
+                        <svg className="w-3.5 h-3.5 text-amber-500 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+                        </svg>
+                        <span className="text-[11px] font-medium text-amber-700 dark:text-amber-300">
+                          Complete your avatar in Step 1 to unlock this tool
+                        </span>
+                      </div>
+                    </div>
+                  );
+                }
+
+                return (
+                  <Link
+                    key={tool.href}
+                    href={tool.href}
+                    className={`group bg-white dark:bg-[#1a1a1a] rounded-xl border hover:shadow-lg transition-all duration-200 ${
+                      isAvatarTool && !hasAvatar
+                        ? "border-[#6ba3c7] shadow-md shadow-[#6ba3c7]/10 ring-1 ring-[#6ba3c7]/20"
+                        : "border-[#2f3437]/10 dark:border-white/10 hover:border-[#6ba3c7]/50"
+                    } ${section.columns === 1 ? "p-6" : "p-5"}`}
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
+                        isAvatarTool && !hasAvatar
+                          ? "bg-[#6ba3c7] text-white"
+                          : "bg-[#6ba3c7]/10 text-[#6ba3c7]"
+                      }`}>
+                        <span className="text-xs font-bold">{currentStep}</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-xl">{tool.icon}</span>
+                          <h3 className="font-semibold text-[#2f3437] dark:text-white group-hover:text-[#6ba3c7] transition-colors text-sm">
+                            {tool.title}
+                          </h3>
+                          {isAvatarTool && !hasAvatar && (
+                            <span className="text-[10px] font-bold uppercase tracking-wider bg-[#6ba3c7] text-white px-2 py-0.5 rounded-full">
+                              Start Here
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-[#2f3437]/60 dark:text-white/60 mt-1 leading-relaxed">{tool.description}</p>
+                        <p className={`text-xs mt-2 font-medium ${
+                          tool.badge === "green"
+                            ? "text-[#6ba3c7]"
+                            : tool.badge === "blue"
+                            ? "text-[#2f3437]/50 dark:text-white/50"
+                            : "text-amber-600 dark:text-amber-400"
+                        }`}>
+                          {tool.extra}
+                        </p>
+                      </div>
+                      <span className="text-[#2f3437]/20 dark:text-white/20 group-hover:text-[#6ba3c7]/50 transition-colors text-lg mt-1">→</span>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+
+      {/* Usage card */}
       {!loading && usage && (
-        <div className="mt-6">
+        <div>
           <UsageCard usage={usage} />
         </div>
       )}
