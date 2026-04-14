@@ -96,10 +96,10 @@ function tierBadge(tier: string) {
       : tier === "mastery_2" || tier === "mastery_4"
       ? "bg-[#8b5cf6] text-white"
       : tier === "done_with_you"
-      ? "bg-[#1e2a38] text-white"
+      ? "bg-[#78350f] text-[#fef3c7]"
       : "bg-gray-200 text-gray-700";
   return (
-    <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${cls}`}>{label}</span>
+    <span className={`text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap ${cls}`}>{label}</span>
   );
 }
 

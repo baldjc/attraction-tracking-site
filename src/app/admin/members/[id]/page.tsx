@@ -101,7 +101,7 @@ function tierColors(tier: string) {
   if (tier === "foundations") return { badge: "bg-[#6ba3c7]/20 text-[#6ba3c7]", dot: "#6ba3c7" };
   if (tier === "editing_2" || tier === "editing_4") return { badge: "bg-amber-100 text-amber-700", dot: "#f59e0b" };
   if (tier === "mastery_2" || tier === "mastery_4") return { badge: "bg-purple-100 text-purple-700", dot: "#7c3aed" };
-  if (tier === "done_with_you") return { badge: "bg-emerald-100 text-emerald-700", dot: "#059669" };
+  if (tier === "done_with_you") return { badge: "bg-[#78350f]/10 text-[#78350f]", dot: "#78350f" };
   return { badge: "bg-gray-100 text-gray-500", dot: "#9ca3af" };
 }
 
@@ -734,7 +734,7 @@ export default function MemberDetailPage() {
               {!member.youtubeChannelName && isRawChannelId(member.youtubeHandle) && (
                 <span className="text-white/40 text-xs italic">Resolving channel name…</span>
               )}
-              <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full shrink-0 ${tierColors(member.serviceTier).badge}`}>
+              <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full shrink-0 whitespace-nowrap ${tierColors(member.serviceTier).badge}`}>
                 {tierLabel(member.serviceTier)}
               </span>
               {member.stripePlanName && member.subscriptionStatus && (() => {
@@ -1281,7 +1281,7 @@ export default function MemberDetailPage() {
                       {SERVICE_TIERS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
                     </select>
                   ) : (
-                    <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold ${tierColors(member.serviceTier).badge}`}>
+                    <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap ${tierColors(member.serviceTier).badge}`}>
                       {tierLabel(member.serviceTier)}
                     </span>
                   )}
