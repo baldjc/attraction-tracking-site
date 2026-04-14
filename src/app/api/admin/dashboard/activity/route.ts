@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { UserRole } from "@/generated/prisma/client";
 
 export async function GET() {
   const session = await auth();
@@ -22,7 +23,7 @@ export async function GET() {
     prisma.user.findMany({
       where: {
         createdAt: { gte: sevenDaysAgo },
-        role: { in: ["member", "foundations_member"] },
+        role: { in: [UserRole.foundations_member] },
       },
       orderBy: { createdAt: "desc" },
       take: 10,

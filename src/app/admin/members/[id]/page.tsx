@@ -175,7 +175,6 @@ export default function MemberDetailPage() {
 
   const [quickTier, setQuickTier] = useState<string>("");
   const [tierSaving, setTierSaving] = useState(false);
-  const [tierSaved, setTierSaved] = useState(false);
 
   const [notes, setNotes] = useState("");
   const [notesSaving, setNotesSaving] = useState(false);
@@ -190,11 +189,9 @@ export default function MemberDetailPage() {
 
   const [avatarText, setAvatarText] = useState("");
   const [avatarSaving, setAvatarSaving] = useState(false);
-  const [avatarSaved, setAvatarSaved] = useState(false);
 
   const [videoThemes, setVideoThemes] = useState("");
   const [videoThemesSaving, setVideoThemesSaving] = useState(false);
-  const [videoThemesSaved, setVideoThemesSaved] = useState(false);
   const [toolsUsage, setToolsUsage] = useState<{
     scriptsCount: number; analysesCount: number; lastActivity: string | null;
   } | null>(null);
@@ -300,33 +297,41 @@ export default function MemberDetailPage() {
   async function handleSaveAdminAvatar() {
     if (!member?.id) return;
     setAvatarSaving(true);
-    setAvatarSaved(false);
-    let parsed: unknown = avatarText;
-    try { parsed = JSON.parse(avatarText); } catch { /* save as string */ }
-    await fetch(`/api/members/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ avatarProfile: parsed }),
-    });
-    await fetchMember();
-    setAvatarSaving(false);
-    setAvatarSaved(true);
-    setTimeout(() => setAvatarSaved(false), 3000);
+    try {
+      let parsed: unknown = avatarText;
+      try { parsed = JSON.parse(avatarText); } catch { /* save as string */ }
+      const res = await fetch(`/api/members/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ avatarProfile: parsed }),
+      });
+      if (!res.ok) throw new Error("Save failed");
+      await fetchMember();
+      toast.success("Avatar updated.");
+    } catch {
+      toast.error("Failed to save avatar.");
+    } finally {
+      setAvatarSaving(false);
+    }
   }
 
   async function handleSaveVideoThemes() {
     if (!member?.id) return;
     setVideoThemesSaving(true);
-    setVideoThemesSaved(false);
-    await fetch(`/api/members/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ videoThemes }),
-    });
-    await fetchMember();
-    setVideoThemesSaving(false);
-    setVideoThemesSaved(true);
-    setTimeout(() => setVideoThemesSaved(false), 3000);
+    try {
+      const res = await fetch(`/api/members/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ videoThemes }),
+      });
+      if (!res.ok) throw new Error("Save failed");
+      await fetchMember();
+      toast.success("Video themes saved.");
+    } catch {
+      toast.error("Failed to save video themes.");
+    } finally {
+      setVideoThemesSaving(false);
+    }
   }
 
   function isRawChannelId(handle: string | null | undefined): boolean {
@@ -357,39 +362,58 @@ export default function MemberDetailPage() {
 
   async function handleSaveEdit() {
     setSaving(true);
-    await fetch(`/api/members/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(editFields),
-    });
-    await fetchMember();
-    setEditing(false);
-    setSaving(false);
+    try {
+      const res = await fetch(`/api/members/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editFields),
+      });
+      if (!res.ok) throw new Error("Save failed");
+      await fetchMember();
+      setEditing(false);
+      toast.success("Profile updated.");
+    } catch {
+      toast.error("Failed to save profile.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function handleSaveNotes() {
     setNotesSaving(true);
-    const res = await fetch(`/api/members/${id}/notes`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ notes }),
-    });
-    const data = await res.json();
-    setNotesUpdated(data.member?.coachingNotesUpdatedAt ?? null);
-    setNotesSaving(false);
+    try {
+      const res = await fetch(`/api/members/${id}/notes`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notes }),
+      });
+      if (!res.ok) throw new Error("Save failed");
+      const data = await res.json();
+      setNotesUpdated(data.member?.coachingNotesUpdatedAt ?? null);
+      toast.success("Coaching notes saved.");
+    } catch {
+      toast.error("Failed to save notes.");
+    } finally {
+      setNotesSaving(false);
+    }
   }
 
   async function handleQuickTierSave() {
     setTierSaving(true);
-    await fetch(`/api/members/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ serviceTier: quickTier }),
-    });
-    await fetchMember();
-    setTierSaving(false);
-    setTierSaved(true);
-    setTimeout(() => setTierSaved(false), 2000);
+    try {
+      const res = await fetch(`/api/members/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ serviceTier: quickTier }),
+      });
+      if (!res.ok) throw new Error("Save failed");
+      await fetchMember();
+      toast.success(`Tier updated to ${quickTier.replace(/_/g, " ")}`);
+    } catch {
+      toast.error("Failed to update tier.");
+    } finally {
+      setTierSaving(false);
+    }
   }
 
   async function handleSendPaymentReminder() {
@@ -440,9 +464,15 @@ export default function MemberDetailPage() {
 
   async function handleStripeUnlink() {
     setUnlinking(true);
-    await fetch(`/api/admin/members/${id}/stripe-unlink`, { method: "PUT" });
-    await fetchMember();
-    setUnlinking(false);
+    try {
+      await fetch(`/api/admin/members/${id}/stripe-unlink`, { method: "PUT" });
+      await fetchMember();
+      toast.success("Stripe account unlinked.");
+    } catch {
+      toast.error("Failed to unlink Stripe.");
+    } finally {
+      setUnlinking(false);
+    }
   }
 
   async function handleStripeSync() {
@@ -462,16 +492,29 @@ export default function MemberDetailPage() {
 
   async function handleDeleteAudit(auditId: string) {
     setDeletingAuditId(auditId);
-    await fetch(`/api/audits/${auditId}`, { method: "DELETE" });
-    setConfirmDeleteId(null);
-    setDeletingAuditId(null);
-    await fetchMember();
+    try {
+      const res = await fetch(`/api/audits/${auditId}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Delete failed");
+      setConfirmDeleteId(null);
+      setDeletingAuditId(null);
+      await fetchMember();
+      toast.success("Audit deleted.");
+    } catch {
+      toast.error("Failed to delete audit.");
+      setDeletingAuditId(null);
+    }
   }
 
   async function handleDeleteMember() {
     setDeletingMember(true);
-    await fetch(`/api/members/${id}`, { method: "DELETE" });
-    router.push("/admin/members");
+    try {
+      await fetch(`/api/members/${id}`, { method: "DELETE" });
+      toast.success("Member deleted. Redirecting…");
+      router.push("/admin/members");
+    } catch {
+      toast.error("Failed to delete member.");
+      setDeletingMember(false);
+    }
   }
 
   async function runAudit(auditType: string, videoId?: string) {
@@ -1292,7 +1335,7 @@ export default function MemberDetailPage() {
                 <h2 className="text-sm font-semibold text-[#2f3437] mb-3">Membership Level</h2>
                 <select
                   value={quickTier}
-                  onChange={(e) => { setQuickTier(e.target.value); setTierSaved(false); }}
+                  onChange={(e) => setQuickTier(e.target.value)}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30 mb-2"
                 >
                   {SERVICE_TIERS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
@@ -1301,12 +1344,11 @@ export default function MemberDetailPage() {
                   onClick={handleQuickTierSave}
                   disabled={tierSaving || quickTier === member.serviceTier}
                   className={`w-full text-sm font-semibold px-4 py-2 rounded-lg transition-colors ${
-                    tierSaved ? "bg-green-100 text-green-700"
-                    : quickTier === member.serviceTier ? "bg-gray-100 text-gray-400 cursor-default"
+                    quickTier === member.serviceTier ? "bg-gray-100 text-gray-400 cursor-default"
                     : "bg-[#111] hover:bg-[#2a3a4d] text-white"
                   }`}
                 >
-                  {tierSaved ? "Saved" : tierSaving ? "Saving…" : "Save Tier"}
+                  {tierSaving ? "Saving…" : "Save Tier"}
                 </button>
               </div>
             )}
@@ -1808,7 +1850,6 @@ export default function MemberDetailPage() {
                   className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-[#2f3437] font-mono focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30 resize-none"
                 />
                 <div className="flex items-center justify-between mt-2">
-                  {avatarSaved && <span className="text-xs text-green-600 font-medium">Saved</span>}
                   <button
                     onClick={handleSaveAdminAvatar}
                     disabled={avatarSaving}
@@ -1841,7 +1882,6 @@ export default function MemberDetailPage() {
                   className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30 resize-none"
                 />
                 <div className="flex items-center justify-between mt-2">
-                  {videoThemesSaved && <span className="text-xs text-green-600 font-medium">Saved</span>}
                   <button
                     onClick={handleSaveVideoThemes}
                     disabled={videoThemesSaving}

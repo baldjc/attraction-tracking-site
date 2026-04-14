@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useSearchParams, useRouter } from "next/navigation";
 import {
   ArrowPathIcon,
   ChevronUpIcon,
@@ -12,8 +13,10 @@ import {
   CursorArrowRaysIcon,
   TrophyIcon,
   BanknotesIcon,
+  ArrowDownTrayIcon,
 } from "@heroicons/react/24/outline";
 import { useSession } from "next-auth/react";
+import { useToast } from "@/components/ToastProvider";
 
 interface SummaryCards {
   videosThisWeek: number;
@@ -66,7 +69,7 @@ type StatusFilter = "all" | "active" | "at_risk" | "inactive";
 type SortKey = "fullName" | "videos7d" | "clicks7d" | "conversions7d" | "toolUses7d" | "latestAuditScore" | "status" | "lastVideoAt";
 type SortDir = "asc" | "desc";
 
-const PAGE_SIZE = 200;
+const PAGE_SIZE = 50;
 
 const tierLabels: Record<string, string> = {
   foundations: "Foundations",
@@ -203,6 +206,9 @@ export default function MembersPage() {
   const { data: session } = useSession();
   const role = (session?.user as any)?.role ?? "admin";
   const isEditorRole = role === "editor";
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const toast = useToast();
 
   const [members, setMembers] = useState<Member[]>([]);
   const [cards, setCards] = useState<SummaryCards | null>(null);
@@ -221,15 +227,25 @@ export default function MembersPage() {
   const [runningAudit, setRunningAudit] = useState<Record<string, boolean>>({});
   const [auditDone, setAuditDone] = useState<Record<string, string>>({});
 
-  const [search, setSearch] = useState("");
-  const [tierFilter, setTierFilter] = useState<TierFilter>("all");
-  const [subFilter, setSubFilter] = useState<SubFilter>("all");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [search, setSearch] = useState(searchParams.get("search") || "");
+  const [tierFilter, setTierFilter] = useState<TierFilter>((searchParams.get("tier") as TierFilter) || "all");
+  const [subFilter, setSubFilter] = useState<SubFilter>((searchParams.get("sub") as SubFilter) || "all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>((searchParams.get("status") as StatusFilter) || "all");
 
   const [sortKey, setSortKey] = useState<SortKey>("fullName");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [page, setPage] = useState(1);
   const [videosOpen, setVideosOpen] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (search) params.set("search", search);
+    if (tierFilter !== "all") params.set("tier", tierFilter);
+    if (subFilter !== "all") params.set("sub", subFilter);
+    if (statusFilter !== "all") params.set("status", statusFilter);
+    const qs = params.toString();
+    router.replace(`/admin/members${qs ? `?${qs}` : ""}`, { scroll: false });
+  }, [search, tierFilter, subFilter, statusFilter, router]);
 
   const fetchMembers = useCallback(async () => {
     setLoading(true);
@@ -294,6 +310,40 @@ export default function MembersPage() {
       setRefreshMsg("Sync failed. Please try again.");
     }
     setRefreshing(false);
+  }
+
+  function handleExportCSV() {
+    const headers = [
+      "Name", "Email", "YouTube Handle", "Tier", "Subscription",
+      "Audit Score", "Videos (7d)", "Clicks (7d)", "Conversions (7d)",
+      "Tool Uses (7d)", "Status",
+    ];
+    const rows = filtered.map((m: Member) => [
+      m.fullName || "",
+      m.email || "",
+      m.youtubeHandle || "",
+      m.serviceTier || "",
+      m.subscriptionStatus || "",
+      m.latestAuditScore ?? "",
+      m.videos7d ?? 0,
+      m.clicks7d ?? 0,
+      m.conversions7d ?? 0,
+      m.toolUses7d ?? 0,
+      m.status || "",
+    ]);
+    const csv = [headers, ...rows]
+      .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `members-${new Date().toISOString().split("T")[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success(`Exported ${filtered.length} members to CSV`);
   }
 
   async function handleRunAudit(video: RecentVideo) {
@@ -381,6 +431,13 @@ export default function MembersPage() {
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={handleExportCSV}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-[#2f3437]/20 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 text-[#2f3437] dark:text-white transition-colors"
+          >
+            <ArrowDownTrayIcon className="w-4 h-4" />
+            Export CSV
+          </button>
           {!isEditorRole && (
             <button
               onClick={handleRefreshAll}
