@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import prisma from "@/lib/prisma";
-import { isValidStatus } from "@/lib/content-plan-utils";
+import { isValidStatus, PRODUCTION_TIERS } from "@/lib/content-plan-utils";
 import { createVideoFolder } from "@/lib/google-drive";
 
 const DRIVE_TRIGGER_STATUSES = ["Ready to Shoot", "Shooting", "Shot - In Post"];
@@ -27,7 +27,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
   const dbUser = await prisma.user.findUnique({
     where: { id: user.id },
-    select: { serviceTier: true },
+    select: { serviceTier: true, fullName: true, email: true, assetsDriveLink: true },
   });
   const serviceTier = dbUser?.serviceTier ?? "foundations";
 
@@ -60,15 +60,23 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
   if (
     status !== undefined &&
+    PRODUCTION_TIERS.includes(serviceTier) &&
     DRIVE_TRIGGER_STATUSES.includes(status) &&
-    !plan.driveFolderLink
+    (!plan.driveFolderLink || !plan.driveFolderLink.startsWith("http"))
   ) {
     try {
-      const member = await prisma.user.findUnique({ where: { id: user.id }, select: { fullName: true, email: true } });
-      const memberName = member?.fullName || member?.email || user.id;
-      const link = await createVideoFolder(memberName, plan.title);
-      plan = await prisma.contentPlan.update({ where: { id }, data: { driveFolderLink: link } });
-    } catch {
+      const memberName = dbUser?.fullName || dbUser?.email || user.id;
+      const { videoFolderUrl, memberFolderUrl } = await createVideoFolder(memberName, plan.title);
+      const driveUpdates: Promise<unknown>[] = [
+        prisma.contentPlan.update({ where: { id }, data: { driveFolderLink: videoFolderUrl } }),
+      ];
+      if (!dbUser?.assetsDriveLink) {
+        driveUpdates.push(prisma.user.update({ where: { id: user.id }, data: { assetsDriveLink: memberFolderUrl } }));
+      }
+      await Promise.all(driveUpdates);
+      plan = { ...plan, driveFolderLink: videoFolderUrl };
+    } catch (err) {
+      console.error("[content-plans/[id]] Drive folder creation failed:", err);
     }
   }
 
