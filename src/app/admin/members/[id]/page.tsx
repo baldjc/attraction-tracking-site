@@ -101,7 +101,7 @@ function tierColors(tier: string) {
   if (tier === "foundations") return { badge: "bg-[#6ba3c7]/20 text-[#6ba3c7]", dot: "#6ba3c7" };
   if (tier === "editing_2" || tier === "editing_4") return { badge: "bg-amber-100 text-amber-700", dot: "#f59e0b" };
   if (tier === "mastery_2" || tier === "mastery_4") return { badge: "bg-purple-100 text-purple-700", dot: "#7c3aed" };
-  if (tier === "done_with_you") return { badge: "bg-[#78350f]/10 text-[#78350f]", dot: "#78350f" };
+  if (tier === "done_with_you") return { badge: "bg-[#d97706]/20 text-[#d97706]", dot: "#d97706" };
   return { badge: "bg-gray-100 text-gray-500", dot: "#9ca3af" };
 }
 
