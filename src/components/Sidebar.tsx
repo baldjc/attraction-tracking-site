@@ -34,6 +34,7 @@ import {
   CalendarDaysIcon,
   Squares2X2Icon,
   MagnifyingGlassCircleIcon,
+  LockClosedIcon,
 } from "@heroicons/react/24/outline";
 import { useState, useEffect } from "react";
 import { IMPERSONATE_LS_KEY } from "@/lib/impersonate-constants";
@@ -104,6 +105,7 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [impersonate, setImpersonate] = useState<ImpersonateState | null>(null);
+  const [lockedTooltip, setLockedTooltip] = useState<string | null>(null);
   const [showSwitch, setShowSwitch] = useState(false);
   const [qaCallsPending, setQaCallsPending] = useState(0);
   const [hireWaitlist, setHireWaitlist] = useState(0);
@@ -161,15 +163,21 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
 
   const isStaffOnMemberView = isStaff && isImpersonating;
 
-  const baseMemberLinks = memberLinks.filter((link) => {
-    if (link.featureKey && featureFlags && featureFlags[link.featureKey] === false) return false;
-    if (link.href === "/member/client-hub") {
-      if (featureFlags && featureFlags["client_hub"] === false) return false;
-      return clientHubEnabled;
-    }
-    if (link.tierRequired && memberTier && !link.tierRequired.includes(memberTier)) return false;
-    return true;
-  });
+  const baseMemberLinks = memberLinks
+    .filter((link) => {
+      // Feature-flagged items get fully hidden (admin toggle)
+      if (link.featureKey && featureFlags && featureFlags[link.featureKey] === false) return false;
+      // Client Hub: also respect clientHubEnabled flag (hides completely when off)
+      if (link.href === "/member/client-hub") {
+        if (featureFlags && featureFlags["client_hub"] === false) return false;
+        if (!clientHubEnabled) return false;
+      }
+      return true;
+    })
+    .map((link) => ({
+      ...link,
+      locked: !!(link.tierRequired && memberTier && !link.tierRequired.includes(memberTier)),
+    }));
 
   const links = isStaffOnMemberView
     ? baseMemberLinks
@@ -307,35 +315,67 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
               );
             })() : null;
 
+            const isLocked = !!(link as any).locked;
+
             return (
               <div key={link.href}>
                 {sectionHeader}
-                <Link
-                  href={link.href}
-                  title={collapsed ? link.label : undefined}
-                  className={`flex items-center gap-3 py-2.5 text-sm font-medium transition-colors duration-200 border-l-2 rounded-r-md ${
-                    collapsed ? "px-3 justify-center border-l-0" : "px-3"
-                  } ${
-                    active
-                      ? "border-[#6ba3c7] bg-white/10 text-white"
-                      : "border-transparent text-white/60 hover:text-white hover:bg-white/8"
-                  }`}
-                >
-                  <Icon className="w-5 h-5 shrink-0" />
-                  {!collapsed && (
-                    <>
-                      <span className="leading-tight flex-1">{link.label}</span>
-                      {badgeCount > 0 && (
-                        <span className="bg-amber-500 text-amber-900 text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">
-                          {badgeCount}
-                        </span>
-                      )}
-                    </>
-                  )}
-                  {collapsed && badgeCount > 0 && (
-                    <span className="absolute top-1 right-1 w-2 h-2 bg-amber-500 rounded-full" />
-                  )}
-                </Link>
+                {isLocked ? (
+                  <button
+                    onClick={() => {
+                      setLockedTooltip(lockedTooltip === link.label ? null : link.label);
+                      setTimeout(() => setLockedTooltip(null), 3000);
+                    }}
+                    title={collapsed ? `${link.label} (locked)` : undefined}
+                    className={`relative flex items-center gap-3 py-2.5 text-sm font-medium transition-colors duration-200 border-l-2 rounded-r-md w-full text-left opacity-40 cursor-not-allowed ${
+                      collapsed ? "px-3 justify-center border-l-0" : "px-3"
+                    } border-transparent text-white/60`}
+                  >
+                    <Icon className="w-5 h-5 shrink-0" />
+                    {!collapsed && (
+                      <>
+                        <span className="leading-tight flex-1">{link.label}</span>
+                        <LockClosedIcon className="w-3.5 h-3.5 text-white/30 shrink-0" />
+                      </>
+                    )}
+                    {collapsed && (
+                      <LockClosedIcon className="absolute top-1 right-1 w-2.5 h-2.5 text-white/30" />
+                    )}
+                  </button>
+                ) : (
+                  <Link
+                    href={link.href}
+                    title={collapsed ? link.label : undefined}
+                    className={`flex items-center gap-3 py-2.5 text-sm font-medium transition-colors duration-200 border-l-2 rounded-r-md ${
+                      collapsed ? "px-3 justify-center border-l-0" : "px-3"
+                    } ${
+                      active
+                        ? "border-[#6ba3c7] bg-white/10 text-white"
+                        : "border-transparent text-white/60 hover:text-white hover:bg-white/8"
+                    }`}
+                  >
+                    <Icon className="w-5 h-5 shrink-0" />
+                    {!collapsed && (
+                      <>
+                        <span className="leading-tight flex-1">{link.label}</span>
+                        {badgeCount > 0 && (
+                          <span className="bg-amber-500 text-amber-900 text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">
+                            {badgeCount}
+                          </span>
+                        )}
+                      </>
+                    )}
+                    {collapsed && badgeCount > 0 && (
+                      <span className="absolute top-1 right-1 w-2 h-2 bg-amber-500 rounded-full" />
+                    )}
+                  </Link>
+                )}
+                {!collapsed && lockedTooltip === link.label && isLocked && (
+                  <div className="ml-8 mt-1 mb-1 bg-[#1e2a38] border border-white/10 text-white text-xs rounded-lg px-3 py-2 shadow-lg">
+                    {link.label === "Content Planner" && "Unlocks with Production membership — manage your video pipeline"}
+                    {link.label === "Client Hub" && "Unlocks with Production membership — your production assets and status"}
+                  </div>
+                )}
               </div>
             );
           });
