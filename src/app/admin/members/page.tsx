@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
@@ -202,7 +202,7 @@ const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
   { value: "inactive", label: "Inactive" },
 ];
 
-export default function MembersPage() {
+function MembersPageInner() {
   const { data: session } = useSession();
   const role = (session?.user as any)?.role ?? "admin";
   const isEditorRole = role === "editor";
@@ -885,5 +885,13 @@ export default function MembersPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function MembersPage() {
+  return (
+    <Suspense>
+      <MembersPageInner />
+    </Suspense>
   );
 }
