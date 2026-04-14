@@ -25,6 +25,7 @@ enum ServiceTier {
   editing_4
   mastery_2
   mastery_4
+  done_with_you
 }
 
 enum AuditType {
