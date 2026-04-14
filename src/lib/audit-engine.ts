@@ -1211,12 +1211,17 @@ Then offer: "Last thing — want me to create an image of [Name]? I'll put them 
 > - "[Title]" *(Framework Name — keywords: "keyword1", "keyword2")*
 > - "[Title]" *(Framework Name — keywords: "keyword1", "keyword2")*
 
-**Journey arc — typical for real estate (adapt based on conversation):**
+**Canonical content themes — select the ones that fit this avatar's journey:**
 1. The Decision — "Should we even do this?"
-2. The Equity / Preparation — "Will our situation support the move?"
+2. The Equity — "Will our situation support the move?"
 3. The Transition — "What if we get stuck in the middle?"
-4. The Purchase / Action — "Will we get it right?"
+4. The Purchase — "Will we get it right?"
 5. The Aftermath — "Did we make the right call?"
+6. The Neighbourhood — "Are we picking the right area?"
+7. The Strategy — "How do I play this smart?"
+8. The Numbers — "What do the numbers actually say?"
+
+Most avatars will use 3-5 of these. Not every avatar needs every theme. Choose the ones that match THIS avatar's emotional journey and content needs.
 
 ---
 

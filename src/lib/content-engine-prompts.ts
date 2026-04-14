@@ -224,8 +224,11 @@ For real estate avatars, typical theme boundaries:
 - "The Decision" = Should I do this? Angles: readiness, timing, opportunity cost, guilt, rate lock-in. NOT logistics or market risks.
 - "The Equity" = Can my current situation fund this? Angles: buying power, budget math, what equity unlocks, prep ROI. NOT choosing a home.
 - "The Transition" = How do I get from A to B without chaos? Angles: timing strategies, bridge financing, moving logistics, competing with a contingency. NOT evaluating the home itself.
-- "The Purchase" = Is this the right home/neighbourhood/price? Angles: hidden costs, market traps, inspection risks, neighbourhood evaluation. NOT logistics or selling.
+- "The Purchase" = Is this the right home/neighbourhood/price? Angles: hidden costs, market traps, inspection risks, offer strategy. NOT logistics or selling.
 - "The Aftermath" = Did I get it right? Angles: post-close surprises, tax resets, protecting the investment. NOT the buying process.
+- "The Neighbourhood" = Where should I buy? Angles: area comparisons, hidden gems, lifestyle-fit, data-driven groupings. NOT single-area deep dives or 1v1 comparisons.
+- "The Strategy" = How do I play this smart? Angles: property type guidance, market-condition tactics, offer strategy, insider knowledge. NOT emotional readiness or location choice.
+- "The Numbers" = What do the numbers actually say? Angles: market updates, monthly stats, data breakdowns, trend analysis. NOT emotional or lifestyle content.
 
 If a generated title could fit equally well under two different themes, it is too generic. Make it specific to "${theme}".
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { CANONICAL_THEMES } from "@/lib/canonical-themes";
 
 async function checkAdmin() {
   const session = await auth();
@@ -14,12 +15,11 @@ interface ThemeObj {
   colour?: string | null;
 }
 
-const DEFAULT_THEMES: ThemeObj[] = [
-  { name: "Theme 1", emoji: null, colour: null },
-  { name: "Theme 2", emoji: null, colour: null },
-  { name: "Theme 3", emoji: null, colour: null },
-  { name: "Theme 4", emoji: null, colour: null },
-];
+const DEFAULT_THEMES: ThemeObj[] = CANONICAL_THEMES.slice(0, 4).map((t) => ({
+  name: t.name,
+  emoji: t.emoji,
+  colour: t.colour,
+}));
 
 const PINNED_THEMES: ThemeObj[] = [
   { name: "Monthly Market Update", emoji: "📊", colour: null },

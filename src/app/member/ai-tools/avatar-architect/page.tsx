@@ -17,6 +17,7 @@ import PromptEditor from "@/components/ai-tools/PromptEditor";
 import RecentConversations from "@/components/ai-tools/RecentConversations";
 import MarkdownMessage from "@/components/MarkdownMessage";
 import NextStepCard from "@/components/ai-tools/NextStepCard";
+import { CANONICAL_THEMES } from "@/lib/canonical-themes";
 
 interface Message {
   role: "user" | "assistant";
@@ -42,16 +43,6 @@ interface ThemeSelectionItem {
   enforceBuySideTitles: boolean;
   whyThisFits: string;
 }
-
-const CANONICAL_7 = [
-  "Market Updates Monthly",
-  "The Pre-Buying Decision",
-  "The Neighbourhoods",
-  "The Equity",
-  "The Education",
-  "The Numbers",
-  "The Relocation",
-] as const;
 
 interface AvatarData {
   avatar_name: string;
@@ -416,8 +407,8 @@ function AvatarProfileCard({
                     className="flex-1 border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40 bg-white"
                   >
                     <option value="">— choose canonical theme —</option>
-                    {CANONICAL_7.map((cn) => (
-                      <option key={cn} value={cn}>{cn}</option>
+                    {CANONICAL_THEMES.map((ct) => (
+                      <option key={ct.id} value={ct.name}>{ct.emoji} {ct.name} — {ct.coreStress}</option>
                     ))}
                   </select>
                 </div>
