@@ -566,6 +566,23 @@ function Toggle({ enabled, onChange, disabled }: { enabled: boolean; onChange: (
   );
 }
 
+const FLAG_DESCRIPTIONS: Record<string, string> = {
+  campaigns: "Shows the Generate Leads section and campaign tracking for all members.",
+  ai_tools: "Master toggle for the AI Tools sidebar section. When off, no AI tools are accessible.",
+  resources: "Shows learning resources. When off, resource content is hidden from members.",
+  tool_avatar_architect: "Avatar Architect — build ideal viewer profiles. Requires AI Tools enabled.",
+  tool_content_engine: "Content Engine — generate video ideas from avatar. Requires AI Tools enabled.",
+  tool_arc_script_builder: "ARC Script Builder — write video scripts. Requires AI Tools enabled.",
+  tool_title_analyzer: "Title & Thumbnail Analyzer — score titles. Requires AI Tools enabled.",
+  tool_script_review: "Script Review — score scripts against 14 principles. Requires AI Tools enabled.",
+  tool_repurpose_content: "Master toggle for Repurpose Content tool. Requires AI Tools enabled.",
+  tool_repurpose_newsletter: "Newsletter format in Repurpose. Requires Repurpose Content enabled.",
+  tool_repurpose_linkedin: "LinkedIn article format in Repurpose. Requires Repurpose Content enabled.",
+  tool_repurpose_facebook: "Facebook post format in Repurpose. Requires Repurpose Content enabled.",
+  tool_repurpose_blog: "Blog post format in Repurpose. Requires Repurpose Content enabled.",
+  tool_repurpose_postcard: "Postcard format in Repurpose. Requires Repurpose Content enabled.",
+};
+
 function FeatureVisibilitySection() {
   const [flags, setFlags] = useState<FeatureFlags | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
@@ -675,6 +692,11 @@ function FeatureVisibilitySection() {
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-[#2f3437]">{item.label}</p>
                         <p className="text-xs text-[#2f3437]/45">{item.desc}</p>
+                        {FLAG_DESCRIPTIONS[item.key] && (
+                          <p className="text-[11px] text-[#2f3437]/40 mt-0.5 leading-relaxed">
+                            {FLAG_DESCRIPTIONS[item.key]}
+                          </p>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">

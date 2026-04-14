@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
-import { ArrowPathIcon, PlayIcon, CheckCircleIcon, XCircleIcon } from "@heroicons/react/24/outline";
+import { ArrowPathIcon, PlayIcon, CheckCircleIcon, XCircleIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
 
 interface AuditRequestRow {
   id: string;
@@ -123,6 +123,14 @@ export default function AuditsPage() {
   const [cancellingJobId, setCancellingJobId] = useState<string | null>(null);
   const activeJobsPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [, forceUpdate] = useState(0);
+
+  const [batchOpen, setBatchOpen] = useState(false);
+
+  const isBatchActive = activeJobs.length > 0 || batchStatus?.status === "running" || baselineBatchStatus?.status === "running";
+
+  useEffect(() => {
+    if (isBatchActive) setBatchOpen(true);
+  }, [isBatchActive]);
 
   useEffect(() => {
     fetchAuditRequests();
@@ -326,28 +334,8 @@ export default function AuditsPage() {
 
   return (
     <div>
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
-        <div>
-          <h1 className="text-2xl font-bold text-[#2f3437]">Audits</h1>
-        </div>
-        <div className="flex flex-wrap gap-2 shrink-0">
-          <button
-            onClick={handleRunAllBaseline}
-            disabled={baselineLaunching || isBaselineRunning || isRunning}
-            className="flex items-center gap-2 bg-[#6ba3c7] hover:bg-[#2ab0ec] disabled:opacity-50 text-white px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors"
-          >
-            <PlayIcon className={`w-4 h-4 ${isBaselineRunning ? "animate-pulse" : ""}`} />
-            {isBaselineRunning ? `Running… ${baselineBatchStatus!.current}/${baselineBatchStatus!.total}` : baselineLaunching ? "Starting…" : "Run All Baseline Audits"}
-          </button>
-          <button
-            onClick={handleRunAllMonthly}
-            disabled={launching || isRunning || isBaselineRunning}
-            className="flex items-center gap-2 bg-[#111] hover:bg-[#2a3a4d] disabled:opacity-50 text-white px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors"
-          >
-            <PlayIcon className={`w-4 h-4 ${isRunning ? "animate-pulse" : ""}`} />
-            {isRunning ? `Running… ${batchStatus!.current}/${batchStatus!.total}` : launching ? "Starting…" : "Run All Monthly Audits"}
-          </button>
-        </div>
+      <div className="mb-4">
+        <h1 className="text-2xl font-bold text-[#2f3437]">Audits</h1>
       </div>
 
       {/* Tab bar */}
@@ -471,179 +459,226 @@ export default function AuditsPage() {
       {tab === "audits" && (
       <div>
 
-      {/* Active Jobs section */}
-      {activeJobs.length > 0 && (
-        <div className="mb-5 bg-white border border-[#6ba3c7]/30 rounded-lg overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-[#6ba3c7]/20 bg-[#e8f7ff]/40">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-[#6ba3c7] animate-pulse" />
-              <span className="text-sm font-semibold text-[#2f3437]">
-                {activeJobs.length} Audit{activeJobs.length !== 1 ? "s" : ""} In Progress
+      {/* Batch Operations Panel — collapsible */}
+      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-4">
+        {/* Panel header — always visible */}
+        <button
+          onClick={() => setBatchOpen(!batchOpen)}
+          className="w-full flex items-center justify-between px-5 py-3 hover:bg-gray-50 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-semibold text-[#2f3437]">Batch Operations</span>
+            {isBatchActive && (
+              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">
+                <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse" />
+                {activeJobs.length} job{activeJobs.length !== 1 ? "s" : ""} running
               </span>
-            </div>
-            <button
-              onClick={fetchActiveJobs}
-              className="text-xs text-[#2f3437]/50 hover:text-[#2f3437] flex items-center gap-1"
-            >
-              <ArrowPathIcon className="w-3 h-3" /> Refresh
-            </button>
+            )}
+            {!isBatchActive && (lastRun || baselineLastRun) && (
+              <span className="text-xs text-[#2f3437]/40">
+                Last run: {new Date((lastRun?.date || baselineLastRun?.date)!).toLocaleDateString("en-CA")}
+              </span>
+            )}
           </div>
-          <div className="divide-y divide-gray-100">
-            {activeJobs.map((job) => (
-              <div key={job.id} className="flex items-center gap-4 px-4 py-3">
-                <div className="w-4 h-4 border-2 border-[#6ba3c7] border-t-transparent rounded-full animate-spin shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {job.user ? (
-                      <Link
-                        href={`/admin/members/${job.user.id}`}
-                        className="text-sm font-medium text-[#6ba3c7] hover:underline truncate"
-                      >
-                        {job.user.fullName ?? job.user.email}
-                      </Link>
-                    ) : (
-                      <span className="text-sm font-medium text-[#2f3437]/60">Unknown member</span>
-                    )}
-                    <span className="text-xs px-1.5 py-0.5 rounded bg-[#111]/10 text-[#2f3437]/60 capitalize shrink-0">
-                      {job.auditType.replace("_", " ")}
+          <ChevronDownIcon className={`w-4 h-4 text-[#2f3437]/40 transition-transform duration-200 ${batchOpen ? "rotate-180" : ""}`} />
+        </button>
+
+        {/* Panel content — collapsible */}
+        {batchOpen && (
+          <div className="border-t border-gray-100 px-5 py-4 space-y-4">
+            {/* Run buttons */}
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={handleRunAllBaseline}
+                disabled={baselineLaunching || isBaselineRunning || isRunning}
+                className="flex items-center gap-2 bg-[#6ba3c7] hover:bg-[#2ab0ec] disabled:opacity-50 text-white px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors"
+              >
+                <PlayIcon className={`w-4 h-4 ${isBaselineRunning ? "animate-pulse" : ""}`} />
+                {isBaselineRunning ? `Running… ${baselineBatchStatus!.current}/${baselineBatchStatus!.total}` : baselineLaunching ? "Starting…" : "Run All Baseline Audits"}
+              </button>
+              <button
+                onClick={handleRunAllMonthly}
+                disabled={launching || isRunning || isBaselineRunning}
+                className="flex items-center gap-2 bg-[#111] hover:bg-[#2a3a4d] disabled:opacity-50 text-white px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors"
+              >
+                <PlayIcon className={`w-4 h-4 ${isRunning ? "animate-pulse" : ""}`} />
+                {isRunning ? `Running… ${batchStatus!.current}/${batchStatus!.total}` : launching ? "Starting…" : "Run All Monthly Audits"}
+              </button>
+            </div>
+
+            {/* Active Jobs section */}
+            {activeJobs.length > 0 && (
+              <div className="bg-white border border-[#6ba3c7]/30 rounded-lg overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-[#6ba3c7]/20 bg-[#e8f7ff]/40">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-[#6ba3c7] animate-pulse" />
+                    <span className="text-sm font-semibold text-[#2f3437]">
+                      {activeJobs.length} Audit{activeJobs.length !== 1 ? "s" : ""} In Progress
                     </span>
                   </div>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-xs text-[#2f3437]/50">{job.message}</span>
-                    <span className="text-xs text-[#2f3437]/30">·</span>
-                    <span className="text-xs text-[#2f3437]/40">{elapsedLabel(job.createdAt)}</span>
+                  <button
+                    onClick={fetchActiveJobs}
+                    className="text-xs text-[#2f3437]/50 hover:text-[#2f3437] flex items-center gap-1"
+                  >
+                    <ArrowPathIcon className="w-3 h-3" /> Refresh
+                  </button>
+                </div>
+                <div className="divide-y divide-gray-100">
+                  {activeJobs.map((job) => (
+                    <div key={job.id} className="flex items-center gap-4 px-4 py-3">
+                      <div className="w-4 h-4 border-2 border-[#6ba3c7] border-t-transparent rounded-full animate-spin shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {job.user ? (
+                            <Link
+                              href={`/admin/members/${job.user.id}`}
+                              className="text-sm font-medium text-[#6ba3c7] hover:underline truncate"
+                            >
+                              {job.user.fullName ?? job.user.email}
+                            </Link>
+                          ) : (
+                            <span className="text-sm font-medium text-[#2f3437]/60">Unknown member</span>
+                          )}
+                          <span className="text-xs px-1.5 py-0.5 rounded bg-[#111]/10 text-[#2f3437]/60 capitalize shrink-0">
+                            {job.auditType.replace("_", " ")}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-xs text-[#2f3437]/50">{job.message}</span>
+                          <span className="text-xs text-[#2f3437]/30">·</span>
+                          <span className="text-xs text-[#2f3437]/40">{elapsedLabel(job.createdAt)}</span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleCancelJob(job.id)}
+                        disabled={cancellingJobId === job.id}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-red-50 text-[#ff0033] hover:bg-red-100 disabled:opacity-50 transition-colors shrink-0"
+                      >
+                        <XCircleIcon className="w-3.5 h-3.5" />
+                        {cancellingJobId === job.id ? "Cancelling…" : "Cancel"}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Monthly batch progress */}
+            {isRunning && (
+              <div className="bg-white border border-[#6ba3c7]/30 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm font-semibold text-[#2f3437]">Monthly batch in progress…</p>
+                  <div className="flex items-center gap-3">
+                    <p className="text-sm text-[#2f3437]/50">{batchStatus.current} / {batchStatus.total} members</p>
+                    <button onClick={dismissMonthlyBatch} className="text-xs text-[#2f3437]/40 hover:text-[#ff0033] transition-colors" title="Dismiss">✕</button>
                   </div>
                 </div>
-                <button
-                  onClick={() => handleCancelJob(job.id)}
-                  disabled={cancellingJobId === job.id}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-red-50 text-[#ff0033] hover:bg-red-100 disabled:opacity-50 transition-colors shrink-0"
-                >
-                  <XCircleIcon className="w-3.5 h-3.5" />
-                  {cancellingJobId === job.id ? "Cancelling…" : "Cancel"}
-                </button>
+                <div className="w-full bg-gray-100 rounded-full h-2 mb-3">
+                  <div
+                    className="bg-[#6ba3c7] h-2 rounded-full transition-all duration-500"
+                    style={{ width: `${batchStatus.total > 0 ? (batchStatus.current / batchStatus.total) * 100 : 0}%` }}
+                  />
+                </div>
+                {batchStatus.results && batchStatus.results.length > 0 && (
+                  <div className="space-y-1 max-h-48 overflow-y-auto">
+                    {batchStatus.results.slice().reverse().map((r, i) => (
+                      <div key={i} className="flex items-center gap-2 text-xs">
+                        <span className={r.status === "success" ? "text-green-600" : r.status === "failed" ? "text-[#ff0033]" : "text-[#2f3437]/40"}>
+                          {r.status === "success" ? "✓" : r.status === "failed" ? "✗" : "–"}
+                        </span>
+                        <span className="text-[#2f3437]">{r.memberName}</span>
+                        {r.reason && <span className="text-[#2f3437]/40">({r.reason})</span>}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-            ))}
-          </div>
-        </div>
-      )}
+            )}
 
-      {/* Batch progress */}
-      {isRunning && (
-        <div className="mb-4 bg-white border border-[#6ba3c7]/30 rounded-lg p-4">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-semibold text-[#2f3437]">Monthly batch in progress…</p>
-            <div className="flex items-center gap-3">
-              <p className="text-sm text-[#2f3437]/50">{batchStatus.current} / {batchStatus.total} members</p>
-              <button onClick={dismissMonthlyBatch} className="text-xs text-[#2f3437]/40 hover:text-[#ff0033] transition-colors" title="Dismiss">✕</button>
-            </div>
-          </div>
-          <div className="w-full bg-gray-100 rounded-full h-2 mb-3">
-            <div
-              className="bg-[#6ba3c7] h-2 rounded-full transition-all duration-500"
-              style={{ width: `${batchStatus.total > 0 ? (batchStatus.current / batchStatus.total) * 100 : 0}%` }}
-            />
-          </div>
-          {batchStatus.results && batchStatus.results.length > 0 && (
-            <div className="space-y-1 max-h-48 overflow-y-auto">
-              {batchStatus.results.slice().reverse().map((r, i) => (
-                <div key={i} className="flex items-center gap-2 text-xs">
-                  <span className={
-                    r.status === "success" ? "text-green-600" :
-                    r.status === "failed" ? "text-[#ff0033]" : "text-[#2f3437]/40"
-                  }>
-                    {r.status === "success" ? "✓" : r.status === "failed" ? "✗" : "–"}
-                  </span>
-                  <span className="text-[#2f3437]">{r.memberName}</span>
-                  {r.reason && <span className="text-[#2f3437]/40">({r.reason})</span>}
+            {/* Monthly batch summary */}
+            {!isRunning && batchStatus?.status === "complete" && batchStatus.completed && (
+              <div className="bg-white border border-gray-200 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <CheckCircleIcon className="w-4 h-4 text-green-500 shrink-0" />
+                  <p className="text-sm font-semibold text-[#2f3437]">Last monthly batch complete</p>
+                  <p className="text-xs text-[#2f3437]/40 ml-auto">{fmtDateTime(batchStatus.completed)}</p>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+                <p className="text-xs text-[#2f3437]/60">
+                  {batchStatus.results?.filter(r => r.status === "success").length ?? 0} audits completed ·{" "}
+                  {batchStatus.results?.filter(r => r.status === "skipped").length ?? 0} skipped ·{" "}
+                  {batchStatus.results?.filter(r => r.status === "failed").length ?? 0} failed
+                </p>
+              </div>
+            )}
 
-      {/* Monthly batch summary */}
-      {!isRunning && batchStatus?.status === "complete" && batchStatus.completed && (
-        <div className="mb-4 bg-white border border-gray-200 rounded-lg p-4">
-          <div className="flex items-center gap-2 mb-1">
-            <CheckCircleIcon className="w-4 h-4 text-green-500 shrink-0" />
-            <p className="text-sm font-semibold text-[#2f3437]">Last monthly batch complete</p>
-            <p className="text-xs text-[#2f3437]/40 ml-auto">{fmtDateTime(batchStatus.completed)}</p>
-          </div>
-          <p className="text-xs text-[#2f3437]/60">
-            {batchStatus.results?.filter(r => r.status === "success").length ?? 0} audits completed ·{" "}
-            {batchStatus.results?.filter(r => r.status === "skipped").length ?? 0} skipped ·{" "}
-            {batchStatus.results?.filter(r => r.status === "failed").length ?? 0} failed
-          </p>
-        </div>
-      )}
+            {/* Last monthly run from DB */}
+            {lastRun && !isRunning && !(batchStatus?.status === "complete") && (
+              <div className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-xs text-[#2f3437]/60">
+                <span className="font-medium text-[#2f3437]">Last monthly run:</span>{" "}
+                {fmtDateTime(lastRun.date)} —{" "}
+                {lastRun.audits_queued} audits completed, {lastRun.skipped_no_new_videos + lastRun.skipped_no_baseline + (lastRun.skipped_no_youtube ?? 0)} skipped
+                {lastRun.failures > 0 && `, ${lastRun.failures} failed`}
+              </div>
+            )}
 
-      {/* Last monthly run from DB */}
-      {lastRun && !isRunning && !(batchStatus?.status === "complete") && (
-        <div className="mb-4 px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-xs text-[#2f3437]/60">
-          <span className="font-medium text-[#2f3437]">Last monthly run:</span>{" "}
-          {fmtDateTime(lastRun.date)} —{" "}
-          {lastRun.audits_queued} audits completed, {lastRun.skipped_no_new_videos + lastRun.skipped_no_baseline + (lastRun.skipped_no_youtube ?? 0)} skipped
-          {lastRun.failures > 0 && `, ${lastRun.failures} failed`}
-        </div>
-      )}
-
-      {/* Baseline batch progress */}
-      {isBaselineRunning && (
-        <div className="mb-4 bg-white border border-[#6ba3c7]/30 rounded-lg p-4">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-semibold text-[#2f3437]">Baseline batch in progress…</p>
-            <div className="flex items-center gap-3">
-              <p className="text-sm text-[#2f3437]/50">{baselineBatchStatus!.current} / {baselineBatchStatus!.total} members</p>
-              <button onClick={dismissBaselineBatch} className="text-xs text-[#2f3437]/40 hover:text-[#ff0033] transition-colors" title="Dismiss">✕</button>
-            </div>
-          </div>
-          <div className="w-full bg-gray-100 rounded-full h-2 mb-3">
-            <div
-              className="bg-[#6ba3c7] h-2 rounded-full transition-all duration-500"
-              style={{ width: `${baselineBatchStatus!.total > 0 ? (baselineBatchStatus!.current / baselineBatchStatus!.total) * 100 : 0}%` }}
-            />
-          </div>
-          {baselineBatchStatus!.results && baselineBatchStatus!.results.length > 0 && (
-            <div className="space-y-1 max-h-48 overflow-y-auto">
-              {baselineBatchStatus!.results.slice().reverse().map((r, i) => (
-                <div key={i} className="flex items-center gap-2 text-xs">
-                  <span className={r.status === "success" ? "text-green-600" : r.status === "failed" ? "text-[#ff0033]" : "text-[#2f3437]/40"}>
-                    {r.status === "success" ? "✓" : r.status === "failed" ? "✗" : "–"}
-                  </span>
-                  <span className="text-[#2f3437]">{r.memberName}</span>
-                  {r.reason && <span className="text-[#2f3437]/40">({r.reason})</span>}
+            {/* Baseline batch progress */}
+            {isBaselineRunning && (
+              <div className="bg-white border border-[#6ba3c7]/30 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm font-semibold text-[#2f3437]">Baseline batch in progress…</p>
+                  <div className="flex items-center gap-3">
+                    <p className="text-sm text-[#2f3437]/50">{baselineBatchStatus!.current} / {baselineBatchStatus!.total} members</p>
+                    <button onClick={dismissBaselineBatch} className="text-xs text-[#2f3437]/40 hover:text-[#ff0033] transition-colors" title="Dismiss">✕</button>
+                  </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+                <div className="w-full bg-gray-100 rounded-full h-2 mb-3">
+                  <div
+                    className="bg-[#6ba3c7] h-2 rounded-full transition-all duration-500"
+                    style={{ width: `${baselineBatchStatus!.total > 0 ? (baselineBatchStatus!.current / baselineBatchStatus!.total) * 100 : 0}%` }}
+                  />
+                </div>
+                {baselineBatchStatus!.results && baselineBatchStatus!.results.length > 0 && (
+                  <div className="space-y-1 max-h-48 overflow-y-auto">
+                    {baselineBatchStatus!.results.slice().reverse().map((r, i) => (
+                      <div key={i} className="flex items-center gap-2 text-xs">
+                        <span className={r.status === "success" ? "text-green-600" : r.status === "failed" ? "text-[#ff0033]" : "text-[#2f3437]/40"}>
+                          {r.status === "success" ? "✓" : r.status === "failed" ? "✗" : "–"}
+                        </span>
+                        <span className="text-[#2f3437]">{r.memberName}</span>
+                        {r.reason && <span className="text-[#2f3437]/40">({r.reason})</span>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
-      {/* Baseline batch summary */}
-      {!isBaselineRunning && baselineBatchStatus?.status === "complete" && baselineBatchStatus.completed && (
-        <div className="mb-4 bg-white border border-[#6ba3c7]/20 rounded-lg p-4">
-          <div className="flex items-center gap-2 mb-1">
-            <CheckCircleIcon className="w-4 h-4 text-[#6ba3c7] shrink-0" />
-            <p className="text-sm font-semibold text-[#2f3437]">Baseline batch complete</p>
-            <p className="text-xs text-[#2f3437]/40 ml-auto">{fmtDateTime(baselineBatchStatus.completed)}</p>
+            {/* Baseline batch summary */}
+            {!isBaselineRunning && baselineBatchStatus?.status === "complete" && baselineBatchStatus.completed && (
+              <div className="bg-white border border-[#6ba3c7]/20 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <CheckCircleIcon className="w-4 h-4 text-[#6ba3c7] shrink-0" />
+                  <p className="text-sm font-semibold text-[#2f3437]">Baseline batch complete</p>
+                  <p className="text-xs text-[#2f3437]/40 ml-auto">{fmtDateTime(baselineBatchStatus.completed)}</p>
+                </div>
+                <p className="text-xs text-[#2f3437]/60">
+                  {baselineBatchStatus.results?.filter(r => r.status === "success").length ?? 0} new baselines generated ·{" "}
+                  {baselineBatchStatus.results?.filter(r => r.status === "failed").length ?? 0} failed
+                </p>
+              </div>
+            )}
+
+            {/* Last baseline run from DB */}
+            {baselineLastRun && !isBaselineRunning && !(baselineBatchStatus?.status === "complete") && (
+              <div className="px-4 py-3 bg-[#e8f7ff]/60 border border-[#6ba3c7]/20 rounded-lg text-xs text-[#2f3437]/60">
+                <span className="font-medium text-[#2f3437]">Last baseline run:</span>{" "}
+                {fmtDateTime(baselineLastRun.date)} — {baselineLastRun.generated} baseline{baselineLastRun.generated !== 1 ? "s" : ""} generated
+                {baselineLastRun.failures > 0 && `, ${baselineLastRun.failures} failed`}
+              </div>
+            )}
           </div>
-          <p className="text-xs text-[#2f3437]/60">
-            {baselineBatchStatus.results?.filter(r => r.status === "success").length ?? 0} new baselines generated ·{" "}
-            {baselineBatchStatus.results?.filter(r => r.status === "failed").length ?? 0} failed
-          </p>
-        </div>
-      )}
-
-      {/* Last baseline run from DB */}
-      {baselineLastRun && !isBaselineRunning && !(baselineBatchStatus?.status === "complete") && (
-        <div className="mb-4 px-4 py-3 bg-[#e8f7ff]/60 border border-[#6ba3c7]/20 rounded-lg text-xs text-[#2f3437]/60">
-          <span className="font-medium text-[#2f3437]">Last baseline run:</span>{" "}
-          {fmtDateTime(baselineLastRun.date)} — {baselineLastRun.generated} baseline{baselineLastRun.generated !== 1 ? "s" : ""} generated
-          {baselineLastRun.failures > 0 && `, ${baselineLastRun.failures} failed`}
-        </div>
-      )}
+        )}
+      </div>
 
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
         <input

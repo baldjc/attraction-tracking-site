@@ -21,6 +21,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { CheckCircleIcon } from "@heroicons/react/24/solid";
 import { PRINCIPLE_NAMES, PRINCIPLE_COLORS } from "@/lib/academy-constants";
+import { useToast } from "@/components/ToastProvider";
 
 // ── Foundations Library (Course Manager) ────────────────────────────────────
 
@@ -58,6 +59,12 @@ function FoundationsLibraryTab({ moduleType = "foundations" }: { moduleType?: st
   const [creatingLesson, setCreatingLesson] = useState(false);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const [editingLessonId, setEditingLessonId] = useState<string | null>(null);
+  const [editFields, setEditFields] = useState({ title: "", description: "" });
+  const [savingLesson, setSavingLesson] = useState(false);
+
+  const toast = useToast();
 
   const loadSections = useCallback(async () => {
     const res = await fetch(`/api/admin/academy/sections?moduleType=${moduleType}`);
@@ -153,6 +160,57 @@ function FoundationsLibraryTab({ moduleType = "foundations" }: { moduleType?: st
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ lessons: updated.map((l) => ({ id: l.id, sortOrder: l.sortOrder })) }),
     });
+  }
+
+  function startEditingLesson(lesson: Lesson) {
+    setEditingLessonId(lesson.id);
+    setEditFields({
+      title: lesson.title || "",
+      description: (lesson as any).description || "",
+    });
+  }
+
+  async function handleSaveInlineLesson(lessonId: string) {
+    setSavingLesson(true);
+    try {
+      const res = await fetch(`/api/admin/academy/lessons/${lessonId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editFields),
+      });
+      if (!res.ok) throw new Error("Save failed");
+      toast.success("Lesson updated.");
+      setEditingLessonId(null);
+      loadSections();
+    } catch {
+      toast.error("Failed to save lesson.");
+    } finally {
+      setSavingLesson(false);
+    }
+  }
+
+  async function handleBulkPublish(sectionId: string, publish: boolean) {
+    const section = sections.find((s) => s.id === sectionId);
+    if (!section?.lessons?.length) return;
+    try {
+      await Promise.all(
+        section.lessons.map((l) =>
+          fetch(`/api/admin/academy/lessons/${l.id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ published: publish }),
+          })
+        )
+      );
+      toast.success(
+        publish
+          ? `Published all ${section.lessons.length} lessons in "${section.title}".`
+          : `Unpublished all lessons in "${section.title}".`
+      );
+      loadSections();
+    } catch {
+      toast.error("Failed to update lessons.");
+    }
   }
 
   async function createSection() {
@@ -268,6 +326,31 @@ function FoundationsLibraryTab({ moduleType = "foundations" }: { moduleType?: st
                 {section.published ? "Published" : "Draft"}
               </button>
 
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (!section.lessons) loadLessons(section.id);
+                    handleBulkPublish(section.id, true);
+                  }}
+                  className="text-[10px] text-green-600 hover:bg-green-50 px-2 py-1 rounded transition-colors"
+                  title="Publish all lessons in this section"
+                >
+                  Publish All
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (!section.lessons) loadLessons(section.id);
+                    handleBulkPublish(section.id, false);
+                  }}
+                  className="text-[10px] text-red-500 hover:bg-red-50 px-2 py-1 rounded transition-colors"
+                  title="Unpublish all lessons in this section"
+                >
+                  Unpublish All
+                </button>
+              </div>
+
               <Link
                 href={`/admin/academy-manager/sections/${section.id}`}
                 className="shrink-0 p-1.5 text-[#2f3437]/50 hover:text-[#6ba3c7] hover:bg-[#6ba3c7]/10 rounded-lg transition-colors"
@@ -287,67 +370,121 @@ function FoundationsLibraryTab({ moduleType = "foundations" }: { moduleType?: st
                     )}
 
                     {(section.lessons ?? []).map((lesson, lessonIdx) => (
-                      <div
-                        key={lesson.id}
-                        className="flex items-center gap-3 px-4 py-2.5 pl-12 border-b border-gray-50 last:border-0 hover:bg-gray-50/50 transition-colors"
-                      >
-                        <AcademicCapIcon className="w-4 h-4 text-[#2f3437]/20 shrink-0" />
+                      <div key={lesson.id} className="border-b border-gray-50 last:border-0">
+                        <div className="flex items-center gap-3 px-4 py-2.5 pl-12 hover:bg-gray-50/50 transition-colors">
+                          <AcademicCapIcon className="w-4 h-4 text-[#2f3437]/20 shrink-0" />
 
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-xs text-[#2f3437]/40 font-mono w-4 shrink-0">{lesson.sortOrder}</span>
-                            <span className="text-sm font-medium text-[#2f3437] truncate">{lesson.title}</span>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-xs text-[#2f3437]/40 font-mono w-4 shrink-0">{lesson.sortOrder}</span>
+                              <span className="text-sm font-medium text-[#2f3437] truncate">{lesson.title}</span>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  startEditingLesson(lesson);
+                                }}
+                                className="p-1 rounded hover:bg-gray-100 text-[#2f3437]/40 hover:text-[#6ba3c7] transition-colors"
+                                title="Quick edit"
+                              >
+                                <PencilIcon className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                            <div className="flex items-center gap-1.5 mt-0.5 pl-6 flex-wrap">
+                              {lesson.youtubeUrl && (
+                                <span className="text-[10px] text-[#2f3437]/30">▶ Video</span>
+                              )}
+                              {(lesson.principleTags as string[]).slice(0, 2).map((tag) => (
+                                <span key={tag} className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${PRINCIPLE_COLORS[tag] ?? "bg-gray-100 text-gray-600"}`}>
+                                  {PRINCIPLE_NAMES[tag] ?? tag}
+                                </span>
+                              ))}
+                              {(lesson.principleTags as string[]).length > 2 && (
+                                <span className="text-[10px] text-[#2f3437]/30">+{(lesson.principleTags as string[]).length - 2}</span>
+                              )}
+                            </div>
                           </div>
-                          <div className="flex items-center gap-1.5 mt-0.5 pl-6 flex-wrap">
-                            {lesson.youtubeUrl && (
-                              <span className="text-[10px] text-[#2f3437]/30">▶ Video</span>
-                            )}
-                            {(lesson.principleTags as string[]).slice(0, 2).map((tag) => (
-                              <span key={tag} className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${PRINCIPLE_COLORS[tag] ?? "bg-gray-100 text-gray-600"}`}>
-                                {PRINCIPLE_NAMES[tag] ?? tag}
-                              </span>
-                            ))}
-                            {(lesson.principleTags as string[]).length > 2 && (
-                              <span className="text-[10px] text-[#2f3437]/30">+{(lesson.principleTags as string[]).length - 2}</span>
-                            )}
+
+                          <div className="flex gap-0.5 shrink-0">
+                            <button
+                              onClick={() => moveLesson(section.id, lessonIdx, "up")}
+                              disabled={lessonIdx === 0}
+                              className="p-1 text-[#2f3437]/30 hover:text-[#2f3437] disabled:opacity-20 disabled:cursor-not-allowed"
+                            >
+                              <ArrowUpIcon className="w-3 h-3" />
+                            </button>
+                            <button
+                              onClick={() => moveLesson(section.id, lessonIdx, "down")}
+                              disabled={lessonIdx === (section.lessons?.length ?? 0) - 1}
+                              className="p-1 text-[#2f3437]/30 hover:text-[#2f3437] disabled:opacity-20 disabled:cursor-not-allowed"
+                            >
+                              <ArrowDownIcon className="w-3 h-3" />
+                            </button>
                           </div>
+
+                          <button
+                            onClick={() => toggleLessonPublished(section.id, lesson)}
+                            disabled={togglingId === lesson.id}
+                            className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full transition-colors ${
+                              lesson.published
+                                ? "bg-green-100 text-green-700 hover:bg-green-200"
+                                : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                            }`}
+                          >
+                            {lesson.published ? "Published" : "Draft"}
+                          </button>
+
+                          <Link
+                            href={`/admin/academy-manager/lessons/${lesson.id}`}
+                            className="shrink-0 p-1.5 text-[#2f3437]/40 hover:text-[#6ba3c7] hover:bg-[#6ba3c7]/10 rounded-lg transition-colors"
+                          >
+                            <PencilSquareIcon className="w-3.5 h-3.5" />
+                          </Link>
                         </div>
 
-                        <div className="flex gap-0.5 shrink-0">
-                          <button
-                            onClick={() => moveLesson(section.id, lessonIdx, "up")}
-                            disabled={lessonIdx === 0}
-                            className="p-1 text-[#2f3437]/30 hover:text-[#2f3437] disabled:opacity-20 disabled:cursor-not-allowed"
-                          >
-                            <ArrowUpIcon className="w-3 h-3" />
-                          </button>
-                          <button
-                            onClick={() => moveLesson(section.id, lessonIdx, "down")}
-                            disabled={lessonIdx === (section.lessons?.length ?? 0) - 1}
-                            className="p-1 text-[#2f3437]/30 hover:text-[#2f3437] disabled:opacity-20 disabled:cursor-not-allowed"
-                          >
-                            <ArrowDownIcon className="w-3 h-3" />
-                          </button>
-                        </div>
-
-                        <button
-                          onClick={() => toggleLessonPublished(section.id, lesson)}
-                          disabled={togglingId === lesson.id}
-                          className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full transition-colors ${
-                            lesson.published
-                              ? "bg-green-100 text-green-700 hover:bg-green-200"
-                              : "bg-gray-100 text-gray-500 hover:bg-gray-200"
-                          }`}
-                        >
-                          {lesson.published ? "Published" : "Draft"}
-                        </button>
-
-                        <Link
-                          href={`/admin/academy-manager/lessons/${lesson.id}`}
-                          className="shrink-0 p-1.5 text-[#2f3437]/40 hover:text-[#6ba3c7] hover:bg-[#6ba3c7]/10 rounded-lg transition-colors"
-                        >
-                          <PencilSquareIcon className="w-3.5 h-3.5" />
-                        </Link>
+                        {editingLessonId === lesson.id && (
+                          <div className="bg-gray-50/50 border-t border-gray-100 px-6 py-4 space-y-3">
+                            <div>
+                              <label className="text-xs font-medium text-[#2f3437]/60 block mb-1">Title</label>
+                              <input
+                                value={editFields.title}
+                                onChange={(e) => setEditFields((f) => ({ ...f, title: e.target.value }))}
+                                className="w-full border border-[#2f3437]/20 bg-white rounded-lg px-3 py-2 text-sm text-[#2f3437] focus:outline-none focus:border-[#6ba3c7]"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-xs font-medium text-[#2f3437]/60 block mb-1">Description</label>
+                              <textarea
+                                value={editFields.description}
+                                onChange={(e) => setEditFields((f) => ({ ...f, description: e.target.value }))}
+                                rows={2}
+                                className="w-full border border-[#2f3437]/20 bg-white rounded-lg px-3 py-2 text-sm text-[#2f3437] focus:outline-none focus:border-[#6ba3c7] resize-none"
+                              />
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <a
+                                href={`/admin/academy-manager/lessons/${lesson.id}`}
+                                className="text-xs text-[#6ba3c7] hover:underline"
+                              >
+                                Open full editor →
+                              </a>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => setEditingLessonId(null)}
+                                  className="px-3 py-1.5 text-xs rounded-lg border border-[#2f3437]/20 hover:bg-gray-50 text-[#2f3437] transition-colors"
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  onClick={() => handleSaveInlineLesson(lesson.id)}
+                                  disabled={savingLesson}
+                                  className="px-3 py-1.5 text-xs bg-[#6ba3c7] text-white rounded-lg hover:bg-[#5490b5] disabled:opacity-50 transition-colors"
+                                >
+                                  {savingLesson ? "Saving…" : "Save"}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ))}
 
