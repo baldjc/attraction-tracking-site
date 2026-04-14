@@ -10,10 +10,14 @@ import {
   VideoCameraIcon,
   CurrencyDollarIcon,
   StarIcon,
+  ArrowTrendingUpIcon,
+  ArrowTrendingDownIcon,
+  MinusIcon,
 } from "@heroicons/react/24/outline";
 
 interface ActionCard {
   label: string;
+  subtitle: string;
   count: number;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
@@ -23,6 +27,8 @@ interface ActionCard {
 interface StatCard {
   label: string;
   value: string | number;
+  subtitle?: string;
+  trend?: "up" | "down" | "same" | null;
   icon: React.ComponentType<{ className?: string }>;
   href: string;
 }
@@ -45,6 +51,11 @@ function timeAgo(dateStr: string): string {
   return `${days}d ago`;
 }
 
+function fmtMrr(cents: number): string {
+  const dollars = Math.round(cents / 100);
+  return `$${dollars.toLocaleString("en-CA")}`;
+}
+
 const TYPE_EMOJI: Record<string, string> = {
   audit_complete: "📊",
   member_signup: "👤",
@@ -62,13 +73,27 @@ export default function AdminDashboard() {
   useEffect(() => {
     async function load() {
       try {
-        const membersRes = await fetch("/api/admin/members");
-        const membersData = await membersRes.json();
-        const members: any[] = membersData.members ?? membersData ?? [];
+        const [membersRes, auditTrendRes] = await Promise.all([
+          fetch("/api/members"),
+          fetch("/api/admin/dashboard/audit-trend"),
+        ]);
 
-        const atRisk = members.filter((m) => m.activityStatus === "at_risk").length;
-        const activeCount = members.filter((m) => m.subscriptionStatus === "active").length;
-        const totalVideos = members.reduce((sum, m) => sum + (m.videosThisWeek ?? 0), 0);
+        const membersData = await membersRes.json();
+        const members: any[] = membersData.members ?? [];
+        const cards = membersData.cards ?? {};
+
+        const atRisk = members.filter((m) => m.status === "at_risk").length;
+        const activeCount = cards.activeMembers ?? 0;
+        const videosThisWeek = cards.videosThisWeek ?? 0;
+        const mrr: number = cards.mrr ?? 0;
+
+        let auditTrend: { currentAvg: number | null; trend: "up" | "down" | "same" | null } = {
+          currentAvg: null,
+          trend: null,
+        };
+        if (auditTrendRes.ok) {
+          auditTrend = await auditTrendRes.json();
+        }
 
         let pendingAudits = 0;
         try {
@@ -88,26 +113,77 @@ export default function AdminDashboard() {
           }
         } catch {}
 
-        const mrr = membersData.mrr ?? membersData.summary?.mrr ?? "—";
-
-        const scored = members.filter((m) => m.latestAuditScore != null);
-        const avgScore =
-          scored.length > 0
-            ? (scored.reduce((sum, m) => sum + m.latestAuditScore, 0) / scored.length).toFixed(1)
-            : "—";
-
         setActions([
-          { label: "Pending Audit Requests", count: pendingAudits, href: "/admin/audits", icon: ClipboardDocumentListIcon, urgent: pendingAudits > 0 },
-          { label: "Hire Waitlist", count: waitlistCount, href: "/admin/hire", icon: UserGroupIcon, urgent: waitlistCount > 0 },
-          { label: "Members At Risk", count: atRisk, href: "/admin/members?status=at_risk", icon: ExclamationTriangleIcon, urgent: atRisk > 0 },
-          { label: "Active Members", count: activeCount, href: "/admin/members?sub=active", icon: UsersIcon, urgent: false },
+          {
+            label: "Pending Audits",
+            subtitle: "Audit requests awaiting review",
+            count: pendingAudits,
+            href: "/admin/audits",
+            icon: ClipboardDocumentListIcon,
+            urgent: pendingAudits > 0,
+          },
+          {
+            label: "Hire Waitlist",
+            subtitle: "Editors waiting for placement",
+            count: waitlistCount,
+            href: "/admin/hire",
+            icon: UserGroupIcon,
+            urgent: waitlistCount > 0,
+          },
+          {
+            label: "Members At Risk",
+            subtitle: "No activity in 7–14 days",
+            count: atRisk,
+            href: "/admin/members?status=at_risk",
+            icon: ExclamationTriangleIcon,
+            urgent: atRisk > 0,
+          },
+          {
+            label: "Active This Week",
+            subtitle: "Posted, used tools, or had clicks",
+            count: activeCount,
+            href: "/admin/members?status=active",
+            icon: UsersIcon,
+            urgent: false,
+          },
         ]);
 
         setStats([
-          { label: "Total Members", value: members.length, icon: UsersIcon, href: "/admin/members" },
-          { label: "Videos This Week", value: totalVideos, icon: VideoCameraIcon, href: "/admin/analytics" },
-          { label: "MRR", value: typeof mrr === "number" ? `$${mrr.toLocaleString()}` : mrr, icon: CurrencyDollarIcon, href: "/admin/members" },
-          { label: "Avg Audit Score", value: avgScore, icon: StarIcon, href: "/admin/audits" },
+          {
+            label: "Total Members",
+            value: members.length,
+            icon: UsersIcon,
+            href: "/admin/members",
+          },
+          {
+            label: "Videos This Week",
+            value: videosThisWeek,
+            subtitle: "Published in the last 7 days",
+            icon: VideoCameraIcon,
+            href: "/admin/analytics",
+          },
+          {
+            label: "MRR",
+            value: mrr > 0 ? fmtMrr(mrr) : "—",
+            subtitle: "Active + past-due subs · ~CAD",
+            icon: CurrencyDollarIcon,
+            href: "/admin/members",
+          },
+          {
+            label: "Avg Audit Score",
+            value: auditTrend.currentAvg !== null ? auditTrend.currentAvg : "—",
+            subtitle:
+              auditTrend.trend === "up"
+                ? "Group trending up"
+                : auditTrend.trend === "down"
+                ? "Group trending down"
+                : auditTrend.trend === "same"
+                ? "Group holding steady"
+                : "Latest baseline or monthly",
+            trend: auditTrend.trend,
+            icon: StarIcon,
+            href: "/admin/audits",
+          },
         ]);
 
         try {
@@ -170,9 +246,12 @@ export default function AdminDashboard() {
                 <p className="text-xs text-[#2f3437]/50 dark:text-white/40 uppercase tracking-wider mt-1">
                   {a.label}
                 </p>
+                <p className="text-[10px] text-[#2f3437]/30 dark:text-white/20 mt-0.5 leading-tight">
+                  {a.subtitle}
+                </p>
               </div>
               <a.icon
-                className={`w-5 h-5 ${a.urgent ? "text-amber-500" : "text-[#2f3437]/20 dark:text-white/20"}`}
+                className={`w-5 h-5 shrink-0 ${a.urgent ? "text-amber-500" : "text-[#2f3437]/20 dark:text-white/20"}`}
               />
             </div>
           </Link>
@@ -193,7 +272,23 @@ export default function AdminDashboard() {
                 {s.label}
               </p>
             </div>
-            <p className="text-2xl font-bold text-[#6ba3c7]">{s.value}</p>
+            <div className="flex items-baseline gap-2">
+              <p className="text-2xl font-bold text-[#6ba3c7]">{s.value}</p>
+              {s.trend === "up" && (
+                <ArrowTrendingUpIcon className="w-4 h-4 text-emerald-500 shrink-0" />
+              )}
+              {s.trend === "down" && (
+                <ArrowTrendingDownIcon className="w-4 h-4 text-red-400 shrink-0" />
+              )}
+              {s.trend === "same" && (
+                <MinusIcon className="w-4 h-4 text-gray-400 shrink-0" />
+              )}
+            </div>
+            {s.subtitle && (
+              <p className="text-[10px] text-[#2f3437]/30 dark:text-white/20 mt-0.5 leading-tight">
+                {s.subtitle}
+              </p>
+            )}
           </Link>
         ))}
       </div>

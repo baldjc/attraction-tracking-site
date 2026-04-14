@@ -12,7 +12,6 @@ import {
   ExclamationTriangleIcon,
   CursorArrowRaysIcon,
   TrophyIcon,
-  BanknotesIcon,
   ArrowDownTrayIcon,
 } from "@heroicons/react/24/outline";
 import { useSession } from "next-auth/react";
@@ -490,13 +489,13 @@ function MembersPageInner() {
 
       {/* KPI Cards */}
       {loading ? (
-        <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
-          {[...Array(6)].map((_, i) => (
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+          {[...Array(5)].map((_, i) => (
             <div key={i} className={`${card} p-4 h-[100px] animate-pulse bg-gray-100`} />
           ))}
         </div>
       ) : cards && (
-        <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
           {/* Videos This Week */}
           <div className={`${card} p-4 flex flex-col justify-between h-[100px]`}>
             <div className="flex items-center gap-1.5">
@@ -542,23 +541,6 @@ function MembersPageInner() {
               </div>
             ) : (
               <div className={`text-sm ${dim}`}>—</div>
-            )}
-          </div>
-          {/* MRR */}
-          <div className={`${card} p-4 flex flex-col justify-between h-[100px]`}>
-            <div className="flex items-center gap-1.5">
-              <BanknotesIcon className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span className={`text-[10px] uppercase tracking-widest font-semibold ${muted}`}>Monthly Revenue</span>
-            </div>
-            {cards.mrr > 0 ? (
-              <div>
-                <div className={`text-2xl font-bold text-emerald-700`}>{fmtPrice(cards.mrr)}</div>
-                <div className={`text-[9px] ${dim} mt-0.5`}>
-                  {backfillingPrices ? "Updating…" : `~CAD · USD at ${cards.usdToCadRate ?? 1.38}`}
-                </div>
-              </div>
-            ) : (
-              <div className={`text-sm ${dim}`}>{backfillingPrices ? "Loading…" : "—"}</div>
             )}
           </div>
         </div>
