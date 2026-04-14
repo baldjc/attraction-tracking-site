@@ -319,7 +319,7 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
                     active
                       ? "border-[#6ba3c7] bg-white/10 text-white"
                       : "border-transparent text-white/60 hover:text-white hover:bg-white/8"
-                  } ${sectionLabel && !collapsed ? "pl-6" : ""}`}
+                  }`}
                 >
                   <Icon className="w-5 h-5 shrink-0" />
                   {!collapsed && (
