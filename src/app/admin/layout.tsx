@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import Sidebar from "@/components/Sidebar";
+import { ToastProvider } from "@/components/ToastProvider";
 
 export default async function AdminLayout({
   children,
@@ -31,7 +32,9 @@ export default async function AdminLayout({
       <main className="lg:pl-[260px] print:pl-0">
         <div className="pt-14 lg:pt-0 print:pt-0">
           <div className="p-6 lg:p-8 print:p-0">
-            <div className="animate-fade-in-up">{children}</div>
+            <ToastProvider>
+              <div className="animate-fade-in-up">{children}</div>
+            </ToastProvider>
           </div>
         </div>
       </main>

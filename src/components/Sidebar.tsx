@@ -57,18 +57,18 @@ interface SidebarProps {
 }
 
 const adminLinks = [
-  { href: "/admin", label: "Dashboard", icon: HomeIcon },
-  { href: "/admin/members", label: "Members", icon: UsersIcon },
-  { href: "/admin/content-calendar", label: "Content Calendar", icon: CalendarDaysIcon },
-  { href: "/admin/audits", label: "Audits", icon: ClipboardDocumentListIcon },
-  { href: "/admin/qa-prep", label: "Q&A Prep", icon: ChatBubbleLeftRightIcon },
-  { href: "/admin/academy", label: "Academy", icon: AcademicCapIcon },
-  { href: "/admin/academy-manager", label: "Academy Manager", icon: WrenchScrewdriverIcon, badgeKey: "qaCallsPending" },
-  { href: "/admin/ai-tools", label: "AI Tools", icon: SparklesIcon },
-  { href: "/admin/intelligence", label: "Intelligence", icon: MagnifyingGlassCircleIcon },
-  { href: "/admin/hire", label: "Hire a Human", icon: UserGroupIcon, badgeKey: "hireWaitlist" },
-  { href: "/admin/generate-leads", label: "Generate Leads", icon: RocketLaunchIcon },
-  { href: "/admin/settings", label: "Settings", icon: Cog6ToothIcon },
+  { href: "/admin", label: "Dashboard", icon: HomeIcon, section: null as string | null },
+  { href: "/admin/members", label: "Members", icon: UsersIcon, section: "People" },
+  { href: "/admin/audits", label: "Audits", icon: ClipboardDocumentListIcon, section: "People" },
+  { href: "/admin/qa-prep", label: "Q&A Prep", icon: ChatBubbleLeftRightIcon, section: "People" },
+  { href: "/admin/academy-manager", label: "Academy Manager", icon: WrenchScrewdriverIcon, section: "Content", badgeKey: "qaCallsPending" },
+  { href: "/admin/academy", label: "Academy", icon: AcademicCapIcon, section: "Content" },
+  { href: "/admin/content-calendar", label: "Content Calendar", icon: CalendarDaysIcon, section: "Content" },
+  { href: "/admin/ai-tools", label: "AI Tools", icon: SparklesIcon, section: "Content" },
+  { href: "/admin/intelligence", label: "Intelligence", icon: MagnifyingGlassCircleIcon, section: "Content" },
+  { href: "/admin/generate-leads", label: "Generate Leads", icon: RocketLaunchIcon, section: "Growth" },
+  { href: "/admin/hire", label: "Hire a Human", icon: UserGroupIcon, section: "Growth", badgeKey: "hireWaitlist" },
+  { href: "/admin/settings", label: "Settings", icon: Cog6ToothIcon, section: "System" },
 ];
 
 const editorLinks = [

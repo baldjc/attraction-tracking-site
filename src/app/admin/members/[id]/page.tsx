@@ -29,6 +29,7 @@ import {
   ReferenceDot,
 } from "recharts";
 import { useTheme } from "@/components/ThemeProvider";
+import { useToast } from "@/components/ToastProvider";
 import ContentPlanTable from "@/components/content-planner/ContentPlanTable";
 import AdminCallsTab from "@/components/admin/AdminCallsTab";
 import AdminClientHubTab from "@/components/admin/AdminClientHubTab";
@@ -146,6 +147,7 @@ export default function MemberDetailPage() {
   const router = useRouter();
   const { theme } = useTheme();
   const isDark = theme === "dark";
+  const toast = useToast();
 
   const chartGrid    = isDark ? "rgba(45,55,72,0.5)"   : "rgba(30,42,56,0.06)";
   const chartTick    = isDark ? "#64748b"               : "rgba(30,42,56,0.45)";
@@ -208,10 +210,8 @@ export default function MemberDetailPage() {
   const [unlinking, setUnlinking] = useState(false);
 
   const [sendingReminder, setSendingReminder] = useState(false);
-  const [reminderToast, setReminderToast] = useState<{ ok: boolean; msg: string } | null>(null);
 
   const [syncingStripe, setSyncingStripe] = useState(false);
-  const [stripeSyncToast, setStripeSyncToast] = useState<{ ok: boolean; msg: string } | null>(null);
 
   const [topVideos, setTopVideos] = useState<any[]>([]);
   const [topVideosLoading, setTopVideosLoading] = useState(false);
@@ -394,23 +394,21 @@ export default function MemberDetailPage() {
 
   async function handleSendPaymentReminder() {
     setSendingReminder(true);
-    setReminderToast(null);
     try {
       const res = await fetch(`/api/admin/members/${id}/send-payment-reminder`, { method: "POST" });
       const data = await res.json();
       if (res.ok) {
-        setReminderToast({ ok: true, msg: "Payment reminder SMS sent." });
+        toast.success("Payment reminder SMS sent.");
         if (data.sentAt) {
           setMember((prev: any) => prev ? { ...prev, lastPaymentReminderSentAt: data.sentAt } : prev);
         }
       } else {
-        setReminderToast({ ok: false, msg: data.error ?? "Failed to send reminder." });
+        toast.error(data.error ?? "Failed to send reminder.");
       }
     } catch {
-      setReminderToast({ ok: false, msg: "Network error — could not send reminder." });
+      toast.error("Network error — could not send reminder.");
     } finally {
       setSendingReminder(false);
-      setTimeout(() => setReminderToast(null), 5000);
     }
   }
 
@@ -449,18 +447,16 @@ export default function MemberDetailPage() {
 
   async function handleStripeSync() {
     setSyncingStripe(true);
-    setStripeSyncToast(null);
     try {
       const res = await fetch(`/api/admin/members/${id}/stripe-sync`, { method: "POST" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Sync failed");
       await fetchMember();
-      setStripeSyncToast({ ok: true, msg: `Synced — status is now: ${data.subscriptionStatus ?? "unknown"}` });
+      toast.success(`Synced — status is now: ${data.subscriptionStatus ?? "unknown"}`);
     } catch (err: unknown) {
-      setStripeSyncToast({ ok: false, msg: err instanceof Error ? err.message : "Sync failed" });
+      toast.error(err instanceof Error ? err.message : "Sync failed");
     } finally {
       setSyncingStripe(false);
-      setTimeout(() => setStripeSyncToast(null), 6000);
     }
   }
 
@@ -777,36 +773,6 @@ export default function MemberDetailPage() {
           </div>
         </div>
       </div>
-
-      {stripeSyncToast && (
-        <div className={`rounded-lg px-5 py-3 flex items-center justify-between gap-4 ${
-          stripeSyncToast.ok
-            ? "bg-green-50 border border-green-200"
-            : "bg-red-50 border border-[#ff0033]/20"
-        }`}>
-          <span className={`text-sm font-medium ${stripeSyncToast.ok ? "text-green-700" : "text-[#ff0033]"}`}>
-            {stripeSyncToast.msg}
-          </span>
-          <button onClick={() => setStripeSyncToast(null)} className="text-xs text-[#2f3437]/40 hover:text-[#2f3437]">
-            Dismiss
-          </button>
-        </div>
-      )}
-
-      {reminderToast && (
-        <div className={`rounded-lg px-5 py-3 flex items-center justify-between gap-4 ${
-          reminderToast.ok
-            ? "bg-green-50 border border-green-200"
-            : "bg-red-50 border border-[#ff0033]/20"
-        }`}>
-          <span className={`text-sm font-medium ${reminderToast.ok ? "text-green-700" : "text-[#ff0033]"}`}>
-            {reminderToast.msg}
-          </span>
-          <button onClick={() => setReminderToast(null)} className="text-xs text-[#2f3437]/40 hover:text-[#2f3437]">
-            Dismiss
-          </button>
-        </div>
-      )}
 
       {/* STATS ROW */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
