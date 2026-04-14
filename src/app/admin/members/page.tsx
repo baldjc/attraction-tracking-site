@@ -635,67 +635,41 @@ function MembersPageInner() {
       )}
 
       {/* Filters */}
-      <div className="space-y-2">
-        <div className="flex flex-wrap items-center gap-3">
-          <input
-            type="text"
-            placeholder="Search by name, email, or YouTube handle…"
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            className="w-full max-w-sm px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6ba3c7] focus:border-transparent outline-none text-[#2f3437] bg-white text-sm"
-          />
-          <div className="flex items-center gap-1.5 flex-wrap">
-            {TIER_FILTERS.map((f) => (
-              <FilterBtn
-                key={f.value}
-                active={tierFilter === f.value}
-                label={f.label}
-                activeClass={
-                  f.value === "foundations"  ? "bg-[#6ba3c7] text-white border-[#6ba3c7]"
-                  : f.value === "production" ? "bg-[#f59e0b] text-white border-[#f59e0b]"
-                  : f.value === "growth"     ? "bg-[#8b5cf6] text-white border-[#8b5cf6]"
-                  : f.value === "done_with_you" ? "bg-[#1e2a38] text-white border-[#1e2a38]"
-                  : "bg-[#111] text-white border-[#111]"
-                }
-                onClick={() => { setTierFilter(f.value as TierFilter); setPage(1); }}
-              />
-            ))}
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-semibold text-[#2f3437]/40 uppercase tracking-wider w-12">Sub:</span>
+      <div className="flex flex-wrap items-center gap-3">
+        <input
+          type="text"
+          placeholder="Search by name, email, or YouTube handle…"
+          value={search}
+          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+          className="w-full max-w-sm px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6ba3c7] focus:border-transparent outline-none text-[#2f3437] bg-white text-sm"
+        />
+        <select
+          value={tierFilter}
+          onChange={(e) => { setTierFilter(e.target.value as TierFilter); setPage(1); }}
+          className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-[#2f3437] bg-white focus:ring-2 focus:ring-[#6ba3c7] focus:border-transparent outline-none"
+        >
+          {TIER_FILTERS.map((f) => (
+            <option key={f.value} value={f.value}>{f.value === "all" ? "All Tiers" : f.label}</option>
+          ))}
+        </select>
+        <select
+          value={subFilter}
+          onChange={(e) => { setSubFilter(e.target.value as SubFilter); setPage(1); }}
+          className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-[#2f3437] bg-white focus:ring-2 focus:ring-[#6ba3c7] focus:border-transparent outline-none"
+        >
           {SUB_FILTERS.map((f) => (
-            <FilterBtn
-              key={f.value}
-              active={subFilter === f.value}
-              label={f.label}
-              activeClass={
-                f.value === "active" ? "bg-green-600 text-white border-green-600"
-                : f.value === "past_due" ? "bg-amber-500 text-white border-amber-500"
-                : f.value === "cancelled" ? "bg-red-500 text-white border-red-500"
-                : "bg-[#111] text-white border-[#111]"
-              }
-              onClick={() => { setSubFilter(f.value as SubFilter); setPage(1); }}
-            />
+            <option key={f.value} value={f.value}>{f.value === "all" ? "All Subs" : f.label}</option>
           ))}
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-semibold text-[#2f3437]/40 uppercase tracking-wider w-12">Status:</span>
+        </select>
+        <select
+          value={statusFilter}
+          onChange={(e) => { setStatusFilter(e.target.value as StatusFilter); setPage(1); }}
+          className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-[#2f3437] bg-white focus:ring-2 focus:ring-[#6ba3c7] focus:border-transparent outline-none"
+        >
           {STATUS_FILTERS.map((f) => (
-            <FilterBtn
-              key={f.value}
-              active={statusFilter === f.value}
-              label={f.label}
-              activeClass={
-                f.value === "active" ? "bg-emerald-600 text-white border-emerald-600"
-                : f.value === "at_risk" ? "bg-yellow-500 text-white border-yellow-500"
-                : f.value === "inactive" ? "bg-red-500 text-white border-red-500"
-                : "bg-[#111] text-white border-[#111]"
-              }
-              onClick={() => { setStatusFilter(f.value as StatusFilter); setPage(1); }}
-            />
+            <option key={f.value} value={f.value}>{f.value === "all" ? "All Statuses" : f.label}</option>
           ))}
-        </div>
+        </select>
       </div>
 
       {/* Mobile list */}
