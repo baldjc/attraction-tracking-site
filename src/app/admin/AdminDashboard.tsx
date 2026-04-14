@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import {
   ClipboardDocumentListIcon,
   UserGroupIcon,
@@ -14,6 +15,8 @@ import {
   ArrowTrendingDownIcon,
   MinusIcon,
 } from "@heroicons/react/24/outline";
+
+const OWNER_EMAIL = "jared@attractionbyvideo.com";
 
 interface ActionCard {
   label: string;
@@ -65,8 +68,12 @@ const TYPE_EMOJI: Record<string, string> = {
 };
 
 export default function AdminDashboard() {
+  const { data: session } = useSession();
+  const isOwner = (session?.user as any)?.email === OWNER_EMAIL;
+
   const [actions, setActions] = useState<ActionCard[]>([]);
-  const [stats, setStats] = useState<StatCard[]>([]);
+  const [topStats, setTopStats] = useState<StatCard[]>([]);
+  const [ownerStats, setOwnerStats] = useState<StatCard[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -113,6 +120,24 @@ export default function AdminDashboard() {
           }
         } catch {}
 
+        // Row 1 — shown to all admins
+        setTopStats([
+          {
+            label: "Total Members",
+            value: members.length,
+            icon: UsersIcon,
+            href: "/admin/members",
+          },
+          {
+            label: "Videos This Week",
+            value: videosThisWeek,
+            subtitle: "Published in the last 7 days",
+            icon: VideoCameraIcon,
+            href: "/admin/analytics",
+          },
+        ]);
+
+        // Action cards — Jared only
         setActions([
           {
             label: "Pending Audits",
@@ -148,20 +173,8 @@ export default function AdminDashboard() {
           },
         ]);
 
-        setStats([
-          {
-            label: "Total Members",
-            value: members.length,
-            icon: UsersIcon,
-            href: "/admin/members",
-          },
-          {
-            label: "Videos This Week",
-            value: videosThisWeek,
-            subtitle: "Published in the last 7 days",
-            icon: VideoCameraIcon,
-            href: "/admin/analytics",
-          },
+        // Stat cards — Jared only
+        setOwnerStats([
           {
             label: "MRR",
             value: mrr > 0 ? fmtMrr(mrr) : "—",
@@ -205,17 +218,16 @@ export default function AdminDashboard() {
   if (loading) {
     return (
       <div className="space-y-6 p-6">
+        <div className="grid grid-cols-2 gap-4">
+          {[1, 2].map((i) => (
+            <div key={i} className="h-20 bg-gray-100 dark:bg-white/5 rounded-xl animate-pulse" />
+          ))}
+        </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="h-24 bg-gray-100 dark:bg-white/5 rounded-xl animate-pulse" />
           ))}
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-20 bg-gray-100 dark:bg-white/5 rounded-xl animate-pulse" />
-          ))}
-        </div>
-        <div className="h-64 bg-gray-100 dark:bg-white/5 rounded-xl animate-pulse" />
       </div>
     );
   }
@@ -230,37 +242,9 @@ export default function AdminDashboard() {
         </p>
       </div>
 
-      {/* Needs Attention */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {actions.map((a) => (
-          <Link
-            key={a.label}
-            href={a.href}
-            className={`bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-[#2a2a2a] p-5 hover:shadow-md transition-shadow ${
-              a.urgent ? "border-l-4 border-l-amber-400" : ""
-            }`}
-          >
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-3xl font-black text-[#2f3437] dark:text-white">{a.count}</p>
-                <p className="text-xs text-[#2f3437]/50 dark:text-white/40 uppercase tracking-wider mt-1">
-                  {a.label}
-                </p>
-                <p className="text-[10px] text-[#2f3437]/30 dark:text-white/20 mt-0.5 leading-tight">
-                  {a.subtitle}
-                </p>
-              </div>
-              <a.icon
-                className={`w-5 h-5 shrink-0 ${a.urgent ? "text-amber-500" : "text-[#2f3437]/20 dark:text-white/20"}`}
-              />
-            </div>
-          </Link>
-        ))}
-      </div>
-
-      {/* Quick Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {stats.map((s) => (
+      {/* Row 1 — Total Members + Videos This Week — shown to all admins */}
+      <div className="grid grid-cols-2 gap-4">
+        {topStats.map((s) => (
           <Link
             key={s.label}
             href={s.href}
@@ -272,18 +256,7 @@ export default function AdminDashboard() {
                 {s.label}
               </p>
             </div>
-            <div className="flex items-baseline gap-2">
-              <p className="text-2xl font-bold text-[#6ba3c7]">{s.value}</p>
-              {s.trend === "up" && (
-                <ArrowTrendingUpIcon className="w-4 h-4 text-emerald-500 shrink-0" />
-              )}
-              {s.trend === "down" && (
-                <ArrowTrendingDownIcon className="w-4 h-4 text-red-400 shrink-0" />
-              )}
-              {s.trend === "same" && (
-                <MinusIcon className="w-4 h-4 text-gray-400 shrink-0" />
-              )}
-            </div>
+            <p className="text-2xl font-bold text-[#6ba3c7]">{s.value}</p>
             {s.subtitle && (
               <p className="text-[10px] text-[#2f3437]/30 dark:text-white/20 mt-0.5 leading-tight">
                 {s.subtitle}
@@ -293,52 +266,120 @@ export default function AdminDashboard() {
         ))}
       </div>
 
-      {/* Recent Activity */}
-      {activities.length > 0 ? (
-        <div className="bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-[#2a2a2a] overflow-hidden">
-          <div className="px-5 py-3 border-b border-gray-100 dark:border-[#2a2a2a]">
-            <h2 className="text-sm font-semibold text-[#2f3437] dark:text-[#e2e8f0]">Recent Activity</h2>
-          </div>
-          <div className="divide-y divide-gray-100 dark:divide-[#2a2a2a]">
-            {activities.slice(0, 10).map((a, i) => (
+      {/* Rows 2+ — Jared only */}
+      {isOwner && (
+        <>
+          {/* Action cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {actions.map((a) => (
               <Link
-                key={i}
-                href={a.link}
-                className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 dark:hover:bg-white/5"
+                key={a.label}
+                href={a.href}
+                className={`bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-[#2a2a2a] p-5 hover:shadow-md transition-shadow ${
+                  a.urgent ? "border-l-4 border-l-amber-400" : ""
+                }`}
               >
-                <span className="text-lg">{TYPE_EMOJI[a.type] || "📌"}</span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-[#2f3437] dark:text-[#e2e8f0] truncate">{a.title}</p>
-                  <p className="text-xs text-[#2f3437]/40 dark:text-white/30">{a.description}</p>
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-3xl font-black text-[#2f3437] dark:text-white">{a.count}</p>
+                    <p className="text-xs text-[#2f3437]/50 dark:text-white/40 uppercase tracking-wider mt-1">
+                      {a.label}
+                    </p>
+                    <p className="text-[10px] text-[#2f3437]/30 dark:text-white/20 mt-0.5 leading-tight">
+                      {a.subtitle}
+                    </p>
+                  </div>
+                  <a.icon
+                    className={`w-5 h-5 shrink-0 ${a.urgent ? "text-amber-500" : "text-[#2f3437]/20 dark:text-white/20"}`}
+                  />
                 </div>
-                <span className="text-xs text-[#2f3437]/30 dark:text-white/20 shrink-0">
-                  {timeAgo(a.timestamp)}
-                </span>
               </Link>
             ))}
           </div>
-        </div>
-      ) : (
-        <div className="bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-[#2a2a2a] p-5">
-          <h2 className="text-sm font-semibold text-[#2f3437] dark:text-[#e2e8f0] mb-3">Quick Links</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {[
-              { label: "View Members", href: "/admin/members", emoji: "👥" },
-              { label: "Run Audits", href: "/admin/audits", emoji: "📊" },
-              { label: "Q&A Prep", href: "/admin/qa-prep", emoji: "💬" },
-              { label: "Academy Manager", href: "/admin/academy-manager", emoji: "🎓" },
-            ].map((link) => (
+
+          {/* Owner stat cards — MRR + Avg Audit Score */}
+          <div className="grid grid-cols-2 gap-4">
+            {ownerStats.map((s) => (
               <Link
-                key={link.href}
-                href={link.href}
-                className="flex items-center gap-2 p-3 rounded-lg border border-gray-100 dark:border-[#2a2a2a] hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+                key={s.label}
+                href={s.href}
+                className="bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-[#2a2a2a] p-4 hover:shadow-md transition-shadow"
               >
-                <span className="text-lg">{link.emoji}</span>
-                <span className="text-sm font-medium text-[#2f3437] dark:text-[#e2e8f0]">{link.label}</span>
+                <div className="flex items-center gap-2 mb-1">
+                  <s.icon className="w-4 h-4 text-[#6ba3c7]" />
+                  <p className="text-xs text-[#2f3437]/50 dark:text-white/40 uppercase tracking-wider">
+                    {s.label}
+                  </p>
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <p className="text-2xl font-bold text-[#6ba3c7]">{s.value}</p>
+                  {s.trend === "up" && (
+                    <ArrowTrendingUpIcon className="w-4 h-4 text-emerald-500 shrink-0" />
+                  )}
+                  {s.trend === "down" && (
+                    <ArrowTrendingDownIcon className="w-4 h-4 text-red-400 shrink-0" />
+                  )}
+                  {s.trend === "same" && (
+                    <MinusIcon className="w-4 h-4 text-gray-400 shrink-0" />
+                  )}
+                </div>
+                {s.subtitle && (
+                  <p className="text-[10px] text-[#2f3437]/30 dark:text-white/20 mt-0.5 leading-tight">
+                    {s.subtitle}
+                  </p>
+                )}
               </Link>
             ))}
           </div>
-        </div>
+
+          {/* Recent Activity */}
+          {activities.length > 0 ? (
+            <div className="bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-[#2a2a2a] overflow-hidden">
+              <div className="px-5 py-3 border-b border-gray-100 dark:border-[#2a2a2a]">
+                <h2 className="text-sm font-semibold text-[#2f3437] dark:text-[#e2e8f0]">Recent Activity</h2>
+              </div>
+              <div className="divide-y divide-gray-100 dark:divide-[#2a2a2a]">
+                {activities.slice(0, 10).map((a, i) => (
+                  <Link
+                    key={i}
+                    href={a.link}
+                    className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 dark:hover:bg-white/5"
+                  >
+                    <span className="text-lg">{TYPE_EMOJI[a.type] || "📌"}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-[#2f3437] dark:text-[#e2e8f0] truncate">{a.title}</p>
+                      <p className="text-xs text-[#2f3437]/40 dark:text-white/30">{a.description}</p>
+                    </div>
+                    <span className="text-xs text-[#2f3437]/30 dark:text-white/20 shrink-0">
+                      {timeAgo(a.timestamp)}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-[#2a2a2a] p-5">
+              <h2 className="text-sm font-semibold text-[#2f3437] dark:text-[#e2e8f0] mb-3">Quick Links</h2>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {[
+                  { label: "View Members", href: "/admin/members", emoji: "👥" },
+                  { label: "Run Audits", href: "/admin/audits", emoji: "📊" },
+                  { label: "Q&A Prep", href: "/admin/qa-prep", emoji: "💬" },
+                  { label: "Academy Manager", href: "/admin/academy-manager", emoji: "🎓" },
+                ].map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className="flex items-center gap-2 p-3 rounded-lg border border-gray-100 dark:border-[#2a2a2a] hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+                  >
+                    <span className="text-lg">{link.emoji}</span>
+                    <span className="text-sm font-medium text-[#2f3437] dark:text-[#e2e8f0]">{link.label}</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
