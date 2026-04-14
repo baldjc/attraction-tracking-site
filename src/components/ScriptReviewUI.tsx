@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { ArrowPathIcon, CheckIcon, BookmarkSquareIcon, TrashIcon, UserCircleIcon } from "@heroicons/react/24/outline";
+import NextStepCard from "@/components/ai-tools/NextStepCard";
 
 const PRINCIPLE_LABELS: Record<string, string> = {
   avatar_clarity: "Avatar Clarity",
@@ -598,6 +599,16 @@ export default function ScriptReviewUI({ fetchBaseline = false, isAdmin = false 
           </div>
           <ResultDisplay r={activeResult} baselineScores={activeBaselineScores} />
         </div>
+      )}
+
+      {savedId && result && !viewedResult && (
+        <NextStepCard
+          emoji="♻️"
+          title="Repurpose Your Content"
+          description="Turn your video transcript into a newsletter, LinkedIn article, Facebook post, or blog post in one click."
+          href="/member/ai-tools/repurpose-content"
+          buttonLabel="Open Repurpose Content"
+        />
       )}
 
       {history.length > 0 && (

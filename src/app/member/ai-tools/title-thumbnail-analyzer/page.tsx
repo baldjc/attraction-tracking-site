@@ -8,6 +8,7 @@ import PromptEditor from "@/components/ai-tools/PromptEditor";
 import RecentConversations from "@/components/ai-tools/RecentConversations";
 import ResourceRecommendations from "@/components/ResourceRecommendations";
 import MarkdownMessage from "@/components/MarkdownMessage";
+import NextStepCard from "@/components/ai-tools/NextStepCard";
 
 interface AnalysisResult {
   thumbnail?: {
@@ -812,6 +813,14 @@ export default function TitleThumbnailAnalyzerPage() {
               </div>
             )
           )}
+
+          <NextStepCard
+            emoji="🎬"
+            title="Write Your Script"
+            description="Take your optimised title into the ARC Script Builder and structure your video around it."
+            href="/member/ai-tools/arc-script-builder"
+            buttonLabel="Open ARC Script Builder"
+          />
 
           <button
             onClick={reset}

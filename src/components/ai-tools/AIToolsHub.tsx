@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { ChevronRightIcon } from "@heroicons/react/24/outline";
 import { useSession } from "next-auth/react";
 
 interface AvatarData {
@@ -131,6 +132,7 @@ export default function AIToolsHub({ basePath, featureFlags }: Props) {
   const allTools = [
     {
       href: `${basePath}/avatar-architect`,
+      id: "tool-avatar",
       featureKey: "tool_avatar_architect",
       icon: "🎯",
       title: "Avatar Architect",
@@ -142,6 +144,7 @@ export default function AIToolsHub({ basePath, featureFlags }: Props) {
     },
     {
       href: `${basePath}/content-engine`,
+      id: "tool-content-engine",
       featureKey: "tool_content_engine",
       icon: "🚀",
       title: "Content Engine",
@@ -155,6 +158,7 @@ export default function AIToolsHub({ basePath, featureFlags }: Props) {
     },
     {
       href: `${basePath}/title-thumbnail-analyzer`,
+      id: "tool-title",
       featureKey: "tool_title_analyzer",
       icon: "🔍",
       title: "Title & Thumbnail Analyzer",
@@ -164,6 +168,7 @@ export default function AIToolsHub({ basePath, featureFlags }: Props) {
     },
     {
       href: `${basePath}/arc-script-builder`,
+      id: "tool-script-builder",
       featureKey: "tool_arc_script_builder",
       icon: "🎬",
       title: "ARC Script Builder",
@@ -175,6 +180,7 @@ export default function AIToolsHub({ basePath, featureFlags }: Props) {
     },
     {
       href: scriptReviewHref,
+      id: "tool-review",
       featureKey: "tool_script_review",
       icon: "📋",
       title: "Script Review",
@@ -188,6 +194,7 @@ export default function AIToolsHub({ basePath, featureFlags }: Props) {
     },
     {
       href: `${basePath}/repurpose-content`,
+      id: "tool-repurpose",
       featureKey: "tool_repurpose_content",
       icon: "♻️",
       title: "Repurpose Content",
@@ -197,12 +204,51 @@ export default function AIToolsHub({ basePath, featureFlags }: Props) {
     },
     {
       href: `${basePath}/description-generator`,
+      id: "tool-description",
       featureKey: "tool_description_generator",
       icon: "📝",
       title: "Description Generator",
       description: "Generate SEO-optimised YouTube descriptions from your video transcript",
       extra: avatarStatus,
       badge: avatar?.avatarName ? "green" : "amber",
+    },
+  ];
+
+  const hasAvatar = !loading && !!avatar?.avatarName;
+  const hasIdeas = !loading && (savedIdeasCount ?? 0) > 0;
+  const hasScript = !loading && !!lastScript;
+
+  type StepStatus = "complete" | "current" | "upcoming";
+  const workflowSteps: { label: string; sublabel: string; status: StepStatus; targetId: string }[] = [
+    {
+      label: "Step 1",
+      sublabel: "Build Avatar",
+      status: hasAvatar ? "complete" : "current",
+      targetId: "tool-avatar",
+    },
+    {
+      label: "Step 2",
+      sublabel: "Generate Ideas",
+      status: hasAvatar && hasIdeas ? "complete" : hasAvatar ? "current" : "upcoming",
+      targetId: "tool-content-engine",
+    },
+    {
+      label: "Step 3",
+      sublabel: "Write Script",
+      status: hasIdeas && hasScript ? "complete" : hasIdeas ? "current" : "upcoming",
+      targetId: "tool-script-builder",
+    },
+    {
+      label: "Step 4",
+      sublabel: "Review & Package",
+      status: hasScript ? "current" : "upcoming",
+      targetId: "tool-review",
+    },
+    {
+      label: "Step 5",
+      sublabel: "Repurpose",
+      status: hasScript ? "current" : "upcoming",
+      targetId: "tool-repurpose",
     },
   ];
 
@@ -244,10 +290,54 @@ export default function AIToolsHub({ basePath, featureFlags }: Props) {
         </div>
       )}
 
+      {!loading && (
+        <div className="mb-6">
+          <p className="text-[11px] font-semibold text-[#2f3437]/40 dark:text-white/40 uppercase tracking-widest mb-3">
+            Your Content Workflow
+          </p>
+          <div className="flex items-center gap-0 overflow-x-auto pb-1 -mx-1 px-1">
+            {workflowSteps.map((step, i) => (
+              <div key={step.targetId} className="flex items-center shrink-0">
+                <button
+                  onClick={() => {
+                    const el = document.getElementById(step.targetId);
+                    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+                    el?.classList.add("ring-2", "ring-[#6ba3c7]", "ring-offset-2");
+                    setTimeout(() => el?.classList.remove("ring-2", "ring-[#6ba3c7]", "ring-offset-2"), 1800);
+                  }}
+                  className={`flex flex-col items-center px-3 py-2 rounded-lg text-center transition-colors ${
+                    step.status === "complete"
+                      ? "text-[#6ba3c7]"
+                      : step.status === "current"
+                      ? "bg-[#6ba3c7]/8 dark:bg-[#6ba3c7]/15 text-[#2f3437] dark:text-white"
+                      : "text-[#2f3437]/30 dark:text-white/30"
+                  }`}
+                >
+                  <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold mb-1 border transition-colors ${
+                    step.status === "complete"
+                      ? "bg-[#6ba3c7] border-[#6ba3c7] text-white"
+                      : step.status === "current"
+                      ? "bg-white dark:bg-[#1a1a1a] border-[#6ba3c7] text-[#6ba3c7]"
+                      : "bg-transparent border-[#2f3437]/20 dark:border-white/20 text-[#2f3437]/30 dark:text-white/30"
+                  }`}>
+                    {step.status === "complete" ? "✓" : i + 1}
+                  </span>
+                  <span className="text-[10px] font-semibold leading-tight whitespace-nowrap">{step.sublabel}</span>
+                </button>
+                {i < workflowSteps.length - 1 && (
+                  <ChevronRightIcon className="w-3.5 h-3.5 text-[#2f3437]/15 dark:text-white/15 shrink-0 mx-0.5" />
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
         {tools.map((tool) => (
           <Link
             key={tool.href}
+            id={tool.id}
             href={tool.href}
             className="group bg-white dark:bg-[#1a1a1a] rounded-lg border border-[#2f3437]/10 dark:border-white/10 p-6 hover:border-[#6ba3c7]/50 hover:shadow-lg transition-all duration-200"
           >

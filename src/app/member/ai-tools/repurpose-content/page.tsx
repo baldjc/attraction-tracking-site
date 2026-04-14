@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { ChevronDownIcon, ChevronUpIcon, ClipboardDocumentIcon, CheckIcon } from "@heroicons/react/24/outline";
+import NextStepCard from "@/components/ai-tools/NextStepCard";
 
 function markdownToHtml(md: string): string {
   const lines = md.split("\n");
@@ -1380,6 +1381,14 @@ export default function RepurposeContentPage() {
               )}
             </ResultCard>
           )}
+
+          <NextStepCard
+            emoji="📅"
+            title="Plan Your Next Video"
+            description="Head to the Content Planner to schedule your next piece of content and keep your production pipeline moving."
+            href="/member/content-planner"
+            buttonLabel="Open Content Planner"
+          />
 
           <button onClick={reset} className="w-full border border-[#2f3437]/20 dark:border-white/20 text-[#2f3437] dark:text-white py-3 rounded-lg font-semibold hover:bg-[#111]/5 dark:hover:bg-white/5 transition-colors">
             Generate Another

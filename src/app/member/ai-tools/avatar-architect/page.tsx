@@ -16,6 +16,7 @@ import {
 import PromptEditor from "@/components/ai-tools/PromptEditor";
 import RecentConversations from "@/components/ai-tools/RecentConversations";
 import MarkdownMessage from "@/components/MarkdownMessage";
+import NextStepCard from "@/components/ai-tools/NextStepCard";
 
 interface Message {
   role: "user" | "assistant";
@@ -1472,12 +1473,23 @@ export default function AvatarArchitectPage() {
       )}
 
       {saved && (
-        <div className="flex-shrink-0 mb-3 bg-green-50 border border-green-200 rounded-lg p-3 flex items-center gap-2">
-          <CheckIcon className="w-5 h-5 text-green-600" />
-          <p className="text-sm font-medium text-green-800">
-            Avatar saved! All your AI tools will now use {detectedAvatar?.avatar_name}.
-          </p>
-        </div>
+        <>
+          <div className="flex-shrink-0 mb-3 bg-green-50 border border-green-200 rounded-lg p-3 flex items-center gap-2">
+            <CheckIcon className="w-5 h-5 text-green-600" />
+            <p className="text-sm font-medium text-green-800">
+              Avatar saved! All your AI tools will now use {detectedAvatar?.avatar_name}.
+            </p>
+          </div>
+          <div className="flex-shrink-0 mb-3">
+            <NextStepCard
+              emoji="🚀"
+              title="Generate Content Ideas"
+              description="Your avatar is ready. Head to the Content Engine to generate video ideas organised by your content themes."
+              href="/member/ai-tools/content-engine"
+              buttonLabel="Open Content Engine"
+            />
+          </div>
+        </>
       )}
 
       {/* Chat messages */}

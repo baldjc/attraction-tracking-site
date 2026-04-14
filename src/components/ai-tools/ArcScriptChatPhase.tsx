@@ -12,6 +12,7 @@ import {
 import Link from "next/link";
 import ArcProgressBar, { SECTIONS } from "@/components/ai-tools/ArcProgressBar";
 import MarkdownMessage from "@/components/MarkdownMessage";
+import NextStepCard from "@/components/ai-tools/NextStepCard";
 
 interface Message {
   role: "user" | "assistant";
@@ -724,6 +725,16 @@ export default function ArcScriptChatPhase({
               Build Another Script
             </button>
           </div>
+
+          {saved && (
+            <NextStepCard
+              emoji="📋"
+              title="Review Your Script"
+              description="Score your finished script against the 14 Attraction principles and get a coaching breakdown."
+              href="/member/ai-tools/script-review"
+              buttonLabel="Open Script Review"
+            />
+          )}
         </div>
       )}
 
