@@ -79,16 +79,16 @@ const editorLinks = [
 const PRODUCTION_TIERS = ["editing_2", "editing_4", "mastery_2", "mastery_4", "done_with_you"];
 
 const memberLinks = [
-  { href: "/member/dashboard",       label: "Dashboard",      icon: HomeIcon,         featureKey: null,        colour: "#6ba3c7", tierRequired: null },
-  { href: "/member/scores",          label: "My Scores",      icon: StarIcon,         featureKey: null,        colour: "#F59E0B", tierRequired: null },
-  { href: "/member/academy",         label: "Academy",        icon: AcademicCapIcon,  featureKey: null,        colour: "#10B981", tierRequired: null },
-  { href: "/member/ai-tools",        label: "AI Tools",       icon: SparklesIcon,     featureKey: "ai_tools",  colour: "#6ba3c7", tierRequired: null },
-  { href: "/member/content-planner", label: "Content Planner",icon: CalendarDaysIcon, featureKey: "content_calendar", colour: "#6ba3c7", tierRequired: null },
-  { href: "/member/my-calls",        label: "My Calls",       icon: VideoCameraIcon,  featureKey: null,        colour: "#6ba3c7", tierRequired: null },
-  { href: "/member/client-hub",      label: "Client Hub",     icon: Squares2X2Icon,   featureKey: null,        colour: "#6ba3c7", tierRequired: PRODUCTION_TIERS },
-  { href: "/member/generate-leads",  label: "Generate Leads", icon: RocketLaunchIcon, featureKey: "campaigns", colour: "#E63946", tierRequired: null },
-  { href: "/member/hire",            label: "Hire a Human",   icon: UserGroupIcon,    featureKey: null,        colour: "#8B5CF6", tierRequired: null },
-  { href: "/member/settings",        label: "Settings",       icon: Cog6ToothIcon,    featureKey: null,        colour: "#6ba3c7", tierRequired: null },
+  { href: "/member/dashboard",       label: "Dashboard",       icon: HomeIcon,         featureKey: null,        colour: "#6ba3c7", tierRequired: null },
+  { href: "/member/academy",         label: "Academy",         icon: AcademicCapIcon,  featureKey: null,        colour: "#10B981", tierRequired: null,           section: "Learn" },
+  { href: "/member/scores",          label: "My Scores",       icon: StarIcon,         featureKey: null,        colour: "#F59E0B", tierRequired: null },
+  { href: "/member/ai-tools",        label: "AI Tools",        icon: SparklesIcon,     featureKey: "ai_tools",  colour: "#6ba3c7", tierRequired: null,           section: "Create" },
+  { href: "/member/content-planner", label: "Content Planner", icon: CalendarDaysIcon, featureKey: null,        colour: "#6ba3c7", tierRequired: PRODUCTION_TIERS },
+  { href: "/member/generate-leads",  label: "Generate Leads",  icon: RocketLaunchIcon, featureKey: "campaigns", colour: "#E63946", tierRequired: null,           section: "Grow" },
+  { href: "/member/client-hub",      label: "Client Hub",      icon: Squares2X2Icon,   featureKey: null,        colour: "#6ba3c7", tierRequired: PRODUCTION_TIERS },
+  { href: "/member/my-calls",        label: "My Calls",        icon: VideoCameraIcon,  featureKey: null,        colour: "#6ba3c7", tierRequired: null,           section: "Support" },
+  { href: "/member/hire",            label: "Hire a Human",    icon: UserGroupIcon,    featureKey: null,        colour: "#8B5CF6", tierRequired: null },
+  { href: "/member/settings",        label: "Settings",        icon: Cog6ToothIcon,    featureKey: null,        colour: "#6ba3c7", tierRequired: null },
 ];
 
 interface ImpersonateState {

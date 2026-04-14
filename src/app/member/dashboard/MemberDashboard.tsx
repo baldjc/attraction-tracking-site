@@ -99,7 +99,7 @@ const NAV_CARDS = [
   { title: "Academy",        description: "Master the Attraction system, one lesson at a time.", href: "/member/academy",                     emoji: "🎓", colour: "#10B981" },
   { title: "My Avatar",      description: "Work on your perfect avatar.",                        href: "/member/ai-tools/avatar-architect",   emoji: "🎯", colour: "#EF4444" },
   { title: "Create Content", description: "Generate ideas, scripts, and titles with AI.",        href: "/member/ai-tools",                    emoji: "✨", colour: "#6ba3c7" },
-  { title: "Generate Leads", description: "Track your links, clicks, and conversions.",          href: "/member/campaigns",                   emoji: "🚀", colour: "#E63946" },
+  { title: "Generate Leads", description: "Learn to generate leads, track campaigns, and measure results.", href: "/member/generate-leads", emoji: "🚀", colour: "#E63946" },
   { title: "My Scores",      description: "See how your content stacks up.",                     href: "/member/scores",                      emoji: "🏆", colour: "#F59E0B" },
   { title: "Hire a Human",   description: "Hire us to help you grow faster.",                    href: "/member/hire",                        emoji: "🤝", colour: "#8B5CF6" },
 ];
