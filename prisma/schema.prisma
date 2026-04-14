@@ -1262,3 +1262,14 @@ model ApiCache {
   @@index([expiresAt])
   @@map("intel_api_cache")
 }
+
+model ChangelogEntry {
+  id        String   @id @default(cuid())
+  title     String
+  body      String
+  emoji     String   @default("✨")
+  createdAt DateTime @default(now())
+  published Boolean  @default(true)
+
+  @@map("changelog_entries")
+}

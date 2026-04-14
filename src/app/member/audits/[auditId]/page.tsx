@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeftIcon, ArrowTopRightOnSquareIcon } from "@heroicons/react/24/outline";
+import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/outline";
+import Breadcrumb from "@/components/Breadcrumb";
 
 const AUDIT_KEY_TO_ACADEMY_SLUG: Record<string, string> = {
   lead_magnet_system: "lead_magnet",
@@ -125,10 +126,10 @@ export default function MemberAuditReportPage() {
 
   return (
     <div className="max-w-4xl space-y-4 md:space-y-5">
-      <Link href="/member/scores" className="inline-flex items-center gap-1.5 text-sm text-[#2f3437]/50 hover:text-[#2f3437]">
-        <ArrowLeftIcon className="w-4 h-4" />
-        Back to My Scores
-      </Link>
+      <Breadcrumb items={[
+        { label: "My Scores", href: "/member/scores" },
+        { label: "Audit Report" },
+      ]} />
 
       {isSingleVideo && singleVideo ? (
         <>

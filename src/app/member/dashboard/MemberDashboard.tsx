@@ -112,12 +112,20 @@ export default function MemberDashboard() {
   const [topVideos, setTopVideos] = useState<TopVideo[] | null>(null);
   const [videosLoading, setVideosLoading] = useState(true);
   const [noUploadsIn30Days, setNoUploadsIn30Days] = useState(false);
+  const [changelog, setChangelog] = useState<Array<{ id: string; title: string; body: string; emoji: string; createdAt: string }>>([]);
 
   useEffect(() => {
     fetch("/api/member/dashboard")
       .then((r) => r.json())
       .then((d) => { setData(d); setLoading(false); })
       .catch(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/member/changelog")
+      .then((r) => r.json())
+      .then((d) => setChangelog(d.entries ?? []))
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -364,6 +372,28 @@ export default function MemberDashboard() {
         </div>
 
       </div>
+
+      {/* ── What's New ── */}
+      {changelog.length > 0 && (
+        <div className={`${card} p-5`}>
+          <h3 className={`text-sm font-semibold ${txt} mb-3`}>What&apos;s New</h3>
+          <div className="space-y-3">
+            {changelog.slice(0, 3).map((entry) => (
+              <div key={entry.id} className="flex gap-3">
+                <span className="text-lg shrink-0">{entry.emoji}</span>
+                <div className="min-w-0">
+                  <p className={`text-sm font-medium ${txt}`}>{entry.title}</p>
+                  <p className={`text-xs ${muted} line-clamp-1 mt-0.5`}>{entry.body}</p>
+                  <p className="text-[10px] text-[#2f3437]/30 dark:text-white/20 mt-1">
+                    {new Date(entry.createdAt).toLocaleDateString("en-CA", { month: "short", day: "numeric" })}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

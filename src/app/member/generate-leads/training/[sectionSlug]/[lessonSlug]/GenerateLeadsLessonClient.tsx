@@ -294,6 +294,66 @@ function RelatedMomentsSection({ principles }: { principles: string[] }) {
   );
 }
 
+const PRINCIPLE_TO_TOOL: Record<string, { emoji: string; title: string; desc: string; href: string; button: string }> = {
+  avatar_clarity: {
+    emoji: "🎯",
+    title: "Refine Your Avatar",
+    desc: "Apply what you just learned to sharpen your ideal viewer profile.",
+    href: "/member/ai-tools/avatar-architect",
+    button: "Open Avatar Architect",
+  },
+  themes_over_topics: {
+    emoji: "💡",
+    title: "Generate Content Ideas",
+    desc: "Use the Content Engine to brainstorm themes based on this lesson.",
+    href: "/member/ai-tools/content-engine",
+    button: "Open Content Engine",
+  },
+  arc_attention: {
+    emoji: "🎬",
+    title: "Write a Script Hook",
+    desc: "Practice writing attention-grabbing hooks using the Script Builder.",
+    href: "/member/ai-tools/arc-script-builder",
+    button: "Open Script Builder",
+  },
+  arc_revelation: {
+    emoji: "🎬",
+    title: "Build Your Script's Revelation",
+    desc: "Practice the revelation arc in a script using the Script Builder.",
+    href: "/member/ai-tools/arc-script-builder",
+    button: "Open Script Builder",
+  },
+  arc_connection: {
+    emoji: "🎬",
+    title: "Strengthen Your Script's Connection",
+    desc: "Practice connection techniques in a script.",
+    href: "/member/ai-tools/arc-script-builder",
+    button: "Open Script Builder",
+  },
+  title_frameworks: {
+    emoji: "🔍",
+    title: "Test a Title",
+    desc: "Run a title through the analyser to see how it scores.",
+    href: "/member/ai-tools/title-thumbnail-analyzer",
+    button: "Open Title Analyser",
+  },
+  approve_the_click: {
+    emoji: "🔍",
+    title: "Analyse Your Thumbnail",
+    desc: "Test a title + thumbnail combo against the Attraction framework.",
+    href: "/member/ai-tools/title-thumbnail-analyzer",
+    button: "Open Title Analyser",
+  },
+};
+
+const DEFAULT_PRACTICE = {
+  emoji: "📋",
+  title: "Review a Script",
+  desc: "Score any script against the 14 Attraction principles.",
+  href: "/member/ai-tools/script-review",
+  button: "Open Script Review",
+};
+
 export default function GenerateLeadsLessonClient({
   sectionSlug,
   lessonSlug,
@@ -646,6 +706,60 @@ export default function GenerateLeadsLessonClient({
           </Link>
         )}
       </div>
+
+      {/* Practice CTA — shows after lesson is marked complete */}
+      {completed && lesson && (
+        <div className="mt-4">
+          {lesson.aiToolLink && lesson.aiToolLabel ? (
+            <div className="bg-[#6ba3c7]/5 dark:bg-[#6ba3c7]/10 border border-[#6ba3c7]/20 rounded-xl p-5">
+              <div className="flex items-start gap-4">
+                <span className="text-2xl shrink-0 mt-0.5">🚀</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-[#2f3437] dark:text-[#e2e8f0]">
+                    Practice: {lesson.aiToolLabel}
+                  </p>
+                  <p className="text-xs text-[#2f3437]/60 dark:text-[#94a3b8] mt-1">
+                    Put what you just learned into action.
+                  </p>
+                  <a
+                    href={lesson.aiToolLink}
+                    className="inline-flex items-center gap-1.5 bg-[#6ba3c7] text-white text-sm font-semibold rounded-lg px-4 py-2 mt-3 hover:bg-[#5490b5] transition-colors"
+                  >
+                    {lesson.aiToolLabel} →
+                  </a>
+                </div>
+              </div>
+            </div>
+          ) : (
+            (() => {
+              const match = (lesson.principleTags || [])
+                .map((tag: string) => PRINCIPLE_TO_TOOL[tag])
+                .find(Boolean) || DEFAULT_PRACTICE;
+              return (
+                <div className="bg-[#6ba3c7]/5 dark:bg-[#6ba3c7]/10 border border-[#6ba3c7]/20 rounded-xl p-5">
+                  <div className="flex items-start gap-4">
+                    <span className="text-2xl shrink-0 mt-0.5">{match.emoji}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-[#2f3437] dark:text-[#e2e8f0]">
+                        Practice: {match.title}
+                      </p>
+                      <p className="text-xs text-[#2f3437]/60 dark:text-[#94a3b8] mt-1">
+                        {match.desc}
+                      </p>
+                      <a
+                        href={match.href}
+                        className="inline-flex items-center gap-1.5 bg-[#6ba3c7] text-white text-sm font-semibold rounded-lg px-4 py-2 mt-3 hover:bg-[#5490b5] transition-colors"
+                      >
+                        {match.button} →
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()
+          )}
+        </div>
+      )}
     </div>
   );
 }

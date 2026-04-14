@@ -3,6 +3,7 @@
 import { useState, useEffect, use, useCallback } from "react";
 import Link from "next/link";
 import { PencilIcon, ArrowPathIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
+import Breadcrumb from "@/components/Breadcrumb";
 import { DailyLineChart, ChartEmpty } from "@/components/charts/DailyLineChart";
 import { LinkBarChart } from "@/components/charts/LinkBarChart";
 import ClickMap from "@/components/campaigns/ClickMap";
@@ -372,11 +373,10 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
 
       {/* Header */}
       <div>
-        <div className="mb-2">
-          <Link href="/member/campaigns" className="text-sm text-[#2f3437]/40 hover:text-[#2f3437] transition-colors">
-            ← Campaigns
-          </Link>
-        </div>
+        <Breadcrumb items={[
+          { label: "Generate Leads", href: "/member/generate-leads?section=campaigns" },
+          { label: campaign?.name || "Campaign" },
+        ]} />
         <div className="flex items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
