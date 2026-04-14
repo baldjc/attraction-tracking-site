@@ -58,6 +58,7 @@ Each talking point uses EITHER a Value Loop OR a Data Tour Loop:
 - Name It — identify the neighbourhood, tier, category, or item
 - Number It — present 3-5 specific data points
 - Interpret It — what do these numbers actually mean in plain language
+- Connect It — 1-2 sentences tying this data point back to the viewer's life, identity, or the video's Throughline Lesson. This is the human beat that makes the viewer feel seen inside the data — not a teaching section, but a "people like us" moment woven into the tour. Each Connect It reinforces the Throughline Lesson from a different angle. Never skip this beat.
 - Opinion It — the creator's editorial reaction (3-7 words, genuine tone)
 - Bridge It — curiosity bridge to the next item
 
@@ -119,7 +120,8 @@ Every completed script must pass these checks:
 - Intro pattern comes FIRST (approves the click immediately — no preamble)
 - Expertise bridge comes AFTER lead magnet (for data-heavy videos, data scope IS the bridge)
 - Lead magnet mentioned 3 times (within first 20 sec, midpoint, end)
-- Each talking point follows the right loop: Value Loop (What/Why/When/Proof Point/Meaning) or Data Tour Loop (Name/Number/Interpret/Opinion/Bridge)
+- Each talking point follows the right loop: Value Loop (What/Why/When/Proof Point/Meaning) or Data Tour Loop (Name/Number/Interpret/Connect/Opinion/Bridge)
+- For data-heavy videos: Throughline Lesson identified and Connect It beats distributed across every Data Tour Loop point (not clustered at the start or in a standalone section)
 - No "how to implement" (save that for consultation/lead magnet)
 - 4-5 connection phrases integrated (written into dialogue, distributed throughout)
 - 2-3 values/interests peppered in (casual, conversational; in data-heavy scripts, editorial reactions count)
@@ -165,8 +167,11 @@ Write each option word-for-word as ~20-25 second scripts. Make them specific to 
 **SECTION 3 — CREDIBILITY**
 Draft a credibility line using credentials from the avatar profile. Note what you pulled in (years in business, deals closed, client results, etc.). Write it as an actual script line that weaves in naturally — not boastful.
 
-**SECTION 4 — INSIGHTS (VALUE LOOPS)**
-Generate the insights using What → Why → When → Story Proof → Connection loops from the research. Add And → But → Therefore curiosity bridges between sections. Each insight should feel like a revelation, not a how-to.
+**SECTION 4 — INSIGHTS (HYBRID LOOPS)**
+Generate the insights using the right loop type per talking point:
+- Value Loop points: What → Why → When → Story Proof → Connection
+- Data Tour Loop points: Name It → Number It → Interpret It → Connect It → Opinion It → Bridge It
+For data-heavy videos, ensure each Data Tour Loop point includes a Connect It beat (1-2 sentences) that ties the data back to the viewer's life or the Throughline Lesson identified in Section 1. These must be distributed throughout — not front-loaded in the first couple of minutes. Add And → But → Therefore curiosity bridges between sections. Each insight should feel like a revelation, not a how-to.
 
 **SECTION 5 — CLOSING**
 Draft a closing that includes lead magnet mentions (3 total across the full script). Include connection phrases and note where values are placed.
@@ -180,8 +185,9 @@ Assemble the complete script from approved sections. Then run the 11-item checkl
 2. Opening approves the click
 3. Credibility woven in naturally
 4. Lead magnet mentioned 3 times
-5. Each insight follows the Value Loop
+5. Each insight follows the correct loop (Value Loop or Data Tour Loop with Connect It)
 6. No "how to implement" (keep them wanting more)
+6b. For data-heavy videos: Throughline Lesson identified and Connect It beats distributed across every Data Tour Loop point
 7. 4-5 connection phrases integrated
 8. Values/interests peppered throughout
 9. Curiosity bridges between sections

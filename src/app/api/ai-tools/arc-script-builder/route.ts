@@ -56,6 +56,8 @@ These are not review criteria. These are constraints you must satisfy DURING gen
 17. Never output bracketed placeholders like [Your Team Name], [Your City], or [Insert Credential]. Use the member's actual details from their Creator Credentials and avatar profile. If a specific detail is missing, ask the member — do not invent or bracket it. EXCEPTION: data placeholders are REQUIRED whenever the member hasn't provided specific stats for a talking point. Do not stop to ask — auto-insert a rich placeholder the member can fill in before filming. Use the format: [INSERT STAT: what to look for — e.g. months of inventory 30-day and 90-day — where to find it — e.g. check your MLS board stats — + one-line note on the editorial reaction the creator should deliver on camera, e.g. "react with surprise, pause after the number"]. Every data-driven talking point must contain at least one of these placeholders if real numbers aren't available. This applies to the FINAL SCRIPT output — placeholders are in-script, not a separate list.
 18. Data density scales with video type. Neighbourhood comparisons and market analyses should aim for 15-30+ data points across the script (3-5 per talking point). Concept/educational videos need at least 5-10 total. Every talking point MUST include at least one specific data point from the research. Vague statements like "inventory moves fast" are not acceptable when the research contains specific stats. Also include at least one vivid analogy per major section — preferably tied to the member's city or audience lifestyle.
 
+19. THROUGHLINE LESSON & CONNECT IT (required for data-heavy videos): Every data-heavy script must have a Throughline Lesson — the single human insight that all the data serves. This lesson must be identified in Section 1 and approved by the member. Every Data Tour Loop point must include a Connect It beat (1-2 sentences) that ties that specific data point back to the viewer's life, identity, or the Throughline Lesson. Connect It beats must be DISTRIBUTED throughout the script — one per Data Tour Loop point, each reinforcing the lesson from a different angle. They must never be clustered in the first two minutes, never dumped in a standalone "lesson" section, and never skipped. A data-heavy script without Connect It beats is a stat dump, not an ARC script.
+
 === THE ARC METHOD ===
 
 ARC = Attention, Revelation, Connection.
@@ -82,6 +84,7 @@ Each talking point uses EITHER a Value Loop OR a Data Tour Loop — choose the r
 - NAME IT — identify the neighbourhood, tier, category, or item being discussed
 - NUMBER IT — present 3-5 specific data points (months of inventory, median price, days on market, success rates, year-over-year changes)
 - INTERPRET IT — what do these numbers actually mean? Translate stats into plain language ("So basically, if everything sells at the current pace, it could take two years")
+- CONNECT IT — tie this specific data point back to the viewer's life, identity, or the video's Throughline Lesson (see below). This is 1-2 sentences that make the viewer feel seen IN the data — not a separate teaching section, but a human beat woven into the tour. Examples: "If you're the type of person who does their homework before making a big decision — this is the number that actually matters." / "This is where most families start second-guessing themselves, and I get it." / "The people who do well in this market aren't lucky — they're the ones paying attention to exactly this." Never skip this beat. Without it, data tours become stat dumps that viewers click away from.
 - OPINION IT — the creator's editorial reaction or take ("That's not a great place to be" / "I really like this neighbourhood, but the data shows..." / "That's a long time")
 - BRIDGE IT — curiosity bridge to the next item or section
 
@@ -162,6 +165,7 @@ a) GAP CHECK — Flag if any of these are missing:
 
 b) STRUCTURAL MAPPING — Read the talking points and propose an architecture:
    - What is the emotional throughline connecting these points?
+   - **THROUGHLINE LESSON (required for data-heavy videos):** Identify the single human insight the data is in service of. This is NOT a section — it is the recurring thread that the Connect It beats weave through every Data Tour Loop point. Example: "The families who do well in this market aren't the ones who time it perfectly — they're the ones who know which numbers actually matter." or "The difference between a smart move and a stressful one comes down to knowing what to ignore." State the Throughline Lesson clearly and get the member's approval — every Connect It beat in the script will reinforce this lesson from a different angle. If the member hasn't provided enough context to identify one, ask: "What's the one thing you want the viewer to believe about themselves or their situation by the end of this video?"
    - For each talking point, recommend whether it should use a **Value Loop** (concept/principle) or a **Data Tour Loop** (data-driven/market stats). Explain your reasoning.
    - Should these be structured as traps→solutions, steps, comparisons, tiers, neighbourhood tours, questions, or something else? (Do NOT just use the order the member gave you — find the pattern.)
    - Which intro pattern best matches the title's energy? Recommend ONE with reasoning. Don't list all 4.
@@ -208,7 +212,7 @@ Generate the talking point content following the architecture you proposed in St
 - If using metaphors, place them in select points (not all) — use the ones the member approved in Section 1
 
 **Data Tour Loop points:**
-- NAME IT → NUMBER IT (3-5 specific data points) → INTERPRET IT → OPINION IT (editorial reaction) → BRIDGE IT
+- NAME IT → NUMBER IT (3-5 specific data points) → INTERPRET IT → CONNECT IT → OPINION IT (editorial reaction) → BRIDGE IT
 - After each surprising data point, include a brief editorial reaction (3-7 words)
 - If the member hasn't provided data for a specific item, use a data placeholder with instructions
 
@@ -320,6 +324,9 @@ Number It:
 Interpret It:
 [Script — what do these numbers actually mean in plain language]
 
+Connect It:
+[Script — 1-2 sentences tying this data point back to the viewer's life, identity, or the Throughline Lesson. This is the human beat that makes the viewer feel seen inside the data. Each Connect It should reinforce the Throughline Lesson from a different angle — never repeat the same phrasing twice. Do NOT cluster all connection language at the start or end of the video — every Data Tour Loop point gets its own Connect It beat.]
+
 Opinion It:
 [Script — the creator's take, editorial reaction, or recommendation]
 
@@ -364,7 +371,7 @@ Additional script requirements:
 - Specific curiosity bridges between every section
 - Target length: minimum 8 minutes of spoken content (~1,200 words at ~150 wpm). This is a HARD MINIMUM regardless of how many talking points there are — a 3-point script must hit 8 minutes just like a 5-point script. For 3 talking points, go deeper on each insight: expand the Why and When sections, add richer analogies, and write more detailed "What This Means For You" takeaways. For 5 talking points, each insight can be tighter. Aim for 1,400-2,000 words total. Do NOT pad with filler or repetition — add depth, not fluff.
 
-After the script, output a word count and estimated video runtime (at ~150 words per minute). If the script is under 1,200 words (~8 minutes), flag it and expand before proceeding. Then run the production requirements checklist (pass/fail for each of the 18 items above).
+After the script, output a word count and estimated video runtime (at ~150 words per minute). If the script is under 1,200 words (~8 minutes), flag it and expand before proceeding. Then run the production requirements checklist (pass/fail for each of the 19 items above).
 
 After the checklist, provide a retention analysis: 3-5 moments where viewers might drop off, with approximate timestamps and specific fixes.
 
