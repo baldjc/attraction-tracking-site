@@ -18,23 +18,28 @@ export async function PUT(
   const { id, callId } = await params;
   const { fathomUrl, loomUrl, callDate, topic, notes } = await req.json();
 
-  const existing = await prisma.clientCall.findUnique({ where: { id: callId } });
-  if (!existing || existing.userId !== id) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  try {
+    const existing = await prisma.clientCall.findUnique({ where: { id: callId } });
+    if (!existing || existing.userId !== id) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    const call = await prisma.clientCall.update({
+      where: { id: callId },
+      data: {
+        ...(fathomUrl !== undefined && { fathomUrl: fathomUrl || null }),
+        ...(loomUrl !== undefined && { loomUrl: loomUrl || null }),
+        ...(callDate !== undefined && { callDate: new Date(callDate) }),
+        ...(topic !== undefined && { topic }),
+        ...(notes !== undefined && { notes }),
+      },
+    });
+
+    return NextResponse.json({ call });
+  } catch (err) {
+    console.error("[calls PUT]", err);
+    return NextResponse.json({ error: "Failed to update call recording. Please try again." }, { status: 500 });
   }
-
-  const call = await prisma.clientCall.update({
-    where: { id: callId },
-    data: {
-      ...(fathomUrl !== undefined && { fathomUrl: fathomUrl || null }),
-      ...(loomUrl !== undefined && { loomUrl: loomUrl || null }),
-      ...(callDate !== undefined && { callDate: new Date(callDate) }),
-      ...(topic !== undefined && { topic }),
-      ...(notes !== undefined && { notes }),
-    },
-  });
-
-  return NextResponse.json({ call });
 }
 
 export async function DELETE(
@@ -46,11 +51,16 @@ export async function DELETE(
 
   const { id, callId } = await params;
 
-  const existing = await prisma.clientCall.findUnique({ where: { id: callId } });
-  if (!existing || existing.userId !== id) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
+  try {
+    const existing = await prisma.clientCall.findUnique({ where: { id: callId } });
+    if (!existing || existing.userId !== id) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
 
-  await prisma.clientCall.delete({ where: { id: callId } });
-  return NextResponse.json({ success: true });
+    await prisma.clientCall.delete({ where: { id: callId } });
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error("[calls DELETE]", err);
+    return NextResponse.json({ error: "Failed to delete call recording." }, { status: 500 });
+  }
 }

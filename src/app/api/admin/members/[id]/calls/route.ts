@@ -38,17 +38,21 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const adminId = (session.user as any).id as string;
 
-  const call = await prisma.clientCall.create({
-    data: {
-      userId: id,
-      fathomUrl: fathomUrl || null,
-      loomUrl: loomUrl || null,
-      callDate: new Date(callDate),
-      topic: topic ?? null,
-      notes: notes ?? null,
-      createdById: adminId,
-    },
-  });
-
-  return NextResponse.json({ call });
+  try {
+    const call = await prisma.clientCall.create({
+      data: {
+        userId: id,
+        fathomUrl: fathomUrl || null,
+        loomUrl: loomUrl || null,
+        callDate: new Date(callDate),
+        topic: topic ?? null,
+        notes: notes ?? null,
+        createdById: adminId,
+      },
+    });
+    return NextResponse.json({ call });
+  } catch (err) {
+    console.error("[calls POST]", err);
+    return NextResponse.json({ error: "Failed to save call recording. Please try again." }, { status: 500 });
+  }
 }

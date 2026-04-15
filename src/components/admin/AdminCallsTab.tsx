@@ -104,8 +104,9 @@ export default function AdminCallsTab({ memberId }: Props) {
           notes: form.notes || null,
         }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Failed to save");
+      let data: Record<string, any> = {};
+      try { data = await res.json(); } catch { /* non-JSON error body */ }
+      if (!res.ok) throw new Error(data.error ?? "Failed to save call. Please try again.");
       if (editing) {
         setCalls((prev) => prev.map((c) => c.id === editing.id ? data.call : c));
       } else {
