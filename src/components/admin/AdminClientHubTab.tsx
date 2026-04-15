@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { PencilIcon, TrashIcon, PlusIcon, XMarkIcon, ArrowUpIcon, ArrowDownIcon } from "@heroicons/react/24/outline";
+import { PencilIcon, TrashIcon, PlusIcon, XMarkIcon, ArrowUpIcon, ArrowDownIcon, FolderPlusIcon, ArrowTopRightOnSquareIcon } from "@heroicons/react/24/outline";
 
 interface QuickLink {
   id: string;
@@ -18,12 +18,11 @@ interface Props {
 const GROWTH_DWY = ["mastery_2", "mastery_4", "done_with_you"];
 
 export default function AdminClientHubTab({ memberId, serviceTier }: Props) {
-  const [clientHubEnabled, setClientHubEnabled] = useState(true);
-  const [hubToggleSaving, setHubToggleSaving] = useState(false);
-
   const [assetsDriveLink, setAssetsDriveLink] = useState("");
   const [assetsSaving, setAssetsSaving] = useState(false);
   const [assetsSaved, setAssetsSaved] = useState(false);
+  const [folderCreating, setFolderCreating] = useState(false);
+  const [folderError, setFolderError] = useState("");
 
   const [quickLinks, setQuickLinks] = useState<QuickLink[]>([]);
   const [linksLoading, setLinksLoading] = useState(true);
@@ -40,26 +39,9 @@ export default function AdminClientHubTab({ memberId, serviceTier }: Props) {
   useEffect(() => {
     fetch(`/api/members/${memberId}`)
       .then((r) => r.json())
-      .then((d) => {
-        setAssetsDriveLink(d.member?.assetsDriveLink ?? "");
-        setClientHubEnabled(d.member?.clientHubEnabled ?? true);
-      })
+      .then((d) => setAssetsDriveLink(d.member?.assetsDriveLink ?? ""))
       .catch(() => {});
   }, [memberId]);
-
-  async function handleHubToggle(val: boolean) {
-    setHubToggleSaving(true);
-    setClientHubEnabled(val);
-    try {
-      await fetch(`/api/admin/members/${memberId}/client-hub-enabled`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ clientHubEnabled: val }),
-      });
-    } catch { setClientHubEnabled(!val); } finally {
-      setHubToggleSaving(false);
-    }
-  }
 
   useEffect(() => {
     if (!showQuickLinks) { setLinksLoading(false); return; }
@@ -82,6 +64,23 @@ export default function AdminClientHubTab({ memberId, serviceTier }: Props) {
       setTimeout(() => setAssetsSaved(false), 2000);
     } catch { /* silent */ } finally {
       setAssetsSaving(false);
+    }
+  }
+
+  async function createAssetFolder() {
+    setFolderCreating(true);
+    setFolderError("");
+    try {
+      const res = await fetch(`/api/admin/members/${memberId}/assets-drive-folder`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed to create folder");
+      setAssetsDriveLink(data.assetsDriveLink);
+    } catch (e: unknown) {
+      setFolderError(e instanceof Error ? e.message : "Failed to create folder");
+    } finally {
+      setFolderCreating(false);
     }
   }
 
@@ -163,50 +162,71 @@ export default function AdminClientHubTab({ memberId, serviceTier }: Props) {
   return (
     <div className="space-y-6">
       <div className="bg-gray-50 border border-gray-200 rounded-xl p-5">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-sm font-semibold text-[#2f3437]">Client Hub Access</h3>
-            <p className="text-xs text-[#2f3437]/50 mt-0.5">
-              {clientHubEnabled
-                ? "Client Hub is visible to this member."
-                : "Client Hub is hidden from this member."}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => handleHubToggle(!clientHubEnabled)}
-            disabled={hubToggleSaving}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none disabled:opacity-50 ${
-              clientHubEnabled ? "bg-[#6ba3c7]" : "bg-gray-300"
-            }`}
-          >
-            <span
-              className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
-                clientHubEnabled ? "translate-x-6" : "translate-x-1"
-              }`}
-            />
-          </button>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-[#2f3437]">Assets Drive Folder</h3>
+          {assetsDriveLink && (
+            <a
+              href={assetsDriveLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 text-xs text-[#6ba3c7] hover:text-[#5a8fb3] transition-colors"
+            >
+              <ArrowTopRightOnSquareIcon className="w-3.5 h-3.5" />
+              Open in Drive
+            </a>
+          )}
         </div>
-      </div>
 
-      <div className="bg-gray-50 border border-gray-200 rounded-xl p-5">
-        <h3 className="text-sm font-semibold text-[#2f3437] mb-3">Assets Drive Folder URL</h3>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={assetsDriveLink}
-            onChange={(e) => setAssetsDriveLink(e.target.value)}
-            placeholder="https://drive.google.com/drive/folders/..."
-            className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30 bg-white"
-          />
-          <button
-            onClick={saveAssetsLink}
-            disabled={assetsSaving}
-            className="px-4 py-2 text-sm bg-[#2f3437] text-white rounded-lg hover:bg-[#1a1f22] disabled:opacity-50 transition-colors whitespace-nowrap"
-          >
-            {assetsSaved ? "Saved ✓" : assetsSaving ? "Saving…" : "Save"}
-          </button>
-        </div>
+        {!assetsDriveLink ? (
+          <div className="space-y-3">
+            <p className="text-sm text-[#2f3437]/50">No asset folder has been created for this member yet.</p>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={createAssetFolder}
+                disabled={folderCreating}
+                className="flex items-center gap-2 px-4 py-2 text-sm bg-[#6ba3c7] text-white rounded-lg hover:bg-[#5a8fb3] disabled:opacity-50 transition-colors"
+              >
+                <FolderPlusIcon className="w-4 h-4" />
+                {folderCreating ? "Creating…" : "Create Folder"}
+              </button>
+              <span className="text-xs text-[#2f3437]/40">or paste a URL below</span>
+            </div>
+            {folderError && <p className="text-sm text-red-600">{folderError}</p>}
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={assetsDriveLink}
+                onChange={(e) => setAssetsDriveLink(e.target.value)}
+                placeholder="https://drive.google.com/drive/folders/..."
+                className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30 bg-white"
+              />
+              <button
+                onClick={saveAssetsLink}
+                disabled={assetsSaving || !assetsDriveLink}
+                className="px-4 py-2 text-sm bg-[#2f3437] text-white rounded-lg hover:bg-[#1a1f22] disabled:opacity-50 transition-colors whitespace-nowrap"
+              >
+                {assetsSaved ? "Saved ✓" : assetsSaving ? "Saving…" : "Save"}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={assetsDriveLink}
+              onChange={(e) => setAssetsDriveLink(e.target.value)}
+              placeholder="https://drive.google.com/drive/folders/..."
+              className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30 bg-white"
+            />
+            <button
+              onClick={saveAssetsLink}
+              disabled={assetsSaving}
+              className="px-4 py-2 text-sm bg-[#2f3437] text-white rounded-lg hover:bg-[#1a1f22] disabled:opacity-50 transition-colors whitespace-nowrap"
+            >
+              {assetsSaved ? "Saved ✓" : assetsSaving ? "Saving…" : "Save"}
+            </button>
+          </div>
+        )}
       </div>
 
       {showQuickLinks && (
@@ -331,7 +351,7 @@ export default function AdminClientHubTab({ memberId, serviceTier }: Props) {
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6">
             <h3 className="text-base font-semibold text-[#2f3437] mb-2">Delete quick link?</h3>
-            <p className="text-sm text-[#2f3437]/60 mb-6">This will remove &ldquo;{deleteTarget.label}&rdquo; from the member's Client Hub.</p>
+            <p className="text-sm text-[#2f3437]/60 mb-6">This will remove &ldquo;{deleteTarget.label}&rdquo; from the member&apos;s Client Hub.</p>
             <div className="flex gap-2 justify-end">
               <button
                 onClick={() => setDeleteTarget(null)}

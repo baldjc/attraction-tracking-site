@@ -42,6 +42,33 @@ async function findOrCreateFolder(
   return folder.data.id!;
 }
 
+/**
+ * Creates (or finds) a member's top-level asset folder under the root Drive folder.
+ * Returns the shareable Google Drive link.
+ */
+export async function createMemberFolder(memberName: string): Promise<string> {
+  const rootFolderId = process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID;
+  if (!rootFolderId) throw new Error("GOOGLE_DRIVE_ROOT_FOLDER_ID is not set");
+
+  const drive = getDriveClient();
+  const memberFolderId = await findOrCreateFolder(drive, memberName, rootFolderId);
+
+  // Make the folder accessible via link (viewer access for the member)
+  try {
+    await drive.permissions.create({
+      fileId: memberFolderId,
+      requestBody: {
+        role: "reader",
+        type: "anyone",
+      },
+    });
+  } catch {
+    // Permission may already exist — safe to ignore
+  }
+
+  return `https://drive.google.com/drive/folders/${memberFolderId}`;
+}
+
 export interface VideoFolderResult {
   memberFolderUrl: string;
   videoFolderUrl: string;
