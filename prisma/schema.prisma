@@ -131,6 +131,12 @@ model User {
   clientHubEnabled Boolean  @default(true)
   calendarToken    String?  @unique
 
+  // Admin test avatar state (mutually exclusive — only one set at a time)
+  activeTestAvatarId    String?   // Points to an AdminTestAvatar.id (custom avatar mode)
+  activeTestMemberId    String?   // Points to a User.id whose avatar to borrow (member avatar mode)
+
+  adminTestAvatars      AdminTestAvatar[] @relation("adminTestAvatars")
+
   audits               Audit[]
   auditJobs            AuditJob[]
   campaigns            Campaign[]
@@ -1305,4 +1311,23 @@ model AdminAction {
 
   @@index([createdAt])
   @@index([targetType, targetId])
+}
+
+model AdminTestAvatar {
+  id              String   @id @default(cuid())
+  adminUserId     String
+  admin           User     @relation("adminTestAvatars", fields: [adminUserId], references: [id], onDelete: Cascade)
+  slotNumber      Int
+  label           String
+  avatarName      String?
+  avatarSummary   String?
+  avatarProfile   Json?
+  contentThemes   Json?
+  niche           Json?
+  city            String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([adminUserId, slotNumber])
+  @@map("admin_test_avatars")
 }

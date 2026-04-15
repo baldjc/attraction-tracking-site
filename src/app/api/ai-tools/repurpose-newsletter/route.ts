@@ -3,6 +3,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import prisma from "@/lib/prisma";
 import { DEFAULT_NEWSLETTER_PROMPT, applyNewsletterTokens } from "@/lib/repurpose-prompts";
+import { getAvatarData } from "@/lib/avatar-utils";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -24,11 +25,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Transcript exceeds 50,000 character limit" }, { status: 400 });
   }
 
-  const [dbUser, promptSetting] = await Promise.all([
+  const [dbUser, promptSetting, avatarData] = await Promise.all([
     prisma.user.findUnique({
       where: { id: user.id },
       select: {
-        avatarProfile: true,
         repurposeName: true,
         repurposeBusiness: true,
         repurposeListSize: true,
@@ -36,6 +36,7 @@ export async function POST(req: NextRequest) {
       },
     }),
     prisma.appSetting.findUnique({ where: { key: "repurpose_newsletter_prompt" } }),
+    getAvatarData(user.id),
   ]);
 
   const memberName = dbUser?.repurposeName || "the author";
@@ -43,7 +44,7 @@ export async function POST(req: NextRequest) {
   const listSize = dbUser?.repurposeListSize || "";
   const listSizeText = listSize ? ` of ${listSize}+ subscribers` : "";
   const voiceStyle = VOICE_MAP[dbUser?.repurposeVoice || "direct"] || VOICE_MAP.direct;
-  const avatarText = dbUser?.avatarProfile ? JSON.stringify(dbUser.avatarProfile) : "No avatar saved";
+  const avatarText = avatarData.avatarProfile ? JSON.stringify(avatarData.avatarProfile) : "No avatar saved";
 
   const promptTemplate = promptSetting?.value || DEFAULT_NEWSLETTER_PROMPT;
   const systemPrompt = applyNewsletterTokens(promptTemplate, {

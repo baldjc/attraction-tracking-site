@@ -1,25 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import prisma from "@/lib/prisma";
+import { getAvatarData } from "@/lib/avatar-utils";
 
 export async function GET() {
   const user = await resolveUserFromSession();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const dbUser = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: {
-      avatarProfile: true,
-      avatarName: true,
-      avatarSummary: true,
-      contentThemes: true,
-      niche: true,
-      city: true,
-      updatedAt: true,
-    },
-  });
+  const avatar = await getAvatarData(user.id);
 
-  return NextResponse.json(dbUser ?? {});
+  return NextResponse.json({
+    avatarProfile: avatar.avatarProfile,
+    avatarName: avatar.avatarName,
+    avatarSummary: avatar.avatarSummary,
+    contentThemes: avatar.contentThemes,
+    niche: avatar.niche,
+    city: avatar.city,
+    testAvatarId: avatar.testAvatarId,
+    testAvatarLabel: avatar.testAvatarLabel,
+    testMemberId: avatar.testMemberId,
+    testMemberName: avatar.testMemberName,
+  });
 }
 
 const PALETTE = ["#3B82F6", "#F59E0B", "#EF4444", "#10B981", "#8B5CF6", "#EC4899", "#06B6D4", "#F97316"];

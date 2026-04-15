@@ -4,6 +4,7 @@ import { resolveUserFromSession } from "@/lib/session-utils";
 import { TITLE_THUMBNAIL_ANALYZER_PROMPT } from "@/lib/audit-engine";
 import { logUsage } from "@/lib/ai-tool-cost";
 import prisma from "@/lib/prisma";
+import { getAvatarData } from "@/lib/avatar-utils";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -21,24 +22,24 @@ function extractTitles(text: string): string[] {
 }
 
 async function getMemberContext(userId: string) {
-  const dbUser = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { avatarProfile: true, contentThemes: true },
-  });
-  const latestAudit = await prisma.audit.findFirst({
-    where: { userId, auditType: "baseline" },
-    orderBy: { createdAt: "desc" },
-    select: { scores: true },
-  });
-  const avatarText = dbUser?.avatarProfile
-    ? JSON.stringify(dbUser.avatarProfile)
+  const [avatar, latestAudit] = await Promise.all([
+    getAvatarData(userId),
+    prisma.audit.findFirst({
+      where: { userId, auditType: "baseline" },
+      orderBy: { createdAt: "desc" },
+      select: { scores: true },
+    }),
+  ]);
+
+  const avatarText = avatar.avatarProfile
+    ? JSON.stringify(avatar.avatarProfile)
     : "No avatar saved";
 
   // Build theme context for title evaluation
   let themesText = "";
-  if (Array.isArray(dbUser?.contentThemes) && dbUser.contentThemes.length > 0) {
+  if (Array.isArray(avatar.contentThemes) && avatar.contentThemes.length > 0) {
     themesText = "\n\nCONTENT THEMES (use to evaluate if title speaks to the right theme):\n";
-    for (const t of dbUser.contentThemes as any[]) {
+    for (const t of avatar.contentThemes as any[]) {
       if (typeof t === "string") {
         themesText += `- ${t}\n`;
       } else {
@@ -52,7 +53,7 @@ async function getMemberContext(userId: string) {
   const titleFrameworksScore = latestAudit?.scores
     ? (latestAudit.scores as any)?.title_frameworks?.score ?? "N/A"
     : "N/A";
-  return { avatarText: avatarText + themesText, titleFrameworksScore };
+  return { avatarText: avatarText + themesText, titleFrameworksScore, testAvatarLabel: avatar.testAvatarLabel };
 }
 
 export async function POST(req: NextRequest) {

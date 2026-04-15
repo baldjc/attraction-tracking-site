@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import prisma from "@/lib/prisma";
+import { getAvatarData } from "@/lib/avatar-utils";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -27,20 +28,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Transcript exceeds 50,000 character limit" }, { status: 400 });
   }
 
-  const dbUser = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: {
-      avatarProfile: true,
-      repurposeName: true,
-      repurposeBusiness: true,
-      repurposeVoice: true,
-    },
-  });
+  const [dbUser, avatarData] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: user.id },
+      select: {
+        repurposeName: true,
+        repurposeBusiness: true,
+        repurposeVoice: true,
+      },
+    }),
+    getAvatarData(user.id),
+  ]);
 
   const memberName = dbUser?.repurposeName || "the author";
   const businessName = dbUser?.repurposeBusiness || "the business";
   const voiceStyle = VOICE_MAP[dbUser?.repurposeVoice || "direct"] || VOICE_MAP.direct;
-  const avatarText = dbUser?.avatarProfile ? JSON.stringify(dbUser.avatarProfile) : "No avatar saved";
+  const avatarText = avatarData.avatarProfile ? JSON.stringify(avatarData.avatarProfile) : "No avatar saved";
 
   const linkInstruction = link
     ? `\nLINK TO INCLUDE: ${link.label} — ${link.url}\nInclude this link naturally in the first_comment field. Frame it as a helpful resource, not a sales pitch.\n`

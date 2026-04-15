@@ -3,6 +3,7 @@ import { resolveUserFromSession } from "@/lib/session-utils";
 import { SCRIPT_REVIEW_PROMPT, SCRIPT_REVIEW_CHAT_SYSTEM_PROMPT } from "@/lib/audit-engine";
 import Anthropic from "@anthropic-ai/sdk";
 import prisma from "@/lib/prisma";
+import { getAvatarData } from "@/lib/avatar-utils";
 
 const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -86,17 +87,16 @@ export async function POST(req: NextRequest) {
   const user = await resolveUserFromSession();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  // Change 3: Expanded DB select to include avatarProfile and creatorCredentials
-  // Previously only fetched: avatarName, avatarSummary, contentThemes
-  const dbUser = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: { avatarName: true, avatarSummary: true, avatarProfile: true, contentThemes: true },
-  });
-
   const { videoTitle, scriptText, messages, conversationId } = await req.json();
   const isFirstCall = !conversationId && videoTitle && scriptText;
 
-  const avatar = buildAvatarContext(dbUser ?? {});
+  const avatarData = await getAvatarData(user.id);
+  const avatar = buildAvatarContext({
+    avatarName: avatarData.avatarName,
+    avatarSummary: avatarData.avatarSummary,
+    avatarProfile: avatarData.avatarProfile,
+    contentThemes: avatarData.contentThemes,
+  });
 
   if (isFirstCall) {
     const systemPrompt = await getSystemPromptForMode(user.id, "analysis", avatar.block);

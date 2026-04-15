@@ -4,6 +4,7 @@ import { resolveUserFromSession } from "@/lib/session-utils";
 import { logUsage } from "@/lib/ai-tool-cost";
 import { buildBatchSystemPrompt, CONTENT_ENGINE_DEFAULT_ADDENDUM, getActiveThemeEnforceBuySide } from "@/lib/content-engine-prompts";
 import prisma from "@/lib/prisma";
+import { getAvatarData } from "@/lib/avatar-utils";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -16,10 +17,7 @@ export async function POST(req: NextRequest) {
 
   console.log("[content-engine/batch] Generating for theme:", theme, "user:", user.id);
 
-  const dbUser = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: { avatarProfile: true, contentThemes: true, niche: true, city: true },
-  });
+  const avatar = await getAvatarData(user.id);
 
   const savedIdeas = await prisma.savedIdea.findMany({
     where: { userId: user.id, theme },
@@ -31,16 +29,16 @@ export async function POST(req: NextRequest) {
   const customSetting = await prisma.appSetting.findUnique({ where: { key: "content_engine_prompt" } });
 
   let systemPrompt = buildBatchSystemPrompt({
-    avatarProfile: dbUser?.avatarProfile ?? null,
-    contentThemes: dbUser?.contentThemes ?? null,
-    niche: (dbUser?.niche ?? null) as string | string[] | null,
-    city: dbUser?.city ?? null,
+    avatarProfile: avatar.avatarProfile ?? null,
+    contentThemes: avatar.contentThemes ?? null,
+    niche: (avatar.niche ?? null) as string | string[] | null,
+    city: avatar.city ?? null,
     savedTitles: savedIdeas.map((i) => i.title),
     shownTitles,
     theme,
   });
 
-  const enforceBuySide = getActiveThemeEnforceBuySide(dbUser?.contentThemes ?? null, theme);
+  const enforceBuySide = getActiveThemeEnforceBuySide(avatar.contentThemes ?? null, theme);
   const addendum = customSetting !== null ? (customSetting.value ?? "") : (enforceBuySide ? CONTENT_ENGINE_DEFAULT_ADDENDUM : "");
   if (addendum.trim()) {
     systemPrompt = systemPrompt + "\n\n" + addendum;

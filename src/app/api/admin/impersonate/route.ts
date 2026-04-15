@@ -49,6 +49,15 @@ export async function POST(req: NextRequest) {
     sameSite: "lax",
   });
 
+  // Clear any active test avatar state when starting impersonation
+  const adminId = (session.user as any).id as string;
+  if (adminId) {
+    await prisma.user.update({
+      where: { id: adminId },
+      data: { activeTestAvatarId: null, activeTestMemberId: null },
+    });
+  }
+
   return NextResponse.json({
     ok: true,
     member: { id: member.id, name: member.fullName ?? member.email },

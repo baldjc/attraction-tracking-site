@@ -3,6 +3,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import { checkCostCap, logUsage, getMonthlyUsage } from "@/lib/ai-tool-cost";
 import prisma from "@/lib/prisma";
+import { getAvatarData } from "@/lib/avatar-utils";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const MODEL = "claude-sonnet-4-20250514";
@@ -437,10 +438,13 @@ export async function POST(req: NextRequest) {
   const sessionUser = await resolveUserFromSession();
   if (!sessionUser) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const dbUser = await prisma.user.findUnique({
-    where: { id: sessionUser.id },
-    select: { id: true, role: true, avatarName: true, avatarSummary: true, avatarProfile: true, contentThemes: true, creatorCredentials: true, aiToolsMonthlyCapOverride: true, city: true },
-  });
+  const [dbUser, avatarData] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: sessionUser.id },
+      select: { id: true, role: true, creatorCredentials: true, aiToolsMonthlyCapOverride: true },
+    }),
+    getAvatarData(sessionUser.id),
+  ]);
   if (!dbUser) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
   const body = await req.json();
@@ -495,15 +499,15 @@ export async function POST(req: NextRequest) {
     const researchSummary = messages.find((m) => m.researchSummary)?.researchSummary ?? "";
     const cleanMessages = messages.map(({ role, content }) => ({ role, content }));
 
-    const avatarProfile = dbUser?.avatarProfile as any;
+    const avatarProfile = avatarData.avatarProfile as any;
     let avatarText: string;
-    if (!avatarProfile && !dbUser?.avatarName && !dbUser?.avatarSummary) {
+    if (!avatarProfile && !avatarData.avatarName && !avatarData.avatarSummary) {
       avatarText =
         "No avatar saved. Recommend the member build their avatar first using the Avatar Architect. Write to a general audience but note this in the Research & Strategy section.";
     } else {
       const parts: string[] = [];
-      if (dbUser?.avatarName) parts.push(`Avatar Name: ${dbUser.avatarName}`);
-      if (dbUser?.avatarSummary) parts.push(`Avatar Summary: ${dbUser.avatarSummary}`);
+      if (avatarData.avatarName) parts.push(`Avatar Name: ${avatarData.avatarName}`);
+      if (avatarData.avatarSummary) parts.push(`Avatar Summary: ${avatarData.avatarSummary}`);
       if (avatarProfile?.full_document) {
         parts.push(`\nFull Avatar Document:\n${avatarProfile.full_document}`);
       } else if (avatarProfile) {
@@ -514,8 +518,8 @@ export async function POST(req: NextRequest) {
 
     // Prefer the direct contentThemes field (most up-to-date), fall back to avatarProfile blob
     const rawThemes = (
-      Array.isArray(dbUser.contentThemes) && dbUser.contentThemes.length > 0
-        ? dbUser.contentThemes
+      Array.isArray(avatarData.contentThemes) && avatarData.contentThemes.length > 0
+        ? avatarData.contentThemes
         : (avatarProfile?.contentThemes ?? avatarProfile?.content_themes ?? [])
     ) as any[];
     const themesText =
@@ -552,7 +556,7 @@ export async function POST(req: NextRequest) {
       .replace("{{CONTENT_THEMES}}", themesText)
       .replace("{{BASELINE_SCORES}}", baselineScores)
       .replace("{{RESEARCH_SUMMARY}}", researchSummary || "(no research summary provided)")
-      .replace("{{MEMBER_CITY}}", dbUser.city ?? "your market");
+      .replace("{{MEMBER_CITY}}", avatarData.city ?? "your market");
 
     const encoder = new TextEncoder();
 
