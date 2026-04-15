@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
   PaperAirplaneIcon,
@@ -526,6 +527,16 @@ function isEquityTheme(themeName: string): boolean {
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 export default function AvatarArchitectPage() {
   const { data: session } = useSession();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const rawSlot = searchParams.get("testAvatarSlot");
+  const testAvatarSlot = rawSlot ? parseInt(rawSlot, 10) : null;
+  const testAvatarLabel = searchParams.get("label") ?? "";
+  const isTestAvatarMode =
+    (session?.user as any)?.role === "admin" &&
+    !!testAvatarSlot &&
+    !isNaN(testAvatarSlot as number);
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -632,15 +643,21 @@ export default function AvatarArchitectPage() {
         });
       }
     }
-    fetch("/api/member/avatar", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contentThemes: updated }),
-    });
+    if (!isTestAvatarMode) {
+      fetch("/api/member/avatar", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contentThemes: updated }),
+      });
+    }
     setSavedAvatar((prev) => prev ? { ...prev, contentThemes: updated } : prev);
   }
 
   useEffect(() => {
+    if (isTestAvatarMode) {
+      setAvatarLoading(false);
+      return;
+    }
     fetch("/api/member/avatar")
       .then((r) => r.json())
       .then((d) => {
@@ -650,7 +667,7 @@ export default function AvatarArchitectPage() {
         setAvatarLoading(false);
       })
       .catch(() => setAvatarLoading(false));
-  }, []);
+  }, [isTestAvatarMode]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -871,6 +888,34 @@ export default function AvatarArchitectPage() {
 
   async function saveAvatar() {
     if (!detectedAvatar) return;
+    // In test-avatar mode: skip confirm-replace and save to the test-avatars API
+    if (isTestAvatarMode) {
+      setSaving(true);
+      const shellThemes = (detectedAvatar.content_themes ?? []).map((t: Record<string, unknown>) => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { content_engine_prompt: _strip, state: _s, builtAt: _b, ...rest } = t as Record<string, unknown>;
+        return { ...rest, content_engine_prompt: null, state: "empty" as const };
+      });
+      const res = await fetch("/api/admin/test-avatars", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          slotNumber: testAvatarSlot,
+          label: testAvatarLabel || `Test Avatar Slot ${testAvatarSlot}`,
+          avatarProfile: detectedAvatar,
+          avatarName: detectedAvatar.avatar_name,
+          avatarSummary: detectedAvatar.avatar_summary,
+          contentThemes: shellThemes,
+        }),
+      });
+      setSaving(false);
+      if (res.ok) {
+        setSaved(true);
+        setTimeout(() => router.push("/admin/ai-tools"), 1500);
+      }
+      return;
+    }
+
     if (savedAvatar?.avatarName && !confirmReplace) {
       setConfirmReplace(true);
       return;
@@ -1038,11 +1083,13 @@ export default function AvatarArchitectPage() {
       builtAt: new Date().toISOString(),
     } as RawTheme;
 
-    await fetch("/api/member/avatar", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contentThemes: themes }),
-    });
+    if (!isTestAvatarMode) {
+      await fetch("/api/member/avatar", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contentThemes: themes }),
+      });
+    }
     setSavedAvatar((prev) => prev ? { ...prev, contentThemes: themes } : prev);
     setThemeSaved(true);
   }
@@ -1409,13 +1456,26 @@ export default function AvatarArchitectPage() {
     <div className="flex flex-col h-[calc(100vh-120px)]">
       <div className="flex-shrink-0 mb-1">
         <Link
-          href="/member/ai-tools"
+          href={isTestAvatarMode ? "/admin/ai-tools" : "/member/ai-tools"}
           className="flex items-center gap-1.5 text-xs text-[#2f3437]/50 hover:text-[#6ba3c7] transition-colors"
         >
           <ArrowLeftIcon className="w-3.5 h-3.5" />
-          Back to AI Tools
+          {isTestAvatarMode ? "Back to Admin AI Tools" : "Back to AI Tools"}
         </Link>
       </div>
+
+      {/* Test avatar mode banner */}
+      {isTestAvatarMode && (
+        <div className="flex-shrink-0 mb-3 bg-amber-50 border border-amber-300 rounded-lg px-4 py-2.5 flex items-center gap-2">
+          <span className="text-sm">🧪</span>
+          <p className="text-xs font-semibold text-amber-800">
+            Building test avatar: <span className="font-bold">{testAvatarLabel || `Slot ${testAvatarSlot}`}</span>
+            <span className="font-normal text-amber-700"> (Slot {testAvatarSlot})</span>
+          </p>
+          <p className="text-xs text-amber-600 ml-auto">Answer as if you were this client type — all saves go to the test avatar slot, not your profile.</p>
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-4 flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-[#2f3437]">🎯 Avatar Architect</h1>
@@ -1438,8 +1498,14 @@ export default function AvatarArchitectPage() {
               <p className="font-semibold text-[#2f3437] text-sm">
                 ✅ Avatar ready: <strong>{detectedAvatar.avatar_name}</strong>
               </p>
-              <p className="text-xs text-[#2f3437]/60 mt-0.5">Save it to your profile so all AI tools can use it.</p>
-              {confirmReplace && (
+              {isTestAvatarMode ? (
+                <p className="text-xs text-[#2f3437]/60 mt-0.5">
+                  Save as <strong>{testAvatarLabel || `Slot ${testAvatarSlot}`}</strong> in test avatar slot {testAvatarSlot}.
+                </p>
+              ) : (
+                <p className="text-xs text-[#2f3437]/60 mt-0.5">Save it to your profile so all AI tools can use it.</p>
+              )}
+              {!isTestAvatarMode && confirmReplace && (
                 <p className="text-xs text-amber-700 mt-1">
                   ⚠️ This will replace your current avatar ({savedAvatar?.avatarName}). Are you sure?
                 </p>
@@ -1457,12 +1523,12 @@ export default function AvatarArchitectPage() {
                 onClick={saveAvatar}
                 disabled={saving}
                 className={`text-xs px-4 py-1.5 rounded-lg font-semibold transition-colors ${
-                  confirmReplace
+                  !isTestAvatarMode && confirmReplace
                     ? "bg-amber-500 text-white hover:bg-amber-600"
                     : "bg-[#6ba3c7] text-white hover:bg-[#6ba3c7]/90"
                 }`}
               >
-                {saving ? "Saving..." : confirmReplace ? "Yes, Replace" : "Save to My Profile"}
+                {saving ? "Saving..." : isTestAvatarMode ? "Save Test Avatar" : confirmReplace ? "Yes, Replace" : "Save to My Profile"}
               </button>
             </div>
           </div>
@@ -1474,18 +1540,22 @@ export default function AvatarArchitectPage() {
           <div className="flex-shrink-0 mb-3 bg-green-50 border border-green-200 rounded-lg p-3 flex items-center gap-2">
             <CheckIcon className="w-5 h-5 text-green-600" />
             <p className="text-sm font-medium text-green-800">
-              Avatar saved! All your AI tools will now use {detectedAvatar?.avatar_name}.
+              {isTestAvatarMode
+                ? `Test avatar saved as "${testAvatarLabel || `Slot ${testAvatarSlot}`}"! Returning to admin tools…`
+                : `Avatar saved! All your AI tools will now use ${detectedAvatar?.avatar_name}.`}
             </p>
           </div>
-          <div className="flex-shrink-0 mb-3">
-            <NextStepCard
-              emoji="🚀"
-              title="Generate Content Ideas"
-              description="Your avatar is ready. Head to the Content Engine to generate video ideas organised by your content themes."
-              href="/member/ai-tools/content-engine"
-              buttonLabel="Open Content Engine"
-            />
-          </div>
+          {!isTestAvatarMode && (
+            <div className="flex-shrink-0 mb-3">
+              <NextStepCard
+                emoji="🚀"
+                title="Generate Content Ideas"
+                description="Your avatar is ready. Head to the Content Engine to generate video ideas organised by your content themes."
+                href="/member/ai-tools/content-engine"
+                buttonLabel="Open Content Engine"
+              />
+            </div>
+          )}
         </>
       )}
 

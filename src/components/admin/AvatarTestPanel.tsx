@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import {
   BeakerIcon,
   ChevronDownIcon,
@@ -49,6 +50,7 @@ function themeCount(contentThemes: any): number {
 }
 
 export default function AvatarTestPanel({ onAvatarChange }: Props) {
+  const router = useRouter();
   const [state, setState] = useState<PanelState>({
     testAvatars: [],
     activeTestAvatarId: null,
@@ -60,13 +62,13 @@ export default function AvatarTestPanel({ onAvatarChange }: Props) {
   const [members, setMembers] = useState<MemberOption[]>([]);
   const [search, setSearch] = useState("");
   const [loadingMembers, setLoadingMembers] = useState(false);
-  const [showForm, setShowForm] = useState<"create" | { id: string } | null>(null);
-  const [formSlot, setFormSlot] = useState<number>(1);
+  const [showForm, setShowForm] = useState<{ id: string } | null>(null);
   const [formLabel, setFormLabel] = useState("");
-  const [formAvatarName, setFormAvatarName] = useState("");
-  const [formAvatarSummary, setFormAvatarSummary] = useState("");
-  const [formCity, setFormCity] = useState("");
   const [saving, setSaving] = useState(false);
+
+  // Label prompt before navigating to Avatar Architect
+  const [buildPromptSlot, setBuildPromptSlot] = useState<number | null>(null);
+  const [buildLabel, setBuildLabel] = useState("");
 
   const memberRef = useRef<HTMLDivElement>(null);
   const customRef = useRef<HTMLDivElement>(null);
@@ -152,61 +154,39 @@ export default function AvatarTestPanel({ onAvatarChange }: Props) {
     onAvatarChange?.();
   }
 
-  function openCreate() {
-    const usedSlots = state.testAvatars.map((a) => a.slotNumber);
-    const nextSlot = [1, 2, 3, 4, 5].find((s) => !usedSlots.includes(s)) ?? 1;
-    setFormSlot(nextSlot);
-    setFormLabel("");
-    setFormAvatarName("");
-    setFormAvatarSummary("");
-    setFormCity("");
-    setShowForm("create");
+  function openBuildPrompt(slot: number) {
+    setBuildLabel("");
+    setBuildPromptSlot(slot);
+    setShowCustomManager(false);
+  }
+
+  function confirmBuild() {
+    if (!buildLabel.trim() || buildPromptSlot === null) return;
+    const params = new URLSearchParams({
+      testAvatarSlot: String(buildPromptSlot),
+      label: buildLabel.trim(),
+    });
+    router.push(`/admin/ai-tools/avatar-architect?${params.toString()}`);
+    setBuildPromptSlot(null);
   }
 
   function openEdit(avatar: TestAvatar) {
-    setFormSlot(avatar.slotNumber);
     setFormLabel(avatar.label);
-    setFormAvatarName(avatar.avatarName ?? "");
-    setFormAvatarSummary(avatar.avatarSummary ?? "");
-    setFormCity(avatar.city ?? "");
     setShowForm({ id: avatar.id });
   }
 
   async function saveForm() {
-    if (!formLabel.trim()) return;
+    if (!formLabel.trim() || !showForm) return;
     setSaving(true);
     try {
-      if (showForm === "create") {
-        const res = await fetch("/api/admin/test-avatars", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            slotNumber: formSlot,
-            label: formLabel,
-            avatarName: formAvatarName || null,
-            avatarSummary: formAvatarSummary || null,
-            city: formCity || null,
-          }),
-        });
-        if (res.ok) {
-          await loadState();
-          setShowForm(null);
-        }
-      } else if (showForm && typeof showForm === "object") {
-        const res = await fetch(`/api/admin/test-avatars/${showForm.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            label: formLabel,
-            avatarName: formAvatarName || null,
-            avatarSummary: formAvatarSummary || null,
-            city: formCity || null,
-          }),
-        });
-        if (res.ok) {
-          await loadState();
-          setShowForm(null);
-        }
+      const res = await fetch(`/api/admin/test-avatars/${showForm.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ label: formLabel }),
+      });
+      if (res.ok) {
+        await loadState();
+        setShowForm(null);
       }
     } finally {
       setSaving(false);
@@ -229,81 +209,66 @@ export default function AvatarTestPanel({ onAvatarChange }: Props) {
 
   return (
     <div className="mb-6">
-      {/* Form modal */}
+      {/* Label prompt → navigate to Avatar Architect */}
+      {buildPromptSlot !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-xl shadow-2xl border border-[#2f3437]/10 w-full max-w-sm p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-[#2f3437]">Name this test avatar</h3>
+              <button onClick={() => setBuildPromptSlot(null)} className="text-[#2f3437]/40 hover:text-[#2f3437]">
+                <XMarkIcon className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-xs text-[#2f3437]/50">This label identifies the avatar in the panel (e.g. "First-Time Buyer", "Investor", "Empty Nester"). You'll build it out with the Avatar Architect.</p>
+            <input
+              autoFocus
+              type="text"
+              value={buildLabel}
+              onChange={(e) => setBuildLabel(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") confirmBuild(); }}
+              placeholder="e.g. First-Time Buyer"
+              className="w-full text-sm border border-[#2f3437]/15 rounded-lg px-3 py-2.5 outline-none focus:ring-1 focus:ring-[#6ba3c7]"
+            />
+            <div className="flex gap-2">
+              <button onClick={() => setBuildPromptSlot(null)} className="flex-1 text-sm text-[#2f3437]/50 border border-[#2f3437]/15 rounded-lg py-2 hover:bg-gray-50">
+                Cancel
+              </button>
+              <button
+                onClick={confirmBuild}
+                disabled={!buildLabel.trim()}
+                className="flex-1 text-sm font-semibold text-white bg-[#6ba3c7] rounded-lg py-2 hover:bg-[#5a8fb3] disabled:opacity-50"
+              >
+                Start Building →
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit label modal */}
       {showForm !== null && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-xl shadow-2xl border border-[#2f3437]/10 w-full max-w-md p-6 space-y-4">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="font-semibold text-[#2f3437]">
-                {showForm === "create" ? "Create Custom Test Avatar" : "Edit Custom Test Avatar"}
-              </h3>
+          <div className="bg-white rounded-xl shadow-2xl border border-[#2f3437]/10 w-full max-w-sm p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-[#2f3437]">Rename test avatar</h3>
               <button onClick={() => setShowForm(null)} className="text-[#2f3437]/40 hover:text-[#2f3437]">
                 <XMarkIcon className="w-4 h-4" />
               </button>
             </div>
-            <div className="space-y-3">
-              <div>
-                <label className="text-xs font-semibold text-[#2f3437]/60 mb-1 block">Label (required)</label>
-                <input
-                  type="text"
-                  value={formLabel}
-                  onChange={(e) => setFormLabel(e.target.value)}
-                  placeholder="e.g. First-Time Buyer, Investor, Empty Nester"
-                  className="w-full text-sm border border-[#2f3437]/15 rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-[#6ba3c7]"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-[#2f3437]/60 mb-1 block">Avatar Name</label>
-                <input
-                  type="text"
-                  value={formAvatarName}
-                  onChange={(e) => setFormAvatarName(e.target.value)}
-                  placeholder="e.g. Jamie"
-                  className="w-full text-sm border border-[#2f3437]/15 rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-[#6ba3c7]"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-[#2f3437]/60 mb-1 block">Avatar Summary</label>
-                <textarea
-                  value={formAvatarSummary}
-                  onChange={(e) => setFormAvatarSummary(e.target.value)}
-                  placeholder="Brief description of the avatar persona…"
-                  rows={3}
-                  className="w-full text-sm border border-[#2f3437]/15 rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-[#6ba3c7] resize-none"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-[#2f3437]/60 mb-1 block">City</label>
-                <input
-                  type="text"
-                  value={formCity}
-                  onChange={(e) => setFormCity(e.target.value)}
-                  placeholder="e.g. Edmonton"
-                  className="w-full text-sm border border-[#2f3437]/15 rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-[#6ba3c7]"
-                />
-              </div>
-              {showForm === "create" && (
-                <div>
-                  <label className="text-xs font-semibold text-[#2f3437]/60 mb-1 block">Slot</label>
-                  <select
-                    value={formSlot}
-                    onChange={(e) => setFormSlot(Number(e.target.value))}
-                    className="w-full text-sm border border-[#2f3437]/15 rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-[#6ba3c7]"
-                  >
-                    {slots.map((s) => (
-                      <option key={s} value={s}>
-                        Slot {s}{state.testAvatars.find((a) => a.slotNumber === s) ? " (will replace existing)" : ""}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
+            <div>
+              <label className="text-xs font-semibold text-[#2f3437]/60 mb-1 block">Label</label>
+              <input
+                autoFocus
+                type="text"
+                value={formLabel}
+                onChange={(e) => setFormLabel(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") saveForm(); }}
+                placeholder="e.g. First-Time Buyer"
+                className="w-full text-sm border border-[#2f3437]/15 rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-[#6ba3c7]"
+              />
             </div>
-            <div className="flex gap-2 pt-2">
-              <button
-                onClick={() => setShowForm(null)}
-                className="flex-1 text-sm text-[#2f3437]/50 border border-[#2f3437]/15 rounded-lg py-2 hover:bg-gray-50"
-              >
+            <div className="flex gap-2">
+              <button onClick={() => setShowForm(null)} className="flex-1 text-sm text-[#2f3437]/50 border border-[#2f3437]/15 rounded-lg py-2 hover:bg-gray-50">
                 Cancel
               </button>
               <button
@@ -311,7 +276,7 @@ export default function AvatarTestPanel({ onAvatarChange }: Props) {
                 disabled={!formLabel.trim() || saving}
                 className="flex-1 text-sm font-semibold text-white bg-[#6ba3c7] rounded-lg py-2 hover:bg-[#5a8fb3] disabled:opacity-50"
               >
-                {saving ? "Saving…" : "Save"}
+                {saving ? "Saving…" : "Rename"}
               </button>
             </div>
           </div>
@@ -453,12 +418,14 @@ export default function AvatarTestPanel({ onAvatarChange }: Props) {
                                 <button
                                   onClick={() => { setShowCustomManager(false); openEdit(avatar); }}
                                   className="p-1 text-[#2f3437]/30 hover:text-[#2f3437]/60"
+                                  title="Rename"
                                 >
                                   <PencilIcon className="w-3 h-3" />
                                 </button>
                                 <button
                                   onClick={() => deleteAvatar(avatar.id)}
                                   className="p-1 text-[#2f3437]/30 hover:text-red-500"
+                                  title="Delete"
                                 >
                                   <TrashIcon className="w-3 h-3" />
                                 </button>
@@ -466,11 +433,11 @@ export default function AvatarTestPanel({ onAvatarChange }: Props) {
                             </div>
                           ) : (
                             <button
-                              onClick={() => { setShowCustomManager(false); setFormSlot(slot); openCreate(); setFormSlot(slot); }}
+                              onClick={() => openBuildPrompt(slot)}
                               className="w-full flex items-center gap-2 text-xs text-[#2f3437]/30 hover:text-[#6ba3c7] transition-colors"
                             >
                               <span className="text-[#2f3437]/20">{slot}.</span>
-                              <span className="flex-1 text-left border-b border-dashed border-[#2f3437]/10 pb-0.5">empty</span>
+                              <span className="flex-1 text-left border-b border-dashed border-[#2f3437]/10 pb-0.5">empty — click to build</span>
                               <PlusIcon className="w-3 h-3 shrink-0" />
                             </button>
                           )}
@@ -480,11 +447,16 @@ export default function AvatarTestPanel({ onAvatarChange }: Props) {
                   </ul>
                   <div className="p-2 border-t border-gray-100">
                     <button
-                      onClick={() => { setShowCustomManager(false); openCreate(); }}
-                      className="w-full flex items-center justify-center gap-1.5 text-xs font-semibold text-[#6ba3c7] hover:bg-[#6ba3c7]/5 py-2 rounded-lg transition-colors"
+                      onClick={() => {
+                        const usedSlots = state.testAvatars.map((a) => a.slotNumber);
+                        const nextSlot = [1, 2, 3, 4, 5].find((s) => !usedSlots.includes(s));
+                        if (nextSlot) openBuildPrompt(nextSlot);
+                      }}
+                      disabled={state.testAvatars.length >= 5}
+                      className="w-full flex items-center justify-center gap-1.5 text-xs font-semibold text-[#6ba3c7] hover:bg-[#6ba3c7]/5 py-2 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       <PlusIcon className="w-3.5 h-3.5" />
-                      Create New Custom Avatar
+                      {state.testAvatars.length >= 5 ? "All 5 slots filled" : "Build New Custom Avatar"}
                     </button>
                   </div>
                 </div>
