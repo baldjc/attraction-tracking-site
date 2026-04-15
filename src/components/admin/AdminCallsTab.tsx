@@ -58,13 +58,13 @@ function CallCard({
         {/* Date badge */}
         <div className="shrink-0 text-center bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 min-w-[48px]">
           <p className="text-[9px] font-bold uppercase tracking-wider text-[#6ba3c7]">
-            {new Date(call.callDate + "T00:00:00Z").toLocaleDateString("en-CA", { month: "short", timeZone: "UTC" })}
+            {new Date(call.callDate).toLocaleDateString("en-CA", { month: "short", timeZone: "UTC" })}
           </p>
           <p className="text-base font-bold text-[#2f3437] leading-none">
-            {new Date(call.callDate + "T00:00:00Z").toLocaleDateString("en-CA", { day: "numeric", timeZone: "UTC" })}
+            {new Date(call.callDate).toLocaleDateString("en-CA", { day: "numeric", timeZone: "UTC" })}
           </p>
           <p className="text-[9px] text-[#2f3437]/40">
-            {new Date(call.callDate + "T00:00:00Z").getUTCFullYear()}
+            {new Date(call.callDate).getUTCFullYear()}
           </p>
         </div>
 
