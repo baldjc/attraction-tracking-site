@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
 
 interface Call {
   id: string;
@@ -14,7 +15,7 @@ interface Call {
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString("en-CA", {
     year: "numeric",
-    month: "long",
+    month: "short",
     day: "numeric",
     timeZone: "UTC",
   });
@@ -34,72 +35,77 @@ function loomEmbedUrl(url: string): string {
 function CallCard({ call }: { call: Call }) {
   const hasLoom = !!call.loomUrl;
   const hasFathom = !!call.fathomUrl;
-  const hasBoth = hasLoom && hasFathom;
-  const [activeTab, setActiveTab] = useState<"loom" | "fathom">(hasLoom ? "loom" : "fathom");
+  const [loomOpen, setLoomOpen] = useState(false);
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-      <div className="px-6 pt-6 pb-4">
-        <p className="text-xs font-medium text-[#6ba3c7] mb-1 uppercase tracking-wide">
-          {formatDate(call.callDate)}
-        </p>
-        <h2 className="text-base font-semibold text-[#2f3437]">{callTitle(call)}</h2>
+      {/* Main row */}
+      <div className="flex items-center gap-4 px-5 py-4">
+        {/* Date badge */}
+        <div className="shrink-0 text-center bg-[#f7f6f3] rounded-lg px-3 py-2 min-w-[56px]">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-[#6ba3c7]">
+            {new Date(call.callDate + "T00:00:00Z").toLocaleDateString("en-CA", { month: "short", timeZone: "UTC" })}
+          </p>
+          <p className="text-lg font-bold text-[#2f3437] leading-none">
+            {new Date(call.callDate + "T00:00:00Z").toLocaleDateString("en-CA", { day: "numeric", timeZone: "UTC" })}
+          </p>
+          <p className="text-[10px] text-[#2f3437]/40">
+            {new Date(call.callDate + "T00:00:00Z").getUTCFullYear()}
+          </p>
+        </div>
+
+        {/* Title + notes preview */}
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-[#2f3437] truncate">{callTitle(call)}</p>
+          {call.notes && (
+            <p className="text-xs text-[#2f3437]/40 truncate mt-0.5">{call.notes}</p>
+          )}
+        </div>
+
+        {/* Video buttons */}
+        <div className="flex items-center gap-2 shrink-0">
+          {hasFathom && (
+            <a
+              href={call.fathomUrl!}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 bg-[#2f3437] text-white rounded-lg hover:bg-[#1a1f22] transition-colors"
+            >
+              <span>🎥</span> Watch
+            </a>
+          )}
+          {hasLoom && (
+            <button
+              onClick={() => setLoomOpen((o) => !o)}
+              className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 border border-gray-200 text-[#2f3437] rounded-lg hover:border-[#6ba3c7]/40 hover:text-[#6ba3c7] transition-colors"
+            >
+              {loomOpen ? <ChevronUpIcon className="w-3.5 h-3.5" /> : <ChevronDownIcon className="w-3.5 h-3.5" />}
+              Loom
+            </button>
+          )}
+        </div>
       </div>
 
-      {hasBoth && (
-        <div className="px-6 pb-3 flex gap-2">
-          <button
-            onClick={() => setActiveTab("loom")}
-            className={`text-xs px-3 py-1 rounded-full border transition-colors ${
-              activeTab === "loom"
-                ? "bg-[#2f3437] text-white border-[#2f3437]"
-                : "text-[#2f3437]/50 border-gray-200 hover:border-[#2f3437]/30"
-            }`}
-          >
-            Loom
-          </button>
-          <button
-            onClick={() => setActiveTab("fathom")}
-            className={`text-xs px-3 py-1 rounded-full border transition-colors ${
-              activeTab === "fathom"
-                ? "bg-[#2f3437] text-white border-[#2f3437]"
-                : "text-[#2f3437]/50 border-gray-200 hover:border-[#2f3437]/30"
-            }`}
-          >
-            Call Recording
-          </button>
+      {/* Loom embed — collapsible */}
+      {hasLoom && loomOpen && (
+        <div className="px-5 pb-4 border-t border-gray-100 pt-3">
+          <iframe
+            src={loomEmbedUrl(call.loomUrl!)}
+            width="100%"
+            height="340"
+            frameBorder="0"
+            allowFullScreen
+            className="rounded-lg border border-gray-100 block"
+          />
         </div>
       )}
 
-      <div className="px-6">
-        {activeTab === "loom" && call.loomUrl && (
-          <iframe
-            src={loomEmbedUrl(call.loomUrl)}
-            width="100%"
-            height="400"
-            frameBorder="0"
-            allowFullScreen
-            className="rounded-lg border border-gray-100"
-          />
-        )}
-        {activeTab === "fathom" && call.fathomUrl && (
-          <iframe
-            src={call.fathomUrl}
-            width="100%"
-            height="400"
-            frameBorder="0"
-            allowFullScreen
-            className="rounded-lg border border-gray-100"
-          />
-        )}
-      </div>
-
-      {call.notes && (
-        <div className="px-6 py-4">
-          <p className="text-sm text-[#2f3437]/60 whitespace-pre-line">{call.notes}</p>
+      {/* Full notes — if no truncation was enough */}
+      {call.notes && call.notes.length > 60 && (
+        <div className="px-5 pb-4 border-t border-gray-100 pt-3">
+          <p className="text-xs text-[#2f3437]/60 whitespace-pre-line">{call.notes}</p>
         </div>
       )}
-      {!call.notes && <div className="pb-4" />}
     </div>
   );
 }
@@ -118,12 +124,14 @@ export default function MyCallsClient() {
 
   if (loading) {
     return (
-      <div className="space-y-4">
-        {[...Array(2)].map((_, i) => (
-          <div key={i} className="bg-white border border-gray-200 rounded-xl p-6 animate-pulse">
-            <div className="h-4 bg-gray-100 rounded w-32 mb-3" />
-            <div className="h-5 bg-gray-100 rounded w-64 mb-4" />
-            <div className="h-48 bg-gray-100 rounded" />
+      <div className="space-y-3">
+        {[...Array(3)].map((_, i) => (
+          <div key={i} className="bg-white border border-gray-200 rounded-xl p-4 animate-pulse flex items-center gap-4">
+            <div className="w-14 h-14 bg-gray-100 rounded-lg shrink-0" />
+            <div className="flex-1">
+              <div className="h-4 bg-gray-100 rounded w-48 mb-2" />
+              <div className="h-3 bg-gray-100 rounded w-32" />
+            </div>
           </div>
         ))}
       </div>
@@ -142,7 +150,7 @@ export default function MyCallsClient() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {calls.map((call) => (
         <CallCard key={call.id} call={call} />
       ))}

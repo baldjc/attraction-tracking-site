@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { PencilIcon, TrashIcon, PlusIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { PencilIcon, TrashIcon, PlusIcon, XMarkIcon, ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
 
 interface Call {
   id: string;
@@ -37,6 +37,107 @@ function loomEmbedUrl(url: string): string {
 }
 
 const EMPTY_FORM = { fathomUrl: "", loomUrl: "", callDate: "", topic: "", notes: "" };
+
+function CallCard({
+  call,
+  onEdit,
+  onDelete,
+}: {
+  call: Call;
+  onEdit: (call: Call) => void;
+  onDelete: (call: Call) => void;
+}) {
+  const hasLoom = !!call.loomUrl;
+  const hasFathom = !!call.fathomUrl;
+  const [loomOpen, setLoomOpen] = useState(false);
+
+  return (
+    <div className="bg-gray-50 border border-gray-200 rounded-xl overflow-hidden">
+      {/* Compact header row */}
+      <div className="flex items-center gap-3 px-4 py-3.5">
+        {/* Date badge */}
+        <div className="shrink-0 text-center bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 min-w-[48px]">
+          <p className="text-[9px] font-bold uppercase tracking-wider text-[#6ba3c7]">
+            {new Date(call.callDate + "T00:00:00Z").toLocaleDateString("en-CA", { month: "short", timeZone: "UTC" })}
+          </p>
+          <p className="text-base font-bold text-[#2f3437] leading-none">
+            {new Date(call.callDate + "T00:00:00Z").toLocaleDateString("en-CA", { day: "numeric", timeZone: "UTC" })}
+          </p>
+          <p className="text-[9px] text-[#2f3437]/40">
+            {new Date(call.callDate + "T00:00:00Z").getUTCFullYear()}
+          </p>
+        </div>
+
+        {/* Title */}
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-[#2f3437] truncate">{callTitle(call)}</p>
+          {call.notes && (
+            <p className="text-xs text-[#2f3437]/40 truncate mt-0.5">{call.notes}</p>
+          )}
+        </div>
+
+        {/* Video buttons + actions */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {hasFathom && (
+            <a
+              href={call.fathomUrl!}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 bg-[#2f3437] text-white rounded-lg hover:bg-[#1a1f22] transition-colors"
+            >
+              <span>🎥</span> Fathom
+            </a>
+          )}
+          {hasLoom && (
+            <button
+              onClick={() => setLoomOpen((o) => !o)}
+              className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 border border-gray-200 text-[#2f3437] rounded-lg hover:border-[#6ba3c7]/40 hover:text-[#6ba3c7] transition-colors"
+            >
+              {loomOpen ? <ChevronUpIcon className="w-3 h-3" /> : <ChevronDownIcon className="w-3 h-3" />}
+              Loom
+            </button>
+          )}
+          <div className="w-px h-4 bg-gray-200 mx-0.5" />
+          <button
+            onClick={() => onEdit(call)}
+            className="p-1.5 text-[#2f3437]/30 hover:text-[#2f3437] rounded-md hover:bg-gray-200 transition-colors"
+            title="Edit"
+          >
+            <PencilIcon className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={() => onDelete(call)}
+            className="p-1.5 text-[#2f3437]/30 hover:text-red-500 rounded-md hover:bg-red-50 transition-colors"
+            title="Delete"
+          >
+            <TrashIcon className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Loom embed — collapsible */}
+      {hasLoom && loomOpen && (
+        <div className="px-4 pb-4 border-t border-gray-200 pt-3">
+          <iframe
+            src={loomEmbedUrl(call.loomUrl!)}
+            width="100%"
+            height="320"
+            frameBorder="0"
+            allowFullScreen
+            className="rounded-lg border border-gray-200 bg-white block"
+          />
+        </div>
+      )}
+
+      {/* Full notes */}
+      {call.notes && call.notes.length > 60 && (
+        <div className="px-4 pb-3 border-t border-gray-100 pt-2.5">
+          <p className="text-xs text-[#2f3437]/60 whitespace-pre-line">{call.notes}</p>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function AdminCallsTab({ memberId }: Props) {
   const [calls, setCalls] = useState<Call[]>([]);
@@ -134,28 +235,34 @@ export default function AdminCallsTab({ memberId }: Props) {
   }
 
   if (loading) {
-    return <div className="animate-pulse h-32 bg-gray-50 rounded-lg" />;
+    return (
+      <div className="space-y-3">
+        {[...Array(2)].map((_, i) => (
+          <div key={i} className="animate-pulse h-16 bg-gray-50 border border-gray-200 rounded-xl" />
+        ))}
+      </div>
+    );
   }
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-5">
+      <div className="flex items-center justify-between mb-4">
         <h2 className="text-sm font-semibold text-[#2f3437]">Call Recordings</h2>
         <button
           onClick={openAdd}
-          className="flex items-center gap-1.5 text-sm bg-[#2f3437] text-white px-3 py-2 rounded-lg hover:bg-[#1a1f22] transition-colors"
+          className="flex items-center gap-1.5 text-xs bg-[#2f3437] text-white px-3 py-1.5 rounded-lg hover:bg-[#1a1f22] transition-colors"
         >
-          <PlusIcon className="w-4 h-4" />
+          <PlusIcon className="w-3.5 h-3.5" />
           Add Call
         </button>
       </div>
 
       {calls.length === 0 ? (
-        <div className="bg-gray-50 rounded-lg p-10 text-center text-sm text-[#2f3437]/40">
+        <div className="bg-gray-50 border border-gray-200 rounded-xl p-8 text-center text-sm text-[#2f3437]/40">
           No call recordings for this member yet.
         </div>
       ) : (
-        <div className="space-y-5">
+        <div className="space-y-2.5">
           {calls.map((call) => (
             <CallCard
               key={call.id}
@@ -277,91 +384,6 @@ export default function AdminCallsTab({ memberId }: Props) {
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function FathomLinkCard({ url }: { url: string }) {
-  return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="flex items-center gap-3 bg-white border border-gray-200 rounded-lg px-4 py-3.5 hover:border-[#6ba3c7]/40 hover:bg-[#6ba3c7]/3 transition-colors group"
-    >
-      <div className="w-8 h-8 rounded-full bg-[#6ba3c7]/10 flex items-center justify-center shrink-0 text-sm">
-        🎥
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-[#2f3437] group-hover:text-[#6ba3c7] transition-colors">Open in Fathom</p>
-        <p className="text-xs text-[#2f3437]/40 truncate">{url}</p>
-      </div>
-      <svg className="w-4 h-4 text-[#2f3437]/30 group-hover:text-[#6ba3c7] shrink-0 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-      </svg>
-    </a>
-  );
-}
-
-function CallCard({
-  call,
-  onEdit,
-  onDelete,
-}: {
-  call: Call;
-  onEdit: (call: Call) => void;
-  onDelete: (call: Call) => void;
-}) {
-  const hasLoom = !!call.loomUrl;
-  const hasFathom = !!call.fathomUrl;
-
-  return (
-    <div className="bg-gray-50 border border-gray-200 rounded-xl overflow-hidden">
-      <div className="flex items-start justify-between px-5 pt-5 pb-3">
-        <div>
-          <p className="text-xs font-medium text-[#6ba3c7] mb-0.5 uppercase tracking-wide">
-            {formatDate(call.callDate)}
-          </p>
-          <h3 className="text-sm font-semibold text-[#2f3437]">{callTitle(call)}</h3>
-        </div>
-        <div className="flex items-center gap-1 shrink-0 ml-3">
-          <button
-            onClick={() => onEdit(call)}
-            className="p-1.5 text-[#2f3437]/40 hover:text-[#2f3437] rounded-md hover:bg-gray-200 transition-colors"
-            title="Edit"
-          >
-            <PencilIcon className="w-3.5 h-3.5" />
-          </button>
-          <button
-            onClick={() => onDelete(call)}
-            className="p-1.5 text-[#2f3437]/40 hover:text-red-600 rounded-md hover:bg-red-50 transition-colors"
-            title="Delete"
-          >
-            <TrashIcon className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      </div>
-
-      <div className="px-5 space-y-3">
-        {hasFathom && <FathomLinkCard url={call.fathomUrl!} />}
-        {hasLoom && (
-          <iframe
-            src={loomEmbedUrl(call.loomUrl!)}
-            width="100%"
-            height="360"
-            frameBorder="0"
-            allowFullScreen
-            className="rounded-lg border border-gray-200 bg-white block"
-          />
-        )}
-      </div>
-
-      {call.notes && (
-        <div className="px-5 py-4">
-          <p className="text-sm text-[#2f3437]/60 whitespace-pre-line">{call.notes}</p>
-        </div>
-      )}
-      {!call.notes && <div className="pb-4" />}
     </div>
   );
 }
