@@ -45,6 +45,7 @@ const TOOL_LABELS: Record<string, string> = {
   title_thumbnail_analyzer: "Title & Thumbnail Analyzer",
   script_review: "Script Review",
   description_generator: "Description Generator",
+  listing_video_builder: "Listing Video Builder",
 };
 
 function UsageCard({ usage }: { usage: UsageData }) {
@@ -105,7 +106,7 @@ const SECTIONS = [
     icon: "✍️",
     label: "Create",
     description: "Turn your avatar into ideas and scripts.",
-    tools: ["content_engine", "arc_script_builder"],
+    tools: ["content_engine", "arc_script_builder", "listing_video_builder"],
     columns: 2,
   },
   {
@@ -200,6 +201,16 @@ export default function AIToolsHub({ basePath, featureFlags }: Props) {
       extra: lastScript
         ? `Last script: ${new Date(lastScript.createdAt).toLocaleDateString()}`
         : avatarStatus,
+      badge: avatar?.avatarName ? "green" : "amber",
+    },
+    {
+      href: `${basePath}/listing-video-builder`,
+      id: "tool-listing-video",
+      featureKey: "tool_listing_video_builder",
+      icon: "🏠",
+      title: "Listing Video Builder",
+      description: "Turn any listing into an avatar-driven video — not a home tour, a content strategy",
+      extra: avatarStatus,
       badge: avatar?.avatarName ? "green" : "amber",
     },
     {

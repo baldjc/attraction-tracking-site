@@ -20,6 +20,7 @@ export interface FeatureFlags {
   tool_repurpose_blog: boolean;
   tool_repurpose_postcard: boolean;
   tool_description_generator: boolean;
+  tool_listing_video_builder: boolean;
   [key: string]: boolean;
 }
 
@@ -43,6 +44,7 @@ export const DEFAULT_FLAGS: FeatureFlags = {
   tool_repurpose_blog: true,
   tool_repurpose_postcard: true,
   tool_description_generator: true,
+  tool_listing_video_builder: false,
 };
 
 export async function getFeatureFlags(): Promise<FeatureFlags> {

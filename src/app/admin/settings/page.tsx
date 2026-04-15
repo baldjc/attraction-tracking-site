@@ -510,6 +510,7 @@ interface FeatureFlags {
   tool_repurpose_facebook: boolean;
   tool_repurpose_blog: boolean;
   tool_repurpose_postcard: boolean;
+  tool_listing_video_builder: boolean;
   [key: string]: boolean;
 }
 
@@ -533,6 +534,7 @@ const FEATURE_DEFS = [
       { key: "tool_title_analyzer", label: "Title & Thumbnail Analyzer", desc: "Title/thumbnail scoring" },
       { key: "tool_script_review", label: "Script Review", desc: "Script scoring and feedback" },
       { key: "tool_repurpose_content", label: "Repurpose Content", desc: "Turn transcripts into content — also controls individual formats below" },
+      { key: "tool_listing_video_builder", label: "Listing Video Builder", desc: "Turn listings into avatar-driven video concepts" },
     ],
   },
   {
