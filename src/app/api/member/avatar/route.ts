@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import prisma from "@/lib/prisma";
 import { getAvatarData } from "@/lib/avatar-utils";
+import { CANONICAL_THEMES } from "@/lib/canonical-themes";
 
 export async function GET() {
   const user = await resolveUserFromSession();
@@ -23,22 +24,27 @@ export async function GET() {
   });
 }
 
-const PALETTE = ["#3B82F6", "#F59E0B", "#EF4444", "#10B981", "#8B5CF6", "#EC4899", "#06B6D4", "#F97316"];
-const DEFAULT_EMOJIS = ["🎯", "⚡", "🔥", "🌿", "💡", "💎", "🌊", "🚀"];
-
 function normalizeThemes(themes: unknown): object[] | null {
   if (!Array.isArray(themes)) return null;
-  return themes.map((t, i) => {
-    const colour = PALETTE[i % PALETTE.length];
-    const emoji = DEFAULT_EMOJIS[i % DEFAULT_EMOJIS.length];
+  return themes.map((t) => {
+    const name = typeof t === "string" ? t : (t as any).name;
+    const canonical = CANONICAL_THEMES.find(
+      (ct) => ct.name.toLowerCase() === name?.toLowerCase()
+    );
     if (typeof t === "string") {
-      return { name: t, coreStress: null, emoji, colour };
+      return {
+        name: t,
+        coreStress: canonical?.coreStress ?? null,
+        emoji: canonical?.emoji ?? "📌",
+        colour: canonical?.colour ?? "#3B82F6",
+      };
     }
     const obj = t as Record<string, unknown>;
     return {
       ...obj,
-      colour: obj.colour ?? colour,
-      emoji: obj.emoji ?? emoji,
+      emoji: obj.emoji ?? canonical?.emoji ?? "📌",
+      colour: obj.colour ?? canonical?.colour ?? "#3B82F6",
+      coreStress: obj.coreStress ?? canonical?.coreStress ?? null,
     };
   });
 }

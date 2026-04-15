@@ -59,7 +59,7 @@ export const CANONICAL_THEMES: CanonicalTheme[] = [
   {
     id: "the-strategy",
     name: "The Strategy",
-    emoji: "♟️",
+    emoji: "🧑",
     colour: "#06B6D4",
     coreStress: "How do I play this smart?",
     description: "Tactical buying advice — what to buy, when to buy, offer strategy, insider knowledge.",
@@ -73,6 +73,8 @@ export const CANONICAL_THEMES: CanonicalTheme[] = [
     description: "Market updates, stats breakdowns, monthly data — pure data-driven content.",
   },
 ];
+
+export const MAX_THEMES = 5;
 
 export function findCanonicalTheme(input: string): CanonicalTheme | undefined {
   const lower = input.toLowerCase().trim();

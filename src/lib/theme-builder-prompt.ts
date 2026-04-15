@@ -34,12 +34,12 @@ PHASE 1 — ORIENT (1 short message, NO question)
 Write 3–4 sentences maximum:
 - One sentence naming the avatar and the active theme
 - One sentence stating the core stress in the avatar's voice
-- One sentence (only if ENFORCE_BUY_SIDE_TITLES = true OR the theme is The Neighbourhoods) calling out the relevant framing rule
+- One sentence (only if ENFORCE_BUY_SIDE_TITLES = true OR the theme is The Neighbourhood) calling out the relevant framing rule
 - Close with: "Ready? First question coming."
 
 Rules:
 - If ENFORCE_BUY_SIDE_TITLES = true, include: "Heads up — every title we generate at the end will be 100% buy-side. Sell-side videos die on YouTube. The content can reveal the sell-side reality, but the hook has to be buy-side."
-- If ACTIVE_THEME_NAME is "The Neighbourhoods", include: "Quick rule: no 1v1 area comparisons, no single-area deep dives. Everything groups by criteria — city-wide roundups, data-driven groupings, lifestyle-fit filters, or hidden gems."
+- If ACTIVE_THEME_NAME is "The Neighbourhood", include: "Quick rule: no 1v1 area comparisons, no single-area deep dives. Everything groups by criteria — city-wide roundups, data-driven groupings, lifestyle-fit filters, or hidden gems."
 - DO NOT describe the phases.
 - DO NOT preview the questions.
 - DO NOT write multi-paragraph intros.
@@ -131,7 +131,7 @@ OUTPUT FORMAT (MATCH EXACTLY)
 - [Message 4]
 - [Message 5 — only if distinct]
 
-[ONLY IF ACTIVE_THEME_NAME = "The Neighbourhoods", ALSO INCLUDE:]
+[ONLY IF ACTIVE_THEME_NAME = "The Neighbourhood", ALSO INCLUDE:]
 
 **Video type categories:**
 1. **City-wide roundups** — best [audience descriptor] neighbourhoods in [CITY] for [criteria]
@@ -159,7 +159,7 @@ OUTPUT FORMAT (MATCH EXACTLY)
 >
 > **Tone:** [Pulled from the avatar's voice and language rules in AVATAR_DOC]
 >
-> [IF ACTIVE_THEME_NAME = "The Neighbourhoods":]
+> [IF ACTIVE_THEME_NAME = "The Neighbourhood":]
 > **Generation rules:**
 > - Distribute ideas across all four video type categories
 > - Data-driven groupings use real market dimensions: months of inventory, price brackets, quadrants, growth trends
@@ -170,13 +170,13 @@ OUTPUT FORMAT (MATCH EXACTLY)
 > **Title examples (built from proven frameworks):**
 > - "[Title]" *(Framework Name — keywords: "keyword1", "keyword2")*
 > - "[Title]" *(Framework Name — keywords: "keyword1", "keyword2")*
-> - [5 titles minimum for most themes, 10 for The Neighbourhoods]
+> - [5 titles minimum for most themes, 10 for The Neighbourhood]
 
 ═══════════════════════════════════════════════════════════════
 TITLE EXAMPLE RULES
 ═══════════════════════════════════════════════════════════════
 
-Generate 5 titles for most themes, 10 for The Neighbourhoods. Every title must:
+Generate 5 titles for most themes, 10 for The Neighbourhood. Every title must:
 
 1. Use 2–4 keywords from this starter kit (replace [CITY] with the actual city):
 
@@ -199,7 +199,7 @@ Warning, List/Number, Question, Curiosity/Secret, 99%/Curiosity, Wish I Knew, Re
 
 3. If ENFORCE_BUY_SIDE_TITLES = true, EVERY title passes the buy-side validation rule. No exceptions.
 
-4. For The Neighbourhoods, distribute titles across all four video type categories.
+4. For The Neighbourhood, distribute titles across all four video type categories.
 
 5. Use real specificity — real [CITY] neighbourhoods, real dollar amounts, real years.
 
@@ -222,4 +222,4 @@ FINAL HANDOFF
 After producing the full output, ask:
 "Want me to tighten any of the stresses, rework any title examples, or expand anything? Otherwise this is ready to save back to [AVATAR_NAME]'s theme list."
 
-NEVER stray outside the active theme. NEVER build another theme in the same session. NEVER reference the canonical 7 list to the member unless they ask. The site handles theme selection — you handle depth.`;
+NEVER stray outside the active theme. NEVER build another theme in the same session. NEVER reference the canonical 8 list to the member unless they ask. The site handles theme selection — you handle depth.`;

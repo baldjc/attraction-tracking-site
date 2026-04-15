@@ -17,7 +17,7 @@ import PromptEditor from "@/components/ai-tools/PromptEditor";
 import RecentConversations from "@/components/ai-tools/RecentConversations";
 import MarkdownMessage from "@/components/MarkdownMessage";
 import NextStepCard from "@/components/ai-tools/NextStepCard";
-import { CANONICAL_THEMES } from "@/lib/canonical-themes";
+import { CANONICAL_THEMES, MAX_THEMES } from "@/lib/canonical-themes";
 
 interface Message {
   role: "user" | "assistant";
@@ -180,7 +180,6 @@ function AvatarProfileCard({
         }))
       : []
   );
-  const [themeInput, setThemeInput] = useState("");
   const [showMigrationBanner, setShowMigrationBanner] = useState(() =>
     Array.isArray(avatar.contentThemes) &&
     avatar.contentThemes.length > 0 &&
@@ -200,7 +199,6 @@ function AvatarProfileCard({
   const [saving, setSaving] = useState(false);
   const [remapSaving, setRemapSaving] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
-  const MAX_THEMES = 4;
 
   function startEdit() {
     setName(avatar.avatarName ?? "");
@@ -219,23 +217,10 @@ function AvatarProfileCard({
 
   function cancelEdit() {
     setEditing(false);
-    setThemeInput("");
-  }
-
-  function addTheme() {
-    const t = themeInput.trim();
-    if (t && themes.length < MAX_THEMES && !themes.some((th) => th.name === t)) {
-      setThemes((prev) => [...prev, { name: t, context: "", enforceBuySideTitles: isEquityTheme(t) }]);
-    }
-    setThemeInput("");
   }
 
   function removeTheme(idx: number) {
     setThemes((prev) => prev.filter((_, j) => j !== idx));
-  }
-
-  function handleThemeKeyDown(e: React.KeyboardEvent) {
-    if (e.key === "Enter" || e.key === ",") { e.preventDefault(); addTheme(); }
   }
 
   async function save() {
@@ -255,7 +240,6 @@ function AvatarProfileCard({
         const updated = await res.json();
         onChange({ avatarName: updated.avatarName, avatarSummary: updated.avatarSummary, contentThemes: updated.contentThemes, updatedAt: updated.updatedAt });
         setEditing(false);
-        setThemeInput("");
         setToast("Saved");
         setTimeout(() => setToast(null), 3000);
       }
@@ -300,9 +284,9 @@ function AvatarProfileCard({
                 <div key={i} className="border border-[#6ba3c7]/20 rounded-lg overflow-hidden">
                   <div className="flex items-center gap-2 px-3 py-2 bg-[#6ba3c7]/5">
                     <span className="w-6 h-6 rounded-full bg-[#6ba3c7]/10 text-[#6ba3c7] text-xs font-bold flex items-center justify-center shrink-0">{i + 1}</span>
-                    <input type="text" value={t.name} onChange={(e) => { const v = e.target.value; setThemes((prev) => prev.map((x, j) => j === i ? { ...x, name: v, enforceBuySideTitles: x.enforceBuySideTitles !== undefined ? x.enforceBuySideTitles : isEquityTheme(v) } : x)); }}
-                      placeholder="Theme name…"
-                      className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm font-medium text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40 bg-white" />
+                    <span className="flex-1 px-3 py-1.5 text-sm font-medium text-[#2f3437]">
+                      {CANONICAL_THEMES.find((ct) => ct.name === t.name)?.emoji ?? "📌"} {t.name}
+                    </span>
                     <button onClick={() => removeTheme(i)} className="p-1 text-[#2f3437]/30 hover:text-red-400 transition-colors"><XMarkIcon className="w-4 h-4" /></button>
                   </div>
                   <div className="px-3 py-2">
@@ -326,16 +310,38 @@ function AvatarProfileCard({
                 </div>
               ))}
             </div>
-            {themes.length < MAX_THEMES && (
-              <div className="flex gap-2">
-                <input type="text" value={themeInput} onChange={(e) => setThemeInput(e.target.value)} onKeyDown={handleThemeKeyDown}
-                  placeholder="Add a theme and press Enter…"
-                  className="flex-1 border border-dashed border-[#6ba3c7]/40 rounded-lg px-3 py-1.5 text-sm text-[#2f3437] placeholder-[#2f3437]/30 focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40" />
-                <button onClick={addTheme} className="px-3 py-1.5 bg-[#6ba3c7]/10 text-[#6ba3c7] text-xs font-semibold rounded-lg hover:bg-[#6ba3c7]/20 transition-colors flex items-center gap-1">
-                  <PlusIcon className="w-3.5 h-3.5" /> Add
-                </button>
-              </div>
-            )}
+            {(() => {
+              const availableThemes = CANONICAL_THEMES.filter(
+                (ct) => !themes.some((t) => t.name.toLowerCase() === ct.name.toLowerCase())
+              );
+              return themes.length < MAX_THEMES && availableThemes.length > 0 ? (
+                <select
+                  value=""
+                  onChange={(e) => {
+                    const selected = CANONICAL_THEMES.find((ct) => ct.id === e.target.value);
+                    if (selected) {
+                      setThemes((prev) => [...prev, {
+                        name: selected.name,
+                        context: "",
+                        enforceBuySideTitles: selected.name === "The Equity",
+                      }]);
+                    }
+                  }}
+                  className="w-full border border-dashed border-[#6ba3c7]/40 rounded-lg px-3 py-2 text-sm text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40 bg-white"
+                >
+                  <option value="" disabled>— choose canonical theme —</option>
+                  {availableThemes.map((ct) => (
+                    <option key={ct.id} value={ct.id}>
+                      {ct.emoji} {ct.name} — {ct.coreStress}
+                    </option>
+                  ))}
+                </select>
+              ) : themes.length >= MAX_THEMES ? (
+                <p className="text-xs text-[#2f3437]/30 italic py-1">
+                  Maximum {MAX_THEMES} themes reached
+                </p>
+              ) : null;
+            })()}
           </div>
         </div>
       </div>
@@ -376,7 +382,7 @@ function AvatarProfileCard({
       {showMigrationBanner && (
         <div className="flex items-start justify-between gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
           <p className="text-xs text-amber-800 leading-relaxed">
-            <strong>Theme update needed:</strong> This avatar was built before we locked in our 7 canonical content themes. Map your existing themes to the canonical list so the Theme Builder and Content Engine work properly.
+            <strong>Theme update needed:</strong> This avatar was built before we locked in our 8 canonical content themes. Map your existing themes to the canonical list so the Theme Builder and Content Engine work properly.
           </p>
           <div className="flex items-center gap-2 shrink-0">
             <button onClick={() => setShowRemapModal(true)} className="text-xs font-semibold text-amber-800 hover:underline whitespace-nowrap">Remap Now</button>
