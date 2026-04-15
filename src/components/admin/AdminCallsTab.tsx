@@ -281,6 +281,28 @@ export default function AdminCallsTab({ memberId }: Props) {
   );
 }
 
+function FathomLinkCard({ url }: { url: string }) {
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex items-center gap-3 bg-white border border-gray-200 rounded-lg px-4 py-3.5 hover:border-[#6ba3c7]/40 hover:bg-[#6ba3c7]/3 transition-colors group"
+    >
+      <div className="w-8 h-8 rounded-full bg-[#6ba3c7]/10 flex items-center justify-center shrink-0 text-sm">
+        🎥
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-[#2f3437] group-hover:text-[#6ba3c7] transition-colors">Open in Fathom</p>
+        <p className="text-xs text-[#2f3437]/40 truncate">{url}</p>
+      </div>
+      <svg className="w-4 h-4 text-[#2f3437]/30 group-hover:text-[#6ba3c7] shrink-0 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+      </svg>
+    </a>
+  );
+}
+
 function CallCard({
   call,
   onEdit,
@@ -292,8 +314,6 @@ function CallCard({
 }) {
   const hasLoom = !!call.loomUrl;
   const hasFathom = !!call.fathomUrl;
-  const hasBoth = hasLoom && hasFathom;
-  const [activeTab, setActiveTab] = useState<"loom" | "fathom">(hasLoom ? "loom" : "fathom");
 
   return (
     <div className="bg-gray-50 border border-gray-200 rounded-xl overflow-hidden">
@@ -322,50 +342,16 @@ function CallCard({
         </div>
       </div>
 
-      {hasBoth && (
-        <div className="px-5 pb-3 flex gap-2">
-          <button
-            onClick={() => setActiveTab("loom")}
-            className={`text-xs px-3 py-1 rounded-full border transition-colors ${
-              activeTab === "loom"
-                ? "bg-[#2f3437] text-white border-[#2f3437]"
-                : "text-[#2f3437]/50 border-gray-200 hover:border-[#2f3437]/30"
-            }`}
-          >
-            Loom
-          </button>
-          <button
-            onClick={() => setActiveTab("fathom")}
-            className={`text-xs px-3 py-1 rounded-full border transition-colors ${
-              activeTab === "fathom"
-                ? "bg-[#2f3437] text-white border-[#2f3437]"
-                : "text-[#2f3437]/50 border-gray-200 hover:border-[#2f3437]/30"
-            }`}
-          >
-            Fathom
-          </button>
-        </div>
-      )}
-
-      <div className="px-5">
-        {(activeTab === "loom" && call.loomUrl) && (
+      <div className="px-5 space-y-3">
+        {hasFathom && <FathomLinkCard url={call.fathomUrl!} />}
+        {hasLoom && (
           <iframe
-            src={loomEmbedUrl(call.loomUrl)}
+            src={loomEmbedUrl(call.loomUrl!)}
             width="100%"
             height="360"
             frameBorder="0"
             allowFullScreen
-            className="rounded-lg border border-gray-200 bg-white"
-          />
-        )}
-        {(activeTab === "fathom" && call.fathomUrl) && (
-          <iframe
-            src={call.fathomUrl}
-            width="100%"
-            height="360"
-            frameBorder="0"
-            allowFullScreen
-            className="rounded-lg border border-gray-200 bg-white"
+            className="rounded-lg border border-gray-200 bg-white block"
           />
         )}
       </div>
