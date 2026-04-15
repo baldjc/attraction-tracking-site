@@ -50,12 +50,17 @@ export async function POST(req: NextRequest) {
   });
 
   // Clear any active test avatar state when starting impersonation
-  const adminId = (session.user as any).id as string;
-  if (adminId) {
-    await prisma.user.update({
-      where: { id: adminId },
-      data: { activeTestAvatarId: null, activeTestMemberId: null },
-    });
+  // Wrapped in try/catch — columns may not exist yet on older DB instances
+  try {
+    const adminId = (session.user as any).id as string;
+    if (adminId) {
+      await prisma.user.update({
+        where: { id: adminId },
+        data: { activeTestAvatarId: null, activeTestMemberId: null },
+      });
+    }
+  } catch {
+    // Non-fatal — impersonation still succeeds
   }
 
   return NextResponse.json({
