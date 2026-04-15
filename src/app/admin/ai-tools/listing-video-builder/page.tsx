@@ -9,6 +9,7 @@ export default function AdminListingVideoBuilderPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [ready, setReady] = useState(false);
+  const [calendarEnabled, setCalendarEnabled] = useState(false);
 
   useEffect(() => {
     if (status === "loading") return;
@@ -17,14 +18,18 @@ export default function AdminListingVideoBuilderPage() {
       router.replace("/admin");
       return;
     }
-    setReady(true);
+    fetch("/api/admin/feature-visibility")
+      .then((r) => r.json())
+      .then((flags) => setCalendarEnabled(flags?.content_calendar !== false))
+      .catch(() => {})
+      .finally(() => setReady(true));
   }, [session, status, router]);
 
   if (!ready) return null;
 
   return (
     <div className="max-w-2xl mx-auto">
-      <ListingVideoBuilderTool basePath="/admin/ai-tools" isAdmin />
+      <ListingVideoBuilderTool basePath="/admin/ai-tools" isAdmin calendarEnabled={calendarEnabled} />
     </div>
   );
 }

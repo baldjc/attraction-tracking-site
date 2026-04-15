@@ -39,6 +39,7 @@ interface Props {
     extractedFileText: string;
   };
   onReset: () => void;
+  calendarEnabled?: boolean;
 }
 
 function parseOptions(text: string): ListingOption[] | null {
@@ -75,16 +76,22 @@ function OptionCard({
   onDevelop,
   onSendToScript,
   onSaveToPlanner,
+  onSaveToCalendar,
+  calendarEnabled,
 }: {
   option: ListingOption;
   onDevelop: (opt: ListingOption) => void;
   onSendToScript: (opt: ListingOption) => void;
   onSaveToPlanner: (opt: ListingOption) => void;
+  onSaveToCalendar: (opt: ListingOption) => Promise<void>;
+  calendarEnabled?: boolean;
 }) {
   const [showPoints, setShowPoints] = useState(false);
   const [showData, setShowData] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [calSaving, setCalSaving] = useState(false);
+  const [calSaved, setCalSaved] = useState(false);
 
   async function handleSave() {
     setSaving(true);
@@ -93,6 +100,16 @@ function OptionCard({
       setSaved(true);
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleCalendarSave() {
+    setCalSaving(true);
+    try {
+      await onSaveToCalendar(option);
+      setCalSaved(true);
+    } finally {
+      setCalSaving(false);
     }
   }
 
@@ -197,6 +214,15 @@ function OptionCard({
         >
           Send to Script Builder
         </button>
+        {calendarEnabled && (
+          <button
+            onClick={handleCalendarSave}
+            disabled={calSaving || calSaved}
+            className="py-2 px-3 border border-[#6ba3c7]/30 text-[#6ba3c7] text-xs font-semibold rounded-lg hover:bg-[#6ba3c7]/5 disabled:opacity-50 transition-colors"
+          >
+            {calSaved ? "Added to Calendar ✓" : calSaving ? "Adding…" : "📅 Add to Calendar"}
+          </button>
+        )}
         <button
           onClick={handleSave}
           disabled={saving || saved}
@@ -209,7 +235,7 @@ function OptionCard({
   );
 }
 
-export default function ListingVideoChat({ initialResponse, propertyData, onReset }: Props) {
+export default function ListingVideoChat({ initialResponse, propertyData, onReset, calendarEnabled }: Props) {
   const options = parseOptions(initialResponse);
   const { before, after } = getTextOutside(initialResponse);
 
@@ -250,6 +276,26 @@ export default function ListingVideoChat({ initialResponse, propertyData, onRese
         whyItWorks: opt.angle,
         dataToFind: opt.dataToFind,
         source: "listing_video_builder",
+      }),
+    });
+  }
+
+  async function handleSaveToCalendar(opt: ListingOption) {
+    const notes = [
+      opt.angle,
+      opt.talkingPoints.length > 0 ? `\nTalking points:\n${opt.talkingPoints.map((p, i) => `${i + 1}. ${p}`).join("\n")}` : "",
+      opt.dataToFind ? `\nData to find:\n${opt.dataToFind}` : "",
+      opt.leadMagnetHook ? `\nLead magnet hook:\n${opt.leadMagnetHook}` : "",
+    ].filter(Boolean).join("\n");
+
+    await fetch("/api/member/content-plans", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: opt.workingTitle,
+        status: "Idea",
+        theme: opt.canonicalTheme,
+        notes,
       }),
     });
   }
@@ -354,6 +400,8 @@ export default function ListingVideoChat({ initialResponse, propertyData, onRese
                 onDevelop={handleDevelop}
                 onSendToScript={handleSendToScript}
                 onSaveToPlanner={handleSaveToPlanner}
+                onSaveToCalendar={handleSaveToCalendar}
+                calendarEnabled={calendarEnabled}
               />
             ))}
           </div>

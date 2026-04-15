@@ -9,6 +9,7 @@ import ListingVideoChat from "@/components/ai-tools/ListingVideoChat";
 interface Props {
   basePath: string;
   isAdmin?: boolean;
+  calendarEnabled?: boolean;
 }
 
 interface PropertyData {
@@ -22,7 +23,7 @@ interface PropertyData {
   extractedFileText: string;
 }
 
-export default function ListingVideoBuilderTool({ basePath, isAdmin }: Props) {
+export default function ListingVideoBuilderTool({ basePath, isAdmin, calendarEnabled }: Props) {
   const [phase, setPhase] = useState<"input" | "results">("input");
   const [propertyData, setPropertyData] = useState<PropertyData | null>(null);
   const [aiResponse, setAiResponse] = useState<string>("");
@@ -110,6 +111,7 @@ export default function ListingVideoBuilderTool({ basePath, isAdmin }: Props) {
             initialResponse={aiResponse}
             propertyData={propertyData}
             onReset={handleReset}
+            calendarEnabled={calendarEnabled}
           />
         ) : null}
       </div>

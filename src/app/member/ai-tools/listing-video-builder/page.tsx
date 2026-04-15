@@ -7,6 +7,7 @@ import ListingVideoBuilderTool from "@/components/ai-tools/ListingVideoBuilderTo
 export default function ListingVideoBuilderPage() {
   const router = useRouter();
   const [checking, setChecking] = useState(true);
+  const [calendarEnabled, setCalendarEnabled] = useState(false);
 
   useEffect(() => {
     fetch("/api/admin/feature-visibility")
@@ -15,6 +16,7 @@ export default function ListingVideoBuilderPage() {
         if (flags?.tool_listing_video_builder === false) {
           router.replace("/member/ai-tools");
         }
+        setCalendarEnabled(flags?.content_calendar !== false);
       })
       .catch(() => {})
       .finally(() => setChecking(false));
@@ -24,7 +26,7 @@ export default function ListingVideoBuilderPage() {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <ListingVideoBuilderTool basePath="/member/ai-tools" />
+      <ListingVideoBuilderTool basePath="/member/ai-tools" calendarEnabled={calendarEnabled} />
     </div>
   );
 }
