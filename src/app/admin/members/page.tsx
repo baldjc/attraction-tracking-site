@@ -576,7 +576,13 @@ function MembersPageInner() {
                       </div>
                     )}
                     <div className="p-3 flex flex-col gap-2 flex-1">
-                      <div className="text-xs text-[#6ba3c7] font-medium truncate">{video.user.fullName || "Unknown"}</div>
+                      <Link
+                        href={`/admin/members/${video.user.id}`}
+                        className="text-xs text-[#6ba3c7] hover:text-[#5490b5] hover:underline font-medium truncate"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {video.user.fullName || "Unknown"}
+                      </Link>
                       <div className={`text-sm ${txt} font-medium line-clamp-2 leading-snug`}>{video.title}</div>
                       <div className={`text-xs ${dim}`}>{fmtDate(video.publishedAt)} · {video.viewCount.toLocaleString()} views</div>
                       <div className="mt-auto flex flex-col gap-1.5">
