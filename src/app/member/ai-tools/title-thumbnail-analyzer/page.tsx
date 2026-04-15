@@ -10,30 +10,52 @@ import ResourceRecommendations from "@/components/ResourceRecommendations";
 import MarkdownMessage from "@/components/MarkdownMessage";
 import NextStepCard from "@/components/ai-tools/NextStepCard";
 
+interface SubScores {
+  [key: string]: number;
+}
+
+interface TitleAlternative {
+  title: string;
+  formula: string;
+}
+
 interface AnalysisResult {
   thumbnail?: {
     score?: number;
+    sub_scores?: SubScores;
+    dissonance_triggers_used?: string[];
+    thumbnail_pattern?: string;
     observations?: string[];
     improvements?: string[];
+    mistakes_flagged?: string[];
   };
   title?: {
     score?: number;
+    sub_scores?: SubScores;
     framework_used?: string;
-    alternatives?: string[];
+    formula_match?: string;
+    dissonance_triggers_used?: string[];
+    character_count?: number;
+    alternatives?: (string | TitleAlternative)[];
     attraction_scores?: {
       title_frameworks: number;
       approve_the_click: number;
       avatar_clarity: number;
+      superlative_urgency?: number;
     };
     observations?: string[];
+    mistakes_flagged?: string[];
   };
   combined?: {
     score?: number;
+    sub_scores?: SubScores;
+    dissonance_combination?: string;
     avatar_would_click?: boolean;
     observations?: string[];
     improvements?: string[];
     redundancies?: string[];
     thumbnail_concepts?: string[];
+    mistakes_flagged?: string[];
   };
   intro?: {
     score?: number;
@@ -89,6 +111,54 @@ function ScoreBadge({ label, score }: { label: string; score: number }) {
   );
 }
 
+const SUB_SCORE_LABELS: Record<string, string> = {
+  visual_contradiction: "Visual Contradiction",
+  expectation_violation: "Expectation Violation",
+  curiosity_gap: "Curiosity Gap",
+  emotional_tension: "Emotional Tension",
+  pattern_interrupt: "Pattern Interrupt",
+  belief_challenge: "Belief Challenge",
+  specificity_mystery: "Specificity + Mystery",
+  tension_words: "Tension Words",
+  stakes_clarity: "Stakes Clarity",
+  pattern_break: "Pattern Break",
+  reinforced_tension: "Reinforced Tension",
+  gap_alignment: "Gap Alignment",
+  information_balance: "Information Balance",
+  promise_consistency: "Promise Consistency",
+  click_compulsion: "Click Compulsion",
+};
+
+function SubScoreBar({ name, value }: { name: string; value: number }) {
+  const label = SUB_SCORE_LABELS[name] ?? name;
+  const pct = (value / 4) * 100;
+  const color =
+    value >= 3 ? "bg-green-500" : value >= 2 ? "bg-amber-400" : "bg-red-400";
+  return (
+    <div className="flex items-center gap-3">
+      <span className="text-xs text-[#2f3437]/60 w-44 shrink-0 text-right">{label}</span>
+      <div className="flex-1 h-2 bg-[#2f3437]/10 rounded-full overflow-hidden">
+        <div className={`h-full rounded-full transition-all ${color}`} style={{ width: `${pct}%` }} />
+      </div>
+      <span className="text-xs font-semibold text-[#2f3437] w-8">{value}/4</span>
+    </div>
+  );
+}
+
+function SubScoreBreakdown({ subScores }: { subScores?: SubScores }) {
+  if (!subScores || Object.keys(subScores).length === 0) return null;
+  return (
+    <div className="space-y-2 mt-4 pt-4 border-t border-[#2f3437]/8">
+      <p className="text-xs font-semibold text-[#2f3437]/40 uppercase tracking-wide mb-2">
+        Score Breakdown
+      </p>
+      {Object.entries(subScores).map(([key, val]) => (
+        <SubScoreBar key={key} name={key} value={val} />
+      ))}
+    </div>
+  );
+}
+
 function GoDeeperSection({
   title,
   result,
@@ -112,7 +182,7 @@ function GoDeeperSection({
   const alternatives = result.title?.alternatives ?? [];
 
   const quickActions: string[] = [
-    ...alternatives.slice(0, 3).map((_, i) => `Give me 5 more title variations like alternative #${i + 1}`),
+    ...alternatives.slice(0, 3).map((a, i) => `Give me 5 more title variations like alternative #${i + 1}`),
     "How can I improve my thumbnail to match this title better?",
     "What would make this title score higher?",
     "Rewrite my title using a different framework",
@@ -542,6 +612,9 @@ export default function TitleThumbnailAnalyzerPage() {
                 <ScoreBadge label="Title Frameworks" score={result.title.attraction_scores.title_frameworks} />
                 <ScoreBadge label="Approve the Click" score={result.title.attraction_scores.approve_the_click} />
                 <ScoreBadge label="Avatar Clarity" score={result.title.attraction_scores.avatar_clarity} />
+                {result.title.attraction_scores.superlative_urgency != null && (
+                  <ScoreBadge label="Superlative & Urgency" score={result.title.attraction_scores.superlative_urgency} />
+                )}
               </div>
               {result.title?.framework_used && (
                 <p className="text-sm text-[#2f3437]/60 mt-3">
@@ -584,6 +657,38 @@ export default function TitleThumbnailAnalyzerPage() {
                     </ul>
                   </div>
                 )}
+                {(result.thumbnail?.dissonance_triggers_used?.length ?? 0) > 0 && (
+                  <div className="mt-1">
+                    <p className="text-xs font-semibold text-[#2f3437]/40 uppercase tracking-wide mb-2">
+                      Dissonance Triggers Detected
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {result.thumbnail?.dissonance_triggers_used?.map((t, i) => (
+                        <span key={i} className="text-xs px-2.5 py-1 rounded-full bg-[#6ba3c7]/10 text-[#6ba3c7] font-medium">
+                          {t}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {result.thumbnail?.thumbnail_pattern && (
+                  <p className="text-sm text-[#2f3437]/60">
+                    Pattern: <strong>{result.thumbnail.thumbnail_pattern}</strong>
+                  </p>
+                )}
+                {(result.thumbnail?.mistakes_flagged?.length ?? 0) > 0 && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                    <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-1.5">Common Mistakes Detected</p>
+                    <ul className="space-y-1">
+                      {result.thumbnail?.mistakes_flagged?.map((m, i) => (
+                        <li key={i} className="text-sm text-amber-700 flex gap-2">
+                          <span>⚠</span>{m}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                <SubScoreBreakdown subScores={result.thumbnail?.sub_scores} />
               </div>
             </div>
           )}
@@ -606,23 +711,81 @@ export default function TitleThumbnailAnalyzerPage() {
                 </ul>
               </div>
             )}
+            <div className="flex flex-wrap gap-3 mb-4">
+              {(result.title?.dissonance_triggers_used?.length ?? 0) > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-[#2f3437]/40 uppercase tracking-wide mb-1.5">
+                    Dissonance Triggers
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {result.title?.dissonance_triggers_used?.map((t, i) => (
+                      <span key={i} className="text-xs px-2.5 py-1 rounded-full bg-[#6ba3c7]/10 text-[#6ba3c7] font-medium">
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {result.title?.formula_match && (
+                <div>
+                  <p className="text-xs font-semibold text-[#2f3437]/40 uppercase tracking-wide mb-1.5">
+                    Title Formula
+                  </p>
+                  <span className="text-xs px-2.5 py-1 rounded-full bg-green-100 text-green-700 font-medium">
+                    {result.title.formula_match}
+                  </span>
+                </div>
+              )}
+              {result.title?.character_count != null && (
+                <div>
+                  <p className="text-xs font-semibold text-[#2f3437]/40 uppercase tracking-wide mb-1.5">
+                    Character Count
+                  </p>
+                  <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
+                    result.title.character_count > 60
+                      ? "bg-red-100 text-red-700"
+                      : "bg-green-100 text-green-700"
+                  }`}>
+                    {result.title.character_count} chars {result.title.character_count > 60 ? "(too long for mobile)" : "✓"}
+                  </span>
+                </div>
+              )}
+            </div>
             {(result.title?.alternatives?.length ?? 0) > 0 && (
-              <div>
+              <div className="mb-4">
                 <p className="text-xs font-semibold text-[#2f3437]/40 uppercase tracking-wide mb-2">
                   Improved Alternatives
                 </p>
                 <ul className="space-y-2">
-                  {result.title?.alternatives?.map((a, i) => (
-                    <li
-                      key={i}
-                      className="bg-[#f7f6f3] rounded-lg px-4 py-2.5 text-sm font-medium text-[#2f3437]"
-                    >
-                      {i + 1}. {a}
+                  {result.title?.alternatives?.map((a, i) => {
+                    const isObj = typeof a === "object" && a !== null && "title" in a;
+                    const titleText = isObj ? (a as TitleAlternative).title : (a as string);
+                    const formula = isObj ? (a as TitleAlternative).formula : null;
+                    return (
+                      <li key={i} className="bg-[#f7f6f3] rounded-lg px-4 py-2.5">
+                        <p className="text-sm font-medium text-[#2f3437]">{i + 1}. {titleText}</p>
+                        {formula && (
+                          <p className="text-xs text-[#2f3437]/40 mt-1">Formula: {formula}</p>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
+            {(result.title?.mistakes_flagged?.length ?? 0) > 0 && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-2">
+                <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-1.5">Common Mistakes Detected</p>
+                <ul className="space-y-1">
+                  {result.title?.mistakes_flagged?.map((m, i) => (
+                    <li key={i} className="text-sm text-amber-700 flex gap-2">
+                      <span>⚠</span>{m}
                     </li>
                   ))}
                 </ul>
               </div>
             )}
+            <SubScoreBreakdown subScores={result.title?.sub_scores} />
           </div>
 
           {/* Intro analysis — only shown when transcript was provided */}
@@ -693,6 +856,11 @@ export default function TitleThumbnailAnalyzerPage() {
                   : "✗ Avatar unlikely to click"}
               </span>
             </div>
+            {result.combined?.dissonance_combination && (
+              <p className="text-sm text-[#2f3437]/60 mt-1 mb-3">
+                <strong>Dissonance type:</strong> {result.combined.dissonance_combination}
+              </p>
+            )}
             {(result.combined?.observations?.length ?? 0) > 0 && (
               <ul className="space-y-1.5 mb-3">
                 {result.combined?.observations?.map((o, i) => (
@@ -751,6 +919,19 @@ export default function TitleThumbnailAnalyzerPage() {
                 </div>
               </div>
             )}
+            {(result.combined?.mistakes_flagged?.length ?? 0) > 0 && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mt-4">
+                <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-1.5">Combination Mistakes Detected</p>
+                <ul className="space-y-1">
+                  {result.combined?.mistakes_flagged?.map((m, i) => (
+                    <li key={i} className="text-sm text-amber-700 flex gap-2">
+                      <span>⚠</span>{m}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            <SubScoreBreakdown subScores={result.combined?.sub_scores} />
           </div>
 
           {result.follow_up && (

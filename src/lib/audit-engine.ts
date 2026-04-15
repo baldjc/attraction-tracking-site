@@ -1921,80 +1921,245 @@ The #1 rule: The thumbnail must NEVER repeat what the title says. The title and 
 
 Think of it like a movie trailer: the image is the hook, the title is the twist. Together they create an open loop the viewer can only close by clicking.
 
+## THE 7 COGNITIVE DISSONANCE TRIGGERS
+
+Use these named triggers to identify WHICH type of dissonance is at work (or missing). Reference these by name in your analysis so members learn the vocabulary.
+
+### 1. Contradiction Trigger
+Present two ideas that seem mutually exclusive.
+- Thumbnail: Luxury car + "I'm broke" expression; Expensive house + "$500/month" text overlay
+- Title: "I Got Rich By Losing Money"; "The Worst Advice That Changed My Life"
+
+### 2. Expectation Violation
+Show something that contradicts what should logically happen.
+- Thumbnail: Before/after with unexpected results; Expert looking confused or surprised
+- Title: "This SHOULDN'T Work, But It Does"; "The Strategy Everyone Uses That Actually Fails"
+
+### 3. Curiosity Gap
+Reveal enough to create questions, but not enough to answer them.
+- Thumbnail: Partially hidden information; Reaction face without context
+- Title: "The ONE Thing That [Outcome]"; "I Discovered Something About [Topic]"
+
+### 4. Social Proof Conflict
+Juxtapose collective wisdom against contradicting evidence.
+- Thumbnail: Crowd going one direction, you going another; "Experts say X" with visual of opposite
+- Title: "Why I Stopped Following [Popular Advice]"; "The Lie Everyone Believes About [Topic]"
+
+### 5. Stakes Escalation
+Make the consequences feel significant and unresolved.
+- Thumbnail: Dramatic genuine facial expression; Visual representation of loss or gain
+- Title: "This Mistake Cost Me [Specific Amount]"; "You're Losing [Benefit] Every Day"
+
+### 6. Identity Challenge
+Target the viewer's self-perception directly.
+- Thumbnail: "You" or pointing gesture; Relatable person in relatable situation
+- Title: "You're Probably Making This Mistake"; "Why [Type of Person] Gets This Wrong"
+
+### 7. Temporal Tension
+Create urgency or time-based dissonance.
+- Thumbnail: Clock or countdown imagery; "Before" and "After" split
+- Title: "Why 2025 Changes Everything for [Topic]"; "I Wish I Knew This [Time Period] Ago"
+
+## 5 HIGH-DISSONANCE TITLE FORMULAS
+
+When generating alternative titles, draw from these proven structures:
+
+1. **Contradiction Statement:** [Positive Outcome] + By/Through + [Seemingly Negative Action]
+   - "I Made $100K By Giving Away My Best Work"
+
+2. **Counter-Intuitive Discovery:** Why + [Expected Action] + Actually + [Opposite Outcome]
+   - "Why Working Harder Actually Makes You Poorer"
+
+3. **Specific Reveal:** The + [Specific Number/Thing] + That + [Unexpected Result]
+   - "The 3 Words That Tripled My Revenue"
+
+4. **Pattern Break:** [Common Belief] + Is + [Contrarian Take]
+   - "Your 'Strategy' Is Actually Sabotage"
+
+5. **Insider Knowledge:** What + [Authority/Group] + Don't Want You To Know
+   - "What Top Agents Don't Tell First-Time Buyers"
+
+## 5 HIGH-DISSONANCE THUMBNAIL PATTERNS
+
+When suggesting thumbnail concepts, reference these proven visual patterns by name:
+
+1. **The Split Screen** — Left: expected/common state. Right: unexpected outcome. Immediate visual dissonance.
+2. **The Reaction + Mystery** — Strong genuine facial expression + partial reveal of the cause + arrow or indicator.
+3. **The Contradiction Visual** — Professional person + unprofessional situation; success symbol + failure indicator.
+4. **The Pattern Interrupt** — Break typical thumbnail conventions in the niche: unexpected colours, composition, subject.
+5. **The Stakes Visual** — Dollar amounts with clear direction; before/after with dramatic contrast; visual loss or gain.
+
+## SCORING CALIBRATION GUIDE
+
+Use this calibration for ALL 0-4 sub-dimension scores to ensure consistency:
+
+- **0 points:** No evidence of the dimension at all
+- **1 point:** Weak or subtle presence — barely noticeable
+- **2 points:** Noticeable but not compelling — viewer might pause but won't feel pulled
+- **3 points:** Strong and effective — creates clear tension or curiosity
+- **4 points:** Exceptional, industry-leading execution — irresistible pull
+
 ## ANALYSIS PROCESS
 
-1. THUMBNAIL ANALYSIS (score 0-20 for cognitive dissonance):
-   - Does the image on its own create curiosity, tension, or an unanswered question?
-   - Is there a clear focal point that draws the eye?
-   - Does it subvert what the viewer would expect to see for this topic?
-   - Would the AVATAR specifically stop scrolling for this image?
-   - Emotional trigger: what feeling does this image provoke (confusion, fear, curiosity, envy)?
-   - Colour, composition, and visual hierarchy effectiveness
-   - If there is text on the thumbnail, does it ADD new information or just repeat the title? (repeating = score penalty)
-   - Provide specific improvements: what to change, add, remove, or reshoot
+### 1. THUMBNAIL ANALYSIS (score 0-20 for cognitive dissonance)
 
-2. TITLE ANALYSIS (score 0-20 for cognitive dissonance):
-   - Which proven framework does it use (or fail to use)?
-   - Does it create curiosity, urgency, or emotional tension ON ITS OWN, separate from the thumbnail?
-   - Is it specific to the avatar — would they feel this was made for them?
-   - Grade 5 language check (simple, conversational words)
-   - Power word assessment
-   - SUPERLATIVE CHECK: Does the title contain at least one superlative (biggest, worst, best, fastest, most, #1, ultimate, easiest, first, only, never, always, every)? Titles without superlatives feel generic and forgettable — flag this as a weakness and score down.
-   - URGENCY CHECK: Does the title create time pressure or loss aversion (now, today, before it's too late, stop, don't wait, while you still can, you're running out of, before you lose, immediately, this week, or you'll regret it)? Titles without urgency lack the push that converts a curious scroller into a clicker — flag and score down.
-   - Generate 3 improved title alternatives using proven frameworks — each alternative MUST contain at least one superlative AND one urgency trigger, and must be designed to create DISSONANCE against the thumbnail (not echo it). Reject any alternative that lacks both.
+Score across 5 named sub-dimensions (0-4 each, using the calibration guide above):
 
-   Also score against Attraction principles:
-   - Title Frameworks (0-10): Does it use a proven pattern?
-   - Approve the Click potential (0-10): Will the viewer know what to expect from the video?
-   - Avatar Clarity (0-10): Would the avatar specifically feel this is for THEM?
-   - Superlative & Urgency (0-10): Does it use power superlatives AND create time pressure? (0 = neither present, 5 = one present, 10 = both present and compelling)
+- **Visual Contradiction (0-4):** Does the image contain conflicting elements that create tension?
+- **Expectation Violation (0-4):** Does something look "wrong" or unexpected for this topic?
+- **Curiosity Gap (0-4):** Does it raise questions without providing answers? Is something partially hidden?
+- **Emotional Tension (0-4):** Does it create conflicting feelings? Would the avatar stop scrolling?
+- **Pattern Interrupt (0-4):** Does it break typical YouTube thumbnail patterns in this niche?
 
-3. COMBINED ANALYSIS — THE DISSONANCE TEST (score 0-20 for cognitive dissonance):
-   This is the most important section. Score the PAIR on how much psychological tension they create together.
-   - Does the thumbnail show something DIFFERENT from what the title says? (If they repeat each other, max score is 5)
-   - Is there an open loop? Does seeing both create a question the viewer MUST answer by clicking?
-   - Does the combination create a "wait, what?" reaction?
-   - Would the avatar feel compelled to click THIS specific pairing?
-   - Redundancy check: list any words, themes, or messages that appear in BOTH the title and thumbnail — each overlap is a penalty
-   - Provide 2-3 specific thumbnail concept directions that would create stronger dissonance against the title (describe the visual scene, emotion, and any text overlay — text must add NEW information, never echo the title)
+Also evaluate:
+- Is there a clear focal point that draws the eye?
+- Colour, composition, and visual hierarchy effectiveness
+- If there is text on the thumbnail, does it ADD new information or just repeat the title? (repeating = score penalty)
+- Which of the 7 dissonance triggers is the thumbnail using (or failing to use)?
+- Which of the 5 thumbnail patterns does it follow (or should it follow)?
+- Provide specific improvements: what to change, add, remove, or reshoot
+
+### 2. TITLE ANALYSIS (score 0-20 for cognitive dissonance)
+
+Score across 5 named sub-dimensions (0-4 each, using the calibration guide above):
+
+- **Belief Challenge (0-4):** Does it contradict what viewers think they know?
+- **Specificity + Mystery (0-4):** Is it specific enough to be credible but vague enough to need answering?
+- **Tension Words (0-4):** Does it use language that creates mental friction?
+- **Stakes Clarity (0-4):** Are consequences/benefits clear but unexplained?
+- **Pattern Break (0-4):** Does it subvert typical title formats in this niche?
+
+Also evaluate:
+- Which of the 5 title formulas does it use (or should it use)?
+- Which of the 7 dissonance triggers is the title leveraging?
+- Does it create curiosity, urgency, or emotional tension ON ITS OWN, separate from the thumbnail?
+- Is it specific to the avatar — would they feel this was made for them?
+- Grade 5 language check (simple, conversational words)
+- Power word assessment
+- SUPERLATIVE CHECK: Does the title contain at least one superlative (biggest, worst, best, fastest, most, #1, ultimate, easiest, first, only, never, always, every)? Titles without superlatives feel generic and forgettable — flag this as a weakness and score down.
+- URGENCY CHECK: Does the title create time pressure or loss aversion (now, today, before it's too late, stop, don't wait, while you still can, you're running out of, before you lose, immediately, this week, or you'll regret it)? Titles without urgency lack the push that converts a curious scroller into a clicker — flag and score down.
+- Generate 3 improved title alternatives using the 5 title formulas above — each alternative MUST contain at least one superlative AND one urgency trigger, and must be designed to create DISSONANCE against the thumbnail (not echo it). Name which formula each alternative uses. Reject any alternative that lacks both.
+
+Also score against Attraction principles:
+- Title Frameworks (0-10): Does it use a proven pattern?
+- Approve the Click potential (0-10): Will the viewer know what to expect from the video?
+- Avatar Clarity (0-10): Would the avatar specifically feel this is for THEM?
+- Superlative & Urgency (0-10): Does it use power superlatives AND create time pressure? (0 = neither present, 5 = one present, 10 = both present and compelling)
+
+### 3. COMBINED ANALYSIS — THE DISSONANCE TEST (score 0-20 for cognitive dissonance)
+
+This is the most important section. Score the PAIR across 5 named sub-dimensions (0-4 each):
+
+- **Reinforced Tension (0-4):** Does each element amplify the other's dissonance?
+- **Gap Alignment (0-4):** Do they create the same curiosity gap pointing to the same "I need to know" question?
+- **Information Balance (0-4):** Does each provide unique info without redundancy?
+- **Promise Consistency (0-4):** Do they promise the same transformation?
+- **Click Compulsion (0-4):** Is the combined package irresistible to the target avatar?
+
+Also evaluate:
+- Does the thumbnail show something DIFFERENT from what the title says? (If they repeat each other, max score is 5)
+- Is there an open loop? Does seeing both create a question the viewer MUST answer by clicking?
+- Does the combination create a "wait, what?" reaction?
+- Would the avatar feel compelled to click THIS specific pairing?
+- Redundancy check: list any words, themes, or messages that appear in BOTH the title and thumbnail — each overlap is a penalty
+- Which combination of dissonance triggers are at play (e.g., "Contradiction trigger in thumbnail + Curiosity Gap in title")?
+- Provide 2-3 specific thumbnail concept directions (reference the 5 thumbnail patterns by name) that would create stronger dissonance against the title — describe the visual scene, emotion, and any text overlay. Text must add NEW information, never echo the title.
+
+## COMMON MISTAKES TO FLAG
+
+### Thumbnail Mistakes
+- Clickbait without payoff — creates distrust, harms channel long-term
+- Too much text — competes with title, clutters the visual
+- Forced emotions — viewers detect inauthentic expressions
+- Low contrast — fails to stand out in sidebar/feed
+- Too busy — eye doesn't know where to focus
+
+### Title Mistakes
+- Vague promises — "Amazing" or "Incredible" without specificity
+- No stakes — why should the viewer care right now?
+- Misleading — damages trust and retention
+- Too long — gets truncated on mobile (flag if > 60 characters)
+- No search consideration — great for clicks but no discovery
+
+### Combination Mistakes
+- Redundant information — title and thumbnail say the same thing
+- Conflicting promises — create confusion, not dissonance
+- Mismatched tone — serious thumbnail + playful title (or vice versa)
+- No clear subject — viewer can't tell what the video is about
+
+## JSON OUTPUT FORMAT
 
 Return ONLY valid JSON in this exact structure:
 
 {
   "thumbnail": {
     "score": 0,
+    "sub_scores": {
+      "visual_contradiction": 0,
+      "expectation_violation": 0,
+      "curiosity_gap": 0,
+      "emotional_tension": 0,
+      "pattern_interrupt": 0
+    },
+    "dissonance_triggers_used": ["Curiosity Gap"],
+    "thumbnail_pattern": "The Reaction + Mystery",
     "observations": ["observation 1", "observation 2"],
-    "improvements": ["improvement 1", "improvement 2"]
+    "improvements": ["improvement 1", "improvement 2"],
+    "mistakes_flagged": ["Too much text competing with title"]
   },
   "title": {
     "score": 0,
+    "sub_scores": {
+      "belief_challenge": 0,
+      "specificity_mystery": 0,
+      "tension_words": 0,
+      "stakes_clarity": 0,
+      "pattern_break": 0
+    },
     "framework_used": "name or none",
+    "formula_match": "Specific Reveal",
+    "dissonance_triggers_used": ["Stakes Escalation", "Identity Challenge"],
     "curiosity_score": 0,
     "avatar_specific": true,
     "grade_5_ok": true,
     "power_words": ["word1"],
     "superlatives_found": ["biggest", "#1"],
     "urgency_triggers_found": ["right now"],
-    "alternatives": ["Alt title 1", "Alt title 2", "Alt title 3"],
+    "character_count": 52,
+    "alternatives": [
+      {"title": "Alt title 1", "formula": "Contradiction Statement"},
+      {"title": "Alt title 2", "formula": "Counter-Intuitive Discovery"},
+      {"title": "Alt title 3", "formula": "Specific Reveal"}
+    ],
     "attraction_scores": {
       "title_frameworks": 0,
       "approve_the_click": 0,
       "avatar_clarity": 0,
       "superlative_urgency": 0
     },
-    "observations": ["observation 1"]
+    "observations": ["observation 1"],
+    "mistakes_flagged": []
   },
   "combined": {
     "score": 0,
+    "sub_scores": {
+      "reinforced_tension": 0,
+      "gap_alignment": 0,
+      "information_balance": 0,
+      "promise_consistency": 0,
+      "click_compulsion": 0
+    },
+    "dissonance_combination": "Contradiction trigger (thumbnail) + Curiosity Gap (title)",
     "complementary": true,
     "avatar_would_click": true,
     "observations": ["observation 1"],
     "improvements": ["improvement 1"],
     "redundancies": ["word or theme that appears in both title and thumbnail"],
     "thumbnail_concepts": [
-      "Concept 1: [Visual scene description] — creates dissonance because [reason]",
-      "Concept 2: [Visual scene description] — creates dissonance because [reason]"
-    ]
+      "Split Screen pattern: [Visual scene description] — creates dissonance because [reason]",
+      "Stakes Visual pattern: [Visual scene description] — creates dissonance because [reason]"
+    ],
+    "mistakes_flagged": []
   },
   "follow_up": "Would you like me to suggest alternative thumbnail concepts or refine any of the title options?"
 }`;
