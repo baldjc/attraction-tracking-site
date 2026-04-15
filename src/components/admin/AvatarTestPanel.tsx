@@ -121,29 +121,53 @@ export default function AvatarTestPanel({ onAvatarChange }: Props) {
 
   async function activateMember(member: MemberOption) {
     setShowMemberPicker(false);
-    const res = await fetch("/api/admin/test-avatars/active", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ memberId: member.id }),
-    });
-    if (res.ok) {
-      const name = member.fullName || member.email;
-      setState((s) => ({ ...s, activeTestMemberId: member.id, activeTestAvatarId: null }));
-      setActiveMemberName(name);
+    // Optimistic update — show immediately
+    const name = member.fullName || member.email;
+    setState((s) => ({ ...s, activeTestMemberId: member.id, activeTestAvatarId: null }));
+    setActiveMemberName(name);
+    try {
+      const res = await fetch("/api/admin/test-avatars/active", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ memberId: member.id }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        console.error("[AvatarTestPanel] activateMember failed:", res.status, body);
+        // Revert on failure
+        setState((s) => ({ ...s, activeTestMemberId: null }));
+        setActiveMemberName(null);
+        return;
+      }
       onAvatarChange?.();
+    } catch (err) {
+      console.error("[AvatarTestPanel] activateMember error:", err);
+      // Revert on network error
+      setState((s) => ({ ...s, activeTestMemberId: null }));
+      setActiveMemberName(null);
     }
   }
 
   async function activateCustom(avatar: TestAvatar) {
     setShowCustomManager(false);
-    const res = await fetch("/api/admin/test-avatars/active", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ testAvatarId: avatar.id }),
-    });
-    if (res.ok) {
-      setState((s) => ({ ...s, activeTestAvatarId: avatar.id, activeTestMemberId: null }));
+    // Optimistic update
+    setState((s) => ({ ...s, activeTestAvatarId: avatar.id, activeTestMemberId: null }));
+    setActiveMemberName(null);
+    try {
+      const res = await fetch("/api/admin/test-avatars/active", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ testAvatarId: avatar.id }),
+      });
+      if (!res.ok) {
+        console.error("[AvatarTestPanel] activateCustom failed:", res.status);
+        setState((s) => ({ ...s, activeTestAvatarId: null }));
+        return;
+      }
       onAvatarChange?.();
+    } catch (err) {
+      console.error("[AvatarTestPanel] activateCustom error:", err);
+      setState((s) => ({ ...s, activeTestAvatarId: null }));
     }
   }
 

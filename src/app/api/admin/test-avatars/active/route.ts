@@ -37,10 +37,15 @@ export async function POST(req: NextRequest) {
     if (!member) {
       return NextResponse.json({ error: "Member not found" }, { status: 404 });
     }
-    await prisma.user.update({
-      where: { id: adminId },
-      data: { activeTestMemberId: body.memberId, activeTestAvatarId: null },
-    });
+    try {
+      await prisma.user.update({
+        where: { id: adminId },
+        data: { activeTestMemberId: body.memberId, activeTestAvatarId: null },
+      });
+    } catch (err) {
+      console.error("[test-avatars/active] failed to persist member selection:", err);
+      return NextResponse.json({ error: "Failed to save selection" }, { status: 500 });
+    }
     const name = member.fullName || member.email;
     return NextResponse.json({ ok: true, mode: "member", label: `${name}'s Avatar` });
   }
