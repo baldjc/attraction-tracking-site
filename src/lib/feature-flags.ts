@@ -46,7 +46,7 @@ export const DEFAULT_FLAGS: FeatureFlags = {
   tool_description_generator: true,
   tool_listing_video_builder: false,
   plan_artifacts_v1: false,
-  progress_track_v1: false,
+  progress_track_v1: true,
 };
 
 export async function getFeatureFlags(): Promise<FeatureFlags> {
