@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import ContentPlannerClient from "./ContentPlannerClient";
 import ContentPlannerUpgrade from "@/components/ContentPlannerUpgrade";
 
@@ -31,5 +31,9 @@ export default function ContentPlannerWrapper() {
     return <ContentPlannerUpgrade />;
   }
 
-  return <ContentPlannerClient serviceTier={serviceTier} />;
+  return (
+    <Suspense fallback={null}>
+      <ContentPlannerClient serviceTier={serviceTier} />
+    </Suspense>
+  );
 }

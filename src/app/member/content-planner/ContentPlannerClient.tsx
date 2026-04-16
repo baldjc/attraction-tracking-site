@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { CalendarDaysIcon, ClipboardDocumentIcon, CheckIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import ContentPlanTable from "@/components/content-planner/ContentPlanTable";
 import CalendarView from "@/components/content-planner/CalendarView";
 import BoardView from "@/components/content-planner/BoardView";
+import ContentPlanEditModal, { type ContentPlan } from "@/components/content-planner/ContentPlanEditModal";
 import { hasEditDueDate } from "@/lib/content-plan-utils";
 
 type ViewId = "publish_cal" | "shoot_cal" | "edit_due" | "table" | "by_theme";
@@ -25,6 +27,22 @@ export default function ContentPlannerClient({
   const [calUrl, setCalUrl] = useState<string | null>(null);
   const [calLoading, setCalLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [autoOpenPlan, setAutoOpenPlan] = useState<ContentPlan | null>(null);
+
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Auto-open the edit modal when a ?plan=<id> param is present (e.g. from "View in planner →" link)
+  useEffect(() => {
+    const planId = searchParams.get("plan");
+    if (!planId) return;
+    // Clear the param immediately so refresh doesn't re-open it
+    router.replace("/member/content-planner");
+    fetch(`/api/member/content-plans/${planId}`)
+      .then((r) => r.json())
+      .then((d) => { if (d?.plan) setAutoOpenPlan(d.plan as ContentPlan); })
+      .catch(() => {});
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const showEditDueTab = hasEditDueDate(serviceTier);
 
@@ -129,6 +147,17 @@ export default function ContentPlannerClient({
           apiBase={apiBase}
           serviceTier={serviceTier}
           isAdmin={isAdminView}
+        />
+      )}
+
+      {autoOpenPlan && (
+        <ContentPlanEditModal
+          plan={autoOpenPlan}
+          serviceTier={serviceTier}
+          apiBase={apiBase}
+          onClose={() => setAutoOpenPlan(null)}
+          onSaved={() => setAutoOpenPlan(null)}
+          onDeleted={() => setAutoOpenPlan(null)}
         />
       )}
 

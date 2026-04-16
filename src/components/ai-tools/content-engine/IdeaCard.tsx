@@ -61,7 +61,6 @@ export default function IdeaCard({ idea, theme, onSaved, savedId, onDelete }: Pr
           dataToFind: idea.dataToFind ?? null,
           framework: selectedOption.framework,
           whyItWorks: idea.whyItWorks,
-          dataToFind: idea.dataToFind ?? null,
           source: "batch",
         }),
       });
@@ -135,6 +134,7 @@ export default function IdeaCard({ idea, theme, onSaved, savedId, onDelete }: Pr
         whyItWorks: idea.whyItWorks,
         dataToFind: idea.dataToFind ?? null,
         ...(localSavedId ? { ideaId: localSavedId } : {}),
+        ...(createdPlan?.id ? { planId: createdPlan.id } : {}),
       })
     );
     const base = pathname.startsWith("/admin") ? "/admin" : "/member";
@@ -281,7 +281,7 @@ export default function IdeaCard({ idea, theme, onSaved, savedId, onDelete }: Pr
           className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-semibold text-[#2f3437] dark:text-white bg-[#111]/5 dark:bg-white/5 hover:bg-[#6ba3c7]/10 hover:text-[#6ba3c7] dark:hover:text-[#6ba3c7] rounded-lg transition-colors"
         >
           <span>🎬</span>
-          Build Script
+          {createdPlan?.id ? "Build Script (updates this plan)" : "Build Script"}
         </button>
         {addedToPlanner ? (
           <Link

@@ -7,6 +7,71 @@ import ArcScriptUploadPhase from "@/components/ai-tools/ArcScriptUploadPhase";
 import ArcScriptChatPhase from "@/components/ai-tools/ArcScriptChatPhase";
 import { GROWTH_DWY_TIERS } from "@/lib/content-plan-utils";
 
+function nextStatusForTier(tier: string): string {
+  return GROWTH_DWY_TIERS.includes(tier) ? "Not Started" : "Scripted";
+}
+
+function SaveStatusBanner({
+  plannerSaving,
+  plannerSaved,
+  plannerSaveError,
+  linkedPlanTitle,
+  linkedPlanId,
+  onRetry,
+}: {
+  plannerSaving: boolean;
+  plannerSaved: boolean;
+  plannerSaveError: boolean;
+  linkedPlanTitle: string;
+  linkedPlanId: string | null;
+  onRetry: () => void;
+}) {
+  if (!plannerSaving && !plannerSaved && !plannerSaveError) return null;
+  if (plannerSaving) {
+    return (
+      <div className="mb-5 flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
+        <span className="text-amber-600">⏳</span>
+        <p className="text-sm text-amber-700">Saving script to your content plan…</p>
+      </div>
+    );
+  }
+  if (plannerSaved) {
+    return (
+      <div className="mb-5 flex items-center gap-3 bg-green-50 border border-green-200 rounded-lg px-4 py-3">
+        <span className="text-green-600">✓</span>
+        <p className="text-sm text-green-700 flex-1">
+          Script saved to: <strong>{linkedPlanTitle || "your content plan"}</strong>
+        </p>
+        {linkedPlanId && (
+          <a
+            href={`/member/content-planner?plan=${linkedPlanId}`}
+            className="shrink-0 text-xs font-semibold text-green-700 underline hover:no-underline"
+          >
+            View in planner →
+          </a>
+        )}
+      </div>
+    );
+  }
+  if (plannerSaveError) {
+    return (
+      <div className="mb-5 flex items-center gap-3 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+        <span className="text-red-600">⚠️</span>
+        <p className="text-sm text-red-700 flex-1">
+          We couldn&apos;t save your script. It&apos;s still safe here in the builder.
+        </p>
+        <button
+          onClick={onRetry}
+          className="shrink-0 text-xs font-semibold text-white bg-red-500 hover:bg-red-600 px-3 py-1.5 rounded-md transition-colors"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+  return null;
+}
+
 interface Props {
   basePath: string;
   isAdmin?: boolean;
@@ -80,6 +145,7 @@ export default function ArcScriptBuilderTool({ basePath, isAdmin }: Props) {
   const [plansLoaded, setPlansLoaded] = useState(false);
   const [draftToResume, setDraftToResume] = useState<ScriptDraftResume | null>(null);
   const [draftChecked, setDraftChecked] = useState(false);
+  const [linkedPlanTitle, setLinkedPlanTitle] = useState<string>("");
 
   useEffect(() => {
     fetch("/api/ai-tools/usage/me")
@@ -139,16 +205,33 @@ export default function ArcScriptBuilderTool({ basePath, isAdmin }: Props) {
     } catch { /* ignore malformed data */ }
   }, []);
 
+  // Fetch the linked plan's title for the save banner
+  useEffect(() => {
+    if (!linkedPlanId) return;
+    fetch(`/api/member/content-plans/${linkedPlanId}`)
+      .then((r) => r.json())
+      .then((d) => { if (d?.plan?.title) setLinkedPlanTitle(d.plan.title); })
+      .catch(() => {});
+  }, [linkedPlanId]);
+
   // Auto-save to linked plan as soon as the final script is ready
   useEffect(() => {
     if (!linkedPlanId || !finalScript || plannerSaved || plannerSaving) return;
     setPlannerSaving(true);
     setPlannerSaveError(false);
-    fetch(`/api/member/content-plans/${linkedPlanId}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ script: finalScript }),
-    })
+    // Check current status first — only advance if still "Idea"
+    fetch(`/api/member/content-plans/${linkedPlanId}`)
+      .then((r) => r.json())
+      .then((data) => {
+        const currentStatus = data?.plan?.status ?? "";
+        const body: Record<string, string | null> = { script: finalScript };
+        if (currentStatus === "Idea") body.status = nextStatusForTier(serviceTier);
+        return fetch(`/api/member/content-plans/${linkedPlanId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+      })
       .then((r) => {
         if (!r.ok) throw new Error("save failed");
         setPlannerSaved(true);
@@ -164,10 +247,16 @@ export default function ArcScriptBuilderTool({ basePath, isAdmin }: Props) {
     try {
       const targetPlanId = planId ?? linkedPlanId;
       if (targetPlanId) {
+        // Check current status — only advance if still "Idea"
+        const checkRes = await fetch(`/api/member/content-plans/${targetPlanId}`);
+        const checkData = await checkRes.json();
+        const currentStatus = checkData?.plan?.status ?? "";
+        const body: Record<string, string | null> = { script: finalScript || null };
+        if (currentStatus === "Idea") body.status = nextStatusForTier(serviceTier);
         const res = await fetch(`/api/member/content-plans/${targetPlanId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ script: finalScript || null }),
+          body: JSON.stringify(body),
         });
         if (!res.ok) throw new Error("save failed");
       } else if (uploadData) {
@@ -245,6 +334,15 @@ export default function ArcScriptBuilderTool({ basePath, isAdmin }: Props) {
           <p className="text-sm text-[#2f3437]/60 mt-1">{subtitle}</p>
         </div>
       </div>
+
+      <SaveStatusBanner
+        plannerSaving={plannerSaving}
+        plannerSaved={plannerSaved}
+        plannerSaveError={plannerSaveError}
+        linkedPlanTitle={linkedPlanTitle}
+        linkedPlanId={linkedPlanId}
+        onRetry={() => handleSaveToPlanner()}
+      />
 
       {usage && pct >= 50 && (
         <div className={`mb-5 flex items-start gap-3 border rounded-lg p-4 ${
