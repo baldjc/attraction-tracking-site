@@ -27,22 +27,35 @@ export async function GET(req: NextRequest) {
   const where: Record<string, unknown> = {
     user: { serviceTier: { in: PRODUCTION_TIERS } },
   };
+  const andClauses: Array<Record<string, unknown>> = [];
   if (status.length) where.status = { in: status };
   if (memberId.length) where.userId = { in: memberId };
   if (assignedTo.length) {
-    where.assignedUserId = assignedTo.includes("__unassigned__")
-      ? { in: [...assignedTo.filter((v) => v !== "__unassigned__"), null] as unknown as string[] }
-      : { in: assignedTo };
+    const hasUnassigned = assignedTo.includes("__unassigned__");
+    const userIds = assignedTo.filter((v) => v !== "__unassigned__");
+    if (hasUnassigned && userIds.length) {
+      andClauses.push({ OR: [{ assignedUserId: { in: userIds } }, { assignedUserId: null }] });
+    } else if (hasUnassigned) {
+      where.assignedUserId = null;
+    } else {
+      where.assignedUserId = { in: userIds };
+    }
   }
-  if (shootBefore) where.shootDate = { lte: new Date(shootBefore) };
+  if (shootBefore) {
+    const d = new Date(shootBefore);
+    if (!isNaN(d.getTime())) where.shootDate = { lte: d };
+  }
   if (search) {
-    where.OR = [
-      { title: { contains: search, mode: "insensitive" } },
-      { theme: { contains: search, mode: "insensitive" } },
-      { user: { fullName: { contains: search, mode: "insensitive" } } },
-      { user: { email: { contains: search, mode: "insensitive" } } },
-    ];
+    andClauses.push({
+      OR: [
+        { title: { contains: search, mode: "insensitive" } },
+        { theme: { contains: search, mode: "insensitive" } },
+        { user: { fullName: { contains: search, mode: "insensitive" } } },
+        { user: { email: { contains: search, mode: "insensitive" } } },
+      ],
+    });
   }
+  if (andClauses.length) where.AND = andClauses;
 
   const [plans, total] = await Promise.all([
     prisma.contentPlan.findMany({

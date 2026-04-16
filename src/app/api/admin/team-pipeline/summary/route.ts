@@ -1,8 +1,15 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { ServiceTier } from "@/generated/prisma/client";
 
-const PRODUCTION_TIERS = ["editing_2", "editing_4", "mastery_2", "mastery_4", "done_with_you"];
+const PRODUCTION_TIERS: ServiceTier[] = [
+  ServiceTier.editing_2,
+  ServiceTier.editing_4,
+  ServiceTier.mastery_2,
+  ServiceTier.mastery_4,
+  ServiceTier.done_with_you,
+];
 
 export async function GET() {
   const session = await auth();
@@ -12,13 +19,11 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const baseWhere = { user: { serviceTier: { in: PRODUCTION_TIERS } } };
-
   const [scripted, filmed, assignedToMe, unassigned] = await Promise.all([
-    prisma.contentPlan.count({ where: { ...baseWhere, status: "Scripted" } }),
-    prisma.contentPlan.count({ where: { ...baseWhere, status: "Filmed" } }),
-    prisma.contentPlan.count({ where: { ...baseWhere, assignedUserId: userId } }),
-    prisma.contentPlan.count({ where: { ...baseWhere, assignedUserId: null } }),
+    prisma.contentPlan.count({ where: { status: "Scripted", user: { serviceTier: { in: PRODUCTION_TIERS } } } }),
+    prisma.contentPlan.count({ where: { status: "Filmed", user: { serviceTier: { in: PRODUCTION_TIERS } } } }),
+    prisma.contentPlan.count({ where: { assignedUserId: userId, user: { serviceTier: { in: PRODUCTION_TIERS } } } }),
+    prisma.contentPlan.count({ where: { assignedUserId: null, user: { serviceTier: { in: PRODUCTION_TIERS } } } }),
   ]);
 
   return NextResponse.json({ scripted, filmed, assignedToMe, unassigned });

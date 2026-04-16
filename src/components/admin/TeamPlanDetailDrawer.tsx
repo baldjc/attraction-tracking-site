@@ -66,16 +66,7 @@ export default function TeamPlanDetailDrawer({ plan, staff, currentUserId, curre
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
       });
-      if (res.ok) {
-        onUpdated({ id: plan.id, status });
-      } else {
-        const altRes = await fetch(`/api/admin/content-plans/${plan.id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status }),
-        });
-        if (altRes.ok) onUpdated({ id: plan.id, status });
-      }
+      if (res.ok) onUpdated({ id: plan.id, status });
     } finally {
       setStatusWorking(false);
     }
@@ -115,9 +106,25 @@ export default function TeamPlanDetailDrawer({ plan, staff, currentUserId, curre
     if (res.ok) setNotes((prev) => prev.filter((x) => x.id !== n.id));
   }
 
-  function openAsMember() {
-    localStorage.setItem(IMPERSONATE_LS_KEY, JSON.stringify({ memberId: plan.member.id, memberName: plan.member.name }));
-    window.location.href = "/member/content-planner";
+  async function openAsMember() {
+    try {
+      const res = await fetch("/api/admin/impersonate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ memberId: plan.member.id }),
+      });
+      if (!res.ok) {
+        alert("Failed to switch view");
+        return;
+      }
+      try {
+        localStorage.setItem(IMPERSONATE_LS_KEY, JSON.stringify({ memberId: plan.member.id, memberName: plan.member.name }));
+      } catch {}
+      document.cookie = `impersonate_member=${plan.member.id}; path=/; max-age=${60 * 60 * 8}; SameSite=Lax`;
+      window.location.href = "/member/content-planner";
+    } catch {
+      alert("Failed to switch view");
+    }
   }
 
   const artifactRow = Object.entries(plan.artifactCounts).filter(([, n]) => n > 0);
