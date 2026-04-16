@@ -4,6 +4,8 @@ import { resolveUserFromSession } from "@/lib/session-utils";
 import { logUsage, checkCostCap } from "@/lib/ai-tool-cost";
 import { getAvatarData } from "@/lib/avatar-utils";
 import { buildListingVideoPrompt } from "@/lib/listing-video-builder-prompt";
+import { getFeatureFlags } from "@/lib/feature-flags";
+import { isListingVideoBuilderTester } from "@/lib/listing-video-builder-access";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const MODEL = "claude-sonnet-4-20250514";
@@ -11,6 +13,17 @@ const MODEL = "claude-sonnet-4-20250514";
 export async function POST(req: NextRequest) {
   const user = await resolveUserFromSession();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  // Gate: admins and editors always pass; members need the flag or be on the allowlist
+  if (user.role !== "admin" && user.role !== "editor") {
+    const flags = await getFeatureFlags();
+    const allowed =
+      flags.tool_listing_video_builder === true ||
+      isListingVideoBuilderTester(user.email);
+    if (!allowed) {
+      return NextResponse.json({ error: "Not available" }, { status: 403 });
+    }
+  }
 
   const capCheck = await checkCostCap(user.id);
   if (!capCheck.allowed) {

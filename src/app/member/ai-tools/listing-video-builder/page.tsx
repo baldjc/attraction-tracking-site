@@ -1,28 +1,25 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
+import { getFeatureFlags } from "@/lib/feature-flags";
+import { isListingVideoBuilderTester } from "@/lib/listing-video-builder-access";
 import ListingVideoBuilderTool from "@/components/ai-tools/ListingVideoBuilderTool";
 
-export default function ListingVideoBuilderPage() {
-  const router = useRouter();
-  const [checking, setChecking] = useState(true);
-  const [calendarEnabled, setCalendarEnabled] = useState(false);
+export default async function ListingVideoBuilderPage() {
+  const session = await auth();
+  const role = (session?.user as any)?.role as string;
+  const email = session?.user?.email ?? null;
 
-  useEffect(() => {
-    fetch("/api/admin/feature-visibility")
-      .then((r) => r.json())
-      .then((flags) => {
-        if (flags?.tool_listing_video_builder === false) {
-          router.replace("/member/ai-tools");
-        }
-        setCalendarEnabled(flags?.content_calendar !== false);
-      })
-      .catch(() => {})
-      .finally(() => setChecking(false));
-  }, [router]);
-
-  if (checking) return null;
+  // Admins and editors always pass. Everyone else must either be on the
+  // tester allowlist OR have the global flag enabled.
+  let calendarEnabled = true;
+  if (role !== "admin" && role !== "editor") {
+    const flags = await getFeatureFlags();
+    calendarEnabled = flags?.content_calendar !== false;
+    const allowed =
+      flags.tool_listing_video_builder === true ||
+      isListingVideoBuilderTester(email);
+    if (!allowed) redirect("/member/ai-tools");
+  }
 
   return (
     <div className="max-w-2xl mx-auto">
