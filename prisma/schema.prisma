@@ -1331,3 +1331,17 @@ model AdminTestAvatar {
   @@unique([adminUserId, slotNumber])
   @@map("admin_test_avatars")
 }
+
+model Principle {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  colorLight  String
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("principles")
+}

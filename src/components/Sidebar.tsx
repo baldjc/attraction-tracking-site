@@ -62,6 +62,7 @@ const adminLinks = [
   { href: "/admin/members", label: "Members", icon: UsersIcon, section: "People" },
   { href: "/admin/audits", label: "Audits", icon: ClipboardDocumentListIcon, section: "People" },
   { href: "/admin/qa-prep", label: "Q&A Prep", icon: ChatBubbleLeftRightIcon, section: "People" },
+  { href: "/admin/principles", label: "Principles", icon: BookOpenIcon, section: "Content" },
   { href: "/admin/academy-manager", label: "Academy Manager", icon: WrenchScrewdriverIcon, section: "Content", badgeKey: "qaCallsPending" },
   { href: "/admin/academy", label: "Academy", icon: AcademicCapIcon, section: "Content" },
   { href: "/admin/content-calendar", label: "Content Calendar", icon: CalendarDaysIcon, section: "Content" },
