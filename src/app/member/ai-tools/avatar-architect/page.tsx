@@ -911,7 +911,8 @@ function AvatarArchitectInner() {
       setSaving(false);
       if (res.ok) {
         setSaved(true);
-        setTimeout(() => router.push("/admin/ai-tools"), 1500);
+        const isAdminRoute = window.location.pathname.startsWith("/admin");
+        setTimeout(() => router.push(isAdminRoute ? "/admin/ai-tools" : "/member/ai-tools"), 1500);
       } else {
         const errData = await res.json().catch(() => ({}));
         console.error("[AvatarArchitect] Failed to save test avatar:", errData);

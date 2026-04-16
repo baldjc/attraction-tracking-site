@@ -190,7 +190,9 @@ export default function AvatarTestPanel({ onAvatarChange }: Props) {
       testAvatarSlot: String(buildPromptSlot),
       label: buildLabel.trim(),
     });
-    router.push(`/admin/ai-tools/avatar-architect?${params.toString()}`);
+    const isAdminRoute = window.location.pathname.startsWith("/admin");
+    const basePath = isAdminRoute ? "/admin/ai-tools" : "/member/ai-tools";
+    router.push(`${basePath}/avatar-architect?${params.toString()}`);
     setBuildPromptSlot(null);
   }
 
