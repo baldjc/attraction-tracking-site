@@ -564,6 +564,7 @@ function RepurposeContentPageInner() {
             transcript,
             title,
             newsletterUrl: newsletterActiveLink?.trackedUrl || null,
+            contentPlanId: planId || undefined,
           }),
         })
           .then((r) => r.json())
@@ -593,6 +594,7 @@ function RepurposeContentPageInner() {
             title,
             selectedLinks: linksForApi,
             oneOffLinks: campaignLinksForApi,
+            contentPlanId: planId || undefined,
           }),
         })
           .then((r) => r.json())
@@ -620,6 +622,7 @@ function RepurposeContentPageInner() {
             link: facebookActiveLink
               ? { label: facebookActiveLink.linkName, url: facebookActiveLink.trackedUrl }
               : null,
+            contentPlanId: planId || undefined,
           }),
         })
           .then((r) => r.json())
@@ -649,6 +652,7 @@ function RepurposeContentPageInner() {
             title,
             selectedLinks: blogSavedLinksForApi,
             oneOffLinks: blogCampaignLinksForApi,
+            contentPlanId: planId || undefined,
           }),
         })
           .then((r) => r.json())
@@ -672,7 +676,7 @@ function RepurposeContentPageInner() {
         fetch("/api/ai-tools/repurpose-postcard", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ transcript, title, neighbourhood: neighbourhood.trim() }),
+          body: JSON.stringify({ transcript, title, neighbourhood: neighbourhood.trim(), contentPlanId: planId || undefined }),
         })
           .then((r) => r.json())
           .then((data) => {

@@ -3,6 +3,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import prisma from "@/lib/prisma";
 import { getAvatarData } from "@/lib/avatar-utils";
+import { maybeSavePlanArtifact } from "@/lib/save-plan-artifact";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -10,7 +11,7 @@ export async function POST(req: NextRequest) {
   const user = await resolveUserFromSession();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { transcript, title, neighbourhood } = await req.json();
+  const { transcript, title, neighbourhood, contentPlanId } = await req.json();
   if (!transcript || !title || !neighbourhood) {
     return NextResponse.json({ error: "Missing transcript, title, or neighbourhood" }, { status: 400 });
   }
@@ -96,7 +97,21 @@ Respond ONLY with valid JSON, no markdown fences:
         output: outputWithNeighbourhood,
       },
     });
-    return NextResponse.json({ result: parsed, id: saved.id });
+    const planSave = await maybeSavePlanArtifact({
+      contentPlanId,
+      userId: user.id,
+      type: "repurpose_postcard",
+      content: JSON.stringify(outputWithNeighbourhood),
+      metadata: {
+        transcript_excerpt: transcript.slice(0, 300),
+        prompt_used: "postcard",
+        videoTitle: title,
+        neighbourhood,
+        repurposedContentId: saved.id,
+        savedAt: new Date().toISOString(),
+      },
+    });
+    return NextResponse.json({ result: parsed, id: saved.id, savedToPlan: planSave.saved });
   } catch {
     return NextResponse.json({ error: "Failed to parse response", raw: rawText }, { status: 500 });
   }
