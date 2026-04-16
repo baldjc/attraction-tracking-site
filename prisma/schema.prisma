@@ -158,6 +158,7 @@ model User {
   waitlistEntries      ServiceWaitlistEntry[]
   helpConversations    HelpConversation[]
   contentPlans         ContentPlan[]
+  assignedPlans        ContentPlan[]    @relation("PlanAssignee")
   clientCalls          ClientCall[]     @relation("ClientCalls")
   createdCalls         ClientCall[]     @relation("CallCreator")
   quickLinks           ClientQuickLink[]
@@ -299,7 +300,8 @@ model Campaign {
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
 
-  links TrackingLink[]
+  links        TrackingLink[]
+  contentPlans ContentPlan[] @relation("PlanCampaign")
 
   @@index([userId])
   @@map("campaigns")
@@ -782,6 +784,13 @@ model ContentPlan {
   linkedIdeaId    String?
   linkedScriptId  String?
   youtubeVideoId  String?
+
+  linkedCampaignId String?
+  campaign         Campaign? @relation("PlanCampaign", fields: [linkedCampaignId], references: [id], onDelete: SetNull)
+  assignedUserId   String?
+  assignedUser     User?     @relation("PlanAssignee", fields: [assignedUserId], references: [id], onDelete: SetNull)
+
+  artifacts        PlanArtifact[]
 
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -1344,4 +1353,23 @@ model Principle {
   updatedAt   DateTime @updatedAt
 
   @@map("principles")
+}
+
+model PlanArtifact {
+  id             String      @id @default(uuid())
+  planId         String
+  plan           ContentPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  type           String
+  content        String?     @db.Text
+  metadata       Json?
+  version        Int         @default(1)
+  supersededById String?
+  generatedAt    DateTime    @default(now())
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@index([planId])
+  @@index([planId, type])
+  @@index([planId, type, version])
+  @@map("plan_artifacts")
 }
