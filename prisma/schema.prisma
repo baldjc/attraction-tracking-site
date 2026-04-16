@@ -166,6 +166,8 @@ model User {
   contentEngineDrafts  ContentEngineDraft[]
   changelogViews       ChangelogEntryView[]
   upgradeModalDismissals UpgradeModalDismissal[]
+  planTeamNotes          PlanTeamNote[]      @relation("PlanTeamNoteAuthor")
+  planAssignments        PlanAssignmentLog[] @relation("PlanAssignmentActor")
 
   @@map("users")
 }
@@ -792,6 +794,8 @@ model ContentPlan {
   assignedUser     User?     @relation("PlanAssignee", fields: [assignedUserId], references: [id], onDelete: SetNull)
 
   artifacts        PlanArtifact[]
+  teamNotes        PlanTeamNote[]
+  assignmentLog    PlanAssignmentLog[]
 
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -799,6 +803,8 @@ model ContentPlan {
   @@index([userId])
   @@index([userId, status])
   @@index([userId, publishDate])
+  @@index([status])
+  @@index([assignedUserId])
   @@map("content_plans")
 }
 
@@ -1373,6 +1379,35 @@ model PlanArtifact {
   @@index([planId, type])
   @@index([planId, type, version])
   @@map("plan_artifacts")
+}
+
+model PlanTeamNote {
+  id         String      @id @default(uuid())
+  planId     String
+  plan       ContentPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  authorId   String
+  author     User        @relation("PlanTeamNoteAuthor", fields: [authorId], references: [id])
+  note       String      @db.Text
+  visibility String
+  createdAt  DateTime    @default(now())
+
+  @@index([planId])
+  @@index([planId, visibility])
+  @@map("plan_team_notes")
+}
+
+model PlanAssignmentLog {
+  id              String      @id @default(uuid())
+  planId          String
+  plan            ContentPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  actorId         String
+  actor           User        @relation("PlanAssignmentActor", fields: [actorId], references: [id])
+  fromAssigneeId  String?
+  toAssigneeId    String?
+  createdAt       DateTime    @default(now())
+
+  @@index([planId])
+  @@map("plan_assignment_logs")
 }
 
 model UpgradeModalDismissal {

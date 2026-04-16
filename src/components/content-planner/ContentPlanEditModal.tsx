@@ -112,6 +112,7 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
   const [showDownloadMenu, setShowDownloadMenu] = useState(false);
   const [artifacts, setArtifacts] = useState<PlanArtifactsByType>({});
   const [showAllTools, setShowAllTools] = useState(false);
+  const [teamNotes, setTeamNotes] = useState<Array<{ id: string; note: string; createdAt: string; author: { name: string } }>>([]);
 
   useEffect(() => {
     if (!showProgressTrack) return;
@@ -120,6 +121,14 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
       .then((d) => { if (d?.artifacts) setArtifacts(d.artifacts); })
       .catch(() => {});
   }, [plan.id, showProgressTrack]);
+
+  useEffect(() => {
+    if (isAdmin) return;
+    fetch(`/api/member/content-plans/${plan.id}/team-notes`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (d?.notes) setTeamNotes(d.notes); })
+      .catch(() => {});
+  }, [plan.id, isAdmin]);
 
   // Sprint 3 Part A: extract latest script_review score for badge display
   const latestReviewScore = (() => {
@@ -277,6 +286,22 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
         </div>
 
         <div className="px-6 py-5 space-y-4">
+
+          {!isAdmin && teamNotes.length > 0 && (
+            <div className="rounded-xl border border-[#6ba3c7]/25 bg-[#6ba3c7]/5 px-4 py-3 space-y-2">
+              <p className="text-xs font-bold uppercase tracking-wider text-[#6ba3c7]">📝 Notes from your team</p>
+              <ul className="space-y-2">
+                {teamNotes.map((n) => (
+                  <li key={n.id} className="text-sm text-[#2f3437]">
+                    <p className="whitespace-pre-wrap leading-relaxed">{n.note}</p>
+                    <p className="text-[11px] text-[#2f3437]/50 mt-0.5">
+                      {n.author.name} · {new Date(n.createdAt).toLocaleDateString()}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {showProgressTrack && progressSteps.length > 0 && (
             <div className="rounded-xl border border-gray-100 bg-[#f7f6f3] px-4 pt-4 pb-3 space-y-3">

@@ -76,6 +76,7 @@ export default function AdminDashboard() {
   const [ownerStats, setOwnerStats] = useState<StatCard[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
+  const [teamPipeline, setTeamPipeline] = useState<{ scripted: number; filmed: number; assignedToMe: number; unassigned: number } | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -206,6 +207,11 @@ export default function AdminDashboard() {
             setActivities(actData.activities ?? []);
           }
         } catch {}
+
+        try {
+          const tpRes = await fetch("/api/admin/team-pipeline/summary");
+          if (tpRes.ok) setTeamPipeline(await tpRes.json());
+        } catch {}
       } catch (err) {
         console.error("Dashboard load error:", err);
       } finally {
@@ -331,6 +337,37 @@ export default function AdminDashboard() {
               </Link>
             ))}
           </div>
+
+          {/* Team Pipeline summary */}
+          {teamPipeline && (teamPipeline.scripted + teamPipeline.filmed + teamPipeline.assignedToMe + teamPipeline.unassigned > 0) && (
+            <Link
+              href="/admin/team-pipeline"
+              className="block bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-[#2a2a2a] p-5 hover:shadow-md transition-shadow"
+            >
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-sm font-semibold text-[#2f3437] dark:text-[#e2e8f0]">🎬 Team Pipeline</h2>
+                <span className="text-xs text-[#6ba3c7]">Open →</span>
+              </div>
+              <div className="grid grid-cols-4 gap-3">
+                <div>
+                  <p className="text-2xl font-bold text-[#6ba3c7]">{teamPipeline.scripted}</p>
+                  <p className="text-[10px] uppercase tracking-wider text-[#2f3437]/50 dark:text-white/40 mt-0.5">Scripted</p>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-[#10B981]">{teamPipeline.filmed}</p>
+                  <p className="text-[10px] uppercase tracking-wider text-[#2f3437]/50 dark:text-white/40 mt-0.5">Filmed</p>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-[#2f3437] dark:text-white">{teamPipeline.assignedToMe}</p>
+                  <p className="text-[10px] uppercase tracking-wider text-[#2f3437]/50 dark:text-white/40 mt-0.5">Assigned to me</p>
+                </div>
+                <div>
+                  <p className={`text-2xl font-bold ${teamPipeline.unassigned > 0 ? "text-amber-500" : "text-[#2f3437] dark:text-white"}`}>{teamPipeline.unassigned}</p>
+                  <p className="text-[10px] uppercase tracking-wider text-[#2f3437]/50 dark:text-white/40 mt-0.5">Unassigned</p>
+                </div>
+              </div>
+            </Link>
+          )}
 
           {/* Recent Activity */}
           {activities.length > 0 ? (

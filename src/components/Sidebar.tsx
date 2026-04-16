@@ -65,6 +65,7 @@ const adminLinks = [
   { href: "/admin/academy-manager", label: "Academy Manager", icon: WrenchScrewdriverIcon, section: "Content", badgeKey: "qaCallsPending" },
   { href: "/admin/academy", label: "Academy", icon: AcademicCapIcon, section: "Content" },
   { href: "/admin/content-calendar", label: "Content Calendar", icon: CalendarDaysIcon, section: "Content" },
+  { href: "/admin/team-pipeline", label: "Team Pipeline", icon: VideoCameraIcon, section: "Content", featureKey: "team_pipeline" },
   { href: "/admin/ai-tools", label: "AI Tools", icon: SparklesIcon, section: "Content" },
   { href: "/admin/intelligence", label: "Intelligence", icon: MagnifyingGlassCircleIcon, section: "Growth" },
   { href: "/admin/generate-leads", label: "Generate Leads", icon: RocketLaunchIcon, section: "Growth" },
@@ -78,6 +79,7 @@ const editorLinks = [
   { href: "/admin/members", label: "Members", icon: UsersIcon },
   { href: "/admin/audits", label: "Audits", icon: ClipboardDocumentListIcon },
   { href: "/admin/qa-prep", label: "Q&A Prep", icon: ChatBubbleLeftRightIcon },
+  { href: "/admin/team-pipeline", label: "Team Pipeline", icon: VideoCameraIcon, featureKey: "team_pipeline" },
 ];
 
 const PRODUCTION_TIERS = ["editing_2", "editing_4", "mastery_2", "mastery_4", "done_with_you"];

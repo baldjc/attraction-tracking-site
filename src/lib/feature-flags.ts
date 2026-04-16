@@ -50,6 +50,7 @@ export const DEFAULT_FLAGS: FeatureFlags = {
   tool_planner_linkage: false,
   saved_ideas_page: false,
   upgrade_moments: false,
+  team_pipeline: false,
 };
 
 export async function getFeatureFlags(): Promise<FeatureFlags> {
