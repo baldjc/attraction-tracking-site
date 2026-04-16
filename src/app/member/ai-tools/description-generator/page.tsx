@@ -92,6 +92,47 @@ function DescriptionGeneratorPageInner() {
       .catch(() => {});
   }, []);
 
+  // Sprint 3 Part D: when arriving with a planId, look up linkedCampaignId
+  // on the plan and preselect a default tracking link for that campaign.
+  useEffect(() => {
+    if (!contentPlanId || activeLink) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const planRes = await fetch(`/api/member/content-plans/${contentPlanId}`);
+        if (!planRes.ok) return;
+        const planData = await planRes.json();
+        const linkedCampaignId: string | undefined = planData?.plan?.linkedCampaignId ?? undefined;
+        if (!linkedCampaignId || cancelled) return;
+
+        const [campaignsRes, linksRes] = await Promise.all([
+          fetch("/api/campaigns"),
+          fetch(`/api/campaigns/${linkedCampaignId}/links`),
+        ]);
+        if (cancelled) return;
+        const campaignList: CampaignInfo[] = campaignsRes.ok ? await campaignsRes.json() : [];
+        const linkList: CampaignLinkInfo[] = linksRes.ok ? await linksRes.json() : [];
+        const campaign = campaignList.find((c) => c.id === linkedCampaignId);
+        if (!campaign || linkList.length === 0 || cancelled) return;
+
+        const firstLink = linkList[0];
+        setActiveLink({
+          campaignId: linkedCampaignId,
+          campaignName: campaign.name,
+          linkId: firstLink.id,
+          linkName: firstLink.name,
+          trackedUrl: firstLink.trackedUrl,
+          isNew: false,
+        });
+        setLastPickedCampaignId(linkedCampaignId);
+      } catch {
+        // ignore — picker can still be opened manually
+      }
+    })();
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contentPlanId]);
+
   const openCampaignPicker = useCallback(async () => {
     setShowCampaignPicker(true);
     setNewLinkMode(false);

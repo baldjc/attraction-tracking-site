@@ -30,6 +30,7 @@ export interface ContentPlan {
   thumbnailWords: string | null;
   footageLink: string | null;
   driveFolderLink: string | null;
+  linkedCampaignId?: string | null;
 }
 
 interface ThemeOption {
@@ -88,7 +89,19 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
     researchNotes: plan.researchNotes ?? "",
     thumbnailWords: plan.thumbnailWords ?? "",
     footageLink: plan.footageLink ?? "",
+    linkedCampaignId: plan.linkedCampaignId ?? "",
   });
+  const [campaigns, setCampaigns] = useState<Array<{ id: string; name: string }>>([]);
+
+  useEffect(() => {
+    // Sprint 3 Part D: load user's campaigns for the lead-magnet linker dropdown.
+    // Skipped in admin context (admins use a different campaigns scope).
+    if (isAdmin) return;
+    fetch("/api/campaigns")
+      .then((r) => (r.ok ? r.json() : []))
+      .then((d) => Array.isArray(d) && setCampaigns(d.map((c: { id: string; name: string }) => ({ id: c.id, name: c.name }))))
+      .catch(() => {});
+  }, [isAdmin]);
   const [driveFolderLink, setDriveFolderLink] = useState(plan.driveFolderLink);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -160,6 +173,7 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
           researchNotes: form.researchNotes || null,
           thumbnailWords: form.thumbnailWords || null,
           footageLink: form.footageLink || null,
+          linkedCampaignId: form.linkedCampaignId || null,
         }),
       });
       const data = await res.json();
@@ -471,6 +485,25 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
             </label>
             <textarea value={form.researchNotes} onChange={(e) => setForm((f) => ({ ...f, researchNotes: e.target.value }))} rows={5} className={`${field} resize-y`} placeholder="Paste your research here — statistics, sources, talking points, Manus/Perplexity output…" />
           </div>
+
+          {!isAdmin && (
+            <div>
+              <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">
+                Lead Magnet Campaign
+                <span className="ml-1 font-normal text-[#2f3437]/40">(preselects this campaign in the Description Generator)</span>
+              </label>
+              <select
+                value={form.linkedCampaignId}
+                onChange={(e) => setForm((f) => ({ ...f, linkedCampaignId: e.target.value }))}
+                className={field}
+              >
+                <option value="">— None —</option>
+                {campaigns.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div className={`grid gap-3 ${useDrive ? "grid-cols-1" : "grid-cols-2"}`}>
             <div>
