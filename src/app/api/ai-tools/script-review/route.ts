@@ -4,6 +4,8 @@ import { SCRIPT_REVIEW_PROMPT, SCRIPT_REVIEW_CHAT_SYSTEM_PROMPT } from "@/lib/au
 import Anthropic from "@anthropic-ai/sdk";
 import prisma from "@/lib/prisma";
 import { getAvatarData } from "@/lib/avatar-utils";
+import { parseOverallScore } from "@/lib/score-badge";
+import { getFeatureFlags } from "@/lib/feature-flags";
 
 const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -87,7 +89,7 @@ export async function POST(req: NextRequest) {
   const user = await resolveUserFromSession();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { videoTitle, scriptText, messages, conversationId } = await req.json();
+  const { videoTitle, scriptText, messages, conversationId, contentPlanId } = await req.json();
   const isFirstCall = !conversationId && videoTitle && scriptText;
 
   const avatarData = await getAvatarData(user.id);
@@ -134,7 +136,63 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    return NextResponse.json({ markdownReport, conversationId: conv.id });
+    // Sprint 3 Part A: Save review as PlanArtifact when linked to a plan
+    let savedToPlan = false;
+    let planArtifactId: string | null = null;
+    let overallScore: number | null = null;
+    if (contentPlanId) {
+      try {
+        const flags = await getFeatureFlags();
+        if (flags.tool_planner_linkage) {
+          const plan = await prisma.contentPlan.findFirst({
+            where: { id: contentPlanId, userId: user.id },
+          });
+          if (plan) {
+            overallScore = parseOverallScore(markdownReport);
+            const existing = await prisma.planArtifact.findFirst({
+              where: { planId: plan.id, type: "script_review", supersededById: null },
+              orderBy: { version: "desc" },
+            });
+            const nextVersion = existing ? existing.version + 1 : 1;
+            const artifact = await prisma.$transaction(async (tx) => {
+              const created = await tx.planArtifact.create({
+                data: {
+                  planId: plan.id,
+                  type: "script_review",
+                  content: markdownReport,
+                  metadata: {
+                    overallScore,
+                    conversationId: conv.id,
+                    videoTitle,
+                    reviewedAt: new Date().toISOString(),
+                  },
+                  version: nextVersion,
+                },
+              });
+              if (existing) {
+                await tx.planArtifact.update({
+                  where: { id: existing.id },
+                  data: { supersededById: created.id },
+                });
+              }
+              return created;
+            });
+            savedToPlan = true;
+            planArtifactId = artifact.id;
+          }
+        }
+      } catch (err) {
+        console.error("[script-review] Failed to save PlanArtifact:", err);
+      }
+    }
+
+    return NextResponse.json({
+      markdownReport,
+      conversationId: conv.id,
+      savedToPlan,
+      planArtifactId,
+      overallScore,
+    });
   }
 
   if (!conversationId || !messages?.length) {

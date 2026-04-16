@@ -543,6 +543,7 @@ Produce a Markdown report in EXACTLY this structure:
 
 # ARC Framework Script Review: "[Video Title]"
 
+**Overall Score:** [X.X/10 — your weighted Attraction Score for this script, using the ARC principles. Use one decimal. Be honest: most early-draft scripts score 4–6, polished ARC-aligned scripts score 7.5+.]
 **Target Audience:** [Describe the avatar based on the avatar profile provided, or infer from the script]
 **Framework:** Attraction by Video (ARC Method)
 

@@ -47,6 +47,7 @@ export const DEFAULT_FLAGS: FeatureFlags = {
   tool_listing_video_builder: false,
   plan_artifacts_v1: false,
   progress_track_v1: false,
+  tool_planner_linkage: false,
 };
 
 export async function getFeatureFlags(): Promise<FeatureFlags> {

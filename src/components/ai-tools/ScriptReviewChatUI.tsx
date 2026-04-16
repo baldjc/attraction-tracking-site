@@ -44,9 +44,10 @@ function AssistantBubble({
 interface Props {
   basePath: string;
   noAvatar?: boolean;
+  defaultPlanId?: string;
 }
 
-export default function ScriptReviewChatUI({ basePath, noAvatar }: Props) {
+export default function ScriptReviewChatUI({ basePath, noAvatar, defaultPlanId }: Props) {
   const [phase, setPhase] = useState<"input" | "chat">("input");
   const [videoTitle, setVideoTitle] = useState("");
   const [scriptText, setScriptText] = useState("");
@@ -55,10 +56,11 @@ export default function ScriptReviewChatUI({ basePath, noAvatar }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [refreshCounter, setRefreshCounter] = useState(0);
-  const [linkedPlanId, setLinkedPlanId] = useState<string | null>(null);
+  const [linkedPlanId, setLinkedPlanId] = useState<string | null>(defaultPlanId ?? null);
   const [plannerSaving, setPlannerSaving] = useState(false);
   const [plannerSaved, setPlannerSaved] = useState(false);
   const [plannerSaveError, setPlannerSaveError] = useState(false);
+  const [reviewSavedToPlan, setReviewSavedToPlan] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -73,6 +75,33 @@ export default function ScriptReviewChatUI({ basePath, noAvatar }: Props) {
       }
     } catch {}
   }, []);
+
+  // Sprint 3 Part A: when a defaultPlanId is provided via URL, prefill from the
+  // plan's latest script artifact (or the plan's script field) so the user
+  // doesn't have to re-paste their work.
+  useEffect(() => {
+    if (!defaultPlanId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const [planRes, artifactsRes] = await Promise.all([
+          fetch(`/api/member/content-plans/${defaultPlanId}`),
+          fetch(`/api/member/content-plans/${defaultPlanId}/artifacts`),
+        ]);
+        if (cancelled) return;
+        const planData = planRes.ok ? await planRes.json() : null;
+        const artifactsData = artifactsRes.ok ? await artifactsRes.json() : null;
+
+        const latestScript = artifactsData?.artifacts?.script?.[0];
+        const planTitle = planData?.plan?.title;
+        const planScript = planData?.plan?.script;
+
+        setVideoTitle((prev) => prev || planTitle || "");
+        setScriptText((prev) => prev || latestScript?.content || planScript || "");
+      } catch {}
+    })();
+    return () => { cancelled = true; };
+  }, [defaultPlanId]);
 
   async function handleSaveScriptToPlan(script: string) {
     if (!linkedPlanId) return;
@@ -104,7 +133,11 @@ export default function ScriptReviewChatUI({ basePath, noAvatar }: Props) {
       const res = await fetch("/api/ai-tools/script-review", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ videoTitle: videoTitle.trim(), scriptText: scriptText.trim() }),
+        body: JSON.stringify({
+          videoTitle: videoTitle.trim(),
+          scriptText: scriptText.trim(),
+          ...(linkedPlanId ? { contentPlanId: linkedPlanId } : {}),
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "AI error");
@@ -117,6 +150,9 @@ export default function ScriptReviewChatUI({ basePath, noAvatar }: Props) {
       setConversationId(data.conversationId);
       setPhase("chat");
       setRefreshCounter((n) => n + 1);
+      if (data.savedToPlan) {
+        setReviewSavedToPlan(true);
+      }
     } catch (e: any) {
       alert(`Error: ${e.message}`);
     } finally {
@@ -309,6 +345,23 @@ export default function ScriptReviewChatUI({ basePath, noAvatar }: Props) {
             )}
             <div ref={messagesEndRef} />
           </div>
+
+          {linkedPlanId && reviewSavedToPlan && (
+            <div className="mt-3 pt-3 border-t border-gray-100 dark:border-white/10">
+              <div className="flex items-center gap-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-500/30 rounded-lg px-4 py-2.5">
+                <CheckCircleIcon className="w-4 h-4 text-green-600 dark:text-green-400 shrink-0" />
+                <p className="text-sm text-green-700 dark:text-green-300 font-medium flex-1">
+                  ✓ Review saved to your plan.
+                </p>
+                <a
+                  href={`/member/content-planner?plan=${linkedPlanId}`}
+                  className="text-xs font-semibold text-green-700 dark:text-green-400 underline hover:no-underline shrink-0"
+                >
+                  View in planner →
+                </a>
+              </div>
+            </div>
+          )}
 
           {linkedPlanId && (
             <div className="mt-3 pt-3 border-t border-gray-100 dark:border-white/10">

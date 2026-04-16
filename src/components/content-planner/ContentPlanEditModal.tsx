@@ -13,6 +13,7 @@ import {
 import ProgressTrack from "@/components/content-planner/ProgressTrack";
 import { resolveProgressSteps, getSuggestedNextStep, type PlanArtifactsByType } from "@/lib/plan-state";
 import { buildToolUrl } from "@/lib/tool-handoff";
+import { getScoreBadgeClasses } from "@/lib/score-badge";
 
 export interface ContentPlan {
   id: string;
@@ -106,6 +107,15 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
       .then((d) => { if (d?.artifacts) setArtifacts(d.artifacts); })
       .catch(() => {});
   }, [plan.id, showProgressTrack]);
+
+  // Sprint 3 Part A: extract latest script_review score for badge display
+  const latestReviewScore = (() => {
+    const review = artifacts?.script_review?.[0];
+    if (!review) return null;
+    const meta = (review.metadata ?? {}) as { overallScore?: number | null };
+    const score = typeof meta.overallScore === "number" ? meta.overallScore : null;
+    return score;
+  })();
 
   function handleStepClick(key: string) {
     const route = TOOL_ROUTES[key];
@@ -299,7 +309,17 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
 
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="block text-xs font-medium text-[#2f3437]/60">Title</label>
+              <label className="block text-xs font-medium text-[#2f3437]/60 flex items-center gap-2">
+                Title
+                {latestReviewScore !== null && (
+                  <span
+                    title="Latest Script Review score"
+                    className={`inline-flex items-center text-[10px] font-semibold px-1.5 py-0.5 rounded ${getScoreBadgeClasses(latestReviewScore)}`}
+                  >
+                    Review {latestReviewScore.toFixed(1)}/10
+                  </span>
+                )}
+              </label>
               {!showProgressTrack && (
                 <button type="button" onClick={() => pushToAITool("title")} className="text-xs text-[#6ba3c7] hover:underline">Analyse Title →</button>
               )}

@@ -13,6 +13,7 @@ import {
   hasEditDueDate,
   hasDriveFolder,
 } from "@/lib/content-plan-utils";
+import { getScoreBadgeClasses } from "@/lib/score-badge";
 
 interface ContentPlan {
   id: string;
@@ -25,6 +26,7 @@ interface ContentPlan {
   priority: string | null;
   notes: string | null;
   script: string | null;
+  researchNotes: string | null;
   thumbnailWords: string | null;
   footageLink: string | null;
   driveFolderLink: string | null;
@@ -81,6 +83,7 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
   const [sortKey, setSortKey] = useState<keyof ContentPlan | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [showProgressTrack, setShowProgressTrack] = useState(false);
+  const [showReviewColumn, setShowReviewColumn] = useState(false);
   const [planArtifacts, setPlanArtifacts] = useState<Record<string, PlanArtifactsByType>>({});
 
   const allStatusOptions = getStatusOptions(serviceTier);
@@ -92,18 +95,21 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
     fetchThemes();
     fetch("/api/member/feature-flags")
       .then((r) => r.json())
-      .then((d) => { if (d?.flags?.progress_track_v1) setShowProgressTrack(true); })
+      .then((d) => {
+        if (d?.flags?.progress_track_v1) setShowProgressTrack(true);
+        if (d?.flags?.tool_planner_linkage) setShowReviewColumn(true);
+      })
       .catch(() => {});
   }, [apiBase]);
 
   useEffect(() => {
-    if (!showProgressTrack || plans.length === 0) return;
+    if ((!showProgressTrack && !showReviewColumn) || plans.length === 0) return;
     const ids = plans.map((p) => p.id).join(",");
     fetch(`/api/member/content-plans/artifacts?planIds=${ids}`)
       .then((r) => r.json())
       .then((d) => { if (d?.artifactsByPlan) setPlanArtifacts(d.artifactsByPlan); })
       .catch(() => {});
-  }, [plans, showProgressTrack]);
+  }, [plans, showProgressTrack, showReviewColumn]);
 
   useEffect(() => {
     if (editingCell && inputRef.current) {
@@ -482,6 +488,7 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
                 </th>
                 {showDriveFolder && <th className="text-center px-4 py-2.5 font-medium whitespace-nowrap">Drive</th>}
                 <th className="text-left px-4 py-2.5 font-medium">Notes</th>
+                {showReviewColumn && <th className="hidden md:table-cell text-center px-4 py-2.5 font-medium whitespace-nowrap">Review</th>}
                 {showProgressTrack && <th className="hidden md:table-cell px-4 py-2.5 font-medium whitespace-nowrap">Progress</th>}
                 <th className="px-4 py-2.5 w-10" />
               </tr>
@@ -512,6 +519,23 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
                   <td className="px-4 py-2.5">{renderCell(plan, "thumbnailWords")}</td>
                   {showDriveFolder && <td className="px-4 py-2.5 text-center">{renderCell(plan, "driveFolderLink")}</td>}
                   <td className="px-4 py-2.5">{renderCell(plan, "notes")}</td>
+                  {showReviewColumn && (
+                    <td className="hidden md:table-cell px-4 py-2.5 text-center">
+                      {(() => {
+                        const review = planArtifacts[plan.id]?.script_review?.[0];
+                        const meta = (review?.metadata ?? {}) as { overallScore?: number | null };
+                        const score = typeof meta.overallScore === "number" ? meta.overallScore : null;
+                        if (score === null) {
+                          return <span className="text-[#2f3437]/30 text-xs italic">—</span>;
+                        }
+                        return (
+                          <span className={`inline-flex items-center text-[10px] font-semibold px-1.5 py-0.5 rounded ${getScoreBadgeClasses(score)}`}>
+                            {score.toFixed(1)}
+                          </span>
+                        );
+                      })()}
+                    </td>
+                  )}
                   {showProgressTrack && (
                     <td className="hidden md:table-cell px-4 py-2.5">
                       <ProgressTrack

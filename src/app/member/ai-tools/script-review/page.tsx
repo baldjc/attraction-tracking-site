@@ -44,7 +44,7 @@ export default async function MemberScriptReviewPage({
 
       {planId && <LinkedPlanBanner planId={planId} />}
 
-      <ScriptReviewChatUI basePath="/member/ai-tools" noAvatar={noAvatar} />
+      <ScriptReviewChatUI basePath="/member/ai-tools" noAvatar={noAvatar} defaultPlanId={planId} />
     </div>
   );
 }
