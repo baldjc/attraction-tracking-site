@@ -22,6 +22,7 @@ import {
 import { CheckCircleIcon } from "@heroicons/react/24/solid";
 import { PRINCIPLE_NAMES, PRINCIPLE_COLORS } from "@/lib/academy-constants";
 import { useToast } from "@/components/ToastProvider";
+import PrinciplesTab from "@/components/admin/PrinciplesTab";
 
 // ── Foundations Library (Course Manager) ────────────────────────────────────
 
@@ -1182,12 +1183,13 @@ function QACallsTab() {
 
 // ── Tab bar ───────────────────────────────────────────────────────────────────
 
-type ManagerTab = "foundations" | "qa-calls" | "lead-gen";
+type ManagerTab = "foundations" | "qa-calls" | "lead-gen" | "principles";
 
 const MANAGER_TABS: { id: ManagerTab; label: string }[] = [
   { id: "foundations", label: "Foundations Library" },
   { id: "qa-calls", label: "Q&A Calls" },
   { id: "lead-gen", label: "Lead Gen Training" },
+  { id: "principles", label: "Principles" },
 ];
 
 function AcademyManagerInner() {
@@ -1227,6 +1229,7 @@ function AcademyManagerInner() {
       {tab === "foundations" && <FoundationsLibraryTab moduleType="foundations" />}
       {tab === "qa-calls" && <QACallsTab />}
       {tab === "lead-gen" && <FoundationsLibraryTab moduleType="lead-generation" />}
+      {tab === "principles" && <PrinciplesTab />}
     </div>
   );
 }
