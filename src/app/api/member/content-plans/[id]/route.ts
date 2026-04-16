@@ -32,7 +32,14 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const serviceTier = dbUser?.serviceTier ?? "foundations";
 
   const body = await req.json();
-  const { title, status, theme, shootDate, publishDate, editDueDate, priority, notes, script, researchNotes, thumbnailWords, footageLink, driveFolderLink, youtubeDescription, linkedCampaignId } = body;
+  const { title, status, theme, shootDate, publishDate, editDueDate, priority, notes, script, researchNotes, thumbnailWords, footageLink, driveFolderLink, youtubeDescription, linkedCampaignId, linkedScriptId } = body;
+
+  if (linkedScriptId !== undefined && linkedScriptId !== null) {
+    const owned = await prisma.savedScript.findFirst({ where: { id: linkedScriptId, userId: user.id }, select: { id: true } });
+    if (!owned) {
+      return NextResponse.json({ error: "Script not found" }, { status: 404 });
+    }
+  }
 
   if (status !== undefined && !isValidStatus(status, serviceTier)) {
     return NextResponse.json({ error: "Invalid status for your membership tier" }, { status: 400 });
@@ -56,6 +63,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       ...(driveFolderLink !== undefined && { driveFolderLink: driveFolderLink ?? null }),
       ...(youtubeDescription !== undefined && { youtubeDescription: youtubeDescription ?? null }),
       ...(linkedCampaignId !== undefined && { linkedCampaignId: linkedCampaignId ?? null }),
+      ...(linkedScriptId !== undefined && { linkedScriptId: linkedScriptId ?? null }),
     },
   });
 

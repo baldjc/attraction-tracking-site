@@ -96,9 +96,11 @@ interface Props {
   trigger: UpgradeTrigger;
   open: boolean;
   onClose: () => void;
+  onContinue?: () => void;
+  continueLabel?: string;
 }
 
-export default function UpgradeModal({ trigger, open, onClose }: Props) {
+export default function UpgradeModal({ trigger, open, onClose, onContinue, continueLabel }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const copy = COPY[trigger];
 
@@ -114,7 +116,7 @@ export default function UpgradeModal({ trigger, open, onClose }: Props) {
 
   if (!open) return null;
 
-  async function handleDismiss() {
+  async function handleDismissOnly() {
     if (submitting) return;
     setSubmitting(true);
     try {
@@ -124,11 +126,15 @@ export default function UpgradeModal({ trigger, open, onClose }: Props) {
         body: JSON.stringify({ trigger }),
       });
     } catch {
-      /* fail silently — user can still close */
+      /* fail silently */
     } finally {
       setSubmitting(false);
-      onClose();
     }
+  }
+
+  async function handleDismiss() {
+    await handleDismissOnly();
+    onClose();
   }
 
   return (
@@ -175,10 +181,13 @@ export default function UpgradeModal({ trigger, open, onClose }: Props) {
               {copy.ctaLabel}
             </Link>
             <button
-              onClick={handleDismiss}
+              onClick={async () => {
+                await handleDismissOnly();
+                if (onContinue) onContinue();
+              }}
               className="text-sm font-medium text-[#2f3437]/50 hover:text-[#2f3437] px-4 py-2.5 rounded-lg transition-colors"
             >
-              Not now
+              {onContinue ? (continueLabel ?? "Continue anyway") : "Not now"}
             </button>
           </div>
         </div>

@@ -43,19 +43,19 @@ export default function OrphanScriptsBanner() {
 
   function handleClose(linkedAny: boolean) {
     setOpen(false);
+    // Once the user has worked through the modal (linked or skipped each one),
+    // dismiss the banner for 30 days regardless of outcome — we don't want to
+    // nag them every page load if they intentionally skipped.
     if (linkedAny) {
-      // Re-fetch unlinked count
       fetch("/api/ai-tools/saved-scripts?unlinked=true")
         .then((r) => r.json())
         .then((d) => {
           const list: OrphanScript[] = Array.isArray(d?.scripts) ? d.scripts : [];
           setScripts(list);
-          if (list.length === 0) {
-            handleDismiss();
-          }
         })
         .catch(() => {});
     }
+    handleDismiss();
   }
 
   if (hidden || scripts.length === 0) return null;

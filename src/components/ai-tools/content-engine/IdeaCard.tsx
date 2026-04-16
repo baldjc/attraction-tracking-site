@@ -271,7 +271,14 @@ export default function IdeaCard({ idea, theme, onSaved, savedId, onDelete }: Pr
         </div>
       )}
 
-      <UpgradeModal trigger="add_to_planner" open={showUpgrade} onClose={() => setShowUpgrade(false)} />
+      <UpgradeModal
+        trigger="add_to_planner"
+        open={showUpgrade}
+        onClose={() => {
+          upgradeGate.markDismissed("add_to_planner");
+          setShowUpgrade(false);
+        }}
+      />
 
       {createdPlan && (
         <ContentPlanEditModal

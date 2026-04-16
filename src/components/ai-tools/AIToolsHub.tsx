@@ -453,7 +453,19 @@ export default function AIToolsHub({ basePath, featureFlags }: Props) {
       <UpgradeModal
         trigger={upgradeTrigger ?? "build_script"}
         open={!!upgradeTrigger}
-        onClose={() => setUpgradeTrigger(null)}
+        onClose={() => {
+          if (upgradeTrigger) upgradeGate.markDismissed(upgradeTrigger);
+          setUpgradeTrigger(null);
+        }}
+        onContinue={() => {
+          const target = upgradeTrigger;
+          if (target) upgradeGate.markDismissed(target);
+          setUpgradeTrigger(null);
+          if (target === "build_script") {
+            window.location.href = "/member/ai-tools/script-builder";
+          }
+        }}
+        continueLabel="Continue to tool"
       />
     </div>
   );

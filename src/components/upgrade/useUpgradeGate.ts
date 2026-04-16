@@ -43,5 +43,13 @@ export function useUpgradeGate() {
     return true;
   }
 
-  return { ...state, isFoundations, shouldShow };
+  function markDismissed(trigger: UpgradeTrigger) {
+    setState((s) => {
+      const next = new Set(s.dismissed);
+      next.add(trigger);
+      return { ...s, dismissed: next };
+    });
+  }
+
+  return { ...state, isFoundations, shouldShow, markDismissed };
 }
