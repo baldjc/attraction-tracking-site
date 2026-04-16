@@ -66,7 +66,7 @@ const adminLinks = [
   { href: "/admin/academy", label: "Academy", icon: AcademicCapIcon, section: "Content" },
   { href: "/admin/content-calendar", label: "Content Calendar", icon: CalendarDaysIcon, section: "Content" },
   { href: "/admin/ai-tools", label: "AI Tools", icon: SparklesIcon, section: "Content" },
-  { href: "/admin/intelligence", label: "Intelligence", icon: MagnifyingGlassCircleIcon, section: "Content" },
+  { href: "/admin/intelligence", label: "Intelligence", icon: MagnifyingGlassCircleIcon, section: "Growth" },
   { href: "/admin/generate-leads", label: "Generate Leads", icon: RocketLaunchIcon, section: "Growth" },
   { href: "/admin/hire", label: "Hire a Human", icon: UserGroupIcon, section: "Growth", badgeKey: "hireWaitlist" },
   { href: "/admin/activity-log", label: "Activity Log", icon: ClockIcon, section: "System" },
