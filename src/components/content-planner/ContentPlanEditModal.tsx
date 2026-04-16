@@ -113,6 +113,8 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
   const [artifacts, setArtifacts] = useState<PlanArtifactsByType>({});
   const [showAllTools, setShowAllTools] = useState(false);
   const [teamNotes, setTeamNotes] = useState<Array<{ id: string; note: string; createdAt: string; author: { name: string } }>>([]);
+  const [driveFiles, setDriveFiles] = useState<Array<{ id: string; name: string; webViewLink: string | null; modifiedTime: string | null; mimeType: string | null }> | null>(null);
+  const [driveFilesLoading, setDriveFilesLoading] = useState(false);
 
   useEffect(() => {
     if (!showProgressTrack) return;
@@ -129,6 +131,19 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
       .then((d) => { if (d?.notes) setTeamNotes(d.notes); })
       .catch(() => {});
   }, [plan.id, isAdmin]);
+
+  // Sprint 6 — fetch Drive folder contents when a folder exists. API returns
+  // an empty list when the drive_auto_upload flag is off, which transparently
+  // collapses the section.
+  useEffect(() => {
+    if (!driveFolderLink) { setDriveFiles(null); return; }
+    setDriveFilesLoading(true);
+    fetch(`/api/member/content-plans/${plan.id}/drive-files`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (d) setDriveFiles(d.files ?? []); })
+      .catch(() => {})
+      .finally(() => setDriveFilesLoading(false));
+  }, [plan.id, driveFolderLink]);
 
   // Sprint 3 Part A: extract latest script_review score for badge display
   const latestReviewScore = (() => {
@@ -286,6 +301,32 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
         </div>
 
         <div className="px-6 py-5 space-y-4">
+
+          {driveFolderLink && driveFiles && driveFiles.length > 0 && (
+            <div className="rounded-xl border border-[#10B981]/25 bg-[#10B981]/5 px-4 py-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-bold uppercase tracking-wider text-[#10B981]">📁 Project Folder</p>
+                <a href={driveFolderLink} target="_blank" rel="noreferrer" className="text-[11px] font-semibold text-[#10B981] hover:underline">Open in Drive →</a>
+              </div>
+              <ul className="space-y-1">
+                {driveFiles.map((f) => (
+                  <li key={f.id} className="text-xs text-[#2f3437]/80 flex items-center justify-between gap-2">
+                    <a
+                      href={f.webViewLink ?? driveFolderLink}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="truncate hover:text-[#10B981] hover:underline"
+                      title={f.name}
+                    >📄 {f.name}</a>
+                    {f.modifiedTime && (
+                      <span className="text-[10px] text-[#2f3437]/40 shrink-0">{new Date(f.modifiedTime).toLocaleDateString()}</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+              {driveFilesLoading && <p className="text-[10px] text-[#2f3437]/40 italic">Refreshing…</p>}
+            </div>
+          )}
 
           {!isAdmin && teamNotes.length > 0 && (
             <div className="rounded-xl border border-[#6ba3c7]/25 bg-[#6ba3c7]/5 px-4 py-3 space-y-2">

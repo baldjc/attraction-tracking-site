@@ -51,6 +51,7 @@ export const DEFAULT_FLAGS: FeatureFlags = {
   saved_ideas_page: false,
   upgrade_moments: false,
   team_pipeline: false,
+  drive_auto_upload: false,
 };
 
 export async function getFeatureFlags(): Promise<FeatureFlags> {

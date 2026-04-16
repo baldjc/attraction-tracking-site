@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import { getFeatureFlags } from "@/lib/feature-flags";
+import { syncArtifactToDrive } from "@/lib/drive-sync";
 
 async function checkOwnership(planId: string, userId: string, isAdmin: boolean) {
   const plan = await prisma.contentPlan.findUnique({ where: { id: planId } });
@@ -84,6 +85,13 @@ export async function POST(
 
     return created;
   });
+
+  // Sprint 6 — fire-and-forget Drive sync. Do NOT await: Drive latency must
+  // not block the tool save flow, and syncArtifactToDrive swallows its own
+  // errors internally.
+  if (typeof content === "string" && content.length > 0) {
+    void syncArtifactToDrive(id, type, content);
+  }
 
   return NextResponse.json({ artifact }, { status: 201 });
 }

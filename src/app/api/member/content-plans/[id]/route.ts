@@ -4,7 +4,7 @@ import prisma from "@/lib/prisma";
 import { isValidStatus, PRODUCTION_TIERS } from "@/lib/content-plan-utils";
 import { createVideoFolder } from "@/lib/google-drive";
 
-const DRIVE_TRIGGER_STATUSES = ["Ready to Shoot", "Shooting", "Shot - In Post"];
+const DRIVE_TRIGGER_STATUSES = ["Scripted", "Ready to Shoot", "Shooting", "Shot - In Post"];
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await resolveUserFromSession();

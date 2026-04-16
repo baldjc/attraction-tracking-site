@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import prisma from "@/lib/prisma";
 import { getStatusOptions, isValidStatus, PRODUCTION_TIERS, PRE_PRODUCTION_STATUSES } from "@/lib/content-plan-utils";
-import { createVideoFolder } from "@/lib/google-drive";
+import { createVideoFolder, ensureVideoFolderForPlan } from "@/lib/google-drive";
+import { getFeatureFlags } from "@/lib/feature-flags";
 
 export async function GET(req: NextRequest) {
   const user = await resolveUserFromSession();
@@ -71,20 +72,35 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  // Auto-create Google Drive folder for Production/Growth/DWY members — only once the plan is in production (Ready to Shoot or beyond)
-  if (PRODUCTION_TIERS.includes(serviceTier) && dbUser?.fullName && !PRE_PRODUCTION_STATUSES.includes(plan.status)) {
-    try {
-      const { videoFolderUrl, memberFolderUrl } = await createVideoFolder(dbUser.fullName, plan.title);
-      const updates: Promise<unknown>[] = [
-        prisma.contentPlan.update({ where: { id: plan.id }, data: { driveFolderLink: videoFolderUrl } }),
-      ];
-      if (!dbUser.assetsDriveLink) {
-        updates.push(prisma.user.update({ where: { id: user.id }, data: { assetsDriveLink: memberFolderUrl } }));
+  // Auto-create Google Drive folder for Production/Growth/DWY members. When
+  // `drive_auto_upload` is on, any "Scripted"-or-later plan gets a folder at
+  // creation time (Script Builder save-as-new-plan flow); otherwise preserve
+  // the old behaviour where only post–pre-production plans get folders.
+  const flags = await getFeatureFlags();
+  const shouldCreateFolder = PRODUCTION_TIERS.includes(serviceTier) && (
+    flags.drive_auto_upload
+      ? !PRE_PRODUCTION_STATUSES.includes(plan.status) || plan.status === "Scripted"
+      : !PRE_PRODUCTION_STATUSES.includes(plan.status)
+  );
+
+  if (shouldCreateFolder) {
+    if (flags.drive_auto_upload) {
+      const result = await ensureVideoFolderForPlan(plan.id, user.id);
+      if (result) (plan as any).driveFolderLink = result.folderUrl;
+    } else if (dbUser?.fullName) {
+      try {
+        const { videoFolderUrl, memberFolderUrl } = await createVideoFolder(dbUser.fullName, plan.title);
+        const updates: Promise<unknown>[] = [
+          prisma.contentPlan.update({ where: { id: plan.id }, data: { driveFolderLink: videoFolderUrl } }),
+        ];
+        if (!dbUser.assetsDriveLink) {
+          updates.push(prisma.user.update({ where: { id: user.id }, data: { assetsDriveLink: memberFolderUrl } }));
+        }
+        await Promise.all(updates);
+        (plan as any).driveFolderLink = videoFolderUrl;
+      } catch (err) {
+        console.error("[content-plans] Drive folder creation failed:", err);
       }
-      await Promise.all(updates);
-      (plan as any).driveFolderLink = videoFolderUrl;
-    } catch (err) {
-      console.error("[content-plans] Drive folder creation failed:", err);
     }
   }
 
