@@ -710,12 +710,25 @@ export default function ArcScriptChatPhase({
               {saved ? "Saved" : saving ? "Saving…" : "Save Script"}
             </button>
             <button
-              onClick={openPlanner}
-              disabled={plannerPushed}
+              onClick={() => {
+                if (linkedPlanId) {
+                  // Script came from a planner item — save directly, skip modal
+                  pushToPlanner(linkedPlanId);
+                } else {
+                  openPlanner();
+                }
+              }}
+              disabled={plannerPushed || plannerSaved || plannerPushing}
               className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium border border-[#2f3437]/15 dark:border-white/15 rounded-lg hover:bg-[#111]/5 dark:hover:bg-white/5 transition-colors text-[#2f3437] dark:text-white disabled:opacity-50"
             >
               <span>📅</span>
-              {plannerPushed ? "In Planner" : "Push to Content Planner"}
+              {plannerPushed || plannerSaved
+                ? "In Planner ✓"
+                : plannerPushing
+                  ? "Saving…"
+                  : linkedPlanId
+                    ? "Save to Content Planner"
+                    : "Push to Content Planner"}
             </button>
             <button
               onClick={onReset}
