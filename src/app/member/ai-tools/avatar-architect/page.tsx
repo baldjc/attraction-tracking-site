@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -525,7 +525,7 @@ function isEquityTheme(themeName: string): boolean {
 }
 
 // ─── Main Page ─────────────────────────────────────────────────────────────────
-export default function AvatarArchitectPage() {
+function AvatarArchitectInner() {
   const { data: session } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -912,6 +912,10 @@ export default function AvatarArchitectPage() {
       if (res.ok) {
         setSaved(true);
         setTimeout(() => router.push("/admin/ai-tools"), 1500);
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        console.error("[AvatarArchitect] Failed to save test avatar:", errData);
+        alert(`Failed to save test avatar: ${errData.error ?? "Unknown error"}`);
       }
       return;
     }
@@ -1639,5 +1643,13 @@ export default function AvatarArchitectPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AvatarArchitectPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-sm text-gray-400">Loading…</div>}>
+      <AvatarArchitectInner />
+    </Suspense>
   );
 }
