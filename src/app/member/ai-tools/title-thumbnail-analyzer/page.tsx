@@ -391,17 +391,73 @@ function TitleThumbnailAnalyzerPageInner() {
     setPlannerSaving(true);
     setPlannerSaveError(false);
     try {
+      // Backward-compatible: keep updating ContentPlan.title
       const res = await fetch(`/api/member/content-plans/${linkedPlanId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title: titleToSave.trim() }),
       });
       if (!res.ok) throw new Error("Save failed");
+
+      // Sprint 3 Part B: also write a PlanArtifact of type "title".
+      // Best-effort: silently swallow artifact errors so legacy save still wins.
+      try {
+        await fetch(`/api/member/content-plans/${linkedPlanId}/artifacts`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: "title",
+            content: titleToSave.trim(),
+            metadata: {
+              score: result?.title?.score ?? null,
+              alternatives: result?.title?.alternatives ?? [],
+              savedAt: new Date().toISOString(),
+            },
+          }),
+        });
+      } catch (err) {
+        console.error("[title-thumbnail] artifact save failed:", err);
+      }
+
       setPlannerSaved(true);
     } catch {
       setPlannerSaveError(true);
     } finally {
       setPlannerSaving(false);
+    }
+  }
+
+  // Sprint 3 Part B: Save thumbnail (uploaded image as data URL) as a PlanArtifact
+  const [thumbnailSaving, setThumbnailSaving] = useState(false);
+  const [thumbnailSaved, setThumbnailSaved] = useState(false);
+  const [thumbnailSaveError, setThumbnailSaveError] = useState(false);
+
+  async function handleSaveThumbnailToPlan() {
+    if (!linkedPlanId || !thumbnailPreview) return;
+    setThumbnailSaving(true);
+    setThumbnailSaveError(false);
+    try {
+      const res = await fetch(`/api/member/content-plans/${linkedPlanId}/artifacts`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "thumbnail",
+          content: thumbnailPreview,
+          metadata: {
+            score: result?.thumbnail?.score ?? null,
+            alternatives: (result?.thumbnail as { alternatives?: unknown[] } | undefined)?.alternatives ?? [],
+            imageType: thumbnail?.type ?? null,
+            dimensions: null,
+            savedAt: new Date().toISOString(),
+          },
+        }),
+      });
+      if (!res.ok) throw new Error("Save failed");
+      setThumbnailSaved(true);
+    } catch {
+      setThumbnailSaveError(true);
+    } finally {
+      setThumbnailSaving(false);
     }
   }
 
@@ -997,6 +1053,37 @@ function TitleThumbnailAnalyzerPageInner() {
                   className="w-full bg-[#6ba3c7] text-white py-2 rounded-lg text-sm font-semibold hover:bg-[#5490b5] disabled:opacity-50 transition-colors"
                 >
                   {plannerSaving ? "Saving…" : "Save Title to Content Plan"}
+                </button>
+              </div>
+            )
+          )}
+
+          {linkedPlanId && thumbnailPreview && (
+            thumbnailSaved ? (
+              <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-lg px-4 py-3">
+                <svg className="w-4 h-4 text-green-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                <p className="text-sm text-green-700 font-medium flex-1">Thumbnail saved to your Content Plan.</p>
+                <a href={`/member/content-planner?plan=${linkedPlanId}`} className="text-xs font-semibold text-green-700 underline hover:no-underline shrink-0">
+                  View in Planner →
+                </a>
+              </div>
+            ) : (
+              <div className="bg-[#6ba3c7]/5 border border-[#6ba3c7]/20 rounded-lg px-4 py-4 space-y-3">
+                <p className="text-xs font-semibold text-[#2f3437]/60 uppercase tracking-wide">
+                  🖼 Save thumbnail back to Content Plan
+                </p>
+                <p className="text-xs text-[#2f3437]/50">
+                  Stores this thumbnail (with its analyzer score) on the linked plan so you can reference it later.
+                </p>
+                {thumbnailSaveError && (
+                  <p className="text-xs text-red-500">Save failed. Please try again.</p>
+                )}
+                <button
+                  onClick={handleSaveThumbnailToPlan}
+                  disabled={thumbnailSaving}
+                  className="w-full bg-[#6ba3c7] text-white py-2 rounded-lg text-sm font-semibold hover:bg-[#5490b5] disabled:opacity-50 transition-colors"
+                >
+                  {thumbnailSaving ? "Saving…" : "Save Thumbnail to Content Plan"}
                 </button>
               </div>
             )
