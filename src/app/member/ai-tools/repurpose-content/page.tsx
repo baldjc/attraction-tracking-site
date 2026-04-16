@@ -325,6 +325,8 @@ function RepurposeContentPageInner() {
   }, [newLinkMode, pickerForOutput]);
 
   const [loading, setLoading] = useState(false);
+  // Sprint 3 Part C: track which formats persisted to the linked plan
+  const [planSaveResults, setPlanSaveResults] = useState<Record<string, boolean>>({});
 
   const [newsletterResult, setNewsletterResult] = useState<NewsletterResult | null>(null);
   const [newsletterRecordId, setNewsletterRecordId] = useState<string | null>(null);
@@ -574,6 +576,7 @@ function RepurposeContentPageInner() {
               setNewsletterRecordId(data.id);
               const nl = data.result as NewsletterResult;
               setEditedNewsletter(nlFormatted(nl));
+              if (data.savedToPlan) setPlanSaveResults((p) => ({ ...p, newsletter: true }));
             } else {
               setNewsletterError(data.error || "Newsletter generation failed");
             }
@@ -603,6 +606,7 @@ function RepurposeContentPageInner() {
               setLinkedInResult(data.result);
               setLinkedInRecordId(data.id);
               setEditedLinkedIn(data.result.full_article);
+              if (data.savedToPlan) setPlanSaveResults((p) => ({ ...p, linkedin: true }));
             } else {
               setLinkedInError(data.error || "LinkedIn article generation failed");
             }
@@ -632,6 +636,7 @@ function RepurposeContentPageInner() {
               setFacebookRecordId(data.id);
               setEditedFacebookBody(data.result.post_body);
               setEditedFacebookComment(data.result.first_comment);
+              if (data.savedToPlan) setPlanSaveResults((p) => ({ ...p, facebook: true }));
             } else {
               setFacebookError(data.error || "Facebook post generation failed");
             }
@@ -663,6 +668,7 @@ function RepurposeContentPageInner() {
               setEditedBlogTitle(data.result.blog_title);
               setEditedBlogArticle(data.result.full_article);
               setEditedBlogMeta(data.result.meta_description);
+              if (data.savedToPlan) setPlanSaveResults((p) => ({ ...p, blog: true }));
             } else {
               setBlogError(data.error || "Blog post generation failed");
             }
@@ -686,6 +692,7 @@ function RepurposeContentPageInner() {
               setEditedPostcardFrontHeadline(data.result.front_headline);
               setEditedPostcardFrontHook(data.result.front_hook);
               setEditedPostcardBack(data.result.back_body);
+              if (data.savedToPlan) setPlanSaveResults((p) => ({ ...p, postcard: true }));
             } else {
               setPostcardError(data.error || "Postcard generation failed");
             }
@@ -1192,6 +1199,18 @@ function RepurposeContentPageInner() {
               </span>
             )}
           </div>
+
+          {planId && Object.values(planSaveResults).some(Boolean) && (
+            <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-lg px-4 py-3">
+              <svg className="w-4 h-4 text-green-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+              <p className="text-sm text-green-700 font-medium flex-1">
+                Saved to your Content Plan: {Object.entries(planSaveResults).filter(([, v]) => v).map(([k]) => TOOL_LABELS[k] ?? k).join(", ")}
+              </p>
+              <a href={`/member/content-planner?plan=${planId}`} className="text-xs font-semibold text-green-700 underline hover:no-underline shrink-0">
+                View in Planner →
+              </a>
+            </div>
+          )}
 
           {loading && !newsletterResult && !linkedInResult && !facebookResult && !blogResult && !postcardResult && (
             <div className="text-center py-4 text-sm text-[#2f3437]/50 dark:text-white/50 animate-pulse">

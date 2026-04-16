@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { resolveUserFromSession } from "@/lib/session-utils";
+import { getFeatureFlags } from "@/lib/feature-flags";
 
 async function checkOwnership(planId: string, userId: string, isAdmin: boolean) {
   const plan = await prisma.contentPlan.findUnique({ where: { id: planId } });
@@ -44,6 +45,13 @@ export async function POST(
 
   const plan = await checkOwnership(id, user.id, isAdmin);
   if (!plan) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  // Sprint 3: gate plan-artifact writes behind tool_planner_linkage so that
+  // disabling the flag fully suppresses tool→plan persistence.
+  const flags = await getFeatureFlags();
+  if (!flags.tool_planner_linkage) {
+    return NextResponse.json({ error: "Feature disabled" }, { status: 403 });
+  }
 
   const body = await req.json();
   const { type, content, metadata } = body;
