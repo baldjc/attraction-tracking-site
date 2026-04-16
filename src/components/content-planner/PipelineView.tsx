@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import ContentPlanEditModal, { type ContentPlan } from "./ContentPlanEditModal";
 import ProgressTrack from "./ProgressTrack";
 import { resolveProgressSteps, type PlanArtifactsByType } from "@/lib/plan-state";
-import { STATUS_STYLES, filterPlans } from "@/lib/content-plan-utils";
+import { STATUS_STYLES, filterPlans, getStatusOptions } from "@/lib/content-plan-utils";
 import { getScoreBadgeClasses } from "@/lib/score-badge";
 
 interface Props {
@@ -16,11 +16,11 @@ interface Props {
 }
 
 /**
- * Sprint 7 — kanban view for plans. One column per status in the canonical
- * pipeline order. Drag-and-drop uses native HTML5 events (no new deps).
- * Optimistic UI reverts the card on API error.
+ * Sprint 7 — kanban view for plans. Columns come from the member's tier
+ * status options so every column represents a valid drop target for the PUT
+ * handler. Drag-and-drop uses native HTML5 events (no new deps). Optimistic
+ * UI reverts the card on API error.
  */
-const PIPELINE_STATUSES = ["Idea", "Scripted", "Filmed", "Editing", "Scheduled", "Published", "On Hold"];
 
 function truncate(str: string | null | undefined, n: number): string {
   if (!str) return "";
@@ -29,11 +29,12 @@ function truncate(str: string | null | undefined, n: number): string {
 
 export default function PipelineView({
   apiBase,
-  serviceTier: _serviceTier,
+  serviceTier,
   isAdmin = false,
   searchQuery = "",
   statusFilter = [],
 }: Props) {
+  const pipelineStatuses = useMemo(() => getStatusOptions(serviceTier), [serviceTier]);
   const [plans, setPlans] = useState<ContentPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -74,12 +75,13 @@ export default function PipelineView({
 
   const plansByStatus = useMemo(() => {
     const map: Record<string, ContentPlan[]> = {};
-    for (const s of PIPELINE_STATUSES) map[s] = [];
+    for (const s of pipelineStatuses) map[s] = [];
     for (const p of visiblePlans) {
-      if (map[p.status]) map[p.status].push(p);
+      if (!map[p.status]) map[p.status] = [];
+      map[p.status].push(p);
     }
     return map;
-  }, [visiblePlans]);
+  }, [visiblePlans, pipelineStatuses]);
 
   async function moveTo(planId: string, newStatus: string) {
     const prev = plans.find((p) => p.id === planId);
@@ -163,7 +165,7 @@ export default function PipelineView({
   if (loading) {
     return (
       <div className="flex gap-3 overflow-x-auto pb-4">
-        {PIPELINE_STATUSES.map((s) => (
+        {pipelineStatuses.map((s) => (
           <div key={s} className="w-64 shrink-0 h-80 bg-white rounded-xl border border-gray-200 animate-pulse" />
         ))}
       </div>
@@ -177,7 +179,7 @@ export default function PipelineView({
   return (
     <>
       <div className="flex gap-3 overflow-x-auto pb-4 items-start snap-x">
-        {PIPELINE_STATUSES.map((status) => {
+        {pipelineStatuses.map((status) => {
           const colPlans = plansByStatus[status] ?? [];
           const style = STATUS_STYLES[status] ?? { bg: "#f3f4f6", text: "#6b7280" };
           const isOver = dragOverCol === status;
@@ -233,7 +235,7 @@ export default function PipelineView({
       {editingPlan && (
         <ContentPlanEditModal
           plan={editingPlan}
-          serviceTier={_serviceTier}
+          serviceTier={serviceTier}
           apiBase={apiBase}
           isAdmin={isAdmin}
           onClose={() => setEditingPlan(null)}
