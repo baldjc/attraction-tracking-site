@@ -28,9 +28,17 @@ export default function ContentPlannerClient({
   const [calLoading, setCalLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [autoOpenPlan, setAutoOpenPlan] = useState<ContentPlan | null>(null);
+  const [showProgressTrack, setShowProgressTrack] = useState(false);
 
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  useEffect(() => {
+    fetch("/api/member/feature-flags")
+      .then((r) => r.json())
+      .then((d) => { if (d?.flags?.progress_track_v1) setShowProgressTrack(true); })
+      .catch(() => {});
+  }, []);
 
   // Auto-open the edit modal when a ?plan=<id> param is present (e.g. from "View in planner →" link)
   useEffect(() => {
@@ -155,6 +163,7 @@ export default function ContentPlannerClient({
           plan={autoOpenPlan}
           serviceTier={serviceTier}
           apiBase={apiBase}
+          showProgressTrack={showProgressTrack}
           onClose={() => setAutoOpenPlan(null)}
           onSaved={() => setAutoOpenPlan(null)}
           onDeleted={() => setAutoOpenPlan(null)}
