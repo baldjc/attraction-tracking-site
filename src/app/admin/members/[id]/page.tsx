@@ -1366,9 +1366,15 @@ export default function MemberDetailPage() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-[#2f3437]/50">Themes saved</span>
-                  <span className={`text-xs font-semibold ${member?.videoThemes ? "text-green-600" : "text-[#2f3437]/30"}`}>
-                    {member?.videoThemes ? "✓ Yes" : "None"}
-                  </span>
+                  {(() => {
+                    const ctCount = Array.isArray(member?.contentThemes) ? (member.contentThemes as unknown[]).length : 0;
+                    const hasThemes = ctCount > 0 || !!member?.videoThemes;
+                    return (
+                      <span className={`text-xs font-semibold ${hasThemes ? "text-green-600" : "text-[#2f3437]/30"}`}>
+                        {ctCount > 0 ? `✓ ${ctCount} theme${ctCount !== 1 ? "s" : ""}` : hasThemes ? "✓ Yes" : "None"}
+                      </span>
+                    );
+                  })()}
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-[#2f3437]/50">Scripts built</span>
