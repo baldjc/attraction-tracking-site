@@ -3,8 +3,10 @@ import { resolveUserFromSession } from "@/lib/session-utils";
 import prisma from "@/lib/prisma";
 import { isValidStatus, PRODUCTION_TIERS } from "@/lib/content-plan-utils";
 import { createVideoFolder } from "@/lib/google-drive";
+import { getFeatureFlags } from "@/lib/feature-flags";
 
-const DRIVE_TRIGGER_STATUSES = ["Scripted", "Ready to Shoot", "Shooting", "Shot - In Post"];
+const DRIVE_TRIGGER_STATUSES_LEGACY = ["Ready to Shoot", "Shooting", "Shot - In Post"];
+const DRIVE_TRIGGER_STATUSES_WITH_SCRIPTED = ["Scripted", "Ready to Shoot", "Shooting", "Shot - In Post"];
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await resolveUserFromSession();
@@ -67,10 +69,15 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     },
   });
 
+  const driveFlags = await getFeatureFlags();
+  const triggerStatuses = driveFlags.drive_auto_upload
+    ? DRIVE_TRIGGER_STATUSES_WITH_SCRIPTED
+    : DRIVE_TRIGGER_STATUSES_LEGACY;
+
   if (
     status !== undefined &&
     PRODUCTION_TIERS.includes(serviceTier) &&
-    DRIVE_TRIGGER_STATUSES.includes(status) &&
+    triggerStatuses.includes(status) &&
     (!plan.driveFolderLink || !plan.driveFolderLink.startsWith("http"))
   ) {
     try {
