@@ -14,6 +14,7 @@ import {
   ArrowTrendingUpIcon,
   ArrowTrendingDownIcon,
   MinusIcon,
+  ChartBarIcon,
 } from "@heroicons/react/24/outline";
 
 const OWNER_EMAIL = "jared@attractionbyvideo.com";
@@ -59,6 +60,21 @@ function fmtMrr(cents: number): string {
   return `$${dollars.toLocaleString("en-CA")}`;
 }
 
+function fmtHours(h: number | null): string {
+  if (h === null) return "—";
+  if (h < 24) return `${h.toFixed(1)}h`;
+  return `${(h / 24).toFixed(1)}d`;
+}
+
+function FlowKpi({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-[10px] uppercase tracking-wider text-[#2f3437]/50 dark:text-white/40">{label}</p>
+      <p className="text-xl font-bold text-[#6ba3c7] mt-0.5">{value}</p>
+    </div>
+  );
+}
+
 const TYPE_EMOJI: Record<string, string> = {
   audit_complete: "📊",
   member_signup: "👤",
@@ -77,6 +93,13 @@ export default function AdminDashboard() {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
   const [teamPipeline, setTeamPipeline] = useState<{ scripted: number; filmed: number; assignedToMe: number; unassigned: number } | null>(null);
+  const [flowMetrics, setFlowMetrics] = useState<{
+    scriptingVelocityHours: number | null;
+    productionVelocityHours: number | null;
+    reviewStickinessPct: number;
+    repurposeCompletionPct: number;
+    plansByStatus: Array<{ status: string; count: number }>;
+  } | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -211,6 +234,20 @@ export default function AdminDashboard() {
         try {
           const tpRes = await fetch("/api/admin/team-pipeline/summary");
           if (tpRes.ok) setTeamPipeline(await tpRes.json());
+        } catch {}
+
+        try {
+          const fmRes = await fetch("/api/admin/flow-metrics");
+          if (fmRes.ok) {
+            const fm = await fmRes.json();
+            setFlowMetrics({
+              scriptingVelocityHours: fm.scriptingVelocityHours,
+              productionVelocityHours: fm.productionVelocityHours,
+              reviewStickinessPct: fm.reviewStickinessPct,
+              repurposeCompletionPct: fm.repurposeCompletionPct,
+              plansByStatus: fm.plansByStatus ?? [],
+            });
+          }
         } catch {}
       } catch (err) {
         console.error("Dashboard load error:", err);
@@ -367,6 +404,44 @@ export default function AdminDashboard() {
                 </div>
               </div>
             </Link>
+          )}
+
+          {/* Content Flow Metrics — flag-gated server-side */}
+          {flowMetrics && (
+            <div className="bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-[#2a2a2a] p-5">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-sm font-semibold text-[#2f3437] dark:text-[#e2e8f0] flex items-center gap-1.5">
+                  <ChartBarIcon className="w-4 h-4 text-[#6ba3c7]" />
+                  Content Flow Metrics
+                </h2>
+                <Link href="/admin/flow-metrics" className="text-xs text-[#6ba3c7] hover:underline">
+                  View full report →
+                </Link>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                <FlowKpi label="Scripting velocity" value={fmtHours(flowMetrics.scriptingVelocityHours)} />
+                <FlowKpi label="Production velocity" value={fmtHours(flowMetrics.productionVelocityHours)} />
+                <FlowKpi label="Review stickiness" value={`${flowMetrics.reviewStickinessPct}%`} />
+                <FlowKpi label="Repurpose done" value={`${flowMetrics.repurposeCompletionPct}%`} />
+              </div>
+              {flowMetrics.plansByStatus.length > 0 && (
+                <div className="space-y-1.5">
+                  {flowMetrics.plansByStatus.slice(0, 7).map((row) => {
+                    const max = Math.max(...flowMetrics.plansByStatus.map((r) => r.count), 1);
+                    const pct = (row.count / max) * 100;
+                    return (
+                      <div key={row.status} className="flex items-center gap-2 text-xs">
+                        <div className="w-28 shrink-0 text-[#2f3437]/60 dark:text-white/50 truncate">{row.status}</div>
+                        <div className="flex-1 h-3 bg-gray-100 dark:bg-white/5 rounded overflow-hidden">
+                          <div className="h-full bg-[#6ba3c7]" style={{ width: `${pct}%` }} />
+                        </div>
+                        <div className="w-8 text-right tabular-nums text-[#2f3437]/60 dark:text-white/50">{row.count}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           )}
 
           {/* Recent Activity */}

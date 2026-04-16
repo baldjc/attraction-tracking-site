@@ -53,6 +53,7 @@ export const DEFAULT_FLAGS: FeatureFlags = {
   team_pipeline: false,
   drive_auto_upload: false,
   planner_pipeline_view: false,
+  flow_metrics: false,
 };
 
 export async function getFeatureFlags(): Promise<FeatureFlags> {
