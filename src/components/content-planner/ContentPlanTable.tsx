@@ -12,6 +12,7 @@ import {
   getStatusOptions,
   hasEditDueDate,
   hasDriveFolder,
+  filterPlans,
 } from "@/lib/content-plan-utils";
 import { getScoreBadgeClasses } from "@/lib/score-badge";
 
@@ -36,6 +37,8 @@ interface Props {
   apiBase: string;
   isAdmin?: boolean;
   forcedServiceTier?: string;
+  searchQuery?: string;
+  statusFilter?: string[];
 }
 
 function StatusBadge({ status }: { status: string }) {
@@ -62,7 +65,7 @@ function toInputDate(d: string | null) {
 
 type EditingCell = { id: string; field: string } | null;
 
-export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServiceTier }: Props) {
+export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServiceTier, searchQuery = "", statusFilter = [] }: Props) {
   const [plans, setPlans] = useState<ContentPlan[]>([]);
   const [serviceTier, setServiceTier] = useState<string>(forcedServiceTier ?? "foundations");
   const [themes, setThemes] = useState<Array<{ name: string; emoji?: string | null; colour?: string | null }>>([
@@ -220,9 +223,14 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
     }
   }
 
+  const visiblePlans = useMemo(
+    () => filterPlans(plans, searchQuery, statusFilter),
+    [plans, searchQuery, statusFilter]
+  );
+
   const sortedPlans = useMemo(() => {
-    if (!sortKey) return plans;
-    return [...plans].sort((a, b) => {
+    if (!sortKey) return visiblePlans;
+    return [...visiblePlans].sort((a, b) => {
       const aVal = a[sortKey];
       const bVal = b[sortKey];
       const mult = sortDir === "asc" ? 1 : -1;

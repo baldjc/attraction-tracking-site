@@ -52,6 +52,7 @@ export const DEFAULT_FLAGS: FeatureFlags = {
   upgrade_moments: false,
   team_pipeline: false,
   drive_auto_upload: false,
+  planner_pipeline_view: false,
 };
 
 export async function getFeatureFlags(): Promise<FeatureFlags> {

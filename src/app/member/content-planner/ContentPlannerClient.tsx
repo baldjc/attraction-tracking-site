@@ -1,15 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { CalendarDaysIcon, ClipboardDocumentIcon, CheckIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { CalendarDaysIcon, ClipboardDocumentIcon, CheckIcon, XMarkIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import ContentPlanTable from "@/components/content-planner/ContentPlanTable";
 import CalendarView from "@/components/content-planner/CalendarView";
 import BoardView from "@/components/content-planner/BoardView";
+import PipelineView from "@/components/content-planner/PipelineView";
 import ContentPlanEditModal, { type ContentPlan } from "@/components/content-planner/ContentPlanEditModal";
-import { hasEditDueDate } from "@/lib/content-plan-utils";
+import { hasEditDueDate, getStatusOptions } from "@/lib/content-plan-utils";
 
-type ViewId = "publish_cal" | "shoot_cal" | "edit_due" | "table" | "by_theme";
+type ViewId = "publish_cal" | "shoot_cal" | "edit_due" | "table" | "by_theme" | "pipeline";
 
 interface Props {
   serviceTier: string;
@@ -29,6 +30,12 @@ export default function ContentPlannerClient({
   const [copied, setCopied] = useState(false);
   const [autoOpenPlan, setAutoOpenPlan] = useState<ContentPlan | null>(null);
   const [showProgressTrack, setShowProgressTrack] = useState(false);
+  const [showPipelineTab, setShowPipelineTab] = useState(false);
+
+  // Sprint 7 — global search + status filter state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string[]>([]);
+  const [allPlans, setAllPlans] = useState<ContentPlan[] | null>(null);
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -36,7 +43,10 @@ export default function ContentPlannerClient({
   useEffect(() => {
     fetch("/api/member/feature-flags")
       .then((r) => r.json())
-      .then((d) => { if (d?.flags?.progress_track_v1) setShowProgressTrack(true); })
+      .then((d) => {
+        if (d?.flags?.progress_track_v1) setShowProgressTrack(true);
+        if (d?.flags?.planner_pipeline_view) setShowPipelineTab(true);
+      })
       .catch(() => {});
   }, []);
 
@@ -44,13 +54,31 @@ export default function ContentPlannerClient({
   useEffect(() => {
     const planId = searchParams.get("plan");
     if (!planId) return;
-    // Clear the param immediately so refresh doesn't re-open it
     router.replace("/member/content-planner");
     fetch(`/api/member/content-plans/${planId}`)
       .then((r) => r.json())
       .then((d) => { if (d?.plan) setAutoOpenPlan(d.plan as ContentPlan); })
       .catch(() => {});
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Sprint 7 — fetch plan list once for filter-chip counts + Pipeline default heuristic.
+  useEffect(() => {
+    fetch(apiBase)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (d?.plans) setAllPlans(d.plans as ContentPlan[]); })
+      .catch(() => {});
+  }, [apiBase]);
+
+  // When Pipeline is available and the member has 5+ plans, default the view
+  // to Pipeline on first load (but don't override an explicit selection).
+  const [defaultChosen, setDefaultChosen] = useState(false);
+  useEffect(() => {
+    if (defaultChosen) return;
+    if (!showPipelineTab) return;
+    if (!allPlans) return;
+    if (allPlans.length >= 5) setView("pipeline");
+    setDefaultChosen(true);
+  }, [showPipelineTab, allPlans, defaultChosen]);
 
   const showEditDueTab = hasEditDueDate(serviceTier);
 
@@ -60,8 +88,26 @@ export default function ContentPlannerClient({
     { id: "shoot_cal",   label: "Shoot Calendar",    restricted: false },
     { id: "edit_due",    label: "Edit Due",           restricted: !showEditDueTab },
     { id: "by_theme",    label: "By Theme",           restricted: false },
+    { id: "pipeline",    label: "Pipeline",           restricted: !showPipelineTab },
   ];
   const TABS = ALL_TABS.filter((t) => !t.restricted);
+
+  const statusOptions = useMemo(() => getStatusOptions(serviceTier), [serviceTier]);
+
+  const statusCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    if (!allPlans) return counts;
+    for (const p of allPlans) counts[p.status] = (counts[p.status] ?? 0) + 1;
+    return counts;
+  }, [allPlans]);
+
+  function toggleStatus(s: string) {
+    setStatusFilter((curr) => curr.includes(s) ? curr.filter((x) => x !== s) : [...curr, s]);
+  }
+  function clearFilters() {
+    setSearchQuery("");
+    setStatusFilter([]);
+  }
 
   async function openCalModal() {
     setShowCalModal(true);
@@ -86,8 +132,59 @@ export default function ContentPlannerClient({
     });
   }
 
+  const filtersActive = searchQuery.trim().length > 0 || statusFilter.length > 0;
+
   return (
     <div>
+      {/* Sprint 7 — global search + status filter bar */}
+      <div className="mb-4 space-y-2.5">
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="relative flex-1 min-w-[240px] max-w-md">
+            <MagnifyingGlassIcon className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#2f3437]/40 pointer-events-none" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="🔍 Search plans…"
+              className="w-full pl-9 pr-8 py-1.5 text-sm bg-white border border-gray-200 rounded-lg text-[#2f3437] placeholder:text-[#2f3437]/40 focus:outline-none focus:border-[#6ba3c7] focus:ring-2 focus:ring-[#6ba3c7]/20"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-[#2f3437]/40 hover:text-[#2f3437]"
+                title="Clear search"
+              >
+                <XMarkIcon className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+          {filtersActive && (
+            <button onClick={clearFilters} className="text-xs text-[#6ba3c7] hover:underline whitespace-nowrap">
+              Clear filters
+            </button>
+          )}
+        </div>
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {statusOptions.map((s) => {
+            const count = statusCounts[s] ?? 0;
+            const selected = statusFilter.includes(s);
+            return (
+              <button
+                key={s}
+                onClick={() => toggleStatus(s)}
+                className={`text-xs font-medium px-2.5 py-1 rounded-full border transition-colors ${
+                  selected
+                    ? "bg-[#6ba3c7] border-[#6ba3c7] text-white"
+                    : "bg-white border-gray-200 text-[#2f3437]/70 hover:border-[#6ba3c7]/50"
+                }`}
+              >
+                {s} ({count})
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       <div className="flex items-center justify-between gap-3 mb-5 flex-wrap">
         <div className="flex items-center flex-wrap gap-1 bg-white border border-gray-200 rounded-lg p-1 shadow-sm">
           {TABS.map((tab) => (
@@ -120,6 +217,8 @@ export default function ContentPlannerClient({
           apiBase={apiBase}
           forcedServiceTier={serviceTier}
           isAdmin={isAdminView}
+          searchQuery={searchQuery}
+          statusFilter={statusFilter}
         />
       )}
 
@@ -129,6 +228,8 @@ export default function ContentPlannerClient({
           calendarType="publish"
           serviceTier={serviceTier}
           isAdmin={isAdminView}
+          searchQuery={searchQuery}
+          statusFilter={statusFilter}
         />
       )}
 
@@ -138,6 +239,8 @@ export default function ContentPlannerClient({
           calendarType="shoot"
           serviceTier={serviceTier}
           isAdmin={isAdminView}
+          searchQuery={searchQuery}
+          statusFilter={statusFilter}
         />
       )}
 
@@ -147,6 +250,8 @@ export default function ContentPlannerClient({
           calendarType="edit_due"
           serviceTier={serviceTier}
           isAdmin={isAdminView}
+          searchQuery={searchQuery}
+          statusFilter={statusFilter}
         />
       )}
 
@@ -155,6 +260,18 @@ export default function ContentPlannerClient({
           apiBase={apiBase}
           serviceTier={serviceTier}
           isAdmin={isAdminView}
+          searchQuery={searchQuery}
+          statusFilter={statusFilter}
+        />
+      )}
+
+      {view === "pipeline" && showPipelineTab && (
+        <PipelineView
+          apiBase={apiBase}
+          serviceTier={serviceTier}
+          isAdmin={isAdminView}
+          searchQuery={searchQuery}
+          statusFilter={statusFilter}
         />
       )}
 

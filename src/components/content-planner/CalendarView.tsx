@@ -15,7 +15,7 @@ import {
 } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { ChevronLeftIcon, ChevronRightIcon, PlusIcon, XMarkIcon } from "@heroicons/react/24/outline";
-import { STATUS_STYLES, getStatusOptions, PRIORITY_OPTIONS, hasEditDueDate } from "@/lib/content-plan-utils";
+import { STATUS_STYLES, getStatusOptions, PRIORITY_OPTIONS, hasEditDueDate, filterPlans } from "@/lib/content-plan-utils";
 import ContentPlanEditModal, { type ContentPlan } from "./ContentPlanEditModal";
 
 interface ThemeOption {
@@ -30,6 +30,8 @@ interface Props {
   serviceTier: string;
   isAdmin?: boolean;
   themes?: ThemeOption[];
+  searchQuery?: string;
+  statusFilter?: string[];
 }
 
 const DATE_FIELD: Record<string, keyof ContentPlan> = {
@@ -99,7 +101,7 @@ function DroppableDay({ id, children, isOver }: { id: string; children: React.Re
   );
 }
 
-export default function CalendarView({ apiBase, calendarType, serviceTier, isAdmin, themes = [] }: Props) {
+export default function CalendarView({ apiBase, calendarType, serviceTier, isAdmin, themes = [], searchQuery = "", statusFilter = [] }: Props) {
   const today = new Date();
   const [year,  setYear]  = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
@@ -147,7 +149,9 @@ export default function CalendarView({ apiBase, calendarType, serviceTier, isAdm
   }
   function goToday() { setYear(today.getFullYear()); setMonth(today.getMonth()); }
 
-  const plansByDay = plans.reduce<Record<string, ContentPlan[]>>((acc, plan) => {
+  const visiblePlans = filterPlans(plans, searchQuery, statusFilter);
+
+  const plansByDay = visiblePlans.reduce<Record<string, ContentPlan[]>>((acc, plan) => {
     const dateVal = plan[dateField] as string | null;
     const key = planDateKey(dateVal);
     if (key) { acc[key] = acc[key] ? [...acc[key], plan] : [plan]; }

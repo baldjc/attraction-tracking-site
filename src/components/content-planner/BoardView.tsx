@@ -15,13 +15,15 @@ import {
 } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { ArrowTopRightOnSquareIcon, FolderIcon, PlusIcon, XMarkIcon } from "@heroicons/react/24/outline";
-import { STATUS_STYLES, getStatusOptions, PRIORITY_OPTIONS, hasEditDueDate } from "@/lib/content-plan-utils";
+import { STATUS_STYLES, getStatusOptions, PRIORITY_OPTIONS, hasEditDueDate, filterPlans } from "@/lib/content-plan-utils";
 import ContentPlanEditModal, { type ContentPlan } from "./ContentPlanEditModal";
 
 interface Props {
   apiBase: string;
   serviceTier: string;
   isAdmin?: boolean;
+  searchQuery?: string;
+  statusFilter?: string[];
 }
 
 const COLUMN_COLOURS = [
@@ -100,7 +102,7 @@ function DroppableColumn({ id, children, isOver }: { id: string; children: React
   );
 }
 
-export default function BoardView({ apiBase, serviceTier, isAdmin }: Props) {
+export default function BoardView({ apiBase, serviceTier, isAdmin, searchQuery = "", statusFilter = [] }: Props) {
   const [plans,   setPlans]   = useState<ContentPlan[]>([]);
   const [themes,  setThemes]  = useState<ThemeObj[]>([]);
   const [loading, setLoading] = useState(true);
@@ -217,7 +219,8 @@ export default function BoardView({ apiBase, serviceTier, isAdmin }: Props) {
   }
 
   const hasNoThemes = themes.length === 0;
-  const unassigned  = plans.filter((p) => !p.theme || !themes.some((t) => t.name === p.theme));
+  const visiblePlans = filterPlans(plans, searchQuery, statusFilter);
+  const unassigned  = visiblePlans.filter((p) => !p.theme || !themes.some((t) => t.name === p.theme));
   const activePlan  = plans.find((p) => p.id === activeDragId);
 
   const columns: { id: string; label: string; colour: string }[] = themes.map((t, i) => ({
@@ -262,7 +265,7 @@ export default function BoardView({ apiBase, serviceTier, isAdmin }: Props) {
           {columns.map((col) => {
             const colPlans = col.id === "__unassigned__"
               ? unassigned
-              : plans.filter((p) => p.theme === col.id);
+              : visiblePlans.filter((p) => p.theme === col.id);
             return (
               <div key={col.id} className="w-64 shrink-0 bg-white border border-gray-200 rounded-xl overflow-hidden">
                 <div className="h-1" style={{ backgroundColor: col.colour }} />
@@ -293,7 +296,7 @@ export default function BoardView({ apiBase, serviceTier, isAdmin }: Props) {
           {columns.map((col) => {
             const colPlans = col.id === "__unassigned__"
               ? unassigned
-              : plans.filter((p) => p.theme === col.id);
+              : visiblePlans.filter((p) => p.theme === col.id);
             return (
               <div key={col.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden">
                 <div className="h-1" style={{ backgroundColor: col.colour }} />

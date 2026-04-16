@@ -55,6 +55,36 @@ export function hasDriveFolder(serviceTier: string): boolean {
   return PRODUCTION_TIERS.includes(serviceTier);
 }
 
+/**
+ * Shared search + status filter applied across every planner view so that
+ * "Sprint 7" filters feel global. Case-insensitive match across title/theme/
+ * notes/script/thumbnailWords/researchNotes. Empty `statusFilter` = all
+ * statuses. Empty `query` = no text filter.
+ */
+export function filterPlans<T extends {
+  title?: string | null;
+  theme?: string | null;
+  notes?: string | null;
+  script?: string | null;
+  researchNotes?: string | null;
+  thumbnailWords?: string | null;
+  status: string;
+}>(plans: T[], query: string, statusFilter: string[]): T[] {
+  const q = (query ?? "").trim().toLowerCase();
+  const hasQuery = q.length > 0;
+  const hasStatus = statusFilter && statusFilter.length > 0;
+  if (!hasQuery && !hasStatus) return plans;
+  return plans.filter((p) => {
+    if (hasStatus && !statusFilter.includes(p.status)) return false;
+    if (!hasQuery) return true;
+    const haystack = [p.title, p.theme, p.notes, p.script, p.researchNotes, p.thumbnailWords]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+    return haystack.includes(q);
+  });
+}
+
 export const PRE_PRODUCTION_STATUSES = [
   "Idea",
   "Future Idea",
