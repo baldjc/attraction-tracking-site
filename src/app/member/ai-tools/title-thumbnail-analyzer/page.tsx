@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { PhotoIcon, BookmarkIcon, CheckIcon, PaperAirplaneIcon, ArrowLeftIcon } from "@heroicons/react/24/outline";
 import { SparklesIcon } from "@heroicons/react/24/solid";
 import Link from "next/link";
@@ -9,6 +10,7 @@ import RecentConversations from "@/components/ai-tools/RecentConversations";
 import ResourceRecommendations from "@/components/ResourceRecommendations";
 import MarkdownMessage from "@/components/MarkdownMessage";
 import NextStepCard from "@/components/ai-tools/NextStepCard";
+import LinkedPlanBanner from "@/components/ai-tools/LinkedPlanBanner";
 
 interface SubScores {
   [key: string]: number;
@@ -354,7 +356,10 @@ function GoDeeperSection({
   );
 }
 
-export default function TitleThumbnailAnalyzerPage() {
+function TitleThumbnailAnalyzerPageInner() {
+  const searchParams = useSearchParams();
+  const urlPlanId = searchParams.get("planId");
+
   const [title, setTitle] = useState("");
   const [thumbnail, setThumbnail] = useState<File | null>(null);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
@@ -363,7 +368,7 @@ export default function TitleThumbnailAnalyzerPage() {
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState("");
   const [refreshCounter, setRefreshCounter] = useState(0);
-  const [linkedPlanId, setLinkedPlanId] = useState<string | null>(null);
+  const [linkedPlanId, setLinkedPlanId] = useState<string | null>(urlPlanId);
   const [plannerSaving, setPlannerSaving] = useState(false);
   const [plannerSaved, setPlannerSaved] = useState(false);
   const [plannerSaveError, setPlannerSaveError] = useState(false);
@@ -504,6 +509,8 @@ export default function TitleThumbnailAnalyzerPage() {
           Score your title and thumbnail for cognitive dissonance — the gap that compels the click
         </p>
       </div>
+
+      {linkedPlanId && <LinkedPlanBanner planId={linkedPlanId} />}
       <PromptEditor toolKey="title_thumbnail_analyzer_prompt" defaultPrompt="" placeholders={[]} />
       <RecentConversations
         toolType="title_thumbnail_analyzer"
@@ -1012,5 +1019,13 @@ export default function TitleThumbnailAnalyzerPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function TitleThumbnailAnalyzerPage() {
+  return (
+    <Suspense>
+      <TitleThumbnailAnalyzerPageInner />
+    </Suspense>
   );
 }

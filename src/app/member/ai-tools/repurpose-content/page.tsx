@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { ChevronDownIcon, ChevronUpIcon, ClipboardDocumentIcon, CheckIcon } from "@heroicons/react/24/outline";
 import NextStepCard from "@/components/ai-tools/NextStepCard";
+import LinkedPlanBanner from "@/components/ai-tools/LinkedPlanBanner";
 
 function markdownToHtml(md: string): string {
   const lines = md.split("\n");
@@ -267,7 +269,10 @@ function SaveButton({ onSave, saving, saved }: { onSave: () => void; saving: boo
   );
 }
 
-export default function RepurposeContentPage() {
+function RepurposeContentPageInner() {
+  const searchParams = useSearchParams();
+  const planId = searchParams.get("planId");
+
   const [profile, setProfile] = useState<RepurposeProfile>({ name: "", business: "", listSize: "", voice: "" });
   const [savedLinks, setSavedLinks] = useState<SavedLink[]>([]);
   const [isSetup, setIsSetup] = useState<boolean | null>(null);
@@ -751,6 +756,8 @@ export default function RepurposeContentPage() {
         <h1 className="text-2xl font-bold text-[#2f3437] dark:text-white">♻️ Repurpose Content</h1>
         <p className="text-[#2f3437]/60 dark:text-white/60 mt-1">Turn your video transcript into a newsletter, LinkedIn article, Facebook post, blog post, or neighbourhood postcard</p>
       </div>
+
+      {planId && <LinkedPlanBanner planId={planId} />}
 
       {!isSetup && (
         <div className="bg-white dark:bg-[#1a1a1a] border border-[#2f3437]/10 dark:border-white/10 rounded-lg p-6">
@@ -1396,5 +1403,13 @@ export default function RepurposeContentPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function RepurposeContentPage() {
+  return (
+    <Suspense>
+      <RepurposeContentPageInner />
+    </Suspense>
   );
 }

@@ -10,6 +10,9 @@ import {
   hasEditDueDate,
   hasDriveFolder,
 } from "@/lib/content-plan-utils";
+import ProgressTrack from "@/components/content-planner/ProgressTrack";
+import { resolveProgressSteps, getSuggestedNextStep, type PlanArtifactsByType } from "@/lib/plan-state";
+import { buildToolUrl } from "@/lib/tool-handoff";
 
 export interface ContentPlan {
   id: string;
@@ -41,6 +44,7 @@ interface Props {
   isAdmin?: boolean;
   memberId?: string;
   themes?: ThemeOption[];
+  showProgressTrack?: boolean;
   onClose: () => void;
   onSaved: (updated: ContentPlan) => void;
   onDeleted?: (id: string) => void;
@@ -51,7 +55,23 @@ function toDateInput(val: string | null) {
   return new Date(val).toISOString().slice(0, 10);
 }
 
-export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdmin, memberId, themes = [], onClose, onSaved, onDeleted }: Props) {
+const TOOL_ROUTES: Partial<Record<string, string>> = {
+  script: "/member/ai-tools/arc-script-builder",
+  review: "/member/ai-tools/script-review",
+  title: "/member/ai-tools/title-thumbnail-analyzer",
+  description: "/member/ai-tools/description-generator",
+  repurpose: "/member/ai-tools/repurpose-content",
+};
+
+const ALL_TOOLS = [
+  { key: "script", label: "Build Script", icon: "📝" },
+  { key: "review", label: "Script Review", icon: "📋" },
+  { key: "title", label: "Title & Thumbnail", icon: "🎯" },
+  { key: "description", label: "Description Generator", icon: "✍️" },
+  { key: "repurpose", label: "Repurpose Content", icon: "♻️" },
+];
+
+export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdmin, memberId, themes = [], showProgressTrack = false, onClose, onSaved, onDeleted }: Props) {
   const router = useRouter();
   const [form, setForm] = useState({
     title: plan.title,
@@ -76,6 +96,27 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
   const [creatingFolder, setCreatingFolder] = useState(false);
   const [folderError, setFolderError] = useState("");
   const [showDownloadMenu, setShowDownloadMenu] = useState(false);
+  const [artifacts, setArtifacts] = useState<PlanArtifactsByType>({});
+  const [showAllTools, setShowAllTools] = useState(false);
+
+  useEffect(() => {
+    if (!showProgressTrack) return;
+    fetch(`/api/member/content-plans/${plan.id}/artifacts`)
+      .then((r) => r.json())
+      .then((d) => { if (d?.artifacts) setArtifacts(d.artifacts); })
+      .catch(() => {});
+  }, [plan.id, showProgressTrack]);
+
+  function handleStepClick(key: string) {
+    const route = TOOL_ROUTES[key];
+    if (!route) return;
+    router.push(buildToolUrl(route, { planId: plan.id, returnTo: "/member/content-planner" }));
+  }
+
+  const progressSteps = showProgressTrack
+    ? resolveProgressSteps({ id: plan.id, status: form.status, script: form.script }, artifacts, handleStepClick)
+    : [];
+  const suggestedNext = showProgressTrack ? getSuggestedNextStep(progressSteps) : null;
 
   const showEditDue = hasEditDueDate(serviceTier);
   const useDrive = hasDriveFolder(serviceTier);
@@ -212,10 +253,56 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
         </div>
 
         <div className="px-6 py-5 space-y-4">
+
+          {showProgressTrack && progressSteps.length > 0 && (
+            <div className="rounded-xl border border-gray-100 bg-[#f7f6f3] px-4 pt-4 pb-3 space-y-3">
+              <ProgressTrack steps={progressSteps} />
+
+              {suggestedNext && TOOL_ROUTES[suggestedNext.key] && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-[#2f3437]/50">Suggested next:</span>
+                  <a
+                    href={buildToolUrl(TOOL_ROUTES[suggestedNext.key]!, { planId: plan.id, returnTo: "/member/content-planner" })}
+                    className="flex items-center gap-1.5 text-xs font-semibold text-white bg-[#6ba3c7] hover:bg-[#5a92b6] px-3 py-1.5 rounded-lg transition-colors"
+                  >
+                    {ALL_TOOLS.find((t) => t.key === suggestedNext.key)?.icon}{" "}
+                    {ALL_TOOLS.find((t) => t.key === suggestedNext.key)?.label} →
+                  </a>
+                </div>
+              )}
+
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setShowAllTools((v) => !v)}
+                  className="text-[10px] text-[#2f3437]/40 hover:text-[#6ba3c7] transition-colors"
+                >
+                  {showAllTools ? "Hide tools ▲" : "All tools for this plan ▼"}
+                </button>
+                {showAllTools && (
+                  <div className="mt-2 grid grid-cols-2 gap-1.5">
+                    {ALL_TOOLS.map((tool) => (
+                      <a
+                        key={tool.key}
+                        href={buildToolUrl(TOOL_ROUTES[tool.key]!, { planId: plan.id, returnTo: "/member/content-planner" })}
+                        className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-[#2f3437]/70 bg-white border border-gray-200 rounded-lg hover:border-[#6ba3c7] hover:text-[#6ba3c7] transition-colors"
+                      >
+                        <span>{tool.icon}</span>
+                        <span>{tool.label}</span>
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           <div>
             <div className="flex items-center justify-between mb-1">
               <label className="block text-xs font-medium text-[#2f3437]/60">Title</label>
-              <button type="button" onClick={() => pushToAITool("title")} className="text-xs text-[#6ba3c7] hover:underline">Analyse Title →</button>
+              {!showProgressTrack && (
+                <button type="button" onClick={() => pushToAITool("title")} className="text-xs text-[#6ba3c7] hover:underline">Analyse Title →</button>
+              )}
             </div>
             <input type="text" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} className={field} />
             <p className={`text-xs mt-1 text-right ${form.title.length > 80 ? "text-red-500" : form.title.length > 60 ? "text-amber-500" : "text-[#2f3437]/40"}`}>
@@ -285,7 +372,9 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
           <div>
             <div className="flex items-center justify-between mb-1">
               <label className="block text-xs font-medium text-[#2f3437]/60">Talking Points / Outline of Video</label>
-              <button type="button" onClick={() => pushToAITool("script-builder")} className="text-xs text-[#6ba3c7] hover:underline">Build Script →</button>
+              {!showProgressTrack && (
+                <button type="button" onClick={() => pushToAITool("script-builder")} className="text-xs text-[#6ba3c7] hover:underline">Build Script →</button>
+              )}
             </div>
             <textarea value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} rows={3} className={`${field} resize-y`} placeholder="Key details, action items…" />
           </div>
@@ -293,7 +382,9 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
           <div>
             <div className="flex items-center justify-between mb-1">
               <label className="block text-xs font-medium text-[#2f3437]/60">Script</label>
-              <button type="button" onClick={() => pushToAITool("script-review")} className="text-xs text-[#6ba3c7] hover:underline">Script Review →</button>
+              {!showProgressTrack && (
+                <button type="button" onClick={() => pushToAITool("script-review")} className="text-xs text-[#6ba3c7] hover:underline">Script Review →</button>
+              )}
             </div>
             <textarea value={form.script} onChange={(e) => setForm((f) => ({ ...f, script: e.target.value }))} rows={6} className={`${field} resize-y`} placeholder="Write your video script here…" />
             {form.script.trim() && (

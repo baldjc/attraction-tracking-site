@@ -75,6 +75,7 @@ function SaveStatusBanner({
 interface Props {
   basePath: string;
   isAdmin?: boolean;
+  defaultPlanId?: string;
 }
 
 interface ContentTheme {
@@ -129,7 +130,7 @@ interface ScriptDraftResume {
   updatedAt: string;
 }
 
-export default function ArcScriptBuilderTool({ basePath, isAdmin }: Props) {
+export default function ArcScriptBuilderTool({ basePath, isAdmin, defaultPlanId }: Props) {
   const [phase, setPhase] = useState<"upload" | "chat">("upload");
   const [uploadData, setUploadData] = useState<UploadData | null>(null);
   const [usage, setUsage] = useState<UsageData | null>(null);
@@ -203,7 +204,9 @@ export default function ArcScriptBuilderTool({ basePath, isAdmin }: Props) {
         }
       }
     } catch { /* ignore malformed data */ }
-  }, []);
+    // URL param planId takes over when no sessionStorage prefill exists
+    if (!linkedPlanId && defaultPlanId) setLinkedPlanId(defaultPlanId);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fetch the linked plan's title for the save banner
   useEffect(() => {

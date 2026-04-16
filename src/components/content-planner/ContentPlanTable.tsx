@@ -4,6 +4,8 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { PlusIcon, TrashIcon, ArrowTopRightOnSquareIcon, PencilSquareIcon, ChevronUpIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
 import { CheckIcon, XMarkIcon } from "@heroicons/react/24/solid";
 import ContentPlanEditModal from "./ContentPlanEditModal";
+import ProgressTrack from "./ProgressTrack";
+import { resolveProgressSteps, type PlanArtifactsByType } from "@/lib/plan-state";
 import {
   STATUS_STYLES,
   PRIORITY_OPTIONS,
@@ -78,6 +80,8 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
   const inputRef = useRef<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null>(null);
   const [sortKey, setSortKey] = useState<keyof ContentPlan | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [showProgressTrack, setShowProgressTrack] = useState(false);
+  const [planArtifacts, setPlanArtifacts] = useState<Record<string, PlanArtifactsByType>>({});
 
   const allStatusOptions = getStatusOptions(serviceTier);
   const showEditDue = isAdmin || hasEditDueDate(serviceTier);
@@ -86,7 +90,20 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
   useEffect(() => {
     fetchPlans();
     fetchThemes();
+    fetch("/api/member/feature-flags")
+      .then((r) => r.json())
+      .then((d) => { if (d?.flags?.progress_track_v1) setShowProgressTrack(true); })
+      .catch(() => {});
   }, [apiBase]);
+
+  useEffect(() => {
+    if (!showProgressTrack || plans.length === 0) return;
+    const ids = plans.map((p) => p.id).join(",");
+    fetch(`/api/member/content-plans/artifacts?planIds=${ids}`)
+      .then((r) => r.json())
+      .then((d) => { if (d?.artifactsByPlan) setPlanArtifacts(d.artifactsByPlan); })
+      .catch(() => {});
+  }, [plans, showProgressTrack]);
 
   useEffect(() => {
     if (editingCell && inputRef.current) {
@@ -465,6 +482,7 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
                 </th>
                 {showDriveFolder && <th className="text-center px-4 py-2.5 font-medium whitespace-nowrap">Drive</th>}
                 <th className="text-left px-4 py-2.5 font-medium">Notes</th>
+                {showProgressTrack && <th className="hidden md:table-cell px-4 py-2.5 font-medium whitespace-nowrap">Progress</th>}
                 <th className="px-4 py-2.5 w-10" />
               </tr>
             </thead>
@@ -494,6 +512,18 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
                   <td className="px-4 py-2.5">{renderCell(plan, "thumbnailWords")}</td>
                   {showDriveFolder && <td className="px-4 py-2.5 text-center">{renderCell(plan, "driveFolderLink")}</td>}
                   <td className="px-4 py-2.5">{renderCell(plan, "notes")}</td>
+                  {showProgressTrack && (
+                    <td className="hidden md:table-cell px-4 py-2.5">
+                      <ProgressTrack
+                        compact
+                        steps={resolveProgressSteps(
+                          { id: plan.id, status: plan.status, script: plan.script },
+                          planArtifacts[plan.id] ?? {},
+                          () => setEditingPlan(plan)
+                        )}
+                      />
+                    </td>
+                  )}
                   <td className="px-4 py-2.5">
                     {confirmDelete === plan.id ? (
                       <div className="flex items-center gap-1">
@@ -618,6 +648,7 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
           apiBase={apiBase}
           isAdmin={isAdmin}
           themes={themes}
+          showProgressTrack={showProgressTrack}
           onClose={() => setEditingPlan(null)}
           onSaved={(updated) => {
             setPlans((prev) => prev.map((p) => (p.id === updated.id ? { ...p, ...updated } : p)));

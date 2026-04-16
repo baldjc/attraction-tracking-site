@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import PageHeader from "@/components/PageHeader";
+import LinkedPlanBanner from "@/components/ai-tools/LinkedPlanBanner";
 
 interface CampaignInfo {
   id: string;
@@ -34,10 +36,13 @@ interface ContentPlanOption {
   title: string;
 }
 
-export default function DescriptionGeneratorPage() {
+function DescriptionGeneratorPageInner() {
+  const searchParams = useSearchParams();
+  const urlPlanId = searchParams.get("planId");
+
   const [title, setTitle] = useState("");
   const [transcript, setTranscript] = useState("");
-  const [contentPlanId, setContentPlanId] = useState<string | null>(null);
+  const [contentPlanId, setContentPlanId] = useState<string | null>(urlPlanId);
 
   const [generating, setGenerating] = useState(false);
   const [description, setDescription] = useState("");
@@ -271,12 +276,7 @@ export default function DescriptionGeneratorPage() {
         description="Generate SEO-optimised YouTube descriptions from your video transcript"
       />
 
-      {contentPlanId && (
-        <div className="mb-4 flex items-center gap-2 text-xs text-[#6ba3c7] bg-[#6ba3c7]/8 border border-[#6ba3c7]/20 rounded-lg px-3 py-2">
-          <span>📋</span>
-          <span>Linked to Content Plan — description will be saved automatically on generate</span>
-        </div>
-      )}
+      {contentPlanId && <LinkedPlanBanner planId={contentPlanId} />}
 
       {/* INPUT SECTION */}
       <div className="bg-white dark:bg-[#1a1a1a] rounded-xl border border-[#2f3437]/10 dark:border-white/10 shadow-sm p-6 space-y-4 mb-6">
@@ -502,5 +502,13 @@ export default function DescriptionGeneratorPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function DescriptionGeneratorPage() {
+  return (
+    <Suspense>
+      <DescriptionGeneratorPageInner />
+    </Suspense>
   );
 }

@@ -2,14 +2,22 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import ScriptReviewChatUI from "@/components/ai-tools/ScriptReviewChatUI";
+import LinkedPlanBanner from "@/components/ai-tools/LinkedPlanBanner";
 import Link from "next/link";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 
 export const metadata = { title: "Script Review – Attraction by Video" };
 
-export default async function MemberScriptReviewPage() {
+export default async function MemberScriptReviewPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ planId?: string }>;
+}) {
   const session = await auth();
   if (!session?.user) redirect("/login");
+
+  const params = await searchParams;
+  const planId = params.planId;
 
   const user = await prisma.user.findUnique({
     where: { email: session.user.email! },
@@ -33,6 +41,8 @@ export default async function MemberScriptReviewPage() {
           Paste your script and get scored on 14 Attraction principles — then chat to improve it.
         </p>
       </div>
+
+      {planId && <LinkedPlanBanner planId={planId} />}
 
       <ScriptReviewChatUI basePath="/member/ai-tools" noAvatar={noAvatar} />
     </div>
