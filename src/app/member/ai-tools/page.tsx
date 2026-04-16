@@ -10,17 +10,20 @@ export default async function AIToolsHubPage() {
   const role = (session?.user as any)?.role as string;
   const email = session?.user?.email ?? null;
 
-  const baseFlags =
-    role === "admin" || role === "editor"
-      ? { ...DEFAULT_FLAGS }
-      : await getFeatureFlags();
+  const isPrivileged = role === "admin" || role === "editor";
 
-  // Testing override: force the Listing Video Builder ON for allowlisted
-  // member emails, even if the global flag is OFF. Remove once the tool
-  // is rolled out to all eligible tiers.
-  const featureFlags = isListingVideoBuilderTester(email)
-    ? { ...baseFlags, tool_listing_video_builder: true }
-    : baseFlags;
+  const baseFlags = isPrivileged
+    ? { ...DEFAULT_FLAGS }
+    : await getFeatureFlags();
+
+  // Admins/editors always see the Listing Video Builder (DEFAULT_FLAGS has it
+  // off by default; force it on for privileged roles).
+  // Testing override: also force it ON for allowlisted member emails so they
+  // can test the member experience. Remove allowlist once tool is rolled out.
+  const featureFlags =
+    isPrivileged || isListingVideoBuilderTester(email)
+      ? { ...baseFlags, tool_listing_video_builder: true }
+      : baseFlags;
 
   return (
     <>
