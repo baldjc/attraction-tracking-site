@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import ContentPlannerClient from "./ContentPlannerClient";
 import ContentPlannerUpgrade from "@/components/ContentPlannerUpgrade";
+import OrphanScriptsBanner from "@/components/content-planner/OrphanScriptsBanner";
 
 const PRODUCTION_TIERS = ["editing_2", "editing_4", "mastery_2", "mastery_4", "done_with_you"];
 
@@ -33,6 +34,7 @@ export default function ContentPlannerWrapper() {
 
   return (
     <Suspense fallback={null}>
+      <OrphanScriptsBanner />
       <ContentPlannerClient serviceTier={serviceTier} />
     </Suspense>
   );

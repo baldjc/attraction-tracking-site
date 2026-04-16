@@ -21,6 +21,7 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
   const requestedUserId = searchParams.get("userId");
+  const unlinkedOnly = searchParams.get("unlinked") === "true";
 
   let targetUserId = user.id;
 
@@ -32,10 +33,27 @@ export async function GET(req: NextRequest) {
     targetUserId = requestedUserId;
   }
 
+  let unlinkedScriptIds: Set<string> | null = null;
+  if (unlinkedOnly) {
+    const linkedPlans = await prisma.contentPlan.findMany({
+      where: { userId: targetUserId, linkedScriptId: { not: null } },
+      select: { linkedScriptId: true },
+    });
+    const linkedIds = new Set(linkedPlans.map((p) => p.linkedScriptId).filter((id): id is string => !!id));
+    const allScripts = await prisma.savedScript.findMany({
+      where: { userId: targetUserId },
+      select: { id: true },
+    });
+    unlinkedScriptIds = new Set(allScripts.map((s) => s.id).filter((id) => !linkedIds.has(id)));
+  }
+
   const scripts = await prisma.savedScript.findMany({
-    where: { userId: targetUserId },
+    where: {
+      userId: targetUserId,
+      ...(unlinkedScriptIds ? { id: { in: Array.from(unlinkedScriptIds) } } : {}),
+    },
     orderBy: { createdAt: "desc" },
-    take: 30,
+    take: unlinkedOnly ? 100 : 30,
     select: { id: true, videoTitle: true, arcScores: true, createdAt: true, scriptOutline: true },
   });
 

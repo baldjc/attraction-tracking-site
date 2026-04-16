@@ -4,6 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import ContentPlanEditModal, { type ContentPlan } from "@/components/content-planner/ContentPlanEditModal";
+import UpgradeModal from "@/components/upgrade/UpgradeModal";
+import { useUpgradeGate } from "@/components/upgrade/useUpgradeGate";
 
 export interface TitleOption {
   title: string;
@@ -36,6 +38,8 @@ export default function IdeaCard({ idea, theme, onSaved, savedId, onDelete }: Pr
   const [addedToPlanner, setAddedToPlanner] = useState(false);
   const [createdPlan, setCreatedPlan] = useState<ContentPlan | null>(null);
   const [plannerServiceTier, setPlannerServiceTier] = useState("foundations");
+  const [showUpgrade, setShowUpgrade] = useState(false);
+  const upgradeGate = useUpgradeGate();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -86,6 +90,10 @@ export default function IdeaCard({ idea, theme, onSaved, savedId, onDelete }: Pr
 
   async function handleAddToPlanner() {
     if (addedToPlanner || addingToPlanner) return;
+    if (upgradeGate.shouldShow("add_to_planner")) {
+      setShowUpgrade(true);
+      return;
+    }
     setAddingToPlanner(true);
     try {
       let notes: string | undefined;
@@ -262,6 +270,8 @@ export default function IdeaCard({ idea, theme, onSaved, savedId, onDelete }: Pr
           </p>
         </div>
       )}
+
+      <UpgradeModal trigger="add_to_planner" open={showUpgrade} onClose={() => setShowUpgrade(false)} />
 
       {createdPlan && (
         <ContentPlanEditModal

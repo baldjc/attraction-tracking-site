@@ -107,7 +107,15 @@ export default function ThemeDashboard({ themes, niche, city }: Props) {
             <ArrowLeftIcon className="w-3.5 h-3.5" />
             Back to AI Tools
           </Link>
-          <h1 className="text-2xl font-bold text-[#2f3437] dark:text-white">🚀 Content Engine</h1>
+          <div className="flex items-center gap-3 flex-wrap">
+            <h1 className="text-2xl font-bold text-[#2f3437] dark:text-white">🚀 Content Engine</h1>
+            <Link
+              href="/member/ai-tools/saved-ideas"
+              className="text-xs font-medium text-[#6ba3c7] hover:text-[#5490b5] transition-colors"
+            >
+              💡 My saved ideas →
+            </Link>
+          </div>
           <p className="text-sm text-[#2f3437]/50 dark:text-white/50 mt-0.5">
             {currentNiche
               ? `${currentNiche === "real_estate" ? "Real Estate" : currentNiche === "financial_planning" ? "Financial Planning" : "Other"}${currentCity ? ` · ${currentCity}` : ""}`

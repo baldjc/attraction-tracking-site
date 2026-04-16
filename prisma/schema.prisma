@@ -165,6 +165,7 @@ model User {
   scriptDrafts         ScriptDraft[]
   contentEngineDrafts  ContentEngineDraft[]
   changelogViews       ChangelogEntryView[]
+  upgradeModalDismissals UpgradeModalDismissal[]
 
   @@map("users")
 }
@@ -1372,4 +1373,16 @@ model PlanArtifact {
   @@index([planId, type])
   @@index([planId, type, version])
   @@map("plan_artifacts")
+}
+
+model UpgradeModalDismissal {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trigger     String
+  dismissedAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([userId, trigger])
+  @@map("upgrade_modal_dismissals")
 }

@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { ChevronDownIcon, ChevronUpIcon, ClipboardDocumentIcon, CheckIcon } from "@heroicons/react/24/outline";
 import NextStepCard from "@/components/ai-tools/NextStepCard";
 import LinkedPlanBanner from "@/components/ai-tools/LinkedPlanBanner";
+import InlineUpgradeBanner from "@/components/upgrade/InlineUpgradeBanner";
 
 function markdownToHtml(md: string): string {
   const lines = md.split("\n");
@@ -769,6 +770,7 @@ function RepurposeContentPageInner() {
       </div>
 
       {planId && <LinkedPlanBanner planId={planId} />}
+      <InlineUpgradeBanner message="Want repurposed content to save back into your Content Planner? That's a Production feature." />
 
       {!isSetup && (
         <div className="bg-white dark:bg-[#1a1a1a] border border-[#2f3437]/10 dark:border-white/10 rounded-lg p-6">

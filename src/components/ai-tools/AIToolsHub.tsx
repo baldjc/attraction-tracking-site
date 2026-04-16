@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
+import UpgradeModal, { type UpgradeTrigger } from "@/components/upgrade/UpgradeModal";
+import { useUpgradeGate } from "@/components/upgrade/useUpgradeGate";
 
 interface AvatarData {
   avatarName?: string | null;
@@ -125,11 +127,22 @@ const SECTIONS = [
     tools: ["repurpose_content", "description_generator"],
     columns: 2,
   },
+  {
+    id: "library",
+    icon: "💡",
+    label: "Library",
+    description: "Everything you've saved, in one place.",
+    tools: ["saved_ideas"],
+    columns: 1,
+    flagKey: "saved_ideas_page",
+  },
 ];
 
 export default function AIToolsHub({ basePath, featureFlags }: Props) {
   const { data: session } = useSession();
   const isAdmin = (session?.user as any)?.role === "admin";
+  const upgradeGate = useUpgradeGate();
+  const [upgradeTrigger, setUpgradeTrigger] = useState<UpgradeTrigger | null>(null);
   const [avatar, setAvatar] = useState<AvatarData | null>(null);
   const [lastScript, setLastScript] = useState<SavedScript | null>(null);
   const [lastReview, setLastReview] = useState<SavedScript | null>(null);
@@ -257,6 +270,16 @@ export default function AIToolsHub({ basePath, featureFlags }: Props) {
       extra: avatarStatus,
       badge: avatar?.avatarName ? "green" : "amber",
     },
+    {
+      href: `${basePath}/saved-ideas`,
+      id: "tool-saved-ideas",
+      featureKey: "saved_ideas_page",
+      icon: "💡",
+      title: "My Saved Ideas",
+      description: "Every idea you've starred. Push to your planner or build a script when you're ready.",
+      extra: savedIdeasCount != null ? `${savedIdeasCount} saved idea${savedIdeasCount === 1 ? "" : "s"}` : "Star ideas in Content Engine to save them",
+      badge: "blue" as const,
+    },
   ];
 
   const hasAvatar = !loading && !!avatar?.avatarName;
@@ -358,10 +381,21 @@ export default function AIToolsHub({ basePath, featureFlags }: Props) {
                   );
                 }
 
+                const interceptTrigger: UpgradeTrigger | null =
+                  tool.featureKey === "tool_arc_script_builder" && upgradeGate.shouldShow("build_script")
+                    ? "build_script"
+                    : null;
+
                 return (
                   <Link
                     key={tool.href}
                     href={tool.href}
+                    onClick={(e) => {
+                      if (interceptTrigger) {
+                        e.preventDefault();
+                        setUpgradeTrigger(interceptTrigger);
+                      }
+                    }}
                     className={`group bg-white dark:bg-[#1a1a1a] rounded-xl border hover:shadow-lg transition-all duration-200 ${
                       isAvatarTool && !hasAvatar
                         ? "border-[#6ba3c7] shadow-md shadow-[#6ba3c7]/10 ring-1 ring-[#6ba3c7]/20"
@@ -415,6 +449,12 @@ export default function AIToolsHub({ basePath, featureFlags }: Props) {
           <UsageCard usage={usage} />
         </div>
       )}
+
+      <UpgradeModal
+        trigger={upgradeTrigger ?? "build_script"}
+        open={!!upgradeTrigger}
+        onClose={() => setUpgradeTrigger(null)}
+      />
     </div>
   );
 }

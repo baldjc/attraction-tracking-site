@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import ScriptReviewChatUI from "@/components/ai-tools/ScriptReviewChatUI";
 import LinkedPlanBanner from "@/components/ai-tools/LinkedPlanBanner";
+import InlineUpgradeBanner from "@/components/upgrade/InlineUpgradeBanner";
 import Link from "next/link";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 
@@ -43,6 +44,7 @@ export default async function MemberScriptReviewPage({
       </div>
 
       {planId && <LinkedPlanBanner planId={planId} />}
+      <InlineUpgradeBanner message="Want scripts to save back to a planner with their score? That's a Production feature." />
 
       <ScriptReviewChatUI basePath="/member/ai-tools" noAvatar={noAvatar} defaultPlanId={planId} />
     </div>
