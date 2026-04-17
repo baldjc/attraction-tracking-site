@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { CalendarDaysIcon, ClipboardDocumentIcon, CheckIcon, XMarkIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+import { CalendarDaysIcon, ClipboardDocumentIcon, CheckIcon, XMarkIcon, MagnifyingGlassIcon, PlusIcon } from "@heroicons/react/24/outline";
 import ContentPlanTable from "@/components/content-planner/ContentPlanTable";
 import CalendarView from "@/components/content-planner/CalendarView";
 import BoardView from "@/components/content-planner/BoardView";
@@ -124,6 +124,27 @@ export default function ContentPlannerClient({
     }
   }
 
+  const [addingPlan, setAddingPlan] = useState(false);
+  async function handleQuickAdd() {
+    if (addingPlan) return;
+    setAddingPlan(true);
+    try {
+      const res = await fetch(apiBase, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: "New Video", status: statusOptions[0] }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed to add");
+      setAllPlans((prev) => (prev ? [data.plan as ContentPlan, ...prev] : [data.plan as ContentPlan]));
+      setAutoOpenPlan(data.plan as ContentPlan);
+    } catch (e: any) {
+      alert(`Could not add video: ${e.message}`);
+    } finally {
+      setAddingPlan(false);
+    }
+  }
+
   function copyUrl() {
     if (!calUrl) return;
     navigator.clipboard.writeText(calUrl).then(() => {
@@ -201,15 +222,27 @@ export default function ContentPlannerClient({
             </button>
           ))}
         </div>
-        {!isAdminView && (
-          <button
-            onClick={openCalModal}
-            className="flex items-center gap-1.5 text-sm text-[#2f3437]/70 border border-gray-200 bg-white px-3 py-1.5 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors"
-          >
-            <CalendarDaysIcon className="w-4 h-4" />
-            Subscribe to Calendar
-          </button>
-        )}
+        <div className="flex items-center gap-2 flex-wrap">
+          {!isAdminView && (
+            <button
+              onClick={handleQuickAdd}
+              disabled={addingPlan}
+              className="flex items-center gap-1.5 text-sm font-semibold text-white bg-[#6ba3c7] px-3 py-1.5 rounded-lg hover:bg-[#5490b5] disabled:opacity-50 transition-colors"
+            >
+              <PlusIcon className="w-4 h-4" />
+              {addingPlan ? "Adding…" : "Add Video"}
+            </button>
+          )}
+          {!isAdminView && (
+            <button
+              onClick={openCalModal}
+              className="flex items-center gap-1.5 text-sm text-[#2f3437]/70 border border-gray-200 bg-white px-3 py-1.5 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors"
+            >
+              <CalendarDaysIcon className="w-4 h-4" />
+              Subscribe to Calendar
+            </button>
+          )}
+        </div>
       </div>
 
       {view === "table" && (
