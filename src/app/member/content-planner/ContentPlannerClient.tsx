@@ -83,12 +83,12 @@ export default function ContentPlannerClient({
   const showEditDueTab = hasEditDueDate(serviceTier);
 
   const ALL_TABS: { id: ViewId; label: string; restricted: boolean }[] = [
-    { id: "table",       label: "Table",             restricted: false },
+    { id: "pipeline",    label: "Pipeline",          restricted: !showPipelineTab },
+    { id: "by_theme",    label: "By Theme",          restricted: false },
     { id: "publish_cal", label: "Publish Calendar",  restricted: false },
     { id: "shoot_cal",   label: "Shoot Calendar",    restricted: false },
-    { id: "edit_due",    label: "Edit Due",           restricted: !showEditDueTab },
-    { id: "by_theme",    label: "By Theme",           restricted: false },
-    { id: "pipeline",    label: "Pipeline",           restricted: !showPipelineTab },
+    { id: "edit_due",    label: "Edit Calendar",     restricted: !showEditDueTab },
+    { id: "table",       label: "Full Table",        restricted: false },
   ];
   const TABS = ALL_TABS.filter((t) => !t.restricted);
 
