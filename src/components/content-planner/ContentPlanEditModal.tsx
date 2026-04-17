@@ -73,7 +73,31 @@ const ALL_TOOLS = [
   { key: "repurpose", label: "Repurpose Content", icon: "♻️" },
 ];
 
-export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdmin, memberId, themes = [], showProgressTrack = false, onClose, onSaved, onDeleted }: Props) {
+export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdmin, memberId, themes: themesProp = [], showProgressTrack: showProgressTrackProp = false, onClose, onSaved, onDeleted }: Props) {
+  // Self-fetch themes when caller didn't supply any (e.g. opened from Pipeline,
+  // auto-open URL link, or other entry points). Falls back to caller-supplied list.
+  const [fetchedThemes, setFetchedThemes] = useState<ThemeOption[]>([]);
+  const themes = themesProp.length > 0 ? themesProp : fetchedThemes;
+  useEffect(() => {
+    if (themesProp.length > 0 || isAdmin) return;
+    fetch("/api/member/content-plans/themes")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (d?.themes) setFetchedThemes(d.themes); })
+      .catch(() => {});
+  }, [themesProp.length, isAdmin]);
+
+  // Self-fetch the progress-track flag if the caller didn't pass it explicitly
+  // so the milestone dots appear regardless of which view opened the modal.
+  const [flagShowProgress, setFlagShowProgress] = useState(false);
+  const showProgressTrack = showProgressTrackProp || flagShowProgress;
+  useEffect(() => {
+    if (showProgressTrackProp) return;
+    fetch("/api/member/feature-flags")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (d?.flags?.progress_track_v1) setFlagShowProgress(true); })
+      .catch(() => {});
+  }, [showProgressTrackProp]);
+
   const router = useRouter();
   const [form, setForm] = useState({
     title: plan.title,
