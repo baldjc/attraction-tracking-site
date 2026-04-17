@@ -316,7 +316,7 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
 
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-start justify-center p-4 overflow-y-auto">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-lg my-8">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-lg lg:max-w-5xl my-8">
         <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-100">
           <h3 className="text-base font-semibold text-[#2f3437]">Edit Video</h3>
           <button onClick={onClose} className="text-[#2f3437]/40 hover:text-[#2f3437]">
@@ -411,6 +411,8 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
             </div>
           )}
 
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-4">
+            <div className="space-y-4">
           <div>
             <div className="flex items-center justify-between mb-1">
               <label className="block text-xs font-medium text-[#2f3437]/60 flex items-center gap-2">
@@ -502,7 +504,9 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
             </div>
             <textarea value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} rows={3} className={`${field} resize-y`} placeholder="Key details, action items…" />
           </div>
+            </div>
 
+            <div className="space-y-4">
           <div>
             <div className="flex items-center justify-between mb-1">
               <label className="block text-xs font-medium text-[#2f3437]/60">Script</label>
@@ -653,6 +657,9 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
               )}
             </div>
           )}
+
+            </div>
+          </div>
 
           {error && <p className="text-sm text-red-600">{error}</p>}
         </div>
