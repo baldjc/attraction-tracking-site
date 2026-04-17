@@ -111,7 +111,7 @@ export async function computeFlowMetrics(
       createdAt: true,
       updatedAt: true,
       linkedCampaignId: true,
-      user: { select: { id: true, name: true, email: true } },
+      user: { select: { id: true, fullName: true, email: true } },
     },
   });
 
@@ -191,7 +191,7 @@ export async function computeFlowMetrics(
     if (!row) {
       row = {
         userId: p.userId,
-        name: u?.name ?? "—",
+        name: u?.fullName ?? u?.email ?? "—",
         email: u?.email ?? "—",
         planCount: 0,
         scriptedCount: 0,
