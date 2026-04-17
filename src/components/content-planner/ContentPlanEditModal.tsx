@@ -412,209 +412,113 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
           )}
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-4">
+            {/* LEFT COLUMN: metadata, dates, notes */}
             <div className="space-y-4">
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="block text-xs font-medium text-[#2f3437]/60 flex items-center gap-2">
-                Title
-                {latestReviewScore !== null && (
-                  <span
-                    title="Latest Script Review score"
-                    className={`inline-flex items-center text-[10px] font-semibold px-1.5 py-0.5 rounded ${getScoreBadgeClasses(latestReviewScore)}`}
-                  >
-                    Review {latestReviewScore.toFixed(1)}/10
-                  </span>
-                )}
-              </label>
-              {!showProgressTrack && (
-                <button type="button" onClick={() => pushToAITool("title")} className="text-xs text-[#6ba3c7] hover:underline">Analyse Title →</button>
-              )}
-            </div>
-            <input type="text" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} className={field} />
-            <p className={`text-xs mt-1 text-right ${form.title.length > 80 ? "text-red-500" : form.title.length > 60 ? "text-amber-500" : "text-[#2f3437]/40"}`}>
-              {form.title.length} / 60
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Status</label>
-              <select value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))} className={field}>
-                {statusOptions.map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Priority</label>
-              <select value={form.priority} onChange={(e) => setForm((f) => ({ ...f, priority: e.target.value }))} className={field}>
-                <option value="">—</option>
-                {PRIORITY_OPTIONS.map((p) => <option key={p} value={p}>{p}</option>)}
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Theme</label>
-            {themes.length > 0 ? (
-              <select value={form.theme} onChange={(e) => setForm((f) => ({ ...f, theme: e.target.value }))} className={field}>
-                <option value="">— none —</option>
-                {themes.map((t) => (
-                  <option key={t.name} value={t.name}>
-                    {t.emoji ? `${t.emoji} ${t.name}` : t.name}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <input type="text" value={form.theme} onChange={(e) => setForm((f) => ({ ...f, theme: e.target.value }))} className={field} placeholder="e.g., Neighbourhood Expertise" />
-            )}
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Shoot Date</label>
-              <input type="date" value={form.shootDate} onChange={(e) => setForm((f) => ({ ...f, shootDate: e.target.value }))} className={field} />
-            </div>
-            {showEditDue ? (
               <div>
-                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Edit Due Date</label>
-                <input type="date" value={form.editDueDate} onChange={(e) => setForm((f) => ({ ...f, editDueDate: e.target.value }))} className={field} />
-              </div>
-            ) : (
-              <div>
-                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Publish Date</label>
-                <input type="date" value={form.publishDate} onChange={(e) => setForm((f) => ({ ...f, publishDate: e.target.value }))} className={field} />
-              </div>
-            )}
-          </div>
-
-          {showEditDue && (
-            <div>
-              <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Publish Date</label>
-              <input type="date" value={form.publishDate} onChange={(e) => setForm((f) => ({ ...f, publishDate: e.target.value }))} className={field} />
-            </div>
-          )}
-
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="block text-xs font-medium text-[#2f3437]/60">Talking Points / Outline of Video</label>
-              {!showProgressTrack && (
-                <button type="button" onClick={() => pushToAITool("script-builder")} className="text-xs text-[#6ba3c7] hover:underline">Build Script →</button>
-              )}
-            </div>
-            <textarea value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} rows={3} className={`${field} resize-y`} placeholder="Key details, action items…" />
-          </div>
-            </div>
-
-            <div className="space-y-4">
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="block text-xs font-medium text-[#2f3437]/60">Script</label>
-              {!showProgressTrack && (
-                <button type="button" onClick={() => pushToAITool("script-review")} className="text-xs text-[#6ba3c7] hover:underline">Script Review →</button>
-              )}
-            </div>
-            <textarea value={form.script} onChange={(e) => setForm((f) => ({ ...f, script: e.target.value }))} rows={6} className={`${field} resize-y`} placeholder="Write your video script here…" />
-            {form.script.trim() && (
-              <div className="relative mt-1.5 flex justify-end">
-                <button
-                  type="button"
-                  onClick={() => setShowDownloadMenu((v) => !v)}
-                  className="flex items-center gap-1.5 text-xs text-[#2f3437]/50 hover:text-[#6ba3c7] transition-colors"
-                >
-                  <ArrowDownTrayIcon className="w-3.5 h-3.5" />
-                  Download Script
-                </button>
-                {showDownloadMenu && (
-                  <div className="absolute right-0 top-6 z-10 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[130px]">
-                    {(["md", "txt", "pdf"] as const).map((fmt) => (
-                      <button
-                        key={fmt}
-                        type="button"
-                        onClick={() => downloadScript(fmt)}
-                        className="w-full text-left px-3 py-1.5 text-xs text-[#2f3437] hover:bg-gray-50 transition-colors"
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-medium text-[#2f3437]/60 flex items-center gap-2">
+                    Title
+                    {latestReviewScore !== null && (
+                      <span
+                        title="Latest Script Review score"
+                        className={`inline-flex items-center text-[10px] font-semibold px-1.5 py-0.5 rounded ${getScoreBadgeClasses(latestReviewScore)}`}
                       >
-                        .{fmt}{fmt === "pdf" ? " (print)" : ""}
-                      </button>
+                        Review {latestReviewScore.toFixed(1)}/10
+                      </span>
+                    )}
+                  </label>
+                  {!showProgressTrack && (
+                    <button type="button" onClick={() => pushToAITool("title")} className="text-xs text-[#6ba3c7] hover:underline">Analyse Title →</button>
+                  )}
+                </div>
+                <input type="text" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} className={field} />
+                <p className={`text-xs mt-1 text-right ${form.title.length > 80 ? "text-red-500" : form.title.length > 60 ? "text-amber-500" : "text-[#2f3437]/40"}`}>
+                  {form.title.length} / 60
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Status</label>
+                  <select value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))} className={field}>
+                    {statusOptions.map((s) => (
+                      <option key={s} value={s}>{s}</option>
                     ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Priority</label>
+                  <select value={form.priority} onChange={(e) => setForm((f) => ({ ...f, priority: e.target.value }))} className={field}>
+                    <option value="">—</option>
+                    {PRIORITY_OPTIONS.map((p) => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div className={`grid gap-3 ${showEditDue ? "grid-cols-3" : "grid-cols-2"}`}>
+                <div>
+                  <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Shoot Date</label>
+                  <input type="date" value={form.shootDate} onChange={(e) => setForm((f) => ({ ...f, shootDate: e.target.value }))} className={field} />
+                </div>
+                {showEditDue && (
+                  <div>
+                    <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Edit Due Date</label>
+                    <input type="date" value={form.editDueDate} onChange={(e) => setForm((f) => ({ ...f, editDueDate: e.target.value }))} className={field} />
                   </div>
                 )}
+                <div>
+                  <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Publish Date</label>
+                  <input type="date" value={form.publishDate} onChange={(e) => setForm((f) => ({ ...f, publishDate: e.target.value }))} className={field} />
+                </div>
               </div>
-            )}
-          </div>
 
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="block text-xs font-medium text-[#2f3437]/60">YouTube Description</label>
-              {!form.youtubeDescription && form.script && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    sessionStorage.setItem("description_prefill", JSON.stringify({
-                      title: form.title || "",
-                      transcript: form.script || "",
-                      contentPlanId: plan.id,
-                    }));
-                    window.location.href = "/member/ai-tools/description-generator";
-                  }}
-                  className="text-[10px] text-[#6ba3c7] hover:underline"
-                >
-                  Generate with AI →
-                </button>
-              )}
-            </div>
-            <textarea
-              value={form.youtubeDescription}
-              onChange={(e) => setForm((f) => ({ ...f, youtubeDescription: e.target.value }))}
-              rows={4}
-              className={`${field} resize-y`}
-              placeholder="YouTube video description…"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">
-              Research Notes
-              <span className="ml-1 font-normal text-[#2f3437]/40">(paste notes, stats, talking points)</span>
-            </label>
-            <textarea value={form.researchNotes} onChange={(e) => setForm((f) => ({ ...f, researchNotes: e.target.value }))} rows={5} className={`${field} resize-y`} placeholder="Paste your research here — statistics, sources, talking points, Manus/Perplexity output…" />
-          </div>
-
-          {!isAdmin && (
-            <div>
-              <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">
-                Lead Magnet Campaign
-                <span className="ml-1 font-normal text-[#2f3437]/40">(preselects this campaign in the Description Generator)</span>
-              </label>
-              <select
-                value={form.linkedCampaignId}
-                onChange={(e) => setForm((f) => ({ ...f, linkedCampaignId: e.target.value }))}
-                className={field}
-              >
-                <option value="">— None —</option>
-                {campaigns.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          <div className={`grid gap-3 ${useDrive ? "grid-cols-1" : "grid-cols-2"}`}>
-            <div>
-              <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Thumbnail Words</label>
-              <input type="text" value={form.thumbnailWords} onChange={(e) => setForm((f) => ({ ...f, thumbnailWords: e.target.value }))} className={field} placeholder="3–5 words" />
-            </div>
-            {!useDrive && (
               <div>
-                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Footage Link</label>
-                <input type="text" value={form.footageLink} onChange={(e) => setForm((f) => ({ ...f, footageLink: e.target.value }))} className={field} placeholder="https://…" />
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-medium text-[#2f3437]/60">Talking Points / Outline of Video</label>
+                  {!showProgressTrack && (
+                    <button type="button" onClick={() => pushToAITool("script-builder")} className="text-xs text-[#6ba3c7] hover:underline">Build Script →</button>
+                  )}
+                </div>
+                <textarea value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} rows={5} className={`${field} resize-y`} placeholder="Key details, action items…" />
               </div>
-            )}
-          </div>
 
-          {useDrive && (
-            <div>
-              <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Google Drive Folder</label>
+              <div>
+                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">
+                  Research Notes
+                  <span className="ml-1 font-normal text-[#2f3437]/40">(paste notes, stats, talking points)</span>
+                </label>
+                <textarea value={form.researchNotes} onChange={(e) => setForm((f) => ({ ...f, researchNotes: e.target.value }))} rows={5} className={`${field} resize-y`} placeholder="Paste your research here — statistics, sources, talking points, Manus/Perplexity output…" />
+              </div>
+
+              {!isAdmin && (
+                <div>
+                  <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">
+                    Lead Magnet Campaign
+                    <span className="ml-1 font-normal text-[#2f3437]/40">(preselects this campaign in the Description Generator)</span>
+                  </label>
+                  <select
+                    value={form.linkedCampaignId}
+                    onChange={(e) => setForm((f) => ({ ...f, linkedCampaignId: e.target.value }))}
+                    className={field}
+                  >
+                    <option value="">— None —</option>
+                    {campaigns.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {!useDrive && (
+                <div>
+                  <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Footage Link</label>
+                  <input type="text" value={form.footageLink} onChange={(e) => setForm((f) => ({ ...f, footageLink: e.target.value }))} className={field} placeholder="https://…" />
+                </div>
+              )}
+
+              {useDrive && (
+                <div>
+                  <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Google Drive Folder</label>
               {driveFolderLink ? (
                 <a
                   href={driveFolderLink}
@@ -658,6 +562,95 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
             </div>
           )}
 
+            </div>
+
+            {/* RIGHT COLUMN: theme, script, description, thumbnail */}
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Theme</label>
+                {themes.length > 0 ? (
+                  <select value={form.theme} onChange={(e) => setForm((f) => ({ ...f, theme: e.target.value }))} className={field}>
+                    <option value="">— none —</option>
+                    {themes.map((t) => (
+                      <option key={t.name} value={t.name}>
+                        {t.emoji ? `${t.emoji} ${t.name}` : t.name}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input type="text" value={form.theme} onChange={(e) => setForm((f) => ({ ...f, theme: e.target.value }))} className={field} placeholder="e.g., Neighbourhood Expertise" />
+                )}
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-medium text-[#2f3437]/60">Script</label>
+                  {!showProgressTrack && (
+                    <button type="button" onClick={() => pushToAITool("script-review")} className="text-xs text-[#6ba3c7] hover:underline">Script Review →</button>
+                  )}
+                </div>
+                <textarea value={form.script} onChange={(e) => setForm((f) => ({ ...f, script: e.target.value }))} rows={18} className={`${field} resize-y`} placeholder="Write your video script here…" />
+                {form.script.trim() && (
+                  <div className="relative mt-1.5 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setShowDownloadMenu((v) => !v)}
+                      className="flex items-center gap-1.5 text-xs text-[#2f3437]/50 hover:text-[#6ba3c7] transition-colors"
+                    >
+                      <ArrowDownTrayIcon className="w-3.5 h-3.5" />
+                      Download Script
+                    </button>
+                    {showDownloadMenu && (
+                      <div className="absolute right-0 top-6 z-10 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[130px]">
+                        {(["md", "txt", "pdf"] as const).map((fmt) => (
+                          <button
+                            key={fmt}
+                            type="button"
+                            onClick={() => downloadScript(fmt)}
+                            className="w-full text-left px-3 py-1.5 text-xs text-[#2f3437] hover:bg-gray-50 transition-colors"
+                          >
+                            .{fmt}{fmt === "pdf" ? " (print)" : ""}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-medium text-[#2f3437]/60">YouTube Description</label>
+                  {!form.youtubeDescription && form.script && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        sessionStorage.setItem("description_prefill", JSON.stringify({
+                          title: form.title || "",
+                          transcript: form.script || "",
+                          contentPlanId: plan.id,
+                        }));
+                        window.location.href = "/member/ai-tools/description-generator";
+                      }}
+                      className="text-[10px] text-[#6ba3c7] hover:underline"
+                    >
+                      Generate with AI →
+                    </button>
+                  )}
+                </div>
+                <textarea
+                  value={form.youtubeDescription}
+                  onChange={(e) => setForm((f) => ({ ...f, youtubeDescription: e.target.value }))}
+                  rows={4}
+                  className={`${field} resize-y`}
+                  placeholder="YouTube video description…"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Thumbnail Words</label>
+                <input type="text" value={form.thumbnailWords} onChange={(e) => setForm((f) => ({ ...f, thumbnailWords: e.target.value }))} className={field} placeholder="3–5 words" />
+              </div>
             </div>
           </div>
 
