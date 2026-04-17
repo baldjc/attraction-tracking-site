@@ -315,7 +315,7 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 z-50 flex items-start justify-center p-4 overflow-y-auto">
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-start justify-center p-4 overflow-y-auto lg:pl-[260px]">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-lg lg:max-w-3xl xl:max-w-4xl my-8">
         <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-100">
           <h3 className="text-base font-semibold text-[#2f3437]">Edit Video</h3>
