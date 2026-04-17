@@ -103,6 +103,24 @@ export default function ScriptReviewChatUI({ basePath, noAvatar, defaultPlanId }
     return () => { cancelled = true; };
   }, [defaultPlanId]);
 
+  // Pull the latest revised script out of the chat. We look for the most-recent
+  // assistant message containing a fenced ``` code block — that is how the
+  // reviewer formats rewrites. Falls back to the original input when none yet.
+  function extractRevisedScript(): string {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const m = messages[i];
+      if (m.role !== "assistant") continue;
+      const fenceMatches = [...m.content.matchAll(/```(?:[\w-]*\n)?([\s\S]*?)```/g)];
+      if (fenceMatches.length > 0) {
+        const longest = fenceMatches
+          .map((x) => x[1].trim())
+          .reduce((a, b) => (b.length > a.length ? b : a), "");
+        if (longest.length > 80) return longest;
+      }
+    }
+    return scriptText;
+  }
+
   async function handleSaveScriptToPlan(script: string) {
     if (!linkedPlanId) return;
     setPlannerSaving(true);
@@ -382,11 +400,12 @@ export default function ScriptReviewChatUI({ basePath, noAvatar, defaultPlanId }
                     <p className="text-xs text-red-500 w-full">Save failed. Please try again.</p>
                   )}
                   <button
-                    onClick={() => handleSaveScriptToPlan(scriptText)}
+                    onClick={() => handleSaveScriptToPlan(extractRevisedScript())}
                     disabled={plannerSaving}
                     className="shrink-0 px-3 py-1.5 text-xs font-semibold bg-[#6ba3c7] text-white rounded-md hover:bg-[#5490b5] disabled:opacity-50 transition-colors"
+                    title="Saves the most recent revised script from the chat (or your original if none yet)."
                   >
-                    {plannerSaving ? "Saving…" : "Save Script to Content Plan"}
+                    {plannerSaving ? "Saving…" : "Save Revised Script to Plan"}
                   </button>
                 </div>
               )}
