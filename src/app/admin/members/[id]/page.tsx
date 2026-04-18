@@ -840,8 +840,22 @@ export default function MemberDetailPage() {
         ))}
       </div>
 
-      {/* TAB BAR */}
-      <div className="flex gap-1 bg-white border border-gray-200 rounded-lg p-1 w-fit overflow-x-auto">
+      {/* TAB BAR — dropdown on mobile, pill bar on sm+ */}
+      <div className="sm:hidden">
+        <select
+          value={activeTab}
+          onChange={(e) => setActiveTab(e.target.value as TabId)}
+          className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2.5 text-sm font-medium text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40"
+        >
+          {TABS.filter((t) => !t.tierRequired || t.tierRequired.includes(member.serviceTier)).map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.label}
+              {t.id === "progress" && (member.audits?.length ?? 0) > 0 ? ` (${member.audits.length})` : ""}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="hidden sm:flex gap-1 bg-white border border-gray-200 rounded-lg p-1 w-fit overflow-x-auto">
         {TABS.filter((t) => !t.tierRequired || t.tierRequired.includes(member.serviceTier)).map((t) => (
           <button
             key={t.id}
