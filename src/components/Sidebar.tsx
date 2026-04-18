@@ -89,6 +89,7 @@ const PRODUCTION_TIERS = ["editing_2", "editing_4", "mastery_2", "mastery_4", "d
 const memberLinks = [
   { href: "/member/dashboard",       label: "Dashboard",       icon: HomeIcon,         featureKey: null,        colour: "#6ba3c7", tierRequired: null },
   { href: "/member/academy",         label: "Academy",         icon: AcademicCapIcon,  featureKey: null,        colour: "#10B981", tierRequired: null,           section: "Learn" },
+  { href: "/member/academy?tab=live-calls", label: "Live Calls", icon: VideoCameraIcon, featureKey: null,        colour: "#10B981", tierRequired: null },
   { href: "/member/scores",          label: "My Scores",       icon: StarIcon,         featureKey: null,        colour: "#F59E0B", tierRequired: null },
   { href: "/member/content-planner", label: "Content Planner", icon: CalendarDaysIcon, featureKey: null,        colour: "#6ba3c7", tierRequired: PRODUCTION_TIERS, section: "Create" },
   { href: "/member/ai-tools",        label: "AI Tools",        icon: SparklesIcon,     featureKey: "ai_tools",  colour: "#6ba3c7", tierRequired: null },
