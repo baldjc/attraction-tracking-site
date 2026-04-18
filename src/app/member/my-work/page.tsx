@@ -7,7 +7,7 @@ import PageHeader from "@/components/PageHeader";
 
 interface WorkItem {
   id: string;
-  type: "script" | "idea" | "review" | "analysis" | "repurposed";
+  type: "script" | "draft" | "idea" | "review" | "analysis" | "repurposed";
   title: string;
   createdAt: string;
   expiresAt: string | null;
@@ -18,6 +18,7 @@ interface WorkItem {
 const TABS = [
   { id: "all", label: "All" },
   { id: "script", label: "Scripts" },
+  { id: "draft", label: "In Progress" },
   { id: "idea", label: "Ideas" },
   { id: "review", label: "Reviews" },
   { id: "repurposed", label: "Repurposed" },
@@ -34,6 +35,7 @@ function daysUntil(dateStr: string): number {
 function badgeColor(type: string): string {
   switch (type) {
     case "script":    return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300";
+    case "draft":     return "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200";
     case "idea":      return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300";
     case "review":    return "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300";
     case "analysis":  return "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300";

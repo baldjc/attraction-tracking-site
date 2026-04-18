@@ -8,12 +8,18 @@ export async function GET() {
 
   const userId = user.id;
 
-  const [scripts, ideas, conversations, repurposed] = await Promise.all([
+  const [scripts, scriptDrafts, ideas, conversations, repurposed] = await Promise.all([
     prisma.savedScript.findMany({
       where: { userId },
       orderBy: { createdAt: "desc" },
       take: 50,
       select: { id: true, videoTitle: true, createdAt: true },
+    }),
+    prisma.scriptDraft.findMany({
+      where: { userId },
+      orderBy: { updatedAt: "desc" },
+      take: 50,
+      select: { id: true, videoTitle: true, updatedAt: true, createdAt: true },
     }),
     prisma.savedIdea.findMany({
       where: { userId },
@@ -47,6 +53,15 @@ export async function GET() {
       expiresAt: null,
       toolUrl: `/member/ai-tools/arc-script-builder?load=${s.id}`,
       badge: "Script",
+    })),
+    ...scriptDrafts.map((d) => ({
+      id: d.id,
+      type: "draft" as const,
+      title: d.videoTitle || "Untitled Draft",
+      createdAt: d.updatedAt.toISOString(),
+      expiresAt: null,
+      toolUrl: `/member/ai-tools/arc-script-builder?resume=${d.id}`,
+      badge: "In Progress",
     })),
     ...ideas.map((i) => ({
       id: i.id,

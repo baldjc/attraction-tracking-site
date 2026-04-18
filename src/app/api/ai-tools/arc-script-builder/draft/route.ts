@@ -2,14 +2,19 @@ import { NextRequest, NextResponse } from "next/server";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import prisma from "@/lib/prisma";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const user = await resolveUserFromSession();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const draft = await prisma.scriptDraft.findFirst({
-    where: { userId: user.id },
-    orderBy: { updatedAt: "desc" },
-  });
+  const { searchParams } = new URL(req.url);
+  const id = searchParams.get("id");
+
+  const draft = id
+    ? await prisma.scriptDraft.findFirst({ where: { id, userId: user.id } })
+    : await prisma.scriptDraft.findFirst({
+        where: { userId: user.id },
+        orderBy: { updatedAt: "desc" },
+      });
 
   return NextResponse.json({ draft: draft ?? null });
 }

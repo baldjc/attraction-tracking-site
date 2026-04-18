@@ -165,8 +165,14 @@ export default function ArcScriptBuilderTool({ basePath, isAdmin, defaultPlanId 
         }
       })
       .catch(() => {});
-    // Check for an in-progress draft
-    fetch("/api/ai-tools/arc-script-builder/draft")
+    // Check for an in-progress draft (optionally a specific one via ?resume=<id>)
+    const resumeId = typeof window !== "undefined"
+      ? new URLSearchParams(window.location.search).get("resume")
+      : null;
+    const draftUrl = resumeId
+      ? `/api/ai-tools/arc-script-builder/draft?id=${encodeURIComponent(resumeId)}`
+      : "/api/ai-tools/arc-script-builder/draft";
+    fetch(draftUrl)
       .then((r) => r.json())
       .then((d) => {
         if (d?.draft) setDraftToResume(d.draft as ScriptDraftResume);
