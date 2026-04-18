@@ -61,7 +61,7 @@ export async function GET() {
       createdAt: d.updatedAt.toISOString(),
       expiresAt: null,
       toolUrl: `/member/ai-tools/arc-script-builder?resume=${d.id}`,
-      badge: "In Progress",
+      badge: "Script In Progress",
     })),
     ...ideas.map((i) => ({
       id: i.id,
