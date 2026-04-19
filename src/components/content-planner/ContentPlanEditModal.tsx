@@ -185,14 +185,18 @@ ${avatarSection}
 Produce a research brief I can hand to a script writer. For **each talking point above** (or, if none, for the 5–7 strongest sub-topics implied by the title), deliver every section below. Do not skip sections. If a section has no good data, say "no reliable data found" — do not invent.
 
 1. **HARD STATS & DATA (must be sourced)**
-   - Specific numbers, percentages, dollar amounts, year-over-year deltas, transaction volumes, days-on-market, price-to-income ratios, mortgage rates, inventory counts, etc.
-   - Prefer **local market data** for the avatar's city/region; fall back to provincial, then national.
-   - For every figure: include the **source name, date, and a working URL**. Cite Canadian sources where possible (CREA, CMHC, Statistics Canada, local real estate boards like CREB/TRREB/REBGV, Bank of Canada, BCFSA, RECA, RECO). Distinguish "as of [date]" from older data.
-   - Flag anything older than 12 months as "dated — use with caution."
+   - Specific numbers, percentages, dollar/local-currency amounts, year-over-year deltas, transaction volumes, days-on-market, price-to-income ratios, mortgage/interest rates, inventory counts, absorption rates, etc.
+   - Prefer **local market data** for the avatar's city/metro/region; fall back to state/province, then national. Detect the country and region from the avatar and title — this video could be for any realtor in any city in North America (US, Canada, or Mexico).
+   - For every figure: include the **source name, date, and a working URL**. Use the most authoritative source for that geography, for example:
+     • **Local market** — the local MLS, association of REALTORS®, or real estate board (e.g. CAR/NAR local chapters in the US; CREB, TRREB, REBGV, QPAREB in Canada; AMPI in Mexico).
+     • **National market** — NAR, Redfin, Zillow, Realtor.com, FRED, U.S. Census, HUD (US); CREA, CMHC, Statistics Canada (Canada); INEGI, SHF (Mexico).
+     • **Rates / macro** — Federal Reserve / Freddie Mac PMMS (US); Bank of Canada (Canada); Banco de México (Mexico).
+     • **Policy / regulatory** — state real estate commissions, CFPB, IRS (US); provincial regulators like RECO/RECA/BCFSA, CRA (Canada); CONDUSEF, CNBV (Mexico).
+   - Distinguish "as of [date]" from older data. Flag anything older than 12 months as "dated — use with caution."
 
 2. **MARKET CONTEXT & RECENT NEWS (last 6–12 months)**
-   - What has changed recently that makes this video timely? Rate moves, policy changes (foreign buyer ban, FHSA, capital gains rules, rent control, zoning reforms), new programs, headline transactions.
-   - Each item with date + source URL.
+   - What has changed recently in this specific market that makes this video timely? Central bank rate moves, policy or tax changes (e.g. NAR commission settlement, state/provincial transfer-tax updates, first-time buyer programs, zoning reform, rent control, foreign buyer rules), new lending products, headline transactions or local development news.
+   - Each item with date + source URL, and note whether it is local, regional, or national.
 
 3. **MAIN ARGUMENT & UNIQUE ANGLE**
    - The single sharpest thesis the data supports. What contrarian, counter-intuitive, or under-told point can I credibly make?
