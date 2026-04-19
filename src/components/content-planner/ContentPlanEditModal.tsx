@@ -162,33 +162,71 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
     }
 
     const avatarSection = avatarData?.avatarName
-      ? `=== TARGET AVATAR ===\nName: ${avatarData.avatarName}\n${avatarData.full_document || avatarData.avatarSummary || JSON.stringify(avatarData, null, 2)}`
-      : "(No avatar saved — write for a general real estate audience)";
+      ? `Name: ${avatarData.avatarName}\n${avatarData.full_document || avatarData.avatarSummary || JSON.stringify(avatarData, null, 2)}`
+      : "(No avatar saved — write for a general real estate audience.)";
 
-    const prompt = `I'm creating a YouTube video titled: "${t}"
+    const themeLine = form.theme ? `Theme / Series: ${form.theme}` : "";
+    const publishLine = form.publishDate ? `Planned publish date: ${form.publishDate}` : "";
+    const todayLine = `Today's date (for recency of stats): ${new Date().toISOString().slice(0, 10)}`;
 
-${tp ? `My key talking points:\n${tp}\n` : ""}
+    const prompt = `You are a senior real-estate research analyst preparing a deep research brief for a YouTube video. Your job is to gather **specific, verifiable, recent, sourced data** that I can confidently say on camera. Generic advice or vague summaries are not acceptable.
+
+=== VIDEO CONTEXT ===
+Title: "${t}"
+${themeLine}
+${publishLine}
+${todayLine}
+
+${tp ? `=== TALKING POINTS / OUTLINE (the spine of the video) ===\n${tp}\n` : "=== TALKING POINTS ===\n(None provided — infer the most important angles from the title and avatar.)\n"}
+=== TARGET AVATAR (who is watching) ===
 ${avatarSection}
 
-=== WHAT I NEED ===
+=== WHAT I NEED FROM YOU ===
+Produce a research brief I can hand to a script writer. For **each talking point above** (or, if none, for the 5–7 strongest sub-topics implied by the title), deliver every section below. Do not skip sections. If a section has no good data, say "no reliable data found" — do not invent.
 
-Research this topic and provide a structured research document I can use to build my script. For each talking point above, find:
+1. **HARD STATS & DATA (must be sourced)**
+   - Specific numbers, percentages, dollar amounts, year-over-year deltas, transaction volumes, days-on-market, price-to-income ratios, mortgage rates, inventory counts, etc.
+   - Prefer **local market data** for the avatar's city/region; fall back to provincial, then national.
+   - For every figure: include the **source name, date, and a working URL**. Cite Canadian sources where possible (CREA, CMHC, Statistics Canada, local real estate boards like CREB/TRREB/REBGV, Bank of Canada, BCFSA, RECA, RECO). Distinguish "as of [date]" from older data.
+   - Flag anything older than 12 months as "dated — use with caution."
 
-1. **REAL STATS & DATA** — Specific numbers, percentages, dollar amounts, year-over-year comparisons. Local data for the member's market preferred where available. Include the source (e.g., CREA 2025, local MLS board stats, StatsCan).
+2. **MARKET CONTEXT & RECENT NEWS (last 6–12 months)**
+   - What has changed recently that makes this video timely? Rate moves, policy changes (foreign buyer ban, FHSA, capital gains rules, rent control, zoning reforms), new programs, headline transactions.
+   - Each item with date + source URL.
 
-2. **MAIN ARGUMENTS & UNIQUE ANGLES** — What point of view does the data support? What contrarian or surprising take could I make that's backed by evidence?
+3. **MAIN ARGUMENT & UNIQUE ANGLE**
+   - The single sharpest thesis the data supports. What contrarian, counter-intuitive, or under-told point can I credibly make?
+   - Why this angle wins for *this* avatar specifically.
 
-3. **CLIENT PAIN POINTS & EMOTIONAL TRIGGERS** — Based on the avatar above, what fears, frustrations, or hopes does this topic speak to? What's the internal monologue of someone dealing with this?
+4. **AVATAR PAIN POINTS, FEARS & DESIRES**
+   - The internal monologue of the avatar on this topic — fears, frustrations, secret hopes, money worries, status concerns, family pressure.
+   - Tie each pain point to a specific stat or quote above so it lands with proof.
 
-4. **MYTH OR MISCONCEPTION** — What does the average person believe about this topic that's wrong or incomplete? What's the counter-truth?
+5. **MYTHS & MISCONCEPTIONS TO BUST**
+   - What "common knowledge" is wrong or incomplete on this topic? State the myth, then the counter-truth with a source.
 
-5. **CONTENT IDEAS** — Specific angles, framings, or metaphors that could make each point land harder on camera.
+6. **CONVENTIONAL WISDOM (what other agents / mainstream media are saying)**
+   - 3–5 representative takes from competing voices (other Realtors on YouTube, big brokerages, news outlets, banks). Quote or paraphrase + link.
+   - This is so I can position *against* the noise, not repeat it.
 
-6. **CONVENTIONAL WISDOM** — What do competing sources, other agents, or mainstream advice say about this? (So I can position against it.)
+7. **CONCRETE EXAMPLES, CASE STUDIES & MICRO-STORIES**
+   - Real (or realistic, clearly hypothetical) buyer/seller scenarios with numbers — list price vs sold price, carrying costs, bidding-war outcomes, rent vs buy math, mortgage stress-test pass/fail examples.
+   - Anonymised is fine; specificity is the point.
 
-7. **NOTABLE QUOTES OR PHRASINGS** — Any standout language worth preserving or referencing.
+8. **VISUAL / B-ROLL & ON-SCREEN DATA SUGGESTIONS**
+   - Charts, graphs, screenshots, headlines, neighbourhood shots, or props that would visualise the strongest points. Note which stat each visual supports.
 
-Format each talking point as its own section with all 7 categories. Preserve specific numbers and sources exactly. Be concise but complete.`;
+9. **NOTABLE QUOTES & PHRASINGS**
+   - Standout lines from analysts, economists, agents, or buyers/sellers worth quoting verbatim. Include attribution + source.
+
+10. **OPEN QUESTIONS / GAPS**
+    - What couldn't you find? What should the agent verify locally before recording (e.g., this week's local board stats, current rate sheets)?
+
+=== OUTPUT FORMAT ===
+- Markdown, with one ## H2 per talking point and the 10 numbered sections above as ### H3s under each.
+- Every stat on its own bullet with: \`figure — short context — Source Name, Date — URL\`.
+- Be concise, but complete. No fluff, no filler intros, no closing summary. Just the brief.
+- If something is uncertain, say so explicitly. Never fabricate sources or numbers.`;
 
     try {
       await navigator.clipboard.writeText(prompt);
@@ -543,10 +581,24 @@ Format each talking point as its own section with all 7 categories. Preserve spe
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">
-                  Research Notes
-                  <span className="ml-1 font-normal text-[#2f3437]/40">(paste notes, stats, talking points)</span>
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-medium text-[#2f3437]/60">
+                    Research Notes
+                    <span className="ml-1 font-normal text-[#2f3437]/40">(paste notes, stats, talking points)</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={generateResearchPrompt}
+                    className="text-xs text-[#6ba3c7] hover:underline disabled:opacity-50"
+                    title="Build a deep-research prompt from this video's title, talking points, and your avatar — copies to clipboard so you can paste into Manus / Perplexity / ChatGPT"
+                  >
+                    {researchPromptCopied
+                      ? "Copied — paste into Manus / Perplexity"
+                      : researchPromptError
+                      ? researchPromptError
+                      : "Generate Research Prompt →"}
+                  </button>
+                </div>
                 <textarea value={form.researchNotes} onChange={(e) => setForm((f) => ({ ...f, researchNotes: e.target.value }))} rows={5} className={`${field} resize-y`} placeholder="Paste your research here — statistics, sources, talking points, Manus/Perplexity output…" />
               </div>
 
