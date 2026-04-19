@@ -851,6 +851,7 @@ model ScriptDraft {
   userId            String
   user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   videoTitle        String
+  planId            String?
   initialData       Json
   messages          Json
   currentSection    String   @default("research_strategy")
@@ -861,6 +862,7 @@ model ScriptDraft {
 
   @@unique([userId, videoTitle])
   @@index([userId])
+  @@index([userId, planId])
   @@map("script_drafts")
 }
 

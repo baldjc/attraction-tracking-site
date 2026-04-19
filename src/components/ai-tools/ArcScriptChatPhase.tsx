@@ -177,6 +177,7 @@ export default function ArcScriptChatPhase({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           videoTitle: initialData.title,
+          planId: linkedPlanId ?? undefined,
           initialData,
           messages: currentMessages,
           currentSection: currentSec,

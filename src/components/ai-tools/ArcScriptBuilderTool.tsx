@@ -165,13 +165,34 @@ export default function ArcScriptBuilderTool({ basePath, isAdmin, defaultPlanId 
         }
       })
       .catch(() => {});
-    // Check for an in-progress draft (optionally a specific one via ?resume=<id>)
-    const resumeId = typeof window !== "undefined"
-      ? new URLSearchParams(window.location.search).get("resume")
-      : null;
-    const draftUrl = resumeId
-      ? `/api/ai-tools/arc-script-builder/draft?id=${encodeURIComponent(resumeId)}`
-      : "/api/ai-tools/arc-script-builder/draft";
+
+    // Decide which draft to surface.
+    //   1. ?resume=<id>  → that exact draft (My Work flow).
+    //   2. plan context  → only the draft for THIS plan, or none. Plan id can come
+    //                      from sessionStorage prefill (push from planner) or the
+    //                      defaultPlanId URL param.
+    //   3. otherwise     → the user's most recent draft (cold sidebar visit).
+    if (typeof window === "undefined") { setDraftChecked(true); return; }
+    const params = new URLSearchParams(window.location.search);
+    const resumeId = params.get("resume");
+    let plannerPlanId: string | null = null;
+    try {
+      const raw = sessionStorage.getItem("arc_prefill");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (typeof parsed?.planId === "string") plannerPlanId = parsed.planId;
+      }
+    } catch { /* ignore */ }
+    const planContextId = plannerPlanId ?? defaultPlanId ?? null;
+
+    let draftUrl: string;
+    if (resumeId) {
+      draftUrl = `/api/ai-tools/arc-script-builder/draft?id=${encodeURIComponent(resumeId)}`;
+    } else if (planContextId) {
+      draftUrl = `/api/ai-tools/arc-script-builder/draft?planId=${encodeURIComponent(planContextId)}`;
+    } else {
+      draftUrl = "/api/ai-tools/arc-script-builder/draft";
+    }
     fetch(draftUrl)
       .then((r) => r.json())
       .then((d) => {
@@ -179,7 +200,7 @@ export default function ArcScriptBuilderTool({ basePath, isAdmin, defaultPlanId 
       })
       .catch(() => {})
       .finally(() => setDraftChecked(true));
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     fetch("/api/member/avatar")
