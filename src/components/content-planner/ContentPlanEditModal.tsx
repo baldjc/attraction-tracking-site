@@ -139,6 +139,66 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
   const [teamNotes, setTeamNotes] = useState<Array<{ id: string; note: string; createdAt: string; author: { name: string } }>>([]);
   const [driveFiles, setDriveFiles] = useState<Array<{ id: string; name: string; webViewLink: string | null; modifiedTime: string | null; mimeType: string | null }> | null>(null);
   const [driveFilesLoading, setDriveFilesLoading] = useState(false);
+  const [avatarData, setAvatarData] = useState<any>(null);
+  const [researchPromptCopied, setResearchPromptCopied] = useState(false);
+  const [researchPromptError, setResearchPromptError] = useState("");
+
+  useEffect(() => {
+    if (isAdmin) return;
+    fetch("/api/member/avatar")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (d) setAvatarData(d); })
+      .catch(() => {});
+  }, [isAdmin]);
+
+  async function generateResearchPrompt() {
+    setResearchPromptError("");
+    const t = form.title.trim();
+    const tp = form.notes.trim();
+    if (!t) {
+      setResearchPromptError("Add a title first");
+      setTimeout(() => setResearchPromptError(""), 2500);
+      return;
+    }
+
+    const avatarSection = avatarData?.avatarName
+      ? `=== TARGET AVATAR ===\nName: ${avatarData.avatarName}\n${avatarData.full_document || avatarData.avatarSummary || JSON.stringify(avatarData, null, 2)}`
+      : "(No avatar saved — write for a general real estate audience)";
+
+    const prompt = `I'm creating a YouTube video titled: "${t}"
+
+${tp ? `My key talking points:\n${tp}\n` : ""}
+${avatarSection}
+
+=== WHAT I NEED ===
+
+Research this topic and provide a structured research document I can use to build my script. For each talking point above, find:
+
+1. **REAL STATS & DATA** — Specific numbers, percentages, dollar amounts, year-over-year comparisons. Local data for the member's market preferred where available. Include the source (e.g., CREA 2025, local MLS board stats, StatsCan).
+
+2. **MAIN ARGUMENTS & UNIQUE ANGLES** — What point of view does the data support? What contrarian or surprising take could I make that's backed by evidence?
+
+3. **CLIENT PAIN POINTS & EMOTIONAL TRIGGERS** — Based on the avatar above, what fears, frustrations, or hopes does this topic speak to? What's the internal monologue of someone dealing with this?
+
+4. **MYTH OR MISCONCEPTION** — What does the average person believe about this topic that's wrong or incomplete? What's the counter-truth?
+
+5. **CONTENT IDEAS** — Specific angles, framings, or metaphors that could make each point land harder on camera.
+
+6. **CONVENTIONAL WISDOM** — What do competing sources, other agents, or mainstream advice say about this? (So I can position against it.)
+
+7. **NOTABLE QUOTES OR PHRASINGS** — Any standout language worth preserving or referencing.
+
+Format each talking point as its own section with all 7 categories. Preserve specific numbers and sources exactly. Be concise but complete.`;
+
+    try {
+      await navigator.clipboard.writeText(prompt);
+      setResearchPromptCopied(true);
+      setTimeout(() => setResearchPromptCopied(false), 2500);
+    } catch {
+      setResearchPromptError("Could not copy");
+      setTimeout(() => setResearchPromptError(""), 2500);
+    }
+  }
 
   useEffect(() => {
     if (!showProgressTrack) return;
