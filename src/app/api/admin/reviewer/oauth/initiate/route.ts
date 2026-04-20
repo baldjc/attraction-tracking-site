@@ -26,7 +26,11 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
   }
 
-  const origin = req.nextUrl.origin;
+  const forwardedHost = req.headers.get("x-forwarded-host");
+  const forwardedProto = req.headers.get("x-forwarded-proto");
+  const host = forwardedHost ?? req.headers.get("host") ?? req.nextUrl.host;
+  const proto = forwardedProto ?? req.nextUrl.protocol.replace(":", "");
+  const origin = `${proto}://${host}`;
   const redirectUri = `${origin}/api/admin/reviewer/oauth/callback`;
   const state = crypto.randomBytes(16).toString("hex");
 
