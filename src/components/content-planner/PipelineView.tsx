@@ -1,11 +1,19 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { VideoCameraIcon, CalendarDaysIcon } from "@heroicons/react/24/outline";
 import ContentPlanEditModal, { type ContentPlan } from "./ContentPlanEditModal";
 import ProgressTrack from "./ProgressTrack";
 import { resolveProgressSteps, type PlanArtifactsByType } from "@/lib/plan-state";
 import { STATUS_STYLES, filterPlans, getStatusOptions } from "@/lib/content-plan-utils";
 import { getScoreBadgeClasses } from "@/lib/score-badge";
+
+export type PipelineSortKey =
+  | "default"
+  | "publish-asc"
+  | "publish-desc"
+  | "shoot-asc"
+  | "shoot-desc";
 
 interface Props {
   apiBase: string;
@@ -13,6 +21,39 @@ interface Props {
   isAdmin?: boolean;
   searchQuery?: string;
   statusFilter?: string[];
+  sortBy?: PipelineSortKey;
+}
+
+function formatShortDate(d: Date | string | null | undefined): string | null {
+  if (!d) return null;
+  return new Date(d).toLocaleDateString("en-CA", {
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+  });
+}
+
+function dateValue(d: Date | string | null | undefined): number | null {
+  if (!d) return null;
+  const t = new Date(d).getTime();
+  return Number.isFinite(t) ? t : null;
+}
+
+function sortPlans(plans: ContentPlan[], sortBy: PipelineSortKey): ContentPlan[] {
+  if (sortBy === "default") return plans;
+  const [field, dir] = sortBy.split("-") as ["publish" | "shoot", "asc" | "desc"];
+  const key = field === "publish" ? "publishDate" : "shootDate";
+  const sign = dir === "asc" ? 1 : -1;
+  // Plans without the chosen date sink to the bottom regardless of direction
+  // so empty cards never crowd the top of a column.
+  return [...plans].sort((a, b) => {
+    const av = dateValue(a[key] as string | Date | null | undefined);
+    const bv = dateValue(b[key] as string | Date | null | undefined);
+    if (av == null && bv == null) return 0;
+    if (av == null) return 1;
+    if (bv == null) return -1;
+    return (av - bv) * sign;
+  });
 }
 
 /**
@@ -33,6 +74,7 @@ export default function PipelineView({
   isAdmin = false,
   searchQuery = "",
   statusFilter = [],
+  sortBy = "default",
 }: Props) {
   const pipelineStatuses = useMemo(() => getStatusOptions(serviceTier), [serviceTier]);
   const [plans, setPlans] = useState<ContentPlan[]>([]);
@@ -80,8 +122,10 @@ export default function PipelineView({
       if (!map[p.status]) map[p.status] = [];
       map[p.status].push(p);
     }
+    // Apply the chosen sort within every column.
+    for (const s of Object.keys(map)) map[s] = sortPlans(map[s], sortBy);
     return map;
-  }, [visiblePlans, pipelineStatuses]);
+  }, [visiblePlans, pipelineStatuses, sortBy]);
 
   async function moveTo(planId: string, newStatus: string) {
     const prev = plans.find((p) => p.id === planId);
@@ -111,9 +155,8 @@ export default function PipelineView({
   }
 
   function Card({ plan }: { plan: ContentPlan }) {
-    const publishDate = plan.publishDate
-      ? new Date(plan.publishDate).toLocaleDateString("en-CA", { month: "short", day: "numeric", timeZone: "UTC" })
-      : null;
+    const publishDate = formatShortDate(plan.publishDate);
+    const shootDate = formatShortDate(plan.shootDate);
     const artifacts = artifactsByPlan[plan.id] ?? {};
     const steps = resolveProgressSteps(
       { id: plan.id, status: plan.status, script: plan.script },
@@ -152,11 +195,24 @@ export default function PipelineView({
         </div>
         <div className="flex items-center justify-between gap-2 text-[10px]">
           {plan.theme ? (
-            <span className="px-1.5 py-0.5 bg-gray-100 text-[#2f3437]/70 rounded truncate max-w-[60%]" title={plan.theme}>
+            <span className="px-1.5 py-0.5 bg-gray-100 text-[#2f3437]/70 rounded truncate max-w-[55%]" title={plan.theme}>
               {plan.theme}
             </span>
           ) : <span />}
-          {publishDate && <span className="text-[#2f3437]/50 shrink-0">{publishDate}</span>}
+          <div className="flex items-center gap-2 text-[#2f3437]/50 shrink-0">
+            {shootDate && (
+              <span className="inline-flex items-center gap-0.5" title={`Shoot date: ${shootDate}`}>
+                <VideoCameraIcon className="w-3 h-3" />
+                {shootDate}
+              </span>
+            )}
+            {publishDate && (
+              <span className="inline-flex items-center gap-0.5" title={`Publish date: ${publishDate}`}>
+                <CalendarDaysIcon className="w-3 h-3" />
+                {publishDate}
+              </span>
+            )}
+          </div>
         </div>
       </div>
     );

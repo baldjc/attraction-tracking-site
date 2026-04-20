@@ -6,7 +6,7 @@ import { CalendarDaysIcon, ClipboardDocumentIcon, CheckIcon, XMarkIcon, Magnifyi
 import ContentPlanTable from "@/components/content-planner/ContentPlanTable";
 import CalendarView from "@/components/content-planner/CalendarView";
 import BoardView from "@/components/content-planner/BoardView";
-import PipelineView from "@/components/content-planner/PipelineView";
+import PipelineView, { type PipelineSortKey } from "@/components/content-planner/PipelineView";
 import ContentPlanEditModal, { type ContentPlan } from "@/components/content-planner/ContentPlanEditModal";
 import { hasEditDueDate, getStatusOptions } from "@/lib/content-plan-utils";
 
@@ -35,6 +35,7 @@ export default function ContentPlannerClient({
   // Sprint 7 — global search + status filter state
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
+  const [pipelineSort, setPipelineSort] = useState<PipelineSortKey>("default");
   const [allPlans, setAllPlans] = useState<ContentPlan[] | null>(null);
 
   const router = useRouter();
@@ -184,6 +185,22 @@ export default function ContentPlannerClient({
               Clear filters
             </button>
           )}
+          {view === "pipeline" && (
+            <label className="ml-auto flex items-center gap-1.5 text-xs text-[#2f3437]/60">
+              Sort
+              <select
+                value={pipelineSort}
+                onChange={(e) => setPipelineSort(e.target.value as PipelineSortKey)}
+                className="text-xs bg-white border border-gray-200 rounded-md px-2 py-1 text-[#2f3437] focus:outline-none focus:border-[#6ba3c7] focus:ring-2 focus:ring-[#6ba3c7]/20"
+              >
+                <option value="default">Default</option>
+                <option value="publish-asc">Publish date ↑</option>
+                <option value="publish-desc">Publish date ↓</option>
+                <option value="shoot-asc">Shoot date ↑</option>
+                <option value="shoot-desc">Shoot date ↓</option>
+              </select>
+            </label>
+          )}
         </div>
         <div className="flex items-center gap-1.5 flex-wrap">
           {statusOptions.map((s) => {
@@ -305,6 +322,7 @@ export default function ContentPlannerClient({
           isAdmin={isAdminView}
           searchQuery={searchQuery}
           statusFilter={statusFilter}
+          sortBy={pipelineSort}
         />
       )}
 
