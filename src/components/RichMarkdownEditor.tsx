@@ -129,7 +129,7 @@ export default function RichMarkdownEditor({
       <div
         className={
           className ??
-          `flex-1 min-h-0 overflow-auto rounded-lg border border-[#eaeaea] bg-white p-4 ${
+          `relative flex-1 min-h-0 overflow-auto rounded-lg border border-[#eaeaea] bg-white p-4 ${
             hideToolbar ? "" : "mt-2 p-6"
           }`
         }
