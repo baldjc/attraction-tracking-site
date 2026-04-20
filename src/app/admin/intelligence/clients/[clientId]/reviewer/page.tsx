@@ -16,7 +16,23 @@ export const dynamic = "force-dynamic";
 
 async function resolveChannel(
   id: string,
-): Promise<{ name: string; channelRef: string } | null> {
+): Promise<{ name: string; channelRef: string; backHref?: string; backLabel?: string } | null> {
+  const tracked = await prisma.reviewerTrackedChannel.findUnique({
+    where: { id },
+    include: { user: { select: { fullName: true, email: true } } },
+  });
+  if (tracked) {
+    return {
+      name:
+        tracked.user?.fullName ||
+        tracked.user?.email ||
+        tracked.channelName,
+      channelRef: tracked.channelRef,
+      backHref: "/admin/reviewer",
+      backLabel: "← Reviewer overview",
+    };
+  }
+
   const client = await prisma.client.findUnique({
     where: { id },
     select: { id: true, name: true, ownChannelId: true, ownChannelUrl: true },
@@ -91,10 +107,10 @@ export default async function ReviewerChannelPage({
       <div className="flex items-start justify-between gap-4">
         <div>
           <Link
-            href={`/admin/intelligence/clients/${clientId}`}
+            href={resolved.backHref ?? `/admin/intelligence/clients/${clientId}`}
             className="text-sm text-[#787774] hover:text-[#2f3437]"
           >
-            ← Client
+            {resolved.backLabel ?? "← Client"}
           </Link>
           <h1 className="mt-2 text-2xl font-bold text-[#2f3437] dark:text-white">
             {resolved.name}
