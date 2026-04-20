@@ -523,13 +523,6 @@ export default function ArcScriptChatPhase({
         onSectionClick={handleSectionClick}
       />
 
-      <AnalysisProgress
-        active={loading}
-        title="Generating script…"
-        estimatedSeconds={30}
-        hint="The AI is writing this section. Please keep this tab open — leaving now will lose the response."
-      />
-
       {expandedSection && (
         <div className="mb-4">
           {sectionApprovals.filter((a) => a.key === expandedSection).map((approval) => {
@@ -821,6 +814,12 @@ export default function ArcScriptChatPhase({
 
       {!atTurnLimit && (
         <div className="flex-shrink-0 border-t border-[#2f3437]/10 dark:border-white/10 pt-4">
+          <AnalysisProgress
+            active={loading}
+            title="Generating script…"
+            estimatedSeconds={30}
+            hint="The AI is writing this section. Please keep this tab open — leaving now will lose the response."
+          />
           <div className="flex gap-3 items-end">
             <textarea
               value={input}
