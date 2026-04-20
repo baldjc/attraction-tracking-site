@@ -280,10 +280,46 @@ Produce a research brief I can hand to a script writer. For **each talking point
     return score;
   })();
 
-  function handleStepClick(key: string) {
+  // Seed the appropriate sessionStorage prefill for a given tool key so the
+  // destination tool can pick up title / notes / script as expected. Used by
+  // every launch point in the modal — inline field buttons, the progress
+  // track's "Suggested next" link, and the "All tools for this plan" grid —
+  // so the hand-off works no matter which entry the user clicks.
+  function seedToolPrefill(key: string) {
+    if (typeof window === "undefined") return;
+    if (key === "script") {
+      const talkingPoints = form.notes.split("\n").map((l) => l.trim()).filter(Boolean);
+      sessionStorage.setItem(
+        "arc_prefill",
+        JSON.stringify({ planId: plan.id, title: form.title, talkingPoints })
+      );
+    } else if (key === "title") {
+      sessionStorage.setItem(
+        "title_prefill",
+        JSON.stringify({ planId: plan.id, title: form.title })
+      );
+    } else if (key === "review") {
+      sessionStorage.setItem(
+        "script_review_prefill",
+        JSON.stringify({ planId: plan.id, title: form.title, script: form.script })
+      );
+    } else if (key === "description") {
+      sessionStorage.setItem(
+        "description_prefill",
+        JSON.stringify({ title: form.title, transcript: form.script, contentPlanId: plan.id })
+      );
+    }
+  }
+
+  function launchTool(key: string) {
     const route = TOOL_ROUTES[key];
     if (!route) return;
+    seedToolPrefill(key);
     router.push(buildToolUrl(route, { planId: plan.id, returnTo: "/member/content-planner" }));
+  }
+
+  function handleStepClick(key: string) {
+    launchTool(key);
   }
 
   const progressSteps = showProgressTrack
@@ -368,17 +404,10 @@ Produce a research brief I can hand to a script writer. For **each talking point
   const field = "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30";
 
   function pushToAITool(tool: "title" | "script-builder" | "script-review") {
-    if (tool === "title") {
-      sessionStorage.setItem("title_prefill", JSON.stringify({ planId: plan.id, title: form.title }));
-      router.push("/member/ai-tools/title-thumbnail-analyzer");
-    } else if (tool === "script-builder") {
-      const talkingPoints = form.notes.split("\n").map((l) => l.trim()).filter(Boolean);
-      sessionStorage.setItem("arc_prefill", JSON.stringify({ planId: plan.id, title: form.title, talkingPoints }));
-      router.push("/member/ai-tools/arc-script-builder");
-    } else {
-      sessionStorage.setItem("script_review_prefill", JSON.stringify({ planId: plan.id, title: form.title, script: form.script }));
-      router.push("/member/ai-tools/script-review");
-    }
+    // Delegate to the unified launcher so prefill seeding stays in one place.
+    if (tool === "title") launchTool("title");
+    else if (tool === "script-builder") launchTool("script");
+    else launchTool("review");
   }
 
   function downloadScript(format: "md" | "txt" | "pdf") {
@@ -477,13 +506,14 @@ Produce a research brief I can hand to a script writer. For **each talking point
               {suggestedNext && TOOL_ROUTES[suggestedNext.key] && (
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-[#2f3437]/50">Suggested next:</span>
-                  <a
-                    href={buildToolUrl(TOOL_ROUTES[suggestedNext.key]!, { planId: plan.id, returnTo: "/member/content-planner" })}
+                  <button
+                    type="button"
+                    onClick={() => launchTool(suggestedNext.key)}
                     className="flex items-center gap-1.5 text-xs font-semibold text-white bg-[#6ba3c7] hover:bg-[#5a92b6] px-3 py-1.5 rounded-lg transition-colors"
                   >
                     {ALL_TOOLS.find((t) => t.key === suggestedNext.key)?.icon}{" "}
                     {ALL_TOOLS.find((t) => t.key === suggestedNext.key)?.label} →
-                  </a>
+                  </button>
                 </div>
               )}
 
@@ -498,14 +528,15 @@ Produce a research brief I can hand to a script writer. For **each talking point
                 {showAllTools && (
                   <div className="mt-2 grid grid-cols-2 gap-1.5">
                     {ALL_TOOLS.map((tool) => (
-                      <a
+                      <button
                         key={tool.key}
-                        href={buildToolUrl(TOOL_ROUTES[tool.key]!, { planId: plan.id, returnTo: "/member/content-planner" })}
+                        type="button"
+                        onClick={() => launchTool(tool.key)}
                         className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-[#2f3437]/70 bg-white border border-gray-200 rounded-lg hover:border-[#6ba3c7] hover:text-[#6ba3c7] transition-colors"
                       >
                         <span>{tool.icon}</span>
                         <span>{tool.label}</span>
-                      </a>
+                      </button>
                     ))}
                   </div>
                 )}
