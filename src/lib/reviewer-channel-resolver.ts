@@ -25,6 +25,15 @@ export async function resolveUsersForChannel(
 
   const userIds = new Set<string>();
 
+  // Source 0: explicit tracked channels (ReviewerTrackedChannel.userId)
+  const tracked = await prisma.reviewerTrackedChannel.findMany({
+    where: { channelRef, userId: { not: null } },
+    select: { userId: true },
+  });
+  for (const t of tracked) {
+    if (t.userId) userIds.add(t.userId);
+  }
+
   const admins = await prisma.user.findMany({
     where: {
       role: "admin",

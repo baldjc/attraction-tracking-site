@@ -6,6 +6,7 @@ import prisma from "@/lib/prisma";
 import { isReviewerEnabled } from "@/lib/reviewer-flag";
 import { getChannelInfo } from "@/lib/youtube";
 import OverviewSyncAllButton from "./OverviewSyncAllButton";
+import TrackedChannelsPanel from "@/components/reviewer/TrackedChannelsPanel";
 
 export const dynamic = "force-dynamic";
 
@@ -26,15 +27,34 @@ interface ChannelCard {
 const MARKET_UPDATE_THEME = "Market Updates";
 
 async function gatherChannels(): Promise<ChannelCard[]> {
-  // Source 1: Clients with ownChannelId
+  const cards: Array<Omit<ChannelCard, "thumbnailUrl"> & { thumbnailUrl: string | null }> =
+    [];
+
+  // Source 0: Explicitly tracked channels (primary)
+  const tracked = await prisma.reviewerTrackedChannel.findMany({
+    where: { enabled: true },
+    orderBy: { createdAt: "desc" },
+    include: { user: { select: { id: true, fullName: true, email: true } } },
+  });
+  for (const t of tracked) {
+    cards.push(
+      await buildCard(
+        t.id,
+        t.user?.fullName || t.user?.email || t.channelName,
+        t.channelRef,
+        t.channelThumbnail,
+      ),
+    );
+  }
+
+  // Source 1: Clients with ownChannelId (legacy automatic source)
   const clients = await prisma.client.findMany({
     where: { ownChannelId: { not: null } },
     select: { id: true, name: true, ownChannelId: true },
   });
-  const cards: Array<Omit<ChannelCard, "thumbnailUrl"> & { thumbnailUrl: string | null }> =
-    [];
   for (const c of clients) {
     if (!c.ownChannelId) continue;
+    if (cards.some((card) => card.channelRef === c.ownChannelId)) continue;
     cards.push(await buildCard(c.id, c.name, c.ownChannelId));
   }
 
@@ -240,11 +260,11 @@ export default async function ReviewerOverviewPage() {
         </div>
       </div>
 
+      <TrackedChannelsPanel />
+
       {cards.length === 0 ? (
         <p className="rounded-xl border border-[#eaeaea] bg-white p-8 text-center text-sm text-[#787774]">
-          No channels tracked yet. Connect YouTube Analytics in Settings, then
-          set <code className="font-data">ownChannelId</code> on a Client or add
-          a YouTube handle to an admin user.
+          No channels tracked yet. Add one in the panel above.
         </p>
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">

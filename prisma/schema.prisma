@@ -169,7 +169,28 @@ model User {
   planTeamNotes          PlanTeamNote[]      @relation("PlanTeamNoteAuthor")
   planAssignments        PlanAssignmentLog[] @relation("PlanAssignmentActor")
 
+  reviewerTrackedChannels      ReviewerTrackedChannel[] @relation("ReviewerTrackedChannelMember")
+  reviewerTrackedChannelsAdded ReviewerTrackedChannel[] @relation("ReviewerTrackedChannelAddedBy")
+
   @@map("users")
+}
+
+model ReviewerTrackedChannel {
+  id               String   @id @default(uuid())
+  channelRef       String   @unique
+  channelName      String
+  channelHandle    String?
+  channelThumbnail String?
+  userId           String?
+  user             User?    @relation("ReviewerTrackedChannelMember", fields: [userId], references: [id], onDelete: SetNull)
+  addedById        String
+  addedBy          User     @relation("ReviewerTrackedChannelAddedBy", fields: [addedById], references: [id])
+  enabled          Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([userId])
+  @@map("reviewer_tracked_channels")
 }
 
 model ResourceLesson {
