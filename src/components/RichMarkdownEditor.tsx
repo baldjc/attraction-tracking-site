@@ -84,11 +84,19 @@ export default function RichMarkdownEditor({
       attributes: {
         "aria-label": ariaLabel ?? "Editor",
         class:
-          "prose prose-sm max-w-none focus:outline-none text-[#2f3437] " +
-          "prose-headings:font-semibold prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg " +
-          "prose-p:my-3 prose-ul:my-3 prose-ol:my-3 prose-li:my-0.5 " +
-          "prose-strong:text-[#2f3437] prose-blockquote:border-l-[#6ba3c7] " +
-          "[&_p:empty]:min-h-[1em]",
+          "max-w-none focus:outline-none text-[#2f3437] text-[15px] leading-relaxed " +
+          "[&_h1]:text-3xl [&_h1]:font-bold [&_h1]:mt-5 [&_h1]:mb-3 [&_h1]:leading-tight " +
+          "[&_h2]:text-2xl [&_h2]:font-bold [&_h2]:mt-4 [&_h2]:mb-2 [&_h2]:leading-tight " +
+          "[&_h3]:text-xl [&_h3]:font-semibold [&_h3]:mt-4 [&_h3]:mb-2 [&_h3]:leading-tight " +
+          "[&_p]:my-3 [&_p:empty]:min-h-[1em] " +
+          "[&_ul]:list-disc [&_ul]:pl-6 [&_ul]:my-3 " +
+          "[&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:my-3 " +
+          "[&_li]:my-1 [&_li>p]:my-0 " +
+          "[&_blockquote]:border-l-4 [&_blockquote]:border-[#6ba3c7] [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-[#2f3437]/80 [&_blockquote]:my-3 " +
+          "[&_hr]:border-0 [&_hr]:border-t [&_hr]:border-[#d4d4d4] [&_hr]:my-6 " +
+          "[&_strong]:font-semibold [&_strong]:text-[#2f3437] " +
+          "[&_em]:italic [&_s]:line-through [&_s]:text-[#2f3437]/60 " +
+          "[&_a]:text-[#6ba3c7] [&_a]:underline",
       },
     },
     onUpdate: ({ editor }) => {
@@ -237,6 +245,14 @@ function Toolbar({ editor }: { editor: Editor }) {
         onClick={() => editor.chain().focus().toggleBlockquote().run()}
       >
         ❝
+      </button>
+      <button
+        type="button"
+        className={btn(false)}
+        title="Section divider"
+        onClick={() => editor.chain().focus().setHorizontalRule().run()}
+      >
+        <span className="inline-block w-4 border-t-2 border-current" />
       </button>
       <span className="w-px h-5 bg-[#eaeaea] mx-1" />
       <button
