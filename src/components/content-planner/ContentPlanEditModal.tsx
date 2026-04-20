@@ -605,13 +605,31 @@ Produce a research brief I can hand to a script writer. For **each talking point
                 </div>
                 {/* Drama Mode toggle — replaces the old Priority field */}
                 <div className="flex items-center justify-between rounded-md border border-slate-200 bg-slate-50 p-3">
-                  <div className="flex-1">
+                  <div className="flex items-center gap-1.5">
                     <label htmlFor="drama-mode" className="text-sm font-medium text-slate-900">
                       Drama Mode
                     </label>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      Flag this as the monthly wide-net Drama video — broader hook, pulls new viewers.
-                    </p>
+                    <span
+                      className="group relative inline-flex"
+                      tabIndex={0}
+                      aria-label="Drama Mode info"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                        className="h-4 w-4 text-slate-400 hover:text-slate-600 cursor-help"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      <span className="pointer-events-none absolute left-1/2 top-full z-20 mt-1 w-56 -translate-x-1/2 rounded-md bg-slate-900 px-3 py-2 text-xs font-normal leading-snug text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus:opacity-100">
+                        Flag this as the monthly wide-net Drama video — broader hook, pulls new viewers.
+                      </span>
+                    </span>
                   </div>
                   <button
                     type="button"
@@ -619,8 +637,8 @@ Produce a research brief I can hand to a script writer. For **each talking point
                     role="switch"
                     aria-checked={form.dramaMode}
                     onClick={() => setForm((f) => ({ ...f, dramaMode: !f.dramaMode }))}
-                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 ${
-                      form.dramaMode ? "bg-orange-600" : "bg-slate-300"
+                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 ${
+                      form.dramaMode ? "bg-green-600" : "bg-slate-300"
                     }`}
                   >
                     <span
