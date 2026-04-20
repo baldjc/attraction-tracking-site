@@ -19,6 +19,41 @@ export function formatTierLabel(tier: string): string {
  * Tier badge colors. Mirrors the palette used on the admin member detail page
  * so every surface that shows a tier reads the same.
  */
+export type PlanSortKey =
+  | "default"
+  | "publish-asc"
+  | "publish-desc"
+  | "shoot-asc"
+  | "shoot-desc";
+
+function dateValue(d: Date | string | null | undefined): number | null {
+  if (!d) return null;
+  const t = new Date(d).getTime();
+  return Number.isFinite(t) ? t : null;
+}
+
+/**
+ * Sort plans by shoot or publish date. Plans missing the chosen date sink to
+ * the bottom regardless of direction so empty cards never crowd the top.
+ */
+export function sortPlansByDate<T extends { shootDate?: string | Date | null; publishDate?: string | Date | null }>(
+  plans: T[],
+  sortBy: PlanSortKey
+): T[] {
+  if (sortBy === "default") return plans;
+  const [field, dir] = sortBy.split("-") as ["publish" | "shoot", "asc" | "desc"];
+  const key = field === "publish" ? "publishDate" : "shootDate";
+  const sign = dir === "asc" ? 1 : -1;
+  return [...plans].sort((a, b) => {
+    const av = dateValue(a[key] as string | Date | null | undefined);
+    const bv = dateValue(b[key] as string | Date | null | undefined);
+    if (av == null && bv == null) return 0;
+    if (av == null) return 1;
+    if (bv == null) return -1;
+    return (av - bv) * sign;
+  });
+}
+
 export function tierBadgeClasses(tier: string | null | undefined): string {
   if (tier === "foundations") return "bg-[#6ba3c7]/20 text-[#6ba3c7]";
   if (tier === "editing_2" || tier === "editing_4") return "bg-amber-100 text-amber-700";

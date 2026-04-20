@@ -185,7 +185,7 @@ export default function ContentPlannerClient({
               Clear filters
             </button>
           )}
-          {view === "pipeline" && (
+          {(view === "pipeline" || view === "by_theme") && (
             <label className="ml-auto flex items-center gap-1.5 text-xs text-[#2f3437]/60">
               Sort
               <select
@@ -312,6 +312,7 @@ export default function ContentPlannerClient({
           isAdmin={isAdminView}
           searchQuery={searchQuery}
           statusFilter={statusFilter}
+          sortBy={pipelineSort}
         />
       )}
 

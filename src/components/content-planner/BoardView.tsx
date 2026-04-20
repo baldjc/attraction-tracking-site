@@ -14,8 +14,8 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
-import { ArrowTopRightOnSquareIcon, FolderIcon, PlusIcon, XMarkIcon } from "@heroicons/react/24/outline";
-import { STATUS_STYLES, getStatusOptions, PRIORITY_OPTIONS, hasEditDueDate, filterPlans } from "@/lib/content-plan-utils";
+import { ArrowTopRightOnSquareIcon, FolderIcon, PlusIcon, XMarkIcon, VideoCameraIcon, CalendarDaysIcon } from "@heroicons/react/24/outline";
+import { STATUS_STYLES, getStatusOptions, PRIORITY_OPTIONS, hasEditDueDate, filterPlans, sortPlansByDate, type PlanSortKey } from "@/lib/content-plan-utils";
 import ContentPlanEditModal, { type ContentPlan } from "./ContentPlanEditModal";
 
 interface Props {
@@ -24,6 +24,12 @@ interface Props {
   isAdmin?: boolean;
   searchQuery?: string;
   statusFilter?: string[];
+  sortBy?: PlanSortKey;
+}
+
+function formatShortDate(d: Date | string | null | undefined): string | null {
+  if (!d) return null;
+  return new Date(d).toLocaleDateString("en-CA", { month: "short", day: "numeric", timeZone: "UTC" });
 }
 
 const COLUMN_COLOURS = [
@@ -48,9 +54,8 @@ function DraggableCard({
   const style = { transform: CSS.Translate.toString(transform), opacity: isDragging ? 0.4 : 1 };
   const s = STATUS_STYLES[plan.status] ?? { bg: "#f3f4f6", text: "#6b7280" };
 
-  const publishDate = plan.publishDate
-    ? new Date(plan.publishDate).toLocaleDateString("en-CA", { month: "short", day: "numeric", timeZone: "UTC" })
-    : null;
+  const publishDate = formatShortDate(plan.publishDate);
+  const shootDate = formatShortDate(plan.shootDate);
 
   return (
     <div
@@ -71,7 +76,18 @@ function DraggableCard({
           >
             {plan.status}
           </span>
-          {publishDate && <span className="text-xs text-[#2f3437]/40">{publishDate}</span>}
+          {shootDate && (
+            <span className="inline-flex items-center gap-0.5 text-xs text-[#2f3437]/50" title={`Shoot date: ${shootDate}`}>
+              <VideoCameraIcon className="w-3 h-3" />
+              {shootDate}
+            </span>
+          )}
+          {publishDate && (
+            <span className="inline-flex items-center gap-0.5 text-xs text-[#2f3437]/50" title={`Publish date: ${publishDate}`}>
+              <CalendarDaysIcon className="w-3 h-3" />
+              {publishDate}
+            </span>
+          )}
         </div>
         {plan.driveFolderLink && (
           <a
@@ -102,7 +118,7 @@ function DroppableColumn({ id, children, isOver }: { id: string; children: React
   );
 }
 
-export default function BoardView({ apiBase, serviceTier, isAdmin, searchQuery = "", statusFilter = [] }: Props) {
+export default function BoardView({ apiBase, serviceTier, isAdmin, searchQuery = "", statusFilter = [], sortBy = "default" }: Props) {
   const [plans,   setPlans]   = useState<ContentPlan[]>([]);
   const [themes,  setThemes]  = useState<ThemeObj[]>([]);
   const [loading, setLoading] = useState(true);
@@ -219,7 +235,7 @@ export default function BoardView({ apiBase, serviceTier, isAdmin, searchQuery =
   }
 
   const hasNoThemes = themes.length === 0;
-  const visiblePlans = filterPlans(plans, searchQuery, statusFilter);
+  const visiblePlans = sortPlansByDate(filterPlans(plans, searchQuery, statusFilter), sortBy);
   const unassigned  = visiblePlans.filter((p) => !p.theme || !themes.some((t) => t.name === p.theme));
   const activePlan  = plans.find((p) => p.id === activeDragId);
 
@@ -311,9 +327,8 @@ export default function BoardView({ apiBase, serviceTier, isAdmin, searchQuery =
                     <p className="text-xs text-[#2f3437]/30 text-center py-4">No videos</p>
                   ) : colPlans.map((plan) => {
                     const s = STATUS_STYLES[plan.status] ?? { bg: "#f3f4f6", text: "#6b7280" };
-                    const publishDate = plan.publishDate
-                      ? new Date(plan.publishDate).toLocaleDateString("en-CA", { month: "short", day: "numeric", timeZone: "UTC" })
-                      : null;
+                    const publishDate = formatShortDate(plan.publishDate);
+                    const shootDate = formatShortDate(plan.shootDate);
                     return (
                       <div
                         key={plan.id}
@@ -325,7 +340,18 @@ export default function BoardView({ apiBase, serviceTier, isAdmin, searchQuery =
                           <span className="inline-block text-xs font-medium px-1.5 py-0.5 rounded-full" style={{ backgroundColor: s.bg, color: s.text }}>
                             {plan.status}
                           </span>
-                          {publishDate && <span className="text-xs text-[#2f3437]/40">{publishDate}</span>}
+                          {shootDate && (
+                            <span className="inline-flex items-center gap-0.5 text-xs text-[#2f3437]/50" title={`Shoot date: ${shootDate}`}>
+                              <VideoCameraIcon className="w-3 h-3" />
+                              {shootDate}
+                            </span>
+                          )}
+                          {publishDate && (
+                            <span className="inline-flex items-center gap-0.5 text-xs text-[#2f3437]/50" title={`Publish date: ${publishDate}`}>
+                              <CalendarDaysIcon className="w-3 h-3" />
+                              {publishDate}
+                            </span>
+                          )}
                           {plan.driveFolderLink && (
                             <a
                               href={plan.driveFolderLink}

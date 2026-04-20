@@ -5,15 +5,12 @@ import { VideoCameraIcon, CalendarDaysIcon } from "@heroicons/react/24/outline";
 import ContentPlanEditModal, { type ContentPlan } from "./ContentPlanEditModal";
 import ProgressTrack from "./ProgressTrack";
 import { resolveProgressSteps, type PlanArtifactsByType } from "@/lib/plan-state";
-import { STATUS_STYLES, filterPlans, getStatusOptions } from "@/lib/content-plan-utils";
+import { STATUS_STYLES, filterPlans, getStatusOptions, sortPlansByDate, type PlanSortKey } from "@/lib/content-plan-utils";
 import { getScoreBadgeClasses } from "@/lib/score-badge";
 
-export type PipelineSortKey =
-  | "default"
-  | "publish-asc"
-  | "publish-desc"
-  | "shoot-asc"
-  | "shoot-desc";
+// Backwards-compatible alias — callers (ContentPlannerClient) imported this
+// name before sort logic was lifted to a shared util.
+export type PipelineSortKey = PlanSortKey;
 
 interface Props {
   apiBase: string;
@@ -30,29 +27,6 @@ function formatShortDate(d: Date | string | null | undefined): string | null {
     month: "short",
     day: "numeric",
     timeZone: "UTC",
-  });
-}
-
-function dateValue(d: Date | string | null | undefined): number | null {
-  if (!d) return null;
-  const t = new Date(d).getTime();
-  return Number.isFinite(t) ? t : null;
-}
-
-function sortPlans(plans: ContentPlan[], sortBy: PipelineSortKey): ContentPlan[] {
-  if (sortBy === "default") return plans;
-  const [field, dir] = sortBy.split("-") as ["publish" | "shoot", "asc" | "desc"];
-  const key = field === "publish" ? "publishDate" : "shootDate";
-  const sign = dir === "asc" ? 1 : -1;
-  // Plans without the chosen date sink to the bottom regardless of direction
-  // so empty cards never crowd the top of a column.
-  return [...plans].sort((a, b) => {
-    const av = dateValue(a[key] as string | Date | null | undefined);
-    const bv = dateValue(b[key] as string | Date | null | undefined);
-    if (av == null && bv == null) return 0;
-    if (av == null) return 1;
-    if (bv == null) return -1;
-    return (av - bv) * sign;
   });
 }
 
@@ -123,7 +97,7 @@ export default function PipelineView({
       map[p.status].push(p);
     }
     // Apply the chosen sort within every column.
-    for (const s of Object.keys(map)) map[s] = sortPlans(map[s], sortBy);
+    for (const s of Object.keys(map)) map[s] = sortPlansByDate(map[s], sortBy);
     return map;
   }, [visiblePlans, pipelineStatuses, sortBy]);
 
