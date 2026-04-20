@@ -23,6 +23,10 @@ function dayDate(): Date {
 }
 
 async function resolveChannelIds(): Promise<string[]> {
+  const tracked = await prisma.reviewerTrackedChannel.findMany({
+    where: { enabled: true },
+    select: { channelRef: true },
+  });
   const admins = await prisma.user.findMany({
     where: {
       role: "admin",
@@ -39,6 +43,9 @@ async function resolveChannelIds(): Promise<string[]> {
   });
 
   const ids = new Set<string>();
+  for (const t of tracked) {
+    if (t.channelRef) ids.add(t.channelRef);
+  }
   for (const c of clients) {
     if (c.ownChannelId) ids.add(c.ownChannelId);
   }
