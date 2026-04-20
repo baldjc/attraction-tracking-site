@@ -493,7 +493,7 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
                 </th>
                 <th className="text-left px-4 py-2.5 font-medium whitespace-nowrap">
                   <button onClick={() => handleSort("thumbnailWords")} className="flex items-center gap-0.5 hover:text-[#2f3437] transition-colors">
-                    Thumbnail Words <SortIcon col="thumbnailWords" />
+                    Thumbnail Words and Ideas <SortIcon col="thumbnailWords" />
                   </button>
                 </th>
                 {showDriveFolder && <th className="text-center px-4 py-2.5 font-medium whitespace-nowrap">Drive</th>}
@@ -651,8 +651,8 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
                 </div>
               )}
               <div>
-                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Thumbnail Words</label>
-                <input type="text" value={addForm.thumbnailWords ?? ""} onChange={(e) => setAddForm((f) => ({ ...f, thumbnailWords: e.target.value }))} placeholder="Words for your thumbnail..." className="w-full border border-gray-200 text-[#2f3437] text-sm rounded-lg px-3 py-2 focus:border-[#6ba3c7] focus:outline-none" />
+                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Thumbnail Words and Ideas</label>
+                <input type="text" value={addForm.thumbnailWords ?? ""} onChange={(e) => setAddForm((f) => ({ ...f, thumbnailWords: e.target.value }))} placeholder="Words for your thumbnail, or quick ideas…" className="w-full border border-gray-200 text-[#2f3437] text-sm rounded-lg px-3 py-2 focus:border-[#6ba3c7] focus:outline-none" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Footage Link</label>

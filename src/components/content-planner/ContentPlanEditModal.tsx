@@ -879,8 +879,8 @@ Produce a research brief I can hand to a script writer. For **each talking point
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Thumbnail Words</label>
-                <input type="text" value={form.thumbnailWords} onChange={(e) => setForm((f) => ({ ...f, thumbnailWords: e.target.value }))} className={field} placeholder="3–5 words" />
+                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Thumbnail Words and Ideas</label>
+                <input type="text" value={form.thumbnailWords} onChange={(e) => setForm((f) => ({ ...f, thumbnailWords: e.target.value }))} className={field} placeholder="3–5 words, or quick ideas…" />
               </div>
             </div>
           </div>
