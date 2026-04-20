@@ -16,10 +16,10 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const { user, isAdmin, error } = await resolveUserFromSession(req);
-  if (error || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const user = await resolveUserFromSession();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const plan = await checkOwnership(id, user.id, isAdmin);
+  const plan = await checkOwnership(id, user.id, user.isAdmin);
   if (!plan) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const artifacts = await prisma.planArtifact.findMany({
@@ -41,10 +41,10 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const { user, isAdmin, error } = await resolveUserFromSession(req);
-  if (error || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const user = await resolveUserFromSession();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const plan = await checkOwnership(id, user.id, isAdmin);
+  const plan = await checkOwnership(id, user.id, user.isAdmin);
   if (!plan) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   // Sprint 3: gate plan-artifact writes behind tool_planner_linkage so that

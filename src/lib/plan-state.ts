@@ -48,18 +48,31 @@ function hasContent(artifacts: PlanArtifactsByType, type: string): boolean {
 }
 
 export function resolveProgressSteps(
-  plan: { id: string; status: string; script?: string | null },
+  plan: {
+    id: string;
+    status: string;
+    script?: string | null;
+    youtubeDescription?: string | null;
+    thumbnailWords?: string | null;
+  },
   artifacts: PlanArtifactsByType,
   onStepClick: (key: string) => void
 ): ProgressStep[] {
   const hasRepurpose = REPURPOSE_TYPES.some((t) => hasContent(artifacts, t));
 
+  // Each step also falls back to the plan's own column where one exists, so a
+  // step still marks done even if the artifact write was skipped (e.g. legacy
+  // plans saved before the artifact endpoint was wired up).
   const checks: Array<{ key: ProgressStep["key"]; done: boolean; artifactType?: string }> = [
     { key: "idea", done: true },
     { key: "script", done: hasContent(artifacts, "script") || !!(plan.script?.trim()), artifactType: "script" },
     { key: "review", done: hasContent(artifacts, "script_review"), artifactType: "script_review" },
     { key: "title", done: hasContent(artifacts, "title"), artifactType: "title" },
-    { key: "description", done: hasContent(artifacts, "description"), artifactType: "description" },
+    {
+      key: "description",
+      done: hasContent(artifacts, "description") || !!(plan.youtubeDescription?.trim()),
+      artifactType: "description",
+    },
     { key: "repurpose", done: hasRepurpose },
     { key: "ready", done: READY_STATUSES.has(plan.status) },
   ];

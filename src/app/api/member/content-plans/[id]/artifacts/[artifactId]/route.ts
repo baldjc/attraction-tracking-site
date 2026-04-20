@@ -24,10 +24,10 @@ export async function GET(
   { params }: { params: Promise<{ id: string; artifactId: string }> }
 ) {
   const { id, artifactId } = await params;
-  const { user, isAdmin, error } = await resolveUserFromSession(req);
-  if (error || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const user = await resolveUserFromSession();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const artifact = await checkArtifactOwnership(id, artifactId, user.id, isAdmin);
+  const artifact = await checkArtifactOwnership(id, artifactId, user.id, user.isAdmin);
   if (!artifact) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   return NextResponse.json({ artifact });
@@ -38,10 +38,10 @@ export async function PUT(
   { params }: { params: Promise<{ id: string; artifactId: string }> }
 ) {
   const { id, artifactId } = await params;
-  const { user, isAdmin, error } = await resolveUserFromSession(req);
-  if (error || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const user = await resolveUserFromSession();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const artifact = await checkArtifactOwnership(id, artifactId, user.id, isAdmin);
+  const artifact = await checkArtifactOwnership(id, artifactId, user.id, user.isAdmin);
   if (!artifact) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const body = await req.json();
@@ -61,10 +61,10 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string; artifactId: string }> }
 ) {
   const { id, artifactId } = await params;
-  const { user, isAdmin, error } = await resolveUserFromSession(req);
-  if (error || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const user = await resolveUserFromSession();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const artifact = await checkArtifactOwnership(id, artifactId, user.id, isAdmin);
+  const artifact = await checkArtifactOwnership(id, artifactId, user.id, user.isAdmin);
   if (!artifact) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const tombstone = `deleted:${artifactId}`;

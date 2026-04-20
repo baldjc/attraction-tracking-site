@@ -3,8 +3,9 @@ import prisma from "@/lib/prisma";
 import { resolveUserFromSession } from "@/lib/session-utils";
 
 export async function GET(req: NextRequest) {
-  const { user, isAdmin, error } = await resolveUserFromSession(req);
-  if (error || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const user = await resolveUserFromSession();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const isAdmin = user.isAdmin;
 
   const { searchParams } = new URL(req.url);
   const planIdsParam = searchParams.get("planIds") ?? "";

@@ -289,6 +289,23 @@ function DescriptionGeneratorPageInner() {
         setSavedToPlan(true);
         setContentPlanId(planId);
         setShowPlanPicker(false);
+
+        // Mirror the title tool: also write a PlanArtifact of type "description"
+        // so the plan's progress track ticks the Description step. Best-effort —
+        // swallow errors so the plan-field save still wins.
+        try {
+          await fetch(`/api/member/content-plans/${planId}/artifacts`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              type: "description",
+              content: description,
+              metadata: { savedAt: new Date().toISOString() },
+            }),
+          });
+        } catch (err) {
+          console.error("[description-generator] artifact save failed:", err);
+        }
       }
     } catch { /* ignore */ }
     setSavingToPlan(false);

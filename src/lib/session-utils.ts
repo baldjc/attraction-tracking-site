@@ -6,11 +6,23 @@ import { IMPERSONATE_COOKIE } from "@/lib/impersonate-constants";
 export { IMPERSONATE_COOKIE };
 export { IMPERSONATE_LS_KEY } from "@/lib/impersonate-constants";
 
-export async function resolveUserFromSession(): Promise<{ id: string; email: string } | null> {
+export type ResolvedUser = {
+  id: string;
+  email: string;
+  /** Role of the actual signed-in account (not the impersonated member). */
+  role: string | null;
+  /** True when the actual signed-in account has the admin role. */
+  isAdmin: boolean;
+  /** True when the resolved user is an impersonated member. */
+  isImpersonating: boolean;
+};
+
+export async function resolveUserFromSession(): Promise<ResolvedUser | null> {
   const session = await auth();
   if (!session?.user) return null;
 
-  const role = (session.user as any).role;
+  const role = ((session.user as any).role as string | undefined) ?? null;
+  const isAdmin = role === "admin";
 
   // Admin and editor impersonation: if they have an impersonation cookie, use that member's ID
   if (role === "admin" || role === "editor") {
@@ -21,7 +33,9 @@ export async function resolveUserFromSession(): Promise<{ id: string; email: str
         where: { id: impersonateId },
         select: { id: true, email: true },
       });
-      if (impersonatedUser) return impersonatedUser;
+      if (impersonatedUser) {
+        return { ...impersonatedUser, role, isAdmin, isImpersonating: true };
+      }
     }
   }
 
@@ -36,5 +50,6 @@ export async function resolveUserFromSession(): Promise<{ id: string; email: str
     dbUser = await prisma.user.findUnique({ where: { email: sessionEmail }, select: { id: true, email: true } });
   }
 
-  return dbUser ?? null;
+  if (!dbUser) return null;
+  return { ...dbUser, role, isAdmin, isImpersonating: false };
 }
