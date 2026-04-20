@@ -40,7 +40,7 @@ export default async function ReviewerSettingsPage({
         >
           ← Admin
         </Link>
-        <h1 className="font-display mt-2 text-3xl text-[#2f3437]">
+        <h1 className="mt-2 text-2xl font-bold text-[#2f3437]">
           Analytics Reviewer — Settings
         </h1>
         <p className="mt-2 text-sm text-[#787774]">

@@ -222,7 +222,7 @@ export default async function ReviewerOverviewPage() {
     <div className="mx-auto max-w-6xl px-2 py-2">
       <div className="mb-6 flex items-start justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl text-[#2f3437] dark:text-white">
+          <h1 className="text-2xl font-bold text-[#2f3437] dark:text-white">
             Analytics Reviewer
           </h1>
           <p className="mt-1 text-sm text-[#787774]">
@@ -343,7 +343,7 @@ export default async function ReviewerOverviewPage() {
             boxShadow: "var(--atbv-shadow-sm)",
           }}
         >
-          <h2 className="font-display text-lg text-[#2f3437] dark:text-white">
+          <h2 className="text-lg font-semibold text-[#2f3437] dark:text-white">
             Issues across all channels
           </h2>
           <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">

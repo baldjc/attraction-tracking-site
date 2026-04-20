@@ -96,7 +96,7 @@ export default async function ReviewerChannelPage({
           >
             ← Client
           </Link>
-          <h1 className="font-display mt-2 text-3xl text-[#2f3437] dark:text-white">
+          <h1 className="mt-2 text-2xl font-bold text-[#2f3437] dark:text-white">
             {resolved.name}
           </h1>
           <p className="mt-1 text-sm text-[#787774]">
