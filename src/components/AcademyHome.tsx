@@ -270,7 +270,7 @@ export default function AcademyHome() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[10px] font-semibold tracking-wider text-[#6ba3c7] uppercase">
-                      Step {stepNum}
+                      Section {stepNum}
                     </p>
                     <p className="font-semibold text-[#2f3437] dark:text-white leading-snug line-clamp-2">
                       {sec.title}
