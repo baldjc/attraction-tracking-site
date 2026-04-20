@@ -16,6 +16,8 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { ArrowTopRightOnSquareIcon, FolderIcon, PlusIcon, XMarkIcon, VideoCameraIcon, CalendarDaysIcon } from "@heroicons/react/24/outline";
 import { STATUS_STYLES, getStatusOptions, PRIORITY_OPTIONS, hasEditDueDate, filterPlans, sortPlansByDate, type PlanSortKey } from "@/lib/content-plan-utils";
+import { resolveProgressSteps, type PlanArtifactsByType } from "@/lib/plan-state";
+import ProgressTrack from "./ProgressTrack";
 import ContentPlanEditModal, { type ContentPlan } from "./ContentPlanEditModal";
 
 interface Props {
@@ -45,9 +47,11 @@ interface ThemeObj {
 
 function DraggableCard({
   plan,
+  artifacts,
   onEdit,
 }: {
   plan: ContentPlan;
+  artifacts: PlanArtifactsByType;
   onEdit: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: plan.id });
@@ -56,6 +60,11 @@ function DraggableCard({
 
   const publishDate = formatShortDate(plan.publishDate);
   const shootDate = formatShortDate(plan.shootDate);
+  const steps = resolveProgressSteps(
+    { id: plan.id, status: plan.status, script: plan.script },
+    artifacts,
+    onEdit
+  );
 
   return (
     <div
@@ -81,6 +90,9 @@ function DraggableCard({
             <FolderIcon className="w-3.5 h-3.5" />
           </a>
         )}
+      </div>
+      <div className="mb-2">
+        <ProgressTrack steps={steps} compact />
       </div>
       <div className="flex items-center gap-1.5 flex-wrap">
         <span
@@ -121,6 +133,7 @@ function DroppableColumn({ id, children, isOver }: { id: string; children: React
 export default function BoardView({ apiBase, serviceTier, isAdmin, searchQuery = "", statusFilter = [], sortBy = "default" }: Props) {
   const [plans,   setPlans]   = useState<ContentPlan[]>([]);
   const [themes,  setThemes]  = useState<ThemeObj[]>([]);
+  const [artifactsByPlan, setArtifactsByPlan] = useState<Record<string, PlanArtifactsByType>>({});
   const [loading, setLoading] = useState(true);
   const [editingPlan,  setEditingPlan]  = useState<ContentPlan | null>(null);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
@@ -148,6 +161,17 @@ export default function BoardView({ apiBase, serviceTier, isAdmin, searchQuery =
       setThemes(themeData.themes ?? []);
     }).catch(() => {}).finally(() => setLoading(false));
   }, [apiBase]);
+
+  // Match PipelineView: load artifacts for the same set of plans so the
+  // ProgressTrack dots can render on each card.
+  useEffect(() => {
+    if (plans.length === 0) { setArtifactsByPlan({}); return; }
+    const ids = plans.map((p) => p.id).join(",");
+    fetch(`/api/member/content-plans/artifacts?planIds=${ids}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (d?.artifactsByPlan) setArtifactsByPlan(d.artifactsByPlan); })
+      .catch(() => {});
+  }, [plans]);
 
   function handleDragStart(e: DragStartEvent) {
     setActiveDragId(String(e.active.id));
@@ -297,6 +321,7 @@ export default function BoardView({ apiBase, serviceTier, isAdmin, searchQuery =
                       <DraggableCard
                         key={plan.id}
                         plan={plan}
+                        artifacts={artifactsByPlan[plan.id] ?? {}}
                         onEdit={() => setEditingPlan(plan)}
                       />
                     ))}
