@@ -338,8 +338,8 @@ Produce a research brief I can hand to a script writer. For **each talking point
     return () => window.removeEventListener("keydown", handleKey);
   }, [onClose]);
 
-  async function handleSave() {
-    if (!form.title.trim()) { setError("Title is required."); return; }
+  async function handleSave(): Promise<boolean> {
+    if (!form.title.trim()) { setError("Title is required."); return false; }
     setSaving(true);
     setError("");
     try {
@@ -367,11 +367,23 @@ Produce a research brief I can hand to a script writer. For **each talking point
       if (!res.ok) throw new Error(data.error ?? "Failed to save");
       if (data.plan?.driveFolderLink) setDriveFolderLink(data.plan.driveFolderLink);
       onSaved(data.plan);
+      return true;
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to save");
+      return false;
     } finally {
       setSaving(false);
     }
+  }
+
+  // Backdrop click → auto-save then close. If the save fails (e.g. missing
+  // required title), keep the modal open and surface the error instead of
+  // silently discarding the user's edits.
+  async function handleBackdropClick(e: React.MouseEvent<HTMLDivElement>) {
+    if (e.target !== e.currentTarget) return; // ignore clicks bubbling from the panel
+    if (saving) return;
+    const ok = await handleSave();
+    if (ok) onClose();
   }
 
   async function handleDelete() {
@@ -447,7 +459,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 z-50 flex items-start justify-center p-4 overflow-y-auto lg:pl-[260px]">
+    <div onClick={handleBackdropClick} className="fixed inset-0 bg-black/40 z-50 flex items-start justify-center p-4 overflow-y-auto lg:pl-[260px]">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-lg lg:max-w-3xl xl:max-w-4xl my-8">
         <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-100">
           <h3 className="text-base font-semibold text-[#2f3437]">Edit Video</h3>
