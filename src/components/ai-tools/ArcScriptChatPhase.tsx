@@ -185,10 +185,19 @@ export default function ArcScriptChatPhase({
           sectionApprovals: secApprovals,
         }),
       });
-      if (!res.ok) throw new Error("Draft save failed");
+      if (!res.ok) {
+        let detail = `HTTP ${res.status}`;
+        try {
+          const errBody = await res.json();
+          if (errBody?.detail) detail = `${errBody.error ?? "error"}: ${errBody.detail}`;
+        } catch {}
+        console.error("[arc-draft] save failed", detail);
+        throw new Error(detail);
+      }
       setDraftSaved(true);
       draftSavedTimerRef.current = setTimeout(() => setDraftSaved(false), 3000);
-    } catch {
+    } catch (e) {
+      console.error("[arc-draft] save error", e);
       setDraftSaveError(true);
     } finally {
       setDraftSaving(false);

@@ -35,38 +35,75 @@ export async function POST(req: NextRequest) {
   const user = await resolveUserFromSession();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const body = await req.json();
+  let body: any;
+  try {
+    body = await req.json();
+  } catch (e: any) {
+    console.error("[draft POST] failed to parse body", { userId: user.id, err: e?.message });
+    return NextResponse.json({ error: "invalid_json", detail: e?.message ?? "could not parse body" }, { status: 400 });
+  }
+
   const { videoTitle, planId, initialData, messages, currentSection, completedSections, sectionApprovals } = body;
 
-  if (!videoTitle) return NextResponse.json({ error: "videoTitle required" }, { status: 400 });
+  if (!videoTitle || typeof videoTitle !== "string") {
+    return NextResponse.json({ error: "videoTitle required" }, { status: 400 });
+  }
 
   const planIdValue: string | null = typeof planId === "string" && planId.length > 0 ? planId : null;
 
-  const draft = await prisma.scriptDraft.upsert({
-    where: { userId_videoTitle: { userId: user.id, videoTitle } },
-    create: {
+  // Sanitize: ensure JSON-typed fields are the right shape so Prisma never
+  // chokes on unexpected payloads (e.g. undefined nested values).
+  const safeInitialData = initialData && typeof initialData === "object" ? initialData : {};
+  const safeMessages = Array.isArray(messages) ? messages : [];
+  const safeCompleted = Array.isArray(completedSections) ? completedSections : [];
+  const safeApprovals = Array.isArray(sectionApprovals) ? sectionApprovals : [];
+  const safeCurrentSection = typeof currentSection === "string" && currentSection.length > 0
+    ? currentSection
+    : "research_strategy";
+
+  try {
+    const draft = await prisma.scriptDraft.upsert({
+      where: { userId_videoTitle: { userId: user.id, videoTitle } },
+      create: {
+        userId: user.id,
+        videoTitle,
+        planId: planIdValue,
+        initialData: safeInitialData,
+        messages: safeMessages,
+        currentSection: safeCurrentSection,
+        completedSections: safeCompleted,
+        sectionApprovals: safeApprovals,
+      },
+      update: {
+        // Only overwrite planId when the caller actually provided one — never
+        // unlink a draft from its plan on a subsequent save that omitted planId.
+        ...(planIdValue !== null ? { planId: planIdValue } : {}),
+        initialData: safeInitialData,
+        messages: safeMessages,
+        currentSection: safeCurrentSection,
+        completedSections: safeCompleted,
+        sectionApprovals: safeApprovals,
+      },
+    });
+
+    return NextResponse.json({ id: draft.id });
+  } catch (e: any) {
+    const payloadBytes = JSON.stringify(body ?? {}).length;
+    console.error("[draft POST] upsert failed", {
       userId: user.id,
       videoTitle,
       planId: planIdValue,
-      initialData: initialData ?? {},
-      messages: messages ?? [],
-      currentSection: currentSection ?? "research_strategy",
-      completedSections: completedSections ?? [],
-      sectionApprovals: sectionApprovals ?? [],
-    },
-    update: {
-      // Only overwrite planId when the caller actually provided one — never
-      // unlink a draft from its plan on a subsequent save that omitted planId.
-      ...(planIdValue !== null ? { planId: planIdValue } : {}),
-      initialData: initialData ?? {},
-      messages: messages ?? [],
-      currentSection: currentSection ?? "research_strategy",
-      completedSections: completedSections ?? [],
-      sectionApprovals: sectionApprovals ?? [],
-    },
-  });
-
-  return NextResponse.json({ id: draft.id });
+      messageCount: safeMessages.length,
+      payloadBytes,
+      code: e?.code,
+      name: e?.name,
+      message: e?.message,
+    });
+    return NextResponse.json(
+      { error: "draft_save_failed", code: e?.code ?? null, detail: e?.message ?? "unknown" },
+      { status: 500 },
+    );
+  }
 }
 
 export async function DELETE(req: NextRequest) {
