@@ -43,7 +43,7 @@ export default function RichMarkdownEditor({
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
-        heading: { levels: [1, 2, 3] },
+        heading: { levels: [2, 3] },
         paragraph: false,
       }),
       // Custom paragraph that preserves empty lines when serialised to markdown
@@ -166,27 +166,19 @@ function Toolbar({ editor }: { editor: Editor }) {
     <div className="flex items-center flex-wrap gap-0.5 border border-[#eaeaea] rounded-lg bg-[#fafafa] px-1 py-1">
       <button
         type="button"
-        className={btn(editor.isActive("heading", { level: 1 }))}
-        title="Heading 1"
-        onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-      >
-        H1
-      </button>
-      <button
-        type="button"
         className={btn(editor.isActive("heading", { level: 2 }))}
-        title="Heading 2"
+        title="Heading"
         onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
       >
-        H2
+        Heading
       </button>
       <button
         type="button"
         className={btn(editor.isActive("heading", { level: 3 }))}
-        title="Heading 3"
+        title="Sub-Heading"
         onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
       >
-        H3
+        Sub-Heading
       </button>
       <button
         type="button"
