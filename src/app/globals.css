@@ -1,19 +1,32 @@
+/* ============================================================
+   Attraction by Video — globals.css (drop-in)
+   Target: Next.js 16 App Router, Tailwind CSS v4
+   Replaces: src/app/globals.css
+   Keeps: existing class-based dark mode, scrollbar-hide utility,
+          print rules, slide-in-right animation.
+   Adds:  one source of truth for color/spacing/radius/shadow
+          tokens, consolidated typography, tightened dark-mode
+          overrides. No breaking changes to Tailwind classnames
+          currently in use.
+   ============================================================ */
+
 @import "tailwindcss";
 
-/* ── Class-based dark mode for dark: Tailwind variants ───────── */
+/* ── Class-based dark mode for dark: Tailwind variants ──────── */
 @custom-variant dark (&:is(.dark *));
 
-/* ── Scrollbar hide utility ──────────────────────────────────── */
+/* ── Scrollbar hide utility ─────────────────────────────────── */
 @utility scrollbar-hide {
   scrollbar-width: none;
   -ms-overflow-style: none;
-  &::-webkit-scrollbar {
-    display: none;
-  }
+  &::-webkit-scrollbar { display: none; }
 }
 
-/* ── App colour tokens ───────────────────────────────────────── */
+/* ============================================================
+   DESIGN TOKENS
+   ============================================================ */
 :root {
+  /* ── Core brand palette ───────────────────────────────────── */
   --atbv-bg: #f7f6f3;
   --atbv-surface: #ffffff;
   --atbv-sidebar: #1e2a38;
@@ -23,8 +36,32 @@
   --atbv-border: #eaeaea;
   --atbv-hover: #f4f3f0;
   --atbv-input: #ffffff;
-  --atbv-primary: #6ba3c7;
-  --atbv-danger: #e63946;
+
+  /* ── Accents (per-module identity) ────────────────────────── */
+  --atbv-primary: #6ba3c7;         /* sky — brand primary */
+  --atbv-primary-hover: #5490b5;
+  --atbv-danger: #e63946;          /* alert / Generate Leads */
+  --atbv-success: #10b981;         /* emerald — Academy */
+  --atbv-warning: #f59e0b;         /* amber — My Scores */
+  --atbv-purple: #8b5cf6;          /* Hire a Human */
+
+  /* ── Radii ─────────────────────────────────────────────────── */
+  --atbv-radius-sm: 0.375rem;  /* 6  — small buttons, inputs */
+  --atbv-radius-md: 0.5rem;    /* 8  — default */
+  --atbv-radius-lg: 0.75rem;   /* 12 — cards */
+  --atbv-radius-xl: 1rem;      /* 16 — modals */
+
+  /* ── Shadows (near-flat) ───────────────────────────────────── */
+  --atbv-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.03);
+  --atbv-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+  --atbv-shadow-md: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --atbv-shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.08);
+  --atbv-shadow-xl: 0 12px 32px rgba(0, 0, 0, 0.12);
+
+  /* ── Motion ────────────────────────────────────────────────── */
+  --atbv-dur-fast: 150ms;
+  --atbv-dur-base: 200ms;
+  --atbv-dur-slow: 400ms;
 }
 
 html.dark {
@@ -37,16 +74,12 @@ html.dark {
   --atbv-border: #2d3748;
   --atbv-hover: #2d3748;
   --atbv-input: #2d3748;
-  --atbv-primary: #6ba3c7;
-  --atbv-danger: #e63946;
 }
 
-/* ── Smooth colour transitions everywhere ────────────────────── */
-*,
-*::before,
-*::after {
+/* ── Smooth colour transitions everywhere ───────────────────── */
+*, *::before, *::after {
   transition-property: background-color, border-color, color;
-  transition-duration: 200ms;
+  transition-duration: var(--atbv-dur-base);
   transition-timing-function: ease;
 }
 
@@ -56,11 +89,14 @@ body {
   font-family: var(--font-outfit), system-ui, -apple-system, sans-serif;
 }
 
-/* ── Typography utilities ─────────────────────────────────────── */
+/* ============================================================
+   TYPOGRAPHY UTILITIES
+   ============================================================ */
 .font-display {
   font-family: var(--font-instrument-serif), Georgia, "Times New Roman", serif;
   font-feature-settings: "kern" 1;
   letter-spacing: -0.02em;
+  font-weight: 400;
 }
 
 .font-data,
@@ -69,27 +105,46 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* ── Page entry animation ─────────────────────────────────────── */
+.eyebrow {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--atbv-text-muted);
+}
+
+/* ============================================================
+   ANIMATIONS
+   ============================================================ */
 /*
-  IMPORTANT: Do NOT use transform in this keyframe.
-  A non-none transform on an ancestor creates a CSS stacking context,
-  trapping position:fixed descendants (modal backdrops) so they are
-  positioned relative to the animated element instead of the viewport.
-  Opacity-only animation avoids this entirely.
+  IMPORTANT: Do NOT use transform in fade-in-up. A non-none
+  transform on an ancestor creates a CSS stacking context,
+  trapping position:fixed descendants (modal backdrops) so they
+  position relative to the animated element instead of the
+  viewport. Opacity-only animation avoids this entirely.
 */
 @keyframes fade-in-up {
   from { opacity: 0; }
   to   { opacity: 1; }
 }
-
 .animate-fade-in-up {
-  animation: fade-in-up 400ms ease both;
+  animation: fade-in-up var(--atbv-dur-slow) ease both;
   animation-delay: calc(var(--index, 0) * 60ms);
 }
 
-/* ── Global dark-mode overrides for hardcoded Tailwind classes ─ */
+@keyframes slide-in-right {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+.animate-slide-in-right {
+  animation: slide-in-right 0.2s ease-out;
+}
+
+/* ============================================================
+   DARK-MODE OVERRIDES for hardcoded Tailwind classes
+   (identical to existing globals.css; kept for compat)
+   ============================================================ */
 html.dark .bg-white { background-color: var(--atbv-surface) !important; }
-html.dark .bg-\[\#f7f6f3\] { background-color: var(--atbv-bg) !important; }
 html.dark .bg-\[\#f7f6f3\] { background-color: var(--atbv-bg) !important; }
 html.dark .bg-\[\#f8f9fa\] { background-color: var(--atbv-hover) !important; }
 html.dark .hover\:bg-\[\#f8f9fa\]:hover { background-color: var(--atbv-hover) !important; }
@@ -97,14 +152,6 @@ html.dark .bg-gray-50 { background-color: var(--atbv-hover) !important; }
 html.dark .bg-gray-100 { background-color: var(--atbv-border) !important; }
 
 html.dark .text-\[\#2f3437\] { color: var(--atbv-text) !important; }
-html.dark .text-\[\#2f3437\] { color: var(--atbv-text) !important; }
-html.dark .text-\[\#2f3437\]\/80 { color: var(--atbv-text-muted) !important; }
-html.dark .text-\[\#2f3437\]\/70 { color: var(--atbv-text-muted) !important; }
-html.dark .text-\[\#2f3437\]\/60 { color: var(--atbv-text-muted) !important; }
-html.dark .text-\[\#2f3437\]\/50 { color: var(--atbv-text-muted) !important; }
-html.dark .text-\[\#2f3437\]\/40 { color: var(--atbv-text-dim) !important; }
-html.dark .text-\[\#2f3437\]\/30 { color: var(--atbv-text-dim) !important; }
-html.dark .text-\[\#2f3437\]\/20 { color: var(--atbv-text-dim) !important; }
 html.dark .text-\[\#2f3437\]\/80 { color: var(--atbv-text-muted) !important; }
 html.dark .text-\[\#2f3437\]\/70 { color: var(--atbv-text-muted) !important; }
 html.dark .text-\[\#2f3437\]\/60 { color: var(--atbv-text-muted) !important; }
@@ -123,15 +170,10 @@ html.dark .border-\[\#2f3437\]\/5 { border-color: var(--atbv-border) !important;
 html.dark .border-\[\#2f3437\]\/10 { border-color: var(--atbv-border) !important; }
 html.dark .border-\[\#2f3437\]\/15 { border-color: var(--atbv-border) !important; }
 html.dark .border-\[\#2f3437\]\/20 { border-color: var(--atbv-border) !important; }
-html.dark .border-\[\#2f3437\]\/5 { border-color: var(--atbv-border) !important; }
-html.dark .border-\[\#2f3437\]\/10 { border-color: var(--atbv-border) !important; }
-html.dark .border-\[\#2f3437\]\/15 { border-color: var(--atbv-border) !important; }
-html.dark .border-\[\#2f3437\]\/20 { border-color: var(--atbv-border) !important; }
 html.dark .border-gray-100,
 html.dark .border-gray-200,
 html.dark .border-\[\#eaeaea\] { border-color: var(--atbv-border) !important; }
 
-html.dark .divide-\[\#2f3437\]\/5 > * + * { border-color: var(--atbv-border) !important; }
 html.dark .divide-\[\#2f3437\]\/5 > * + * { border-color: var(--atbv-border) !important; }
 html.dark .divide-gray-50 > * + * { border-color: var(--atbv-border) !important; }
 
@@ -150,23 +192,17 @@ html.dark textarea {
   color-scheme: dark;
 }
 
-/* ── Print Styles ────────────────────────────────────────────── */
+/* ============================================================
+   PRINT STYLES
+   ============================================================ */
 @media print {
-  *,
-  *::before,
-  *::after {
+  *, *::before, *::after {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
     transition: none !important;
   }
 
-  .no-print,
-  nav,
-  aside,
-  [data-sidebar],
-  [data-no-print] {
-    display: none !important;
-  }
+  .no-print, nav, aside, [data-sidebar], [data-no-print] { display: none !important; }
 
   body {
     background: #fff !important;
@@ -181,13 +217,8 @@ html.dark textarea {
     padding: 0 12pt !important;
   }
 
-  .print-page-break {
-    page-break-before: always;
-  }
-
-  .print-avoid-break {
-    page-break-inside: avoid;
-  }
+  .print-page-break { page-break-before: always; }
+  .print-avoid-break { page-break-inside: avoid; }
 
   .print-header::before {
     content: "";
@@ -207,12 +238,4 @@ html.dark textarea {
       color: #888;
     }
   }
-}
-
-@keyframes slide-in-right {
-  from { transform: translateX(100%); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
-}
-.animate-slide-in-right {
-  animation: slide-in-right 0.2s ease-out;
 }
