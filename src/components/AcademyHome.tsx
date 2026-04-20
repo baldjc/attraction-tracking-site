@@ -238,12 +238,12 @@ export default function AcademyHome() {
       );
     }
 
+    const orderedSections = sections.slice().sort((a, b) => a.sortOrder - b.sortOrder);
+
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {sections
-          .slice()
-          .sort((a, b) => a.sortOrder - b.sortOrder)
-          .map((sec) => {
+        {orderedSections.map((sec, idx) => {
+            const stepNum = idx + 1;
             const pct =
               sec.lessonCount > 0
                 ? Math.round((sec.completedCount / sec.lessonCount) * 100)
@@ -259,10 +259,19 @@ export default function AcademyHome() {
               >
                 {/* Header row */}
                 <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-[#6ba3c7]/10 dark:bg-[#6ba3c7]/15 flex items-center justify-center shrink-0 text-lg">
+                  <div className="relative w-10 h-10 rounded-lg bg-[#6ba3c7]/10 dark:bg-[#6ba3c7]/15 flex items-center justify-center shrink-0 text-lg">
                     {getSectionIcon(sec.sortOrder, sec.slug)}
+                    <span
+                      className="absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full bg-[#2f3437] dark:bg-white text-white dark:text-[#2f3437] text-[10px] font-bold flex items-center justify-center shadow-sm tabular-nums"
+                      aria-hidden
+                    >
+                      {stepNum}
+                    </span>
                   </div>
                   <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-semibold tracking-wider text-[#6ba3c7] uppercase">
+                      Step {stepNum}
+                    </p>
                     <p className="font-semibold text-[#2f3437] dark:text-white leading-snug line-clamp-2">
                       {sec.title}
                     </p>
@@ -403,9 +412,14 @@ export default function AcademyHome() {
 
       {/* Zone 2 */}
       <section>
-        <h2 className="text-xs font-semibold tracking-widest text-[#2f3437]/40 dark:text-white/30 uppercase mb-4">
-          Course Sections
-        </h2>
+        <div className="flex items-baseline justify-between mb-4">
+          <h2 className="text-xs font-semibold tracking-widest text-[#2f3437]/40 dark:text-white/30 uppercase">
+            Course Sections
+          </h2>
+          <p className="text-xs text-[#2f3437]/40 dark:text-white/30">
+            Work through these in order
+          </p>
+        </div>
         <SectionGrid />
       </section>
 
