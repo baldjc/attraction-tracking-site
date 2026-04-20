@@ -776,6 +776,7 @@ model ContentPlan {
   publishDate     DateTime?
   editDueDate     DateTime?
   priority        String?
+  dramaMode       Boolean   @default(false)
   notes           String?   @db.Text
   script          String?   @db.Text
   youtubeDescription String? @db.Text

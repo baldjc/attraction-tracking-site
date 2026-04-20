@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { XMarkIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
 import {
   STATUS_STYLES,
-  PRIORITY_OPTIONS,
   getStatusOptions,
   hasEditDueDate,
   hasDriveFolder,
@@ -25,6 +24,7 @@ export interface ContentPlan {
   publishDate: string | null;
   editDueDate: string | null;
   priority: string | null;
+  dramaMode?: boolean;
   notes: string | null;
   script: string | null;
   researchNotes: string | null;
@@ -108,6 +108,7 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
     shootDate: toDateInput(plan.shootDate),
     editDueDate: toDateInput(plan.editDueDate),
     priority: plan.priority ?? "",
+    dramaMode: Boolean(plan.dramaMode ?? false),
     notes: plan.notes ?? "",
     script: plan.script ?? "",
     youtubeDescription: (plan as any).youtubeDescription ?? "",
@@ -292,7 +293,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
       const talkingPoints = form.notes.split("\n").map((l) => l.trim()).filter(Boolean);
       sessionStorage.setItem(
         "arc_prefill",
-        JSON.stringify({ planId: plan.id, title: form.title, talkingPoints })
+        JSON.stringify({ planId: plan.id, title: form.title, talkingPoints, dramaMode: form.dramaMode })
       );
     } else if (key === "title") {
       sessionStorage.setItem(
@@ -305,17 +306,18 @@ Produce a research brief I can hand to a script writer. For **each talking point
           // both fields instead of starting from blank.
           transcript: form.script,
           thumbnailWords: form.thumbnailWords,
+          dramaMode: form.dramaMode,
         })
       );
     } else if (key === "review") {
       sessionStorage.setItem(
         "script_review_prefill",
-        JSON.stringify({ planId: plan.id, title: form.title, script: form.script })
+        JSON.stringify({ planId: plan.id, title: form.title, script: form.script, dramaMode: form.dramaMode })
       );
     } else if (key === "description") {
       sessionStorage.setItem(
         "description_prefill",
-        JSON.stringify({ title: form.title, transcript: form.script, contentPlanId: plan.id })
+        JSON.stringify({ title: form.title, transcript: form.script, contentPlanId: plan.id, dramaMode: form.dramaMode })
       );
     }
   }
@@ -362,6 +364,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
           shootDate: form.shootDate || null,
           editDueDate: form.editDueDate || null,
           priority: form.priority || null,
+          dramaMode: Boolean(form.dramaMode),
           notes: form.notes || null,
           script: form.script || null,
           youtubeDescription: form.youtubeDescription || null,
@@ -600,12 +603,32 @@ Produce a research brief I can hand to a script writer. For **each talking point
                     ))}
                   </select>
                 </div>
-                <div>
-                  <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Priority</label>
-                  <select value={form.priority} onChange={(e) => setForm((f) => ({ ...f, priority: e.target.value }))} className={field}>
-                    <option value="">—</option>
-                    {PRIORITY_OPTIONS.map((p) => <option key={p} value={p}>{p}</option>)}
-                  </select>
+                {/* Drama Mode toggle — replaces the old Priority field */}
+                <div className="flex items-center justify-between rounded-md border border-slate-200 bg-slate-50 p-3">
+                  <div className="flex-1">
+                    <label htmlFor="drama-mode" className="text-sm font-medium text-slate-900">
+                      Drama Mode
+                    </label>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Flag this as the monthly wide-net Drama video — broader hook, pulls new viewers.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    id="drama-mode"
+                    role="switch"
+                    aria-checked={form.dramaMode}
+                    onClick={() => setForm((f) => ({ ...f, dramaMode: !f.dramaMode }))}
+                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 ${
+                      form.dramaMode ? "bg-orange-600" : "bg-slate-300"
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition-transform ${
+                        form.dramaMode ? "translate-x-5" : "translate-x-0"
+                      }`}
+                    />
+                  </button>
                 </div>
               </div>
 

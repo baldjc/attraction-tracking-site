@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { PlusIcon, TrashIcon, ArrowTopRightOnSquareIcon, PencilSquareIcon, ChevronUpIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
 import { CheckIcon, XMarkIcon } from "@heroicons/react/24/solid";
+import DramaMagnet from "@/components/icons/DramaMagnet";
 import ContentPlanEditModal from "./ContentPlanEditModal";
 import ProgressTrack from "./ProgressTrack";
 import { resolveProgressSteps, type PlanArtifactsByType } from "@/lib/plan-state";
@@ -31,6 +32,7 @@ interface ContentPlan {
   thumbnailWords: string | null;
   footageLink: string | null;
   driveFolderLink: string | null;
+  dramaMode?: boolean;
 }
 
 interface Props {
@@ -514,8 +516,11 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
                     </button>
                   </td>
                   <td className="px-4 py-2.5">
-                    <div className="cursor-pointer text-sm text-[#2f3437] font-medium hover:text-[#6ba3c7] transition-colors max-w-[200px] truncate" onClick={() => setEditingPlan(plan)}>
-                      {plan.title}
+                    <div className="cursor-pointer text-sm text-[#2f3437] font-medium hover:text-[#6ba3c7] transition-colors max-w-[200px] truncate flex items-center gap-1.5" onClick={() => setEditingPlan(plan)}>
+                      {plan.dramaMode && (
+                        <DramaMagnet className="w-3.5 h-3.5 text-orange-600 shrink-0" />
+                      )}
+                      <span className="truncate">{plan.title}</span>
                     </div>
                   </td>
                   <td className="px-4 py-2.5">{renderCell(plan, "status")}</td>

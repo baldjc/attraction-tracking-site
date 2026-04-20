@@ -5,6 +5,7 @@ import { TITLE_THUMBNAIL_ANALYZER_PROMPT } from "@/lib/audit-engine";
 import { logUsage } from "@/lib/ai-tool-cost";
 import prisma from "@/lib/prisma";
 import { getAvatarData } from "@/lib/avatar-utils";
+import { getDramaContext } from "@/lib/drama-video-definition";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -64,7 +65,7 @@ export async function POST(req: NextRequest) {
   const { action } = body;
 
   if (action === "chat") {
-    const { title, analysisResult, messages, introTranscript } = body;
+    const { title, analysisResult, messages, introTranscript, dramaMode } = body;
     const { avatarText, titleFrameworksScore } = await getMemberContext(user.id);
 
     const customSetting = await prisma.appSetting.findUnique({
@@ -97,7 +98,7 @@ ${avatarText}
 
 BASELINE TITLE FRAMEWORKS SCORE: ${titleFrameworksScore}
 
-Your role: Help the member refine titles, create variations, adapt for different platforms, and answer specific questions about their title, thumbnail, and intro. When you provide a list of title alternatives, number each one clearly (1. Title here) so they can be saved. Keep responses concise and actionable.`;
+Your role: Help the member refine titles, create variations, adapt for different platforms, and answer specific questions about their title, thumbnail, and intro. When you provide a list of title alternatives, number each one clearly (1. Title here) so they can be saved. Keep responses concise and actionable.${dramaMode ? getDramaContext("title") + getDramaContext("thumbnail") : ""}`;
 
     const apiMessages: Anthropic.MessageParam[] = messages.map(
       (m: { role: string; content: string }) => ({
@@ -127,7 +128,7 @@ Your role: Help the member refine titles, create variations, adapt for different
     return NextResponse.json({ reply, titles });
   }
 
-  const { title, thumbnailBase64, thumbnailMimeType, introTranscript, thumbnailWords } = body;
+  const { title, thumbnailBase64, thumbnailMimeType, introTranscript, thumbnailWords, dramaMode } = body;
   if (!title) return NextResponse.json({ error: "Missing title" }, { status: 400 });
   const thumbWords = typeof thumbnailWords === "string" ? thumbnailWords.trim() : "";
 
@@ -139,7 +140,10 @@ Your role: Help the member refine titles, create variations, adapt for different
     where: { key: "title_thumbnail_analyzer_prompt" },
   });
   const basePrompt = customSetting?.value ?? TITLE_THUMBNAIL_ANALYZER_PROMPT;
-  const finalSystemPrompt = `${basePrompt}\n\n${memberContext}`;
+  const dramaContext = dramaMode
+    ? getDramaContext("title") + (thumbnailBase64 || thumbnailWords ? getDramaContext("thumbnail") : "")
+    : "";
+  const finalSystemPrompt = `${basePrompt}\n\n${memberContext}${dramaContext}`;
 
   const introInstructions = introTranscript
     ? `\n\nA video intro transcript has also been provided. Additionally evaluate whether this intro "approves the click" — does it deliver on the promise made by the title and thumbnail, and would the viewer feel satisfied they clicked? Include an "intro" key in your JSON response with: {"intro": {"score": <0-20>, "approves_click": <bool>, "observations": ["..."], "improvements": ["..."]}}`
