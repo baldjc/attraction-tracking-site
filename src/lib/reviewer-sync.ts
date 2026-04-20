@@ -8,6 +8,7 @@ import {
   getVideoViewerCohorts,
 } from "@/lib/youtube-analytics";
 import { getChannelInfo } from "@/lib/youtube";
+import { runGlanceTestForChannel } from "@/lib/glance-test-runner";
 
 function daysAgo(n: number): string {
   return new Date(Date.now() - n * 86400000).toISOString().slice(0, 10);
@@ -224,11 +225,19 @@ export async function syncAllChannelsAnalytics() {
     channelId: string;
     success: boolean;
     error?: string;
+    glanceProcessed?: number;
   }> = [];
   for (const id of channelIds) {
     try {
       await syncChannelAnalytics(id);
-      results.push({ channelId: id, success: true });
+      let glanceProcessed = 0;
+      try {
+        const out = await runGlanceTestForChannel(id, "system");
+        glanceProcessed = out.processed;
+      } catch (err) {
+        console.error(`[reviewer-sync] glance for ${id} failed:`, err);
+      }
+      results.push({ channelId: id, success: true, glanceProcessed });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       results.push({ channelId: id, success: false, error: msg });
