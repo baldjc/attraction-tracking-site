@@ -297,7 +297,15 @@ Produce a research brief I can hand to a script writer. For **each talking point
     } else if (key === "title") {
       sessionStorage.setItem(
         "title_prefill",
-        JSON.stringify({ planId: plan.id, title: form.title })
+        JSON.stringify({
+          planId: plan.id,
+          title: form.title,
+          // Carry the script (used as the intro transcript) and the
+          // member's planned thumbnail words so the analyzer can pre-fill
+          // both fields instead of starting from blank.
+          transcript: form.script,
+          thumbnailWords: form.thumbnailWords,
+        })
       );
     } else if (key === "review") {
       sessionStorage.setItem(

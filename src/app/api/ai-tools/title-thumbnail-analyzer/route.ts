@@ -127,8 +127,9 @@ Your role: Help the member refine titles, create variations, adapt for different
     return NextResponse.json({ reply, titles });
   }
 
-  const { title, thumbnailBase64, thumbnailMimeType, introTranscript } = body;
+  const { title, thumbnailBase64, thumbnailMimeType, introTranscript, thumbnailWords } = body;
   if (!title) return NextResponse.json({ error: "Missing title" }, { status: 400 });
+  const thumbWords = typeof thumbnailWords === "string" ? thumbnailWords.trim() : "";
 
   const { avatarText, titleFrameworksScore } = await getMemberContext(user.id);
 
@@ -146,9 +147,13 @@ Your role: Help the member refine titles, create variations, adapt for different
 
   const jsonReminder = `\n\nReturn ONLY valid JSON with the exact structure from your instructions — including "thumbnail", "title" (with "score", "attraction_scores", "observations", "alternatives"), "combined" (with "score", "avatar_would_click", "observations", "improvements", "redundancies", "thumbnail_concepts"), and "follow_up". Every field must be populated.`;
 
+  const thumbWordsBlock = thumbWords ? `\n\nPlanned thumbnail text (the 2-3 words the member intends to put on the thumbnail): "${thumbWords}"` : "";
+
   const analysisText = thumbnailBase64
-    ? `Analyse this title and thumbnail combination.\n\nTitle: "${title}"${introTranscript ? `\n\nVideo intro transcript (first ~30-60 seconds):\n${introTranscript}` : ""}\n\nPlease provide your full analysis as JSON.${introInstructions}${jsonReminder}`
-    : `Analyse this title${introTranscript ? " and video intro" : ""} (no thumbnail provided — analyse title only).\n\nTitle: "${title}"${introTranscript ? `\n\nVideo intro transcript (first ~30-60 seconds):\n${introTranscript}` : ""}\n\nFor thumbnail fields, return score: 0 and note that no image was provided.${introInstructions}${jsonReminder}`;
+    ? `Analyse this title and thumbnail combination.\n\nTitle: "${title}"${thumbWordsBlock}${introTranscript ? `\n\nVideo intro transcript (first ~30-60 seconds):\n${introTranscript}` : ""}\n\nPlease provide your full analysis as JSON.${introInstructions}${jsonReminder}`
+    : thumbWords
+      ? `Analyse this title and the planned thumbnail copy${introTranscript ? " and video intro" : ""} (no thumbnail image provided — score the title-and-thumbnail-text combo for cognitive dissonance and click compulsion, and note that visual execution still needs evaluation).\n\nTitle: "${title}"${thumbWordsBlock}${introTranscript ? `\n\nVideo intro transcript (first ~30-60 seconds):\n${introTranscript}` : ""}\n\nIn the thumbnail score, evaluate how the planned text complements the title rather than penalising the lack of an image. Mention in observations that no image was provided.${introInstructions}${jsonReminder}`
+      : `Analyse this title${introTranscript ? " and video intro" : ""} (no thumbnail provided — analyse title only).\n\nTitle: "${title}"${introTranscript ? `\n\nVideo intro transcript (first ~30-60 seconds):\n${introTranscript}` : ""}\n\nFor thumbnail fields, return score: 0 and note that no image was provided.${introInstructions}${jsonReminder}`;
 
   const userContent: Anthropic.MessageParam["content"] = thumbnailBase64
     ? [

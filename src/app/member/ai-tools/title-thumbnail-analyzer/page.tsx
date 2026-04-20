@@ -364,6 +364,7 @@ function TitleThumbnailAnalyzerPageInner() {
   const [thumbnail, setThumbnail] = useState<File | null>(null);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
   const [introTranscript, setIntroTranscript] = useState("");
+  const [thumbnailWords, setThumbnailWords] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState("");
@@ -382,6 +383,8 @@ function TitleThumbnailAnalyzerPageInner() {
         const data = JSON.parse(raw);
         if (data.title) setTitle(data.title);
         if (data.planId) setLinkedPlanId(data.planId);
+        if (data.transcript) setIntroTranscript(data.transcript);
+        if (data.thumbnailWords) setThumbnailWords(data.thumbnailWords);
       }
     } catch {}
   }, []);
@@ -496,7 +499,7 @@ function TitleThumbnailAnalyzerPageInner() {
     const res = await fetch("/api/ai-tools/title-thumbnail-analyzer", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, thumbnailBase64, thumbnailMimeType, introTranscript: introTranscript.trim() }),
+      body: JSON.stringify({ title, thumbnailBase64, thumbnailMimeType, introTranscript: introTranscript.trim(), thumbnailWords: thumbnailWords.trim() }),
     });
 
     const data = await res.json();
@@ -536,6 +539,7 @@ function TitleThumbnailAnalyzerPageInner() {
     setThumbnail(null);
     setThumbnailPreview(null);
     setIntroTranscript("");
+    setThumbnailWords("");
     setResult(null);
     setError("");
     if (fileRef.current) fileRef.current.value = "";
@@ -625,6 +629,23 @@ function TitleThumbnailAnalyzerPageInner() {
                   />
                 </label>
               )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-[#2f3437] mb-1">
+                Thumbnail Text{" "}
+                <span className="font-normal text-[#2f3437]/40">(optional — 2–3 words you plan to put on the thumbnail)</span>
+              </label>
+              <p className="text-xs text-[#2f3437]/40 mb-2">
+                If you haven&apos;t designed the image yet, type the words you plan to use so the AI can score the title-and-thumbnail copy combo.
+              </p>
+              <input
+                type="text"
+                value={thumbnailWords}
+                onChange={(e) => setThumbnailWords(e.target.value)}
+                placeholder="e.g. STOP CHASING"
+                className="w-full bg-white border border-[#2f3437]/20 rounded-lg px-4 py-3 text-sm text-[#2f3437] placeholder-[#2f3437]/30 focus:outline-none focus:border-[#6ba3c7] transition-colors"
+              />
             </div>
 
             <div>
