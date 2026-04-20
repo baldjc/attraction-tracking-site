@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useEffect, DragEvent, ChangeEvent } from
 import { ChevronDownIcon, FilmIcon } from "@heroicons/react/24/outline";
 import { DocumentArrowUpIcon, XMarkIcon, ClipboardDocumentIcon, CheckIcon } from "@heroicons/react/24/outline";
 import MarkdownTextarea from "@/components/MarkdownTextarea";
+import AnalysisProgress from "@/components/ai-tools/AnalysisProgress";
 
 interface UploadedFile {
   file: File;
@@ -95,6 +96,7 @@ export default function ArcScriptUploadPhase({ onStartBuilding, prefillData, onS
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState("");
+  const ANALYSIS_STEPS = ["Reading files…", "Analysing research…"];
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [avatarData, setAvatarData] = useState<any>(null);
   const [researchPrompt, setResearchPrompt] = useState("");
@@ -357,6 +359,14 @@ Format each talking point as its own section with all 7 categories. Preserve spe
 
   return (
     <div className="max-w-2xl mx-auto space-y-5">
+      <AnalysisProgress
+        active={loading}
+        step={loadingStep}
+        steps={ANALYSIS_STEPS}
+        estimatedSeconds={45}
+        title="Preparing your script…"
+        hint="This usually takes 20–60 seconds. Please keep this tab open — leaving now will cancel the analysis."
+      />
       {isPrefilled && (
         <div className="bg-[#6ba3c7]/8 border border-[#6ba3c7]/25 rounded-lg px-4 py-3 space-y-2">
           <div className="flex items-center justify-between gap-2 flex-wrap">

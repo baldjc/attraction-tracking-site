@@ -11,6 +11,7 @@ import {
 } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import ArcProgressBar, { SECTIONS } from "@/components/ai-tools/ArcProgressBar";
+import AnalysisProgress from "@/components/ai-tools/AnalysisProgress";
 import MarkdownMessage from "@/components/MarkdownMessage";
 import NextStepCard from "@/components/ai-tools/NextStepCard";
 
@@ -520,6 +521,13 @@ export default function ArcScriptChatPhase({
         currentSection={currentSection}
         completedSections={completedSections}
         onSectionClick={handleSectionClick}
+      />
+
+      <AnalysisProgress
+        active={loading}
+        title="Generating script…"
+        estimatedSeconds={30}
+        hint="The AI is writing this section. Please keep this tab open — leaving now will lose the response."
       />
 
       {expandedSection && (
