@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { ArrowsPointingOutIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import MarkdownMessage from "@/components/MarkdownMessage";
 import RichMarkdownEditor from "@/components/RichMarkdownEditor";
@@ -24,7 +25,12 @@ export default function MarkdownTextarea({
 }: MarkdownTextareaProps) {
   const [mode, setMode] = useState<"edit" | "preview">("edit");
   const [expanded, setExpanded] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const hasContent = value.trim().length > 0;
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!expanded) return;
@@ -104,7 +110,7 @@ export default function MarkdownTextarea({
         </div>
       )}
 
-      {expanded && (
+      {expanded && mounted && createPortal(
         <div
           className="fixed inset-0 z-[200] bg-black/60 flex items-center justify-center p-3 sm:p-6"
           onClick={() => setExpanded(false)}
@@ -147,7 +153,8 @@ export default function MarkdownTextarea({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
