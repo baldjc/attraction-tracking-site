@@ -589,9 +589,32 @@ Produce a research brief I can hand to a script writer. For **each talking point
                   )}
                 </div>
                 <input type="text" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} className={field} />
-                <p className={`text-xs mt-1 text-right ${form.title.length > 80 ? "text-red-500" : form.title.length > 60 ? "text-amber-500" : "text-[#2f3437]/40"}`}>
-                  {form.title.length} / 60
-                </p>
+                <div className={`text-xs mt-1 flex items-center justify-end gap-1.5 ${form.title.length > 80 ? "text-red-500" : form.title.length > 60 ? "text-amber-500" : "text-[#2f3437]/40"}`}>
+                  <span>
+                    {form.title.length} / 60 Characters
+                  </span>
+                  <span
+                    className="group relative inline-flex"
+                    tabIndex={0}
+                    aria-label="Title length info"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                      className="h-3.5 w-3.5 text-slate-400 hover:text-slate-600 cursor-help"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    <span className="pointer-events-none absolute right-0 top-full z-20 mt-1 w-60 rounded-md bg-slate-900 px-3 py-2 text-xs font-normal leading-snug text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus:opacity-100">
+                      Ideally you want your title length about 60–65 characters or less so it doesn&apos;t get cut off in YouTube search results.
+                    </span>
+                  </span>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
