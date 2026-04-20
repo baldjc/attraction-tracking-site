@@ -67,14 +67,33 @@ function getMonthGrid(year: number, month: number): (number | null)[][] {
 
 function StatusPill({ plan, onClick, dragging }: { plan: ContentPlan; onClick?: () => void; dragging?: boolean }) {
   const s = STATUS_STYLES[plan.status] ?? { bg: "#f3f4f6", text: "#6b7280" };
+  // Three-line card: title, status, theme. Status-colored left rail keeps the
+  // strong color cue from the old pill without dominating the entire chip.
   return (
     <div
       onClick={onClick}
-      className={`text-xs font-medium px-1.5 py-0.5 rounded cursor-pointer truncate select-none transition-opacity ${dragging ? "opacity-40 outline-dashed outline-2 outline-purple-400" : "hover:brightness-95"}`}
-      style={{ backgroundColor: s.bg, color: s.text }}
+      className={`bg-white border border-gray-200 rounded cursor-pointer select-none transition-shadow overflow-hidden ${
+        dragging ? "opacity-40 outline-dashed outline-2 outline-purple-400" : "hover:shadow-sm hover:border-[#6ba3c7]"
+      }`}
       title={plan.title}
     >
-      {plan.title}
+      <div className="flex">
+        <div className="w-1 shrink-0" style={{ backgroundColor: s.bg }} />
+        <div className="flex-1 min-w-0 px-1.5 py-1 leading-tight">
+          <p className="text-[11px] font-medium text-[#2f3437] truncate">{plan.title}</p>
+          <p
+            className="text-[9px] font-semibold uppercase tracking-wide truncate"
+            style={{ color: s.text }}
+          >
+            {plan.status}
+          </p>
+          {plan.theme && (
+            <p className="text-[9px] text-[#2f3437]/50 truncate" title={plan.theme}>
+              {plan.theme}
+            </p>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
