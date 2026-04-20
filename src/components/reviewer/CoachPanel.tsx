@@ -138,7 +138,7 @@ export function CoachPanel({ channelRef }: { channelRef: string }) {
       }}
     >
       <div className="mb-1 flex items-center justify-between">
-        <h2 className="font-display text-lg text-[#2f3437] dark:text-white">
+        <h2 className="text-lg font-semibold text-[#2f3437] dark:text-white">
           Coach Panel
         </h2>
         <p className="eyebrow text-[#787774]">AI coaching summary</p>
