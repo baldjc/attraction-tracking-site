@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { PencilIcon, TrashIcon, PlusIcon, XMarkIcon, ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
+import MarkdownTextarea from "@/components/MarkdownTextarea";
 
 interface Call {
   id: string;
@@ -330,12 +331,12 @@ export default function AdminCallsTab({ memberId }: Props) {
               </div>
               <div>
                 <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Notes (optional)</label>
-                <textarea
+                <MarkdownTextarea
                   value={form.notes}
-                  onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+                  onChange={(next) => setForm((f) => ({ ...f, notes: next }))}
                   placeholder="Key discussion points, action items..."
-                  rows={3}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30 resize-none"
+                  rows={4}
+                  ariaLabel="Notes"
                 />
               </div>
               {error && <p className="text-sm text-red-600">{error}</p>}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import MarkdownTextarea from "@/components/MarkdownTextarea";
 import {
   MegaphoneIcon,
   PlusIcon,
@@ -204,12 +205,12 @@ export default function AnnouncementsSection() {
 
             <div>
               <label className="block text-xs font-medium text-[#2f3437]/60 dark:text-white/40 mb-1">Message</label>
-              <textarea
+              <MarkdownTextarea
                 value={form.body}
-                onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))}
-                rows={4}
+                onChange={(next) => setForm((f) => ({ ...f, body: next }))}
+                rows={5}
                 placeholder="Write your message here. Keep it clear and concise."
-                className="w-full bg-white dark:bg-[#0f1419] border border-gray-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-[#2f3437] dark:text-[#e2e8f0] placeholder:text-[#2f3437]/30 dark:placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40 resize-none"
+                ariaLabel="Message"
               />
             </div>
 

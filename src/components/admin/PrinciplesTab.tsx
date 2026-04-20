@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import MarkdownTextarea from "@/components/MarkdownTextarea";
 import {
   PlusIcon,
   PencilIcon,
@@ -378,12 +379,12 @@ export default function PrinciplesTab() {
               </div>
               <div>
                 <label className="block text-xs font-semibold text-[#2f3437]/60 mb-1">Description</label>
-                <textarea
+                <MarkdownTextarea
                   value={form.description}
-                  onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+                  onChange={(next) => setForm((f) => ({ ...f, description: next }))}
                   placeholder="Optional short description…"
-                  rows={2}
-                  className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-[#6ba3c7] resize-none"
+                  rows={3}
+                  ariaLabel="Description"
                 />
               </div>
               <div>

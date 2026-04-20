@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback, useEffect, DragEvent, ChangeEvent } from "react";
 import { ChevronDownIcon, FilmIcon } from "@heroicons/react/24/outline";
 import { DocumentArrowUpIcon, XMarkIcon, ClipboardDocumentIcon, CheckIcon } from "@heroicons/react/24/outline";
+import MarkdownTextarea from "@/components/MarkdownTextarea";
 
 interface UploadedFile {
   file: File;
@@ -566,12 +567,12 @@ Format each talking point as its own section with all 7 categories. Preserve spe
           Paste your research notes{" "}
           <span className="text-[#2f3437]/40 dark:text-white/40 font-normal">(or paste content from scanned PDFs)</span>
         </label>
-        <textarea
+        <MarkdownTextarea
           value={pastedNotes}
-          onChange={(e) => setPastedNotes(e.target.value)}
+          onChange={setPastedNotes}
           placeholder="Paste any research, notes, stats, quotes, or article content here…"
           rows={8}
-          className="w-full bg-white dark:bg-[#0f1419] border border-[#2f3437]/20 dark:border-white/20 rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-white placeholder-[#2f3437]/30 dark:placeholder-white/30 resize-none focus:outline-none focus:border-[#6ba3c7] transition-colors"
+          ariaLabel="Research notes"
         />
       </div>
 
@@ -583,12 +584,12 @@ Format each talking point as its own section with all 7 categories. Preserve spe
         <p className="text-xs text-[#2f3437]/50 dark:text-white/50 mb-2">
           This gets woven through the whole script as a single threaded story. The more specific, the better — real name, real situation, real outcome.
         </p>
-        <textarea
+        <MarkdownTextarea
           value={clientStory}
-          onChange={(e) => setClientStory(e.target.value)}
+          onChange={setClientStory}
           placeholder="e.g. I had a client named Sarah who came to me after her listing had already expired twice. She'd dropped the price $40k and still had zero offers. Here's what we found…"
           rows={4}
-          className="w-full bg-white dark:bg-[#0f1419] border border-[#2f3437]/20 dark:border-white/20 rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-white placeholder-[#2f3437]/30 dark:placeholder-white/30 resize-none focus:outline-none focus:border-[#6ba3c7] transition-colors"
+          ariaLabel="Client story"
         />
       </div>
 

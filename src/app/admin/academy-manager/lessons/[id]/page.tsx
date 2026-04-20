@@ -14,6 +14,7 @@ import {
   CheckIcon,
 } from "@heroicons/react/24/outline";
 import { PRINCIPLE_NAMES, PRINCIPLE_SLUGS, PRINCIPLE_COLORS } from "@/lib/academy-constants";
+import MarkdownTextarea from "@/components/MarkdownTextarea";
 
 const AI_TOOLS = [
   { value: "", label: "None" },
@@ -517,23 +518,35 @@ export default function EditLessonPage({ params }: { params: Promise<{ id: strin
 
         <div>
           <label className="block text-sm font-medium text-[#2f3437] mb-1.5">Description</label>
-          <textarea value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-            rows={3} placeholder="Brief overview of this lesson…"
-            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#6ba3c7] focus:border-transparent outline-none resize-none" />
+          <MarkdownTextarea
+            value={form.description}
+            onChange={(next) => setForm((f) => ({ ...f, description: next }))}
+            rows={4}
+            placeholder="Brief overview of this lesson…"
+            ariaLabel="Description"
+          />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[#2f3437] mb-1.5">Key Takeaways <span className="font-normal text-[#2f3437]/40">(markdown)</span></label>
-          <textarea value={form.keyTakeaways} onChange={(e) => setForm((f) => ({ ...f, keyTakeaways: e.target.value }))}
-            rows={4} placeholder="- Takeaway one&#10;- Takeaway two"
-            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#6ba3c7] focus:border-transparent outline-none font-mono resize-none" />
+          <label className="block text-sm font-medium text-[#2f3437] mb-1.5">Key Takeaways</label>
+          <MarkdownTextarea
+            value={form.keyTakeaways}
+            onChange={(next) => setForm((f) => ({ ...f, keyTakeaways: next }))}
+            rows={5}
+            placeholder="Takeaway one"
+            ariaLabel="Key Takeaways"
+          />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[#2f3437] mb-1.5">Action Items <span className="font-normal text-[#2f3437]/40">(markdown)</span></label>
-          <textarea value={form.actionItems} onChange={(e) => setForm((f) => ({ ...f, actionItems: e.target.value }))}
-            rows={4} placeholder="- Action one&#10;- Action two"
-            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#6ba3c7] focus:border-transparent outline-none font-mono resize-none" />
+          <label className="block text-sm font-medium text-[#2f3437] mb-1.5">Action Items</label>
+          <MarkdownTextarea
+            value={form.actionItems}
+            onChange={(next) => setForm((f) => ({ ...f, actionItems: next }))}
+            rows={5}
+            placeholder="Action one"
+            ariaLabel="Action Items"
+          />
         </div>
 
         <div>

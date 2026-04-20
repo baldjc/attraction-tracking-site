@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { CheckIcon, LinkIcon } from "@heroicons/react/24/outline";
 import LinkTrackingPage from "@/app/member/link-tracking/page";
+import MarkdownTextarea from "@/components/MarkdownTextarea";
 
 interface AvatarData {
   avatarProfile?: Record<string, unknown> | null;
@@ -308,11 +309,12 @@ function MemberSettingsPageInner() {
                   </div>
                 ) : (
                   <div className="p-3 bg-[#f7f6f3]/30 dark:bg-[#0f1419]/30">
-                    <textarea
+                    <MarkdownTextarea
                       value={avatarText}
-                      onChange={(e) => setAvatarText(e.target.value)}
+                      onChange={setAvatarText}
                       rows={16}
-                      className="w-full border border-[#2f3437]/20 dark:border-[#2a2a2a] rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-[#e2e8f0] font-mono bg-white dark:bg-[#1a1a1a] focus:outline-none focus:border-[#6ba3c7] resize-y"
+                      ariaLabel="Avatar Profile"
+                      placeholder="Your avatar profile…"
                     />
                     <div className="flex items-center justify-between mt-3">
                       {saved && <span className="flex items-center gap-1.5 text-sm text-green-600"><CheckIcon className="w-4 h-4" /> Saved</span>}
@@ -341,12 +343,12 @@ function MemberSettingsPageInner() {
               </div>
               <div>
                 <label className="block text-sm font-semibold text-[#2f3437] dark:text-[#e2e8f0] mb-2">Paste your existing avatar document</label>
-                <textarea
+                <MarkdownTextarea
                   value={avatarText}
-                  onChange={(e) => setAvatarText(e.target.value)}
+                  onChange={setAvatarText}
                   rows={10}
                   placeholder="Paste your avatar document here..."
-                  className="w-full border border-[#2f3437]/20 dark:border-[#2a2a2a] rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-[#e2e8f0] placeholder-[#2f3437]/30 dark:bg-[#1a1a1a] focus:outline-none focus:border-[#6ba3c7] resize-y"
+                  ariaLabel="Avatar Document"
                 />
                 <div className="flex items-center justify-between mt-3">
                   {saved && <span className="flex items-center gap-1.5 text-sm text-green-600"><CheckIcon className="w-4 h-4" /> Saved</span>}

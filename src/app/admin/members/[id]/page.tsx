@@ -32,6 +32,7 @@ import { useTheme } from "@/components/ThemeProvider";
 import { useToast } from "@/components/ToastProvider";
 import ContentPlanTable from "@/components/content-planner/ContentPlanTable";
 import AdminCallsTab from "@/components/admin/AdminCallsTab";
+import MarkdownTextarea from "@/components/MarkdownTextarea";
 import AdminClientHubTab from "@/components/admin/AdminClientHubTab";
 
 const GHL_LOCATION_ID = process.env.NEXT_PUBLIC_GHL_LOCATION_ID ?? "";
@@ -1323,12 +1324,12 @@ export default function MemberDetailPage() {
                 </div>
               ) : (
                 <>
-                  <textarea
+                  <MarkdownTextarea
                     value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
+                    onChange={setNotes}
                     rows={6}
                     placeholder="Private coaching notes about this member…"
-                    className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30 resize-none"
+                    ariaLabel="Coaching Notes"
                   />
                   <button
                     onClick={handleSaveNotes}
@@ -1895,12 +1896,12 @@ export default function MemberDetailPage() {
               </div>
             ) : (
               <>
-                <textarea
+                <MarkdownTextarea
                   value={videoThemes}
-                  onChange={(e) => setVideoThemes(e.target.value)}
+                  onChange={setVideoThemes}
                   rows={8}
                   placeholder={"Describe the recurring themes and content pillars for this channel.\n\nExamples:\n- Real estate tips for first-time buyers in Calgary\n- Behind-the-scenes of listing a luxury home\n- Local market updates and trends\n- Neighbourhood spotlights"}
-                  className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30 resize-none"
+                  ariaLabel="Video Themes"
                 />
                 <div className="flex items-center justify-between mt-2">
                   <button

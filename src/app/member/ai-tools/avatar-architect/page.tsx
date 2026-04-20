@@ -19,6 +19,7 @@ import RecentConversations from "@/components/ai-tools/RecentConversations";
 import MarkdownMessage from "@/components/MarkdownMessage";
 import NextStepCard from "@/components/ai-tools/NextStepCard";
 import { CANONICAL_THEMES, MAX_THEMES } from "@/lib/canonical-themes";
+import MarkdownTextarea from "@/components/MarkdownTextarea";
 
 interface Message {
   role: "user" | "assistant";
@@ -1429,12 +1430,12 @@ function AvatarArchitectInner() {
           Paste your avatar notes below — this can be a full avatar document, rough notes, bullet points, or anything you&apos;ve already written about your ideal client. The more you give me, the less I&apos;ll need to ask.
         </p>
 
-        <textarea
+        <MarkdownTextarea
           value={importText}
-          onChange={(e) => setImportText(e.target.value)}
+          onChange={setImportText}
           rows={20}
           placeholder="Paste your avatar notes here…"
-          className="w-full border border-[#2f3437]/20 rounded-lg px-4 py-3 text-sm text-[#2f3437] placeholder-[#2f3437]/30 resize-y focus:outline-none focus:border-[#6ba3c7] transition-colors bg-white leading-relaxed"
+          ariaLabel="Avatar notes"
         />
 
         <div className="flex items-center justify-between mt-4">

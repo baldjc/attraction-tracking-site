@@ -6,6 +6,7 @@ import { ChevronDownIcon, ChevronUpIcon, ClipboardDocumentIcon, CheckIcon } from
 import NextStepCard from "@/components/ai-tools/NextStepCard";
 import LinkedPlanBanner from "@/components/ai-tools/LinkedPlanBanner";
 import InlineUpgradeBanner from "@/components/upgrade/InlineUpgradeBanner";
+import MarkdownTextarea from "@/components/MarkdownTextarea";
 
 function markdownToHtml(md: string): string {
   const lines = md.split("\n");
@@ -820,7 +821,7 @@ function RepurposeContentPageInner() {
                     {transcriptLength.toLocaleString()}/50,000
                   </span>
                 </label>
-                <textarea value={transcript} onChange={(e) => setTranscript(e.target.value)} placeholder="Paste your video transcript here..." rows={10} className="w-full border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#0f1419] rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-white placeholder-[#2f3437]/30 dark:placeholder-white/30 focus:outline-none focus:border-[#6ba3c7] transition-colors resize-y" />
+                <MarkdownTextarea value={transcript} onChange={setTranscript} placeholder="Paste your video transcript here..." rows={10} ariaLabel="Transcript" />
               </div>
 
               <div>
