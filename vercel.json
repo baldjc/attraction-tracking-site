@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/youtube-sync",
       "schedule": "0 14 * * *"
+    },
+    {
+      "path": "/api/cron/reviewer-daily-sync",
+      "schedule": "0 15 * * *"
     }
   ]
 }
