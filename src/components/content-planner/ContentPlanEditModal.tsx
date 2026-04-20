@@ -13,6 +13,7 @@ import {
 import ProgressTrack from "@/components/content-planner/ProgressTrack";
 import { resolveProgressSteps, getSuggestedNextStep, type PlanArtifactsByType } from "@/lib/plan-state";
 import { buildToolUrl } from "@/lib/tool-handoff";
+import MarkdownTextarea from "@/components/MarkdownTextarea";
 import { getScoreBadgeClasses } from "@/lib/score-badge";
 
 export interface ContentPlan {
@@ -612,7 +613,14 @@ Produce a research brief I can hand to a script writer. For **each talking point
                     <button type="button" onClick={() => pushToAITool("script-builder")} className="text-xs text-[#6ba3c7] hover:underline">Build Script →</button>
                   )}
                 </div>
-                <textarea value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} rows={5} className={`${field} resize-y`} placeholder="Key details, action items…" />
+                <MarkdownTextarea
+                  value={form.notes}
+                  onChange={(v) => setForm((f) => ({ ...f, notes: v }))}
+                  rows={5}
+                  className={field}
+                  placeholder="Key details, action items…"
+                  ariaLabel="Talking Points"
+                />
               </div>
 
               <div>
@@ -634,7 +642,14 @@ Produce a research brief I can hand to a script writer. For **each talking point
                       : "Generate Research Prompt →"}
                   </button>
                 </div>
-                <textarea value={form.researchNotes} onChange={(e) => setForm((f) => ({ ...f, researchNotes: e.target.value }))} rows={5} className={`${field} resize-y`} placeholder="Paste your research here — statistics, sources, talking points, Manus/Perplexity output…" />
+                <MarkdownTextarea
+                  value={form.researchNotes}
+                  onChange={(v) => setForm((f) => ({ ...f, researchNotes: v }))}
+                  rows={5}
+                  className={field}
+                  placeholder="Paste your research here — statistics, sources, talking points, Manus/Perplexity output…"
+                  ariaLabel="Research Notes"
+                />
               </div>
 
               {!isAdmin && (
@@ -736,7 +751,14 @@ Produce a research brief I can hand to a script writer. For **each talking point
                     <button type="button" onClick={() => pushToAITool("script-review")} className="text-xs text-[#6ba3c7] hover:underline">Script Review →</button>
                   )}
                 </div>
-                <textarea value={form.script} onChange={(e) => setForm((f) => ({ ...f, script: e.target.value }))} rows={18} className={`${field} resize-y`} placeholder="Write your video script here…" />
+                <MarkdownTextarea
+                  value={form.script}
+                  onChange={(v) => setForm((f) => ({ ...f, script: v }))}
+                  rows={18}
+                  className={field}
+                  placeholder="Write your video script here…"
+                  ariaLabel="Script"
+                />
                 {form.script.trim() && (
                   <div className="relative mt-1.5 flex justify-end">
                     <button
@@ -785,12 +807,13 @@ Produce a research brief I can hand to a script writer. For **each talking point
                     </button>
                   )}
                 </div>
-                <textarea
+                <MarkdownTextarea
                   value={form.youtubeDescription}
-                  onChange={(e) => setForm((f) => ({ ...f, youtubeDescription: e.target.value }))}
+                  onChange={(v) => setForm((f) => ({ ...f, youtubeDescription: v }))}
                   rows={4}
-                  className={`${field} resize-y`}
+                  className={field}
                   placeholder="YouTube video description…"
+                  ariaLabel="YouTube Description"
                 />
               </div>
 
