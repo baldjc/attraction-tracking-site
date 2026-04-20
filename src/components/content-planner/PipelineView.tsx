@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { VideoCameraIcon, CalendarDaysIcon } from "@heroicons/react/24/outline";
+import { VideoCameraIcon, CalendarDaysIcon, FolderIcon } from "@heroicons/react/24/outline";
 import ContentPlanEditModal, { type ContentPlan } from "./ContentPlanEditModal";
 import ProgressTrack from "./ProgressTrack";
 import { resolveProgressSteps, type PlanArtifactsByType } from "@/lib/plan-state";
@@ -162,6 +162,18 @@ export default function PipelineView({
             <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0 ${getScoreBadgeClasses(score)}`}>
               {score}
             </span>
+          )}
+          {plan.driveFolderLink && (
+            <a
+              href={plan.driveFolderLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="text-[#6ba3c7] hover:text-[#5a8fb0] transition-colors shrink-0 mt-0.5"
+              title="Open Google Drive folder"
+            >
+              <FolderIcon className="w-3.5 h-3.5" />
+            </a>
           )}
         </div>
         <div className="mb-2">

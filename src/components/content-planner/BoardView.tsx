@@ -65,29 +65,9 @@ function DraggableCard({
       onClick={onEdit}
       className={`bg-white border border-gray-200 rounded-lg p-3 cursor-pointer transition-shadow ${isDragging ? "outline-dashed outline-2 outline-purple-300 opacity-40" : "hover:border-[#6ba3c7] hover:shadow-sm"}`}
     >
-      <div {...listeners} className="mb-2 cursor-grab active:cursor-grabbing">
-        <p className="text-xs font-medium text-[#2f3437] leading-snug">{plan.title}</p>
-      </div>
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span
-            className="inline-block text-xs font-medium px-1.5 py-0.5 rounded-full"
-            style={{ backgroundColor: s.bg, color: s.text }}
-          >
-            {plan.status}
-          </span>
-          {shootDate && (
-            <span className="inline-flex items-center gap-0.5 text-xs text-[#2f3437]/50" title={`Shoot date: ${shootDate}`}>
-              <VideoCameraIcon className="w-3 h-3" />
-              {shootDate}
-            </span>
-          )}
-          {publishDate && (
-            <span className="inline-flex items-center gap-0.5 text-xs text-[#2f3437]/50" title={`Publish date: ${publishDate}`}>
-              <CalendarDaysIcon className="w-3 h-3" />
-              {publishDate}
-            </span>
-          )}
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <div {...listeners} className="flex-1 min-w-0 cursor-grab active:cursor-grabbing">
+          <p className="text-xs font-medium text-[#2f3437] leading-snug">{plan.title}</p>
         </div>
         {plan.driveFolderLink && (
           <a
@@ -95,11 +75,31 @@ function DraggableCard({
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
-            className="text-[#6ba3c7] hover:text-[#5a8fb0] transition-colors shrink-0"
-            title="Open folder"
+            className="text-[#6ba3c7] hover:text-[#5a8fb0] transition-colors shrink-0 mt-0.5"
+            title="Open Google Drive folder"
           >
             <FolderIcon className="w-3.5 h-3.5" />
           </a>
+        )}
+      </div>
+      <div className="flex items-center gap-1.5 flex-wrap">
+        <span
+          className="inline-block text-xs font-medium px-1.5 py-0.5 rounded-full"
+          style={{ backgroundColor: s.bg, color: s.text }}
+        >
+          {plan.status}
+        </span>
+        {shootDate && (
+          <span className="inline-flex items-center gap-0.5 text-xs text-[#2f3437]/50" title={`Shoot date: ${shootDate}`}>
+            <VideoCameraIcon className="w-3 h-3" />
+            {shootDate}
+          </span>
+        )}
+        {publishDate && (
+          <span className="inline-flex items-center gap-0.5 text-xs text-[#2f3437]/50" title={`Publish date: ${publishDate}`}>
+            <CalendarDaysIcon className="w-3 h-3" />
+            {publishDate}
+          </span>
         )}
       </div>
     </div>
@@ -335,7 +335,21 @@ export default function BoardView({ apiBase, serviceTier, isAdmin, searchQuery =
                         onClick={() => setEditingPlan(plan)}
                         className="bg-white border border-gray-200 rounded-lg p-3 cursor-pointer hover:border-[#6ba3c7] hover:shadow-sm transition-colors"
                       >
-                        <p className="text-xs font-medium text-[#2f3437] leading-snug mb-2">{plan.title}</p>
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <p className="text-xs font-medium text-[#2f3437] leading-snug flex-1 min-w-0">{plan.title}</p>
+                          {plan.driveFolderLink && (
+                            <a
+                              href={plan.driveFolderLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="text-[#6ba3c7] hover:text-[#5a8fb0] shrink-0 mt-0.5"
+                              title="Open Google Drive folder"
+                            >
+                              <FolderIcon className="w-3.5 h-3.5" />
+                            </a>
+                          )}
+                        </div>
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="inline-block text-xs font-medium px-1.5 py-0.5 rounded-full" style={{ backgroundColor: s.bg, color: s.text }}>
                             {plan.status}
@@ -351,17 +365,6 @@ export default function BoardView({ apiBase, serviceTier, isAdmin, searchQuery =
                               <CalendarDaysIcon className="w-3 h-3" />
                               {publishDate}
                             </span>
-                          )}
-                          {plan.driveFolderLink && (
-                            <a
-                              href={plan.driveFolderLink}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={(e) => e.stopPropagation()}
-                              className="text-[#6ba3c7] hover:text-[#5a8fb0]"
-                            >
-                              <FolderIcon className="w-3.5 h-3.5" />
-                            </a>
                           )}
                         </div>
                       </div>
