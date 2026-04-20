@@ -17,6 +17,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { ChevronLeftIcon, ChevronRightIcon, PlusIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { STATUS_STYLES, getStatusOptions, PRIORITY_OPTIONS, hasEditDueDate, filterPlans } from "@/lib/content-plan-utils";
 import ContentPlanEditModal, { type ContentPlan } from "./ContentPlanEditModal";
+import DramaMagnet from "@/components/icons/DramaMagnet";
 
 interface ThemeOption {
   name: string;
@@ -65,22 +66,41 @@ function getMonthGrid(year: number, month: number): (number | null)[][] {
   return weeks;
 }
 
-function StatusPill({ plan, onClick, dragging }: { plan: ContentPlan; onClick?: () => void; dragging?: boolean }) {
+function StatusPill({ plan, onClick, dragging, themeOption }: { plan: ContentPlan; onClick?: () => void; dragging?: boolean; themeOption?: ThemeOption }) {
   const s = STATUS_STYLES[plan.status] ?? { bg: "#f3f4f6", text: "#6b7280" };
+  const themeEmoji = themeOption?.emoji ?? null;
+  const themeColour = themeOption?.colour ?? null;
   // Three-line card: title, status, theme. Status-colored left rail keeps the
   // strong color cue from the old pill without dominating the entire chip.
+  // Drama Mode badge + theme emoji appear on the title row for at-a-glance
+  // recognition; the theme name keeps its own line below the status.
+  const titleAttr = [
+    plan.dramaMode ? "Drama Mode" : null,
+    plan.theme ?? null,
+    plan.title,
+  ].filter(Boolean).join(" • ");
   return (
     <div
       onClick={onClick}
       className={`bg-white border border-gray-200 rounded cursor-pointer select-none transition-shadow overflow-hidden ${
         dragging ? "opacity-40 outline-dashed outline-2 outline-purple-400" : "hover:shadow-sm hover:border-[#6ba3c7]"
       }`}
-      title={plan.title}
+      title={titleAttr}
     >
       <div className="flex">
         <div className="w-1 shrink-0" style={{ backgroundColor: s.bg }} />
         <div className="flex-1 min-w-0 px-1.5 py-1 leading-tight">
-          <p className="text-[11px] font-medium text-[#2f3437] truncate">{plan.title}</p>
+          <div className="flex items-center gap-1 min-w-0">
+            {plan.dramaMode && (
+              <DramaMagnet className="w-3 h-3 text-orange-600 shrink-0" aria-label="Drama Mode" />
+            )}
+            {themeEmoji && (
+              <span className="text-[11px] leading-none shrink-0" aria-hidden>
+                {themeEmoji}
+              </span>
+            )}
+            <p className="text-[11px] font-medium text-[#2f3437] truncate min-w-0">{plan.title}</p>
+          </div>
           <p
             className="text-[9px] font-semibold uppercase tracking-wide truncate"
             style={{ color: s.text }}
@@ -88,7 +108,11 @@ function StatusPill({ plan, onClick, dragging }: { plan: ContentPlan; onClick?: 
             {plan.status}
           </p>
           {plan.theme && (
-            <p className="text-[9px] text-[#2f3437]/50 truncate" title={plan.theme}>
+            <p
+              className="text-[9px] truncate"
+              style={{ color: themeColour ?? "rgba(47,52,55,0.5)" }}
+              title={plan.theme}
+            >
               {plan.theme}
             </p>
           )}
@@ -98,12 +122,12 @@ function StatusPill({ plan, onClick, dragging }: { plan: ContentPlan; onClick?: 
   );
 }
 
-function DraggablePill({ plan, onClick }: { plan: ContentPlan; onClick: () => void }) {
+function DraggablePill({ plan, onClick, themeOption }: { plan: ContentPlan; onClick: () => void; themeOption?: ThemeOption }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: plan.id });
   const style = { transform: CSS.Translate.toString(transform) };
   return (
     <div ref={setNodeRef} style={style} {...listeners} {...attributes}>
-      <StatusPill plan={plan} onClick={isDragging ? undefined : onClick} dragging={isDragging} />
+      <StatusPill plan={plan} onClick={isDragging ? undefined : onClick} dragging={isDragging} themeOption={themeOption} />
     </div>
   );
 }
@@ -178,6 +202,12 @@ export default function CalendarView({ apiBase, calendarType, serviceTier, isAdm
   }, {});
 
   const weeks = getMonthGrid(year, month);
+
+  const themeByName = resolvedThemes.reduce<Record<string, ThemeOption>>((acc, t) => {
+    acc[t.name] = t;
+    return acc;
+  }, {});
+  const themeFor = (plan: ContentPlan) => (plan.theme ? themeByName[plan.theme] : undefined);
 
   function handleDragStart(e: DragStartEvent) {
     setActiveDragId(String(e.active.id));
@@ -334,6 +364,7 @@ export default function CalendarView({ apiBase, calendarType, serviceTier, isAdm
                                 key={plan.id}
                                 plan={plan}
                                 onClick={() => setEditingPlan(plan)}
+                                themeOption={themeFor(plan)}
                               />
                             ))}
                           </div>
@@ -382,7 +413,7 @@ export default function CalendarView({ apiBase, calendarType, serviceTier, isAdm
                   <div className="space-y-1">
                     {dayPlans.map((plan) => (
                       <div key={plan.id} onClick={() => setEditingPlan(plan)}>
-                        <StatusPill plan={plan} />
+                        <StatusPill plan={plan} themeOption={themeFor(plan)} />
                       </div>
                     ))}
                   </div>
