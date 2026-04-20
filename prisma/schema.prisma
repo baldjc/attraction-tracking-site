@@ -1424,3 +1424,121 @@ model UpgradeModalDismissal {
   @@index([userId, trigger])
   @@map("upgrade_modal_dismissals")
 }
+
+// ============================================================
+// Analytics Reviewer (admin-only) — Part 1 foundation models
+// ============================================================
+
+model YouTubeOAuthToken {
+  id              String   @id @default(cuid())
+  singleton       String   @unique @default("admin")
+  accessTokenEnc  String   @db.Text
+  refreshTokenEnc String   @db.Text
+  expiresAt       DateTime
+  scope           String
+  googleEmail     String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("youtube_oauth_tokens")
+}
+
+model ChannelAnalyticsSnapshot {
+  id                String   @id @default(cuid())
+  channelRef        String
+  date              DateTime
+  views28d          Int      @default(0)
+  views7d           Int      @default(0)
+  views48h          Int      @default(0)
+  watchTimeMin28d   Int      @default(0)
+  subsGained28d     Int      @default(0)
+  subsLost28d       Int      @default(0)
+  newViewers28d     Int      @default(0)
+  casualViewers28d  Int      @default(0)
+  regularViewers28d Int      @default(0)
+  createdAt         DateTime @default(now())
+
+  @@unique([channelRef, date])
+  @@index([channelRef, date])
+  @@map("channel_analytics_snapshots")
+}
+
+model VideoAnalyticsSnapshot {
+  id                 String   @id @default(cuid())
+  videoId            String
+  channelRef         String
+  date               DateTime
+  views              Int      @default(0)
+  impressions        Int      @default(0)
+  ctr                Float    @default(0)
+  avgViewDurationSec Int      @default(0)
+  avgViewPercentage  Float    @default(0)
+  watchTimeMin       Int      @default(0)
+  retentionCurve     Json?
+  trafficSources     Json?
+  viewerCohorts      Json?
+  createdAt          DateTime @default(now())
+
+  @@unique([videoId, date])
+  @@index([videoId, date])
+  @@index([channelRef, date])
+  @@map("video_analytics_snapshots")
+}
+
+model PulseSnapshot {
+  id                 String   @id @default(cuid())
+  videoId            String   @unique
+  channelRef         String
+  publishedAt        DateTime
+  pulseWindowEndsAt  DateTime
+  views              Int      @default(0)
+  impressions        Int      @default(0)
+  ctr                Float    @default(0)
+  avgViewDurationSec Int      @default(0)
+  watchTimeMin       Int      @default(0)
+  performanceRatio   Float    @default(0)
+  baseline           Json?
+  lastSyncedAt       DateTime @default(now())
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([channelRef, publishedAt])
+  @@map("pulse_snapshots")
+}
+
+model GlanceTestResult {
+  id           String   @id @default(cuid())
+  videoId      String   @unique
+  channelRef   String
+  thumbnailUrl String
+  title        String
+  propertyPop  Int
+  faceClear    Int
+  contrast     Int
+  textMaxWords Int
+  overallScore Int
+  observations Json
+  improvements Json
+  rawResponse  Json
+  createdAt    DateTime @default(now())
+
+  @@index([channelRef, createdAt])
+  @@map("glance_test_results")
+}
+
+model ReviewerRun {
+  id             String    @id @default(cuid())
+  channelRef     String
+  requestedById  String
+  status         String    @default("pending")
+  windowDays     Int       @default(28)
+  inputContext   Json?
+  reportMarkdown String?   @db.Text
+  errorMessage   String?
+  startedAt      DateTime?
+  finishedAt     DateTime?
+  createdAt      DateTime  @default(now())
+
+  @@index([channelRef, createdAt])
+  @@map("reviewer_runs")
+}
