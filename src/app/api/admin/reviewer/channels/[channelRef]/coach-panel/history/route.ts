@@ -1,12 +1,10 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { isAdmin } from "@/lib/auth-utils";
+import prisma from "@/lib/prisma";
 import { isReviewerEnabled } from "@/lib/reviewer-flag";
-import { runGlanceTestForChannel } from "@/lib/glance-test-runner";
 
-export const maxDuration = 60;
-
-export async function POST(
+export async function GET(
   _req: Request,
   { params }: { params: Promise<{ channelRef: string }> },
 ) {
@@ -20,12 +18,18 @@ export async function POST(
   }
 
   const { channelRef } = await params;
-  const runBy = (session.user as { id?: string }).id ?? "system";
-
-  // Fire-and-forget — long-running job; client should poll the read API.
-  void runGlanceTestForChannel(channelRef, runBy).catch((err) =>
-    console.error(`[glance-test/run] channel ${channelRef}:`, err),
-  );
-
-  return NextResponse.json({ accepted: true }, { status: 202 });
+  const runs = await prisma.reviewerRun.findMany({
+    where: { channelRef },
+    orderBy: { createdAt: "desc" },
+    take: 10,
+    select: {
+      id: true,
+      status: true,
+      startedAt: true,
+      finishedAt: true,
+      createdAt: true,
+      errorMessage: true,
+    },
+  });
+  return NextResponse.json({ runs });
 }

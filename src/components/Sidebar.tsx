@@ -70,6 +70,7 @@ const adminLinks = [
   { href: "/admin/ai-tools", label: "Content Tools", icon: SparklesIcon, section: "Content" },
   { href: "/admin/flow-metrics", label: "Flow Metrics", icon: ArrowTrendingUpIcon, section: "Content", featureKey: "flow_metrics" },
   { href: "/admin/intelligence", label: "Intelligence", icon: MagnifyingGlassCircleIcon, section: "Growth" },
+  { href: "/admin/reviewer", label: "Analytics Reviewer", icon: ArrowTrendingUpIcon, section: "Growth", featureKey: "tool_analytics_reviewer" },
   { href: "/admin/generate-leads", label: "Generate Leads", icon: RocketLaunchIcon, section: "Growth" },
   { href: "/admin/hire", label: "Hire a Human", icon: UserGroupIcon, section: "Growth", badgeKey: "hireWaitlist" },
   { href: "/admin/activity-log", label: "Activity Log", icon: ClockIcon, section: "System" },

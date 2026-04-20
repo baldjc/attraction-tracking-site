@@ -5,6 +5,7 @@ import { isAdmin } from "@/lib/auth-utils";
 import prisma from "@/lib/prisma";
 import { getOAuthStatus } from "@/lib/youtube-oauth";
 import ReviewerSettingsClient from "./ReviewerSettingsClient";
+import FeatureFlagToggle from "./FeatureFlagToggle";
 
 export const dynamic = "force-dynamic";
 
@@ -48,14 +49,16 @@ export default async function ReviewerSettingsPage({
         </p>
       </div>
 
+      <FeatureFlagToggle initialEnabled={flagOn} />
+
       {!flagOn && (
         <div
           className="mb-6 rounded-xl border border-[#f59e0b]/30 bg-[#f59e0b]/5 p-4 text-sm text-[#2f3437]"
           style={{ borderRadius: "var(--atbv-radius-lg)" }}
         >
           <strong className="font-semibold">Feature flag is OFF.</strong>{" "}
-          Enable <code className="font-data">tool_analytics_reviewer</code> in{" "}
-          AppSetting to expose the Reviewer surfaces.
+          API routes return 404 and the sidebar section is hidden until you
+          toggle this on.
         </div>
       )}
 

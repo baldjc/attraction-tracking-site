@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { isAdmin } from "@/lib/auth-utils";
+import { isReviewerEnabled } from "@/lib/reviewer-flag";
 import prisma from "@/lib/prisma";
 
 function verdict(
@@ -25,6 +26,9 @@ export async function GET(
   const role = (session?.user as { role?: string } | undefined)?.role;
   if (!session?.user || !isAdmin(role ?? "")) {
     return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
+  }
+  if (!(await isReviewerEnabled())) {
+    return NextResponse.json({ error: "Feature disabled" }, { status: 404 });
   }
 
   const { channelRef } = await params;

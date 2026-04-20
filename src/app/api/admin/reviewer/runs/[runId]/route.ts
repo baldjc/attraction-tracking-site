@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { isAdmin } from "@/lib/auth-utils";
-import { isReviewerEnabled } from "@/lib/reviewer-flag";
 import prisma from "@/lib/prisma";
+import { isReviewerEnabled } from "@/lib/reviewer-flag";
 
 export async function GET(
   _req: Request,
-  { params }: { params: Promise<{ channelRef: string }> },
+  { params }: { params: Promise<{ runId: string }> },
 ) {
   const session = await auth();
   const role = (session?.user as { role?: string } | undefined)?.role;
@@ -17,12 +17,22 @@ export async function GET(
     return NextResponse.json({ error: "Feature disabled" }, { status: 404 });
   }
 
-  const { channelRef } = await params;
-  const results = await prisma.glanceTestResult.findMany({
-    where: { channelRef },
-    orderBy: { createdAt: "desc" },
-    take: 30,
+  const { runId } = await params;
+  const run = await prisma.reviewerRun.findUnique({
+    where: { id: runId },
+    select: {
+      id: true,
+      channelRef: true,
+      status: true,
+      reportMarkdown: true,
+      errorMessage: true,
+      startedAt: true,
+      finishedAt: true,
+      createdAt: true,
+    },
   });
-
-  return NextResponse.json({ results });
+  if (!run) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+  return NextResponse.json({ run });
 }
