@@ -81,24 +81,106 @@ export async function syncMemberChannel(userId: string): Promise<SyncResult> {
           },
         });
 
-        const existingPlan = await prisma.contentPlan.findFirst({
+        const publishedStatus = GROWTH_DWY_TIERS.includes(user.serviceTier ?? "")
+          ? "Live on YT"
+          : "Published";
+        const trimmedTitle = video.title.trim();
+        const publishDate = new Date(video.uploadDate);
+
+        // 1) Already linked by videoId? Just refresh title + publishDate +
+        // status (in case the sync ran before the plan got its publish date).
+        const linkedPlan = await prisma.contentPlan.findFirst({
           where: { userId: user.id, youtubeVideoId: video.videoId },
           select: { id: true },
         });
 
-        if (!existingPlan) {
-          const publishedStatus = GROWTH_DWY_TIERS.includes(user.serviceTier ?? "")
-            ? "Live on YT"
-            : "Published";
-          await prisma.contentPlan.create({
+        if (linkedPlan) {
+          await prisma.contentPlan.update({
+            where: { id: linkedPlan.id },
             data: {
-              userId: user.id,
-              title: video.title,
+              title: trimmedTitle,
               status: publishedStatus,
-              publishDate: new Date(video.uploadDate),
-              youtubeVideoId: video.videoId,
+              publishDate,
             },
           });
+        } else {
+          // 2) No videoId match — try to find an existing un-published plan
+          // whose title is the same as (or a strong prefix of) the YouTube
+          // title. This is the common case: the member drafted/scripted
+          // the video in the planner, then refined the title before
+          // publishing on YouTube. We want to flip that plan to "Live on
+          // YT" instead of inserting a duplicate row.
+          //
+          // Match strategy, in order:
+          //   a) exact case-insensitive title match
+          //   b) the YouTube title STARTS WITH a planner title that is
+          //      itself ≥ 25 chars (avoids matching tiny generic titles)
+          //   c) a planner title STARTS WITH the YouTube title under the
+          //      same length guard
+          // We exclude already-published plans (Live on YT / Published)
+          // so we never overwrite an older live video with the same
+          // prefix.
+          const PUBLISHED_STATUSES = ["Live on YT", "Published"];
+          const PREFIX_GUARD = 25;
+
+          let titleMatch = await prisma.contentPlan.findFirst({
+            where: {
+              userId: user.id,
+              youtubeVideoId: null,
+              status: { notIn: PUBLISHED_STATUSES },
+              title: { equals: trimmedTitle, mode: "insensitive" },
+            },
+            orderBy: { updatedAt: "desc" },
+            select: { id: true },
+          });
+
+          if (!titleMatch && trimmedTitle.length >= PREFIX_GUARD) {
+            // Pull recent unmatched plans for this user and check prefixes
+            // in JS — Prisma can't express "stored title is a prefix of
+            // input string" without raw SQL, and the per-user candidate
+            // set is small.
+            const candidates = await prisma.contentPlan.findMany({
+              where: {
+                userId: user.id,
+                youtubeVideoId: null,
+                status: { notIn: PUBLISHED_STATUSES },
+              },
+              orderBy: { updatedAt: "desc" },
+              select: { id: true, title: true },
+              take: 100,
+            });
+            const ytLower = trimmedTitle.toLowerCase();
+            const found = candidates.find((c) => {
+              const planTitle = c.title.trim();
+              if (planTitle.length < PREFIX_GUARD) return false;
+              const planLower = planTitle.toLowerCase();
+              return ytLower.startsWith(planLower) || planLower.startsWith(ytLower);
+            });
+            if (found) titleMatch = { id: found.id };
+          }
+
+          if (titleMatch) {
+            await prisma.contentPlan.update({
+              where: { id: titleMatch.id },
+              data: {
+                title: trimmedTitle,
+                status: publishedStatus,
+                publishDate,
+                youtubeVideoId: video.videoId,
+              },
+            });
+          } else {
+            // 3) Genuine new upload with no matching plan — create one.
+            await prisma.contentPlan.create({
+              data: {
+                userId: user.id,
+                title: trimmedTitle,
+                status: publishedStatus,
+                publishDate,
+                youtubeVideoId: video.videoId,
+              },
+            });
+          }
         }
 
         newCount++;
