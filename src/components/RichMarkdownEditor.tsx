@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+import Paragraph from "@tiptap/extension-paragraph";
 import { Markdown } from "tiptap-markdown";
 import {
   BoldIcon,
@@ -43,6 +44,31 @@ export default function RichMarkdownEditor({
     extensions: [
       StarterKit.configure({
         heading: { levels: [1, 2, 3] },
+        paragraph: false,
+      }),
+      // Custom paragraph that preserves empty lines when serialised to markdown
+      Paragraph.extend({
+        addStorage() {
+          return {
+            markdown: {
+              serialize(state: {
+                renderInline: (node: unknown) => void;
+                closeBlock: (node: unknown) => void;
+                write: (text: string) => void;
+              }, node: { childCount: number }) {
+                if (node.childCount === 0) {
+                  // Output a non-breaking space so re-parsing keeps the blank line
+                  state.write("\u00A0");
+                  state.closeBlock(node);
+                } else {
+                  state.renderInline(node);
+                  state.closeBlock(node);
+                }
+              },
+              parse: { setup() {} },
+            },
+          };
+        },
       }),
       Markdown.configure({
         html: false,
@@ -60,8 +86,9 @@ export default function RichMarkdownEditor({
         class:
           "prose prose-sm max-w-none focus:outline-none text-[#2f3437] " +
           "prose-headings:font-semibold prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg " +
-          "prose-p:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-0.5 " +
-          "prose-strong:text-[#2f3437] prose-blockquote:border-l-[#6ba3c7]",
+          "prose-p:my-3 prose-ul:my-3 prose-ol:my-3 prose-li:my-0.5 " +
+          "prose-strong:text-[#2f3437] prose-blockquote:border-l-[#6ba3c7] " +
+          "[&_p:empty]:min-h-[1em]",
       },
     },
     onUpdate: ({ editor }) => {
