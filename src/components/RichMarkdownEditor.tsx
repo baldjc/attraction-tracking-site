@@ -100,7 +100,8 @@ export default function RichMarkdownEditor({
       },
     },
     onUpdate: ({ editor }) => {
-      const md = editor.storage.markdown?.getMarkdown?.() ?? "";
+      const storage = editor.storage as { markdown?: { getMarkdown?: () => string } };
+      const md = storage.markdown?.getMarkdown?.() ?? "";
       onChange(md);
     },
   });
@@ -108,7 +109,8 @@ export default function RichMarkdownEditor({
   // Keep editor in sync if external value changes (e.g. AI tool prefill)
   useEffect(() => {
     if (!editor) return;
-    const current = editor.storage.markdown?.getMarkdown?.() ?? "";
+    const storage = editor.storage as { markdown?: { getMarkdown?: () => string } };
+    const current = storage.markdown?.getMarkdown?.() ?? "";
     if (value !== current) {
       editor.commands.setContent(value || "", { emitUpdate: false });
     }
