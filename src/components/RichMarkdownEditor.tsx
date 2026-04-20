@@ -16,6 +16,9 @@ interface RichMarkdownEditorProps {
   onChange: (markdown: string) => void;
   placeholder?: string;
   ariaLabel?: string;
+  hideToolbar?: boolean;
+  minHeight?: string;
+  className?: string;
 }
 
 /**
@@ -28,6 +31,9 @@ export default function RichMarkdownEditor({
   onChange,
   placeholder,
   ariaLabel,
+  hideToolbar = false,
+  minHeight,
+  className,
 }: RichMarkdownEditorProps) {
   const editor = useEditor({
     extensions: [
@@ -48,7 +54,7 @@ export default function RichMarkdownEditor({
       attributes: {
         "aria-label": ariaLabel ?? "Editor",
         class:
-          "prose prose-sm max-w-none focus:outline-none min-h-full text-[#2f3437] " +
+          "prose prose-sm max-w-none focus:outline-none text-[#2f3437] " +
           "prose-headings:font-semibold prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg " +
           "prose-p:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-0.5 " +
           "prose-strong:text-[#2f3437] prose-blockquote:border-l-[#6ba3c7]",
@@ -80,10 +86,19 @@ export default function RichMarkdownEditor({
 
   return (
     <div className="flex flex-col h-full min-h-0">
-      <Toolbar editor={editor} />
-      <div className="flex-1 min-h-0 overflow-auto rounded-lg border border-[#eaeaea] bg-white p-6 mt-2">
+      {!hideToolbar && <Toolbar editor={editor} />}
+      <div
+        className={
+          className ??
+          `flex-1 min-h-0 overflow-auto rounded-lg border border-[#eaeaea] bg-white p-4 ${
+            hideToolbar ? "" : "mt-2 p-6"
+          }`
+        }
+        style={minHeight ? { minHeight } : undefined}
+        onClick={() => editor.chain().focus().run()}
+      >
         {editor.isEmpty && placeholder && (
-          <p className="pointer-events-none text-[#2f3437]/30 absolute mt-0">
+          <p className="pointer-events-none text-[#2f3437]/30 absolute select-none">
             {placeholder}
           </p>
         )}

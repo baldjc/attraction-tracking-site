@@ -63,13 +63,14 @@ export default function MarkdownTextarea({
           Expand
         </button>
       </div>
-      <textarea
+      <RichMarkdownEditor
         value={value}
-        onChange={(e) => onChange(e.target.value)}
-        rows={rows}
+        onChange={onChange}
         placeholder={placeholder}
-        aria-label={ariaLabel}
-        className={`${className} resize-y`}
+        ariaLabel={ariaLabel}
+        hideToolbar
+        className={`${className} overflow-auto resize-y`}
+        minHeight={`${Math.max(rows, 3) * 1.6}rem`}
       />
 
       {expanded && mounted && createPortal(
