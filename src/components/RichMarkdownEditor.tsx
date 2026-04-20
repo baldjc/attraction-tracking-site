@@ -186,7 +186,7 @@ function Toolbar({ editor }: { editor: Editor }) {
         title="Paragraph"
         onClick={() => editor.chain().focus().setParagraph().run()}
       >
-        P
+        Paragraph
       </button>
       <span className="w-px h-5 bg-[#eaeaea] mx-1" />
       <button
