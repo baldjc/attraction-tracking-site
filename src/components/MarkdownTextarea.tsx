@@ -69,7 +69,7 @@ export default function MarkdownTextarea({
         placeholder={placeholder}
         ariaLabel={ariaLabel}
         hideToolbar
-        className={`${className} overflow-auto resize-y block`}
+        className={`${className} relative overflow-auto resize-y block rounded-lg border border-[#eaeaea] bg-white p-4`}
         height={`${Math.max(rows, 3) * 1.6}rem`}
       />
 
