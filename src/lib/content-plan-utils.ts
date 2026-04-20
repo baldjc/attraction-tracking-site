@@ -15,6 +15,18 @@ export function formatTierLabel(tier: string): string {
   return TIER_LABELS[tier] ?? tier;
 }
 
+/**
+ * Tier badge colors. Mirrors the palette used on the admin member detail page
+ * so every surface that shows a tier reads the same.
+ */
+export function tierBadgeClasses(tier: string | null | undefined): string {
+  if (tier === "foundations") return "bg-[#6ba3c7]/20 text-[#6ba3c7]";
+  if (tier === "editing_2" || tier === "editing_4") return "bg-amber-100 text-amber-700";
+  if (tier === "mastery_2" || tier === "mastery_4") return "bg-purple-100 text-purple-700";
+  if (tier === "done_with_you") return "bg-[#d97706]/20 text-[#d97706]";
+  return "bg-gray-100 text-gray-500";
+}
+
 export const FOUNDATIONS_STATUSES = [
   "Idea",
   "Scripted",

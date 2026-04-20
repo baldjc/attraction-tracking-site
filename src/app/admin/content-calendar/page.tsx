@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { CalendarDaysIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
 import ContentPlannerClient from "@/app/member/content-planner/ContentPlannerClient";
-import { formatTierLabel } from "@/lib/content-plan-utils";
+import { formatTierLabel, tierBadgeClasses } from "@/lib/content-plan-utils";
 
 interface Member {
   id: string;
@@ -103,9 +103,13 @@ export default function AdminContentCalendarPage() {
                 }`}
               >
                 <p className="text-sm font-medium text-[#2f3437] dark:text-[#e2e8f0] truncate">{m.fullName || m.email}</p>
-                <p className="text-[10px] text-[#2f3437]/40 dark:text-white/30 capitalize mt-0.5">
-                  {m.serviceTier?.replace(/_/g, " ") || "No tier"}
-                </p>
+                <span
+                  className={`inline-block text-[10px] font-medium px-1.5 py-0.5 rounded mt-1 ${
+                    m.serviceTier ? tierBadgeClasses(m.serviceTier) : "bg-gray-100 text-gray-500"
+                  }`}
+                >
+                  {m.serviceTier ? formatTierLabel(m.serviceTier) : "No tier"}
+                </span>
               </button>
             ))
           )}
