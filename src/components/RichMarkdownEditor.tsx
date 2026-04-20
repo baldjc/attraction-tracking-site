@@ -106,7 +106,7 @@ export default function RichMarkdownEditor({
         onClick={() => editor.chain().focus().run()}
       >
         {editor.isEmpty && placeholder && (
-          <p className="pointer-events-none text-[#2f3437]/30 absolute select-none">
+          <p className="pointer-events-none text-[#2f3437]/30 absolute select-none pr-6 max-w-full whitespace-normal break-words">
             {placeholder}
           </p>
         )}
