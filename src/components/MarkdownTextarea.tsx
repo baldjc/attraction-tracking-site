@@ -69,8 +69,8 @@ export default function MarkdownTextarea({
         placeholder={placeholder}
         ariaLabel={ariaLabel}
         hideToolbar
-        className={`${className} overflow-auto resize-y`}
-        minHeight={`${Math.max(rows, 3) * 1.6}rem`}
+        className={`${className} overflow-auto resize-y block`}
+        height={`${Math.max(rows, 3) * 1.6}rem`}
       />
 
       {expanded && mounted && createPortal(

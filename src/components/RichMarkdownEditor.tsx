@@ -18,6 +18,8 @@ interface RichMarkdownEditorProps {
   ariaLabel?: string;
   hideToolbar?: boolean;
   minHeight?: string;
+  maxHeight?: string;
+  height?: string;
   className?: string;
 }
 
@@ -33,6 +35,8 @@ export default function RichMarkdownEditor({
   ariaLabel,
   hideToolbar = false,
   minHeight,
+  maxHeight,
+  height,
   className,
 }: RichMarkdownEditorProps) {
   const editor = useEditor({
@@ -94,7 +98,11 @@ export default function RichMarkdownEditor({
             hideToolbar ? "" : "mt-2 p-6"
           }`
         }
-        style={minHeight ? { minHeight } : undefined}
+        style={{
+          ...(minHeight ? { minHeight } : {}),
+          ...(maxHeight ? { maxHeight } : {}),
+          ...(height ? { height } : {}),
+        }}
         onClick={() => editor.chain().focus().run()}
       >
         {editor.isEmpty && placeholder && (
