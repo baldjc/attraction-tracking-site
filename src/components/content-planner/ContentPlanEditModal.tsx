@@ -319,6 +319,11 @@ Produce a research brief I can hand to a script writer. For **each talking point
         "description_prefill",
         JSON.stringify({ title: form.title, transcript: form.script, contentPlanId: plan.id, dramaMode: form.dramaMode })
       );
+    } else if (key === "repurpose") {
+      sessionStorage.setItem(
+        "repurpose_prefill",
+        JSON.stringify({ planId: plan.id, title: form.title, transcript: form.script, dramaMode: form.dramaMode })
+      );
     }
   }
 

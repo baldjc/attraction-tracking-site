@@ -326,6 +326,18 @@ function RepurposeContentPageInner() {
     }
   }, [newLinkMode, pickerForOutput]);
 
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("repurpose_prefill");
+      if (raw) {
+        sessionStorage.removeItem("repurpose_prefill");
+        const data = JSON.parse(raw);
+        if (data.title) setTitle(data.title);
+        if (data.transcript) setTranscript(data.transcript);
+      }
+    } catch { /* ignore */ }
+  }, []);
+
   const [loading, setLoading] = useState(false);
   // Sprint 3 Part C: track which formats persisted to the linked plan
   const [planSaveResults, setPlanSaveResults] = useState<Record<string, boolean>>({});
