@@ -198,7 +198,7 @@ function DescriptionGeneratorPageInner() {
         body: JSON.stringify({
           name: newLinkName.trim(),
           source: "youtube",
-          destinationOverride: "lead_magnet",
+          destinationOverride: "landing_page",
         }),
       });
       if (res.ok) {
@@ -364,7 +364,7 @@ function DescriptionGeneratorPageInner() {
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-[#2f3437]/60 dark:text-white/60 mb-1">Lead Magnet Tracking Link <span className="font-normal text-[#2f3437]/40 dark:text-white/30">(optional)</span></label>
+          <label className="block text-xs font-medium text-[#2f3437]/60 dark:text-white/60 mb-1">Landing Page Tracking Link <span className="font-normal text-[#2f3437]/40 dark:text-white/30">(optional)</span></label>
           {activeLink ? (
             <div className="flex items-center gap-2 bg-[#6ba3c7]/8 border border-[#6ba3c7]/20 rounded-lg px-3 py-2">
               <span className="text-xs font-medium text-[#6ba3c7] shrink-0">Campaign</span>

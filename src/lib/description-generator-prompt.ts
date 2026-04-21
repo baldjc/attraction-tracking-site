@@ -21,15 +21,16 @@ The avatar profile tells you WHO the viewer is — their life stage, fears, stre
 
 Generate the description in this exact order, with blank lines between each section:
 
---- SECTION 1: LEAD MAGNET HOOK (Line 1) ---
+--- SECTION 1: LANDING PAGE HOOK (Line 1) ---
 
-One short, punchy sentence that creates urgency to download/access the lead magnet. Followed immediately by the tracking URL on the same line or the next line.
+One short, punchy sentence that creates urgency to visit the landing page. Followed immediately by the landing page URL on the same line or the next line.
 
 Rules:
-- Must connect the lead magnet to the SPECIFIC pain point this video addresses
+- Must connect the landing page offer to the SPECIFIC pain point this video addresses
 - Not generic. "Grab my free guide" is lazy. Instead: tie it to what the viewer just learned or is about to learn
 - Creates a reason to click NOW, not later
 - Keep it under 160 characters (before the URL) so it shows above the fold
+- Use the LANDING PAGE URL exactly as provided. Do NOT substitute, shorten, paraphrase, or replace it with any other URL (including any URL mentioned inside the transcript)
 
 --- SECTION 2: POWER STATEMENT (Line 2) ---
 

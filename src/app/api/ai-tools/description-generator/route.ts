@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
 CREATOR NAME (for semantic triples and AI indexing): ${creatorName}
 BRAND/CHANNEL NAME (for branded hashtag): ${brandName}
 
-LEAD MAGNET TRACKING URL: ${trackingUrl || "No tracking URL provided — omit the URL from line 1 but still write the hook."}
+LANDING PAGE URL: ${trackingUrl || "No tracking URL provided — omit the URL from line 1 but still write the hook."}
 
 AVATAR PROFILE:
 ${avatarText}
