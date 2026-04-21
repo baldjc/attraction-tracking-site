@@ -143,7 +143,23 @@ function Delta({ val }: { val: number | null }) {
 export default function MemberDetailPage() {
   const { data: sessionData } = useSession();
   const currentRole = (sessionData?.user as any)?.role ?? "admin";
-  const isEditorRole = currentRole === "editor";
+  const [impersonatedRole, setImpersonatedRole] = useState<string | null>(null);
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("abv_impersonate");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        setImpersonatedRole(parsed?.targetRole ?? null);
+      } else {
+        setImpersonatedRole(null);
+      }
+    } catch {
+      setImpersonatedRole(null);
+    }
+  }, []);
+  // Effective role honors "View as Staff Admin" impersonation.
+  const effectiveRole = impersonatedRole === "editor" ? "editor" : currentRole;
+  const isEditorRole = effectiveRole === "editor";
 
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -1411,22 +1427,24 @@ export default function MemberDetailPage() {
               </div>
             </div>
 
-            {/* Stripe */}
-            {!isEditorRole && (
+            {/* Stripe — editors see Plan + Renews only (no customer link, no $ amount) */}
+            {(!isEditorRole || member.stripeCustomerId) && (!isEditorRole || member.stripePlanName || member.stripeCurrentPeriodEnd) && (
               <div className="bg-white rounded-lg border border-gray-200 p-5">
                 <h2 className="text-sm font-semibold text-[#2f3437] mb-3">Stripe</h2>
                 {member.stripeCustomerId ? (
                   <div className="space-y-2 text-sm">
-                    <div className="flex items-start justify-between gap-2">
-                      <span className="text-[#2f3437]/50 text-xs shrink-0">Customer</span>
-                      <a
-                        href={`https://dashboard.stripe.com/customers/${member.stripeCustomerId}`}
-                        target="_blank" rel="noopener noreferrer"
-                        className="text-[#6ba3c7] hover:underline font-mono text-xs truncate text-right"
-                      >
-                        {member.stripeCustomerId}
-                      </a>
-                    </div>
+                    {!isEditorRole && (
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="text-[#2f3437]/50 text-xs shrink-0">Customer</span>
+                        <a
+                          href={`https://dashboard.stripe.com/customers/${member.stripeCustomerId}`}
+                          target="_blank" rel="noopener noreferrer"
+                          className="text-[#6ba3c7] hover:underline font-mono text-xs truncate text-right"
+                        >
+                          {member.stripeCustomerId}
+                        </a>
+                      </div>
+                    )}
                     {member.stripePlanName && (
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-[#2f3437]/50 text-xs">Plan</span>
@@ -1444,7 +1462,7 @@ export default function MemberDetailPage() {
                         </div>
                       </div>
                     )}
-                    {member.stripePriceAmount != null && (
+                    {!isEditorRole && member.stripePriceAmount != null && (
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-[#2f3437]/50 text-xs">Amount</span>
                         <span className="text-xs font-semibold text-emerald-700">
