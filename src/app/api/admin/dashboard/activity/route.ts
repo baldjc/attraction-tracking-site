@@ -2,20 +2,27 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { UserRole } from "@/generated/prisma/client";
+import { staffMemberIdFilter } from "@/lib/staff-access";
 
 export async function GET() {
   const session = await auth();
-  const role = (session?.user as { role?: string } | undefined)?.role;
-  if (!session?.user || (role !== "admin" && role !== "editor")) {
+  const sessionUser = session?.user as { id?: string; role?: string } | undefined;
+  const role = sessionUser?.role;
+  const userId = sessionUser?.id;
+  if (!session?.user || (role !== "admin" && role !== "editor") || !userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
+  // Honors impersonation: when admin views as Staff Admin, applies that
+  // editor's allowedMemberIds scope. Returns undefined for unrestricted access.
+  const memberScope = await staffMemberIdFilter(userId);
+
   const [audits, recentUsers, waitlist] = await Promise.all([
     prisma.audit.findMany({
-      where: { createdAt: { gte: sevenDaysAgo } },
+      where: { createdAt: { gte: sevenDaysAgo }, ...(memberScope ? { userId: memberScope } : {}) },
       include: { user: { select: { fullName: true, email: true } } },
       orderBy: { createdAt: "desc" },
       take: 10,
@@ -24,13 +31,14 @@ export async function GET() {
       where: {
         createdAt: { gte: sevenDaysAgo },
         role: { in: [UserRole.foundations_member] },
+        ...(memberScope ? { id: memberScope } : {}),
       },
       orderBy: { createdAt: "desc" },
       take: 10,
       select: { id: true, fullName: true, email: true, createdAt: true },
     }),
     prisma.serviceWaitlistEntry.findMany({
-      where: { createdAt: { gte: sevenDaysAgo } },
+      where: { createdAt: { gte: sevenDaysAgo }, ...(memberScope ? { userId: memberScope } : {}) },
       include: {
         user: { select: { fullName: true } },
         package: { select: { name: true } },

@@ -328,9 +328,11 @@ export default function AdminDashboard() {
 
       {/* Rows 2+ — visible to admins and staff admins */}
       <>
-          {/* Action cards */}
+          {/* Action cards — hide "Members At Risk" + "Active This Week" for staff admins */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {actions.map((a) => (
+            {actions
+              .filter((a) => isAdminRole || (a.label !== "Members At Risk" && a.label !== "Active This Week"))
+              .map((a) => (
               <Link
                 key={a.label}
                 href={a.href}
