@@ -131,7 +131,7 @@ function TrainingTab({ sections, loading, pct, onSwitchTab }: {
 function GenerateLeadsPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const activeTab = searchParams.get("section") ?? "training";
+  const activeTab = searchParams.get("section") ?? "campaigns";
 
   const [sections, setSections] = useState<TrainingSection[]>([]);
   const [sectionsLoading, setSectionsLoading] = useState(true);
