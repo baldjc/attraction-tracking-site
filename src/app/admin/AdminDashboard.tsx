@@ -328,11 +328,13 @@ export default function AdminDashboard() {
 
       {/* Rows 2+ — visible to admins and staff admins */}
       <>
-          {/* Action cards — hide "Members At Risk" + "Active This Week" for staff admins */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {actions
-              .filter((a) => isAdminRole || (a.label !== "Members At Risk" && a.label !== "Active This Week"))
-              .map((a) => (
+          {(() => {
+            const visibleActions = actions.filter(
+              (a) => isAdminRole || (a.label !== "Members At Risk" && a.label !== "Active This Week")
+            );
+            const visibleStats = ownerStats.filter((s) => isAdminRole || s.label !== "MRR");
+
+            const renderAction = (a: ActionCard) => (
               <Link
                 key={a.label}
                 href={a.href}
@@ -355,12 +357,9 @@ export default function AdminDashboard() {
                   />
                 </div>
               </Link>
-            ))}
-          </div>
+            );
 
-          {/* Stat cards — MRR (admin only) + Avg Audit Score */}
-          <div className="grid grid-cols-2 gap-4">
-            {ownerStats.filter((s) => isAdminRole || s.label !== "MRR").map((s) => (
+            const renderStat = (s: StatCard) => (
               <Link
                 key={s.label}
                 href={s.href}
@@ -390,8 +389,29 @@ export default function AdminDashboard() {
                   </p>
                 )}
               </Link>
-            ))}
-          </div>
+            );
+
+            if (!isAdminRole) {
+              // Staff admin view: Pending Audits + Hire Waitlist + Avg Audit Score in one neat 3-col row.
+              return (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  {visibleActions.map(renderAction)}
+                  {visibleStats.map(renderStat)}
+                </div>
+              );
+            }
+
+            return (
+              <>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {visibleActions.map(renderAction)}
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  {visibleStats.map(renderStat)}
+                </div>
+              </>
+            );
+          })()}
 
           {/* Team Pipeline summary */}
           {teamPipeline && (teamPipeline.scripted + teamPipeline.filmed + teamPipeline.assignedToMe + teamPipeline.unassigned > 0) && (
