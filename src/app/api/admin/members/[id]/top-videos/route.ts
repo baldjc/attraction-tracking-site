@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { canStaffAccessMember } from "@/lib/staff-access";
 import { getChannelInfo, getTopVideosByViewCount } from "@/lib/youtube";
 
 function resolveIdentifier(member: {
@@ -32,6 +33,9 @@ export async function GET(
   }
 
   const { id } = await params;
+  if (!(await canStaffAccessMember((session.user as any).id, id))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const member = await prisma.user.findUnique({
     where: { id },

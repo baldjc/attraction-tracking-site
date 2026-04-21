@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { isAdminOrEditor, canAccessTier } from "@/lib/auth-utils";
+import { canStaffAccessMember } from "@/lib/staff-access";
 
 export async function GET(
   _req: NextRequest,
@@ -14,6 +15,9 @@ export async function GET(
   }
 
   const { userId } = await params;
+  if (!(await canStaffAccessMember((session.user as any).id, userId))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   // Tier guard for editor
   const member = await prisma.user.findUnique({ where: { id: userId }, select: { serviceTier: true } });

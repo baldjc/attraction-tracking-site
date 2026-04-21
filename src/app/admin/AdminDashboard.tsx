@@ -17,8 +17,6 @@ import {
   ChartBarIcon,
 } from "@heroicons/react/24/outline";
 
-const OWNER_EMAIL = "jared@attractionbyvideo.com";
-
 interface ActionCard {
   label: string;
   subtitle: string;
@@ -85,7 +83,8 @@ const TYPE_EMOJI: Record<string, string> = {
 
 export default function AdminDashboard() {
   const { data: session } = useSession();
-  const isOwner = (session?.user as any)?.email === OWNER_EMAIL;
+  const role = (session?.user as any)?.role;
+  const isAdminRole = role === "admin";
 
   const [actions, setActions] = useState<ActionCard[]>([]);
   const [topStats, setTopStats] = useState<StatCard[]>([]);
@@ -309,9 +308,8 @@ export default function AdminDashboard() {
         ))}
       </div>
 
-      {/* Rows 2+ — Jared only */}
-      {isOwner && (
-        <>
+      {/* Rows 2+ — visible to admins and staff admins */}
+      <>
           {/* Action cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {actions.map((a) => (
@@ -340,9 +338,9 @@ export default function AdminDashboard() {
             ))}
           </div>
 
-          {/* Owner stat cards — MRR + Avg Audit Score */}
+          {/* Stat cards — MRR (admin only) + Avg Audit Score */}
           <div className="grid grid-cols-2 gap-4">
-            {ownerStats.map((s) => (
+            {ownerStats.filter((s) => isAdminRole || s.label !== "MRR").map((s) => (
               <Link
                 key={s.label}
                 href={s.href}
@@ -492,7 +490,6 @@ export default function AdminDashboard() {
             </div>
           )}
         </>
-      )}
     </div>
   );
 }

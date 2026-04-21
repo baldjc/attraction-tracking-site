@@ -207,7 +207,7 @@ function StaffCard({
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <span className={`text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full ${roleBadge}`}>
-            {staff.role}
+            {staff.role === "admin" ? "Admin" : "Staff Admin"}
           </span>
           <button
             type="button"
@@ -379,7 +379,7 @@ function AddStaffForm({ onCreated }: { onCreated: (s: StaffMember) => void }) {
               onChange={(e) => setRole(e.target.value as "admin" | "editor")}
               className="w-full px-3 py-2 text-sm border border-[#2f3437]/15 rounded-lg focus:outline-none focus:border-[#6ba3c7] bg-white"
             >
-              <option value="editor">Editor</option>
+              <option value="editor">Staff Admin</option>
               <option value="admin">Admin</option>
             </select>
           </div>

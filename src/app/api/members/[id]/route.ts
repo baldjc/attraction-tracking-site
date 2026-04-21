@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { isAdminOrEditor, isAdmin, canAccessTier } from "@/lib/auth-utils";
+import { canStaffAccessMember } from "@/lib/staff-access";
 import { logAdminAction } from "@/lib/admin-log";
 
 export async function GET(
@@ -9,12 +10,18 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
-  const role = (session?.user as any)?.role;
-  if (!session?.user || !isAdminOrEditor(role)) {
+  const sessionUser = session?.user as { id?: string; role?: string } | undefined;
+  const role = sessionUser?.role;
+  const userId = sessionUser?.id;
+  if (!session?.user || !isAdminOrEditor(role ?? "") || !userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { id } = await params;
+
+  if (!(await canStaffAccessMember(userId, id))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const member = await prisma.user.findUnique({
     where: { id },
@@ -50,7 +57,24 @@ export async function GET(
   // Flatten tracking links from all campaigns so the frontend can use member.links directly
   const links = member.campaigns.flatMap((c) => c.links);
 
-  return NextResponse.json({ member: { ...member, links } });
+  // Redact financial / Stripe fields for non-admin staff (editor / Staff Admin).
+  const isAdminRole = role === "admin";
+  const sanitized = isAdminRole
+    ? { ...member, links }
+    : {
+        ...member,
+        links,
+        stripeCustomerId: null,
+        stripeSubscriptionId: null,
+        subscriptionStatus: null,
+        stripePlanName: null,
+        stripeCurrentPeriodEnd: null,
+        stripePriceAmount: null,
+        stripeCurrency: null,
+        lastPaymentReminderSentAt: null,
+      };
+
+  return NextResponse.json({ member: sanitized });
 }
 
 export async function PATCH(

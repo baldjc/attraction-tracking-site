@@ -2,15 +2,19 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { isAdminOrEditor, editorTierFilter } from "@/lib/auth-utils";
+import { staffMemberIdFilter } from "@/lib/staff-access";
 
 export async function GET() {
   const session = await auth();
-  const role = (session?.user as any)?.role;
-  if (!session?.user || !isAdminOrEditor(role)) {
+  const sessionUser = session?.user as { id?: string; role?: string } | undefined;
+  const role = sessionUser?.role;
+  const userId = sessionUser?.id;
+  if (!session?.user || !isAdminOrEditor(role ?? "") || !userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const tierFilter = editorTierFilter(role);
+  const tierFilter = editorTierFilter(role ?? "");
+  const allowedFilter = await staffMemberIdFilter(userId);
 
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -18,7 +22,10 @@ export async function GET() {
   const fourteenDaysAgo = new Date();
   fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
 
-  const userWhere = tierFilter ? tierFilter : { role: "foundations_member" as const };
+  const userWhere: Record<string, unknown> = tierFilter
+    ? { ...tierFilter }
+    : { role: "foundations_member" as const };
+  if (allowedFilter) userWhere.id = allowedFilter;
 
   const members = await prisma.user.findMany({
     where: userWhere,
@@ -195,15 +202,29 @@ export async function GET() {
       return sum + (currency === "USD" ? Math.round(amount * USD_TO_CAD) : amount);
     }, 0);
 
+  const isAdminRole = role === "admin";
+  const sanitizedMembers = isAdminRole
+    ? memberRows
+    : memberRows.map((m) => ({
+        ...m,
+        stripeCurrency: null,
+        stripeCustomerId: null,
+        stripeSubscriptionId: null,
+        subscriptionStatus: null,
+        stripePlanName: null,
+        stripeCurrentPeriodEnd: null,
+        stripePriceAmount: null,
+      }));
+
   return NextResponse.json({
-    members: memberRows,
+    members: sanitizedMembers,
     cards: {
       videosThisWeek,
       activeMembers,
       inactiveMembers,
       linkClicks7d: clicksResult._count,
       topLead,
-      mrr,
+      mrr: isAdminRole ? mrr : null,
       usdToCadRate: USD_TO_CAD,
     },
     recentVideos,

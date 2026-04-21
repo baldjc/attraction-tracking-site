@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { canStaffAccessMember } from "@/lib/staff-access";
 import { createVideoFolder } from "@/lib/google-drive";
 
 const DRIVE_TRIGGER_STATUSES = ["Ready to Shoot", "Shooting", "Shot - In Post"];
@@ -16,6 +17,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id, planId } = await params;
+  if (!(await canStaffAccessMember((session.user as any).id, id))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   const existing = await prisma.contentPlan.findFirst({ where: { id: planId, userId: id } });
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
@@ -70,6 +74,9 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id, planId } = await params;
+  if (!(await canStaffAccessMember((session.user as any).id, id))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   const existing = await prisma.contentPlan.findFirst({ where: { id: planId, userId: id } });
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 

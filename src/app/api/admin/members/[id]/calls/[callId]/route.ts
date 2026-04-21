@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { canStaffAccessMember } from "@/lib/staff-access";
 
 async function checkAdmin() {
   const session = await auth();
@@ -16,6 +17,9 @@ export async function PUT(
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id, callId } = await params;
+  if (!(await canStaffAccessMember((session.user as any).id, id))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   const { fathomUrl, loomUrl, callDate, topic, notes } = await req.json();
 
   try {
@@ -50,6 +54,9 @@ export async function DELETE(
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id, callId } = await params;
+  if (!(await canStaffAccessMember((session.user as any).id, id))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   try {
     const existing = await prisma.clientCall.findUnique({ where: { id: callId } });

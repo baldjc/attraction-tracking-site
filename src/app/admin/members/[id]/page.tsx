@@ -738,7 +738,7 @@ export default function MemberDetailPage() {
               <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full shrink-0 whitespace-nowrap ${tierColors(member.serviceTier).badge}`}>
                 {tierLabel(member.serviceTier)}
               </span>
-              {member.stripePlanName && member.subscriptionStatus && (() => {
+              {!isEditorRole && member.stripePlanName && member.subscriptionStatus && (() => {
                 const cfg = subCfg[member.subscriptionStatus];
                 if (!cfg) return null;
                 return (

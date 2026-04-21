@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { canStaffAccessMember } from "@/lib/staff-access";
 import { createVideoFolder } from "@/lib/google-drive";
 
 async function checkAdmin() {
@@ -17,6 +18,9 @@ export async function POST(
   if (!session) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
 
   const { id, planId } = await params;
+  if (!(await canStaffAccessMember((session.user as any).id, id))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const plan = await prisma.contentPlan.findFirst({ where: { id: planId, userId: id } });
   if (!plan) return NextResponse.json({ error: "Not found" }, { status: 404 });
