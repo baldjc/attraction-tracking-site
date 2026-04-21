@@ -313,7 +313,8 @@ function MembersPageInner() {
 
   function handleExportCSV() {
     const headers = [
-      "Name", "Email", "YouTube Handle", "Tier", "Subscription",
+      "Name", "Email", "YouTube Handle", "Tier",
+      ...(isEditorRole ? [] : ["Subscription"]),
       "Audit Score", "Videos (7d)", "Clicks (7d)", "Conversions (7d)",
       "Tool Uses (7d)", "Status",
     ];
@@ -322,7 +323,7 @@ function MembersPageInner() {
       m.email || "",
       m.youtubeHandle || "",
       m.serviceTier || "",
-      m.subscriptionStatus || "",
+      ...(isEditorRole ? [] : [m.subscriptionStatus || ""]),
       m.latestAuditScore ?? "",
       m.videos7d ?? 0,
       m.clicks7d ?? 0,
@@ -699,7 +700,9 @@ function MembersPageInner() {
                   </th>
                   <th className={`${thCls} cursor-default text-center`}>YT</th>
                   <th className={`${thCls} cursor-default`}>Tier</th>
-                  <th className={`${thCls} cursor-default`}>Subscription</th>
+                  {!isEditorRole && (
+                    <th className={`${thCls} cursor-default`}>Subscription</th>
+                  )}
                   <th className={thCls} onClick={() => toggleSort("latestAuditScore")}>
                     Score <SortIcon col="latestAuditScore" />
                   </th>
@@ -722,9 +725,9 @@ function MembersPageInner() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {loading ? (
-                  <tr><td colSpan={10} className={`px-6 py-12 text-center ${muted}`}>Loading…</td></tr>
+                  <tr><td colSpan={isEditorRole ? 9 : 10} className={`px-6 py-12 text-center ${muted}`}>Loading…</td></tr>
                 ) : paginated.length === 0 ? (
-                  <tr><td colSpan={10} className={`px-6 py-12 text-center ${muted}`}>
+                  <tr><td colSpan={isEditorRole ? 9 : 10} className={`px-6 py-12 text-center ${muted}`}>
                     {members.length === 0 ? "No members yet. Click \"Sync from GHL\" to import." : "No members match your filters."}
                   </td></tr>
                 ) : (
@@ -766,45 +769,47 @@ function MembersPageInner() {
                         )}
                       </td>
                       <td className="px-4 py-3">{tierBadge(m.serviceTier)}</td>
-                      <td className="px-4 py-3">
-                        {m.subscriptionStatus ? (
-                          <div className="flex flex-col gap-0.5">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              {subStatusBadge(m.subscriptionStatus)}
-                              {fmtPrice(m.stripePriceAmount) && (() => {
-                                const isUSD = (m.stripeCurrency ?? "USD").toUpperCase() === "USD";
-                                const rate = cards?.usdToCadRate ?? 1.38;
-                                const cadAmount = isUSD && m.stripePriceAmount
-                                  ? Math.round(m.stripePriceAmount * rate)
-                                  : m.stripePriceAmount;
-                                return (
-                                  <span className="text-xs font-semibold text-emerald-700">
-                                    {isUSD ? (
-                                      <>
-                                        {fmtPrice(cadAmount)}/mo
-                                        <span className="ml-1 font-normal text-gray-400 text-[10px]">CAD</span>
-                                        <span className="ml-1 font-normal text-gray-300 text-[10px]">({fmtPrice(m.stripePriceAmount)} USD)</span>
-                                      </>
-                                    ) : (
-                                      <>
-                                        {fmtPrice(m.stripePriceAmount)}/mo
-                                        <span className="ml-1 font-normal text-gray-400 text-[10px]">CAD</span>
-                                      </>
-                                    )}
-                                  </span>
-                                );
-                              })()}
+                      {!isEditorRole && (
+                        <td className="px-4 py-3">
+                          {m.subscriptionStatus ? (
+                            <div className="flex flex-col gap-0.5">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                {subStatusBadge(m.subscriptionStatus)}
+                                {fmtPrice(m.stripePriceAmount) && (() => {
+                                  const isUSD = (m.stripeCurrency ?? "USD").toUpperCase() === "USD";
+                                  const rate = cards?.usdToCadRate ?? 1.38;
+                                  const cadAmount = isUSD && m.stripePriceAmount
+                                    ? Math.round(m.stripePriceAmount * rate)
+                                    : m.stripePriceAmount;
+                                  return (
+                                    <span className="text-xs font-semibold text-emerald-700">
+                                      {isUSD ? (
+                                        <>
+                                          {fmtPrice(cadAmount)}/mo
+                                          <span className="ml-1 font-normal text-gray-400 text-[10px]">CAD</span>
+                                          <span className="ml-1 font-normal text-gray-300 text-[10px]">({fmtPrice(m.stripePriceAmount)} USD)</span>
+                                        </>
+                                      ) : (
+                                        <>
+                                          {fmtPrice(m.stripePriceAmount)}/mo
+                                          <span className="ml-1 font-normal text-gray-400 text-[10px]">CAD</span>
+                                        </>
+                                      )}
+                                    </span>
+                                  );
+                                })()}
+                              </div>
+                              {fmtPeriodEnd(m.stripeCurrentPeriodEnd, m.subscriptionStatus) && (
+                                <span className={`text-[10px] ${dim}`}>
+                                  {fmtPeriodEnd(m.stripeCurrentPeriodEnd, m.subscriptionStatus)}
+                                </span>
+                              )}
                             </div>
-                            {fmtPeriodEnd(m.stripeCurrentPeriodEnd, m.subscriptionStatus) && (
-                              <span className={`text-[10px] ${dim}`}>
-                                {fmtPeriodEnd(m.stripeCurrentPeriodEnd, m.subscriptionStatus)}
-                              </span>
-                            )}
-                          </div>
-                        ) : (
-                          <span className={`text-sm ${dim}`}>—</span>
-                        )}
-                      </td>
+                          ) : (
+                            <span className={`text-sm ${dim}`}>—</span>
+                          )}
+                        </td>
+                      )}
                       <td className={`px-4 py-3 ${scoreColor(m.latestAuditScore)}`}>
                         {m.latestAuditScore != null ? `${Number(m.latestAuditScore).toFixed(1)}/10` : <span className={dim}>—</span>}
                       </td>
