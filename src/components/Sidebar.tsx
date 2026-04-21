@@ -112,6 +112,8 @@ const memberLinks = [
 interface ImpersonateState {
   memberId: string;
   memberName: string;
+  /** Role of the impersonated user. When "editor", treat as Staff Admin view. */
+  targetRole?: string;
 }
 
 export default function Sidebar({ role, userName, featureFlags }: SidebarProps) {
@@ -178,7 +180,8 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
     return () => { document.body.style.overflow = ""; };
   }, [mobileOpen]);
 
-  const isStaffOnMemberView = isStaff && isImpersonating;
+  const isImpersonatingStaff = isImpersonating && impersonate?.targetRole === "editor";
+  const isStaffOnMemberView = isStaff && isImpersonating && !isImpersonatingStaff;
 
   const baseMemberLinks = memberLinks
     .filter((link) => {
@@ -196,7 +199,9 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
       locked: !!(link.tierRequired && memberTier && !link.tierRequired.includes(memberTier)),
     }));
 
-  const links = isStaffOnMemberView
+  const links = isImpersonatingStaff
+    ? editorLinks
+    : isStaffOnMemberView
     ? baseMemberLinks
     : role === "admin"
     ? adminLinks
@@ -220,13 +225,17 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
     router.push("/admin");
   }
 
-  const homeHref = isStaffOnMemberView
+  const homeHref = isImpersonatingStaff
+    ? "/admin"
+    : isStaffOnMemberView
     ? "/member/dashboard"
     : role === "admin" || role === "editor"
     ? "/admin"
     : "/member/dashboard";
 
-  const roleLabel = isStaffOnMemberView
+  const roleLabel = isImpersonatingStaff
+    ? "Staff Admin"
+    : isStaffOnMemberView
     ? "Foundations Member"
     : role === "admin"
     ? "Admin"
@@ -240,12 +249,16 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
       {isStaff && !collapsed && (
         <div
           className={`flex-shrink-0 px-3 py-2 flex items-center gap-2 ${
-            isImpersonating ? "bg-[#e63946]" : "bg-[#6ba3c7]/20"
+            isImpersonatingStaff
+              ? "bg-amber-500"
+              : isImpersonating
+              ? "bg-[#e63946]"
+              : "bg-[#6ba3c7]/20"
           }`}
         >
           <EyeIcon className={`w-3.5 h-3.5 shrink-0 ${isImpersonating ? "text-white/80" : "text-white/50"}`} />
           <span className={`text-[10px] font-bold uppercase tracking-widest shrink-0 ${isImpersonating ? "text-white" : "text-white/60"}`}>
-            {isImpersonating ? "Member" : "Admin"}
+            {isImpersonatingStaff ? "Staff Admin" : isImpersonating ? "Member" : "Admin"}
           </span>
           <button
             onClick={() => setShowSwitch((s) => !s)}
@@ -275,7 +288,11 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
       {isStaff && collapsed && (
         <div
           className={`flex-shrink-0 py-2 flex justify-center ${
-            isImpersonating ? "bg-[#e63946]" : "bg-[#6ba3c7]/20"
+            isImpersonatingStaff
+              ? "bg-amber-500"
+              : isImpersonating
+              ? "bg-[#e63946]"
+              : "bg-[#6ba3c7]/20"
           }`}
         >
           {isImpersonating ? (

@@ -46,7 +46,7 @@ export default function EditorDashboard() {
     });
     if (res.ok) {
       const memberName = member.fullName || member.email;
-      localStorage.setItem(IMPERSONATE_LS_KEY, JSON.stringify({ memberId: member.id, memberName }));
+      localStorage.setItem(IMPERSONATE_LS_KEY, JSON.stringify({ memberId: member.id, memberName, targetRole: "member" }));
       window.location.href = "/member/scores";
     } else {
       setViewingId(null);

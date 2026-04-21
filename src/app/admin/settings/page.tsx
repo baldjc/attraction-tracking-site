@@ -160,8 +160,8 @@ function StaffCard({
     });
     if (res.ok) {
       const memberName = staff.fullName || staff.email;
-      localStorage.setItem(IMPERSONATE_LS_KEY, JSON.stringify({ memberId: staff.id, memberName }));
-      window.location.href = "/member/dashboard";
+      localStorage.setItem(IMPERSONATE_LS_KEY, JSON.stringify({ memberId: staff.id, memberName, targetRole: staff.role || "editor" }));
+      window.location.href = "/admin";
     }
     setViewingAs(false);
   }

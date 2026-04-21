@@ -15,6 +15,8 @@ export type ResolvedUser = {
   isAdmin: boolean;
   /** True when the resolved user is an impersonated member. */
   isImpersonating: boolean;
+  /** Role of the impersonated user, when applicable. */
+  impersonatedRole?: string | null;
 };
 
 export async function resolveUserFromSession(): Promise<ResolvedUser | null> {
@@ -31,10 +33,17 @@ export async function resolveUserFromSession(): Promise<ResolvedUser | null> {
     if (impersonateId) {
       const impersonatedUser = await prisma.user.findUnique({
         where: { id: impersonateId },
-        select: { id: true, email: true },
+        select: { id: true, email: true, role: true },
       });
       if (impersonatedUser) {
-        return { ...impersonatedUser, role, isAdmin, isImpersonating: true };
+        return {
+          id: impersonatedUser.id,
+          email: impersonatedUser.email,
+          role,
+          isAdmin,
+          isImpersonating: true,
+          impersonatedRole: impersonatedUser.role,
+        };
       }
     }
   }

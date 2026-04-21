@@ -55,7 +55,7 @@ export default function WorkingForBanner() {
     });
     if (res.ok) {
       const memberName = member.fullName || member.email;
-      localStorage.setItem(IMPERSONATE_LS_KEY, JSON.stringify({ memberId: member.id, memberName }));
+      localStorage.setItem(IMPERSONATE_LS_KEY, JSON.stringify({ memberId: member.id, memberName, targetRole: "member" }));
       setImpersonate({ memberId: member.id, memberName });
       window.location.reload();
     }

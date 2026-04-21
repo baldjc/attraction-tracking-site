@@ -118,7 +118,7 @@ export default function TeamPlanDetailDrawer({ plan, staff, currentUserId, curre
         return;
       }
       try {
-        localStorage.setItem(IMPERSONATE_LS_KEY, JSON.stringify({ memberId: plan.member.id, memberName: plan.member.name }));
+        localStorage.setItem(IMPERSONATE_LS_KEY, JSON.stringify({ memberId: plan.member.id, memberName: plan.member.name, targetRole: "member" }));
       } catch {}
       document.cookie = `impersonate_member=${plan.member.id}; path=/; max-age=${60 * 60 * 8}; SameSite=Lax`;
       window.location.href = "/member/content-planner";

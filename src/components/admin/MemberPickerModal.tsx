@@ -67,7 +67,7 @@ export default function MemberPickerModal({ onClose, adminEmail }: Props) {
       }
       const displayName = user.fullName ?? user.email;
       try {
-        localStorage.setItem(IMPERSONATE_LS_KEY, JSON.stringify({ memberId: user.id, memberName: displayName }));
+        localStorage.setItem(IMPERSONATE_LS_KEY, JSON.stringify({ memberId: user.id, memberName: displayName, targetRole: user.role || "member" }));
       } catch {}
       document.cookie = `impersonate_member=${user.id}; path=/; max-age=${60 * 60 * 8}; SameSite=Lax`;
       const isStaff = user.role === "admin" || user.role === "editor";
