@@ -225,7 +225,7 @@ function GenerateLeadsPageInner() {
 
       {/* Tab bar */}
       <div className="flex gap-1 border-b border-[#2f3437]/10 dark:border-white/10 mb-6">
-        {["training", "campaigns"].map((tab) => (
+        {["campaigns", "training"].map((tab) => (
           <button
             key={tab}
             onClick={() => switchTab(tab)}
