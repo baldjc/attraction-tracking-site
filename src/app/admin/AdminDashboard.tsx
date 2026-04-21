@@ -84,7 +84,25 @@ const TYPE_EMOJI: Record<string, string> = {
 export default function AdminDashboard() {
   const { data: session } = useSession();
   const role = (session?.user as any)?.role;
-  const isAdminRole = role === "admin";
+  const [impersonatedRole, setImpersonatedRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("abv_impersonate");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        setImpersonatedRole(parsed?.targetRole ?? null);
+      } else {
+        setImpersonatedRole(null);
+      }
+    } catch {
+      setImpersonatedRole(null);
+    }
+  }, []);
+
+  // Effective role: when impersonating a Staff Admin, treat as editor for gating.
+  const effectiveRole = impersonatedRole === "editor" ? "editor" : role;
+  const isAdminRole = effectiveRole === "admin";
 
   const [actions, setActions] = useState<ActionCard[]>([]);
   const [topStats, setTopStats] = useState<StatCard[]>([]);
