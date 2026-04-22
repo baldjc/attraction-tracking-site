@@ -60,6 +60,13 @@ export async function DELETE(
     data: { auditId: null },
   });
 
+  // Unlink any AuditRequest that pointed at this audit and reopen it so the
+  // admin can re-run it from the Audit Requests tab.
+  await prisma.auditRequest.updateMany({
+    where: { auditId },
+    data: { auditId: null, status: "pending" },
+  });
+
   await prisma.audit.delete({ where: { id: auditId } });
 
   return NextResponse.json({ success: true });
