@@ -971,20 +971,46 @@ export default function AuditReportPage() {
 
       {/* Header callout */}
       <div className="bg-[#6ba3c7]/10 border border-[#6ba3c7]/30 rounded-lg p-6 print-avoid-break">
-        <p className="text-xs font-semibold text-[#6ba3c7] uppercase tracking-wider mb-1">
-          Attraction by Video — {typeLabel}
-        </p>
-        <h1 className="text-2xl font-bold text-[#2f3437]">{member?.fullName ?? member?.email}</h1>
-        {isSingleVideo && singleVideoTitle ? (
-          <p className="text-[#2f3437]/80 font-medium mt-1">"{singleVideoTitle}"</p>
-        ) : (
-          (member?.youtubeChannelName || channelInfo?.title || member?.youtubeHandle) && (
-            <p className="text-[#2f3437]/60 mt-1">
-              {member?.youtubeChannelName || channelInfo?.title || member?.youtubeHandle}
+        <div className="flex flex-col md:flex-row md:items-start gap-5 md:gap-6">
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-semibold text-[#6ba3c7] uppercase tracking-wider mb-1">
+              Attraction by Video — {typeLabel}
             </p>
-          )
-        )}
-        <p className="text-sm text-[#2f3437]/50 mt-1">{fmt(audit.createdAt)}</p>
+            <h1 className="text-2xl font-bold text-[#2f3437]">{member?.fullName ?? member?.email}</h1>
+            {isSingleVideo && singleVideoTitle ? (
+              <p className="text-[#2f3437]/80 font-medium mt-1">"{singleVideoTitle}"</p>
+            ) : (
+              (member?.youtubeChannelName || channelInfo?.title || member?.youtubeHandle) && (
+                <p className="text-[#2f3437]/60 mt-1">
+                  {member?.youtubeChannelName || channelInfo?.title || member?.youtubeHandle}
+                </p>
+              )
+            )}
+            <p className="text-sm text-[#2f3437]/50 mt-1">{fmt(audit.createdAt)}</p>
+          </div>
+          {isSingleVideo && videos[0]?.videoId && (
+            <div className="w-full md:w-72 lg:w-80 shrink-0 no-print">
+              <div className="relative aspect-video rounded-md overflow-hidden bg-black shadow-md">
+                <iframe
+                  src={`https://www.youtube-nocookie.com/embed/${videos[0].videoId}?rel=0&modestbranding=1`}
+                  title={videos[0].title ?? "Audited video"}
+                  loading="lazy"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  className="absolute inset-0 w-full h-full border-0"
+                />
+              </div>
+              <a
+                href={`https://youtube.com/watch?v=${videos[0].videoId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block text-[11px] text-[#2f3437]/55 hover:text-[#6ba3c7] mt-1.5 text-right"
+              >
+                Watch on YouTube ↗
+              </a>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Score + Diagnosis — side-by-side on desktop */}
