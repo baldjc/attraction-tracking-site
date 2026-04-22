@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeftIcon,
@@ -217,6 +217,17 @@ export default function MemberDetailPage() {
   const [academyProgress, setAcademyProgress] = useState<any>(null);
 
   const [stripeLinkOpen, setStripeLinkOpen] = useState(false);
+  const [convertOpen, setConvertOpen] = useState(false);
+  const [convertTier, setConvertTier] = useState("foundations");
+  const [convertStripeId, setConvertStripeId] = useState("");
+  const [converting, setConverting] = useState(false);
+  const searchParams = useSearchParams();
+  // Auto-open convert modal when arriving via ?convert=1 on a lead.
+  useEffect(() => {
+    if (searchParams?.get("convert") === "1" && member?.role === "audit_lead") {
+      setConvertOpen(true);
+    }
+  }, [searchParams, member?.role]);
   const [stripeSearchQ, setStripeSearchQ] = useState("");
   const [stripeSearchResults, setStripeSearchResults] = useState<any[]>([]);
   const [stripeSearchLoading, setStripeSearchLoading] = useState(false);
@@ -751,10 +762,19 @@ export default function MemberDetailPage() {
               {!member.youtubeChannelName && isRawChannelId(member.youtubeHandle) && (
                 <span className="text-white/40 text-xs italic">Resolving channel name…</span>
               )}
-              <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full shrink-0 whitespace-nowrap ${tierColors(member.serviceTier).badge}`}>
-                {tierLabel(member.serviceTier)}
-              </span>
-              {!isEditorRole && member.stripePlanName && member.subscriptionStatus && (() => {
+              {member.role === "audit_lead" ? (
+                <span
+                  className="text-xs font-bold px-2.5 py-0.5 rounded-full shrink-0 whitespace-nowrap bg-amber-400 text-amber-950 border border-amber-300"
+                  title="Not a paying member — Lead Audit only"
+                >
+                  LEAD · Not a paying member
+                </span>
+              ) : (
+                <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full shrink-0 whitespace-nowrap ${tierColors(member.serviceTier).badge}`}>
+                  {tierLabel(member.serviceTier)}
+                </span>
+              )}
+              {member.role !== "audit_lead" && !isEditorRole && member.stripePlanName && member.subscriptionStatus && (() => {
                 const cfg = subCfg[member.subscriptionStatus];
                 if (!cfg) return null;
                 return (
@@ -805,7 +825,15 @@ export default function MemberDetailPage() {
                 )}
               </div>
             )}
-            {!isEditorRole && member.subscriptionStatus === "past_due" && (
+            {member.role === "audit_lead" && (
+              <button
+                onClick={() => setConvertOpen(true)}
+                className="inline-flex items-center gap-1.5 bg-amber-400 hover:bg-amber-500 text-[#2f3437] text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+              >
+                Convert to Member →
+              </button>
+            )}
+            {member.role !== "audit_lead" && !isEditorRole && member.subscriptionStatus === "past_due" && (
               <div className="flex flex-col items-start gap-1">
                 <button
                   onClick={handleSendPaymentReminder}
@@ -821,7 +849,7 @@ export default function MemberDetailPage() {
                 )}
               </div>
             )}
-            {!isEditorRole && member.stripeCustomerId && (
+            {member.role !== "audit_lead" && !isEditorRole && member.stripeCustomerId && (
               <button
                 onClick={handleStripeSync}
                 disabled={syncingStripe}
@@ -2094,6 +2122,93 @@ export default function MemberDetailPage() {
         <div className="bg-white rounded-lg border border-gray-200 p-5">
           <h2 className="text-sm font-semibold text-[#2f3437] mb-4">Client Hub Settings</h2>
           <AdminClientHubTab memberId={member.id} serviceTier={member.serviceTier} />
+        </div>
+      )}
+
+      {/* Convert Lead → Member modal */}
+      {convertOpen && member && (
+        <div
+          className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+          onClick={() => !converting && setConvertOpen(false)}
+        >
+          <div
+            className="bg-white rounded-xl shadow-xl max-w-md w-full p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-bold text-[#2f3437] mb-1">Convert Lead to Member</h3>
+            <p className="text-sm text-[#2f3437]/60 mb-5">
+              {member.fullName ?? member.email} will become a paying member. A fresh full Baseline audit will be queued automatically.
+            </p>
+
+            <label className="block text-xs font-semibold text-[#2f3437]/70 uppercase tracking-wider mb-1">
+              Membership tier
+            </label>
+            <select
+              value={convertTier}
+              onChange={(e) => setConvertTier(e.target.value)}
+              disabled={converting}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-4"
+            >
+              <option value="foundations">Foundations</option>
+              <option value="editing_2">Production</option>
+              <option value="mastery_2">Growth</option>
+              <option value="done_with_you">Done-With-You</option>
+            </select>
+
+            <label className="block text-xs font-semibold text-[#2f3437]/70 uppercase tracking-wider mb-1">
+              Stripe customer ID <span className="text-[#2f3437]/40 font-normal normal-case">(optional — leave blank to send a payment link via GHL)</span>
+            </label>
+            <input
+              type="text"
+              value={convertStripeId}
+              onChange={(e) => setConvertStripeId(e.target.value)}
+              placeholder="cus_…"
+              disabled={converting}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-5 font-mono"
+            />
+
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setConvertOpen(false)}
+                disabled={converting}
+                className="px-4 py-2 text-sm font-medium text-[#2f3437]/70 hover:bg-gray-100 rounded-lg disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  setConverting(true);
+                  try {
+                    const res = await fetch(`/api/admin/leads/${member.id}/convert`, {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        serviceTier: convertTier,
+                        stripeCustomerId: convertStripeId.trim() || undefined,
+                      }),
+                    });
+                    if (!res.ok) {
+                      const err = await res.json().catch(() => ({}));
+                      toast.error(err.error ?? "Failed to convert lead.");
+                      setConverting(false);
+                      return;
+                    }
+                    toast.success("Lead converted. Baseline audit queued.");
+                    setConvertOpen(false);
+                    fetchMember();
+                  } catch (e: any) {
+                    toast.error(e?.message ?? "Failed to convert lead.");
+                  } finally {
+                    setConverting(false);
+                  }
+                }}
+                disabled={converting}
+                className="px-4 py-2 text-sm font-semibold bg-[#2f3437] hover:bg-[#3a4145] text-white rounded-lg disabled:opacity-50"
+              >
+                {converting ? "Converting…" : "Confirm Conversion"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -29,6 +29,8 @@ interface AuditRow {
     id: string;
     fullName: string | null;
     email: string;
+    role?: string;
+    leadStatus?: string | null;
     youtubeChannelThumbnail: string | null;
     youtubeChannelName: string | null;
   } | null;
@@ -99,13 +101,15 @@ function elapsedLabel(createdAt: string) {
 const ACTIVE_STATUSES = ["queued", "downloading", "analysing", "generating"];
 
 export default function AuditsPage() {
-  const [tab, setTab] = useState<"requests" | "audits">("audits");
+  const [tab, setTab] = useState<"requests" | "audits" | "lead-audits">("audits");
 
   const [auditReqs, setAuditReqs] = useState<AuditRequestRow[]>([]);
   const [auditReqsLoading, setAuditReqsLoading] = useState(true);
   const [runningRequestId, setRunningRequestId] = useState<string | null>(null);
 
   const [audits, setAudits] = useState<AuditRow[]>([]);
+  const [leadAudits, setLeadAudits] = useState<AuditRow[]>([]);
+  const [leadAuditsLoading, setLeadAuditsLoading] = useState(true);
   const [loading, setLoading] = useState(true);
   const [typeFilter, setTypeFilter] = useState("");
   const [search, setSearch] = useState("");
@@ -135,6 +139,7 @@ export default function AuditsPage() {
   useEffect(() => {
     fetchAuditRequests();
     fetchAudits();
+    fetchLeadAudits();
     fetchBatchStatus();
     fetchBaselineBatchStatus();
     fetchActiveJobs();
@@ -231,6 +236,17 @@ export default function AuditsPage() {
     const data = await res.json();
     setAudits(data.audits ?? []);
     setLoading(false);
+  }
+
+  async function fetchLeadAudits() {
+    setLeadAuditsLoading(true);
+    try {
+      const res = await fetch("/api/admin/lead-audits");
+      const data = await res.json();
+      setLeadAudits(data.audits ?? []);
+    } finally {
+      setLeadAuditsLoading(false);
+    }
   }
 
   async function fetchBatchStatus() {
@@ -444,6 +460,17 @@ export default function AuditsPage() {
           <span className="ml-2 text-xs text-[#2f3437]/40 font-normal">{audits.length}</span>
         </button>
         <button
+          onClick={() => setTab("lead-audits")}
+          className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+            tab === "lead-audits"
+              ? "bg-white text-[#2f3437] shadow-sm"
+              : "text-[#2f3437]/50 hover:text-[#2f3437]"
+          }`}
+        >
+          Lead Audits
+          <span className="ml-2 text-xs text-[#2f3437]/40 font-normal">{leadAudits.length}</span>
+        </button>
+        <button
           onClick={() => setTab("requests")}
           className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
             tab === "requests"
@@ -459,6 +486,74 @@ export default function AuditsPage() {
           )}
         </button>
       </div>
+
+      {/* Lead Audits tab */}
+      {tab === "lead-audits" && (
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm text-[#2f3437]/60">
+              {leadAudits.length} lead audit{leadAudits.length !== 1 ? "s" : ""}
+            </p>
+            <button
+              onClick={fetchLeadAudits}
+              className="flex items-center gap-1.5 text-xs text-[#2f3437]/50 hover:text-[#2f3437] transition-colors"
+            >
+              <ArrowPathIcon className="w-3.5 h-3.5" /> Refresh
+            </button>
+          </div>
+          <div className="bg-white rounded-lg border border-amber-200 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-amber-50 border-b border-amber-200">
+                    {["Date", "Lead", "Score", "Lead Status", "Action"].map((h) => (
+                      <th key={h} className="text-left px-6 py-3 text-xs font-semibold text-amber-900/70 uppercase tracking-wider">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {leadAuditsLoading ? (
+                    <tr><td colSpan={5} className="px-6 py-12 text-center text-[#2f3437]/40">Loading…</td></tr>
+                  ) : leadAudits.length === 0 ? (
+                    <tr><td colSpan={5} className="px-6 py-12 text-center text-[#2f3437]/40">No lead audits yet.</td></tr>
+                  ) : leadAudits.map((a) => (
+                    <tr key={a.id} className="hover:bg-amber-50/40 transition-colors">
+                      <td className="px-6 py-4 text-[#2f3437]/70 whitespace-nowrap">{fmt(a.createdAt)}</td>
+                      <td className="px-6 py-4">
+                        {a.user ? (
+                          <Link href={`/admin/members/${a.user.id}`} className="text-amber-700 hover:underline font-medium whitespace-nowrap">
+                            {a.user.fullName ?? a.user.email}
+                          </Link>
+                        ) : "—"}
+                        {a.user?.youtubeChannelName && (
+                          <p className="text-xs text-[#2f3437]/50 mt-0.5">{a.user.youtubeChannelName}</p>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        {a.overallScore != null ? (
+                          <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${scoreBg(Number(a.overallScore))}`}>
+                            {Number(a.overallScore).toFixed(1)}
+                          </span>
+                        ) : "—"}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="inline-block px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-xs font-semibold">
+                          {a.user?.leadStatus ?? "New"}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <Link href={`/admin/audits/${a.id}`} className="text-amber-700 hover:underline text-xs font-medium whitespace-nowrap">
+                          View Lead Report →
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Audit Requests tab */}
       {tab === "requests" && (

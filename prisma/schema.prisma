@@ -65,6 +65,14 @@ enum SourceType {
   OTHER
 }
 
+enum LeadStatus {
+  New
+  Audited
+  Pitched
+  Converted
+  Lost
+}
+
 model User {
   id                String      @id @default(uuid())
   email             String      @unique
@@ -124,6 +132,10 @@ model User {
   incomeGoal             String?
   postingRhythm          Int?
   biggestChallenge       String?
+
+  // Lead pipeline (only meaningful while role = audit_lead)
+  leadStatus             LeadStatus @default(New)
+  convertedFromLeadAt    DateTime?
 
   lastYoutubeSyncAt    DateTime? @map("last_youtube_sync_at")
 

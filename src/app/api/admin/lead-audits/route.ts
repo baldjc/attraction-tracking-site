@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import { isAdminOrEditor, editorTierFilter } from "@/lib/auth-utils";
+import { isAdminOrEditor } from "@/lib/auth-utils";
 
 export async function GET() {
   const session = await auth();
@@ -10,16 +10,14 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const tierFilter = editorTierFilter(role);
-
-  // Member Audits view excludes lead audits and audits owned by audit_lead users.
-  const baseWhere: any = {
-    auditType: { not: "lead" },
-    user: { is: { role: { not: "audit_lead" }, ...(tierFilter ?? {}) } },
-  };
-
+  // Lead Audits = either auditType="lead" OR audit owner is an audit_lead.
   const audits = await prisma.audit.findMany({
-    where: baseWhere,
+    where: {
+      OR: [
+        { auditType: "lead" },
+        { user: { is: { role: "audit_lead" } } },
+      ],
+    },
     orderBy: { createdAt: "desc" },
     include: {
       user: {
@@ -27,7 +25,9 @@ export async function GET() {
           id: true,
           fullName: true,
           email: true,
+          role: true,
           serviceTier: true,
+          leadStatus: true,
           youtubeChannelThumbnail: true,
           youtubeChannelName: true,
         },

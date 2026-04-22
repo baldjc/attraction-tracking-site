@@ -177,11 +177,13 @@ export default function AuditReportPage() {
   const channelInfo = report?.channelInfo;
   const isSingleVideo = audit.auditType === "single_video";
   const isMonthly = audit.auditType === "monthly";
+  const isLead = audit.auditType === "lead";
   const singleVideoTitle = isSingleVideo ? (videos[0]?.title ?? null) : null;
   const phaseReport = report?.phase_report as any;
 
   const typeLabel = audit.auditType === "baseline" ? "Baseline Audit"
     : audit.auditType === "monthly" ? "Monthly Audit"
+    : isLead ? "Lead Audit"
     : "Single Video Audit";
 
   const whatsWorking: Array<{ strength: string; evidence: string }> =
@@ -212,6 +214,193 @@ export default function AuditReportPage() {
     if (scores[key] && scores[key].score >= 4 && scores[key].score <= 6) {
       qaItems.push({ key, prompt: QA_IF_LOW[key], score: scores[key].score });
     }
+  }
+
+  // ----- LEAD AUDIT VIEW -----
+  // Non-members see a thinner report: orange branding, problems + cost + which
+  // membership asset solves it. No improved_example, no per-video deep dive,
+  // no learning path, no Q&A. Closes with a conversion narrative + CTAs.
+  if (isLead) {
+    const leadGaps: Array<{
+      principle: string;
+      score: number;
+      description: string;
+      current_example: string;
+      what_this_costs_you?: string;
+      inside_attraction?: string;
+    }> = report?.three_biggest_gaps ?? [];
+    const conversionNarrative: string = report?.conversion_narrative ?? "";
+
+    return (
+      <div className="max-w-4xl space-y-4 md:space-y-5 print-full-width" id="audit-report">
+        {/* Top nav */}
+        <div className="flex items-center justify-between no-print">
+          <Link
+            href={member?.id ? `/admin/members/${member.id}` : "/admin/leads"}
+            className="inline-flex items-center gap-1.5 text-sm text-[#2f3437]/50 hover:text-[#2f3437]"
+          >
+            <ArrowLeftIcon className="w-4 h-4" />
+            Back to {member?.fullName ?? "Lead"}
+          </Link>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleCopyLink}
+              className="inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-[#2f3437]/70 transition-colors"
+            >
+              <ClipboardDocumentIcon className="w-4 h-4" />
+              {copied ? "Copied!" : "Share Report"}
+            </button>
+            <button
+              onClick={handlePrint}
+              className="inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-[#2f3437]/70 transition-colors"
+            >
+              <PrinterIcon className="w-4 h-4" />
+              Print / PDF
+            </button>
+            <button
+              onClick={handleDelete}
+              disabled={deleting}
+              className="inline-flex items-center gap-1.5 text-sm text-[#ff0033]/60 hover:text-[#ff0033] disabled:opacity-40 transition-colors"
+            >
+              <TrashIcon className="w-4 h-4" />
+              {deleting ? "Deleting…" : "Delete"}
+            </button>
+          </div>
+        </div>
+
+        {/* Print-only logo header */}
+        <div className="hidden print:block text-center py-4 border-b border-gray-200 mb-2">
+          <p className="text-lg font-black text-[#2f3437] tracking-tight">Attraction by Video</p>
+          <p className="text-xs text-[#2f3437]/50">Lead Audit — for {member?.fullName ?? member?.email}</p>
+        </div>
+
+        {/* Orange banner header */}
+        <div className="rounded-lg overflow-hidden bg-gradient-to-r from-amber-500 via-orange-500 to-orange-600 p-6 print-avoid-break text-white">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="inline-block px-2 py-0.5 rounded-full bg-white/20 text-white text-[11px] font-bold uppercase tracking-wider">
+              Lead Audit
+            </span>
+            <span className="text-xs text-white/80">For {member?.fullName ?? member?.email}</span>
+          </div>
+          <h1 className="text-2xl font-bold leading-tight">Where Your Channel Is Today</h1>
+          {(member?.youtubeChannelName || channelInfo?.title || member?.youtubeHandle) && (
+            <p className="text-white/90 mt-1">
+              {member?.youtubeChannelName || channelInfo?.title || member?.youtubeHandle}
+            </p>
+          )}
+          <p className="text-xs text-white/70 mt-2">{fmt(audit.createdAt)}</p>
+        </div>
+
+        {/* Score + diagnosis */}
+        <div className="flex flex-col md:flex-row gap-4 print-avoid-break">
+          <div className={`rounded-lg p-5 text-center md:w-44 shrink-0 ${scoreBgBlock(audit.overallScore)}`}>
+            <p className="text-xs font-semibold uppercase tracking-wider mb-1 text-[#2f3437]/60">Channel Score</p>
+            <p className={`text-6xl font-black ${scoreText(Number(audit.overallScore))}`}>
+              {audit.overallScore != null ? Number(audit.overallScore).toFixed(1) : "—"}
+            </p>
+            <p className="text-sm font-medium mt-0.5 text-[#2f3437]/50">/ 10</p>
+          </div>
+          <div className="flex-1 bg-white rounded-lg border border-gray-200 p-5 flex items-center">
+            <p className="text-base text-[#2f3437] leading-relaxed">
+              {report?.one_sentence_diagnosis ?? "Diagnosis pending."}
+            </p>
+          </div>
+        </div>
+
+        {/* What's working — 2 strengths only */}
+        {whatsWorking.length > 0 && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-6 print-avoid-break">
+            <h2 className="text-base font-semibold text-green-800 mb-3">✅ What&apos;s Working</h2>
+            <div className="space-y-3">
+              {whatsWorking.slice(0, 2).map((item, i) => (
+                <div key={i} className="flex items-start gap-3">
+                  <span className="mt-1 text-green-500 shrink-0">•</span>
+                  <div>
+                    <p className="text-sm text-green-800 font-medium">{item.strength}</p>
+                    {item.evidence && (
+                      <p className="text-xs text-green-700/70 mt-0.5 italic">"{item.evidence}"</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Three biggest problems — current + cost + inside attraction */}
+        {leadGaps.length > 0 && (
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <h2 className="text-base font-semibold text-[#2f3437] mb-4">🎯 Three Biggest Problems</h2>
+            <div className="space-y-6">
+              {leadGaps.map((gap, i) => (
+                <div key={i} className="border-l-4 border-orange-500 pl-4 print-avoid-break">
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
+                    <span className="bg-orange-100 text-orange-700 text-xs font-bold px-2 py-0.5 rounded-full">{i + 1}</span>
+                    <span className="text-sm font-bold text-[#2f3437]">{gap.principle}</span>
+                    {gap.score > 0 && (
+                      <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${scoreBg(gap.score)}`}>
+                        {gap.score.toFixed(1)}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm text-[#2f3437]/80 mb-3 leading-relaxed">{gap.description}</p>
+
+                  {gap.current_example && (
+                    <div className="bg-[#ffe5ea] rounded-lg px-3 py-2 mb-2">
+                      <p className="text-xs font-semibold text-[#ff0033] mb-1">Current</p>
+                      <p className="text-xs text-[#2f3437]/80 italic">"{gap.current_example}"</p>
+                    </div>
+                  )}
+
+                  {gap.what_this_costs_you && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-2">
+                      <p className="text-xs font-semibold text-amber-800 mb-1">What this costs you</p>
+                      <p className="text-xs text-[#2f3437]/80">{gap.what_this_costs_you}</p>
+                    </div>
+                  )}
+
+                  {gap.inside_attraction && (
+                    <div className="bg-[#e8f7ff] border border-[#6ba3c7]/30 rounded-lg px-3 py-2">
+                      <p className="text-xs font-semibold text-[#0ea5d9] mb-1">Inside Attraction by Video</p>
+                      <p className="text-xs text-[#2f3437]/80">{gap.inside_attraction}</p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Conversion narrative + CTAs */}
+        {conversionNarrative && (
+          <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-orange-200 rounded-lg p-6 print-avoid-break">
+            <h2 className="text-base font-semibold text-[#2f3437] mb-3">Where to go from here</h2>
+            <p className="text-sm text-[#2f3437]/85 leading-relaxed whitespace-pre-line">{conversionNarrative}</p>
+            <div className="mt-5 flex flex-wrap gap-3 no-print">
+              <a
+                href={`mailto:${member?.email ?? ""}?subject=${encodeURIComponent("Your Attraction by Video Lead Audit")}&body=${encodeURIComponent(`Hi ${member?.fullName ?? "there"},\n\nYour Lead Audit is ready. Let's book a 15-minute walkthrough call to review it together.\n\n— Jared`)}`}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-orange-600 hover:bg-orange-700 text-white text-sm font-semibold transition-colors"
+              >
+                Send Report + Book Call
+              </a>
+              {member?.id && (
+                <Link
+                  href={`/admin/members/${member.id}?convert=1`}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#2f3437] hover:bg-[#3a4145] text-white text-sm font-semibold transition-colors"
+                >
+                  Convert to Member →
+                </Link>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Footer */}
+        <div className="text-center py-6 text-sm text-[#2f3437]/40 border-t border-gray-200">
+          Prepared for {member?.fullName ?? member?.email} by Jared Chamberlain ~ Founder of Attraction by Video
+        </div>
+      </div>
+    );
   }
 
   return (

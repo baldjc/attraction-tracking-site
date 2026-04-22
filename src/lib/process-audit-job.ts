@@ -1,6 +1,6 @@
 import prisma from "@/lib/prisma";
 import { getChannelInfo, getVideosWithTranscripts, getVideoById, getLatestLongFormVideos } from "@/lib/youtube";
-import { runAuditWithClaude, DEFAULT_SCORING_PROMPT, SINGLE_VIDEO_SCORING_PROMPT } from "@/lib/audit-engine";
+import { runAuditWithClaude, DEFAULT_SCORING_PROMPT, SINGLE_VIDEO_SCORING_PROMPT, LEAD_SCORING_PROMPT } from "@/lib/audit-engine";
 
 export async function processAuditJob(jobId: string, selectedVideoId?: string) {
   const job = await prisma.auditJob.findUnique({
@@ -73,8 +73,10 @@ export async function processAuditJob(jobId: string, selectedVideoId?: string) {
         }
       }
 
-      // Always fetch the last 5 videos for scoring (gives full Consistency + pattern data)
-      videos = await getVideosWithTranscripts(channelInfo.uploadsPlaylistId, 5);
+      // Lead audits use 3 videos (faster + cheaper for non-members);
+      // member audits use 5 videos for full Consistency + pattern data.
+      const videoCount = job.auditType === "lead" ? 3 : 5;
+      videos = await getVideosWithTranscripts(channelInfo.uploadsPlaylistId, videoCount);
 
       if (videos.length === 0) throw new Error("No videos found on this channel");
     }
@@ -83,6 +85,7 @@ export async function processAuditJob(jobId: string, selectedVideoId?: string) {
 
     const setting = await prisma.appSetting.findUnique({ where: { key: "audit_prompt" } });
     const isSingleVideo = job.auditType === "single_video";
+    const isLead = job.auditType === "lead";
 
     let systemPrompt: string;
     if (isSingleVideo) {
@@ -90,6 +93,9 @@ export async function processAuditJob(jobId: string, selectedVideoId?: string) {
         || ((member as any).avatarProfile ? JSON.stringify((member as any).avatarProfile, null, 2) : null)
         || "No avatar profile saved for this member — infer the intended avatar from the video content.";
       systemPrompt = SINGLE_VIDEO_SCORING_PROMPT.replace("{{AVATAR_PROFILE}}", avatarText);
+    } else if (isLead) {
+      const leadSetting = await prisma.appSetting.findUnique({ where: { key: "lead_audit_prompt" } });
+      systemPrompt = leadSetting?.value ?? LEAD_SCORING_PROMPT;
     } else {
       systemPrompt = setting?.value ?? DEFAULT_SCORING_PROMPT;
     }

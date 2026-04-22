@@ -42,8 +42,10 @@ export async function POST(
     data: { userId: user.id },
   });
 
+  // Audit requests come from non-members (leads). Run a thinner "lead" audit
+  // — problems + cost + which Attraction asset solves them — never a full baseline.
   const job = await prisma.auditJob.create({
-    data: { auditType: "baseline", userId: user.id, status: "queued" },
+    data: { auditType: "lead", userId: user.id, status: "queued" },
   });
 
   processAuditJob(job.id).catch(console.error);

@@ -333,6 +333,130 @@ CONSISTENCY SCORING IS NON-NEGOTIABLE:
 - A score of 8 for a weekly publisher is WRONG. A score of 9 for a weekly publisher is WRONG. Only 10 is correct.
 - If you return any score other than 10 for a channel with an average gap of ≤7 days, you have made an error.`;
 
+// LEAD_SCORING_PROMPT — used for non-member "lead" audits.
+// Reuses the principle definitions, scoring guidelines, and calibration rules from
+// DEFAULT_SCORING_PROMPT verbatim (extracted at module load), then swaps in a
+// lead-specific output spec: only 2 strengths, every gap maps to an "inside_attraction"
+// asset, no improved_example / video_breakdowns, and a closing conversion_narrative.
+export const LEAD_SCORING_PROMPT: string = (() => {
+  const def = DEFAULT_SCORING_PROMPT;
+
+  // Principle definitions + scoring guidelines block: from "SCORING PRINCIPLES" up to
+  // (but not including) the JSON-output section.
+  const principlesStart = def.indexOf("SCORING PRINCIPLES (score each 0–10):");
+  const principlesEnd = def.indexOf("Return ONLY valid JSON");
+  const principlesAndGuidelines =
+    principlesStart >= 0 && principlesEnd > principlesStart
+      ? def.substring(principlesStart, principlesEnd).trim()
+      : "";
+
+  // Calibration rules block: from "CALIBRATION RULES — READ CAREFULLY:" up to
+  // (but not including) "WEIGHTED SCORING:".
+  const calibrationStart = def.indexOf("CALIBRATION RULES — READ CAREFULLY:");
+  const calibrationEnd = def.indexOf("WEIGHTED SCORING:");
+  const calibration =
+    calibrationStart >= 0 && calibrationEnd > calibrationStart
+      ? def.substring(calibrationStart, calibrationEnd).trim()
+      : "";
+
+  const header = `You are the Attraction by Video audit engine running in LEAD AUDIT mode.
+
+You score YouTube channels used by service-based entrepreneurs (primarily real estate agents) against 16 principles of audience attraction. This audit is for a NON-MEMBER prospect. The goal of the output is to show them the problems clearly, quantify the business impact, and point to the specific membership assets that solve each gap — WITHOUT giving them the "how" to fix it themselves.
+
+CRITICAL RULES:
+- Never include rewritten examples, improved hooks, or "do it this way" coaching.
+- Never include per-video breakdowns or scripts.
+- Keep \`whats_working\` to exactly 2 genuine strengths. We are not here to validate. We are here to create honest contrast.
+- Every gap MUST include \`what_this_costs_you\` (the business cost) and \`inside_attraction\` (the specific ABV asset that solves it — from the allowed list below).`;
+
+  const allowedMappings = `ALLOWED \`inside_attraction\` MAPPINGS — use ONLY these exact phrasings:
+
+- avatar_clarity → "Avatar Architect AI tool + Foundations Academy Week 1: Channel Strategy"
+- themes_over_topics → "Content Engine AI tool + Foundations Academy Week 2: Content Pillars"
+- arc_attention → "ARC Script Builder + Foundations Academy Week 3: The ARC Script"
+- arc_revelation → "ARC Script Builder + weekly Hot Seat coaching calls"
+- arc_connection → "Script Review tool + weekly Hot Seat coaching calls"
+- title_frameworks → "Title & Thumbnail Analyzer + Foundations Academy Week 4: Thumbnails & SEO"
+- approve_the_click → "Title & Thumbnail Analyzer + Script Review tool"
+- lead_magnet_system → "Foundations Academy Week 3 + weekly live call hot seats"
+- curiosity_bridges → "ARC Script Builder + Script Review tool"
+- show_dont_tell → "ARC Script Builder + Script Review tool"
+- values_peppering → "Avatar Architect AI tool + Script Review tool"
+- connection_language → "Avatar Architect AI tool + Script Review tool"
+- story_proof → "ARC Script Builder + Foundations Academy Week 3"
+- grade_5_language → "Script Review tool"
+- binge_architecture → "Content Engine AI tool + Foundations Academy Week 2"
+- consistency → "Weekly Live Coaching Calls (accountability) + Content Engine AI tool"`;
+
+  const outputSpec = `Return ONLY valid JSON in this exact structure, nothing else:
+
+{
+  "scores": {
+    "avatar_clarity": { "score": 0.0, "evidence": "..." },
+    "themes_over_topics": { "score": 0.0, "evidence": "..." },
+    "arc_attention": { "score": 0.0, "evidence": "..." },
+    "arc_revelation": { "score": 0.0, "evidence": "..." },
+    "arc_connection": { "score": 0.0, "evidence": "..." },
+    "title_frameworks": { "score": 0.0, "evidence": "..." },
+    "approve_the_click": { "score": 0.0, "evidence": "..." },
+    "lead_magnet_system": { "score": 0.0, "evidence": "..." },
+    "curiosity_bridges": { "score": 0.0, "evidence": "..." },
+    "show_dont_tell": { "score": 0.0, "evidence": "..." },
+    "values_peppering": { "score": 0.0, "evidence": "..." },
+    "connection_language": { "score": 0.0, "evidence": "..." },
+    "story_proof": { "score": 0.0, "evidence": "..." },
+    "grade_5_language": { "score": 0.0, "evidence": "..." },
+    "binge_architecture": { "score": 0.0, "evidence": "..." },
+    "consistency": { "score": 0.0, "evidence": "..." }
+  },
+  "overall_score": 0.0,
+  "raw_average": 0.0,
+  "one_sentence_diagnosis": "{Name} has {genuine strength} — but {core gap that explains why the channel isn't converting into clients}.",
+  "whats_working": [
+    { "strength": "Specific genuine strength with evidence", "evidence": "Quote or example from transcript" },
+    { "strength": "Specific genuine strength 2", "evidence": "Quote or example" }
+  ],
+  "three_biggest_gaps": [
+    {
+      "principle": "Lead Magnet System",
+      "score": 2.0,
+      "description": "2–3 sentences describing the gap in plain language. No solutions. Just the problem as it appears in the evidence.",
+      "current_example": "Exact quote from a transcript showing the current approach",
+      "what_this_costs_you": "1–2 sentences on the business impact — leads lost, trust eroded, competitors winning. Avoid hype. Concrete language only.",
+      "inside_attraction": "Use the exact phrasing from the ALLOWED mapping above"
+    },
+    {
+      "principle": "Avatar Clarity",
+      "score": 0.0,
+      "description": "...",
+      "current_example": "...",
+      "what_this_costs_you": "...",
+      "inside_attraction": "..."
+    },
+    {
+      "principle": "ARC Attention",
+      "score": 0.0,
+      "description": "...",
+      "current_example": "...",
+      "what_this_costs_you": "...",
+      "inside_attraction": "..."
+    }
+  ],
+  "conversion_narrative": "2–3 sentences. Frame this as: 'Here's where your channel is today (objective). Here's what members of Attraction by Video get access to that solves this (specific — name 2–3 of the assets from the allowed mapping). The next step is a 15-minute walkthrough call where we review this report together.' No hype. No urgency. Honest and respectful — the avatar hates being sold to."
+}
+
+WEIGHTED SCORING (same as standard audit):
+- 3x weight: lead_magnet_system, avatar_clarity, binge_architecture
+- 2x weight: arc_attention, approve_the_click, connection_language, title_frameworks, arc_revelation, story_proof
+- 1x weight: themes_over_topics, consistency, curiosity_bridges, values_peppering, grade_5_language, arc_connection
+- 0x weight: show_dont_tell
+Formula: Sum of (each score × its weight) ÷ 27 = overall_score. Also report raw_average as the unweighted mean of all 16 principle scores.
+
+Be rigorous and honest. Do NOT inflate scores. Most channels score 3–5 overall. This is a prospect who needs to see the truth — sugar-coating it is the opposite of helpful.`;
+
+  return [header, principlesAndGuidelines, calibration, allowedMappings, outputSpec].join("\n\n");
+})();
+
 export interface AuditScores {
   avatar_clarity: { score: number; evidence: string };
   themes_over_topics: { score: number; evidence: string };
