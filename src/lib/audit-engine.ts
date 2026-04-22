@@ -466,10 +466,14 @@ CRITICAL RULES:
 }
 
 For each video in \`video_breakdowns\`, calculate dimension_scores as follows:
-- channel_strategy = average of avatar_clarity, themes_over_topics, consistency (use the channel-level scores, since a single video doesn't redefine these)
-- content_impact = average of this video's observed performance on arc_attention, arc_revelation, arc_connection, title_frameworks, approve_the_click, curiosity_bridges
-- viewer_connection = average of connection_language, values_peppering, story_proof, grade_5_language as they appear in this video
-- lead_generation = average of lead_magnet_system, binge_architecture as observable in this video
+- channel_strategy: how well THIS specific video reinforces the channel's avatar, theme, and posting cadence story. Not a copy of the channel-level avatar/themes scores — score what this video alone signals about strategy.
+- content_impact: average of this video's observed performance on arc_attention, arc_revelation, arc_connection, title_frameworks, approve_the_click, curiosity_bridges
+- viewer_connection: average of connection_language, values_peppering, story_proof, grade_5_language as they appear in this video
+- lead_generation: average of lead_magnet_system, binge_architecture as observable in this video (CTAs, lead magnets, end-screen links, descriptions, comments-pinned offers)
+
+PER-VIDEO SCORING IS MANDATORY. Inside each \`video_breakdowns[].dimension_scores\` object, calculate \`channel_strategy\`, \`content_impact\`, \`viewer_connection\`, and \`lead_generation\` independently based on THIS SPECIFIC VIDEO's content — its opening, retention signals, content depth, and lead-generation elements (CTAs, lead magnets, links). Do NOT copy the channel-level roll-up averages into each video's object. Videos on the same channel routinely differ by 0.5–2.0 points across dimensions because openings, depth, and CTAs vary video to video. Force that variance to show up in the data.
+
+Before returning your JSON, scan \`video_breakdowns\` and confirm no two videos share an identical \`dimension_scores\` object. If they do, re-score them using evidence from each individual video.
 
 WEIGHTED SCORING (same as standard audit):
 - 3x weight: lead_magnet_system, avatar_clarity, binge_architecture

@@ -441,11 +441,11 @@ export default function AuditReportPage() {
           </div>
         )}
 
-        {/* Videos Analysed — observation-only video cards */}
+        {/* Videos Analysed — merged: thumbnail + scores + observations + deep dive in one card per video */}
         {videos.length > 0 && (
           <div className="bg-white rounded-lg border border-gray-200 p-6 print-page-break">
             <h2 className="text-base font-semibold text-[#2f3437] mb-4">Videos Analysed</h2>
-            <div className="space-y-4">
+            <div className="space-y-5">
               {videos.map((v: any, i: number) => {
                 const breakdown =
                   leadVideoBreakdowns[i] ??
@@ -460,77 +460,106 @@ export default function AuditReportPage() {
                   viewer_connection?: number;
                   lead_generation?: number;
                 } | undefined;
+                const hasDeepDive = !!(breakdown?.opening_analysis || breakdown?.insights_analysis || breakdown?.connection_analysis);
+                const youtubeUrl = `https://youtube.com/watch?v=${v.videoId}`;
 
                 return (
                   <div key={i} className="border border-gray-100 rounded-lg p-4 print-avoid-break">
-                    <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
+                    {/* Top block: thumbnail (left) + meta/scores/observations (right) */}
+                    <div className="flex flex-col sm:flex-row gap-4">
                       <a
-                        href={`https://youtube.com/watch?v=${v.videoId}`}
+                        href={youtubeUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-sm font-semibold text-[#6ba3c7] hover:underline flex items-center gap-1"
+                        className="block w-full sm:w-[160px] sm:shrink-0 aspect-video rounded-md overflow-hidden border border-gray-200 bg-gray-100 relative group"
                       >
-                        {v.title}
-                        <ArrowTopRightOnSquareIcon className="w-3 h-3 shrink-0 no-print" />
+                        <img
+                          src={`https://i.ytimg.com/vi/${v.videoId}/hqdefault.jpg`}
+                          alt={v.title}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            const img = e.currentTarget;
+                            img.style.display = "none";
+                            const fb = img.nextElementSibling as HTMLElement | null;
+                            if (fb) fb.style.display = "flex";
+                          }}
+                        />
+                        <div
+                          className="absolute inset-0 hidden items-center justify-center bg-gray-200 text-gray-400"
+                          aria-hidden="true"
+                        >
+                          <svg viewBox="0 0 24 24" className="w-10 h-10" fill="currentColor">
+                            <path d="M21.6 7.2a2.5 2.5 0 0 0-1.76-1.77C18.27 5 12 5 12 5s-6.27 0-7.84.43A2.5 2.5 0 0 0 2.4 7.2 26 26 0 0 0 2 12a26 26 0 0 0 .4 4.8 2.5 2.5 0 0 0 1.76 1.77C5.73 19 12 19 12 19s6.27 0 7.84-.43a2.5 2.5 0 0 0 1.76-1.77A26 26 0 0 0 22 12a26 26 0 0 0-.4-4.8zM10 15V9l5.2 3-5.2 3z" />
+                          </svg>
+                        </div>
                       </a>
-                      <span className="text-xs text-[#2f3437]/40 whitespace-nowrap">
-                        {fmtDuration(v.durationSeconds)} · {fmt(v.uploadDate)} · {v.viewCount?.toLocaleString()} views
-                      </span>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-start justify-between gap-2 mb-1">
+                          <a
+                            href={youtubeUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm font-semibold text-[#6ba3c7] hover:underline flex items-center gap-1"
+                          >
+                            {v.title}
+                            <ArrowTopRightOnSquareIcon className="w-3 h-3 shrink-0 no-print" />
+                          </a>
+                        </div>
+                        <p className="text-xs text-[#2f3437]/40">
+                          {fmtDuration(v.durationSeconds)} · {fmt(v.uploadDate)} · {v.viewCount?.toLocaleString()} views
+                        </p>
+                        {!v.hadTranscript && (
+                          <p className="text-xs text-amber-500 mt-1">(no transcript available)</p>
+                        )}
+                        {dimScores && (
+                          <div className="flex flex-wrap gap-1.5 mt-2">
+                            {leadDimBadge(dimScores.channel_strategy, "🎯 Strategy")}
+                            {leadDimBadge(dimScores.content_impact, "🎬 Content")}
+                            {leadDimBadge(dimScores.viewer_connection, "🤝 Connection")}
+                            {leadDimBadge(dimScores.lead_generation, "📈 Lead Gen")}
+                          </div>
+                        )}
+                        {breakdown?.whats_working && (
+                          <p className="text-xs text-[#2f3437]/75 mt-2">
+                            <span className="mr-1 text-green-500">✅</span>{breakdown.whats_working}
+                          </p>
+                        )}
+                        {breakdown?.whats_missing && (
+                          <p className="text-xs text-[#2f3437]/75 mt-1">
+                            <span className="mr-1 text-amber-500">⚠️</span>{breakdown.whats_missing}
+                          </p>
+                        )}
+                        {breakdown?.inside_attraction && (
+                          <div className="mt-2 bg-[#e8f7ff] border border-[#6ba3c7]/30 rounded-md px-2.5 py-1.5">
+                            <span className="text-[10px] font-bold text-[#0ea5d9] uppercase tracking-wider">Inside Attraction → </span>
+                            <span className="text-[11px] text-[#2f3437]/80">{breakdown.inside_attraction}</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    {!v.hadTranscript && (
-                      <p className="text-xs text-amber-500 mb-1">(no transcript available)</p>
-                    )}
-                    {dimScores && (
-                      <div className="flex flex-wrap gap-1.5 mt-2 mb-2">
-                        {leadDimBadge(dimScores.channel_strategy, "🎯 Strategy")}
-                        {leadDimBadge(dimScores.content_impact, "🎬 Content")}
-                        {leadDimBadge(dimScores.viewer_connection, "🤝 Connection")}
-                        {leadDimBadge(dimScores.lead_generation, "📈 Lead Gen")}
-                      </div>
-                    )}
-                    {breakdown?.whats_working && (
-                      <p className="text-xs text-[#2f3437]/75 mt-1">
-                        <span className="mr-1 text-green-500">✅</span>{breakdown.whats_working}
-                      </p>
-                    )}
-                    {breakdown?.whats_missing && (
-                      <p className="text-xs text-[#2f3437]/75 mt-1">
-                        <span className="mr-1 text-amber-500">⚠️</span>{breakdown.whats_missing}
-                      </p>
-                    )}
-                    {breakdown?.inside_attraction && (
-                      <div className="mt-3 bg-[#e8f7ff] border border-[#6ba3c7]/30 rounded-md px-2.5 py-1.5">
-                        <span className="text-[10px] font-bold text-[#0ea5d9] uppercase tracking-wider">Inside Attraction → </span>
-                        <span className="text-[11px] text-[#2f3437]/80">{breakdown.inside_attraction}</span>
-                      </div>
+
+                    {/* Divider + deep dive (full width) */}
+                    {hasDeepDive && (
+                      <>
+                        <hr className="my-4 border-gray-100" />
+                        <div className="space-y-3">
+                          {[
+                            { label: "Opening", text: breakdown?.opening_analysis },
+                            { label: "Insights", text: breakdown?.insights_analysis },
+                            { label: "Connection", text: breakdown?.connection_analysis },
+                          ].map(({ label, text }) => text && (
+                            <div key={label}>
+                              <span className="text-[10px] font-bold text-[#2f3437]/50 uppercase tracking-wider block mb-1">{label}</span>
+                              <p className="text-sm text-[#2f3437]/80 leading-relaxed">{text}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </>
                     )}
                   </div>
                 );
               })}
-            </div>
-          </div>
-        )}
-
-        {/* Video Deep Dive — observational OPENING / INSIGHTS / CONNECTION */}
-        {leadVideoBreakdowns.some((v: any) => v.opening_analysis || v.insights_analysis || v.connection_analysis) && (
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <h2 className="text-base font-semibold text-[#2f3437] mb-4">🔍 Video Deep Dive</h2>
-            <div className="space-y-6">
-              {leadVideoBreakdowns.map((v: any, i: number) => (
-                <div key={i} className="border-l-4 border-orange-500 pl-4 print-avoid-break">
-                  <h3 className="font-semibold text-[#2f3437] mb-3">"{v.title}"</h3>
-                  {[
-                    { label: "Opening", text: v.opening_analysis },
-                    { label: "Insights", text: v.insights_analysis },
-                    { label: "Connection", text: v.connection_analysis },
-                  ].map(({ label, text }) => text && (
-                    <div key={label} className="mb-2">
-                      <span className="text-[10px] font-bold text-[#2f3437]/50 uppercase tracking-wider block">{label}</span>
-                      <span className="text-sm text-[#2f3437]/80">{text}</span>
-                    </div>
-                  ))}
-                </div>
-              ))}
             </div>
           </div>
         )}
