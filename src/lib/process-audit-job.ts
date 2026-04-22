@@ -137,6 +137,18 @@ export async function processAuditJob(jobId: string, selectedVideoId?: string) {
       lastMonthScores = (lastMonth?.scores as any) ?? null;
     }
 
+    // Honour cancellation: if an admin cancelled this job while Claude was running,
+    // do NOT save the audit (would otherwise overwrite status back to "complete"
+    // and create a phantom duplicate alongside any re-run).
+    const currentJob = await prisma.auditJob.findUnique({
+      where: { id: jobId },
+      select: { status: true },
+    });
+    if (currentJob?.status === "cancelled") {
+      console.log(`[audit job ${jobId}] cancelled mid-flight — discarding result`);
+      return;
+    }
+
     const audit = await prisma.audit.create({
       data: {
         userId: member.id,
