@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import { getChannelInfo, getVideosWithTranscripts, getVideoById, getLatestLongFormVideos } from "@/lib/youtube";
 import { runAuditWithClaude, DEFAULT_SCORING_PROMPT, SINGLE_VIDEO_SCORING_PROMPT, LEAD_SCORING_PROMPT } from "@/lib/audit-engine";
+import { sendAuditReadyEmail } from "@/lib/email";
 
 export async function processAuditJob(jobId: string, selectedVideoId?: string) {
   const job = await prisma.auditJob.findUnique({
@@ -198,6 +199,23 @@ export async function processAuditJob(jobId: string, selectedVideoId?: string) {
       }
     } catch {
       // non-critical — don't fail the audit job if linking fails
+    }
+
+    // Notify the member that their audit is ready — paying members only, never leads.
+    if (job.auditType !== "lead" && member.email) {
+      try {
+        const firstVideoTitle = (videos[0] as any)?.title ?? null;
+        await sendAuditReadyEmail({
+          to: member.email,
+          memberName: member.fullName,
+          auditId: audit.id,
+          auditType: job.auditType as "baseline" | "monthly" | "single_video",
+          videoTitle: job.auditType === "single_video" ? firstVideoTitle : null,
+        });
+      } catch (err) {
+        console.error(`[audit job ${jobId}] email notify failed:`, err);
+        // Non-critical — never fail the audit job because of an email send.
+      }
     }
   } catch (err: any) {
     console.error(`[audit job ${jobId}] failed:`, err.message);

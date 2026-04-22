@@ -134,3 +134,98 @@ export async function sendWaitlistNotification(
     console.error("[email] Failed to send waitlist notification:", error);
   }
 }
+
+export async function sendAuditReadyEmail(params: {
+  to: string;
+  memberName: string | null;
+  auditId: string;
+  auditType: "baseline" | "monthly" | "single_video";
+  videoTitle?: string | null;
+}): Promise<void> {
+  const { to, memberName, auditId, auditType, videoTitle } = params;
+
+  const greeting = memberName ? `Hi ${memberName.split(" ")[0]},` : "Hi,";
+
+  const auditLabel =
+    auditType === "baseline"
+      ? "baseline Attraction Audit"
+      : auditType === "monthly"
+      ? "monthly Attraction Audit"
+      : videoTitle
+      ? `video audit for "${videoTitle}"`
+      : "video audit";
+
+  const contextLine =
+    auditType === "baseline"
+      ? "This is your starting point — the benchmark we'll measure every future audit against."
+      : auditType === "monthly"
+      ? "We've run your channel through the 16-principle scorecard again and flagged what's moved since last month."
+      : "We've broken down the video's opening, insights, connection, and lead-generation signals against your avatar.";
+
+  const subject =
+    auditType === "baseline"
+      ? "Your baseline Attraction Audit is ready"
+      : auditType === "monthly"
+      ? "Your monthly Attraction Audit is ready"
+      : videoTitle
+      ? `Your video audit is ready — ${videoTitle}`
+      : "Your video audit is ready";
+
+  const baseUrl = process.env.NEXTAUTH_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "https://members.attractionbyvideo.com";
+  const auditUrl = `${baseUrl.replace(/\/$/, "")}/member/audits/${auditId}`;
+
+  const { error } = await resend.emails.send({
+    from: FROM_EMAIL,
+    to,
+    subject,
+    html: `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /></head>
+<body style="margin:0;padding:0;background:#f1f1ef;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f1ef;padding:40px 16px;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;">
+          <tr>
+            <td align="center" style="padding-bottom:32px;">
+              <div style="display:inline-block;background:#1e2a38;border-radius:16px;padding:12px;">
+                <span style="font-size:28px;">📹</span>
+              </div>
+              <div style="margin-top:12px;font-size:18px;font-weight:700;color:#1e2a38;">Attraction by Video</div>
+            </td>
+          </tr>
+          <tr>
+            <td style="background:#ffffff;border-radius:16px;padding:40px 36px;border:1px solid #e5e7eb;">
+              <p style="margin:0 0 16px;font-size:15px;color:#1e2a38;">${greeting}</p>
+              <p style="margin:0 0 16px;font-size:15px;color:#1e2a38;">Your ${auditLabel} is ready to view.</p>
+              <p style="margin:0 0 28px;font-size:15px;color:#374151;">${contextLine}</p>
+
+              <div style="text-align:center;margin:0 0 28px;">
+                <a href="${auditUrl}" style="display:inline-block;background:#1e2a38;color:#ffffff;border-radius:100px;padding:14px 28px;font-weight:700;text-decoration:none;font-size:15px;">View your audit →</a>
+              </div>
+
+              <p style="margin:0 0 8px;font-size:13px;color:#6b7280;line-height:1.6;">
+                The report covers your channel across 16 principles, with per-video breakdowns and targeted recommendations. It's all saved to your Attraction Dashboard — log in anytime to revisit it.
+              </p>
+              <p style="margin:20px 0 0;font-size:13px;color:#6b7280;">— The Attraction by Video Team</p>
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding-top:24px;">
+              <p style="margin:0;font-size:12px;color:#9ca3af;">© ${new Date().getFullYear()} Attraction by Video</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+    `.trim(),
+  });
+
+  if (error) {
+    console.error("[email] Failed to send audit-ready email:", error);
+  }
+}
