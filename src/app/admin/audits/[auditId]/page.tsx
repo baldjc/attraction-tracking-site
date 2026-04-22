@@ -366,8 +366,8 @@ export default function AuditReportPage() {
               Lead Audit
             </span>
           </div>
-          {/* Identity strip — avatar overlaps banner */}
-          <div className="flex items-end gap-3 px-1 -mt-8 sm:-mt-10 relative">
+          {/* Avatar overlaps banner */}
+          <div className="px-1 -mt-8 sm:-mt-10 relative">
             <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-4 border-white bg-gray-200 overflow-hidden shrink-0 shadow">
               {channelInfo?.thumbnailUrl ? (
                 <img
@@ -380,15 +380,16 @@ export default function AuditReportPage() {
                 <div className="w-full h-full bg-gradient-to-br from-[#6ba3c7] to-[#2c4a6e]" />
               )}
             </div>
-            <div className="pb-1 min-w-0">
-              <h1 className="text-lg sm:text-xl font-bold text-[#2f3437] leading-tight truncate">
-                {member?.youtubeChannelName || channelInfo?.title || member?.fullName || member?.email}
-              </h1>
-              <p className="text-xs text-[#2f3437]/55">
-                {member?.youtubeHandle && <span>{member.youtubeHandle} · </span>}
-                Audited {fmt(audit.createdAt)}
-              </p>
-            </div>
+          </div>
+          {/* Identity — sits in the light area below the banner */}
+          <div className="px-1 mt-4 sm:mt-5 min-w-0">
+            <h1 className="text-[#2f3437] leading-tight">
+              {member?.youtubeChannelName || channelInfo?.title || member?.fullName || member?.email}
+            </h1>
+            <p className="text-xs text-[#2f3437]/55 mt-2">
+              {member?.youtubeHandle && <span>{member.youtubeHandle} · </span>}
+              Audited {fmt(audit.createdAt)}
+            </p>
           </div>
         </div>
 
