@@ -464,7 +464,7 @@ export default function AuditReportPage() {
                 Hey — I'm Jared Chamberlain. I built Attraction by Video because YouTube became the most profitable thing in my real estate business: <strong>$171M+ in volume sold</strong> and <strong>$4M+ in GCI</strong> from my channel since 2022, with <strong>242+ weeks of consecutive publishing</strong> and <strong>one video that generated 230+ leads in 2 days</strong>.
               </p>
               <p className="text-sm text-[#2f3437]/80 leading-relaxed mt-3">
-                The 16-point framework you just read is the exact same one I run on my own channel every month. If any of the gaps in this report feel impossible to close on your own — that's exactly why I built the membership.
+                The 16-point framework you see below is the exact same one I run on my own channel, and all our members' channels, every month. If any of the gaps in this report feel impossible to close on your own — that's exactly the reason I built the membership and the reason you should join.
               </p>
               <p className="text-xs text-[#2f3437]/55 italic mt-4">— Jared Chamberlain, Founder of Attraction by Video</p>
             </div>
