@@ -365,9 +365,11 @@ You score YouTube channels used by service-based entrepreneurs (primarily real e
 
 CRITICAL RULES:
 - Never include rewritten examples, improved hooks, or "do it this way" coaching.
-- Never include per-video breakdowns or scripts.
+- Never include scripts, framework executions, or templates the lead could copy.
 - Keep \`whats_working\` to exactly 2 genuine strengths. We are not here to validate. We are here to create honest contrast.
-- Every gap MUST include \`what_this_costs_you\` (the business cost) and \`inside_attraction\` (the specific ABV asset that solves it — from the allowed list below).`;
+- Every gap MUST include \`what_this_costs_you\` (the business cost) and \`inside_attraction\` (the specific ABV asset that solves it — from the allowed list below).
+- For each of the 16 principles in \`scores\`, include an \`inside_attraction\` field. Use the EXACT phrasing from the ALLOWED \`inside_attraction\` MAPPINGS table below. Do not paraphrase. Do not mix assets. One principle = one mapping.
+- For each video in \`video_breakdowns\`, describe what the opening / insights / connection DO, not what they should do differently. Use language like "Opens with…", "Relies on…", "Lacks…", "Takes X seconds to…". Do NOT use language like "Should open with…", "Would be stronger if…", "Rewrite this as…", "Try saying…", or anything that hands the creator a ready-to-use improvement.`;
 
   const allowedMappings = `ALLOWED \`inside_attraction\` MAPPINGS — use ONLY these exact phrasings:
 
@@ -392,22 +394,22 @@ CRITICAL RULES:
 
 {
   "scores": {
-    "avatar_clarity": { "score": 0.0, "evidence": "..." },
-    "themes_over_topics": { "score": 0.0, "evidence": "..." },
-    "arc_attention": { "score": 0.0, "evidence": "..." },
-    "arc_revelation": { "score": 0.0, "evidence": "..." },
-    "arc_connection": { "score": 0.0, "evidence": "..." },
-    "title_frameworks": { "score": 0.0, "evidence": "..." },
-    "approve_the_click": { "score": 0.0, "evidence": "..." },
-    "lead_magnet_system": { "score": 0.0, "evidence": "..." },
-    "curiosity_bridges": { "score": 0.0, "evidence": "..." },
-    "show_dont_tell": { "score": 0.0, "evidence": "..." },
-    "values_peppering": { "score": 0.0, "evidence": "..." },
-    "connection_language": { "score": 0.0, "evidence": "..." },
-    "story_proof": { "score": 0.0, "evidence": "..." },
-    "grade_5_language": { "score": 0.0, "evidence": "..." },
-    "binge_architecture": { "score": 0.0, "evidence": "..." },
-    "consistency": { "score": 0.0, "evidence": "..." }
+    "avatar_clarity": { "score": 0.0, "evidence": "...", "inside_attraction": "Use exact phrasing from ALLOWED mapping" },
+    "themes_over_topics": { "score": 0.0, "evidence": "...", "inside_attraction": "..." },
+    "arc_attention": { "score": 0.0, "evidence": "...", "inside_attraction": "..." },
+    "arc_revelation": { "score": 0.0, "evidence": "...", "inside_attraction": "..." },
+    "arc_connection": { "score": 0.0, "evidence": "...", "inside_attraction": "..." },
+    "title_frameworks": { "score": 0.0, "evidence": "...", "inside_attraction": "..." },
+    "approve_the_click": { "score": 0.0, "evidence": "...", "inside_attraction": "..." },
+    "lead_magnet_system": { "score": 0.0, "evidence": "...", "inside_attraction": "..." },
+    "curiosity_bridges": { "score": 0.0, "evidence": "...", "inside_attraction": "..." },
+    "show_dont_tell": { "score": 0.0, "evidence": "...", "inside_attraction": "..." },
+    "values_peppering": { "score": 0.0, "evidence": "...", "inside_attraction": "..." },
+    "connection_language": { "score": 0.0, "evidence": "...", "inside_attraction": "..." },
+    "story_proof": { "score": 0.0, "evidence": "...", "inside_attraction": "..." },
+    "grade_5_language": { "score": 0.0, "evidence": "...", "inside_attraction": "..." },
+    "binge_architecture": { "score": 0.0, "evidence": "...", "inside_attraction": "..." },
+    "consistency": { "score": 0.0, "evidence": "...", "inside_attraction": "..." }
   },
   "overall_score": 0.0,
   "raw_average": 0.0,
@@ -442,8 +444,32 @@ CRITICAL RULES:
       "inside_attraction": "..."
     }
   ],
+  "video_breakdowns": [
+    {
+      "title": "Exact video title",
+      "video_id": "youtubeVideoId",
+      "opening_analysis": "2–3 sentences describing what the opening DOES — pattern observed (e.g., 'Opens with 26 seconds of channel context before reaching the topic. Relies on a generic 'welcome back' rather than tension.'). Do NOT prescribe what to do instead.",
+      "insights_analysis": "2–3 sentences describing the unique insights present or absent. Name the pattern (e.g., 'Surfaces zone-by-zone price data but never connects it to a buyer decision.'). Do NOT rewrite.",
+      "connection_analysis": "2–3 sentences describing emotional resonance present or absent (e.g., 'Speaks at the camera in agent voice. No personal stake or values revealed in the first 90 seconds.'). Observe, don't coach.",
+      "whats_working": "One sentence on what this specific video does well.",
+      "whats_missing": "One sentence on what this specific video lacks — at the pattern level, not prescribed.",
+      "inside_attraction": "Which ABV asset would help build this muscle. Use EXACT phrasings from the ALLOWED mapping above.",
+      "dimension_scores": {
+        "channel_strategy": 0.0,
+        "content_impact": 0.0,
+        "viewer_connection": 0.0,
+        "lead_generation": 0.0
+      }
+    }
+  ],
   "conversion_narrative": "2–3 sentences. Frame this as: 'Here's where your channel is today (objective). Here's what members of Attraction by Video get access to that solves this (specific — name 2–3 of the assets from the allowed mapping). The next step is a 15-minute walkthrough call where we review this report together.' No hype. No urgency. Honest and respectful — the avatar hates being sold to."
 }
+
+For each video in \`video_breakdowns\`, calculate dimension_scores as follows:
+- channel_strategy = average of avatar_clarity, themes_over_topics, consistency (use the channel-level scores, since a single video doesn't redefine these)
+- content_impact = average of this video's observed performance on arc_attention, arc_revelation, arc_connection, title_frameworks, approve_the_click, curiosity_bridges
+- viewer_connection = average of connection_language, values_peppering, story_proof, grade_5_language as they appear in this video
+- lead_generation = average of lead_magnet_system, binge_architecture as observable in this video
 
 WEIGHTED SCORING (same as standard audit):
 - 3x weight: lead_magnet_system, avatar_clarity, binge_architecture

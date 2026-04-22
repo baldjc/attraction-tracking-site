@@ -230,6 +230,22 @@ export default function AuditReportPage() {
       inside_attraction?: string;
     }> = report?.three_biggest_gaps ?? [];
     const conversionNarrative: string = report?.conversion_narrative ?? "";
+    const leadVideoBreakdowns: any[] = report?.video_breakdowns ?? [];
+
+    function leadDimBadge(score: number | undefined, label: string) {
+      if (score == null) return null;
+      const bg =
+        score >= 7
+          ? "bg-[#e8f7ff] text-[#0ea5d9]"
+          : score >= 5
+          ? "bg-[#fef3c7] text-amber-700"
+          : "bg-[#ffe5ea] text-[#cc0029]";
+      return (
+        <span key={label} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${bg}`}>
+          {label} {score.toFixed(1)}
+        </span>
+      );
+    }
 
     return (
       <div className="max-w-4xl space-y-4 md:space-y-5 print-full-width" id="audit-report">
@@ -365,6 +381,154 @@ export default function AuditReportPage() {
                       <p className="text-xs text-[#2f3437]/80">{gap.inside_attraction}</p>
                     </div>
                   )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 16-Principle Scorecard — full breakdown with Inside Attraction chips */}
+        {hasScores && (
+          <div className="bg-white rounded-lg border border-gray-200 p-6 print-page-break print-avoid-break">
+            <h2 className="text-base font-semibold text-[#2f3437] mb-1">Your Attraction Score — 16 Principles</h2>
+            <p className="text-xs text-[#2f3437]/50 mb-4">Every low score below has a specific tool or training inside Attraction by Video that addresses it.</p>
+            <div className="space-y-4">
+              {DIMENSIONS.map((dim) => (
+                <div key={dim.label}>
+                  <h3 className="text-sm font-bold text-[#2f3437] uppercase tracking-wide mb-2 pt-1">{dim.label}</h3>
+                  <div className="space-y-1.5">
+                    {dim.keys.filter((k) => scores[k]).map((key) => {
+                      const val = scores[key] as { score: number | null; evidence?: string; inside_attraction?: string };
+                      const isNA = val.score == null;
+                      const pct = isNA ? 0 : Math.max(0, Math.min(100, (val.score ?? 0) * 10));
+                      const barColor =
+                        isNA ? "bg-gray-200"
+                        : (val.score ?? 0) >= 7 ? "bg-[#0ea5d9]"
+                        : (val.score ?? 0) >= 5 ? "bg-amber-400"
+                        : "bg-[#cc0029]";
+                      return (
+                        <div key={key} className="rounded-lg border border-gray-100 p-3 print-avoid-break">
+                          <div className="flex items-center gap-3">
+                            <span className={`flex-1 text-sm font-medium ${isNA ? "text-[#2f3437]/40" : "text-[#2f3437]"}`}>
+                              {PRINCIPLE_LABELS[key] ?? key}
+                            </span>
+                            <span className="w-14 text-right">
+                              {isNA
+                                ? <span className="inline-block px-2 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-400">N/A</span>
+                                : <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${scoreBg(val.score!)}`}>{val.score!.toFixed(1)}</span>
+                              }
+                            </span>
+                          </div>
+                          <div className="mt-2 h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+                            <div className={`h-full ${barColor}`} style={{ width: `${pct}%` }} />
+                          </div>
+                          {val.evidence && (
+                            <p className="text-xs text-[#2f3437]/65 mt-2 leading-relaxed">{val.evidence}</p>
+                          )}
+                          {val.inside_attraction && (
+                            <div className="mt-2 inline-flex items-start gap-1.5 bg-[#e8f7ff] border border-[#6ba3c7]/30 rounded-md px-2 py-1">
+                              <span className="text-[10px] font-bold text-[#0ea5d9] uppercase tracking-wider mt-0.5 shrink-0">Inside Attraction →</span>
+                              <span className="text-[11px] text-[#2f3437]/80">{val.inside_attraction}</span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Videos Analysed — observation-only video cards */}
+        {videos.length > 0 && (
+          <div className="bg-white rounded-lg border border-gray-200 p-6 print-page-break">
+            <h2 className="text-base font-semibold text-[#2f3437] mb-4">Videos Analysed</h2>
+            <div className="space-y-4">
+              {videos.map((v: any, i: number) => {
+                const breakdown =
+                  leadVideoBreakdowns[i] ??
+                  leadVideoBreakdowns.find(
+                    (b: any) =>
+                      b.video_id === v.videoId ||
+                      b.title?.trim().toLowerCase() === v.title?.trim().toLowerCase()
+                  );
+                const dimScores = breakdown?.dimension_scores as {
+                  channel_strategy?: number;
+                  content_impact?: number;
+                  viewer_connection?: number;
+                  lead_generation?: number;
+                } | undefined;
+
+                return (
+                  <div key={i} className="border border-gray-100 rounded-lg p-4 print-avoid-break">
+                    <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
+                      <a
+                        href={`https://youtube.com/watch?v=${v.videoId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm font-semibold text-[#6ba3c7] hover:underline flex items-center gap-1"
+                      >
+                        {v.title}
+                        <ArrowTopRightOnSquareIcon className="w-3 h-3 shrink-0 no-print" />
+                      </a>
+                      <span className="text-xs text-[#2f3437]/40 whitespace-nowrap">
+                        {fmtDuration(v.durationSeconds)} · {fmt(v.uploadDate)} · {v.viewCount?.toLocaleString()} views
+                      </span>
+                    </div>
+                    {!v.hadTranscript && (
+                      <p className="text-xs text-amber-500 mb-1">(no transcript available)</p>
+                    )}
+                    {dimScores && (
+                      <div className="flex flex-wrap gap-1.5 mt-2 mb-2">
+                        {leadDimBadge(dimScores.channel_strategy, "🎯 Strategy")}
+                        {leadDimBadge(dimScores.content_impact, "🎬 Content")}
+                        {leadDimBadge(dimScores.viewer_connection, "🤝 Connection")}
+                        {leadDimBadge(dimScores.lead_generation, "📈 Lead Gen")}
+                      </div>
+                    )}
+                    {breakdown?.whats_working && (
+                      <p className="text-xs text-[#2f3437]/75 mt-1">
+                        <span className="mr-1 text-green-500">✅</span>{breakdown.whats_working}
+                      </p>
+                    )}
+                    {breakdown?.whats_missing && (
+                      <p className="text-xs text-[#2f3437]/75 mt-1">
+                        <span className="mr-1 text-amber-500">⚠️</span>{breakdown.whats_missing}
+                      </p>
+                    )}
+                    {breakdown?.inside_attraction && (
+                      <div className="mt-3 bg-[#e8f7ff] border border-[#6ba3c7]/30 rounded-md px-2.5 py-1.5">
+                        <span className="text-[10px] font-bold text-[#0ea5d9] uppercase tracking-wider">Inside Attraction → </span>
+                        <span className="text-[11px] text-[#2f3437]/80">{breakdown.inside_attraction}</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Video Deep Dive — observational OPENING / INSIGHTS / CONNECTION */}
+        {leadVideoBreakdowns.some((v: any) => v.opening_analysis || v.insights_analysis || v.connection_analysis) && (
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <h2 className="text-base font-semibold text-[#2f3437] mb-4">🔍 Video Deep Dive</h2>
+            <div className="space-y-6">
+              {leadVideoBreakdowns.map((v: any, i: number) => (
+                <div key={i} className="border-l-4 border-orange-500 pl-4 print-avoid-break">
+                  <h3 className="font-semibold text-[#2f3437] mb-3">"{v.title}"</h3>
+                  {[
+                    { label: "Opening", text: v.opening_analysis },
+                    { label: "Insights", text: v.insights_analysis },
+                    { label: "Connection", text: v.connection_analysis },
+                  ].map(({ label, text }) => text && (
+                    <div key={label} className="mb-2">
+                      <span className="text-[10px] font-bold text-[#2f3437]/50 uppercase tracking-wider block">{label}</span>
+                      <span className="text-sm text-[#2f3437]/80">{text}</span>
+                    </div>
+                  ))}
                 </div>
               ))}
             </div>
