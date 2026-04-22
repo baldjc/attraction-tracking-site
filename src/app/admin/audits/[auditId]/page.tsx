@@ -1265,7 +1265,7 @@ export default function AuditReportPage() {
         )}
       </div>
 
-      {/* Videos Analysed */}
+      {/* Videos Analysed — merged: thumbnail + scores + observations + deep dive in one card per video */}
       {videos.length > 0 && (
         <div className="bg-white rounded-lg border border-gray-200 p-6 print-page-break">
           <h2 className="text-base font-semibold text-[#2f3437] mb-4">Videos Analysed</h2>
@@ -1274,7 +1274,7 @@ export default function AuditReportPage() {
               Per-video analysis unavailable for this audit. Delete and re-run to see dimension scores, strengths, and improvements per video.
             </div>
           )}
-          <div className="space-y-4">
+          <div className="space-y-5">
             {videos.map((v: any, i: number) => {
               const breakdown =
                 report?.video_breakdowns?.[i] ??
@@ -1292,6 +1292,7 @@ export default function AuditReportPage() {
               const strong = breakdown?.strength ?? breakdown?.opening_analysis;
               const improve = breakdown?.improvement ??
                 [breakdown?.insights_analysis, breakdown?.connection_analysis].filter(Boolean)[0];
+              const hasDeepDive = !!(breakdown?.opening_analysis || breakdown?.insights_analysis || breakdown?.connection_analysis);
 
               function dimBadge(score: number | undefined, label: string) {
                 if (score == null) return null;
@@ -1309,69 +1310,90 @@ export default function AuditReportPage() {
               }
 
               return (
-                <div key={i} className="border border-gray-100 rounded-lg p-4 print-avoid-break">
-                  <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
+                <div key={i} className="border border-gray-100 rounded-lg p-4 sm:p-5 print-avoid-break">
+                  <div className="flex flex-col sm:flex-row gap-4">
                     <a
                       href={`https://youtube.com/watch?v=${v.videoId}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-sm font-semibold text-[#6ba3c7] hover:underline flex items-center gap-1"
+                      className="block w-full sm:w-44 md:w-52 shrink-0 group"
                     >
-                      {v.title}
-                      <ArrowTopRightOnSquareIcon className="w-3 h-3 shrink-0 no-print" />
+                      <div className="relative aspect-video rounded-md overflow-hidden bg-gray-100 shadow-sm">
+                        <img
+                          src={`https://i.ytimg.com/vi/${v.videoId}/hqdefault.jpg`}
+                          alt={v.title ?? "Video thumbnail"}
+                          loading="lazy"
+                          className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                          onError={(e) => {
+                            const img = e.currentTarget;
+                            img.style.display = "none";
+                          }}
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/15 transition-colors" />
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                          <div className="w-12 h-12 rounded-full bg-black/60 group-hover:bg-[#cc0029] transition-colors flex items-center justify-center shadow-lg">
+                            <svg viewBox="0 0 24 24" className="w-5 h-5 text-white ml-0.5" fill="currentColor">
+                              <path d="M8 5v14l11-7z" />
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
                     </a>
-                    <span className="text-xs text-[#2f3437]/40 whitespace-nowrap">
-                      {fmtDuration(v.durationSeconds)} · {fmt(v.uploadDate)} · {v.viewCount?.toLocaleString()} views
-                    </span>
-                  </div>
-                  {!v.hadTranscript && (
-                    <p className="text-xs text-amber-500 mb-1">(no transcript available)</p>
-                  )}
-                  {dimScores && (
-                    <div className="flex flex-wrap gap-1.5 mt-2 mb-2">
-                      {dimBadge(dimScores.channel_strategy, "🎯 Strategy")}
-                      {dimBadge(dimScores.content_impact, "🎬 Content")}
-                      {dimBadge(dimScores.viewer_connection, "🤝 Connection")}
-                      {dimBadge(dimScores.lead_generation, "📈 Lead Gen")}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-start justify-between gap-2 mb-1">
+                        <a
+                          href={`https://youtube.com/watch?v=${v.videoId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm font-semibold text-[#6ba3c7] hover:underline flex items-center gap-1"
+                        >
+                          {v.title}
+                          <ArrowTopRightOnSquareIcon className="w-3 h-3 shrink-0 no-print" />
+                        </a>
+                        <span className="text-xs text-[#2f3437]/40 whitespace-nowrap">
+                          {fmtDuration(v.durationSeconds)} · {fmt(v.uploadDate)} · {v.viewCount?.toLocaleString()} views
+                        </span>
+                      </div>
+                      {!v.hadTranscript && (
+                        <p className="text-xs text-amber-500 mb-1">(no transcript available)</p>
+                      )}
+                      {dimScores && (
+                        <div className="flex flex-wrap gap-1.5 mt-2 mb-2">
+                          {dimBadge(dimScores.channel_strategy, "🎯 Strategy")}
+                          {dimBadge(dimScores.content_impact, "🎬 Content")}
+                          {dimBadge(dimScores.viewer_connection, "🤝 Connection")}
+                          {dimBadge(dimScores.lead_generation, "📈 Lead Gen")}
+                        </div>
+                      )}
+                      {strong && (
+                        <p className="text-xs text-[#2f3437]/70 mt-1">
+                          <span className="mr-1">✅</span>{strong}
+                        </p>
+                      )}
+                      {improve && (
+                        <p className="text-xs text-[#2f3437]/70 mt-1">
+                          <span className="mr-1">⚠️</span>{improve}
+                        </p>
+                      )}
                     </div>
-                  )}
-                  {strong && (
-                    <p className="text-xs text-[#2f3437]/70 mt-1">
-                      <span className="mr-1">✅</span>{strong}
-                    </p>
-                  )}
-                  {improve && (
-                    <p className="text-xs text-[#2f3437]/70 mt-1">
-                      <span className="mr-1">⚠️</span>{improve}
-                    </p>
+                  </div>
+                  {hasDeepDive && (
+                    <div className="mt-4 pt-4 border-t border-gray-100 space-y-3">
+                      {[
+                        { label: "Opening", text: breakdown?.opening_analysis },
+                        { label: "Insights", text: breakdown?.insights_analysis },
+                        { label: "Connection", text: breakdown?.connection_analysis },
+                      ].map(({ label, text }) => text && (
+                        <div key={label}>
+                          <p className="text-[11px] font-semibold text-[#2f3437]/50 uppercase tracking-[0.15em] mb-1">{label}</p>
+                          <p className="text-sm text-[#2f3437]/80 leading-relaxed">{text}</p>
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </div>
               );
             })}
-          </div>
-        </div>
-      )}
-
-      {/* Video-by-Video Deep Dive (when video_breakdowns have detailed analysis) */}
-      {report?.video_breakdowns?.some((v: any) => v.opening_analysis || v.insights_analysis) && (
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h2 className="text-base font-semibold text-[#2f3437] mb-4">🔍 Video Deep Dive</h2>
-          <div className="space-y-6">
-            {report.video_breakdowns.map((v: any, i: number) => (
-              <div key={i} className="border-l-4 border-[#6ba3c7] pl-4 print-avoid-break">
-                <h3 className="font-semibold text-[#2f3437] mb-3">"{v.title}"</h3>
-                {[
-                  { label: "Opening", text: v.opening_analysis },
-                  { label: "Insights", text: v.insights_analysis },
-                  { label: "Connection", text: v.connection_analysis },
-                ].map(({ label, text }) => text && (
-                  <div key={label} className="mb-2">
-                    <span className="text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wider">{label}: </span>
-                    <span className="text-sm text-[#2f3437]/80">{text}</span>
-                  </div>
-                ))}
-              </div>
-            ))}
           </div>
         </div>
       )}
