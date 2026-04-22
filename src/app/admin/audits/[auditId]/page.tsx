@@ -399,17 +399,17 @@ export default function AuditReportPage() {
             Inside Attraction by Video
           </p>
           <h2 className="text-xl sm:text-2xl font-bold text-white leading-snug">
-            Every gap in this audit has a fix inside the membership.
+            Every gap in this audit has a specific fix inside the Attraction Membership.
           </h2>
           <p className="text-sm text-white/55 mt-2 leading-relaxed max-w-2xl">
-            Attraction by Video is the platform that turns this diagnosis into results. You'll find every tool, framework, and training needed to close the gaps this report surfaces.
+            Attraction by Video is the platform that turns this diagnosis into results. You'll find every tool, framework, and training needed to close the gaps this report surfaces and turn your YouTube channel into a lead magnet that attracts the right clients.
           </p>
           <div className="grid sm:grid-cols-2 gap-3 mt-5">
             {[
-              { icon: "🤖", label: "6 AI Tools", desc: "Avatar Architect, Content Engine, Title & Thumbnail Analyzer, ARC Script Builder, Script Review, Repurpose Content" },
-              { icon: "🎓", label: "Foundations Academy", desc: "4-week program: Channel Strategy → Content Pillars → The ARC Script → Thumbnails & SEO" },
-              { icon: "📞", label: "Weekly Live Calls", desc: "Group coaching and hot-seat reviews with the Attraction team" },
-              { icon: "👥", label: "Community of Service-Based Creators", desc: "Other entrepreneurs using YouTube to attract clients" },
+              { icon: "🤖", label: "6 Custom Tools", desc: "Avatar Architect, Content Engine, Title & Thumbnail Analyzer, Script Builder, Script Review, Repurposing Content — and more coming. These aren't generic ChatGPT prompts; they're custom-built for real estate agents doing YouTube." },
+              { icon: "🎓", label: "Foundations Academy", desc: "Teaching you how to build a YouTube channel that attracts clients instead of you chasing them. We cover: Channel Strategy → Content Pillars → The ARC Script → Thumbnails & SEO." },
+              { icon: "📞", label: "Weekly Live Calls", desc: "Group coaching and hot-seat reviews with the Attraction team. We learn from each other and grow as a community of agents doing YouTube." },
+              { icon: "👥", label: "Community of Realtor Creators", desc: "Other entrepreneurs using YouTube to attract clients." },
             ].map((b) => (
               <div key={b.label} className="flex items-start gap-3">
                 <span className="text-xl shrink-0 leading-none mt-0.5">{b.icon}</span>
