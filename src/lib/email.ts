@@ -171,8 +171,9 @@ export async function sendAuditReadyEmail(params: {
       ? `Your video audit is ready — ${videoTitle}`
       : "Your video audit is ready";
 
-  const baseUrl = process.env.NEXTAUTH_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "https://members.attractionbyvideo.com";
-  const auditUrl = `${baseUrl.replace(/\/$/, "")}/member/audits/${auditId}`;
+  const baseUrl = (process.env.NEXTAUTH_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "https://members.attractionbyvideo.com").replace(/\/$/, "");
+  const auditUrl = `${baseUrl}/member/audits/${auditId}`;
+  const logoUrl = `${baseUrl}/logo.png`;
 
   const { error } = await resend.emails.send({
     from: FROM_EMAIL,
@@ -189,10 +190,7 @@ export async function sendAuditReadyEmail(params: {
         <table width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;">
           <tr>
             <td align="center" style="padding-bottom:32px;">
-              <div style="display:inline-block;background:#1e2a38;border-radius:16px;padding:12px;">
-                <span style="font-size:28px;">📹</span>
-              </div>
-              <div style="margin-top:12px;font-size:18px;font-weight:700;color:#1e2a38;">Attraction by Video</div>
+              <img src="${logoUrl}" alt="Attraction by Video" width="200" style="display:block;width:200px;max-width:60%;height:auto;border:0;outline:none;text-decoration:none;" />
             </td>
           </tr>
           <tr>
