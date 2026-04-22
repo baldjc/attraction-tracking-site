@@ -689,26 +689,37 @@ export default function AuditsPage() {
                         </span>
                       </td>
                       <td className="px-5 py-3">
-                        {r.status === "audited" ? (
-                          r.auditId ? (
-                            <Link href={`/admin/audits/${r.auditId}`} className="text-[#6ba3c7] hover:underline text-xs font-medium whitespace-nowrap">
+                        <div className="flex items-center gap-2 whitespace-nowrap">
+                          {r.status === "audited" && r.auditId && (
+                            <Link href={`/admin/audits/${r.auditId}`} className="text-[#6ba3c7] hover:underline text-xs font-medium">
                               View Report →
                             </Link>
-                          ) : r.userId ? (
-                            <Link href={`/admin/members/${r.userId}`} className="text-[#6ba3c7] hover:underline text-xs font-medium whitespace-nowrap">
+                          )}
+                          {r.status === "audited" && !r.auditId && r.userId && (
+                            <Link href={`/admin/members/${r.userId}`} className="text-[#6ba3c7] hover:underline text-xs font-medium">
                               View Member →
                             </Link>
-                          ) : <span className="text-xs text-[#2f3437]/40">Complete</span>
-                        ) : (
+                          )}
                           <button
                             onClick={() => handleRunAuditRequest(r.id)}
                             disabled={runningRequestId === r.id}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[#6ba3c7] hover:bg-[#2ab0ec] text-white disabled:opacity-50 transition-colors whitespace-nowrap"
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium disabled:opacity-50 transition-colors whitespace-nowrap ${
+                              r.status === "audited"
+                                ? "border border-[#6ba3c7]/40 text-[#6ba3c7] hover:bg-[#6ba3c7]/10"
+                                : "bg-[#6ba3c7] hover:bg-[#2ab0ec] text-white"
+                            }`}
+                            title={r.status === "audited" ? "Delete previous audit and run a fresh one against the channel as it is right now" : undefined}
                           >
-                            <PlayIcon className="w-3 h-3" />
-                            {runningRequestId === r.id ? "Starting…" : "Run Audit"}
+                            {r.status === "audited" ? (
+                              <ArrowPathIcon className="w-3 h-3" />
+                            ) : (
+                              <PlayIcon className="w-3 h-3" />
+                            )}
+                            {runningRequestId === r.id
+                              ? (r.status === "audited" ? "Re-running…" : "Starting…")
+                              : (r.status === "audited" ? "Re-run Audit" : "Run Audit")}
                           </button>
-                        )}
+                        </div>
                       </td>
                     </tr>
                   ))}

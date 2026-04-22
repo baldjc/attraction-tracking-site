@@ -20,9 +20,25 @@ export async function POST(
   if (!auditRequest) {
     return NextResponse.json({ error: "Audit request not found" }, { status: 404 });
   }
-  if (auditRequest.status === "audited") {
-    return NextResponse.json({ error: "Audit already completed for this request" }, { status: 400 });
+
+  // Allow re-running: if a previous audit exists for this request, delete it
+  // so the new run becomes the canonical audit for this lead.
+  if (auditRequest.auditId) {
+    try {
+      await prisma.auditJob.updateMany({
+        where: { auditId: auditRequest.auditId },
+        data: { auditId: null },
+      });
+      await prisma.audit.delete({ where: { id: auditRequest.auditId } });
+    } catch (err) {
+      console.error(`[audit-request ${id}] failed to delete previous audit:`, err);
+    }
   }
+  // Reset to pending so the in-job linker re-attaches the new audit.
+  await prisma.auditRequest.update({
+    where: { id },
+    data: { auditId: null, status: "pending" },
+  });
 
   let user = await prisma.user.findUnique({ where: { email: auditRequest.email } });
 
