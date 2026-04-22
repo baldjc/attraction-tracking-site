@@ -249,6 +249,57 @@ export default function AuditsPage() {
     }
   }
 
+  const [busyAuditId, setBusyAuditId] = useState<string | null>(null);
+
+  async function handleDeleteAudit(a: AuditRow, isLead: boolean) {
+    const label = a.user?.fullName ?? a.user?.email ?? "this audit";
+    if (!confirm(`Delete audit for ${label}? This cannot be undone.`)) return;
+    setBusyAuditId(a.id);
+    try {
+      const res = await fetch(`/api/audits/${a.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        alert(`Failed to delete audit: ${err.error ?? res.statusText}`);
+        return;
+      }
+      if (isLead) await fetchLeadAudits(); else await fetchAudits();
+    } finally {
+      setBusyAuditId(null);
+    }
+  }
+
+  async function handleRerunAudit(a: AuditRow, isLead: boolean) {
+    if (!a.user?.id) {
+      alert("Cannot re-run: this audit has no associated member.");
+      return;
+    }
+    const label = a.user?.fullName ?? a.user?.email ?? "this member";
+    if (!confirm(`Re-run ${a.auditType.replace("_", " ")} audit for ${label}? The current audit will be deleted and a fresh one will start.`)) return;
+    setBusyAuditId(a.id);
+    try {
+      const delRes = await fetch(`/api/audits/${a.id}`, { method: "DELETE" });
+      if (!delRes.ok) {
+        const err = await delRes.json().catch(() => ({}));
+        alert(`Failed to delete previous audit: ${err.error ?? delRes.statusText}`);
+        return;
+      }
+      const videoId = a.auditType === "single_video" ? a.videosAnalysed?.[0]?.videoId : undefined;
+      const runRes = await fetch("/api/audits/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ memberId: a.user.id, auditType: a.auditType, videoId }),
+      });
+      if (!runRes.ok) {
+        const err = await runRes.json().catch(() => ({}));
+        alert(`Audit deleted, but re-run failed: ${err.error ?? runRes.statusText}`);
+      }
+      if (isLead) await fetchLeadAudits(); else await fetchAudits();
+      fetchActiveJobs();
+    } finally {
+      setBusyAuditId(null);
+    }
+  }
+
   async function fetchBatchStatus() {
     try {
       const res = await fetch("/api/audits/run-all-monthly");
@@ -542,9 +593,27 @@ export default function AuditsPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <Link href={`/admin/audits/${a.id}`} className="text-amber-700 hover:underline text-xs font-medium whitespace-nowrap">
-                          View Lead Report →
-                        </Link>
+                        <div className="flex items-center gap-3 whitespace-nowrap">
+                          <Link href={`/admin/audits/${a.id}`} className="text-amber-700 hover:underline text-xs font-medium">
+                            View Lead Report →
+                          </Link>
+                          <button
+                            onClick={() => handleRerunAudit(a, true)}
+                            disabled={busyAuditId === a.id || !a.user?.id}
+                            className="flex items-center gap-1 text-xs font-medium text-[#2f3437]/60 hover:text-amber-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                            title="Delete this audit and run a fresh one"
+                          >
+                            <ArrowPathIcon className="w-3.5 h-3.5" />
+                            {busyAuditId === a.id ? "Working…" : "Re-run"}
+                          </button>
+                          <button
+                            onClick={() => handleDeleteAudit(a, true)}
+                            disabled={busyAuditId === a.id}
+                            className="text-xs font-medium text-red-600/70 hover:text-red-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                          >
+                            Delete
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -1143,9 +1212,27 @@ export default function AuditsPage() {
                     ) : "—"}
                   </td>
                   <td className="px-6 py-4">
-                    <Link href={`/admin/audits/${a.id}`} className="text-[#6ba3c7] hover:underline text-xs font-medium whitespace-nowrap">
-                      View Report →
-                    </Link>
+                    <div className="flex items-center gap-3 whitespace-nowrap">
+                      <Link href={`/admin/audits/${a.id}`} className="text-[#6ba3c7] hover:underline text-xs font-medium">
+                        View Report →
+                      </Link>
+                      <button
+                        onClick={() => handleRerunAudit(a, false)}
+                        disabled={busyAuditId === a.id || !a.user?.id}
+                        className="flex items-center gap-1 text-xs font-medium text-[#2f3437]/60 hover:text-[#6ba3c7] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        title="Delete this audit and run a fresh one"
+                      >
+                        <ArrowPathIcon className="w-3.5 h-3.5" />
+                        {busyAuditId === a.id ? "Working…" : "Re-run"}
+                      </button>
+                      <button
+                        onClick={() => handleDeleteAudit(a, false)}
+                        disabled={busyAuditId === a.id}
+                        className="text-xs font-medium text-red-600/70 hover:text-red-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </td>
                 </tr>
                 );
