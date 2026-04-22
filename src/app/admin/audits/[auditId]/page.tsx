@@ -374,7 +374,45 @@ export default function AuditReportPage() {
             >
               Join Attraction by Video →
             </a>
-            <p className="text-[11px] text-white/40 italic">Or keep reading — your audit starts below.</p>
+            <p className="text-[13px] text-white text-center mt-1">
+              Starting at $495 USD / $595 CAD per month · Rate locked for life.
+            </p>
+            <p className="text-[11px] text-white/50 italic text-center">Or keep reading — your audit starts below.</p>
+          </div>
+        </div>
+
+        {/* Founder note from Jared */}
+        <div className="bg-[#fdf8f0] border border-[#e8dfd1] rounded-lg p-6 sm:p-8 print-avoid-break">
+          <div className="flex flex-col sm:flex-row gap-5 sm:gap-6">
+            <div className="w-32 sm:w-[180px] sm:shrink-0 mx-auto sm:mx-0">
+              <div className="aspect-[3/4] rounded-2xl overflow-hidden bg-gradient-to-br from-[#6ba3c7] to-[#2c4a6e] shadow">
+                <img
+                  src="https://attractionbyvideo.com/images/jared-headshot.png"
+                  alt="Jared Chamberlain"
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    const img = e.currentTarget;
+                    img.style.display = "none";
+                    const fb = img.nextElementSibling as HTMLElement | null;
+                    if (fb) fb.style.display = "flex";
+                  }}
+                />
+                <div className="w-full h-full hidden items-center justify-center text-white text-3xl font-black" aria-hidden="true">JC</div>
+              </div>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[11px] font-bold text-[#2f3437]/55 uppercase tracking-[0.18em] mb-2">A Note From Jared</p>
+              <h3 className="text-xl sm:text-2xl font-bold text-[#2f3437] leading-snug mb-3">
+                "I'm not a YouTube guru who's never sold a house."
+              </h3>
+              <p className="text-sm text-[#2f3437]/80 leading-relaxed">
+                Hey — I'm Jared Chamberlain. I built Attraction by Video because YouTube became the most profitable thing in my real estate business: <strong>$171M+ in volume sold</strong> and <strong>$4M+ in GCI</strong> from my channel since 2022, with <strong>242+ weeks of consecutive publishing</strong> and <strong>one video that generated 230+ leads in 2 days</strong>.
+              </p>
+              <p className="text-sm text-[#2f3437]/80 leading-relaxed mt-3">
+                The 16-point framework you just read is the exact same one I run on my own channel every month. If any of the gaps in this report feel impossible to close on your own — that's exactly why I built the membership.
+              </p>
+              <p className="text-xs text-[#2f3437]/55 italic mt-4">— Jared Chamberlain, Founder of Attraction by Video</p>
+            </div>
           </div>
         </div>
 
@@ -658,6 +696,108 @@ export default function AuditReportPage() {
             </div>
           </div>
         )}
+
+        {/* How It Works — 3 step path from audit to attracting clients */}
+        <div className="bg-white rounded-lg border border-gray-200 p-6 sm:p-8 print-avoid-break">
+          <p className="text-[11px] font-bold text-[#6ba3c7] uppercase tracking-[0.18em] mb-2">How It Works</p>
+          <h2 className="text-xl sm:text-2xl font-bold text-[#2f3437] leading-snug mb-6">
+            From audit to attracting clients — here's the path.
+          </h2>
+          <div className="grid sm:grid-cols-3 gap-5">
+            {[
+              { n: "01", title: "Join", body: "Lock in your rate today (never increases) and get instant access to the full Attraction platform." },
+              { n: "02", title: "Build", body: "Work through the Foundations Academy and use the 6 custom AI tools to craft videos designed to attract real estate clients — not just views." },
+              { n: "03", title: "Attract", body: "Ship videos consistently with weekly coaching from the Attraction team. Watch your channel turn into a lead magnet that brings clients to you." },
+            ].map((s) => (
+              <div key={s.n} className="border border-gray-100 rounded-lg p-5">
+                <div className="w-12 h-12 rounded-full bg-[#6ba3c7]/15 text-[#6ba3c7] font-black text-base flex items-center justify-center mb-3">
+                  {s.n}
+                </div>
+                <h3 className="text-base font-bold text-[#2f3437] mb-1.5">{s.title}</h3>
+                <p className="text-sm text-[#2f3437]/70 leading-relaxed">{s.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Member testimonials */}
+        <div className="bg-white rounded-lg border border-gray-200 p-6 sm:p-8 print-avoid-break">
+          <p className="text-[11px] font-bold text-[#6ba3c7] uppercase tracking-[0.18em] mb-2">What Members Are Saying</p>
+          <h2 className="text-xl sm:text-2xl font-bold text-[#2f3437] leading-snug mb-6">
+            Real agents. Real results.
+          </h2>
+          <div className="grid sm:grid-cols-2 gap-5">
+            {[
+              {
+                name: "Julie Roth",
+                role: "Foundations Member",
+                photo: "https://attractionbyvideo.com/images/avatars/julie-roth.png",
+                initials: "JR",
+                quote: "Working with Jared has been exactly what I needed to finally take YouTube seriously. I had wanted to do YouTube for years, but lacked clear direction and the motivation to stay consistent. Jared's coaching changed that. His classes are incredibly tactical, practical, and step-by-step — making the entire process easy to understand and actually implement. He doesn't hold anything back. He truly shares his playbook, which has been a game-changer for me.",
+              },
+              {
+                name: "Phil Martin",
+                role: "Growth + Foundations Member",
+                photo: "https://attractionbyvideo.com/images/avatars/phil-martin.png",
+                initials: "PM",
+                quote: "Jared is the first person I've ever met that can actually explain the rhyme and the reason — A plus B equals C, meaning leads. Consistent leads. He's cracked a code that takes all the voodoo out and all the complexity out. Forget the hype. Have an approach, do the work, stay consistent. I know for a fact this is passive marketing that consistently generates quality leads.",
+              },
+            ].map((t) => (
+              <div key={t.name} className="border border-gray-100 rounded-lg p-5 flex flex-col">
+                <span className="text-4xl leading-none text-[#6ba3c7]/40 font-serif mb-1">"</span>
+                <p className="text-sm text-[#2f3437]/85 leading-relaxed flex-1">{t.quote}</p>
+                <div className="flex items-center gap-3 mt-4 pt-4 border-t border-gray-100">
+                  <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-[#6ba3c7] to-[#2c4a6e] shrink-0 relative">
+                    <img
+                      src={t.photo}
+                      alt={t.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        const img = e.currentTarget;
+                        img.style.display = "none";
+                        const fb = img.nextElementSibling as HTMLElement | null;
+                        if (fb) fb.style.display = "flex";
+                      }}
+                    />
+                    <div className="absolute inset-0 hidden items-center justify-center text-white text-xs font-bold" aria-hidden="true">
+                      {t.initials}
+                    </div>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-[#2f3437] truncate">{t.name}</p>
+                    <p className="text-xs text-[#2f3437]/55 truncate">{t.role}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Final CTA card — bookends the report */}
+        <div className="rounded-lg bg-[#0f1216] p-6 sm:p-12 text-center print-avoid-break">
+          <p className="text-[11px] font-bold text-white/50 uppercase tracking-[0.18em] mb-3">
+            Ready to Close the Gaps?
+          </p>
+          <h2 className="text-xl sm:text-2xl font-bold text-white leading-snug">
+            Every gap in this report has a fix inside the membership.
+          </h2>
+          <p className="text-sm text-white/55 mt-2 leading-relaxed max-w-xl mx-auto">
+            Lock in your rate today — it never increases as long as you remain a member.
+          </p>
+          <div className="mt-6 flex flex-col items-center gap-2">
+            <a
+              href="https://attractionbyvideo.com/#join"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-6 py-3 rounded-lg bg-[#6ba3c7] hover:bg-[#5993b8] text-white text-sm font-bold transition-colors shadow"
+            >
+              Join Attraction by Video →
+            </a>
+            <p className="text-[12px] text-white/55 text-center mt-1">
+              $495 USD / $595 CAD per month · Cancel anytime · Rate locked for life
+            </p>
+          </div>
+        </div>
 
         {/* Footer */}
         <div className="text-center py-6 text-sm text-[#2f3437]/40 border-t border-gray-200">
