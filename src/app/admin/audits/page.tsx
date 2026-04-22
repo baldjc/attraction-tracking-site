@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
-import { ArrowPathIcon, PlayIcon, CheckCircleIcon, XCircleIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
+import { ArrowPathIcon, PlayIcon, CheckCircleIcon, XCircleIcon, ChevronDownIcon, PlusIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 
 interface AuditRequestRow {
   id: string;
@@ -332,6 +332,98 @@ export default function AuditsPage() {
 
   const pendingCount = auditReqs.filter((r) => r.status === "pending").length;
 
+  // Manual "Add Request" modal state
+  const [addOpen, setAddOpen] = useState(false);
+  const [addSubmitting, setAddSubmitting] = useState(false);
+  const [addError, setAddError] = useState<string | null>(null);
+  const emptyForm = {
+    fullName: "",
+    email: "",
+    youtubeChannelUrl: "",
+    phone: "",
+    currentYoutubeIncome: "",
+    desiredYoutubeIncome: "",
+  };
+  const [addForm, setAddForm] = useState(emptyForm);
+
+  function openAddModal() {
+    setAddForm(emptyForm);
+    setAddError(null);
+    setAddOpen(true);
+  }
+
+  async function submitAddRequest(e: React.FormEvent) {
+    e.preventDefault();
+    setAddError(null);
+    setAddSubmitting(true);
+    try {
+      const res = await fetch("/api/admin/audit-requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(addForm),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setAddError(data.error ?? "Failed to create audit request.");
+        return;
+      }
+      setAddOpen(false);
+      await fetchAuditRequests();
+    } finally {
+      setAddSubmitting(false);
+    }
+  }
+
+  // Webhook activity panel state
+  const [webhookOpen, setWebhookOpen] = useState(false);
+  const [webhookLogs, setWebhookLogs] = useState<Array<{
+    id: string;
+    status: "success" | "deduplicated" | "rejected_bad_token" | "rejected_missing_fields" | "error";
+    email: string | null;
+    message: string | null;
+    payload: any;
+    createdAt: string;
+  }>>([]);
+  const [webhookLoading, setWebhookLoading] = useState(false);
+  const [expandedPayloadId, setExpandedPayloadId] = useState<string | null>(null);
+
+  async function fetchWebhookLogs() {
+    setWebhookLoading(true);
+    try {
+      const res = await fetch("/api/admin/webhook-logs");
+      const data = await res.json();
+      setWebhookLogs(data.logs ?? []);
+    } finally {
+      setWebhookLoading(false);
+    }
+  }
+
+  function toggleWebhookPanel() {
+    const next = !webhookOpen;
+    setWebhookOpen(next);
+    if (next && webhookLogs.length === 0) fetchWebhookLogs();
+  }
+
+  function relativeTime(iso: string) {
+    const diff = Date.now() - new Date(iso).getTime();
+    const s = Math.floor(diff / 1000);
+    if (s < 60) return `${s}s ago`;
+    const m = Math.floor(s / 60);
+    if (m < 60) return `${m}m ago`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `${h}h ago`;
+    const d = Math.floor(h / 24);
+    return `${d}d ago`;
+  }
+
+  const webhookStatusBadge: Record<string, { label: string; cls: string; icon?: typeof ExclamationTriangleIcon }> = {
+    success: { label: "Success", cls: "bg-green-100 text-green-700" },
+    deduplicated: { label: "Deduplicated", cls: "bg-gray-100 text-gray-600" },
+    rejected_bad_token: { label: "Bad token", cls: "bg-red-100 text-red-700", icon: ExclamationTriangleIcon },
+    rejected_missing_fields: { label: "Missing fields", cls: "bg-amber-100 text-amber-700" },
+    error: { label: "Error", cls: "bg-red-100 text-red-700", icon: ExclamationTriangleIcon },
+  };
+
   return (
     <div>
       <div className="mb-4">
@@ -373,12 +465,20 @@ export default function AuditsPage() {
         <div>
           <div className="flex items-center justify-between mb-4">
             <p className="text-sm text-[#2f3437]/60">{auditReqs.length} request{auditReqs.length !== 1 ? "s" : ""}</p>
-            <button
-              onClick={fetchAuditRequests}
-              className="flex items-center gap-1.5 text-xs text-[#2f3437]/50 hover:text-[#2f3437] transition-colors"
-            >
-              <ArrowPathIcon className="w-3.5 h-3.5" /> Refresh
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={fetchAuditRequests}
+                className="flex items-center gap-1.5 text-xs text-[#2f3437]/50 hover:text-[#2f3437] transition-colors"
+              >
+                <ArrowPathIcon className="w-3.5 h-3.5" /> Refresh
+              </button>
+              <button
+                onClick={openAddModal}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#6ba3c7] hover:bg-[#2ab0ec] text-white transition-colors"
+              >
+                <PlusIcon className="w-3.5 h-3.5" /> Add Request Manually
+              </button>
+            </div>
           </div>
           <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
             <div className="overflow-x-auto">
@@ -452,6 +552,164 @@ export default function AuditsPage() {
               </table>
             </div>
           </div>
+
+          {/* Webhook Activity panel */}
+          <div className="mt-6 bg-white rounded-lg border border-gray-200 overflow-hidden">
+            <button
+              onClick={toggleWebhookPanel}
+              className="w-full flex items-center justify-between px-5 py-3 hover:bg-gray-50 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm font-semibold text-[#2f3437]">Webhook Activity</h2>
+                <span className="text-xs text-[#2f3437]/40">Last 50 GHL → backend calls</span>
+              </div>
+              <ChevronDownIcon className={`w-4 h-4 text-[#2f3437]/40 transition-transform ${webhookOpen ? "rotate-180" : ""}`} />
+            </button>
+            {webhookOpen && (
+              <div className="border-t border-gray-200">
+                <div className="flex items-center justify-end px-5 py-2 border-b border-gray-100">
+                  <button
+                    onClick={fetchWebhookLogs}
+                    className="flex items-center gap-1.5 text-xs text-[#2f3437]/50 hover:text-[#2f3437] transition-colors"
+                  >
+                    <ArrowPathIcon className="w-3.5 h-3.5" /> Refresh
+                  </button>
+                </div>
+                {webhookLoading ? (
+                  <div className="px-5 py-8 text-center text-sm text-[#2f3437]/40">Loading…</div>
+                ) : webhookLogs.length === 0 ? (
+                  <div className="px-5 py-8 text-center text-sm text-[#2f3437]/40">No webhook activity yet.</div>
+                ) : (
+                  <ul className="divide-y divide-gray-100">
+                    {webhookLogs.map((log) => {
+                      const cfg = webhookStatusBadge[log.status] ?? { label: log.status, cls: "bg-gray-100 text-gray-600" };
+                      const Icon = cfg.icon;
+                      const expanded = expandedPayloadId === log.id;
+                      return (
+                        <li key={log.id} className="px-5 py-3">
+                          <div className="flex items-start gap-3 flex-wrap">
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${cfg.cls}`}>
+                              {Icon && <Icon className="w-3 h-3" />}
+                              {cfg.label}
+                            </span>
+                            <span className="text-xs text-[#2f3437]/50 whitespace-nowrap">{relativeTime(log.createdAt)}</span>
+                            {log.email && <span className="text-xs text-[#2f3437]/70">{log.email}</span>}
+                            <span className="text-xs text-[#2f3437]/60 flex-1 min-w-[200px]">{log.message ?? "—"}</span>
+                            <button
+                              onClick={() => setExpandedPayloadId(expanded ? null : log.id)}
+                              className="text-xs text-[#6ba3c7] hover:underline whitespace-nowrap"
+                            >
+                              {expanded ? "Hide payload" : "View payload"}
+                            </button>
+                          </div>
+                          {expanded && (
+                            <pre className="mt-2 text-[11px] bg-gray-50 border border-gray-200 rounded-md p-3 overflow-x-auto text-[#2f3437]/80 whitespace-pre-wrap break-words">
+                              {JSON.stringify(log.payload, null, 2)}
+                            </pre>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Add Request Manually modal */}
+      {addOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => !addSubmitting && setAddOpen(false)}>
+          <form
+            onClick={(e) => e.stopPropagation()}
+            onSubmit={submitAddRequest}
+            className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4"
+          >
+            <div>
+              <h2 className="text-lg font-bold text-[#2f3437]">Add Audit Request</h2>
+              <p className="text-xs text-[#2f3437]/50 mt-0.5">Manually create a lead request, then click Run Audit on the row.</p>
+            </div>
+            {addError && (
+              <div className="text-xs bg-red-50 text-red-700 border border-red-200 rounded-md px-3 py-2">{addError}</div>
+            )}
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Full name *</label>
+                <input
+                  required
+                  value={addForm.fullName}
+                  onChange={(e) => setAddForm({ ...addForm, fullName: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Email *</label>
+                <input
+                  required
+                  type="email"
+                  value={addForm.email}
+                  onChange={(e) => setAddForm({ ...addForm, email: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">YouTube channel URL *</label>
+                <input
+                  required
+                  pattern=".*(youtube\.com|youtu\.be).*"
+                  title="Must contain youtube.com or youtu.be"
+                  placeholder="https://youtube.com/@yourhandle"
+                  value={addForm.youtubeChannelUrl}
+                  onChange={(e) => setAddForm({ ...addForm, youtubeChannelUrl: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Phone</label>
+                <input
+                  value={addForm.phone}
+                  onChange={(e) => setAddForm({ ...addForm, phone: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Current YT income</label>
+                  <input
+                    value={addForm.currentYoutubeIncome}
+                    onChange={(e) => setAddForm({ ...addForm, currentYoutubeIncome: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Desired YT income</label>
+                  <input
+                    value={addForm.desiredYoutubeIncome}
+                    onChange={(e) => setAddForm({ ...addForm, desiredYoutubeIncome: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setAddOpen(false)}
+                disabled={addSubmitting}
+                className="px-3 py-1.5 text-sm text-[#2f3437]/70 hover:text-[#2f3437] disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={addSubmitting}
+                className="px-4 py-1.5 text-sm font-semibold rounded-lg bg-[#6ba3c7] hover:bg-[#2ab0ec] text-white disabled:opacity-50"
+              >
+                {addSubmitting ? "Creating…" : "Create Request"}
+              </button>
+            </div>
+          </form>
         </div>
       )}
 

@@ -785,6 +785,32 @@ model AuditRequest {
   @@map("audit_requests")
 }
 
+enum WebhookLogStatus {
+  success
+  deduplicated
+  rejected_bad_token
+  rejected_missing_fields
+  error
+}
+
+enum WebhookSource {
+  ghl_audit_request
+}
+
+model WebhookLog {
+  id        String           @id @default(uuid())
+  source    WebhookSource
+  status    WebhookLogStatus
+  email     String?
+  message   String?
+  payload   Json
+  createdAt DateTime         @default(now())
+
+  @@index([source, createdAt])
+  @@index([status])
+  @@map("webhook_logs")
+}
+
 model ContentPlan {
   id              String    @id @default(uuid())
   userId          String
