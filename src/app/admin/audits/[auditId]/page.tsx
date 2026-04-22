@@ -290,21 +290,92 @@ export default function AuditReportPage() {
           <p className="text-xs text-[#2f3437]/50">Lead Audit — for {member?.fullName ?? member?.email}</p>
         </div>
 
-        {/* Orange banner header */}
-        <div className="rounded-lg overflow-hidden bg-gradient-to-r from-amber-500 via-orange-500 to-orange-600 p-6 print-avoid-break text-white">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="inline-block px-2 py-0.5 rounded-full bg-white/20 text-white text-[11px] font-bold uppercase tracking-wider">
+        {/* Channel banner — YouTube-style with overlapping avatar */}
+        <div className="print-avoid-break">
+          <div className="relative w-full h-[120px] sm:h-[200px] rounded-lg overflow-hidden">
+            {channelInfo?.bannerUrl ? (
+              <img
+                src={channelInfo.bannerUrl}
+                alt="Channel banner"
+                className="absolute inset-0 w-full h-full object-cover"
+                onError={(e) => {
+                  const img = e.currentTarget;
+                  img.style.display = "none";
+                }}
+              />
+            ) : (
+              <div className="absolute inset-0 bg-gradient-to-r from-[#2c4a6e] via-[#3a6f9e] to-[#6ba3c7]" />
+            )}
+            {/* Bottom dark gradient for contrast */}
+            <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/45 to-transparent pointer-events-none" />
+            <span className="absolute top-3 right-3 inline-block px-2 py-0.5 rounded-full bg-orange-500 text-white text-[11px] font-bold uppercase tracking-wider shadow">
               Lead Audit
             </span>
-            <span className="text-xs text-white/80">For {member?.fullName ?? member?.email}</span>
           </div>
-          <h1 className="text-2xl font-bold leading-tight">Where Your Channel Is Today</h1>
-          {(member?.youtubeChannelName || channelInfo?.title || member?.youtubeHandle) && (
-            <p className="text-white/90 mt-1">
-              {member?.youtubeChannelName || channelInfo?.title || member?.youtubeHandle}
-            </p>
-          )}
-          <p className="text-xs text-white/70 mt-2">{fmt(audit.createdAt)}</p>
+          {/* Identity strip — avatar overlaps banner */}
+          <div className="flex items-end gap-3 px-1 -mt-8 sm:-mt-10 relative">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-4 border-white bg-gray-200 overflow-hidden shrink-0 shadow">
+              {channelInfo?.thumbnailUrl ? (
+                <img
+                  src={channelInfo.thumbnailUrl}
+                  alt={channelInfo?.title ?? "Channel thumbnail"}
+                  className="w-full h-full object-cover"
+                  onError={(e) => { e.currentTarget.style.display = "none"; }}
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-[#6ba3c7] to-[#2c4a6e]" />
+              )}
+            </div>
+            <div className="pb-1 min-w-0">
+              <h1 className="text-lg sm:text-xl font-bold text-[#2f3437] leading-tight truncate">
+                {member?.youtubeChannelName || channelInfo?.title || member?.fullName || member?.email}
+              </h1>
+              <p className="text-xs text-[#2f3437]/55">
+                {member?.youtubeHandle && <span>{member.youtubeHandle} · </span>}
+                Audited {fmt(audit.createdAt)}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Inside Attraction by Video — membership frame */}
+        <div className="rounded-lg bg-[#0f1216] p-6 sm:p-8 print-avoid-break">
+          <p className="text-[11px] font-bold text-white/50 uppercase tracking-[0.18em] mb-3">
+            Inside Attraction by Video
+          </p>
+          <h2 className="text-xl sm:text-2xl font-bold text-white leading-snug">
+            Every gap in this audit has a fix inside the membership.
+          </h2>
+          <p className="text-sm text-white/55 mt-2 leading-relaxed max-w-2xl">
+            Attraction by Video is the platform that turns this diagnosis into results. You'll find every tool, framework, and training needed to close the gaps this report surfaces.
+          </p>
+          <div className="grid sm:grid-cols-2 gap-3 mt-5">
+            {[
+              { icon: "🤖", label: "6 AI Tools", desc: "Avatar Architect, Content Engine, Title & Thumbnail Analyzer, ARC Script Builder, Script Review, Repurpose Content" },
+              { icon: "🎓", label: "Foundations Academy", desc: "4-week program: Channel Strategy → Content Pillars → The ARC Script → Thumbnails & SEO" },
+              { icon: "📞", label: "Weekly Live Calls", desc: "Group coaching and hot-seat reviews with the Attraction team" },
+              { icon: "👥", label: "Community of Service-Based Creators", desc: "Other entrepreneurs using YouTube to attract clients" },
+            ].map((b) => (
+              <div key={b.label} className="flex items-start gap-3">
+                <span className="text-xl shrink-0 leading-none mt-0.5">{b.icon}</span>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-white">{b.label}</p>
+                  <p className="text-xs text-white/55 leading-relaxed">{b.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-6 flex flex-col items-center gap-2">
+            <a
+              href="https://attractionbyvideo.com/#join"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-6 py-3 rounded-lg bg-[#6ba3c7] hover:bg-[#5993b8] text-white text-sm font-bold transition-colors shadow"
+            >
+              Join Attraction by Video →
+            </a>
+            <p className="text-[11px] text-white/40 italic">Or keep reading — your audit starts below.</p>
+          </div>
         </div>
 
         {/* Score + diagnosis */}
