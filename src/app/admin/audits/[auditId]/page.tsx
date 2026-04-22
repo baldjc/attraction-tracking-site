@@ -735,19 +735,13 @@ export default function AuditReportPage() {
             <p className="text-sm text-[#2f3437]/85 leading-relaxed whitespace-pre-line">{conversionNarrative}</p>
             <div className="mt-5 flex flex-wrap gap-3 no-print">
               <a
-                href={`mailto:${member?.email ?? ""}?subject=${encodeURIComponent("Your Attraction by Video Lead Audit")}&body=${encodeURIComponent(`Hi ${member?.fullName ?? "there"},\n\nYour Lead Audit is ready. Let's book a 15-minute walkthrough call to review it together.\n\n— Jared`)}`}
+                href="https://attractionbyvideo.com/#join"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-orange-600 hover:bg-orange-700 text-white text-sm font-semibold transition-colors"
               >
-                Send Report + Book Call
+                Join Attraction Membership →
               </a>
-              {member?.id && (
-                <Link
-                  href={`/admin/members/${member.id}?convert=1`}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#2f3437] hover:bg-[#3a4145] text-white text-sm font-semibold transition-colors"
-                >
-                  Convert to Member →
-                </Link>
-              )}
             </div>
           </div>
         )}
