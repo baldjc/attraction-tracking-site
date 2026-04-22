@@ -248,7 +248,7 @@ export default function AuditReportPage() {
     }
 
     return (
-      <div className="lead-report max-w-4xl space-y-5 md:space-y-7 print-full-width" id="audit-report">
+      <div className="abv-report max-w-4xl space-y-5 md:space-y-7 print-full-width" id="audit-report">
         <link
           rel="stylesheet"
           href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@900,800,700,500&f[]=satoshi@400,500,600,700&display=swap"
@@ -256,7 +256,7 @@ export default function AuditReportPage() {
         <style
           dangerouslySetInnerHTML={{
             __html: `
-              .lead-report {
+              .abv-report {
                 --abv-primary: #1A1A1A;
                 --abv-secondary: #6B6B6B;
                 --abv-muted: #9B9B9B;
@@ -266,39 +266,39 @@ export default function AuditReportPage() {
                 font-family: 'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
                 color: var(--abv-secondary);
               }
-              .lead-report h1, .lead-report h2, .lead-report h3, .lead-report h4 {
+              .abv-report h1, .abv-report h2, .abv-report h3, .abv-report h4 {
                 font-family: 'Cabinet Grotesk', 'Satoshi', sans-serif !important;
                 letter-spacing: -0.025em !important;
                 line-height: 1.1 !important;
               }
-              .lead-report h1 { font-weight: 800 !important; font-size: clamp(28px, 4.4vw, 44px) !important; }
-              .lead-report h2 { font-weight: 800 !important; font-size: clamp(22px, 3vw, 32px) !important; line-height: 1.15 !important; }
-              .lead-report h3 { font-weight: 700 !important; font-size: clamp(18px, 1.6vw, 22px) !important; letter-spacing: -0.02em !important; line-height: 1.25 !important; }
-              .lead-report .text-6xl { font-family: 'Cabinet Grotesk', 'Satoshi', sans-serif !important; font-weight: 900 !important; letter-spacing: -0.03em !important; line-height: 1 !important; font-size: clamp(56px, 8vw, 88px) !important; }
-              .lead-report .text-3xl { font-family: 'Cabinet Grotesk', 'Satoshi', sans-serif !important; font-weight: 900 !important; letter-spacing: -0.025em !important; }
-              .lead-report p { line-height: 1.65; }
-              .lead-report .display-num {
+              .abv-report h1 { font-weight: 800 !important; font-size: clamp(28px, 4.4vw, 44px) !important; }
+              .abv-report h2 { font-weight: 800 !important; font-size: clamp(22px, 3vw, 32px) !important; line-height: 1.15 !important; }
+              .abv-report h3 { font-weight: 700 !important; font-size: clamp(18px, 1.6vw, 22px) !important; letter-spacing: -0.02em !important; line-height: 1.25 !important; }
+              .abv-report .text-6xl { font-family: 'Cabinet Grotesk', 'Satoshi', sans-serif !important; font-weight: 900 !important; letter-spacing: -0.03em !important; line-height: 1 !important; font-size: clamp(56px, 8vw, 88px) !important; }
+              .abv-report .text-3xl { font-family: 'Cabinet Grotesk', 'Satoshi', sans-serif !important; font-weight: 900 !important; letter-spacing: -0.025em !important; }
+              .abv-report p { line-height: 1.65; }
+              .abv-report .display-num {
                 font-family: 'Cabinet Grotesk', 'Satoshi', sans-serif;
                 font-weight: 900;
                 letter-spacing: -0.03em;
                 line-height: 1;
               }
-              .lead-report .eyebrow {
+              .abv-report .eyebrow {
                 font-family: 'Satoshi', sans-serif;
                 font-size: 11px;
                 font-weight: 600;
                 letter-spacing: 0.18em;
                 text-transform: uppercase;
               }
-              .lead-report .rounded-lg { border-radius: 18px; }
-              .lead-report .rounded-md { border-radius: 12px; }
-              .lead-report .border-gray-200 { border-color: var(--abv-border); }
-              .lead-report .border-gray-100 { border-color: var(--abv-border); }
-              .lead-report a { transition: color 180ms cubic-bezier(0.16, 1, 0.3, 1); }
-              .lead-report .text-\\[\\#2f3437\\] { color: var(--abv-primary); }
-              .lead-report .border-t.border-gray-200 { border-top-color: var(--abv-border); }
+              .abv-report .rounded-lg { border-radius: 18px; }
+              .abv-report .rounded-md { border-radius: 12px; }
+              .abv-report .border-gray-200 { border-color: var(--abv-border); }
+              .abv-report .border-gray-100 { border-color: var(--abv-border); }
+              .abv-report a { transition: color 180ms cubic-bezier(0.16, 1, 0.3, 1); }
+              .abv-report .text-\\[\\#2f3437\\] { color: var(--abv-primary); }
+              .abv-report .border-t.border-gray-200 { border-top-color: var(--abv-border); }
               @media (min-width: 768px) {
-                .lead-report > * + * { margin-top: 28px; }
+                .abv-report > * + * { margin-top: 28px; }
               }
             `,
           }}
@@ -863,7 +863,61 @@ export default function AuditReportPage() {
   }
 
   return (
-    <div className="max-w-4xl space-y-4 md:space-y-5 print-full-width" id="audit-report">
+    <div className="abv-report max-w-4xl space-y-5 md:space-y-7 print-full-width" id="audit-report">
+      <link
+        rel="stylesheet"
+        href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@900,800,700,500&f[]=satoshi@400,500,600,700&display=swap"
+      />
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+            .abv-report {
+              --abv-primary: #1A1A1A;
+              --abv-secondary: #6B6B6B;
+              --abv-muted: #9B9B9B;
+              --abv-azure: #6ba3c7;
+              --abv-crimson: #d64545;
+              --abv-border: rgba(0,0,0,0.06);
+              font-family: 'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+              color: var(--abv-secondary);
+            }
+            .abv-report h1, .abv-report h2, .abv-report h3, .abv-report h4 {
+              font-family: 'Cabinet Grotesk', 'Satoshi', sans-serif !important;
+              letter-spacing: -0.025em !important;
+              line-height: 1.1 !important;
+            }
+            .abv-report h1 { font-weight: 800 !important; font-size: clamp(28px, 4.4vw, 44px) !important; }
+            .abv-report h2 { font-weight: 800 !important; font-size: clamp(22px, 3vw, 32px) !important; line-height: 1.15 !important; }
+            .abv-report h3 { font-weight: 700 !important; font-size: clamp(18px, 1.6vw, 22px) !important; letter-spacing: -0.02em !important; line-height: 1.25 !important; }
+            .abv-report .text-6xl { font-family: 'Cabinet Grotesk', 'Satoshi', sans-serif !important; font-weight: 900 !important; letter-spacing: -0.03em !important; line-height: 1 !important; font-size: clamp(56px, 8vw, 88px) !important; }
+            .abv-report .text-3xl { font-family: 'Cabinet Grotesk', 'Satoshi', sans-serif !important; font-weight: 900 !important; letter-spacing: -0.025em !important; }
+            .abv-report p { line-height: 1.65; }
+            .abv-report .display-num {
+              font-family: 'Cabinet Grotesk', 'Satoshi', sans-serif;
+              font-weight: 900;
+              letter-spacing: -0.03em;
+              line-height: 1;
+            }
+            .abv-report .eyebrow {
+              font-family: 'Satoshi', sans-serif;
+              font-size: 11px;
+              font-weight: 600;
+              letter-spacing: 0.18em;
+              text-transform: uppercase;
+            }
+            .abv-report .rounded-lg { border-radius: 18px; }
+            .abv-report .rounded-md { border-radius: 12px; }
+            .abv-report .border-gray-200 { border-color: var(--abv-border); }
+            .abv-report .border-gray-100 { border-color: var(--abv-border); }
+            .abv-report a { transition: color 180ms cubic-bezier(0.16, 1, 0.3, 1); }
+            .abv-report .text-\\[\\#2f3437\\] { color: var(--abv-primary); }
+            .abv-report .border-t.border-gray-200 { border-top-color: var(--abv-border); }
+            @media (min-width: 768px) {
+              .abv-report > * + * { margin-top: 28px; }
+            }
+          `,
+        }}
+      />
 
       {/* Top navigation — hidden on print */}
       <div className="flex items-center justify-between no-print">
