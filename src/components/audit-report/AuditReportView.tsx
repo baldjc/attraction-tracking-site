@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/outline";
+import { upgradeYouTubeImage } from "@/lib/youtube";
 
 const PRINCIPLE_LABELS: Record<string, string> = {
   avatar_clarity: "Avatar Clarity",
@@ -267,7 +268,7 @@ export default function AuditReportView({ audit, chrome }: { audit: any; chrome?
           <div className="relative w-full h-[120px] sm:h-[200px] rounded-lg overflow-hidden">
             {channelInfo?.bannerUrl ? (
               <img
-                src={channelInfo.bannerUrl}
+                src={upgradeYouTubeImage(channelInfo.bannerUrl, 2560) ?? channelInfo.bannerUrl}
                 alt="Channel banner"
                 className="absolute inset-0 w-full h-full object-cover"
                 onError={(e) => {
@@ -862,7 +863,7 @@ export default function AuditReportView({ audit, chrome }: { audit: any; chrome?
       {/* Banner */}
       {channelInfo?.bannerUrl ? (
         <div className="w-full h-32 rounded-lg overflow-hidden print-avoid-break">
-          <img src={channelInfo.bannerUrl} alt="Channel banner" className="w-full h-full object-cover" />
+          <img src={upgradeYouTubeImage(channelInfo.bannerUrl, 2560) ?? channelInfo.bannerUrl} alt="Channel banner" className="w-full h-full object-cover" />
         </div>
       ) : (
         <div className="h-28 rounded-lg bg-gradient-to-r from-[#2f3437] via-[#2c4a6e] to-[#6ba3c7] print-avoid-break" />

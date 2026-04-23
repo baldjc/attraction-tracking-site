@@ -23,6 +23,27 @@ export interface ChannelInfo {
   totalViewCount: number;
 }
 
+/**
+ * Normalize a YouTube/Google-hosted image URL to request a higher resolution.
+ * yt3.googleusercontent.com URLs accept a `=wNNNN` size suffix; if one is
+ * already present we replace it, otherwise we append it. Width 2560 yields
+ * the original 2560x1440 source for channel banners.
+ */
+export function upgradeYouTubeImage(
+  url: string | null | undefined,
+  width = 2560,
+): string | null {
+  if (!url) return null;
+  try {
+    const lastSlash = url.lastIndexOf("/");
+    const eqIdx = url.lastIndexOf("=");
+    const base = eqIdx > lastSlash ? url.slice(0, eqIdx) : url;
+    return `${base}=w${width}`;
+  } catch {
+    return url;
+  }
+}
+
 export interface VideoWithTranscript extends VideoInfo {
   transcript: string | null;
 }
@@ -65,7 +86,7 @@ export async function getChannelInfo(handle: string): Promise<ChannelInfo> {
     channelId: ch.id,
     title: ch.snippet.title,
     handle: handle.startsWith("@") ? handle : `@${handle}`,
-    bannerUrl: ch.brandingSettings?.image?.bannerExternalUrl ?? null,
+    bannerUrl: upgradeYouTubeImage(ch.brandingSettings?.image?.bannerExternalUrl, 2560),
     thumbnailUrl,
     uploadsPlaylistId: ch.contentDetails.relatedPlaylists.uploads,
     subscriberCount: parseInt(ch.statistics?.subscriberCount || "0"),
