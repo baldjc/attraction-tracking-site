@@ -280,9 +280,30 @@ export default function AuditReportView({ audit, chrome }: { audit: any; chrome?
             )}
             {/* Bottom dark gradient for contrast */}
             <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/45 to-transparent pointer-events-none" />
-            <span className="absolute top-3 right-3 inline-block px-2 py-0.5 rounded-full bg-orange-500 text-white text-[11px] font-bold uppercase tracking-wider shadow">
-              Lead Audit
-            </span>
+            <div className="absolute top-3 right-3 flex flex-col items-end gap-1">
+              <span className="inline-block px-2.5 py-0.5 rounded-full bg-orange-500 text-white text-[11px] font-bold uppercase tracking-wider shadow">
+                Attraction by Video Channel Audit
+              </span>
+              {(member?.youtubeChannelUrl ||
+                member?.youtubeHandle ||
+                channelInfo?.handle) && (
+                <a
+                  href={
+                    member?.youtubeChannelUrl ??
+                    `https://youtube.com/${(member?.youtubeHandle ?? channelInfo?.handle ?? "").replace(/^@?/, "@")}`
+                  }
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[11px] font-medium text-white/95 hover:text-white underline underline-offset-2 drop-shadow"
+                >
+                  {member?.youtubeChannelName ||
+                    channelInfo?.title ||
+                    member?.youtubeHandle ||
+                    channelInfo?.handle ||
+                    "View channel"}
+                </a>
+              )}
+            </div>
           </div>
           {/* Avatar overlaps banner */}
           <div className="px-1 -mt-8 sm:-mt-10 relative">
