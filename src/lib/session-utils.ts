@@ -26,10 +26,21 @@ export async function resolveUserFromSession(): Promise<ResolvedUser | null> {
   const role = ((session.user as any).role as string | undefined) ?? null;
   const isAdmin = role === "admin";
 
-  // Admin and editor impersonation: if they have an impersonation cookie, use that member's ID
+  // Admin and editor impersonation: if they have an impersonation cookie, use that member's ID.
+  // Cookie format: "<ownerId>:<memberId>" — only honored when ownerId matches the current
+  // signed-in account, so a stale cookie from another staff member on a shared device
+  // doesn't bleed into the next sign-in. Legacy unprefixed cookies are ignored.
   if (role === "admin" || role === "editor") {
     const cookieStore = await cookies();
-    const impersonateId = cookieStore.get(IMPERSONATE_COOKIE)?.value;
+    const cookieValue = cookieStore.get(IMPERSONATE_COOKIE)?.value;
+    const sessionUserId = (session.user as any).id as string | undefined;
+    let impersonateId: string | null = null;
+    if (cookieValue && cookieValue.includes(":") && sessionUserId) {
+      const [ownerId, memberId] = cookieValue.split(":");
+      if (ownerId === sessionUserId && memberId) {
+        impersonateId = memberId;
+      }
+    }
     if (impersonateId) {
       const impersonatedUser = await prisma.user.findUnique({
         where: { id: impersonateId },

@@ -43,8 +43,9 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(new URL("/admin", base));
   }
 
+  const ownerId = (session.user as any).id as string;
   const response = NextResponse.redirect(new URL(`/member/dashboard?t=${Date.now()}`, base));
-  response.cookies.set(IMPERSONATE_COOKIE, memberId, {
+  response.cookies.set(IMPERSONATE_COOKIE, `${ownerId}:${memberId}`, {
     httpOnly: false,
     path: "/",
     maxAge: 60 * 60 * 8,

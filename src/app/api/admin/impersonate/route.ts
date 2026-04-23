@@ -13,6 +13,16 @@ export async function POST(req: NextRequest) {
   }
 
   const { memberId } = await req.json();
+  const ownerId = (session.user as any).id as string;
+
+  // Switching "view" to your own account just clears the impersonation cookie.
+  // Editors don't include themselves in allowedMemberIds, and admins viewing
+  // themselves shouldn't go through the impersonation path either.
+  if (memberId && ownerId && memberId === ownerId) {
+    const cookieStore = await cookies();
+    cookieStore.delete(IMPERSONATE_COOKIE);
+    return NextResponse.json({ ok: true, member: { id: ownerId, name: session.user.email ?? "" } });
+  }
 
   if (role === "editor") {
     const editorId = (session.user as any).id as string;
@@ -41,7 +51,9 @@ export async function POST(req: NextRequest) {
   }
 
   const cookieStore = await cookies();
-  cookieStore.set(IMPERSONATE_COOKIE, memberId, {
+  // Tie the cookie to the staff account that set it so a stale cookie left on
+  // a shared device cannot apply to whoever logs in next.
+  cookieStore.set(IMPERSONATE_COOKIE, `${ownerId}:${memberId}`, {
     httpOnly: true,
     secure: true,
     path: "/",
@@ -52,10 +64,9 @@ export async function POST(req: NextRequest) {
   // Clear any active test avatar state when starting impersonation
   // Wrapped in try/catch — columns may not exist yet on older DB instances
   try {
-    const adminId = (session.user as any).id as string;
-    if (adminId) {
+    if (ownerId) {
       await prisma.user.update({
-        where: { id: adminId },
+        where: { id: ownerId },
         data: { activeTestAvatarId: null, activeTestMemberId: null },
       });
     }
