@@ -171,8 +171,18 @@ export async function sendAuditReadyEmail(params: {
       ? `Your video audit is ready — ${videoTitle}`
       : "Your video audit is ready";
 
-  const baseUrl = (process.env.NEXTAUTH_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "https://members.attractionbyvideo.com").replace(/\/$/, "");
-  const auditUrl = `${baseUrl}/member/audits/${auditId}`;
+  // Always use a public production-style URL for email content. Falling back
+  // to NEXTAUTH_URL would point recipients at localhost in dev environments,
+  // which breaks both the logo image and the audit link in their inbox.
+  const rawBase =
+    process.env.EMAIL_BASE_URL ??
+    process.env.NEXT_PUBLIC_APP_URL ??
+    (process.env.NEXTAUTH_URL && !/localhost|127\.0\.0\.1|0\.0\.0\.0|\.repl(\.co|it\.dev)/i.test(process.env.NEXTAUTH_URL)
+      ? process.env.NEXTAUTH_URL
+      : null) ??
+    "https://members.attractionbyvideo.com";
+  const baseUrl = rawBase.replace(/\/$/, "");
+  const auditUrl = `${baseUrl}/reports/${auditId}`;
   const logoUrl = `${baseUrl}/logo.png`;
 
   const { error } = await resend.emails.send({
