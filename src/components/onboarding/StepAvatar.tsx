@@ -34,15 +34,60 @@ export default function StepAvatar({ existingAvatarName, existingContentThemes, 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: [{ role: "user", content: taggedContent }] }),
       });
-      const data = await res.json();
-      if (data.avatarData) {
-        setExtractedData(data.avatarData);
+
+      if (!res.ok || !res.body) {
+        const errBody = await res.json().catch(() => ({}));
+        throw new Error(errBody.error ?? `HTTP ${res.status}`);
+      }
+
+      // The endpoint streams server-sent events ("data: {...}\n\n").
+      // Read the whole stream, then pull the final "done" event's avatarData.
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let avatarData: any = null;
+      let streamErr: string | null = null;
+
+      const handleLine = (line: string) => {
+        if (!line.startsWith("data: ")) return;
+        try {
+          const event = JSON.parse(line.slice(6)) as {
+            type: string;
+            message?: string;
+            avatarData?: any;
+          };
+          if (event.type === "done") {
+            avatarData = event.avatarData ?? null;
+          } else if (event.type === "error") {
+            streamErr = event.message ?? "The AI service returned an error.";
+          }
+        } catch {
+          // ignore parse errors on partial lines
+        }
+      };
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+        for (const line of lines) handleLine(line);
+      }
+      // Flush any trailing event left over after the stream closed without a final newline.
+      if (buffer.trim()) handleLine(buffer.trim());
+
+      if (streamErr) {
+        setExtractError(streamErr);
+      } else if (avatarData) {
+        setExtractedData(avatarData);
         setSubState("confirming");
       } else {
         setExtractError("We couldn't extract avatar data from that document. Try pasting more detail, or build one from scratch using the Avatar Architect after setup.");
       }
-    } catch {
-      setExtractError("Something went wrong. Please try again.");
+    } catch (err: any) {
+      setExtractError(err?.message ?? "Something went wrong. Please try again.");
     } finally {
       setExtracting(false);
     }
