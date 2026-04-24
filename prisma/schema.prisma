@@ -642,7 +642,7 @@ model MemberWorkbookResponse {
   response        Json
   updatedAt       DateTime @updatedAt
 
-  user          User                @relation(fields: [userId], references: [id])
+  user          User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   workbookField LessonWorkbookField @relation(fields: [workbookFieldId], references: [id])
 
   @@unique([userId, workbookFieldId])
@@ -656,7 +656,7 @@ model MemberLessonProgress {
   completed   Boolean   @default(false)
   completedAt DateTime?
 
-  user   User         @relation(fields: [userId], references: [id])
+  user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   lesson CourseLesson @relation(fields: [lessonId], references: [id])
 
   @@unique([userId, lessonId])
@@ -670,7 +670,7 @@ model MemberHomework {
   homeworkItems Json
   updatedAt     DateTime @updatedAt
 
-  user   User         @relation(fields: [userId], references: [id])
+  user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   lesson CourseLesson @relation(fields: [lessonId], references: [id])
 
   @@unique([userId, lessonId])
@@ -734,7 +734,7 @@ model ServiceWaitlistEntry {
   message   String?
   createdAt DateTime @default(now())
   package   ServicePackage @relation(fields: [packageId], references: [id])
-  user      User           @relation(fields: [userId], references: [id])
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([packageId, userId])
   @@map("service_waitlist_entries")

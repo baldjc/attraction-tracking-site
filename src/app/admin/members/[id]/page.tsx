@@ -537,11 +537,19 @@ export default function MemberDetailPage() {
   async function handleDeleteMember() {
     setDeletingMember(true);
     try {
-      await fetch(`/api/members/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/members/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        let detail = "";
+        try {
+          const body = await res.json();
+          detail = body?.error || body?.message || "";
+        } catch {}
+        throw new Error(detail || `HTTP ${res.status}`);
+      }
       toast.success("Member deleted. Redirecting…");
       router.push("/admin/members");
-    } catch {
-      toast.error("Failed to delete member.");
+    } catch (err) {
+      toast.error(err instanceof Error ? `Failed to delete member: ${err.message}` : "Failed to delete member.");
       setDeletingMember(false);
     }
   }
