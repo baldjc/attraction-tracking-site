@@ -428,11 +428,11 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
         )}
         <button
           onClick={() => setHelpOpen((v) => !v)}
-          title="Kit assistant"
-          className={`flex items-center gap-3 py-2.5 text-sm font-medium text-white/50 hover:text-white hover:bg-white/5 transition-colors duration-200 w-full rounded-md lg:hidden ${collapsed ? "px-3 justify-center" : "px-3"}`}
+          title="Help"
+          className={`flex items-center gap-3 py-2.5 text-sm font-medium text-white/50 hover:text-white hover:bg-white/5 transition-colors duration-200 w-full rounded-md ${collapsed ? "px-3 justify-center" : "px-3"}`}
         >
           <span className="text-base leading-none shrink-0">🤖</span>
-          {!collapsed && <span>Kit assistant</span>}
+          {!collapsed && <span>Help</span>}
         </button>
         <button
           onClick={toggleTheme}
@@ -476,10 +476,14 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
 
   return (
     <>
-      {/* Kit assistant panel — mobile only, triggered from sidebar */}
+      {/* Kit assistant panel — mobile: bottom drawer, desktop: popup near sidebar */}
       {helpOpen && (
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-[60] h-[80vh] animate-fade-in-up">
-          <div className="w-full h-full bg-white dark:bg-[#1a1a1a] border-t border-[#2f3437]/10 dark:border-[#2a2a2a] shadow-2xl overflow-hidden rounded-t-2xl">
+        <div
+          className={`fixed z-[60] animate-fade-in-up
+            max-lg:bottom-0 max-lg:left-0 max-lg:right-0 max-lg:h-[80vh]
+            lg:bottom-6 lg:w-[380px] lg:h-[500px] ${collapsed ? "lg:left-20" : "lg:left-[272px]"}`}
+        >
+          <div className="w-full h-full bg-white dark:bg-[#1a1a1a] border border-[#2f3437]/10 dark:border-[#2a2a2a] shadow-2xl overflow-hidden rounded-t-2xl lg:rounded-2xl">
             <HelpChat onClose={() => setHelpOpen(false)} />
           </div>
         </div>
