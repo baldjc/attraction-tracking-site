@@ -542,14 +542,6 @@ function MembersPageInner() {
             </div>
             <div className={`text-3xl font-bold ${txt}`}>{cards.activeMembers}</div>
           </div>
-          {/* Inactive */}
-          <div className={`${card} p-4 flex flex-col justify-between h-[100px]`}>
-            <div className="flex items-center gap-1.5">
-              <ExclamationTriangleIcon className="w-4 h-4 text-red-500 shrink-0" />
-              <span className={`text-[10px] uppercase tracking-widest font-semibold ${muted}`}>Inactive</span>
-            </div>
-            <div className={`text-3xl font-bold ${txt}`}>{cards.inactiveMembers}</div>
-          </div>
           {/* Link Clicks */}
           <div className={`${card} p-4 flex flex-col justify-between h-[100px]`}>
             <div className="flex items-center gap-1.5">
