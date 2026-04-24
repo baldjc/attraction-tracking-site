@@ -3,25 +3,27 @@ import { auth } from "@/lib/auth";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { IMPERSONATE_COOKIE, parseImpersonateCookie } from "@/lib/impersonate-constants";
+import { isMainOwnerEmail } from "@/lib/auth-utils";
 
 /**
  * Staff (admin or editor) member-scope access helpers.
  *
- * - admin   → unrestricted access to every member.
- * - editor  → restricted by `User.allowedMemberIds`:
+ * - main owner (Jared)   → unrestricted access to every member.
+ * - any other admin/editor → restricted by `User.allowedMemberIds`:
  *               • null/undefined  → full access (legacy / unset)
  *               • string[]        → may only access listed member ids
  */
 
 type StaffRow = {
   role: string | null;
+  email: string | null;
   allowedMemberIds: unknown;
 };
 
 async function loadStaff(staffUserId: string): Promise<StaffRow | null> {
   return prisma.user.findUnique({
     where: { id: staffUserId },
-    select: { role: true, allowedMemberIds: true },
+    select: { role: true, email: true, allowedMemberIds: true },
   });
 }
 
@@ -80,44 +82,45 @@ export async function isImpersonatingStaff(): Promise<boolean> {
 }
 
 /** True if the given staff user is allowed to access the given member id.
- *  An actual admin (true session role) always has access — even if they're
- *  currently "viewing as" a Staff Admin for UI purposes — so an admin never
- *  gets locked out of member data because of a stale impersonation cookie. */
+ *  The main owner (Jared) always has access — even if they're currently
+ *  "viewing as" a Staff Admin for UI purposes — so the owner never gets
+ *  locked out of member data because of a stale impersonation cookie. */
 export async function canStaffAccessMember(
   staffUserId: string,
   memberId: string
 ): Promise<boolean> {
-  // Real session user — bypass scoping entirely if they are admin.
+  // Real session user — bypass scoping entirely if they are the main owner.
   const actor = await loadStaff(staffUserId);
-  if (actor?.role === "admin") return true;
+  if (isMainOwnerEmail(actor?.email)) return true;
 
   const effectiveId = await getEffectiveStaffUserId(staffUserId);
   const staff = effectiveId === staffUserId ? actor : await loadStaff(effectiveId);
   if (!staff) return false;
-  if (staff.role === "admin") return true;
-  if (staff.role !== "editor") return false;
+  if (isMainOwnerEmail(staff.email)) return true;
+  if (staff.role !== "admin" && staff.role !== "editor") return false;
   const allowed = parseAllowed(staff.allowedMemberIds);
-  if (allowed === null) return true; // editor with no restrictions
+  if (allowed === null) return true; // sub-admin with no restrictions
   return allowed.includes(memberId);
 }
 
 /**
  * Prisma where-fragment for filtering a `userId` (or member-id) field by the
  * staff member's allowed scope. Returns `undefined` when no scoping is needed
- * (admin, or editor with full access).
+ * (main owner, or sub-admin/editor with full access).
  */
 export async function staffMemberIdFilter(
   staffUserId: string
 ): Promise<{ in: string[] } | undefined> {
-  // Real session user — admins always see everything regardless of any
-  // active impersonation cookie.
+  // Real session user — the main owner always sees everything regardless of
+  // any active impersonation cookie.
   const actor = await loadStaff(staffUserId);
-  if (actor?.role === "admin") return undefined;
+  if (isMainOwnerEmail(actor?.email)) return undefined;
 
   const effectiveId = await getEffectiveStaffUserId(staffUserId);
   const staff = effectiveId === staffUserId ? actor : await loadStaff(effectiveId);
-  if (!staff || staff.role === "admin") return undefined;
-  if (staff.role !== "editor") return { in: [] };
+  if (!staff) return { in: [] };
+  if (isMainOwnerEmail(staff.email)) return undefined;
+  if (staff.role !== "admin" && staff.role !== "editor") return { in: [] };
   const allowed = parseAllowed(staff.allowedMemberIds);
   if (allowed === null) return undefined;
   return { in: allowed };

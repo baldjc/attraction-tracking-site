@@ -84,6 +84,7 @@ const TYPE_EMOJI: Record<string, string> = {
 export default function AdminDashboard() {
   const { data: session } = useSession();
   const role = (session?.user as any)?.role;
+  const sessionIsMainOwner = !!(session?.user as { isMainOwner?: boolean } | undefined)?.isMainOwner;
   const [impersonatedRole, setImpersonatedRole] = useState<string | null>(null);
 
   useEffect(() => {
@@ -102,6 +103,12 @@ export default function AdminDashboard() {
 
   // Effective role: when impersonating a Staff Admin, treat as editor for gating.
   const effectiveRole = impersonatedRole === "editor" ? "editor" : role;
+  // Main owner (Jared) sees the restricted tiles; sub-admins do not.
+  // When the owner is "viewing as" a Staff Admin, treat them as a sub-admin
+  // for UI gating so the preview matches what a sub-admin actually sees.
+  const isMainOwner = sessionIsMainOwner && impersonatedRole !== "editor";
+  // Layout helper: true admins (incl. main owner) get the multi-row layout;
+  // sub-admins get the simpler single-row layout.
   const isAdminRole = effectiveRole === "admin";
 
   const [actions, setActions] = useState<ActionCard[]>([]);
@@ -329,10 +336,12 @@ export default function AdminDashboard() {
       {/* Rows 2+ — visible to admins and staff admins */}
       <>
           {(() => {
+            // Only the main owner (Jared) sees Members At Risk and MRR.
+            // Sub-admins see every other tile.
             const visibleActions = actions.filter(
-              (a) => isAdminRole || (a.label !== "Members At Risk" && a.label !== "Active This Week")
+              (a) => isMainOwner || a.label !== "Members At Risk"
             );
-            const visibleStats = ownerStats.filter((s) => isAdminRole || s.label !== "MRR");
+            const visibleStats = ownerStats.filter((s) => isMainOwner || s.label !== "MRR");
 
             const renderAction = (a: ActionCard) => (
               <Link
@@ -392,9 +401,10 @@ export default function AdminDashboard() {
             );
 
             if (!isAdminRole) {
-              // Staff admin view: Pending Audits + Hire Waitlist + Avg Audit Score in one neat 3-col row.
+              // Staff admin view: Pending Audits + Hire Waitlist + Active This Week
+              // + Avg Audit Score in one neat 4-col row.
               return (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {visibleActions.map(renderAction)}
                   {visibleStats.map(renderStat)}
                 </div>

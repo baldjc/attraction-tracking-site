@@ -8,6 +8,22 @@ const EDITOR_VISIBLE_TIERS: ServiceTier[] = [
   ServiceTier.mastery_4,
 ];
 
+const DEFAULT_OWNER_EMAIL = "jared@chamberlaingroup.ca";
+
+/**
+ * The single "main owner" email — the founder admin (Jared) who has full
+ * unrestricted visibility. Other admin/editor accounts are sub-admins and
+ * may be scoped to a subset of members via `User.allowedMemberIds`.
+ */
+export function getMainOwnerEmail(): string {
+  return (process.env.ADMIN_EMAIL ?? DEFAULT_OWNER_EMAIL).trim().toLowerCase();
+}
+
+export function isMainOwnerEmail(email: string | null | undefined): boolean {
+  if (!email) return false;
+  return email.trim().toLowerCase() === getMainOwnerEmail();
+}
+
 export async function getSessionRole(): Promise<{ id: string; role: string } | null> {
   const session = await auth();
   if (!session?.user) return null;

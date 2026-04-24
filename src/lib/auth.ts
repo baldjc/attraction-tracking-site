@@ -3,6 +3,14 @@ import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import prisma from "./prisma";
 
+// Inlined to avoid circular import with `@/lib/auth-utils` (which itself
+// depends on `auth`). Keep in sync with `getMainOwnerEmail` there.
+function isMainOwnerEmail(email: string | null | undefined): boolean {
+  if (!email) return false;
+  const owner = (process.env.ADMIN_EMAIL ?? "jared@chamberlaingroup.ca").trim().toLowerCase();
+  return email.trim().toLowerCase() === owner;
+}
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
   secret: process.env.SESSION_SECRET ?? process.env.AUTH_SECRET,
   trustHost: true,
@@ -60,6 +68,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (user) {
         token.role = (user as any).role;
         token.id = user.id;
+        const u = user as { email?: string | null };
+        if (u.email) token.email = u.email;
       }
       return token;
     },
@@ -67,6 +77,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (session.user) {
         (session.user as any).role = token.role;
         (session.user as any).id = token.id;
+        const su = session.user as { email?: string | null; isMainOwner?: boolean };
+        su.isMainOwner = isMainOwnerEmail(
+          (token.email as string | undefined) ?? su.email ?? null,
+        );
       }
       return session;
     },

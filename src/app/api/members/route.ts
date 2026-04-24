@@ -1,18 +1,19 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import { isAdminOrEditor, editorTierFilter } from "@/lib/auth-utils";
+import { isAdminOrEditor, editorTierFilter, isMainOwnerEmail } from "@/lib/auth-utils";
 import { staffMemberIdFilter } from "@/lib/staff-access";
 
 export async function GET() {
   const session = await auth();
-  const sessionUser = session?.user as { id?: string; role?: string } | undefined;
+  const sessionUser = session?.user as { id?: string; role?: string; email?: string } | undefined;
   const role = sessionUser?.role;
   const userId = sessionUser?.id;
   if (!session?.user || !isAdminOrEditor(role ?? "") || !userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const isOwner = isMainOwnerEmail(sessionUser?.email ?? null);
   const tierFilter = editorTierFilter(role ?? "");
   const allowedFilter = await staffMemberIdFilter(userId);
 
@@ -204,8 +205,9 @@ export async function GET() {
       return sum + (currency === "USD" ? Math.round(amount * USD_TO_CAD) : amount);
     }, 0);
 
-  const isAdminRole = role === "admin";
-  const sanitizedMembers = isAdminRole
+  // Stripe / billing data is owner-only. Admins (incl. sub-admins) and editors
+  // who are not the main owner get the redacted view.
+  const sanitizedMembers = isOwner
     ? memberRows
     : memberRows.map((m) => ({
         ...m,
@@ -226,7 +228,7 @@ export async function GET() {
       inactiveMembers,
       linkClicks7d: clicksResult._count,
       topLead,
-      mrr: isAdminRole ? mrr : null,
+      mrr: isOwner ? mrr : null,
       usdToCadRate: USD_TO_CAD,
     },
     recentVideos,
