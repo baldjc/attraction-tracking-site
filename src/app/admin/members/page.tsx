@@ -66,7 +66,7 @@ interface Member {
 type TierFilter = "all" | "foundations" | "production" | "growth" | "done_with_you";
 type SubFilter = "all" | "active" | "past_due" | "cancelled" | "none";
 type StatusFilter = "all" | "active" | "at_risk" | "inactive";
-type SortKey = "fullName" | "videos7d" | "clicks7d" | "conversions7d" | "toolUses7d" | "latestAuditScore" | "lastLoginAt" | "lastVideoAt";
+type SortKey = "fullName" | "videos7d" | "clicks7d" | "conversions7d" | "latestAuditScore" | "lastLoginAt" | "lastVideoAt";
 type SortDir = "asc" | "desc";
 
 const PAGE_SIZE = 50;
@@ -345,7 +345,7 @@ function MembersPageInner() {
     const headers = [
       "Name", "Email", "YouTube Handle", "Tier", "Subscription",
       "Audit Score", "Videos (7d)", "Clicks (7d)", "Conversions (7d)",
-      "Tool Uses (7d)", "Last Active",
+      "Last Active",
     ];
     const rows = filtered.map((m: Member) => [
       m.fullName || "",
@@ -357,7 +357,6 @@ function MembersPageInner() {
       m.videos7d ?? 0,
       m.clicks7d ?? 0,
       m.conversions7d ?? 0,
-      m.toolUses7d ?? 0,
       m.lastLoginAt ? new Date(m.lastLoginAt).toISOString().split("T")[0] : "Never",
     ]);
     const csv = [headers, ...rows]
@@ -742,9 +741,6 @@ function MembersPageInner() {
                   <th className={thCls} onClick={() => toggleSort("conversions7d")}>
                     Conv. (7d) <SortIcon col="conversions7d" />
                   </th>
-                  <th className={thCls} onClick={() => toggleSort("toolUses7d")}>
-                    Tools (7d) <SortIcon col="toolUses7d" />
-                  </th>
                   <th className={thCls} onClick={() => toggleSort("lastLoginAt")}>
                     Last Active <SortIcon col="lastLoginAt" />
                   </th>
@@ -841,7 +837,6 @@ function MembersPageInner() {
                       <td className={`px-4 py-3 ${muted}`}>{m.videos7d || <span className={dim}>0</span>}</td>
                       <td className={`px-4 py-3 ${muted}`}>{m.clicks7d || <span className={dim}>0</span>}</td>
                       <td className={`px-4 py-3 ${muted}`}>{m.conversions7d || <span className={dim}>0</span>}</td>
-                      <td className={`px-4 py-3 ${muted}`}>{m.toolUses7d || <span className={dim}>0</span>}</td>
                       <td className="px-4 py-3">
                         {(() => {
                           const la = fmtLastActive(m.lastLoginAt);
