@@ -75,7 +75,10 @@ export default function RichMarkdownEditor({
         linkify: true,
         breaks: true,
         transformPastedText: true,
-        transformCopiedText: true,
+        // Copy the rendered/plain text instead of the underlying markdown source.
+        // Otherwise selections include things like `<https://…>` autolinks and
+        // trailing `\` line-end escapes, which YouTube and other destinations reject.
+        transformCopiedText: false,
       }),
     ],
     content: value || "",
