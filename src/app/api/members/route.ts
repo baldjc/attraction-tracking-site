@@ -174,6 +174,7 @@ export async function GET() {
         stripePlanName: member.stripePlanName ?? null,
         stripeCurrentPeriodEnd: member.stripeCurrentPeriodEnd?.toISOString() ?? null,
         stripePriceAmount: member.stripePriceAmount ?? null,
+        stripeLineItems: member.stripeLineItems ?? null,
         lastVideoAt: lastVideoDate?.toISOString() ?? null,
         videos7d: member.youtubeVideos.length,
         clicks7d,

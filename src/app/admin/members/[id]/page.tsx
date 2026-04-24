@@ -1501,6 +1501,47 @@ export default function MemberDetailPage() {
                         </span>
                       </div>
                     )}
+                    {!isEditorRole && Array.isArray(member.stripeLineItems) && member.stripeLineItems.length > 1 && (
+                      <div className="pt-2 mt-1 border-t border-gray-100">
+                        <div className="text-[10px] uppercase tracking-wide text-[#2f3437]/40 mb-1.5">Line items</div>
+                        <ul className="space-y-1.5">
+                          {member.stripeLineItems.map((li: {
+                            productId: string | null;
+                            productName: string | null;
+                            priceId: string;
+                            unitAmount: number | null;
+                            quantity: number;
+                            currency: string;
+                            interval: string | null;
+                          }, idx: number) => {
+                            const cur = (li.currency || "CAD").toUpperCase();
+                            const formatter = new Intl.NumberFormat("en-CA", { style: "currency", currency: cur, maximumFractionDigits: 0 });
+                            const lineAmount = li.unitAmount != null
+                              ? formatter.format((li.unitAmount * li.quantity) / 100)
+                              : null;
+                            const unitDisplay = li.unitAmount != null
+                              ? `${formatter.format(li.unitAmount / 100)}${li.quantity > 1 ? ` × ${li.quantity}` : ""}`
+                              : null;
+                            const intervalSuffix = li.interval === "year" ? "/yr" : li.interval ? "/mo" : "";
+                            return (
+                              <li key={li.priceId || idx} className="flex items-start justify-between gap-2 text-xs">
+                                <span className="text-[#2f3437]/70 truncate" title={li.productName ?? li.priceId}>
+                                  {li.productName || "Line item"}
+                                </span>
+                                <span className="text-right shrink-0">
+                                  {lineAmount && (
+                                    <span className="font-medium text-[#2f3437]">{lineAmount}{intervalSuffix}</span>
+                                  )}
+                                  {unitDisplay && li.quantity > 1 && (
+                                    <span className="block text-[10px] text-[#2f3437]/40">{unitDisplay}</span>
+                                  )}
+                                </span>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </div>
+                    )}
                     {member.stripeCurrentPeriodEnd && (
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-[#2f3437]/50 text-xs">

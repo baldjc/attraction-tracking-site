@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import { stripe } from "@/lib/stripe";
+import { stripe, extractSubscriptionSummary } from "@/lib/stripe";
 import { isAdminOrEditor } from "@/lib/auth-utils";
 
 export const runtime = "nodejs";
 
 export async function POST() {
   const session = await auth();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const role = (session?.user as any)?.role;
   if (!session?.user || !isAdminOrEditor(role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -16,7 +17,11 @@ export async function POST() {
   const subscribers = await prisma.user.findMany({
     where: {
       stripeSubscriptionId: { not: null },
-      OR: [{ stripePriceAmount: null }, { stripeCurrency: null }],
+      OR: [
+        { stripePriceAmount: null },
+        { stripeCurrency: null },
+        { stripeLineItems: { equals: null } },
+      ],
     },
     select: { id: true, email: true, stripeSubscriptionId: true },
   });
@@ -29,19 +34,18 @@ export async function POST() {
       const sub = await stripe.subscriptions.retrieve(user.stripeSubscriptionId!, {
         expand: ["items.data.price"],
       });
-      const price = sub.items.data[0]?.price;
-      const priceAmount = price?.unit_amount ?? null;
-      const currency = price?.currency ? price.currency.toUpperCase() : null;
-      if (priceAmount !== null || currency !== null) {
-        await prisma.user.update({
-          where: { id: user.id },
-          data: {
-            ...(priceAmount !== null ? { stripePriceAmount: priceAmount } : {}),
-            ...(currency !== null ? { stripeCurrency: currency } : {}),
-          },
-        });
-        updated++;
-      }
+      const summary = await extractSubscriptionSummary(sub);
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          ...(summary.totalAmount !== null ? { stripePriceAmount: summary.totalAmount } : {}),
+          ...(summary.currency !== null ? { stripeCurrency: summary.currency } : {}),
+          stripePlanName: summary.combinedPlanName,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          stripeLineItems: summary.lineItems as any,
+        },
+      });
+      updated++;
     } catch {
       failed++;
     }

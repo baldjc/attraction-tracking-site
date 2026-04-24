@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
-import { stripe } from "@/lib/stripe";
+import { stripe, extractSubscriptionSummary } from "@/lib/stripe";
 import prisma from "@/lib/prisma";
 
 export const runtime = "nodejs";
@@ -63,49 +63,40 @@ export async function POST(req: Request) {
     const subscription = event.data.object as Stripe.Subscription;
     const customerId = subscription.customer as string;
     const status = subscription.status;
-    // current_period_end was removed from the top-level subscription object in Stripe API 2024-09-30+.
-    // It now lives on each subscription item's period. We try both places and skip if neither resolves.
-    const rawPeriodEnd: number | null | undefined =
-      (subscription as any).current_period_end ??
-      (subscription.items?.data?.[0] as any)?.period?.end ??
-      null;
-    const periodEnd = rawPeriodEnd ? new Date(rawPeriodEnd * 1000) : null;
 
-    // Get product name, price amount, and currency
-    let planName: string | null = null;
-    let priceAmount: number | null = null;
-    let priceCurrency: string | null = null;
+    let summary;
     try {
-      const priceItem = subscription.items.data[0];
-      if (priceItem?.price) {
-        priceAmount = priceItem.price.unit_amount ?? null;
-        priceCurrency = priceItem.price.currency ? priceItem.price.currency.toUpperCase() : null;
-        if (priceItem.price.product) {
-          const product = await stripe.products.retrieve(priceItem.price.product as string);
-          planName = product.name;
-        }
-      }
-    } catch {
-      // product not retrievable
+      summary = await extractSubscriptionSummary(subscription);
+    } catch (err) {
+      console.error("[stripe-webhook] Failed to extract subscription summary:", err);
+      summary = null;
     }
 
     const user = await findUser(customerId);
     if (user) {
-      const tier = planName ? productNameToTier(planName) : null;
+      const tier = summary?.primaryPlanName ? productNameToTier(summary.primaryPlanName) : null;
       await prisma.user.update({
         where: { id: user.id },
         data: {
           stripeCustomerId: customerId,
           stripeSubscriptionId: subscription.id,
           subscriptionStatus: status,
-          stripePlanName: planName,
-          ...(periodEnd ? { stripeCurrentPeriodEnd: periodEnd } : {}),
-          ...(priceAmount !== null ? { stripePriceAmount: priceAmount } : {}),
-          ...(priceCurrency !== null ? { stripeCurrency: priceCurrency } : {}),
+          ...(summary
+            ? {
+                stripePlanName: summary.combinedPlanName,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                stripeLineItems: summary.lineItems as any,
+                ...(summary.periodEnd ? { stripeCurrentPeriodEnd: summary.periodEnd } : {}),
+                ...(summary.totalAmount !== null ? { stripePriceAmount: summary.totalAmount } : {}),
+                ...(summary.currency !== null ? { stripeCurrency: summary.currency } : {}),
+              }
+            : {}),
           ...(status === "active" && tier ? { serviceTier: tier } : {}),
         },
       });
-      console.log(`[stripe-webhook] Updated user ${user.email}: status=${status}, plan=${planName}`);
+      console.log(
+        `[stripe-webhook] Updated user ${user.email}: status=${status}, plan=${summary?.combinedPlanName ?? "?"}, items=${summary?.lineItems.length ?? 0}, total=${summary?.totalAmount ?? "?"}`,
+      );
     } else {
       console.warn(`[stripe-webhook] No user found for Stripe customer ${customerId}`);
     }

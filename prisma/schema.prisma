@@ -95,6 +95,7 @@ model User {
   stripeCurrentPeriodEnd  DateTime?
   stripePriceAmount       Int?
   stripeCurrency          String?
+  stripeLineItems         Json?
   lastPaymentReminderSentAt DateTime?
   slackUserId       String?
   skoolProfile      String?
