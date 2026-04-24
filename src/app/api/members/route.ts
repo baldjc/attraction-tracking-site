@@ -191,7 +191,7 @@ export async function GET() {
     .filter(Boolean)
     .sort((a, b) => b!.getTime() - a!.getTime())[0];
 
-  const activeMembers = memberRows.filter((m) => m.status === "active").length;
+  const activeMembers = memberRows.length;
   const inactiveMembers = memberRows.filter((m) => m.status === "inactive").length;
   const videosThisWeek = memberRows.reduce((sum, m) => sum + m.videos7d, 0);
   const rateSetting = await prisma.appSetting.findUnique({ where: { key: "usd_to_cad_rate" } });
