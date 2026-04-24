@@ -2,7 +2,7 @@ import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { IMPERSONATE_COOKIE } from "@/lib/impersonate-constants";
+import { IMPERSONATE_COOKIE, parseImpersonateCookie } from "@/lib/impersonate-constants";
 
 /**
  * Staff (admin or editor) member-scope access helpers.
@@ -41,7 +41,10 @@ function parseAllowed(raw: unknown): string[] | null {
 export async function getEffectiveStaffUserId(actorId: string): Promise<string> {
   try {
     const cookieStore = await cookies();
-    const impersonateId = cookieStore.get(IMPERSONATE_COOKIE)?.value;
+    const impersonateId = parseImpersonateCookie(
+      cookieStore.get(IMPERSONATE_COOKIE)?.value,
+      actorId,
+    );
     if (!impersonateId || impersonateId === actorId) return actorId;
     const target = await prisma.user.findUnique({
       where: { id: impersonateId },
@@ -57,8 +60,14 @@ export async function getEffectiveStaffUserId(actorId: string): Promise<string> 
 /** True if the actor is currently impersonating a Staff Admin (editor). */
 export async function isImpersonatingStaff(): Promise<boolean> {
   try {
+    const session = await auth();
+    const actorId = (session?.user as { id?: string } | undefined)?.id;
+    if (!actorId) return false;
     const cookieStore = await cookies();
-    const impersonateId = cookieStore.get(IMPERSONATE_COOKIE)?.value;
+    const impersonateId = parseImpersonateCookie(
+      cookieStore.get(IMPERSONATE_COOKIE)?.value,
+      actorId,
+    );
     if (!impersonateId) return false;
     const target = await prisma.user.findUnique({
       where: { id: impersonateId },
