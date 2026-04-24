@@ -80,14 +80,19 @@ export async function isImpersonatingStaff(): Promise<boolean> {
 }
 
 /** True if the given staff user is allowed to access the given member id.
- *  Honors impersonation: if the actor is "viewing as" a Staff Admin, the
- *  impersonated user's restrictions are enforced instead of the actor's. */
+ *  An actual admin (true session role) always has access — even if they're
+ *  currently "viewing as" a Staff Admin for UI purposes — so an admin never
+ *  gets locked out of member data because of a stale impersonation cookie. */
 export async function canStaffAccessMember(
   staffUserId: string,
   memberId: string
 ): Promise<boolean> {
+  // Real session user — bypass scoping entirely if they are admin.
+  const actor = await loadStaff(staffUserId);
+  if (actor?.role === "admin") return true;
+
   const effectiveId = await getEffectiveStaffUserId(staffUserId);
-  const staff = await loadStaff(effectiveId);
+  const staff = effectiveId === staffUserId ? actor : await loadStaff(effectiveId);
   if (!staff) return false;
   if (staff.role === "admin") return true;
   if (staff.role !== "editor") return false;
@@ -104,8 +109,13 @@ export async function canStaffAccessMember(
 export async function staffMemberIdFilter(
   staffUserId: string
 ): Promise<{ in: string[] } | undefined> {
+  // Real session user — admins always see everything regardless of any
+  // active impersonation cookie.
+  const actor = await loadStaff(staffUserId);
+  if (actor?.role === "admin") return undefined;
+
   const effectiveId = await getEffectiveStaffUserId(staffUserId);
-  const staff = await loadStaff(effectiveId);
+  const staff = effectiveId === staffUserId ? actor : await loadStaff(effectiveId);
   if (!staff || staff.role === "admin") return undefined;
   if (staff.role !== "editor") return { in: [] };
   const allowed = parseAllowed(staff.allowedMemberIds);
