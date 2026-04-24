@@ -181,6 +181,7 @@ export async function GET() {
         conversions7d,
         toolUses7d,
         status,
+        lastLoginAt: member.lastLoginAt?.toISOString() ?? null,
       };
     })
   );

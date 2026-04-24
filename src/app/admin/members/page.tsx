@@ -60,12 +60,13 @@ interface Member {
   conversions7d: number;
   toolUses7d: number;
   status: string;
+  lastLoginAt: string | null;
 }
 
 type TierFilter = "all" | "foundations" | "production" | "growth" | "done_with_you";
 type SubFilter = "all" | "active" | "past_due" | "cancelled" | "none";
 type StatusFilter = "all" | "active" | "at_risk" | "inactive";
-type SortKey = "fullName" | "videos7d" | "clicks7d" | "conversions7d" | "toolUses7d" | "latestAuditScore" | "status" | "lastVideoAt";
+type SortKey = "fullName" | "videos7d" | "clicks7d" | "conversions7d" | "toolUses7d" | "latestAuditScore" | "lastLoginAt" | "lastVideoAt";
 type SortDir = "asc" | "desc";
 
 const PAGE_SIZE = 50;
@@ -124,6 +125,19 @@ function fmtPeriodEnd(iso: string | null, status: string | null) {
   const d = new Date(iso);
   const formatted = d.toLocaleDateString("en-CA", { month: "short", day: "numeric" });
   return status === "cancelled" ? `Ended ${formatted}` : `Renews ${formatted}`;
+}
+
+function fmtLastActive(iso: string | null): { label: string; tone: "ok" | "warn" | "stale" | "never" } {
+  if (!iso) return { label: "Never", tone: "never" };
+  const d = new Date(iso);
+  const days = Math.floor((Date.now() - d.getTime()) / 86400000);
+  let label: string;
+  if (days <= 0) label = "Today";
+  else if (days === 1) label = "Yesterday";
+  else if (days < 30) label = `${days}d ago`;
+  else label = d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: days > 330 ? "numeric" : undefined });
+  const tone: "ok" | "warn" | "stale" | "never" = days <= 7 ? "ok" : days <= 30 ? "warn" : "stale";
+  return { label, tone };
 }
 
 function scoreColor(score: number | null) {
@@ -331,7 +345,7 @@ function MembersPageInner() {
     const headers = [
       "Name", "Email", "YouTube Handle", "Tier", "Subscription",
       "Audit Score", "Videos (7d)", "Clicks (7d)", "Conversions (7d)",
-      "Tool Uses (7d)", "Status",
+      "Tool Uses (7d)", "Last Active",
     ];
     const rows = filtered.map((m: Member) => [
       m.fullName || "",
@@ -344,7 +358,7 @@ function MembersPageInner() {
       m.clicks7d ?? 0,
       m.conversions7d ?? 0,
       m.toolUses7d ?? 0,
-      m.status || "",
+      m.lastLoginAt ? new Date(m.lastLoginAt).toISOString().split("T")[0] : "Never",
     ]);
     const csv = [headers, ...rows]
       .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","))
@@ -420,13 +434,14 @@ function MembersPageInner() {
     .filter((m) => matchesSubFilter(m, subFilter))
     .filter((m) => statusFilter === "all" || m.status === statusFilter)
     .sort((a, b) => {
-      let av: any = a[sortKey];
-      let bv: any = b[sortKey];
-      if (av === null || av === undefined) av = sortDir === "asc" ? Infinity : -Infinity;
-      if (bv === null || bv === undefined) bv = sortDir === "asc" ? Infinity : -Infinity;
+      const av = a[sortKey];
+      const bv = b[sortKey];
+      if (av == null && bv == null) return 0;
+      if (av == null) return 1;
+      if (bv == null) return -1;
       if (typeof av === "string" && typeof bv === "string")
         return sortDir === "asc" ? av.localeCompare(bv) : bv.localeCompare(av);
-      return sortDir === "asc" ? av - bv : bv - av;
+      return sortDir === "asc" ? (av as number) - (bv as number) : (bv as number) - (av as number);
     });
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
@@ -688,7 +703,6 @@ function MembersPageInner() {
           paginated.map((m) => (
             <Link key={m.id} href={`/admin/members/${m.id}`} className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors">
               <div className="flex items-center gap-2 min-w-0 flex-wrap">
-                <StatusDot status={m.status} />
                 <span className="font-medium text-[#2f3437] text-sm truncate">{m.fullName || "—"}</span>
                 <span className="shrink-0">{tierBadge(m.serviceTier)}</span>
               </div>
@@ -696,7 +710,7 @@ function MembersPageInner() {
                 <div className={`text-xs font-semibold ${scoreColor(m.latestAuditScore)}`}>
                   {m.latestAuditScore != null ? `${m.latestAuditScore.toFixed(1)}/10` : "—"}
                 </div>
-                <div className={`text-xs ${muted}`}>{m.videos7d}v</div>
+                <div className={`text-xs ${muted}`}>{fmtLastActive(m.lastLoginAt).label}</div>
               </div>
             </Link>
           ))
@@ -731,8 +745,8 @@ function MembersPageInner() {
                   <th className={thCls} onClick={() => toggleSort("toolUses7d")}>
                     Tools (7d) <SortIcon col="toolUses7d" />
                   </th>
-                  <th className={thCls} onClick={() => toggleSort("status")}>
-                    Status <SortIcon col="status" />
+                  <th className={thCls} onClick={() => toggleSort("lastLoginAt")}>
+                    Last Active <SortIcon col="lastLoginAt" />
                   </th>
                 </tr>
               </thead>
@@ -828,7 +842,17 @@ function MembersPageInner() {
                       <td className={`px-4 py-3 ${muted}`}>{m.clicks7d || <span className={dim}>0</span>}</td>
                       <td className={`px-4 py-3 ${muted}`}>{m.conversions7d || <span className={dim}>0</span>}</td>
                       <td className={`px-4 py-3 ${muted}`}>{m.toolUses7d || <span className={dim}>0</span>}</td>
-                      <td className="px-4 py-3"><StatusDot status={m.status} /></td>
+                      <td className="px-4 py-3">
+                        {(() => {
+                          const la = fmtLastActive(m.lastLoginAt);
+                          const cls =
+                            la.tone === "ok" ? "text-green-700"
+                            : la.tone === "warn" ? "text-amber-700"
+                            : la.tone === "stale" ? "text-red-700"
+                            : dim;
+                          return <span className={`text-sm whitespace-nowrap ${cls}`}>{la.label}</span>;
+                        })()}
+                      </td>
                     </tr>
                   ))
                 )}
