@@ -113,6 +113,7 @@ export default function ArcScriptChatPhase({
   const [draftSaved, setDraftSaved] = useState(resumeMessages && resumeMessages.length > 0);
   const [draftSaveError, setDraftSaveError] = useState(false);
   const draftSavedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const draftIdRef = useRef<string | null>(draftId ?? null);
   const [savedScriptId, setSavedScriptId] = useState<string | null>(null);
   const [plannerOpen, setPlannerOpen] = useState(false);
   const [plannerPlans, setPlannerPlans] = useState<Array<{ id: string; title: string; status: string }>>([]);
@@ -161,7 +162,10 @@ export default function ArcScriptChatPhase({
         if (data?.id) setSavedScriptId(data.id);
         setSaved(true);
         // Clean up draft — script is now saved permanently
-        fetch(`/api/ai-tools/arc-script-builder/draft?videoTitle=${encodeURIComponent(initialData.title)}`, { method: "DELETE" }).catch(() => {});
+        const cleanupId = draftIdRef.current;
+        if (cleanupId) {
+          fetch(`/api/ai-tools/arc-script-builder/draft?id=${encodeURIComponent(cleanupId)}`, { method: "DELETE" }).catch(() => {});
+        }
       })
       .catch(() => setSaveError("Auto-save failed. Use the save button below to retry."))
       .finally(() => setSaving(false));
@@ -177,6 +181,7 @@ export default function ArcScriptChatPhase({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          id: draftIdRef.current ?? undefined,
           videoTitle: initialData.title,
           planId: linkedPlanId ?? undefined,
           initialData,
@@ -195,6 +200,10 @@ export default function ArcScriptChatPhase({
         console.error("[arc-draft] save failed", detail);
         throw new Error(detail);
       }
+      try {
+        const data = await res.json();
+        if (data?.id) draftIdRef.current = data.id;
+      } catch {}
       setDraftSaved(true);
       draftSavedTimerRef.current = setTimeout(() => setDraftSaved(false), 3000);
     } catch (e) {

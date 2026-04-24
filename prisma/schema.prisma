@@ -921,7 +921,6 @@ model ScriptDraft {
   updatedAt         DateTime @updatedAt
   createdAt         DateTime @default(now())
 
-  @@unique([userId, videoTitle])
   @@index([userId])
   @@index([userId, planId])
   @@map("script_drafts")

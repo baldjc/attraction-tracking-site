@@ -43,13 +43,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "invalid_json", detail: e?.message ?? "could not parse body" }, { status: 400 });
   }
 
-  const { videoTitle, planId, initialData, messages, currentSection, completedSections, sectionApprovals } = body;
+  const { id, videoTitle, planId, initialData, messages, currentSection, completedSections, sectionApprovals } = body;
 
   if (!videoTitle || typeof videoTitle !== "string") {
     return NextResponse.json({ error: "videoTitle required" }, { status: 400 });
   }
 
   const planIdValue: string | null = typeof planId === "string" && planId.length > 0 ? planId : null;
+  const idValue: string | null = typeof id === "string" && id.length > 0 ? id : null;
 
   // Sanitize: ensure JSON-typed fields are the right shape so Prisma never
   // chokes on unexpected payloads (e.g. undefined nested values).
@@ -61,23 +62,56 @@ export async function POST(req: NextRequest) {
     ? currentSection
     : "research_strategy";
 
+  const updateData = {
+    videoTitle,
+    // Only overwrite planId when the caller actually provided one — never
+    // unlink a draft from its plan on a subsequent save that omitted planId.
+    ...(planIdValue !== null ? { planId: planIdValue } : {}),
+    initialData: safeInitialData,
+    messages: safeMessages,
+    currentSection: safeCurrentSection,
+    completedSections: safeCompleted,
+    sectionApprovals: safeApprovals,
+  };
+
   try {
-    const draft = await prisma.scriptDraft.upsert({
-      where: { userId_videoTitle: { userId: user.id, videoTitle } },
-      create: {
+    // 1) If the client already knows the draft id, update that exact row.
+    if (idValue) {
+      const existing = await prisma.scriptDraft.findFirst({
+        where: { id: idValue, userId: user.id },
+        select: { id: true },
+      });
+      if (existing) {
+        const draft = await prisma.scriptDraft.update({
+          where: { id: existing.id },
+          data: updateData,
+        });
+        return NextResponse.json({ id: draft.id });
+      }
+    }
+
+    // 2) Otherwise, if there's a plan context, reuse the existing draft for that plan.
+    if (planIdValue) {
+      const existing = await prisma.scriptDraft.findFirst({
+        where: { userId: user.id, planId: planIdValue },
+        orderBy: { updatedAt: "desc" },
+        select: { id: true },
+      });
+      if (existing) {
+        const draft = await prisma.scriptDraft.update({
+          where: { id: existing.id },
+          data: updateData,
+        });
+        return NextResponse.json({ id: draft.id });
+      }
+    }
+
+    // 3) No id, no matching plan-linked draft — create a fresh one.
+    const draft = await prisma.scriptDraft.create({
+      data: {
         userId: user.id,
         videoTitle,
         planId: planIdValue,
-        initialData: safeInitialData,
-        messages: safeMessages,
-        currentSection: safeCurrentSection,
-        completedSections: safeCompleted,
-        sectionApprovals: safeApprovals,
-      },
-      update: {
-        // Only overwrite planId when the caller actually provided one — never
-        // unlink a draft from its plan on a subsequent save that omitted planId.
-        ...(planIdValue !== null ? { planId: planIdValue } : {}),
         initialData: safeInitialData,
         messages: safeMessages,
         currentSection: safeCurrentSection,
@@ -89,10 +123,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ id: draft.id });
   } catch (e: any) {
     const payloadBytes = JSON.stringify(body ?? {}).length;
-    console.error("[draft POST] upsert failed", {
+    console.error("[draft POST] save failed", {
       userId: user.id,
       videoTitle,
       planId: planIdValue,
+      draftId: idValue,
       messageCount: safeMessages.length,
       payloadBytes,
       code: e?.code,
