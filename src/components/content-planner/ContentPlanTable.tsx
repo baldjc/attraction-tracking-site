@@ -308,9 +308,23 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
           </select>
         );
       }
+      const themeMeta = plan.theme ? themes.find((t) => t.name === plan.theme) : null;
       return (
-        <div className="cursor-pointer text-xs text-[#2f3437]/70 hover:text-[#2f3437]" onClick={() => startEdit(plan.id, "theme", plan.theme)}>
-          {plan.theme || <span className="text-[#2f3437]/30 italic">Click to set</span>}
+        <div className="cursor-pointer" onClick={() => startEdit(plan.id, "theme", plan.theme)}>
+          {plan.theme ? (
+            <span
+              className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap"
+              style={{
+                backgroundColor: themeMeta?.colour ? `${themeMeta.colour}1A` : "#eaeaea",
+                color: themeMeta?.colour ?? "#2f3437",
+              }}
+            >
+              {themeMeta?.emoji && <span className="text-sm leading-none">{themeMeta.emoji}</span>}
+              <span>{plan.theme}</span>
+            </span>
+          ) : (
+            <span className="text-xs text-[#2f3437]/30 italic">Click to set</span>
+          )}
         </div>
       );
     }
