@@ -488,11 +488,6 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
                     Shoot Date <SortIcon col="shootDate" />
                   </button>
                 </th>
-                <th className="text-left px-4 py-2.5 font-medium whitespace-nowrap">
-                  <button onClick={() => handleSort("publishDate")} className="flex items-center gap-0.5 hover:text-[#2f3437] transition-colors">
-                    Publish Date <SortIcon col="publishDate" />
-                  </button>
-                </th>
                 {showEditDue && (
                   <th className="text-left px-4 py-2.5 font-medium whitespace-nowrap">
                     <button onClick={() => handleSort("editDueDate")} className="flex items-center gap-0.5 hover:text-[#2f3437] transition-colors">
@@ -500,6 +495,11 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
                     </button>
                   </th>
                 )}
+                <th className="text-left px-4 py-2.5 font-medium whitespace-nowrap">
+                  <button onClick={() => handleSort("publishDate")} className="flex items-center gap-0.5 hover:text-[#2f3437] transition-colors">
+                    Publish Date <SortIcon col="publishDate" />
+                  </button>
+                </th>
                 <th className="text-left px-4 py-2.5 font-medium whitespace-nowrap">
                   <button onClick={() => handleSort("priority")} className="flex items-center gap-0.5 hover:text-[#2f3437] transition-colors">
                     Priority <SortIcon col="priority" />
@@ -540,8 +540,8 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
                   <td className="px-4 py-2.5">{renderCell(plan, "status")}</td>
                   <td className="px-4 py-2.5">{renderCell(plan, "theme")}</td>
                   <td className="px-4 py-2.5">{renderCell(plan, "shootDate")}</td>
-                  <td className="px-4 py-2.5">{renderCell(plan, "publishDate")}</td>
                   {showEditDue && <td className="px-4 py-2.5">{renderCell(plan, "editDueDate")}</td>}
+                  <td className="px-4 py-2.5">{renderCell(plan, "publishDate")}</td>
                   <td className="px-4 py-2.5">{renderCell(plan, "priority")}</td>
                   <td className="px-4 py-2.5">{renderCell(plan, "thumbnailWords")}</td>
                   {showDriveFolder && <td className="px-4 py-2.5 text-center">{renderCell(plan, "driveFolderLink")}</td>}
