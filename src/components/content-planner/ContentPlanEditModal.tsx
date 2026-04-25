@@ -525,54 +525,6 @@ Produce a research brief I can hand to a script writer. For **each talking point
             </div>
           )}
 
-          {repurposeArtifacts.length > 0 && (
-            <div className="rounded-xl border border-[#a78bfa]/25 bg-[#a78bfa]/5 px-4 py-3 space-y-2">
-              <div className="flex items-center justify-between">
-                <p className="text-xs font-bold uppercase tracking-wider text-[#7c5fde]">
-                  ♻️ Repurposed Content
-                </p>
-                <button
-                  type="button"
-                  onClick={() => launchTool("repurpose")}
-                  className="text-[11px] font-semibold text-[#7c5fde] hover:underline"
-                >
-                  Open Repurpose Tool →
-                </button>
-              </div>
-              <ul className="space-y-1.5">
-                {repurposeArtifacts.map(({ type, latest }) => {
-                  const meta = (latest!.metadata ?? {}) as { feedback_used?: string | null };
-                  const feedback = meta.feedback_used?.trim() || "";
-                  const updated = latest!.updatedAt ? new Date(latest!.updatedAt as string) : null;
-                  return (
-                    <li key={latest!.id} className="text-xs text-[#2f3437]/85">
-                      <div className="flex items-center justify-between gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setViewingArtifact({ type, content: latest!.content?.toString() ?? "", label: REPURPOSE_LABELS[type] ?? type })}
-                          className="font-medium hover:text-[#7c5fde] hover:underline truncate"
-                          title={`View ${REPURPOSE_LABELS[type] ?? type}`}
-                        >
-                          {REPURPOSE_LABELS[type] ?? type}
-                        </button>
-                        {updated && (
-                          <span className="text-[10px] text-[#2f3437]/40 shrink-0">
-                            {updated.toLocaleDateString()}
-                          </span>
-                        )}
-                      </div>
-                      {feedback && (
-                        <p className="text-[10px] italic text-[#2f3437]/55 mt-0.5 truncate" title={feedback}>
-                          Last revision: &ldquo;{feedback}&rdquo;
-                        </p>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          )}
-
           {!isAdmin && teamNotes.length > 0 && (
             <div className="rounded-xl border border-[#6ba3c7]/25 bg-[#6ba3c7]/5 px-4 py-3 space-y-2">
               <p className="text-xs font-bold uppercase tracking-wider text-[#6ba3c7]">📝 Notes from your team</p>
@@ -873,6 +825,54 @@ Produce a research brief I can hand to a script writer. For **each talking point
               )}
             </div>
           )}
+
+              {repurposeArtifacts.length > 0 && (
+                <div className="rounded-xl border border-[#a78bfa]/25 bg-[#a78bfa]/5 px-4 py-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-bold uppercase tracking-wider text-[#7c5fde]">
+                      ♻️ Repurposed Content
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => launchTool("repurpose")}
+                      className="text-[11px] font-semibold text-[#7c5fde] hover:underline"
+                    >
+                      Open Repurpose Tool →
+                    </button>
+                  </div>
+                  <ul className="space-y-1.5">
+                    {repurposeArtifacts.map(({ type, latest }) => {
+                      const meta = (latest!.metadata ?? {}) as { feedback_used?: string | null };
+                      const feedback = meta.feedback_used?.trim() || "";
+                      const updated = latest!.updatedAt ? new Date(latest!.updatedAt as string) : null;
+                      return (
+                        <li key={latest!.id} className="text-xs text-[#2f3437]/85">
+                          <div className="flex items-center justify-between gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setViewingArtifact({ type, content: latest!.content?.toString() ?? "", label: REPURPOSE_LABELS[type] ?? type })}
+                              className="font-medium hover:text-[#7c5fde] hover:underline truncate text-left"
+                              title={`View ${REPURPOSE_LABELS[type] ?? type}`}
+                            >
+                              {REPURPOSE_LABELS[type] ?? type}
+                            </button>
+                            {updated && (
+                              <span className="text-[10px] text-[#2f3437]/40 shrink-0">
+                                {updated.toLocaleDateString()}
+                              </span>
+                            )}
+                          </div>
+                          {feedback && (
+                            <p className="text-[10px] italic text-[#2f3437]/55 mt-0.5 truncate" title={feedback}>
+                              Last revision: &ldquo;{feedback}&rdquo;
+                            </p>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
 
             </div>
 
