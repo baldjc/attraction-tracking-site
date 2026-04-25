@@ -501,11 +501,6 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
                   </button>
                 </th>
                 <th className="text-left px-4 py-2.5 font-medium whitespace-nowrap">
-                  <button onClick={() => handleSort("priority")} className="flex items-center gap-0.5 hover:text-[#2f3437] transition-colors">
-                    Priority <SortIcon col="priority" />
-                  </button>
-                </th>
-                <th className="text-left px-4 py-2.5 font-medium whitespace-nowrap">
                   <button onClick={() => handleSort("thumbnailWords")} className="flex items-center gap-0.5 hover:text-[#2f3437] transition-colors">
                     Thumbnail Words and Ideas <SortIcon col="thumbnailWords" />
                   </button>
@@ -542,7 +537,6 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
                   <td className="px-4 py-2.5">{renderCell(plan, "shootDate")}</td>
                   {showEditDue && <td className="px-4 py-2.5">{renderCell(plan, "editDueDate")}</td>}
                   <td className="px-4 py-2.5">{renderCell(plan, "publishDate")}</td>
-                  <td className="px-4 py-2.5">{renderCell(plan, "priority")}</td>
                   <td className="px-4 py-2.5">{renderCell(plan, "thumbnailWords")}</td>
                   {showDriveFolder && <td className="px-4 py-2.5 text-center">{renderCell(plan, "driveFolderLink")}</td>}
                   <td className="px-4 py-2.5">{renderCell(plan, "notes")}</td>
