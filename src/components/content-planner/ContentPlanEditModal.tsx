@@ -233,6 +233,11 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
   // doesn't try to read document.body.
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
+  const [copiedArtifact, setCopiedArtifact] = useState(false);
+  const copiedTimeoutRef = useRef<number | null>(null);
+  useEffect(() => () => {
+    if (copiedTimeoutRef.current) window.clearTimeout(copiedTimeoutRef.current);
+  }, []);
   const [showAllTools, setShowAllTools] = useState(false);
   const [teamNotes, setTeamNotes] = useState<Array<{ id: string; note: string; createdAt: string; author: { name: string } }>>([]);
   const [driveFiles, setDriveFiles] = useState<Array<{ id: string; name: string; webViewLink: string | null; modifiedTime: string | null; mimeType: string | null }> | null>(null);
@@ -1219,11 +1224,20 @@ Produce a research brief I can hand to a script writer. For **each talking point
                 <button
                   type="button"
                   onClick={async () => {
-                    try { await navigator.clipboard.writeText(editingArtifactContent); } catch {}
+                    try {
+                      await navigator.clipboard.writeText(editingArtifactContent);
+                      setCopiedArtifact(true);
+                      if (copiedTimeoutRef.current) window.clearTimeout(copiedTimeoutRef.current);
+                      copiedTimeoutRef.current = window.setTimeout(() => setCopiedArtifact(false), 2000);
+                    } catch {}
                   }}
-                  className="px-3 py-1.5 text-xs font-semibold rounded-md text-[#6ba3c7] hover:bg-[#6ba3c7]/10 transition-colors"
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+                    copiedArtifact
+                      ? "bg-[#6ba3c7]/15 text-[#6ba3c7]"
+                      : "text-[#6ba3c7] hover:bg-[#6ba3c7]/10"
+                  }`}
                 >
-                  Copy
+                  {copiedArtifact ? "Copied!" : "Copy"}
                 </button>
                 <button
                   type="button"
