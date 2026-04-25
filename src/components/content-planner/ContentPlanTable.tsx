@@ -506,9 +506,6 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
                   </button>
                 </th>
                 {showDriveFolder && <th className="text-center px-4 py-2.5 font-medium whitespace-nowrap">Drive</th>}
-                <th className="text-left px-4 py-2.5 font-medium">Notes</th>
-                {showReviewColumn && <th className="hidden md:table-cell text-center px-4 py-2.5 font-medium whitespace-nowrap">Review</th>}
-                {showProgressTrack && <th className="hidden md:table-cell px-4 py-2.5 font-medium whitespace-nowrap">Progress</th>}
                 <th className="px-4 py-2.5 w-10" />
               </tr>
             </thead>
@@ -539,36 +536,6 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
                   <td className="px-4 py-2.5">{renderCell(plan, "publishDate")}</td>
                   <td className="px-4 py-2.5">{renderCell(plan, "thumbnailWords")}</td>
                   {showDriveFolder && <td className="px-4 py-2.5 text-center">{renderCell(plan, "driveFolderLink")}</td>}
-                  <td className="px-4 py-2.5">{renderCell(plan, "notes")}</td>
-                  {showReviewColumn && (
-                    <td className="hidden md:table-cell px-4 py-2.5 text-center">
-                      {(() => {
-                        const review = planArtifacts[plan.id]?.script_review?.[0];
-                        const meta = (review?.metadata ?? {}) as { overallScore?: number | null };
-                        const score = typeof meta.overallScore === "number" ? meta.overallScore : null;
-                        if (score === null) {
-                          return <span className="text-[#2f3437]/30 text-xs italic">—</span>;
-                        }
-                        return (
-                          <span className={`inline-flex items-center text-[10px] font-semibold px-1.5 py-0.5 rounded ${getScoreBadgeClasses(score)}`}>
-                            {score.toFixed(1)}
-                          </span>
-                        );
-                      })()}
-                    </td>
-                  )}
-                  {showProgressTrack && (
-                    <td className="hidden md:table-cell px-4 py-2.5">
-                      <ProgressTrack
-                        compact
-                        steps={resolveProgressSteps(
-                          { id: plan.id, status: plan.status, script: plan.script },
-                          planArtifacts[plan.id] ?? {},
-                          () => setEditingPlan(plan)
-                        )}
-                      />
-                    </td>
-                  )}
                   <td className="px-4 py-2.5">
                     {confirmDelete === plan.id ? (
                       <div className="flex items-center gap-1">
