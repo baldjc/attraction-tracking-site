@@ -13,6 +13,7 @@ import ProgressTrack from "@/components/content-planner/ProgressTrack";
 import { resolveProgressSteps, getSuggestedNextStep, type PlanArtifactsByType } from "@/lib/plan-state";
 import { buildToolUrl } from "@/lib/tool-handoff";
 import MarkdownTextarea from "@/components/MarkdownTextarea";
+import RichMarkdownEditor from "@/components/RichMarkdownEditor";
 import { getScoreBadgeClasses } from "@/lib/score-badge";
 
 export interface ContentPlan {
@@ -1104,34 +1105,45 @@ Produce a research brief I can hand to a script writer. For **each talking point
       </div>
 
       {viewingArtifact && (
+        // Open the artifact viewer as the full-screen editor directly so the
+        // user can read and copy the whole piece without first clicking
+        // "Expand" inside a smaller modal. Layout mirrors the expanded view
+        // used by MarkdownTextarea (max-w-5xl, ~94vh) and uses the toolbar-
+        // enabled RichMarkdownEditor underneath.
         <div
-          className="fixed inset-0 z-[60] bg-black/40 flex items-center justify-center p-4"
+          className="fixed inset-0 z-[200] bg-black/60 flex items-center justify-center p-3 sm:p-6"
           onClick={() => setViewingArtifact(null)}
         >
           <div
-            className="bg-white dark:bg-[#1a1a1a] rounded-2xl shadow-2xl max-w-3xl w-full max-h-[85vh] flex flex-col"
+            className="bg-white dark:bg-[#1a1a1a] rounded-xl shadow-2xl w-full max-w-5xl h-[94vh] flex flex-col overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-white/10">
-              <h4 className="text-sm font-semibold text-[#2f3437] dark:text-white">{viewingArtifact.label}</h4>
+            <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-[#eaeaea] dark:border-white/10">
+              <h3 className="text-sm font-semibold text-[#2f3437] dark:text-white truncate">
+                {viewingArtifact.label}
+              </h3>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={async () => {
                     try { await navigator.clipboard.writeText(editingArtifactContent); } catch {}
                   }}
-                  className="text-xs font-semibold text-[#6ba3c7] hover:underline"
-                >Copy</button>
+                  className="px-3 py-1.5 text-xs font-semibold rounded-md text-[#6ba3c7] hover:bg-[#6ba3c7]/10 transition-colors"
+                >
+                  Copy
+                </button>
                 <button
                   type="button"
                   onClick={() => setViewingArtifact(null)}
-                  className="text-[#2f3437]/40 hover:text-[#2f3437] dark:text-white/50"
+                  className="p-1.5 rounded hover:bg-[#eaeaea]/60 dark:hover:bg-white/10 text-[#2f3437]/60 dark:text-white/60"
                   aria-label="Close"
-                >✕</button>
+                >
+                  <XMarkIcon className="w-5 h-5" />
+                </button>
               </div>
             </div>
-            <div className="flex-1 overflow-auto px-5 py-4">
-              <MarkdownTextarea
+            <div className="flex-1 min-h-0 overflow-hidden p-5">
+              <RichMarkdownEditor
                 value={editingArtifactContent}
                 onChange={(v) => {
                   setEditingArtifactContent(v);
@@ -1139,11 +1151,10 @@ Produce a research brief I can hand to a script writer. For **each talking point
                   if (artifactSaveError) setArtifactSaveError(null);
                 }}
                 placeholder="Edit your content..."
-                rows={18}
                 ariaLabel={`Edit ${viewingArtifact.label}`}
               />
             </div>
-            <div className="flex items-center justify-between gap-3 px-5 py-3 border-t border-gray-100 dark:border-white/10">
+            <div className="flex items-center justify-between gap-3 px-5 py-3 border-t border-[#eaeaea] dark:border-white/10">
               <div className="text-xs">
                 {artifactSaveError ? (
                   <span className="text-red-600 dark:text-red-400">{artifactSaveError}</span>
@@ -1152,7 +1163,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
                 ) : editingArtifactContent !== viewingArtifact.content ? (
                   <span className="text-[#2f3437]/50 dark:text-white/40">Unsaved changes</span>
                 ) : (
-                  <span className="text-[#2f3437]/40 dark:text-white/30">No changes</span>
+                  <span className="text-[#2f3437]/40 dark:text-white/30">Esc or click outside to close</span>
                 )}
               </div>
               <div className="flex items-center gap-2">
