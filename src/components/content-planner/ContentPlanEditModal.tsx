@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { XMarkIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
 import {
@@ -137,7 +137,18 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
   const [folderError, setFolderError] = useState("");
   const [showDownloadMenu, setShowDownloadMenu] = useState(false);
   const [artifacts, setArtifacts] = useState<PlanArtifactsByType>({});
-  const [viewingArtifact, setViewingArtifact] = useState<{ type: string; content: string; label: string } | null>(null);
+  const [viewingArtifact, setViewingArtifact] = useState<{ id: string; type: string; content: string; label: string } | null>(null);
+  const [editingArtifactContent, setEditingArtifactContent] = useState("");
+  const [savingArtifact, setSavingArtifact] = useState(false);
+  const [savedArtifact, setSavedArtifact] = useState(false);
+  const [artifactSaveError, setArtifactSaveError] = useState<string | null>(null);
+  // Tracks the currently visible artifact id so async save handlers can
+  // verify the user hasn't switched away before applying their results.
+  const viewingArtifactIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    viewingArtifactIdRef.current = viewingArtifact?.id ?? null;
+  }, [viewingArtifact]);
+  const savedTimeoutRef = useRef<number | null>(null);
   const [showAllTools, setShowAllTools] = useState(false);
   const [teamNotes, setTeamNotes] = useState<Array<{ id: string; note: string; createdAt: string; author: { name: string } }>>([]);
   const [driveFiles, setDriveFiles] = useState<Array<{ id: string; name: string; webViewLink: string | null; modifiedTime: string | null; mimeType: string | null }> | null>(null);
@@ -272,6 +283,98 @@ Produce a research brief I can hand to a script writer. For **each talking point
       .catch(() => {})
       .finally(() => setDriveFilesLoading(false));
   }, [plan.id, driveFolderLink]);
+
+  // Seed/reset the editable copy + status flags whenever the user opens or
+  // closes the artifact viewer so the editor starts on the latest saved
+  // content and clears stale "Saved"/error states between artifacts. Also
+  // cancels any pending "Saved" auto-clear timeout so it can't fire against
+  // a different artifact later.
+  useEffect(() => {
+    if (savedTimeoutRef.current !== null) {
+      window.clearTimeout(savedTimeoutRef.current);
+      savedTimeoutRef.current = null;
+    }
+    if (viewingArtifact) {
+      setEditingArtifactContent(viewingArtifact.content);
+      setSavedArtifact(false);
+      setArtifactSaveError(null);
+    } else {
+      setEditingArtifactContent("");
+      setSavingArtifact(false);
+      setSavedArtifact(false);
+      setArtifactSaveError(null);
+    }
+  }, [viewingArtifact]);
+
+  // Defensive cleanup: cancel any pending "Saved" auto-clear if the parent
+  // modal unmounts while a save is in flight, to avoid setState-after-unmount.
+  useEffect(() => {
+    return () => {
+      if (savedTimeoutRef.current !== null) {
+        window.clearTimeout(savedTimeoutRef.current);
+        savedTimeoutRef.current = null;
+      }
+    };
+  }, []);
+
+  // Persist edits to the underlying plan artifact. After a successful save we
+  // refresh the artifact list so the side panel reflects the new content and
+  // updated timestamp without requiring the user to reopen the plan.
+  async function saveArtifactEdits() {
+    if (!viewingArtifact) return;
+    // Capture which artifact is being saved and what content is being sent
+    // so that if the user switches to another artifact (or closes the
+    // modal) before this request resolves, we can drop the late response
+    // instead of clobbering the new artifact's editor or showing a stale
+    // "Saved" badge on the wrong item.
+    const savingId = viewingArtifact.id;
+    const contentAtSave = editingArtifactContent;
+    setSavingArtifact(true);
+    setSavedArtifact(false);
+    setArtifactSaveError(null);
+    try {
+      const res = await fetch(
+        `/api/member/content-plans/${plan.id}/artifacts/${savingId}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: contentAtSave }),
+        }
+      );
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to save");
+      }
+      const refreshed = await fetch(`/api/member/content-plans/${plan.id}/artifacts`)
+        .then((r) => (r.ok ? r.json() : null))
+        .catch(() => null);
+      if (refreshed?.artifacts) setArtifacts(refreshed.artifacts);
+      // Only apply UI feedback if the user is still viewing the same artifact
+      // they were saving — otherwise drop the response silently so we don't
+      // overwrite a different artifact's editor or flash a misleading badge.
+      if (viewingArtifactIdRef.current === savingId) {
+        setViewingArtifact((prev) =>
+          prev && prev.id === savingId ? { ...prev, content: contentAtSave } : prev
+        );
+        setSavedArtifact(true);
+        if (savedTimeoutRef.current !== null) {
+          window.clearTimeout(savedTimeoutRef.current);
+        }
+        savedTimeoutRef.current = window.setTimeout(() => {
+          setSavedArtifact(false);
+          savedTimeoutRef.current = null;
+        }, 2500);
+      }
+    } catch (err) {
+      if (viewingArtifactIdRef.current === savingId) {
+        setArtifactSaveError(err instanceof Error ? err.message : "Failed to save");
+      }
+    } finally {
+      if (viewingArtifactIdRef.current === savingId) {
+        setSavingArtifact(false);
+      }
+    }
+  }
 
   const REPURPOSE_LABELS: Record<string, string> = {
     repurpose_newsletter: "📧 Newsletter",
@@ -850,7 +953,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
                           <div className="flex items-center justify-between gap-2">
                             <button
                               type="button"
-                              onClick={() => setViewingArtifact({ type, content: latest!.content?.toString() ?? "", label: REPURPOSE_LABELS[type] ?? type })}
+                              onClick={() => setViewingArtifact({ id: latest!.id, type, content: latest!.content?.toString() ?? "", label: REPURPOSE_LABELS[type] ?? type })}
                               className="font-medium hover:text-[#7c5fde] hover:underline truncate text-left"
                               title={`View ${REPURPOSE_LABELS[type] ?? type}`}
                             >
@@ -1015,7 +1118,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
                 <button
                   type="button"
                   onClick={async () => {
-                    try { await navigator.clipboard.writeText(viewingArtifact.content); } catch {}
+                    try { await navigator.clipboard.writeText(editingArtifactContent); } catch {}
                   }}
                   className="text-xs font-semibold text-[#6ba3c7] hover:underline"
                 >Copy</button>
@@ -1027,9 +1130,49 @@ Produce a research brief I can hand to a script writer. For **each talking point
                 >✕</button>
               </div>
             </div>
-            <pre className="flex-1 overflow-auto px-5 py-4 text-sm text-[#2f3437] dark:text-white/90 whitespace-pre-wrap font-sans">
-              {viewingArtifact.content}
-            </pre>
+            <div className="flex-1 overflow-auto px-5 py-4">
+              <MarkdownTextarea
+                value={editingArtifactContent}
+                onChange={(v) => {
+                  setEditingArtifactContent(v);
+                  if (savedArtifact) setSavedArtifact(false);
+                  if (artifactSaveError) setArtifactSaveError(null);
+                }}
+                placeholder="Edit your content..."
+                rows={18}
+                ariaLabel={`Edit ${viewingArtifact.label}`}
+              />
+            </div>
+            <div className="flex items-center justify-between gap-3 px-5 py-3 border-t border-gray-100 dark:border-white/10">
+              <div className="text-xs">
+                {artifactSaveError ? (
+                  <span className="text-red-600 dark:text-red-400">{artifactSaveError}</span>
+                ) : savedArtifact ? (
+                  <span className="text-green-600 dark:text-green-400 font-medium">Saved ✓</span>
+                ) : editingArtifactContent !== viewingArtifact.content ? (
+                  <span className="text-[#2f3437]/50 dark:text-white/40">Unsaved changes</span>
+                ) : (
+                  <span className="text-[#2f3437]/40 dark:text-white/30">No changes</span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setViewingArtifact(null)}
+                  className="px-3 py-1.5 text-xs font-medium text-[#2f3437] dark:text-white/80 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg transition-colors"
+                >
+                  Close
+                </button>
+                <button
+                  type="button"
+                  onClick={saveArtifactEdits}
+                  disabled={savingArtifact || editingArtifactContent === viewingArtifact.content}
+                  className="px-4 py-1.5 text-xs font-semibold rounded-lg bg-[#7c5fde] hover:bg-[#6b4fce] disabled:bg-[#7c5fde]/40 disabled:cursor-not-allowed text-white transition-colors"
+                >
+                  {savingArtifact ? "Saving..." : "Save changes"}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
