@@ -145,7 +145,7 @@ export default function RichMarkdownEditor({
         }}
         onClick={() => editor.chain().focus().run()}
       >
-        {editor.isEmpty && placeholder && (
+        {!value.trim() && editor.isEmpty && placeholder && (
           <p
             className="pointer-events-none text-[#2f3437]/30 absolute select-none whitespace-normal break-words"
             style={{ width: "calc(100% - 2rem)" }}
