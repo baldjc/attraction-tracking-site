@@ -70,26 +70,17 @@ export default function ContentPlannerClient({
       .catch(() => {});
   }, [apiBase]);
 
-  // When Pipeline is available and the member has 5+ plans, default the view
-  // to Pipeline on first load (but don't override an explicit selection).
-  const [defaultChosen, setDefaultChosen] = useState(false);
-  useEffect(() => {
-    if (defaultChosen) return;
-    if (!showPipelineTab) return;
-    if (!allPlans) return;
-    if (allPlans.length >= 5) setView("pipeline");
-    setDefaultChosen(true);
-  }, [showPipelineTab, allPlans, defaultChosen]);
+  // Full Table is the default landing view for all members.
 
   const showEditDueTab = hasEditDueDate(serviceTier);
 
   const ALL_TABS: { id: ViewId; label: string; restricted: boolean }[] = [
+    { id: "table",       label: "Full Table",        restricted: false },
     { id: "pipeline",    label: "Pipeline",          restricted: !showPipelineTab },
     { id: "by_theme",    label: "By Theme",          restricted: false },
     { id: "publish_cal", label: "Publish Calendar",  restricted: false },
     { id: "shoot_cal",   label: "Shoot Calendar",    restricted: false },
     { id: "edit_due",    label: "Edit Calendar",     restricted: !showEditDueTab },
-    { id: "table",       label: "Full Table",        restricted: false },
   ];
   const TABS = ALL_TABS.filter((t) => !t.restricted);
 
