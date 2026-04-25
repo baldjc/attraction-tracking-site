@@ -7,7 +7,7 @@ import prisma from "./prisma";
 // depends on `auth`). Keep in sync with `getMainOwnerEmail` there.
 function isMainOwnerEmail(email: string | null | undefined): boolean {
   if (!email) return false;
-  const owner = (process.env.ADMIN_EMAIL ?? "jared@chamberlaingroup.ca").trim().toLowerCase();
+  const owner = (process.env.ADMIN_EMAIL ?? "jared@attractionbyvideo.com").trim().toLowerCase();
   return email.trim().toLowerCase() === owner;
 }
 

@@ -8,7 +8,7 @@ const EDITOR_VISIBLE_TIERS: ServiceTier[] = [
   ServiceTier.mastery_4,
 ];
 
-const DEFAULT_OWNER_EMAIL = "jared@chamberlaingroup.ca";
+const DEFAULT_OWNER_EMAIL = "jared@attractionbyvideo.com";
 
 /**
  * The single "main owner" email — the founder admin (Jared) who has full
