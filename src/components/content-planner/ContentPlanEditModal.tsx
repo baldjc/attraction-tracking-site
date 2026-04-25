@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { XMarkIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
 import {
@@ -15,6 +16,84 @@ import { buildToolUrl } from "@/lib/tool-handoff";
 import MarkdownTextarea from "@/components/MarkdownTextarea";
 import RichMarkdownEditor from "@/components/RichMarkdownEditor";
 import { getScoreBadgeClasses } from "@/lib/score-badge";
+
+/**
+ * Convert the stored repurpose-artifact content (which the API saves as a
+ * JSON.stringified object — e.g. {subject_line, body, sign_off} for the
+ * newsletter) into clean copy-paste-ready plain text. If the content isn't
+ * JSON (already plain text, or saved by a future revision), it is returned
+ * unchanged so the user always sees a sensible body in the viewer.
+ */
+function formatRepurposeArtifactForView(type: string, raw: string): string {
+  if (!raw) return "";
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return raw;
+  }
+  if (!parsed || typeof parsed !== "object") return raw;
+  const p = parsed as Record<string, unknown>;
+  const str = (k: string) => (typeof p[k] === "string" ? (p[k] as string).trim() : "");
+  const lines = (parts: Array<string | false | null | undefined>) =>
+    parts.filter((x): x is string => Boolean(x)).join("\n").replace(/\n{3,}/g, "\n\n").trim();
+
+  if (type === "repurpose_newsletter") {
+    const subject = str("subject_line");
+    const preview = str("preview_text");
+    const body = str("body");
+    const ps = str("ps_line");
+    const sign = str("sign_off");
+    return lines([
+      subject && `Subject: ${subject}`,
+      preview && `Preview: ${preview}`,
+      "",
+      body,
+      "",
+      ps && `P.S. ${ps}`,
+      sign,
+    ]);
+  }
+  if (type === "repurpose_linkedin") {
+    return str("full_article") || raw;
+  }
+  if (type === "repurpose_facebook") {
+    const post = str("post_body");
+    const comment = str("first_comment");
+    const tags = Array.isArray(p.hashtags)
+      ? (p.hashtags as unknown[]).filter((h) => typeof h === "string").map((h) => `#${h}`).join(" ")
+      : "";
+    return lines([
+      post,
+      "",
+      comment && `First comment: ${comment}`,
+      tags && `Hashtags: ${tags}`,
+    ]);
+  }
+  if (type === "repurpose_blog") {
+    const title = str("blog_title");
+    const article = str("full_article");
+    const meta = str("meta_description");
+    return lines([title, "", article, "", meta && `Meta: ${meta}`]);
+  }
+  if (type === "repurpose_postcard") {
+    const headline = str("front_headline");
+    const hook = str("front_hook");
+    const back = str("back_body");
+    const url = str("video_url_placeholder");
+    return lines([
+      "FRONT",
+      headline && `Headline: ${headline}`,
+      hook && `Hook: ${hook}`,
+      "",
+      "BACK",
+      back,
+      "",
+      url,
+    ]);
+  }
+  return raw;
+}
 
 export interface ContentPlan {
   id: string;
@@ -150,6 +229,10 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
     viewingArtifactIdRef.current = viewingArtifact?.id ?? null;
   }, [viewingArtifact]);
   const savedTimeoutRef = useRef<number | null>(null);
+  // Gate the artifact-viewer portal until after first client mount so SSR
+  // doesn't try to read document.body.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
   const [showAllTools, setShowAllTools] = useState(false);
   const [teamNotes, setTeamNotes] = useState<Array<{ id: string; note: string; createdAt: string; author: { name: string } }>>([]);
   const [driveFiles, setDriveFiles] = useState<Array<{ id: string; name: string; webViewLink: string | null; modifiedTime: string | null; mimeType: string | null }> | null>(null);
@@ -954,7 +1037,16 @@ Produce a research brief I can hand to a script writer. For **each talking point
                           <div className="flex items-center justify-between gap-2">
                             <button
                               type="button"
-                              onClick={() => setViewingArtifact({ id: latest!.id, type, content: latest!.content?.toString() ?? "", label: REPURPOSE_LABELS[type] ?? type })}
+                              onClick={() => setViewingArtifact({
+                                id: latest!.id,
+                                type,
+                                // Format the raw stored JSON into a plain
+                                // copy-paste-ready text body so the user sees
+                                // (and edits) clean content instead of an
+                                // escaped JSON dump.
+                                content: formatRepurposeArtifactForView(type, latest!.content?.toString() ?? ""),
+                                label: REPURPOSE_LABELS[type] ?? type,
+                              })}
                               className="font-medium hover:text-[#7c5fde] hover:underline truncate text-left"
                               title={`View ${REPURPOSE_LABELS[type] ?? type}`}
                             >
@@ -1104,14 +1196,15 @@ Produce a research brief I can hand to a script writer. For **each talking point
         </div>
       </div>
 
-      {viewingArtifact && (
+      {viewingArtifact && mounted && createPortal(
         // Open the artifact viewer as the full-screen editor directly so the
         // user can read and copy the whole piece without first clicking
         // "Expand" inside a smaller modal. Layout mirrors the expanded view
-        // used by MarkdownTextarea (max-w-5xl, ~94vh) and uses the toolbar-
-        // enabled RichMarkdownEditor underneath.
+        // used by MarkdownTextarea (max-w-5xl, ~94vh). Portaled to <body> so
+        // the parent planner modal's lg:pl-[260px] sidebar offset does not
+        // squeeze it against the right edge of the viewport.
         <div
-          className="fixed inset-0 z-[200] bg-black/60 flex items-center justify-center p-3 sm:p-6"
+          className="fixed inset-0 z-[300] bg-black/60 flex items-center justify-center p-3 sm:p-6"
           onClick={() => setViewingArtifact(null)}
         >
           <div
@@ -1185,7 +1278,8 @@ Produce a research brief I can hand to a script writer. For **each talking point
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
