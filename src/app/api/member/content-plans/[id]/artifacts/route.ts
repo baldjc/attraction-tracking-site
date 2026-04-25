@@ -22,6 +22,14 @@ export async function GET(
   const plan = await checkOwnership(id, user.id, user.isAdmin);
   if (!plan) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
+  // Sprint 3: read gate — when tool_planner_linkage is off, hide artifacts
+  // entirely so dependent UI (progress track score badge, Repurposed Content
+  // section) collapses without extra client-side flag checks.
+  const flags = await getFeatureFlags();
+  if (!flags.tool_planner_linkage) {
+    return NextResponse.json({ artifacts: {} });
+  }
+
   const artifacts = await prisma.planArtifact.findMany({
     where: { planId: id },
     orderBy: [{ type: "asc" }, { version: "desc" }],

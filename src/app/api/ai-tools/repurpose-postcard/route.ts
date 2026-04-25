@@ -11,13 +11,17 @@ export async function POST(req: NextRequest) {
   const user = await resolveUserFromSession();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { transcript, title, neighbourhood, contentPlanId } = await req.json();
+  const { transcript, title, neighbourhood, contentPlanId, feedback } = await req.json();
   if (!transcript || !title || !neighbourhood) {
     return NextResponse.json({ error: "Missing transcript, title, or neighbourhood" }, { status: 400 });
   }
   if (transcript.length > 50000) {
     return NextResponse.json({ error: "Transcript exceeds 50,000 character limit" }, { status: 400 });
   }
+  if (typeof feedback === "string" && feedback.length > 1000) {
+    return NextResponse.json({ error: "Feedback exceeds 1,000 character limit" }, { status: 400 });
+  }
+  const trimmedFeedback = typeof feedback === "string" ? feedback.trim() : "";
 
   const [dbUser, avatarData] = await Promise.all([
     prisma.user.findUnique({
@@ -75,10 +79,22 @@ Respond ONLY with valid JSON, no markdown fences:
   "video_url_placeholder": "[Insert your video URL for QR code generation]"
 }`;
 
+  const finalSystemPrompt = trimmedFeedback
+    ? `${systemPrompt}
+
+## REVISION FEEDBACK FROM THE MEMBER (HIGHEST PRIORITY)
+The member generated a previous version of this output and is asking for a revision. Apply this feedback to the new version. Treat it as the most important instruction in this prompt — it overrides stylistic defaults but NOT the structural rules above (output format, JSON schema, length bounds, link rules, no-dashes rule, Canadian spelling).
+
+Member's revision feedback:
+"""
+${trimmedFeedback}
+"""`
+    : systemPrompt;
+
   const response = await client.messages.create({
     model: "claude-sonnet-4-20250514",
     max_tokens: 512,
-    system: systemPrompt,
+    system: finalSystemPrompt,
     messages: [{ role: "user", content: `Video Title: "${title}"\n\nTranscript:\n${transcript}\n\nNeighbourhood: ${neighbourhood}\n\nWrite the postcard copy as JSON.` }],
   });
 
@@ -109,6 +125,7 @@ Respond ONLY with valid JSON, no markdown fences:
         neighbourhood,
         repurposedContentId: saved.id,
         savedAt: new Date().toISOString(),
+        feedback_used: trimmedFeedback || null,
       },
     });
     return NextResponse.json({ result: parsed, id: saved.id, savedToPlan: planSave.saved });

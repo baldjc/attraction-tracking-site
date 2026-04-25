@@ -137,6 +137,7 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
   const [folderError, setFolderError] = useState("");
   const [showDownloadMenu, setShowDownloadMenu] = useState(false);
   const [artifacts, setArtifacts] = useState<PlanArtifactsByType>({});
+  const [viewingArtifact, setViewingArtifact] = useState<{ type: string; content: string; label: string } | null>(null);
   const [showAllTools, setShowAllTools] = useState(false);
   const [teamNotes, setTeamNotes] = useState<Array<{ id: string; note: string; createdAt: string; author: { name: string } }>>([]);
   const [driveFiles, setDriveFiles] = useState<Array<{ id: string; name: string; webViewLink: string | null; modifiedTime: string | null; mimeType: string | null }> | null>(null);
@@ -245,12 +246,11 @@ Produce a research brief I can hand to a script writer. For **each talking point
   }
 
   useEffect(() => {
-    if (!showProgressTrack) return;
     fetch(`/api/member/content-plans/${plan.id}/artifacts`)
       .then((r) => r.json())
       .then((d) => { if (d?.artifacts) setArtifacts(d.artifacts); })
       .catch(() => {});
-  }, [plan.id, showProgressTrack]);
+  }, [plan.id]);
 
   useEffect(() => {
     if (isAdmin) return;
@@ -272,6 +272,19 @@ Produce a research brief I can hand to a script writer. For **each talking point
       .catch(() => {})
       .finally(() => setDriveFilesLoading(false));
   }, [plan.id, driveFolderLink]);
+
+  const REPURPOSE_LABELS: Record<string, string> = {
+    repurpose_newsletter: "📧 Newsletter",
+    repurpose_linkedin:   "💼 LinkedIn Article",
+    repurpose_facebook:   "📘 Facebook Post",
+    repurpose_blog:       "📰 Blog Post",
+    repurpose_postcard:   "📮 Postcard",
+  };
+
+  const repurposeArtifacts = Object.entries(artifacts)
+    .filter(([type]) => type.startsWith("repurpose_"))
+    .map(([type, list]) => ({ type, latest: list?.[0] ?? null }))
+    .filter((x) => x.latest && (x.latest.content?.toString().trim().length ?? 0) > 0);
 
   // Sprint 3 Part A: extract latest script_review score for badge display
   const latestReviewScore = (() => {
@@ -512,6 +525,54 @@ Produce a research brief I can hand to a script writer. For **each talking point
             </div>
           )}
 
+          {repurposeArtifacts.length > 0 && (
+            <div className="rounded-xl border border-[#a78bfa]/25 bg-[#a78bfa]/5 px-4 py-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-bold uppercase tracking-wider text-[#7c5fde]">
+                  ♻️ Repurposed Content
+                </p>
+                <button
+                  type="button"
+                  onClick={() => launchTool("repurpose")}
+                  className="text-[11px] font-semibold text-[#7c5fde] hover:underline"
+                >
+                  Open Repurpose Tool →
+                </button>
+              </div>
+              <ul className="space-y-1.5">
+                {repurposeArtifacts.map(({ type, latest }) => {
+                  const meta = (latest!.metadata ?? {}) as { feedback_used?: string | null };
+                  const feedback = meta.feedback_used?.trim() || "";
+                  const updated = latest!.updatedAt ? new Date(latest!.updatedAt as string) : null;
+                  return (
+                    <li key={latest!.id} className="text-xs text-[#2f3437]/85">
+                      <div className="flex items-center justify-between gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setViewingArtifact({ type, content: latest!.content?.toString() ?? "", label: REPURPOSE_LABELS[type] ?? type })}
+                          className="font-medium hover:text-[#7c5fde] hover:underline truncate"
+                          title={`View ${REPURPOSE_LABELS[type] ?? type}`}
+                        >
+                          {REPURPOSE_LABELS[type] ?? type}
+                        </button>
+                        {updated && (
+                          <span className="text-[10px] text-[#2f3437]/40 shrink-0">
+                            {updated.toLocaleDateString()}
+                          </span>
+                        )}
+                      </div>
+                      {feedback && (
+                        <p className="text-[10px] italic text-[#2f3437]/55 mt-0.5 truncate" title={feedback}>
+                          Last revision: &ldquo;{feedback}&rdquo;
+                        </p>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
+
           {!isAdmin && teamNotes.length > 0 && (
             <div className="rounded-xl border border-[#6ba3c7]/25 bg-[#6ba3c7]/5 px-4 py-3 space-y-2">
               <p className="text-xs font-bold uppercase tracking-wider text-[#6ba3c7]">📝 Notes from your team</p>
@@ -580,7 +641,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
                 <div className="flex items-center justify-between mb-1">
                   <label className="block text-xs font-medium text-[#2f3437]/60 flex items-center gap-2">
                     Title
-                    {latestReviewScore !== null && (
+                    {showProgressTrack && latestReviewScore !== null && (
                       <span
                         title="Latest Script Review score"
                         className={`inline-flex items-center text-[10px] font-semibold px-1.5 py-0.5 rounded ${getScoreBadgeClasses(latestReviewScore)}`}
@@ -938,6 +999,40 @@ Produce a research brief I can hand to a script writer. For **each talking point
           </div>
         </div>
       </div>
+
+      {viewingArtifact && (
+        <div
+          className="fixed inset-0 z-[60] bg-black/40 flex items-center justify-center p-4"
+          onClick={() => setViewingArtifact(null)}
+        >
+          <div
+            className="bg-white dark:bg-[#1a1a1a] rounded-2xl shadow-2xl max-w-3xl w-full max-h-[85vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-white/10">
+              <h4 className="text-sm font-semibold text-[#2f3437] dark:text-white">{viewingArtifact.label}</h4>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try { await navigator.clipboard.writeText(viewingArtifact.content); } catch {}
+                  }}
+                  className="text-xs font-semibold text-[#6ba3c7] hover:underline"
+                >Copy</button>
+                <button
+                  type="button"
+                  onClick={() => setViewingArtifact(null)}
+                  className="text-[#2f3437]/40 hover:text-[#2f3437] dark:text-white/50"
+                  aria-label="Close"
+                >✕</button>
+              </div>
+            </div>
+            <pre className="flex-1 overflow-auto px-5 py-4 text-sm text-[#2f3437] dark:text-white/90 whitespace-pre-wrap font-sans">
+              {viewingArtifact.content}
+            </pre>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

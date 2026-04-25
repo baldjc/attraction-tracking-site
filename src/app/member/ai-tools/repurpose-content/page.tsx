@@ -382,6 +382,18 @@ function RepurposeContentPageInner() {
   const [savingPostcard, setSavingPostcard] = useState(false);
   const [savedPostcard, setSavedPostcard] = useState(false);
 
+  const [feedbackNewsletter, setFeedbackNewsletter] = useState("");
+  const [feedbackLinkedIn, setFeedbackLinkedIn] = useState("");
+  const [feedbackFacebook, setFeedbackFacebook] = useState("");
+  const [feedbackBlog, setFeedbackBlog] = useState("");
+  const [feedbackPostcard, setFeedbackPostcard] = useState("");
+
+  const [redoingNewsletter, setRedoingNewsletter] = useState(false);
+  const [redoingLinkedIn, setRedoingLinkedIn] = useState(false);
+  const [redoingFacebook, setRedoingFacebook] = useState(false);
+  const [redoingBlog, setRedoingBlog] = useState(false);
+  const [redoingPostcard, setRedoingPostcard] = useState(false);
+
   const [pastOutputs, setPastOutputs] = useState<PastOutput[]>([]);
   const [showPastOutputs, setShowPastOutputs] = useState(false);
   const [expandedSession, setExpandedSession] = useState<{ key: string; tool: string } | null>(null);
@@ -408,6 +420,14 @@ function RepurposeContentPageInner() {
   }, []);
 
   useEffect(() => { loadPastOutputs(); }, [loadPastOutputs]);
+
+  useEffect(() => {
+    setFeedbackNewsletter("");
+    setFeedbackLinkedIn("");
+    setFeedbackFacebook("");
+    setFeedbackBlog("");
+    setFeedbackPostcard("");
+  }, [transcript, title]);
 
   async function saveProfile() {
     setSavingProfile(true);
@@ -729,11 +749,190 @@ function RepurposeContentPageInner() {
     setEditedPostcardFrontHeadline(""); setEditedPostcardFrontHook(""); setEditedPostcardBack("");
     setNewsletterRecordId(null); setLinkedInRecordId(null); setFacebookRecordId(null); setBlogRecordId(null); setPostcardRecordId(null);
     setSavedNewsletter(false); setSavedLinkedIn(false); setSavedFacebook(false); setSavedBlog(false); setSavedPostcard(false);
+    setFeedbackNewsletter(""); setFeedbackLinkedIn(""); setFeedbackFacebook(""); setFeedbackBlog(""); setFeedbackPostcard("");
     setSelectedLinkIndexes([]); setOneOffLinks([]); setActiveCampaignLinks([]);
     setBlogActiveCampaignLinks([]); setBlogSelectedLinkIndexes([]); setBlogOneOffLinks([]);
     setNewsletterActiveLink(null); setFacebookActiveLink(null);
     setShowCampaignPicker(false); setPickerCampaignId(""); setCampaignPickerLinks([]);
     setPickerForOutput(null); setLastPickedCampaignId("");
+  }
+
+  async function redoNewsletter() {
+    if (!transcript.trim() || !title.trim()) return;
+    setRedoingNewsletter(true);
+    setNewsletterError("");
+    try {
+      const res = await fetch("/api/ai-tools/repurpose-newsletter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          transcript,
+          title,
+          newsletterUrl: newsletterActiveLink?.trackedUrl || null,
+          contentPlanId: planId || undefined,
+          feedback: feedbackNewsletter.trim() || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (data.result) {
+        setNewsletterResult(data.result);
+        setNewsletterRecordId(data.id);
+        setEditedNewsletter(nlFormatted(data.result as NewsletterResult));
+        setSavedNewsletter(false);
+        if (data.savedToPlan) setPlanSaveResults((p) => ({ ...p, newsletter: true }));
+      } else {
+        setNewsletterError(data.error || "Newsletter regeneration failed");
+      }
+    } catch {
+      setNewsletterError("Newsletter regeneration failed");
+    } finally {
+      setRedoingNewsletter(false);
+    }
+  }
+
+  async function redoLinkedIn() {
+    if (!transcript.trim() || !title.trim()) return;
+    setRedoingLinkedIn(true);
+    setLinkedInError("");
+    try {
+      const linksForApi = selectedLinkIndexes.map((i) => savedLinks[i]).filter(Boolean);
+      const campaignLinksForApi = activeCampaignLinks.map((l) => ({ label: l.linkName, url: l.trackedUrl }));
+      const res = await fetch("/api/ai-tools/repurpose-linkedin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          transcript,
+          title,
+          selectedLinks: linksForApi,
+          oneOffLinks: campaignLinksForApi,
+          contentPlanId: planId || undefined,
+          feedback: feedbackLinkedIn.trim() || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (data.result) {
+        setLinkedInResult(data.result);
+        setLinkedInRecordId(data.id);
+        setEditedLinkedIn(data.result.full_article);
+        setSavedLinkedIn(false);
+        if (data.savedToPlan) setPlanSaveResults((p) => ({ ...p, linkedin: true }));
+      } else {
+        setLinkedInError(data.error || "LinkedIn article regeneration failed");
+      }
+    } catch {
+      setLinkedInError("LinkedIn article regeneration failed");
+    } finally {
+      setRedoingLinkedIn(false);
+    }
+  }
+
+  async function redoFacebook() {
+    if (!transcript.trim() || !title.trim()) return;
+    setRedoingFacebook(true);
+    setFacebookError("");
+    try {
+      const res = await fetch("/api/ai-tools/repurpose-facebook", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          transcript,
+          title,
+          link: facebookActiveLink
+            ? { label: facebookActiveLink.linkName, url: facebookActiveLink.trackedUrl }
+            : null,
+          contentPlanId: planId || undefined,
+          feedback: feedbackFacebook.trim() || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (data.result) {
+        setFacebookResult(data.result);
+        setFacebookRecordId(data.id);
+        setEditedFacebookBody(data.result.post_body);
+        setEditedFacebookComment(data.result.first_comment);
+        setSavedFacebook(false);
+        if (data.savedToPlan) setPlanSaveResults((p) => ({ ...p, facebook: true }));
+      } else {
+        setFacebookError(data.error || "Facebook post regeneration failed");
+      }
+    } catch {
+      setFacebookError("Facebook post regeneration failed");
+    } finally {
+      setRedoingFacebook(false);
+    }
+  }
+
+  async function redoBlog() {
+    if (!transcript.trim() || !title.trim()) return;
+    setRedoingBlog(true);
+    setBlogError("");
+    try {
+      const blogSavedLinksForApi = blogSelectedLinkIndexes.map((i) => savedLinks[i]).filter(Boolean);
+      const blogCampaignLinksForApi = blogActiveCampaignLinks.map((l) => ({ label: l.linkName, url: l.trackedUrl }));
+      const res = await fetch("/api/ai-tools/repurpose-blog", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          transcript,
+          title,
+          selectedLinks: blogSavedLinksForApi,
+          oneOffLinks: blogCampaignLinksForApi,
+          contentPlanId: planId || undefined,
+          feedback: feedbackBlog.trim() || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (data.result) {
+        setBlogResult(data.result);
+        setBlogRecordId(data.id);
+        setEditedBlogTitle(data.result.blog_title);
+        setEditedBlogArticle(data.result.full_article);
+        setEditedBlogMeta(data.result.meta_description);
+        setSavedBlog(false);
+        if (data.savedToPlan) setPlanSaveResults((p) => ({ ...p, blog: true }));
+      } else {
+        setBlogError(data.error || "Blog post regeneration failed");
+      }
+    } catch {
+      setBlogError("Blog post regeneration failed");
+    } finally {
+      setRedoingBlog(false);
+    }
+  }
+
+  async function redoPostcard() {
+    if (!transcript.trim() || !title.trim() || !neighbourhood.trim()) return;
+    setRedoingPostcard(true);
+    setPostcardError("");
+    try {
+      const res = await fetch("/api/ai-tools/repurpose-postcard", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          transcript,
+          title,
+          neighbourhood: neighbourhood.trim(),
+          contentPlanId: planId || undefined,
+          feedback: feedbackPostcard.trim() || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (data.result) {
+        setPostcardResult(data.result);
+        setPostcardRecordId(data.id);
+        setEditedPostcardFrontHeadline(data.result.front_headline);
+        setEditedPostcardFrontHook(data.result.front_hook);
+        setEditedPostcardBack(data.result.back_body);
+        setSavedPostcard(false);
+        if (data.savedToPlan) setPlanSaveResults((p) => ({ ...p, postcard: true }));
+      } else {
+        setPostcardError(data.error || "Postcard regeneration failed");
+      }
+    } catch {
+      setPostcardError("Postcard regeneration failed");
+    } finally {
+      setRedoingPostcard(false);
+    }
   }
 
   const hasResults = newsletterResult || linkedInResult || facebookResult || blogResult || postcardResult
@@ -1254,6 +1453,41 @@ function RepurposeContentPageInner() {
                       saved={savedNewsletter}
                     />
                   </div>
+                  <div className="mt-4 pt-4 border-t border-gray-100 dark:border-white/10">
+                    <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/60 dark:text-white/50 mb-1.5">
+                      Redo with feedback (optional)
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={feedbackNewsletter}
+                        onChange={(e) => setFeedbackNewsletter(e.target.value)}
+                        placeholder="e.g. shorter, lead with the equity hook, drop the bullet list"
+                        maxLength={1000}
+                        disabled={redoingNewsletter || loading}
+                        className="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-white/15 bg-white dark:bg-white/5 text-[#2f3437] dark:text-white placeholder:text-[#2f3437]/40 focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40"
+                      />
+                      <button
+                        type="button"
+                        onClick={redoNewsletter}
+                        disabled={redoingNewsletter || loading || !transcript.trim() || !title.trim()}
+                        className="px-4 py-2 text-sm font-semibold rounded-lg bg-[#6ba3c7] hover:bg-[#5a92b6] disabled:bg-[#6ba3c7]/40 disabled:cursor-not-allowed text-white transition-colors flex items-center gap-1.5"
+                        aria-label="Regenerate this output using the feedback above"
+                      >
+                        {redoingNewsletter ? (
+                          <>
+                            <span className="inline-block w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                            Redoing…
+                          </>
+                        ) : (
+                          <>↻ Redo</>
+                        )}
+                      </button>
+                    </div>
+                    <p className="text-[10px] text-[#2f3437]/40 dark:text-white/40 mt-1">
+                      Replaces this output. Your feedback stays so you can refine and run it again.
+                    </p>
+                  </div>
                 </div>
               )}
             </ResultCard>
@@ -1280,6 +1514,41 @@ function RepurposeContentPageInner() {
                       saving={savingLinkedIn}
                       saved={savedLinkedIn}
                     />
+                  </div>
+                  <div className="mt-4 pt-4 border-t border-gray-100 dark:border-white/10">
+                    <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/60 dark:text-white/50 mb-1.5">
+                      Redo with feedback (optional)
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={feedbackLinkedIn}
+                        onChange={(e) => setFeedbackLinkedIn(e.target.value)}
+                        placeholder="e.g. punchier opening, more local examples, cut the closing CTA"
+                        maxLength={1000}
+                        disabled={redoingLinkedIn || loading}
+                        className="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-white/15 bg-white dark:bg-white/5 text-[#2f3437] dark:text-white placeholder:text-[#2f3437]/40 focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40"
+                      />
+                      <button
+                        type="button"
+                        onClick={redoLinkedIn}
+                        disabled={redoingLinkedIn || loading || !transcript.trim() || !title.trim()}
+                        className="px-4 py-2 text-sm font-semibold rounded-lg bg-[#6ba3c7] hover:bg-[#5a92b6] disabled:bg-[#6ba3c7]/40 disabled:cursor-not-allowed text-white transition-colors flex items-center gap-1.5"
+                        aria-label="Regenerate this output using the feedback above"
+                      >
+                        {redoingLinkedIn ? (
+                          <>
+                            <span className="inline-block w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                            Redoing…
+                          </>
+                        ) : (
+                          <>↻ Redo</>
+                        )}
+                      </button>
+                    </div>
+                    <p className="text-[10px] text-[#2f3437]/40 dark:text-white/40 mt-1">
+                      Replaces this output. Your feedback stays so you can refine and run it again.
+                    </p>
                   </div>
                 </div>
               )}
@@ -1325,6 +1594,41 @@ function RepurposeContentPageInner() {
                       saved={savedFacebook}
                     />
                   </div>
+                  <div className="mt-4 pt-4 border-t border-gray-100 dark:border-white/10">
+                    <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/60 dark:text-white/50 mb-1.5">
+                      Redo with feedback (optional)
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={feedbackFacebook}
+                        onChange={(e) => setFeedbackFacebook(e.target.value)}
+                        placeholder="e.g. shorter, lose the question opener, no hashtags"
+                        maxLength={1000}
+                        disabled={redoingFacebook || loading}
+                        className="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-white/15 bg-white dark:bg-white/5 text-[#2f3437] dark:text-white placeholder:text-[#2f3437]/40 focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40"
+                      />
+                      <button
+                        type="button"
+                        onClick={redoFacebook}
+                        disabled={redoingFacebook || loading || !transcript.trim() || !title.trim()}
+                        className="px-4 py-2 text-sm font-semibold rounded-lg bg-[#6ba3c7] hover:bg-[#5a92b6] disabled:bg-[#6ba3c7]/40 disabled:cursor-not-allowed text-white transition-colors flex items-center gap-1.5"
+                        aria-label="Regenerate this output using the feedback above"
+                      >
+                        {redoingFacebook ? (
+                          <>
+                            <span className="inline-block w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                            Redoing…
+                          </>
+                        ) : (
+                          <>↻ Redo</>
+                        )}
+                      </button>
+                    </div>
+                    <p className="text-[10px] text-[#2f3437]/40 dark:text-white/40 mt-1">
+                      Replaces this output. Your feedback stays so you can refine and run it again.
+                    </p>
+                  </div>
                 </div>
               )}
             </ResultCard>
@@ -1365,6 +1669,41 @@ function RepurposeContentPageInner() {
                       saving={savingBlog}
                       saved={savedBlog}
                     />
+                  </div>
+                  <div className="mt-4 pt-4 border-t border-gray-100 dark:border-white/10">
+                    <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/60 dark:text-white/50 mb-1.5">
+                      Redo with feedback (optional)
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={feedbackBlog}
+                        onChange={(e) => setFeedbackBlog(e.target.value)}
+                        placeholder="e.g. punchier title, fewer subheadings, add more local data"
+                        maxLength={1000}
+                        disabled={redoingBlog || loading}
+                        className="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-white/15 bg-white dark:bg-white/5 text-[#2f3437] dark:text-white placeholder:text-[#2f3437]/40 focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40"
+                      />
+                      <button
+                        type="button"
+                        onClick={redoBlog}
+                        disabled={redoingBlog || loading || !transcript.trim() || !title.trim()}
+                        className="px-4 py-2 text-sm font-semibold rounded-lg bg-[#6ba3c7] hover:bg-[#5a92b6] disabled:bg-[#6ba3c7]/40 disabled:cursor-not-allowed text-white transition-colors flex items-center gap-1.5"
+                        aria-label="Regenerate this output using the feedback above"
+                      >
+                        {redoingBlog ? (
+                          <>
+                            <span className="inline-block w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                            Redoing…
+                          </>
+                        ) : (
+                          <>↻ Redo</>
+                        )}
+                      </button>
+                    </div>
+                    <p className="text-[10px] text-[#2f3437]/40 dark:text-white/40 mt-1">
+                      Replaces this output. Your feedback stays so you can refine and run it again.
+                    </p>
                   </div>
                 </div>
               )}
@@ -1421,6 +1760,41 @@ function RepurposeContentPageInner() {
                       saving={savingPostcard}
                       saved={savedPostcard}
                     />
+                  </div>
+                  <div className="mt-4 pt-4 border-t border-gray-100 dark:border-white/10">
+                    <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/60 dark:text-white/50 mb-1.5">
+                      Redo with feedback (optional)
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={feedbackPostcard}
+                        onChange={(e) => setFeedbackPostcard(e.target.value)}
+                        placeholder="e.g. softer hook, mention move-up buyers explicitly"
+                        maxLength={1000}
+                        disabled={redoingPostcard || loading}
+                        className="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-white/15 bg-white dark:bg-white/5 text-[#2f3437] dark:text-white placeholder:text-[#2f3437]/40 focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40"
+                      />
+                      <button
+                        type="button"
+                        onClick={redoPostcard}
+                        disabled={redoingPostcard || loading || !transcript.trim() || !title.trim() || !neighbourhood.trim()}
+                        className="px-4 py-2 text-sm font-semibold rounded-lg bg-[#6ba3c7] hover:bg-[#5a92b6] disabled:bg-[#6ba3c7]/40 disabled:cursor-not-allowed text-white transition-colors flex items-center gap-1.5"
+                        aria-label="Regenerate this output using the feedback above"
+                      >
+                        {redoingPostcard ? (
+                          <>
+                            <span className="inline-block w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                            Redoing…
+                          </>
+                        ) : (
+                          <>↻ Redo</>
+                        )}
+                      </button>
+                    </div>
+                    <p className="text-[10px] text-[#2f3437]/40 dark:text-white/40 mt-1">
+                      Replaces this output. Your feedback stays so you can refine and run it again.
+                    </p>
                   </div>
                 </div>
               )}
