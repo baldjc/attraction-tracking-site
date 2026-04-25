@@ -314,13 +314,13 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
       return (
         <div className="cursor-pointer" onClick={() => startEdit(plan.id, "theme", plan.theme)}>
           {plan.theme ? (
-            <span
-              className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap"
-              style={{
-                backgroundColor: themeMeta?.colour ? `${themeMeta.colour}1A` : "#eaeaea",
-                color: themeMeta?.colour ?? "#2f3437",
-              }}
-            >
+            <span className="inline-flex items-center gap-1.5 text-xs text-[#2f3437] whitespace-nowrap hover:text-[#6ba3c7] transition-colors">
+              {themeMeta?.colour && (
+                <span
+                  className="inline-block w-2 h-2 rounded-full shrink-0"
+                  style={{ backgroundColor: themeMeta.colour }}
+                />
+              )}
               {themeMeta?.emoji && <span className="text-sm leading-none">{themeMeta.emoji}</span>}
               <span>{plan.theme}</span>
             </span>
