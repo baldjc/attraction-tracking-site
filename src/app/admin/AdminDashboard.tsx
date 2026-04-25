@@ -204,14 +204,6 @@ export default function AdminDashboard() {
             urgent: waitlistCount > 0,
           },
           {
-            label: "Members At Risk",
-            subtitle: "No activity in 7–14 days",
-            count: atRisk,
-            href: "/admin/members?status=at_risk",
-            icon: ExclamationTriangleIcon,
-            urgent: atRisk > 0,
-          },
-          {
             label: "Active This Week",
             subtitle: "Posted, used tools, or had clicks",
             count: activeCount,
@@ -338,9 +330,7 @@ export default function AdminDashboard() {
           {(() => {
             // Only the main owner (Jared) sees Members At Risk and MRR.
             // Sub-admins see every other tile.
-            const visibleActions = actions.filter(
-              (a) => isMainOwner || a.label !== "Members At Risk"
-            );
+            const visibleActions = actions;
             const visibleStats = ownerStats.filter((s) => isMainOwner || s.label !== "MRR");
 
             const renderAction = (a: ActionCard) => (
