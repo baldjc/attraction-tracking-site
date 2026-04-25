@@ -23,6 +23,7 @@ interface ContentPlan {
   status: string;
   theme: string | null;
   shootDate: string | null;
+  shootLocation: string | null;
   publishDate: string | null;
   editDueDate: string | null;
   priority: string | null;
@@ -193,6 +194,7 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
           status: addForm.status || allStatusOptions[0],
           theme: addForm.theme || null,
           shootDate: addForm.shootDate || null,
+          shootLocation: addForm.shootLocation || null,
           publishDate: addForm.publishDate || null,
           editDueDate: addForm.editDueDate || null,
           priority: addForm.priority || null,
@@ -352,6 +354,41 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
       );
     }
 
+    if (field === "shootLocation") {
+      if (isEditing) {
+        return (
+          <select
+            ref={inputRef as any}
+            value={cellValue}
+            onChange={(e) => { setEditingCell(null); updatePlan(plan.id, { shootLocation: e.target.value || null }); }}
+            onBlur={() => setEditingCell(null)}
+            className={selectCls}
+          >
+            <option value="">— None —</option>
+            <option value="In Studio">In Studio</option>
+            <option value="Out of Studio">Out of Studio</option>
+          </select>
+        );
+      }
+      return (
+        <div className="cursor-pointer text-xs whitespace-nowrap" onClick={() => startEdit(plan.id, "shootLocation", plan.shootLocation)}>
+          {plan.shootLocation ? (
+            <span
+              className={`inline-flex items-center px-2 py-0.5 rounded-full font-medium ${
+                plan.shootLocation === "In Studio"
+                  ? "bg-[#7c5fde]/15 text-[#7c5fde]"
+                  : "bg-[#6ba3c7]/15 text-[#6ba3c7]"
+              }`}
+            >
+              {plan.shootLocation}
+            </span>
+          ) : (
+            <span className="text-[#2f3437]/30 italic">—</span>
+          )}
+        </div>
+      );
+    }
+
     if (field === "shootDate" || field === "publishDate" || field === "editDueDate") {
       if (isEditing) {
         return (
@@ -488,6 +525,11 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
                     Shoot Date <SortIcon col="shootDate" />
                   </button>
                 </th>
+                <th className="text-left px-4 py-2.5 font-medium whitespace-nowrap">
+                  <button onClick={() => handleSort("shootLocation")} className="flex items-center gap-0.5 hover:text-[#2f3437] transition-colors">
+                    Shoot Location <SortIcon col="shootLocation" />
+                  </button>
+                </th>
                 {showEditDue && (
                   <th className="text-left px-4 py-2.5 font-medium whitespace-nowrap">
                     <button onClick={() => handleSort("editDueDate")} className="flex items-center gap-0.5 hover:text-[#2f3437] transition-colors">
@@ -532,6 +574,7 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
                   <td className="px-4 py-2.5">{renderCell(plan, "status")}</td>
                   <td className="px-4 py-2.5">{renderCell(plan, "theme")}</td>
                   <td className="px-4 py-2.5">{renderCell(plan, "shootDate")}</td>
+                  <td className="px-4 py-2.5">{renderCell(plan, "shootLocation")}</td>
                   {showEditDue && <td className="px-4 py-2.5">{renderCell(plan, "editDueDate")}</td>}
                   <td className="px-4 py-2.5">{renderCell(plan, "publishDate")}</td>
                   <td className="px-4 py-2.5">{renderCell(plan, "thumbnailWords")}</td>
@@ -618,6 +661,18 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
                   <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Publish Date</label>
                   <input type="date" value={addForm.publishDate ?? ""} onChange={(e) => setAddForm((f) => ({ ...f, publishDate: e.target.value }))} className="w-full border border-gray-200 text-[#2f3437] text-sm rounded-lg px-3 py-2 focus:border-[#6ba3c7] focus:outline-none" />
                 </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Shoot Location</label>
+                <select
+                  value={addForm.shootLocation ?? ""}
+                  onChange={(e) => setAddForm((f) => ({ ...f, shootLocation: e.target.value }))}
+                  className="w-full border border-gray-200 text-[#2f3437] text-sm rounded-lg px-3 py-2 focus:border-[#6ba3c7] focus:outline-none"
+                >
+                  <option value="">Select location...</option>
+                  <option value="In Studio">In Studio</option>
+                  <option value="Out of Studio">Out of Studio</option>
+                </select>
               </div>
               {showEditDue && (
                 <div>

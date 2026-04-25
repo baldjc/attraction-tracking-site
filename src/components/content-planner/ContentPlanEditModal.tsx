@@ -101,6 +101,7 @@ export interface ContentPlan {
   status: string;
   theme: string | null;
   shootDate: string | null;
+  shootLocation: string | null;
   publishDate: string | null;
   editDueDate: string | null;
   priority: string | null;
@@ -186,6 +187,7 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
     theme: plan.theme ?? "",
     publishDate: toDateInput(plan.publishDate),
     shootDate: toDateInput(plan.shootDate),
+    shootLocation: plan.shootLocation ?? "",
     editDueDate: toDateInput(plan.editDueDate),
     priority: plan.priority ?? "",
     dramaMode: Boolean(plan.dramaMode ?? false),
@@ -572,6 +574,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
           theme: form.theme || null,
           publishDate: form.publishDate || null,
           shootDate: form.shootDate || null,
+          shootLocation: form.shootLocation || null,
           editDueDate: form.editDueDate || null,
           priority: form.priority || null,
           dramaMode: Boolean(form.dramaMode),
@@ -898,6 +901,19 @@ Produce a research brief I can hand to a script writer. For **each talking point
                   <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Publish Date</label>
                   <input type="date" value={form.publishDate} onChange={(e) => setForm((f) => ({ ...f, publishDate: e.target.value }))} className={field} />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Shoot Location</label>
+                <select
+                  value={form.shootLocation}
+                  onChange={(e) => setForm((f) => ({ ...f, shootLocation: e.target.value }))}
+                  className={field}
+                >
+                  <option value="">Select location...</option>
+                  <option value="In Studio">In Studio</option>
+                  <option value="Out of Studio">Out of Studio</option>
+                </select>
               </div>
 
               <div>

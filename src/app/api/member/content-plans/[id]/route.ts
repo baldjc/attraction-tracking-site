@@ -34,7 +34,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const serviceTier = dbUser?.serviceTier ?? "foundations";
 
   const body = await req.json();
-  const { title, status, theme, shootDate, publishDate, editDueDate, priority, dramaMode, notes, script, researchNotes, thumbnailWords, footageLink, driveFolderLink, youtubeDescription, linkedCampaignId, linkedScriptId } = body;
+  const { title, status, theme, shootDate, shootLocation, publishDate, editDueDate, priority, dramaMode, notes, script, researchNotes, thumbnailWords, footageLink, driveFolderLink, youtubeDescription, linkedCampaignId, linkedScriptId } = body;
 
   if (linkedScriptId !== undefined && linkedScriptId !== null) {
     const owned = await prisma.savedScript.findFirst({ where: { id: linkedScriptId, userId: user.id }, select: { id: true } });
@@ -54,6 +54,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       ...(status !== undefined && { status }),
       ...(theme !== undefined && { theme: theme ?? null }),
       ...(shootDate !== undefined && { shootDate: shootDate ? new Date(shootDate) : null }),
+      ...(shootLocation !== undefined && { shootLocation: shootLocation || null }),
       ...(publishDate !== undefined && { publishDate: publishDate ? new Date(publishDate) : null }),
       ...(editDueDate !== undefined && { editDueDate: editDueDate ? new Date(editDueDate) : null }),
       ...(priority !== undefined && { priority: priority ?? null }),

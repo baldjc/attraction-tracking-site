@@ -833,6 +833,7 @@ model ContentPlan {
   status          String    @default("Idea")
   theme           String?
   shootDate       DateTime?
+  shootLocation   String?
   publishDate     DateTime?
   editDueDate     DateTime?
   priority        String?

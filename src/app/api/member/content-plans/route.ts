@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
   const serviceTier = dbUser?.serviceTier ?? "foundations";
 
   const body = await req.json();
-  const { title, status, theme, shootDate, publishDate, editDueDate, priority, dramaMode, notes, script, thumbnailWords, footageLink, linkedIdeaId, linkedScriptId, youtubeVideoId } = body;
+  const { title, status, theme, shootDate, shootLocation, publishDate, editDueDate, priority, dramaMode, notes, script, thumbnailWords, footageLink, linkedIdeaId, linkedScriptId, youtubeVideoId } = body;
 
   if (!title || typeof title !== "string" || !title.trim()) {
     return NextResponse.json({ error: "Title is required" }, { status: 400 });
@@ -59,6 +59,7 @@ export async function POST(req: NextRequest) {
       status: finalStatus,
       theme: theme ?? null,
       shootDate: shootDate ? new Date(shootDate) : null,
+      shootLocation: shootLocation ?? null,
       publishDate: publishDate ? new Date(publishDate) : null,
       editDueDate: editDueDate ? new Date(editDueDate) : null,
       priority: priority ?? null,
