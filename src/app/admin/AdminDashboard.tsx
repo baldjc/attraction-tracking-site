@@ -140,7 +140,11 @@ export default function AdminDashboard() {
         const atRisk = members.filter((m) => m.status === "at_risk").length;
         const activeCount = cards.activeMembers ?? 0;
         const videosThisWeek = cards.videosThisWeek ?? 0;
-        const mrr: number = cards.mrr ?? 0;
+        // Server returns null for non-owners and a number (incl. 0) for owners.
+        // Treat presence of the number as the source of truth for visibility.
+        const mrrRaw = cards.mrr;
+        const mrrAvailable = typeof mrrRaw === "number";
+        const mrr: number = mrrAvailable ? mrrRaw : 0;
 
         let auditTrend: { currentAvg: number | null; trend: "up" | "down" | "same" | null } = {
           currentAvg: null,
@@ -213,31 +217,34 @@ export default function AdminDashboard() {
           },
         ]);
 
-        // Stat cards — Jared only
-        setOwnerStats([
-          {
+        // Stat cards — MRR only included when the server returned it
+        // (i.e. the requester is the main owner). Avg Audit Score is for everyone.
+        const stats: StatCard[] = [];
+        if (mrrAvailable) {
+          stats.push({
             label: "MRR",
             value: mrr > 0 ? fmtMrr(mrr) : "—",
             subtitle: "Active + past-due subs · ~CAD",
             icon: CurrencyDollarIcon,
             href: "/admin/members",
-          },
-          {
-            label: "Avg Audit Score",
-            value: auditTrend.currentAvg !== null ? auditTrend.currentAvg : "—",
-            subtitle:
-              auditTrend.trend === "up"
-                ? "Group trending up"
-                : auditTrend.trend === "down"
-                ? "Group trending down"
-                : auditTrend.trend === "same"
-                ? "Group holding steady"
-                : "Latest baseline or monthly",
-            trend: auditTrend.trend,
-            icon: StarIcon,
-            href: "/admin/audits",
-          },
-        ]);
+          });
+        }
+        stats.push({
+          label: "Avg Audit Score",
+          value: auditTrend.currentAvg !== null ? auditTrend.currentAvg : "—",
+          subtitle:
+            auditTrend.trend === "up"
+              ? "Group trending up"
+              : auditTrend.trend === "down"
+              ? "Group trending down"
+              : auditTrend.trend === "same"
+              ? "Group holding steady"
+              : "Latest baseline or monthly",
+          trend: auditTrend.trend,
+          icon: StarIcon,
+          href: "/admin/audits",
+        });
+        setOwnerStats(stats);
 
         try {
           const actRes = await fetch("/api/admin/dashboard/activity");
@@ -328,10 +335,9 @@ export default function AdminDashboard() {
       {/* Rows 2+ — visible to admins and staff admins */}
       <>
           {(() => {
-            // Only the main owner (Jared) sees Members At Risk and MRR.
-            // Sub-admins see every other tile.
+            // ownerStats already filters MRR server-side (only main owner gets it).
             const visibleActions = actions;
-            const visibleStats = ownerStats.filter((s) => isMainOwner || s.label !== "MRR");
+            const visibleStats = ownerStats;
 
             const renderAction = (a: ActionCard) => (
               <Link
