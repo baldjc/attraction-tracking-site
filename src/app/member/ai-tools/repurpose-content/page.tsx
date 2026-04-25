@@ -394,6 +394,14 @@ function RepurposeContentPageInner() {
   const [redoingBlog, setRedoingBlog] = useState(false);
   const [redoingPostcard, setRedoingPostcard] = useState(false);
 
+  const [generatingNewsletter, setGeneratingNewsletter] = useState(false);
+  const [generatingLinkedIn, setGeneratingLinkedIn] = useState(false);
+  const [generatingFacebook, setGeneratingFacebook] = useState(false);
+  const [generatingBlog, setGeneratingBlog] = useState(false);
+  const [generatingPostcard, setGeneratingPostcard] = useState(false);
+
+  const [hydratedFromPlan, setHydratedFromPlan] = useState(false);
+
   const [pastOutputs, setPastOutputs] = useState<PastOutput[]>([]);
   const [showPastOutputs, setShowPastOutputs] = useState(false);
   const [expandedSession, setExpandedSession] = useState<{ key: string; tool: string } | null>(null);
@@ -420,6 +428,69 @@ function RepurposeContentPageInner() {
   }, []);
 
   useEffect(() => { loadPastOutputs(); }, [loadPastOutputs]);
+
+  // When opened from the planner with a planId, restore the latest
+  // generated outputs for this video title so the user picks up where they
+  // left off instead of seeing a blank slate. Runs once after past outputs
+  // have loaded and the prefill has populated the title.
+  useEffect(() => {
+    if (hydratedFromPlan) return;
+    if (!planId) return;
+    if (!title.trim()) return;
+    if (pastOutputs.length === 0) return;
+    const matching = pastOutputs.filter((o) => o.videoTitle === title);
+    if (matching.length === 0) return;
+    const latestByTool: Record<string, PastOutput> = {};
+    for (const o of matching) {
+      const existing = latestByTool[o.toolType];
+      if (!existing || new Date(o.createdAt).getTime() > new Date(existing.createdAt).getTime()) {
+        latestByTool[o.toolType] = o;
+      }
+    }
+    if (latestByTool.newsletter) {
+      const o = latestByTool.newsletter;
+      const nl = o.output as NewsletterResult;
+      setNewsletterResult(nl);
+      setNewsletterRecordId(o.id);
+      setEditedNewsletter(o.editedOutput || nlFormatted(nl));
+    }
+    if (latestByTool.linkedin) {
+      const o = latestByTool.linkedin;
+      const li = o.output as LinkedInResult;
+      setLinkedInResult(li);
+      setLinkedInRecordId(o.id);
+      setEditedLinkedIn(o.editedOutput || li.full_article);
+    }
+    if (latestByTool.facebook) {
+      const o = latestByTool.facebook;
+      const fb = o.output as FacebookResult;
+      setFacebookResult(fb);
+      setFacebookRecordId(o.id);
+      setEditedFacebookBody(fb.post_body);
+      setEditedFacebookComment(fb.first_comment);
+    }
+    if (latestByTool.blog) {
+      const o = latestByTool.blog;
+      const b = o.output as BlogResult;
+      setBlogResult(b);
+      setBlogRecordId(o.id);
+      setEditedBlogTitle(b.blog_title);
+      setEditedBlogArticle(b.full_article);
+      setEditedBlogMeta(b.meta_description);
+    }
+    if (latestByTool.postcard) {
+      const o = latestByTool.postcard;
+      const p = o.output as PostcardResult;
+      setPostcardResult(p);
+      setPostcardRecordId(o.id);
+      setEditedPostcardFrontHeadline(p.front_headline);
+      setEditedPostcardFrontHook(p.front_hook);
+      setEditedPostcardBack(p.back_body);
+      const nb = (o.output as PostcardResult & { neighbourhood?: string }).neighbourhood;
+      if (nb && !neighbourhood.trim()) setNeighbourhood(nb);
+    }
+    setHydratedFromPlan(true);
+  }, [planId, title, pastOutputs, hydratedFromPlan, neighbourhood]);
 
   useEffect(() => {
     setFeedbackNewsletter("");
@@ -592,6 +663,7 @@ function RepurposeContentPageInner() {
     const promises: Promise<void>[] = [];
 
     if (toolFlags.newsletter && generateNewsletter) {
+      setGeneratingNewsletter(true);
       promises.push(
         fetch("/api/ai-tools/repurpose-newsletter", {
           method: "POST",
@@ -616,12 +688,14 @@ function RepurposeContentPageInner() {
             }
           })
           .catch(() => setNewsletterError("Newsletter generation failed"))
+          .finally(() => setGeneratingNewsletter(false))
       );
     }
 
     if (toolFlags.linkedin && generateLinkedIn) {
       const linksForApi = selectedLinkIndexes.map((i) => savedLinks[i]).filter(Boolean);
       const campaignLinksForApi = activeCampaignLinks.map((l) => ({ label: l.linkName, url: l.trackedUrl }));
+      setGeneratingLinkedIn(true);
       promises.push(
         fetch("/api/ai-tools/repurpose-linkedin", {
           method: "POST",
@@ -646,10 +720,12 @@ function RepurposeContentPageInner() {
             }
           })
           .catch(() => setLinkedInError("LinkedIn article generation failed"))
+          .finally(() => setGeneratingLinkedIn(false))
       );
     }
 
     if (toolFlags.facebook && generateFacebook) {
+      setGeneratingFacebook(true);
       promises.push(
         fetch("/api/ai-tools/repurpose-facebook", {
           method: "POST",
@@ -676,12 +752,14 @@ function RepurposeContentPageInner() {
             }
           })
           .catch(() => setFacebookError("Facebook post generation failed"))
+          .finally(() => setGeneratingFacebook(false))
       );
     }
 
     if (toolFlags.blog && generateBlog) {
       const blogSavedLinksForApi = blogSelectedLinkIndexes.map((i) => savedLinks[i]).filter(Boolean);
       const blogCampaignLinksForApi = blogActiveCampaignLinks.map((l) => ({ label: l.linkName, url: l.trackedUrl }));
+      setGeneratingBlog(true);
       promises.push(
         fetch("/api/ai-tools/repurpose-blog", {
           method: "POST",
@@ -708,10 +786,12 @@ function RepurposeContentPageInner() {
             }
           })
           .catch(() => setBlogError("Blog post generation failed"))
+          .finally(() => setGeneratingBlog(false))
       );
     }
 
     if (toolFlags.postcard && generatePostcard) {
+      setGeneratingPostcard(true);
       promises.push(
         fetch("/api/ai-tools/repurpose-postcard", {
           method: "POST",
@@ -732,6 +812,7 @@ function RepurposeContentPageInner() {
             }
           })
           .catch(() => setPostcardError("Postcard generation failed"))
+          .finally(() => setGeneratingPostcard(false))
       );
     }
 
@@ -750,6 +831,8 @@ function RepurposeContentPageInner() {
     setNewsletterRecordId(null); setLinkedInRecordId(null); setFacebookRecordId(null); setBlogRecordId(null); setPostcardRecordId(null);
     setSavedNewsletter(false); setSavedLinkedIn(false); setSavedFacebook(false); setSavedBlog(false); setSavedPostcard(false);
     setFeedbackNewsletter(""); setFeedbackLinkedIn(""); setFeedbackFacebook(""); setFeedbackBlog(""); setFeedbackPostcard("");
+    setGeneratingNewsletter(false); setGeneratingLinkedIn(false); setGeneratingFacebook(false); setGeneratingBlog(false); setGeneratingPostcard(false);
+    setHydratedFromPlan(true);
     setSelectedLinkIndexes([]); setOneOffLinks([]); setActiveCampaignLinks([]);
     setBlogActiveCampaignLinks([]); setBlogSelectedLinkIndexes([]); setBlogOneOffLinks([]);
     setNewsletterActiveLink(null); setFacebookActiveLink(null);
@@ -1464,13 +1547,13 @@ function RepurposeContentPageInner() {
                         onChange={(e) => setFeedbackNewsletter(e.target.value)}
                         placeholder="e.g. shorter, lead with the equity hook, drop the bullet list"
                         maxLength={1000}
-                        disabled={redoingNewsletter || loading}
+                        disabled={redoingNewsletter || generatingNewsletter}
                         className="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-white/15 bg-white dark:bg-white/5 text-[#2f3437] dark:text-white placeholder:text-[#2f3437]/40 focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40"
                       />
                       <button
                         type="button"
                         onClick={redoNewsletter}
-                        disabled={redoingNewsletter || loading || !transcript.trim() || !title.trim()}
+                        disabled={redoingNewsletter || generatingNewsletter || !transcript.trim() || !title.trim()}
                         className="px-4 py-2 text-sm font-semibold rounded-lg bg-[#6ba3c7] hover:bg-[#5a92b6] disabled:bg-[#6ba3c7]/40 disabled:cursor-not-allowed text-white transition-colors flex items-center gap-1.5"
                         aria-label="Regenerate this output using the feedback above"
                       >
@@ -1526,13 +1609,13 @@ function RepurposeContentPageInner() {
                         onChange={(e) => setFeedbackLinkedIn(e.target.value)}
                         placeholder="e.g. punchier opening, more local examples, cut the closing CTA"
                         maxLength={1000}
-                        disabled={redoingLinkedIn || loading}
+                        disabled={redoingLinkedIn || generatingLinkedIn}
                         className="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-white/15 bg-white dark:bg-white/5 text-[#2f3437] dark:text-white placeholder:text-[#2f3437]/40 focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40"
                       />
                       <button
                         type="button"
                         onClick={redoLinkedIn}
-                        disabled={redoingLinkedIn || loading || !transcript.trim() || !title.trim()}
+                        disabled={redoingLinkedIn || generatingLinkedIn || !transcript.trim() || !title.trim()}
                         className="px-4 py-2 text-sm font-semibold rounded-lg bg-[#6ba3c7] hover:bg-[#5a92b6] disabled:bg-[#6ba3c7]/40 disabled:cursor-not-allowed text-white transition-colors flex items-center gap-1.5"
                         aria-label="Regenerate this output using the feedback above"
                       >
@@ -1605,13 +1688,13 @@ function RepurposeContentPageInner() {
                         onChange={(e) => setFeedbackFacebook(e.target.value)}
                         placeholder="e.g. shorter, lose the question opener, no hashtags"
                         maxLength={1000}
-                        disabled={redoingFacebook || loading}
+                        disabled={redoingFacebook || generatingFacebook}
                         className="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-white/15 bg-white dark:bg-white/5 text-[#2f3437] dark:text-white placeholder:text-[#2f3437]/40 focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40"
                       />
                       <button
                         type="button"
                         onClick={redoFacebook}
-                        disabled={redoingFacebook || loading || !transcript.trim() || !title.trim()}
+                        disabled={redoingFacebook || generatingFacebook || !transcript.trim() || !title.trim()}
                         className="px-4 py-2 text-sm font-semibold rounded-lg bg-[#6ba3c7] hover:bg-[#5a92b6] disabled:bg-[#6ba3c7]/40 disabled:cursor-not-allowed text-white transition-colors flex items-center gap-1.5"
                         aria-label="Regenerate this output using the feedback above"
                       >
@@ -1681,13 +1764,13 @@ function RepurposeContentPageInner() {
                         onChange={(e) => setFeedbackBlog(e.target.value)}
                         placeholder="e.g. punchier title, fewer subheadings, add more local data"
                         maxLength={1000}
-                        disabled={redoingBlog || loading}
+                        disabled={redoingBlog || generatingBlog}
                         className="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-white/15 bg-white dark:bg-white/5 text-[#2f3437] dark:text-white placeholder:text-[#2f3437]/40 focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40"
                       />
                       <button
                         type="button"
                         onClick={redoBlog}
-                        disabled={redoingBlog || loading || !transcript.trim() || !title.trim()}
+                        disabled={redoingBlog || generatingBlog || !transcript.trim() || !title.trim()}
                         className="px-4 py-2 text-sm font-semibold rounded-lg bg-[#6ba3c7] hover:bg-[#5a92b6] disabled:bg-[#6ba3c7]/40 disabled:cursor-not-allowed text-white transition-colors flex items-center gap-1.5"
                         aria-label="Regenerate this output using the feedback above"
                       >
@@ -1772,13 +1855,13 @@ function RepurposeContentPageInner() {
                         onChange={(e) => setFeedbackPostcard(e.target.value)}
                         placeholder="e.g. softer hook, mention move-up buyers explicitly"
                         maxLength={1000}
-                        disabled={redoingPostcard || loading}
+                        disabled={redoingPostcard || generatingPostcard}
                         className="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-white/15 bg-white dark:bg-white/5 text-[#2f3437] dark:text-white placeholder:text-[#2f3437]/40 focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40"
                       />
                       <button
                         type="button"
                         onClick={redoPostcard}
-                        disabled={redoingPostcard || loading || !transcript.trim() || !title.trim() || !neighbourhood.trim()}
+                        disabled={redoingPostcard || generatingPostcard || !transcript.trim() || !title.trim() || !neighbourhood.trim()}
                         className="px-4 py-2 text-sm font-semibold rounded-lg bg-[#6ba3c7] hover:bg-[#5a92b6] disabled:bg-[#6ba3c7]/40 disabled:cursor-not-allowed text-white transition-colors flex items-center gap-1.5"
                         aria-label="Regenerate this output using the feedback above"
                       >
