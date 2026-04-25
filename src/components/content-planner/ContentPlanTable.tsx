@@ -542,11 +542,6 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
                     Publish Date <SortIcon col="publishDate" />
                   </button>
                 </th>
-                <th className="text-left px-4 py-2.5 font-medium whitespace-nowrap">
-                  <button onClick={() => handleSort("thumbnailWords")} className="flex items-center gap-0.5 hover:text-[#2f3437] transition-colors">
-                    Thumbnail Words and Ideas <SortIcon col="thumbnailWords" />
-                  </button>
-                </th>
                 {showDriveFolder && <th className="text-center px-4 py-2.5 font-medium whitespace-nowrap">Drive</th>}
                 <th className="px-4 py-2.5 w-10" />
               </tr>
@@ -577,7 +572,6 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
                   <td className="px-4 py-2.5">{renderCell(plan, "shootLocation")}</td>
                   {showEditDue && <td className="px-4 py-2.5">{renderCell(plan, "editDueDate")}</td>}
                   <td className="px-4 py-2.5">{renderCell(plan, "publishDate")}</td>
-                  <td className="px-4 py-2.5">{renderCell(plan, "thumbnailWords")}</td>
                   {showDriveFolder && <td className="px-4 py-2.5 text-center">{renderCell(plan, "driveFolderLink")}</td>}
                   <td className="px-4 py-2.5">
                     {confirmDelete === plan.id ? (
