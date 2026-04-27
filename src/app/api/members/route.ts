@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import { isAdminOrEditor, editorTierFilter, isMainOwnerEmail } from "@/lib/auth-utils";
+import { isAdminOrEditor, editorTierFilter, isAdmin } from "@/lib/auth-utils";
 import { staffMemberIdFilter } from "@/lib/staff-access";
 
 export async function GET() {
@@ -13,7 +13,12 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const isOwner = isMainOwnerEmail(sessionUser?.email ?? null);
+  // Billing visibility (MRR + Stripe fields) is gated on the `admin` role.
+  // Currently the only admin account is the founder; sub-admins are `editor`.
+  // Using role here is more reliable than an email comparison, which can fail
+  // when sessions are missing the email claim or when env vars override the
+  // expected owner address.
+  const isOwner = isAdmin(role ?? "");
   const tierFilter = editorTierFilter(role ?? "");
   const allowedFilter = await staffMemberIdFilter(userId);
 
