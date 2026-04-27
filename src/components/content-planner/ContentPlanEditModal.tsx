@@ -348,8 +348,12 @@ Produce a research brief I can hand to a script writer. For **each talking point
   }
 
   useEffect(() => {
+    // Clear any prior plan's artifacts immediately so a stale Repurposed
+    // Content list never leaks across plan switches or when the endpoint
+    // returns 403 (e.g. tool_planner_linkage flag off).
+    setArtifacts({});
     fetch(`/api/member/content-plans/${plan.id}/artifacts`)
-      .then((r) => r.json())
+      .then((r) => (r.ok ? r.json() : null))
       .then((d) => { if (d?.artifacts) setArtifacts(d.artifacts); })
       .catch(() => {});
   }, [plan.id]);
