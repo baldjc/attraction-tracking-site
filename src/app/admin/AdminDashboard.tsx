@@ -114,6 +114,12 @@ export default function AdminDashboard() {
   const [actions, setActions] = useState<ActionCard[]>([]);
   const [topStats, setTopStats] = useState<StatCard[]>([]);
   const [ownerStats, setOwnerStats] = useState<StatCard[]>([]);
+  const [mrrData, setMrrData] = useState<{
+    mrr: number;
+    payingMembers: number;
+    byTier: { foundations: number; growth: number; doneWithYou: number; other: number };
+    countByTier: { foundations: number; growth: number; doneWithYou: number; other: number };
+  } | null>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
   const [teamPipeline, setTeamPipeline] = useState<{ scripted: number; filmed: number; assignedToMe: number; unassigned: number } | null>(null);
@@ -145,6 +151,12 @@ export default function AdminDashboard() {
         const mrrRaw = cards.mrr;
         const mrrAvailable = typeof mrrRaw === "number";
         const mrr: number = mrrAvailable ? mrrRaw : 0;
+        const payingMembersRaw = cards.payingMembers;
+        const payingMembers: number =
+          typeof payingMembersRaw === "number" ? payingMembersRaw : 0;
+        const emptyTierBreakdown = { foundations: 0, growth: 0, doneWithYou: 0, other: 0 };
+        const byTier = (cards.mrrByTier ?? emptyTierBreakdown) as typeof emptyTierBreakdown;
+        const countByTier = (cards.countByTier ?? emptyTierBreakdown) as typeof emptyTierBreakdown;
 
         let auditTrend: { currentAvg: number | null; trend: "up" | "down" | "same" | null } = {
           currentAvg: null,
@@ -217,34 +229,26 @@ export default function AdminDashboard() {
           },
         ]);
 
-        // Stat cards — MRR only included when the server returned it
-        // (i.e. the requester is the main owner). Avg Audit Score is for everyone.
-        const stats: StatCard[] = [];
-        if (mrrAvailable) {
-          stats.push({
-            label: "MRR",
-            value: mrr > 0 ? fmtMrr(mrr) : "—",
-            subtitle: "Active + past-due subs · ~CAD",
-            icon: CurrencyDollarIcon,
-            href: "/admin/members",
-          });
-        }
-        stats.push({
-          label: "Avg Audit Score",
-          value: auditTrend.currentAvg !== null ? auditTrend.currentAvg : "—",
-          subtitle:
-            auditTrend.trend === "up"
-              ? "Group trending up"
-              : auditTrend.trend === "down"
-              ? "Group trending down"
-              : auditTrend.trend === "same"
-              ? "Group holding steady"
-              : "Latest baseline or monthly",
-          trend: auditTrend.trend,
-          icon: StarIcon,
-          href: "/admin/audits",
-        });
-        setOwnerStats(stats);
+        // Avg Audit Score sits in the action row to fill the 4th slot.
+        // MRR is rendered separately as a full-width rich card below.
+        setOwnerStats([
+          {
+            label: "Avg Audit Score",
+            value: auditTrend.currentAvg !== null ? auditTrend.currentAvg : "—",
+            subtitle:
+              auditTrend.trend === "up"
+                ? "Group trending up"
+                : auditTrend.trend === "down"
+                ? "Group trending down"
+                : auditTrend.trend === "same"
+                ? "Group holding steady"
+                : "Latest baseline or monthly",
+            trend: auditTrend.trend,
+            icon: StarIcon,
+            href: "/admin/audits",
+          },
+        ]);
+        setMrrData(mrrAvailable ? { mrr, payingMembers, byTier, countByTier } : null);
 
         try {
           const actRes = await fetch("/api/admin/dashboard/activity");
@@ -411,10 +415,100 @@ export default function AdminDashboard() {
               <>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {visibleActions.map(renderAction)}
-                </div>
-                <div className="grid grid-cols-2 gap-4">
                   {visibleStats.map(renderStat)}
                 </div>
+                {mrrData && (
+                  <Link
+                    href="/admin/members"
+                    className="block bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-[#2a2a2a] p-5 hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <CurrencyDollarIcon className="w-4 h-4 text-[#6ba3c7]" />
+                      <p className="text-xs text-[#2f3437]/50 dark:text-white/40 uppercase tracking-wider">
+                        Monthly Recurring Revenue
+                      </p>
+                    </div>
+                    <p className="text-4xl font-black text-[#6ba3c7] leading-none">
+                      {mrrData.mrr > 0 ? fmtMrr(mrrData.mrr) : "—"}
+                    </p>
+                    <p className="text-[10px] text-[#2f3437]/30 dark:text-white/20 mt-1">
+                      Active + past-due subs · ~CAD
+                    </p>
+                    <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-gray-100 dark:border-[#2a2a2a]">
+                      <div>
+                        <p className="text-xl font-bold text-[#2f3437] dark:text-white">
+                          {mrrData.payingMembers}
+                        </p>
+                        <p className="text-[10px] uppercase tracking-wider text-[#2f3437]/50 dark:text-white/40 mt-0.5">
+                          Paying
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xl font-bold text-[#2f3437] dark:text-white">
+                          {mrrData.mrr > 0 ? fmtMrr(mrrData.mrr * 12) : "—"}
+                        </p>
+                        <p className="text-[10px] uppercase tracking-wider text-[#2f3437]/50 dark:text-white/40 mt-0.5">
+                          ARR
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xl font-bold text-[#2f3437] dark:text-white">
+                          {mrrData.payingMembers > 0
+                            ? fmtMrr(Math.round(mrrData.mrr / mrrData.payingMembers))
+                            : "—"}
+                        </p>
+                        <p className="text-[10px] uppercase tracking-wider text-[#2f3437]/50 dark:text-white/40 mt-0.5">
+                          ARPU
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-4 pt-4 border-t border-gray-100 dark:border-[#2a2a2a]">
+                      <p className="text-[10px] uppercase tracking-wider text-[#2f3437]/50 dark:text-white/40 mb-2">
+                        By Program
+                      </p>
+                      <div className="grid grid-cols-3 gap-3">
+                        <div>
+                          <p className="text-base font-bold text-[#6ba3c7]">
+                            {mrrData.byTier.foundations > 0 ? fmtMrr(mrrData.byTier.foundations) : "—"}
+                          </p>
+                          <p className="text-[10px] uppercase tracking-wider text-[#2f3437]/50 dark:text-white/40 mt-0.5">
+                            Foundations
+                          </p>
+                          <p className="text-[10px] text-[#2f3437]/30 dark:text-white/20">
+                            {mrrData.countByTier.foundations} member{mrrData.countByTier.foundations === 1 ? "" : "s"}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-base font-bold text-[#6ba3c7]">
+                            {mrrData.byTier.growth > 0 ? fmtMrr(mrrData.byTier.growth) : "—"}
+                          </p>
+                          <p className="text-[10px] uppercase tracking-wider text-[#2f3437]/50 dark:text-white/40 mt-0.5">
+                            Growth
+                          </p>
+                          <p className="text-[10px] text-[#2f3437]/30 dark:text-white/20">
+                            {mrrData.countByTier.growth} member{mrrData.countByTier.growth === 1 ? "" : "s"}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-base font-bold text-[#6ba3c7]">
+                            {mrrData.byTier.doneWithYou > 0 ? fmtMrr(mrrData.byTier.doneWithYou) : "—"}
+                          </p>
+                          <p className="text-[10px] uppercase tracking-wider text-[#2f3437]/50 dark:text-white/40 mt-0.5">
+                            Done With You
+                          </p>
+                          <p className="text-[10px] text-[#2f3437]/30 dark:text-white/20">
+                            {mrrData.countByTier.doneWithYou} member{mrrData.countByTier.doneWithYou === 1 ? "" : "s"}
+                          </p>
+                        </div>
+                      </div>
+                      {mrrData.byTier.other > 0 && (
+                        <p className="text-[10px] text-[#2f3437]/40 dark:text-white/30 mt-2">
+                          + {fmtMrr(mrrData.byTier.other)} from {mrrData.countByTier.other} other
+                        </p>
+                      )}
+                    </div>
+                  </Link>
+                )}
               </>
             );
           })()}

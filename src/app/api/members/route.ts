@@ -202,13 +202,33 @@ export async function GET() {
   const videosThisWeek = memberRows.reduce((sum, m) => sum + m.videos7d, 0);
   const rateSetting = await prisma.appSetting.findUnique({ where: { key: "usd_to_cad_rate" } });
   const USD_TO_CAD = rateSetting ? parseFloat(rateSetting.value) : 1.38;
-  const mrr = memberRows
-    .filter((m) => (m.subscriptionStatus === "active" || m.subscriptionStatus === "past_due") && m.stripePriceAmount)
-    .reduce((sum, m) => {
-      const amount = m.stripePriceAmount ?? 0;
-      const currency = (m.stripeCurrency ?? "USD").toUpperCase();
-      return sum + (currency === "USD" ? Math.round(amount * USD_TO_CAD) : amount);
-    }, 0);
+  const payingRows = memberRows.filter(
+    (m) => (m.subscriptionStatus === "active" || m.subscriptionStatus === "past_due") && m.stripePriceAmount,
+  );
+  const toCadCents = (m: (typeof payingRows)[number]): number => {
+    const amount = m.stripePriceAmount ?? 0;
+    const currency = (m.stripeCurrency ?? "USD").toUpperCase();
+    return currency === "USD" ? Math.round(amount * USD_TO_CAD) : amount;
+  };
+  const mrr = payingRows.reduce((sum, m) => sum + toCadCents(m), 0);
+  const payingMembers = payingRows.length;
+
+  // Program breakdown of MRR + paying member counts.
+  // foundations -> Foundations · mastery_* -> Growth · done_with_you -> Done With You
+  // Anything outside those buckets (e.g. editing_2/4) lands in "other".
+  const mrrByTier = { foundations: 0, growth: 0, doneWithYou: 0, other: 0 };
+  const countByTier = { foundations: 0, growth: 0, doneWithYou: 0, other: 0 };
+  for (const m of payingRows) {
+    const cents = toCadCents(m);
+    const t = m.serviceTier ?? "foundations";
+    let bucket: keyof typeof mrrByTier;
+    if (t === "foundations") bucket = "foundations";
+    else if (t === "mastery_2" || t === "mastery_4") bucket = "growth";
+    else if (t === "done_with_you") bucket = "doneWithYou";
+    else bucket = "other";
+    mrrByTier[bucket] += cents;
+    countByTier[bucket] += 1;
+  }
 
   // Stripe / billing data is owner-only. Admins (incl. sub-admins) and editors
   // who are not the main owner get the redacted view.
@@ -234,6 +254,9 @@ export async function GET() {
       linkClicks7d: clicksResult._count,
       topLead,
       mrr: isOwner ? mrr : null,
+      payingMembers: isOwner ? payingMembers : null,
+      mrrByTier: isOwner ? mrrByTier : null,
+      countByTier: isOwner ? countByTier : null,
       usdToCadRate: USD_TO_CAD,
     },
     recentVideos,
