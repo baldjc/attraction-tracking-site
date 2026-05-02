@@ -26,6 +26,7 @@ const DEFAULT_COL_WIDTHS: Record<string, number> = {
   title: 260,
   status: 140,
   theme: 160,
+  binge: 180,
   shootDate: 100,
   shootLocation: 110,
   editDueDate: 100,
@@ -51,6 +52,11 @@ interface ContentPlan {
   footageLink: string | null;
   driveFolderLink: string | null;
   dramaMode?: boolean;
+  // Binge target — the previous video this one chains back to. Returned by
+  // the API as a summary so we can render the title in the cell without an
+  // extra round-trip; the bare id is what gets PUT back when editing.
+  bingeVideoId: string | null;
+  bingeVideo: { id: string; title: string; theme: string | null; status: string } | null;
 }
 
 interface Props {
@@ -287,6 +293,18 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
         return mult * (aO - bO);
       }
 
+      // Sort the Binge column by the linked video's title (more useful than
+      // sorting raw uuids). Fall back to the relation summary, then to a
+      // lookup in the loaded plans list.
+      if (sortKey === "bingeVideoId") {
+        const aTitle = a.bingeVideo?.title ?? (a.bingeVideoId ? plans.find((p) => p.id === a.bingeVideoId)?.title : "") ?? "";
+        const bTitle = b.bingeVideo?.title ?? (b.bingeVideoId ? plans.find((p) => p.id === b.bingeVideoId)?.title : "") ?? "";
+        if (!aTitle && !bTitle) return 0;
+        if (!aTitle) return 1;
+        if (!bTitle) return -1;
+        return mult * aTitle.localeCompare(bTitle);
+      }
+
       const aStr = (aVal as string | null) ?? "";
       const bStr = (bVal as string | null) ?? "";
       if (!aStr && !bStr) return 0;
@@ -362,6 +380,47 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
             </span>
           ) : (
             <span className="text-xs text-[#2f3437]/30 italic">Click to set</span>
+          )}
+        </div>
+      );
+    }
+
+    if (field === "bingeVideoId") {
+      if (isEditing) {
+        // Pull candidates from the already-loaded plans list (all same-user
+        // plans are present), excluding the current row to forbid self-link.
+        const candidates = plans.filter((p) => p.id !== plan.id);
+        return (
+          <select
+            ref={inputRef as any}
+            value={cellValue}
+            onChange={(e) => { setEditingCell(null); updatePlan(plan.id, { bingeVideoId: e.target.value || null }); }}
+            onBlur={() => setEditingCell(null)}
+            className={selectCls}
+          >
+            <option value="">— None —</option>
+            {candidates.map((c) => (
+              <option key={c.id} value={c.id}>{c.title}</option>
+            ))}
+          </select>
+        );
+      }
+      const target = plan.bingeVideo ?? (plan.bingeVideoId ? plans.find((p) => p.id === plan.bingeVideoId) ?? null : null);
+      return (
+        <div
+          className="cursor-pointer text-xs"
+          onClick={() => startEdit(plan.id, "bingeVideoId", plan.bingeVideoId)}
+        >
+          {target ? (
+            <span
+              className="inline-flex items-center gap-1 text-[#2f3437] hover:text-[#6ba3c7] transition-colors max-w-full"
+              title={target.title}
+            >
+              <span className="text-[#6ba3c7] shrink-0">↪</span>
+              <span className="truncate">{target.title}</span>
+            </span>
+          ) : (
+            <span className="text-[#2f3437]/30 italic">Click to set</span>
           )}
         </div>
       );
@@ -557,6 +616,7 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
               <col style={{ width: colWidths.title }} />
               <col style={{ width: colWidths.status }} />
               <col style={{ width: colWidths.theme }} />
+              <col style={{ width: colWidths.binge }} />
               <col style={{ width: colWidths.shootDate }} />
               <col style={{ width: colWidths.shootLocation }} />
               {showEditDue && <col style={{ width: colWidths.editDueDate }} />}
@@ -584,6 +644,12 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
                     Theme <SortIcon col="theme" />
                   </button>
                   <ColumnResizeHandle label="Theme" handleProps={getColResizeProps("theme")} />
+                </th>
+                <th className="text-left px-3 py-2.5 font-medium whitespace-nowrap relative group">
+                  <button onClick={() => handleSort("bingeVideoId")} className="flex items-center gap-0.5 hover:text-[#2f3437] transition-colors">
+                    Binge <SortIcon col="bingeVideoId" />
+                  </button>
+                  <ColumnResizeHandle label="Binge" handleProps={getColResizeProps("binge")} />
                 </th>
                 <th className="text-left px-3 py-2.5 font-medium whitespace-nowrap relative group">
                   <button onClick={() => handleSort("shootDate")} className="flex items-center gap-0.5 hover:text-[#2f3437] transition-colors">
@@ -642,6 +708,7 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
                   </td>
                   <td className="px-3 py-2.5 align-top overflow-hidden">{renderCell(plan, "status")}</td>
                   <td className="px-3 py-2.5 align-top overflow-hidden">{renderCell(plan, "theme")}</td>
+                  <td className="px-3 py-2.5 align-top overflow-hidden">{renderCell(plan, "bingeVideoId")}</td>
                   <td className="px-3 py-2.5 align-top overflow-hidden">{renderCell(plan, "shootDate")}</td>
                   <td className="px-3 py-2.5 align-top overflow-hidden">{renderCell(plan, "shootLocation")}</td>
                   {showEditDue && <td className="px-3 py-2.5 align-top overflow-hidden">{renderCell(plan, "editDueDate")}</td>}
