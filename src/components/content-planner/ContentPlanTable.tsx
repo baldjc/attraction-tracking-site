@@ -478,11 +478,25 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
     }
 
     if (field === "driveFolderLink") {
-      if (!plan.driveFolderLink) return <span className="text-[#2f3437]/30 text-xs italic">—</span>;
+      if (!plan.driveFolderLink) {
+        return (
+          <div className="flex items-center justify-center">
+            <span className="text-[#2f3437]/30 text-xs italic">—</span>
+          </div>
+        );
+      }
       return (
-        <a href={plan.driveFolderLink} target="_blank" rel="noopener noreferrer" className="text-[#6ba3c7] hover:text-[#4a82a6] transition-colors">
-          <ArrowTopRightOnSquareIcon className="w-4 h-4" />
-        </a>
+        <div className="flex items-center justify-center">
+          <a
+            href={plan.driveFolderLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center text-[#6ba3c7] hover:text-[#4a82a6] transition-colors"
+            title="Open Google Drive folder"
+          >
+            <ArrowTopRightOnSquareIcon className="w-4 h-4" />
+          </a>
+        </div>
       );
     }
 
