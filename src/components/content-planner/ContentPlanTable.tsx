@@ -294,7 +294,7 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
       if (!bStr) return -1;
       return mult * aStr.localeCompare(bStr);
     });
-  }, [plans, sortKey, sortDir]);
+  }, [visiblePlans, sortKey, sortDir]);
 
   function SortIcon({ col }: { col: keyof ContentPlan }) {
     if (sortKey !== col) return <ChevronUpIcon className="w-3 h-3 opacity-20 inline-block ml-0.5 -mt-0.5" />;

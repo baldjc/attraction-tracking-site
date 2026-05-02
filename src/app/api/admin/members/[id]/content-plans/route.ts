@@ -89,8 +89,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     },
   });
 
-  // Auto-create Google Drive folder for Production/Growth/DWY members — only once the plan is in production (Ready to Shoot or beyond)
-  if (member && PRODUCTION_TIERS.includes(member.serviceTier ?? "") && member.fullName && !PRE_PRODUCTION_STATUSES.includes(plan.status)) {
+  // Auto-create Google Drive folder for Production/Growth/DWY members. Folders
+  // spin up either when the plan is in production (Ready to Shoot or beyond)
+  // OR when the plan starts at "Needs Research" — so members can drop research
+  // links into the seeded "Video Research" doc from day one.
+  const shouldCreateFolder =
+    plan.status === "Needs Research" || !PRE_PRODUCTION_STATUSES.includes(plan.status);
+  if (member && PRODUCTION_TIERS.includes(member.serviceTier ?? "") && member.fullName && shouldCreateFolder) {
     try {
       const { videoFolderUrl, memberFolderUrl } = await createVideoFolder(member.fullName, plan.title);
       const updates: Promise<unknown>[] = [

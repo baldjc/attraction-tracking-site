@@ -79,10 +79,16 @@ export async function POST(req: NextRequest) {
   // creation time (Script Builder save-as-new-plan flow); otherwise preserve
   // the old behaviour where only post–pre-production plans get folders.
   const flags = await getFeatureFlags();
+  // "Needs Research" always triggers folder creation (regardless of feature
+  // flag) so members starting at that earliest production stage immediately
+  // get a folder + seeded "Video Research" doc to capture sources.
+  const isNeedsResearchTrigger = plan.status === "Needs Research";
   const shouldCreateFolder = PRODUCTION_TIERS.includes(serviceTier) && (
-    flags.drive_auto_upload
-      ? !PRE_PRODUCTION_STATUSES.includes(plan.status) || plan.status === "Scripted"
-      : !PRE_PRODUCTION_STATUSES.includes(plan.status)
+    isNeedsResearchTrigger || (
+      flags.drive_auto_upload
+        ? !PRE_PRODUCTION_STATUSES.includes(plan.status) || plan.status === "Scripted"
+        : !PRE_PRODUCTION_STATUSES.includes(plan.status)
+    )
   );
 
   if (shouldCreateFolder) {
