@@ -4,7 +4,11 @@ import prisma from "@/lib/prisma";
 import { canStaffAccessMember } from "@/lib/staff-access";
 import { createVideoFolder } from "@/lib/google-drive";
 
-const DRIVE_TRIGGER_STATUSES = ["Ready to Shoot", "Shooting", "Shot - In Post"];
+// "Needs Research" is the earliest production status — kicking off the Drive
+// folder + Video Research doc here gives the member a place to drop research
+// links from the very start of the workflow. Later statuses remain triggers
+// because Drive creation is idempotent (skipped when a folder already exists).
+const DRIVE_TRIGGER_STATUSES = ["Needs Research", "Ready to Shoot", "Shooting", "Shot - In Post"];
 
 async function checkAdmin() {
   const session = await auth();

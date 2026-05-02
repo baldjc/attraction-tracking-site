@@ -5,8 +5,12 @@ import { isValidStatus, PRODUCTION_TIERS } from "@/lib/content-plan-utils";
 import { createVideoFolder } from "@/lib/google-drive";
 import { getFeatureFlags } from "@/lib/feature-flags";
 
-const DRIVE_TRIGGER_STATUSES_LEGACY = ["Ready to Shoot", "Shooting", "Shot - In Post"];
-const DRIVE_TRIGGER_STATUSES_WITH_SCRIPTED = ["Scripted", "Ready to Shoot", "Shooting", "Shot - In Post"];
+// "Needs Research" is the earliest production status — kicking off the Drive
+// folder + Video Research doc here gives the member a place to drop research
+// links from day one. Later statuses remain triggers because folder creation
+// is idempotent (skipped when a folder already exists).
+const DRIVE_TRIGGER_STATUSES_LEGACY = ["Needs Research", "Ready to Shoot", "Shooting", "Shot - In Post"];
+const DRIVE_TRIGGER_STATUSES_WITH_SCRIPTED = ["Needs Research", "Scripted", "Ready to Shoot", "Shooting", "Shot - In Post"];
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await resolveUserFromSession();

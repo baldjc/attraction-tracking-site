@@ -75,6 +75,43 @@ export async function createMemberFolder(memberName: string): Promise<string> {
 export interface VideoFolderResult {
   memberFolderUrl: string;
   videoFolderUrl: string;
+  researchDocUrl: string | null;
+}
+
+/**
+ * Finds (or creates) a blank Google Doc with the given name inside `folderId`.
+ * Idempotent: if a Doc with that name already exists in the folder we return
+ * its URL instead of creating a duplicate. Errors are swallowed so that a
+ * Docs hiccup never blocks Drive folder creation.
+ */
+async function findOrCreateDocInFolder(
+  drive: drive_v3.Drive,
+  folderId: string,
+  docName: string
+): Promise<string | null> {
+  try {
+    const safeName = docName.replace(/['"\\]/g, "");
+    const existing = await drive.files.list({
+      q: `name='${safeName}' and mimeType='application/vnd.google-apps.document' and '${folderId}' in parents and trashed=false`,
+      fields: "files(id, name)",
+      spaces: "drive",
+    });
+    if (existing.data.files && existing.data.files.length > 0) {
+      return `https://docs.google.com/document/d/${existing.data.files[0].id}/edit`;
+    }
+    const created = await drive.files.create({
+      requestBody: {
+        name: safeName,
+        parents: [folderId],
+        mimeType: "application/vnd.google-apps.document",
+      },
+      fields: "id",
+    });
+    return `https://docs.google.com/document/d/${created.data.id}/edit`;
+  } catch (err) {
+    console.error("[google-drive] findOrCreateDocInFolder failed:", err);
+    return null;
+  }
 }
 
 export async function createVideoFolder(
@@ -89,9 +126,15 @@ export async function createVideoFolder(
   const memberFolderId = await findOrCreateFolder(drive, memberName, rootFolderId);
   const videoFolderId = await findOrCreateFolder(drive, videoTitle, memberFolderId);
 
+  // Auto-seed each video folder with a "Video Research" Google Doc so members
+  // have a place to start as soon as the folder spins up. Idempotent — safe
+  // to re-run on existing folders.
+  const researchDocUrl = await findOrCreateDocInFolder(drive, videoFolderId, "Video Research");
+
   return {
     memberFolderUrl: `https://drive.google.com/drive/folders/${memberFolderId}`,
     videoFolderUrl: `https://drive.google.com/drive/folders/${videoFolderId}`,
+    researchDocUrl,
   };
 }
 
