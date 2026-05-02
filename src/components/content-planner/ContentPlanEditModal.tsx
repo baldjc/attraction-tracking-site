@@ -1365,7 +1365,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
                 <MarkdownTextarea
                   value={form.script}
                   onChange={(v) => setForm((f) => ({ ...f, script: v }))}
-                  rows={18}
+                  rows={12}
                   className={field}
                   placeholder="Write your video script here…"
                   ariaLabel="Script"
