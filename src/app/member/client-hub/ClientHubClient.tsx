@@ -125,10 +125,10 @@ export default function ClientHubClient() {
                     <td className="py-2.5 pr-4 font-medium text-[#2f3437]">{plan.title}</td>
                     <td className="py-2.5 pr-4">
                       <span
-                        className="inline-block text-xs font-medium px-2 py-0.5 rounded-full"
+                        className="inline-block text-xs font-medium px-2 py-0.5 rounded"
                         style={{
-                          background: STATUS_STYLES[plan.status]?.bg ?? "#f3f4f6",
-                          color: STATUS_STYLES[plan.status]?.text ?? "#6b7280",
+                          background: STATUS_STYLES[plan.status]?.bg ?? "#E3E2E0",
+                          color: STATUS_STYLES[plan.status]?.text ?? "#3F3D38",
                         }}
                       >
                         {plan.status}

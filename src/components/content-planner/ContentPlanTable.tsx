@@ -45,10 +45,11 @@ interface Props {
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const s = STATUS_STYLES[status] ?? { bg: "#e5e7eb", text: "#6b7280" };
+  const s = STATUS_STYLES[status] ?? { bg: "#E3E2E0", text: "#3F3D38" };
+  // Notion-style square chip: 4px radius, tight padding, sharper text colour.
   return (
     <span
-      className="inline-block text-xs font-medium px-2 py-0.5 rounded-full whitespace-nowrap"
+      className="inline-block text-xs font-medium px-2 py-0.5 rounded whitespace-nowrap"
       style={{ backgroundColor: s.bg, color: s.text }}
     >
       {status}
@@ -322,16 +323,16 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
       return (
         <div className="cursor-pointer" onClick={() => startEdit(plan.id, "theme", plan.theme)}>
           {plan.theme ? (
-            <span className="inline-flex items-center gap-1.5 text-xs text-[#2f3437] whitespace-nowrap hover:text-[#6ba3c7] transition-colors">
+            <span className="inline-flex items-center gap-1.5 text-xs text-[#2f3437] hover:text-[#6ba3c7] transition-colors max-w-full">
               {themeMeta?.emoji ? (
-                <span className="text-sm leading-none">{themeMeta.emoji}</span>
+                <span className="text-sm leading-none shrink-0">{themeMeta.emoji}</span>
               ) : themeMeta?.colour ? (
                 <span
                   className="inline-block w-2 h-2 rounded-full shrink-0"
                   style={{ backgroundColor: themeMeta.colour }}
                 />
               ) : null}
-              <span>{plan.theme}</span>
+              <span className="truncate" title={plan.theme}>{plan.theme}</span>
             </span>
           ) : (
             <span className="text-xs text-[#2f3437]/30 italic">Click to set</span>
@@ -383,10 +384,10 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
         <div className="cursor-pointer text-xs whitespace-nowrap" onClick={() => startEdit(plan.id, "shootLocation", plan.shootLocation)}>
           {plan.shootLocation ? (
             <span
-              className={`inline-flex items-center px-2 py-0.5 rounded-full font-medium ${
+              className={`inline-flex items-center px-2 py-0.5 rounded font-medium ${
                 plan.shootLocation === "In Studio"
-                  ? "bg-[#7c5fde]/15 text-[#7c5fde]"
-                  : "bg-[#6ba3c7]/15 text-[#6ba3c7]"
+                  ? "bg-[#E8DEEE] text-[#492F64]"
+                  : "bg-[#D3E5EF] text-[#183347]"
               }`}
             >
               {plan.shootLocation}
@@ -514,45 +515,45 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
             <thead>
               <tr className="border-b border-gray-200 bg-gray-50 text-[#2f3437]/50 text-xs uppercase tracking-wide">
                 <th className="px-3 py-2.5 w-8" />
-                <th className="text-left px-4 py-2.5 font-medium whitespace-nowrap">
+                <th className="text-left px-3 py-2.5 font-medium whitespace-nowrap min-w-[220px]">
                   <button onClick={() => handleSort("title")} className="flex items-center gap-0.5 hover:text-[#2f3437] transition-colors">
                     Title <SortIcon col="title" />
                   </button>
                 </th>
-                <th className="text-left px-4 py-2.5 font-medium whitespace-nowrap">
+                <th className="text-left px-3 py-2.5 font-medium whitespace-nowrap w-[140px]">
                   <button onClick={() => handleSort("status")} className="flex items-center gap-0.5 hover:text-[#2f3437] transition-colors">
                     Status <SortIcon col="status" />
                   </button>
                 </th>
-                <th className="text-left px-4 py-2.5 font-medium whitespace-nowrap">
+                <th className="text-left px-3 py-2.5 font-medium whitespace-nowrap w-[160px]">
                   <button onClick={() => handleSort("theme")} className="flex items-center gap-0.5 hover:text-[#2f3437] transition-colors">
                     Theme <SortIcon col="theme" />
                   </button>
                 </th>
-                <th className="text-left px-4 py-2.5 font-medium whitespace-nowrap">
+                <th className="text-left px-3 py-2.5 font-medium whitespace-nowrap w-[100px]">
                   <button onClick={() => handleSort("shootDate")} className="flex items-center gap-0.5 hover:text-[#2f3437] transition-colors">
-                    Shoot Date <SortIcon col="shootDate" />
+                    Shoot <SortIcon col="shootDate" />
                   </button>
                 </th>
-                <th className="text-left px-4 py-2.5 font-medium whitespace-nowrap">
+                <th className="text-left px-3 py-2.5 font-medium whitespace-nowrap w-[110px]">
                   <button onClick={() => handleSort("shootLocation")} className="flex items-center gap-0.5 hover:text-[#2f3437] transition-colors">
-                    Shoot Location <SortIcon col="shootLocation" />
+                    Location <SortIcon col="shootLocation" />
                   </button>
                 </th>
                 {showEditDue && (
-                  <th className="text-left px-4 py-2.5 font-medium whitespace-nowrap">
+                  <th className="text-left px-3 py-2.5 font-medium whitespace-nowrap w-[100px]">
                     <button onClick={() => handleSort("editDueDate")} className="flex items-center gap-0.5 hover:text-[#2f3437] transition-colors">
                       Edit Due <SortIcon col="editDueDate" />
                     </button>
                   </th>
                 )}
-                <th className="text-left px-4 py-2.5 font-medium whitespace-nowrap">
+                <th className="text-left px-3 py-2.5 font-medium whitespace-nowrap w-[100px]">
                   <button onClick={() => handleSort("publishDate")} className="flex items-center gap-0.5 hover:text-[#2f3437] transition-colors">
-                    Publish Date <SortIcon col="publishDate" />
+                    Publish <SortIcon col="publishDate" />
                   </button>
                 </th>
-                {showDriveFolder && <th className="text-center px-4 py-2.5 font-medium whitespace-nowrap">Drive</th>}
-                <th className="px-4 py-2.5 w-10" />
+                {showDriveFolder && <th className="text-center px-3 py-2.5 font-medium whitespace-nowrap w-[60px]">Drive</th>}
+                <th className="px-3 py-2.5 w-10" />
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -567,22 +568,22 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
                       <PencilSquareIcon className="w-4 h-4" />
                     </button>
                   </td>
-                  <td className="px-4 py-2.5">
-                    <div className="cursor-pointer text-sm text-[#2f3437] font-medium hover:text-[#6ba3c7] transition-colors max-w-[200px] truncate flex items-center gap-1.5" onClick={() => setEditingPlan(plan)}>
+                  <td className="px-3 py-2.5 align-top">
+                    <div className="cursor-pointer text-sm text-[#2f3437] font-medium hover:text-[#6ba3c7] transition-colors max-w-[280px] flex items-start gap-1.5 leading-snug" onClick={() => setEditingPlan(plan)}>
                       {plan.dramaMode && (
-                        <DramaMagnet className="w-3.5 h-3.5 text-orange-600 shrink-0" />
+                        <DramaMagnet className="w-3.5 h-3.5 text-orange-600 shrink-0 mt-0.5" />
                       )}
-                      <span className="truncate">{plan.title}</span>
+                      <span className="line-clamp-2 break-words">{plan.title}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-2.5">{renderCell(plan, "status")}</td>
-                  <td className="px-4 py-2.5">{renderCell(plan, "theme")}</td>
-                  <td className="px-4 py-2.5">{renderCell(plan, "shootDate")}</td>
-                  <td className="px-4 py-2.5">{renderCell(plan, "shootLocation")}</td>
-                  {showEditDue && <td className="px-4 py-2.5">{renderCell(plan, "editDueDate")}</td>}
-                  <td className="px-4 py-2.5">{renderCell(plan, "publishDate")}</td>
-                  {showDriveFolder && <td className="px-4 py-2.5 text-center">{renderCell(plan, "driveFolderLink")}</td>}
-                  <td className="px-4 py-2.5">
+                  <td className="px-3 py-2.5 align-top">{renderCell(plan, "status")}</td>
+                  <td className="px-3 py-2.5 align-top">{renderCell(plan, "theme")}</td>
+                  <td className="px-3 py-2.5 align-top">{renderCell(plan, "shootDate")}</td>
+                  <td className="px-3 py-2.5 align-top">{renderCell(plan, "shootLocation")}</td>
+                  {showEditDue && <td className="px-3 py-2.5 align-top">{renderCell(plan, "editDueDate")}</td>}
+                  <td className="px-3 py-2.5 align-top">{renderCell(plan, "publishDate")}</td>
+                  {showDriveFolder && <td className="px-3 py-2.5 text-center align-top">{renderCell(plan, "driveFolderLink")}</td>}
+                  <td className="px-3 py-2.5 align-top">
                     {confirmDelete === plan.id ? (
                       <div className="flex items-center gap-1">
                         <button onClick={() => deletePlan(plan.id)} className="text-red-500 hover:text-red-700 p-0.5"><CheckIcon className="w-4 h-4" /></button>

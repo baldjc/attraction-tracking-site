@@ -173,7 +173,9 @@ export default function AdminContentCalendarPage() {
             <div className="p-6">
               <div className="flex items-center gap-2 mb-4">
                 <h2 className="text-sm font-semibold text-[#2f3437] dark:text-[#e2e8f0]">{selected.name}</h2>
-                <span className="text-[10px] bg-[#6ba3c7]/10 text-[#6ba3c7] px-2 py-0.5 rounded-full font-medium capitalize">
+                <span className={`text-[10px] px-2 py-0.5 rounded font-medium capitalize ${
+                  selected.serviceTier ? tierBadgeClasses(selected.serviceTier) : "bg-[#E3E2E0] text-[#3F3D38]"
+                }`}>
                   {formatTierLabel(selected.serviceTier)}
                 </span>
               </div>

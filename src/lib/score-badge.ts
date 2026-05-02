@@ -1,7 +1,7 @@
 export function getScoreBadgeClasses(score: number): string {
-  if (score >= 7) return "bg-[#e8f7ff] text-[#0ea5d9]";
-  if (score >= 5) return "bg-[#fef3c7] text-amber-700";
-  return "bg-[#ffe5ea] text-[#cc0029]";
+  if (score >= 7) return "bg-[#DBEDDB] text-[#2B593F]";
+  if (score >= 5) return "bg-[#FDECC8] text-[#7A5A1F]";
+  return "bg-[#FFE2DD] text-[#7A2E29]";
 }
 
 export function parseOverallScore(markdown: string): number | null {

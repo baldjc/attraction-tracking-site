@@ -54,12 +54,17 @@ export function sortPlansByDate<T extends { shootDate?: string | Date | null; pu
   });
 }
 
+/**
+ * Notion-style tier badge. Sharper pastel background with a darker, more
+ * saturated text colour and a 4px square radius rather than a full pill, so
+ * tags read at a glance without dominating the row.
+ */
 export function tierBadgeClasses(tier: string | null | undefined): string {
-  if (tier === "foundations") return "bg-[#6ba3c7]/20 text-[#6ba3c7]";
-  if (tier === "editing_2" || tier === "editing_4") return "bg-amber-100 text-amber-700";
-  if (tier === "mastery_2" || tier === "mastery_4") return "bg-purple-100 text-purple-700";
-  if (tier === "done_with_you") return "bg-[#d97706]/20 text-[#d97706]";
-  return "bg-gray-100 text-gray-500";
+  if (tier === "foundations") return "bg-[#D3E5EF] text-[#183347]";
+  if (tier === "editing_2" || tier === "editing_4") return "bg-[#FDECC8] text-[#7A5A1F]";
+  if (tier === "mastery_2" || tier === "mastery_4") return "bg-[#E8DEEE] text-[#4F326C]";
+  if (tier === "done_with_you") return "bg-[#FADEC9] text-[#854C1D]";
+  return "bg-[#E3E2E0] text-[#3F3D38]";
 }
 
 export const FOUNDATIONS_STATUSES = [
@@ -140,22 +145,30 @@ export const PRE_PRODUCTION_STATUSES = [
   "Scripted",
 ];
 
+/**
+ * Notion-inspired status palette. Pastel backgrounds + darker, saturated text
+ * so tags pop against the table without screaming. Used everywhere the
+ * planner shows a status chip (table, board, pipeline, calendar, client-hub).
+ *
+ * Pair these values with `rounded` (4px) — never `rounded-full` — to keep the
+ * Notion-style square chip look.
+ */
 export const STATUS_STYLES: Record<string, { bg: string; text: string }> = {
-  "Idea":              { bg: "#f3f4f6", text: "#6b7280" },
-  "Future Idea":       { bg: "#f3f4f6", text: "#6b7280" },
-  "Scripted":          { bg: "#dbeafe", text: "#1d4ed8" },
-  "Not Started":       { bg: "#dbeafe", text: "#1d4ed8" },
-  "Needs Research":    { bg: "#fee2e2", text: "#b91c1c" },
-  "Ready to Shoot":    { bg: "#ede9fe", text: "#6d28d9" },
-  "Filmed":            { bg: "#fce7f3", text: "#be185d" },
-  "Shooting":          { bg: "#fce7f3", text: "#be185d" },
-  "Editing":           { bg: "#fef9c3", text: "#a16207" },
-  "Shot - In Post":    { bg: "#fef9c3", text: "#a16207" },
-  "Edited":            { bg: "#dcfce7", text: "#15803d" },
-  "Scheduled":         { bg: "#ffedd5", text: "#c2410c" },
-  "Scheduled on YT":   { bg: "#ffedd5", text: "#c2410c" },
-  "Published":         { bg: "#d1fae5", text: "#065f46" },
-  "Live on YT":        { bg: "#d1fae5", text: "#065f46" },
+  "Idea":              { bg: "#E3E2E0", text: "#3F3D38" },
+  "Future Idea":       { bg: "#E3E2E0", text: "#3F3D38" },
+  "Scripted":          { bg: "#D3E5EF", text: "#183347" },
+  "Not Started":       { bg: "#D3E5EF", text: "#183347" },
+  "Needs Research":    { bg: "#FFE2DD", text: "#7A2E29" },
+  "Ready to Shoot":    { bg: "#E8DEEE", text: "#492F64" },
+  "Filmed":            { bg: "#F5E0E9", text: "#6D2A4D" },
+  "Shooting":          { bg: "#F5E0E9", text: "#6D2A4D" },
+  "Editing":           { bg: "#FDECC8", text: "#7A5A1F" },
+  "Shot - In Post":    { bg: "#FDECC8", text: "#7A5A1F" },
+  "Edited":            { bg: "#DBEDDB", text: "#2B593F" },
+  "Scheduled":         { bg: "#FADEC9", text: "#854C1D" },
+  "Scheduled on YT":   { bg: "#FADEC9", text: "#854C1D" },
+  "Published":         { bg: "#DBEDDB", text: "#2B593F" },
+  "Live on YT":        { bg: "#DBEDDB", text: "#2B593F" },
 };
 
 export const PRIORITY_OPTIONS = ["High", "Medium", "Low"];

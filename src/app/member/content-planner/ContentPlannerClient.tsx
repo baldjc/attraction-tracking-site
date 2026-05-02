@@ -201,7 +201,7 @@ export default function ContentPlannerClient({
               <button
                 key={s}
                 onClick={() => toggleStatus(s)}
-                className={`text-xs font-medium px-2.5 py-1 rounded-full border transition-colors ${
+                className={`text-xs font-medium px-2.5 py-1 rounded border transition-colors ${
                   selected
                     ? "bg-[#6ba3c7] border-[#6ba3c7] text-white"
                     : "bg-white border-gray-200 text-[#2f3437]/70 hover:border-[#6ba3c7]/50"

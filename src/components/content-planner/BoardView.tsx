@@ -105,7 +105,7 @@ function DraggableCard({
       </div>
       <div className="flex items-center gap-1.5 flex-wrap">
         <span
-          className="inline-block text-xs font-medium px-1.5 py-0.5 rounded-full"
+          className="inline-block text-xs font-medium px-2 py-0.5 rounded"
           style={{ backgroundColor: s.bg, color: s.text }}
         >
           {plan.status}
@@ -320,7 +320,7 @@ export default function BoardView({ apiBase, serviceTier, isAdmin, searchQuery =
                 <div className="h-1" style={{ backgroundColor: col.colour }} />
                 <div className="flex items-center justify-between px-3 py-2.5 border-b border-gray-100">
                   <span className="text-xs font-semibold text-[#2f3437] truncate">{col.label}</span>
-                  <span className="text-xs font-medium bg-gray-100 text-[#2f3437]/60 px-1.5 py-0.5 rounded-full shrink-0 ml-1">
+                  <span className="text-xs font-medium bg-[#E3E2E0] text-[#3F3D38] px-1.5 py-0.5 rounded shrink-0 ml-1">
                     {colPlans.length}
                   </span>
                 </div>
@@ -352,7 +352,7 @@ export default function BoardView({ apiBase, serviceTier, isAdmin, searchQuery =
                 <div className="h-1" style={{ backgroundColor: col.colour }} />
                 <div className="flex items-center justify-between px-3 py-2.5 border-b border-gray-100">
                   <span className="text-xs font-semibold text-[#2f3437]">{col.label}</span>
-                  <span className="text-xs font-medium bg-gray-100 text-[#2f3437]/60 px-1.5 py-0.5 rounded-full">
+                  <span className="text-xs font-medium bg-[#E3E2E0] text-[#3F3D38] px-1.5 py-0.5 rounded">
                     {colPlans.length}
                   </span>
                 </div>
@@ -385,7 +385,7 @@ export default function BoardView({ apiBase, serviceTier, isAdmin, searchQuery =
                           )}
                         </div>
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="inline-block text-xs font-medium px-1.5 py-0.5 rounded-full" style={{ backgroundColor: s.bg, color: s.text }}>
+                          <span className="inline-block text-xs font-medium px-2 py-0.5 rounded" style={{ backgroundColor: s.bg, color: s.text }}>
                             {plan.status}
                           </span>
                           {shootDate && (

@@ -190,7 +190,7 @@ export default function PipelineView({
         </div>
         <div className="flex items-center justify-between gap-2 text-[10px]">
           {plan.theme ? (
-            <span className="px-1.5 py-0.5 bg-gray-100 text-[#2f3437]/70 rounded truncate max-w-[55%]" title={plan.theme}>
+            <span className="px-1.5 py-0.5 bg-[#E3E2E0] text-[#3F3D38] rounded truncate max-w-[55%]" title={plan.theme}>
               {plan.theme}
             </span>
           ) : <span />}
@@ -256,12 +256,12 @@ export default function PipelineView({
               <div className="h-1" style={{ backgroundColor: style.bg }} />
               <div className="flex items-center justify-between px-3 py-2.5 border-b border-gray-100">
                 <span
-                  className="inline-block text-xs font-semibold px-2 py-0.5 rounded-full"
+                  className="inline-block text-xs font-semibold px-2 py-0.5 rounded"
                   style={{ backgroundColor: style.bg, color: style.text }}
                 >
                   {status}
                 </span>
-                <span className="text-xs font-medium bg-gray-100 text-[#2f3437]/60 px-1.5 py-0.5 rounded-full">
+                <span className="text-xs font-medium bg-[#E3E2E0] text-[#3F3D38] px-1.5 py-0.5 rounded">
                   {colPlans.length}
                 </span>
               </div>
