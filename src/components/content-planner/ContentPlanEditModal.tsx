@@ -95,6 +95,16 @@ function formatRepurposeArtifactForView(type: string, raw: string): string {
   return raw;
 }
 
+// Lightweight summary of a related plan, used for both the `bingeVideo`
+// (selected target) and `bingedFromList` (reverse-link) relations on a plan.
+// Kept tiny so list payloads stay small.
+export interface BingeVideoSummary {
+  id: string;
+  title: string;
+  theme: string | null;
+  status: string;
+}
+
 export interface ContentPlan {
   id: string;
   title: string;
@@ -113,6 +123,13 @@ export interface ContentPlan {
   footageLink: string | null;
   driveFolderLink: string | null;
   linkedCampaignId?: string | null;
+  // Binge chain: the previous video this one points viewers back to (forward
+  // link), and every other video that has selected THIS plan as its binge
+  // target (reverse links). The list endpoint includes both relations so the
+  // modal can render them on open without a follow-up fetch.
+  bingeVideoId?: string | null;
+  bingeVideo?: BingeVideoSummary | null;
+  bingedFromList?: BingeVideoSummary[];
 }
 
 interface ThemeOption {
@@ -198,8 +215,99 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
     thumbnailWords: plan.thumbnailWords ?? "",
     footageLink: plan.footageLink ?? "",
     linkedCampaignId: plan.linkedCampaignId ?? "",
+    bingeVideoId: plan.bingeVideoId ?? "",
   });
   const [campaigns, setCampaigns] = useState<Array<{ id: string; name: string }>>([]);
+
+  // Binge Video selector state. Options are loaded lazily the first time the
+  // dropdown opens (one fetch per modal session) so users who never touch the
+  // field don't pay for the extra roundtrip.
+  const [bingeOpen, setBingeOpen] = useState(false);
+  const [bingeQuery, setBingeQuery] = useState("");
+  const [bingeOptions, setBingeOptions] = useState<BingeVideoSummary[]>([]);
+  const [bingeLoaded, setBingeLoaded] = useState(false);
+  const [bingeLoading, setBingeLoading] = useState(false);
+  const bingeRef = useRef<HTMLDivElement>(null);
+  const bingeSearchRef = useRef<HTMLInputElement>(null);
+
+  // Lazy-load the option list the first time the dropdown is opened.
+  useEffect(() => {
+    if (!bingeOpen || bingeLoaded || bingeLoading) return;
+    setBingeLoading(true);
+    fetch(`${apiBase}/list-for-binge-selector?excludeId=${encodeURIComponent(plan.id)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (Array.isArray(d?.plans)) {
+          setBingeOptions(d.plans as BingeVideoSummary[]);
+          setBingeLoaded(true);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setBingeLoading(false));
+  }, [bingeOpen, bingeLoaded, bingeLoading, apiBase, plan.id]);
+
+  // Close the dropdown on outside click + Escape, and auto-focus the search
+  // input when it opens so members can start typing immediately.
+  useEffect(() => {
+    if (!bingeOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (bingeRef.current && !bingeRef.current.contains(e.target as Node)) {
+        setBingeOpen(false);
+      }
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { setBingeOpen(false); e.stopPropagation(); }
+    };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey, true);
+    // Defer focus to next tick so the input is mounted.
+    const t = window.setTimeout(() => bingeSearchRef.current?.focus(), 0);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey, true);
+      window.clearTimeout(t);
+    };
+  }, [bingeOpen]);
+
+  // Resolve the currently-selected binge target. Prefer the freshly-loaded
+  // option (latest title/theme) over the snapshot bundled with the plan, but
+  // fall back to the snapshot so the chip renders even before the options
+  // list has been fetched.
+  const selectedBinge: BingeVideoSummary | null = (() => {
+    const id = form.bingeVideoId;
+    if (!id) return null;
+    const fromOpts = bingeOptions.find((o) => o.id === id);
+    if (fromOpts) return fromOpts;
+    return plan.bingeVideo ?? null;
+  })();
+
+  // Render a theme name with its emoji prefix (when known) so binge options
+  // and reverse-link rows match the rest of the modal's theme styling.
+  function formatTheme(themeName: string | null): string {
+    if (!themeName) return "";
+    const t = themes.find((x) => x.name === themeName);
+    return t?.emoji ? `${t.emoji} ${themeName}` : themeName;
+  }
+
+  // Filter options by case-insensitive substring match on title.
+  const filteredBingeOptions = (() => {
+    const q = bingeQuery.trim().toLowerCase();
+    if (!q) return bingeOptions;
+    return bingeOptions.filter((o) => o.title.toLowerCase().includes(q));
+  })();
+
+  // "Open" affordance on a Binged FROM row: navigate to the same auto-open
+  // URL pattern the planner client already supports (?plan=<id>) and close
+  // the current modal. The parent listens for that param and re-opens with
+  // the new plan, so the user lands directly in the linked video's editor.
+  function handleOpenLinkedPlan(targetId: string) {
+    onClose();
+    if (typeof window !== "undefined") {
+      const u = new URL(window.location.href);
+      u.searchParams.set("plan", targetId);
+      router.replace(`${u.pathname}${u.search}`);
+    }
+  }
 
   useEffect(() => {
     // Sprint 3 Part D: load user's campaigns for the lead-magnet linker dropdown.
@@ -589,6 +697,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
           thumbnailWords: form.thumbnailWords || null,
           footageLink: form.footageLink || null,
           linkedCampaignId: form.linkedCampaignId || null,
+          bingeVideoId: form.bingeVideoId || null,
         }),
       });
       const data = await res.json();
@@ -1112,6 +1221,137 @@ Produce a research brief I can hand to a script writer. For **each talking point
                   </select>
                 ) : (
                   <input type="text" value={form.theme} onChange={(e) => setForm((f) => ({ ...f, theme: e.target.value }))} className={field} placeholder="e.g., Neighbourhood Expertise" />
+                )}
+              </div>
+
+              {/* Binge Video selector — links this video to ONE previous video the
+                  member wants to drive viewers back to. Core to the Attraction
+                  by Video framework: every video should chain. Stacked under
+                  Theme so the strategic pairing (what is this + what does it
+                  chain back to) sits at the top of the form. */}
+              <div ref={bingeRef} className="relative">
+                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Binge Video</label>
+                <p className="text-[11px] text-[#2f3437]/45 mb-1.5 leading-snug">
+                  The previous video this one points viewers back to. Builds the chain.
+                </p>
+                {selectedBinge && !bingeOpen ? (
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[#6ba3c7]/30 bg-[#6ba3c7]/5">
+                    <button
+                      type="button"
+                      onClick={() => { setBingeQuery(""); setBingeOpen(true); }}
+                      className="min-w-0 flex-1 text-left"
+                      title="Change binge target"
+                    >
+                      <p className="text-sm font-medium text-[#2f3437] truncate">{selectedBinge.title}</p>
+                      <p className="text-[11px] text-[#2f3437]/55 truncate">
+                        {formatTheme(selectedBinge.theme) || <span className="italic">No theme</span>}
+                      </p>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setForm((f) => ({ ...f, bingeVideoId: "" }))}
+                      className="shrink-0 p-1 rounded hover:bg-white/60 text-[#2f3437]/50 hover:text-red-600 transition-colors"
+                      aria-label="Clear binge video"
+                      title="Clear"
+                    >
+                      <XMarkIcon className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => { setBingeQuery(""); setBingeOpen((v) => !v); }}
+                    className={`${field} text-left flex items-center justify-between gap-2`}
+                  >
+                    <span className="truncate text-[#2f3437]/45">
+                      {bingeLoading ? "Loading videos…" : "Select a video to binge to…"}
+                    </span>
+                    <svg className="w-3.5 h-3.5 text-[#2f3437]/45 shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.06l3.71-3.83a.75.75 0 111.08 1.04l-4.25 4.39a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z" clipRule="evenodd" /></svg>
+                  </button>
+                )}
+                {bingeOpen && (
+                  <div className="absolute left-0 right-0 z-20 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-72 flex flex-col overflow-hidden">
+                    <input
+                      ref={bingeSearchRef}
+                      type="text"
+                      value={bingeQuery}
+                      onChange={(e) => setBingeQuery(e.target.value)}
+                      placeholder="Search by title…"
+                      className="w-full px-3 py-2 text-sm border-b border-gray-100 focus:outline-none"
+                    />
+                    <div className="overflow-y-auto">
+                      {bingeLoading && bingeOptions.length === 0 ? (
+                        <p className="px-3 py-3 text-xs text-[#2f3437]/45 italic">Loading…</p>
+                      ) : filteredBingeOptions.length === 0 ? (
+                        <p className="px-3 py-3 text-xs text-[#2f3437]/45 italic">
+                          {bingeOptions.length === 0
+                            ? "No other videos to link yet — create more videos in the planner first."
+                            : "No matches."}
+                        </p>
+                      ) : (
+                        <ul>
+                          {filteredBingeOptions.map((opt) => {
+                            const active = opt.id === form.bingeVideoId;
+                            return (
+                              <li key={opt.id}>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setForm((f) => ({ ...f, bingeVideoId: opt.id }));
+                                    setBingeOpen(false);
+                                  }}
+                                  className={`w-full text-left px-3 py-2 hover:bg-[#6ba3c7]/5 transition-colors ${active ? "bg-[#6ba3c7]/10" : ""}`}
+                                >
+                                  <p className="text-sm font-medium text-[#2f3437] truncate">{opt.title}</p>
+                                  <p className="text-[11px] text-[#2f3437]/55 truncate">
+                                    {formatTheme(opt.theme) || <span className="italic">No theme</span>}
+                                  </p>
+                                </button>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Binged FROM (read-only) — every other plan that has selected
+                  THIS one as its binge target. Helps the member see at a glance
+                  how many downstream videos rely on this one. */}
+              <div>
+                <h4 className="text-[11px] font-bold uppercase tracking-wider text-[#2f3437]/55 mb-1">Binged FROM</h4>
+                <p className="text-[11px] text-[#2f3437]/45 mb-2 leading-snug">
+                  Other videos in your planner that point back to this one.
+                </p>
+                {plan.bingedFromList && plan.bingedFromList.length > 0 ? (
+                  <ul className="space-y-1.5">
+                    {plan.bingedFromList.map((b) => (
+                      <li
+                        key={b.id}
+                        className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg border border-gray-200 bg-gray-50/50"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-[#2f3437] truncate">{b.title}</p>
+                          <p className="text-[11px] text-[#2f3437]/55 truncate">
+                            {formatTheme(b.theme) || <span className="italic">No theme</span>}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenLinkedPlan(b.id)}
+                          className="shrink-0 text-[11px] font-medium text-[#6ba3c7] hover:underline"
+                        >
+                          Open →
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-[11px] italic text-[#2f3437]/45">
+                    Nothing yet. When you set this video as another video&apos;s binge target, it will show up here.
+                  </p>
                 )}
               </div>
 

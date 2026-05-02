@@ -25,6 +25,16 @@ export async function GET(req: NextRequest) {
       ...(themeFilter ? { theme: themeFilter } : {}),
     },
     orderBy: { publishDate: "desc" },
+    include: {
+      // Include the binge chain summaries so the planner table + edit modal
+      // can render the chip and the "Binged FROM" list without an extra
+      // roundtrip per plan.
+      bingeVideo: { select: { id: true, title: true, theme: true, status: true } },
+      bingedFromList: {
+        select: { id: true, title: true, theme: true, status: true },
+        orderBy: { updatedAt: "desc" },
+      },
+    },
   });
 
   return NextResponse.json({ plans, serviceTier: dbUser?.serviceTier ?? "foundations" });
@@ -41,10 +51,22 @@ export async function POST(req: NextRequest) {
   const serviceTier = dbUser?.serviceTier ?? "foundations";
 
   const body = await req.json();
-  const { title, status, theme, shootDate, shootLocation, publishDate, editDueDate, priority, dramaMode, notes, script, thumbnailWords, footageLink, linkedIdeaId, linkedScriptId, youtubeVideoId } = body;
+  const { title, status, theme, shootDate, shootLocation, publishDate, editDueDate, priority, dramaMode, notes, script, thumbnailWords, footageLink, linkedIdeaId, linkedScriptId, youtubeVideoId, bingeVideoId } = body;
 
   if (!title || typeof title !== "string" || !title.trim()) {
     return NextResponse.json({ error: "Title is required" }, { status: 400 });
+  }
+
+  // Binge-link ownership check. Self-link is impossible at create time (no id
+  // yet), so we only need to verify the target exists and belongs to the user.
+  if (bingeVideoId) {
+    const target = await prisma.contentPlan.findFirst({
+      where: { id: bingeVideoId, userId: user.id },
+      select: { id: true },
+    });
+    if (!target) {
+      return NextResponse.json({ error: "Binge target not found" }, { status: 404 });
+    }
   }
 
   const requestedStatus = status ?? "Idea";
@@ -71,6 +93,7 @@ export async function POST(req: NextRequest) {
       linkedIdeaId: linkedIdeaId ?? null,
       linkedScriptId: linkedScriptId ?? null,
       youtubeVideoId: youtubeVideoId ?? null,
+      bingeVideoId: bingeVideoId ?? null,
     },
   });
 

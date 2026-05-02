@@ -12,12 +12,26 @@ import { getFeatureFlags } from "@/lib/feature-flags";
 const DRIVE_TRIGGER_STATUSES_LEGACY = ["Needs Research", "Ready to Shoot", "Shooting", "Shot - In Post"];
 const DRIVE_TRIGGER_STATUSES_WITH_SCRIPTED = ["Needs Research", "Scripted", "Ready to Shoot", "Shooting", "Shot - In Post"];
 
+// Shape of the related-plan summaries surfaced via `bingeVideo` and
+// `bingedFromList`. Kept small (id/title/theme/status) so the planner UI can
+// render the chip + "Binged FROM" rows without a second roundtrip.
+const BINGE_RELATION_SELECT = { id: true, title: true, theme: true, status: true } as const;
+
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await resolveUserFromSession();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
-  const plan = await prisma.contentPlan.findFirst({ where: { id, userId: user.id } });
+  const plan = await prisma.contentPlan.findFirst({
+    where: { id, userId: user.id },
+    include: {
+      bingeVideo: { select: BINGE_RELATION_SELECT },
+      bingedFromList: {
+        select: BINGE_RELATION_SELECT,
+        orderBy: { updatedAt: "desc" },
+      },
+    },
+  });
   if (!plan) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   return NextResponse.json({ plan });
@@ -39,11 +53,32 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
   const body = await req.json();
   const { title, status, theme, shootDate, shootLocation, publishDate, editDueDate, priority, dramaMode, notes, script, researchNotes, thumbnailWords, footageLink, driveFolderLink, youtubeDescription, linkedCampaignId, linkedScriptId } = body;
+  // Coerce empty-string `bingeVideoId` ("") to null so non-modal clients can
+  // clear the link without tripping the ownership lookup (which would 404 on
+  // an empty id). Treat `undefined` (field omitted) distinctly from null
+  // (explicit clear) so partial updates only touch what the caller sent.
+  const bingeVideoId: string | null | undefined =
+    body.bingeVideoId === undefined ? undefined : (body.bingeVideoId || null);
 
   if (linkedScriptId !== undefined && linkedScriptId !== null) {
     const owned = await prisma.savedScript.findFirst({ where: { id: linkedScriptId, userId: user.id }, select: { id: true } });
     if (!owned) {
       return NextResponse.json({ error: "Script not found" }, { status: 404 });
+    }
+  }
+
+  // Binge-link validation: a video cannot point to itself, and the target must
+  // belong to the same user (no cross-account links).
+  if (bingeVideoId !== undefined && bingeVideoId !== null) {
+    if (bingeVideoId === id) {
+      return NextResponse.json({ error: "A video can't binge to itself." }, { status: 400 });
+    }
+    const target = await prisma.contentPlan.findFirst({
+      where: { id: bingeVideoId, userId: user.id },
+      select: { id: true },
+    });
+    if (!target) {
+      return NextResponse.json({ error: "Binge target not found" }, { status: 404 });
     }
   }
 
@@ -72,6 +107,14 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       ...(youtubeDescription !== undefined && { youtubeDescription: youtubeDescription ?? null }),
       ...(linkedCampaignId !== undefined && { linkedCampaignId: linkedCampaignId ?? null }),
       ...(linkedScriptId !== undefined && { linkedScriptId: linkedScriptId ?? null }),
+      ...(bingeVideoId !== undefined && { bingeVideoId: bingeVideoId ?? null }),
+    },
+    include: {
+      bingeVideo: { select: BINGE_RELATION_SELECT },
+      bingedFromList: {
+        select: BINGE_RELATION_SELECT,
+        orderBy: { updatedAt: "desc" },
+      },
     },
   });
 

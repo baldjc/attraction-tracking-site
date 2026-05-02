@@ -855,6 +855,10 @@ model ContentPlan {
   assignedUserId   String?
   assignedUser     User?     @relation("PlanAssignee", fields: [assignedUserId], references: [id], onDelete: SetNull)
 
+  bingeVideoId     String?
+  bingeVideo       ContentPlan?  @relation("BingeChain", fields: [bingeVideoId], references: [id], onDelete: SetNull)
+  bingedFromList   ContentPlan[] @relation("BingeChain")
+
   artifacts        PlanArtifact[]
   teamNotes        PlanTeamNote[]
   assignmentLog    PlanAssignmentLog[]
@@ -867,6 +871,7 @@ model ContentPlan {
   @@index([userId, publishDate])
   @@index([status])
   @@index([assignedUserId])
+  @@index([bingeVideoId])
   @@map("content_plans")
 }
 

@@ -24,6 +24,16 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     prisma.contentPlan.findMany({
       where: { userId: id },
       orderBy: { publishDate: "desc" },
+      include: {
+        // Surface the binge chain summaries so the admin planner table + edit
+        // modal can render the chip and "Binged FROM" list without an extra
+        // roundtrip per plan.
+        bingeVideo: { select: { id: true, title: true, theme: true, status: true } },
+        bingedFromList: {
+          select: { id: true, title: true, theme: true, status: true },
+          orderBy: { updatedAt: "desc" },
+        },
+      },
     }),
     prisma.user.findUnique({ where: { id }, select: { serviceTier: true, contentThemes: true } }),
   ]);

@@ -29,6 +29,27 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
   const body = await req.json();
   const { title, status, theme, shootDate, publishDate, editDueDate, priority, dramaMode, notes, script, researchNotes, thumbnailWords, footageLink, driveFolderLink } = body;
+  // Coerce empty-string `bingeVideoId` ("") to null so non-modal clients can
+  // clear the link without tripping the ownership lookup (which would 404 on
+  // an empty id). Treat `undefined` (field omitted) distinctly from null
+  // (explicit clear) so partial updates only touch what the caller sent.
+  const bingeVideoId: string | null | undefined =
+    body.bingeVideoId === undefined ? undefined : (body.bingeVideoId || null);
+
+  // Binge-link validation: a video cannot point to itself, and the target must
+  // belong to the same member (no cross-account links even when admin edits).
+  if (bingeVideoId !== undefined && bingeVideoId !== null) {
+    if (bingeVideoId === planId) {
+      return NextResponse.json({ error: "A video can't binge to itself." }, { status: 400 });
+    }
+    const target = await prisma.contentPlan.findFirst({
+      where: { id: bingeVideoId, userId: id },
+      select: { id: true },
+    });
+    if (!target) {
+      return NextResponse.json({ error: "Binge target not found" }, { status: 404 });
+    }
+  }
 
   let plan = await prisma.contentPlan.update({
     where: { id: planId },
@@ -47,6 +68,14 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       ...(thumbnailWords !== undefined && { thumbnailWords: thumbnailWords ?? null }),
       ...(footageLink !== undefined && { footageLink: footageLink ?? null }),
       ...(driveFolderLink !== undefined && { driveFolderLink: driveFolderLink ?? null }),
+      ...(bingeVideoId !== undefined && { bingeVideoId: bingeVideoId ?? null }),
+    },
+    include: {
+      bingeVideo: { select: { id: true, title: true, theme: true, status: true } },
+      bingedFromList: {
+        select: { id: true, title: true, theme: true, status: true },
+        orderBy: { updatedAt: "desc" },
+      },
     },
   });
 
@@ -60,7 +89,13 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       const memberName = member?.fullName || member?.email || id;
       const { videoFolderUrl, memberFolderUrl } = await createVideoFolder(memberName, plan.title);
       const updates: Promise<unknown>[] = [
-        prisma.contentPlan.update({ where: { id: planId }, data: { driveFolderLink: videoFolderUrl } }).then((p) => { plan = p; }),
+        // Persist the new Drive folder link, but spread it onto the existing
+        // `plan` object instead of replacing it — otherwise we'd drop the
+        // `bingeVideo`/`bingedFromList` relations the modal needs to refresh
+        // its state after save.
+        prisma.contentPlan
+          .update({ where: { id: planId }, data: { driveFolderLink: videoFolderUrl } })
+          .then(() => { plan = { ...plan, driveFolderLink: videoFolderUrl }; }),
       ];
       if (!member?.assetsDriveLink) {
         updates.push(prisma.user.update({ where: { id }, data: { assetsDriveLink: memberFolderUrl } }));
