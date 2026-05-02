@@ -1,24 +1,27 @@
 import type { Metadata, Viewport } from "next";
-import { Outfit, Instrument_Serif, Geist_Mono } from "next/font/google";
+import { Inter, Source_Serif_4, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import SessionProvider from "@/components/SessionProvider";
 import ThemeProvider from "@/components/ThemeProvider";
 
-const outfit = Outfit({
-  variable: "--font-outfit",
+// Notion-inspired type system. Inter = clean UI/body, Source Serif 4 =
+// editorial display alternative to paid Lyon Text, JetBrains Mono = data /
+// monospace. All loaded as CSS variable fonts via next/font for zero CLS
+// and automatic preconnect.
+const inter = Inter({
+  variable: "--font-sans",
   subsets: ["latin"],
   display: "swap",
 });
 
-const instrumentSerif = Instrument_Serif({
-  variable: "--font-instrument-serif",
+const sourceSerif = Source_Serif_4({
+  variable: "--font-serif",
   subsets: ["latin"],
-  weight: "400",
   display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-mono",
   subsets: ["latin"],
   display: "swap",
 });
@@ -55,7 +58,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${outfit.variable} ${instrumentSerif.variable} ${geistMono.variable} antialiased`}
+        className={`${inter.variable} ${sourceSerif.variable} ${jetbrainsMono.variable} antialiased`}
         suppressHydrationWarning
       >
         <SessionProvider>
