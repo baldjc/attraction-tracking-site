@@ -71,15 +71,15 @@ export default function AdminContentCalendarPage() {
   return (
     <div className="flex h-[calc(100vh-4rem)]">
       {/* Left panel: Member list (desktop only) */}
-      <div className="hidden lg:flex flex-col w-64 shrink-0 border-r border-gray-200 dark:border-[#2a2a2a] bg-white dark:bg-[#1a1a1a]">
-        <div className="p-3 border-b border-gray-100 dark:border-[#2a2a2a] sticky top-0 bg-white dark:bg-[#1a1a1a] z-10 shrink-0">
-          <p className="text-xs font-semibold text-[#2f3437]/50 dark:text-white/40 uppercase tracking-wider mb-2">Members</p>
+      <div className="hidden lg:flex flex-col w-52 shrink-0 border-r border-gray-200 dark:border-[#2a2a2a] bg-white dark:bg-[#1a1a1a]">
+        <div className="px-2.5 py-2 border-b border-gray-100 dark:border-[#2a2a2a] sticky top-0 bg-white dark:bg-[#1a1a1a] z-10 shrink-0">
+          <p className="text-[10px] font-semibold text-[#2f3437]/50 dark:text-white/40 uppercase tracking-wider mb-1.5">Members</p>
           <input
             type="text"
-            placeholder="Search members..."
+            placeholder="Search members…"
             value={memberSearch}
             onChange={(e) => setMemberSearch(e.target.value)}
-            className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-[#2a2a2a] rounded-lg px-3 py-2 text-sm text-[#2f3437] dark:text-[#e2e8f0] placeholder:text-[#2f3437]/30 focus:outline-none focus:border-[#6ba3c7]"
+            className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-[#2a2a2a] rounded-md px-2.5 py-1.5 text-xs text-[#2f3437] dark:text-[#e2e8f0] placeholder:text-[#2f3437]/30 focus:outline-none focus:border-[#6ba3c7]"
           />
         </div>
         <div className="flex-1 overflow-y-auto">
@@ -96,15 +96,15 @@ export default function AdminContentCalendarPage() {
               <button
                 key={m.id}
                 onClick={() => handleSelectMember(m)}
-                className={`w-full text-left px-3 py-2.5 border-b border-gray-50 dark:border-[#2a2a2a]/50 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors ${
+                className={`w-full text-left px-2.5 py-1.5 border-b border-gray-50 dark:border-[#2a2a2a]/50 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors ${
                   selected?.id === m.id
                     ? "bg-[#6ba3c7]/5 dark:bg-[#6ba3c7]/10 border-l-2 border-l-[#6ba3c7]"
                     : ""
                 }`}
               >
-                <p className="text-sm font-medium text-[#2f3437] dark:text-[#e2e8f0] truncate">{m.fullName || m.email}</p>
+                <p className="text-xs font-medium text-[#2f3437] dark:text-[#e2e8f0] truncate leading-tight">{m.fullName || m.email}</p>
                 <span
-                  className={`inline-block text-[10px] font-medium px-1.5 py-0.5 rounded mt-1 ${
+                  className={`inline-block text-[9px] font-medium px-1.5 py-0.5 rounded mt-0.5 ${
                     m.serviceTier ? tierBadgeClasses(m.serviceTier) : "bg-gray-100 text-gray-500"
                   }`}
                 >
