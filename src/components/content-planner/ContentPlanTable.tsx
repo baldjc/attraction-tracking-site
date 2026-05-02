@@ -58,7 +58,15 @@ function StatusBadge({ status }: { status: string }) {
 
 function formatDate(d: string | null) {
   if (!d) return "";
-  return new Date(d).toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" });
+  // Date-only fields (shootDate, editDueDate, publishDate) are stored as
+  // midnight UTC. Display them in UTC so they never shift back a day in
+  // negative-offset timezones (e.g. Mountain time turns May 5 into May 4).
+  return new Date(d).toLocaleDateString("en-CA", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  });
 }
 
 function toInputDate(d: string | null) {
