@@ -388,8 +388,25 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
     if (field === "bingeVideoId") {
       if (isEditing) {
         // Pull candidates from the already-loaded plans list (all same-user
-        // plans are present), excluding the current row to forbid self-link.
-        const candidates = plans.filter((p) => p.id !== plan.id);
+        // plans are present). Filter rules:
+        //  - exclude the current row (no self-link)
+        //  - if the current row has a publishDate, only show videos that
+        //    publish on or before that date — you can't drive viewers to
+        //    a video that hasn't aired yet
+        //  - sort newest publishDate first so recent options surface at top
+        const currentPub = plan.publishDate ? new Date(plan.publishDate).getTime() : null;
+        const candidates = plans
+          .filter((p) => p.id !== plan.id)
+          .filter((p) => {
+            if (currentPub === null) return true;
+            if (!p.publishDate) return false;
+            return new Date(p.publishDate).getTime() <= currentPub;
+          })
+          .sort((a, b) => {
+            const aT = a.publishDate ? new Date(a.publishDate).getTime() : 0;
+            const bT = b.publishDate ? new Date(b.publishDate).getTime() : 0;
+            return bT - aT;
+          });
         return (
           <select
             ref={inputRef as any}
