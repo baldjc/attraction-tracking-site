@@ -26,7 +26,7 @@ const DEFAULT_COL_WIDTHS: Record<string, number> = {
   title: 260,
   status: 140,
   theme: 160,
-  binge: 180,
+  binge: 140,
   shootDate: 100,
   shootLocation: 110,
   editDueDate: 100,
@@ -412,13 +412,13 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
           onClick={() => startEdit(plan.id, "bingeVideoId", plan.bingeVideoId)}
         >
           {target ? (
-            <span
-              className="inline-flex items-center gap-1 text-[#2f3437] hover:text-[#6ba3c7] transition-colors max-w-full"
+            <div
+              className="flex items-start gap-1 text-[#2f3437] hover:text-[#6ba3c7] transition-colors leading-snug"
               title={target.title}
             >
-              <span className="text-[#6ba3c7] shrink-0">↪</span>
-              <span className="truncate">{target.title}</span>
-            </span>
+              <span className="text-[#6ba3c7] shrink-0 leading-snug">↪</span>
+              <span className="line-clamp-3 break-words min-w-0">{target.title}</span>
+            </div>
           ) : (
             <span className="text-[#2f3437]/30 italic">Click to set</span>
           )}
