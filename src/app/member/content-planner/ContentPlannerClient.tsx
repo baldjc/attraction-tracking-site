@@ -8,7 +8,7 @@ import CalendarView from "@/components/content-planner/CalendarView";
 import BoardView from "@/components/content-planner/BoardView";
 import PipelineView, { type PipelineSortKey } from "@/components/content-planner/PipelineView";
 import ContentPlanEditModal, { type ContentPlan } from "@/components/content-planner/ContentPlanEditModal";
-import { hasEditDueDate, getStatusOptions } from "@/lib/content-plan-utils";
+import { hasEditDueDate, getStatusOptions, filterPlans } from "@/lib/content-plan-utils";
 
 type ViewId = "publish_cal" | "shoot_cal" | "edit_due" | "table" | "by_theme" | "pipeline";
 
@@ -93,6 +93,14 @@ export default function ContentPlannerClient({
     return counts;
   }, [allPlans]);
 
+  // Live filtered/total counts so the user can see filters are working even
+  // before scrolling the table — also serves as a quick sanity check.
+  const filteredCount = useMemo(() => {
+    if (!allPlans) return 0;
+    return filterPlans(allPlans, searchQuery, statusFilter).length;
+  }, [allPlans, searchQuery, statusFilter]);
+  const totalCount = allPlans?.length ?? 0;
+
   function toggleStatus(s: string) {
     setStatusFilter((curr) => curr.includes(s) ? curr.filter((x) => x !== s) : [...curr, s]);
   }
@@ -172,9 +180,14 @@ export default function ContentPlannerClient({
             )}
           </div>
           {filtersActive && (
-            <button onClick={clearFilters} className="text-xs text-[#6ba3c7] hover:underline whitespace-nowrap">
-              Clear filters
-            </button>
+            <>
+              <span className="text-xs text-[#2f3437]/60 whitespace-nowrap">
+                Showing <span className="font-semibold text-[#2f3437]">{filteredCount}</span> of {totalCount}
+              </span>
+              <button onClick={clearFilters} className="text-xs text-[#6ba3c7] hover:underline whitespace-nowrap">
+                Clear filters
+              </button>
+            </>
           )}
           {(view === "pipeline" || view === "by_theme") && (
             <label className="ml-auto flex items-center gap-1.5 text-xs text-[#2f3437]/60">
@@ -200,14 +213,18 @@ export default function ContentPlannerClient({
             return (
               <button
                 key={s}
+                type="button"
                 onClick={() => toggleStatus(s)}
-                className={`text-xs font-medium px-2.5 py-1 rounded border transition-colors ${
+                aria-pressed={selected}
+                title={selected ? `Click to remove ${s} filter` : `Filter by ${s}`}
+                className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded border transition-all ${
                   selected
-                    ? "bg-[#6ba3c7] border-[#6ba3c7] text-white"
-                    : "bg-white border-gray-200 text-[#2f3437]/70 hover:border-[#6ba3c7]/50"
+                    ? "bg-[#6ba3c7] border-[#6ba3c7] text-white font-semibold shadow-sm ring-2 ring-[#6ba3c7]/30"
+                    : "bg-white border-gray-200 text-[#2f3437]/70 font-medium hover:border-[#6ba3c7]/50 hover:bg-[#6ba3c7]/5"
                 }`}
               >
-                {s} ({count})
+                {selected && <CheckIcon className="w-3 h-3" />}
+                <span>{s} ({count})</span>
               </button>
             );
           })}
