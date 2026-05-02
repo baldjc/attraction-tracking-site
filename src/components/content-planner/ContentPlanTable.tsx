@@ -16,6 +16,23 @@ import {
   filterPlans,
 } from "@/lib/content-plan-utils";
 import { getScoreBadgeClasses } from "@/lib/score-badge";
+import { useResizableColumns, ColumnResizeHandle } from "@/hooks/useResizableColumns";
+
+// Default column widths (px) for the main planner table. Used as the
+// fallback layout until the user's saved layout hydrates from localStorage.
+// Keys mirror the field names so resize handlers stay readable at call sites.
+const DEFAULT_COL_WIDTHS: Record<string, number> = {
+  expand: 36,
+  title: 260,
+  status: 140,
+  theme: 160,
+  shootDate: 100,
+  shootLocation: 110,
+  editDueDate: 100,
+  publishDate: 100,
+  driveFolderLink: 60,
+  actions: 44,
+};
 
 interface ContentPlan {
   id: string;
@@ -104,6 +121,15 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
   const allStatusOptions = getStatusOptions(serviceTier);
   const showEditDue = isAdmin || hasEditDueDate(serviceTier);
   const showDriveFolder = isAdmin || hasDriveFolder(serviceTier);
+
+  // Resizable, persistent column widths. The same hook can be wired up to any
+  // other table on the site by passing a unique tableId.
+  const { widths: colWidths, getHandleProps: getColResizeProps } = useResizableColumns({
+    tableId: isAdmin ? "content-planner-admin" : "content-planner-member",
+    defaults: DEFAULT_COL_WIDTHS,
+    minWidth: 50,
+    maxWidth: 900,
+  });
 
   useEffect(() => {
     fetchPlans();
@@ -511,55 +537,79 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
         </div>
       ) : (
         <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
-          <table className="w-full text-sm border-collapse">
+          <table className="text-sm border-collapse" style={{ tableLayout: "fixed", width: "max-content", minWidth: "100%" }}>
+            <colgroup>
+              <col style={{ width: colWidths.expand }} />
+              <col style={{ width: colWidths.title }} />
+              <col style={{ width: colWidths.status }} />
+              <col style={{ width: colWidths.theme }} />
+              <col style={{ width: colWidths.shootDate }} />
+              <col style={{ width: colWidths.shootLocation }} />
+              {showEditDue && <col style={{ width: colWidths.editDueDate }} />}
+              <col style={{ width: colWidths.publishDate }} />
+              {showDriveFolder && <col style={{ width: colWidths.driveFolderLink }} />}
+              <col style={{ width: colWidths.actions }} />
+            </colgroup>
             <thead>
               <tr className="border-b border-gray-200 bg-gray-50 text-[#2f3437]/50 text-xs uppercase tracking-wide">
-                <th className="px-3 py-2.5 w-8" />
-                <th className="text-left px-3 py-2.5 font-medium whitespace-nowrap min-w-[220px]">
+                <th className="px-3 py-2.5" />
+                <th className="text-left px-3 py-2.5 font-medium whitespace-nowrap relative group">
                   <button onClick={() => handleSort("title")} className="flex items-center gap-0.5 hover:text-[#2f3437] transition-colors">
                     Title <SortIcon col="title" />
                   </button>
+                  <ColumnResizeHandle label="Title" handleProps={getColResizeProps("title")} />
                 </th>
-                <th className="text-left px-3 py-2.5 font-medium whitespace-nowrap w-[140px]">
+                <th className="text-left px-3 py-2.5 font-medium whitespace-nowrap relative group">
                   <button onClick={() => handleSort("status")} className="flex items-center gap-0.5 hover:text-[#2f3437] transition-colors">
                     Status <SortIcon col="status" />
                   </button>
+                  <ColumnResizeHandle label="Status" handleProps={getColResizeProps("status")} />
                 </th>
-                <th className="text-left px-3 py-2.5 font-medium whitespace-nowrap w-[160px]">
+                <th className="text-left px-3 py-2.5 font-medium whitespace-nowrap relative group">
                   <button onClick={() => handleSort("theme")} className="flex items-center gap-0.5 hover:text-[#2f3437] transition-colors">
                     Theme <SortIcon col="theme" />
                   </button>
+                  <ColumnResizeHandle label="Theme" handleProps={getColResizeProps("theme")} />
                 </th>
-                <th className="text-left px-3 py-2.5 font-medium whitespace-nowrap w-[100px]">
+                <th className="text-left px-3 py-2.5 font-medium whitespace-nowrap relative group">
                   <button onClick={() => handleSort("shootDate")} className="flex items-center gap-0.5 hover:text-[#2f3437] transition-colors">
                     Shoot <SortIcon col="shootDate" />
                   </button>
+                  <ColumnResizeHandle label="Shoot date" handleProps={getColResizeProps("shootDate")} />
                 </th>
-                <th className="text-left px-3 py-2.5 font-medium whitespace-nowrap w-[110px]">
+                <th className="text-left px-3 py-2.5 font-medium whitespace-nowrap relative group">
                   <button onClick={() => handleSort("shootLocation")} className="flex items-center gap-0.5 hover:text-[#2f3437] transition-colors">
                     Location <SortIcon col="shootLocation" />
                   </button>
+                  <ColumnResizeHandle label="Location" handleProps={getColResizeProps("shootLocation")} />
                 </th>
                 {showEditDue && (
-                  <th className="text-left px-3 py-2.5 font-medium whitespace-nowrap w-[100px]">
+                  <th className="text-left px-3 py-2.5 font-medium whitespace-nowrap relative group">
                     <button onClick={() => handleSort("editDueDate")} className="flex items-center gap-0.5 hover:text-[#2f3437] transition-colors">
                       Edit Due <SortIcon col="editDueDate" />
                     </button>
+                    <ColumnResizeHandle label="Edit due date" handleProps={getColResizeProps("editDueDate")} />
                   </th>
                 )}
-                <th className="text-left px-3 py-2.5 font-medium whitespace-nowrap w-[100px]">
+                <th className="text-left px-3 py-2.5 font-medium whitespace-nowrap relative group">
                   <button onClick={() => handleSort("publishDate")} className="flex items-center gap-0.5 hover:text-[#2f3437] transition-colors">
                     Publish <SortIcon col="publishDate" />
                   </button>
+                  <ColumnResizeHandle label="Publish date" handleProps={getColResizeProps("publishDate")} />
                 </th>
-                {showDriveFolder && <th className="text-center px-3 py-2.5 font-medium whitespace-nowrap w-[60px]">Drive</th>}
-                <th className="px-3 py-2.5 w-10" />
+                {showDriveFolder && (
+                  <th className="text-center px-3 py-2.5 font-medium whitespace-nowrap relative group">
+                    Drive
+                    <ColumnResizeHandle label="Drive folder" handleProps={getColResizeProps("driveFolderLink")} />
+                  </th>
+                )}
+                <th className="px-3 py-2.5" />
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {sortedPlans.map((plan) => (
                 <tr key={plan.id} className="hover:bg-[#6ba3c7]/5 transition-colors">
-                  <td className="px-3 py-2.5">
+                  <td className="px-3 py-2.5 overflow-hidden">
                     <button
                       onClick={() => setEditingPlan(plan)}
                       className="text-[#2f3437]/20 hover:text-[#6ba3c7] transition-colors p-0.5"
@@ -568,21 +618,21 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
                       <PencilSquareIcon className="w-4 h-4" />
                     </button>
                   </td>
-                  <td className="px-3 py-2.5 align-top">
-                    <div className="cursor-pointer text-sm text-[#2f3437] font-medium hover:text-[#6ba3c7] transition-colors max-w-[280px] flex items-start gap-1.5 leading-snug" onClick={() => setEditingPlan(plan)}>
+                  <td className="px-3 py-2.5 align-top overflow-hidden">
+                    <div className="cursor-pointer text-sm text-[#2f3437] font-medium hover:text-[#6ba3c7] transition-colors flex items-start gap-1.5 leading-snug" onClick={() => setEditingPlan(plan)}>
                       {plan.dramaMode && (
                         <DramaMagnet className="w-3.5 h-3.5 text-orange-600 shrink-0 mt-0.5" />
                       )}
                       <span className="line-clamp-2 break-words">{plan.title}</span>
                     </div>
                   </td>
-                  <td className="px-3 py-2.5 align-top">{renderCell(plan, "status")}</td>
-                  <td className="px-3 py-2.5 align-top">{renderCell(plan, "theme")}</td>
-                  <td className="px-3 py-2.5 align-top">{renderCell(plan, "shootDate")}</td>
-                  <td className="px-3 py-2.5 align-top">{renderCell(plan, "shootLocation")}</td>
-                  {showEditDue && <td className="px-3 py-2.5 align-top">{renderCell(plan, "editDueDate")}</td>}
-                  <td className="px-3 py-2.5 align-top">{renderCell(plan, "publishDate")}</td>
-                  {showDriveFolder && <td className="px-3 py-2.5 text-center align-top">{renderCell(plan, "driveFolderLink")}</td>}
+                  <td className="px-3 py-2.5 align-top overflow-hidden">{renderCell(plan, "status")}</td>
+                  <td className="px-3 py-2.5 align-top overflow-hidden">{renderCell(plan, "theme")}</td>
+                  <td className="px-3 py-2.5 align-top overflow-hidden">{renderCell(plan, "shootDate")}</td>
+                  <td className="px-3 py-2.5 align-top overflow-hidden">{renderCell(plan, "shootLocation")}</td>
+                  {showEditDue && <td className="px-3 py-2.5 align-top overflow-hidden">{renderCell(plan, "editDueDate")}</td>}
+                  <td className="px-3 py-2.5 align-top overflow-hidden">{renderCell(plan, "publishDate")}</td>
+                  {showDriveFolder && <td className="px-3 py-2.5 text-center align-top overflow-hidden">{renderCell(plan, "driveFolderLink")}</td>}
                   <td className="px-3 py-2.5 align-top">
                     {confirmDelete === plan.id ? (
                       <div className="flex items-center gap-1">
