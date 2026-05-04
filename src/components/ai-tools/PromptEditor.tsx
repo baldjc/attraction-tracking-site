@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
+import MarkdownTextarea from "@/components/MarkdownTextarea";
 import { useSession } from "next-auth/react";
 import { usePathname } from "next/navigation";
 
@@ -96,11 +97,11 @@ export default function PromptEditor({ toolKey, defaultPrompt, placeholders }: P
             <p className="text-sm text-[#2f3437]/40 animate-pulse">Loading prompt…</p>
           ) : (
             <>
-              <textarea
+              <MarkdownTextarea
                 value={value}
-                onChange={(e) => setValue(e.target.value)}
+                onChange={setValue}
                 rows={20}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-xs font-mono text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40 resize-y"
+                ariaLabel="Prompt Editor"
               />
 
               {placeholders && placeholders.length > 0 && (

@@ -447,12 +447,12 @@ Format each talking point as its own section with all 7 categories. Preserve spe
           <p className="text-xs text-[#2f3437]/50 dark:text-white/50 mb-2">
             List the main points you want to cover. Don&apos;t worry about order — the AI will propose the best structure.
           </p>
-          <textarea
+          <MarkdownTextarea
             value={talkingPoints}
-            onChange={(e) => setTalkingPoints(e.target.value)}
+            onChange={setTalkingPoints}
             placeholder="What insights, tips, or points do you want to cover? One per line is fine."
             rows={3}
-            className="w-full bg-white dark:bg-[#0f1419] border border-[#2f3437]/20 dark:border-white/20 rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-white placeholder-[#2f3437]/30 dark:placeholder-white/30 resize-none focus:outline-none focus:border-[#6ba3c7] transition-colors"
+            ariaLabel="Key Talking Points"
           />
         </div>
       )}
@@ -729,12 +729,12 @@ Format each talking point as its own section with all 7 categories. Preserve spe
         <p className="text-xs text-[#2f3437]/50 dark:text-white/50 mb-2">
           Pick from your recent YouTube videos or type a title for an upcoming one. The AI uses this to write a specific open loop ending.
         </p>
-        <textarea
+        <MarkdownTextarea
           value={nextVideoPush}
-          onChange={(e) => setNextVideoPush(e.target.value)}
+          onChange={setNextVideoPush}
           rows={nextVideoPush.length > 80 ? 5 : 2}
           placeholder="e.g. Why Buyers Are Regret-Proofing Their Offer Strategy in 2026"
-          className="w-full bg-white dark:bg-[#0f1419] border border-[#2f3437]/20 dark:border-white/20 rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-white placeholder-[#2f3437]/30 dark:placeholder-white/30 resize-none focus:outline-none focus:border-[#6ba3c7] transition-colors"
+          ariaLabel="Next Video Push"
         />
       </div>
 

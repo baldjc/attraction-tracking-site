@@ -1527,7 +1527,7 @@ function RepurposeContentPageInner() {
               )}
               {newsletterResult && (
                 <div className="space-y-3">
-                  <textarea value={editedNewsletter} onChange={(e) => setEditedNewsletter(e.target.value)} rows={16} className="w-full border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#0f1419] rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-white focus:outline-none focus:border-[#6ba3c7] transition-colors resize-y font-mono" />
+                  <MarkdownTextarea value={editedNewsletter} onChange={setEditedNewsletter} rows={16} ariaLabel="Newsletter" />
                   <div className="flex gap-2">
                     <CopyButton text={editedNewsletter} />
                     <SaveButton
@@ -1588,7 +1588,7 @@ function RepurposeContentPageInner() {
               )}
               {linkedInResult && (
                 <div className="space-y-3">
-                  <textarea value={editedLinkedIn} onChange={(e) => setEditedLinkedIn(e.target.value)} rows={28} className="w-full border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#0f1419] rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-white focus:outline-none focus:border-[#6ba3c7] transition-colors resize-y" />
+                  <MarkdownTextarea value={editedLinkedIn} onChange={setEditedLinkedIn} rows={28} ariaLabel="LinkedIn Article" />
                   <p className="text-xs text-[#2f3437]/40 dark:text-white/40">Plain text — paste directly into LinkedIn&apos;s article editor.</p>
                   <div className="flex gap-2">
                     <CopyButton text={editedLinkedIn} label="Copy Article" />
@@ -1652,11 +1652,11 @@ function RepurposeContentPageInner() {
                 <div className="space-y-4">
                   <div>
                     <p className="text-xs font-semibold text-[#2f3437]/50 dark:text-white/50 uppercase tracking-wide mb-1.5">Post body</p>
-                    <textarea value={editedFacebookBody} onChange={(e) => setEditedFacebookBody(e.target.value)} rows={8} className="w-full border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#0f1419] rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-white focus:outline-none focus:border-[#6ba3c7] transition-colors resize-y" />
+                    <MarkdownTextarea value={editedFacebookBody} onChange={setEditedFacebookBody} rows={8} ariaLabel="Facebook Post Body" />
                   </div>
                   <div>
                     <p className="text-xs font-semibold text-[#2f3437]/50 dark:text-white/50 uppercase tracking-wide mb-1.5">Paste this as your first comment</p>
-                    <textarea value={editedFacebookComment} onChange={(e) => setEditedFacebookComment(e.target.value)} rows={2} className="w-full border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#0f1419] rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-white focus:outline-none focus:border-[#6ba3c7] transition-colors resize-y" />
+                    <MarkdownTextarea value={editedFacebookComment} onChange={setEditedFacebookComment} rows={2} ariaLabel="Facebook First Comment" />
                     <p className="text-xs text-[#2f3437]/40 dark:text-white/40 mt-1">Facebook suppresses reach for posts with links in the body — paste this as the first comment instead.</p>
                   </div>
                   {facebookResult.hashtags?.length > 0 && (
@@ -1735,11 +1735,11 @@ function RepurposeContentPageInner() {
                   </div>
                   <div>
                     <p className="text-xs font-semibold text-[#2f3437]/50 dark:text-white/50 uppercase tracking-wide mb-1.5">Full article</p>
-                    <textarea value={editedBlogArticle} onChange={(e) => setEditedBlogArticle(e.target.value)} rows={32} className="w-full border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#0f1419] rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-white focus:outline-none focus:border-[#6ba3c7] transition-colors resize-y" />
+                    <MarkdownTextarea value={editedBlogArticle} onChange={setEditedBlogArticle} rows={32} ariaLabel="Blog Article" />
                   </div>
                   <div>
                     <p className="text-xs font-semibold text-[#2f3437]/50 dark:text-white/50 uppercase tracking-wide mb-1.5">Meta description <span className="font-normal normal-case text-[#2f3437]/30 dark:text-white/30">({editedBlogMeta.length}/160 chars)</span></p>
-                    <textarea value={editedBlogMeta} onChange={(e) => setEditedBlogMeta(e.target.value)} rows={2} className="w-full border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#0f1419] rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-white focus:outline-none focus:border-[#6ba3c7] transition-colors resize-none" />
+                    <MarkdownTextarea value={editedBlogMeta} onChange={setEditedBlogMeta} rows={2} ariaLabel="Meta Description" />
                   </div>
                   <p className="text-xs text-[#2f3437]/40 dark:text-white/40">Plain text — paste directly into WordPress, Squarespace, Wix, or any CMS editor.</p>
                   <div className="flex gap-2">
@@ -1826,11 +1826,11 @@ function RepurposeContentPageInner() {
                     <div>
                       <p className="text-xs font-semibold text-[#2f3437]/50 dark:text-white/50 uppercase tracking-wide mb-1.5">Edit front copy</p>
                       <input value={editedPostcardFrontHeadline} onChange={(e) => setEditedPostcardFrontHeadline(e.target.value)} placeholder="Front headline" className="w-full border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#0f1419] rounded-lg px-4 py-2.5 text-sm text-[#2f3437] dark:text-white focus:outline-none focus:border-[#6ba3c7] transition-colors mb-2" />
-                      <textarea value={editedPostcardFrontHook} onChange={(e) => setEditedPostcardFrontHook(e.target.value)} rows={2} placeholder="Front hook" className="w-full border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#0f1419] rounded-lg px-4 py-2.5 text-sm text-[#2f3437] dark:text-white focus:outline-none focus:border-[#6ba3c7] transition-colors resize-none" />
+                      <MarkdownTextarea value={editedPostcardFrontHook} onChange={setEditedPostcardFrontHook} rows={2} placeholder="Front hook" ariaLabel="Postcard Front Hook" />
                     </div>
                     <div>
                       <p className="text-xs font-semibold text-[#2f3437]/50 dark:text-white/50 uppercase tracking-wide mb-1.5">Edit back copy</p>
-                      <textarea value={editedPostcardBack} onChange={(e) => setEditedPostcardBack(e.target.value)} rows={3} className="w-full border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#0f1419] rounded-lg px-4 py-2.5 text-sm text-[#2f3437] dark:text-white focus:outline-none focus:border-[#6ba3c7] transition-colors resize-none" />
+                      <MarkdownTextarea value={editedPostcardBack} onChange={setEditedPostcardBack} rows={3} ariaLabel="Postcard Back Copy" />
                     </div>
                   </div>
                   <div className="flex gap-2">

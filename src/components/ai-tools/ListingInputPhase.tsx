@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback, ChangeEvent, DragEvent } from "react";
 import { ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
 import { DocumentArrowUpIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import MarkdownTextarea from "@/components/MarkdownTextarea";
 
 interface Props {
   onSubmit: (data: {
@@ -185,45 +186,45 @@ export default function ListingInputPhase({ onSubmit, loading }: Props) {
           <div className="px-4 pb-4 space-y-4 border-t border-[#2f3437]/8 dark:border-white/8">
             <div className="pt-3">
               <label className={labelClass}>Key Features</label>
-              <textarea
+              <MarkdownTextarea
                 value={keyFeatures}
-                onChange={(e) => setKeyFeatures(e.target.value)}
+                onChange={setKeyFeatures}
                 placeholder="e.g. 4 bed, 3 bath, finished basement, pie lot, walkout, built 2019"
                 rows={2}
-                className={`${inputClass} resize-none`}
+                ariaLabel="Key Features"
               />
             </div>
 
             <div>
               <label className={labelClass}>Neighbourhood Highlights</label>
-              <textarea
+              <MarkdownTextarea
                 value={neighbourhoodHighlights}
-                onChange={(e) => setNeighbourhoodHighlights(e.target.value)}
+                onChange={setNeighbourhoodHighlights}
                 placeholder="e.g. Close to 3 top-rated schools, lake access, 10 min to Deerfoot"
                 rows={2}
-                className={`${inputClass} resize-none`}
+                ariaLabel="Neighbourhood Highlights"
               />
             </div>
 
             <div>
               <label className={labelClass}>MLS Remarks / Listing Description</label>
-              <textarea
+              <MarkdownTextarea
                 value={mlsRemarks}
-                onChange={(e) => setMlsRemarks(e.target.value)}
+                onChange={setMlsRemarks}
                 placeholder="Paste from MLS — the AI will extract what it needs"
                 rows={4}
-                className={`${inputClass} resize-none`}
+                ariaLabel="MLS Remarks"
               />
             </div>
 
             <div>
               <label className={labelClass}>Why This Property Stands Out</label>
-              <textarea
+              <MarkdownTextarea
                 value={creatorOpinion}
-                onChange={(e) => setCreatorOpinion(e.target.value)}
+                onChange={setCreatorOpinion}
                 placeholder="Your opinion on what makes it special — this adds your unique voice"
                 rows={2}
-                className={`${inputClass} resize-none`}
+                ariaLabel="Why This Property Stands Out"
               />
             </div>
 

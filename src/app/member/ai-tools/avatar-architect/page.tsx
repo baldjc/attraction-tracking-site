@@ -275,9 +275,9 @@ function AvatarProfileCard({
           </div>
           <div>
             <label className="block text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wider mb-1.5">Avatar Description</label>
-            <textarea value={summary} onChange={(e) => setSummary(e.target.value)} rows={4}
+            <MarkdownTextarea value={summary} onChange={setSummary} rows={4}
               placeholder="A description of your avatar's situation, fears, and goals…"
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40 resize-y min-h-[100px]" />
+              ariaLabel="Avatar Description" />
           </div>
           <div>
             <label className="block text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wider mb-2">Content Themes <span className="font-normal text-[#2f3437]/35">({themes.length}/{MAX_THEMES})</span></label>
@@ -293,10 +293,10 @@ function AvatarProfileCard({
                   </div>
                   <div className="px-3 py-2">
                     <label className="block text-xs text-[#2f3437]/40 mb-1">AI Context &amp; Prompting</label>
-                    <textarea value={t.context} onChange={(e) => { const v = e.target.value; setThemes((prev) => prev.map((x, j) => j === i ? { ...x, context: v } : x)); }}
+                    <MarkdownTextarea value={t.context} onChange={(v: string) => { setThemes((prev) => prev.map((x, j) => j === i ? { ...x, context: v } : x)); }}
                       rows={3}
                       placeholder="Describe the stresses, angles, tone, and content engine prompting for this theme…"
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40 resize-y min-h-[60px]" />
+                      ariaLabel={`Theme ${i + 1} Context`} />
                   </div>
                   <div className="px-3 pb-3">
                     <label className="flex items-start gap-2 cursor-pointer">

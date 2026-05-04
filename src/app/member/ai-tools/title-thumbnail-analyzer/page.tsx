@@ -9,6 +9,7 @@ import PromptEditor from "@/components/ai-tools/PromptEditor";
 import RecentConversations from "@/components/ai-tools/RecentConversations";
 import ResourceRecommendations from "@/components/ResourceRecommendations";
 import MarkdownMessage from "@/components/MarkdownMessage";
+import MarkdownTextarea from "@/components/MarkdownTextarea";
 import NextStepCard from "@/components/ai-tools/NextStepCard";
 import LinkedPlanBanner from "@/components/ai-tools/LinkedPlanBanner";
 
@@ -661,12 +662,12 @@ function TitleThumbnailAnalyzerPageInner() {
               <p className="text-xs text-[#2f3437]/40 mb-2">
                 Paste your intro script or transcript so the AI can check whether it delivers on the promise of your title.
               </p>
-              <textarea
+              <MarkdownTextarea
                 value={introTranscript}
-                onChange={(e) => setIntroTranscript(e.target.value)}
+                onChange={setIntroTranscript}
                 placeholder="Hey, in this video I'm going to show you exactly why most agents are losing listings before they even get to the appointment..."
                 rows={4}
-                className="w-full bg-white border border-[#2f3437]/20 rounded-lg px-4 py-3 text-sm text-[#2f3437] placeholder-[#2f3437]/30 focus:outline-none focus:border-[#6ba3c7] transition-colors resize-y"
+                ariaLabel="Video Intro Transcript"
               />
             </div>
 

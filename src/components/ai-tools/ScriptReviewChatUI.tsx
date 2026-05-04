@@ -10,6 +10,7 @@ import {
 import RecentConversations from "./RecentConversations";
 import PromptEditor from "./PromptEditor";
 import MarkdownMessage from "@/components/MarkdownMessage";
+import MarkdownTextarea from "@/components/MarkdownTextarea";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -281,12 +282,12 @@ export default function ScriptReviewChatUI({ basePath, noAvatar, defaultPlanId }
             <label className="block text-sm font-semibold text-[#2f3437] dark:text-white mb-1.5">
               Script or Transcript
             </label>
-            <textarea
+            <MarkdownTextarea
               value={scriptText}
-              onChange={(e) => setScriptText(e.target.value)}
+              onChange={setScriptText}
               placeholder="Paste your full script or transcript here…"
               rows={14}
-              className="w-full bg-white dark:bg-[#0f1419] border border-gray-200 dark:border-white/20 rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-white placeholder-gray-400 dark:placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40 resize-y"
+              ariaLabel="Script or Transcript"
             />
           </div>
 

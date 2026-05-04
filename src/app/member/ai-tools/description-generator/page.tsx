@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import PageHeader from "@/components/PageHeader";
 import LinkedPlanBanner from "@/components/ai-tools/LinkedPlanBanner";
+import MarkdownTextarea from "@/components/MarkdownTextarea";
 
 interface CampaignInfo {
   id: string;
@@ -351,12 +352,12 @@ function DescriptionGeneratorPageInner() {
 
         <div>
           <label className="block text-xs font-medium text-[#2f3437]/60 dark:text-white/60 mb-1">Transcript or Script</label>
-          <textarea
+          <MarkdownTextarea
             value={transcript}
-            onChange={(e) => setTranscript(e.target.value)}
+            onChange={setTranscript}
             rows={8}
             placeholder="Paste your video transcript or script here..."
-            className="w-full border border-[#2f3437]/10 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-[#2f3437] dark:text-white bg-white dark:bg-[#111] placeholder:text-[#2f3437]/30 dark:placeholder:text-white/30 resize-y focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30"
+            ariaLabel="Transcript or Script"
           />
           {transcript.length > 0 && (
             <p className="text-xs text-[#2f3437]/40 dark:text-white/40 mt-1">{transcript.length.toLocaleString()} characters</p>
@@ -439,12 +440,12 @@ function DescriptionGeneratorPageInner() {
         {boilerplateExpanded && (
           <div className="px-6 pb-5 space-y-3 border-t border-[#2f3437]/5 dark:border-white/5 pt-4">
             <p className="text-xs text-[#2f3437]/40 dark:text-white/40">This text is automatically appended to every generated description. Save it once, use it everywhere.</p>
-            <textarea
+            <MarkdownTextarea
               value={boilerplate}
-              onChange={(e) => { setBoilerplate(e.target.value); setBoilerplateSaved(false); }}
+              onChange={(v: string) => { setBoilerplate(v); setBoilerplateSaved(false); }}
               rows={6}
               placeholder={"We'd love to hear from you! 👇\n\n📱 (555) 123-4567\n📧 info@yourbusiness.com\n📷 https://www.instagram.com/you/"}
-              className="w-full border border-[#2f3437]/10 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-[#2f3437] dark:text-white bg-white dark:bg-[#111] placeholder:text-[#2f3437]/30 dark:placeholder:text-white/30 resize-y focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30"
+              ariaLabel="Boilerplate"
             />
             <button
               onClick={saveBoilerplate}
