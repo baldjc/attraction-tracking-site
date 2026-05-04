@@ -16,6 +16,7 @@ import { buildToolUrl } from "@/lib/tool-handoff";
 import MarkdownTextarea from "@/components/MarkdownTextarea";
 import RichMarkdownEditor from "@/components/RichMarkdownEditor";
 import { getScoreBadgeClasses } from "@/lib/score-badge";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 /**
  * Convert the stored repurpose-artifact content (which the API saves as a
@@ -198,6 +199,7 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
   }, [showProgressTrackProp]);
 
   const router = useRouter();
+  const isMobile = useIsMobile();
   const [form, setForm] = useState({
     title: plan.title,
     status: plan.status,
@@ -796,16 +798,36 @@ Produce a research brief I can hand to a script writer. For **each talking point
   }
 
   return (
-    <div onClick={handleBackdropClick} className="fixed inset-0 bg-black/40 z-50 flex items-start justify-center p-4 overflow-y-auto lg:pl-[260px]">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-lg lg:max-w-3xl xl:max-w-4xl my-8">
-        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-100">
+    <div
+      onClick={handleBackdropClick}
+      className={
+        isMobile
+          ? "fixed inset-0 bg-white z-50 overflow-y-auto"
+          : "fixed inset-0 bg-black/40 z-50 flex items-start justify-center p-4 overflow-y-auto lg:pl-[260px]"
+      }
+    >
+      <div
+        className={
+          isMobile
+            ? "bg-white w-full min-h-full flex flex-col"
+            : "bg-white rounded-xl shadow-xl w-full max-w-lg lg:max-w-3xl xl:max-w-4xl my-8"
+        }
+      >
+        <div
+          className={
+            isMobile
+              ? "sticky top-0 z-20 bg-white/95 backdrop-blur-sm flex items-center justify-between px-4 pt-4 pb-3 border-b border-gray-100"
+              : "flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-100"
+          }
+          style={isMobile ? { paddingTop: "calc(env(safe-area-inset-top, 0px) + 0.75rem)" } : undefined}
+        >
           <h3 className="text-base font-semibold text-[#2f3437]">Edit Video</h3>
-          <button onClick={onClose} className="text-[#2f3437]/40 hover:text-[#2f3437]">
-            <XMarkIcon className="w-5 h-5" />
+          <button onClick={onClose} className="text-[#2f3437]/40 hover:text-[#2f3437] p-1 -mr-1">
+            <XMarkIcon className="w-6 h-6" />
           </button>
         </div>
 
-        <div className="px-6 py-5 space-y-4">
+        <div className={isMobile ? "px-4 py-4 space-y-4 pb-32" : "px-6 py-5 space-y-4"}>
 
           {driveFolderLink && driveFiles && driveFiles.length > 0 && (
             <div className="rounded-xl border border-[#10B981]/25 bg-[#10B981]/5 px-4 py-3 space-y-2">
@@ -1438,7 +1460,14 @@ Produce a research brief I can hand to a script writer. For **each talking point
           {error && <p className="text-sm text-red-600">{error}</p>}
         </div>
 
-        <div className="flex items-center justify-between px-6 pb-5 pt-2 border-t border-gray-100">
+        <div
+          className={
+            isMobile
+              ? "sticky bottom-0 z-20 bg-white/95 backdrop-blur-sm flex items-center justify-between px-4 py-3 border-t border-gray-100"
+              : "flex items-center justify-between px-6 pb-5 pt-2 border-t border-gray-100"
+          }
+          style={isMobile ? { paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 0.75rem)" } : undefined}
+        >
           {onDeleted ? (
             confirmDelete ? (
               <div className="flex items-center gap-2">

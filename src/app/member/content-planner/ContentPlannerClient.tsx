@@ -8,7 +8,9 @@ import CalendarView from "@/components/content-planner/CalendarView";
 import BoardView from "@/components/content-planner/BoardView";
 import PipelineView, { type PipelineSortKey } from "@/components/content-planner/PipelineView";
 import ContentPlanEditModal, { type ContentPlan } from "@/components/content-planner/ContentPlanEditModal";
+import MobileCardFeed from "@/components/content-planner/MobileCardFeed";
 import { hasEditDueDate, getStatusOptions, filterPlans } from "@/lib/content-plan-utils";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 type ViewId = "publish_cal" | "shoot_cal" | "edit_due" | "table" | "by_theme" | "pipeline";
 
@@ -40,6 +42,7 @@ export default function ContentPlannerClient({
 
   const router = useRouter();
   const searchParams = useSearchParams();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     fetch("/api/member/feature-flags")
@@ -154,6 +157,44 @@ export default function ContentPlannerClient({
   }
 
   const filtersActive = searchQuery.trim().length > 0 || statusFilter.length > 0;
+
+  if (isMobile) {
+    return (
+      <div>
+        <MobileCardFeed
+          plans={allPlans}
+          statusOptions={statusOptions}
+          onSelectPlan={(p) => setAutoOpenPlan(p)}
+          onAddPlan={handleQuickAdd}
+          addingPlan={addingPlan}
+          isAdminView={isAdminView}
+        />
+        {autoOpenPlan && (
+          <ContentPlanEditModal
+            plan={autoOpenPlan}
+            serviceTier={serviceTier}
+            apiBase={apiBase}
+            showProgressTrack={showProgressTrack}
+            onClose={() => setAutoOpenPlan(null)}
+            onSaved={(updated) => {
+              setAutoOpenPlan(null);
+              if (updated) {
+                setAllPlans((prev) =>
+                  prev ? prev.map((p) => (p.id === updated.id ? (updated as ContentPlan) : p)) : prev
+                );
+              }
+            }}
+            onDeleted={(deletedId) => {
+              setAutoOpenPlan(null);
+              if (deletedId) {
+                setAllPlans((prev) => (prev ? prev.filter((p) => p.id !== deletedId) : prev));
+              }
+            }}
+          />
+        )}
+      </div>
+    );
+  }
 
   return (
     <div>
