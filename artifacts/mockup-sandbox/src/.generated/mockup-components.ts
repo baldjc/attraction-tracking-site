@@ -3,5 +3,8 @@ type ModuleMap = Record<string, () => Promise<Record<string, unknown>>>;
 export const modules: ModuleMap = {
   "./components/mockups/content-planner-mobile/CalendarFirst.tsx": () => import("../components/mockups/content-planner-mobile/CalendarFirst.tsx"),
   "./components/mockups/content-planner-mobile/CardFeed.tsx": () => import("../components/mockups/content-planner-mobile/CardFeed.tsx"),
+  "./components/mockups/content-planner-mobile/EditBottomSheet.tsx": () => import("../components/mockups/content-planner-mobile/EditBottomSheet.tsx"),
+  "./components/mockups/content-planner-mobile/EditFullScreen.tsx": () => import("../components/mockups/content-planner-mobile/EditFullScreen.tsx"),
+  "./components/mockups/content-planner-mobile/EditSectionNav.tsx": () => import("../components/mockups/content-planner-mobile/EditSectionNav.tsx"),
   "./components/mockups/content-planner-mobile/SwipeablePipeline.tsx": () => import("../components/mockups/content-planner-mobile/SwipeablePipeline.tsx")
 };
