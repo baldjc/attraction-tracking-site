@@ -1,0 +1,38 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "noWA1ScbkaAMvMcOcWTu-"
+uri = "file://attached_assets/screenshots/mockups/1-planner-CardFeed.png"
+type = "image"
+title = "Planner — Card Feed (vertical scrolling rich cards)"
+
+[[outputs]]
+id = "hEe9Q3MlgfLSfb8aPFfHR"
+uri = "file://attached_assets/screenshots/mockups/2-planner-SwipeablePipeline.png"
+type = "image"
+title = "Planner — Swipeable Pipeline (horizontal status lanes)"
+
+[[outputs]]
+id = "wqjrah1L0zB1vMh9RuFAo"
+uri = "file://attached_assets/screenshots/mockups/3-planner-CalendarFirst.png"
+type = "image"
+title = "Planner — Calendar-First (month grid with status dots)"
+
+[[outputs]]
+id = "d2oOHmYWFDBlgh3ZT9e31"
+uri = "file://attached_assets/screenshots/mockups/4-edit-BottomSheet.png"
+type = "image"
+title = "Editor — Bottom Sheet (collapsed accordions, one-handed)"
+
+[[outputs]]
+id = "E6Gm6fJAG8Lkl6-l-RrP2"
+uri = "file://attached_assets/screenshots/mockups/5-edit-FullScreen.png"
+type = "image"
+title = "Editor — Full-Screen Tabbed (Details / Script / Publish / More)"
+
+[[outputs]]
+id = "uBwjFC6wUx-IQjaQZYAS9"
+uri = "file://attached_assets/screenshots/mockups/6-edit-SectionNav.png"
+type = "image"
+title = "Editor — Section-Nav (sticky pill nav, single scroll)"
