@@ -1,0 +1,18 @@
+/* Shared tokens for content-planner-mobile variants.
+   Mirrors the main app's Notion-style status palette + brand colors. */
+
+:root {
+  --abv-brand: #6ba3c7;
+  --abv-planner-accent: #7c5fde;
+
+  /* Notion-style status chip colors (paired bg/text) */
+  --st-idea-bg: #E3E2E0;        --st-idea-text: #3F3D38;
+  --st-scripted-bg: #D3E5EF;    --st-scripted-text: #183347;
+  --st-research-bg: #FFE2DD;    --st-research-text: #7A2E29;
+  --st-ready-bg: #E8DEEE;       --st-ready-text: #492F64;
+  --st-shooting-bg: #F5E0E9;    --st-shooting-text: #6D2A4D;
+  --st-editing-bg: #FDECC8;     --st-editing-text: #7A5A1F;
+  --st-edited-bg: #DBEDDB;      --st-edited-text: #2B593F;
+  --st-scheduled-bg: #FADEC9;   --st-scheduled-text: #854C1D;
+  --st-published-bg: #DBEDDB;   --st-published-text: #2B593F;
+}
