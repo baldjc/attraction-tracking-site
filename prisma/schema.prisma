@@ -842,6 +842,10 @@ model ContentPlan {
   script          String?   @db.Text
   youtubeDescription String? @db.Text
   researchNotes   String?   @db.Text
+  // Free-form scratchpad for the member's own notes & thoughts about this
+  // video — separate from `notes` (talking points / outline) and
+  // `researchNotes` (sourced facts) so the structured fields stay clean.
+  thoughts        String?   @db.Text
   thumbnailWords  String?
   footageLink     String?
   driveFolderLink String?

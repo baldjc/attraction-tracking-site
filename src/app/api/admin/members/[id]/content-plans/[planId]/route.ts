@@ -28,7 +28,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const body = await req.json();
-  const { title, status, theme, shootDate, publishDate, editDueDate, priority, dramaMode, notes, script, researchNotes, thumbnailWords, footageLink, driveFolderLink, thumbnailFileId, thumbnailFileName } = body;
+  const { title, status, theme, shootDate, publishDate, editDueDate, priority, dramaMode, notes, script, researchNotes, thoughts, thumbnailWords, footageLink, driveFolderLink, thumbnailFileId, thumbnailFileName } = body;
   // Coerce empty-string `bingeVideoId` ("") to null so non-modal clients can
   // clear the link without tripping the ownership lookup (which would 404 on
   // an empty id). Treat `undefined` (field omitted) distinctly from null
@@ -79,6 +79,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       ...(notes !== undefined && { notes: notes ?? null }),
       ...(script !== undefined && { script: script ?? null }),
       ...(researchNotes !== undefined && { researchNotes: researchNotes ?? null }),
+      ...(thoughts !== undefined && { thoughts: thoughts ?? null }),
       ...(thumbnailWords !== undefined && { thumbnailWords: thumbnailWords ?? null }),
       ...(footageLink !== undefined && { footageLink: footageLink ?? null }),
       ...(driveFolderLink !== undefined && { driveFolderLink: driveFolderLink ?? null }),

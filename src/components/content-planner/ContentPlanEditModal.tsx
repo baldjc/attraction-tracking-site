@@ -120,6 +120,7 @@ export interface ContentPlan {
   notes: string | null;
   script: string | null;
   researchNotes: string | null;
+  thoughts?: string | null;
   thumbnailWords: string | null;
   footageLink: string | null;
   driveFolderLink: string | null;
@@ -222,6 +223,7 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
     script: plan.script ?? "",
     youtubeDescription: (plan as any).youtubeDescription ?? "",
     researchNotes: plan.researchNotes ?? "",
+    thoughts: plan.thoughts ?? "",
     thumbnailWords: plan.thumbnailWords ?? "",
     footageLink: plan.footageLink ?? "",
     linkedCampaignId: plan.linkedCampaignId ?? "",
@@ -711,6 +713,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
           script: form.script || null,
           youtubeDescription: form.youtubeDescription || null,
           researchNotes: form.researchNotes || null,
+          thoughts: form.thoughts || null,
           thumbnailWords: form.thumbnailWords || null,
           footageLink: form.footageLink || null,
           linkedCampaignId: form.linkedCampaignId || null,
@@ -1154,6 +1157,21 @@ Produce a research brief I can hand to a script writer. For **each talking point
                   className={field}
                   placeholder="Paste your research here — statistics, sources, talking points, Manus/Perplexity output…"
                   ariaLabel="Research Notes"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">
+                  Notes & Thoughts
+                  <span className="ml-1 font-normal text-[#2f3437]/40">(scratchpad — ideas, reminders, anything)</span>
+                </label>
+                <MarkdownTextarea
+                  value={form.thoughts}
+                  onChange={(v) => setForm((f) => ({ ...f, thoughts: v }))}
+                  rows={4}
+                  className={field}
+                  placeholder="Anything you want to remember about this video…"
+                  ariaLabel="Notes and Thoughts"
                 />
               </div>
 
