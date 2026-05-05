@@ -1160,21 +1160,6 @@ Produce a research brief I can hand to a script writer. For **each talking point
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">
-                  Notes & Thoughts
-                  <span className="ml-1 font-normal text-[#2f3437]/40">(scratchpad — ideas, reminders, anything)</span>
-                </label>
-                <MarkdownTextarea
-                  value={form.thoughts}
-                  onChange={(v) => setForm((f) => ({ ...f, thoughts: v }))}
-                  rows={4}
-                  className={field}
-                  placeholder="Anything you want to remember about this video…"
-                  ariaLabel="Notes and Thoughts"
-                />
-              </div>
-
               {!isAdmin && (
                 <div>
                   <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">
@@ -1453,6 +1438,21 @@ Produce a research brief I can hand to a script writer. For **each talking point
                     Nothing yet. When you set this video as another video&apos;s binge target, it will show up here.
                   </p>
                 )}
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">
+                  Notes & Thoughts
+                  <span className="ml-1 font-normal text-[#2f3437]/40">(scratchpad — ideas, reminders, anything)</span>
+                </label>
+                <MarkdownTextarea
+                  value={form.thoughts}
+                  onChange={(v) => setForm((f) => ({ ...f, thoughts: v }))}
+                  rows={4}
+                  className={field}
+                  placeholder="Anything you want to remember about this video…"
+                  ariaLabel="Notes and Thoughts"
+                />
               </div>
 
               <div>
