@@ -167,11 +167,42 @@ export default function ProgressTrack({ steps, compact = false }: Props) {
               >
                 {step.label}
               </span>
-              {/* Per-step "Mark done" checkbox was removed in the redesign:
-                  the filled blue circle already conveys completion clearly,
-                  and the extra control added visual noise. The manualDone /
-                  onToggleManual props on ProgressStep are kept (no-op here)
-                  so callers don't have to change. */}
+              {/* Per-step "done" checkbox — small blue affordance under the
+                  label so the user can manually flag a step complete. Hidden
+                  when the step is auto-detected as done from real content
+                  (the filled circle already says it). */}
+              {step.onToggleManual && !step.autoDone && (
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); step.onToggleManual?.(); }}
+                  className="mt-1 inline-flex items-center gap-1 group focus:outline-none"
+                  aria-pressed={!!step.manualDone}
+                  aria-label={`Mark ${step.label} ${step.manualDone ? "not done" : "done"}`}
+                  title={step.manualDone ? "Marked done — click to undo" : "Mark done"}
+                >
+                  <span
+                    className={`flex items-center justify-center rounded-[3px] border transition-colors ${
+                      step.manualDone
+                        ? "bg-[#185FA5] border-[#185FA5] text-white"
+                        : "bg-white border-gray-300 group-hover:border-[#185FA5]"
+                    }`}
+                    style={{ width: 12, height: 12 }}
+                  >
+                    {step.manualDone && (
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={4} className="w-2.5 h-2.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                  </span>
+                  <span
+                    className={`text-[9px] uppercase tracking-wider transition-colors ${
+                      step.manualDone ? "text-[#185FA5] font-semibold" : "text-[#2f3437]/45 group-hover:text-[#185FA5]"
+                    }`}
+                  >
+                    Done
+                  </span>
+                </button>
+              )}
             </div>
           );
         })}
