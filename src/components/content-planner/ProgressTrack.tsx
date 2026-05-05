@@ -79,9 +79,9 @@ export default function ProgressTrack({ steps, compact = false }: Props) {
               onClick={(e) => { e.stopPropagation(); step.onClick(); }}
               className={`rounded-full transition-transform hover:scale-125 ${
                 step.status === "done"
-                  ? "bg-emerald-500"
+                  ? "bg-[#185FA5]"
                   : step.status === "current"
-                  ? "bg-[#6ba3c7]"
+                  ? "bg-[#185FA5]"
                   : "bg-gray-200 dark:bg-[#2a2a2a]"
               }`}
               style={{ width: 7, height: 7, flexShrink: 0 }}
@@ -112,11 +112,11 @@ export default function ProgressTrack({ steps, compact = false }: Props) {
             <button
               type="button"
               onClick={() => step.onClick()}
-              className={`relative flex items-center justify-center rounded-full border-2 transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#6ba3c7]/50 ${
+              className={`relative flex items-center justify-center rounded-full border-2 transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#185FA5]/40 ${
                 step.status === "done"
-                  ? "bg-emerald-500 border-emerald-500 text-white"
+                  ? "bg-[#185FA5] border-[#185FA5] text-white"
                   : step.status === "current"
-                  ? "bg-[#6ba3c7] border-[#6ba3c7] text-white"
+                  ? "bg-[#185FA5] border-[#185FA5] text-white"
                   : "bg-white dark:bg-[#1a1a1a] border-gray-300 dark:border-[#2a2a2a] text-gray-300 dark:text-[#94a3b8]"
               }`}
               style={{
@@ -135,7 +135,7 @@ export default function ProgressTrack({ steps, compact = false }: Props) {
                 <span className="text-[9px] font-bold">{i + 1}</span>
               )}
               {step.status === "current" && (
-                <span className="absolute inset-0 rounded-full animate-ping bg-[#6ba3c7]/40 pointer-events-none" />
+                <span className="absolute inset-0 rounded-full animate-ping bg-[#185FA5]/40 pointer-events-none" />
               )}
             </button>
           );
@@ -150,7 +150,7 @@ export default function ProgressTrack({ steps, compact = false }: Props) {
                 {!isLast && (
                   <div
                     className={`flex-1 h-0.5 mx-0.5 transition-colors ${
-                      step.status === "done" ? "bg-emerald-400" : "bg-gray-200 dark:bg-[#2a2a2a]"
+                      step.status === "done" ? "bg-[#185FA5]" : "bg-gray-200 dark:bg-[#2a2a2a]"
                     }`}
                   />
                 )}
@@ -159,47 +159,19 @@ export default function ProgressTrack({ steps, compact = false }: Props) {
               <span
                 className={`mt-1.5 text-[10px] leading-tight text-center whitespace-nowrap select-none ${
                   step.status === "done"
-                    ? "text-emerald-600 dark:text-emerald-400"
+                    ? "text-[#185FA5]"
                     : step.status === "current"
-                    ? "font-bold text-[#6ba3c7]"
+                    ? "font-bold text-[#185FA5]"
                     : "text-[#2f3437]/60 dark:text-[#94a3b8]"
                 }`}
               >
                 {step.label}
               </span>
-
-              {/* Manual checkbox — lets the user tick a step done themselves
-                  even when the auto-detector hasn't matched. Hidden when the
-                  step is auto-done from real content (the green check already
-                  reflects the truth) and when no toggle handler was wired. */}
-              {step.onToggleManual && !step.autoDone && (
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); step.onToggleManual?.(); }}
-                  aria-pressed={!!step.manualDone}
-                  aria-label={step.manualDone ? `Unmark ${step.label} as done` : `Mark ${step.label} as done`}
-                  className={`mt-1 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9px] leading-none transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#6ba3c7]/50 ${
-                    step.manualDone
-                      ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400"
-                      : "bg-transparent text-[#2f3437]/50 hover:bg-slate-100 hover:text-[#2f3437] dark:text-[#94a3b8] dark:hover:bg-[#2a2a2a]"
-                  }`}
-                >
-                  <span
-                    className={`inline-flex h-2.5 w-2.5 items-center justify-center rounded-[3px] border ${
-                      step.manualDone
-                        ? "border-emerald-500 bg-emerald-500 text-white"
-                        : "border-gray-300 bg-white dark:border-[#3a3a3a] dark:bg-[#1a1a1a]"
-                    }`}
-                  >
-                    {step.manualDone && (
-                      <svg viewBox="0 0 12 12" className="h-2 w-2" fill="none" stroke="currentColor" strokeWidth={3}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.5 6.5l2.5 2.5 4.5-5" />
-                      </svg>
-                    )}
-                  </span>
-                  {step.manualDone ? "Done" : "Mark done"}
-                </button>
-              )}
+              {/* Per-step "Mark done" checkbox was removed in the redesign:
+                  the filled blue circle already conveys completion clearly,
+                  and the extra control added visual noise. The manualDone /
+                  onToggleManual props on ProgressStep are kept (no-op here)
+                  so callers don't have to change. */}
             </div>
           );
         })}

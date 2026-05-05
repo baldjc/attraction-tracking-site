@@ -212,6 +212,133 @@ function CollapsedPreview({ value, placeholder, onExpand }: { value: string; pla
   );
 }
 
+// Colored dot used inside the Status chip + popover so the status chip
+// reads at a glance. Maps known statuses to a calm hex; falls back to a
+// neutral gray for anything custom we haven't seen.
+const STATUS_DOT_COLOR: Record<string, string> = {
+  "Idea": "#94a3b8",
+  "Drafting": "#a78bfa",
+  "Ready to Shoot": "#f59e0b",
+  "Shooting": "#f59e0b",
+  "Shot - In Post": "#0ea5e9",
+  "Ready to Post": "#22c55e",
+  "Posted": "#185FA5",
+  "Archived": "#9ca3af",
+};
+function statusDotColor(status: string | null | undefined): string {
+  if (!status) return "#cbd5e1";
+  return STATUS_DOT_COLOR[status] ?? "#94a3b8";
+}
+
+// Compact pill used for the chip strip directly under the title. Acts as
+// a button that opens an inline popover (rendered via children render-prop)
+// for editing the underlying field. Keeps Status / Theme / Publish date /
+// Location off the form grid so the modal opens compact.
+function ChipPopover({
+  label,
+  value,
+  dotColor,
+  children,
+}: {
+  label: string;
+  value: React.ReactNode;
+  dotColor?: string;
+  children: (close: () => void) => React.ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") { setOpen(false); e.stopPropagation(); } };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey, true);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey, true);
+    };
+  }, [open]);
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="inline-flex items-center gap-1.5 rounded-md bg-gray-100 hover:bg-gray-200 transition-colors px-2.5 py-1 text-[12px] text-[#2f3437]/80"
+        aria-haspopup="true"
+        aria-expanded={open}
+      >
+        {dotColor && (
+          <span className="inline-block w-2 h-2 rounded-full shrink-0" style={{ background: dotColor }} aria-hidden />
+        )}
+        <span className="text-[#2f3437]/55">{label}:</span>
+        <span className="text-[#2f3437] truncate max-w-[140px]">{value}</span>
+      </button>
+      {open && (
+        <div className="absolute left-0 top-full z-30 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg min-w-[200px] overflow-hidden">
+          {children(() => setOpen(false))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// One row in the Notion-style content list. Collapsed: label on left, a
+// one-line preview (or empty hint) on right. Expanded: pushes its body
+// down inline. Only one row in the list expands at a time — controlled
+// from the parent via `expanded` + `onToggle`. `action` is an optional
+// AI-generator link (e.g. "Generate Research Prompt →") shown at the
+// top right of the expanded body.
+function ContentRow({
+  label,
+  value,
+  emptyHint,
+  expanded,
+  onToggle,
+  action,
+  children,
+}: {
+  label: string;
+  value: string;
+  emptyHint: string;
+  expanded: boolean;
+  onToggle: () => void;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  const preview = previewLine(value);
+  const filled = preview.length > 0;
+  return (
+    <li className="bg-white">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="w-full flex items-center justify-between gap-3 px-3.5 py-2.5 text-left hover:bg-gray-50/60 transition-colors"
+        aria-expanded={expanded}
+      >
+        <span className={`text-[13px] shrink-0 ${filled ? "font-medium text-[#2f3437]" : "text-[#2f3437]/65"}`}>{label}</span>
+        <span className="flex items-center gap-2 min-w-0">
+          {filled ? (
+            <span className="text-[12px] text-[#2f3437]/60 truncate text-right" style={{ maxWidth: "60%", minWidth: 0 }}>
+              {preview}
+            </span>
+          ) : (
+            <span className="text-[12px] text-[#2f3437]/40 truncate text-right">{emptyHint}</span>
+          )}
+          <span className={`text-[#2f3437]/35 transition-transform shrink-0 ${expanded ? "rotate-90" : ""}`}>▸</span>
+        </span>
+      </button>
+      {expanded && (
+        <div className="px-3.5 pb-3 pt-1 border-t border-gray-100 space-y-1.5">
+          {action && <div className="flex justify-end">{action}</div>}
+          {children}
+        </div>
+      )}
+    </li>
+  );
+}
+
 export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdmin, memberId, themes: themesProp = [], showProgressTrack: showProgressTrackProp = false, onClose, onSaved, onDeleted }: Props) {
   // Self-fetch themes when caller didn't supply any (e.g. opened from Pipeline,
   // auto-open URL link, or other entry points). Falls back to caller-supplied list.
@@ -375,6 +502,12 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
   const isSectionExpanded = (key: string) => !!expandedSections[key];
   const toggleSection = (key: string) => setExpandedSections((s) => ({ ...s, [key]: !s[key] }));
+  // Title-bar character counter only renders while the title input is
+  // focused, per the Zone 2 spec — keeps the hero row quiet at rest.
+  const [titleFocused, setTitleFocused] = useState(false);
+  // Single-row expansion for the new Content list (Notion-style). Only one
+  // of the five rows can be open at a time so the list stays compact.
+  const [contentRowExpanded, setContentRowExpanded] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -925,336 +1058,380 @@ Produce a research brief I can hand to a script writer. For **each talking point
 
         <div className={isMobile ? "px-4 py-4 space-y-4 pb-32" : "px-6 py-5 space-y-4 flex-1 overflow-y-auto"}>
 
-          {driveFolderLink && driveFiles && driveFiles.length > 0 && (() => {
-            // Project Folder — Zone 4 of the redesign. Collapsed-by-default
-            // one-line summary on a neutral white surface (no green tint).
-            // Click the row to expand the full file list inline. The
-            // "Open in Drive ↗" link short-circuits the toggle.
-            const expanded = isSectionExpanded("projectFolder");
-            const fileCount = driveFiles.length;
-            return (
-              <div className="rounded-lg border border-gray-200 bg-white">
-                {/* Header row uses two sibling controls (button + anchor) so
-                    we never nest an <a> inside a <button> — that would be
-                    invalid HTML and break keyboard/screen-reader semantics. */}
-                <div className="flex items-center justify-between gap-2 pr-3">
-                  <button
-                    type="button"
-                    onClick={() => toggleSection("projectFolder")}
-                    className="flex-1 min-w-0 flex items-center justify-start gap-2 px-4 py-2.5 text-left hover:bg-gray-50/60 transition-colors rounded-lg"
-                    aria-expanded={expanded}
-                  >
-                    <span className={`text-[#2f3437]/40 transition-transform ${expanded ? "rotate-90" : ""}`}>▸</span>
-                    <span className="text-[13px] font-medium text-[#2f3437]">Project folder</span>
-                    <span className="text-[12px] text-[#2f3437]/50 truncate">
-                      {fileCount} file{fileCount === 1 ? "" : "s"}{thumbnailFileId ? " · thumbnail set" : ""}
-                    </span>
-                  </button>
-                  <a
-                    href={driveFolderLink}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-[12px] font-medium text-[#185FA5] hover:underline shrink-0 py-2"
-                  >Open in Drive ↗</a>
-                </div>
-                {expanded && (
-                  <div className="px-4 pb-3 pt-1 space-y-2 border-t border-gray-100">
-                    {thumbnailFileId && (
-                      <div className="flex items-center gap-3 bg-gray-50 rounded-md border border-gray-200 p-2">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={`/api/member/content-plans/${plan.id}/thumbnail?v=${thumbVersion}`}
-                          alt="Selected thumbnail"
-                          className="w-20 h-12 object-cover rounded bg-gray-100"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[10px] uppercase tracking-wider font-semibold text-[#2f3437]/60">Thumbnail</p>
-                          <p className="text-xs text-[#2f3437] truncate" title={thumbnailFileName ?? ""}>
-                            {thumbnailFileName ?? "Selected file"}
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => { setThumbnailFileId(null); setThumbnailFileName(null); }}
-                          className="text-[11px] font-medium text-[#2f3437]/50 hover:text-red-500 px-1.5"
-                          title="Remove thumbnail"
-                        >Clear</button>
-                      </div>
-                    )}
-                    <ul className="space-y-0.5">
-                      {driveFiles.map((f) => {
-                        const isImage = (f.mimeType ?? "").startsWith("image/");
-                        const isPicked = f.id === thumbnailFileId;
-                        return (
-                          <li key={f.id} className="text-xs text-[#2f3437]/80 flex items-center justify-between gap-2 px-1 py-1 rounded hover:bg-gray-50">
-                            <a
-                              href={f.webViewLink ?? driveFolderLink}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="truncate hover:text-[#185FA5] hover:underline flex-1 min-w-0"
-                              title={f.name}
-                            >{isImage ? "🖼️" : "📄"} {f.name}</a>
-                            <div className="flex items-center gap-2 shrink-0">
-                              {isImage && (
-                                isPicked ? (
-                                  <span className="text-[10px] font-semibold uppercase tracking-wider text-[#2f3437]/70 bg-gray-100 px-1.5 py-0.5 rounded">Thumbnail</span>
-                                ) : (
-                                  <button
-                                    type="button"
-                                    onClick={() => { setThumbnailFileId(f.id); setThumbnailFileName(f.name); }}
-                                    className="text-[10px] font-medium text-[#185FA5] hover:underline"
-                                  >Set as thumbnail</button>
-                                )
-                              )}
-                              {f.modifiedTime && (
-                                <span className="text-[10px] text-[#2f3437]/40">{new Date(f.modifiedTime).toLocaleDateString()}</span>
-                              )}
-                            </div>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                    {driveFilesLoading && <p className="text-[10px] text-[#2f3437]/40 italic">Refreshing…</p>}
-                    {thumbnailFileId && (
-                      <p className="text-[10px] text-[#2f3437]/40 italic">Save to apply your thumbnail across the planner.</p>
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          })()}
-
-          {!isAdmin && teamNotes.length > 0 && (
-            <div className="rounded-xl border border-[#6ba3c7]/25 bg-[#6ba3c7]/5 px-4 py-3 space-y-2">
-              <p className="text-xs font-bold uppercase tracking-wider text-[#6ba3c7]">📝 Notes from your team</p>
-              <ul className="space-y-2">
-                {teamNotes.map((n) => (
-                  <li key={n.id} className="text-sm text-[#2f3437]">
-                    <p className="whitespace-pre-wrap leading-relaxed">{n.note}</p>
-                    <p className="text-[11px] text-[#2f3437]/50 mt-0.5">
-                      {n.author.name} · {new Date(n.createdAt).toLocaleDateString()}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {showProgressTrack && progressSteps.length > 0 && (
-            // Workflow zone — Zone 3. Neutral white surface (no green/teal
-            // band), with top/bottom 0.5px hairlines and a primary-blue
-            // "Suggested next" CTA. The stepper's own colors stay as-is.
-            <div className="-mx-6 px-6 py-4 space-y-3 border-y border-gray-200 bg-white">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/50">
-                  Workflow{(() => {
-                    const total = progressSteps.length;
-                    const currentIdx = progressSteps.findIndex((s) => s.status === "current");
-                    const doneCount = progressSteps.filter((s) => s.status === "done").length;
-                    const stepNum = currentIdx >= 0 ? currentIdx + 1 : Math.min(doneCount + 1, total);
-                    return ` · Step ${stepNum} of ${total}`;
-                  })()}
-                </span>
-                {suggestedNext && TOOL_ROUTES[suggestedNext.key] && (
-                  <button
-                    type="button"
-                    onClick={() => launchTool(suggestedNext.key)}
-                    className="flex items-center gap-1.5 text-xs font-medium text-white bg-[#185FA5] hover:bg-[#134d87] px-3.5 py-1.5 rounded-md transition-colors"
-                  >
-                    {ALL_TOOLS.find((t) => t.key === suggestedNext.key)?.label} →
-                  </button>
-                )}
-              </div>
-
-              <ProgressTrack steps={progressSteps} />
-
-              <div>
-                <button
-                  type="button"
-                  onClick={() => setShowAllTools((v) => !v)}
-                  className="text-[11px] text-[#185FA5] hover:underline transition-colors"
-                >
-                  {showAllTools ? "Hide tools ▴" : "Show tools ▾"}
-                </button>
-                {showAllTools && (
-                  <div className="mt-2 grid grid-cols-2 gap-1.5">
-                    {ALL_TOOLS.map((tool) => (
-                      <button
-                        key={tool.key}
-                        type="button"
-                        onClick={() => launchTool(tool.key)}
-                        className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-[#2f3437]/70 bg-white border border-gray-200 rounded-lg hover:border-[#6ba3c7] hover:text-[#6ba3c7] transition-colors"
-                      >
-                        <span>{tool.icon}</span>
-                        <span>{tool.label}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-4">
-            {/* LEFT COLUMN: metadata, dates, notes */}
-            <div className="space-y-4">
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/85 flex items-center gap-2">
-                    Title
-                    {showProgressTrack && latestReviewScore !== null && (
-                      <span
-                        title="Latest Script Review score"
-                        className={`inline-flex items-center text-[10px] font-semibold px-1.5 py-0.5 rounded ${getScoreBadgeClasses(latestReviewScore)}`}
-                      >
-                        Review {latestReviewScore.toFixed(1)}/10
-                      </span>
-                    )}
-                  </label>
-                  {!showProgressTrack && (
-                    <button type="button" onClick={() => pushToAITool("title")} className="text-xs text-[#6ba3c7] hover:underline">Analyse Title →</button>
-                  )}
-                </div>
+            {/* Zone 2 — Title row + thumbnail chip + focus-only character counter.
+                Sits directly under the modal header so the most important field
+                (what is this video called?) is the first thing the user sees. */}
+            <div className="flex items-start gap-3">
+              <div className="flex-1 min-w-0">
                 <input
                   type="text"
                   value={form.title}
                   onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+                  onFocus={() => setTitleFocused(true)}
+                  onBlur={() => setTitleFocused(false)}
                   placeholder="Untitled video"
-                  className="w-full bg-transparent border-0 border-b border-transparent hover:border-gray-200 focus:border-[#185FA5] focus:ring-0 px-0 py-1 text-lg font-semibold text-[#2f3437] placeholder:text-[#2f3437]/30 transition-colors"
+                  className="w-full bg-transparent border-0 focus:ring-0 px-0 py-1 font-medium text-[#2f3437] placeholder:text-[#2f3437]/30"
+                  style={{ fontSize: 19, lineHeight: 1.3 }}
+                  aria-label="Video title"
                 />
-                <div className={`text-[11px] mt-0.5 flex items-center justify-end gap-1.5 ${form.title.length > 80 ? "text-red-500" : form.title.length > 60 ? "text-amber-500" : "text-[#2f3437]/40"}`}>
-                  <span>
-                    {form.title.length} / 60 Characters
-                  </span>
-                  <span
-                    className="group relative inline-flex"
-                    tabIndex={0}
-                    aria-label="Title length info"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                      className="h-3.5 w-3.5 text-slate-400 hover:text-slate-600 cursor-help"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    <span className="pointer-events-none absolute right-0 top-full z-20 mt-1 w-60 rounded-md bg-slate-900 px-3 py-2 text-xs font-normal leading-snug text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus:opacity-100">
-                      Ideally you want your title length about 60–65 characters or less so it doesn&apos;t get cut off in YouTube search results.
-                    </span>
-                  </span>
-                </div>
+                {titleFocused && (
+                  <div className={`text-[11px] mt-0.5 ${form.title.length > 80 ? "text-red-500" : form.title.length > 60 ? "text-amber-500" : "text-[#2f3437]/40"}`}>
+                    {form.title.length} / 60 characters
+                  </div>
+                )}
               </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/85 mb-1">Status</label>
-                  <select value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))} className={field}>
-                    {statusOptions.map((s) => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
-                  </select>
+              {/* 64×36 thumbnail preview chip on the right edge of the title row. */}
+              {thumbnailFileId ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={`/api/member/content-plans/${plan.id}/thumbnail?v=${thumbVersion}`}
+                  alt="Selected thumbnail"
+                  className="shrink-0 rounded-md bg-gray-100 object-cover border border-gray-200"
+                  style={{ width: 64, height: 36 }}
+                />
+              ) : (
+                <div
+                  className="shrink-0 rounded-md bg-gray-50 border border-dashed border-gray-300 flex items-center justify-center text-[9px] uppercase tracking-wider text-[#2f3437]/40"
+                  style={{ width: 64, height: 36 }}
+                  aria-label="No thumbnail set"
+                >
+                  Thumb
                 </div>
-                {/* Drama Mode toggle — replaces the old Priority field. Sized to
-                    match the Status <select> alongside it (same label header
-                    style + same control height as `field`). */}
-                <div>
-                  <label htmlFor="drama-mode" className="block text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/85 mb-1 flex items-center gap-1.5">
-                    Drama Mode
-                    <span className="group relative inline-flex" tabIndex={0} aria-label="Drama Mode info">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                        className="h-3.5 w-3.5 text-slate-400 hover:text-slate-600 cursor-help"
+              )}
+            </div>
+
+            {/* Zone 2c — Chip strip. Status / Theme / Drama Mode / Publish date /
+                Shoot location each render as a clickable pill that opens an
+                inline popover. Replaces the old full-width fields for these
+                properties. */}
+            <div className="flex flex-wrap items-center gap-2">
+              <ChipPopover
+                label="Status"
+                value={form.status || "—"}
+                dotColor={statusDotColor(form.status)}
+              >
+                {(close) => (
+                  <div className="p-1 min-w-[200px] max-h-72 overflow-y-auto">
+                    {statusOptions.map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => { setForm((f) => ({ ...f, status: s })); close(); }}
+                        className={`w-full text-left px-3 py-1.5 text-xs rounded hover:bg-gray-50 flex items-center gap-2 ${form.status === s ? "bg-[#185FA5]/5 text-[#185FA5] font-medium" : "text-[#2f3437]"}`}
                       >
-                        <path
-                          fillRule="evenodd"
-                          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                      <span className="pointer-events-none absolute left-1/2 top-full z-20 mt-1 w-56 -translate-x-1/2 rounded-md bg-slate-900 px-3 py-2 text-xs font-normal normal-case tracking-normal leading-snug text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus:opacity-100">
-                        Flag this as the monthly wide-net Drama video — broader hook, pulls new viewers.
-                      </span>
-                    </span>
-                  </label>
-                  <div className="w-full border border-gray-200 rounded-lg px-3 h-[38px] bg-white flex items-center justify-between">
-                    <span className={`text-sm ${form.dramaMode ? "text-slate-900 font-medium" : "text-slate-400"}`}>
-                      {form.dramaMode ? "On" : "Off"}
-                    </span>
+                        <span className="inline-block w-2 h-2 rounded-full shrink-0" style={{ background: statusDotColor(s) }} aria-hidden />
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </ChipPopover>
+
+              <ChipPopover
+                label="Theme"
+                value={form.theme ? formatTheme(form.theme) : "No theme"}
+              >
+                {(close) => (
+                  <div className="p-1 min-w-[220px] max-h-72 overflow-y-auto">
                     <button
                       type="button"
-                      id="drama-mode"
-                      role="switch"
-                      aria-checked={form.dramaMode}
-                      onClick={() => setForm((f) => ({ ...f, dramaMode: !f.dramaMode }))}
-                      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 ${
-                        form.dramaMode ? "bg-green-600" : "bg-slate-300"
-                      }`}
+                      onClick={() => { setForm((f) => ({ ...f, theme: "" })); close(); }}
+                      className={`w-full text-left px-3 py-1.5 text-xs rounded hover:bg-gray-50 ${!form.theme ? "bg-[#185FA5]/5 text-[#185FA5] font-medium" : "italic text-[#2f3437]/55"}`}
                     >
-                      <span
-                        className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition-transform ${
-                          form.dramaMode ? "translate-x-4" : "translate-x-0"
-                        }`}
-                      />
+                      — none —
                     </button>
+                    {themes.length > 0 ? themes.map((t) => (
+                      <button
+                        key={t.name}
+                        type="button"
+                        onClick={() => { setForm((f) => ({ ...f, theme: t.name })); close(); }}
+                        className={`w-full text-left px-3 py-1.5 text-xs rounded hover:bg-gray-50 ${form.theme === t.name ? "bg-[#185FA5]/5 text-[#185FA5] font-medium" : "text-[#2f3437]"}`}
+                      >
+                        {t.emoji ? `${t.emoji} ${t.name}` : t.name}
+                      </button>
+                    )) : (
+                      <p className="px-3 py-2 text-[11px] italic text-[#2f3437]/45">No themes yet — add some in Settings.</p>
+                    )}
                   </div>
-                </div>
-              </div>
+                )}
+              </ChipPopover>
 
-              {/* Schedule card — Zone 5 of the redesign. Groups the three
-                  date pickers + shoot location into a single neutral white
-                  surface with a subtle header so they read as one unit. */}
-              <div className="rounded-lg border border-gray-200 bg-white p-3 space-y-3">
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/60">Schedule</p>
-                <div className={`grid gap-3 grid-cols-1 ${showEditDue ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
-                  <div>
-                    <label className="block text-[11px] font-medium text-[#2f3437]/70 mb-1">Shoot date</label>
-                    <input type="date" value={form.shootDate} onChange={(e) => setForm((f) => ({ ...f, shootDate: e.target.value }))} className={field} />
+              {/* Drama Mode is binary, so it's a self-toggling chip rather than
+                  a popover. Click toggles On/Off. */}
+              <button
+                type="button"
+                onClick={() => setForm((f) => ({ ...f, dramaMode: !f.dramaMode }))}
+                className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[12px] transition-colors ${form.dramaMode ? "bg-[#185FA5]/10 text-[#185FA5] font-medium" : "bg-gray-100 text-[#2f3437]/80 hover:bg-gray-200"}`}
+                role="switch"
+                aria-checked={form.dramaMode}
+                title="Drama Mode — flag as the monthly wide-net video"
+              >
+                <span className="text-[#2f3437]/55">Drama:</span>
+                <span>{form.dramaMode ? "On" : "Off"}</span>
+              </button>
+
+              <ChipPopover
+                label="Publish"
+                value={form.publishDate || "Not set"}
+              >
+                {(close) => (
+                  <div className="p-2 min-w-[200px]">
+                    <input
+                      type="date"
+                      value={form.publishDate}
+                      onChange={(e) => setForm((f) => ({ ...f, publishDate: e.target.value }))}
+                      className={field}
+                      autoFocus
+                    />
+                    <div className="flex justify-between gap-2 mt-2">
+                      <button type="button" onClick={() => { setForm((f) => ({ ...f, publishDate: "" })); }} className="text-[11px] text-[#2f3437]/50 hover:text-red-500">Clear</button>
+                      <button type="button" onClick={close} className="text-[11px] font-medium text-[#185FA5] hover:underline">Done</button>
+                    </div>
                   </div>
-                  {showEditDue && (
-                    <div>
-                      <label className="block text-[11px] font-medium text-[#2f3437]/70 mb-1">Edit due</label>
-                      <input type="date" value={form.editDueDate} onChange={(e) => setForm((f) => ({ ...f, editDueDate: e.target.value }))} className={field} />
+                )}
+              </ChipPopover>
+
+              <ChipPopover
+                label="Location"
+                value={form.shootLocation || "Not set"}
+              >
+                {(close) => (
+                  <div className="p-1 min-w-[200px]">
+                    {[
+                      { value: "", label: "Not set", italic: true },
+                      { value: "In Studio", label: "In Studio" },
+                      { value: "Out of Studio", label: "Out of Studio" },
+                    ].map((opt) => (
+                      <button
+                        key={opt.value || "none"}
+                        type="button"
+                        onClick={() => { setForm((f) => ({ ...f, shootLocation: opt.value })); close(); }}
+                        className={`w-full text-left px-3 py-1.5 text-xs rounded hover:bg-gray-50 ${form.shootLocation === opt.value ? "bg-[#185FA5]/5 text-[#185FA5] font-medium" : opt.italic ? "italic text-[#2f3437]/55" : "text-[#2f3437]"}`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </ChipPopover>
+
+              {/* Right-side affordances on the same row: Title analyser link
+                  (legacy mode) or Review-score badge (Progress Track mode). */}
+              {!showProgressTrack && (
+                <button type="button" onClick={() => pushToAITool("title")} className="ml-auto text-[11px] text-[#185FA5] hover:underline">Analyse title →</button>
+              )}
+              {showProgressTrack && latestReviewScore !== null && (
+                <span
+                  title="Latest Script Review score"
+                  className={`ml-auto inline-flex items-center text-[10px] font-semibold px-1.5 py-0.5 rounded ${getScoreBadgeClasses(latestReviewScore)}`}
+                >
+                  Review {latestReviewScore.toFixed(1)}/10
+                </span>
+              )}
+            </div>
+
+            {/* Notes from team banner — surfaced near the top so members see
+                feedback the moment they open the modal. */}
+            {!isAdmin && teamNotes.length > 0 && (
+              <div className="rounded-xl border border-[#6ba3c7]/25 bg-[#6ba3c7]/5 px-4 py-3 space-y-2">
+                <p className="text-xs font-bold uppercase tracking-wider text-[#6ba3c7]">📝 Notes from your team</p>
+                <ul className="space-y-2">
+                  {teamNotes.map((n) => (
+                    <li key={n.id} className="text-sm text-[#2f3437]">
+                      <p className="whitespace-pre-wrap leading-relaxed">{n.note}</p>
+                      <p className="text-[11px] text-[#2f3437]/50 mt-0.5">
+                        {n.author.name} · {new Date(n.createdAt).toLocaleDateString()}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Zone 3 — Workflow stepper. Neutral white surface with hairlines;
+                circles/check marks/connectors are blue (no green anywhere). */}
+            {showProgressTrack && progressSteps.length > 0 && (
+              <div className="-mx-6 px-6 py-4 space-y-3 border-y border-gray-200 bg-white">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/50">
+                    Workflow{(() => {
+                      const total = progressSteps.length;
+                      const currentIdx = progressSteps.findIndex((s) => s.status === "current");
+                      const doneCount = progressSteps.filter((s) => s.status === "done").length;
+                      const stepNum = currentIdx >= 0 ? currentIdx + 1 : Math.min(doneCount + 1, total);
+                      return ` · Step ${stepNum} of ${total}`;
+                    })()}
+                  </span>
+                  {suggestedNext && TOOL_ROUTES[suggestedNext.key] && (
+                    <button
+                      type="button"
+                      onClick={() => launchTool(suggestedNext.key)}
+                      className="flex items-center gap-1.5 text-xs font-medium text-white bg-[#185FA5] hover:bg-[#134d87] px-3.5 py-1.5 rounded-md transition-colors"
+                    >
+                      {ALL_TOOLS.find((t) => t.key === suggestedNext.key)?.label} →
+                    </button>
+                  )}
+                </div>
+                <ProgressTrack steps={progressSteps} />
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => setShowAllTools((v) => !v)}
+                    className="text-[11px] text-[#185FA5] hover:underline transition-colors"
+                  >
+                    {showAllTools ? "Hide tools ▴" : "Show tools ▾"}
+                  </button>
+                  {showAllTools && (
+                    <div className="mt-2 grid grid-cols-2 gap-1.5">
+                      {ALL_TOOLS.map((tool) => (
+                        <button
+                          key={tool.key}
+                          type="button"
+                          onClick={() => launchTool(tool.key)}
+                          className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-[#2f3437]/70 bg-white border border-gray-200 rounded-lg hover:border-[#6ba3c7] hover:text-[#6ba3c7] transition-colors"
+                        >
+                          <span>{tool.icon}</span>
+                          <span>{tool.label}</span>
+                        </button>
+                      ))}
                     </div>
                   )}
-                  <div>
-                    <label className="block text-[11px] font-medium text-[#2f3437]/70 mb-1">Publish date</label>
-                    <input type="date" value={form.publishDate} onChange={(e) => setForm((f) => ({ ...f, publishDate: e.target.value }))} className={field} />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-[11px] font-medium text-[#2f3437]/70 mb-1">Shoot location</label>
-                  <select
-                    value={form.shootLocation}
-                    onChange={(e) => setForm((f) => ({ ...f, shootLocation: e.target.value }))}
-                    className={field}
-                  >
-                    <option value="">Select location…</option>
-                    <option value="In Studio">In Studio</option>
-                    <option value="Out of Studio">Out of Studio</option>
-                  </select>
                 </div>
               </div>
+            )}
 
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/85">Talking Points / Outline of Video</label>
-                  <div className="flex items-center gap-3">
-                    {!showProgressTrack && (
-                      <button type="button" onClick={() => pushToAITool("script-builder")} className="text-xs text-[#6ba3c7] hover:underline">Build Script →</button>
-                    )}
-                    {isSectionExpanded("notes") && (
-                      <button type="button" onClick={() => toggleSection("notes")} className="text-[11px] text-[#2f3437]/50 hover:text-[#6ba3c7]">Collapse</button>
-                    )}
+            {/* Zone 4 — Project folder. Collapsed-by-default neutral row.
+                Header uses sibling button + anchor (no nested anchor-in-button). */}
+            {driveFolderLink && driveFiles && driveFiles.length > 0 && (() => {
+              const expanded = isSectionExpanded("projectFolder");
+              const fileCount = driveFiles.length;
+              return (
+                <div className="rounded-lg border border-gray-200 bg-white">
+                  <div className="flex items-center justify-between gap-2 pr-3">
+                    <button
+                      type="button"
+                      onClick={() => toggleSection("projectFolder")}
+                      className="flex-1 min-w-0 flex items-center justify-start gap-2 px-4 py-2.5 text-left hover:bg-gray-50/60 transition-colors rounded-lg"
+                      aria-expanded={expanded}
+                    >
+                      <span className={`text-[#2f3437]/40 transition-transform ${expanded ? "rotate-90" : ""}`}>▸</span>
+                      <span className="text-[13px] font-medium text-[#2f3437]">Project folder</span>
+                      <span className="text-[12px] text-[#2f3437]/50 truncate">
+                        {fileCount} file{fileCount === 1 ? "" : "s"}{thumbnailFileId ? " · thumbnail set" : ""}
+                      </span>
+                    </button>
+                    <a
+                      href={driveFolderLink}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[12px] font-medium text-[#185FA5] hover:underline shrink-0 py-2"
+                    >Open in Drive ↗</a>
                   </div>
+                  {expanded && (
+                    <div className="px-4 pb-3 pt-1 space-y-2 border-t border-gray-100">
+                      {thumbnailFileId && (
+                        <div className="flex items-center gap-3 bg-gray-50 rounded-md border border-gray-200 p-2">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={`/api/member/content-plans/${plan.id}/thumbnail?v=${thumbVersion}`}
+                            alt="Selected thumbnail"
+                            className="w-20 h-12 object-cover rounded bg-gray-100"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[10px] uppercase tracking-wider font-semibold text-[#2f3437]/60">Thumbnail</p>
+                            <p className="text-xs text-[#2f3437] truncate" title={thumbnailFileName ?? ""}>
+                              {thumbnailFileName ?? "Selected file"}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => { setThumbnailFileId(null); setThumbnailFileName(null); }}
+                            className="text-[11px] font-medium text-[#2f3437]/50 hover:text-red-500 px-1.5"
+                            title="Remove thumbnail"
+                          >Clear</button>
+                        </div>
+                      )}
+                      <ul className="space-y-0.5">
+                        {driveFiles.map((f) => {
+                          const isImage = (f.mimeType ?? "").startsWith("image/");
+                          const isPicked = f.id === thumbnailFileId;
+                          return (
+                            <li key={f.id} className="text-xs text-[#2f3437]/80 flex items-center justify-between gap-2 px-1 py-1 rounded hover:bg-gray-50">
+                              <a
+                                href={f.webViewLink ?? driveFolderLink}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="truncate hover:text-[#185FA5] hover:underline flex-1 min-w-0"
+                                title={f.name}
+                              >{isImage ? "🖼️" : "📄"} {f.name}</a>
+                              <div className="flex items-center gap-2 shrink-0">
+                                {isImage && (
+                                  isPicked ? (
+                                    <span className="text-[10px] font-semibold uppercase tracking-wider text-[#2f3437]/70 bg-gray-100 px-1.5 py-0.5 rounded">Thumbnail</span>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() => { setThumbnailFileId(f.id); setThumbnailFileName(f.name); }}
+                                      className="text-[10px] font-medium text-[#185FA5] hover:underline"
+                                    >Set as thumbnail</button>
+                                  )
+                                )}
+                                {f.modifiedTime && (
+                                  <span className="text-[10px] text-[#2f3437]/40">{new Date(f.modifiedTime).toLocaleDateString()}</span>
+                                )}
+                              </div>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                      {driveFilesLoading && <p className="text-[10px] text-[#2f3437]/40 italic">Refreshing…</p>}
+                      {thumbnailFileId && (
+                        <p className="text-[10px] text-[#2f3437]/40 italic">Save to apply your thumbnail across the planner.</p>
+                      )}
+                    </div>
+                  )}
                 </div>
-                {isSectionExpanded("notes") ? (
+              );
+            })()}
+
+            {/* Zone 5 — Schedule. Three date cards on a neutral white surface.
+                Publish date is also editable from the chip strip; this is the
+                canonical picker that always shows all three dates side-by-side. */}
+            <div className="rounded-lg border border-gray-200 bg-white p-3 space-y-3">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/60">Schedule</p>
+              <div className={`grid gap-3 grid-cols-1 ${showEditDue ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
+                <div>
+                  <label className="block text-[11px] font-medium text-[#2f3437]/70 mb-1">Shoot date</label>
+                  <input type="date" value={form.shootDate} onChange={(e) => setForm((f) => ({ ...f, shootDate: e.target.value }))} className={field} />
+                </div>
+                {showEditDue && (
+                  <div>
+                    <label className="block text-[11px] font-medium text-[#2f3437]/70 mb-1">Edit due</label>
+                    <input type="date" value={form.editDueDate} onChange={(e) => setForm((f) => ({ ...f, editDueDate: e.target.value }))} className={field} />
+                  </div>
+                )}
+                <div>
+                  <label className="block text-[11px] font-medium text-[#2f3437]/70 mb-1">Publish date</label>
+                  <input type="date" value={form.publishDate} onChange={(e) => setForm((f) => ({ ...f, publishDate: e.target.value }))} className={field} />
+                </div>
+              </div>
+            </div>
+
+            {/* Zone 6 — Content list. Notion-style: one bordered card with five
+                collapsible single-line rows. Only one row is open at a time. */}
+            <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
+              <p className="px-3.5 pt-2.5 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/60">Content</p>
+              <ul className="divide-y divide-gray-100 border-t border-gray-100">
+                <ContentRow
+                  label="Talking points / outline"
+                  value={form.notes}
+                  emptyHint="Empty · click to add"
+                  expanded={contentRowExpanded === "notes"}
+                  onToggle={() => setContentRowExpanded((c) => c === "notes" ? null : "notes")}
+                  action={!showProgressTrack ? (
+                    <button type="button" onClick={(e) => { e.stopPropagation(); pushToAITool("script-builder"); }} className="text-xs text-[#185FA5] hover:underline">Build Script →</button>
+                  ) : null}
+                >
                   <MarkdownTextarea
                     value={form.notes}
                     onChange={(v) => setForm((f) => ({ ...f, notes: v }))}
@@ -1263,27 +1440,20 @@ Produce a research brief I can hand to a script writer. For **each talking point
                     placeholder="Key details, action items…"
                     ariaLabel="Talking Points"
                   />
-                ) : (
-                  <CollapsedPreview
-                    value={form.notes}
-                    placeholder="Add talking points or outline…"
-                    onExpand={() => toggleSection("notes")}
-                  />
-                )}
-              </div>
+                </ContentRow>
 
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/85">
-                    Research Notes
-                    <span className="ml-1 font-normal text-[#2f3437]/40">(paste notes, stats, talking points)</span>
-                  </label>
-                  <div className="flex items-center gap-3">
+                <ContentRow
+                  label="Research notes"
+                  value={form.researchNotes}
+                  emptyHint="Empty · click to add"
+                  expanded={contentRowExpanded === "researchNotes"}
+                  onToggle={() => setContentRowExpanded((c) => c === "researchNotes" ? null : "researchNotes")}
+                  action={
                     <button
                       type="button"
-                      onClick={generateResearchPrompt}
-                      className="text-xs text-[#6ba3c7] hover:underline disabled:opacity-50"
-                      title="Build a deep-research prompt from this video's title, talking points, and your avatar — copies to clipboard so you can paste into Manus / Perplexity / ChatGPT"
+                      onClick={(e) => { e.stopPropagation(); generateResearchPrompt(); }}
+                      className="text-xs text-[#185FA5] hover:underline disabled:opacity-50"
+                      title="Build a deep-research prompt and copy to clipboard"
                     >
                       {researchPromptCopied
                         ? "Copied — paste into Manus / Perplexity"
@@ -1291,12 +1461,8 @@ Produce a research brief I can hand to a script writer. For **each talking point
                         ? researchPromptError
                         : "Generate Research Prompt →"}
                     </button>
-                    {isSectionExpanded("researchNotes") && (
-                      <button type="button" onClick={() => toggleSection("researchNotes")} className="text-[11px] text-[#2f3437]/50 hover:text-[#6ba3c7]">Collapse</button>
-                    )}
-                  </div>
-                </div>
-                {isSectionExpanded("researchNotes") ? (
+                  }
+                >
                   <MarkdownTextarea
                     value={form.researchNotes}
                     onChange={(v) => setForm((f) => ({ ...f, researchNotes: v }))}
@@ -1305,345 +1471,18 @@ Produce a research brief I can hand to a script writer. For **each talking point
                     placeholder="Paste your research here — statistics, sources, talking points, Manus/Perplexity output…"
                     ariaLabel="Research Notes"
                   />
-                ) : (
-                  <CollapsedPreview
-                    value={form.researchNotes}
-                    placeholder="Add research notes, stats, or sources…"
-                    onExpand={() => toggleSection("researchNotes")}
-                  />
-                )}
-              </div>
+                </ContentRow>
 
-              {/* Linking & Campaigns — Zone 7. Two-up grid that groups
-                  CRM/lead-magnet linking with the footage source (raw URL or
-                  the auto-created Drive folder) so the user can see all
-                  outbound links for this video at a glance. */}
-              <div className="rounded-lg border border-gray-200 bg-white p-3 space-y-3">
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/60">Linking &amp; campaigns</p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {!isAdmin && (
-                      <div>
-                        <label className="block text-[11px] font-medium text-[#2f3437]/70 mb-1">
-                          Lead magnet campaign
-                        </label>
-                        <select
-                          value={form.linkedCampaignId}
-                          onChange={(e) => setForm((f) => ({ ...f, linkedCampaignId: e.target.value }))}
-                          className={field}
-                        >
-                          <option value="">— None —</option>
-                          {campaigns.map((c) => (
-                            <option key={c.id} value={c.id}>{c.name}</option>
-                          ))}
-                        </select>
-                        <p className="text-[10px] text-[#2f3437]/45 mt-1">Preselected in the Description Generator.</p>
-                      </div>
-                    )}
-
-                    {!useDrive && (
-                      <div>
-                        <label className="block text-[11px] font-medium text-[#2f3437]/70 mb-1">Footage link</label>
-                        <input type="text" value={form.footageLink} onChange={(e) => setForm((f) => ({ ...f, footageLink: e.target.value }))} className={field} placeholder="https://…" />
-                      </div>
-                    )}
-
-                    {useDrive && (
-                      <div>
-                        <label className="block text-[11px] font-medium text-[#2f3437]/70 mb-1">Google Drive folder</label>
-                        {driveFolderLink ? (
-                          <a
-                            href={driveFolderLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-2 px-3 py-2 text-sm text-[#185FA5] bg-blue-50/60 border border-blue-100 rounded-lg hover:bg-blue-100/70 transition-colors w-full truncate"
-                          >
-                            <svg className="w-4 h-4 shrink-0" viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg">
-                              <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
-                              <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#00ac47"/>
-                              <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/>
-                              <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
-                              <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
-                              <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 27h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
-                            </svg>
-                            Open Drive folder
-                          </a>
-                        ) : isAdmin ? (
-                          <div>
-                            <button
-                              type="button"
-                              onClick={handleCreateFolder}
-                              disabled={creatingFolder}
-                              className="flex items-center gap-2 px-3 py-2 text-sm text-[#2f3437]/70 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50 w-full"
-                            >
-                              <svg className="w-4 h-4 shrink-0" viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg">
-                                <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
-                                <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#00ac47"/>
-                                <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/>
-                                <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
-                                <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
-                                <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 27h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
-                              </svg>
-                              {creatingFolder ? "Creating folder…" : "Create Drive folder"}
-                            </button>
-                            {folderError && <p className="text-xs text-red-600 mt-1">{folderError}</p>}
-                          </div>
-                        ) : (
-                          <p className="text-xs text-[#2f3437]/50 italic">Your folder will be created automatically when the status is set to Ready to Shoot, Shooting, or Shot - In Post.</p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-              {repurposeArtifacts.length > 0 && (
-                <div className="rounded-xl border border-[#a78bfa]/25 bg-[#a78bfa]/5 px-4 py-3 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs font-bold uppercase tracking-wider text-[#7c5fde]">
-                      ♻️ Repurposed Content
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => launchTool("repurpose")}
-                      className="text-[11px] font-semibold text-[#7c5fde] hover:underline"
-                    >
-                      Open Repurpose Tool →
-                    </button>
-                  </div>
-                  <ul className="space-y-1.5">
-                    {repurposeArtifacts.map(({ type, latest }) => {
-                      const meta = (latest!.metadata ?? {}) as { feedback_used?: string | null };
-                      const feedback = meta.feedback_used?.trim() || "";
-                      const updated = latest!.updatedAt ? new Date(latest!.updatedAt as string) : null;
-                      return (
-                        <li key={latest!.id} className="text-xs text-[#2f3437]/85">
-                          <div className="flex items-center justify-between gap-2">
-                            <button
-                              type="button"
-                              onClick={() => setViewingArtifact({
-                                id: latest!.id,
-                                type,
-                                // Format the raw stored JSON into a plain
-                                // copy-paste-ready text body so the user sees
-                                // (and edits) clean content instead of an
-                                // escaped JSON dump.
-                                content: formatRepurposeArtifactForView(type, latest!.content?.toString() ?? ""),
-                                label: REPURPOSE_LABELS[type] ?? type,
-                              })}
-                              className="font-medium hover:text-[#7c5fde] hover:underline truncate text-left"
-                              title={`View ${REPURPOSE_LABELS[type] ?? type}`}
-                            >
-                              {REPURPOSE_LABELS[type] ?? type}
-                            </button>
-                            {updated && (
-                              <span className="text-[10px] text-[#2f3437]/40 shrink-0">
-                                {updated.toLocaleDateString()}
-                              </span>
-                            )}
-                          </div>
-                          {feedback && (
-                            <p className="text-[10px] italic text-[#2f3437]/55 mt-0.5 truncate" title={feedback}>
-                              Last revision: &ldquo;{feedback}&rdquo;
-                            </p>
-                          )}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-              )}
-
-            </div>
-
-            {/* RIGHT COLUMN: theme, script, description, thumbnail */}
-            <div className="space-y-4">
-              <div>
-                <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/85 mb-1">Theme</label>
-                {themes.length > 0 ? (
-                  <select value={form.theme} onChange={(e) => setForm((f) => ({ ...f, theme: e.target.value }))} className={field}>
-                    <option value="">— none —</option>
-                    {themes.map((t) => (
-                      <option key={t.name} value={t.name}>
-                        {t.emoji ? `${t.emoji} ${t.name}` : t.name}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <input type="text" value={form.theme} onChange={(e) => setForm((f) => ({ ...f, theme: e.target.value }))} className={field} placeholder="e.g., Neighbourhood Expertise" />
-                )}
-              </div>
-
-              {/* Binge Video selector — links this video to ONE previous video the
-                  member wants to drive viewers back to. Core to the Attraction
-                  by Video framework: every video should chain. Stacked under
-                  Theme so the strategic pairing (what is this + what does it
-                  chain back to) sits at the top of the form. */}
-              <div ref={bingeRef} className="relative">
-                <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/85 mb-1">Binge Video</label>
-                <p className="text-[11px] text-[#2f3437]/45 mb-1.5 leading-snug">
-                  The previous video this one points viewers back to. Builds the chain.
-                </p>
-                {selectedBinge && !bingeOpen ? (
-                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[#6ba3c7]/30 bg-[#6ba3c7]/5">
-                    <button
-                      type="button"
-                      onClick={() => { setBingeQuery(""); setBingeOpen(true); }}
-                      className="min-w-0 flex-1 text-left"
-                      title="Change binge target"
-                    >
-                      <p className="text-sm font-medium text-[#2f3437] truncate">{selectedBinge.title}</p>
-                      <p className="text-[11px] text-[#2f3437]/55 truncate">
-                        {formatTheme(selectedBinge.theme) || <span className="italic">No theme</span>}
-                      </p>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setForm((f) => ({ ...f, bingeVideoId: "" }))}
-                      className="shrink-0 p-1 rounded hover:bg-white/60 text-[#2f3437]/50 hover:text-red-600 transition-colors"
-                      aria-label="Clear binge video"
-                      title="Clear"
-                    >
-                      <XMarkIcon className="w-4 h-4" />
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => { setBingeQuery(""); setBingeOpen((v) => !v); }}
-                    className={`${field} text-left flex items-center justify-between gap-2`}
-                  >
-                    <span className="truncate text-[#2f3437]/45">
-                      {bingeLoading ? "Loading videos…" : "Select a video to binge to…"}
-                    </span>
-                    <svg className="w-3.5 h-3.5 text-[#2f3437]/45 shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.06l3.71-3.83a.75.75 0 111.08 1.04l-4.25 4.39a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z" clipRule="evenodd" /></svg>
-                  </button>
-                )}
-                {bingeOpen && (
-                  <div className="absolute left-0 right-0 z-20 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-72 flex flex-col overflow-hidden">
-                    <input
-                      ref={bingeSearchRef}
-                      type="text"
-                      value={bingeQuery}
-                      onChange={(e) => setBingeQuery(e.target.value)}
-                      placeholder="Search by title…"
-                      className="w-full px-3 py-2 text-sm border-b border-gray-100 focus:outline-none"
-                    />
-                    <div className="overflow-y-auto">
-                      {bingeLoading && bingeOptions.length === 0 ? (
-                        <p className="px-3 py-3 text-xs text-[#2f3437]/45 italic">Loading…</p>
-                      ) : filteredBingeOptions.length === 0 ? (
-                        <p className="px-3 py-3 text-xs text-[#2f3437]/45 italic">
-                          {bingeOptions.length === 0
-                            ? "No other videos to link yet — create more videos in the planner first."
-                            : "No matches."}
-                        </p>
-                      ) : (
-                        <ul>
-                          {filteredBingeOptions.map((opt) => {
-                            const active = opt.id === form.bingeVideoId;
-                            return (
-                              <li key={opt.id}>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setForm((f) => ({ ...f, bingeVideoId: opt.id }));
-                                    setBingeOpen(false);
-                                  }}
-                                  className={`w-full text-left px-3 py-2 hover:bg-[#6ba3c7]/5 transition-colors ${active ? "bg-[#6ba3c7]/10" : ""}`}
-                                >
-                                  <p className="text-sm font-medium text-[#2f3437] truncate">{opt.title}</p>
-                                  <p className="text-[11px] text-[#2f3437]/55 truncate">
-                                    {formatTheme(opt.theme) || <span className="italic">No theme</span>}
-                                  </p>
-                                </button>
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Binged FROM (read-only) — every other plan that has selected
-                  THIS one as its binge target. Helps the member see at a glance
-                  how many downstream videos rely on this one. */}
-              <div>
-                <h4 className="text-[11px] font-bold uppercase tracking-wider text-[#2f3437]/55 mb-1">Binged FROM</h4>
-                <p className="text-[11px] text-[#2f3437]/45 mb-2 leading-snug">
-                  Other videos in your planner that point back to this one.
-                </p>
-                {plan.bingedFromList && plan.bingedFromList.length > 0 ? (
-                  <ul className="space-y-1.5">
-                    {plan.bingedFromList.map((b) => (
-                      <li
-                        key={b.id}
-                        className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg border border-gray-200 bg-gray-50/50"
-                      >
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium text-[#2f3437] truncate">{b.title}</p>
-                          <p className="text-[11px] text-[#2f3437]/55 truncate">
-                            {formatTheme(b.theme) || <span className="italic">No theme</span>}
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => handleOpenLinkedPlan(b.id)}
-                          className="shrink-0 text-[11px] font-medium text-[#6ba3c7] hover:underline"
-                        >
-                          Open →
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-[11px] italic text-[#2f3437]/45">
-                    Nothing yet. When you set this video as another video&apos;s binge target, it will show up here.
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/85">
-                    Notes & Thoughts
-                    <span className="ml-1 font-normal text-[#2f3437]/40">(scratchpad — ideas, reminders, anything)</span>
-                  </label>
-                  {isSectionExpanded("thoughts") && (
-                    <button type="button" onClick={() => toggleSection("thoughts")} className="text-[11px] text-[#2f3437]/50 hover:text-[#6ba3c7]">Collapse</button>
-                  )}
-                </div>
-                {isSectionExpanded("thoughts") ? (
-                  <MarkdownTextarea
-                    value={form.thoughts}
-                    onChange={(v) => setForm((f) => ({ ...f, thoughts: v }))}
-                    rows={4}
-                    className={field}
-                    placeholder="Anything you want to remember about this video…"
-                    ariaLabel="Notes and Thoughts"
-                  />
-                ) : (
-                  <CollapsedPreview
-                    value={form.thoughts}
-                    placeholder="Jot ideas, reminders, anything…"
-                    onExpand={() => toggleSection("thoughts")}
-                  />
-                )}
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/85">Script</label>
-                  <div className="flex items-center gap-3">
-                    {!showProgressTrack && (
-                      <button type="button" onClick={() => pushToAITool("script-review")} className="text-xs text-[#6ba3c7] hover:underline">Script Review →</button>
-                    )}
-                    {isSectionExpanded("script") && (
-                      <button type="button" onClick={() => toggleSection("script")} className="text-[11px] text-[#2f3437]/50 hover:text-[#6ba3c7]">Collapse</button>
-                    )}
-                  </div>
-                </div>
-                {isSectionExpanded("script") ? (
+                <ContentRow
+                  label="Script"
+                  value={form.script}
+                  emptyHint="Empty · click to add"
+                  expanded={contentRowExpanded === "script"}
+                  onToggle={() => setContentRowExpanded((c) => c === "script" ? null : "script")}
+                  action={!showProgressTrack ? (
+                    <button type="button" onClick={(e) => { e.stopPropagation(); pushToAITool("script-review"); }} className="text-xs text-[#185FA5] hover:underline">Script Review →</button>
+                  ) : null}
+                >
                   <MarkdownTextarea
                     value={form.script}
                     onChange={(v) => setForm((f) => ({ ...f, script: v }))}
@@ -1652,67 +1491,58 @@ Produce a research brief I can hand to a script writer. For **each talking point
                     placeholder="Write your video script here…"
                     ariaLabel="Script"
                   />
-                ) : (
-                  <CollapsedPreview
-                    value={form.script}
-                    placeholder="Write or paste your video script…"
-                    onExpand={() => toggleSection("script")}
-                  />
-                )}
-                {isSectionExpanded("script") && form.script.trim() && (
-                  <div className="relative mt-1.5 flex justify-end">
-                    <button
-                      type="button"
-                      onClick={() => setShowDownloadMenu((v) => !v)}
-                      className="flex items-center gap-1.5 text-xs text-[#2f3437]/50 hover:text-[#6ba3c7] transition-colors"
-                    >
-                      <ArrowDownTrayIcon className="w-3.5 h-3.5" />
-                      Download Script
-                    </button>
-                    {showDownloadMenu && (
-                      <div className="absolute right-0 top-6 z-10 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[130px]">
-                        {(["md", "txt", "pdf"] as const).map((fmt) => (
-                          <button
-                            key={fmt}
-                            type="button"
-                            onClick={() => downloadScript(fmt)}
-                            className="w-full text-left px-3 py-1.5 text-xs text-[#2f3437] hover:bg-gray-50 transition-colors"
-                          >
-                            .{fmt}{fmt === "pdf" ? " (print)" : ""}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/85">YouTube Description</label>
-                  <div className="flex items-center gap-3">
-                    {!form.youtubeDescription && form.script && (
+                  {form.script.trim() && (
+                    <div className="relative mt-1.5 flex justify-end">
                       <button
                         type="button"
-                        onClick={() => {
-                          sessionStorage.setItem("description_prefill", JSON.stringify({
-                            title: form.title || "",
-                            transcript: form.script || "",
-                            contentPlanId: plan.id,
-                          }));
-                          window.location.href = "/member/ai-tools/description-generator";
-                        }}
-                        className="text-[10px] text-[#6ba3c7] hover:underline"
+                        onClick={() => setShowDownloadMenu((v) => !v)}
+                        className="flex items-center gap-1.5 text-xs text-[#2f3437]/50 hover:text-[#185FA5] transition-colors"
                       >
-                        Generate with AI →
+                        <ArrowDownTrayIcon className="w-3.5 h-3.5" />
+                        Download Script
                       </button>
-                    )}
-                    {isSectionExpanded("youtubeDescription") && (
-                      <button type="button" onClick={() => toggleSection("youtubeDescription")} className="text-[11px] text-[#2f3437]/50 hover:text-[#6ba3c7]">Collapse</button>
-                    )}
-                  </div>
-                </div>
-                {isSectionExpanded("youtubeDescription") ? (
+                      {showDownloadMenu && (
+                        <div className="absolute right-0 top-6 z-10 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[130px]">
+                          {(["md", "txt", "pdf"] as const).map((fmt) => (
+                            <button
+                              key={fmt}
+                              type="button"
+                              onClick={() => downloadScript(fmt)}
+                              className="w-full text-left px-3 py-1.5 text-xs text-[#2f3437] hover:bg-gray-50 transition-colors"
+                            >
+                              .{fmt}{fmt === "pdf" ? " (print)" : ""}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </ContentRow>
+
+                <ContentRow
+                  label="YouTube description"
+                  value={form.youtubeDescription}
+                  emptyHint={form.script ? "Empty · generate with AI" : "Empty · click to add"}
+                  expanded={contentRowExpanded === "youtubeDescription"}
+                  onToggle={() => setContentRowExpanded((c) => c === "youtubeDescription" ? null : "youtubeDescription")}
+                  action={!form.youtubeDescription && form.script ? (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        sessionStorage.setItem("description_prefill", JSON.stringify({
+                          title: form.title || "",
+                          transcript: form.script || "",
+                          contentPlanId: plan.id,
+                        }));
+                        window.location.href = "/member/ai-tools/description-generator";
+                      }}
+                      className="text-xs text-[#185FA5] hover:underline"
+                    >
+                      Generate with AI →
+                    </button>
+                  ) : null}
+                >
                   <MarkdownTextarea
                     value={form.youtubeDescription}
                     onChange={(v) => setForm((f) => ({ ...f, youtubeDescription: v }))}
@@ -1721,24 +1551,286 @@ Produce a research brief I can hand to a script writer. For **each talking point
                     placeholder="YouTube video description…"
                     ariaLabel="YouTube Description"
                   />
-                ) : (
-                  <CollapsedPreview
-                    value={form.youtubeDescription}
-                    placeholder="Add the description that publishes with this video…"
-                    onExpand={() => toggleSection("youtubeDescription")}
+                </ContentRow>
+
+                <ContentRow
+                  label="Thumbnail words"
+                  value={form.thumbnailWords}
+                  emptyHint="Empty · 3–5 words"
+                  expanded={contentRowExpanded === "thumbnailWords"}
+                  onToggle={() => setContentRowExpanded((c) => c === "thumbnailWords" ? null : "thumbnailWords")}
+                >
+                  <input
+                    type="text"
+                    value={form.thumbnailWords}
+                    onChange={(e) => setForm((f) => ({ ...f, thumbnailWords: e.target.value }))}
+                    className={field}
+                    placeholder="3–5 words, or quick ideas…"
                   />
+                </ContentRow>
+              </ul>
+            </div>
+
+            {/* Zone 7 — Linking & campaigns. 2×2 grid: Binge Video / Binged From
+                on the top row, Lead Magnet / Drive Folder (or Footage Link) on
+                the bottom. All four outbound links live in one card. */}
+            <div className="rounded-lg border border-gray-200 bg-white p-3 space-y-3">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/60">Linking &amp; campaigns</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {/* Binge Video card — links this video to the previous video the
+                    member wants to drive viewers back to. */}
+                <div ref={bingeRef} className="relative rounded-md bg-gray-50 px-3 py-2.5">
+                  <p className="text-[11px] uppercase tracking-wider font-semibold text-[#2f3437]/55 mb-1">Binge video</p>
+                  {selectedBinge && !bingeOpen ? (
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => { setBingeQuery(""); setBingeOpen(true); }}
+                        className="min-w-0 flex-1 text-left"
+                        title="Change binge target"
+                      >
+                        <p className="text-[13px] text-[#2f3437] truncate">{selectedBinge.title}</p>
+                        <p className="text-[11px] text-[#2f3437]/55 truncate">
+                          {formatTheme(selectedBinge.theme) || <span className="italic">No theme</span>}
+                        </p>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setForm((f) => ({ ...f, bingeVideoId: "" }))}
+                        className="shrink-0 p-1 rounded hover:bg-white text-[#2f3437]/50 hover:text-red-600 transition-colors"
+                        aria-label="Clear binge video"
+                      >
+                        <XMarkIcon className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => { setBingeQuery(""); setBingeOpen((v) => !v); }}
+                      className="w-full text-left text-[13px] text-[#2f3437]/50 hover:text-[#185FA5] flex items-center justify-between gap-2"
+                    >
+                      <span className="truncate">{bingeLoading ? "Loading videos…" : "Select a video to binge to…"}</span>
+                      <svg className="w-3.5 h-3.5 text-[#2f3437]/45 shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.06l3.71-3.83a.75.75 0 111.08 1.04l-4.25 4.39a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z" clipRule="evenodd" /></svg>
+                    </button>
+                  )}
+                  {bingeOpen && (
+                    <div className="absolute left-0 right-0 z-20 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-72 flex flex-col overflow-hidden">
+                      <input
+                        ref={bingeSearchRef}
+                        type="text"
+                        value={bingeQuery}
+                        onChange={(e) => setBingeQuery(e.target.value)}
+                        placeholder="Search by title…"
+                        className="w-full px-3 py-2 text-sm border-b border-gray-100 focus:outline-none"
+                      />
+                      <div className="overflow-y-auto">
+                        {bingeLoading && bingeOptions.length === 0 ? (
+                          <p className="px-3 py-3 text-xs text-[#2f3437]/45 italic">Loading…</p>
+                        ) : filteredBingeOptions.length === 0 ? (
+                          <p className="px-3 py-3 text-xs text-[#2f3437]/45 italic">
+                            {bingeOptions.length === 0
+                              ? "No other videos to link yet — create more videos in the planner first."
+                              : "No matches."}
+                          </p>
+                        ) : (
+                          <ul>
+                            {filteredBingeOptions.map((opt) => {
+                              const active = opt.id === form.bingeVideoId;
+                              return (
+                                <li key={opt.id}>
+                                  <button
+                                    type="button"
+                                    onClick={() => { setForm((f) => ({ ...f, bingeVideoId: opt.id })); setBingeOpen(false); }}
+                                    className={`w-full text-left px-3 py-2 hover:bg-[#185FA5]/5 transition-colors ${active ? "bg-[#185FA5]/10" : ""}`}
+                                  >
+                                    <p className="text-sm font-medium text-[#2f3437] truncate">{opt.title}</p>
+                                    <p className="text-[11px] text-[#2f3437]/55 truncate">
+                                      {formatTheme(opt.theme) || <span className="italic">No theme</span>}
+                                    </p>
+                                  </button>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Binged FROM card — read-only list of videos that point back. */}
+                <div className="rounded-md bg-gray-50 px-3 py-2.5">
+                  <p className="text-[11px] uppercase tracking-wider font-semibold text-[#2f3437]/55 mb-1">Binged from</p>
+                  {plan.bingedFromList && plan.bingedFromList.length > 0 ? (
+                    <ul className="space-y-1.5">
+                      {plan.bingedFromList.map((b) => (
+                        <li key={b.id} className="flex items-center justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[13px] text-[#2f3437] truncate">{b.title}</p>
+                            <p className="text-[11px] text-[#2f3437]/55 truncate">
+                              {formatTheme(b.theme) || <span className="italic">No theme</span>}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleOpenLinkedPlan(b.id)}
+                            className="shrink-0 text-[11px] font-medium text-[#185FA5] hover:underline"
+                          >
+                            Open →
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-[12px] italic text-[#2f3437]/45">No videos point here yet</p>
+                  )}
+                </div>
+
+                {/* Lead magnet card. Hidden in admin contexts (admins use a
+                    separate campaigns scope). */}
+                {!isAdmin && (
+                  <div className="rounded-md bg-gray-50 px-3 py-2.5">
+                    <p className="text-[11px] uppercase tracking-wider font-semibold text-[#2f3437]/55 mb-1">Lead magnet campaign</p>
+                    <select
+                      value={form.linkedCampaignId}
+                      onChange={(e) => setForm((f) => ({ ...f, linkedCampaignId: e.target.value }))}
+                      className={field}
+                    >
+                      <option value="">— None —</option>
+                      {campaigns.map((c) => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Footage / Drive folder card. Switches based on whether the
+                    member's tier uses managed Drive folders. */}
+                {useDrive ? (
+                  <div className="rounded-md bg-gray-50 px-3 py-2.5">
+                    <p className="text-[11px] uppercase tracking-wider font-semibold text-[#2f3437]/55 mb-1">Drive folder</p>
+                    {driveFolderLink ? (
+                      <a
+                        href={driveFolderLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[13px] text-[#185FA5] hover:underline truncate block"
+                      >
+                        Open Drive folder ↗
+                      </a>
+                    ) : isAdmin ? (
+                      <div>
+                        <button
+                          type="button"
+                          onClick={handleCreateFolder}
+                          disabled={creatingFolder}
+                          className="text-[13px] text-[#185FA5] hover:underline disabled:opacity-50"
+                        >
+                          {creatingFolder ? "Creating folder…" : "Create Drive folder"}
+                        </button>
+                        {folderError && <p className="text-xs text-red-600 mt-1">{folderError}</p>}
+                      </div>
+                    ) : (
+                      <p className="text-[12px] italic text-[#2f3437]/45">Created automatically when status moves to shooting / post.</p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="rounded-md bg-gray-50 px-3 py-2.5">
+                    <p className="text-[11px] uppercase tracking-wider font-semibold text-[#2f3437]/55 mb-1">Footage link</p>
+                    <input
+                      type="text"
+                      value={form.footageLink}
+                      onChange={(e) => setForm((f) => ({ ...f, footageLink: e.target.value }))}
+                      className={field}
+                      placeholder="https://…"
+                    />
+                  </div>
                 )}
               </div>
-
-              <div>
-                <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/85 mb-1">Thumbnail Words and Ideas</label>
-                <input type="text" value={form.thumbnailWords} onChange={(e) => setForm((f) => ({ ...f, thumbnailWords: e.target.value }))} className={field} placeholder="3–5 words, or quick ideas…" />
-              </div>
             </div>
-          </div>
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
-        </div>
+            {/* Zone 8 — Notes & Thoughts. Single collapsed block at the bottom. */}
+            <div>
+              {!isSectionExpanded("thoughts") ? (
+                <CollapsedPreview
+                  value={form.thoughts}
+                  placeholder="Scratchpad — ideas, reminders, anything…"
+                  onExpand={() => toggleSection("thoughts")}
+                />
+              ) : (
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/60">Notes &amp; thoughts</span>
+                    <button type="button" onClick={() => toggleSection("thoughts")} className="text-[11px] text-[#2f3437]/50 hover:text-[#185FA5]">Collapse</button>
+                  </div>
+                  <MarkdownTextarea
+                    value={form.thoughts}
+                    onChange={(v) => setForm((f) => ({ ...f, thoughts: v }))}
+                    rows={4}
+                    className={field}
+                    placeholder="Anything you want to remember about this video…"
+                    ariaLabel="Notes and Thoughts"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Repurpose artifacts — shown at the very bottom when present. */}
+            {repurposeArtifacts.length > 0 && (
+              <div className="rounded-xl border border-[#a78bfa]/25 bg-[#a78bfa]/5 px-4 py-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-bold uppercase tracking-wider text-[#7c5fde]">
+                    ♻️ Repurposed Content
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => launchTool("repurpose")}
+                    className="text-[11px] font-semibold text-[#7c5fde] hover:underline"
+                  >
+                    Open Repurpose Tool →
+                  </button>
+                </div>
+                <ul className="space-y-1.5">
+                  {repurposeArtifacts.map(({ type, latest }) => {
+                    const meta = (latest!.metadata ?? {}) as { feedback_used?: string | null };
+                    const feedback = meta.feedback_used?.trim() || "";
+                    const updated = latest!.updatedAt ? new Date(latest!.updatedAt as string) : null;
+                    return (
+                      <li key={latest!.id} className="text-xs text-[#2f3437]/85">
+                        <div className="flex items-center justify-between gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setViewingArtifact({
+                              id: latest!.id,
+                              type,
+                              content: formatRepurposeArtifactForView(type, latest!.content?.toString() ?? ""),
+                              label: REPURPOSE_LABELS[type] ?? type,
+                            })}
+                            className="font-medium hover:text-[#7c5fde] hover:underline truncate text-left"
+                            title={`View ${REPURPOSE_LABELS[type] ?? type}`}
+                          >
+                            {REPURPOSE_LABELS[type] ?? type}
+                          </button>
+                          {updated && (
+                            <span className="text-[10px] text-[#2f3437]/40 shrink-0">
+                              {updated.toLocaleDateString()}
+                            </span>
+                          )}
+                        </div>
+                        {feedback && (
+                          <p className="text-[10px] italic text-[#2f3437]/55 mt-0.5 truncate" title={feedback}>
+                            Last revision: &ldquo;{feedback}&rdquo;
+                          </p>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
+
+            {error && <p className="text-sm text-red-600">{error}</p>}
+          </div>
 
         <div
           className={
