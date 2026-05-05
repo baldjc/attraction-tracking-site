@@ -1072,22 +1072,18 @@ Produce a research brief I can hand to a script writer. For **each talking point
                     ))}
                   </select>
                 </div>
-                {/* Drama Mode toggle — replaces the old Priority field */}
-                <div className="flex items-center justify-between rounded-md border border-slate-200 bg-slate-50 p-3">
-                  <div className="flex items-center gap-1.5">
-                    <label htmlFor="drama-mode" className="text-sm font-medium text-slate-900">
-                      Drama Mode
-                    </label>
-                    <span
-                      className="group relative inline-flex"
-                      tabIndex={0}
-                      aria-label="Drama Mode info"
-                    >
+                {/* Drama Mode toggle — replaces the old Priority field. Sized to
+                    match the Status <select> alongside it (same label header
+                    style + same control height as `field`). */}
+                <div>
+                  <label htmlFor="drama-mode" className="block text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/85 mb-1 flex items-center gap-1.5">
+                    Drama Mode
+                    <span className="group relative inline-flex" tabIndex={0} aria-label="Drama Mode info">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         viewBox="0 0 20 20"
                         fill="currentColor"
-                        className="h-4 w-4 text-slate-400 hover:text-slate-600 cursor-help"
+                        className="h-3.5 w-3.5 text-slate-400 hover:text-slate-600 cursor-help"
                       >
                         <path
                           fillRule="evenodd"
@@ -1095,27 +1091,32 @@ Produce a research brief I can hand to a script writer. For **each talking point
                           clipRule="evenodd"
                         />
                       </svg>
-                      <span className="pointer-events-none absolute left-1/2 top-full z-20 mt-1 w-56 -translate-x-1/2 rounded-md bg-slate-900 px-3 py-2 text-xs font-normal leading-snug text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus:opacity-100">
+                      <span className="pointer-events-none absolute left-1/2 top-full z-20 mt-1 w-56 -translate-x-1/2 rounded-md bg-slate-900 px-3 py-2 text-xs font-normal normal-case tracking-normal leading-snug text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus:opacity-100">
                         Flag this as the monthly wide-net Drama video — broader hook, pulls new viewers.
                       </span>
                     </span>
-                  </div>
-                  <button
-                    type="button"
-                    id="drama-mode"
-                    role="switch"
-                    aria-checked={form.dramaMode}
-                    onClick={() => setForm((f) => ({ ...f, dramaMode: !f.dramaMode }))}
-                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 ${
-                      form.dramaMode ? "bg-green-600" : "bg-slate-300"
-                    }`}
-                  >
-                    <span
-                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition-transform ${
-                        form.dramaMode ? "translate-x-5" : "translate-x-0"
+                  </label>
+                  <div className="w-full border border-gray-200 rounded-lg px-3 h-[38px] bg-white flex items-center justify-between">
+                    <span className={`text-sm ${form.dramaMode ? "text-slate-900 font-medium" : "text-slate-400"}`}>
+                      {form.dramaMode ? "On" : "Off"}
+                    </span>
+                    <button
+                      type="button"
+                      id="drama-mode"
+                      role="switch"
+                      aria-checked={form.dramaMode}
+                      onClick={() => setForm((f) => ({ ...f, dramaMode: !f.dramaMode }))}
+                      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 ${
+                        form.dramaMode ? "bg-green-600" : "bg-slate-300"
                       }`}
-                    />
-                  </button>
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition-transform ${
+                          form.dramaMode ? "translate-x-4" : "translate-x-0"
+                        }`}
+                      />
+                    </button>
+                  </div>
                 </div>
               </div>
 
