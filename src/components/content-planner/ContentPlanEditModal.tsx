@@ -926,6 +926,13 @@ Produce a research brief I can hand to a script writer. For **each talking point
           bingeVideoId: form.bingeVideoId || null,
           thumbnailFileId: thumbnailFileId || null,
           thumbnailFileName: thumbnailFileName || null,
+          // Include manualSteps in every Save so the PUT response (which the
+          // parent uses as the authoritative plan) always carries the latest
+          // manual checks. Without this, a Save that races with a per-step
+          // toggle PUT can hand the parent a stale plan whose manualSteps
+          // arrived before the user's click — and the boxes appear unchecked
+          // when the modal is re-opened.
+          manualSteps: form.manualSteps,
         }),
       });
       const data = await res.json();
