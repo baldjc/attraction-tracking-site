@@ -1087,12 +1087,12 @@ Produce a research brief I can hand to a script writer. For **each talking point
                   src={`/api/member/content-plans/${plan.id}/thumbnail?v=${thumbVersion}`}
                   alt="Selected thumbnail"
                   className="shrink-0 rounded-md bg-gray-100 object-cover border border-gray-200"
-                  style={{ width: 64, height: 36 }}
+                  style={{ width: 112, height: 63 }}
                 />
               ) : (
                 <div
                   className="shrink-0 rounded-md bg-gray-50 border border-dashed border-gray-300 flex items-center justify-center text-[9px] uppercase tracking-wider text-[#2f3437]/40"
-                  style={{ width: 64, height: 36 }}
+                  style={{ width: 112, height: 63 }}
                   aria-label="No thumbnail set"
                 >
                   Thumb
