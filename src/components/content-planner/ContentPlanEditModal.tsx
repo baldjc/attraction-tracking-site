@@ -182,6 +182,35 @@ const ALL_TOOLS = [
   { key: "repurpose", label: "Repurpose Content", icon: "♻️" },
 ];
 
+// First non-blank line of a markdown blob, with leading list/heading/quote
+// punctuation stripped. Used as the one-line preview for collapsed
+// long-text sections so the card stays compact until the user expands.
+function previewLine(value: string | null | undefined): string {
+  const trimmed = (value ?? "").trim();
+  if (!trimmed) return "";
+  const firstLine = trimmed.split("\n").find((l) => l.trim()) ?? "";
+  return firstLine.replace(/^[#>*\-\s]+/, "").trim();
+}
+
+// Compact pill that shows the first line of the section's content (or a
+// placeholder when empty) and acts as the click target to expand into the
+// full editor. Used by every collapsible long-text block in the modal.
+function CollapsedPreview({ value, placeholder, onExpand }: { value: string; placeholder: string; onExpand: () => void }) {
+  const preview = previewLine(value);
+  return (
+    <button
+      type="button"
+      onClick={onExpand}
+      className="w-full text-left flex items-center justify-between gap-3 rounded-lg border border-gray-200 bg-white hover:border-[#6ba3c7]/50 hover:bg-[#6ba3c7]/5 transition-colors px-3 py-2"
+    >
+      <span className={`text-xs truncate ${preview ? "text-[#2f3437]" : "italic text-[#2f3437]/40"}`}>
+        {preview || placeholder}
+      </span>
+      <span className="text-[10px] font-semibold uppercase tracking-wider text-[#6ba3c7] shrink-0">Edit</span>
+    </button>
+  );
+}
+
 export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdmin, memberId, themes: themesProp = [], showProgressTrack: showProgressTrackProp = false, onClose, onSaved, onDeleted }: Props) {
   // Self-fetch themes when caller didn't supply any (e.g. opened from Pipeline,
   // auto-open URL link, or other entry points). Falls back to caller-supplied list.
@@ -338,6 +367,12 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
   // Bumped after each save so the proxied image refetches even when the file
   // id hasn't changed (Drive contents may have been replaced).
   const [thumbVersion, setThumbVersion] = useState(0);
+  // Tracks which long-text sections are currently expanded into their full
+  // editor. Default-collapsed for every key so the modal opens compact; the
+  // user clicks the preview pill (or the header Expand button) to edit.
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
+  const isSectionExpanded = (key: string) => !!expandedSections[key];
+  const toggleSection = (key: string) => setExpandedSections((s) => ({ ...s, [key]: !s[key] }));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -1117,18 +1152,31 @@ Produce a research brief I can hand to a script writer. For **each talking point
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="block text-xs font-medium text-[#2f3437]/60">Talking Points / Outline of Video</label>
-                  {!showProgressTrack && (
-                    <button type="button" onClick={() => pushToAITool("script-builder")} className="text-xs text-[#6ba3c7] hover:underline">Build Script →</button>
-                  )}
+                  <div className="flex items-center gap-3">
+                    {!showProgressTrack && (
+                      <button type="button" onClick={() => pushToAITool("script-builder")} className="text-xs text-[#6ba3c7] hover:underline">Build Script →</button>
+                    )}
+                    {isSectionExpanded("notes") && (
+                      <button type="button" onClick={() => toggleSection("notes")} className="text-[11px] text-[#2f3437]/50 hover:text-[#6ba3c7]">Collapse</button>
+                    )}
+                  </div>
                 </div>
-                <MarkdownTextarea
-                  value={form.notes}
-                  onChange={(v) => setForm((f) => ({ ...f, notes: v }))}
-                  rows={5}
-                  className={field}
-                  placeholder="Key details, action items…"
-                  ariaLabel="Talking Points"
-                />
+                {isSectionExpanded("notes") ? (
+                  <MarkdownTextarea
+                    value={form.notes}
+                    onChange={(v) => setForm((f) => ({ ...f, notes: v }))}
+                    rows={5}
+                    className={field}
+                    placeholder="Key details, action items…"
+                    ariaLabel="Talking Points"
+                  />
+                ) : (
+                  <CollapsedPreview
+                    value={form.notes}
+                    placeholder="Add talking points or outline…"
+                    onExpand={() => toggleSection("notes")}
+                  />
+                )}
               </div>
 
               <div>
@@ -1137,27 +1185,40 @@ Produce a research brief I can hand to a script writer. For **each talking point
                     Research Notes
                     <span className="ml-1 font-normal text-[#2f3437]/40">(paste notes, stats, talking points)</span>
                   </label>
-                  <button
-                    type="button"
-                    onClick={generateResearchPrompt}
-                    className="text-xs text-[#6ba3c7] hover:underline disabled:opacity-50"
-                    title="Build a deep-research prompt from this video's title, talking points, and your avatar — copies to clipboard so you can paste into Manus / Perplexity / ChatGPT"
-                  >
-                    {researchPromptCopied
-                      ? "Copied — paste into Manus / Perplexity"
-                      : researchPromptError
-                      ? researchPromptError
-                      : "Generate Research Prompt →"}
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={generateResearchPrompt}
+                      className="text-xs text-[#6ba3c7] hover:underline disabled:opacity-50"
+                      title="Build a deep-research prompt from this video's title, talking points, and your avatar — copies to clipboard so you can paste into Manus / Perplexity / ChatGPT"
+                    >
+                      {researchPromptCopied
+                        ? "Copied — paste into Manus / Perplexity"
+                        : researchPromptError
+                        ? researchPromptError
+                        : "Generate Research Prompt →"}
+                    </button>
+                    {isSectionExpanded("researchNotes") && (
+                      <button type="button" onClick={() => toggleSection("researchNotes")} className="text-[11px] text-[#2f3437]/50 hover:text-[#6ba3c7]">Collapse</button>
+                    )}
+                  </div>
                 </div>
-                <MarkdownTextarea
-                  value={form.researchNotes}
-                  onChange={(v) => setForm((f) => ({ ...f, researchNotes: v }))}
-                  rows={5}
-                  className={field}
-                  placeholder="Paste your research here — statistics, sources, talking points, Manus/Perplexity output…"
-                  ariaLabel="Research Notes"
-                />
+                {isSectionExpanded("researchNotes") ? (
+                  <MarkdownTextarea
+                    value={form.researchNotes}
+                    onChange={(v) => setForm((f) => ({ ...f, researchNotes: v }))}
+                    rows={5}
+                    className={field}
+                    placeholder="Paste your research here — statistics, sources, talking points, Manus/Perplexity output…"
+                    ariaLabel="Research Notes"
+                  />
+                ) : (
+                  <CollapsedPreview
+                    value={form.researchNotes}
+                    placeholder="Add research notes, stats, or sources…"
+                    onExpand={() => toggleSection("researchNotes")}
+                  />
+                )}
               </div>
 
               {!isAdmin && (
@@ -1441,36 +1502,62 @@ Produce a research brief I can hand to a script writer. For **each talking point
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">
-                  Notes & Thoughts
-                  <span className="ml-1 font-normal text-[#2f3437]/40">(scratchpad — ideas, reminders, anything)</span>
-                </label>
-                <MarkdownTextarea
-                  value={form.thoughts}
-                  onChange={(v) => setForm((f) => ({ ...f, thoughts: v }))}
-                  rows={4}
-                  className={field}
-                  placeholder="Anything you want to remember about this video…"
-                  ariaLabel="Notes and Thoughts"
-                />
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-medium text-[#2f3437]/60">
+                    Notes & Thoughts
+                    <span className="ml-1 font-normal text-[#2f3437]/40">(scratchpad — ideas, reminders, anything)</span>
+                  </label>
+                  {isSectionExpanded("thoughts") && (
+                    <button type="button" onClick={() => toggleSection("thoughts")} className="text-[11px] text-[#2f3437]/50 hover:text-[#6ba3c7]">Collapse</button>
+                  )}
+                </div>
+                {isSectionExpanded("thoughts") ? (
+                  <MarkdownTextarea
+                    value={form.thoughts}
+                    onChange={(v) => setForm((f) => ({ ...f, thoughts: v }))}
+                    rows={4}
+                    className={field}
+                    placeholder="Anything you want to remember about this video…"
+                    ariaLabel="Notes and Thoughts"
+                  />
+                ) : (
+                  <CollapsedPreview
+                    value={form.thoughts}
+                    placeholder="Jot ideas, reminders, anything…"
+                    onExpand={() => toggleSection("thoughts")}
+                  />
+                )}
               </div>
 
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="block text-xs font-medium text-[#2f3437]/60">Script</label>
-                  {!showProgressTrack && (
-                    <button type="button" onClick={() => pushToAITool("script-review")} className="text-xs text-[#6ba3c7] hover:underline">Script Review →</button>
-                  )}
+                  <div className="flex items-center gap-3">
+                    {!showProgressTrack && (
+                      <button type="button" onClick={() => pushToAITool("script-review")} className="text-xs text-[#6ba3c7] hover:underline">Script Review →</button>
+                    )}
+                    {isSectionExpanded("script") && (
+                      <button type="button" onClick={() => toggleSection("script")} className="text-[11px] text-[#2f3437]/50 hover:text-[#6ba3c7]">Collapse</button>
+                    )}
+                  </div>
                 </div>
-                <MarkdownTextarea
-                  value={form.script}
-                  onChange={(v) => setForm((f) => ({ ...f, script: v }))}
-                  rows={12}
-                  className={field}
-                  placeholder="Write your video script here…"
-                  ariaLabel="Script"
-                />
-                {form.script.trim() && (
+                {isSectionExpanded("script") ? (
+                  <MarkdownTextarea
+                    value={form.script}
+                    onChange={(v) => setForm((f) => ({ ...f, script: v }))}
+                    rows={12}
+                    className={field}
+                    placeholder="Write your video script here…"
+                    ariaLabel="Script"
+                  />
+                ) : (
+                  <CollapsedPreview
+                    value={form.script}
+                    placeholder="Write or paste your video script…"
+                    onExpand={() => toggleSection("script")}
+                  />
+                )}
+                {isSectionExpanded("script") && form.script.trim() && (
                   <div className="relative mt-1.5 flex justify-end">
                     <button
                       type="button"
@@ -1501,31 +1588,44 @@ Produce a research brief I can hand to a script writer. For **each talking point
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="block text-xs font-medium text-[#2f3437]/60">YouTube Description</label>
-                  {!form.youtubeDescription && form.script && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        sessionStorage.setItem("description_prefill", JSON.stringify({
-                          title: form.title || "",
-                          transcript: form.script || "",
-                          contentPlanId: plan.id,
-                        }));
-                        window.location.href = "/member/ai-tools/description-generator";
-                      }}
-                      className="text-[10px] text-[#6ba3c7] hover:underline"
-                    >
-                      Generate with AI →
-                    </button>
-                  )}
+                  <div className="flex items-center gap-3">
+                    {!form.youtubeDescription && form.script && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          sessionStorage.setItem("description_prefill", JSON.stringify({
+                            title: form.title || "",
+                            transcript: form.script || "",
+                            contentPlanId: plan.id,
+                          }));
+                          window.location.href = "/member/ai-tools/description-generator";
+                        }}
+                        className="text-[10px] text-[#6ba3c7] hover:underline"
+                      >
+                        Generate with AI →
+                      </button>
+                    )}
+                    {isSectionExpanded("youtubeDescription") && (
+                      <button type="button" onClick={() => toggleSection("youtubeDescription")} className="text-[11px] text-[#2f3437]/50 hover:text-[#6ba3c7]">Collapse</button>
+                    )}
+                  </div>
                 </div>
-                <MarkdownTextarea
-                  value={form.youtubeDescription}
-                  onChange={(v) => setForm((f) => ({ ...f, youtubeDescription: v }))}
-                  rows={4}
-                  className={field}
-                  placeholder="YouTube video description…"
-                  ariaLabel="YouTube Description"
-                />
+                {isSectionExpanded("youtubeDescription") ? (
+                  <MarkdownTextarea
+                    value={form.youtubeDescription}
+                    onChange={(v) => setForm((f) => ({ ...f, youtubeDescription: v }))}
+                    rows={4}
+                    className={field}
+                    placeholder="YouTube video description…"
+                    ariaLabel="YouTube Description"
+                  />
+                ) : (
+                  <CollapsedPreview
+                    value={form.youtubeDescription}
+                    placeholder="Add the description that publishes with this video…"
+                    onExpand={() => toggleSection("youtubeDescription")}
+                  />
+                )}
               </div>
 
               <div>
