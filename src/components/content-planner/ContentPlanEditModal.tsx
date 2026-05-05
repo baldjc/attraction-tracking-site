@@ -713,21 +713,30 @@ Produce a research brief I can hand to a script writer. For **each talking point
     launchTool(key);
   }
 
-  // Toggle a manual progress-step check. Optimistic local update then PUT —
-  // failures roll the local state back so the UI can't drift from the server.
+  // Toggle a manual progress-step check. We compute `next` inside the
+  // functional updater so back-to-back clicks (Review then Title before React
+  // re-renders) don't both read the same stale `form.manualSteps` and clobber
+  // each other. The PUT is fired from the updater with the freshly-computed
+  // list; on failure we rewind to the snapshot we captured on entry.
   async function handleToggleManualStep(key: string) {
-    const prev = form.manualSteps;
-    const next = prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key];
-    setForm((f) => ({ ...f, manualSteps: next }));
+    let prevSnapshot: string[] = [];
+    let nextSnapshot: string[] = [];
+    setForm((f) => {
+      prevSnapshot = f.manualSteps;
+      nextSnapshot = f.manualSteps.includes(key)
+        ? f.manualSteps.filter((k) => k !== key)
+        : [...f.manualSteps, key];
+      return { ...f, manualSteps: nextSnapshot };
+    });
     try {
       const res = await fetch(`${apiBase}/${plan.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ manualSteps: next }),
+        body: JSON.stringify({ manualSteps: nextSnapshot }),
       });
       if (!res.ok) throw new Error(String(res.status));
     } catch {
-      setForm((f) => ({ ...f, manualSteps: prev }));
+      setForm((f) => ({ ...f, manualSteps: prevSnapshot }));
       setError("Couldn't save your check — try again.");
     }
   }
