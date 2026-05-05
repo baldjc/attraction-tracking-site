@@ -934,27 +934,29 @@ Produce a research brief I can hand to a script writer. For **each talking point
             const fileCount = driveFiles.length;
             return (
               <div className="rounded-lg border border-gray-200 bg-white">
-                <button
-                  type="button"
-                  onClick={() => toggleSection("projectFolder")}
-                  className="w-full flex items-center justify-between gap-3 px-4 py-2.5 text-left hover:bg-gray-50/60 transition-colors rounded-lg"
-                  aria-expanded={expanded}
-                >
-                  <span className="flex items-center gap-2 min-w-0">
+                {/* Header row uses two sibling controls (button + anchor) so
+                    we never nest an <a> inside a <button> — that would be
+                    invalid HTML and break keyboard/screen-reader semantics. */}
+                <div className="flex items-center justify-between gap-2 pr-3">
+                  <button
+                    type="button"
+                    onClick={() => toggleSection("projectFolder")}
+                    className="flex-1 min-w-0 flex items-center justify-start gap-2 px-4 py-2.5 text-left hover:bg-gray-50/60 transition-colors rounded-lg"
+                    aria-expanded={expanded}
+                  >
                     <span className={`text-[#2f3437]/40 transition-transform ${expanded ? "rotate-90" : ""}`}>▸</span>
                     <span className="text-[13px] font-medium text-[#2f3437]">Project folder</span>
                     <span className="text-[12px] text-[#2f3437]/50 truncate">
                       {fileCount} file{fileCount === 1 ? "" : "s"}{thumbnailFileId ? " · thumbnail set" : ""}
                     </span>
-                  </span>
+                  </button>
                   <a
                     href={driveFolderLink}
                     target="_blank"
                     rel="noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    className="text-[12px] font-medium text-[#185FA5] hover:underline shrink-0"
+                    className="text-[12px] font-medium text-[#185FA5] hover:underline shrink-0 py-2"
                   >Open in Drive ↗</a>
-                </button>
+                </div>
                 {expanded && (
                   <div className="px-4 pb-3 pt-1 space-y-2 border-t border-gray-100">
                     {thumbnailFileId && (
@@ -1113,8 +1115,14 @@ Produce a research brief I can hand to a script writer. For **each talking point
                     <button type="button" onClick={() => pushToAITool("title")} className="text-xs text-[#6ba3c7] hover:underline">Analyse Title →</button>
                   )}
                 </div>
-                <input type="text" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} className={field} />
-                <div className={`text-xs mt-1 flex items-center justify-end gap-1.5 ${form.title.length > 80 ? "text-red-500" : form.title.length > 60 ? "text-amber-500" : "text-[#2f3437]/40"}`}>
+                <input
+                  type="text"
+                  value={form.title}
+                  onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+                  placeholder="Untitled video"
+                  className="w-full bg-transparent border-0 border-b border-transparent hover:border-gray-200 focus:border-[#185FA5] focus:ring-0 px-0 py-1 text-lg font-semibold text-[#2f3437] placeholder:text-[#2f3437]/30 transition-colors"
+                />
+                <div className={`text-[11px] mt-0.5 flex items-center justify-end gap-1.5 ${form.title.length > 80 ? "text-red-500" : form.title.length > 60 ? "text-amber-500" : "text-[#2f3437]/40"}`}>
                   <span>
                     {form.title.length} / 60 Characters
                   </span>
@@ -1199,34 +1207,39 @@ Produce a research brief I can hand to a script writer. For **each talking point
                 </div>
               </div>
 
-              <div className={`grid gap-3 ${showEditDue ? "grid-cols-3" : "grid-cols-2"}`}>
-                <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/85 mb-1">Shoot Date</label>
-                  <input type="date" value={form.shootDate} onChange={(e) => setForm((f) => ({ ...f, shootDate: e.target.value }))} className={field} />
-                </div>
-                {showEditDue && (
+              {/* Schedule card — Zone 5 of the redesign. Groups the three
+                  date pickers + shoot location into a single neutral white
+                  surface with a subtle header so they read as one unit. */}
+              <div className="rounded-lg border border-gray-200 bg-white p-3 space-y-3">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/60">Schedule</p>
+                <div className={`grid gap-3 grid-cols-1 ${showEditDue ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
                   <div>
-                    <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/85 mb-1">Edit Due Date</label>
-                    <input type="date" value={form.editDueDate} onChange={(e) => setForm((f) => ({ ...f, editDueDate: e.target.value }))} className={field} />
+                    <label className="block text-[11px] font-medium text-[#2f3437]/70 mb-1">Shoot date</label>
+                    <input type="date" value={form.shootDate} onChange={(e) => setForm((f) => ({ ...f, shootDate: e.target.value }))} className={field} />
                   </div>
-                )}
-                <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/85 mb-1">Publish Date</label>
-                  <input type="date" value={form.publishDate} onChange={(e) => setForm((f) => ({ ...f, publishDate: e.target.value }))} className={field} />
+                  {showEditDue && (
+                    <div>
+                      <label className="block text-[11px] font-medium text-[#2f3437]/70 mb-1">Edit due</label>
+                      <input type="date" value={form.editDueDate} onChange={(e) => setForm((f) => ({ ...f, editDueDate: e.target.value }))} className={field} />
+                    </div>
+                  )}
+                  <div>
+                    <label className="block text-[11px] font-medium text-[#2f3437]/70 mb-1">Publish date</label>
+                    <input type="date" value={form.publishDate} onChange={(e) => setForm((f) => ({ ...f, publishDate: e.target.value }))} className={field} />
+                  </div>
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/85 mb-1">Shoot Location</label>
-                <select
-                  value={form.shootLocation}
-                  onChange={(e) => setForm((f) => ({ ...f, shootLocation: e.target.value }))}
-                  className={field}
-                >
-                  <option value="">Select location...</option>
-                  <option value="In Studio">In Studio</option>
-                  <option value="Out of Studio">Out of Studio</option>
-                </select>
+                <div>
+                  <label className="block text-[11px] font-medium text-[#2f3437]/70 mb-1">Shoot location</label>
+                  <select
+                    value={form.shootLocation}
+                    onChange={(e) => setForm((f) => ({ ...f, shootLocation: e.target.value }))}
+                    className={field}
+                  >
+                    <option value="">Select location…</option>
+                    <option value="In Studio">In Studio</option>
+                    <option value="Out of Studio">Out of Studio</option>
+                  </select>
+                </div>
               </div>
 
               <div>
@@ -1301,77 +1314,86 @@ Produce a research brief I can hand to a script writer. For **each talking point
                 )}
               </div>
 
-              {!isAdmin && (
-                <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/85 mb-1">
-                    Lead Magnet Campaign
-                    <span className="ml-1 font-normal text-[#2f3437]/40">(preselects this campaign in the Description Generator)</span>
-                  </label>
-                  <select
-                    value={form.linkedCampaignId}
-                    onChange={(e) => setForm((f) => ({ ...f, linkedCampaignId: e.target.value }))}
-                    className={field}
-                  >
-                    <option value="">— None —</option>
-                    {campaigns.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
+              {/* Linking & Campaigns — Zone 7. Two-up grid that groups
+                  CRM/lead-magnet linking with the footage source (raw URL or
+                  the auto-created Drive folder) so the user can see all
+                  outbound links for this video at a glance. */}
+              <div className="rounded-lg border border-gray-200 bg-white p-3 space-y-3">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/60">Linking &amp; campaigns</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {!isAdmin && (
+                      <div>
+                        <label className="block text-[11px] font-medium text-[#2f3437]/70 mb-1">
+                          Lead magnet campaign
+                        </label>
+                        <select
+                          value={form.linkedCampaignId}
+                          onChange={(e) => setForm((f) => ({ ...f, linkedCampaignId: e.target.value }))}
+                          className={field}
+                        >
+                          <option value="">— None —</option>
+                          {campaigns.map((c) => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                          ))}
+                        </select>
+                        <p className="text-[10px] text-[#2f3437]/45 mt-1">Preselected in the Description Generator.</p>
+                      </div>
+                    )}
 
-              {!useDrive && (
-                <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/85 mb-1">Footage Link</label>
-                  <input type="text" value={form.footageLink} onChange={(e) => setForm((f) => ({ ...f, footageLink: e.target.value }))} className={field} placeholder="https://…" />
-                </div>
-              )}
+                    {!useDrive && (
+                      <div>
+                        <label className="block text-[11px] font-medium text-[#2f3437]/70 mb-1">Footage link</label>
+                        <input type="text" value={form.footageLink} onChange={(e) => setForm((f) => ({ ...f, footageLink: e.target.value }))} className={field} placeholder="https://…" />
+                      </div>
+                    )}
 
-              {useDrive && (
-                <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/85 mb-1">Google Drive Folder</label>
-              {driveFolderLink ? (
-                <a
-                  href={driveFolderLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 px-3 py-2 text-sm text-[#6ba3c7] bg-blue-50 border border-blue-100 rounded-lg hover:bg-blue-100 transition-colors w-full truncate"
-                >
-                  <svg className="w-4 h-4 shrink-0" viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg">
-                    <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
-                    <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#00ac47"/>
-                    <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/>
-                    <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
-                    <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
-                    <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 27h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
-                  </svg>
-                  Open Drive Folder
-                </a>
-              ) : isAdmin ? (
-                <div>
-                  <button
-                    type="button"
-                    onClick={handleCreateFolder}
-                    disabled={creatingFolder}
-                    className="flex items-center gap-2 px-3 py-2 text-sm text-[#2f3437]/70 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50"
-                  >
-                    <svg className="w-4 h-4 shrink-0" viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg">
-                      <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
-                      <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#00ac47"/>
-                      <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/>
-                      <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
-                      <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
-                      <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 27h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
-                    </svg>
-                    {creatingFolder ? "Creating folder…" : "Create Drive Folder"}
-                  </button>
-                  {folderError && <p className="text-xs text-red-600 mt-1">{folderError}</p>}
+                    {useDrive && (
+                      <div>
+                        <label className="block text-[11px] font-medium text-[#2f3437]/70 mb-1">Google Drive folder</label>
+                        {driveFolderLink ? (
+                          <a
+                            href={driveFolderLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 px-3 py-2 text-sm text-[#185FA5] bg-blue-50/60 border border-blue-100 rounded-lg hover:bg-blue-100/70 transition-colors w-full truncate"
+                          >
+                            <svg className="w-4 h-4 shrink-0" viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg">
+                              <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
+                              <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#00ac47"/>
+                              <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/>
+                              <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
+                              <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
+                              <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 27h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
+                            </svg>
+                            Open Drive folder
+                          </a>
+                        ) : isAdmin ? (
+                          <div>
+                            <button
+                              type="button"
+                              onClick={handleCreateFolder}
+                              disabled={creatingFolder}
+                              className="flex items-center gap-2 px-3 py-2 text-sm text-[#2f3437]/70 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50 w-full"
+                            >
+                              <svg className="w-4 h-4 shrink-0" viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg">
+                                <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
+                                <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#00ac47"/>
+                                <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/>
+                                <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
+                                <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
+                                <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 27h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
+                              </svg>
+                              {creatingFolder ? "Creating folder…" : "Create Drive folder"}
+                            </button>
+                            {folderError && <p className="text-xs text-red-600 mt-1">{folderError}</p>}
+                          </div>
+                        ) : (
+                          <p className="text-xs text-[#2f3437]/50 italic">Your folder will be created automatically when the status is set to Ready to Shoot, Shooting, or Shot - In Post.</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              ) : (
-                <p className="text-xs text-[#2f3437]/50 italic">Your folder will be created automatically when the status is set to Ready to Shoot, Shooting, or Shot - In Post.</p>
-              )}
-            </div>
-          )}
 
               {repurposeArtifacts.length > 0 && (
                 <div className="rounded-xl border border-[#a78bfa]/25 bg-[#a78bfa]/5 px-4 py-3 space-y-2">
