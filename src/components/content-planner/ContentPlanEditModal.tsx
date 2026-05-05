@@ -121,6 +121,7 @@ export interface ContentPlan {
   script: string | null;
   researchNotes: string | null;
   thoughts?: string | null;
+  manualSteps?: string[] | null;
   thumbnailWords: string | null;
   footageLink: string | null;
   driveFolderLink: string | null;
@@ -257,6 +258,7 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
     footageLink: plan.footageLink ?? "",
     linkedCampaignId: plan.linkedCampaignId ?? "",
     bingeVideoId: plan.bingeVideoId ?? "",
+    manualSteps: Array.isArray((plan as any).manualSteps) ? ((plan as any).manualSteps as string[]) : [],
   });
   const [campaigns, setCampaigns] = useState<Array<{ id: string; name: string }>>([]);
 
@@ -711,8 +713,34 @@ Produce a research brief I can hand to a script writer. For **each talking point
     launchTool(key);
   }
 
+  // Toggle a manual progress-step check. Optimistic local update then PUT —
+  // failures roll the local state back so the UI can't drift from the server.
+  async function handleToggleManualStep(key: string) {
+    const prev = form.manualSteps;
+    const next = prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key];
+    setForm((f) => ({ ...f, manualSteps: next }));
+    try {
+      const res = await fetch(`${apiBase}/${plan.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ manualSteps: next }),
+      });
+      if (!res.ok) throw new Error(String(res.status));
+    } catch {
+      setForm((f) => ({ ...f, manualSteps: prev }));
+      setError("Couldn't save your check — try again.");
+    }
+  }
+
+  const manualStepSet = new Set(form.manualSteps);
   const progressSteps = showProgressTrack
-    ? resolveProgressSteps({ id: plan.id, status: form.status, script: form.script }, artifacts, handleStepClick)
+    ? resolveProgressSteps(
+        { id: plan.id, status: form.status, script: form.script },
+        artifacts,
+        handleStepClick,
+        manualStepSet,
+        handleToggleManualStep
+      )
     : [];
   const suggestedNext = showProgressTrack ? getSuggestedNextStep(progressSteps) : null;
 

@@ -52,7 +52,16 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const serviceTier = dbUser?.serviceTier ?? "foundations";
 
   const body = await req.json();
-  const { title, status, theme, shootDate, shootLocation, publishDate, editDueDate, priority, dramaMode, notes, script, researchNotes, thoughts, thumbnailWords, footageLink, driveFolderLink, youtubeDescription, linkedCampaignId, linkedScriptId, thumbnailFileId, thumbnailFileName } = body;
+  const { title, status, theme, shootDate, shootLocation, publishDate, editDueDate, priority, dramaMode, notes, script, researchNotes, thoughts, thumbnailWords, footageLink, driveFolderLink, youtubeDescription, linkedCampaignId, linkedScriptId, thumbnailFileId, thumbnailFileName, manualSteps } = body;
+  // Whitelist manual step keys so a forged payload can't dump arbitrary JSON
+  // into the column. Anything off-list is dropped silently.
+  const VALID_STEP_KEYS = new Set(["idea","script","review","title","description","repurpose","ready"]);
+  let manualStepsClean: string[] | undefined;
+  if (manualSteps !== undefined) {
+    manualStepsClean = Array.isArray(manualSteps)
+      ? Array.from(new Set(manualSteps.filter((k: unknown): k is string => typeof k === "string" && VALID_STEP_KEYS.has(k))))
+      : [];
+  }
   // Coerce empty-string `bingeVideoId` ("") to null so non-modal clients can
   // clear the link without tripping the ownership lookup (which would 404 on
   // an empty id). Treat `undefined` (field omitted) distinctly from null
@@ -124,6 +133,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       ...(bingeVideoId !== undefined && { bingeVideoId: bingeVideoId ?? null }),
       ...(thumbnailFileId !== undefined && { thumbnailFileId: thumbnailFileId ?? null }),
       ...(thumbnailFileName !== undefined && { thumbnailFileName: thumbnailFileName ?? null }),
+      ...(manualStepsClean !== undefined && { manualSteps: manualStepsClean }),
     },
     include: {
       bingeVideo: { select: BINGE_RELATION_SELECT },

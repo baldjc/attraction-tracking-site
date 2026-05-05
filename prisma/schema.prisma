@@ -846,6 +846,10 @@ model ContentPlan {
   // video — separate from `notes` (talking points / outline) and
   // `researchNotes` (sourced facts) so the structured fields stay clean.
   thoughts        String?   @db.Text
+  // Manual progress-track overrides — array of step keys ("idea","script",
+  // "review","title","description","repurpose","ready") the user has ticked
+  // by hand. Combined with auto-detection (OR) when rendering ProgressTrack.
+  manualSteps     Json?
   thumbnailWords  String?
   footageLink     String?
   driveFolderLink String?

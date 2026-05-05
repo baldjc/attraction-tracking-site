@@ -7,6 +7,8 @@ export type ArtifactEntry = {
   updatedAt: Date | string;
 };
 
+export type StepKey = ProgressStep["key"];
+
 export type PlanArtifactsByType = Record<string, ArtifactEntry[]>;
 
 const LABELS: Record<string, string> = {
@@ -56,30 +58,37 @@ export function resolveProgressSteps(
     thumbnailWords?: string | null;
   },
   artifacts: PlanArtifactsByType,
-  onStepClick: (key: string) => void
+  onStepClick: (key: string) => void,
+  // Optional: keys the user has manually ticked, plus a toggle callback. When
+  // either is omitted the track behaves exactly as before (auto-only).
+  manualDoneKeys?: ReadonlySet<string>,
+  onToggleManual?: (key: string) => void
 ): ProgressStep[] {
   const hasRepurpose = REPURPOSE_TYPES.some((t) => hasContent(artifacts, t));
 
   // Each step also falls back to the plan's own column where one exists, so a
   // step still marks done even if the artifact write was skipped (e.g. legacy
   // plans saved before the artifact endpoint was wired up).
-  const checks: Array<{ key: ProgressStep["key"]; done: boolean; artifactType?: string }> = [
-    { key: "idea", done: true },
-    { key: "script", done: hasContent(artifacts, "script") || !!(plan.script?.trim()), artifactType: "script" },
-    { key: "review", done: hasContent(artifacts, "script_review"), artifactType: "script_review" },
-    { key: "title", done: hasContent(artifacts, "title"), artifactType: "title" },
+  const checks: Array<{ key: ProgressStep["key"]; autoDone: boolean; artifactType?: string }> = [
+    { key: "idea", autoDone: true },
+    { key: "script", autoDone: hasContent(artifacts, "script") || !!(plan.script?.trim()), artifactType: "script" },
+    { key: "review", autoDone: hasContent(artifacts, "script_review"), artifactType: "script_review" },
+    { key: "title", autoDone: hasContent(artifacts, "title"), artifactType: "title" },
     {
       key: "description",
-      done: hasContent(artifacts, "description") || !!(plan.youtubeDescription?.trim()),
+      autoDone: hasContent(artifacts, "description") || !!(plan.youtubeDescription?.trim()),
       artifactType: "description",
     },
-    { key: "repurpose", done: hasRepurpose },
-    { key: "ready", done: READY_STATUSES.has(plan.status) },
+    { key: "repurpose", autoDone: hasRepurpose },
+    { key: "ready", autoDone: READY_STATUSES.has(plan.status) },
   ];
 
   let currentAssigned = false;
 
-  return checks.map(({ key, done, artifactType }) => {
+  return checks.map(({ key, autoDone, artifactType }) => {
+    const manualDone = manualDoneKeys?.has(key) ?? false;
+    const done = autoDone || manualDone;
+
     let status: ProgressStep["status"];
     if (done) {
       status = "done";
@@ -99,6 +108,9 @@ export function resolveProgressSteps(
       status,
       lastEditedAt,
       onClick: () => onStepClick(key),
+      autoDone,
+      manualDone,
+      onToggleManual: onToggleManual ? () => onToggleManual(key) : undefined,
     };
   });
 }

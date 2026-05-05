@@ -8,6 +8,12 @@ export type ProgressStep = {
   lastEditedAt?: Date;
   score?: number;
   onClick: () => void;
+  // Auto-detection result (data exists for this step). Distinct from
+  // `manualDone` so the UI can disable manual toggles for steps that are
+  // already done from real content.
+  autoDone?: boolean;
+  manualDone?: boolean;
+  onToggleManual?: () => void;
 };
 
 type Props = {
@@ -161,6 +167,39 @@ export default function ProgressTrack({ steps, compact = false }: Props) {
               >
                 {step.label}
               </span>
+
+              {/* Manual checkbox — lets the user tick a step done themselves
+                  even when the auto-detector hasn't matched. Hidden when the
+                  step is auto-done from real content (the green check already
+                  reflects the truth) and when no toggle handler was wired. */}
+              {step.onToggleManual && !step.autoDone && (
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); step.onToggleManual?.(); }}
+                  aria-pressed={!!step.manualDone}
+                  aria-label={step.manualDone ? `Unmark ${step.label} as done` : `Mark ${step.label} as done`}
+                  className={`mt-1 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9px] leading-none transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#6ba3c7]/50 ${
+                    step.manualDone
+                      ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400"
+                      : "bg-transparent text-[#2f3437]/50 hover:bg-slate-100 hover:text-[#2f3437] dark:text-[#94a3b8] dark:hover:bg-[#2a2a2a]"
+                  }`}
+                >
+                  <span
+                    className={`inline-flex h-2.5 w-2.5 items-center justify-center rounded-[3px] border ${
+                      step.manualDone
+                        ? "border-emerald-500 bg-emerald-500 text-white"
+                        : "border-gray-300 bg-white dark:border-[#3a3a3a] dark:bg-[#1a1a1a]"
+                    }`}
+                  >
+                    {step.manualDone && (
+                      <svg viewBox="0 0 12 12" className="h-2 w-2" fill="none" stroke="currentColor" strokeWidth={3}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.5 6.5l2.5 2.5 4.5-5" />
+                      </svg>
+                    )}
+                  </span>
+                  {step.manualDone ? "Done" : "Mark done"}
+                </button>
+              )}
             </div>
           );
         })}
