@@ -1019,7 +1019,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
             <div className="space-y-4">
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="block text-xs font-medium text-[#2f3437]/60 flex items-center gap-2">
+                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/85 flex items-center gap-2">
                     Title
                     {showProgressTrack && latestReviewScore !== null && (
                       <span
@@ -1065,7 +1065,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Status</label>
+                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/85 mb-1">Status</label>
                   <select value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))} className={field}>
                     {statusOptions.map((s) => (
                       <option key={s} value={s}>{s}</option>
@@ -1121,23 +1121,23 @@ Produce a research brief I can hand to a script writer. For **each talking point
 
               <div className={`grid gap-3 ${showEditDue ? "grid-cols-3" : "grid-cols-2"}`}>
                 <div>
-                  <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Shoot Date</label>
+                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/85 mb-1">Shoot Date</label>
                   <input type="date" value={form.shootDate} onChange={(e) => setForm((f) => ({ ...f, shootDate: e.target.value }))} className={field} />
                 </div>
                 {showEditDue && (
                   <div>
-                    <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Edit Due Date</label>
+                    <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/85 mb-1">Edit Due Date</label>
                     <input type="date" value={form.editDueDate} onChange={(e) => setForm((f) => ({ ...f, editDueDate: e.target.value }))} className={field} />
                   </div>
                 )}
                 <div>
-                  <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Publish Date</label>
+                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/85 mb-1">Publish Date</label>
                   <input type="date" value={form.publishDate} onChange={(e) => setForm((f) => ({ ...f, publishDate: e.target.value }))} className={field} />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Shoot Location</label>
+                <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/85 mb-1">Shoot Location</label>
                 <select
                   value={form.shootLocation}
                   onChange={(e) => setForm((f) => ({ ...f, shootLocation: e.target.value }))}
@@ -1151,7 +1151,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
 
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="block text-xs font-medium text-[#2f3437]/60">Talking Points / Outline of Video</label>
+                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/85">Talking Points / Outline of Video</label>
                   <div className="flex items-center gap-3">
                     {!showProgressTrack && (
                       <button type="button" onClick={() => pushToAITool("script-builder")} className="text-xs text-[#6ba3c7] hover:underline">Build Script →</button>
@@ -1181,7 +1181,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
 
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="block text-xs font-medium text-[#2f3437]/60">
+                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/85">
                     Research Notes
                     <span className="ml-1 font-normal text-[#2f3437]/40">(paste notes, stats, talking points)</span>
                   </label>
@@ -1223,7 +1223,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
 
               {!isAdmin && (
                 <div>
-                  <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">
+                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/85 mb-1">
                     Lead Magnet Campaign
                     <span className="ml-1 font-normal text-[#2f3437]/40">(preselects this campaign in the Description Generator)</span>
                   </label>
@@ -1242,14 +1242,14 @@ Produce a research brief I can hand to a script writer. For **each talking point
 
               {!useDrive && (
                 <div>
-                  <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Footage Link</label>
+                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/85 mb-1">Footage Link</label>
                   <input type="text" value={form.footageLink} onChange={(e) => setForm((f) => ({ ...f, footageLink: e.target.value }))} className={field} placeholder="https://…" />
                 </div>
               )}
 
               {useDrive && (
                 <div>
-                  <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Google Drive Folder</label>
+                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/85 mb-1">Google Drive Folder</label>
               {driveFolderLink ? (
                 <a
                   href={driveFolderLink}
@@ -1355,7 +1355,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
             {/* RIGHT COLUMN: theme, script, description, thumbnail */}
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Theme</label>
+                <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/85 mb-1">Theme</label>
                 {themes.length > 0 ? (
                   <select value={form.theme} onChange={(e) => setForm((f) => ({ ...f, theme: e.target.value }))} className={field}>
                     <option value="">— none —</option>
@@ -1376,7 +1376,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
                   Theme so the strategic pairing (what is this + what does it
                   chain back to) sits at the top of the form. */}
               <div ref={bingeRef} className="relative">
-                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Binge Video</label>
+                <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/85 mb-1">Binge Video</label>
                 <p className="text-[11px] text-[#2f3437]/45 mb-1.5 leading-snug">
                   The previous video this one points viewers back to. Builds the chain.
                 </p>
@@ -1503,7 +1503,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
 
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="block text-xs font-medium text-[#2f3437]/60">
+                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/85">
                     Notes & Thoughts
                     <span className="ml-1 font-normal text-[#2f3437]/40">(scratchpad — ideas, reminders, anything)</span>
                   </label>
@@ -1531,7 +1531,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
 
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="block text-xs font-medium text-[#2f3437]/60">Script</label>
+                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/85">Script</label>
                   <div className="flex items-center gap-3">
                     {!showProgressTrack && (
                       <button type="button" onClick={() => pushToAITool("script-review")} className="text-xs text-[#6ba3c7] hover:underline">Script Review →</button>
@@ -1587,7 +1587,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
 
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="block text-xs font-medium text-[#2f3437]/60">YouTube Description</label>
+                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/85">YouTube Description</label>
                   <div className="flex items-center gap-3">
                     {!form.youtubeDescription && form.script && (
                       <button
@@ -1629,7 +1629,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Thumbnail Words and Ideas</label>
+                <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/85 mb-1">Thumbnail Words and Ideas</label>
                 <input type="text" value={form.thumbnailWords} onChange={(e) => setForm((f) => ({ ...f, thumbnailWords: e.target.value }))} className={field} placeholder="3–5 words, or quick ideas…" />
               </div>
             </div>
