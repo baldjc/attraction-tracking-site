@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { canStaffAccessMember } from "@/lib/staff-access";
-import { createVideoFolder } from "@/lib/google-drive";
+import { createVideoFolder, isFileInFolder } from "@/lib/google-drive";
 
 // "Needs Research" is the earliest production status — kicking off the Drive
 // folder + Video Research doc here gives the member a place to drop research
@@ -28,7 +28,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const body = await req.json();
-  const { title, status, theme, shootDate, publishDate, editDueDate, priority, dramaMode, notes, script, researchNotes, thumbnailWords, footageLink, driveFolderLink } = body;
+  const { title, status, theme, shootDate, publishDate, editDueDate, priority, dramaMode, notes, script, researchNotes, thumbnailWords, footageLink, driveFolderLink, thumbnailFileId, thumbnailFileName } = body;
   // Coerce empty-string `bingeVideoId` ("") to null so non-modal clients can
   // clear the link without tripping the ownership lookup (which would 404 on
   // an empty id). Treat `undefined` (field omitted) distinctly from null
@@ -51,6 +51,20 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     }
   }
 
+  // Constrain thumbnail picks to a Drive file that actually lives inside
+  // this plan's project folder — otherwise a forged PUT could repoint the
+  // proxy at any file the service account can read.
+  if (thumbnailFileId) {
+    const folderLink = driveFolderLink ?? existing.driveFolderLink;
+    if (!folderLink) {
+      return NextResponse.json({ error: "Plan has no Drive folder" }, { status: 400 });
+    }
+    const inFolder = await isFileInFolder(thumbnailFileId, folderLink);
+    if (!inFolder) {
+      return NextResponse.json({ error: "Thumbnail must be a file in this plan's Drive folder" }, { status: 400 });
+    }
+  }
+
   let plan = await prisma.contentPlan.update({
     where: { id: planId },
     data: {
@@ -69,6 +83,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       ...(footageLink !== undefined && { footageLink: footageLink ?? null }),
       ...(driveFolderLink !== undefined && { driveFolderLink: driveFolderLink ?? null }),
       ...(bingeVideoId !== undefined && { bingeVideoId: bingeVideoId ?? null }),
+      ...(thumbnailFileId !== undefined && { thumbnailFileId: thumbnailFileId ?? null }),
+      ...(thumbnailFileName !== undefined && { thumbnailFileName: thumbnailFileName ?? null }),
     },
     include: {
       bingeVideo: { select: { id: true, title: true, theme: true, status: true } },

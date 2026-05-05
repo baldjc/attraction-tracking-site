@@ -171,9 +171,20 @@ export default function MobileCardFeed({
                   </div>
                 </div>
 
-                <h2 className="text-base font-semibold text-[#2f3437] leading-snug mb-2.5 pr-2">
-                  {p.title || <span className="italic text-[#2f3437]/40">Untitled</span>}
-                </h2>
+                <div className="flex items-start gap-3 mb-2.5">
+                  {p.thumbnailFileId ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={`/api/member/content-plans/${p.id}/thumbnail?v=${encodeURIComponent(p.updatedAt ?? p.thumbnailFileId ?? "")}`}
+                      alt=""
+                      loading="lazy"
+                      className="w-20 h-12 object-cover rounded-lg shrink-0 bg-gray-100 border border-gray-200"
+                    />
+                  ) : null}
+                  <h2 className="text-base font-semibold text-[#2f3437] leading-snug pr-2 flex-1 min-w-0">
+                    {p.title || <span className="italic text-[#2f3437]/40">Untitled</span>}
+                  </h2>
+                </div>
 
                 <div className="flex items-center justify-between text-xs text-[#2f3437]/60 gap-2">
                   <div className="flex items-center gap-3 min-w-0">

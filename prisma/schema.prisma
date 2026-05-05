@@ -846,6 +846,13 @@ model ContentPlan {
   footageLink     String?
   driveFolderLink String?
 
+  // Drive-file pick used as the video's thumbnail in planner views. Stored as
+  // the raw Drive file id (+ friendly name for display fallback) so we can
+  // proxy the binary through our own /thumbnail route — never embed Drive
+  // thumbnailLink URLs directly (they expire and require auth).
+  thumbnailFileId   String?
+  thumbnailFileName String?
+
   linkedIdeaId    String?
   linkedScriptId  String?
   youtubeVideoId  String?

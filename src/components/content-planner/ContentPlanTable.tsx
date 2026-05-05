@@ -51,6 +51,9 @@ interface ContentPlan {
   thumbnailWords: string | null;
   footageLink: string | null;
   driveFolderLink: string | null;
+  thumbnailFileId: string | null;
+  thumbnailFileName: string | null;
+  updatedAt?: string | null;
   dramaMode?: boolean;
   // Binge target — the previous video this one chains back to. Returned by
   // the API as a summary so we can render the title in the cell without an
@@ -716,9 +719,19 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
                     </button>
                   </td>
                   <td className="px-3 py-2.5 align-top overflow-hidden">
-                    <div className="cursor-pointer text-sm text-[#2f3437] font-medium hover:text-[#6ba3c7] transition-colors flex items-start gap-1.5 leading-snug" onClick={() => setEditingPlan(plan)}>
+                    <div className="cursor-pointer text-sm text-[#2f3437] font-medium hover:text-[#6ba3c7] transition-colors flex items-start gap-2 leading-snug" onClick={() => setEditingPlan(plan)}>
+                      {plan.thumbnailFileId ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={`/api/member/content-plans/${plan.id}/thumbnail?v=${encodeURIComponent(plan.updatedAt ?? plan.thumbnailFileId ?? "")}`}
+                          alt=""
+                          loading="lazy"
+                          className="w-12 h-7 object-cover rounded shrink-0 mt-0.5 bg-gray-100 border border-gray-200"
+                          title={plan.thumbnailFileName ?? "Thumbnail"}
+                        />
+                      ) : null}
                       {plan.dramaMode && (
-                        <DramaMagnet className="w-3.5 h-3.5 text-orange-600 shrink-0 mt-0.5" />
+                        <DramaMagnet className="w-3.5 h-3.5 text-orange-600 shrink-0 mt-1" />
                       )}
                       <span className="line-clamp-2 break-words">{plan.title}</span>
                     </div>

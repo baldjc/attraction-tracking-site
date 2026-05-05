@@ -1,192 +1,74 @@
-# Attraction by Video — Platform Overview
+# Attraction by Video
 
-## Project
-Full-stack Next.js 16 platform for YouTube channel audits, GHL member sync, link tracking, admin/member dashboards, webinar landing page config management, payment reminders, AI tools suite, and a 10-phase SEO Intelligence Platform for a real estate coaching program run by Jared Chamberlain.
+A full-stack Next.js platform for YouTube channel audits, member management, link tracking, AI tools, and SEO intelligence for a real estate coaching program.
+
+## Run & Operate
+
+To run the application, use: `next dev -p 5000 -H 0.0.0.0`
+
+Required environment variables:
+- `DATABASE_URL`: PostgreSQL connection string
+- `NEXTAUTH_SECRET`: Auth session signing
+- `NEXTAUTH_URL`: App base URL
+- `ANTHROPIC_API_KEY`: Claude AI key
+- `YOUTUBE_API_KEY`: YouTube Data API v3 key
+- `GHL_API_KEY`: GoHighLevel CRM key
+- `ADMIN_EMAIL`: Admin account email
 
 ## Stack
+
 - **Framework:** Next.js 16 (App Router, Turbopack)
-- **Database:** PostgreSQL (via Prisma v7)
+- **Database:** PostgreSQL (Prisma v7)
 - **Auth:** NextAuth.js v5 (credentials provider)
-- **AI:** Anthropic Claude claude-sonnet-4-20250514 — audit scoring, script review, AI tools suite
-- **YouTube:** YouTube Data API v3 + `youtube-transcript` package
+- **AI:** Anthropic Claude (claude-sonnet-4-20250514)
+- **YouTube:** YouTube Data API v3, `youtube-transcript`
 - **UI:** Tailwind CSS, Recharts, Heroicons
-- **Dev server:** `next dev -p 5000 -H 0.0.0.0`
 
-## Environment Variables Required
-| Key | Purpose |
-|-----|---------|
-| `DATABASE_URL` | PostgreSQL connection string |
-| `NEXTAUTH_SECRET` | Auth session signing |
-| `NEXTAUTH_URL` | App base URL |
-| `ANTHROPIC_API_KEY` | Claude AI for audit scoring |
-| `YOUTUBE_API_KEY` | YouTube Data API v3 for channel/video data |
-| `GHL_API_KEY` | GoHighLevel CRM sync |
-| `ADMIN_EMAIL` | Admin account email |
+## Where things live
 
-## Admin Credentials
-- Email: `jared@attractionbyvideo.com`
-- Password: `fatcat222`
+- `prisma/schema.prisma`: Database schema definition
+- `src/lib/audit-engine.ts`: Core AI audit logic and prompts
+- `src/lib/ghl.ts`: GoHighLevel CRM integration
+- `src/lib/youtube.ts`: YouTube API utilities
+- `src/lib/feature-flags.ts`: Feature flag management
+- `src/app/admin/`: Admin-specific pages and APIs
+- `src/app/member/`: Member-specific pages and APIs
+- `src/app/api/`: All API routes (member, admin, AI tools, analytics)
 
-## GHL Config
-- Location ID: `vEIiKAjpBkCDrabeDre7`
-- Member tag: `"foundations - weekly coaching"`
-- 22 members across 1,831 contacts
-- Pagination: use `meta.nextPageUrl` (not `startAfter`/`startAfterId`)
+## Architecture decisions
 
-## Color Palette
-- Background: `#f1f1ef` (dark: `#1a1f2e`)
-- Primary: `#3dc3ff`
-- Alerts: `#ff0033`
-- Text/Sidebar: `#1e2a38` (dark: `#e2e8f0`)
-- Cards: `#ffffff` (dark: `#242b3d`)
-- Sidebar: `#1e2a38` (dark: `#0f1419`)
+- **AI Model Choice:** Anthropic Claude (claude-sonnet-4-20250514) is used for all AI-powered features, including audit scoring, script review, and content generation, due to its performance characteristics.
+- **Weighted Audit Scoring:** A custom weighted scoring mechanism is applied to audit results, emphasizing key growth areas over general metrics to provide more actionable insights.
+- **Client-side Impersonation:** An admin can impersonate a member using a cookie, enabling direct debugging and support from the admin dashboard.
+- **Class-based Dark Mode:** Implemented using `html.dark` class toggled by a ThemeProvider and an anti-FOUC inline script in the root layout for seamless theme switching.
+- **GHL Deduplication:** GHL member syncing includes email-based deduplication to prevent redundant CRM entries.
 
-## Dark Mode
-- Class-based: `html.dark` toggled by ThemeProvider
-- `@custom-variant dark` in globals.css enables `dark:` Tailwind variants
-- Anti-FOUC inline script in root layout reads `atbv-theme` from localStorage
-- Toggle in sidebar footer (sun/moon icon) above Sign out
-- Global CSS overrides in globals.css handle common hardcoded color patterns
+## Product
 
-## Member Dashboard (`/member/dashboard`)
-- **Page:** `src/app/member/dashboard/page.tsx` — renders `MemberDashboard` for members, `EditorDashboard` for editors/admins
-- **Component:** `src/app/member/dashboard/MemberDashboard.tsx` — full 3-row client dashboard
-  - Row 1: Attraction Score, Leads/Clicks/Conv Rate this month (vs last month delta)
-  - Row 2: Top 3 strengths + gaps with AI tool deep-links, one-sentence diagnosis (left); Days since upload, next Q&A call, AI Tools quick-links (right)
-  - Row 3: Best video this month (thumbnail + stats), Score History sparkline
-- **API:** `src/app/api/member/dashboard/route.ts` — single endpoint, parallel queries, returns: firstName, latestAudit (score/strengths/gaps/diagnosis), previousAudit, campaignStats (thisMonth/lastMonth), bestVideo, daysSinceUpload, nextCoachingCall (next Thursday), scoreHistory
+- **YouTube Channel Audits:** AI-powered scoring (0-10) across 16 principles, with detailed strengths, gaps, and diagnoses.
+- **AI Tools Suite:** Includes Avatar Architect, Content Engine (idea generation), Title & Thumbnail Analyzer, ARC Script Builder, and Script Review.
+- **Member Dashboard:** Personalized views of attraction score, campaign performance, best videos, and quick access to AI tools.
+- **Admin Dashboards:** Comprehensive analytics for members, audits, AI tool usage, and member management.
+- **SEO Intelligence Platform:** Multi-phase platform for client management, competitor tracking, keyword research, content ideas, and video performance analysis.
+- **Content Planner:** Kanban and calendar views for managing video content creation, integrated with member tiers and editing workflows.
+- **Lead Tracking & Analytics:** Comprehensive analytics on video clicks, leads, conversion funnels, and geographical distribution.
 
-## Key Files
-```
-prisma/schema.prisma         — DB schema: User (+ avatarProfile/Name/Summary/contentThemes/niche/city/thankYouPageUrl), Audit, AuditJob, AppSetting, Campaign (+ SourceType enum, destinationUrl, sourceType, deletedAt), TrackingLink (refCode unique, youtubeVideoId/Url/Thumbnail, deletedAt), Click (trackingLinkId, refCode, sessionId, city/province/country), PageView, Lead, ScriptReview, SavedScript, SavedTitle, SavedIdea, TitleAnalysis, AIToolConversation (AIToolType enum: replaced title_creator → content_engine)
-src/lib/
-  feature-flags.ts           — FeatureFlags interface + getFeatureFlags() (reads AppSetting "feature_visibility"); flags: campaigns, ai_tools, resources, tool_avatar_architect, tool_content_engine, tool_arc_script_builder, tool_title_analyzer, tool_script_review; all default true; admins bypass all flags
-  ghl.ts                     — GHL sync with nextPageUrl pagination + title case normalization
-  youtube.ts                 — YouTube API: channel info (now includes statistics: subscriberCount/totalVideoCount/totalViewCount), playlist, transcripts
-  youtube-sync.ts            — syncMemberChannel(userId) + syncAllChannels() — upserts YouTubeVideo + YouTubeChannelSnapshot rows
-  auth-utils.ts              — isAdminOrEditor(role) + editorTierFilter(role) helpers
-  audit-engine.ts            — Claude AI scoring + DEFAULT_SCORING_PROMPT + SCRIPT_REVIEW_PROMPT + AuditResult types
-  auth.ts                    — NextAuth config
-  prisma.ts                  — Prisma client singleton
-  session-utils.ts           — resolveUserFromSession() — resolves DB user; if admin has impersonate cookie, returns impersonated member
-  impersonate-constants.ts   — IMPERSONATE_COOKIE ("abv-impersonate-id") + IMPERSONATE_LS_KEY ("abv_impersonate") — client-safe constants
+## User preferences
 
-src/app/
-  admin/
-    analytics/page.tsx        — Admin Member Analytics: 5 summary cards (videos/active/inactive/clicks/top lead), recent videos grid with Run Audit buttons, sortable member engagement table with status+tier filters and pagination (20/page)
-    analytics/members/[id]/page.tsx — Member deep-dive: YouTube stats (subs/views/pace with 30d deltas), video list with Run Audit, tool usage table, campaigns + click trend bar chart, score history line chart, 4 dimension score cards
-    members/page.tsx          — Members list with search/filter
-    members/[id]/page.tsx     — Member detail: info, audit history, Run Audit, score trend, coaching notes, avatar profile editor, AI Tools Usage stats
-    audits/page.tsx           — All audits list with Run All Baseline + Run All Monthly buttons
-    audits/[auditId]/page.tsx — Full audit report with share/print
-    qa-prep/page.tsx          — Q&A Call Prep
-    script-review/page.tsx    — Redirects → /admin/ai-tools/script-review
-    settings/page.tsx         — AI prompt editor (audit scoring prompt)
-    ai-tools/script-review/page.tsx — New chat-based Script Review (15 principles + visual_suggestions + coaching chat)
-    ai-tools/usage/page.tsx   — AI Tools Usage analytics: summary cards, tool breakdown, member activity, recent feed
-  member/
-    scores/page.tsx           — Member dashboard: score, trend chart, 16-principle breakdown
-    script-review/page.tsx    — Redirects → /member/ai-tools/script-review
-    settings/page.tsx         — Settings with Avatar Profile section (view/edit/paste)
-    ai-tools/page.tsx         — AI Tools Hub: 5 tool cards with avatar status + admin Usage link
-    ai-tools/avatar-architect/page.tsx — Chat-style AI coaching to build ideal client avatar (+ PromptEditor + RecentConversations)
-    ai-tools/content-engine/page.tsx   — Content Engine: theme dashboard, batch/chat idea generation, niche setup, imported titles
-    ai-tools/title-thumbnail-analyzer/page.tsx — Title+thumbnail scoring (+ PromptEditor + RecentConversations)
-    ai-tools/arc-script-builder/page.tsx — 4-step ARC Method script wizard
-    ai-tools/script-review/page.tsx — Chat-based Script Review: paste script → scorecard (15 principles + visual suggestions) → coaching chat
-  member/
-    analytics/page.tsx        — Analytics: overview KPIs + sparklines, clicks/leads timeseries (LineChart), conversion funnel, lead magnet table, video matrix (CTR + conv rate), top videos BarChart, geo breakdown. All tables sortable. Filter bar: 7d/30d/90d/custom, campaign, source. ?section= deep-link from campaigns page cards.
-  api/
-    analytics/overview/       — totalViews/Clicks/Leads/convRate + deltas vs prev period + 30d sparklines
-    analytics/lead-magnets/   — Per-campaign: views/clicks/leads/convRate + bestVideo in period
-    analytics/videos/         — Per tracking link: YT views, clicks, leads, CTR, convRate
-    analytics/timeseries/     — Daily/weekly clicks+leads series (granularity param)
-    analytics/funnel/         — Views→Clicks→Leads with viewToClickRate + clickToLeadRate
-    analytics/geo/            — Leads grouped by city/province/country with flag emoji
-    member/avatar/            — GET/PUT user avatar profile, themes (normalizes string[] → object[]), niche, city
-    member/niche/             — PUT update niche + city
-    ai-tools/avatar-architect/ — POST multi-turn chat; saves enhanced themes (with emoji/colour/coreStress)
-    ai-tools/content-engine/batch/ — POST generate 5 ideas for one theme (parallel-safe)
-    ai-tools/content-engine/chat/  — POST multi-turn chat scoped to a theme; returns <IDEA_DATA> tags
-    ai-tools/content-engine/save-idea/ — POST save idea to SavedIdea
-    ai-tools/content-engine/saved-ideas/ — GET list saved ideas filtered by theme + pagination
-    ai-tools/content-engine/delete-idea/ — DELETE remove a saved idea
-    ai-tools/title-thumbnail-analyzer/ — POST vision + title analysis; checks title_thumbnail_analyzer_prompt AppSetting
-    ai-tools/arc-script-builder/ — POST step-by-step ARC script generation (summarize/opening/credibility/insights/final)
-    ai-tools/script-review/  — POST: first call returns JSON scorecard; subsequent calls = coaching chat
-    ai-tools/conversations/   — POST create / GET list (filter by toolType, last 20, auto-purge 30d)
-    ai-tools/conversations/[id]/ — GET / PATCH / DELETE individual conversation
-    ai-tools/conversations/[id]/download/ — GET markdown download (increments downloadCount)
-    ai-tools/save-script/     — POST save SavedScript
-    ai-tools/saved-scripts/   — GET list member's saved scripts
-    admin/analytics/          — GET full analytics payload: cards, recentVideos (7d), member rows with status/score/activity
-    admin/analytics/members/[id]/ — GET deep-dive: user info, channelStats, videos, toolUsage, campaigns, clickTrend30d, scoreHistory, dimensions
-    admin/youtube/sync/       — POST sync all or one member's YouTube channel (body: {} or { userId })
-    cron/youtube-sync/        — GET daily cron (x-cron-secret header) syncs all member channels at 2pm UTC
-    admin/member-tools-usage/[userId]/ — GET scripts count, analyses count, last activity
-    admin/impersonate/        — POST (set cookie) / DELETE (clear cookie) for admin member impersonation
-    admin/feature-visibility/ — GET/PUT toggle feature flags stored in AppSetting "feature_visibility" (JSON)
-    settings/                 — GET/PATCH/DELETE generic key-based AppSetting; returns prompt defaults for known keys
-    audits/..., members/..., script-review/..., sync/..., qa-prep/... (see previous)
-```
+_Populate as you build_
 
-## Audit Engine
-- Claude claude-sonnet-4-20250514, 8192 max tokens
-- 16 principles scored 0–10 with evidence text
-- Three audit types: `baseline`, `monthly`, `single_video`
-- Monthly audits compare vs baseline + last month
-- Job states: `queued → downloading → analysing → generating → complete/failed`
-- Default scoring prompt stored in `app_settings` table, editable via Settings page; falls back to `DEFAULT_SCORING_PROMPT` if no DB row exists
-- **Weighted scoring**: `overallScore` = Attraction Score (weighted), `raw_average` stored in `reportContent.raw_average`
-  - 3x weight: lead_magnet_system, avatar_clarity, binge_architecture
-  - 2x weight: arc_attention, approve_the_click, connection_language, title_frameworks, arc_revelation, story_proof
-  - 1x weight: themes_over_topics, consistency, curiosity_bridges, values_peppering, grade_5_language, arc_connection
-  - 0x weight: show_dont_tell (scored and shown but excluded — transcript-estimated only)
-  - Formula: Sum(score × weight) ÷ 27 = Attraction Score; Raw Average = Sum of all 16 ÷ 16
-  - `calculateWeightedScores()` exported from `audit-engine.ts`; applied server-side after Claude returns scores
-- **Calibration rules** in prompt (12 total): format awareness, scoring strictness, evidence requirement, lead magnet strictness, curiosity bridges, values peppering, story proof specificity, ARC attention opening pattern, binge architecture context quality, Consistency (rule #11 — mathematical from upload dates with lookup table), Show Don't Tell (rule #12 — transcript verbal cues only)
-- `SCRIPT_REVIEW_PROMPT` in `audit-engine.ts` — specialized prompt for script/transcript analysis; scores Show Don't Tell on written visual cues; sets Consistency to 5 (N/A for single script); returns `whats_working`, `three_improvements`, `quick_win`
-- `ScriptReview` DB model stores: userId, videoTitle, scriptText, scores (Json), overallScore, reportContent (Json)
-- Report pages show: big Attraction Score + "Raw Average: X.X / 10" in small text below (admin, shared, member views)
+## Gotchas
 
-## Content Planner (Phase 1+2 complete)
-- `ContentPlan` model: title, status, theme, shootDate, publishDate, editDueDate, priority, notes, thumbnailWords, footageLink, driveFolderLink
-- `ClientCall` model: fathomUrl, callDate, topic, notes (admin-created, member-scoped)
-- `ClientQuickLink` model: label, url, sortOrder (per-member quick links)
-- User fields added: `assetsDriveLink`, `calendarToken` (unique)
-- Status options are tier-gated: Foundations/Production get 7 statuses; Growth/DWY get 9 statuses
-- Edit Due Date column: visible only for mastery_2, mastery_4, done_with_you
-- Drive Folder column: visible only for editing_2, editing_4, mastery_2, mastery_4, done_with_you
-- Inline cell editing: click any cell → input/select appears → blur/enter saves via PUT
-- Member sidebar link added between AI Tools and Generate Leads
-- Admin member detail page: "Content Planner" tab with dark-themed table
-- Shared utility: `src/lib/content-plan-utils.ts` (tier helpers, status lists, STATUS_STYLES map)
-- API: `GET/POST /api/member/content-plans`, `GET/PUT/DELETE /api/member/content-plans/[id]`, `GET /api/member/content-plans/themes`
-- Admin API: `GET/POST /api/admin/members/[id]/content-plans`, `PUT/DELETE /api/admin/members/[id]/content-plans/[planId]`
-- Calendar views (Publish Calendar, Shoot Calendar, Edit Due) — monthly grid with @dnd-kit drag-and-drop to reschedule; mobile list view; click pill → edit modal (`src/components/content-planner/CalendarView.tsx`)
-- Board view (By Theme) — kanban columns per avatar theme; @dnd-kit drag between columns to reassign theme; mobile stacked; Unassigned column when needed (`src/components/content-planner/BoardView.tsx`)
-- Shared edit modal for calendar/board (`src/components/content-planner/ContentPlanEditModal.tsx`) — all fields, delete with confirmation
+- **GHL Pagination:** Always use `meta.nextPageUrl` for GoHighLevel API pagination, not `startAfter`/`startAfterId`.
+- **Audit Prompts:** AI audit scoring prompts are stored in the `app_settings` table and can be edited via the Admin Settings page; changes directly impact AI scoring.
+- **Feature Flags:** Admins bypass all feature flags; member access is governed by `feature_visibility` in `AppSetting`.
+- **Cron Jobs:** Daily YouTube channel sync is triggered via a cron job, secured by an `x-cron-secret` header.
 
-## Deduplication
-- Chris Troke has 25+ duplicate GHL records — sync deduplicates by email
+## Pointers
 
-## SEO Intelligence Platform (10-phase build)
-- **Phase 0 COMPLETE**: Database schema (18 Prisma models incl. VocabularyProfile, 7 enums) + admin module shell
-- **Phase 1 COMPLETE**: Full client management, competitor tracking, keyword research, cluster management, vocabulary profiles, content ideas (manual + AI-generated), and intelligence runs per client
-- **Phase 2 COMPLETE**: Core execution engine — `syncChannel()` syncs up to 200 videos via YouTube API v3; `executeRun()` chains: syncChannel → outlier detection (2.5× median) → Supadata transcripts → Claude analysis (hookType, titleFramework, stressThemes, whyItWorked, keyTakeaway) → markdown report → DB save
-- Admin routes: `/admin/intelligence/*` — full sub-navigation
-  - `/runs` / `/runs/[runId]` — auto-polling run detail, tabbed report + outliers view, "Save to Swipe File" per outlier
-  - `/new-run` — functional form with client picker + channel URL
-  - `/clients/[clientId]/*` — competitors, keywords, clusters, ideas, vocabulary, runs sub-pages
-  - `/global/outliers` — live outlier feed with "Save to Swipe File", analysis tags
-  - `/global/patterns` — aggregated hook/title/theme patterns from Claude analyses
-  - `/global/trends` — bar charts of hook types, stress themes, title frameworks
-  - `/global/swipe-file` — interactive add/delete/filter/tag swipe file
-- API routes: `POST /runs`, `POST /runs/[runId]/execute` (202 fire-and-forget), `GET /runs/[runId]`, `GET/POST/DELETE competitors`, `GET/POST keywords`, `GET/POST/PATCH/DELETE clusters`, `GET/POST/PATCH ideas`, `GET/POST/DELETE vocabulary`, `POST swipe-file`, `DELETE swipe-file`, `POST channels/sync`, `GET global/outliers`
-- `src/lib/intel-channel.ts` — `syncChannel()`, `fetchAllChannelVideos()`, `computeOutlierMultiples()`
-- `src/lib/intel-run.ts` — `executeRun()` full pipeline with Claude analysis + markdown report generation
-- Outlier threshold: 2.5× channel median; max 5 outliers per run get deep Claude analysis
-- Model: `claude-sonnet-4-20250514`; Supadata API for transcripts (optional, gracefully skipped)
-- Requires `YOUTUBE_API_KEY` for channel sync; `ANTHROPIC_API_KEY` for analysis
-- `VocabularyProfile` model added: client-scoped term/definition/category/exampleUsage entries
-```
+- **Next.js Documentation:** [https://nextjs.org/docs](https://nextjs.org/docs)
+- **Prisma Documentation:** [https://www.prisma.io/docs](https://www.prisma.io/docs)
+- **NextAuth.js Documentation:** [https://next-auth.js.org/](https://next-auth.js.org/)
+- **Anthropic Claude API:** [https://docs.anthropic.com/](https://docs.anthropic.com/)
+- **YouTube Data API v3:** [https://developers.google.com/youtube/v3](https://developers.google.com/youtube/v3)
+- **Tailwind CSS Documentation:** [https://tailwindcss.com/docs](https://tailwindcss.com/docs)

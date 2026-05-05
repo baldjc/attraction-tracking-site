@@ -75,6 +75,17 @@ function DraggableCard({
       onClick={onEdit}
       className={`bg-white border border-gray-200 rounded-lg p-3 cursor-pointer transition-shadow ${isDragging ? "outline-dashed outline-2 outline-purple-300 opacity-40" : "hover:border-[#6ba3c7] hover:shadow-sm"}`}
     >
+      {plan.thumbnailFileId && (
+        <div {...listeners} className="-mx-3 -mt-3 mb-2 cursor-grab active:cursor-grabbing">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={`/api/member/content-plans/${plan.id}/thumbnail?v=${encodeURIComponent(plan.updatedAt ?? plan.thumbnailFileId ?? "")}`}
+            alt=""
+            loading="lazy"
+            className="w-full aspect-video object-cover rounded-t-lg bg-gray-100"
+          />
+        </div>
+      )}
       <div className="flex items-start justify-between gap-2 mb-2">
         <div {...listeners} className="flex-1 min-w-0 cursor-grab active:cursor-grabbing">
           <p className="text-xs font-medium text-[#2f3437] leading-snug">{plan.title}</p>
@@ -369,6 +380,17 @@ export default function BoardView({ apiBase, serviceTier, isAdmin, searchQuery =
                         onClick={() => setEditingPlan(plan)}
                         className="bg-white border border-gray-200 rounded-lg p-3 cursor-pointer hover:border-[#6ba3c7] hover:shadow-sm transition-colors"
                       >
+                        {plan.thumbnailFileId && (
+                          <div className="-mx-3 -mt-3 mb-2">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={`/api/member/content-plans/${plan.id}/thumbnail?v=${encodeURIComponent(plan.updatedAt ?? plan.thumbnailFileId ?? "")}`}
+                              alt=""
+                              loading="lazy"
+                              className="w-full aspect-video object-cover rounded-t-lg bg-gray-100"
+                            />
+                          </div>
+                        )}
                         <div className="flex items-start justify-between gap-2 mb-2">
                           <p className="text-xs font-medium text-[#2f3437] leading-snug flex-1 min-w-0">{plan.title}</p>
                           {plan.driveFolderLink && (

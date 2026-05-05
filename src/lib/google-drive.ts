@@ -274,3 +274,44 @@ export async function listFilesInFolder(folderUrl: string): Promise<Array<{ id: 
     return [];
   }
 }
+
+/**
+ * Fetches a Drive file's binary content as a Buffer + mimeType. Used by the
+ * thumbnail proxy route to stream member-picked images through our origin so
+ * the client never needs Drive auth and the URL stays stable.
+ */
+export async function fetchDriveFileBytes(
+  fileId: string
+): Promise<{ buffer: Buffer; mimeType: string } | null> {
+  try {
+    const drive = getDriveClient();
+    const meta = await drive.files.get({ fileId, fields: "id, mimeType, parents" });
+    const mimeType = meta.data.mimeType ?? "application/octet-stream";
+    const res = await drive.files.get(
+      { fileId, alt: "media" },
+      { responseType: "arraybuffer" }
+    );
+    const buffer = Buffer.from(res.data as ArrayBuffer);
+    return { buffer, mimeType };
+  } catch (err) {
+    console.error("[google-drive] fetchDriveFileBytes failed:", err);
+    return null;
+  }
+}
+
+/**
+ * Verifies that the given Drive file lives inside the given folder URL —
+ * prevents members from picking arbitrary file ids as thumbnails.
+ */
+export async function isFileInFolder(fileId: string, folderUrl: string): Promise<boolean> {
+  try {
+    const folderId = folderIdFromUrl(folderUrl);
+    if (!folderId) return false;
+    const drive = getDriveClient();
+    const meta = await drive.files.get({ fileId, fields: "parents" });
+    return (meta.data.parents ?? []).includes(folderId);
+  } catch (err) {
+    console.error("[google-drive] isFileInFolder failed:", err);
+    return false;
+  }
+}

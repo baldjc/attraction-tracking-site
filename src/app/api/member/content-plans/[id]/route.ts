@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import prisma from "@/lib/prisma";
 import { isValidStatus, PRODUCTION_TIERS } from "@/lib/content-plan-utils";
-import { createVideoFolder } from "@/lib/google-drive";
+import { createVideoFolder, isFileInFolder } from "@/lib/google-drive";
 import { getFeatureFlags } from "@/lib/feature-flags";
 
 // "Needs Research" is the earliest production status — kicking off the Drive
@@ -52,7 +52,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const serviceTier = dbUser?.serviceTier ?? "foundations";
 
   const body = await req.json();
-  const { title, status, theme, shootDate, shootLocation, publishDate, editDueDate, priority, dramaMode, notes, script, researchNotes, thumbnailWords, footageLink, driveFolderLink, youtubeDescription, linkedCampaignId, linkedScriptId } = body;
+  const { title, status, theme, shootDate, shootLocation, publishDate, editDueDate, priority, dramaMode, notes, script, researchNotes, thumbnailWords, footageLink, driveFolderLink, youtubeDescription, linkedCampaignId, linkedScriptId, thumbnailFileId, thumbnailFileName } = body;
   // Coerce empty-string `bingeVideoId` ("") to null so non-modal clients can
   // clear the link without tripping the ownership lookup (which would 404 on
   // an empty id). Treat `undefined` (field omitted) distinctly from null
@@ -86,6 +86,19 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: "Invalid status for your membership tier" }, { status: 400 });
   }
 
+  // Constrain thumbnail picks to a Drive file that actually lives inside
+  // this plan's project folder — otherwise a forged PUT could repoint the
+  // proxy at any file the service account can read.
+  if (thumbnailFileId) {
+    if (!existing.driveFolderLink) {
+      return NextResponse.json({ error: "Plan has no Drive folder" }, { status: 400 });
+    }
+    const inFolder = await isFileInFolder(thumbnailFileId, existing.driveFolderLink);
+    if (!inFolder) {
+      return NextResponse.json({ error: "Thumbnail must be a file in this plan's Drive folder" }, { status: 400 });
+    }
+  }
+
   let plan = await prisma.contentPlan.update({
     where: { id },
     data: {
@@ -108,6 +121,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       ...(linkedCampaignId !== undefined && { linkedCampaignId: linkedCampaignId ?? null }),
       ...(linkedScriptId !== undefined && { linkedScriptId: linkedScriptId ?? null }),
       ...(bingeVideoId !== undefined && { bingeVideoId: bingeVideoId ?? null }),
+      ...(thumbnailFileId !== undefined && { thumbnailFileId: thumbnailFileId ?? null }),
+      ...(thumbnailFileName !== undefined && { thumbnailFileName: thumbnailFileName ?? null }),
     },
     include: {
       bingeVideo: { select: BINGE_RELATION_SELECT },

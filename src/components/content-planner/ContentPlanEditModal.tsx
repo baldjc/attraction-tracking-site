@@ -131,6 +131,14 @@ export interface ContentPlan {
   bingeVideoId?: string | null;
   bingeVideo?: BingeVideoSummary | null;
   bingedFromList?: BingeVideoSummary[];
+  // Drive file currently picked as the video's thumbnail (id + friendly name
+  // so list views can show the chosen filename even when the image hasn't
+  // loaded yet). Resolved to a real image via /api/.../thumbnail.
+  thumbnailFileId?: string | null;
+  thumbnailFileName?: string | null;
+  // Used as the cache-buster on the proxied thumbnail URL so list views
+  // re-fetch the image immediately after a save.
+  updatedAt?: string | null;
 }
 
 interface ThemeOption {
@@ -321,6 +329,13 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
       .catch(() => {});
   }, [isAdmin]);
   const [driveFolderLink, setDriveFolderLink] = useState(plan.driveFolderLink);
+  // Locally tracked thumbnail pick — applied immediately on click so the
+  // preview updates without a save round-trip; persisted on next save.
+  const [thumbnailFileId, setThumbnailFileId] = useState<string | null>(plan.thumbnailFileId ?? null);
+  const [thumbnailFileName, setThumbnailFileName] = useState<string | null>(plan.thumbnailFileName ?? null);
+  // Bumped after each save so the proxied image refetches even when the file
+  // id hasn't changed (Drive contents may have been replaced).
+  const [thumbVersion, setThumbVersion] = useState(0);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -700,11 +715,14 @@ Produce a research brief I can hand to a script writer. For **each talking point
           footageLink: form.footageLink || null,
           linkedCampaignId: form.linkedCampaignId || null,
           bingeVideoId: form.bingeVideoId || null,
+          thumbnailFileId: thumbnailFileId || null,
+          thumbnailFileName: thumbnailFileName || null,
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to save");
       if (data.plan?.driveFolderLink) setDriveFolderLink(data.plan.driveFolderLink);
+      setThumbVersion((v) => v + 1);
       onSaved(data.plan);
       return true;
     } catch (e: unknown) {
@@ -835,23 +853,65 @@ Produce a research brief I can hand to a script writer. For **each talking point
                 <p className="text-xs font-bold uppercase tracking-wider text-[#10B981]">📁 Project Folder</p>
                 <a href={driveFolderLink} target="_blank" rel="noreferrer" className="text-[11px] font-semibold text-[#10B981] hover:underline">Open in Drive →</a>
               </div>
+              {thumbnailFileId && (
+                <div className="flex items-center gap-3 bg-white rounded-lg border border-[#10B981]/30 p-2">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={`/api/member/content-plans/${plan.id}/thumbnail?v=${thumbVersion}`}
+                    alt="Selected thumbnail"
+                    className="w-20 h-12 object-cover rounded bg-gray-100"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] uppercase tracking-wider font-bold text-[#10B981]">Thumbnail</p>
+                    <p className="text-xs text-[#2f3437] truncate" title={thumbnailFileName ?? ""}>
+                      {thumbnailFileName ?? "Selected file"}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => { setThumbnailFileId(null); setThumbnailFileName(null); }}
+                    className="text-[11px] font-medium text-[#2f3437]/50 hover:text-red-500 px-1.5"
+                    title="Remove thumbnail"
+                  >Clear</button>
+                </div>
+              )}
               <ul className="space-y-1">
-                {driveFiles.map((f) => (
-                  <li key={f.id} className="text-xs text-[#2f3437]/80 flex items-center justify-between gap-2">
-                    <a
-                      href={f.webViewLink ?? driveFolderLink}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="truncate hover:text-[#10B981] hover:underline"
-                      title={f.name}
-                    >📄 {f.name}</a>
-                    {f.modifiedTime && (
-                      <span className="text-[10px] text-[#2f3437]/40 shrink-0">{new Date(f.modifiedTime).toLocaleDateString()}</span>
-                    )}
-                  </li>
-                ))}
+                {driveFiles.map((f) => {
+                  const isImage = (f.mimeType ?? "").startsWith("image/");
+                  const isPicked = f.id === thumbnailFileId;
+                  return (
+                    <li key={f.id} className="text-xs text-[#2f3437]/80 flex items-center justify-between gap-2">
+                      <a
+                        href={f.webViewLink ?? driveFolderLink}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="truncate hover:text-[#10B981] hover:underline flex-1 min-w-0"
+                        title={f.name}
+                      >{isImage ? "🖼️" : "📄"} {f.name}</a>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {isImage && (
+                          isPicked ? (
+                            <span className="text-[10px] font-semibold uppercase tracking-wider text-[#10B981] bg-[#10B981]/10 px-1.5 py-0.5 rounded">Thumbnail</span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => { setThumbnailFileId(f.id); setThumbnailFileName(f.name); }}
+                              className="text-[10px] font-medium text-[#10B981] hover:underline"
+                            >Set as thumbnail</button>
+                          )
+                        )}
+                        {f.modifiedTime && (
+                          <span className="text-[10px] text-[#2f3437]/40">{new Date(f.modifiedTime).toLocaleDateString()}</span>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
               {driveFilesLoading && <p className="text-[10px] text-[#2f3437]/40 italic">Refreshing…</p>}
+              {thumbnailFileId && (
+                <p className="text-[10px] text-[#2f3437]/40 italic">Save to apply your thumbnail across the planner.</p>
+              )}
             </div>
           )}
 
