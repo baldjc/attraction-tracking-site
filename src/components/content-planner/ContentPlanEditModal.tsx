@@ -903,7 +903,10 @@ Produce a research brief I can hand to a script writer. For **each talking point
         className={
           isMobile
             ? "bg-white w-full min-h-full flex flex-col"
-            : "bg-white rounded-xl shadow-xl w-full max-w-lg lg:max-w-3xl xl:max-w-4xl my-8"
+            // Bound the desktop modal to the viewport and turn it into a flex
+            // column so the footer (Save / Cancel / Delete) can stick to the
+            // bottom while the body scrolls — see Zone 9 of the redesign spec.
+            : "bg-white rounded-xl shadow-xl w-full max-w-lg lg:max-w-3xl xl:max-w-4xl my-8 max-h-[90vh] flex flex-col"
         }
       >
         <div
@@ -920,75 +923,104 @@ Produce a research brief I can hand to a script writer. For **each talking point
           </button>
         </div>
 
-        <div className={isMobile ? "px-4 py-4 space-y-4 pb-32" : "px-6 py-5 space-y-4"}>
+        <div className={isMobile ? "px-4 py-4 space-y-4 pb-32" : "px-6 py-5 space-y-4 flex-1 overflow-y-auto"}>
 
-          {driveFolderLink && driveFiles && driveFiles.length > 0 && (
-            <div className="rounded-xl border border-[#10B981]/25 bg-[#10B981]/5 px-4 py-3 space-y-2">
-              <div className="flex items-center justify-between">
-                <p className="text-xs font-bold uppercase tracking-wider text-[#10B981]">📁 Project Folder</p>
-                <a href={driveFolderLink} target="_blank" rel="noreferrer" className="text-[11px] font-semibold text-[#10B981] hover:underline">Open in Drive →</a>
-              </div>
-              {thumbnailFileId && (
-                <div className="flex items-center gap-3 bg-white rounded-lg border border-[#10B981]/30 p-2">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={`/api/member/content-plans/${plan.id}/thumbnail?v=${thumbVersion}`}
-                    alt="Selected thumbnail"
-                    className="w-20 h-12 object-cover rounded bg-gray-100"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[10px] uppercase tracking-wider font-bold text-[#10B981]">Thumbnail</p>
-                    <p className="text-xs text-[#2f3437] truncate" title={thumbnailFileName ?? ""}>
-                      {thumbnailFileName ?? "Selected file"}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => { setThumbnailFileId(null); setThumbnailFileName(null); }}
-                    className="text-[11px] font-medium text-[#2f3437]/50 hover:text-red-500 px-1.5"
-                    title="Remove thumbnail"
-                  >Clear</button>
-                </div>
-              )}
-              <ul className="space-y-1">
-                {driveFiles.map((f) => {
-                  const isImage = (f.mimeType ?? "").startsWith("image/");
-                  const isPicked = f.id === thumbnailFileId;
-                  return (
-                    <li key={f.id} className="text-xs text-[#2f3437]/80 flex items-center justify-between gap-2">
-                      <a
-                        href={f.webViewLink ?? driveFolderLink}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="truncate hover:text-[#10B981] hover:underline flex-1 min-w-0"
-                        title={f.name}
-                      >{isImage ? "🖼️" : "📄"} {f.name}</a>
-                      <div className="flex items-center gap-2 shrink-0">
-                        {isImage && (
-                          isPicked ? (
-                            <span className="text-[10px] font-semibold uppercase tracking-wider text-[#10B981] bg-[#10B981]/10 px-1.5 py-0.5 rounded">Thumbnail</span>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => { setThumbnailFileId(f.id); setThumbnailFileName(f.name); }}
-                              className="text-[10px] font-medium text-[#10B981] hover:underline"
-                            >Set as thumbnail</button>
-                          )
-                        )}
-                        {f.modifiedTime && (
-                          <span className="text-[10px] text-[#2f3437]/40">{new Date(f.modifiedTime).toLocaleDateString()}</span>
-                        )}
+          {driveFolderLink && driveFiles && driveFiles.length > 0 && (() => {
+            // Project Folder — Zone 4 of the redesign. Collapsed-by-default
+            // one-line summary on a neutral white surface (no green tint).
+            // Click the row to expand the full file list inline. The
+            // "Open in Drive ↗" link short-circuits the toggle.
+            const expanded = isSectionExpanded("projectFolder");
+            const fileCount = driveFiles.length;
+            return (
+              <div className="rounded-lg border border-gray-200 bg-white">
+                <button
+                  type="button"
+                  onClick={() => toggleSection("projectFolder")}
+                  className="w-full flex items-center justify-between gap-3 px-4 py-2.5 text-left hover:bg-gray-50/60 transition-colors rounded-lg"
+                  aria-expanded={expanded}
+                >
+                  <span className="flex items-center gap-2 min-w-0">
+                    <span className={`text-[#2f3437]/40 transition-transform ${expanded ? "rotate-90" : ""}`}>▸</span>
+                    <span className="text-[13px] font-medium text-[#2f3437]">Project folder</span>
+                    <span className="text-[12px] text-[#2f3437]/50 truncate">
+                      {fileCount} file{fileCount === 1 ? "" : "s"}{thumbnailFileId ? " · thumbnail set" : ""}
+                    </span>
+                  </span>
+                  <a
+                    href={driveFolderLink}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="text-[12px] font-medium text-[#185FA5] hover:underline shrink-0"
+                  >Open in Drive ↗</a>
+                </button>
+                {expanded && (
+                  <div className="px-4 pb-3 pt-1 space-y-2 border-t border-gray-100">
+                    {thumbnailFileId && (
+                      <div className="flex items-center gap-3 bg-gray-50 rounded-md border border-gray-200 p-2">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={`/api/member/content-plans/${plan.id}/thumbnail?v=${thumbVersion}`}
+                          alt="Selected thumbnail"
+                          className="w-20 h-12 object-cover rounded bg-gray-100"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[10px] uppercase tracking-wider font-semibold text-[#2f3437]/60">Thumbnail</p>
+                          <p className="text-xs text-[#2f3437] truncate" title={thumbnailFileName ?? ""}>
+                            {thumbnailFileName ?? "Selected file"}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => { setThumbnailFileId(null); setThumbnailFileName(null); }}
+                          className="text-[11px] font-medium text-[#2f3437]/50 hover:text-red-500 px-1.5"
+                          title="Remove thumbnail"
+                        >Clear</button>
                       </div>
-                    </li>
-                  );
-                })}
-              </ul>
-              {driveFilesLoading && <p className="text-[10px] text-[#2f3437]/40 italic">Refreshing…</p>}
-              {thumbnailFileId && (
-                <p className="text-[10px] text-[#2f3437]/40 italic">Save to apply your thumbnail across the planner.</p>
-              )}
-            </div>
-          )}
+                    )}
+                    <ul className="space-y-0.5">
+                      {driveFiles.map((f) => {
+                        const isImage = (f.mimeType ?? "").startsWith("image/");
+                        const isPicked = f.id === thumbnailFileId;
+                        return (
+                          <li key={f.id} className="text-xs text-[#2f3437]/80 flex items-center justify-between gap-2 px-1 py-1 rounded hover:bg-gray-50">
+                            <a
+                              href={f.webViewLink ?? driveFolderLink}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="truncate hover:text-[#185FA5] hover:underline flex-1 min-w-0"
+                              title={f.name}
+                            >{isImage ? "🖼️" : "📄"} {f.name}</a>
+                            <div className="flex items-center gap-2 shrink-0">
+                              {isImage && (
+                                isPicked ? (
+                                  <span className="text-[10px] font-semibold uppercase tracking-wider text-[#2f3437]/70 bg-gray-100 px-1.5 py-0.5 rounded">Thumbnail</span>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => { setThumbnailFileId(f.id); setThumbnailFileName(f.name); }}
+                                    className="text-[10px] font-medium text-[#185FA5] hover:underline"
+                                  >Set as thumbnail</button>
+                                )
+                              )}
+                              {f.modifiedTime && (
+                                <span className="text-[10px] text-[#2f3437]/40">{new Date(f.modifiedTime).toLocaleDateString()}</span>
+                              )}
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                    {driveFilesLoading && <p className="text-[10px] text-[#2f3437]/40 italic">Refreshing…</p>}
+                    {thumbnailFileId && (
+                      <p className="text-[10px] text-[#2f3437]/40 italic">Save to apply your thumbnail across the planner.</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           {!isAdmin && teamNotes.length > 0 && (
             <div className="rounded-xl border border-[#6ba3c7]/25 bg-[#6ba3c7]/5 px-4 py-3 space-y-2">
@@ -1007,30 +1039,40 @@ Produce a research brief I can hand to a script writer. For **each talking point
           )}
 
           {showProgressTrack && progressSteps.length > 0 && (
-            <div className="rounded-xl border border-gray-100 bg-[#f7f6f3] px-4 pt-4 pb-3 space-y-3">
-              <ProgressTrack steps={progressSteps} />
-
-              {suggestedNext && TOOL_ROUTES[suggestedNext.key] && (
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-[#2f3437]/50">Suggested next:</span>
+            // Workflow zone — Zone 3. Neutral white surface (no green/teal
+            // band), with top/bottom 0.5px hairlines and a primary-blue
+            // "Suggested next" CTA. The stepper's own colors stay as-is.
+            <div className="-mx-6 px-6 py-4 space-y-3 border-y border-gray-200 bg-white">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/50">
+                  Workflow{(() => {
+                    const total = progressSteps.length;
+                    const currentIdx = progressSteps.findIndex((s) => s.status === "current");
+                    const doneCount = progressSteps.filter((s) => s.status === "done").length;
+                    const stepNum = currentIdx >= 0 ? currentIdx + 1 : Math.min(doneCount + 1, total);
+                    return ` · Step ${stepNum} of ${total}`;
+                  })()}
+                </span>
+                {suggestedNext && TOOL_ROUTES[suggestedNext.key] && (
                   <button
                     type="button"
                     onClick={() => launchTool(suggestedNext.key)}
-                    className="flex items-center gap-1.5 text-xs font-semibold text-white bg-[#6ba3c7] hover:bg-[#5a92b6] px-3 py-1.5 rounded-lg transition-colors"
+                    className="flex items-center gap-1.5 text-xs font-medium text-white bg-[#185FA5] hover:bg-[#134d87] px-3.5 py-1.5 rounded-md transition-colors"
                   >
-                    {ALL_TOOLS.find((t) => t.key === suggestedNext.key)?.icon}{" "}
                     {ALL_TOOLS.find((t) => t.key === suggestedNext.key)?.label} →
                   </button>
-                </div>
-              )}
+                )}
+              </div>
+
+              <ProgressTrack steps={progressSteps} />
 
               <div>
                 <button
                   type="button"
                   onClick={() => setShowAllTools((v) => !v)}
-                  className="text-[10px] text-[#2f3437]/40 hover:text-[#6ba3c7] transition-colors"
+                  className="text-[11px] text-[#185FA5] hover:underline transition-colors"
                 >
-                  {showAllTools ? "Hide tools ▲" : "All tools for this plan ▼"}
+                  {showAllTools ? "Hide tools ▴" : "Show tools ▾"}
                 </button>
                 {showAllTools && (
                   <div className="mt-2 grid grid-cols-2 gap-1.5">
@@ -1700,7 +1742,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
           <div className="flex gap-2">
             <button onClick={onClose} className="px-4 py-2 text-sm text-[#2f3437]/60 hover:text-[#2f3437] border border-gray-200 rounded-lg">Cancel</button>
             <button onClick={handleSave} disabled={saving} className="px-4 py-2 text-sm bg-[#2f3437] text-white rounded-lg hover:bg-[#1a1f22] disabled:opacity-50 transition-colors">
-              {saving ? "Saving…" : "Save Changes"}
+              {saving ? "Saving…" : "Save changes"}
             </button>
           </div>
         </div>
