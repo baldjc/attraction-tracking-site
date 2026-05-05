@@ -505,6 +505,7 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
   // Title-bar character counter only renders while the title input is
   // focused, per the Zone 2 spec — keeps the hero row quiet at rest.
   const [titleFocused, setTitleFocused] = useState(false);
+  const titleInputRef = useRef<HTMLInputElement | null>(null);
   // Single-row expansion for the new Content list (Notion-style). Only one
   // of the five rows can be open at a time so the list stays compact.
   const [contentRowExpanded, setContentRowExpanded] = useState<string | null>(null);
@@ -1064,6 +1065,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
             <div className="flex items-start gap-3">
               <div className="flex-1 min-w-0">
                 <input
+                  ref={titleInputRef}
                   type="text"
                   value={form.title}
                   onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
@@ -1074,10 +1076,19 @@ Produce a research brief I can hand to a script writer. For **each talking point
                   style={{ fontSize: 19, lineHeight: 1.3 }}
                   aria-label="Video title"
                 />
-                {titleFocused && (
+                {titleFocused ? (
                   <div className={`text-[11px] mt-0.5 ${form.title.length > 80 ? "text-red-500" : form.title.length > 60 ? "text-amber-500" : "text-[#2f3437]/40"}`}>
                     {form.title.length} / 60 characters
                   </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => titleInputRef.current?.focus()}
+                    className="mt-0.5 text-[10px] uppercase tracking-wider text-[#2f3437]/40 hover:text-[#185FA5] transition-colors"
+                    title="Edit title"
+                  >
+                    Edit
+                  </button>
                 )}
               </div>
               {/* 64×36 thumbnail preview chip on the right edge of the title row. */}
