@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import { isAdminOrEditor, editorTierFilter, isAdmin } from "@/lib/auth-utils";
+import { isAdminOrEditor, isAdmin } from "@/lib/auth-utils";
 import { staffMemberIdFilter } from "@/lib/staff-access";
 
 export async function GET() {
@@ -20,12 +20,6 @@ export async function GET() {
   // expected owner address.
   const isOwner = isAdmin(role ?? "");
   const allowedFilter = await staffMemberIdFilter(userId);
-  // When a sub-admin/editor has been given an explicit list of members
-  // (allowedMemberIds), trust that list verbatim — don't also apply the
-  // legacy editor tier whitelist, otherwise members on the list whose tier
-  // isn't editing/mastery (e.g. foundations members) silently disappear and
-  // the sub-admin sees an unexpectedly short roster.
-  const tierFilter = allowedFilter ? undefined : editorTierFilter(role ?? "");
 
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -36,13 +30,11 @@ export async function GET() {
   // When the sub-admin has an explicit member list, trust it verbatim — skip
   // the default `role: "foundations_member"` scope so members on other tiers
   // (mastery, done-with-you, etc.) still appear. Otherwise fall back to the
-  // legacy default scope keyed off the tier filter.
+  // historical default scope (foundations members, the primary roster the
+  // dashboard was built around).
   const userWhere: Record<string, unknown> = allowedFilter
-    ? {}
-    : tierFilter
-    ? { ...tierFilter }
+    ? { id: allowedFilter }
     : { role: "foundations_member" as const };
-  if (allowedFilter) userWhere.id = allowedFilter;
 
   const members = await prisma.user.findMany({
     where: userWhere,
