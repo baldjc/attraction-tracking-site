@@ -2,10 +2,11 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
-async function requireAdmin() {
+async function requireStaff() {
   const session = await auth();
   if (!session?.user) return null;
-  if ((session.user as any).role !== "admin") return null;
+  const role = (session.user as any).role;
+  if (role !== "admin" && role !== "editor") return null;
   return session.user;
 }
 
@@ -15,7 +16,7 @@ async function getSetting(key: string): Promise<string | null> {
 }
 
 export async function POST() {
-  if (!await requireAdmin()) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!await requireStaff()) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const apiKey = await getSetting("fathom_api_key");
   if (!apiKey) return NextResponse.json({ error: "Fathom API key not configured" }, { status: 400 });

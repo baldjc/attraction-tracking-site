@@ -6,15 +6,16 @@ import { PRINCIPLES } from "../../lessons/route";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
-async function requireAdmin() {
+async function requireStaff() {
   const session = await auth();
   if (!session?.user) return null;
-  if ((session.user as any).role !== "admin") return null;
+  const role = (session.user as any).role;
+  if (role !== "admin" && role !== "editor") return null;
   return session.user;
 }
 
 export async function POST(req: NextRequest) {
-  if (!await requireAdmin()) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!await requireStaff()) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { calls } = await req.json() as {
     calls: Array<{

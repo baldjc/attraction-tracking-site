@@ -9,10 +9,18 @@ async function requireAdmin() {
   return session.user;
 }
 
+async function requireStaff() {
+  const session = await auth();
+  if (!session?.user) return null;
+  const role = (session.user as any).role;
+  if (role !== "admin" && role !== "editor") return null;
+  return session.user;
+}
+
 const KEYS = ["fathom_api_key", "fathom_recording_email", "fathom_title_filter", "fathom_last_pull_date", "fathom_last_pull_status", "fathom_webhook_secret"];
 
 export async function GET() {
-  if (!await requireAdmin()) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!await requireStaff()) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const settings = await prisma.appSetting.findMany({ where: { key: { in: KEYS } } });
   const map: Record<string, string> = {};
