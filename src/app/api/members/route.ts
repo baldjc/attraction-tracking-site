@@ -19,8 +19,13 @@ export async function GET() {
   // when sessions are missing the email claim or when env vars override the
   // expected owner address.
   const isOwner = isAdmin(role ?? "");
-  const tierFilter = editorTierFilter(role ?? "");
   const allowedFilter = await staffMemberIdFilter(userId);
+  // When a sub-admin/editor has been given an explicit list of members
+  // (allowedMemberIds), trust that list verbatim — don't also apply the
+  // legacy editor tier whitelist, otherwise members on the list whose tier
+  // isn't editing/mastery (e.g. foundations members) silently disappear and
+  // the sub-admin sees an unexpectedly short roster.
+  const tierFilter = allowedFilter ? undefined : editorTierFilter(role ?? "");
 
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -28,7 +33,13 @@ export async function GET() {
   const fourteenDaysAgo = new Date();
   fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
 
-  const userWhere: Record<string, unknown> = tierFilter
+  // When the sub-admin has an explicit member list, trust it verbatim — skip
+  // the default `role: "foundations_member"` scope so members on other tiers
+  // (mastery, done-with-you, etc.) still appear. Otherwise fall back to the
+  // legacy default scope keyed off the tier filter.
+  const userWhere: Record<string, unknown> = allowedFilter
+    ? {}
+    : tierFilter
     ? { ...tierFilter }
     : { role: "foundations_member" as const };
   if (allowedFilter) userWhere.id = allowedFilter;

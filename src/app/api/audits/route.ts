@@ -13,8 +13,11 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const tierFilter = editorTierFilter(role ?? "");
   const allowedFilter = await staffMemberIdFilter(userId);
+  // If the sub-admin has an explicit member list, the legacy editor tier
+  // whitelist is bypassed — otherwise members on the list whose tier isn't
+  // editing/mastery would silently disappear from the audits view.
+  const tierFilter = allowedFilter ? undefined : editorTierFilter(role ?? "");
 
   // Member Audits view excludes lead audits and audits owned by audit_lead users.
   const baseWhere: any = {
