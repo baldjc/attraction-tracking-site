@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { getChannelInfo, getLatestLongFormVideos } from "@/lib/youtube";
-import { isAdminOrEditor, canAccessTier } from "@/lib/auth-utils";
+import { isAdminOrEditor } from "@/lib/auth-utils";
+import { canStaffAccessMember } from "@/lib/staff-access";
 
 export async function GET(
   _req: NextRequest,
@@ -15,11 +16,12 @@ export async function GET(
   }
 
   const { id } = await params;
+  const userId = (session.user as any).id as string;
+  if (!(await canStaffAccessMember(userId, id))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   const member = await prisma.user.findUnique({ where: { id } });
   if (!member) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (!canAccessTier(role, member.serviceTier)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
   if (!member.youtubeHandle) return NextResponse.json({ error: "Member has no YouTube handle" }, { status: 400 });
 
   try {

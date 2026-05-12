@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { cookies } from "next/headers";
 import { IMPERSONATE_COOKIE } from "@/lib/session-utils";
-import { isAdminOrEditor, canAccessTier } from "@/lib/auth-utils";
+import { isAdminOrEditor } from "@/lib/auth-utils";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -45,10 +45,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Member not found" }, { status: 404 });
   }
 
-  // Editor can only impersonate editing/mastery members; admin can impersonate anyone
-  if (role === "editor" && !canAccessTier(role, member.serviceTier ?? "")) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  // Per-member access for editors is already enforced by the
+  // allowedMemberIds check above. The legacy editor-tier whitelist is
+  // intentionally not applied so a Staff Admin can impersonate any
+  // member assigned to them, regardless of serviceTier.
 
   const cookieStore = await cookies();
   // Tie the cookie to the staff account that set it so a stale cookie left on

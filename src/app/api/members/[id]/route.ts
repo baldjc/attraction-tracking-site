@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import { isAdminOrEditor, isAdmin, canAccessTier } from "@/lib/auth-utils";
+import { isAdminOrEditor, isAdmin } from "@/lib/auth-utils";
 import { canStaffAccessMember } from "@/lib/staff-access";
 import { logAdminAction } from "@/lib/admin-log";
 
@@ -49,10 +49,10 @@ export async function GET(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  // Editor can only view editing/mastery tier members
-  if (!canAccessTier(role, member.serviceTier)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  // Per-member access is already enforced by canStaffAccessMember above —
+  // sub-admins (incl. editor role) see exactly the members on their
+  // allowedMemberIds list regardless of serviceTier. The legacy
+  // editor-tier whitelist is intentionally not applied here.
 
   // Flatten tracking links from all campaigns so the frontend can use member.links directly
   const links = member.campaigns.flatMap((c) => c.links);
