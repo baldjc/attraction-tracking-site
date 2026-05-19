@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { ArrowPathIcon, PlayIcon, CheckCircleIcon, XCircleIcon, ChevronDownIcon, PlusIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 
@@ -101,6 +102,10 @@ function elapsedLabel(createdAt: string) {
 const ACTIVE_STATUSES = ["queued", "downloading", "analysing", "generating"];
 
 export default function AuditsPage() {
+  const { data: session } = useSession();
+  const userRole = (session?.user as any)?.role as string | undefined;
+  const isAdminUser = userRole === "admin";
+
   const [tab, setTab] = useState<"requests" | "audits" | "lead-audits">("audits");
 
   const [auditReqs, setAuditReqs] = useState<AuditRequestRow[]>([]);
@@ -159,6 +164,10 @@ export default function AuditsPage() {
         clearInterval(activeJobsPollRef.current);
         activeJobsPollRef.current = null;
         fetchAudits();
+        // Also refresh the Lead Audits table — admin-initiated lead audits
+        // (and form/GHL submissions) finish as part of the same job queue,
+        // so when jobs drain to zero, the lead row should appear with a score.
+        fetchLeadAudits();
       }
     }
     return () => {
@@ -441,6 +450,62 @@ export default function AuditsPage() {
     }
   }
 
+  // "Add Lead Audit" modal — creates a lead request AND immediately kicks off
+  // the same backend audit job that GHL/form submissions trigger.
+  const [addLeadOpen, setAddLeadOpen] = useState(false);
+  const [addLeadSubmitting, setAddLeadSubmitting] = useState(false);
+  const [addLeadError, setAddLeadError] = useState<string | null>(null);
+  const [addLeadForm, setAddLeadForm] = useState(emptyForm);
+
+  function openAddLeadModal() {
+    setAddLeadForm(emptyForm);
+    setAddLeadError(null);
+    setAddLeadOpen(true);
+  }
+
+  async function submitAddLeadAudit(e: React.FormEvent) {
+    e.preventDefault();
+    setAddLeadError(null);
+    setAddLeadSubmitting(true);
+    try {
+      // 1. Create the audit request (or reuse an existing pending one for this email).
+      const createRes = await fetch("/api/admin/audit-requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(addLeadForm),
+      });
+      const createData = await createRes.json();
+      let requestId: string | null = null;
+      if (createRes.ok) {
+        requestId = createData?.request?.id ?? null;
+      } else if (createRes.status === 409 && createData?.existingId) {
+        // A pending request already exists for this email — reuse it.
+        requestId = createData.existingId;
+      } else {
+        setAddLeadError(createData?.error ?? "Failed to create lead audit.");
+        return;
+      }
+      if (!requestId) {
+        setAddLeadError("Could not determine audit request ID.");
+        return;
+      }
+      // 2. Kick off the audit job (same path used by Run/Re-run on the Requests tab).
+      const runRes = await fetch(`/api/admin/audit-requests/${requestId}/run`, {
+        method: "POST",
+      });
+      if (!runRes.ok) {
+        const runData = await runRes.json().catch(() => ({}));
+        setAddLeadError(runData?.error ?? "Lead created, but failed to start the audit. Try Re-run on the row.");
+        await fetchLeadAudits();
+        return;
+      }
+      setAddLeadOpen(false);
+      await Promise.all([fetchLeadAudits(), fetchActiveJobs()]);
+    } finally {
+      setAddLeadSubmitting(false);
+    }
+  }
+
   // Webhook activity panel state
   const [webhookOpen, setWebhookOpen] = useState(false);
   const [webhookLogs, setWebhookLogs] = useState<Array<{
@@ -545,12 +610,22 @@ export default function AuditsPage() {
             <p className="text-sm text-[#2f3437]/60">
               {leadAudits.length} lead audit{leadAudits.length !== 1 ? "s" : ""}
             </p>
-            <button
-              onClick={fetchLeadAudits}
-              className="flex items-center gap-1.5 text-xs text-[#2f3437]/50 hover:text-[#2f3437] transition-colors"
-            >
-              <ArrowPathIcon className="w-3.5 h-3.5" /> Refresh
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={fetchLeadAudits}
+                className="flex items-center gap-1.5 text-xs text-[#2f3437]/50 hover:text-[#2f3437] transition-colors"
+              >
+                <ArrowPathIcon className="w-3.5 h-3.5" /> Refresh
+              </button>
+              {isAdminUser && (
+                <button
+                  onClick={openAddLeadModal}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white transition-colors"
+                >
+                  <PlusIcon className="w-3.5 h-3.5" /> Add Lead Audit
+                </button>
+              )}
+            </div>
           </div>
           <div className="bg-white rounded-lg border border-amber-200 overflow-hidden">
             <div className="overflow-x-auto">
@@ -882,6 +957,103 @@ export default function AuditsPage() {
                 className="px-4 py-1.5 text-sm font-semibold rounded-lg bg-[#6ba3c7] hover:bg-[#2ab0ec] text-white disabled:opacity-50"
               >
                 {addSubmitting ? "Creating…" : "Create Request"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Add Lead Audit modal — creates a lead request and immediately runs the audit */}
+      {addLeadOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => !addLeadSubmitting && setAddLeadOpen(false)}>
+          <form
+            onClick={(e) => e.stopPropagation()}
+            onSubmit={submitAddLeadAudit}
+            className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4"
+          >
+            <div>
+              <h2 className="text-lg font-bold text-[#2f3437]">Add Lead Audit</h2>
+              <p className="text-xs text-[#2f3437]/50 mt-0.5">Kicks off the same audit pipeline as a form submission.</p>
+            </div>
+            {addLeadError && (
+              <div className="text-xs bg-red-50 text-red-700 border border-red-200 rounded-md px-3 py-2">{addLeadError}</div>
+            )}
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Lead name *</label>
+                <input
+                  required
+                  value={addLeadForm.fullName}
+                  onChange={(e) => setAddLeadForm({ ...addLeadForm, fullName: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/40"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Email *</label>
+                <input
+                  required
+                  type="email"
+                  value={addLeadForm.email}
+                  onChange={(e) => setAddLeadForm({ ...addLeadForm, email: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/40"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Phone</label>
+                <input
+                  value={addLeadForm.phone}
+                  onChange={(e) => setAddLeadForm({ ...addLeadForm, phone: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/40"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">YouTube channel URL *</label>
+                <input
+                  required
+                  pattern=".*(youtube\.com|youtu\.be).*"
+                  title="Must contain youtube.com or youtu.be"
+                  placeholder="https://youtube.com/@yourhandle"
+                  value={addLeadForm.youtubeChannelUrl}
+                  onChange={(e) => setAddLeadForm({ ...addLeadForm, youtubeChannelUrl: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/40"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">GCI bracket</label>
+                  <input
+                    placeholder="e.g. $100k–$250k"
+                    value={addLeadForm.currentYoutubeIncome}
+                    onChange={(e) => setAddLeadForm({ ...addLeadForm, currentYoutubeIncome: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/40"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Desired GCI</label>
+                  <input
+                    placeholder="e.g. $500k"
+                    value={addLeadForm.desiredYoutubeIncome}
+                    onChange={(e) => setAddLeadForm({ ...addLeadForm, desiredYoutubeIncome: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/40"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setAddLeadOpen(false)}
+                disabled={addLeadSubmitting}
+                className="px-3 py-1.5 text-sm text-[#2f3437]/70 hover:text-[#2f3437] disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={addLeadSubmitting}
+                className="px-4 py-1.5 text-sm font-semibold rounded-lg bg-amber-600 hover:bg-amber-700 text-white disabled:opacity-50"
+              >
+                {addLeadSubmitting ? "Starting audit…" : "Run Lead Audit"}
               </button>
             </div>
           </form>
