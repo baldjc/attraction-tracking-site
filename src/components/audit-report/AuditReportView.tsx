@@ -368,7 +368,7 @@ export default function AuditReportView({ audit, chrome }: { audit: any; chrome?
         </div>
 
         {/* TOP CTA — discovery call (replaces the old in-widget "Join" button) */}
-        <div className="bg-white border border-gray-200 rounded-lg p-6 sm:p-8 print-avoid-break shadow-sm">
+        <div className="bg-white border border-gray-200 rounded-lg p-6 sm:p-8 print-avoid-break">
           <p className="text-sm sm:text-base text-[#2f3437]/85 leading-relaxed max-w-2xl">
             Whenever you&apos;re ready, book a 15-minute discovery call. We&apos;ll get clear on what you&apos;re building, answer your questions about Attraction, and figure out if the membership is the right fit for you.
           </p>
@@ -385,7 +385,7 @@ export default function AuditReportView({ audit, chrome }: { audit: any; chrome?
               href={CHECKOUT_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs text-[#2f3437]/60 italic hover:text-[#185FA5] underline-offset-2 hover:underline"
+              className="text-xs text-[#2f3437]/60 italic hover:text-[#6ba3c7] underline-offset-2 hover:underline"
             >
               Already decided? Skip the call and join Attraction now →
             </a>
@@ -445,8 +445,11 @@ export default function AuditReportView({ audit, chrome }: { audit: any; chrome?
         </div>
 
         {/* SECTION A — Score Outcome Bridge */}
-        <div className="bg-white border border-gray-200 rounded-lg p-6 sm:p-8 print-avoid-break shadow-sm">
-          <p className="text-[11px] font-bold text-[#185FA5] uppercase tracking-[0.18em] mb-3">Score Outcome Bridge</p>
+        <div className="bg-white border border-gray-200 rounded-lg p-6 sm:p-8 print-avoid-break">
+          <p className="text-[11px] font-bold text-[#6ba3c7] uppercase tracking-[0.18em] mb-2">Score Outcome Bridge</p>
+          <h2 className="text-xl sm:text-2xl font-bold text-[#2f3437] leading-snug mb-6">
+            Here&apos;s what your score actually means.
+          </h2>
           <p className="text-sm text-[#2f3437]/85 leading-relaxed">
             A score of <strong>{audit.overallScore != null ? Number(audit.overallScore).toFixed(1) : "—"}</strong> means your channel is visible but invisible. People are watching, but nothing about the experience is telling them what to do next, who you are, or why they should pick up the phone.
           </p>
@@ -535,7 +538,7 @@ export default function AuditReportView({ audit, chrome }: { audit: any; chrome?
         )}
 
         {/* MIDDLE CTA — discovery call (no secondary link at this placement) */}
-        <div className="bg-white border border-gray-200 rounded-lg p-6 sm:p-8 print-avoid-break shadow-sm">
+        <div className="bg-white border border-gray-200 rounded-lg p-6 sm:p-8 print-avoid-break">
           <p className="text-sm sm:text-base text-[#2f3437]/85 leading-relaxed max-w-2xl">
             You just saw the three biggest gaps in your channel. Every one of them has a fix inside Attraction. If you want to talk through whether the membership is the right move for where you want to take your channel, book a quick call.
           </p>
@@ -552,8 +555,11 @@ export default function AuditReportView({ audit, chrome }: { audit: any; chrome?
         </div>
 
         {/* SECTION B — The Attraction Method */}
-        <div className="bg-white border border-gray-200 rounded-lg p-6 sm:p-8 print-avoid-break shadow-sm">
-          <p className="text-[11px] font-bold text-[#185FA5] uppercase tracking-[0.18em] mb-3">The Attraction Method</p>
+        <div className="bg-white border border-gray-200 rounded-lg p-6 sm:p-8 print-avoid-break">
+          <p className="text-[11px] font-bold text-[#6ba3c7] uppercase tracking-[0.18em] mb-2">The Attraction Method</p>
+          <h2 className="text-xl sm:text-2xl font-bold text-[#2f3437] leading-snug mb-6">
+            Three loops. One system.
+          </h2>
           <p className="text-sm text-[#2f3437]/85 leading-relaxed">
             The 16 principles in your audit are not a checklist. They are the components of a system. We call it <strong>The Attraction Method</strong>, and it runs on three loops that work together.
           </p>
@@ -787,13 +793,16 @@ export default function AuditReportView({ audit, chrome }: { audit: any; chrome?
         )}
 
         {/* SECTION C — Your First 30 Days */}
-        <div className="bg-white border border-gray-200 rounded-lg p-6 sm:p-8 print-avoid-break shadow-sm">
-          <p className="text-[11px] font-bold text-[#185FA5] uppercase tracking-[0.18em] mb-3">Your First 30 Days</p>
+        <div className="bg-white border border-gray-200 rounded-lg p-6 sm:p-8 print-avoid-break">
+          <p className="text-[11px] font-bold text-[#6ba3c7] uppercase tracking-[0.18em] mb-2">Your First 30 Days</p>
+          <h2 className="text-xl sm:text-2xl font-bold text-[#2f3437] leading-snug mb-6">
+            From day one to your first re-audit.
+          </h2>
           <p className="text-sm text-[#2f3437]/85 leading-relaxed">
             We get asked a lot of &quot;what does my first month actually look like.&quot; Here it is, in literal terms.
           </p>
           <div className="mt-5 space-y-5">
-            <div className="border-l-2 border-[#185FA5] pl-4">
+            <div className="border-l-2 border-[#6ba3c7] pl-4">
               <p className="text-sm font-bold text-[#2f3437] mb-1">Day 1</p>
               <p className="text-sm text-[#2f3437]/85 leading-relaxed">
                 You get instant access to the platform. The system walks you through your first setup: running the Avatar Architect on your channel, identifying your ideal viewer, and locking your content theme. By the end of day one, you have a written profile of who you should actually be talking to in your videos. Most agents come out of this with a different avatar than they thought they had.
@@ -802,25 +811,25 @@ export default function AuditReportView({ audit, chrome }: { audit: any; chrome?
                 If you are in our Growth or Done With You program, you also get weekly setup calls for your first 30 days where we build the system with you and remove the guesswork.
               </p>
             </div>
-            <div className="border-l-2 border-[#185FA5] pl-4">
+            <div className="border-l-2 border-[#6ba3c7] pl-4">
               <p className="text-sm font-bold text-[#2f3437] mb-1">Week 1</p>
               <p className="text-sm text-[#2f3437]/85 leading-relaxed">
                 Foundations Academy Week 1: Channel Strategy. You learn how to anchor every future video to the right avatar and content theme. By the end of the week, you have used the ARC Script Builder to write your first script on the new framework. This is the first time most members realise the production part is actually faster, not slower, once the strategy is locked.
               </p>
             </div>
-            <div className="border-l-2 border-[#185FA5] pl-4">
+            <div className="border-l-2 border-[#6ba3c7] pl-4">
               <p className="text-sm font-bold text-[#2f3437] mb-1">Week 2</p>
               <p className="text-sm text-[#2f3437]/85 leading-relaxed">
                 You ship your first video using the framework. The Title and Thumbnail Analyzer scores your packaging before you publish. If you want feedback on it, you can request a Hot Seat review on the weekly live call. This is where the data starts coming in on what actually changed: better click-through, longer watch time, real comments instead of crickets.
               </p>
             </div>
-            <div className="border-l-2 border-[#185FA5] pl-4">
+            <div className="border-l-2 border-[#6ba3c7] pl-4">
               <p className="text-sm font-bold text-[#2f3437] mb-1">Week 3</p>
               <p className="text-sm text-[#2f3437]/85 leading-relaxed">
                 You install your first lead magnet using the Lead Magnet System taught in Foundations Week 3. Now your videos have somewhere for a warm viewer to go. This is the single biggest swing for most agents in the first month. Before this week, your viewers had nothing to do at the end of a video. After this week, they have a reason to give you their email.
               </p>
             </div>
-            <div className="border-l-2 border-[#185FA5] pl-4">
+            <div className="border-l-2 border-[#6ba3c7] pl-4">
               <p className="text-sm font-bold text-[#2f3437] mb-1">Week 4</p>
               <p className="text-sm text-[#2f3437]/85 leading-relaxed">
                 You ship your second video. We run the monthly re-audit on your channel using the same 16 principles you were scored on at the start. You get to see exactly which numbers moved, by how much, and which gaps are next on the list. By day 30, you have a system installed, two videos in the new framework, a lead magnet running, and a clear picture of what month 2 should focus on.
@@ -833,8 +842,11 @@ export default function AuditReportView({ audit, chrome }: { audit: any; chrome?
         </div>
 
         {/* SECTION D — The Math */}
-        <div className="bg-white border border-gray-200 rounded-lg p-6 sm:p-8 print-avoid-break shadow-sm">
-          <p className="text-[11px] font-bold text-[#185FA5] uppercase tracking-[0.18em] mb-3">The Math</p>
+        <div className="bg-white border border-gray-200 rounded-lg p-6 sm:p-8 print-avoid-break">
+          <p className="text-[11px] font-bold text-[#6ba3c7] uppercase tracking-[0.18em] mb-2">The Math</p>
+          <h2 className="text-xl sm:text-2xl font-bold text-[#2f3437] leading-snug mb-6">
+            Let&apos;s do the math out loud.
+          </h2>
           <p className="text-sm text-[#2f3437]/85 leading-relaxed">
             I&apos;d rather show this in real numbers than make a pitch about value. So here is the math out loud.
           </p>
@@ -953,10 +965,13 @@ export default function AuditReportView({ audit, chrome }: { audit: any; chrome?
         </div>
 
         {/* SECTION E — Honest Answers (FAQ) */}
-        <div className="bg-white border border-gray-200 rounded-lg p-6 sm:p-8 print-avoid-break shadow-sm">
-          <p className="text-[11px] font-bold text-[#185FA5] uppercase tracking-[0.18em] mb-3">Honest Answers</p>
-          <p className="text-sm text-[#2f3437]/85 leading-relaxed mb-6">
-            The questions every agent has at this point in the audit. Here are the real answers.
+        <div className="bg-white border border-gray-200 rounded-lg p-6 sm:p-8 print-avoid-break">
+          <p className="text-[11px] font-bold text-[#6ba3c7] uppercase tracking-[0.18em] mb-2">Honest Answers</p>
+          <h2 className="text-xl sm:text-2xl font-bold text-[#2f3437] leading-snug mb-2">
+            The questions every agent has at this point.
+          </h2>
+          <p className="text-sm text-[#2f3437]/70 leading-relaxed mb-6">
+            Here are the real answers.
           </p>
           <div className="space-y-6">
             <div>
