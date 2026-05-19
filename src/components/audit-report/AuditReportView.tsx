@@ -444,33 +444,97 @@ export default function AuditReportView({ audit, chrome }: { audit: any; chrome?
         </div>
 
         {/* SECTION A — Score Outcome Bridge */}
+        {(() => {
+          const scoreNum = audit.overallScore != null ? Number(audit.overallScore) : null;
+          const scoreDisplay = scoreNum != null ? scoreNum.toFixed(1) : "—";
+          // Band selection: <4, 4-6, 6-8, 8+. Default to 4-6 when score is unknown.
+          const band: "under4" | "mid" | "upper" | "top" =
+            scoreNum == null ? "mid"
+            : scoreNum < 4 ? "under4"
+            : scoreNum < 6 ? "mid"
+            : scoreNum < 8 ? "upper"
+            : "top";
+          const rangeLabel =
+            band === "under4" ? "1 to 4"
+            : band === "mid"   ? "4 to 6"
+            : band === "upper" ? "6 to 8"
+            : "8+";
+          const isHighScore = scoreNum != null && scoreNum >= 7;
+          return (
         <div className="bg-white border border-gray-200 rounded-lg p-6 sm:p-8 print-avoid-break">
           <p className="text-[11px] font-bold text-[#6ba3c7] uppercase tracking-[0.18em] mb-2">Score Analysis</p>
           <h2 className="text-xl sm:text-2xl font-bold text-[#2f3437] leading-snug mb-6">
             Here&apos;s what your score actually means.
           </h2>
-          <p className="text-sm text-[#2f3437]/85 leading-relaxed">
-            A score of <strong>{audit.overallScore != null ? Number(audit.overallScore).toFixed(1) : "—"}</strong> means your channel is visible but invisible. People are watching, but nothing about the experience is telling them what to do next, who you are, or why they should pick up the phone.
-          </p>
-          <div className="mt-4">
-            <p className="text-sm font-bold text-[#2f3437] mb-1">What channels in the 2 to 6 range typically produce:</p>
+
+          {band === "under4" && (
             <p className="text-sm text-[#2f3437]/85 leading-relaxed">
-              Views without leads. The occasional comment or DM. A channel that feels like it should be working harder than it is. The content is on the platform, but it isn&apos;t pulling viewers toward you in any deliberate way. Most agents in this range are six to twelve months into their channel and wondering if it is worth continuing.
+              A score of <strong>{scoreDisplay}</strong> means your channel is essentially invisible to the audience you&apos;re trying to reach. People aren&apos;t finding it, aren&apos;t converting, and aren&apos;t coming back. The good news is that almost everything in this report is fixable, and you haven&apos;t been doing this wrong for long enough to dig a deep hole.
             </p>
-          </div>
-          <div className="mt-4">
-            <p className="text-sm font-bold text-[#2f3437] mb-1">What channels at a 7 or higher look like:</p>
+          )}
+          {band === "mid" && (
             <p className="text-sm text-[#2f3437]/85 leading-relaxed">
-              A predictable trickle of inbound conversations each week. Viewers who reach out already pre-sold, asking specific questions about working with you instead of cold &quot;what&apos;s your fee&quot; inquiries. The channel becomes the primary lead source for the business, not a side project that occasionally produces something.
+              A score of <strong>{scoreDisplay}</strong> means your channel is visible but invisible. People are watching, but nothing about the experience is telling them what to do next, who you are, or why they should pick up the phone.
             </p>
+          )}
+          {band === "upper" && (
+            <p className="text-sm text-[#2f3437]/85 leading-relaxed">
+              A score of <strong>{scoreDisplay}</strong> means your channel has real momentum but is leaving leads on the table. You&apos;re attracting and holding viewers. The gap is the conversion layer. Most of the work from here is sharpening the system that already works, not rebuilding from scratch.
+            </p>
+          )}
+          {band === "top" && (
+            <p className="text-sm text-[#2f3437]/85 leading-relaxed">
+              A score of <strong>{scoreDisplay}</strong> means your channel is one of the strongest we audit. You&apos;ve built something that most agents only theorise about. From here, the opportunity is scaling what you already have. More lead capture, deeper binge architecture, and the kind of upsell mechanics that turn an audience into a real business.
+            </p>
+          )}
+
+          <div className="mt-4">
+            <p className="text-sm font-bold text-[#2f3437] mb-1">What channels in the {rangeLabel} range typically produce:</p>
+            {band === "under4" && (
+              <p className="text-sm text-[#2f3437]/85 leading-relaxed">
+                Very few views, very few comments, and zero leads. Most agents in this range are six months in, frustrated, and starting to wonder if YouTube is even the right channel for them. It is. The system around the videos just hasn&apos;t been built yet.
+              </p>
+            )}
+            {band === "mid" && (
+              <p className="text-sm text-[#2f3437]/85 leading-relaxed">
+                Views without leads. The occasional comment or DM. A channel that feels like it should be working harder than it is. The content is on the platform, but it isn&apos;t pulling viewers toward you in any deliberate way. Most agents in this range are six to twelve months into their channel and wondering if it is worth continuing.
+              </p>
+            )}
+            {band === "upper" && (
+              <p className="text-sm text-[#2f3437]/85 leading-relaxed">
+                Consistent viewership, a growing subscriber base, and the occasional inbound. The content is doing its job. The system around it hasn&apos;t caught up. Agents at this level usually need targeted fixes in two or three principles, not a full rebuild.
+              </p>
+            )}
+            {band === "top" && (
+              <p className="text-sm text-[#2f3437]/85 leading-relaxed">
+                Predictable inbound. Subscribers who behave like prospects. A real lead-to-deal pipeline running off the channel. Agents at this level are usually past the question of whether YouTube works and into the question of how to scale it without breaking what&apos;s already working.
+              </p>
+            )}
           </div>
-          <p className="text-sm text-[#2f3437]/85 leading-relaxed mt-4">
-            The gap between the two isn&apos;t talent. It isn&apos;t luck. It isn&apos;t even how many videos you&apos;ve shipped. It&apos;s whether the system around the videos is doing its job.
-          </p>
-          <p className="text-sm font-semibold text-[#2f3437] leading-relaxed mt-3">
-            Here is exactly what is pulling your number down right now.
-          </p>
+
+          {isHighScore ? (
+            <p className="text-sm font-semibold text-[#2f3437] leading-relaxed mt-4">
+              You&apos;re already past most of the bar. Here is exactly what&apos;s still holding the number back.
+            </p>
+          ) : (
+            <>
+              <div className="mt-4">
+                <p className="text-sm font-bold text-[#2f3437] mb-1">What channels at a 7 or higher look like:</p>
+                <p className="text-sm text-[#2f3437]/85 leading-relaxed">
+                  A predictable trickle of inbound conversations each week. Viewers who reach out already pre-sold, asking specific questions about working with you instead of cold &quot;what&apos;s your fee&quot; inquiries. The channel becomes the primary lead source for the business, not a side project that occasionally produces something.
+                </p>
+              </div>
+              <p className="text-sm text-[#2f3437]/85 leading-relaxed mt-4">
+                The gap between the two isn&apos;t talent. It isn&apos;t luck. It isn&apos;t even how many videos you&apos;ve shipped. It&apos;s whether the system around the videos is doing its job.
+              </p>
+              <p className="text-sm font-semibold text-[#2f3437] leading-relaxed mt-3">
+                Here is exactly what is pulling your number down right now.
+              </p>
+            </>
+          )}
         </div>
+          );
+        })()}
 
         {/* What's working — 2 strengths only */}
         {whatsWorking.length > 0 && (
