@@ -676,7 +676,6 @@ export default function AuditReportView({ audit, chrome }: { audit: any; chrome?
                   viewer_connection?: number;
                   lead_generation?: number;
                 } | undefined;
-                const hasDeepDive = !!(breakdown?.opening_analysis || breakdown?.insights_analysis || breakdown?.connection_analysis);
                 const youtubeUrl = `https://youtube.com/watch?v=${v.videoId}`;
 
                 return (
@@ -755,24 +754,6 @@ export default function AuditReportView({ audit, chrome }: { audit: any; chrome?
                       </div>
                     </div>
 
-                    {/* Divider + deep dive (full width) */}
-                    {hasDeepDive && (
-                      <>
-                        <hr className="my-4 border-gray-100" />
-                        <div className="space-y-3">
-                          {[
-                            { label: "Opening", text: breakdown?.opening_analysis },
-                            { label: "Insights", text: breakdown?.insights_analysis },
-                            { label: "Connection", text: breakdown?.connection_analysis },
-                          ].map(({ label, text }) => text && (
-                            <div key={label}>
-                              <span className="text-[10px] font-bold text-[#2f3437]/50 uppercase tracking-wider block mb-1">{label}</span>
-                              <p className="text-sm text-[#2f3437]/80 leading-relaxed">{text}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </>
-                    )}
                   </div>
                 );
               })}
@@ -1578,8 +1559,6 @@ export default function AuditReportView({ audit, chrome }: { audit: any; chrome?
               const strong = breakdown?.strength ?? breakdown?.opening_analysis;
               const improve = breakdown?.improvement ??
                 [breakdown?.insights_analysis, breakdown?.connection_analysis].filter(Boolean)[0];
-              const hasDeepDive = !!(breakdown?.opening_analysis || breakdown?.insights_analysis || breakdown?.connection_analysis);
-
               function dimBadge(score: number | undefined, label: string) {
                 if (score == null) return null;
                 const bg =
@@ -1663,20 +1642,6 @@ export default function AuditReportView({ audit, chrome }: { audit: any; chrome?
                       )}
                     </div>
                   </div>
-                  {hasDeepDive && (
-                    <div className="mt-4 pt-4 border-t border-gray-100 space-y-3">
-                      {[
-                        { label: "Opening", text: breakdown?.opening_analysis },
-                        { label: "Insights", text: breakdown?.insights_analysis },
-                        { label: "Connection", text: breakdown?.connection_analysis },
-                      ].map(({ label, text }) => text && (
-                        <div key={label}>
-                          <p className="text-[11px] font-semibold text-[#2f3437]/50 uppercase tracking-[0.15em] mb-1">{label}</p>
-                          <p className="text-sm text-[#2f3437]/80 leading-relaxed">{text}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
                 </div>
               );
             })}
