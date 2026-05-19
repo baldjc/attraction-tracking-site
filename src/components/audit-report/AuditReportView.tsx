@@ -452,7 +452,7 @@ export default function AuditReportView({ audit, chrome }: { audit: any; chrome?
 
         {/* SECTION A — Score Outcome Bridge */}
         <div className="bg-white border border-gray-200 rounded-lg p-6 sm:p-8 print-avoid-break">
-          <p className="text-[11px] font-bold text-[#6ba3c7] uppercase tracking-[0.18em] mb-2">Score Outcome Bridge</p>
+          <p className="text-[11px] font-bold text-[#6ba3c7] uppercase tracking-[0.18em] mb-2">Score Analysis</p>
           <h2 className="text-xl sm:text-2xl font-bold text-[#2f3437] leading-snug mb-6">
             Here&apos;s what your score actually means.
           </h2>
@@ -460,7 +460,7 @@ export default function AuditReportView({ audit, chrome }: { audit: any; chrome?
             A score of <strong>{audit.overallScore != null ? Number(audit.overallScore).toFixed(1) : "—"}</strong> means your channel is visible but invisible. People are watching, but nothing about the experience is telling them what to do next, who you are, or why they should pick up the phone.
           </p>
           <div className="mt-4">
-            <p className="text-sm font-bold text-[#2f3437] mb-1">What channels in the 2 to 4 range typically produce:</p>
+            <p className="text-sm font-bold text-[#2f3437] mb-1">What channels in the 2 to 6 range typically produce:</p>
             <p className="text-sm text-[#2f3437]/85 leading-relaxed">
               Views without leads. The occasional comment or DM. A channel that feels like it should be working harder than it is. The content is on the platform, but it isn&apos;t pulling viewers toward you in any deliberate way. Most agents in this range are six to twelve months into their channel and wondering if it is worth continuing.
             </p>
