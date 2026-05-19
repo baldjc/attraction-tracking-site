@@ -258,12 +258,6 @@ export default function AuditReportView({ audit, chrome }: { audit: any; chrome?
               @media (min-width: 768px) {
                 .abv-report > * + * { margin-top: 28px; }
               }
-              .abv-report details > summary { list-style: none; }
-              .abv-report details > summary::-webkit-details-marker { display: none; }
-              @media print {
-                .abv-report details > *:not(summary) { display: block !important; }
-                .abv-report details svg { display: none !important; }
-              }
             `,
           }}
         />
@@ -960,13 +954,10 @@ export default function AuditReportView({ audit, chrome }: { audit: any; chrome?
           <p className="text-sm text-[#2f3437]/70 leading-relaxed mb-6">
             Here are the real answers.
           </p>
-          <div className="space-y-2">
-            <details className="group border-b border-gray-100 last:border-0 pb-4 last:pb-0 print-avoid-break">
-              <summary className="list-none cursor-pointer flex items-start justify-between gap-4 py-1 [&::-webkit-details-marker]:hidden">
-                <span className="text-sm font-bold text-[#2f3437]">&quot;I&apos;m flat out already. I don&apos;t have time to add a YouTube production job on top of selling houses.&quot;</span>
-                <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" className="w-4 h-4 mt-1 shrink-0 text-[#6ba3c7] transition-transform duration-200 group-open:rotate-180"><path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.06l3.71-3.83a.75.75 0 011.08 1.04l-4.25 4.39a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z" clipRule="evenodd" /></svg>
-              </summary>
-              <div className="mt-3">
+          <div className="space-y-6">
+            <div className="border-b border-gray-100 last:border-0 pb-6 last:pb-0 print-avoid-break">
+              <h3 className="text-sm font-bold text-[#2f3437] mb-3">&quot;I&apos;m flat out already. I don&apos;t have time to add a YouTube production job on top of selling houses.&quot;</h3>
+              <div>
               <p className="text-sm text-[#2f3437]/85 leading-relaxed">
                 This is the most common objection we hear, and there&apos;s actually a different way to look at it.
               </p>
@@ -983,13 +974,10 @@ export default function AuditReportView({ audit, chrome }: { audit: any; chrome?
                 So the honest answer to the time question: if strategy is your blocker, Foundations and the AI tools solve it inside the first 30 days. If production is your blocker, that is what Growth and Done With You exist for. Either way, time is a fixable problem, not a deal-breaker.
               </p>
               </div>
-            </details>
-            <details className="group border-b border-gray-100 last:border-0 pb-4 last:pb-0 print-avoid-break">
-              <summary className="list-none cursor-pointer flex items-start justify-between gap-4 py-1 [&::-webkit-details-marker]:hidden">
-                <span className="text-sm font-bold text-[#2f3437]">&quot;My channel has 40 videos and a couple thousand subscribers, but it isn&apos;t working. Should I delete it and start clean?&quot;</span>
-                <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" className="w-4 h-4 mt-1 shrink-0 text-[#6ba3c7] transition-transform duration-200 group-open:rotate-180"><path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.06l3.71-3.83a.75.75 0 011.08 1.04l-4.25 4.39a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z" clipRule="evenodd" /></svg>
-              </summary>
-              <div className="mt-3">
+            </div>
+            <div className="border-b border-gray-100 last:border-0 pb-6 last:pb-0 print-avoid-break">
+              <h3 className="text-sm font-bold text-[#2f3437] mb-3">&quot;My channel has 40 videos and a couple thousand subscribers, but it isn&apos;t working. Should I delete it and start clean?&quot;</h3>
+              <div>
               <p className="text-sm text-[#2f3437]/85 leading-relaxed">Almost never.</p>
               <p className="text-sm text-[#2f3437]/85 leading-relaxed mt-2">
                 If your channel has views, you&apos;ve already built something that matters. You have an audience that is interested in who you are. The hard part of YouTube, getting strangers to care, you&apos;ve already done. What you&apos;re dealing with isn&apos;t a viewership problem. It&apos;s a lead generation problem. Viewers are showing up. They&apos;re just not converting into people that you or your team are meeting with.
@@ -1004,13 +992,10 @@ export default function AuditReportView({ audit, chrome }: { audit: any; chrome?
                 The algorithm doesn&apos;t punish you for what you posted last year. It responds to what you publish this week.
               </p>
               </div>
-            </details>
-            <details className="group border-b border-gray-100 last:border-0 pb-4 last:pb-0 print-avoid-break">
-              <summary className="list-none cursor-pointer flex items-start justify-between gap-4 py-1 [&::-webkit-details-marker]:hidden">
-                <span className="text-sm font-bold text-[#2f3437]">&quot;I&apos;ve done YouTube training before. I bought a course from a guy with 500K subs, did the camera and SEO stuff, posted for 6 months, and it didn&apos;t move my business. Why is this different?&quot;</span>
-                <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" className="w-4 h-4 mt-1 shrink-0 text-[#6ba3c7] transition-transform duration-200 group-open:rotate-180"><path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.06l3.71-3.83a.75.75 0 011.08 1.04l-4.25 4.39a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z" clipRule="evenodd" /></svg>
-              </summary>
-              <div className="mt-3">
+            </div>
+            <div className="border-b border-gray-100 last:border-0 pb-6 last:pb-0 print-avoid-break">
+              <h3 className="text-sm font-bold text-[#2f3437] mb-3">&quot;I&apos;ve done YouTube training before. I bought a course from a guy with 500K subs, did the camera and SEO stuff, posted for 6 months, and it didn&apos;t move my business. Why is this different?&quot;</h3>
+              <div>
               <p className="text-sm text-[#2f3437]/85 leading-relaxed">
                 Fair question. And honestly, you probably weren&apos;t taught the wrong things. You were taught the wrong goal.
               </p>
@@ -1027,13 +1012,10 @@ export default function AuditReportView({ audit, chrome }: { audit: any; chrome?
                 This is the part most YouTube gurus skip, as they have never had to convert a viewer into an actual paying client. I have. The system you are being audited against was built from doing that 70+ times a year for the last four years. It is a lead generation system that happens to use YouTube. Not a YouTube course that hopes for leads.
               </p>
               </div>
-            </details>
-            <details className="group border-b border-gray-100 last:border-0 pb-4 last:pb-0 print-avoid-break">
-              <summary className="list-none cursor-pointer flex items-start justify-between gap-4 py-1 [&::-webkit-details-marker]:hidden">
-                <span className="text-sm font-bold text-[#2f3437]">&quot;If I join today and start implementing the 16 principles, when am I realistically going to see something change? When does the first lead come in?&quot;</span>
-                <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" className="w-4 h-4 mt-1 shrink-0 text-[#6ba3c7] transition-transform duration-200 group-open:rotate-180"><path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.06l3.71-3.83a.75.75 0 011.08 1.04l-4.25 4.39a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z" clipRule="evenodd" /></svg>
-              </summary>
-              <div className="mt-3">
+            </div>
+            <div className="border-b border-gray-100 last:border-0 pb-6 last:pb-0 print-avoid-break">
+              <h3 className="text-sm font-bold text-[#2f3437] mb-3">&quot;If I join today and start implementing the 16 principles, when am I realistically going to see something change? When does the first lead come in?&quot;</h3>
+              <div>
               <p className="text-sm text-[#2f3437]/85 leading-relaxed">
                 This feels like the right question to ask. It usually isn&apos;t.
               </p>
@@ -1050,13 +1032,10 @@ export default function AuditReportView({ audit, chrome }: { audit: any; chrome?
                 The agents who get there faster are usually the ones who stop trying to rush the next video and start trusting the system. The ones who stay stuck are the ones who join, change one or two things, post one video, and bail when the leads don&apos;t show up by Friday. This is a build. Not a hack.
               </p>
               </div>
-            </details>
-            <details className="group border-b border-gray-100 last:border-0 pb-4 last:pb-0 print-avoid-break">
-              <summary className="list-none cursor-pointer flex items-start justify-between gap-4 py-1 [&::-webkit-details-marker]:hidden">
-                <span className="text-sm font-bold text-[#2f3437]">&quot;This looks great, but I&apos;m not selling Calgary detached homes. I do luxury, or commercial, or rural, or I&apos;m in a smaller market. Is this actually built for me?&quot;</span>
-                <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" className="w-4 h-4 mt-1 shrink-0 text-[#6ba3c7] transition-transform duration-200 group-open:rotate-180"><path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.06l3.71-3.83a.75.75 0 011.08 1.04l-4.25 4.39a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z" clipRule="evenodd" /></svg>
-              </summary>
-              <div className="mt-3">
+            </div>
+            <div className="border-b border-gray-100 last:border-0 pb-6 last:pb-0 print-avoid-break">
+              <h3 className="text-sm font-bold text-[#2f3437] mb-3">&quot;This looks great, but I&apos;m not selling Calgary detached homes. I do luxury, or commercial, or rural, or I&apos;m in a smaller market. Is this actually built for me?&quot;</h3>
+              <div>
               <p className="text-sm text-[#2f3437]/85 leading-relaxed">
                 The system is built to work off of your own channel, talking to your own audience.
               </p>
@@ -1073,13 +1052,10 @@ export default function AuditReportView({ audit, chrome }: { audit: any; chrome?
                 If you have a channel and a market, this works. The system meets you where you already are.
               </p>
               </div>
-            </details>
-            <details className="group border-b border-gray-100 last:border-0 pb-4 last:pb-0 print-avoid-break">
-              <summary className="list-none cursor-pointer flex items-start justify-between gap-4 py-1 [&::-webkit-details-marker]:hidden">
-                <span className="text-sm font-bold text-[#2f3437]">&quot;I&apos;m not a tech person. I built my business on relationships, not tools. Realistically, am I going to be able to use the AI tools, or will I be the one who joins and never figures it out?&quot;</span>
-                <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" className="w-4 h-4 mt-1 shrink-0 text-[#6ba3c7] transition-transform duration-200 group-open:rotate-180"><path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.06l3.71-3.83a.75.75 0 011.08 1.04l-4.25 4.39a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z" clipRule="evenodd" /></svg>
-              </summary>
-              <div className="mt-3">
+            </div>
+            <div className="border-b border-gray-100 last:border-0 pb-6 last:pb-0 print-avoid-break">
+              <h3 className="text-sm font-bold text-[#2f3437] mb-3">&quot;I&apos;m not a tech person. I built my business on relationships, not tools. Realistically, am I going to be able to use the AI tools, or will I be the one who joins and never figures it out?&quot;</h3>
+              <div>
               <p className="text-sm text-[#2f3437]/85 leading-relaxed">
                 If you can have a text or chat conversation on your phone, this will work for you.
               </p>
@@ -1093,13 +1069,10 @@ export default function AuditReportView({ audit, chrome }: { audit: any; chrome?
                 The agents I see hesitate the most about the tech side are usually the ones who get the most leverage from it once they start using it. The tools do the work you would have been guessing at on your own. You don&apos;t need to be a tech expert to use them. You just need to be willing to ask the question.
               </p>
               </div>
-            </details>
-            <details className="group border-b border-gray-100 last:border-0 pb-4 last:pb-0 print-avoid-break">
-              <summary className="list-none cursor-pointer flex items-start justify-between gap-4 py-1 [&::-webkit-details-marker]:hidden">
-                <span className="text-sm font-bold text-[#2f3437]">&quot;What happens if I join and decide in 30 or 60 days that it isn&apos;t for me? Am I locked in? Do I lose my rate if I cancel and come back later?&quot;</span>
-                <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" className="w-4 h-4 mt-1 shrink-0 text-[#6ba3c7] transition-transform duration-200 group-open:rotate-180"><path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.06l3.71-3.83a.75.75 0 011.08 1.04l-4.25 4.39a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z" clipRule="evenodd" /></svg>
-              </summary>
-              <div className="mt-3">
+            </div>
+            <div className="border-b border-gray-100 last:border-0 pb-6 last:pb-0 print-avoid-break">
+              <h3 className="text-sm font-bold text-[#2f3437] mb-3">&quot;What happens if I join and decide in 30 or 60 days that it isn&apos;t for me? Am I locked in? Do I lose my rate if I cancel and come back later?&quot;</h3>
+              <div>
               <p className="text-sm text-[#2f3437]/85 leading-relaxed">
                 The membership is set up as a simple month-to-month, on purpose.
               </p>
@@ -1116,7 +1089,7 @@ export default function AuditReportView({ audit, chrome }: { audit: any; chrome?
                 The downside is small. The upside is a YouTube channel that brings you deals for years.
               </p>
               </div>
-            </details>
+            </div>
           </div>
         </div>
 
