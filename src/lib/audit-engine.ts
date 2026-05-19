@@ -367,28 +367,29 @@ CRITICAL RULES:
 - Never include rewritten examples, improved hooks, or "do it this way" coaching.
 - Never include scripts, framework executions, or templates the lead could copy.
 - Keep \`whats_working\` to exactly 2 genuine strengths. We are not here to validate. We are here to create honest contrast.
-- Every gap MUST include \`what_this_costs_you\` (the business cost) and \`inside_attraction\` (the specific ABV asset that solves it — from the allowed list below).
-- For each of the 16 principles in \`scores\`, include an \`inside_attraction\` field. Use the EXACT phrasing from the ALLOWED \`inside_attraction\` MAPPINGS table below. Do not paraphrase. Do not mix assets. One principle = one mapping.
+- Every gap MUST include \`what_this_costs_you\` (the business cost) and \`inside_attraction\` (a short phrase describing what the lead would LEARN about this principle inside the membership — the insight, understanding, or realisation they'd come away with — from the allowed list below).
+- For each of the 16 principles in \`scores\`, include an \`inside_attraction\` field. Use the EXACT phrasing from the ALLOWED \`inside_attraction\` MAPPINGS table below. Do not paraphrase. Do not mix entries. One principle = one mapping.
+- \`inside_attraction\` is NEVER a list of tools, modules, weeks, AI assistants, courses, or coaching mechanics. It is ONLY a description of what they'd LEARN, framed as the awareness or understanding gained. It must NOT contain instructions, steps, "how to", "use X", "build Y", or any deliverable name.
 - For each video in \`video_breakdowns\`, describe what the opening / insights / connection DO, not what they should do differently. Use language like "Opens with…", "Relies on…", "Lacks…", "Takes X seconds to…". Do NOT use language like "Should open with…", "Would be stronger if…", "Rewrite this as…", "Try saying…", or anything that hands the creator a ready-to-use improvement.`;
 
-  const allowedMappings = `ALLOWED \`inside_attraction\` MAPPINGS — use ONLY these exact phrasings:
+  const allowedMappings = `ALLOWED \`inside_attraction\` MAPPINGS — use ONLY these exact phrasings. Each describes what the lead would LEARN about this principle. Do not invent your own. Do not append tool names, modules, or weeks.
 
-- avatar_clarity → "Avatar Architect AI tool + Foundations Academy Week 1: Channel Strategy"
-- themes_over_topics → "Content Engine AI tool + Foundations Academy Week 2: Content Pillars"
-- arc_attention → "ARC Script Builder + Foundations Academy Week 3: The ARC Script"
-- arc_revelation → "ARC Script Builder + weekly Hot Seat coaching calls"
-- arc_connection → "Script Review tool + weekly Hot Seat coaching calls"
-- title_frameworks → "Title & Thumbnail Analyzer + Foundations Academy Week 4: Thumbnails & SEO"
-- approve_the_click → "Title & Thumbnail Analyzer + Script Review tool"
-- lead_magnet_system → "Foundations Academy Week 3 + weekly live call hot seats"
-- curiosity_bridges → "ARC Script Builder + Script Review tool"
-- show_dont_tell → "ARC Script Builder + Script Review tool"
-- values_peppering → "Avatar Architect AI tool + Script Review tool"
-- connection_language → "Avatar Architect AI tool + Script Review tool"
-- story_proof → "ARC Script Builder + Foundations Academy Week 3"
-- grade_5_language → "Script Review tool"
-- binge_architecture → "Content Engine AI tool + Foundations Academy Week 2"
-- consistency → "Weekly Live Coaching Calls (accountability) + Content Engine AI tool"`;
+- avatar_clarity → "What it actually means to know who your channel is for — and why the version of your avatar you have in your head right now is keeping the wrong people watching and the right people clicking away."
+- themes_over_topics → "Why most channels feel scattered even when every video is on-brand — and what changes when your content starts compounding around a small set of themes instead of chasing topics."
+- arc_attention → "What viewers in your market actually decide in the first 30 seconds — and why polish, energy, or a good hook isn't what's keeping them or losing them."
+- arc_revelation → "Why some videos make a buyer or seller feel 'this person finally gets it' and most don't — even when the information is the same."
+- arc_connection → "What viewers need to feel about you before they'll ever pick up the phone — and why most agent channels never get there even with strong content."
+- title_frameworks → "Why some titles in your market get clicked and most get ignored — and what the click is really responding to underneath the words."
+- approve_the_click → "What a viewer is silently checking for in the first 15 seconds to decide whether they're in the right place — and what makes them quietly leave when it's missing."
+- lead_magnet_system → "What turns a viewer who liked the video into a name, an email, and a real conversation — and why most channels accidentally train viewers to stay anonymous."
+- curiosity_bridges → "Why viewers drop off at predictable moments in the middle of a video — and what keeps them moving from one section to the next without ever noticing."
+- show_dont_tell → "What kinds of evidence actually build trust on video, and why claims about yourself almost always do the opposite of what you intend."
+- values_peppering → "How the right clients quietly self-select and the wrong ones self-eliminate — without you ever having to say 'I'm not for everyone'."
+- connection_language → "The difference between speaking at the camera and speaking to one specific person — and why that single shift changes who reaches out and who stays a viewer."
+- story_proof → "Which moments from your own work move the needle on conversion and which ones read as bragging — even when the underlying story is identical."
+- grade_5_language → "Why most agent content loses viewers before the point lands — and what clarity actually sounds like at the level your market is listening at."
+- binge_architecture → "What makes a viewer watch three of your videos in a row instead of one and disappearing — and why this matters more than any individual video's performance."
+- consistency → "What has to be true between videos for the channel to compound instead of stall — and why most agents misdiagnose this as a publishing-cadence problem."`;
 
   const outputSpec = `Return ONLY valid JSON in this exact structure, nothing else:
 
@@ -453,7 +454,7 @@ CRITICAL RULES:
       "connection_analysis": "2–3 sentences describing emotional resonance present or absent (e.g., 'Speaks at the camera in agent voice. No personal stake or values revealed in the first 90 seconds.'). Observe, don't coach.",
       "whats_working": "One sentence on what this specific video does well.",
       "whats_missing": "One sentence on what this specific video lacks — at the pattern level, not prescribed.",
-      "inside_attraction": "Which ABV asset would help build this muscle. Use EXACT phrasings from the ALLOWED mapping above.",
+      "inside_attraction": "What the lead would learn about this principle inside the membership. Use EXACT phrasing from the ALLOWED mapping above.",
       "dimension_scores": {
         "channel_strategy": 0.0,
         "content_impact": 0.0,
@@ -462,7 +463,7 @@ CRITICAL RULES:
       }
     }
   ],
-  "conversion_narrative": "2–3 sentences. Frame this as: 'Here's where your channel is today (objective). Here's what members of Attraction by Video get access to that solves this (specific — name 2–3 of the assets from the allowed mapping). The next step is a 15-minute walkthrough call where we review this report together.' No hype. No urgency. Honest and respectful — the avatar hates being sold to."
+  "conversion_narrative": "2–3 sentences. Frame this as: 'Here's where your channel is today (objective). Here's what members of Attraction by Video come to understand that closes the gap (specific — describe 2–3 of the learning outcomes from the allowed mapping; never name tools, modules, weeks, or courses). The next step is a 15-minute walkthrough call where we review this report together.' No hype. No urgency. Honest and respectful — the avatar hates being sold to."
 }
 
 For each video in \`video_breakdowns\`, calculate dimension_scores as follows:
