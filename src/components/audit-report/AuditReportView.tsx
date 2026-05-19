@@ -181,7 +181,6 @@ export default function AuditReportView({ audit, chrome }: { audit: any; chrome?
       what_this_costs_you?: string;
       inside_attraction?: string;
     }> = report?.three_biggest_gaps ?? [];
-    const conversionNarrative: string = report?.conversion_narrative ?? "";
     const leadVideoBreakdowns: any[] = report?.video_breakdowns ?? [];
 
     // CTA URLs — discovery call URL is configurable via NEXT_PUBLIC_DISCOVERY_CALL_URL
@@ -751,24 +750,6 @@ export default function AuditReportView({ audit, chrome }: { audit: any; chrome?
                   </div>
                 );
               })}
-            </div>
-          </div>
-        )}
-
-        {/* Conversion narrative + CTAs */}
-        {conversionNarrative && (
-          <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-orange-200 rounded-lg p-6 print-avoid-break">
-            <h2 className="text-base font-semibold text-[#2f3437] mb-3">Where to go from here</h2>
-            <p className="text-sm text-[#2f3437]/85 leading-relaxed whitespace-pre-line">{conversionNarrative}</p>
-            <div className="mt-5 flex flex-wrap gap-3 no-print">
-              <a
-                href={DISCOVERY_CALL_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#185FA5] hover:bg-[#0f4d8c] text-white text-sm font-semibold transition-colors"
-              >
-                Book Your 15-Min Discovery Call →
-              </a>
             </div>
           </div>
         )}
