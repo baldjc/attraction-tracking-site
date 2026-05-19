@@ -424,7 +424,7 @@ export default function AuditReportView({ audit, chrome }: { audit: any; chrome?
                 "I'm not a YouTube guru who's never sold a house."
               </h3>
               <p className="text-sm text-[#2f3437]/80 leading-relaxed">
-                Hey — I'm Jared Chamberlain. I built Attraction by Video because YouTube became the most profitable thing in my real estate business: <strong>$171M+ in volume sold</strong> and <strong>$4M+ in GCI</strong> from my channel since 2022, with <strong>242+ weeks of consecutive publishing</strong> and <strong>one video that generated 230+ leads in 2 days</strong>.
+                Hey — I'm Jared Chamberlain. I built Attraction by Video because YouTube became the most profitable thing in my real estate business: <strong>$171M+ in volume sold</strong> and <strong>$4M+ in GCI</strong> from my channel with <strong>a consistent weekly video since June of 2020</strong> and recently, <strong>one video that generated 230+ leads in 2 days</strong>.
               </p>
               <p className="text-sm text-[#2f3437]/80 leading-relaxed mt-3">
                 The 16-point framework you see below is the exact same one I run on my own channel, and all our members' channels, every month. If any of the gaps in this report feel impossible to close on your own — that's exactly the reason I built the membership and the reason you should join.
