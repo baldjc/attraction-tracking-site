@@ -184,6 +184,12 @@ export default function AuditReportView({ audit, chrome }: { audit: any; chrome?
     const conversionNarrative: string = report?.conversion_narrative ?? "";
     const leadVideoBreakdowns: any[] = report?.video_breakdowns ?? [];
 
+    // CTA URLs — discovery call URL is configurable via NEXT_PUBLIC_DISCOVERY_CALL_URL
+    const DISCOVERY_CALL_URL =
+      process.env.NEXT_PUBLIC_DISCOVERY_CALL_URL ||
+      "https://attractionbyvideo.com/discovery-call";
+    const CHECKOUT_URL = "https://attractionbyvideo.com/#join";
+
     function leadDimBadge(score: number | undefined, label: string) {
       if (score == null) return null;
       const bg =
@@ -359,20 +365,32 @@ export default function AuditReportView({ audit, chrome }: { audit: any; chrome?
               </div>
             ))}
           </div>
-          <div className="mt-6 flex flex-col items-center gap-2">
+        </div>
+
+        {/* TOP CTA — discovery call (replaces the old in-widget "Join" button) */}
+        <div className="bg-white border border-gray-200 rounded-lg p-6 sm:p-8 print-avoid-break shadow-sm">
+          <p className="text-sm sm:text-base text-[#2f3437]/85 leading-relaxed max-w-2xl">
+            Whenever you&apos;re ready, book a 15-minute discovery call. We&apos;ll get clear on what you&apos;re building, answer your questions about Attraction, and figure out if the membership is the right fit for you.
+          </p>
+          <div className="mt-5 flex flex-col items-start gap-3">
             <a
-              href="https://attractionbyvideo.com/#join"
+              href={DISCOVERY_CALL_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-6 py-3 rounded-lg bg-[#6ba3c7] hover:bg-[#5993b8] text-white text-sm font-bold transition-colors shadow"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-6 py-3 rounded-lg bg-[#185FA5] hover:bg-[#0f4d8c] text-white text-sm font-bold transition-colors shadow"
             >
-              Join Attraction by Video →
+              Book Your 15-Min Discovery Call →
             </a>
-            <p className="text-[13px] text-white text-center mt-1">
-              Starting at $495 USD / $595 CAD per month · Rate locked for life.
-            </p>
-            <p className="text-[11px] text-white/50 italic text-center">Or keep reading — your audit starts below.</p>
+            <a
+              href={CHECKOUT_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-[#2f3437]/60 italic hover:text-[#185FA5] underline-offset-2 hover:underline"
+            >
+              Already decided? Skip the call and join Attraction now →
+            </a>
           </div>
+          <p className="text-[11px] text-[#2f3437]/45 italic mt-4">Or keep reading. Your audit starts below.</p>
         </div>
 
         {/* Founder note from Jared */}
@@ -424,6 +442,32 @@ export default function AuditReportView({ audit, chrome }: { audit: any; chrome?
               {report?.one_sentence_diagnosis ?? "Diagnosis pending."}
             </p>
           </div>
+        </div>
+
+        {/* SECTION A — Score Outcome Bridge */}
+        <div className="bg-white border border-gray-200 rounded-lg p-6 sm:p-8 print-avoid-break shadow-sm">
+          <p className="text-[11px] font-bold text-[#185FA5] uppercase tracking-[0.18em] mb-3">Score Outcome Bridge</p>
+          <p className="text-sm text-[#2f3437]/85 leading-relaxed">
+            A score of <strong>{audit.overallScore != null ? Number(audit.overallScore).toFixed(1) : "—"}</strong> means your channel is visible but invisible. People are watching, but nothing about the experience is telling them what to do next, who you are, or why they should pick up the phone.
+          </p>
+          <div className="mt-4">
+            <p className="text-sm font-bold text-[#2f3437] mb-1">What channels in the 2 to 4 range typically produce:</p>
+            <p className="text-sm text-[#2f3437]/85 leading-relaxed">
+              Views without leads. The occasional comment or DM. A channel that feels like it should be working harder than it is. The content is on the platform, but it isn&apos;t pulling viewers toward you in any deliberate way. Most agents in this range are six to twelve months into their channel and wondering if it is worth continuing.
+            </p>
+          </div>
+          <div className="mt-4">
+            <p className="text-sm font-bold text-[#2f3437] mb-1">What channels at a 7 or higher look like:</p>
+            <p className="text-sm text-[#2f3437]/85 leading-relaxed">
+              A predictable trickle of inbound conversations each week. Viewers who reach out already pre-sold, asking specific questions about working with you instead of cold &quot;what&apos;s your fee&quot; inquiries. The channel becomes the primary lead source for the business, not a side project that occasionally produces something.
+            </p>
+          </div>
+          <p className="text-sm text-[#2f3437]/85 leading-relaxed mt-4">
+            The gap between the two isn&apos;t talent. It isn&apos;t luck. It isn&apos;t even how many videos you&apos;ve shipped. It&apos;s whether the system around the videos is doing its job.
+          </p>
+          <p className="text-sm font-semibold text-[#2f3437] leading-relaxed mt-3">
+            Here is exactly what is pulling your number down right now.
+          </p>
         </div>
 
         {/* What's working — 2 strengths only */}
@@ -489,6 +533,63 @@ export default function AuditReportView({ audit, chrome }: { audit: any; chrome?
             </div>
           </div>
         )}
+
+        {/* MIDDLE CTA — discovery call (no secondary link at this placement) */}
+        <div className="bg-white border border-gray-200 rounded-lg p-6 sm:p-8 print-avoid-break shadow-sm">
+          <p className="text-sm sm:text-base text-[#2f3437]/85 leading-relaxed max-w-2xl">
+            You just saw the three biggest gaps in your channel. Every one of them has a fix inside Attraction. If you want to talk through whether the membership is the right move for where you want to take your channel, book a quick call.
+          </p>
+          <div className="mt-5">
+            <a
+              href={DISCOVERY_CALL_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-6 py-3 rounded-lg bg-[#185FA5] hover:bg-[#0f4d8c] text-white text-sm font-bold transition-colors shadow"
+            >
+              Book Your 15-Min Discovery Call →
+            </a>
+          </div>
+        </div>
+
+        {/* SECTION B — The Attraction Method */}
+        <div className="bg-white border border-gray-200 rounded-lg p-6 sm:p-8 print-avoid-break shadow-sm">
+          <p className="text-[11px] font-bold text-[#185FA5] uppercase tracking-[0.18em] mb-3">The Attraction Method</p>
+          <p className="text-sm text-[#2f3437]/85 leading-relaxed">
+            The 16 principles in your audit are not a checklist. They are the components of a system. We call it <strong>The Attraction Method</strong>, and it runs on three loops that work together.
+          </p>
+          <div className="mt-5 space-y-5">
+            <div>
+              <p className="text-sm font-bold text-[#2f3437] mb-1">
+                <span className="mr-2">🧲</span>Attract.
+              </p>
+              <p className="text-sm text-[#2f3437]/85 leading-relaxed">
+                Get the right viewer to click on your video and stay long enough to be moved. This is where titles, thumbnails, video openings, and the ARC structure live. If this loop is broken, nothing else matters. You can have the best market knowledge in the world and the best closing technique on the planet, but if the right viewer never makes it past the first fifteen seconds, the rest of the system has nothing to work on. Inside Attraction, this is run by the Title and Thumbnail Analyzer, the ARC Script Builder, and the Script Review tool.
+              </p>
+            </div>
+            <div>
+              <p className="text-sm font-bold text-[#2f3437] mb-1">
+                <span className="mr-2">🏗️</span>Build.
+              </p>
+              <p className="text-sm text-[#2f3437]/85 leading-relaxed">
+                Create a library that compounds. The viewer who watched one of your videos has to find a second one that pulls them deeper, and a third one that starts building trust. This is where avatar clarity, content themes, and consistency live. Random topics for random audiences will never build a real library, no matter how many videos you ship. Inside Attraction, this is run by the Avatar Architect, the Content Engine, and the Foundations Academy weeks on Channel Strategy and Content Pillars.
+              </p>
+            </div>
+            <div>
+              <p className="text-sm font-bold text-[#2f3437] mb-1">
+                <span className="mr-2">🎣</span>Convert.
+              </p>
+              <p className="text-sm text-[#2f3437]/85 leading-relaxed">
+                Turn warm viewers into a real conversation. This is where lead magnets, binge architecture, and the trust moments inside the content live. Without this loop, even the best content channel just produces views, not leads. This is the part most YouTube coaches skip entirely. Inside Attraction, this is run by the Lead Magnet System taught in Foundations Week 3, the binge architecture training, and the weekly coaching calls that walk you through it on your own channel.
+              </p>
+            </div>
+          </div>
+          <p className="text-sm text-[#2f3437]/85 leading-relaxed mt-5">
+            Every principle in your audit maps to one of these three loops. The reason the audit feels overwhelming when you look at it for the first time is not that the principles are complicated. It is that most agents are trying to fix one loop at a time and end up with a channel that is great at attracting and terrible at converting, or great at building and terrible at attracting.
+          </p>
+          <p className="text-sm text-[#2f3437]/85 leading-relaxed mt-3">
+            The Attraction Method makes the three loops run together. That is when a YouTube channel stops feeling like an output and starts feeling like a business.
+          </p>
+        </div>
 
         {/* 16-Principle Scorecard — full breakdown with Inside Attraction chips */}
         {hasScores && (
@@ -674,16 +775,106 @@ export default function AuditReportView({ audit, chrome }: { audit: any; chrome?
             <p className="text-sm text-[#2f3437]/85 leading-relaxed whitespace-pre-line">{conversionNarrative}</p>
             <div className="mt-5 flex flex-wrap gap-3 no-print">
               <a
-                href="https://attractionbyvideo.com/#join"
+                href={DISCOVERY_CALL_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-orange-600 hover:bg-orange-700 text-white text-sm font-semibold transition-colors"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#185FA5] hover:bg-[#0f4d8c] text-white text-sm font-semibold transition-colors"
               >
-                Join Attraction Membership →
+                Book Your 15-Min Discovery Call →
               </a>
             </div>
           </div>
         )}
+
+        {/* SECTION C — Your First 30 Days */}
+        <div className="bg-white border border-gray-200 rounded-lg p-6 sm:p-8 print-avoid-break shadow-sm">
+          <p className="text-[11px] font-bold text-[#185FA5] uppercase tracking-[0.18em] mb-3">Your First 30 Days</p>
+          <p className="text-sm text-[#2f3437]/85 leading-relaxed">
+            We get asked a lot of &quot;what does my first month actually look like.&quot; Here it is, in literal terms.
+          </p>
+          <div className="mt-5 space-y-5">
+            <div className="border-l-2 border-[#185FA5] pl-4">
+              <p className="text-sm font-bold text-[#2f3437] mb-1">Day 1</p>
+              <p className="text-sm text-[#2f3437]/85 leading-relaxed">
+                You get instant access to the platform. The system walks you through your first setup: running the Avatar Architect on your channel, identifying your ideal viewer, and locking your content theme. By the end of day one, you have a written profile of who you should actually be talking to in your videos. Most agents come out of this with a different avatar than they thought they had.
+              </p>
+              <p className="text-sm text-[#2f3437]/85 leading-relaxed mt-2">
+                If you are in our Growth or Done With You program, you also get weekly setup calls for your first 30 days where we build the system with you and remove the guesswork.
+              </p>
+            </div>
+            <div className="border-l-2 border-[#185FA5] pl-4">
+              <p className="text-sm font-bold text-[#2f3437] mb-1">Week 1</p>
+              <p className="text-sm text-[#2f3437]/85 leading-relaxed">
+                Foundations Academy Week 1: Channel Strategy. You learn how to anchor every future video to the right avatar and content theme. By the end of the week, you have used the ARC Script Builder to write your first script on the new framework. This is the first time most members realise the production part is actually faster, not slower, once the strategy is locked.
+              </p>
+            </div>
+            <div className="border-l-2 border-[#185FA5] pl-4">
+              <p className="text-sm font-bold text-[#2f3437] mb-1">Week 2</p>
+              <p className="text-sm text-[#2f3437]/85 leading-relaxed">
+                You ship your first video using the framework. The Title and Thumbnail Analyzer scores your packaging before you publish. If you want feedback on it, you can request a Hot Seat review on the weekly live call. This is where the data starts coming in on what actually changed: better click-through, longer watch time, real comments instead of crickets.
+              </p>
+            </div>
+            <div className="border-l-2 border-[#185FA5] pl-4">
+              <p className="text-sm font-bold text-[#2f3437] mb-1">Week 3</p>
+              <p className="text-sm text-[#2f3437]/85 leading-relaxed">
+                You install your first lead magnet using the Lead Magnet System taught in Foundations Week 3. Now your videos have somewhere for a warm viewer to go. This is the single biggest swing for most agents in the first month. Before this week, your viewers had nothing to do at the end of a video. After this week, they have a reason to give you their email.
+              </p>
+            </div>
+            <div className="border-l-2 border-[#185FA5] pl-4">
+              <p className="text-sm font-bold text-[#2f3437] mb-1">Week 4</p>
+              <p className="text-sm text-[#2f3437]/85 leading-relaxed">
+                You ship your second video. We run the monthly re-audit on your channel using the same 16 principles you were scored on at the start. You get to see exactly which numbers moved, by how much, and which gaps are next on the list. By day 30, you have a system installed, two videos in the new framework, a lead magnet running, and a clear picture of what month 2 should focus on.
+              </p>
+            </div>
+          </div>
+          <p className="text-sm text-[#2f3437]/85 leading-relaxed mt-5">
+            This is not a hopeful timeline. This is the standard onboarding rhythm we run with every new member.
+          </p>
+        </div>
+
+        {/* SECTION D — The Math */}
+        <div className="bg-white border border-gray-200 rounded-lg p-6 sm:p-8 print-avoid-break shadow-sm">
+          <p className="text-[11px] font-bold text-[#185FA5] uppercase tracking-[0.18em] mb-3">The Math</p>
+          <p className="text-sm text-[#2f3437]/85 leading-relaxed">
+            I&apos;d rather show this in real numbers than make a pitch about value. So here is the math out loud.
+          </p>
+          <p className="text-sm text-[#2f3437]/85 leading-relaxed mt-3">
+            This system has been the foundation of my own real estate business for the last four years. My YouTube channel is the single most profitable thing I&apos;ve built. Right now it produces <strong>70+ deals a year</strong>, roughly <strong>$45M in volume</strong>, and around <strong>$800K in gross commission income</strong> annually. That is not a one-off. That is an average year, on a channel I&apos;ve been publishing to for 242 consecutive weeks.
+          </p>
+          <p className="text-sm text-[#2f3437]/85 leading-relaxed mt-3">
+            I don&apos;t share those numbers as a brag. I share them as the receipt. The system you&apos;ve just been scored against is the same one running on a channel that&apos;s been in market for years.
+          </p>
+          <div className="mt-5">
+            <p className="text-sm font-bold text-[#2f3437] mb-2">What members commonly aim for</p>
+            <p className="text-sm text-[#2f3437]/85 leading-relaxed">
+              A YouTube channel built on the 16 principles, run consistently, should produce <strong>one closed deal per month from inbound</strong>. Members who hit that benchmark are generally adding <strong>$100K+ in GCI per year</strong> on top of their existing business.
+            </p>
+            <p className="text-sm text-[#2f3437]/85 leading-relaxed mt-2">
+              That is not a guarantee. It is the conservative target the system is designed around, and it&apos;s the line where the math gets very hard to argue with.
+            </p>
+          </div>
+          <div className="mt-5">
+            <p className="text-sm font-bold text-[#2f3437] mb-2">The actual math</p>
+            <p className="text-sm text-[#2f3437]/85 leading-relaxed">
+              Attraction by Video is <strong>$495 USD / $595 CAD per month</strong>. About $5,940 USD or $7,140 CAD per year.
+            </p>
+            <p className="text-sm text-[#2f3437]/85 leading-relaxed mt-2">
+              The average commission cheque on a closed residential transaction, after broker splits, lands around <strong>$10,000</strong> in most US and Canadian markets in 2026. Give or take, depending on price point and split structure.
+            </p>
+            <p className="text-sm text-[#2f3437]/85 leading-relaxed mt-2">
+              One YouTube-attributed deal in your first year covers your full year of membership and still leaves $3,000 to $4,000 in your pocket.
+            </p>
+            <p className="text-sm text-[#2f3437]/85 leading-relaxed mt-2">
+              One deal a month puts you at <strong>$120K+ in additional GCI annually</strong>, on a $6K to $7K spend.
+            </p>
+            <p className="text-sm text-[#2f3437]/85 leading-relaxed mt-2">
+              If YouTube brings you a single extra deal in the next 12 months, your membership has more than paid for itself. If it does what we&apos;d expect, the math stops being a question and becomes a problem you&apos;ll wish you&apos;d solved sooner.
+            </p>
+            <p className="text-sm text-[#2f3437]/85 leading-relaxed mt-3">
+              The real question isn&apos;t <em>is $495 a lot of money</em>. The question is <em>what is it costing me to keep operating without this system in place</em>.
+            </p>
+          </div>
+        </div>
 
         {/* How It Works — 3 step path from audit to attracting clients */}
         <div className="bg-white rounded-lg border border-gray-200 p-6 sm:p-8 print-avoid-break">
@@ -761,28 +952,167 @@ export default function AuditReportView({ audit, chrome }: { audit: any; chrome?
           </div>
         </div>
 
-        {/* Final CTA card — bookends the report */}
+        {/* SECTION E — Honest Answers (FAQ) */}
+        <div className="bg-white border border-gray-200 rounded-lg p-6 sm:p-8 print-avoid-break shadow-sm">
+          <p className="text-[11px] font-bold text-[#185FA5] uppercase tracking-[0.18em] mb-3">Honest Answers</p>
+          <p className="text-sm text-[#2f3437]/85 leading-relaxed mb-6">
+            The questions every agent has at this point in the audit. Here are the real answers.
+          </p>
+          <div className="space-y-6">
+            <div>
+              <p className="text-sm font-bold text-[#2f3437] mb-2">&quot;I&apos;m flat out already. I don&apos;t have time to add a YouTube production job on top of selling houses.&quot;</p>
+              <p className="text-sm text-[#2f3437]/85 leading-relaxed">
+                This is the most common objection we hear, and there&apos;s actually a different way to look at it.
+              </p>
+              <p className="text-sm text-[#2f3437]/85 leading-relaxed mt-2">
+                When you have clear direction, content gets easier, not harder. The reason most agents feel like YouTube is a time sink is because they&apos;re guessing. They sit down to film without knowing who they&apos;re talking to, how to talk to them, or what the video is supposed to do. Half the time spent making a video gets eaten by the figuring-it-out part, not the actual production.
+              </p>
+              <p className="text-sm text-[#2f3437]/85 leading-relaxed mt-2">
+                Inside Attraction by Video, you stop guessing. The frameworks tell you who you&apos;re speaking to (Avatar Architect), how to open the video (ARC Script Builder), and what content to make next (Content Engine). When the strategy is clear, the production part takes a fraction of the time it used to.
+              </p>
+              <p className="text-sm text-[#2f3437]/85 leading-relaxed mt-2">
+                There&apos;s an honest second layer to this question too. Sometimes time isn&apos;t actually the real issue. Sometimes the real bottleneck is the editing, the thumbnails, or the channel strategy itself, and more YouTube knowledge on your plate won&apos;t fix that. For agents in that situation, we run Growth and Done With You programs that handle the production and channel management for you. You shoot the content. We run the rest.
+              </p>
+              <p className="text-sm text-[#2f3437]/85 leading-relaxed mt-2">
+                So the honest answer to the time question: if strategy is your blocker, Foundations and the AI tools solve it inside the first 30 days. If production is your blocker, that is what Growth and Done With You exist for. Either way, time is a fixable problem, not a deal-breaker.
+              </p>
+            </div>
+            <div>
+              <p className="text-sm font-bold text-[#2f3437] mb-2">&quot;My channel has 40 videos and a couple thousand subscribers, but it isn&apos;t working. Should I delete it and start clean?&quot;</p>
+              <p className="text-sm text-[#2f3437]/85 leading-relaxed">Almost never.</p>
+              <p className="text-sm text-[#2f3437]/85 leading-relaxed mt-2">
+                If your channel has views, you&apos;ve already built something that matters. You have an audience that is interested in who you are. The hard part of YouTube, getting strangers to care, you&apos;ve already done. What you&apos;re dealing with isn&apos;t a viewership problem. It&apos;s a lead generation problem. Viewers are showing up. They&apos;re just not converting into people that you or your team are meeting with.
+              </p>
+              <p className="text-sm text-[#2f3437]/85 leading-relaxed mt-2">
+                That distinction matters because the fix is completely different. Starting over throws away the audience you&apos;ve already built. Pointing your existing channel in the right direction lets you keep everything you&apos;ve earned and start converting it.
+              </p>
+              <p className="text-sm text-[#2f3437]/85 leading-relaxed mt-2">
+                The road back is probably easier than you think. You don&apos;t need to delete old videos, hide the past, or relaunch with a big announcement. You shift what you publish next. The 16 principles in your audit are the levers. Pull the right ones and the same channel that has been quietly underperforming starts producing leads.
+              </p>
+              <p className="text-sm text-[#2f3437]/85 leading-relaxed mt-2">
+                The algorithm doesn&apos;t punish you for what you posted last year. It responds to what you publish this week.
+              </p>
+            </div>
+            <div>
+              <p className="text-sm font-bold text-[#2f3437] mb-2">&quot;I&apos;ve done YouTube training before. I bought a course from a guy with 500K subs, did the camera and SEO stuff, posted for 6 months, and it didn&apos;t move my business. Why is this different?&quot;</p>
+              <p className="text-sm text-[#2f3437]/85 leading-relaxed">
+                Fair question. And honestly, you probably weren&apos;t taught the wrong things. You were taught the wrong goal.
+              </p>
+              <p className="text-sm text-[#2f3437]/85 leading-relaxed mt-2">
+                Most YouTube coaching, especially the ones at the top of the search results, treats your channel like an entertainment property. Views, subscribers, likes, watch time. Those are the metrics, and the success story is hitting some monetisation tier or going viral. That works great if your business is YouTube. It does very little for a real estate agent whose business is closing deals.
+              </p>
+              <p className="text-sm text-[#2f3437]/85 leading-relaxed mt-2">
+                The hardest part of YouTube isn&apos;t getting views. It is turning views into a real person who gives you their phone number and their email and shows up for a conversation. That move, view to lead, is where most agents stall. A generic &quot;call me for a free consult&quot; or a phone number on the screen will not get you there. People do not call strangers from the internet. They have to feel like they already know you first.
+              </p>
+              <p className="text-sm text-[#2f3437]/85 leading-relaxed mt-2">
+                What we teach instead is how to create the micro trust moments inside your content that move a viewer from curious to committed. A real lead generation system is built around three things working together: high-quality videos that act as the first interaction, lead magnets that match what the viewer actually came to learn, and funnels that capture them at the moment they are most engaged. The channel becomes the front door of your business, not a YouTube hobby on the side.
+              </p>
+              <p className="text-sm text-[#2f3437]/85 leading-relaxed mt-2">
+                This is the part most YouTube gurus skip, as they have never had to convert a viewer into an actual paying client. I have. The system you are being audited against was built from doing that 70+ times a year for the last four years. It is a lead generation system that happens to use YouTube. Not a YouTube course that hopes for leads.
+              </p>
+            </div>
+            <div>
+              <p className="text-sm font-bold text-[#2f3437] mb-2">&quot;If I join today and start implementing the 16 principles, when am I realistically going to see something change? When does the first lead come in?&quot;</p>
+              <p className="text-sm text-[#2f3437]/85 leading-relaxed">
+                This feels like the right question to ask. It usually isn&apos;t.
+              </p>
+              <p className="text-sm text-[#2f3437]/85 leading-relaxed mt-2">
+                What you are about to learn is a new system, and a new system takes time to install. You can either implement it yourself inside the membership, or work with us in our Growth or Done With You programs where we build it for you and with you. Either path works. Neither path is overnight.
+              </p>
+              <p className="text-sm text-[#2f3437]/85 leading-relaxed mt-2">
+                Here is the honest piece most YouTube coaches won&apos;t tell you. When the full system is implemented and operating the way it is supposed to, leads start coming in even from your lowest-viewed videos. The signal isn&apos;t a big viral video. The signal is that the system around the video is doing its job: the right viewer is finding the right content, the lead magnet is matching what they came for, and the funnel is converting them into a real person you can talk to.
+              </p>
+              <p className="text-sm text-[#2f3437]/85 leading-relaxed mt-2">
+                If you give yourself a real runway, somewhere in the three to six month range of doing this correctly, you can take a channel that is currently producing zero leads and turn it into one that is producing real buyers and sellers showing up at your door, in your emails, and in your DMs. Ready to work with you. Not cold strangers you have to convince.
+              </p>
+              <p className="text-sm text-[#2f3437]/85 leading-relaxed mt-2">
+                The agents who get there faster are usually the ones who stop trying to rush the next video and start trusting the system. The ones who stay stuck are the ones who join, change one or two things, post one video, and bail when the leads don&apos;t show up by Friday. This is a build. Not a hack.
+              </p>
+            </div>
+            <div>
+              <p className="text-sm font-bold text-[#2f3437] mb-2">&quot;This looks great, but I&apos;m not selling Calgary detached homes. I do luxury, or commercial, or rural, or I&apos;m in a smaller market. Is this actually built for me?&quot;</p>
+              <p className="text-sm text-[#2f3437]/85 leading-relaxed">
+                The system is built to work off of your own channel, talking to your own audience.
+              </p>
+              <p className="text-sm text-[#2f3437]/85 leading-relaxed mt-2">
+                That is the part most agents miss when they look at this from the outside. You are not learning my market, my buyers, or my style. You are using your own data, your own city, your own niche, and your own avatar to create content that speaks to the people you actually want sitting across from you. Whether that is a first-time buyer in a $400K market or a luxury client in a $4M neighbourhood, the framework is the same. The inputs are yours.
+              </p>
+              <p className="text-sm text-[#2f3437]/85 leading-relaxed mt-2">
+                This isn&apos;t a copy and paste system. The 16 principles are universal. The way they get applied to your channel is not. We use custom AI tools that learn your audience and your market over time. The Avatar Architect builds your buyer profile from what you actually do. The Content Engine recommends topics that fit your market, not mine. The Script Builder writes openings that sound like you, not like a Calgary realtor.
+              </p>
+              <p className="text-sm text-[#2f3437]/85 leading-relaxed mt-2">
+                What you put in is what shapes the output. The system gets sharper the more it learns about you, your clients, and what is actually working in your channel. That is how a luxury specialist, a commercial agent, and a brand-new agent can all run the same framework and end up with completely different content engines that work for their specific business.
+              </p>
+              <p className="text-sm text-[#2f3437]/85 leading-relaxed mt-2">
+                If you have a channel and a market, this works. The system meets you where you already are.
+              </p>
+            </div>
+            <div>
+              <p className="text-sm font-bold text-[#2f3437] mb-2">&quot;I&apos;m not a tech person. I built my business on relationships, not tools. Realistically, am I going to be able to use the AI tools, or will I be the one who joins and never figures it out?&quot;</p>
+              <p className="text-sm text-[#2f3437]/85 leading-relaxed">
+                If you can have a text or chat conversation on your phone, this will work for you.
+              </p>
+              <p className="text-sm text-[#2f3437]/85 leading-relaxed mt-2">
+                The whole system has been built to be easy to use, no matter your age or your tech level. The AI tools work like a conversation. You answer a few questions in plain English, the tool does the heavy lifting, and you get something usable back. There is no code, no settings to configure, no learning curve that takes weeks. Most members are creating their first usable output inside the tool on day one.
+              </p>
+              <p className="text-sm text-[#2f3437]/85 leading-relaxed mt-2">
+                If you ever get stuck, you have two safety nets. The first is the community and the help inside the platform itself, where you can reach out anytime and get pointed in the right direction. The second is our weekly live coaching calls, where we will walk through anything you are unsure about, on screen, with you. Nobody gets left behind over a tech issue.
+              </p>
+              <p className="text-sm text-[#2f3437]/85 leading-relaxed mt-2">
+                The agents I see hesitate the most about the tech side are usually the ones who get the most leverage from it once they start using it. The tools do the work you would have been guessing at on your own. You don&apos;t need to be a tech expert to use them. You just need to be willing to ask the question.
+              </p>
+            </div>
+            <div>
+              <p className="text-sm font-bold text-[#2f3437] mb-2">&quot;What happens if I join and decide in 30 or 60 days that it isn&apos;t for me? Am I locked in? Do I lose my rate if I cancel and come back later?&quot;</p>
+              <p className="text-sm text-[#2f3437]/85 leading-relaxed">
+                The membership is set up as a simple month-to-month, on purpose.
+              </p>
+              <p className="text-sm text-[#2f3437]/85 leading-relaxed mt-2">
+                Some agents only need a couple of months to get traction and start moving forward on their own. Others want to stay longer for the community, the weekly coaching, and the ongoing access to the tools as they evolve. We didn&apos;t want to force anyone into a year-long commitment to find out which one they were. There is no contract. You can cancel anytime, with no fees, no penalty, no questions.
+              </p>
+              <p className="text-sm text-[#2f3437]/85 leading-relaxed mt-2">
+                The one thing worth knowing: when you join today, your rate is locked for as long as you remain a member. If you decide to leave and the membership rate goes up between now and when you come back, you would have to rejoin at the new rate. That is not a pressure tactic. That is just how the rate-lock works for everyone who stays in.
+              </p>
+              <p className="text-sm text-[#2f3437]/85 leading-relaxed mt-2">
+                So the real worst case is this. You join, give the system a fair shot for 30 or 60 days, and if it is not for you, you cancel. You are out one or two months at $495 or $595. No buyout fees. No fine print. Same way you would treat a brokerage tool or a marketing subscription that did not pan out.
+              </p>
+              <p className="text-sm text-[#2f3437]/85 leading-relaxed mt-2">
+                The downside is small. The upside is a YouTube channel that brings you deals for years.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* BOTTOM CTA — replaces the old "Ready to Close the Gaps?" card */}
         <div className="rounded-lg bg-[#0f1216] p-6 sm:p-12 text-center print-avoid-break">
-          <p className="text-[11px] font-bold text-white/50 uppercase tracking-[0.18em] mb-3">
-            Ready to Close the Gaps?
-          </p>
-          <h2 className="text-xl sm:text-2xl font-bold text-white leading-snug">
-            Every gap in this report has a fix inside the membership.
+          <h2 className="text-2xl sm:text-3xl font-black text-white leading-tight">
+            Ready to close the gaps?
           </h2>
-          <p className="text-sm text-white/55 mt-2 leading-relaxed max-w-xl mx-auto">
-            Lock in your rate today — it never increases as long as you remain a member.
+          <p className="text-sm sm:text-base text-white/75 mt-4 leading-relaxed max-w-2xl mx-auto">
+            Every gap in this report has a fix inside the membership. Every fix runs on a system that has been built and tested on real estate channels, not just taught in theory.
           </p>
-          <div className="mt-6 flex flex-col items-center gap-2">
+          <p className="text-sm sm:text-base text-white/75 mt-3 leading-relaxed max-w-2xl mx-auto">
+            The next step is a 15-minute discovery call where we get clear on your goals, answer your questions about the membership, and confirm fit before you join. No pressure, no pitch. Just a conversation about whether Attraction is the right move for what you&apos;re trying to build.
+          </p>
+          <div className="mt-7 flex flex-col items-center gap-3">
             <a
-              href="https://attractionbyvideo.com/#join"
+              href={DISCOVERY_CALL_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-6 py-3 rounded-lg bg-[#6ba3c7] hover:bg-[#5993b8] text-white text-sm font-bold transition-colors shadow"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-6 py-3 rounded-lg bg-[#185FA5] hover:bg-[#0f4d8c] text-white text-sm font-bold transition-colors shadow"
             >
-              Join Attraction by Video →
+              Book Your 15-Min Discovery Call →
             </a>
-            <p className="text-[12px] text-white/55 text-center mt-1">
-              $495 USD / $595 CAD per month · Cancel anytime · Rate locked for life
+            <a
+              href={CHECKOUT_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-white/60 italic hover:text-white underline-offset-2 hover:underline"
+            >
+              Already decided? Skip the call and join Attraction now →
+            </a>
+            <p className="text-[12px] text-white/55 text-center mt-2">
+              $495 USD / $595 CAD per month · Cancel anytime · Rate locked for life.
             </p>
           </div>
         </div>
