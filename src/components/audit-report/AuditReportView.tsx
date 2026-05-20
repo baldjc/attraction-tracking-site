@@ -420,6 +420,9 @@ export default function AuditReportView({ audit, chrome }: { audit: any; chrome?
                 Hey — I'm Jared Chamberlain. I built Attraction by Video because YouTube became the most profitable thing in my real estate business: <strong>$171M+ in volume sold</strong> and <strong>$4M+ in GCI</strong> from my channel with <strong>a consistent weekly video since June of 2020</strong> and recently, <strong>one video that generated 230+ leads in 2 days</strong>.
               </p>
               <p className="text-sm text-[#2f3437]/80 leading-relaxed mt-3">
+                My channel isn&apos;t the biggest real estate channel out there. Not close. But on the number that actually matters, the deals it brings in, it out-produces almost all of them. That&apos;s not the channel. That&apos;s the system.
+              </p>
+              <p className="text-sm text-[#2f3437]/80 leading-relaxed mt-3">
                 The 16-point framework you see below is the exact same one I run on my own channel, and all our members' channels, every month. If any of the gaps in this report feel impossible to close on your own — that's exactly the reason I built the membership and the reason you should join.
               </p>
               <p className="text-xs text-[#2f3437]/55 italic mt-4">— Jared Chamberlain, Founder of Attraction by Video</p>
@@ -459,7 +462,7 @@ export default function AuditReportView({ audit, chrome }: { audit: any; chrome?
             : band === "mid"   ? "4 to 6"
             : band === "upper" ? "6 to 8"
             : "8+";
-          const isHighScore = scoreNum != null && scoreNum >= 7;
+          const isHighScore = scoreNum != null && scoreNum >= 8;
           return (
         <div className="bg-white border border-gray-200 rounded-lg p-6 sm:p-8 print-avoid-break">
           <p className="text-[11px] font-bold text-[#6ba3c7] uppercase tracking-[0.18em] mb-2">Score Analysis</p>
@@ -519,13 +522,13 @@ export default function AuditReportView({ audit, chrome }: { audit: any; chrome?
           ) : (
             <>
               <div className="mt-4">
-                <p className="text-sm font-bold text-[#2f3437] mb-1">What channels at a 7 or higher look like:</p>
+                <p className="text-sm font-bold text-[#2f3437] mb-1">What channels at an 8 or higher look like:</p>
                 <p className="text-sm text-[#2f3437]/85 leading-relaxed">
                   A predictable trickle of inbound conversations each week. Viewers who reach out already pre-sold, asking specific questions about working with you instead of cold &quot;what&apos;s your fee&quot; inquiries. The channel becomes the primary lead source for the business, not a side project that occasionally produces something.
                 </p>
               </div>
               <p className="text-sm text-[#2f3437]/85 leading-relaxed mt-4">
-                The gap between the two isn&apos;t talent. It isn&apos;t luck. It isn&apos;t even how many videos you&apos;ve shipped. It&apos;s whether the system around the videos is doing its job.
+                The gap between the two isn&apos;t talent. It isn&apos;t luck. It isn&apos;t how big your channel is or how many videos you&apos;ve shipped. It&apos;s whether the system around the videos is doing its job.
               </p>
               <p className="text-sm font-semibold text-[#2f3437] leading-relaxed mt-3">
                 Here is exactly what is pulling your number down right now.
@@ -877,7 +880,7 @@ export default function AuditReportView({ audit, chrome }: { audit: any; chrome?
             I&apos;d rather show this in real numbers than make a pitch about value. So here is the math out loud.
           </p>
           <p className="text-sm text-[#2f3437]/85 leading-relaxed mt-3">
-            This system has been the foundation of my own real estate business for the last four years. My YouTube channel is the single most profitable thing I&apos;ve built. Right now it produces <strong>70+ deals a year</strong>, roughly <strong>$45M in volume</strong>, and around <strong>$800K in gross commission income</strong> annually. That is not a one-off. That is an average year, on a channel I&apos;ve been publishing to for 242 consecutive weeks.
+            This system has been the foundation of my own real estate business since 2020. My YouTube channel is the single most profitable thing I&apos;ve built. Right now it produces <strong>70+ deals a year</strong>, roughly <strong>$45M in volume</strong>, and around <strong>$800K in gross commission income</strong> annually. That is not a one-off. That is an average year, on a channel I&apos;ve published to every single week since June 2020.
           </p>
           <p className="text-sm text-[#2f3437]/85 leading-relaxed mt-3">
             I don&apos;t share those numbers as a brag. I share them as the receipt. The system you&apos;ve just been scored against is the same one running on a channel that&apos;s been in market for years.

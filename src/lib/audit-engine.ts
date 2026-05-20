@@ -964,13 +964,22 @@ export async function runAuditWithClaude(
     })
     .join("\n\n");
 
+  const todayIso = new Date().toISOString().slice(0, 10);
   const userMessage = `Please audit the YouTube channel for ${memberName}.
+
+TODAY'S DATE: ${todayIso}. Any upload date on or before today is a valid, real date — treat it as such. Never flag recent uploads as "future dates", "likely an error", or otherwise suspect, regardless of the year. Do not comment on the dates being unusual; just use them.
 
 VIDEOS ANALYSED (${videos.length} long-form videos):
 
 ${videoContent}
 
 Score this channel across all 16 principles. Base scores on actual evidence from the transcripts and video metadata above.
+
+EVIDENCE FIELD — HARD CONSTRAINTS (apply to every \`evidence\`, \`opening_analysis\`, \`insights_analysis\`, \`connection_analysis\`, \`whats_working\`, \`whats_missing\`, and any other customer-facing prose field):
+- Write clean, customer-facing observation only. The reader is the channel owner.
+- Do NOT include "Score: X", "However", "treating as", "assuming", "likely an error", "appears to be", or any meta-commentary about your own reasoning, the data, or your confidence.
+- Do NOT explain your scoring math inside customer-facing fields. (The Consistency math format — "Upload dates: … Gaps: … Average gap: … Score: X" — is the ONE exception and stays exactly as specified in the calibration rules. No "however" or caveats appended.)
+- If you are uncertain about something, resolve it silently and write only the clean conclusion. Never surface ambiguity, error-checking, or scratchpad to the customer.
 
 CRITICAL INSTRUCTIONS:
 - You MUST respond with ONLY a valid JSON object. No markdown, no code fences, no explanation text before or after the JSON.
