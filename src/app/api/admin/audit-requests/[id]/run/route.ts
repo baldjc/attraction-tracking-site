@@ -51,6 +51,17 @@ export async function POST(
         role: "audit_lead",
       },
     });
+  } else if (user.role === "audit_lead") {
+    // Refresh contact-record fields from the current Audit Request so the lead
+    // pipeline shows the latest name/channel. We deliberately do NOT touch
+    // existing member users (paying members) — only leads.
+    user = await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        fullName: auditRequest.fullName,
+        youtubeChannelUrl: auditRequest.youtubeChannelUrl,
+      },
+    });
   }
 
   await prisma.auditRequest.update({
@@ -60,8 +71,15 @@ export async function POST(
 
   // Audit requests come from non-members (leads). Run a thinner "lead" audit
   // — problems + cost + which Attraction asset solves them — never a full baseline.
+  // Pass auditRequestId so the engine audits THIS request's channel (not a
+  // stale user.youtubeChannelUrl) and links the result back to THIS request.
   const job = await prisma.auditJob.create({
-    data: { auditType: "lead", userId: user.id, status: "queued" },
+    data: {
+      auditType: "lead",
+      userId: user.id,
+      auditRequestId: auditRequest.id,
+      status: "queued",
+    },
   });
 
   processAuditJob(job.id).catch(console.error);

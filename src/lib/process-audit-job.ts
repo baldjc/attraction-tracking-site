@@ -6,11 +6,16 @@ import { sendAuditReadyEmail } from "@/lib/email";
 export async function processAuditJob(jobId: string, selectedVideoId?: string) {
   const job = await prisma.auditJob.findUnique({
     where: { id: jobId },
-    include: { user: true },
+    include: { user: true, auditRequest: true },
   });
   if (!job || !job.user) return;
 
   const member = job.user;
+  // For lead audits, the channel and the contact name MUST come from the
+  // Audit Request, not the (possibly stale, email-deduped) User record.
+  const leadRequest = job.auditType === "lead" ? job.auditRequest : null;
+  const channelSourceUrl = leadRequest?.youtubeChannelUrl ?? member.youtubeChannelUrl;
+  const auditedName = leadRequest?.fullName ?? member.fullName ?? member.email;
 
   try {
     await prisma.auditJob.update({ where: { id: jobId }, data: { status: "downloading" } });
@@ -37,9 +42,12 @@ export async function processAuditJob(jobId: string, selectedVideoId?: string) {
         try { channelInfo = await getChannelInfo(youtubeIdentifier); } catch { }
       }
     } else {
-      let youtubeIdentifier = member.youtubeHandle;
-      if (!youtubeIdentifier && member.youtubeChannelUrl) {
-        const url = member.youtubeChannelUrl;
+      // For lead audits, ignore member.youtubeHandle (which may belong to an
+      // earlier audit run that shared the same email) and resolve straight
+      // from the Audit Request's youtubeChannelUrl.
+      let youtubeIdentifier = leadRequest ? null : member.youtubeHandle;
+      if (!youtubeIdentifier && channelSourceUrl) {
+        const url = channelSourceUrl;
         const handleMatch = url.match(/@[\w-]+/);
         if (handleMatch) {
           youtubeIdentifier = handleMatch[0];
@@ -53,7 +61,9 @@ export async function processAuditJob(jobId: string, selectedVideoId?: string) {
       }
 
       if (!youtubeIdentifier) {
-        throw new Error("Member has no YouTube handle or channel URL set.");
+        throw new Error(leadRequest
+          ? "Audit Request has no usable YouTube channel URL."
+          : "Member has no YouTube handle or channel URL set.");
       }
 
       console.log(`[audit job ${jobId}] Using YouTube identifier: ${youtubeIdentifier}`);
@@ -103,7 +113,7 @@ export async function processAuditJob(jobId: string, selectedVideoId?: string) {
 
     const auditResult = await runAuditWithClaude(
       videos.filter(Boolean) as any,
-      member.fullName ?? member.email,
+      auditedName,
       systemPrompt,
       isSingleVideo
     );
@@ -171,8 +181,11 @@ export async function processAuditJob(jobId: string, selectedVideoId?: string) {
       },
     });
 
-    // Persist channel thumbnail on the user record so it's available without re-fetching
-    if (channelInfo?.thumbnailUrl) {
+    // Persist channel thumbnail on the user record so it's available without re-fetching.
+    // Skip for lead audits — the User record may be shared across multiple leads
+    // by email, and overwriting its thumbnail with a different lead's channel
+    // would corrupt earlier lead rows.
+    if (channelInfo?.thumbnailUrl && !leadRequest) {
       await prisma.user.update({
         where: { id: member.id },
         data: { youtubeChannelThumbnail: channelInfo.thumbnailUrl },
@@ -198,19 +211,34 @@ export async function processAuditJob(jobId: string, selectedVideoId?: string) {
 
     await prisma.auditJob.update({ where: { id: jobId }, data: { status: "complete", auditId: audit.id } });
 
-    // Auto-link completed audit to any pending AuditRequest for this user
-    try {
-      const pendingRequest = await prisma.auditRequest.findFirst({
-        where: { userId: member.id, status: "pending", auditId: null },
-      });
-      if (pendingRequest) {
+    // Link completed audit to the EXACT Audit Request this job was started
+    // for. Never `findFirst` — that collapses multiple same-email requests
+    // onto one row.
+    if (leadRequest) {
+      try {
         await prisma.auditRequest.update({
-          where: { id: pendingRequest.id },
+          where: { id: leadRequest.id },
           data: { auditId: audit.id, status: "audited" },
         });
+      } catch (err) {
+        console.error(`[audit job ${jobId}] failed to link AuditRequest ${leadRequest.id}:`, err);
       }
-    } catch {
-      // non-critical — don't fail the audit job if linking fails
+    } else if (job.auditType === "lead") {
+      // Legacy job without auditRequestId — fall back to old behaviour so
+      // jobs queued before this fix still link somewhere sensible.
+      try {
+        const pendingRequest = await prisma.auditRequest.findFirst({
+          where: { userId: member.id, status: "pending", auditId: null },
+        });
+        if (pendingRequest) {
+          await prisma.auditRequest.update({
+            where: { id: pendingRequest.id },
+            data: { auditId: audit.id, status: "audited" },
+          });
+        }
+      } catch {
+        // non-critical
+      }
     }
 
     // Notify the member that their audit is ready — paying members only, never leads.

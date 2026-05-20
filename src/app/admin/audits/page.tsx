@@ -26,6 +26,12 @@ interface AuditRow {
   createdAt: string;
   youtubeVideoId: string | null;
   videosAnalysed: Array<{ videoId: string; title: string }> | null;
+  // Present on rows returned by /api/admin/lead-audits — the originating
+  // Audit Request, so the row shows that lead's own name + channel even when
+  // multiple Audit Requests share an email (and therefore a User).
+  auditRequestId?: string;
+  leadFullName?: string;
+  leadYoutubeChannelUrl?: string;
   user: {
     id: string;
     fullName: string | null;
@@ -648,12 +654,23 @@ export default function AuditsPage() {
                       <td className="px-6 py-4">
                         {a.user ? (
                           <Link href={`/admin/members/${a.user.id}`} className="text-amber-700 hover:underline font-medium whitespace-nowrap">
-                            {a.user.fullName ?? a.user.email}
+                            {a.leadFullName ?? a.user.fullName ?? a.user.email}
                           </Link>
-                        ) : "—"}
-                        {a.user?.youtubeChannelName && (
-                          <p className="text-xs text-[#2f3437]/50 mt-0.5">{a.user.youtubeChannelName}</p>
+                        ) : (
+                          <span className="font-medium text-[#2f3437] whitespace-nowrap">{a.leadFullName ?? "—"}</span>
                         )}
+                        {a.leadYoutubeChannelUrl ? (
+                          <a
+                            href={a.leadYoutubeChannelUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block text-xs text-[#6ba3c7] hover:underline mt-0.5 truncate max-w-[260px]"
+                          >
+                            {a.leadYoutubeChannelUrl}
+                          </a>
+                        ) : a.user?.youtubeChannelName ? (
+                          <p className="text-xs text-[#2f3437]/50 mt-0.5">{a.user.youtubeChannelName}</p>
+                        ) : null}
                       </td>
                       <td className="px-6 py-4">
                         {a.overallScore != null ? (

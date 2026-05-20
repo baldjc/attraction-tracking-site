@@ -303,7 +303,8 @@ model Audit {
   youtubeVideoId String?       @map("youtube_video_id")
   youtubeVideo   YouTubeVideo? @relation(fields: [youtubeVideoId], references: [id])
 
-  auditJob AuditJob?
+  auditJob     AuditJob?
+  auditRequest AuditRequest?
 
   @@index([userId])
   @@index([auditType])
@@ -311,17 +312,20 @@ model Audit {
 }
 
 model AuditJob {
-  id           String    @id @default(uuid())
-  auditType    AuditType
-  userId       String?
-  user         User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  status       JobStatus @default(queued)
-  errorMessage String?
-  auditId      String?   @unique
-  audit        Audit?    @relation(fields: [auditId], references: [id])
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id              String    @id @default(uuid())
+  auditType       AuditType
+  userId          String?
+  user            User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status          JobStatus @default(queued)
+  errorMessage    String?
+  auditId         String?   @unique
+  audit           Audit?    @relation(fields: [auditId], references: [id])
+  auditRequestId  String?
+  auditRequest    AuditRequest? @relation(fields: [auditRequestId], references: [id], onDelete: SetNull)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
+  @@index([auditRequestId])
   @@map("audit_jobs")
 }
 
@@ -789,7 +793,9 @@ model AuditRequest {
   desiredYoutubeIncome String?
   status               AuditRequestStatus @default(pending)
   userId               String?
-  auditId              String?
+  auditId              String?            @unique
+  audit                Audit?             @relation(fields: [auditId], references: [id], onDelete: SetNull)
+  auditJobs            AuditJob[]
   createdAt            DateTime           @default(now())
   updatedAt            DateTime           @updatedAt
 
