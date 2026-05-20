@@ -90,6 +90,21 @@ export async function processAuditJob(jobId: string, selectedVideoId?: string) {
       videos = await getVideosWithTranscripts(channelInfo.uploadsPlaylistId, videoCount);
 
       if (videos.length === 0) throw new Error("No videos found on this channel");
+
+      // Guard against silent "empty" audits: if Supadata couldn't return a
+      // transcript for ANY of the sampled videos, Claude has nothing to score
+      // against and produces a near-floor result (~0.5–0.7) that looks like a
+      // real audit but isn't. Fail loudly so the admin can investigate
+      // (captions disabled on the channel, SUPADATA_API_KEY invalid, etc.)
+      // rather than letting a meaningless score get attached to the lead.
+      const withTranscript = videos.filter((v) => v && v.transcript).length;
+      if (withTranscript === 0) {
+        throw new Error(
+          `No transcripts available for any of the ${videos.length} sampled video(s). ` +
+          `This usually means the channel has auto-captions disabled, or the SUPADATA_API_KEY is invalid/expired. ` +
+          `Check the workflow logs for "[transcript]" lines for the exact Supadata response.`
+        );
+      }
     }
 
     await prisma.auditJob.update({ where: { id: jobId }, data: { status: "analysing" } });
