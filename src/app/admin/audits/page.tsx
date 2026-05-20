@@ -232,9 +232,9 @@ export default function AuditsPage() {
     setRunningRequestId(id);
     try {
       const res = await fetch(`/api/admin/audit-requests/${id}/run`, { method: "POST" });
-      const data = await res.json();
-      if (data.error) {
-        alert(data.error);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data?.error) {
+        alert(data?.error ?? `Failed to run audit (${res.status})`);
       } else {
         await fetchAuditRequests();
         await fetchActiveJobs();
@@ -242,6 +242,24 @@ export default function AuditsPage() {
       }
     } finally {
       setRunningRequestId(null);
+    }
+  }
+
+  const [deletingRequestId, setDeletingRequestId] = useState<string | null>(null);
+  async function handleDeleteAuditRequest(r: { id: string; fullName: string; email: string }) {
+    const label = r.fullName || r.email || "this request";
+    if (!confirm(`Delete the audit request for ${label}? Any audit report attached to it will also be removed. This cannot be undone.`)) return;
+    setDeletingRequestId(r.id);
+    try {
+      const res = await fetch(`/api/admin/audit-requests/${r.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        alert(err?.error ?? `Failed to delete (${res.status})`);
+        return;
+      }
+      await Promise.all([fetchAuditRequests(), fetchLeadAudits()]);
+    } finally {
+      setDeletingRequestId(null);
     }
   }
 
@@ -810,6 +828,14 @@ export default function AuditsPage() {
                             {runningRequestId === r.id
                               ? (r.status === "audited" ? "Re-running…" : "Starting…")
                               : (r.status === "audited" ? "Re-run Audit" : "Run Audit")}
+                          </button>
+                          <button
+                            onClick={() => handleDeleteAuditRequest(r)}
+                            disabled={deletingRequestId === r.id}
+                            className="text-xs font-medium text-red-600/70 hover:text-red-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                            title="Delete this request (and its audit report, if any)"
+                          >
+                            {deletingRequestId === r.id ? "Deleting…" : "Delete"}
                           </button>
                         </div>
                       </td>
