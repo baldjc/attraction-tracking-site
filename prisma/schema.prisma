@@ -47,6 +47,7 @@ enum AIToolType {
   content_engine_v2
   script_builder_v2
   idea_validation
+  knowledge_base_parse
 }
 
 enum JobStatus {
@@ -195,6 +196,10 @@ model User {
   marketDataUploads MarketDataUpload[]
   marketFacts       MarketFact[]
   marketStoryLeads  MarketStoryLead[]
+
+  // Wave 1.5 (data-first rebuild) — additive relations only
+  neighbourhoodProfiles        NeighbourhoodProfile[]
+  neighbourhoodResearchUploads NeighbourhoodResearchUpload[]
 
   @@map("users")
 }
@@ -1825,4 +1830,43 @@ model MarketStoryLead {
   @@index([userId])
   @@index([uploadId])
   @@map("market_story_leads")
+}
+
+// Wave 1.5 (data-first rebuild) — Neighbourhood Knowledge Base.
+// Per-member structured neighbourhood research, generated externally via the
+// member's preferred AI research tool, then parsed back into per-neighbourhood
+// profiles. Consumed by Wave 3 Script Builder for hyper-local content.
+model NeighbourhoodProfile {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  neighbourhood   String
+  content         String   @db.Text
+  summary         String?  @db.Text
+  sourceFile      String?
+  uploadBatchId   String?
+  lastUpdatedAt   DateTime @updatedAt
+  createdAt       DateTime @default(now())
+
+  @@unique([userId, neighbourhood])
+  @@index([userId])
+  @@index([uploadBatchId])
+  @@map("neighbourhood_profiles")
+}
+
+model NeighbourhoodResearchUpload {
+  id                String   @id @default(cuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rawContent        String   @db.Text
+  sourceFileName    String?
+  toolUsed          String?
+  parsedAt          DateTime?
+  profileCount      Int      @default(0)
+  parseCostUsd      Float?
+  uploadedAt        DateTime @default(now())
+  unmatchedSections Json?
+
+  @@index([userId])
+  @@map("neighbourhood_research_uploads")
 }

@@ -31,6 +31,7 @@ export interface FeatureFlags {
   tool_idea_validation: boolean;
   tool_script_builder_v2: boolean;
   tool_home_tour_mode: boolean;
+  tool_neighbourhood_knowledge: boolean;
   nav_v2_hub: boolean;
   [key: string]: boolean;
 }
@@ -72,6 +73,7 @@ export const DEFAULT_FLAGS: FeatureFlags = {
   tool_idea_validation: false,
   tool_script_builder_v2: false,
   tool_home_tour_mode: false,
+  tool_neighbourhood_knowledge: false,
   nav_v2_hub: false,
 };
 

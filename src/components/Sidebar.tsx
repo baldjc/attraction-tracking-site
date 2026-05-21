@@ -105,6 +105,7 @@ const memberLinks = [
   { href: "/member/scores",          label: "My Scores",       icon: StarIcon,         featureKey: null,        colour: "#F59E0B", tierRequired: null },
   { href: "/member/content-planner", label: "Content Planner", icon: CalendarDaysIcon, featureKey: null,        colour: "#6ba3c7", tierRequired: PRODUCTION_TIERS, section: "Create" },
   { href: "/member/market-data",     label: "Market Data",     icon: ChartBarSquareIcon, featureKey: "tool_market_data", colour: "#6ba3c7", tierRequired: null },
+  { href: "/member/knowledge-base",  label: "Knowledge Base",  icon: BookOpenIcon,     featureKey: "tool_neighbourhood_knowledge", colour: "#6ba3c7", tierRequired: null },
   { href: "/member/ai-tools",        label: "Content Tools",        icon: SparklesIcon,     featureKey: "ai_tools",  colour: "#6ba3c7", tierRequired: null },
   { href: "/member/my-work",         label: "My Work",         icon: FolderIcon,       featureKey: "ai_tools",  colour: "#6ba3c7", tierRequired: null },
   { href: "/member/generate-leads",  label: "Generate Leads",  icon: RocketLaunchIcon, featureKey: "campaigns", colour: "#E63946", tierRequired: null,           section: "Grow" },
