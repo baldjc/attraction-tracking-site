@@ -159,11 +159,6 @@ export default function ThemeDashboard({ themes, niche, city }: Props) {
               >
                 {generatingAll ? "Generating..." : "Generate All"}
               </button>
-              {generatingAll && (
-                <div className="ml-2">
-                  <AiThinking mode="phase" phaseLabel={aiThinking.phaseLabel} />
-                </div>
-              )}
               <button
                 onClick={() => setReordering(true)}
                 className="w-9 h-9 rounded-lg border border-[#2f3437]/20 dark:border-white/20 flex items-center justify-center text-[#2f3437]/50 dark:text-white/50 hover:text-[#2f3437] dark:hover:text-white hover:border-[#2f3437]/40 dark:hover:border-white/40 transition-colors"
