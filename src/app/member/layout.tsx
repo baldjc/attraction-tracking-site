@@ -26,6 +26,16 @@ export default async function MemberLayout({
       ? { ...DEFAULT_FLAGS }
       : await getFeatureFlags({ userId, userRole: role });
 
+  // TEMP DEBUG — remove after Market Data sidebar gate is verified for the
+  // Jared Chamberlain member-account.
+  console.log("[MEMBER_LAYOUT_DEBUG]", {
+    userId,
+    role,
+    sessionUserKeys: Object.keys(session.user || {}),
+    tool_market_data: featureFlags.tool_market_data,
+    flagsKeys: Object.keys(featureFlags).filter((k) => k.startsWith("tool_")),
+  });
+
   return (
     <MemberLayoutShell
       role={role}
