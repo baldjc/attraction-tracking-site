@@ -21,6 +21,17 @@ export interface FeatureFlags {
   tool_repurpose_postcard: boolean;
   tool_description_generator: boolean;
   tool_listing_video_builder: boolean;
+  // Wave 0 (data-first rebuild) — new v2 flags. These are the ONLY flags that
+  // are allowed to use the object `{ enabled, allowedUserIds }` form in the
+  // stored AppSetting value. Existing boolean flags above MUST stay boolean
+  // forever — the 19 bare callsites of getFeatureFlags() rely on it.
+  tool_market_data: boolean;
+  tool_fact_validator: boolean;
+  tool_content_engine_v2: boolean;
+  tool_idea_validation: boolean;
+  tool_script_builder_v2: boolean;
+  tool_home_tour_mode: boolean;
+  nav_v2_hub: boolean;
   [key: string]: boolean;
 }
 
@@ -54,16 +65,81 @@ export const DEFAULT_FLAGS: FeatureFlags = {
   drive_auto_upload: false,
   planner_pipeline_view: false,
   flow_metrics: false,
+  // Wave 0 — v2 data-first flags (default closed, per-user allowlist supported)
+  tool_market_data: false,
+  tool_fact_validator: false,
+  tool_content_engine_v2: false,
+  tool_idea_validation: false,
+  tool_script_builder_v2: false,
+  tool_home_tour_mode: false,
+  nav_v2_hub: false,
 };
 
-export async function getFeatureFlags(): Promise<FeatureFlags> {
+/**
+ * Stored shape of an individual flag value in the `feature_visibility`
+ * AppSetting JSON. Existing flags use the boolean form. v2 flags introduced
+ * in Wave 0 may use the object form to gate visibility per-user (e.g. to let
+ * the "Jared Chamberlain" member account see v2 features while other members
+ * still don't).
+ */
+export type FlagValue = boolean | { enabled?: boolean; allowedUserIds?: string[] };
+
+function resolveFlag(value: FlagValue, userId?: string): boolean {
+  if (typeof value === "boolean") return value;
+  if (value && typeof value === "object") {
+    if (value.enabled === true) return true;
+    if (
+      userId &&
+      Array.isArray(value.allowedUserIds) &&
+      value.allowedUserIds.includes(userId)
+    ) {
+      return true;
+    }
+    return false;
+  }
+  return false;
+}
+
+/**
+ * Read feature flags from the database.
+ *
+ * Backward compatible: existing callsites call `getFeatureFlags()` with no
+ * args and continue to work — boolean flag values resolve as-is. To gate a v2
+ * flag with an allowlist, pass `{ userId, userRole }` from the NextAuth
+ * session. Admin / editor bypass all flags (existing behavior).
+ *
+ * Wave 0 contract: ONLY v2 flags are allowed to use the object
+ * `{ enabled, allowedUserIds }` form in the stored JSON. Existing boolean
+ * flags must stay boolean — the 19 bare callsites depend on this.
+ */
+export async function getFeatureFlags(opts?: {
+  userId?: string;
+  userRole?: string | null;
+}): Promise<FeatureFlags> {
+  const { userId, userRole } = opts || {};
+
   try {
     const setting = await prisma.appSetting.findUnique({
       where: { key: FEATURE_SETTING_KEY },
     });
     if (!setting) return { ...DEFAULT_FLAGS };
-    const parsed = JSON.parse(setting.value);
-    return { ...DEFAULT_FLAGS, ...parsed };
+
+    const parsed = JSON.parse(setting.value) as Record<string, FlagValue>;
+
+    // Admin / editor bypass: every flag evaluates to true regardless of
+    // the stored value. This matches the pre-Wave-0 behavior where admin
+    // saw everything.
+    const isStaff = userRole === "admin" || userRole === "editor";
+
+    const result: Record<string, boolean> = { ...DEFAULT_FLAGS };
+    for (const [key, value] of Object.entries(parsed)) {
+      if (isStaff) {
+        result[key] = true;
+      } else {
+        result[key] = resolveFlag(value, userId);
+      }
+    }
+    return result as FeatureFlags;
   } catch {
     return { ...DEFAULT_FLAGS };
   }

@@ -42,6 +42,11 @@ enum AIToolType {
   arc_script_builder
   script_review
   description_generator
+  // Wave 0+ (data-first rebuild) — appended only, do not reorder
+  fact_validator
+  content_engine_v2
+  script_builder_v2
+  idea_validation
 }
 
 enum JobStatus {
@@ -184,6 +189,12 @@ model User {
 
   reviewerTrackedChannels      ReviewerTrackedChannel[] @relation("ReviewerTrackedChannelMember")
   reviewerTrackedChannelsAdded ReviewerTrackedChannel[] @relation("ReviewerTrackedChannelAddedBy")
+
+  // Wave 0 (data-first rebuild) — additive relations only
+  marketConfig      MarketConfig?
+  marketDataUploads MarketDataUpload[]
+  marketFacts       MarketFact[]
+  marketStoryLeads  MarketStoryLead[]
 
   @@map("users")
 }
@@ -466,6 +477,15 @@ model SavedIdea {
   whyItWorks    String?
   source        String   @default("batch")
   createdAt     DateTime @default(now())
+
+  // Wave 0 (data-first rebuild) — all nullable, backward compatible
+  rotationSlot      RotationSlot?
+  titlePromise      String?       @db.Text
+  citedFactIds      Json?
+  linkedStoryLeadId String?
+  shootType         ShootType?
+  tactileType       String?
+  visualPeak        String?       @db.Text
 
   @@index([userId])
   @@index([userId, theme])
@@ -883,6 +903,17 @@ model ContentPlan {
   artifacts        PlanArtifact[]
   teamNotes        PlanTeamNote[]
   assignmentLog    PlanAssignmentLog[]
+
+  // Wave 0 (data-first rebuild) — all nullable, backward compatible
+  shootType         ShootType?
+  rotationSlot      RotationSlot?
+  linkedFactIds     Json?
+  linkedStoryLeadId String?
+  homeAddress       String?
+  homePriceTier     String?
+  homeFeatures      Json?
+  titlePromise      String?       @db.Text
+  visualPeak        String?       @db.Text
 
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -1627,4 +1658,171 @@ model ReviewerRun {
 
   @@index([channelRef, createdAt])
   @@map("reviewer_runs")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Wave 0 — Data-First Rebuild foundation
+// All additions below are ADDITIVE (new enums, new models). No existing
+// structures were modified destructively. Sibling-route doctrine: nothing
+// here is wired into UI/APIs in Wave 0; those come in Waves 1+.
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum ShootType {
+  talking_head
+  home_tour
+}
+
+enum RotationSlot {
+  market_update
+  neighbourhood_fact
+  contrarian_take
+  do_not
+  should_you
+}
+
+enum MarketType {
+  sellers
+  balanced
+  buyers
+  balanced_high_end
+}
+
+enum Trajectory {
+  tightening
+  stable
+  loosening
+  loosening_fast
+}
+
+enum FactUsageClass {
+  headline_safe
+  supporting_texture_only
+  rejected
+}
+
+enum MetricFamily {
+  MOI
+  BENCHMARK
+  PSF
+  MEDIAN
+  DOM
+  SP_LP
+}
+
+enum UploadStatus {
+  pending
+  validating
+  validated
+  failed
+}
+
+model MarketConfig {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  marketName         String
+  mlsSource          String?
+  columnMapping      Json?
+  priceTiers         Json?
+  moiThresholds      Json?
+  neighbourhoodVocab Json?
+  highEndException   Json?
+  keywordKit         Json?
+  primaryAvatar      Json?
+  subPersonas        Json?
+  configuredAt       DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@map("market_configs")
+}
+
+model MarketDataUpload {
+  id                String           @id @default(cuid())
+  userId            String
+  user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  configSnapshot    Json?
+  label             String
+  monthYear         String
+  csvFileName       String
+  csvStorageUrl     String?
+  rowCount          Int
+  status            UploadStatus     @default(pending)
+  uploadedAt        DateTime         @default(now())
+  validatedAt       DateTime?
+  validationCostUsd Float?
+  validationError   String?          @db.Text
+
+  facts             MarketFact[]
+  storyLeads        MarketStoryLead[]
+
+  @@index([userId, monthYear])
+  @@map("market_data_uploads")
+}
+
+model MarketFact {
+  id                   String           @id @default(cuid())
+  userId               String
+  user                 User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  uploadId             String
+  upload               MarketDataUpload @relation(fields: [uploadId], references: [id], onDelete: Cascade)
+
+  neighbourhood        String
+  propertyType         String?
+  priceTier            String?
+
+  metricName           String
+  metricFamily         MetricFamily
+  metricValue          Float?
+  metricValueString    String?
+
+  sampleSize           Int?
+  timeWindow           String?
+  dateContext          DateTime?
+
+  sourceUrl            String?
+  sourceTitle          String?
+  notes                String?          @db.Text
+
+  marketType           MarketType?
+  trajectory           Trajectory?
+  usageClass           FactUsageClass
+
+  compositionShiftFlag Boolean          @default(false)
+  triangulationStatus  String?
+  yoyValue             Float?
+  rolling90dValue      Float?
+  crebAligned          Boolean?
+  viewerCaveat         String?          @db.Text
+
+  createdAt            DateTime         @default(now())
+
+  @@index([userId, neighbourhood])
+  @@index([uploadId])
+  @@index([metricFamily, usageClass])
+  @@map("market_facts")
+}
+
+model MarketStoryLead {
+  id                    String           @id @default(cuid())
+  userId                String
+  user                  User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  uploadId              String
+  upload                MarketDataUpload @relation(fields: [uploadId], references: [id], onDelete: Cascade)
+
+  scanType              Int
+  pattern               String           @db.Text
+  dataThreads           Json
+  whyItMatters          String           @db.Text
+
+  suggestedRotationSlot RotationSlot?
+  suggestedSubPersonas  Json?
+  suggestedFramework    String?
+  tactileType           String?
+
+  claimedByIdeaId       String?
+  createdAt             DateTime         @default(now())
+
+  @@index([userId])
+  @@index([uploadId])
+  @@map("market_story_leads")
 }

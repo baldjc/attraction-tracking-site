@@ -93,6 +93,72 @@ export async function checkCostCap(userId: string): Promise<{
   };
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Wave 0 (data-first rebuild) — v2 cost-cap helper.
+//
+// The v1 cap above (DEFAULT_MONTHLY_CAP = $15) and `checkCostCap()` are kept
+// untouched so existing AI-tool routes behave byte-for-byte identically. The
+// v2 pipeline (Wave 1+) uses the constants and helper below ($20 hard cap with
+// a $15 soft-warning threshold). When v1 routes are retired in Wave 5, flip
+// their callsites to `getCostCapStatus()` and remove this comment block.
+// TODO(wave-5): collapse v1 `checkCostCap()` into `getCostCapStatus()` once
+// the legacy AI-tool routes are removed.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const COST_CAPS = {
+  MEMBER_MONTHLY_HARD_CAP_USD: 20,
+  MEMBER_MONTHLY_SOFT_WARNING_USD: 15,
+} as const;
+
+export interface CostCapStatus {
+  hardBlocked: boolean;
+  softWarning: boolean;
+  monthSpendUsd: number;
+  capUsd: number;
+}
+
+/**
+ * v2 cost-cap status for the data-first pipeline. Admins are never blocked.
+ * Member per-user overrides on `aiToolsMonthlyCapOverride` are respected as
+ * the effective hard cap (matches v1 behavior).
+ */
+export async function getCostCapStatus(userId: string): Promise<CostCapStatus> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { role: true, aiToolsMonthlyCapOverride: true },
+  });
+
+  if (user?.role === "admin") {
+    return {
+      hardBlocked: false,
+      softWarning: false,
+      monthSpendUsd: 0,
+      capUsd: COST_CAPS.MEMBER_MONTHLY_HARD_CAP_USD,
+    };
+  }
+
+  const usage = await prisma.aIToolUsage.aggregate({
+    where: { userId, createdAt: { gte: startOfMonth() } },
+    _sum: { costUsd: true },
+  });
+
+  const monthSpendUsd = usage._sum.costUsd
+    ? new Decimal(usage._sum.costUsd.toString()).toNumber()
+    : 0;
+
+  const capUsd =
+    user?.aiToolsMonthlyCapOverride != null
+      ? new Decimal(user.aiToolsMonthlyCapOverride.toString()).toNumber()
+      : COST_CAPS.MEMBER_MONTHLY_HARD_CAP_USD;
+
+  return {
+    hardBlocked: monthSpendUsd >= capUsd,
+    softWarning: monthSpendUsd >= COST_CAPS.MEMBER_MONTHLY_SOFT_WARNING_USD,
+    monthSpendUsd,
+    capUsd,
+  };
+}
+
 export async function logUsage(
   userId: string,
   toolType: string,
