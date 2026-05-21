@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
+import { AiThinking } from "@/components/ai/AiThinking";
 
 interface TitleOption {
   title: string;
@@ -460,13 +461,7 @@ export default function ListingVideoChat({ initialResponse, propertyData, onRese
               </div>
             ))}
             {chatLoading && (
-              <div className="bg-white dark:bg-[#1a1a1a] border border-[#2f3437]/10 dark:border-white/10 rounded-xl px-4 py-3">
-                <div className="flex gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-[#6ba3c7]/40 animate-bounce" style={{ animationDelay: "0ms" }} />
-                  <span className="w-2 h-2 rounded-full bg-[#6ba3c7]/40 animate-bounce" style={{ animationDelay: "150ms" }} />
-                  <span className="w-2 h-2 rounded-full bg-[#6ba3c7]/40 animate-bounce" style={{ animationDelay: "300ms" }} />
-                </div>
-              </div>
+              <AiThinking mode="quick" />
             )}
           </div>
 

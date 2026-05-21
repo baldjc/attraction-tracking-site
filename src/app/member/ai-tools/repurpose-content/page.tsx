@@ -7,6 +7,8 @@ import NextStepCard from "@/components/ai-tools/NextStepCard";
 import LinkedPlanBanner from "@/components/ai-tools/LinkedPlanBanner";
 import InlineUpgradeBanner from "@/components/upgrade/InlineUpgradeBanner";
 import MarkdownTextarea from "@/components/MarkdownTextarea";
+import { AiThinking } from "@/components/ai/AiThinking";
+import { useAiThinking } from "@/lib/use-ai-thinking";
 
 function markdownToHtml(md: string): string {
   const lines = md.split("\n");
@@ -339,6 +341,14 @@ function RepurposeContentPageInner() {
   }, []);
 
   const [loading, setLoading] = useState(false);
+  const aiThinking = useAiThinking({
+    mode: "phase",
+    fallbackPhases: [
+      "Repurposing your content…",
+      "Adapting voice for each format…",
+      "Drafting long-form sections…",
+    ],
+  });
   // Sprint 3 Part C: track which formats persisted to the linked plan
   const [planSaveResults, setPlanSaveResults] = useState<Record<string, boolean>>({});
 
@@ -653,6 +663,7 @@ function RepurposeContentPageInner() {
     if (generatePostcard && !neighbourhood.trim()) return;
 
     setLoading(true);
+    aiThinking.start();
     setNewsletterResult(null); setNewsletterError(""); setNewsletterRecordId(null);
     setLinkedInResult(null); setLinkedInError(""); setLinkedInRecordId(null);
     setFacebookResult(null); setFacebookError(""); setFacebookRecordId(null);
@@ -817,6 +828,7 @@ function RepurposeContentPageInner() {
     }
 
     await Promise.allSettled(promises);
+    aiThinking.stop();
     setLoading(false);
     loadPastOutputs();
   }
@@ -1491,9 +1503,7 @@ function RepurposeContentPageInner() {
               New content
             </button>
             {loading && (
-              <span className="text-sm text-[#2f3437]/50 dark:text-white/50 animate-pulse">
-                Generating — this may take a minute…
-              </span>
+              <AiThinking mode="phase" phaseLabel={aiThinking.phaseLabel} />
             )}
           </div>
 
@@ -1510,8 +1520,8 @@ function RepurposeContentPageInner() {
           )}
 
           {loading && !newsletterResult && !linkedInResult && !facebookResult && !blogResult && !postcardResult && (
-            <div className="text-center py-4 text-sm text-[#2f3437]/50 dark:text-white/50 animate-pulse">
-              Generating your content — this may take a minute for longer formats…
+            <div className="flex justify-center py-4">
+              <AiThinking mode="phase" phaseLabel={aiThinking.phaseLabel} />
             </div>
           )}
 

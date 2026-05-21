@@ -1,6 +1,8 @@
 "use client";
 import { useState, useEffect, use } from "react";
 import Link from "next/link";
+import { AiThinking } from "@/components/ai/AiThinking";
+import { useAiThinking } from "@/lib/use-ai-thinking";
 
 interface ContentIdea {
   id: string;
@@ -26,6 +28,13 @@ export default function IdeasPage({ params }: { params: Promise<{ clientId: stri
   const [ideas, setIdeas] = useState<ContentIdea[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
+  const aiThinking = useAiThinking({
+    mode: "phase",
+    fallbackPhases: [
+      "Generating content ideas…",
+      "Scoring against client vocabulary…",
+    ],
+  });
   const [genMsg, setGenMsg] = useState<string | null>(null);
   const [showManual, setShowManual] = useState(false);
   const [manualTitle, setManualTitle] = useState("");
@@ -43,21 +52,28 @@ export default function IdeasPage({ params }: { params: Promise<{ clientId: stri
 
   async function generateIdeas() {
     setGenerating(true);
+    aiThinking.start();
     setGenMsg(null);
-    const res = await fetch(`/api/intelligence/clients/${clientId}/ideas`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({}),
-    });
-    if (res.ok) {
-      const created = await res.json();
-      setGenMsg(`Generated ${created.length} new ideas.`);
-      await load();
-    } else {
-      const d = await res.json();
-      setGenMsg(`Error: ${d.error}`);
+    try {
+      const res = await fetch(`/api/intelligence/clients/${clientId}/ideas`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      if (res.ok) {
+        const created = await res.json();
+        setGenMsg(`Generated ${created.length} new ideas.`);
+        await load();
+      } else {
+        const d = await res.json();
+        setGenMsg(`Error: ${d.error}`);
+      }
+    } catch (e: any) {
+      setGenMsg(`Error: ${e?.message ?? "Generation failed"}`);
+    } finally {
+      aiThinking.stop();
+      setGenerating(false);
     }
-    setGenerating(false);
   }
 
   async function saveManual(e: React.FormEvent) {
@@ -104,6 +120,12 @@ export default function IdeasPage({ params }: { params: Promise<{ clientId: stri
           </button>
         </div>
       </div>
+
+      {generating && (
+        <div className="mb-4">
+          <AiThinking mode="phase" phaseLabel={aiThinking.phaseLabel} />
+        </div>
+      )}
 
       {genMsg && (
         <div className="mb-4 bg-[#6ba3c7]/10 border border-[#6ba3c7]/30 rounded-lg px-4 py-3 text-sm text-[#2f3437]">{genMsg}</div>

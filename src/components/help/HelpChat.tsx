@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { XMarkIcon, PaperAirplaneIcon } from "@heroicons/react/24/outline";
 import { HELP_WELCOME_MESSAGE } from "@/lib/help-knowledge-base";
+import { AiThinking } from "@/components/ai/AiThinking";
 
 interface Message {
   role: "user" | "assistant";
@@ -16,15 +17,7 @@ interface Props {
 function TypingIndicator() {
   return (
     <div className="flex justify-start">
-      <div className="bg-[#f7f6f3] dark:bg-[#0f1419] rounded-2xl rounded-bl-md px-3.5 py-2.5 flex items-center gap-1">
-        {[0, 1, 2].map((i) => (
-          <span
-            key={i}
-            className="w-1.5 h-1.5 rounded-full bg-[#2f3437]/30 dark:bg-white/30 animate-bounce"
-            style={{ animationDelay: `${i * 0.15}s` }}
-          />
-        ))}
-      </div>
+      <AiThinking mode="quick" />
     </div>
   );
 }

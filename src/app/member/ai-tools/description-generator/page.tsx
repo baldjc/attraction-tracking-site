@@ -5,6 +5,8 @@ import { useSearchParams } from "next/navigation";
 import PageHeader from "@/components/PageHeader";
 import LinkedPlanBanner from "@/components/ai-tools/LinkedPlanBanner";
 import MarkdownTextarea from "@/components/MarkdownTextarea";
+import { AiThinking } from "@/components/ai/AiThinking";
+import { useAiThinking } from "@/lib/use-ai-thinking";
 
 interface CampaignInfo {
   id: string;
@@ -46,6 +48,10 @@ function DescriptionGeneratorPageInner() {
   const [contentPlanId, setContentPlanId] = useState<string | null>(urlPlanId);
 
   const [generating, setGenerating] = useState(false);
+  const aiThinking = useAiThinking({
+    mode: "phase",
+    fallbackPhases: ["Generating description…", "Polishing copy and tags…"],
+  });
   const [description, setDescription] = useState("");
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
@@ -226,6 +232,7 @@ function DescriptionGeneratorPageInner() {
       return;
     }
     setGenerating(true);
+    aiThinking.start();
     setError("");
     setDescription("");
     setCopied(false);
@@ -249,8 +256,10 @@ function DescriptionGeneratorPageInner() {
       }
     } catch {
       setError("Generation failed. Please try again.");
+    } finally {
+      aiThinking.stop();
+      setGenerating(false);
     }
-    setGenerating(false);
   }, [title, transcript, activeLink, contentPlanId]);
 
   const copyToClipboard = useCallback(async () => {
@@ -391,6 +400,11 @@ function DescriptionGeneratorPageInner() {
         >
           {generating ? "Generating…" : "Generate Description"}
         </button>
+        {generating && (
+          <div className="mt-3">
+            <AiThinking mode="phase" phaseLabel={aiThinking.phaseLabel} />
+          </div>
+        )}
         {error && <p className="text-sm text-red-500">{error}</p>}
       </div>
 

@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, ChangeEvent, DragEvent } from "react";
 import { ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
 import { DocumentArrowUpIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import MarkdownTextarea from "@/components/MarkdownTextarea";
+import { AiThinking } from "@/components/ai/AiThinking";
 
 interface Props {
   onSubmit: (data: {
@@ -284,6 +285,11 @@ export default function ListingInputPhase({ onSubmit, loading }: Props) {
       >
         {uploading ? "Reading files…" : loading ? "Building your video concepts…" : "Build My Video Concept"}
       </button>
+      {loading && (
+        <div className="mt-3">
+          <AiThinking mode="phase" phaseLabel="Building your video concepts…" />
+        </div>
+      )}
     </div>
   );
 }

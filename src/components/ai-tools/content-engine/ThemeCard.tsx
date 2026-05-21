@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import IdeaCard, { Idea } from "./IdeaCard";
+import { AiThinking } from "@/components/ai/AiThinking";
+import { useAiThinking } from "@/lib/use-ai-thinking";
 
 export interface ContentTheme {
   name: string;
@@ -60,6 +62,14 @@ export default function ThemeCard({ theme, index, onGoDeeper, initialIdeas }: Pr
   const [savedPage, setSavedPage] = useState(1);
   const [savedTotal, setSavedTotal] = useState(0);
   const [generating, setGenerating] = useState(false);
+  const aiThinking = useAiThinking({
+    mode: "phase",
+    fallbackPhases: [
+      "Generating idea cards…",
+      "Scoring titles and angles…",
+      "Drafting talking points…",
+    ],
+  });
   const [generateError, setGenerateError] = useState<string | null>(null);
   const [loadingSaved, setLoadingSaved] = useState(false);
   const [savedLoaded, setSavedLoaded] = useState(false);
@@ -110,6 +120,7 @@ export default function ThemeCard({ theme, index, onGoDeeper, initialIdeas }: Pr
   async function handleGenerate() {
     setExpanded(true);
     setGenerating(true);
+    aiThinking.start();
     setGenerateError(null);
     try {
       const newIdeas = await callBatch();
@@ -122,6 +133,7 @@ export default function ThemeCard({ theme, index, onGoDeeper, initialIdeas }: Pr
       console.error("[ThemeCard] Generate failed:", err);
       setGenerateError(err instanceof Error ? err.message : "Generation failed. Please try again.");
     } finally {
+      aiThinking.stop();
       setGenerating(false);
     }
     if (!savedLoaded) loadSaved(1);
@@ -129,6 +141,7 @@ export default function ThemeCard({ theme, index, onGoDeeper, initialIdeas }: Pr
 
   async function handleGenerateMore() {
     setGenerating(true);
+    aiThinking.start();
     setGenerateError(null);
     try {
       const newIdeas = await callBatch();
@@ -141,6 +154,7 @@ export default function ThemeCard({ theme, index, onGoDeeper, initialIdeas }: Pr
       console.error("[ThemeCard] Generate more failed:", err);
       setGenerateError(err instanceof Error ? err.message : "Generation failed. Please try again.");
     } finally {
+      aiThinking.stop();
       setGenerating(false);
     }
   }
@@ -216,6 +230,11 @@ export default function ThemeCard({ theme, index, onGoDeeper, initialIdeas }: Pr
               {generateError}
             </div>
           )}
+          {generating && ideas.length === 0 && (
+            <div className="p-4 flex justify-center">
+              <AiThinking mode="phase" phaseLabel={aiThinking.phaseLabel} />
+            </div>
+          )}
           {ideas.length > 0 && (
             <div className="p-4">
               <div className="flex items-center justify-between mb-3">
@@ -229,8 +248,10 @@ export default function ThemeCard({ theme, index, onGoDeeper, initialIdeas }: Pr
                 </button>
               </div>
               <div className="space-y-3">
-                {generating && ideas.length === 0 ? (
-                  <div className="text-center py-6 text-sm text-[#2f3437]/40 dark:text-white/40">Generating ideas...</div>
+                {generating ? (
+                  <div className="flex justify-center py-3">
+                    <AiThinking mode="phase" phaseLabel={aiThinking.phaseLabel} />
+                  </div>
                 ) : (
                   ideas.map((idea, i) => (
                     <IdeaCard

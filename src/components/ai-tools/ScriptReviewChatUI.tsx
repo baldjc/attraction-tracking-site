@@ -11,6 +11,8 @@ import RecentConversations from "./RecentConversations";
 import PromptEditor from "./PromptEditor";
 import MarkdownMessage from "@/components/MarkdownMessage";
 import MarkdownTextarea from "@/components/MarkdownTextarea";
+import { AiThinking } from "@/components/ai/AiThinking";
+import { useAiThinking } from "@/lib/use-ai-thinking";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -62,6 +64,14 @@ export default function ScriptReviewChatUI({ basePath, noAvatar, defaultPlanId }
   const [plannerSaved, setPlannerSaved] = useState(false);
   const [plannerSaveError, setPlannerSaveError] = useState(false);
   const [reviewSavedToPlan, setReviewSavedToPlan] = useState(false);
+  const initialThinking = useAiThinking({
+    mode: "phase",
+    fallbackPhases: [
+      "Analysing script…",
+      "Scoring against 15 principles…",
+      "Drafting strengths and gaps…",
+    ],
+  });
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -148,6 +158,7 @@ export default function ScriptReviewChatUI({ basePath, noAvatar, defaultPlanId }
   async function handleAnalyze() {
     if (!videoTitle.trim() || !scriptText.trim()) return;
     setLoading(true);
+    initialThinking.start();
     try {
       const res = await fetch("/api/ai-tools/script-review", {
         method: "POST",
@@ -175,6 +186,7 @@ export default function ScriptReviewChatUI({ basePath, noAvatar, defaultPlanId }
     } catch (e: any) {
       alert(`Error: ${e.message}`);
     } finally {
+      initialThinking.stop();
       setLoading(false);
     }
   }
@@ -298,6 +310,11 @@ export default function ScriptReviewChatUI({ basePath, noAvatar, defaultPlanId }
           >
             {loading ? "Analysing script…" : "Analyse My Script"}
           </button>
+          {loading && (
+            <div className="mt-3">
+              <AiThinking mode="phase" phaseLabel={initialThinking.phaseLabel} />
+            </div>
+          )}
         </div>
       ) : (
         <div className="flex flex-col">
@@ -353,13 +370,7 @@ export default function ScriptReviewChatUI({ basePath, noAvatar, defaultPlanId }
 
             {loading && (
               <div className="flex justify-start">
-                <div className="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-lg rounded-tl-sm px-4 py-3">
-                  <div className="flex gap-1">
-                    <span className="w-2 h-2 bg-[#6ba3c7]/60 rounded-full animate-bounce [animation-delay:0ms]" />
-                    <span className="w-2 h-2 bg-[#6ba3c7]/60 rounded-full animate-bounce [animation-delay:150ms]" />
-                    <span className="w-2 h-2 bg-[#6ba3c7]/60 rounded-full animate-bounce [animation-delay:300ms]" />
-                  </div>
-                </div>
+                <AiThinking mode="quick" />
               </div>
             )}
             <div ref={messagesEndRef} />

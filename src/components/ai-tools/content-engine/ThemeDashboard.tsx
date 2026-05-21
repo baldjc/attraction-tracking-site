@@ -8,6 +8,8 @@ import ThemeCard, { ContentTheme } from "./ThemeCard";
 import ContentEngineChat from "./ContentEngineChat";
 import NicheSetup from "./NicheSetup";
 import type { Idea } from "./IdeaCard";
+import { AiThinking } from "@/components/ai/AiThinking";
+import { useAiThinking } from "@/lib/use-ai-thinking";
 
 interface Props {
   themes: Array<ContentTheme | string>;
@@ -21,6 +23,13 @@ export default function ThemeDashboard({ themes, niche, city }: Props) {
   const [currentNiche, setCurrentNiche] = useState(niche);
   const [currentCity, setCurrentCity] = useState(city);
   const [generatingAll, setGeneratingAll] = useState(false);
+  const aiThinking = useAiThinking({
+    mode: "phase",
+    fallbackPhases: [
+      "Generating ideas across all themes…",
+      "This usually takes 30–60 seconds…",
+    ],
+  });
   const [allGenerated, setAllGenerated] = useState<Record<string, Idea[]>>({});
   const [reordering, setReordering] = useState(false);
   const [orderedThemes, setOrderedThemes] = useState<Array<ContentTheme | string>>(themes);
@@ -63,6 +72,7 @@ export default function ThemeDashboard({ themes, niche, city }: Props) {
 
   async function handleGenerateAll() {
     setGeneratingAll(true);
+    aiThinking.start();
     try {
       const results = await Promise.allSettled(
         themes.map(async (t) => {
@@ -83,6 +93,7 @@ export default function ThemeDashboard({ themes, niche, city }: Props) {
       }
       setAllGenerated(map);
     } finally {
+      aiThinking.stop();
       setGeneratingAll(false);
     }
   }
@@ -148,6 +159,11 @@ export default function ThemeDashboard({ themes, niche, city }: Props) {
               >
                 {generatingAll ? "Generating..." : "Generate All"}
               </button>
+              {generatingAll && (
+                <div className="ml-2">
+                  <AiThinking mode="phase" phaseLabel={aiThinking.phaseLabel} />
+                </div>
+              )}
               <button
                 onClick={() => setReordering(true)}
                 className="w-9 h-9 rounded-lg border border-[#2f3437]/20 dark:border-white/20 flex items-center justify-center text-[#2f3437]/50 dark:text-white/50 hover:text-[#2f3437] dark:hover:text-white hover:border-[#2f3437]/40 dark:hover:border-white/40 transition-colors"
@@ -180,8 +196,8 @@ export default function ThemeDashboard({ themes, niche, city }: Props) {
       )}
 
       {generatingAll && (
-        <div className="mb-4 text-sm text-[#2f3437]/50 dark:text-white/50 text-center animate-pulse">
-          Generating ideas for all themes in parallel...
+        <div className="mb-4 flex justify-center">
+          <AiThinking mode="phase" phaseLabel={aiThinking.phaseLabel} />
         </div>
       )}
 
