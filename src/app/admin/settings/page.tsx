@@ -493,26 +493,28 @@ function StaffAccessSection() {
 
 // ─── Feature Visibility ───────────────────────────────────────────────────────
 
+// Wave 0 — v2 per-user gated flags use this object shape. Existing 27 flags
+// stay boolean (contract enforced server-side in /api/admin/feature-visibility).
+type V2FlagValue = { enabled: boolean; allowedUserIds: string[] };
+type FlagValue = boolean | V2FlagValue;
+
 interface FeatureFlags {
-  campaigns: boolean;
-  ai_tools: boolean;
-  resources: boolean;
-  content_calendar: boolean;
-  client_hub: boolean;
-  tool_avatar_architect: boolean;
-  tool_content_engine: boolean;
-  tool_arc_script_builder: boolean;
-  tool_title_analyzer: boolean;
-  tool_script_review: boolean;
-  tool_repurpose_content: boolean;
-  tool_repurpose_newsletter: boolean;
-  tool_repurpose_linkedin: boolean;
-  tool_repurpose_facebook: boolean;
-  tool_repurpose_blog: boolean;
-  tool_repurpose_postcard: boolean;
-  tool_listing_video_builder: boolean;
-  [key: string]: boolean;
+  [key: string]: FlagValue;
 }
+
+function isV2Flag(v: FlagValue | undefined): v is V2FlagValue {
+  return !!v && typeof v === "object" && "enabled" in v && Array.isArray((v as V2FlagValue).allowedUserIds);
+}
+
+const V2_FLAG_DEFS: { key: string; label: string; desc: string }[] = [
+  { key: "tool_market_data", label: "Market Data Upload", desc: "v2 — CSV upload + market configuration" },
+  { key: "tool_fact_validator", label: "Fact Validator", desc: "v2 — Validates uploaded MLS data into market facts" },
+  { key: "tool_content_engine_v2", label: "Content Engine v2", desc: "v2 — Idea generation grounded in validated facts" },
+  { key: "tool_idea_validation", label: "Idea Validation", desc: "v2 — Pre-script idea check against avatar + facts" },
+  { key: "tool_script_builder_v2", label: "Script Builder v2", desc: "v2 — Data-grounded script writer" },
+  { key: "tool_home_tour_mode", label: "Home Tour Mode", desc: "v2 — Home-tour shoot type in planner" },
+  { key: "nav_v2_hub", label: "v2 Navigation Hub", desc: "v2 — Unified hub entry point for data-first features" },
+];
 
 const FEATURE_DEFS = [
   {
@@ -585,16 +587,242 @@ const FLAG_DESCRIPTIONS: Record<string, string> = {
   tool_repurpose_postcard: "Postcard format in Repurpose. Requires Repurpose Content enabled.",
 };
 
+function V2FlagCard({
+  flagKey,
+  label,
+  desc,
+  value,
+  allMembers,
+  saving,
+  onSave,
+}: {
+  flagKey: string;
+  label: string;
+  desc: string;
+  value: V2FlagValue;
+  allMembers: MemberOption[];
+  saving: boolean;
+  onSave: (next: V2FlagValue) => Promise<boolean>;
+}) {
+  const [draft, setDraft] = useState<V2FlagValue>(value);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [toast, setToast] = useState<"saved" | "error" | null>(null);
+  const pickerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setDraft(value);
+  }, [value]);
+
+  useEffect(() => {
+    function outside(e: MouseEvent) {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+        setPickerOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", outside);
+    return () => document.removeEventListener("mousedown", outside);
+  }, []);
+
+  const dirty =
+    draft.enabled !== value.enabled ||
+    draft.allowedUserIds.length !== value.allowedUserIds.length ||
+    draft.allowedUserIds.some((id, i) => id !== value.allowedUserIds[i]);
+
+  const memberById = new Map(allMembers.map((m) => [m.id, m]));
+  const candidates = allMembers.filter((m) => {
+    if (draft.allowedUserIds.includes(m.id)) return false;
+    const q = search.trim().toLowerCase();
+    if (!q) return true;
+    const name = (m.fullName ?? "").toLowerCase();
+    return name.includes(q) || m.email.toLowerCase().includes(q);
+  });
+
+  function addMember(id: string) {
+    if (draft.allowedUserIds.includes(id)) return;
+    setDraft({ ...draft, allowedUserIds: [...draft.allowedUserIds, id] });
+    setSearch("");
+    setPickerOpen(false);
+  }
+
+  function removeMember(id: string) {
+    setDraft({
+      ...draft,
+      allowedUserIds: draft.allowedUserIds.filter((x) => x !== id),
+    });
+  }
+
+  async function handleSave() {
+    const ok = await onSave(draft);
+    setToast(ok ? "saved" : "error");
+    setTimeout(() => setToast(null), 2500);
+  }
+
+  return (
+    <div className="border border-[#2f3437]/10 rounded-lg p-4 bg-white">
+      <div className="flex items-start justify-between gap-4 mb-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <code className="text-sm font-semibold text-[#2f3437]">{flagKey}</code>
+            <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded bg-purple-100 text-purple-700">
+              v2
+            </span>
+          </div>
+          <p className="text-xs text-[#2f3437]/50 mt-0.5">{label} — {desc}</p>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-[11px] font-medium text-[#2f3437]/60">Enabled</span>
+          <Toggle
+            enabled={draft.enabled}
+            onChange={(v) => setDraft({ ...draft, enabled: v })}
+            disabled={saving}
+          />
+        </div>
+      </div>
+
+      <div className="border-t border-[#2f3437]/8 pt-3">
+        <p className="text-xs font-medium text-[#2f3437]/60 mb-2">
+          Members with early access (allowlist)
+        </p>
+
+        {draft.allowedUserIds.length === 0 ? (
+          <p className="text-xs italic text-[#2f3437]/40 mb-2">
+            No members in allowlist. Admins still see this flag via admin bypass.
+          </p>
+        ) : (
+          <ul className="space-y-1 mb-2">
+            {draft.allowedUserIds.map((id) => {
+              const m = memberById.get(id);
+              return (
+                <li
+                  key={id}
+                  className="flex items-center justify-between gap-3 px-3 py-1.5 rounded-md bg-[#6ba3c7]/5 border border-[#6ba3c7]/15"
+                >
+                  <div className="min-w-0">
+                    {m ? (
+                      <>
+                        <p className="text-xs font-medium text-[#2f3437] truncate">
+                          {m.fullName || m.email}
+                        </p>
+                        <p className="text-[10px] text-[#2f3437]/50 truncate font-mono">
+                          {m.email} · {id}
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-xs font-medium text-amber-700 truncate">Unknown user</p>
+                        <p className="text-[10px] text-[#2f3437]/50 truncate font-mono">{id}</p>
+                      </>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeMember(id)}
+                    disabled={saving}
+                    className="text-[11px] font-medium text-[#ff0033] hover:bg-[#ff0033]/10 px-2 py-1 rounded disabled:opacity-40"
+                  >
+                    Remove
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+
+        <div ref={pickerRef} className="relative">
+          <button
+            type="button"
+            onClick={() => setPickerOpen((v) => !v)}
+            disabled={saving}
+            className="text-xs font-medium text-[#6ba3c7] hover:bg-[#6ba3c7]/5 border border-[#6ba3c7]/30 rounded-md px-3 py-1.5 disabled:opacity-40"
+          >
+            + Add member
+          </button>
+
+          {pickerOpen && (
+            <div className="absolute left-0 top-full mt-1 z-20 w-80 bg-white border border-[#2f3437]/15 rounded-lg shadow-lg overflow-hidden">
+              <div className="p-2 border-b border-[#2f3437]/8">
+                <input
+                  autoFocus
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search by name or email…"
+                  className="w-full px-3 py-1.5 text-xs border border-[#2f3437]/15 rounded-md focus:outline-none focus:border-[#6ba3c7]"
+                />
+              </div>
+              <ul className="max-h-56 overflow-y-auto divide-y divide-[#2f3437]/6">
+                {candidates.length === 0 ? (
+                  <li className="px-3 py-3 text-xs text-[#2f3437]/40 text-center">
+                    {search ? "No matches" : "No members available"}
+                  </li>
+                ) : (
+                  candidates.slice(0, 50).map((m) => (
+                    <li key={m.id}>
+                      <button
+                        type="button"
+                        onClick={() => addMember(m.id)}
+                        className="w-full text-left px-3 py-2 hover:bg-[#6ba3c7]/5"
+                      >
+                        <p className="text-xs font-medium text-[#2f3437] truncate">
+                          {m.fullName || m.email}
+                        </p>
+                        <p className="text-[10px] text-[#2f3437]/50 truncate">{m.email}</p>
+                      </button>
+                    </li>
+                  ))
+                )}
+              </ul>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3 mt-3 pt-3 border-t border-[#2f3437]/8">
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={saving || !dirty}
+          className="bg-[#6ba3c7] text-white text-xs font-semibold px-4 py-1.5 rounded-md hover:bg-[#6ba3c7]/90 disabled:opacity-40 transition-colors"
+        >
+          {saving ? "Saving…" : "Save"}
+        </button>
+        {!dirty && !toast && (
+          <span className="text-[11px] text-[#2f3437]/40">No changes</span>
+        )}
+        {toast === "saved" && (
+          <span className="text-[11px] text-green-600 font-medium">✓ Saved</span>
+        )}
+        {toast === "error" && (
+          <span className="text-[11px] text-[#ff0033] font-medium">Failed to save</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function FeatureVisibilitySection() {
   const [flags, setFlags] = useState<FeatureFlags | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
   const [loadError, setLoadError] = useState(false);
+  const [allMembers, setAllMembers] = useState<MemberOption[]>([]);
 
   useEffect(() => {
     fetch("/api/admin/feature-visibility")
       .then((r) => r.json())
       .then(setFlags)
       .catch(() => setLoadError(true));
+  }, []);
+
+  useEffect(() => {
+    // Reuse the staff endpoint's member list for the allowlist typeahead.
+    // Returns non-admin members with id/fullName/email.
+    fetch("/api/admin/staff")
+      .then((r) => r.json())
+      .then((d) => setAllMembers(d.members ?? []))
+      .catch(() => {
+        /* non-fatal — allowlist UI will fall back to "Unknown user" labels */
+      });
   }, []);
 
   async function toggleFlag(key: string, newValue: boolean) {
@@ -621,6 +849,32 @@ function FeatureVisibilitySection() {
     }
   }
 
+  async function saveV2Flag(key: string, next: V2FlagValue): Promise<boolean> {
+    if (!flags) return false;
+    setSaving(key);
+    const prev = { ...flags };
+    setFlags({ ...flags, [key]: next });
+    try {
+      const res = await fetch("/api/admin/feature-visibility", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key, value: next }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setFlags(updated);
+        return true;
+      }
+      setFlags(prev);
+      return false;
+    } catch {
+      setFlags(prev);
+      return false;
+    } finally {
+      setSaving(null);
+    }
+  }
+
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6">
       <div className="mb-5">
@@ -641,6 +895,14 @@ function FeatureVisibilitySection() {
           {[1, 2, 3].map((i) => (
             <div key={i} className="h-12 bg-[#111]/5 rounded-lg animate-pulse" />
           ))}
+        </div>
+      )}
+
+      {flags && (
+        <div className="mb-6">
+          <p className="text-[11px] font-bold text-[#2f3437]/50 uppercase tracking-widest mb-3">
+            Standard flags
+          </p>
         </div>
       )}
 
@@ -726,6 +988,41 @@ function FeatureVisibilitySection() {
           </div>
         );
       })}
+
+      {flags && (
+        <div className="mt-8 pt-6 border-t border-[#2f3437]/10">
+          <div className="mb-4">
+            <p className="text-[11px] font-bold text-[#2f3437]/50 uppercase tracking-widest mb-1">
+              Per-user gated flags (v2)
+            </p>
+            <p className="text-xs text-[#2f3437]/50 leading-relaxed">
+              v2 flags are off for everyone by default. Toggle <em>Enabled</em> to open
+              globally, or add specific members to the allowlist for early access.
+              Admins and editors see these regardless via staff bypass.
+            </p>
+          </div>
+          <div className="space-y-3">
+            {V2_FLAG_DEFS.map(({ key, label, desc }) => {
+              const raw = flags[key];
+              const value: V2FlagValue = isV2Flag(raw)
+                ? raw
+                : { enabled: false, allowedUserIds: [] };
+              return (
+                <V2FlagCard
+                  key={key}
+                  flagKey={key}
+                  label={label}
+                  desc={desc}
+                  value={value}
+                  allMembers={allMembers}
+                  saving={saving === key}
+                  onSave={(next) => saveV2Flag(key, next)}
+                />
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
