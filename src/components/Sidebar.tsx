@@ -22,6 +22,7 @@ import {
   ChevronDownIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  ChevronUpIcon,
   UserCircleIcon,
   SunIcon,
   MoonIcon,
@@ -39,7 +40,7 @@ import {
   ClockIcon,
   ArrowTrendingUpIcon,
 } from "@heroicons/react/24/outline";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { IMPERSONATE_LS_KEY } from "@/lib/impersonate-constants";
 import { useTheme } from "@/components/ThemeProvider";
 import { useSidebar } from "@/components/SidebarContext";
@@ -132,6 +133,8 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
   const [hireWaitlist, setHireWaitlist] = useState(0);
   const [memberTier, setMemberTier] = useState<string | null>(null);
   const [clientHubEnabled, setClientHubEnabled] = useState(true);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement | null>(null);
 
   const isStaff = role === "admin" || role === "editor";
   const isImpersonating = !!impersonate;
@@ -175,7 +178,26 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
 
   useEffect(() => {
     setMobileOpen(false);
+    setUserMenuOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    if (!userMenuOpen) return;
+    const onDocClick = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setUserMenuOpen(false);
+    };
+    document.addEventListener("mousedown", onDocClick);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDocClick);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [userMenuOpen]);
 
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? "hidden" : "";
@@ -418,40 +440,85 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
         })()}
       </nav>
 
-      {/* Bottom: user info + actions */}
-      <div className={`border-t border-white/10 flex-shrink-0 py-3 ${collapsed ? "px-2" : "px-3"}`}>
-        {!collapsed && (
-          <div className="px-3 py-2 mb-1">
-            <p className="text-sm font-semibold text-white truncate">{userName}</p>
-            <p className="text-xs text-white/40 mt-0.5">{roleLabel}</p>
-          </div>
+      {/* Bottom: user info + actions (collapsible dropdown when expanded) */}
+      <div
+        ref={userMenuRef}
+        className={`border-t border-white/10 flex-shrink-0 py-2 ${collapsed ? "px-2" : "px-3"}`}
+      >
+        {collapsed ? (
+          <>
+            <button
+              onClick={() => setHelpOpen((v) => !v)}
+              title="Help"
+              className="flex items-center gap-3 py-2.5 text-sm font-medium text-white/50 hover:text-white hover:bg-white/5 transition-colors duration-200 w-full rounded-md px-3 justify-center"
+            >
+              <span className="text-base leading-none shrink-0">🤖</span>
+            </button>
+            <button
+              onClick={toggleTheme}
+              title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+              className="flex items-center gap-3 py-2.5 text-sm font-medium text-white/50 hover:text-white hover:bg-white/5 transition-colors duration-200 w-full rounded-md px-3 justify-center"
+            >
+              {theme === "dark"
+                ? <SunIcon className="w-5 h-5 shrink-0" />
+                : <MoonIcon className="w-5 h-5 shrink-0" />}
+            </button>
+            <button
+              onClick={() => signOut({ callbackUrl: "/login" })}
+              title="Sign out"
+              className="flex items-center gap-3 py-2.5 text-sm font-medium text-white/50 hover:text-white hover:bg-white/5 transition-colors duration-200 w-full rounded-md px-3 justify-center"
+            >
+              <ArrowRightOnRectangleIcon className="w-5 h-5 shrink-0" />
+            </button>
+          </>
+        ) : (
+          <>
+            {/* Expanded actions — render above the trigger so the up-arrow opens upward */}
+            {userMenuOpen && (
+              <div className="mb-1 space-y-0.5">
+                <button
+                  onClick={() => { setHelpOpen((v) => !v); setUserMenuOpen(false); }}
+                  className="flex items-center gap-3 py-2.5 px-3 text-sm font-medium text-white/60 hover:text-white hover:bg-white/5 transition-colors duration-200 w-full rounded-md"
+                >
+                  <span className="text-base leading-none shrink-0">🤖</span>
+                  <span>Help</span>
+                </button>
+                <button
+                  onClick={() => { toggleTheme(); }}
+                  className="flex items-center gap-3 py-2.5 px-3 text-sm font-medium text-white/60 hover:text-white hover:bg-white/5 transition-colors duration-200 w-full rounded-md"
+                >
+                  {theme === "dark"
+                    ? <SunIcon className="w-5 h-5 shrink-0" />
+                    : <MoonIcon className="w-5 h-5 shrink-0" />}
+                  <span>{theme === "dark" ? "Light mode" : "Dark mode"}</span>
+                </button>
+                <button
+                  onClick={() => signOut({ callbackUrl: "/login" })}
+                  className="flex items-center gap-3 py-2.5 px-3 text-sm font-medium text-white/60 hover:text-white hover:bg-white/5 transition-colors duration-200 w-full rounded-md"
+                >
+                  <ArrowRightOnRectangleIcon className="w-5 h-5 shrink-0" />
+                  <span>Sign out</span>
+                </button>
+                <div className="border-t border-white/10 my-1" />
+              </div>
+            )}
+
+            {/* Trigger — always visible when expanded */}
+            <button
+              onClick={() => setUserMenuOpen((v) => !v)}
+              aria-expanded={userMenuOpen}
+              className="flex items-center gap-3 px-3 py-2 w-full rounded-md hover:bg-white/5 transition-colors duration-200 text-left"
+            >
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-white truncate">{userName}</p>
+                <p className="text-xs text-white/40 mt-0.5 truncate">{roleLabel}</p>
+              </div>
+              {userMenuOpen
+                ? <ChevronDownIcon className="w-4 h-4 shrink-0 text-white/40" />
+                : <ChevronUpIcon className="w-4 h-4 shrink-0 text-white/40" />}
+            </button>
+          </>
         )}
-        <button
-          onClick={() => setHelpOpen((v) => !v)}
-          title="Help"
-          className={`flex items-center gap-3 py-2.5 text-sm font-medium text-white/50 hover:text-white hover:bg-white/5 transition-colors duration-200 w-full rounded-md ${collapsed ? "px-3 justify-center" : "px-3"}`}
-        >
-          <span className="text-base leading-none shrink-0">🤖</span>
-          {!collapsed && <span>Help</span>}
-        </button>
-        <button
-          onClick={toggleTheme}
-          title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-          className={`flex items-center gap-3 py-2.5 text-sm font-medium text-white/50 hover:text-white hover:bg-white/5 transition-colors duration-200 w-full rounded-md ${collapsed ? "px-3 justify-center" : "px-3"}`}
-        >
-          {theme === "dark"
-            ? <SunIcon className="w-5 h-5 shrink-0" />
-            : <MoonIcon className="w-5 h-5 shrink-0" />}
-          {!collapsed && <span>{theme === "dark" ? "Light mode" : "Dark mode"}</span>}
-        </button>
-        <button
-          onClick={() => signOut({ callbackUrl: "/login" })}
-          title={collapsed ? "Sign out" : undefined}
-          className={`flex items-center gap-3 py-2.5 text-sm font-medium text-white/50 hover:text-white hover:bg-white/5 transition-colors duration-200 w-full rounded-md ${collapsed ? "px-3 justify-center" : "px-3"}`}
-        >
-          <ArrowRightOnRectangleIcon className="w-5 h-5 shrink-0" />
-          {!collapsed && <span>Sign out</span>}
-        </button>
       </div>
 
       {/* Collapse toggle — desktop only, bottom of sidebar */}
