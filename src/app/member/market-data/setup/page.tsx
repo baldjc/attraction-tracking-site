@@ -1,0 +1,41 @@
+import { redirect } from "next/navigation";
+import { resolveUserFromSession } from "@/lib/session-utils";
+import { getFeatureFlags } from "@/lib/feature-flags";
+import {
+  emptyMarketConfig,
+  getMarketConfigForUser,
+} from "@/lib/market-config";
+import SetupForm from "@/components/market-data/SetupForm";
+
+export const dynamic = "force-dynamic";
+
+export default async function MarketDataSetupPage() {
+  const user = await resolveUserFromSession();
+  if (!user) redirect("/login");
+
+  const flags = await getFeatureFlags({
+    userId: user.id,
+    userRole: user.role,
+  });
+  if (!flags.tool_market_data) redirect("/member/dashboard");
+
+  const existing = await getMarketConfigForUser(user.id);
+  const initial = existing ?? emptyMarketConfig();
+  const isEdit = !!existing;
+
+  return (
+    <div className="max-w-3xl mx-auto">
+      <header className="mb-6">
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+          {isEdit ? "Edit your market" : "Set up your market"}
+        </h1>
+        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+          Tell us about your local MLS market. Only market name and MLS source
+          are required to start uploading data — everything else has sensible
+          defaults you can adjust later.
+        </p>
+      </header>
+      <SetupForm initial={initial} isEdit={isEdit} />
+    </div>
+  );
+}
