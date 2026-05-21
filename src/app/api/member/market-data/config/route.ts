@@ -2,10 +2,10 @@ import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import {
   emptyMarketConfig,
-  requireMarketAccess,
   toShape,
   type MarketConfigShape,
 } from "@/lib/market-config";
+import { requireMarketAccess } from "@/lib/market-config-server";
 
 export async function GET() {
   const access = await requireMarketAccess();

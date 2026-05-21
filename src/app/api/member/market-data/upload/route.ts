@@ -1,8 +1,8 @@
 import { NextRequest } from "next/server";
 import { randomUUID } from "node:crypto";
 import prisma from "@/lib/prisma";
+import { requireMarketAccess } from "@/lib/market-config-server";
 import {
-  requireMarketAccess,
   CANONICAL_FIELDS,
   FIELD_LABELS,
   type ColumnMapping,

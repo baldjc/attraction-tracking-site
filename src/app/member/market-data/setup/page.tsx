@@ -1,10 +1,8 @@
 import { redirect } from "next/navigation";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import { getFeatureFlags } from "@/lib/feature-flags";
-import {
-  emptyMarketConfig,
-  getMarketConfigForUser,
-} from "@/lib/market-config";
+import { emptyMarketConfig } from "@/lib/market-config";
+import { getMarketConfigForUser } from "@/lib/market-config-server";
 import SetupForm from "@/components/market-data/SetupForm";
 
 export const dynamic = "force-dynamic";

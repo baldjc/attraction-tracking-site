@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { requireMarketAccess } from "@/lib/market-config";
+import { requireMarketAccess } from "@/lib/market-config-server";
 import {
   parseCsvPreview,
   suggestColumnMapping,
