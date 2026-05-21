@@ -14,6 +14,9 @@ import ArcProgressBar, { SECTIONS } from "@/components/ai-tools/ArcProgressBar";
 import AnalysisProgress from "@/components/ai-tools/AnalysisProgress";
 import MarkdownMessage from "@/components/MarkdownMessage";
 import NextStepCard from "@/components/ai-tools/NextStepCard";
+import { AiThinking } from "@/components/ai/AiThinking";
+import { useAiThinking } from "@/lib/use-ai-thinking";
+import { parseSseEvent } from "@/lib/ai-thinking-sse";
 
 interface Message {
   role: "user" | "assistant";
@@ -98,6 +101,10 @@ export default function ArcScriptChatPhase({
   const [messages, setMessages] = useState<Message[]>(resumeMessages ?? []);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const aiThinking = useAiThinking({
+    mode: "phase",
+    fallbackPhases: ["Reviewing your inputs..."],
+  });
   const [currentSection, setCurrentSection] = useState(resumeCurrentSection ?? "research_strategy");
   const [completedSections, setCompletedSections] = useState<string[]>(resumeCompletedSections ?? []);
   const [sectionApprovals, setSectionApprovals] = useState<SectionApproval[]>(resumeSectionApprovals ?? []);
@@ -227,6 +234,7 @@ export default function ArcScriptChatPhase({
     async (userContent: string, researchSummary?: string) => {
       if (loading) return;
       setLoading(true);
+      aiThinking.start();
 
       const newUserMsg: Message = {
         role: "user",
@@ -241,6 +249,8 @@ export default function ArcScriptChatPhase({
 
       setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
 
+      // Outer try/finally guarantees aiThinking.stop() + setLoading(false)
+      // run on every exit path, including the 429 and !res.ok early returns.
       try {
         const res = await fetch("/api/ai-tools/arc-script-builder", {
           method: "POST",
@@ -266,7 +276,6 @@ export default function ArcScriptChatPhase({
                   : "Monthly limit reached.",
             },
           ]);
-          setLoading(false);
           return;
         }
 
@@ -275,7 +284,6 @@ export default function ArcScriptChatPhase({
             ...prev.slice(0, -1),
             { role: "assistant", content: "Something went wrong. Please try again." },
           ]);
-          setLoading(false);
           return;
         }
 
@@ -293,11 +301,25 @@ export default function ArcScriptChatPhase({
           buffer = parts.pop() ?? "";
 
           for (const part of parts) {
-            if (!part.startsWith("data: ")) continue;
+            const sse = parseSseEvent(part);
+            if (!sse) continue;
+
+            // Wave 0.5 phase event — update the AiThinking indicator.
+            if (sse.event === "phase") {
+              try {
+                const phasePayload = JSON.parse(sse.data) as { label?: string };
+                if (phasePayload.label) aiThinking.updatePhase(phasePayload.label);
+              } catch {}
+              continue;
+            }
+
             try {
-              const payload = JSON.parse(part.slice(6));
+              const payload = JSON.parse(sse.data);
 
               if (payload.type === "text") {
+                // First content chunk — dismiss the thinking indicator; the
+                // streaming text itself becomes the activity signal.
+                if (fullText.length === 0) aiThinking.stop();
                 fullText += payload.text;
                 setMessages((prev) => {
                   const updated = [...prev];
@@ -375,11 +397,12 @@ export default function ArcScriptChatPhase({
           ...prev.slice(0, -1),
           { role: "assistant", content: "Connection error. Please try again." },
         ]);
+      } finally {
+        setLoading(false);
+        aiThinking.stop();
       }
-
-      setLoading(false);
     },
-    [loading, messages]
+    [loading, messages, aiThinking]
   );
 
   useEffect(() => {
@@ -584,16 +607,9 @@ export default function ArcScriptChatPhase({
           );
         })}
 
-        {loading && messages[messages.length - 1]?.role !== "assistant" && (
+        {aiThinking.isThinking && messages[messages.length - 1]?.role !== "assistant" && (
           <div className="flex justify-start">
-            <div className="bg-white dark:bg-[#1a1a1a] border border-[#2f3437]/10 dark:border-white/10 rounded-lg rounded-tl-sm px-4 py-3">
-              <div className="flex gap-1.5 items-center h-4">
-                {[0, 1, 2].map((i) => (
-                  <span key={i} className="w-2 h-2 rounded-full bg-[#6ba3c7]/60 animate-bounce"
-                    style={{ animationDelay: `${i * 0.15}s` }} />
-                ))}
-              </div>
-            </div>
+            <AiThinking mode="phase" phaseLabel={aiThinking.phaseLabel} />
           </div>
         )}
         <div ref={bottomRef} />

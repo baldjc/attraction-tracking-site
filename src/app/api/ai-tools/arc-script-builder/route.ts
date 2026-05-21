@@ -5,6 +5,7 @@ import { checkCostCap, logUsage, getMonthlyUsage } from "@/lib/ai-tool-cost";
 import prisma from "@/lib/prisma";
 import { getAvatarData } from "@/lib/avatar-utils";
 import { getDramaContext } from "@/lib/drama-video-definition";
+import { emitPhase } from "@/lib/ai-thinking-sse";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const MODEL = "claude-sonnet-4-20250514";
@@ -563,19 +564,25 @@ export async function POST(req: NextRequest) {
 
     const encoder = new TextEncoder();
 
-    const stream = new ReadableStream({
+    const stream = new ReadableStream<Uint8Array>({
       async start(controller) {
         let totalInput = 0;
         let totalOutput = 0;
         let fullText = "";
 
         try {
+          // Wave 0.5 AI Thinking phase events (consumed by <AiThinking mode="phase" />).
+          // Indicator dismisses on first content chunk; these run before Claude starts.
+          emitPhase(controller, "Reviewing your inputs...");
+
           const anthropicStream = client.messages.stream({
             model: MODEL,
             max_tokens: 8192,
             system: systemPrompt,
             messages: cleanMessages as Anthropic.MessageParam[],
           });
+
+          emitPhase(controller, "Calling Claude...");
 
           for await (const event of anthropicStream) {
             if (

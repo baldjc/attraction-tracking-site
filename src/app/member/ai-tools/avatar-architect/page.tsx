@@ -20,6 +20,9 @@ import MarkdownMessage from "@/components/MarkdownMessage";
 import NextStepCard from "@/components/ai-tools/NextStepCard";
 import { CANONICAL_THEMES, MAX_THEMES } from "@/lib/canonical-themes";
 import MarkdownTextarea from "@/components/MarkdownTextarea";
+import { AiThinking } from "@/components/ai/AiThinking";
+import { useAiThinking } from "@/lib/use-ai-thinking";
+import { parseSseEvent } from "@/lib/ai-thinking-sse";
 
 interface Message {
   role: "user" | "assistant";
@@ -554,6 +557,10 @@ function AvatarArchitectInner() {
   const [refreshCounter, setRefreshCounter] = useState(0);
   const [chatError, setChatError] = useState<string | null>(null);
   const [streamingContent, setStreamingContent] = useState<string | null>(null);
+  const aiThinking = useAiThinking({
+    mode: "phase",
+    fallbackPhases: ["Reviewing your inputs..."],
+  });
   const convIdRef = useRef<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -682,31 +689,38 @@ function AvatarArchitectInner() {
     onChunk: (text: string) => void,
     signal: AbortSignal,
   ): Promise<StreamResult> {
-    const res = await fetch("/api/ai-tools/avatar-architect", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages: msgs, hasBuild, messageCount: msgs.length }),
-      signal,
-    });
-
-    if (!res.ok || !res.body) {
-      const b = await res.json().catch(() => ({}));
-      throw new Error(b.error ?? `HTTP ${res.status}`);
-    }
-
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = "";
-    let lastChunkAt = Date.now();
-
-    // Abort if no chunk arrives for 30 seconds
-    const chunkTimer = setInterval(() => {
-      if (Date.now() - lastChunkAt > 30_000) {
-        reader.cancel("no chunks for 30s");
-      }
-    }, 1000);
-
+    // Outer try/finally guarantees aiThinking.stop() runs on every exit path
+    // (network errors, non-2xx responses, abort, normal completion). Without
+    // this, a fetch failure before the inner try would leave the indicator
+    // stuck on for subsequent sends.
+    let chunkTimer: ReturnType<typeof setInterval> | null = null;
     try {
+      const res = await fetch("/api/ai-tools/avatar-architect", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: msgs, hasBuild, messageCount: msgs.length }),
+        signal,
+      });
+
+      if (!res.ok || !res.body) {
+        const b = await res.json().catch(() => ({}));
+        throw new Error(b.error ?? `HTTP ${res.status}`);
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let lastChunkAt = Date.now();
+
+      // Abort if no chunk arrives for 30 seconds
+      chunkTimer = setInterval(() => {
+        if (Date.now() - lastChunkAt > 30_000) {
+          reader.cancel("no chunks for 30s");
+        }
+      }, 1000);
+
+      let firstChunkSeen = false;
+
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -714,17 +728,35 @@ function AvatarArchitectInner() {
         buffer += decoder.decode(value, { stream: true });
         lastChunkAt = Date.now();
 
-        const lines = buffer.split("\n");
-        buffer = lines.pop() ?? "";
+        // SSE events are separated by blank lines (\n\n).
+        const parts = buffer.split("\n\n");
+        buffer = parts.pop() ?? "";
 
-        for (const line of lines) {
-          if (!line.startsWith("data: ")) continue;
+        for (const part of parts) {
+          const sse = parseSseEvent(part);
+          if (!sse) continue;
+
+          // Wave 0.5 phase event — drives the <AiThinking /> indicator.
+          if (sse.event === "phase") {
+            try {
+              const phasePayload = JSON.parse(sse.data) as { label?: string };
+              if (phasePayload.label) aiThinking.updatePhase(phasePayload.label);
+            } catch {}
+            continue;
+          }
+
           try {
-            const event = JSON.parse(line.slice(6)) as { type: string; text?: string; message?: string; avatarData?: AvatarData | null; themeSelection?: { selectedThemes: ThemeSelectionItem[] } | null; };
+            const event = JSON.parse(sse.data) as { type: string; text?: string; message?: string; avatarData?: AvatarData | null; themeSelection?: { selectedThemes: ThemeSelectionItem[] } | null; };
             if (event.type === "chunk" && event.text) {
+              // First content chunk — dismiss the indicator. Streaming text
+              // is now the activity signal.
+              if (!firstChunkSeen) {
+                firstChunkSeen = true;
+                aiThinking.stop();
+              }
               onChunk(event.text);
             } else if (event.type === "done") {
-              clearInterval(chunkTimer);
+              if (chunkTimer) clearInterval(chunkTimer);
               return { message: event.message ?? "", avatarData: event.avatarData ?? null, themeSelection: event.themeSelection ?? null };
             } else if (event.type === "error") {
               throw new Error(event.message ?? "Unknown stream error");
@@ -736,7 +768,8 @@ function AvatarArchitectInner() {
       }
       throw new Error("Stream ended without a completion event — please try again.");
     } finally {
-      clearInterval(chunkTimer);
+      if (chunkTimer) clearInterval(chunkTimer);
+      aiThinking.stop();
     }
   }
 
@@ -751,6 +784,7 @@ function AvatarArchitectInner() {
     setConversationId(null);
     setScreen("chat");
     setLoading(true);
+    aiThinking.start();
 
     const controller = new AbortController();
     try {
@@ -789,6 +823,7 @@ function AvatarArchitectInner() {
     setConversationId(null);
     setScreen("chat");
     setLoading(true);
+    aiThinking.start();
 
     const controller = new AbortController();
     try {
@@ -823,6 +858,7 @@ function AvatarArchitectInner() {
     setChatError(null);
     setStreamingContent("");
     setLoading(true);
+    aiThinking.start();
 
     const hasBuild = detectedAvatar !== null || newMessages.some((m) => m.role === "assistant" && m.content.includes("<AVATAR_DATA>"));
     const controller = new AbortController();
@@ -855,6 +891,7 @@ function AvatarArchitectInner() {
     setChatError(null);
     setStreamingContent("");
     setLoading(true);
+    aiThinking.start();
 
     const hasBuild = detectedAvatar !== null || messages.some((m) => m.role === "assistant" && m.content.includes("<AVATAR_DATA>"));
     const controller = new AbortController();
@@ -1592,19 +1629,9 @@ function AvatarArchitectInner() {
             </div>
           </div>
         )}
-        {loading && (streamingContent === null || streamingContent.length === 0) && (
+        {aiThinking.isThinking && (streamingContent === null || streamingContent.length === 0) && (
           <div className="flex justify-start">
-            <div className="bg-white border border-[#2f3437]/10 rounded-lg rounded-tl-sm px-4 py-3">
-              <div className="flex gap-1.5 items-center h-4">
-                {[0, 1, 2].map((i) => (
-                  <span
-                    key={i}
-                    className="w-2 h-2 rounded-full bg-[#6ba3c7]/60 animate-bounce"
-                    style={{ animationDelay: `${i * 0.15}s` }}
-                  />
-                ))}
-              </div>
-            </div>
+            <AiThinking mode="phase" phaseLabel={aiThinking.phaseLabel} />
           </div>
         )}
         {chatError && (

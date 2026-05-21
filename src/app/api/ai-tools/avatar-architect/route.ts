@@ -3,6 +3,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import { AVATAR_ARCHITECT_PROMPT } from "@/lib/audit-engine";
 import prisma from "@/lib/prisma";
+import { emitPhase } from "@/lib/ai-thinking-sse";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -67,12 +68,18 @@ export async function POST(req: NextRequest) {
       }, 1000);
 
       try {
+        // Wave 0.5 AI Thinking phase events. Indicator dismisses on first
+        // content chunk; these run before Claude streams text.
+        emitPhase(controller, "Reviewing your inputs...");
+
         const anthropicStream = client.messages.stream({
           model,
           max_tokens: maxTokens,
           system: systemPrompt,
           messages,
         });
+
+        emitPhase(controller, "Building avatar profile...");
 
         for await (const event of anthropicStream) {
           if (
@@ -87,6 +94,10 @@ export async function POST(req: NextRequest) {
         }
 
         clearInterval(chunkTimer);
+
+        // Post-stream phase — indicator re-shows briefly while we extract
+        // structured data and persist the conversation.
+        emitPhase(controller, "Finalizing themes and sub-personas...");
 
         const finalMsg = await anthropicStream.finalMessage();
         const usage = finalMsg.usage;
