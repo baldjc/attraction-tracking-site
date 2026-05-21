@@ -33,9 +33,6 @@ export async function POST(req: NextRequest) {
     data: { email: normalised, codeHash, expiresAt },
   });
 
-  // TEMP DEBUG — remove once Jared is signed in to the member account.
-  console.log(`[OTP_DEBUG] email=${normalised} code=${code} expiresAt=${expiresAt.toISOString()}`);
-
   await sendLoginCode(normalised, code, user.fullName);
 
   return NextResponse.json({ ok: true });
