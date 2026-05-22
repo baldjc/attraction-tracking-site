@@ -20,7 +20,6 @@
 //   • Composition shift:      |Δmedian sqft| > 5% in SAME direction as Δmedian
 //                             price → flag (group-level flag, consumed by validator)
 
-import { promises as fs } from "node:fs";
 import { parse } from "csv-parse/sync";
 import prisma from "@/lib/prisma";
 import {
@@ -755,7 +754,8 @@ export async function aggregateUploadFromDb(
   if (!config)
     throw new Error(`MarketConfig missing for user ${upload.userId} (upload ${uploadId})`);
 
-  const csvBuffer = await fs.readFile(upload.csvStorageUrl);
+  const { readUploadFile } = await import("@/lib/market-csv");
+  const csvBuffer = await readUploadFile(upload.csvStorageUrl);
   const table = await aggregateUpload({
     uploadId: upload.id,
     userId: upload.userId,

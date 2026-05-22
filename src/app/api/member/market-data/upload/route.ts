@@ -12,7 +12,6 @@ import {
   parseCsvPreview,
   detectMonthYearFromFilename,
   writeUploadFile,
-  uploadPathFor,
 } from "@/lib/market-csv";
 import { validateUploadAsync } from "@/lib/fact-validator";
 
@@ -32,9 +31,10 @@ interface UploadEntry {
  *   monthYears: JSON string array, parallel to files (member-confirmed order)
  *   columnMapping: optional JSON object to save to MarketConfig.columnMapping
  *
- * Saves each file to /tmp/uploads/<userId>/<uploadId>.csv and creates one
- * MarketDataUpload row at status='pending' per file. Phase 1 stops here —
- * no aggregation, no validator.
+ * Saves each file to Replit Object Storage at market-data/<userId>/<uploadId>.csv
+ * (persistent across container restarts) and creates one MarketDataUpload row
+ * at status='pending' per file. The Object Storage key is persisted to
+ * `csvStorageUrl` and read back by the aggregator.
  */
 export async function POST(req: NextRequest) {
   const access = await requireMarketAccess();

@@ -1,7 +1,6 @@
-import { promises as fs } from "node:fs";
-import path from "node:path";
 import { parse } from "csv-parse/sync";
 import Anthropic from "@anthropic-ai/sdk";
+import { Client as ObjectStorageClient } from "@replit/object-storage";
 import {
   CANONICAL_FIELDS,
   OPTIONAL_FIELDS,
@@ -9,18 +8,46 @@ import {
   type ColumnMapping,
 } from "@/lib/market-config";
 
-const UPLOADS_ROOT = "/tmp/uploads";
+// ─── Persistent CSV storage (Replit Object Storage) ──────────────────────────
+// Previously CSVs were written to /tmp/uploads which is ephemeral — container
+// restarts wipe the directory, losing every uploaded source file. Object
+// Storage persists across restarts and redeploys. The bucket is provisioned
+// automatically by the Replit App Storage blueprint (env var
+// DEFAULT_OBJECT_STORAGE_BUCKET_ID).
+//
+// Key format: market-data/<userId>/<uploadId>.csv
+// We persist this key in MarketDataUpload.csvStorageUrl. The reader
+// (`readUploadFile`) looks up the row and fetches by key.
 
-export function uploadDirFor(userId: string) {
-  return path.join(UPLOADS_ROOT, userId);
+// The Replit sidecar's auto-discovered default bucket is sometimes empty even
+// when DEFAULT_OBJECT_STORAGE_BUCKET_ID is set in the environment. Pass the
+// bucket ID through explicitly so we fail loudly at boot if it's missing
+// instead of silently at first upload.
+const OBJECT_STORAGE_BUCKET_ID = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID;
+if (!OBJECT_STORAGE_BUCKET_ID) {
+  throw new Error(
+    "DEFAULT_OBJECT_STORAGE_BUCKET_ID is not set — Object Storage bucket must be provisioned (run the App Storage blueprint).",
+  );
+}
+const objectStorage = new ObjectStorageClient({ bucketId: OBJECT_STORAGE_BUCKET_ID });
+
+/** Storage key for a member's uploaded CSV. */
+export function uploadStorageKey(userId: string, uploadId: string): string {
+  return `market-data/${userId}/${uploadId}.csv`;
 }
 
-export function uploadPathFor(userId: string, uploadId: string) {
-  return path.join(uploadDirFor(userId), `${uploadId}.csv`);
-}
-
-export async function ensureUploadDir(userId: string) {
-  await fs.mkdir(uploadDirFor(userId), { recursive: true });
+/**
+ * Write a CSV buffer to Object Storage. Returns the storage key, which the
+ * caller persists in `MarketDataUpload.csvStorageUrl`.
+ */
+function describeStorageError(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (err && typeof err === "object") {
+    const e = err as Record<string, unknown>;
+    if (typeof e.message === "string") return e.message;
+    try { return JSON.stringify(e); } catch { /* fallthrough */ }
+  }
+  return String(err);
 }
 
 export async function writeUploadFile(
@@ -28,10 +55,30 @@ export async function writeUploadFile(
   uploadId: string,
   buf: Buffer,
 ): Promise<string> {
-  await ensureUploadDir(userId);
-  const p = uploadPathFor(userId, uploadId);
-  await fs.writeFile(p, buf);
-  return p;
+  const key = uploadStorageKey(userId, uploadId);
+  const result = await objectStorage.uploadFromBytes(key, buf);
+  if (!result.ok) {
+    throw new Error(
+      `Object Storage upload failed for ${key}: ${describeStorageError(result.error)}`,
+    );
+  }
+  return key;
+}
+
+/**
+ * Read a CSV buffer back from Object Storage by the previously-saved key (the
+ * value stored in `MarketDataUpload.csvStorageUrl`). Throws a clear error if
+ * the object is missing — that signals the row needs re-upload.
+ */
+export async function readUploadFile(storageKey: string): Promise<Buffer> {
+  const result = await objectStorage.downloadAsBytes(storageKey);
+  if (!result.ok) {
+    throw new Error(
+      `CSV not found in Object Storage at ${storageKey}: ${describeStorageError(result.error)}`,
+    );
+  }
+  // SDK returns [Buffer] — a single-element tuple — for downloadAsBytes.
+  return result.value[0];
 }
 
 const MONTH_NAMES: Record<string, number> = {

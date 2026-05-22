@@ -14,6 +14,8 @@ Required environment variables:
 - `YOUTUBE_API_KEY`: YouTube Data API v3 key
 - `GHL_API_KEY`: GoHighLevel CRM key
 - `ADMIN_EMAIL`: Admin account email
+- `DEFAULT_OBJECT_STORAGE_BUCKET_ID`: Replit Object Storage bucket (auto-set when the App Storage blueprint is provisioned; required — `src/lib/market-csv.ts` fails fast at import if missing). Used to persist market-data CSV uploads under key `market-data/<userId>/<uploadId>.csv`.
+- `PRIVATE_OBJECT_DIR` / `PUBLIC_OBJECT_SEARCH_PATHS`: Auto-set by the App Storage blueprint alongside the bucket id.
 
 ## Stack
 
