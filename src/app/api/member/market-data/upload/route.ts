@@ -14,6 +14,10 @@ import {
   writeUploadFile,
   uploadPathFor,
 } from "@/lib/market-csv";
+import { validateUploadAsync } from "@/lib/fact-validator";
+
+export const runtime = "nodejs";
+export const maxDuration = 300;
 
 interface UploadEntry {
   field: "files";
@@ -176,6 +180,14 @@ export async function POST(req: NextRequest) {
     }
     return created;
   });
+
+  // Fire-and-forget: auto-trigger validation for each newly-created upload.
+  // Phase 2A — member shouldn't have to click a separate "validate" button.
+  // The route still returns 200 immediately; validation runs in the background
+  // and the UI polls /api/member/market-data/upload/[id] for status.
+  for (const u of uploads) {
+    validateUploadAsync(u.id);
+  }
 
   return Response.json({ uploads });
 }

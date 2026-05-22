@@ -1712,6 +1712,11 @@ enum MetricFamily {
   MEDIAN
   DOM
   SP_LP
+  // Wave 1 Phase 2A — appended only (do NOT reorder existing values).
+  AVG
+  INVENTORY
+  FAILURE_RATE
+  OTHER
 }
 
 enum UploadStatus {
@@ -1799,6 +1804,16 @@ model MarketFact {
   crebAligned          Boolean?
   viewerCaveat         String?          @db.Text
 
+  // Wave 1 Phase 2A — CREB-alignment + usage notes (all nullable, additive only)
+  moiStrict            Float?
+  moiInclusive         Float?
+  domMedian            Float?
+  domAverage           Float?
+  crebDeltaEstimate    String?          @db.Text
+  inventoryGapWithCreb Float?
+  failureRateFormula   String?          @db.Text
+  usageNotes           String?          @db.Text
+
   createdAt            DateTime         @default(now())
 
   @@index([userId, neighbourhood])
@@ -1823,6 +1838,11 @@ model MarketStoryLead {
   suggestedSubPersonas  Json?
   suggestedFramework    String?
   tactileType           String?
+
+  // Wave 1 Phase 2A — additive only
+  label                 String?
+  isThesisLead          Boolean          @default(false)
+  displayOrder          Int              @default(0)
 
   claimedByIdeaId       String?
   createdAt             DateTime         @default(now())
