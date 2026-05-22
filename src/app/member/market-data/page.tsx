@@ -21,7 +21,7 @@ export default async function MarketDataPage() {
   const config = await getMarketConfigForUser(user.id);
   if (!config) redirect("/member/market-data/setup");
 
-  const uploads = await prisma.marketDataUpload.findMany({
+  const uploadsRaw = await prisma.marketDataUpload.findMany({
     where: { userId: user.id },
     orderBy: { uploadedAt: "desc" },
     select: {
@@ -32,8 +32,20 @@ export default async function MarketDataPage() {
       rowCount: true,
       status: true,
       uploadedAt: true,
+      _count: {
+        select: {
+          facts: true,
+          storyLeads: true,
+        },
+      },
     },
   });
+
+  const uploads = uploadsRaw.map(({ _count, ...rest }) => ({
+    ...rest,
+    factCount: _count.facts,
+    storyLeadCount: _count.storyLeads,
+  }));
 
   const hasColumnMapping =
     !!config.columnMapping &&
