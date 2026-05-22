@@ -29,6 +29,7 @@ if (!OBJECT_STORAGE_BUCKET_ID) {
     "DEFAULT_OBJECT_STORAGE_BUCKET_ID is not set — Object Storage bucket must be provisioned (run the App Storage blueprint).",
   );
 }
+console.log("[object-storage] bucket id loaded:", OBJECT_STORAGE_BUCKET_ID);
 const objectStorage = new ObjectStorageClient({ bucketId: OBJECT_STORAGE_BUCKET_ID });
 
 /** Storage key for a member's uploaded CSV. */
