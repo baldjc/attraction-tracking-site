@@ -169,14 +169,49 @@ export const DEFAULT_HIGH_END_EXCEPTION: HighEndException = {
   propertyTypes: ["detached"],
 };
 
+/**
+ * Order matters — this is the canonical preset list and the order shown in UI.
+ * IDs are stable so existing MarketConfig.subPersonas survive future additions
+ * via `mergeSubPersonasWithPresets` (appends new preset IDs that aren't stored
+ * yet). Custom (user-added) personas have IDs ending in `_custom_<ts>` and are
+ * detected via `isPresetSubPersonaId`.
+ */
 export const DEFAULT_SUB_PERSONAS: SubPersona[] = [
   { id: "first_time_buyer", label: "First-Time Buyer", enabled: false },
+  { id: "move_up", label: "Move-Up Buyer", enabled: false },
   { id: "move_down", label: "Move-Down", enabled: false },
+  { id: "simultaneous_mover", label: "Simultaneous Mover", enabled: false },
   { id: "relocator", label: "Relocator", enabled: false },
   { id: "investor", label: "Investor", enabled: false },
+  { id: "investor_parent", label: "Investor Parent", enabled: false },
   { id: "curious_owner", label: "Curious Owner", enabled: false },
   { id: "aspirational", label: "Aspirational", enabled: false },
 ];
+
+const PRESET_SUB_PERSONA_IDS = new Set(DEFAULT_SUB_PERSONAS.map((p) => p.id));
+
+export function isPresetSubPersonaId(id: string): boolean {
+  return PRESET_SUB_PERSONA_IDS.has(id);
+}
+
+/**
+ * Merge a member's stored subPersonas with the current preset list. Any preset
+ * id that isn't already in `stored` is appended (enabled: false). This lets
+ * members pick up new presets on next form load without losing prior choices
+ * or any custom personas they've added.
+ */
+export function mergeSubPersonasWithPresets(
+  stored: SubPersona[] | null | undefined,
+): SubPersona[] {
+  if (!Array.isArray(stored) || stored.length === 0) {
+    return DEFAULT_SUB_PERSONAS.map((p) => ({ ...p }));
+  }
+  const storedIds = new Set(stored.map((p) => p.id));
+  const missingPresets = DEFAULT_SUB_PERSONAS.filter(
+    (p) => !storedIds.has(p.id),
+  ).map((p) => ({ ...p }));
+  return [...stored, ...missingPresets];
+}
 
 export const KEYWORD_KIT_TEMPLATE: KeywordKit = {
   pillars: [
@@ -251,8 +286,9 @@ export function toShape(
       (row.neighbourhoodVocab as string[] | null) ?? fallback.neighbourhoodVocab,
     keywordKit: (row.keywordKit as KeywordKit | null) ?? fallback.keywordKit,
     primaryAvatar: normalizePrimaryAvatar(row.primaryAvatar, fallbackSnappedAt),
-    subPersonas:
-      (row.subPersonas as SubPersona[] | null) ?? fallback.subPersonas,
+    subPersonas: mergeSubPersonasWithPresets(
+      row.subPersonas as SubPersona[] | null,
+    ),
     columnMapping:
       (row.columnMapping as ColumnMapping | null) ?? fallback.columnMapping,
   };

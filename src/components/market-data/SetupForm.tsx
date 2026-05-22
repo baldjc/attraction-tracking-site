@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   KEYWORD_KIT_TEMPLATE,
   hasAvatarSnapshot,
+  isPresetSubPersonaId,
   type MarketConfigShape,
   type PriceTier,
   type PrimaryAvatar,
@@ -130,6 +131,45 @@ export default function SetupForm({ initial, isEdit }: Props) {
       p.id === id ? { ...p, enabled: !p.enabled } : p,
     );
     setState({ ...state, subPersonas: next });
+  }
+
+  const [customPersonaLabel, setCustomPersonaLabel] = useState("");
+
+  function slugifyPersonaLabel(label: string): string {
+    return (
+      label
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, "_")
+        .replace(/^_+|_+$/g, "") || "persona"
+    );
+  }
+
+  function addCustomSubPersona() {
+    const label = customPersonaLabel.trim();
+    if (!label) return;
+    // Prevent duplicate labels (case-insensitive) against existing personas.
+    const dupe = state.subPersonas.some(
+      (p) => p.label.toLowerCase() === label.toLowerCase(),
+    );
+    if (dupe) {
+      setCustomPersonaLabel("");
+      return;
+    }
+    const id = `${slugifyPersonaLabel(label)}_custom_${Date.now()}`;
+    setState({
+      ...state,
+      subPersonas: [...state.subPersonas, { id, label, enabled: true }],
+    });
+    setCustomPersonaLabel("");
+  }
+
+  function removeCustomSubPersona(id: string) {
+    if (isPresetSubPersonaId(id)) return; // presets cannot be removed
+    setState({
+      ...state,
+      subPersonas: state.subPersonas.filter((p) => p.id !== id),
+    });
   }
 
   function pasteKeywordTemplate() {
@@ -547,28 +587,76 @@ export default function SetupForm({ initial, isEdit }: Props) {
       </section>
 
       {/* Sub-personas */}
-      <section className="space-y-2">
+      <section className="space-y-3">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
           Sub-personas
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          {state.subPersonas.map((p) => (
-            <label
-              key={p.id}
-              className={`flex items-center gap-2 rounded-md border px-3 py-2 text-sm cursor-pointer ${
-                p.enabled
-                  ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-                  : "border-gray-300 dark:border-gray-700"
-              }`}
-            >
-              <input
-                type="checkbox"
-                checked={p.enabled}
-                onChange={() => toggleSubPersona(p.id)}
-              />
-              <span className="text-gray-800 dark:text-gray-200">{p.label}</span>
-            </label>
-          ))}
+          {state.subPersonas.map((p) => {
+            const isCustom = !isPresetSubPersonaId(p.id);
+            return (
+              <div
+                key={p.id}
+                className={`flex items-center gap-2 rounded-md border px-3 py-2 text-sm ${
+                  p.enabled
+                    ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                    : isCustom
+                      ? "border-dashed border-gray-400 dark:border-gray-600"
+                      : "border-gray-300 dark:border-gray-700"
+                }`}
+              >
+                <label className="flex flex-1 items-center gap-2 cursor-pointer min-w-0">
+                  <input
+                    type="checkbox"
+                    checked={p.enabled}
+                    onChange={() => toggleSubPersona(p.id)}
+                  />
+                  <span className="truncate text-gray-800 dark:text-gray-200">
+                    {p.label}
+                  </span>
+                  {isCustom && (
+                    <span className="rounded-full bg-purple-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-purple-700 dark:bg-purple-900/40 dark:text-purple-300">
+                      Custom
+                    </span>
+                  )}
+                </label>
+                {isCustom && (
+                  <button
+                    type="button"
+                    onClick={() => removeCustomSubPersona(p.id)}
+                    aria-label={`Remove ${p.label}`}
+                    className="shrink-0 rounded p-0.5 text-gray-400 hover:bg-gray-200 hover:text-gray-700 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={customPersonaLabel}
+            onChange={(e) => setCustomPersonaLabel(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                addCustomSubPersona();
+              }
+            }}
+            placeholder="Add a custom persona (e.g. Snowbird)"
+            maxLength={60}
+            className="flex-1 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+          />
+          <button
+            type="button"
+            onClick={addCustomSubPersona}
+            disabled={customPersonaLabel.trim().length === 0}
+            className="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-900"
+          >
+            Add
+          </button>
         </div>
       </section>
 
