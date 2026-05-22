@@ -18,8 +18,20 @@ export async function GET() {
       uploadedAt: true,
       validatedAt: true,
       validationError: true,
+      _count: {
+        select: {
+          facts: true,
+          storyLeads: true,
+        },
+      },
     },
   });
 
-  return Response.json({ uploads: rows });
+  const uploads = rows.map(({ _count, ...rest }) => ({
+    ...rest,
+    factCount: _count.facts,
+    storyLeadCount: _count.storyLeads,
+  }));
+
+  return Response.json({ uploads });
 }
