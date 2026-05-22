@@ -1,7 +1,10 @@
-// Wave 1 Phase 2A — upload status polling endpoint.
+// Wave 1 Phase 2A — upload status polling endpoint + delete-for-replace.
 //
-// UploadHistoryTable polls this every 3s while any row is non-terminal.
-// Cheap query: just the upload row + two count() rollups.
+// GET — UploadHistoryTable polls this every 3s while any row is non-terminal.
+//       Cheap query: just the upload row + two count() rollups.
+// DELETE — wipes the upload row; MarketFact and MarketStoryLead cascade
+//          (onDelete: Cascade on the upload relation in prisma/schema.prisma).
+//          Used by the Replace UX to clear a duplicate month before re-upload.
 
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
@@ -62,4 +65,37 @@ export async function GET(
     factCount,
     storyLeadCount,
   });
+}
+
+export async function DELETE(
+  _req: NextRequest,
+  ctx: { params: Promise<{ id: string }> },
+) {
+  const access = await requireMarketAccess();
+  if (!access.ok) return access.response;
+  const { id } = await ctx.params;
+
+  const upload = await prisma.marketDataUpload.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      userId: true,
+      monthYear: true,
+      _count: { select: { facts: true, storyLeads: true } },
+    },
+  });
+  if (!upload) return Response.json({ error: "Upload not found" }, { status: 404 });
+
+  if (upload.userId !== access.user.id && access.user.role !== "admin") {
+    return Response.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const deletedFacts = upload._count.facts;
+  const deletedLeads = upload._count.storyLeads;
+
+  // MarketFact + MarketStoryLead cascade via onDelete: Cascade on their
+  // upload relations (prisma/schema.prisma) — single delete is sufficient.
+  await prisma.marketDataUpload.delete({ where: { id } });
+
+  return Response.json({ ok: true, deletedFacts, deletedLeads });
 }

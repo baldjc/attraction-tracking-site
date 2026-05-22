@@ -119,12 +119,25 @@ export async function POST(req: NextRequest) {
     const buf = Buffer.from(await file.arrayBuffer());
     const preview = parseCsvPreview(buf);
     const id = randomUUID();
-    const storagePath = await writeUploadFile(userId, id, buf);
     const detected = detectMonthYearFromFilename(file.name);
     const monthYear =
-      (monthYears[i] && monthYears[i].trim()) ||
-      detected ||
-      new Date().toISOString().slice(0, 7);
+      (monthYears[i] && monthYears[i].trim()) || detected || null;
+    if (!monthYear) {
+      // No silent current-month fallback — refuse the upload so the member
+      // is forced to pick a month explicitly. Otherwise CSVs with
+      // un-parseable filenames silently land in whatever the server's
+      // current month happens to be (which is how Calgary 2026-04 nearly
+      // got mis-filed).
+      return Response.json(
+        {
+          error: `Couldn't determine month/year for ${file.name}. Please rename the file (YYYY-MM format) or pick a month before uploading.`,
+          filename: file.name,
+          fieldsTried: ["client-confirmed", "filename"],
+        },
+        { status: 400 },
+      );
+    }
+    const storagePath = await writeUploadFile(userId, id, buf);
     const label =
       (labels[i] && labels[i].trim()) ||
       monthYear ||
@@ -137,6 +150,41 @@ export async function POST(req: NextRequest) {
       label,
       storagePath,
     });
+  }
+
+  // Duplicate-month guard — refuse if any monthYear in the batch already
+  // exists for this user in a state that owns facts/leads (or is about to).
+  // Member must explicitly delete the prior upload via the Replace UX
+  // before re-uploading the same month.
+  const conflictRows = await prisma.marketDataUpload.findMany({
+    where: {
+      userId,
+      monthYear: { in: prepared.map((p) => p.monthYear) },
+      status: { in: ["validated", "validating", "pending"] },
+    },
+    select: {
+      id: true,
+      monthYear: true,
+      status: true,
+      label: true,
+      _count: { select: { facts: true, storyLeads: true } },
+    },
+  });
+  if (conflictRows.length > 0) {
+    const conflicts = conflictRows.map(({ _count, ...rest }) => ({
+      ...rest,
+      factCount: _count.facts,
+      storyLeadCount: _count.storyLeads,
+    }));
+    return Response.json(
+      {
+        error: "duplicate_month",
+        message:
+          "One or more months already exist. Delete the existing upload(s) or choose a different month.",
+        conflicts,
+      },
+      { status: 409 },
+    );
   }
 
   // Atomically: save mapping (if provided) + create all upload rows. Both

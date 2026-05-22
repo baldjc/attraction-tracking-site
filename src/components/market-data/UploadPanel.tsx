@@ -25,6 +25,15 @@ interface SelectedFile {
   detectedConfidence: "filename" | "guessed";
 }
 
+interface ConflictRow {
+  id: string;
+  monthYear: string;
+  status: string;
+  label: string;
+  factCount: number;
+  storyLeadCount: number;
+}
+
 function detectMonthYear(name: string): {
   monthYear: string;
   confidence: "filename" | "guessed";
@@ -85,6 +94,11 @@ export default function UploadPanel({
   const [error, setError] = useState<string | null>(null);
   const [proposedHeaders, setProposedHeaders] = useState<string[]>([]);
   const [proposedMapping, setProposedMapping] = useState<ColumnMapping>({});
+  const [conflicts, setConflicts] = useState<ConflictRow[]>([]);
+  const [replacingId, setReplacingId] = useState<string | null>(null);
+  // Mapping last sent to doFinalUpload — captured so the Replace UX can
+  // auto-retry the same POST after the conflicting upload is deleted.
+  const [lastMapping, setLastMapping] = useState<ColumnMapping | null>(null);
 
   const thinking = useAiThinking({
     mode: "phase",
@@ -120,6 +134,14 @@ export default function UploadPanel({
     if (selected.length === 0) return null;
     return selected[0]; // already sorted ascending
   }, [selected]);
+
+  // Block submit until every file has a confirmed month. The server now
+  // rejects the request without a fallback, so disabling here gives the
+  // member a clearer signal than letting the POST round-trip to a 400.
+  const missingMonth = useMemo(
+    () => selected.some((s) => !s.monthYear),
+    [selected],
+  );
 
   function updateFile(i: number, patch: Partial<SelectedFile>) {
     const next = [...selected];
@@ -190,6 +212,9 @@ export default function UploadPanel({
 
   async function doFinalUpload(mapping: ColumnMapping | null) {
     setStage("uploading");
+    setError(null);
+    setConflicts([]);
+    setLastMapping(mapping);
     try {
       const fd = new FormData();
       for (const s of selected) fd.append("files", s.file);
@@ -203,6 +228,15 @@ export default function UploadPanel({
         method: "POST",
         body: fd,
       });
+      if (res.status === 409) {
+        const j = await res.json().catch(() => ({}));
+        if (j?.error === "duplicate_month" && Array.isArray(j.conflicts)) {
+          setConflicts(j.conflicts as ConflictRow[]);
+          setStage(hasColumnMapping ? "picking" : "mapping");
+          return;
+        }
+        throw new Error(j.message || j.error || "Upload failed.");
+      }
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
         throw new Error(j.error || "Upload failed.");
@@ -212,10 +246,40 @@ export default function UploadPanel({
       setStage("picking");
       setProposedHeaders([]);
       setProposedMapping({});
+      setLastMapping(null);
       router.refresh();
     } catch (e) {
       setError((e as Error).message);
       setStage(hasColumnMapping ? "picking" : "mapping");
+    }
+  }
+
+  async function onReplaceConflict(c: ConflictRow) {
+    const ok = window.confirm(
+      `Replace ${c.label}? Existing ${c.factCount.toLocaleString()} facts + ${c.storyLeadCount.toLocaleString()} leads will be deleted.`,
+    );
+    if (!ok) return;
+    setError(null);
+    setReplacingId(c.id);
+    try {
+      const res = await fetch(`/api/member/market-data/upload/${c.id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j.error || "Couldn't delete the existing upload.");
+      }
+      const remaining = conflicts.filter((x) => x.id !== c.id);
+      setConflicts(remaining);
+      // If every conflict is cleared, automatically re-fire the upload
+      // with the same files + mapping the member already confirmed.
+      if (remaining.length === 0) {
+        await doFinalUpload(lastMapping);
+      }
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setReplacingId(null);
     }
   }
 
@@ -292,9 +356,9 @@ export default function UploadPanel({
                     >
                       ✕
                     </button>
-                    {s.detectedConfidence === "guessed" && !s.monthYear && (
-                      <span className="col-span-12 text-[11px] text-amber-600 dark:text-amber-400">
-                        ⚠ Couldn't detect month from filename — please confirm.
+                    {!s.monthYear && (
+                      <span className="col-span-12 text-[11px] text-red-600 dark:text-red-400">
+                        ⚠ Pick a month before uploading — we won't guess for you.
                       </span>
                     )}
                   </li>
@@ -304,11 +368,14 @@ export default function UploadPanel({
                 <button
                   type="button"
                   onClick={onContinue}
-                  className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700"
+                  disabled={missingMonth}
+                  className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-400 disabled:hover:bg-gray-400 dark:disabled:bg-gray-700"
                 >
-                  {hasColumnMapping
-                    ? `Upload ${selected.length} file${selected.length === 1 ? "" : "s"}`
-                    : "Continue"}
+                  {missingMonth
+                    ? "Pick a month for every file"
+                    : hasColumnMapping
+                      ? `Upload ${selected.length} file${selected.length === 1 ? "" : "s"}`
+                      : "Continue"}
                 </button>
               </div>
             </div>
@@ -382,6 +449,43 @@ export default function UploadPanel({
       {stage === "uploading" && (
         <div className="mt-4 text-sm text-gray-600 dark:text-gray-400">
           Uploading {selected.length} file{selected.length === 1 ? "" : "s"}…
+        </div>
+      )}
+
+      {conflicts.length > 0 && (
+        <div className="mt-4 rounded-md border border-amber-300 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-900/20">
+          <div className="text-sm font-medium text-amber-900 dark:text-amber-200">
+            Already uploaded for {conflicts.length === 1 ? "this month" : "these months"}
+          </div>
+          <p className="mt-1 text-xs text-amber-800 dark:text-amber-300">
+            Replace each one to delete the existing facts and re-validate this
+            CSV — or remove the file from the batch.
+          </p>
+          <ul className="mt-2 space-y-1">
+            {conflicts.map((c) => (
+              <li
+                key={c.id}
+                className="flex items-center justify-between gap-3 rounded bg-white/60 px-2 py-1.5 text-xs dark:bg-gray-900/40"
+              >
+                <span className="text-gray-800 dark:text-gray-200">
+                  <span className="font-medium">{c.label}</span>
+                  <span className="text-gray-500 dark:text-gray-400">
+                    {" "}
+                    · {c.status} · {c.factCount.toLocaleString()} facts,{" "}
+                    {c.storyLeadCount.toLocaleString()} leads
+                  </span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => onReplaceConflict(c)}
+                  disabled={replacingId === c.id}
+                  className="rounded-md bg-amber-600 px-3 py-1 text-xs font-medium text-white hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {replacingId === c.id ? "Replacing…" : "Replace"}
+                </button>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 
