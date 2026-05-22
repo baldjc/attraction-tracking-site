@@ -20,9 +20,12 @@ import { FACT_VALIDATOR_SYSTEM_PROMPT } from "@/lib/fact-validator-prompt";
 import {
   aggregateUploadFromDb,
   type AggregatedTable,
+  type AggregatedGroup,
 } from "@/lib/csv-aggregate";
 import {
   parseValidatorOutput,
+  parseFactsChunk,
+  parseSummaryAndLeadsChunk,
   type ParsedFact,
   type ParsedStoryLead,
   type ParsedMetricFamily,
@@ -152,10 +155,15 @@ function selectGroupsForSerialization(
   };
 }
 
-function serializeTable(table: AggregatedTable): string {
-  const { kept, threshold, droppedCount } = selectGroupsForSerialization(
-    table.groups,
-  );
+function serializeTable(
+  table: AggregatedTable,
+  groupSubset?: AggregatedGroup[],
+  chunkLabel?: string,
+): string {
+  // When `groupSubset` is provided we serialize only that slice (chunked-mode).
+  // Otherwise we use the whole table (legacy single-call path / SUMMARY+LEADS).
+  const sourceGroups = groupSubset ?? table.groups;
+  const { kept, threshold, droppedCount } = selectGroupsForSerialization(sourceGroups);
 
   const meta = table.meta;
   const header = [
@@ -169,12 +177,15 @@ function serializeTable(table: AggregatedTable): string {
     `Date range: ${meta.dateRangeMin ?? "n/a"} → ${meta.dateRangeMax ?? "n/a"}`,
     `YoY comparison month: ${meta.yoyComparisonMonthYear ?? "none available"}`,
     `90-day rolling priors: ${meta.rolling90dMonthYears.join(", ") || "none available"}`,
-    `Groups in input total: ${table.groups.length}`,
+    chunkLabel ? `Chunk scope: ${chunkLabel}` : null,
+    `Groups in scope total: ${sourceGroups.length}`,
     `Groups included below: ${kept.length} (rollups + segmented with soldCount >= ${
       Number.isFinite(threshold) ? threshold : "rollups only"
     })`,
     `Groups omitted (low sample size): ${droppedCount}`,
-  ].join("\n");
+  ]
+    .filter((l): l is string => l !== null)
+    .join("\n");
 
   const groupLines = kept.map(formatGroupLine);
 
@@ -246,6 +257,142 @@ async function serializePriorFacts(userId: string, uploadId: string): Promise<st
   return ["=== PRIOR FACTS (3 most recent validated uploads, headline-safe only) ===", ...lines].join("\n");
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Chunk partitioning
+// ─────────────────────────────────────────────────────────────────────────────
+
+type ChunkName = "detached" | "attached" | "apartment" | "rollups";
+
+interface FactsChunk {
+  name: ChunkName;
+  /** Human-readable label injected into the mode marker. */
+  label: string;
+  /** Property-type label stamped onto every MarketFact row from this chunk. */
+  propertyTypeColumn: string | null;
+  groups: AggregatedGroup[];
+}
+
+/** True if the property-type string belongs to the attached rollup family. */
+function isAttachedType(pt: string): boolean {
+  return /semi.?detached|row|townhouse|duplex/i.test(pt);
+}
+/** True if the property-type string is an apartment/condo. */
+function isApartmentType(pt: string): boolean {
+  return /apartment|condo/i.test(pt);
+}
+/** True if the property-type string is detached (not semi). */
+function isDetachedType(pt: string): boolean {
+  if (isAttachedType(pt)) return false;
+  return /detached/i.test(pt);
+}
+
+/**
+ * Partition the aggregator output into 4 disjoint chunks. Every group lands in
+ * exactly one chunk:
+ *   - rollups: neighbourhood === "All Neighbourhoods" OR propertyType === null
+ *   - detached / attached / apartment: neighbourhood-level groups for that type
+ *   - any segmented group whose propertyType doesn't match the three above
+ *     (e.g. "Land", "Other") falls through into `rollups` so we don't drop it.
+ */
+function buildChunks(groups: AggregatedGroup[]): FactsChunk[] {
+  const detached: AggregatedGroup[] = [];
+  const attached: AggregatedGroup[] = [];
+  const apartment: AggregatedGroup[] = [];
+  const rollups: AggregatedGroup[] = [];
+  for (const g of groups) {
+    if (g.neighbourhood === "All Neighbourhoods" || g.propertyType === null) {
+      rollups.push(g);
+      continue;
+    }
+    const pt = g.propertyType;
+    if (isDetachedType(pt)) detached.push(g);
+    else if (isAttachedType(pt)) attached.push(g);
+    else if (isApartmentType(pt)) apartment.push(g);
+    else rollups.push(g); // safety net for unrecognized types
+  }
+  return [
+    { name: "detached", label: "Detached (neighbourhood-level)", propertyTypeColumn: "Detached", groups: detached },
+    {
+      name: "attached",
+      label: "Attached: Semi-Detached + Row/Townhouse + Full Duplex (neighbourhood-level)",
+      propertyTypeColumn: "Semi-Detached",
+      groups: attached,
+    },
+    { name: "apartment", label: "Apartment / Condo (neighbourhood-level)", propertyTypeColumn: "Apartment", groups: apartment },
+    {
+      name: "rollups",
+      label: "Citywide rollups + per-neighbourhood overalls (across all property types)",
+      propertyTypeColumn: null,
+      groups: rollups,
+    },
+  ];
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// User-message builders (one per call mode)
+// ─────────────────────────────────────────────────────────────────────────────
+
+function buildFactsChunkMessage(
+  table: AggregatedTable,
+  config: MarketConfigShape,
+  priorFactsBlock: string,
+  chunk: FactsChunk,
+): string {
+  const modeMarker = [
+    "=== MODE: FACTS_LIBRARY_ONLY ===",
+    `Scope for this call: ${chunk.label}.`,
+    "Emit ONLY the `## VALIDATED FACTS LIBRARY` section — a single ```json``` fenced code block containing a JSON array of fact objects.",
+    "Do NOT emit `## SUMMARY` or `## STORY LEADS` in this call. Those are produced by a separate parallel call over the full dataset.",
+    "Cover EVERY neighbourhood that appears in the GROUPS block below — do not curate which neighbourhoods to include. Apply the per-neighbourhood × metric-family classification rules from the system prompt to each one.",
+  ].join("\n");
+  return [
+    modeMarker,
+    "",
+    serializeTable(table, chunk.groups, chunk.label),
+    "",
+    serializeConfig(config),
+    "",
+    priorFactsBlock,
+    "",
+    "=== TASK ===",
+    "Output ONLY this — nothing else, no prose before or after:",
+    "## VALIDATED FACTS LIBRARY",
+    "```json",
+    "[ /* fact objects per the OUTPUT FORMAT in the system prompt */ ]",
+    "```",
+    "Use the pre-computed numbers in the GROUPS block verbatim — do not recompute them. Your job is to classify, label, triangulate, and emit facts for every neighbourhood × applicable metric family in scope.",
+  ].join("\n");
+}
+
+function buildSummaryAndLeadsMessage(
+  table: AggregatedTable,
+  config: MarketConfigShape,
+  priorFactsBlock: string,
+): string {
+  const modeMarker = [
+    "=== MODE: SUMMARY_AND_LEADS_ONLY ===",
+    "Scope for this call: the full dataset (all property types, all neighbourhoods).",
+    "Emit ONLY `## SUMMARY` and `## STORY LEADS`. Do NOT emit `## VALIDATED FACTS LIBRARY` — facts are produced by four separate parallel calls, one per property-type slice.",
+    "The SUMMARY block's `Validated facts: N` count refers to the merged total across those four chunks — quote it as `(see facts library)` or estimate based on group coverage.",
+  ].join("\n");
+  return [
+    modeMarker,
+    "",
+    serializeTable(table),
+    "",
+    serializeConfig(config),
+    "",
+    priorFactsBlock,
+    "",
+    "=== TASK ===",
+    "Output ONLY these two H2 sections, in this exact order:",
+    "  ## SUMMARY",
+    "  ## STORY LEADS",
+    "Do NOT include `## VALIDATED FACTS LIBRARY`. Use the pre-computed numbers in the GROUPS block — do not recompute them.",
+  ].join("\n");
+}
+
+/** Legacy single-call builder kept for backward-compat / debug paths. */
 function buildUserMessage(
   table: AggregatedTable,
   config: MarketConfigShape,
@@ -309,13 +456,67 @@ async function callValidator(
   // Anthropic's 10-minute synchronous-call ceiling. `messages.stream(...)`
   // accumulates deltas internally; `finalMessage()` returns the same shape as
   // `messages.create(...)` would, including `usage`.
-  const stream = anthropic.messages.stream({
-    model: SONNET_MODEL,
-    max_tokens: 32000,
-    system: systemBlocks as unknown as Anthropic.Messages.TextBlockParam[],
-    messages,
-  });
-  const resp = await stream.finalMessage();
+  //
+  // Retry-with-backoff on transient errors. 5 concurrent chunked calls
+  // routinely hit Anthropic 529 `overloaded_error`; we retry up to 4 times
+  // with exponential backoff (~1s/3s/9s/27s) before giving up.
+  const TRANSIENT_STATUSES = new Set([408, 429, 500, 502, 503, 504, 529]);
+  // Streaming errors from the SDK arrive with status=undefined and the real
+  // error shape nested: err.error.error.type for the inner Anthropic type. The
+  // SDK also stuffs the full JSON into err.message. We match on both the
+  // nested type AND a permissive regex over the message string.
+  const TRANSIENT_TYPES = new Set([
+    "overloaded_error",
+    "rate_limit_error",
+    "api_error",
+    "service_unavailable",
+    "timeout",
+  ]);
+  const isTransient = (err: unknown): boolean => {
+    const e = err as {
+      status?: number;
+      error?: { type?: string; error?: { type?: string } };
+      message?: string;
+    };
+    if (e?.status && TRANSIENT_STATUSES.has(e.status)) return true;
+    if (e?.error?.type && TRANSIENT_TYPES.has(e.error.type)) return true;
+    if (e?.error?.error?.type && TRANSIENT_TYPES.has(e.error.error.type)) return true;
+    const msg = e?.message ?? "";
+    if (
+      /overloaded|rate.?limit|temporar|ECONN|ETIMEDOUT|fetch failed|api_error|internal server error|service unavailable|stream (?:disconnect|interrupt)|\b(?:502|503|504|529)\b/i.test(
+        msg,
+      )
+    ) {
+      return true;
+    }
+    return false;
+  };
+
+  let resp: Anthropic.Messages.Message | null = null;
+  let lastErr: unknown = null;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    try {
+      const stream = anthropic.messages.stream({
+        model: SONNET_MODEL,
+        max_tokens: 32000,
+        system: systemBlocks as unknown as Anthropic.Messages.TextBlockParam[],
+        messages,
+      });
+      resp = await stream.finalMessage();
+      break;
+    } catch (err) {
+      lastErr = err;
+      if (!isTransient(err) || attempt === 4) throw err;
+      const delayMs = 1000 * Math.pow(3, attempt) + Math.floor(Math.random() * 500);
+      console.warn(
+        `[callValidator] transient error attempt=${attempt + 1}, retrying in ${delayMs}ms: ${
+          (err as { message?: string })?.message ?? String(err)
+        }`,
+      );
+      await new Promise((r) => setTimeout(r, delayMs));
+    }
+  }
+  if (!resp) throw lastErr ?? new Error("callValidator failed with no response");
 
   const text = resp.content
     .map((b) => (b.type === "text" ? b.text : ""))
@@ -350,6 +551,7 @@ function mapFactToPrisma(
   fact: ParsedFact,
   uploadId: string,
   userId: string,
+  propertyTypeColumn: string | null = null,
 ): Parameters<typeof prisma.marketFact.create>[0]["data"] {
   // Aggregate `notes` from extraNotes + any prompt-emitted text we didn't pull
   // into a column. Keeps every raw scrap accessible for audit.
@@ -358,7 +560,9 @@ function mapFactToPrisma(
     userId,
     uploadId,
     neighbourhood: fact.neighbourhood,
-    propertyType: null, // not surfaced in validator output (we group inside the validator's neighbourhood field — e.g. "Calgary detached overall")
+    // In chunked mode we know which property-type slice the fact came from, so
+    // we stamp the column. Rollup chunk + legacy single-call path pass null.
+    propertyType: propertyTypeColumn,
     priceTier: null,
     metricName: fact.metricName,
     metricFamily: fact.metricFamily as ParsedMetricFamily,
@@ -408,20 +612,31 @@ function mapLeadToPrisma(
   };
 }
 
+/**
+ * A bundle of facts + the property-type column they should be stamped with.
+ * Used by the chunked persist path so each chunk's facts get the right
+ * propertyType in the MarketFact row.
+ */
+interface FactsBundle {
+  facts: ParsedFact[];
+  propertyTypeColumn: string | null;
+}
+
 async function persistResults(
   uploadId: string,
   userId: string,
-  facts: ParsedFact[],
+  factsBundles: FactsBundle[],
   leads: ParsedStoryLead[],
   costUsd: Decimal,
   inputTokens: number,
   outputTokens: number,
 ): Promise<void> {
+  const allFactRows = factsBundles.flatMap((b) =>
+    b.facts.map((f) => mapFactToPrisma(f, uploadId, userId, b.propertyTypeColumn)),
+  );
   await prisma.$transaction(async (tx) => {
-    if (facts.length > 0) {
-      await tx.marketFact.createMany({
-        data: facts.map((f) => mapFactToPrisma(f, uploadId, userId)),
-      });
+    if (allFactRows.length > 0) {
+      await tx.marketFact.createMany({ data: allFactRows });
     }
     if (leads.length > 0) {
       // createMany doesn't take Json fields cleanly on all providers — do
@@ -487,6 +702,7 @@ async function markUploadValidating(uploadId: string): Promise<void> {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function runValidation(uploadId: string): Promise<void> {
+  const t0 = Date.now();
   console.log('[runValidation] start', uploadId);
   // Resolve userId first (cheap) so we can run cost-cap BEFORE any heavy work.
   const upload = await prisma.marketDataUpload.findUnique({
@@ -518,61 +734,105 @@ export async function runValidation(uploadId: string): Promise<void> {
 
     // Aggregate (pure compute, no Claude).
     const { table, userId, configSnapshot } = await aggregateUploadFromDb(uploadId);
-    console.log('[runValidation] step: config loaded + aggregated, groups=' + table.groups.length, uploadId);
+    console.log('[runValidation] step: aggregated, groups=' + table.groups.length, uploadId);
     const priorFactsBlock = await serializePriorFacts(userId, uploadId);
-    const userMessage = buildUserMessage(table, configSnapshot, priorFactsBlock);
-    console.log('[runValidation] step: user message built, length=' + userMessage.length, uploadId);
 
-    // First Claude call.
-    let call = await callValidator(userMessage);
-    console.log('[runValidation] step: anthropic responded, in=' + call.inputTokens + ' out=' + call.outputTokens + ' cacheRead=' + call.cacheReadTokens + ' textLen=' + call.text.length, uploadId);
-    // Persist raw output to the DB immediately, before parsing. This is the
-    // ground-truth artifact we need to diagnose curation vs aggregator-starve
-    // when fact counts come in low. /tmp dumps were lost on restart.
-    await persistRawValidatorOutput(uploadId, call.text);
-    console.log('[runValidation] RAW_OUTPUT_BEGIN', uploadId, '\n' + call.text.slice(0, 4000) + '\n[runValidation] RAW_OUTPUT_END (showed first 4000 of ' + call.text.length + ' chars)');
-    let parsed = parseValidatorOutput(call.text);
-    console.log('[runValidation] step: parsed, facts=' + parsed.facts.length + ' leads=' + parsed.storyLeads.length, uploadId);
+    // Build the 4 facts chunks + 1 summary/leads chunk. Each is an independent
+    // Claude call. The system prompt is identical across all 5 → prompt cache
+    // is shared (first call writes, subsequent reads).
+    const chunks = buildChunks(table.groups);
+    const chunkLogStr = chunks.map((c) => `${c.name}=${c.groups.length}`).join(' ');
+    console.log('[runValidation] step: chunks built —', chunkLogStr, uploadId);
 
-    // Retry once if the output is structurally unusable.
-    if (parsed.facts.length === 0 && parsed.storyLeads.length === 0) {
-      const retry = await callValidator(
-        userMessage,
-        "Re-emit the FACTS LIBRARY as a SINGLE ```json``` fenced code block containing a valid JSON array of fact objects (one object per fact). Use the exact key names from the OUTPUT FORMAT section. Numeric fields must be JSON numbers or null (not strings). Each Story Lead heading must start with `### LEAD #N — Label`.",
+    // 5 parallel calls.
+    const factCallPromises = chunks.map((chunk) => {
+      const msg = buildFactsChunkMessage(table, configSnapshot, priorFactsBlock, chunk);
+      console.log(`[runValidation] firing facts chunk=${chunk.name} msgLen=${msg.length} groups=${chunk.groups.length}`, uploadId);
+      return callValidator(msg).then((c) => ({ chunk, call: c }));
+    });
+    const summaryCallPromise = (async () => {
+      const msg = buildSummaryAndLeadsMessage(table, configSnapshot, priorFactsBlock);
+      console.log(`[runValidation] firing summary+leads msgLen=${msg.length}`, uploadId);
+      return callValidator(msg);
+    })();
+
+    const [factResults, summaryCall] = await Promise.all([
+      Promise.all(factCallPromises),
+      summaryCallPromise,
+    ]);
+    const wallMs = Date.now() - t0;
+    console.log(`[runValidation] step: all 5 calls returned in ${wallMs}ms`, uploadId);
+
+    // Parse each chunk + merge.
+    const factsBundles: FactsBundle[] = factResults.map(({ chunk, call }) => {
+      const facts = parseFactsChunk(call.text);
+      console.log(
+        `[runValidation] chunk=${chunk.name} facts=${facts.length} cost=$${call.costUsd.toFixed(4)} in=${call.inputTokens} out=${call.outputTokens} cacheRead=${call.cacheReadTokens} textLen=${call.text.length}`,
+        uploadId,
       );
-      // Cost rolls up across both attempts.
-      call = {
-        text: retry.text,
-        inputTokens: call.inputTokens + retry.inputTokens,
-        outputTokens: call.outputTokens + retry.outputTokens,
-        cacheCreateTokens: call.cacheCreateTokens + retry.cacheCreateTokens,
-        cacheReadTokens: call.cacheReadTokens + retry.cacheReadTokens,
-        costUsd: call.costUsd.add(retry.costUsd),
-      };
-      parsed = parseValidatorOutput(call.text);
-      // Replace the raw output with the retry's text so the operator sees the
-      // final attempt's output in `rawValidatorOutput`, not the first failure.
-      await persistRawValidatorOutput(uploadId, call.text);
+      return { facts, propertyTypeColumn: chunk.propertyTypeColumn };
+    });
+    const { summary, storyLeads } = parseSummaryAndLeadsChunk(summaryCall.text);
+    console.log(
+      `[runValidation] summary+leads leads=${storyLeads.length} summaryLen=${summary.length} cost=$${summaryCall.costUsd.toFixed(4)} in=${summaryCall.inputTokens} out=${summaryCall.outputTokens} cacheRead=${summaryCall.cacheReadTokens} textLen=${summaryCall.text.length}`,
+      uploadId,
+    );
+
+    // Persist concatenated raw outputs so debug tooling still has ground truth.
+    const concatenatedRaw = [
+      ...factResults.map(
+        ({ chunk, call }) => `--- CHUNK ${chunk.name.toUpperCase()} ---\n${call.text}`,
+      ),
+      `--- SUMMARY+LEADS ---\n${summaryCall.text}`,
+    ].join('\n\n');
+    await persistRawValidatorOutput(uploadId, concatenatedRaw);
+
+    // Roll up cost + token counters across all 5 calls.
+    const totalCost = factResults
+      .reduce((acc, { call }) => acc.add(call.costUsd), new Decimal(0))
+      .add(summaryCall.costUsd);
+    const totalInputTokens =
+      factResults.reduce((a, { call }) => a + call.inputTokens, 0) + summaryCall.inputTokens;
+    const totalOutputTokens =
+      factResults.reduce((a, { call }) => a + call.outputTokens, 0) + summaryCall.outputTokens;
+    const totalFacts = factsBundles.reduce((a, b) => a + b.facts.length, 0);
+    console.log(
+      `[runValidation] step: parsed all chunks — totalFacts=${totalFacts} leads=${storyLeads.length} totalCost=$${totalCost.toFixed(4)} wallMs=${wallMs}`,
+      uploadId,
+    );
+
+    // Cost guard (warn-only): log if we're materially over the ~$2.60 estimate.
+    if (totalCost.toNumber() > 4) {
+      console.warn(
+        `[runValidation] COST WARNING uploadId=${uploadId} totalCost=$${totalCost.toFixed(4)} exceeds soft cap of $4 — review aggregator group counts.`,
+      );
     }
 
-    if (parsed.facts.length === 0 && parsed.storyLeads.length === 0) {
-      // Final failure — store the raw output so the operator can debug.
+    // Final failure check: nothing parseable from any of the 5 calls.
+    if (totalFacts === 0 && storyLeads.length === 0) {
       await prisma.marketDataUpload.update({
         where: { id: uploadId },
         data: {
           status: "failed",
-          validationCostUsd: call.costUsd.toNumber(),
-          validationError: `Validator output did not contain any parseable facts or story leads after one retry.\n\n--- RAW OUTPUT ---\n${call.text.slice(0, 8000)}`,
+          validationCostUsd: totalCost.toNumber(),
+          validationError:
+            `All 5 chunked validator calls returned no parseable facts or story leads.\n\n` +
+            factResults
+              .map(
+                ({ chunk, call }) =>
+                  `--- CHUNK ${chunk.name.toUpperCase()} (first 1500 chars) ---\n${call.text.slice(0, 1500)}`,
+              )
+              .join('\n\n')
+              .slice(0, 8000),
         },
       });
-      // Still log the spend so cost-cap stays honest.
       await prisma.aIToolUsage.create({
         data: {
           userId,
           toolType: "fact_validator",
-          inputTokens: call.inputTokens,
-          outputTokens: call.outputTokens,
-          costUsd: call.costUsd.toString(),
+          inputTokens: totalInputTokens,
+          outputTokens: totalOutputTokens,
+          costUsd: totalCost.toString(),
         },
       });
       return;
@@ -581,13 +841,16 @@ export async function runValidation(uploadId: string): Promise<void> {
     await persistResults(
       uploadId,
       userId,
-      parsed.facts,
-      parsed.storyLeads,
-      call.costUsd,
-      call.inputTokens,
-      call.outputTokens,
+      factsBundles,
+      storyLeads,
+      totalCost,
+      totalInputTokens,
+      totalOutputTokens,
     );
-    console.log('[runValidation] step: persisted, facts=' + parsed.facts.length + ' leads=' + parsed.storyLeads.length + ' cost=$' + call.costUsd.toFixed(4), uploadId);
+    console.log(
+      `[runValidation] step: persisted — facts=${totalFacts} leads=${storyLeads.length} cost=$${totalCost.toFixed(4)} wallMs=${wallMs}`,
+      uploadId,
+    );
   } catch (err) {
     console.error('[runValidation] threw for', uploadId, err);
     await markUploadFailed(uploadId, err);

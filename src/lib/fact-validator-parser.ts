@@ -671,3 +671,33 @@ export function parseValidatorOutput(md: string): ParsedValidatorOutput {
     storyLeads: parseStoryLeads(storyLeads),
   };
 }
+
+/**
+ * Chunk-mode helper: parse a response from a facts-only chunk. The model is
+ * instructed to emit just `## VALIDATED FACTS LIBRARY\n\`\`\`json [...] \`\`\``,
+ * but it sometimes drops the H2 header or wraps the array in prose. We try the
+ * standard splitter first; if no facts come out, we re-parse the whole text as
+ * if it were a FACTS LIBRARY section so the JSON-block extractor still fires.
+ */
+export function parseFactsChunk(text: string): ParsedFact[] {
+  const std = parseValidatorOutput(text);
+  if (std.facts.length > 0) return std.facts;
+  return parseFacts(text);
+}
+
+/**
+ * Chunk-mode helper: parse a response from the summary+leads-only call. Same
+ * idea — fall back to treating the whole text as the STORY LEADS section if
+ * the model omitted the H2 header for it.
+ */
+export function parseSummaryAndLeadsChunk(text: string): {
+  summary: string;
+  storyLeads: ParsedStoryLead[];
+} {
+  const std = parseValidatorOutput(text);
+  if (std.storyLeads.length > 0 || std.summary.trim()) {
+    return { summary: std.summary, storyLeads: std.storyLeads };
+  }
+  // Fallback: no H2 sections at all. Treat entire text as story-leads block.
+  return { summary: "", storyLeads: parseStoryLeads(text) };
+}
