@@ -8,6 +8,7 @@ import {
   CANONICAL_FIELDS,
   OPTIONAL_FIELDS,
   FIELD_LABELS,
+  MAX_CSV_UPLOAD_BATCH,
   type ColumnMapping,
   type AnyMappedField,
 } from "@/lib/market-config";
@@ -97,8 +98,8 @@ export default function UploadPanel({
   function onPickFiles(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
     if (files.length === 0) return;
-    if (files.length > 24) {
-      setError("Up to 24 files at once.");
+    if (files.length > MAX_CSV_UPLOAD_BATCH) {
+      setError(`Up to ${MAX_CSV_UPLOAD_BATCH} files at once.`);
       return;
     }
     setError(null);
@@ -236,8 +237,8 @@ export default function UploadPanel({
         Upload market data
       </h2>
       <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-        Drop your latest monthly CSV — or up to 24 months at once for a
-        historical backfill.
+        Drop your latest monthly CSV — or up to {MAX_CSV_UPLOAD_BATCH} months
+        at once for a historical backfill.
       </p>
 
       {stage === "picking" && (

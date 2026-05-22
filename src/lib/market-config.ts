@@ -170,6 +170,12 @@ export const DEFAULT_HIGH_END_EXCEPTION: HighEndException = {
 };
 
 /**
+ * Maximum CSV files per upload batch. 25 = enough for 2-year YoY comparison
+ * (current month + 24 prior months). Do not lower below 13 (1-year YoY).
+ */
+export const MAX_CSV_UPLOAD_BATCH = 25;
+
+/**
  * Order matters — this is the canonical preset list and the order shown in UI.
  * IDs are stable so existing MarketConfig.subPersonas survive future additions
  * via `mergeSubPersonasWithPresets` (appends new preset IDs that aren't stored

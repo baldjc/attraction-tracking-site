@@ -5,6 +5,7 @@ import { requireMarketAccess } from "@/lib/market-config-server";
 import {
   CANONICAL_FIELDS,
   FIELD_LABELS,
+  MAX_CSV_UPLOAD_BATCH,
   type ColumnMapping,
 } from "@/lib/market-config";
 import {
@@ -50,9 +51,9 @@ export async function POST(req: NextRequest) {
   if (files.length === 0) {
     return Response.json({ error: "No files provided" }, { status: 400 });
   }
-  if (files.length > 24) {
+  if (files.length > MAX_CSV_UPLOAD_BATCH) {
     return Response.json(
-      { error: "Up to 24 files per batch." },
+      { error: `Up to ${MAX_CSV_UPLOAD_BATCH} files per batch.` },
       { status: 400 },
     );
   }
