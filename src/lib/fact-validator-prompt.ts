@@ -34,10 +34,10 @@ The data may be messy. Some rows will be missing sample sizes, sources, or dates
 
 EXPECTED FIELDS PER ROW (any subset):
 - neighbourhood (e.g., "Aspen Woods" or "Calgary detached overall")
-- metricName (e.g., median_sale_price, median_psf, median_sqft, MOI, DOM, SP_LP, creb_benchmark, active_listings)
-- metricFamily (MOI, BENCHMARK, PSF, MEDIAN, AVG, DOM, SP_LP, INVENTORY, OTHER)
+- metricName (e.g., median_sale_price, median_psf, median_sqft, MOI, DOM, SP_LP, active_listings)
+- metricFamily (MOI, PSF, MEDIAN, AVG, DOM, SP_LP, INVENTORY, OTHER)
 - metricValue (the actual number)
-- sampleSize (integer count of transactions; null only acceptable for MOI / BENCHMARK)
+- sampleSize (integer count of transactions; null only acceptable for MOI)
 - timeWindow (calendar_month / 30_day / 90_day / 180_day / ytd / trailing_12mo)
 - dateContext (e.g., "April 2026" or "Q1 2026")
 - sourceUrl
@@ -53,15 +53,16 @@ THE STATISTICAL HYGIENE LAYER — six rules, applied to every fact
 (a) METRIC HIERARCHY
 The metric family determines how a fact can be used:
 1. MOI (months of inventory) — sample-size-robust, composition-immune. Always headline-safe for tightness/competitiveness claims.
-2. BENCHMARK (CREB benchmark / HPI) — composition-adjusted. Headline-safe for appreciation/depreciation claims.
-3. PSF ($/sqft) — controls for size mix. Headline-safe IF sampleSize >= 30.
-4. MEDIAN sale price — headline-safe ONLY IF sampleSize >= 30 AND no BENCHMARK or PSF available for the same neighbourhood/window.
-5. AVG sale price — never headline-safe. Outliers distort. Label as "rejected" unless the user has explicitly asked for it as texture.
+2. PSF ($/sqft) — controls for size mix. Headline-safe IF sampleSize >= 30. Currently the top-of-hierarchy signal for price-direction claims (see PIPELINE GAP below).
+3. MEDIAN sale price — headline-safe ONLY IF sampleSize >= 30 AND no PSF available for the same neighbourhood/window.
+4. AVG sale price — never headline-safe. Outliers distort. Label as "rejected" unless the user has explicitly asked for it as texture.
+
+PIPELINE GAP — BENCHMARK/HPI feed is not yet plumbed in; do NOT emit BENCHMARK facts or scan for benchmark-anchored patterns. PSF is the price-direction signal.
 
 (b) SAMPLE-SIZE FLOOR
 Any fact with sampleSize < 30 OR sampleSize unknown is small-sample and CANNOT be a video headline. It can still appear in a script as supporting texture, but it must be labelled as such.
 
-Exception: MOI and BENCHMARK metrics carry sampleSize: null by design and are still headline-safe.
+Exception: MOI metrics carry sampleSize: null by design and are still headline-safe.
 
 (c) COMPOSITION-SHIFT CHECK
 For any MEDIAN price fact with a YoY comparison available, you MUST cross-reference the corresponding median sqft fact for the same neighbourhood and time window.
@@ -72,7 +73,7 @@ For any MEDIAN price fact with a YoY comparison available, you MUST cross-refere
 
 (d) TREND TRIANGULATION
 For any neighbourhood where the user (or a downstream prompt) might want to claim "tightening", "competitive", "heating up", or "cooling", check whether at least 2 of 3 signals align:
-- Price direction (PSF or BENCHMARK preferred over MEDIAN)
+- Price direction (PSF preferred over MEDIAN)
 - DOM (falling = tightening, rising = cooling)
 - SP/LP ratio (rising or above 100% = tightening, falling = cooling)
 
@@ -214,7 +215,6 @@ Good examples:
 - "Small sample (n=9) plus mix shift confirmed (sqft +16.3% YoY while PSF -1.6% YoY). DO NOT headline as appreciation. Reference only as supporting texture if the script is explaining the mix shift itself."
 - "Median price unsourced (no sourceUrl, no sourceTitle). Rejected. Will not flow downstream."
 - "PSF based on 90-day window with n=51. Headline-safe. YoY change of +4.3% is real appreciation, not mix shift, because corresponding median sqft moved less than 5%."
-- "BENCHMARK YTD city-wide. Composition-immune. Headline-safe for depreciation claims. -4.2% is the honest city-wide story."
 
 Bad examples (do not write notes like these):
 - "Use this fact." (too vague)
@@ -263,7 +263,7 @@ For any neighbourhood where median price is FLAT or UP but DOM is rising and SP/
 
 ### Scan 6 — Tightening pockets in a softening city
 
-When the city-wide BENCHMARK is down, find the neighbourhoods where MOI is below 0.5 anyway. These are the "where buyers still need to move fast" pockets that contradict the citywide narrative. Group them by quadrant or price band.
+When the city-wide PSF (or mix-shift-checked MEDIAN) is down, find the neighbourhoods where MOI is below 0.5 anyway. These are the "where buyers still need to move fast" pockets that contradict the citywide narrative. Group them by quadrant or price band.
 
 ### Scan 7 — Glut pockets in a tightening city
 
@@ -282,7 +282,7 @@ Each surfaced thread becomes one Story Lead with these fields:
 - WHY IT MATTERS TO VIEWERS: 1 sentence connecting the pattern to a specific avatar pain (move-up family fear of selling into weakness / first-time buyer being pitched scarcity that doesn't exist / relocator buying into a glut without realizing / etc.)
 - SUB-PERSONAS SERVED: which sub-personas this pattern speaks to (Move-Up Family, First-Time Buyer, Move-Down/Empty Nester, Relocator, Investor, Curious Owner, Aspirational)
 - ROTATION SLOT FIT: which packaging slot this lead is best built into. One of:
-  - **Market Update** — the lead is a city-wide state-of-the-market signal (citywide MOI, citywide BENCHMARK, monthly direction)
+  - **Market Update** — the lead is a city-wide state-of-the-market signal (citywide MOI, citywide PSF, monthly direction)
   - **Neighbourhood Fact** — the lead is a place-list pattern (N neighbourhoods doing X, ranked or grouped)
   - **Contrarian Take** — the lead contradicts the common narrative (city looks tight but here's the glut / city looks soft but here's the squeeze / mix-shift mirage / counter-intuitive tier inversion)
   - **Do Not** — the lead supports a specific warning anchored to neighbourhood or market state ("don't buy in these N glut-pocket neighbourhoods right now")
@@ -386,7 +386,7 @@ Emit a SINGLE fenced JSON code block containing a JSON array of fact objects. Ex
   {
     "neighbourhood": "string — name",
     "metricName": "string",
-    "metricFamily": "MOI | BENCHMARK | PSF | MEDIAN | AVG | DOM | SP_LP | INVENTORY | FAILURE_RATE | OTHER",
+    "metricFamily": "MOI | PSF | MEDIAN | AVG | DOM | SP_LP | INVENTORY | FAILURE_RATE | OTHER",
     "metricValue": 0,
     "sampleSize": 0,
     "timeWindow": "calendar_month | 30_day | 90_day | 180_day | ytd | trailing_12mo",
@@ -416,7 +416,7 @@ JSON FORMATTING RULES (NON-NEGOTIABLE):
 - \`creb_aligned\` is BOOLEAN (true/false) or null. Do NOT quote it.
 - All other listed fields are strings.
 - No trailing commas. No comments. No ellipses. The block MUST parse via \`JSON.parse()\` as an array.
-- Order facts by (neighbourhood, then within each neighbourhood: MOI, BENCHMARK, PSF, MEDIAN, median_sqft, DOM, SP_LP, FAILURE_RATE, other). This grouping is for downstream consumers — there are no H3 headers.
+- Order facts by (neighbourhood, then within each neighbourhood: MOI, PSF, MEDIAN, median_sqft, DOM, SP_LP, FAILURE_RATE, other). This grouping is for downstream consumers — there are no H3 headers.
 
 ================================================================
 RULES
@@ -463,7 +463,6 @@ For EVERY neighbourhood that appears in your aggregated input, you MUST emit ONE
 - DOM (emit if DOM data exists)
 - SP_LP (emit if list price data exists)
 - FAILURE_RATE (emit if expired/terminated/withdrawn data exists for the group)
-- BENCHMARK (emit only if CREB benchmark data was provided)
 
 Picking the "most important" family per neighbourhood and dropping the others is NOT allowed. Each metric family adds independent signal — DOM tells a different story than MEDIAN even for the same neighbourhood. The downstream Script Builder cannot reconstruct what you didn't emit.
 

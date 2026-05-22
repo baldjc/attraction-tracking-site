@@ -77,7 +77,7 @@ Five rollup dimensions are baked in: (n,pt,tier), (n,pt,—), (n,—,—), (All,
 **No.**
 
 - `ColumnMapping` has 12 canonical/optional fields. None of them are benchmark, HPI, composite, or composition-adjusted price.
-- The aggregator never emits a `BENCHMARK` family fact — there is **no code path that constructs one**. The validator prompt at `src/lib/fact-validator-prompt.ts:56` describes BENCHMARK ("CREB benchmark / HPI — composition-adjusted. Headline-safe for appreciation/depreciation claims.") and line 466 instructs the model `"BENCHMARK (emit only if CREB benchmark data was provided)"` — and benchmark data is **never provided**. So the model correctly emits zero.
+- The aggregator never emits a `BENCHMARK` family fact — there is **no code path that constructs one**. As of the Wave 1 Phase 2A close-out, the validator prompt (`src/lib/fact-validator-prompt.ts:63`) carries a single PIPELINE GAP line acknowledging that BENCHMARK/HPI is not plumbed in and instructing the model not to emit BENCHMARK facts or scan for benchmark-anchored patterns. All other BENCHMARK rules, examples, and enum slots have been removed; PSF is the price-direction signal.
 - `mlsSource` (e.g. "Pillar 9") is a free-text label only. Nothing in the code branches on it.
 - `MarketConfig` has no field for: benchmark feed URL, benchmark CSV path, benchmark API key, benchmark column mapping, benchmark refresh cadence, benchmark cutoff date.
 
@@ -136,35 +136,35 @@ PSF is the closest functional substitute (and the validator prompt already treat
 
 ## 5. Architectural options
 
-### A) Ship Calgary-only validator now, build multi-market column mapping in Wave 2
+### A) Add `benchmarkSource` + columnMappings to MarketConfig now, Calgary uses it, others get null until configured
 
-The current validator produces 454 high-quality facts for Calgary at $2.62/month and the chunked architecture is stable. If the only blocker is BENCHMARK, that family is genuinely orthogonal to single-market correctness — every MOI/PSF/MEDIAN/DOM/SP_LP/FAILURE_RATE row is already operator-grade for Calgary, and PSF covers the price-direction claim that BENCHMARK would otherwise own. Wave 2 is the natural place to confront the "non-Pillar-9 MLS" problem holistically — at that point you'll also need to address the hardcoded property-type buckets, the Pillar-9-shaped status enum, DOM-vs-CDOM conventions, and benchmark all together rather than bolting benchmark in twice (once for Calgary, again differently for GTA). The cost of shipping A is `0 LOC`, but the cost of Wave 2 grows because the prompt already references BENCHMARK and members will see the gap.
+The "ship Calgary properly + don't paint into a corner" option. The DB migration is small (one Json column on `MarketConfig`, one new table for benchmark snapshots). The ingest module is ~150 LOC. The UI is one new mapping page. Calgary admins upload a CREB HPI CSV monthly (or you pull it via cron from CREB's public stats), the aggregator emits ~50 BENCHMARK group rows per upload, and the validator prompt re-introduces BENCHMARK rules and emission slots. ~3 days end-to-end. The architecture decision you'd make now ("benchmark is a separate snapshot, not a column on the sales CSV") matches how every MLS in North America actually structures this data.
 
-### B) Add `benchmarkSource` + columnMappings to MarketConfig now, Calgary uses it, others get null until configured
+### B) Ship Calgary-only validator now, defer benchmark ingest to Wave 2 (close-out trim already applied)
 
-This is the "ship Calgary properly + don't paint into a corner" option. The DB migration is small (one Json column on `MarketConfig`, one new table for benchmark snapshots). The ingest module is ~150 LOC. The UI is one new mapping page. Calgary admins upload a CREB HPI CSV monthly (or you pull it via cron from CREB's public stats), the aggregator emits ~50 BENCHMARK group rows per upload, the prompt already knows what to do with them — no validator change needed. Future markets either provide a benchmark feed (TRREB has HPI too) or accept BENCHMARK=null and lean on PSF. The architecture decision you'd make now ("benchmark is a separate snapshot, not a column on the sales CSV") matches how every MLS in North America actually structures this data. ~3 days end-to-end.
+The current validator produces ~420 high-quality facts for Calgary per run and the chunked architecture is stable. BENCHMARK family is genuinely orthogonal to single-market correctness — every MOI/PSF/MEDIAN/DOM/SP_LP/FAILURE_RATE row is already operator-grade for Calgary, and PSF covers the price-direction claim that BENCHMARK would otherwise own. Phase 2A trims BENCHMARK rules/enum/scan-recipe references out of the prompt and replaces them with a single PIPELINE GAP line, so the model stops spending output budget on BENCHMARK reasoning. Wave 2 is the natural place to confront the "non-Pillar-9 MLS" problem holistically — at that point you'll address the hardcoded property-type buckets, the Pillar-9-shaped status enum, DOM-vs-CDOM conventions, AND benchmark all together rather than bolting benchmark in twice (once for Calgary, again differently for GTA).
 
-### C) Punt BENCHMARK family entirely — rely on PSF + mix-shift-checked MEDIAN as the appreciation-claim path for all markets
+### C) Punt BENCHMARK family entirely — rely on PSF + mix-shift-checked MEDIAN as the appreciation-claim path for all markets, permanently
 
-Functionally defensible: PSF is composition-aware at the per-listing level (it implicitly controls for size), and MEDIAN with `compositionShiftFlag` already surfaces when a median move is sqft-driven rather than price-driven. The validator prompt's own usage hierarchy puts PSF *above* MEDIAN and BENCHMARK *above* PSF only on the "composition-immune" axis — at neighbourhood level PSF is nearly as defensible as HPI for a 1-month read. You delete the BENCHMARK enum value (or leave it dormant), remove the prompt references, and you never have to solve "where does each market's HPI come from". Risk: real-estate audiences are trained on HPI talking points and operators will ask "why aren't you using the benchmark number CREB just published?" — this is a *market expectations* problem more than a *data quality* problem.
+Functionally defensible: PSF is composition-aware at the per-listing level (it implicitly controls for size), and MEDIAN with `compositionShiftFlag` already surfaces when a median move is sqft-driven rather than price-driven. You delete the BENCHMARK enum value entirely (DB migration + Prisma regen), and never solve "where does each market's HPI come from". Risk: real-estate audiences are trained on HPI talking points and operators will ask "why aren't you using the benchmark number CREB just published?" — this is a *market expectations* problem more than a *data quality* problem.
 
 ---
 
-## 6. Recommendation: **Option B**
+## 6. Recommendation: **Option B** (defer benchmark ingest to Wave 2)
 
-Two reasons it wins over A:
+Two reasons it wins over A (build now):
 
-1. **The architectural decision is the same either way, you're just choosing when to pay it.** The "BENCHMARK is a separate feed, not a CSV column" insight is universal — TRREB, REBGV, REIN, every Canadian board publishes HPI as a separate composition-adjusted product. Building the snapshot-table + ingest path now means Wave 2 inherits a market-agnostic pipeline. Building it later means Wave 2 has to also untangle a Calgary-specific shortcut.
+1. **Wave 1 is shipping Calgary, not multi-market.** Building a benchmark ingest path now bakes in Calgary-specific assumptions (CREB CSV shape, monthly cadence, neighbourhood vocabulary) that Wave 2 will then have to untangle when GTA / REBGV / REIN show up. The "BENCHMARK is a separate composition-adjusted feed" insight is universal — but the *concrete plumbing* (feed shape, ingest cron, mapping UI, MarketBenchmarkSnapshot schema) is best designed once, against the second market's real constraints, not retro-fitted from a Calgary prototype.
 
-2. **The prompt is already paying for it.** `fact-validator-prompt.ts` references BENCHMARK 7 times across the rules, ordering, scan recipes, and example outputs. Every monthly run pays input-token cost for instructions the model can never execute. Right now we're spending ~10K cache-read tokens × 5 chunks/month on dead text. Add a BENCHMARK feed and that prompt suddenly earns its keep — the model can run "city-wide BENCHMARK is down but find the sub-0.5 MOI pockets" scans, generate `headline_safe` appreciation claims, and use BENCHMARK as the appreciation anchor instead of PSF.
+2. **The 2A trim has already reclaimed the prompt cost.** The validator prompt no longer references BENCHMARK except in the single PIPELINE GAP line, and the model no longer spends output tokens speculating about a benchmark column. The verified run shows the change is behavior-preserving (418→422 facts, identical leads, identical cost). There is no longer a "dead text" tax to pay for waiting.
 
-Two reasons it wins over C:
+Two reasons it wins over C (kill BENCHMARK forever):
 
-1. **PSF is a per-listing metric.** It controls for size but not for mix (neighbourhood mix, year-built mix, lot-size mix, condition mix). HPI is a regression-based product designed to absorb all of those. They aren't substitutes — they're different tools. A real-estate professional listening to your audit content WILL notice the difference.
+1. **PSF is a per-listing metric.** It controls for size but not for mix (neighbourhood mix, year-built mix, lot-size mix, condition mix). HPI is a regression-based product designed to absorb all of those. They aren't substitutes — they're different tools. A real-estate professional listening to your audit content WILL notice the difference, eventually.
 
-2. **Audience trust.** "CREB's benchmark price for Hillhurst detached is down 1.8% YoY" is the canonical Calgary market-update sentence. Your Content Engine cannot produce it from PSF + MEDIAN no matter how clever the prompt is. Option C produces correct content; Option B produces *credible* content.
+2. **Audience trust.** "CREB's benchmark price for Hillhurst detached is down 1.8% YoY" is the canonical Calgary market-update sentence. Your Content Engine cannot produce it from PSF + MEDIAN no matter how clever the prompt is. Option C produces correct content; Option B keeps the door open to *credible* content in Wave 2.
 
-### What Option B does NOT solve (deferred to Wave 2)
+### What Option B does NOT solve (carried into Wave 2)
 
 - Non-Pillar-9 status enums (TRREB's `Sold Conditional`, etc.)
 - Non-CREB property-type buckets (TRREB's `Condo Apt`, REBGV's strata categories)
@@ -187,5 +187,5 @@ These are real, but they're all "second market onboarding" problems, not "Calgar
 - `src/lib/csv-aggregate.ts` lines 459-489 — all CSV reads go through ColumnMapping (no hardcoded headers)
 - `src/lib/csv-aggregate.ts` lines 533-539 — five rollup dimensions
 - `src/lib/csv-aggregate.ts` line 568 — hardcoded `metricName` list excludes benchmark/hpi
-- `src/lib/fact-validator-prompt.ts` lines 38, 56, 217, 266, 285, 389, 466 — prompt references BENCHMARK
+- `src/lib/fact-validator-prompt.ts` line 63 — single PIPELINE GAP line is the only remaining BENCHMARK reference after the Wave 1 Phase 2A trim (all rules/enum slots/scan recipes removed)
 - Calgary CSV: 20 columns, no benchmark/HPI column present
