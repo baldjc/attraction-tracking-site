@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   KEYWORD_KIT_TEMPLATE,
+  hasAvatarSnapshot,
   type MarketConfigShape,
   type PriceTier,
+  type PrimaryAvatar,
   type SubPersona,
 } from "@/lib/market-config";
 
@@ -20,11 +22,75 @@ export default function SetupForm({ initial, isEdit }: Props) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [avatarSource, setAvatarSource] = useState<{
+    hasAvatar: boolean;
+    name?: string | null;
+    summary?: string | null;
+    profile?: Record<string, unknown> | null;
+    lastUpdatedAt?: string;
+  } | null>(null);
+  const [pullingAvatar, setPullingAvatar] = useState(false);
+  const [avatarPullError, setAvatarPullError] = useState<string | null>(null);
+  const pullRequestIdRef = useState({ current: 0 })[0];
+
   const readyToUpload =
     state.marketName.trim().length > 0 && state.mlsSource.trim().length > 0;
   const hasAvatarOrKit =
-    (state.primaryAvatar?.description ?? "").trim().length > 0 ||
+    hasAvatarSnapshot(state.primaryAvatar) ||
     (state.keywordKit?.pillars?.length ?? 0) > 0;
+
+  // Probe Avatar Architect once on mount so the empty state can choose the
+  // right CTA ("Pull avatar" vs "Run Avatar Architect").
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/member/market-data/config/avatar-source");
+        const data = res.ok ? await res.json() : { hasAvatar: false };
+        if (!cancelled) setAvatarSource(data);
+      } catch {
+        if (!cancelled) setAvatarSource({ hasAvatar: false });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  async function pullAvatarFromArchitect() {
+    // Guard against rapid double-clicks: only the latest request may mutate state.
+    const myId = ++pullRequestIdRef.current;
+    setAvatarPullError(null);
+    setPullingAvatar(true);
+    try {
+      const res = await fetch("/api/member/market-data/config/avatar-source");
+      const data = await res.json().catch(() => ({}));
+      if (myId !== pullRequestIdRef.current) return; // stale
+      if (!res.ok) {
+        throw new Error(data.error || "Could not load avatar.");
+      }
+      setAvatarSource(data);
+      if (!data.hasAvatar) {
+        setAvatarPullError(
+          "No Avatar Architect data found yet. Build your avatar first.",
+        );
+        return;
+      }
+      const snapshot: PrimaryAvatar = {
+        source: "avatar-architect",
+        snappedAt: new Date().toISOString(),
+        name: data.name ?? null,
+        summary: data.summary ?? null,
+        profile: data.profile ?? null,
+      };
+      setState({ ...state, primaryAvatar: snapshot });
+    } catch (e) {
+      if (myId !== pullRequestIdRef.current) return;
+      setAvatarPullError((e as Error).message);
+    } finally {
+      if (myId === pullRequestIdRef.current) setPullingAvatar(false);
+    }
+  }
 
   async function onSave(e: React.FormEvent) {
     e.preventDefault();
@@ -384,7 +450,7 @@ export default function SetupForm({ initial, isEdit }: Props) {
         </label>
       </section>
 
-      {/* Primary avatar */}
+      {/* Primary avatar — snapshot of Avatar Architect output (canonical lives on User) */}
       <section className="space-y-2">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
           Primary avatar
@@ -392,18 +458,92 @@ export default function SetupForm({ initial, isEdit }: Props) {
         <p className="text-xs text-gray-500 dark:text-gray-400">
           Optional for now — required before you generate ideas or scripts.
         </p>
-        <textarea
-          rows={4}
-          value={state.primaryAvatar.description ?? ""}
-          onChange={(e) =>
-            setState({
-              ...state,
-              primaryAvatar: { description: e.target.value },
-            })
-          }
-          placeholder="Who is your typical viewer? Background, life stage, real-estate concerns…"
-          className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
-        />
+
+        {hasAvatarSnapshot(state.primaryAvatar) ? (
+          <div className="rounded-md border border-gray-200 bg-gray-50 p-3 dark:border-gray-800 dark:bg-gray-950">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                    {state.primaryAvatar.name ?? "(unnamed avatar)"}
+                  </span>
+                  <span className="text-[11px] text-gray-500 dark:text-gray-500">
+                    {state.primaryAvatar.source === "avatar-architect"
+                      ? "from Avatar Architect"
+                      : "manual entry (legacy)"}
+                  </span>
+                </div>
+                {state.primaryAvatar.summary ? (
+                  <p className="mt-1 text-xs text-gray-700 dark:text-gray-300">
+                    {state.primaryAvatar.summary.length > 200
+                      ? state.primaryAvatar.summary.slice(0, 200) + "…"
+                      : state.primaryAvatar.summary}
+                  </p>
+                ) : (
+                  <p className="mt-1 text-xs italic text-gray-400 dark:text-gray-600">
+                    No summary saved on this snapshot.
+                  </p>
+                )}
+                <p className="mt-2 text-[11px] text-gray-500 dark:text-gray-500">
+                  Snapshot taken{" "}
+                  {state.primaryAvatar.snappedAt
+                    ? new Date(state.primaryAvatar.snappedAt).toLocaleString()
+                    : "—"}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={pullAvatarFromArchitect}
+                disabled={pullingAvatar}
+                className="shrink-0 rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-white disabled:opacity-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-900"
+              >
+                {pullingAvatar ? "Pulling…" : "Re-pull from Avatar Architect"}
+              </button>
+            </div>
+            <div className="mt-2">
+              <a
+                href="/member/ai-tools/avatar-architect"
+                className="text-xs text-blue-600 hover:underline dark:text-blue-400"
+              >
+                Edit avatar in Avatar Architect →
+              </a>
+            </div>
+          </div>
+        ) : avatarSource?.hasAvatar ? (
+          <div className="rounded-md border border-dashed border-gray-300 p-4 text-sm dark:border-gray-700">
+            <p className="text-gray-700 dark:text-gray-300">
+              You have an Avatar Architect avatar
+              {avatarSource.name ? ` (${avatarSource.name})` : ""} — snapshot it
+              into your market config so the upload pipelines can read it.
+            </p>
+            <button
+              type="button"
+              onClick={pullAvatarFromArchitect}
+              disabled={pullingAvatar}
+              className="mt-3 rounded-md bg-blue-600 px-4 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:opacity-50"
+            >
+              {pullingAvatar ? "Pulling…" : "Pull avatar from Avatar Architect"}
+            </button>
+          </div>
+        ) : (
+          <div className="rounded-md border border-dashed border-gray-300 p-4 text-sm dark:border-gray-700">
+            <p className="text-gray-700 dark:text-gray-300">
+              You haven't built an avatar yet.
+            </p>
+            <a
+              href="/member/ai-tools/avatar-architect"
+              className="mt-2 inline-block text-sm font-medium text-blue-600 hover:underline dark:text-blue-400"
+            >
+              Run Avatar Architect →
+            </a>
+          </div>
+        )}
+
+        {avatarPullError && (
+          <div className="rounded-md border border-red-300 bg-red-50 p-2 text-xs text-red-800 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300">
+            {avatarPullError}
+          </div>
+        )}
       </section>
 
       {/* Sub-personas */}

@@ -63,8 +63,86 @@ export interface KeywordKit {
   notes?: string;
 }
 
+/**
+ * Point-in-time snapshot of the Avatar Architect output. Avatar Architect
+ * stays canonical on the User row (`avatarProfile`, `avatarName`,
+ * `avatarSummary`); MarketConfig only stores a copy so the Wave 1 → Wave 2/3
+ * pipelines have a stable shape, not a parallel editable source of truth.
+ *
+ * Empty snapshot = `snappedAt === ""`. Use `hasAvatarSnapshot()` to check.
+ */
 export interface PrimaryAvatar {
+  source: "avatar-architect" | "manual";
+  /** ISO timestamp of when the snapshot was taken. "" = no snapshot yet. */
+  snappedAt: string;
+  name: string | null;
+  summary: string | null;
+  profile: Record<string, unknown> | null;
+}
+
+/** Legacy shape (pre Wave-1 follow-up): freeform `{ description }`. */
+interface LegacyPrimaryAvatar {
   description?: string;
+}
+
+export function emptyPrimaryAvatar(): PrimaryAvatar {
+  return {
+    source: "avatar-architect",
+    snappedAt: "",
+    name: null,
+    summary: null,
+    profile: null,
+  };
+}
+
+export function hasAvatarSnapshot(avatar: PrimaryAvatar | null | undefined): boolean {
+  return !!(avatar && avatar.snappedAt && avatar.snappedAt.length > 0);
+}
+
+/**
+ * Normalise whatever sits in MarketConfig.primaryAvatar JSON into the
+ * current PrimaryAvatar shape. Handles three cases:
+ *   - new shape: pass through (with type guards)
+ *   - legacy `{ description }`: treat as a manual snapshot, summary = description
+ *   - null/empty/unknown: return empty snapshot
+ *
+ * `fallbackSnappedAt` is used when converting the legacy shape so the snapshot
+ * carries a real timestamp (use MarketConfig.configuredAt).
+ */
+export function normalizePrimaryAvatar(
+  raw: unknown,
+  fallbackSnappedAt: string,
+): PrimaryAvatar {
+  if (raw && typeof raw === "object") {
+    const obj = raw as Record<string, unknown>;
+    // New shape
+    if (typeof obj.snappedAt === "string" && typeof obj.source === "string") {
+      const source: "avatar-architect" | "manual" =
+        obj.source === "manual" ? "manual" : "avatar-architect";
+      return {
+        source,
+        snappedAt: obj.snappedAt,
+        name: typeof obj.name === "string" ? obj.name : null,
+        summary: typeof obj.summary === "string" ? obj.summary : null,
+        profile:
+          obj.profile && typeof obj.profile === "object"
+            ? (obj.profile as Record<string, unknown>)
+            : null,
+      };
+    }
+    // Legacy `{ description }` shape — only treat as a snapshot if there's actual text
+    const legacy = obj as LegacyPrimaryAvatar;
+    if (typeof legacy.description === "string" && legacy.description.trim().length > 0) {
+      return {
+        source: "manual",
+        snappedAt: fallbackSnappedAt,
+        name: null,
+        summary: legacy.description,
+        profile: null,
+      };
+    }
+  }
+  return emptyPrimaryAvatar();
 }
 
 export interface SubPersona {
@@ -136,7 +214,7 @@ export function emptyMarketConfig(): MarketConfigShape {
     highEndException: DEFAULT_HIGH_END_EXCEPTION,
     neighbourhoodVocab: [],
     keywordKit: {},
-    primaryAvatar: {},
+    primaryAvatar: emptyPrimaryAvatar(),
     subPersonas: DEFAULT_SUB_PERSONAS,
     columnMapping: {},
   };
@@ -154,10 +232,12 @@ export function toShape(
     primaryAvatar: unknown;
     subPersonas: unknown;
     columnMapping: unknown;
+    configuredAt?: Date;
   } | null,
 ): MarketConfigShape {
   if (!row) return emptyMarketConfig();
   const fallback = emptyMarketConfig();
+  const fallbackSnappedAt = (row.configuredAt ?? new Date(0)).toISOString();
   return {
     marketName: row.marketName ?? "",
     mlsSource: row.mlsSource ?? "",
@@ -170,8 +250,7 @@ export function toShape(
     neighbourhoodVocab:
       (row.neighbourhoodVocab as string[] | null) ?? fallback.neighbourhoodVocab,
     keywordKit: (row.keywordKit as KeywordKit | null) ?? fallback.keywordKit,
-    primaryAvatar:
-      (row.primaryAvatar as PrimaryAvatar | null) ?? fallback.primaryAvatar,
+    primaryAvatar: normalizePrimaryAvatar(row.primaryAvatar, fallbackSnappedAt),
     subPersonas:
       (row.subPersonas as SubPersona[] | null) ?? fallback.subPersonas,
     columnMapping:
