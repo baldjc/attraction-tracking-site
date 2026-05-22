@@ -1,3 +1,8 @@
+// Force synchronous stdout/stderr so we don't lose buffered logs if the
+// process is killed mid-run.
+(process.stdout as { _handle?: { setBlocking?: (b: boolean) => void } })._handle?.setBlocking?.(true);
+(process.stderr as { _handle?: { setBlocking?: (b: boolean) => void } })._handle?.setBlocking?.(true);
+
 import prisma from "@/lib/prisma";
 import { runValidation } from "@/lib/fact-validator";
 

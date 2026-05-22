@@ -13,6 +13,8 @@
 // NOT await this — the upload route returns 200/202 instantly while the
 // background work runs.
 
+import { writeFile } from "node:fs/promises";
+import { join } from "node:path";
 import Anthropic from "@anthropic-ai/sdk";
 import Decimal from "decimal.js-light";
 import prisma from "@/lib/prisma";
@@ -70,14 +72,92 @@ export function validateUploadAsync(uploadId: string): void {
 // User message construction
 // ─────────────────────────────────────────────────────────────────────────────
 
-function serializeTable(table: AggregatedTable): string {
-  // Compact but explicit. We tag the section headers so the validator can
-  // see structure without having to parse JSON. Numbers are rounded to keep
-  // the user message small (every saved token compounds across re-runs).
-  const round = (n: number | null, digits = 2): string => {
-    if (n == null) return "n/a";
-    return Number(n.toFixed(digits)).toString();
+// Anthropic Sonnet 4 hard cap is 200K input tokens. The system prompt (cached)
+// is ~35K chars ≈ 8K tokens. We budget ~150K tokens for the user message to
+// leave headroom for config + prior facts + the trailing TASK block. At ~4
+// chars/token that's ~600K chars for the GROUPS block alone.
+const GROUPS_CHAR_BUDGET = 600_000;
+const MIN_SAMPLE_THRESHOLDS = [5, 10, 20, 50, 100];
+
+function isRollupGroup(g: AggregatedGroup): boolean {
+  // Always-include groups: top-of-tree rollups the validator needs as anchor
+  // context. (1) Citywide overall and citywide × propertyType, (2) per-
+  // neighbourhood overall — i.e. groups with priceTier === null AND
+  // (neighbourhood === "All Neighbourhoods" OR propertyType === null).
+  if (g.priceTier !== null) return false;
+  return g.neighbourhood === "All Neighbourhoods" || g.propertyType === null;
+}
+
+function formatGroupLine(g: AggregatedGroup): string {
+  const round = (n: number | null, digits = 2): string =>
+    n == null ? "n/a" : Number(n.toFixed(digits)).toString();
+  const parts = [
+    `- neighbourhood: ${g.neighbourhood}`,
+    `  propertyType: ${g.propertyType ?? "n/a"}`,
+    `  priceTier: ${g.priceTier ?? "n/a"}`,
+    `  sampleSize: ${g.sampleSize}`,
+    `  active=${g.activeCount} pending=${g.pendingCount} sold=${g.soldCount} expired=${g.expiredCount} terminated=${g.terminatedCount} withdrawn=${g.withdrawnCount}`,
+    `  moi_strict: ${round(g.moiStrict)}`,
+    `  moi_inclusive: ${round(g.moiInclusive)}`,
+    `  medianPrice: ${round(g.medianPrice, 0)}`,
+    `  medianSqft: ${round(g.medianSqft, 0)}`,
+    `  psf: ${round(g.psf, 2)}`,
+    `  dom_median: ${round(g.domMedian, 1)}`,
+    `  dom_average: ${round(g.domAverage, 1)}`,
+    `  sp_lp_ratio: ${round(g.spLpRatio, 4)}`,
+    `  failure_rate_pct: ${round(g.failureRate, 2)}`,
+    `  yoy_median_price_pct: ${round(g.yoy.medianPriceDelta, 2)}`,
+    `  yoy_median_sqft_pct: ${round(g.yoy.medianSqftDelta, 2)}`,
+    `  yoy_psf_pct: ${round(g.yoy.psfDelta, 2)}`,
+    `  yoy_moi_strict_pct: ${round(g.yoy.moiStrictDelta, 2)}`,
+    `  rolling90d_medianPrice: ${round(g.rolling90d.medianPrice, 0)}`,
+    `  rolling90d_psf: ${round(g.rolling90d.psf, 2)}`,
+    `  rolling90d_moi_strict: ${round(g.rolling90d.moiStrict, 2)}`,
+    `  composition_shift_flag: ${g.compositionShiftFlag}`,
+  ];
+  if (g.rollupNotes.length > 0) {
+    parts.push(`  rollup_notes: ${g.rollupNotes.join(" | ")}`);
+  }
+  return parts.join("\n");
+}
+
+function selectGroupsForSerialization(
+  groups: AggregatedGroup[],
+): { kept: AggregatedGroup[]; threshold: number; droppedCount: number } {
+  // Always keep rollups. Among non-rollups, drop low-signal groups using an
+  // iteratively-escalating sample-size threshold until total serialized chars
+  // fit within budget. Calgary uploads commonly produce ~2000 raw groups; the
+  // n≥5 cut typically gets it down to ~200-400 groups (<300K chars).
+  const rollups = groups.filter(isRollupGroup);
+  const segmented = groups.filter((g) => !isRollupGroup(g));
+  const rollupChars = rollups.reduce((a, g) => a + formatGroupLine(g).length + 1, 0);
+  for (const threshold of MIN_SAMPLE_THRESHOLDS) {
+    const survivors = segmented.filter((g) => g.soldCount >= threshold);
+    const chars = survivors.reduce(
+      (a, g) => a + formatGroupLine(g).length + 1,
+      rollupChars,
+    );
+    if (chars <= GROUPS_CHAR_BUDGET) {
+      const kept = [...rollups, ...survivors];
+      return {
+        kept,
+        threshold,
+        droppedCount: groups.length - kept.length,
+      };
+    }
+  }
+  // Last resort: rollups only.
+  return {
+    kept: rollups,
+    threshold: Infinity,
+    droppedCount: groups.length - rollups.length,
   };
+}
+
+function serializeTable(table: AggregatedTable): string {
+  const { kept, threshold, droppedCount } = selectGroupsForSerialization(
+    table.groups,
+  );
 
   const meta = table.meta;
   const header = [
@@ -91,38 +171,14 @@ function serializeTable(table: AggregatedTable): string {
     `Date range: ${meta.dateRangeMin ?? "n/a"} → ${meta.dateRangeMax ?? "n/a"}`,
     `YoY comparison month: ${meta.yoyComparisonMonthYear ?? "none available"}`,
     `90-day rolling priors: ${meta.rolling90dMonthYears.join(", ") || "none available"}`,
+    `Groups in input total: ${table.groups.length}`,
+    `Groups included below: ${kept.length} (rollups + segmented with soldCount >= ${
+      Number.isFinite(threshold) ? threshold : "rollups only"
+    })`,
+    `Groups omitted (low sample size): ${droppedCount}`,
   ].join("\n");
 
-  const groupLines = table.groups.map((g) => {
-    const parts = [
-      `- neighbourhood: ${g.neighbourhood}`,
-      `  propertyType: ${g.propertyType ?? "n/a"}`,
-      `  priceTier: ${g.priceTier ?? "n/a"}`,
-      `  sampleSize: ${g.sampleSize}`,
-      `  active=${g.activeCount} pending=${g.pendingCount} sold=${g.soldCount} expired=${g.expiredCount} terminated=${g.terminatedCount} withdrawn=${g.withdrawnCount}`,
-      `  moi_strict: ${round(g.moiStrict)}`,
-      `  moi_inclusive: ${round(g.moiInclusive)}`,
-      `  medianPrice: ${round(g.medianPrice, 0)}`,
-      `  medianSqft: ${round(g.medianSqft, 0)}`,
-      `  psf: ${round(g.psf, 2)}`,
-      `  dom_median: ${round(g.domMedian, 1)}`,
-      `  dom_average: ${round(g.domAverage, 1)}`,
-      `  sp_lp_ratio: ${round(g.spLpRatio, 4)}`,
-      `  failure_rate_pct: ${round(g.failureRate, 2)}`,
-      `  yoy_median_price_pct: ${round(g.yoy.medianPriceDelta, 2)}`,
-      `  yoy_median_sqft_pct: ${round(g.yoy.medianSqftDelta, 2)}`,
-      `  yoy_psf_pct: ${round(g.yoy.psfDelta, 2)}`,
-      `  yoy_moi_strict_pct: ${round(g.yoy.moiStrictDelta, 2)}`,
-      `  rolling90d_medianPrice: ${round(g.rolling90d.medianPrice, 0)}`,
-      `  rolling90d_psf: ${round(g.rolling90d.psf, 2)}`,
-      `  rolling90d_moi_strict: ${round(g.rolling90d.moiStrict, 2)}`,
-      `  composition_shift_flag: ${g.compositionShiftFlag}`,
-    ];
-    if (g.rollupNotes.length > 0) {
-      parts.push(`  rollup_notes: ${g.rollupNotes.join(" | ")}`);
-    }
-    return parts.join("\n");
-  });
+  const groupLines = kept.map(formatGroupLine);
 
   return [
     "=== AGGREGATED INPUT (pre-computed by server; no Claude work needed for these numbers) ===",
@@ -454,7 +510,12 @@ export async function runValidation(uploadId: string): Promise<void> {
 
     // First Claude call.
     let call = await callValidator(userMessage);
-    console.log('[runValidation] step: anthropic responded, in=' + call.inputTokens + ' out=' + call.outputTokens + ' cacheRead=' + call.cacheReadTokens, uploadId);
+    console.log('[runValidation] step: anthropic responded, in=' + call.inputTokens + ' out=' + call.outputTokens + ' cacheRead=' + call.cacheReadTokens + ' textLen=' + call.text.length, uploadId);
+    // DEBUG: dump full raw output to /tmp and first 4KB to console.
+    try {
+      await writeFile(join("/tmp", `validator-raw-${uploadId}.md`), call.text, "utf8");
+    } catch (e) { console.error('[runValidation] failed to write raw dump', e); }
+    console.log('[runValidation] RAW_OUTPUT_BEGIN', uploadId, '\n' + call.text.slice(0, 4000) + '\n[runValidation] RAW_OUTPUT_END (showed first 4000 of ' + call.text.length + ' chars)');
     let parsed = parseValidatorOutput(call.text);
     console.log('[runValidation] step: parsed, facts=' + parsed.facts.length + ' leads=' + parsed.storyLeads.length, uploadId);
 

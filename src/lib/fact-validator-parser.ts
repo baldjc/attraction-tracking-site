@@ -105,15 +105,40 @@ function splitSections(md: string): {
   storyLeads: string;
   facts: string;
 } {
-  const summaryMatch = md.match(/##\s+SUMMARY\b([\s\S]*?)(?=^##\s+|\Z)/im);
-  const leadsMatch = md.match(/##\s+STORY LEADS\b([\s\S]*?)(?=^##\s+|\Z)/im);
-  const factsMatch = md.match(
-    /##\s+VALIDATED FACTS LIBRARY\b([\s\S]*?)(?=^##\s+|\Z)/im,
-  );
+  // Walk the document line-by-line and bucket each line into the section
+  // whose H2 header most recently opened. This is more robust than a single
+  // regex with lookahead: JS doesn't support `\Z`, and `(?=^##\s+|\Z)` —
+  // which a previous version of this parser used — degraded into "stop at any
+  // literal Z" because JS treats `\Z` as the literal character Z, prematurely
+  // truncating every section.
+  const HEADERS: Array<{ key: "summary" | "storyLeads" | "facts"; re: RegExp }> = [
+    { key: "summary", re: /^##\s+SUMMARY\b/i },
+    { key: "storyLeads", re: /^##\s+STORY\s+LEADS\b/i },
+    { key: "facts", re: /^##\s+VALIDATED\s+FACTS\s+LIBRARY\b/i },
+  ];
+  const buckets: Record<"summary" | "storyLeads" | "facts", string[]> = {
+    summary: [],
+    storyLeads: [],
+    facts: [],
+  };
+  let current: "summary" | "storyLeads" | "facts" | null = null;
+  for (const line of md.split(/\r?\n/)) {
+    const hit = HEADERS.find((h) => h.re.test(line));
+    if (hit) {
+      current = hit.key;
+      continue; // don't include the header line itself
+    }
+    // Any other ## H2 closes the current section.
+    if (/^##\s+/.test(line)) {
+      current = null;
+      continue;
+    }
+    if (current) buckets[current].push(line);
+  }
   return {
-    summary: (summaryMatch?.[1] ?? "").trim(),
-    storyLeads: (leadsMatch?.[1] ?? "").trim(),
-    facts: (factsMatch?.[1] ?? "").trim(),
+    summary: buckets.summary.join("\n").trim(),
+    storyLeads: buckets.storyLeads.join("\n").trim(),
+    facts: buckets.facts.join("\n").trim(),
   };
 }
 
@@ -344,12 +369,22 @@ function parseFactBlock(block: string): ParsedFact | null {
 
 function parseFacts(section: string): ParsedFact[] {
   if (!section.trim()) return [];
-  // Split on the leading "- neighbourhood:" sentinel (case-insensitive,
-  // tolerant of any preceding whitespace). The first slice is preamble; drop it.
-  const parts = section.split(/(?=^[\s>]*-\s*neighbourhood\s*:)/im);
+  // The validator groups facts under organizational "### Neighbourhood Name"
+  // H3 sub-headings — these break a naive split on "- neighbourhood:" because
+  // the first key line after each heading isn't preceded by a blank-then-bullet
+  // boundary that older regexes might rely on. Strip the H3 headings entirely
+  // before splitting: every fact block already carries its own
+  // `neighbourhood:` field, so the headings are redundant for data extraction.
+  const stripped = section.replace(/^###[ \t].*$/gm, "");
+
+  // Split on every "- neighbourhood:" boundary using a global multiline regex.
+  // Use the SAME regex source for both splitting (via lookahead) and detection.
+  const BOUNDARY = /^\s*-\s+neighbourhood\s*:/im;
+  const parts = stripped.split(/(?=^\s*-\s+neighbourhood\s*:)/im);
+
   const facts: ParsedFact[] = [];
   for (const block of parts) {
-    if (!/-\s*neighbourhood\s*:/i.test(block)) continue;
+    if (!BOUNDARY.test(block)) continue;
     const f = parseFactBlock(block);
     if (f) facts.push(f);
   }
