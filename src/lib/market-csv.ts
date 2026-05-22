@@ -63,6 +63,14 @@ export function detectMonthYearFromFilename(name: string): string | null {
   const iso = base.match(/(20\d{2})[-_./]?(0[1-9]|1[0-2])/);
   if (iso) return `${iso[1]}-${iso[2]}`;
 
+  // Month-first long year: 04-2026, 04_2026, 04.2026, 04/2026
+  const mmYyyy = base.match(/(?<![0-9])(0[1-9]|1[0-2])[-_./](20\d{2})(?![0-9])/);
+  if (mmYyyy) return `${mmYyyy[2]}-${mmYyyy[1]}`;
+
+  // Month-first short year: 04-26, 04_26, 04.26, 04/26 — assume 20YY
+  const mmYy = base.match(/(?<![0-9])(0[1-9]|1[0-2])[-_./](\d{2})(?![0-9])/);
+  if (mmYy) return `20${mmYy[2]}-${mmYy[1]}`;
+
   const wordMatch = base.match(
     /(jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*[\s\-_]?(20\d{2})/,
   );

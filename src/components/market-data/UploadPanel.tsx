@@ -32,6 +32,18 @@ function detectMonthYear(name: string): {
   const iso = base.match(/(20\d{2})[-_./]?(0[1-9]|1[0-2])/);
   if (iso) return { monthYear: `${iso[1]}-${iso[2]}`, confidence: "filename" };
 
+  // Month-first long year: 04-2026, 04_2026, 04.2026, 04/2026
+  const mmYyyy = base.match(/(?<![0-9])(0[1-9]|1[0-2])[-_./](20\d{2})(?![0-9])/);
+  if (mmYyyy) {
+    return { monthYear: `${mmYyyy[2]}-${mmYyyy[1]}`, confidence: "filename" };
+  }
+
+  // Month-first short year: 04-26, 04_26, 04.26, 04/26 — assume 20YY
+  const mmYy = base.match(/(?<![0-9])(0[1-9]|1[0-2])[-_./](\d{2})(?![0-9])/);
+  if (mmYy) {
+    return { monthYear: `20${mmYy[2]}-${mmYy[1]}`, confidence: "filename" };
+  }
+
   const months: Record<string, number> = {
     jan: 1, january: 1, feb: 2, february: 2, mar: 3, march: 3, apr: 4,
     april: 4, may: 5, jun: 6, june: 6, jul: 7, july: 7, aug: 8, august: 8,
@@ -110,7 +122,17 @@ export default function UploadPanel({
 
   function updateFile(i: number, patch: Partial<SelectedFile>) {
     const next = [...selected];
-    next[i] = { ...next[i], ...patch };
+    const merged = { ...next[i], ...patch };
+    // If the user just provided a monthYear that we couldn't detect, upgrade
+    // confidence so downstream consumers don't see a stale "guessed" flag.
+    if (
+      patch.monthYear &&
+      !next[i].monthYear &&
+      next[i].detectedConfidence === "guessed"
+    ) {
+      merged.detectedConfidence = "filename";
+    }
+    next[i] = merged;
     setSelected(next);
   }
 
@@ -269,7 +291,7 @@ export default function UploadPanel({
                     >
                       ✕
                     </button>
-                    {s.detectedConfidence === "guessed" && (
+                    {s.detectedConfidence === "guessed" && !s.monthYear && (
                       <span className="col-span-12 text-[11px] text-amber-600 dark:text-amber-400">
                         ⚠ Couldn't detect month from filename — please confirm.
                       </span>
