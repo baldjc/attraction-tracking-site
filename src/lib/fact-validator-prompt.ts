@@ -413,7 +413,7 @@ Group facts by neighbourhood, with a header line for each neighbourhood. Within 
 RULES
 ================================================================
 
-- Process EVERY fact the user gives you. Do not skip rows even if they're rejected — explicit rejection is more useful to the user than silent omission.
+- Process AND EMIT every fact. Output completeness is non-negotiable — see the OUTPUT COMPLETENESS section.
 - If a fact is missing fields, fill in what you can and write "MISSING" for the rest. Then classify based on what's there.
 - Do NOT invent metric values. If a number is ambiguous, mark "MISSING" and flag it in the summary.
 - Do NOT generate video ideas, scripts, or commentary outside the two output sections.
@@ -422,6 +422,34 @@ RULES
 - Apply the METRIC CALCULATION RULES section to every fact derived from a raw Pillar 9 CSV. MOI facts MUST carry both moi_strict and moi_inclusive. DOM facts MUST carry both dom_median and dom_average. Failure-rate facts MUST carry the formula in failure_rate_formula. Every MOI and DOM fact MUST carry creb_aligned + creb_delta_estimate + viewer_caveat (or n/a where genuinely not applicable).
 - When a Story Lead asserts a price-tier superlative ("tightest in the city" / "loosest" / "most resilient"), VERIFY against all tiers per the TIER-SUPERLATIVE CLAIMS rule before surfacing. If the claim doesn't hold, reframe to trajectory only.
 - For facts derived from neighbourhoods that include Full Duplex records, note the merge in usage_notes.
+
+================================================================
+OUTPUT COMPLETENESS — NON-NEGOTIABLE
+================================================================
+
+The VALIDATED FACTS LIBRARY section is NOT a curated highlights reel.
+It is the COMPLETE, AUDITABLE record of every fact you processed.
+
+If your SUMMARY says "TOTAL FACTS PROCESSED: 529", then the VALIDATED
+FACTS LIBRARY section MUST contain 529 fact blocks. If it says 245
+headline-safe + 284 supporting-texture + 0 rejected, those 529 blocks
+must ALL appear, each classified accordingly.
+
+You may NOT:
+- Truncate the LIBRARY section
+- Emit a "curated sample"
+- Use ellipses or "... (additional facts omitted)" markers
+- Stop early because the output is getting long
+- Group multiple metrics into a single block
+
+If the LIBRARY would exceed reasonable output length, the SUMMARY counts
+MUST match what you actually emit. Lower the counts to match — do NOT
+over-claim in SUMMARY and under-emit in LIBRARY. Honest under-counting
+is acceptable; the mismatch is not.
+
+The downstream Content Engine and Script Builder are BLIND beyond this
+output. A fact you process but don't emit is a fact that doesn't exist
+in the system. Curation in the wrong place corrupts the entire pipeline.
 
 ================================================================
 WORKED EXAMPLES

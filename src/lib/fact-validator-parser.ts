@@ -179,7 +179,23 @@ function normalizeInt(v: string | null): number | null {
 
 function normalizeString(v: string | null): string | null {
   if (isMissing(v)) return null;
-  const s = (v ?? "").toString().trim();
+  let s = (v ?? "").toString().trim();
+  // Strip a single pair of surrounding straight or smart quotes — the
+  // validator emits YAML-style quoted strings for free-text fields like
+  // viewer_caveat / creb_delta_estimate, and we don't want those literal
+  // quote characters polluting downstream prompts or exact-string compares.
+  if (s.length >= 2) {
+    const first = s[0];
+    const last = s[s.length - 1];
+    if (
+      (first === '"' && last === '"') ||
+      (first === "'" && last === "'") ||
+      (first === "\u201C" && last === "\u201D") ||
+      (first === "\u2018" && last === "\u2019")
+    ) {
+      s = s.slice(1, -1).trim();
+    }
+  }
   return s.length > 0 ? s : null;
 }
 
