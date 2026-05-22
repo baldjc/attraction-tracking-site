@@ -13,8 +13,6 @@
 // NOT await this — the upload route returns 200/202 instantly while the
 // background work runs.
 
-import { writeFile } from "node:fs/promises";
-import { join } from "node:path";
 import Anthropic from "@anthropic-ai/sdk";
 import Decimal from "decimal.js-light";
 import prisma from "@/lib/prisma";
@@ -307,12 +305,17 @@ async function callValidator(
     });
   }
 
-  const resp = await anthropic.messages.create({
+  // Streaming required: at 32K max_tokens the projected duration can exceed
+  // Anthropic's 10-minute synchronous-call ceiling. `messages.stream(...)`
+  // accumulates deltas internally; `finalMessage()` returns the same shape as
+  // `messages.create(...)` would, including `usage`.
+  const stream = anthropic.messages.stream({
     model: SONNET_MODEL,
-    max_tokens: 16000,
+    max_tokens: 32000,
     system: systemBlocks as unknown as Anthropic.Messages.TextBlockParam[],
     messages,
   });
+  const resp = await stream.finalMessage();
 
   const text = resp.content
     .map((b) => (b.type === "text" ? b.text : ""))
@@ -460,6 +463,18 @@ async function markUploadFailed(uploadId: string, err: unknown): Promise<void> {
   });
 }
 
+async function persistRawValidatorOutput(uploadId: string, text: string): Promise<void> {
+  try {
+    await prisma.marketDataUpload.update({
+      where: { id: uploadId },
+      data: { rawValidatorOutput: text },
+    });
+  } catch (e) {
+    // Never let raw-output persistence block validation. Log + continue.
+    console.error('[runValidation] failed to persist rawValidatorOutput', e);
+  }
+}
+
 async function markUploadValidating(uploadId: string): Promise<void> {
   await prisma.marketDataUpload.update({
     where: { id: uploadId },
@@ -511,10 +526,10 @@ export async function runValidation(uploadId: string): Promise<void> {
     // First Claude call.
     let call = await callValidator(userMessage);
     console.log('[runValidation] step: anthropic responded, in=' + call.inputTokens + ' out=' + call.outputTokens + ' cacheRead=' + call.cacheReadTokens + ' textLen=' + call.text.length, uploadId);
-    // DEBUG: dump full raw output to /tmp and first 4KB to console.
-    try {
-      await writeFile(join("/tmp", `validator-raw-${uploadId}.md`), call.text, "utf8");
-    } catch (e) { console.error('[runValidation] failed to write raw dump', e); }
+    // Persist raw output to the DB immediately, before parsing. This is the
+    // ground-truth artifact we need to diagnose curation vs aggregator-starve
+    // when fact counts come in low. /tmp dumps were lost on restart.
+    await persistRawValidatorOutput(uploadId, call.text);
     console.log('[runValidation] RAW_OUTPUT_BEGIN', uploadId, '\n' + call.text.slice(0, 4000) + '\n[runValidation] RAW_OUTPUT_END (showed first 4000 of ' + call.text.length + ' chars)');
     let parsed = parseValidatorOutput(call.text);
     console.log('[runValidation] step: parsed, facts=' + parsed.facts.length + ' leads=' + parsed.storyLeads.length, uploadId);
@@ -523,7 +538,7 @@ export async function runValidation(uploadId: string): Promise<void> {
     if (parsed.facts.length === 0 && parsed.storyLeads.length === 0) {
       const retry = await callValidator(
         userMessage,
-        "Be sure each fact starts with `- neighbourhood:` and each Story Lead heading starts with `### LEAD #N — Label`.",
+        "Re-emit the FACTS LIBRARY as a SINGLE ```json``` fenced code block containing a valid JSON array of fact objects (one object per fact). Use the exact key names from the OUTPUT FORMAT section. Numeric fields must be JSON numbers or null (not strings). Each Story Lead heading must start with `### LEAD #N — Label`.",
       );
       // Cost rolls up across both attempts.
       call = {
@@ -535,6 +550,9 @@ export async function runValidation(uploadId: string): Promise<void> {
         costUsd: call.costUsd.add(retry.costUsd),
       };
       parsed = parseValidatorOutput(call.text);
+      // Replace the raw output with the retry's text so the operator sees the
+      // final attempt's output in `rawValidatorOutput`, not the first failure.
+      await persistRawValidatorOutput(uploadId, call.text);
     }
 
     if (parsed.facts.length === 0 && parsed.storyLeads.length === 0) {

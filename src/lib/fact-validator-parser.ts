@@ -324,7 +324,10 @@ function parseFactBlock(block: string): ParsedFact | null {
     if (!key) continue;
     kv.set(key, value);
   }
+  return factFromKv(kv);
+}
 
+function factFromKv(kv: Map<string, string>): ParsedFact | null {
   const neighbourhood = kv.get("neighbourhood");
   if (!neighbourhood || isMissing(neighbourhood)) return null;
 
@@ -383,21 +386,65 @@ function parseFactBlock(block: string): ParsedFact | null {
   return fact;
 }
 
+function kvFromObject(obj: Record<string, unknown>): Map<string, string> {
+  const kv = new Map<string, string>();
+  for (const [k, v] of Object.entries(obj)) {
+    const key = k.toLowerCase().trim();
+    if (!key) continue;
+    if (v == null) {
+      // Skip — downstream `get()` returning null is equivalent to absent.
+      continue;
+    }
+    if (typeof v === "boolean") { kv.set(key, v ? "true" : "false"); continue; }
+    if (typeof v === "number") {
+      if (!Number.isFinite(v)) continue;
+      kv.set(key, String(v));
+      continue;
+    }
+    if (typeof v === "string") {
+      const trimmed = v.trim();
+      if (trimmed) kv.set(key, trimmed);
+      continue;
+    }
+    // Arrays/objects — coerce to JSON so they end up in extraNotes, not silently dropped.
+    try { kv.set(key, JSON.stringify(v)); } catch { /* skip */ }
+  }
+  return kv;
+}
+
+function parseFactObject(obj: unknown): ParsedFact | null {
+  if (!obj || typeof obj !== "object" || Array.isArray(obj)) return null;
+  const kv = kvFromObject(obj as Record<string, unknown>);
+  return factFromKv(kv);
+}
+
+/**
+ * Phase 2A v2: the FACTS LIBRARY is now a JSON code block. We extract the
+ * ```json ... ``` block and JSON.parse it. If extraction or parse fails, we
+ * fall back to the legacy markdown parser so historical raw outputs (and any
+ * future model regression to markdown) still produce facts instead of zero.
+ */
 function parseFacts(section: string): ParsedFact[] {
   if (!section.trim()) return [];
-  // The validator groups facts under organizational "### Neighbourhood Name"
-  // H3 sub-headings — these break a naive split on "- neighbourhood:" because
-  // the first key line after each heading isn't preceded by a blank-then-bullet
-  // boundary that older regexes might rely on. Strip the H3 headings entirely
-  // before splitting: every fact block already carries its own
-  // `neighbourhood:` field, so the headings are redundant for data extraction.
-  const stripped = section.replace(/^###[ \t].*$/gm, "");
 
-  // Split on every "- neighbourhood:" boundary using a global multiline regex.
-  // Use the SAME regex source for both splitting (via lookahead) and detection.
+  // Try JSON first. Be lenient about the fence form (```json or ``` JSON or
+  // just ``` followed by [). Try multiple fences in case the model emits
+  // intro prose followed by the array.
+  const jsonFromBlock = extractJsonArray(section);
+  if (jsonFromBlock) {
+    const out: ParsedFact[] = [];
+    for (const o of jsonFromBlock) {
+      const f = parseFactObject(o);
+      if (f) out.push(f);
+    }
+    if (out.length > 0) return out;
+  }
+
+  // Legacy markdown fallback. Strip H3 headings (older format grouped facts
+  // under organizational "### Neighbourhood Name" sub-headings).
+  const stripped = section.replace(/^###[ \t].*$/gm, "");
   const BOUNDARY = /^\s*-\s+neighbourhood\s*:/im;
   const parts = stripped.split(/(?=^\s*-\s+neighbourhood\s*:)/im);
-
   const facts: ParsedFact[] = [];
   for (const block of parts) {
     if (!BOUNDARY.test(block)) continue;
@@ -405,6 +452,95 @@ function parseFacts(section: string): ParsedFact[] {
     if (f) facts.push(f);
   }
   return facts;
+}
+
+/**
+ * Extract a JSON array of fact objects from a FACTS LIBRARY section. Tries
+ * fenced ```json``` blocks first, then a generic ``` fence containing what
+ * looks like a JSON array, then a bare `[ ... ]` block as a last resort.
+ * Returns null if nothing parses.
+ */
+function extractJsonArray(section: string): unknown[] | null {
+  const candidates: string[] = [];
+  // 1) Fully fenced ```json ... ```
+  for (const m of section.matchAll(/```json\s*([\s\S]*?)```/gi)) {
+    if (m[1]) candidates.push(m[1]);
+  }
+  // 2) Generic ``` fences whose content starts with `[`
+  if (candidates.length === 0) {
+    for (const m of section.matchAll(/```[a-z0-9_-]*\s*([\s\S]*?)```/gi)) {
+      const body = (m[1] ?? "").trim();
+      if (body.startsWith("[")) candidates.push(body);
+    }
+  }
+  // 3) Unclosed ```json fence — output truncated by max_tokens. Take from the
+  //    opener to the end of the section and let the recovery path slice off
+  //    the partial trailing object.
+  {
+    const openIdx = section.search(/```json\b/i);
+    if (openIdx >= 0) {
+      const afterFence = section.slice(openIdx).replace(/^```json\s*/i, "");
+      const closeIdx = afterFence.indexOf("```");
+      if (closeIdx < 0) candidates.push(afterFence);
+    }
+  }
+  // 4) Bare array
+  if (candidates.length === 0) {
+    const start = section.indexOf("[");
+    const end = section.lastIndexOf("]");
+    if (start >= 0 && end > start) candidates.push(section.slice(start, end + 1));
+  }
+  for (const raw of candidates) {
+    // Strict parse first.
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    } catch { /* fall through to recovery */ }
+    // Recovery: take the prefix from `[` to the last `}` that closes a
+    // top-level (depth==1) object, then append `]`. This salvages a JSON
+    // array truncated mid-object by max_tokens.
+    const recovered = recoverTruncatedJsonArray(raw);
+    if (recovered) return recovered;
+  }
+  return null;
+}
+
+/**
+ * Salvage a JSON array that was truncated mid-object. Walks the string
+ * tracking string/escape state and brace depth, remembering the index of
+ * the last `}` closed at depth 1 (i.e. a complete top-level element). Then
+ * slices `[ ... last_complete_object } ]` and JSON.parses it. Returns null
+ * if no complete object exists or the salvage still fails to parse.
+ */
+function recoverTruncatedJsonArray(raw: string): unknown[] | null {
+  const start = raw.indexOf("[");
+  if (start < 0) return null;
+  let depth = 0;
+  let inString = false;
+  let escape = false;
+  let lastGoodEnd = -1; // index (in raw) of the `}` closing a depth-1 object
+  for (let i = start; i < raw.length; i++) {
+    const ch = raw[i];
+    if (escape) { escape = false; continue; }
+    if (inString) {
+      if (ch === "\\") { escape = true; continue; }
+      if (ch === '"') inString = false;
+      continue;
+    }
+    if (ch === '"') { inString = true; continue; }
+    if (ch === "{" || ch === "[") depth++;
+    else if (ch === "}" || ch === "]") {
+      depth--;
+      if (ch === "}" && depth === 1) lastGoodEnd = i;
+    }
+  }
+  if (lastGoodEnd < 0) return null;
+  const repaired = raw.slice(start, lastGoodEnd + 1) + "]";
+  try {
+    const parsed = JSON.parse(repaired);
+    if (Array.isArray(parsed)) return parsed;
+  } catch { /* unrecoverable */ }
+  return null;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

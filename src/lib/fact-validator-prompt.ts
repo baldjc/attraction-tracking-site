@@ -379,35 +379,44 @@ Order Story Leads by viewer impact — strongest pattern first. If the data supp
 
 ## VALIDATED FACTS LIBRARY
 
-One block per fact, in this exact format:
+Emit a SINGLE fenced JSON code block containing a JSON array of fact objects. Exactly one object per fact. Use the EXACT key names below (snake_case where shown). Do NOT emit any prose, headings, or commentary inside the FACTS LIBRARY section other than the single \`\`\`json\`\`\` block.
 
-\`\`\`
-- neighbourhood: [name]
-  metricName: [name]
-  metricFamily: [MOI | BENCHMARK | PSF | MEDIAN | AVG | DOM | SP_LP | INVENTORY | FAILURE_RATE | OTHER]
-  metricValue: [number]
-  sampleSize: [integer or null]
-  timeWindow: [calendar_month | 30_day | 90_day | 180_day | ytd | trailing_12mo]
-  dateContext: [human-readable period]
-  sourceUrl: [URL or "MISSING"]
-  sourceTitle: [title or "MISSING"]
-  usage_classification: [headline-safe | supporting-texture-only | rejected]
-  market_type: [sellers | balanced | buyers | balanced-high-end | n/a]   # REQUIRED for every MOI fact, per MOI Interpretation Framework. n/a for non-MOI metrics.
-  trajectory: [tightening | stable | loosening | loosening-fast | n/a]   # REQUIRED for every MOI fact when YoY data is available. n/a otherwise.
-  # === CREB-ALIGNMENT FIELDS (REQUIRED on MOI and DOM facts; n/a on others unless noted) ===
-  moi_strict: [number or n/a]                # MOI facts only. Active ÷ Sold.
-  moi_inclusive: [number or n/a]             # MOI facts only. (Active + Pending) ÷ Sold. CREB-aligned view.
-  dom_median: [number or n/a]                # DOM facts only. Median across Sold records.
-  dom_average: [number or n/a]               # DOM facts only. Average across Sold records (= metricValue by default).
-  creb_aligned: [true | false | n/a]         # MOI + DOM facts. Does metricValue match CREB published value within rounding?
-  creb_delta_estimate: [string or n/a]       # MOI + DOM facts. Short string explaining direction & cause of any gap.
-  viewer_caveat: [string or n/a]             # MOI + DOM facts. One pre-written sentence the Script Builder can drop into a script.
-  inventory_gap_with_creb: [number or n/a]   # NEIGHBOURHOOD-LEVEL MOI facts only, populated when |our MoS - CREB MoS| > 0.5.
-  failure_rate_formula: [string or n/a]      # FAILURE_RATE facts only. Echo the exact formula used.
-  usage_notes: [1-2 sentence plain-English instruction to downstream prompts]
+\`\`\`json
+[
+  {
+    "neighbourhood": "string — name",
+    "metricName": "string",
+    "metricFamily": "MOI | BENCHMARK | PSF | MEDIAN | AVG | DOM | SP_LP | INVENTORY | FAILURE_RATE | OTHER",
+    "metricValue": 0,
+    "sampleSize": 0,
+    "timeWindow": "calendar_month | 30_day | 90_day | 180_day | ytd | trailing_12mo",
+    "dateContext": "human-readable period",
+    "sourceUrl": "URL or MISSING",
+    "sourceTitle": "title or MISSING",
+    "usage_classification": "headline-safe | supporting-texture-only | rejected",
+    "market_type": "sellers | balanced | buyers | balanced-high-end | n/a",
+    "trajectory": "tightening | stable | loosening | loosening-fast | n/a",
+    "moi_strict": 0,
+    "moi_inclusive": 0,
+    "dom_median": 0,
+    "dom_average": 0,
+    "creb_aligned": true,
+    "creb_delta_estimate": "string or n/a",
+    "viewer_caveat": "string or n/a",
+    "inventory_gap_with_creb": 0,
+    "failure_rate_formula": "string or n/a",
+    "usage_notes": "1-2 sentence plain-English instruction"
+  }
+]
 \`\`\`
 
-Group facts by neighbourhood, with a header line for each neighbourhood. Within each neighbourhood, list facts in this order: MOI, BENCHMARK, PSF, MEDIAN, median_sqft, DOM, SP_LP, FAILURE_RATE, other. This ordering helps downstream prompts find the highest-hierarchy fact first.
+JSON FORMATTING RULES (NON-NEGOTIABLE):
+- Output MUST be valid JSON. Quote ALL string values. Use \`null\` (not "n/a" or "MISSING") for numeric fields that are not applicable. For string fields, use the literal string "n/a" or "MISSING" when applicable.
+- \`metricValue\`, \`sampleSize\`, \`moi_strict\`, \`moi_inclusive\`, \`dom_median\`, \`dom_average\`, \`inventory_gap_with_creb\` are NUMBERS (or null). Do NOT quote them.
+- \`creb_aligned\` is BOOLEAN (true/false) or null. Do NOT quote it.
+- All other listed fields are strings.
+- No trailing commas. No comments. No ellipses. The block MUST parse via \`JSON.parse()\` as an array.
+- Order facts by (neighbourhood, then within each neighbourhood: MOI, BENCHMARK, PSF, MEDIAN, median_sqft, DOM, SP_LP, FAILURE_RATE, other). This grouping is for downstream consumers — there are no H3 headers.
 
 ================================================================
 RULES
@@ -430,17 +439,35 @@ OUTPUT COMPLETENESS — NON-NEGOTIABLE
 The VALIDATED FACTS LIBRARY section is NOT a curated highlights reel.
 It is the COMPLETE, AUDITABLE record of every fact you processed.
 
-If your SUMMARY says "TOTAL FACTS PROCESSED: 529", then the VALIDATED
-FACTS LIBRARY section MUST contain 529 fact blocks. If it says 245
-headline-safe + 284 supporting-texture + 0 rejected, those 529 blocks
-must ALL appear, each classified accordingly.
+If your SUMMARY says "TOTAL FACTS PROCESSED: 529", then the JSON array in
+VALIDATED FACTS LIBRARY MUST contain 529 objects. If it says 245
+headline-safe + 284 supporting-texture + 0 rejected, those 529 objects
+must ALL appear in the array, each classified accordingly.
 
 You may NOT:
-- Truncate the LIBRARY section
+- Truncate the JSON array
 - Emit a "curated sample"
-- Use ellipses or "... (additional facts omitted)" markers
+- Use ellipses, "...", or "(additional facts omitted)" comments
 - Stop early because the output is getting long
-- Group multiple metrics into a single block
+- Group multiple metrics into a single object
+- Replace any portion of the array with a placeholder or summary
+- Pick ONE metric family per neighbourhood and skip the rest
+
+ONE FACT PER (neighbourhood × metric family) — MANDATORY
+For EVERY neighbourhood that appears in your aggregated input, you MUST emit ONE fact for EACH applicable metric family:
+
+- MOI (always emit if Sold count > 0)
+- PSF (emit if median sqft data exists)
+- MEDIAN (emit; classify as headline-safe / supporting-texture / rejected per hygiene rules)
+- median_sqft (companion to MEDIAN for mix-shift check)
+- DOM (emit if DOM data exists)
+- SP_LP (emit if list price data exists)
+- FAILURE_RATE (emit if expired/terminated/withdrawn data exists for the group)
+- BENCHMARK (emit only if CREB benchmark data was provided)
+
+Picking the "most important" family per neighbourhood and dropping the others is NOT allowed. Each metric family adds independent signal — DOM tells a different story than MEDIAN even for the same neighbourhood. The downstream Script Builder cannot reconstruct what you didn't emit.
+
+If a neighbourhood has 30 Sold rows, you should emit roughly 5–7 facts for that neighbourhood (one per applicable family), classified by usage class. Not 1 fact.
 
 If the LIBRARY would exceed reasonable output length, the SUMMARY counts
 MUST match what you actually emit. Lower the counts to match — do NOT

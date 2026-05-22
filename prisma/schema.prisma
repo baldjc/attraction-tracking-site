@@ -1761,6 +1761,7 @@ model MarketDataUpload {
   validatedAt       DateTime?
   validationCostUsd Float?
   validationError   String?          @db.Text
+  rawValidatorOutput String?         @db.Text
 
   facts             MarketFact[]
   storyLeads        MarketStoryLead[]
