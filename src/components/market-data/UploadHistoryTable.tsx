@@ -132,7 +132,10 @@ export default function UploadHistoryTable({ initial }: Props) {
               <td className="px-3 py-2 text-gray-700 dark:text-gray-300">
                 {r.monthYear}
               </td>
-              <td className="px-3 py-2 text-gray-700 dark:text-gray-300">
+              <td
+                className="px-3 py-2 text-gray-700 dark:text-gray-300"
+                suppressHydrationWarning
+              >
                 {fmt(r.uploadedAt)}
               </td>
               <td className="px-3 py-2 text-right text-gray-700 dark:text-gray-300 tabular-nums">
