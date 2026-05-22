@@ -54,12 +54,13 @@ export function validateUploadAsync(uploadId: string): void {
     try {
       await runValidation(uploadId);
     } catch (err) {
+      console.error('[validateUploadAsync] outer catch for', uploadId, err);
       // Defensive — runValidation should already mark failed on its own.
       // This catches anything thrown before the try/catch inside runValidation.
       try {
         await markUploadFailed(uploadId, err);
-      } catch {
-        // Last-resort: swallow to avoid unhandled rejection bringing down the route.
+      } catch (err2) {
+        console.error('[validateUploadAsync] markFailed also threw for', uploadId, ':', err2);
       }
     }
   });
@@ -415,6 +416,7 @@ async function markUploadValidating(uploadId: string): Promise<void> {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function runValidation(uploadId: string): Promise<void> {
+  console.log('[runValidation] start', uploadId);
   // Resolve userId first (cheap) so we can run cost-cap BEFORE any heavy work.
   const upload = await prisma.marketDataUpload.findUnique({
     where: { id: uploadId },
@@ -441,15 +443,20 @@ export async function runValidation(uploadId: string): Promise<void> {
     }
 
     await markUploadValidating(uploadId);
+    console.log('[runValidation] step: marked validating', uploadId);
 
     // Aggregate (pure compute, no Claude).
     const { table, userId, configSnapshot } = await aggregateUploadFromDb(uploadId);
+    console.log('[runValidation] step: config loaded + aggregated, groups=' + table.groups.length, uploadId);
     const priorFactsBlock = await serializePriorFacts(userId, uploadId);
     const userMessage = buildUserMessage(table, configSnapshot, priorFactsBlock);
+    console.log('[runValidation] step: user message built, length=' + userMessage.length, uploadId);
 
     // First Claude call.
     let call = await callValidator(userMessage);
+    console.log('[runValidation] step: anthropic responded, in=' + call.inputTokens + ' out=' + call.outputTokens + ' cacheRead=' + call.cacheReadTokens, uploadId);
     let parsed = parseValidatorOutput(call.text);
+    console.log('[runValidation] step: parsed, facts=' + parsed.facts.length + ' leads=' + parsed.storyLeads.length, uploadId);
 
     // Retry once if the output is structurally unusable.
     if (parsed.facts.length === 0 && parsed.storyLeads.length === 0) {
@@ -501,7 +508,9 @@ export async function runValidation(uploadId: string): Promise<void> {
       call.inputTokens,
       call.outputTokens,
     );
+    console.log('[runValidation] step: persisted, facts=' + parsed.facts.length + ' leads=' + parsed.storyLeads.length + ' cost=$' + call.costUsd.toFixed(4), uploadId);
   } catch (err) {
+    console.error('[runValidation] threw for', uploadId, err);
     await markUploadFailed(uploadId, err);
     throw err;
   }
