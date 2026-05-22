@@ -442,12 +442,19 @@ export default function SetupForm({ initial, isEdit }: Props) {
           </button>
         </div>
         <p className="text-xs text-gray-500 dark:text-gray-400">
-          Optional. Helps title generation when the wizard ships in Wave 2.
+          Optional. The AI title generator uses these to write YouTube titles
+          your audience actually searches. Add what you want to rank for in
+          your local market.
         </p>
         <label className="block">
           <span className="text-xs text-gray-600 dark:text-gray-400">
             Pillar keywords (one per line)
           </span>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            Broad topics you want to be known for. 3–5 is plenty. Examples:
+            &ldquo;[Your city] real estate market update&rdquo;, &ldquo;[Your
+            city] home prices&rdquo;, &ldquo;[Your city] housing market&rdquo;.
+          </p>
           <textarea
             rows={3}
             value={(state.keywordKit.pillars ?? []).join("\n")}
@@ -470,6 +477,13 @@ export default function SetupForm({ initial, isEdit }: Props) {
           <span className="text-xs text-gray-600 dark:text-gray-400">
             Long-tail keywords (one per line)
           </span>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            Specific question-style searches your ideal client types into
+            YouTube. Lower volume but higher intent — these convert better.
+            Examples: &ldquo;should I buy a home in [your city]&rdquo;,
+            &ldquo;[your city] market forecast&rdquo;, &ldquo;best
+            neighbourhoods in [your city]&rdquo;.
+          </p>
           <textarea
             rows={3}
             value={(state.keywordKit.longTail ?? []).join("\n")}
