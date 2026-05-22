@@ -496,12 +496,15 @@ async function callValidator(
   let lastErr: unknown = null;
   for (let attempt = 0; attempt < 5; attempt++) {
     try {
-      const stream = anthropic.messages.stream({
-        model: SONNET_MODEL,
-        max_tokens: 32000,
-        system: systemBlocks as unknown as Anthropic.Messages.TextBlockParam[],
-        messages,
-      });
+      const stream = anthropic.messages.stream(
+        {
+          model: SONNET_MODEL,
+          max_tokens: 40000,
+          system: systemBlocks as unknown as Anthropic.Messages.TextBlockParam[],
+          messages,
+        },
+        { headers: { "anthropic-beta": "output-128k-2025-02-19" } },
+      );
       resp = await stream.finalMessage();
       break;
     } catch (err) {
@@ -517,6 +520,16 @@ async function callValidator(
     }
   }
   if (!resp) throw lastErr ?? new Error("callValidator failed with no response");
+
+  // Surface max_tokens ceiling hits — they cause truncated output and dropped
+  // facts. Operator-visible signal that we need to chunk further or raise the cap.
+  if ((resp as { stop_reason?: string }).stop_reason === "max_tokens") {
+    console.warn(
+      `[callValidator] WARNING: hit max_tokens ceiling — output truncated. outputTokens=${
+        (resp.usage as { output_tokens?: number })?.output_tokens ?? "?"
+      }`,
+    );
+  }
 
   const text = resp.content
     .map((b) => (b.type === "text" ? b.text : ""))
