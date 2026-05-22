@@ -8,7 +8,6 @@ import {
   CANONICAL_FIELDS,
   OPTIONAL_FIELDS,
   FIELD_LABELS,
-  MAX_CSV_UPLOAD_BATCH,
   type ColumnMapping,
   type AnyMappedField,
 } from "@/lib/market-config";
@@ -16,6 +15,8 @@ import {
 interface Props {
   existingMapping: ColumnMapping | null;
   hasColumnMapping: boolean;
+  /** Per-tier batch limit, supplied by the server (page.tsx). */
+  maxUploadBatch: number;
 }
 
 interface SelectedFile {
@@ -85,6 +86,7 @@ function compareMonthYear(a: string, b: string): number {
 export default function UploadPanel({
   existingMapping,
   hasColumnMapping,
+  maxUploadBatch,
 }: Props) {
   const router = useRouter();
   const [selected, setSelected] = useState<SelectedFile[]>([]);
@@ -112,8 +114,8 @@ export default function UploadPanel({
   function onPickFiles(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
     if (files.length === 0) return;
-    if (files.length > MAX_CSV_UPLOAD_BATCH) {
-      setError(`Up to ${MAX_CSV_UPLOAD_BATCH} files at once.`);
+    if (files.length > maxUploadBatch) {
+      setError(`Your plan allows up to ${maxUploadBatch} files at once.`);
       return;
     }
     setError(null);
@@ -301,7 +303,7 @@ export default function UploadPanel({
         Upload market data
       </h2>
       <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-        Drop your latest monthly CSV — or up to {MAX_CSV_UPLOAD_BATCH} months
+        Drop your latest monthly CSV — or up to {maxUploadBatch} months
         at once for a historical backfill.
       </p>
 

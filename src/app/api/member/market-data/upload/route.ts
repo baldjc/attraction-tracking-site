@@ -1,11 +1,13 @@
 import { NextRequest } from "next/server";
 import { randomUUID } from "node:crypto";
 import prisma from "@/lib/prisma";
-import { requireMarketAccess } from "@/lib/market-config-server";
+import {
+  requireMarketAccess,
+  getMaxUploadBatchForUser,
+} from "@/lib/market-config-server";
 import {
   CANONICAL_FIELDS,
   FIELD_LABELS,
-  MAX_CSV_UPLOAD_BATCH,
   type ColumnMapping,
 } from "@/lib/market-config";
 import {
@@ -55,9 +57,18 @@ export async function POST(req: NextRequest) {
   if (files.length === 0) {
     return Response.json({ error: "No files provided" }, { status: 400 });
   }
-  if (files.length > MAX_CSV_UPLOAD_BATCH) {
+  // Tier-based upload limit — Foundations get 13 months (1-year YoY backfill),
+  // Growth + Done-With-You get 25 months (2-year YoY backfill).
+  const { limit: maxBatch, tier } = await getMaxUploadBatchForUser(userId);
+  if (files.length > maxBatch) {
     return Response.json(
-      { error: `Up to ${MAX_CSV_UPLOAD_BATCH} files per batch.` },
+      {
+        error: "tier_limit_exceeded",
+        message: `Your plan allows up to ${maxBatch} files per upload (you tried ${files.length}).`,
+        limit: maxBatch,
+        attempted: files.length,
+        tier,
+      },
       { status: 400 },
     );
   }
@@ -152,10 +163,45 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  // Duplicate-month guard — refuse if any monthYear in the batch already
-  // exists for this user in a state that owns facts/leads (or is about to).
-  // Member must explicitly delete the prior upload via the Replace UX
-  // before re-uploading the same month.
+  // In-batch duplicate guard — two files in the SAME upload request
+  // pointing at the same month would both pass the DB check below and
+  // create duplicate rows. Refuse before any DB writes.
+  {
+    const seen = new Map<string, string>(); // monthYear -> label
+    const inBatch: Array<{ monthYear: string; label: string }> = [];
+    for (const p of prepared) {
+      const prior = seen.get(p.monthYear);
+      if (prior) {
+        inBatch.push({ monthYear: p.monthYear, label: p.label });
+        if (!inBatch.some((x) => x.label === prior)) {
+          inBatch.unshift({ monthYear: p.monthYear, label: prior });
+        }
+      } else {
+        seen.set(p.monthYear, p.label);
+      }
+    }
+    if (inBatch.length > 0) {
+      return Response.json(
+        {
+          error: "duplicate_month_in_batch",
+          message:
+            "Two or more files in this upload point at the same month. Remove or remap one before retrying.",
+          duplicates: inBatch,
+        },
+        { status: 400 },
+      );
+    }
+  }
+
+  // Cross-request duplicate-month guard — refuse if any monthYear in the
+  // batch already exists for this user in a state that owns facts/leads (or
+  // is about to). Member must explicitly delete the prior upload via the
+  // Replace UX before re-uploading the same month.
+  // NOTE: This is a pre-check without a DB unique constraint, so two
+  // concurrent uploads of the same month from the same user could both
+  // slip through. Acceptable for now (single-user dashboards, no team
+  // multi-tab uploads observed); add `@@unique([userId, monthYear])` and
+  // P2002 handling if that changes.
   const conflictRows = await prisma.marketDataUpload.findMany({
     where: {
       userId,
@@ -234,7 +280,7 @@ export async function POST(req: NextRequest) {
   // The route still returns 200 immediately; validation runs in the background
   // and the UI polls /api/member/market-data/upload/[id] for status.
   for (const u of uploads) {
-    validateUploadAsync(u.id);
+    validateUploadAsync(u.id, userId);
   }
 
   return Response.json({ uploads });

@@ -7,11 +7,20 @@
 // Cost cap is checked BEFORE the Anthropic call. If hard-blocked, the upload
 // is marked `failed` with a friendly message and no Claude tokens are spent.
 //
-// Fire-and-forget contract: `validateUploadAsync(uploadId)` schedules
-// `runValidation` on the microtask queue and returns immediately. Callers
-// (the validate API route + the auto-trigger inside the upload route) MUST
-// NOT await this — the upload route returns 200/202 instantly while the
-// background work runs.
+// Fire-and-forget contract: `validateUploadAsync(uploadId, userId)` enqueues
+// `runValidation` onto a per-user serial chain and returns immediately.
+// Callers (the validate API route + the auto-trigger inside the upload route)
+// MUST NOT await this — the upload route returns 200/202 instantly while
+// the background work runs.
+//
+// Why per-user serial (Fix 5): a single backfill POST creates up to 25
+// MarketDataUpload rows, each kicking validateUploadAsync. The previous
+// implementation fired them all into the microtask queue in parallel, and
+// each runValidation fans out to 5 concurrent Anthropic chunks — that's
+// 125 in-flight Sonnet calls per user, which trips the per-key rate limit
+// and cascades every upload to status=failed. Serializing per user keeps
+// fan-out at 5 chunks at a time, well under the limit, and preserves
+// ordering so earlier months land in the DB before later months query them.
 
 import Anthropic from "@anthropic-ai/sdk";
 import Decimal from "decimal.js-light";
@@ -48,12 +57,28 @@ const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Schedules `runValidation(uploadId)` on the microtask queue without awaiting.
- * Safe to call from a route handler that returns 202 immediately. Any error
- * is caught and persisted to MarketDataUpload.status = 'failed'.
+ * Per-user serial queue. Each user's chain is a single Promise that links
+ * the next runValidation onto the previous one's `.then`, so at most one
+ * Anthropic-bound runValidation per user runs at a time. Cleared when the
+ * chain settles to avoid an ever-growing Map.
+ *
+ * TODO: in-memory only — doesn't survive container restart, and won't
+ * serialize across replicas. Production-scale autoscaling will need a real
+ * queue (BullMQ on Redis, Inngest, or a Postgres-backed job table) so a
+ * deploy mid-backfill doesn't drop in-flight work.
  */
-export function validateUploadAsync(uploadId: string): void {
-  Promise.resolve().then(async () => {
+const userQueues = new Map<string, Promise<void>>();
+
+/**
+ * Schedules `runValidation(uploadId)` on a per-user serial chain without
+ * awaiting. Safe to call from a route handler that returns 202 immediately.
+ * Any error is caught + logged + persisted to MarketDataUpload.status='failed'
+ * — and crucially, swallowed so it doesn't break the chain for subsequent
+ * uploads queued behind it.
+ */
+export function validateUploadAsync(uploadId: string, userId: string): void {
+  const prev = userQueues.get(userId) ?? Promise.resolve();
+  const next = prev.then(async () => {
     try {
       await runValidation(uploadId);
     } catch (err) {
@@ -63,8 +88,22 @@ export function validateUploadAsync(uploadId: string): void {
       try {
         await markUploadFailed(uploadId, err);
       } catch (err2) {
-        console.error('[validateUploadAsync] markFailed also threw for', uploadId, ':', err2);
+        console.error(
+          '[validateUploadAsync] markFailed also threw for',
+          uploadId,
+          ':',
+          err2,
+        );
       }
+      // Intentionally swallow so the chain keeps draining for this user.
+    }
+  });
+  userQueues.set(userId, next);
+  // GC: drop the entry only if it's still the tail of this user's chain.
+  // (Another caller may have pushed onto it between set + finally.)
+  next.finally(() => {
+    if (userQueues.get(userId) === next) {
+      userQueues.delete(userId);
     }
   });
 }

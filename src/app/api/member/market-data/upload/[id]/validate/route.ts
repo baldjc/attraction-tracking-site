@@ -33,9 +33,10 @@ export async function POST(
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  // Already validated → nothing to do. Re-running a validating row is a no-op
-  // (the existing async pass will finish or fail on its own).
-  if (upload.status === "validated") {
+  // Already validated → nothing to do. Already validating → also a no-op
+  // (the in-flight async pass owns this row; re-queueing would let the
+  // serial queue run a duplicate pass once the first finishes).
+  if (upload.status === "validated" || upload.status === "validating") {
     return Response.json(
       { id: upload.id, status: upload.status, queued: false },
       { status: 200 },
@@ -47,7 +48,7 @@ export async function POST(
     data: { status: "validating", validationError: null },
   });
 
-  validateUploadAsync(id);
+  validateUploadAsync(id, upload.userId);
 
   return Response.json(
     { id, status: "validating", queued: true },

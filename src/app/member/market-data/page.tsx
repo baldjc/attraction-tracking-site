@@ -2,7 +2,10 @@ import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import { getFeatureFlags } from "@/lib/feature-flags";
-import { getMarketConfigForUser } from "@/lib/market-config-server";
+import {
+  getMarketConfigForUser,
+  getMaxUploadBatchForUser,
+} from "@/lib/market-config-server";
 import UploadPanel from "@/components/market-data/UploadPanel";
 import UploadHistoryTable from "@/components/market-data/UploadHistoryTable";
 
@@ -20,6 +23,8 @@ export default async function MarketDataPage() {
 
   const config = await getMarketConfigForUser(user.id);
   if (!config) redirect("/member/market-data/setup");
+
+  const { limit: maxUploadBatch } = await getMaxUploadBatchForUser(user.id);
 
   const uploadsRaw = await prisma.marketDataUpload.findMany({
     where: { userId: user.id },
@@ -73,6 +78,7 @@ export default async function MarketDataPage() {
       <UploadPanel
         existingMapping={config.columnMapping}
         hasColumnMapping={hasColumnMapping}
+        maxUploadBatch={maxUploadBatch}
       />
 
       <section>

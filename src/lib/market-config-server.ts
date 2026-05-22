@@ -59,3 +59,30 @@ export async function getMarketConfigForUser(
   if (!row) return null;
   return toShape(row);
 }
+
+/**
+ * Tier-based cap on CSV files per upload batch.
+ *
+ *   Foundations              → 13  (1-year YoY backfill: current + 12 prior)
+ *   Growth (editing/mastery) → 25  (2-year YoY backfill: current + 24 prior)
+ *   Done-With-You            → 25
+ *
+ * Reads `User.serviceTier` directly; admins inherit whatever tier the
+ * impersonated/effective user has (caller is expected to pass the effective
+ * user id, e.g. from `requireMarketAccess().user.id`).
+ *
+ * Defaults to the foundations limit (13) if the user row can't be loaded —
+ * the safer choice for an unauthenticated/missing user; legitimate callers
+ * always have a row because requireMarketAccess resolved them first.
+ */
+export async function getMaxUploadBatchForUser(
+  userId: string,
+): Promise<{ limit: number; tier: string }> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { serviceTier: true },
+  });
+  const tier = user?.serviceTier ?? "foundations";
+  const limit = tier === "foundations" ? 13 : 25;
+  return { limit, tier };
+}
