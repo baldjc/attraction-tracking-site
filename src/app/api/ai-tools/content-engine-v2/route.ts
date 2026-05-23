@@ -379,6 +379,37 @@ function buildInitialUserMessage(args: {
   lines.push("```");
   lines.push("");
 
+  lines.push("## TITLE RULES — INVIOLABLE");
+  lines.push("");
+  lines.push("Every `title` MUST satisfy all three rules below. The server-side validation gate enforces them verbatim — cards that fail are rejected and you'll be re-prompted.");
+  lines.push("");
+  lines.push("**Rule 1 — Named Anchor (REQUIRED).** Every title must contain at least one of:");
+  lines.push("  - a neighbourhood name from the `neighbourhoods` array in the MarketConfig above (NOT the market/city name on its own)");
+  lines.push("  - a dollar amount: `$750K`, `$1.2M`, `$750,000`");
+  lines.push("  - a percent: `9.8%`, `49.4%`");
+  lines.push("  - an MOI mention: `4.5 MOI`, `1.94 MOI`");
+  lines.push("  - a year-month: `April 2026`, `Apr 2026`, `2026-04`");
+  lines.push("");
+  lines.push("⚠️  The market name on its own (e.g. \"Calgary\") does NOT count as an anchor. \"Calgary's market\" / \"Calgary Apartments\" / \"In Calgary\" all FAIL. You need a neighbourhood, $, %, MOI, or year-month in addition to (or instead of) the city.");
+  lines.push("");
+  lines.push("**Rule 2 — Avatar-Segment Ban.** The title must NOT contain any of these phrases (or hyphen/space/plural variants): `first-time buyer(s)`, `first-time home buyer(s)`, `move-up family/families/buyer(s)`, `downsizer(s)`, `empty nester(s)`, `relocator(s)`, `aspirational buyer(s)`, `move-down(s)`, `curious owner(s)`. Avatar segments belong in the body — not the headline.");
+  lines.push("");
+  lines.push("**Rule 3 — Bare Numbers.** If the title contains a bare integer (not embedded in $, %, MOI, or a year-month), it must be one of: **3, 5, 7, 10**. Numbers like \"20-Month\", \"Under 1 Month\", \"7 Days\" with bare integers other than 3/5/7/10 will FAIL.");
+  lines.push("");
+  lines.push("### Worked examples (use these as the bar)");
+  lines.push("");
+  lines.push("PASS:");
+  lines.push("  ✅ \"Mahogany Apartments Just Hit 4.33 MOI\"  — neighbourhood + MOI anchor");
+  lines.push("  ✅ \"These 5 Calgary Neighbourhoods Hit 0.5 MOI\"  — list-count 5 + MOI anchor");
+  lines.push("  ✅ \"Bridgeland vs Beltline: 2.13 MOI Gap in April 2026\"  — neighbourhoods + MOI + year-month");
+  lines.push("");
+  lines.push("FAIL:");
+  lines.push("  ❌ \"Something Strange Is Happening In Calgary Apartments\"  — \"Calgary\" alone is not an anchor; no neighbourhood/$/%/MOI/year-month");
+  lines.push("  ❌ \"These 7 Calgary Neighbourhoods Are Under 1 Month Supply\"  — \"Under 1\" is a bare integer that's not 3/5/7/10, and no anchor (Calgary doesn't count, no neighbourhood named)");
+  lines.push("  ❌ \"Do Not Buy In These Calgary Neighbourhoods Right Now\"  — \"Calgary\" alone fails; needs a specific neighbourhood (e.g. \"Do Not Buy In Saddle Ridge — 3.91 MOI Warning\")");
+  lines.push("");
+  lines.push("**Before you emit each card, silently check the title against these three rules. If it would fail, rewrite it.**");
+  lines.push("");
   lines.push("## OUTPUT FORMAT OVERRIDE");
   lines.push(
     "Ignore the markdown card format from the system prompt. Return ONLY raw JSON (no markdown fence, no prose around it) with this exact schema:",
