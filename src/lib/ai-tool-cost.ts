@@ -159,6 +159,34 @@ export async function getCostCapStatus(userId: string): Promise<CostCapStatus> {
   };
 }
 
+/**
+ * Average validationCostUsd over the user's most-recent successful market-data
+ * uploads. Used to estimate the budget impact of a (re)upload batch BEFORE we
+ * fire validation. Falls back to a $2.75 baseline when the user has no
+ * validated history yet — matches the median observed Phase 1 cost.
+ */
+export async function averageRecentValidationCostUsd(
+  userId: string,
+  samples = 5,
+): Promise<number> {
+  const recent = await prisma.marketDataUpload.findMany({
+    where: {
+      userId,
+      status: "validated",
+      validationCostUsd: { not: null },
+    },
+    orderBy: { validatedAt: "desc" },
+    take: samples,
+    select: { validationCostUsd: true },
+  });
+  if (recent.length === 0) return 2.75;
+  const sum = recent.reduce(
+    (acc, r) => acc + Number(r.validationCostUsd ?? 0),
+    0,
+  );
+  return sum / recent.length;
+}
+
 export async function logUsage(
   userId: string,
   toolType: string,

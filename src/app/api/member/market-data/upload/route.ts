@@ -16,6 +16,10 @@ import {
   writeUploadFile,
 } from "@/lib/market-csv";
 import { validateUploadAsync } from "@/lib/fact-validator";
+import {
+  getCostCapStatus,
+  averageRecentValidationCostUsd,
+} from "@/lib/ai-tool-cost";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -222,14 +226,44 @@ export async function POST(req: NextRequest) {
       factCount: _count.facts,
       storyLeadCount: _count.storyLeads,
     }));
+    // Include the user's recent average validation cost so the client can
+    // surface a realistic "this will cost ~$X" estimate in the replace
+    // confirmation dialog. Falls back to $2.75 on no history.
+    const recentAvgCostUsd = await averageRecentValidationCostUsd(userId);
     return Response.json(
       {
         error: "duplicate_month",
         message:
           "One or more months already exist. Delete the existing upload(s) or choose a different month.",
         conflicts,
+        recentAvgCostUsd,
       },
       { status: 409 },
+    );
+  }
+
+  // Server-side belt-and-braces cost guard. The UI shows a confirmation
+  // dialog with an estimate, but a tampered client could skip it — so we
+  // also refuse here when the estimated batch cost would push the user past
+  // their monthly hard cap. Admins are exempted via getCostCapStatus().
+  const cap = await getCostCapStatus(userId);
+  const avgCost = await averageRecentValidationCostUsd(userId);
+  const estimatedBatchCost = prepared.length * avgCost;
+  if (cap.monthSpendUsd + estimatedBatchCost > cap.capUsd) {
+    const remainingBudget = Math.max(0, cap.capUsd - cap.monthSpendUsd);
+    return Response.json(
+      {
+        error: "estimated_cost_exceeds_cap",
+        message:
+          `This batch would cost about $${estimatedBatchCost.toFixed(2)} ` +
+          `but you have $${remainingBudget.toFixed(2)} of your monthly ` +
+          `AI budget left. Upload fewer months or wait until your cap resets.`,
+        estimatedCost: estimatedBatchCost,
+        remainingBudget,
+        avgCostPerMonth: avgCost,
+        attemptedCount: prepared.length,
+      },
+      { status: 402 },
     );
   }
 
