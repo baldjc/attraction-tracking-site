@@ -466,6 +466,49 @@ interface AnthropicCall {
   costUsd: Decimal;
 }
 
+/**
+ * Wraps callValidator with a single-shot retry for transient SDK stream
+ * cuts ("terminated" / "aborted"). The inner callValidator already does
+ * exponential backoff for 429/503/529/overloaded_error etc., but stream
+ * disconnects from a long-running `messages.stream().finalMessage()` surface
+ * as a bare `terminated` / `aborted` Error with no status code, which slips
+ * through that loop. We retry exactly once with a 2s pause — enough to ride
+ * out a transient network/SDK glitch; never enough to thrash if Anthropic
+ * is genuinely down.
+ *
+ * 4xx errors (real bad-request / auth) and unrecognised errors are NOT
+ * retried — those need a real fix, not a re-fire.
+ */
+async function callValidatorWithStreamCutRetry(
+  userMessage: string,
+  retryNote?: string,
+): Promise<AnthropicCall> {
+  try {
+    return await callValidator(userMessage, retryNote);
+  } catch (err) {
+    const e = err as { status?: number; name?: string; message?: string };
+    const msg = e?.message ?? String(err);
+    // Only retry if the error is a true SDK-level stream abort — no HTTP
+    // status code present (i.e. didn't come back as a structured API error
+    // like 400/401/403), and the message/name matches a known abort
+    // signature. This avoids accidentally retrying a semantic 4xx whose
+    // body just happens to contain "aborted" or "terminated" as text.
+    const isStreamCut =
+      e?.status == null &&
+      (/^(?:terminated|aborted)$/i.test(msg) ||
+        /\bAbortError\b/.test(e?.name ?? "") ||
+        /\b(?:stream (?:disconnect|interrupt|terminated|aborted)|premature close|socket hang up)\b/i.test(
+          msg,
+        ));
+    if (!isStreamCut) throw err;
+    console.warn(
+      `[callValidator] one-shot retry after stream cut: ${msg.slice(0, 200)}`,
+    );
+    await new Promise((r) => setTimeout(r, 2_000));
+    return await callValidator(userMessage, retryNote);
+  }
+}
+
 async function callValidator(
   userMessage: string,
   retryNote?: string,
@@ -531,6 +574,62 @@ async function callValidator(
     return false;
   };
 
+  // Dynamic max_tokens. A fixed 40K ceiling collided with Anthropic's 200K
+  // context limit on large summary chunks (input ≈170–185K + 40K out > 200K
+  // → 400 invalid_request_error). We size the output budget to whatever fits
+  // alongside the actual input, with a 4K safety buffer, floor 8K, cap 64K.
+  //
+  // We use Anthropic's count_tokens endpoint rather than a chars/4 heuristic
+  // because our payloads are dense tabular numeric data that tokenises at
+  // ~2 chars/token, not the ~4 typical of English prose. A heuristic miss of
+  // 2x is the difference between "fits in 200K" and "400 invalid_request".
+  // count_tokens adds ~100ms per call, negligible vs. the multi-minute
+  // streaming response that follows. On failure (e.g. transient network),
+  // fall back to a deliberately pessimistic chars/2 estimate so we still
+  // leave headroom.
+  const CONTEXT_WINDOW = 200_000;
+  const SAFETY_BUFFER = 4_000;
+  const MODEL_OUTPUT_CAP = 64_000;
+  const MIN_USEFUL_OUTPUT = 4_000; // below this, summary/facts parsers can't get a coherent response.
+  let inputTokenEstimate: number;
+  try {
+    const ct = await anthropic.messages.countTokens({
+      model: SONNET_MODEL,
+      system: systemBlocks as unknown as Anthropic.Messages.TextBlockParam[],
+      messages,
+    });
+    inputTokenEstimate = ct.input_tokens;
+  } catch (err) {
+    // Pessimistic fallback: ~2 chars/token for the dense user message + an
+    // explicit system-prompt estimate from its actual length (not a flat
+    // constant), plus 2K for retryNote / wire overhead. Used only when
+    // count_tokens itself fails — rare, but the estimate must not undershoot.
+    const systemPromptEst = Math.ceil(FACT_VALIDATOR_SYSTEM_PROMPT.length / 3);
+    inputTokenEstimate =
+      Math.ceil(userMessage.length / 2) + systemPromptEst + 2_000;
+    console.warn(
+      `[callValidator] count_tokens failed, using pessimistic estimate=${inputTokenEstimate}: ${
+        (err as { message?: string })?.message ?? String(err)
+      }`,
+    );
+  }
+
+  // Strict invariant: input + max_tokens + buffer <= 200K. If the input
+  // alone (with buffer + MIN_USEFUL_OUTPUT) already overflows, do NOT just
+  // clamp max_tokens to 8K — that re-creates the 400 we set out to fix.
+  // Fail fast with a clear, actionable error so the operator knows the
+  // payload needs more chunking upstream.
+  const remaining = CONTEXT_WINDOW - inputTokenEstimate - SAFETY_BUFFER;
+  if (remaining < MIN_USEFUL_OUTPUT) {
+    throw new Error(
+      `Input too large for 200K context: inputTokens=${inputTokenEstimate}, remaining=${remaining} < min ${MIN_USEFUL_OUTPUT}. Reduce chunk size in buildChunks() / buildSummaryAndLeadsMessage().`,
+    );
+  }
+  const dynamicMaxTokens = Math.min(MODEL_OUTPUT_CAP, remaining);
+  console.log(
+    `[callValidator] max_tokens=${dynamicMaxTokens} (inputTokens=${inputTokenEstimate}, msgChars=${userMessage.length})`,
+  );
+
   let resp: Anthropic.Messages.Message | null = null;
   let lastErr: unknown = null;
   for (let attempt = 0; attempt < 5; attempt++) {
@@ -538,7 +637,7 @@ async function callValidator(
       const stream = anthropic.messages.stream(
         {
           model: SONNET_MODEL,
-          max_tokens: 40000,
+          max_tokens: dynamicMaxTokens,
           system: systemBlocks as unknown as Anthropic.Messages.TextBlockParam[],
           messages,
         },
@@ -800,12 +899,12 @@ export async function runValidation(uploadId: string): Promise<void> {
     const factCallPromises = chunks.map((chunk) => {
       const msg = buildFactsChunkMessage(table, configSnapshot, priorFactsBlock, chunk);
       console.log(`[runValidation] firing facts chunk=${chunk.name} msgLen=${msg.length} groups=${chunk.groups.length}`, uploadId);
-      return callValidator(msg).then((c) => ({ chunk, call: c }));
+      return callValidatorWithStreamCutRetry(msg).then((c) => ({ chunk, call: c }));
     });
     const summaryCallPromise = (async () => {
       const msg = buildSummaryAndLeadsMessage(table, configSnapshot, priorFactsBlock);
       console.log(`[runValidation] firing summary+leads msgLen=${msg.length}`, uploadId);
-      return callValidator(msg);
+      return callValidatorWithStreamCutRetry(msg);
     })();
 
     const [factResults, summaryCall] = await Promise.all([
