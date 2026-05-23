@@ -17,7 +17,10 @@ import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { getFeatureFlags } from "@/lib/feature-flags";
 import { getCostCapStatus, logUsage } from "@/lib/ai-tool-cost";
-import { loadStoryLead } from "@/lib/content-engine-context";
+import {
+  extractNeighbourhoodList,
+  loadStoryLead,
+} from "@/lib/content-engine-context";
 import {
   ROTATION_SLOTS,
   validateIdeaCard,
@@ -137,13 +140,11 @@ export async function POST(req: NextRequest) {
   // from the request body in the same shape `validateIdeaCard` expects.
   const config = await prisma.marketConfig.findUnique({
     where: { userId },
-    select: { neighbourhoods: true },
+    select: { neighbourhoodVocab: true },
   });
-  const neighbourhoods = Array.isArray(config?.neighbourhoods)
-    ? (config!.neighbourhoods as unknown[]).filter(
-        (n): n is string => typeof n === "string",
-      )
-    : [];
+  const neighbourhoods = extractNeighbourhoodList(
+    config?.neighbourhoodVocab ?? null,
+  );
   const candidate = {
     title: body.title,
     rotationSlot: body.rotationSlot,
