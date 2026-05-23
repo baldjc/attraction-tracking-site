@@ -258,9 +258,7 @@ interface BackfillCompletionParams {
 export async function sendBackfillCompletionEmail(
   params: BackfillCompletionParams,
 ): Promise<void> {
-  const { to, memberName, successCount, failedCount, succeededMonths, failedUploads } = params;
-  const greeting = memberName ? `Hi ${memberName.split(" ")[0]},` : "Hi,";
-  const total = successCount + failedCount;
+  const { to } = params;
 
   // Mirror sendAuditReadyEmail's URL precedence so the CTA doesn't point at
   // localhost from a dev environment.
@@ -275,6 +273,33 @@ export async function sendBackfillCompletionEmail(
       : null) ??
     "https://members.attractionbyvideo.com";
   const baseUrl = rawBase.replace(/\/$/, "");
+
+  const { subject, html } = renderBackfillCompletionEmail(params, { baseUrl });
+
+  const { error } = await resend.emails.send({
+    from: FROM_EMAIL,
+    to,
+    subject,
+    html,
+  });
+
+  if (error) {
+    console.error("[email] Failed to send backfill completion email:", error);
+  }
+}
+
+// Pure renderer extracted from sendBackfillCompletionEmail so test scripts can
+// snapshot the email body without firing a real send. The baseUrl is passed in
+// so the caller controls the URL precedence (the wrapper above keeps the
+// production logic).
+export function renderBackfillCompletionEmail(
+  params: BackfillCompletionParams,
+  opts: { baseUrl: string },
+): { subject: string; html: string } {
+  const { memberName, successCount, failedCount, succeededMonths, failedUploads } = params;
+  const greeting = memberName ? `Hi ${memberName.split(" ")[0]},` : "Hi,";
+  const total = successCount + failedCount;
+  const baseUrl = opts.baseUrl.replace(/\/$/, "");
   const marketDataUrl = `${baseUrl}/member/market-data`;
   const logoUrl = `${baseUrl}/logo.png`;
 
@@ -328,11 +353,7 @@ export async function sendBackfillCompletionEmail(
     ? `Your ${total}-month backfill finished. <strong>${successCount} validated</strong>, ${failedCount} had errors.`
     : `Your ${total}-month backfill finished. All ${successCount} months validated successfully.`;
 
-  const { error } = await resend.emails.send({
-    from: FROM_EMAIL,
-    to,
-    subject,
-    html: `
+  const html = `
 <!DOCTYPE html>
 <html>
 <head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /></head>
@@ -372,10 +393,7 @@ export async function sendBackfillCompletionEmail(
   </table>
 </body>
 </html>
-    `.trim(),
-  });
+  `.trim();
 
-  if (error) {
-    console.error("[email] Failed to send backfill completion email:", error);
-  }
+  return { subject, html };
 }
