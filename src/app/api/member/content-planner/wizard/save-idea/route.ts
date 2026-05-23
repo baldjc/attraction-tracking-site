@@ -177,6 +177,14 @@ export async function POST(req: NextRequest) {
   // Compose a researchNotes blob that captures the parts of the idea card
   // that don't have a first-class column on ContentPlan. Markdown so the
   // existing planner detail view renders it cleanly.
+  //
+  // DEVIATION (Wave 2 ship-or-iterate trade-off): clarityPremise, framework,
+  // tactileType, subPersonas, estimatedRuntime, and whyItWorks live inside
+  // this Markdown blob because ContentPlan has no first-class columns for
+  // them and we agreed to hold back schema additions in this wave. Wave 3
+  // design will promote these to nullable columns and ship a one-shot
+  // backfill script to re-parse this blob on existing rows. See
+  // `Attraction Tracking Site Build Out/Data-First-Rebuild/Wave-2-Known-Issues.md`.
   const researchNotes = buildResearchNotes({
     clarityPremise: body.clarityPremise!,
     framework: body.framework!,
