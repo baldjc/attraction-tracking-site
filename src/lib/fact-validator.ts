@@ -40,6 +40,7 @@ import {
   type ParsedMetricFamily,
 } from "@/lib/fact-validator-parser";
 import { getCostCapStatus } from "@/lib/ai-tool-cost";
+import { scheduleBackfillCompletionEmail } from "@/lib/backfill-email";
 import type { MarketConfigShape } from "@/lib/market-config";
 
 const SONNET_MODEL = "claude-sonnet-4-20250514";
@@ -101,9 +102,18 @@ export function validateUploadAsync(uploadId: string, userId: string): void {
   userQueues.set(userId, next);
   // GC: drop the entry only if it's still the tail of this user's chain.
   // (Another caller may have pushed onto it between set + finally.)
+  // Also debounce-schedule the batch-completion email so a multi-month
+  // backfill gets a single "X validated, Y failed" summary email after
+  // the queue settles. The scheduler itself swallows the single-upload
+  // case and the still-in-flight case — see backfill-email.ts.
   next.finally(() => {
     if (userQueues.get(userId) === next) {
       userQueues.delete(userId);
+      try {
+        scheduleBackfillCompletionEmail(userId);
+      } catch (err) {
+        console.error('[validateUploadAsync] backfill email schedule threw', err);
+      }
     }
   });
 }
@@ -117,7 +127,21 @@ export function validateUploadAsync(uploadId: string, userId: string): void {
 // leave headroom for config + prior facts + the trailing TASK block. At ~4
 // chars/token that's ~600K chars for the GROUPS block alone.
 const GROUPS_CHAR_BUDGET = 600_000;
-const MIN_SAMPLE_THRESHOLDS = [5, 10, 20, 50, 100];
+
+/**
+ * Sample-size thresholds for low-signal group filtering, scaled to market
+ * size. Big-metro uploads (Dallas, Toronto, etc.) blow past 12-15K rows and
+ * produce 5-10x more segmented groups than Calgary-sized markets — keeping
+ * the n>=5 floor would put us back over the 200K-token context window. The
+ * thresholds escalate iteratively in selectGroupsForSerialization() until
+ * the serialized payload fits GROUPS_CHAR_BUDGET, so a tighter starting
+ * floor just trims the obvious noise sooner without changing the algorithm.
+ */
+function getMinSampleThresholds(rowCount: number): number[] {
+  if (rowCount >= 15_000) return [20, 50, 100];
+  if (rowCount >= 10_000) return [10, 20, 50, 100];
+  return [5, 10, 20, 50, 100];
+}
 
 function isRollupGroup(g: AggregatedGroup): boolean {
   // Always-include groups: top-of-tree rollups the validator needs as anchor
@@ -163,15 +187,18 @@ function formatGroupLine(g: AggregatedGroup): string {
 
 function selectGroupsForSerialization(
   groups: AggregatedGroup[],
+  rowCount: number,
 ): { kept: AggregatedGroup[]; threshold: number; droppedCount: number } {
   // Always keep rollups. Among non-rollups, drop low-signal groups using an
   // iteratively-escalating sample-size threshold until total serialized chars
   // fit within budget. Calgary uploads commonly produce ~2000 raw groups; the
   // n≥5 cut typically gets it down to ~200-400 groups (<300K chars).
+  // Big-market rowCount auto-raises the starting floor (see
+  // getMinSampleThresholds) so Dallas/Toronto don't waste a pass at n=5.
   const rollups = groups.filter(isRollupGroup);
   const segmented = groups.filter((g) => !isRollupGroup(g));
   const rollupChars = rollups.reduce((a, g) => a + formatGroupLine(g).length + 1, 0);
-  for (const threshold of MIN_SAMPLE_THRESHOLDS) {
+  for (const threshold of getMinSampleThresholds(rowCount)) {
     const survivors = segmented.filter((g) => g.soldCount >= threshold);
     const chars = survivors.reduce(
       (a, g) => a + formatGroupLine(g).length + 1,
@@ -202,7 +229,10 @@ function serializeTable(
   // When `groupSubset` is provided we serialize only that slice (chunked-mode).
   // Otherwise we use the whole table (legacy single-call path / SUMMARY+LEADS).
   const sourceGroups = groupSubset ?? table.groups;
-  const { kept, threshold, droppedCount } = selectGroupsForSerialization(sourceGroups);
+  const { kept, threshold, droppedCount } = selectGroupsForSerialization(
+    sourceGroups,
+    table.meta.totalRowsParsed,
+  );
 
   const meta = table.meta;
   const header = [

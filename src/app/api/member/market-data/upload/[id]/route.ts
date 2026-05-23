@@ -32,6 +32,8 @@ export async function GET(
       validatedAt: true,
       validationCostUsd: true,
       validationError: true,
+      rowCount: true,
+      retryCount: true,
     },
   });
   if (!upload) return Response.json({ error: "Upload not found" }, { status: 404 });
@@ -62,6 +64,8 @@ export async function GET(
     validatedAt: upload.validatedAt,
     validationCostUsd: upload.validationCostUsd,
     validationError: upload.validationError,
+    rowCount: upload.rowCount,
+    retryCount: upload.retryCount,
     factCount,
     storyLeadCount,
   });

@@ -1,0 +1,150 @@
+// Wave 1 Phase 2A — friendly error classifier for market-data uploads.
+//
+// Raw Anthropic / parser errors are useless to members ("input length 234567
+// exceeds context limit"). This module maps them to a small catalogue of
+// member-facing messages with explicit next-actions. Used by:
+//   - UploadHistoryTable (modal + retry button)
+//   - Admin failed-uploads view (categorisation + filtering)
+//   - Backfill-completion email (per-month failure lines)
+//
+// Order matters: the big-file context-overflow case is checked BEFORE the
+// generic context-overflow case so we route a 12K+ row member to "filter
+// your territory" instead of telling them to click Retry forever.
+
+export type UploadErrorCategory =
+  | "file_too_large"
+  | "context_overflow"
+  | "cost_cap"
+  | "stream_interrupted"
+  | "provider_overloaded"
+  | "parse_error"
+  | "unknown";
+
+export interface FriendlyError {
+  category: UploadErrorCategory;
+  title: string;
+  body: string;
+  canRetry: boolean;
+  nextAction: "retry" | "replace" | "contact_support" | "wait";
+}
+
+interface ClassifyContext {
+  rowCount?: number;
+  retryCount?: number;
+}
+
+export function classifyUploadError(
+  rawError: string,
+  upload: ClassifyContext = {},
+): FriendlyError {
+  const err = (rawError ?? "").toString();
+  const rowCount = upload.rowCount ?? 0;
+
+  // Big-file branch takes priority: a context-overflow message PLUS a large
+  // upload is almost always a real "this market is too big for one pass"
+  // problem, not a one-off the member can retry their way out of.
+  if (
+    /input length.*exceeds.*context limit|context window|prompt is too long|max_tokens_to_sample/i.test(
+      err,
+    ) &&
+    rowCount > 12_000
+  ) {
+    return {
+      category: "file_too_large",
+      title: "Your market is unusually large for our processor",
+      body:
+        "We process up to roughly 12,000 transactions per month. If you're " +
+        "working a large metro, filter your MLS export to your specific " +
+        "territory (your suburbs, zip codes, or neighbourhoods) before " +
+        "uploading. Most agents only need their actual coverage area, not " +
+        "the whole metro.",
+      canRetry: false,
+      nextAction: "replace",
+    };
+  }
+
+  if (
+    /input length.*exceeds.*context limit|context window|prompt is too long|max_tokens_to_sample/i.test(
+      err,
+    )
+  ) {
+    return {
+      category: "context_overflow",
+      title: "This month's data is unusually large",
+      body:
+        "We're processing files this size with a special path. This should " +
+        "resolve automatically — click Retry. If it keeps failing, contact " +
+        "support.",
+      canRetry: true,
+      nextAction: "retry",
+    };
+  }
+
+  if (/cost cap reached|monthly AI|monthly cost cap|cost_cap/i.test(err)) {
+    return {
+      category: "cost_cap",
+      title: "Monthly AI budget reached",
+      body:
+        "You've used your processing budget for this month. Your cap resets " +
+        "on the 1st, or contact admin to discuss your tier.",
+      canRetry: false,
+      nextAction: "wait",
+    };
+  }
+
+  if (/terminated|aborted|stream.?disconnect|ECONNRESET|socket hang up/i.test(err)) {
+    return {
+      category: "stream_interrupted",
+      title: "Connection interrupted",
+      body:
+        "The AI provider's connection dropped mid-process. This is usually " +
+        "temporary. Click Retry.",
+      canRetry: true,
+      nextAction: "retry",
+    };
+  }
+
+  if (/overloaded|429|rate.?limit|529|503/i.test(err)) {
+    return {
+      category: "provider_overloaded",
+      title: "AI provider is busy",
+      body:
+        "Anthropic is experiencing high load. Wait 1-2 minutes and click Retry.",
+      canRetry: true,
+      nextAction: "retry",
+    };
+  }
+
+  if (/parse|CSV|column|header|invalid.*format|malformed/i.test(err)) {
+    return {
+      category: "parse_error",
+      title: "Couldn't read this file",
+      body:
+        "The CSV format doesn't match what we expected. Check that the file " +
+        "has the standard columns and a YYYY-MM date in the filename. Then " +
+        "upload again.",
+      canRetry: false,
+      nextAction: "replace",
+    };
+  }
+
+  return {
+    category: "unknown",
+    title: "Something unexpected happened",
+    body:
+      "Click Retry to try again. If it keeps failing, contact support and " +
+      "reference this upload ID.",
+    canRetry: true,
+    nextAction: "contact_support",
+  };
+}
+
+export const ERROR_CATEGORY_LABELS: Record<UploadErrorCategory, string> = {
+  file_too_large: "File too large",
+  context_overflow: "Context overflow",
+  cost_cap: "Cost cap reached",
+  stream_interrupted: "Stream interrupted",
+  provider_overloaded: "Provider overloaded",
+  parse_error: "Parse error",
+  unknown: "Unknown",
+};

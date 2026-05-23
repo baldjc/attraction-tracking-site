@@ -24,6 +24,39 @@ interface SelectedFile {
   monthYear: string; // YYYY-MM or "" if undetected
   label: string;
   detectedConfidence: "filename" | "guessed";
+  /** Approximate row count (newline scan, async). undefined while computing,
+   *  null if computation failed. */
+  rowCount?: number | null;
+}
+
+/** Member-facing soft cap. Above this we surface a "filter your territory"
+ *  warning before submit — but we never block, because the back-end retry
+ *  with adaptive thresholds can still get unusually wide markets through. */
+const LARGE_FILE_ROW_THRESHOLD = 12_000;
+
+async function approximateRowCount(file: File): Promise<number | null> {
+  try {
+    // Stream the file and count newlines without decoding to text — fast
+    // even for the 30MB+ MLS exports we get from big-metro brokerages.
+    const reader = file.stream().getReader();
+    let count = 0;
+    let lastByte = 0;
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      if (!value) continue;
+      for (let i = 0; i < value.length; i++) {
+        if (value[i] === 0x0a /* \n */) count++;
+        lastByte = value[i];
+      }
+    }
+    // If the last byte wasn't a newline, the final record is unterminated.
+    if (lastByte !== 0x0a && file.size > 0) count++;
+    // Subtract the header row (every MLS export has one).
+    return Math.max(0, count - 1);
+  } catch {
+    return null;
+  }
 }
 
 interface ConflictRow {
@@ -126,10 +159,28 @@ export default function UploadPanel({
         monthYear: det.monthYear,
         label: det.monthYear || f.name.replace(/\.[^.]+$/, ""),
         detectedConfidence: det.confidence,
+        rowCount: undefined,
       };
     });
     next.sort((a, b) => compareMonthYear(a.monthYear, b.monthYear));
     setSelected(next);
+    // Kick off async row counts in the background — purely advisory, so we
+    // don't block the picker or the Continue button on them.
+    void Promise.all(
+      next.map(async (s, idx) => {
+        const n = await approximateRowCount(s.file);
+        setSelected((curr) => {
+          // Reconcile by file identity, not index — the user may have
+          // removed a file before the count resolves.
+          const matchIdx = curr.findIndex((c) => c.file === s.file);
+          if (matchIdx === -1) return curr;
+          const copy = [...curr];
+          copy[matchIdx] = { ...copy[matchIdx], rowCount: n };
+          return copy;
+        });
+        void idx;
+      }),
+    );
   }
 
   const oldestFile = useMemo<SelectedFile | null>(() => {
@@ -142,6 +193,15 @@ export default function UploadPanel({
   // member a clearer signal than letting the POST round-trip to a 400.
   const missingMonth = useMemo(
     () => selected.some((s) => !s.monthYear),
+    [selected],
+  );
+
+  /** Files whose async row-count came back above the soft cap. */
+  const oversizedFiles = useMemo(
+    () =>
+      selected.filter(
+        (s) => typeof s.rowCount === "number" && s.rowCount > LARGE_FILE_ROW_THRESHOLD,
+      ),
     [selected],
   );
 
@@ -319,6 +379,27 @@ export default function UploadPanel({
               className="block w-full text-sm text-gray-700 dark:text-gray-300 file:mr-3 file:rounded-md file:border-0 file:bg-blue-600 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-blue-700"
             />
           </label>
+
+          {oversizedFiles.length > 0 && (
+            <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
+              <span className="font-medium">Heads up:</span>{" "}
+              {oversizedFiles.length === 1 ? (
+                <>
+                  this file has ~
+                  {(oversizedFiles[0].rowCount ?? 0).toLocaleString()} rows,
+                </>
+              ) : (
+                <>
+                  {oversizedFiles.length} of these files are larger than ~
+                  {LARGE_FILE_ROW_THRESHOLD.toLocaleString()} rows,
+                </>
+              )}{" "}
+              which is larger than most markets. We&apos;ll do our best, but if
+              it doesn&apos;t process you may need to filter your MLS export to
+              your specific territory (your suburbs, zip codes, or
+              neighbourhoods) before uploading.
+            </div>
+          )}
 
           {selected.length > 0 && (
             <div className="space-y-2">

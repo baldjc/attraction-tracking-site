@@ -237,3 +237,145 @@ export async function sendAuditReadyEmail(params: {
     console.error("[email] Failed to send audit-ready email:", error);
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Backfill-completion email (Wave 1 Phase 2A)
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface BackfillCompletionParams {
+  to: string;
+  memberName: string | null;
+  successCount: number;
+  failedCount: number;
+  succeededMonths: Array<{ monthYear: string; label: string }>;
+  failedUploads: Array<{
+    monthYear: string;
+    label: string;
+    friendly: { title: string; body: string };
+  }>;
+}
+
+export async function sendBackfillCompletionEmail(
+  params: BackfillCompletionParams,
+): Promise<void> {
+  const { to, memberName, successCount, failedCount, succeededMonths, failedUploads } = params;
+  const greeting = memberName ? `Hi ${memberName.split(" ")[0]},` : "Hi,";
+  const total = successCount + failedCount;
+
+  // Mirror sendAuditReadyEmail's URL precedence so the CTA doesn't point at
+  // localhost from a dev environment.
+  const rawBase =
+    process.env.EMAIL_BASE_URL ??
+    process.env.NEXT_PUBLIC_APP_URL ??
+    (process.env.NEXTAUTH_URL &&
+    !/localhost|127\.0\.0\.1|0\.0\.0\.0|\.repl(\.co|it\.dev)/i.test(
+      process.env.NEXTAUTH_URL,
+    )
+      ? process.env.NEXTAUTH_URL
+      : null) ??
+    "https://members.attractionbyvideo.com";
+  const baseUrl = rawBase.replace(/\/$/, "");
+  const marketDataUrl = `${baseUrl}/member/market-data`;
+  const logoUrl = `${baseUrl}/logo.png`;
+
+  const subject = failedCount > 0
+    ? `Your market data upload finished with ${failedCount} error${failedCount === 1 ? "" : "s"}`
+    : "Your market data upload is complete";
+
+  // Collapse a long success list to a short summary; full list lives in the
+  // members' upload-history table where they can act on it.
+  const successBlock = (() => {
+    if (succeededMonths.length === 0) return "";
+    if (succeededMonths.length > 10) {
+      return `
+            <p style="margin:24px 0 8px;font-size:14px;font-weight:600;color:#1e2a38;">${succeededMonths.length} months validated</p>
+            <p style="margin:0;font-size:13px;color:#374151;">From ${succeededMonths[0].label} through ${succeededMonths[succeededMonths.length - 1].label}.</p>
+      `.trim();
+    }
+    const lines = succeededMonths
+      .map(
+        (m) =>
+          `<li style="font-size:13px;color:#374151;line-height:1.8;"><strong>${m.label}</strong> <span style="color:#6b7280;">(${m.monthYear})</span></li>`,
+      )
+      .join("");
+    return `
+            <p style="margin:24px 0 8px;font-size:14px;font-weight:600;color:#1e2a38;">Validated</p>
+            <ul style="margin:0;padding-left:20px;">${lines}</ul>
+    `.trim();
+  })();
+
+  const failureBlock = (() => {
+    if (failedUploads.length === 0) return "";
+    const items = failedUploads
+      .map(
+        (f) => `
+              <div style="margin-top:12px;padding:12px 14px;border-radius:8px;background:#fef2f2;border:1px solid #fecaca;">
+                <p style="margin:0 0 4px;font-size:13px;font-weight:600;color:#991b1b;">${f.label} <span style="font-weight:400;color:#7f1d1d;">(${f.monthYear})</span></p>
+                <p style="margin:0 0 4px;font-size:13px;color:#991b1b;font-weight:500;">${f.friendly.title}</p>
+                <p style="margin:0;font-size:12px;color:#7f1d1d;line-height:1.5;">${f.friendly.body}</p>
+              </div>
+        `,
+      )
+      .join("");
+    return `
+            <p style="margin:24px 0 8px;font-size:14px;font-weight:600;color:#991b1b;">Needs attention</p>
+            ${items}
+            <p style="margin:16px 0 0;font-size:13px;color:#374151;">Open Market Data to retry any failed months.</p>
+    `.trim();
+  })();
+
+  const summaryLine = failedCount > 0
+    ? `Your ${total}-month backfill finished. <strong>${successCount} validated</strong>, ${failedCount} had errors.`
+    : `Your ${total}-month backfill finished. All ${successCount} months validated successfully.`;
+
+  const { error } = await resend.emails.send({
+    from: FROM_EMAIL,
+    to,
+    subject,
+    html: `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /></head>
+<body style="margin:0;padding:0;background:#f1f1ef;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f1ef;padding:40px 16px;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
+          <tr>
+            <td align="center" style="padding-bottom:32px;">
+              <img src="${logoUrl}" alt="Attraction by Video" width="200" style="display:block;width:200px;max-width:60%;height:auto;border:0;outline:none;text-decoration:none;" />
+            </td>
+          </tr>
+          <tr>
+            <td style="background:#ffffff;border-radius:16px;padding:36px 32px;border:1px solid #e5e7eb;">
+              <p style="margin:0 0 16px;font-size:15px;color:#1e2a38;">${greeting}</p>
+              <p style="margin:0 0 8px;font-size:15px;color:#1e2a38;">${summaryLine}</p>
+
+              ${successBlock}
+              ${failureBlock}
+
+              <div style="text-align:center;margin:28px 0 8px;">
+                <a href="${marketDataUrl}" style="display:inline-block;background:#1e2a38;color:#ffffff;border-radius:100px;padding:14px 28px;font-weight:700;text-decoration:none;font-size:15px;">Open Market Data →</a>
+              </div>
+
+              <p style="margin:20px 0 0;font-size:13px;color:#6b7280;">— The Attraction by Video Team</p>
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding-top:24px;">
+              <p style="margin:0;font-size:12px;color:#9ca3af;">© ${new Date().getFullYear()} Attraction by Video</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+    `.trim(),
+  });
+
+  if (error) {
+    console.error("[email] Failed to send backfill completion email:", error);
+  }
+}

@@ -1762,6 +1762,8 @@ model MarketDataUpload {
   validationCostUsd Float?
   validationError   String?          @db.Text
   rawValidatorOutput String?         @db.Text
+  retryCount        Int              @default(0)
+  backfillEmailedAt DateTime?
 
   facts             MarketFact[]
   storyLeads        MarketStoryLead[]

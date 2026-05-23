@@ -8,6 +8,7 @@ import {
 } from "@/lib/market-config-server";
 import UploadPanel from "@/components/market-data/UploadPanel";
 import UploadHistoryTable from "@/components/market-data/UploadHistoryTable";
+import UploadProgressBanner from "@/components/market-data/UploadProgressBanner";
 
 export const dynamic = "force-dynamic";
 
@@ -74,6 +75,10 @@ export default async function MarketDataPage() {
           Edit market settings
         </a>
       </header>
+
+      <UploadProgressBanner
+        uploads={uploads.map((u) => ({ id: u.id, status: u.status }))}
+      />
 
       <UploadPanel
         existingMapping={config.columnMapping}
