@@ -170,6 +170,7 @@ interface IdeaLineage {
     id: string;
     neighbourhood: string;
     metricName: string;
+    metricLabel: string;
     metricValueString: string;
     monthYear: string;
   }>;
@@ -1371,7 +1372,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
                         <li key={f.id} className="text-[11px] text-[#2f3437] leading-snug flex flex-wrap items-baseline gap-x-1.5">
                           <span className="font-medium">{f.neighbourhood}</span>
                           <span className="text-[#2f3437]/60">·</span>
-                          <span>{f.metricName}</span>
+                          <span>{f.metricLabel}</span>
                           {f.metricValueString && (
                             <>
                               <span className="text-[#2f3437]/60">·</span>

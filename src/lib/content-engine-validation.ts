@@ -46,6 +46,56 @@ export function rotationSlotToTheme(slot: RotationSlotKey): string {
 }
 
 /**
+ * Human-readable label for a MarketFact.metricName. Wave 2.5 — the
+ * validator persists the raw token the LLM emits (e.g. "SP_LP_ratio",
+ * "MOI", "median_sale_price") which is fine for downstream prompt
+ * shuttling but unreadable in member-facing surfaces like the planner
+ * modal's "Idea card lineage" panel.
+ *
+ * Keys cover every metricName value the validator + parser produce
+ * (see src/lib/fact-validator-prompt.ts lines 37/459-465 for the
+ * enumeration the LLM is instructed to emit, plus the SP_LP / SP_LP_ratio
+ * casing variations actually observed in production rows).
+ *
+ * Unknown values fall through to the raw token rather than throwing,
+ * so a future metric the validator starts emitting still renders
+ * (just without the friendly label) instead of breaking the panel.
+ */
+export const METRIC_NAME_LABELS: Record<string, string> = {
+  // Months of inventory
+  MOI: "Months of Inventory",
+  moi: "Months of Inventory",
+  // Sale-to-list ratio (both casings observed in production)
+  SP_LP: "Sale-to-List Ratio",
+  sp_lp: "Sale-to-List Ratio",
+  SP_LP_ratio: "Sale-to-List Ratio",
+  sp_lp_ratio: "Sale-to-List Ratio",
+  // Days on market
+  DOM: "Days on Market",
+  dom: "Days on Market",
+  dom_median: "Days on Market (median)",
+  dom_average: "Days on Market (average)",
+  // Failure / cancellation rate
+  failure_rate: "Failure Rate",
+  FAILURE_RATE: "Failure Rate",
+  // Price metrics
+  median_sale_price: "Median Sale Price",
+  median_price: "Median Price",
+  MEDIAN: "Median Price",
+  median_psf: "Price per Sq Ft",
+  psf: "Price per Sq Ft",
+  PSF: "Price per Sq Ft",
+  median_sqft: "Median Sq Ft",
+  // Inventory
+  active_listings: "Active Listings",
+  INVENTORY: "Inventory",
+};
+
+export function metricNameToLabel(name: string): string {
+  return METRIC_NAME_LABELS[name] ?? name;
+}
+
+/**
  * Words/phrases that name an avatar segment. Title is forbidden from
  * mentioning these — they belong in the body. Plurals + hyphen/space
  * variants handled by the inner alternation.

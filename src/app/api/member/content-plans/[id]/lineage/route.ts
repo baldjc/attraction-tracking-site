@@ -15,6 +15,7 @@ import prisma from "@/lib/prisma";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import {
   ROTATION_SLOTS,
+  metricNameToLabel,
   rotationSlotToTheme,
   type RotationSlotKey,
 } from "@/lib/content-engine-validation";
@@ -105,9 +106,9 @@ export async function GET(
           id: true,
           neighbourhood: true,
           metricName: true,
+          metricValue: true,
           metricValueString: true,
           dateContext: true,
-          timeWindow: true,
         },
       })
     : [];
@@ -122,16 +123,36 @@ export async function GET(
       (orderIndex.get(b.id) ?? Number.MAX_SAFE_INTEGER),
   );
 
+  // Use UTC month + year so a fact dated 2026-04-30 23:00 UTC doesn't render
+  // as "March 2026" for callers in a positive-UTC-offset locale.
+  const MONTH_NAMES = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December",
+  ];
+  function formatMonthYear(d: Date | null): string {
+    if (!d) return "";
+    return `${MONTH_NAMES[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+  }
+
   const factsResolved = facts.map((f) => ({
     id: f.id,
     neighbourhood: f.neighbourhood,
     metricName: f.metricName,
-    metricValueString: f.metricValueString ?? "",
-    // Prefer the explicit timeWindow string (e.g. "2026-04"); fall back to
-    // dateContext (UTC ISO) trimmed to YYYY-MM. Empty when neither set.
-    monthYear:
-      f.timeWindow ??
-      (f.dateContext ? f.dateContext.toISOString().slice(0, 7) : ""),
+    // Wave 2.5 — pre-labelled metric so the planner modal doesn't have to
+    // duplicate the enum->label map client-side.
+    metricLabel: metricNameToLabel(f.metricName),
+    // metricValueString is often null on numeric facts; fall back to the
+    // raw numeric so the panel always shows a value when one exists.
+    // Strict equality vs null because metricValue can legitimately be 0.
+    metricValueString:
+      f.metricValueString ??
+      (f.metricValue !== null && f.metricValue !== undefined
+        ? String(f.metricValue)
+        : ""),
+    // dateContext is the actual fact date. (timeWindow is a category
+    // string like "calendar_month" — NOT a date — so it must not be
+    // surfaced here.) Render as "Month Year" for the modal.
+    monthYear: formatMonthYear(f.dateContext),
   }));
 
   return NextResponse.json({
