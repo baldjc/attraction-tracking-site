@@ -78,16 +78,19 @@ export function Step3IdeaCards({
     fallbackIntervalMs: 5000,
   });
   useEffect(() => {
-    // No `started.current` guard — under React 18 StrictMode the synthetic
-    // unmount aborts the in-flight request and the remount fires a fresh one.
-    // The previous guard combined with `if (!cancelled) thinking.stop()` could
-    // leave isThinking=true forever when the first effect was cancelled before
-    // its fetch resolved, masking backend errors (including 402 cost-cap
-    // responses that returned in ~80ms).
-    let cancelled = false;
+    // StrictMode-safe pairing of thinking.start/stop with terminal states.
+    //
+    // Under React 18 StrictMode the effect runs mount → cleanup → mount.
+    // Calling thinking.start() synchronously on mount makes the spinner
+    // appear immediately (no blank dead period). thinking.stop() is placed
+    // on each TERMINAL branch (got response / got network error) — never in
+    // a finally block — because the abort path means "I'm being replaced by
+    // a remount that already called start() and owns the indicator now".
+    // Stopping in finally on the abort path would race with mount #2's
+    // start() and hide the spinner entirely (the bug we just had).
+    thinking.start();
     const ctrl = new AbortController();
     (async () => {
-      thinking.start();
       try {
         const r = await fetch("/api/ai-tools/content-engine-v2", {
           method: "POST",
@@ -100,22 +103,22 @@ export function Step3IdeaCards({
           }),
           signal: ctrl.signal,
         });
+        if (ctrl.signal.aborted) return;
         const j = (await r.json()) as BatchResponse;
-        if (cancelled) return;
+        if (ctrl.signal.aborted) return;
         if (!r.ok) {
           setError(j.message ?? j.error ?? `Generation failed (${r.status})`);
         } else {
           setResult(j);
         }
+        thinking.stop();
       } catch (e) {
-        if (cancelled || (e as Error).name === "AbortError") return;
+        if (ctrl.signal.aborted || (e as Error).name === "AbortError") return;
         setError((e as Error).message);
-      } finally {
         thinking.stop();
       }
     })();
     return () => {
-      cancelled = true;
       ctrl.abort();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
