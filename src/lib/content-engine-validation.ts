@@ -96,6 +96,36 @@ export function metricNameToLabel(name: string): string {
 }
 
 /**
+ * Format a numeric metricValue for display. Wave 2.5 fix 4 — the validator
+ * stores raw numerics in metricValue (e.g. SP_LP_ratio = 0.9824), so the
+ * lineage panel was rendering "0.9824" next to a title saying "98.24%". This
+ * normalizes per metric so the cited value matches the title it powers.
+ *
+ * Returns String(value) as a safe fallback for metrics not enumerated here.
+ */
+export function formatMetricValue(metricName: string, value: number): string {
+  const lower = metricName.toLowerCase();
+  // SP/LP and other ratios are stored as 0-1 decimals; render as percent.
+  if (lower === "sp_lp_ratio" || lower === "sp_lp" || (lower.includes("ratio") && Math.abs(value) <= 1)) {
+    return `${(value * 100).toFixed(2)}%`;
+  }
+  // Rates/percentages are stored as 0-100 already.
+  if (lower.includes("rate") || lower.includes("percent")) {
+    return `${value.toFixed(2)}%`;
+  }
+  if (lower === "dom" || lower.includes("days_on_market") || lower.startsWith("dom_")) {
+    return `${value.toFixed(1)} days`;
+  }
+  if (lower === "moi" || lower.includes("months_of_inventory") || lower.startsWith("moi_")) {
+    return `${value.toFixed(2)} MOI`;
+  }
+  if (lower.includes("price") || lower.includes("psf") || lower.includes("median")) {
+    return `$${Math.round(value).toLocaleString()}`;
+  }
+  return String(value);
+}
+
+/**
  * Words/phrases that name an avatar segment. Title is forbidden from
  * mentioning these — they belong in the body. Plurals + hyphen/space
  * variants handled by the inner alternation.

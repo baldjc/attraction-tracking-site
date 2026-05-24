@@ -16,6 +16,7 @@ import { resolveUserFromSession } from "@/lib/session-utils";
 import {
   ROTATION_SLOTS,
   metricNameToLabel,
+  formatMetricValue,
   rotationSlotToTheme,
   type RotationSlotKey,
 } from "@/lib/content-engine-validation";
@@ -109,6 +110,10 @@ export async function GET(
           metricValue: true,
           metricValueString: true,
           dateContext: true,
+          // Wave 2.5 fix 5 — dateContext is null on many validator-produced
+          // facts; fall back to the upload's monthYear (always populated on
+          // validated uploads) so the panel never shows a blank date.
+          upload: { select: { monthYear: true } },
         },
       })
     : [];
@@ -123,37 +128,42 @@ export async function GET(
       (orderIndex.get(b.id) ?? Number.MAX_SAFE_INTEGER),
   );
 
-  // Use UTC month + year so a fact dated 2026-04-30 23:00 UTC doesn't render
-  // as "March 2026" for callers in a positive-UTC-offset locale.
-  const MONTH_NAMES = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December",
-  ];
-  function formatMonthYear(d: Date | null): string {
+  // Use UTC YYYY-MM so a fact dated 2026-04-30 23:00 UTC doesn't shift to
+  // "2026-03" in a positive-UTC-offset locale. Returns "" when no date
+  // source is available; modal hides the date span on empty.
+  function toMonthYear(d: Date | null): string {
     if (!d) return "";
-    return `${MONTH_NAMES[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+    const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+    return `${d.getUTCFullYear()}-${m}`;
   }
 
-  const factsResolved = facts.map((f) => ({
-    id: f.id,
-    neighbourhood: f.neighbourhood,
-    metricName: f.metricName,
-    // Wave 2.5 — pre-labelled metric so the planner modal doesn't have to
-    // duplicate the enum->label map client-side.
-    metricLabel: metricNameToLabel(f.metricName),
-    // metricValueString is often null on numeric facts; fall back to the
-    // raw numeric so the panel always shows a value when one exists.
-    // Strict equality vs null because metricValue can legitimately be 0.
-    metricValueString:
-      f.metricValueString ??
-      (f.metricValue !== null && f.metricValue !== undefined
-        ? String(f.metricValue)
-        : ""),
-    // dateContext is the actual fact date. (timeWindow is a category
-    // string like "calendar_month" — NOT a date — so it must not be
-    // surfaced here.) Render as "Month Year" for the modal.
-    monthYear: formatMonthYear(f.dateContext),
-  }));
+  const factsResolved = facts.map((f) => {
+    // Wave 2.5 fix 4 — prefer the per-metric formatter when we have a raw
+    // numeric (gives "98.24%" for SP_LP_ratio=0.9824), since metricValueString
+    // is either null or stored as a raw decimal that doesn't match the title
+    // it powers. Fall back to the stored string only when there's no numeric
+    // (e.g. trajectory descriptors like "tightening").
+    const hasNumeric = f.metricValue !== null && f.metricValue !== undefined;
+    const metricValueString = hasNumeric
+      ? formatMetricValue(f.metricName, f.metricValue as number)
+      : (f.metricValueString ?? "");
+
+    // Wave 2.5 fix 5 — dateContext is null on many facts; fall back to the
+    // upload's monthYear (always "YYYY-MM" on validated uploads).
+    const monthYear =
+      toMonthYear(f.dateContext) || (f.upload?.monthYear ?? "");
+
+    return {
+      id: f.id,
+      neighbourhood: f.neighbourhood,
+      metricName: f.metricName,
+      // Pre-labelled metric so the planner modal doesn't have to duplicate
+      // the enum->label map client-side.
+      metricLabel: metricNameToLabel(f.metricName),
+      metricValueString,
+      monthYear,
+    };
+  });
 
   return NextResponse.json({
     lineage: {
