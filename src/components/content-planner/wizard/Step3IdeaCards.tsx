@@ -12,7 +12,7 @@
  * sized for the typical 30-60s wall time we observed in sanity runs.
  */
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AiThinking } from "@/components/ai/AiThinking";
 import { useAiThinking } from "@/lib/use-ai-thinking";
@@ -77,13 +77,15 @@ export function Step3IdeaCards({
     fallbackPhases: PHASES,
     fallbackIntervalMs: 5000,
   });
-  // Guard against React StrictMode double-effect in dev.
-  const started = useRef(false);
-
   useEffect(() => {
-    if (started.current) return;
-    started.current = true;
+    // No `started.current` guard — under React 18 StrictMode the synthetic
+    // unmount aborts the in-flight request and the remount fires a fresh one.
+    // The previous guard combined with `if (!cancelled) thinking.stop()` could
+    // leave isThinking=true forever when the first effect was cancelled before
+    // its fetch resolved, masking backend errors (including 402 cost-cap
+    // responses that returned in ~80ms).
     let cancelled = false;
+    const ctrl = new AbortController();
     (async () => {
       thinking.start();
       try {
@@ -96,6 +98,7 @@ export function Step3IdeaCards({
             rotationSlot: rotationSlot ?? undefined,
             validatedIdea: validatedIdea ?? undefined,
           }),
+          signal: ctrl.signal,
         });
         const j = (await r.json()) as BatchResponse;
         if (cancelled) return;
@@ -105,13 +108,15 @@ export function Step3IdeaCards({
           setResult(j);
         }
       } catch (e) {
-        if (!cancelled) setError((e as Error).message);
+        if (cancelled || (e as Error).name === "AbortError") return;
+        setError((e as Error).message);
       } finally {
-        if (!cancelled) thinking.stop();
+        thinking.stop();
       }
     })();
     return () => {
       cancelled = true;
+      ctrl.abort();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
