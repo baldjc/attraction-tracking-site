@@ -16,7 +16,11 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AiThinking } from "@/components/ai/AiThinking";
 import { useAiThinking } from "@/lib/use-ai-thinking";
-import type { RotationSlotKey } from "@/lib/content-engine-validation";
+import {
+  ROTATION_SLOTS,
+  rotationSlotToTheme,
+  type RotationSlotKey,
+} from "@/lib/content-engine-validation";
 
 interface IdeaCard {
   title: string;
@@ -179,7 +183,11 @@ export function Step3IdeaCards({
         <p className="text-xs text-gray-500 dark:text-gray-400">
           {result.returnedCount} idea(s) from {result.factsConsidered} facts in your {uploadLabel} upload.
           {storyLeadId && " Anchored on a Story Lead."}
-          {rotationSlot && ` Rotation slot pinned to ${rotationSlot}.`}
+          {rotationSlot && ` Theme pinned to ${
+            ROTATION_SLOTS.includes(rotationSlot as RotationSlotKey)
+              ? rotationSlotToTheme(rotationSlot as RotationSlotKey)
+              : rotationSlot
+          }.`}
         </p>
       </div>
 

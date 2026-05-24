@@ -22,6 +22,30 @@ export const ROTATION_SLOTS = [
 export type RotationSlotKey = (typeof ROTATION_SLOTS)[number];
 
 /**
+ * Human-readable label for a rotation slot. Wave 2.5 — written into
+ * ContentPlan.theme on save so Wave 2 plans show up in the existing planner
+ * views that filter by theme (BoardView, ContentPlanTable theme dropdowns,
+ * team-pipeline theme filters). The machine-readable `rotationSlot` column
+ * stays the source of truth for the wizard / Wave 3 — `theme` is the
+ * legacy v1 surface mirroring the same value as a string.
+ *
+ * Match Step2C's user-facing labels verbatim so a Wave 2 plan filtered by
+ * "Neighbourhood Fact" in the planner uses the same string the user picked
+ * in the wizard.
+ */
+export const ROTATION_SLOT_LABELS: Record<RotationSlotKey, string> = {
+  market_update: "Market Update",
+  neighbourhood_fact: "Neighbourhood Fact",
+  contrarian_take: "Contrarian Take",
+  do_not: "Do Not",
+  should_you: "Should You",
+};
+
+export function rotationSlotToTheme(slot: RotationSlotKey): string {
+  return ROTATION_SLOT_LABELS[slot];
+}
+
+/**
  * Words/phrases that name an avatar segment. Title is forbidden from
  * mentioning these — they belong in the body. Plurals + hyphen/space
  * variants handled by the inner alternation.

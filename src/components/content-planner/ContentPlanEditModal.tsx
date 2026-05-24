@@ -141,6 +141,39 @@ export interface ContentPlan {
   // Used as the cache-buster on the proxied thumbnail URL so list views
   // re-fetch the image immediately after a save.
   updatedAt?: string | null;
+  // Wave 2 wizard lineage — non-null on plans created from the wizard.
+  // Read-only on the modal; used to detect Wave 2 plans + drive the
+  // "Idea card lineage" panel via /api/.../lineage.
+  rotationSlot?: string | null;
+  titlePromise?: string | null;
+  visualPeak?: string | null;
+  linkedStoryLeadId?: string | null;
+  linkedFactIds?: unknown;
+}
+
+// Wave 2.5 — payload returned by GET /api/member/content-plans/[id]/lineage.
+// Surfaces the story lead + cited facts the wizard pinned to this plan so
+// the modal can render a read-only "Idea card lineage" panel without
+// re-doing the wizard joins client-side.
+interface IdeaLineage {
+  rotationSlot: string;
+  themeLabel: string;
+  titlePromise: string | null;
+  visualPeak: string | null;
+  thumbnailCallouts: string[];
+  storyLead: {
+    id: string;
+    pattern: string;
+    whyItMattersPreview: string;
+  } | null;
+  facts: Array<{
+    id: string;
+    neighbourhood: string;
+    metricName: string;
+    metricValueString: string;
+    monthYear: string;
+  }>;
+  totalCited: number;
 }
 
 interface ThemeOption {
@@ -545,6 +578,30 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
   const [avatarData, setAvatarData] = useState<any>(null);
   const [researchPromptCopied, setResearchPromptCopied] = useState(false);
   const [researchPromptError, setResearchPromptError] = useState("");
+
+  // Wave 2.5 — "Idea card lineage" panel. Only fetched when the plan
+  // was created by the Wave 2 wizard (rotationSlot is non-null), so v1
+  // plans pay zero network cost on open.
+  const [lineage, setLineage] = useState<IdeaLineage | null>(null);
+  const [showAllLineageFacts, setShowAllLineageFacts] = useState(false);
+  useEffect(() => {
+    // Always clear at plan-change start so a stale lineage from a previous
+    // plan can never bleed through (e.g. fetch fails / returns lineage:null
+    // for the new plan). Also reset the show-more toggle so the new plan
+    // starts collapsed.
+    setLineage(null);
+    setShowAllLineageFacts(false);
+    if (!plan.rotationSlot) return;
+    let cancelled = false;
+    fetch(`/api/member/content-plans/${plan.id}/lineage`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (cancelled) return;
+        setLineage(d?.lineage ? (d.lineage as IdeaLineage) : null);
+      })
+      .catch(() => { if (!cancelled) setLineage(null); });
+    return () => { cancelled = true; };
+  }, [plan.id, plan.rotationSlot]);
 
   useEffect(() => {
     if (isAdmin) return;
@@ -1247,6 +1304,99 @@ Produce a research brief I can hand to a script writer. For **each talking point
                 </span>
               )}
             </div>
+
+            {/* Wave 2.5 — Idea card lineage. Read-only panel that shows the
+                theme, title promise, visual peak, thumbnail callouts, the
+                Story Lead the wizard anchored on, and the cited market
+                facts. Only rendered for plans the wizard created (i.e.
+                rotationSlot is non-null on the plan + lineage payload
+                resolved). v1 plans see nothing. */}
+            {lineage && (
+              <div className="rounded-xl border border-[#185FA5]/20 bg-[#185FA5]/[0.03] px-4 py-3 space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-[#185FA5]">
+                    🎯 Idea card lineage
+                  </p>
+                  <span className="inline-flex items-center rounded-md bg-[#185FA5]/10 px-2 py-0.5 text-[11px] font-semibold text-[#185FA5]">
+                    {lineage.themeLabel}
+                  </span>
+                </div>
+
+                {lineage.titlePromise && (
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-[#2f3437]/50 mb-0.5">Title promise</p>
+                    <p className="text-xs text-[#2f3437] leading-snug">{lineage.titlePromise}</p>
+                  </div>
+                )}
+
+                {lineage.visualPeak && (
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-[#2f3437]/50 mb-0.5">Visual peak</p>
+                    <p className="text-xs text-[#2f3437] leading-snug">{lineage.visualPeak}</p>
+                  </div>
+                )}
+
+                {lineage.thumbnailCallouts.length > 0 && (
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-[#2f3437]/50 mb-1">Thumbnail words</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {lineage.thumbnailCallouts.map((c, i) => (
+                        <span key={i} className="inline-flex items-center rounded-md bg-white border border-gray-200 px-2 py-0.5 text-[11px] font-medium text-[#2f3437]">
+                          {c}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {lineage.storyLead && (
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-[#2f3437]/50 mb-0.5">Story lead</p>
+                    <p className="text-xs text-[#2f3437] leading-snug font-medium">{lineage.storyLead.pattern}</p>
+                    {lineage.storyLead.whyItMattersPreview && (
+                      <p className="text-[11px] text-[#2f3437]/65 leading-snug mt-0.5">
+                        {lineage.storyLead.whyItMattersPreview}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {lineage.totalCited > 0 && (
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-[#2f3437]/50 mb-1">
+                      Cited facts ({lineage.facts.length}/{lineage.totalCited})
+                    </p>
+                    <ul className="space-y-1">
+                      {(showAllLineageFacts ? lineage.facts : lineage.facts.slice(0, 5)).map((f) => (
+                        <li key={f.id} className="text-[11px] text-[#2f3437] leading-snug flex flex-wrap items-baseline gap-x-1.5">
+                          <span className="font-medium">{f.neighbourhood}</span>
+                          <span className="text-[#2f3437]/60">·</span>
+                          <span>{f.metricName}</span>
+                          {f.metricValueString && (
+                            <>
+                              <span className="text-[#2f3437]/60">·</span>
+                              <span className="font-mono text-[#2f3437]/80">{f.metricValueString}</span>
+                            </>
+                          )}
+                          {f.monthYear && (
+                            <span className="text-[#2f3437]/45">({f.monthYear})</span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                    {lineage.facts.length > 5 && (
+                      <button
+                        type="button"
+                        onClick={() => setShowAllLineageFacts((v) => !v)}
+                        className="mt-1 text-[11px] font-medium text-[#185FA5] hover:underline"
+                      >
+                        {showAllLineageFacts ? "Show less" : `Show ${lineage.facts.length - 5} more`}
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Notes from team banner — surfaced near the top so members see
                 feedback the moment they open the modal. */}

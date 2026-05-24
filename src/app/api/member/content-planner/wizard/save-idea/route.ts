@@ -23,6 +23,7 @@ import {
 } from "@/lib/content-engine-context";
 import {
   ROTATION_SLOTS,
+  rotationSlotToTheme,
   validateIdeaCard,
   type RotationSlotKey,
 } from "@/lib/content-engine-validation";
@@ -202,6 +203,10 @@ export async function POST(req: NextRequest) {
       userId,
       title: body.title!,
       status: "Idea",
+      // Wave 2.5 — also write the human-readable theme string so this plan
+      // shows up in v1 planner views that filter by theme. `rotationSlot`
+      // (machine-readable enum) remains the source of truth for the wizard.
+      theme: rotationSlotToTheme(body.rotationSlot),
       rotationSlot: body.rotationSlot,
       titlePromise: body.titlePromise,
       visualPeak: body.visualPeak,

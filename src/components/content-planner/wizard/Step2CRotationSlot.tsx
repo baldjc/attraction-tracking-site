@@ -1,8 +1,10 @@
 /**
- * Wave 2 wizard — Step 2C: Rotation Slot picker.
+ * Wave 2 wizard — Step 2C: Theme picker.
  *
- * 5 cards (one per slot) with a short description; clicking takes the user
- * to Step 3 with the slot pinned via ?rotationSlot=<slot>.
+ * 5 cards (one per theme) with a short description; clicking takes the user
+ * to Step 3 with the theme pinned via ?rotationSlot=<slot>. The URL param
+ * name stays as `rotationSlot` (the wire/API contract) — only display
+ * labels say "theme" per Wave 2.5 UX polish.
  */
 import Link from "next/link";
 import { ROTATION_SLOTS, type RotationSlotKey } from "@/lib/content-engine-validation";
@@ -48,14 +50,14 @@ const SLOTS: SlotMeta[] = [
 ];
 
 export function Step2CRotationSlot() {
-  // Tiny defence-in-depth: ensure each rotation slot card matches a real
-  // ROTATION_SLOTS value. (Hard-coded above for ordering / copy control.)
+  // Tiny defence-in-depth: ensure each theme card matches a real
+  // ROTATION_SLOTS enum value. (Hard-coded above for ordering / copy control.)
   const known = new Set<string>(ROTATION_SLOTS);
 
   return (
     <div>
       <p className="mb-6 text-sm text-gray-600 dark:text-gray-400">
-        Pick the type of video. We&apos;ll generate 5 ideas in that slot, anchored on your validated facts.
+        Pick the type of video. We&apos;ll generate 5 ideas in that theme, anchored on your validated facts.
       </p>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {SLOTS.filter((s) => known.has(s.key)).map((s) => (
@@ -72,7 +74,7 @@ export function Step2CRotationSlot() {
               {s.blurb}
             </p>
             <span className="mt-4 inline-flex items-center text-sm font-medium text-blue-600 group-hover:text-blue-700 dark:text-blue-400 dark:group-hover:text-blue-300">
-              Pick this slot →
+              Pick this theme →
             </span>
           </Link>
         ))}

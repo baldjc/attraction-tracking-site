@@ -5,7 +5,7 @@
  *   ?step=1            Mode picker (default)
  *   ?step=2a           Story Lead browser
  *   ?step=2b           Idea Validation Mode
- *   ?step=2c           Rotation Slot picker
+ *   ?step=2c           Theme picker
  *   ?step=3            Generate idea cards (params: storyLeadId | rotationSlot | validatedIdea)
  *   ?step=4            Review picked idea (param: picked=<sessionStorage key>)
  *
@@ -133,7 +133,7 @@ const STEP_LABELS: Record<string, string> = {
   "1": "Pick how to start",
   "2a": "Browse Story Leads",
   "2b": "Validate an idea",
-  "2c": "Pick a rotation slot",
+  "2c": "Pick a theme",
   "3": "Idea cards",
   "4": "Review and save",
 };

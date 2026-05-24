@@ -4,7 +4,7 @@
  * Three co-equal entry modes (NOT a sequential funnel):
  *   - Browse Story Leads   → ?step=2a
  *   - Validate an idea     → ?step=2b  (hidden when tool_idea_validation OFF)
- *   - Pick a rotation slot → ?step=2c
+ *   - Pick a theme        → ?step=2c
  */
 import Link from "next/link";
 
@@ -38,9 +38,9 @@ export function Step1ModePicker({ showIdeaValidation }: Props) {
         <ModeCard
           href="/member/content-planner/wizard?step=2c"
           icon="🎯"
-          title="Pick a rotation slot"
-          description="Choose the type of video you want to make (Market Update, Neighbourhood Fact, Do Not, Should You, Contrarian Take) and we'll generate 5 ideas in that slot."
-          cta="Pick a slot"
+          title="Pick a theme"
+          description="Choose the type of video you want to make (Market Update, Neighbourhood Fact, Do Not, Should You, Contrarian Take) and we'll generate 5 ideas in that theme."
+          cta="Pick a theme"
         />
       </div>
     </div>
