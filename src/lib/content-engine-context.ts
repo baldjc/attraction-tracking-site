@@ -26,7 +26,7 @@ export async function loadLatestValidatedUpload(
 ): Promise<LatestUpload | null> {
   const upload = await prisma.marketDataUpload.findFirst({
     where: { userId, status: "validated" },
-    orderBy: { validatedAt: "desc" },
+    orderBy: [{ monthYear: "desc" }, { validatedAt: "desc" }],
     select: {
       id: true,
       monthYear: true,
