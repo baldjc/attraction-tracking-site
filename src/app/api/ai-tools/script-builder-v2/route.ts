@@ -449,12 +449,27 @@ export async function POST(req: NextRequest) {
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
+      // TELEMETRY (TEMP — strip before final commit): timestamp every
+      // emit/heartbeat/anthropic boundary so we can see, server-side,
+      // whether phase events are being produced on time or whether
+      // they're stalled in our own code. Pair with proxy/client logs
+      // to isolate the buffering layer.
+      const startTime = Date.now();
+      const ms = () => Date.now() - startTime;
+      const trace = (event: string, label: string) => {
+        console.log(
+          `[sb-v2:emit] t=${ms()}ms event=${event} label="${label.slice(0, 40)}"`,
+        );
+      };
+      console.log(`[sb-v2:start] t=${ms()}ms user=${userId}`);
+
       heartbeat = setInterval(() => {
         if (clientSignal.aborted) {
           stopHeartbeat();
           return;
         }
         try {
+          console.log(`[sb-v2:heartbeat] t=${ms()}ms`);
           controller.enqueue(encoder.encode(`: heartbeat ${Date.now()}\n\n`));
         } catch {
           // Controller already closed — stop ticking.
@@ -474,6 +489,7 @@ export async function POST(req: NextRequest) {
       };
 
       try {
+        trace("phase", "Loading your facts and neighbourhood context...");
         emit("phase", {
           key: "load",
           label: "Loading your facts and neighbourhood context...",
@@ -500,14 +516,17 @@ export async function POST(req: NextRequest) {
           // Phase: first attempt walks intro→body→hook; retries jump
           // straight to "fixing rule violations".
           if (attempt === 0) {
+            trace("phase", "Drafting the 3-beat intro...");
             emit("phase", {
               key: "intro",
               label: "Drafting the 3-beat intro...",
             });
           } else {
+            const reLabel = `Re-prompting to fix ${lastErrors.length} content-rule violation(s) (attempt ${attempt + 1}/${MAX_REPROMPTS + 1})...`;
+            trace("phase", reLabel);
             emit("phase", {
               key: "reprompt",
-              label: `Re-prompting to fix ${lastErrors.length} content-rule violation(s) (attempt ${attempt + 1}/${MAX_REPROMPTS + 1})...`,
+              label: reLabel,
             });
           }
 
@@ -535,6 +554,7 @@ export async function POST(req: NextRequest) {
           const midStreamTimers: ReturnType<typeof setTimeout>[] = [];
           midStreamTimers.push(
             setTimeout(() => {
+              trace("phase", "Building the data → psychology → clarity body...");
               emit("phase", {
                 key: "body",
                 label: "Building the data → psychology → clarity body...",
@@ -543,6 +563,7 @@ export async function POST(req: NextRequest) {
           );
           midStreamTimers.push(
             setTimeout(() => {
+              trace("phase", "Writing the next-video hook...");
               emit("phase", {
                 key: "hook",
                 label: "Writing the next-video hook...",
@@ -563,10 +584,12 @@ export async function POST(req: NextRequest) {
           //   message_stop   → final
           let attemptInputTokens = 0;
           let attemptOutputTokens = 0;
+          let firstTokenLogged = false;
           try {
             // Anthropic streaming API. `signal: internalAbort.signal`
             // ensures abort propagates upstream so we stop being billed
             // for tokens the client will never see.
+            console.log(`[sb-v2:anthropic-start] t=${ms()}ms attempt=${attempt}`);
             const sdkStream = anthropic.messages.stream(
               {
                 model: SONNET_MODEL,
@@ -604,11 +627,23 @@ export async function POST(req: NextRequest) {
                 event.delta.type === "text_delta"
               ) {
                 const text = event.delta.text;
+                if (!firstTokenLogged) {
+                  console.log(
+                    `[sb-v2:anthropic-first-token] t=${ms()}ms attempt=${attempt}`,
+                  );
+                  firstTokenLogged = true;
+                }
                 draft += text;
                 emit("token", { text });
               }
             }
+            console.log(
+              `[sb-v2:anthropic-end] t=${ms()}ms attempt=${attempt} tokens=${attemptOutputTokens}`,
+            );
           } catch (err) {
+            console.log(
+              `[sb-v2:anthropic-error] t=${ms()}ms attempt=${attempt} tokens=${attemptOutputTokens}`,
+            );
             // Whatever happened, fold the best-known token counts into
             // the running totals BEFORE breaking — so an abort or upstream
             // error mid-stream still bills (requirement: logUsage runs on
@@ -640,6 +675,7 @@ export async function POST(req: NextRequest) {
           if (internalAbort.signal.aborted) break;
 
           // ─ Server-side validation gate ──────────────────────────────
+          trace("phase", "Validating content rules...");
           emit("phase", {
             key: "validate",
             label: "Validating content rules...",
