@@ -48,6 +48,88 @@ export default function KnowledgeBaseClient({
   const [briefCopied, setBriefCopied] = useState(false);
   const [search, setSearch] = useState("");
 
+  const existingVocabLower = useMemo(
+    () => new Set(neighbourhoods.map((n) => n.trim().toLowerCase())),
+    [neighbourhoods],
+  );
+
+  type DiscoveredState =
+    | { status: "idle" }
+    | { status: "loading" }
+    | { status: "error"; message: string }
+    | {
+        status: "ready";
+        discovered: string[];
+        monthsCovered: number;
+        selected: Set<string>;
+      }
+    | { status: "saving"; selected: Set<string> }
+    | { status: "saved"; addedCount: number; totalCount: number };
+  const [discovered, setDiscovered] = useState<DiscoveredState>({
+    status: "idle",
+  });
+
+  async function onLoadDiscovered() {
+    setDiscovered({ status: "loading" });
+    try {
+      const res = await fetch(
+        "/api/member/knowledge-base/discovered-neighbourhoods",
+      );
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Failed to load.");
+      const discoveredList: string[] = Array.isArray(data.discovered)
+        ? data.discovered
+        : [];
+      const newOnes = discoveredList.filter(
+        (n) => !existingVocabLower.has(n.trim().toLowerCase()),
+      );
+      setDiscovered({
+        status: "ready",
+        discovered: discoveredList,
+        monthsCovered: Number(data.monthsCovered) || 0,
+        selected: new Set(newOnes),
+      });
+    } catch (e) {
+      setDiscovered({ status: "error", message: (e as Error).message });
+    }
+  }
+
+  function toggleDiscovered(name: string) {
+    setDiscovered((s) => {
+      if (s.status !== "ready") return s;
+      const next = new Set(s.selected);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return { ...s, selected: next };
+    });
+  }
+
+  async function onSaveDiscovered() {
+    if (discovered.status !== "ready") return;
+    const selected = discovered.selected;
+    setDiscovered({ status: "saving", selected });
+    try {
+      const res = await fetch(
+        "/api/member/knowledge-base/discovered-neighbourhoods",
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ neighbourhoods: Array.from(selected) }),
+        },
+      );
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Failed to save.");
+      setDiscovered({
+        status: "saved",
+        addedCount: Number(data.addedCount) || 0,
+        totalCount: Number(data.totalCount) || 0,
+      });
+      router.refresh();
+    } catch (e) {
+      setDiscovered({ status: "error", message: (e as Error).message });
+    }
+  }
+
   const [pastedText, setPastedText] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [toolUsed, setToolUsed] = useState("");
@@ -145,6 +227,157 @@ export default function KnowledgeBaseClient({
 
   return (
     <>
+      {/* Auto-populate vocab from validated MarketFact rows */}
+      <section className="rounded-lg border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
+        <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">
+          Auto-populate from your validated data
+        </h2>
+        <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+          Pull the distinct neighbourhoods already found in your validated MLS
+          uploads and merge them into your vocab — no retyping required.
+        </p>
+
+        {discovered.status === "idle" && (
+          <div className="mt-4">
+            <button
+              type="button"
+              onClick={onLoadDiscovered}
+              className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-800 shadow-sm hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:hover:bg-gray-800"
+            >
+              Find neighbourhoods in my data
+            </button>
+          </div>
+        )}
+
+        {discovered.status === "loading" && (
+          <div className="mt-3 text-sm text-gray-500 dark:text-gray-400">
+            Scanning your validated facts…
+          </div>
+        )}
+
+        {discovered.status === "error" && (
+          <div className="mt-3 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-800 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300">
+            {discovered.message}
+            <div className="mt-2">
+              <button
+                type="button"
+                onClick={onLoadDiscovered}
+                className="text-xs underline hover:no-underline"
+              >
+                Try again
+              </button>
+            </div>
+          </div>
+        )}
+
+        {(discovered.status === "ready" || discovered.status === "saving") && (
+          <div className="mt-4 space-y-3">
+            <div className="text-sm text-gray-700 dark:text-gray-300">
+              Found{" "}
+              <strong>
+                {(discovered.status === "ready"
+                  ? discovered.discovered.length
+                  : 0)}{" "}
+              </strong>
+              distinct neighbourhoods
+              {discovered.status === "ready" && discovered.monthsCovered > 0 && (
+                <>
+                  {" "}across your last{" "}
+                  <strong>{discovered.monthsCovered}</strong>{" "}
+                  {discovered.monthsCovered === 1 ? "month" : "months"} of
+                  validated uploads
+                </>
+              )}
+              . Deselect any you don't want in your vocab.
+            </div>
+
+            {discovered.status === "ready" &&
+            discovered.discovered.length === 0 ? (
+              <div className="rounded-md border border-dashed border-gray-300 p-4 text-xs text-gray-500 dark:border-gray-700 dark:text-gray-400">
+                No neighbourhoods found yet. Upload and validate some MLS data
+                first.
+              </div>
+            ) : (
+              <ul className="max-h-72 overflow-auto rounded-md border border-gray-200 p-2 dark:border-gray-800">
+                {(discovered.status === "ready"
+                  ? discovered.discovered
+                  : []
+                ).map((name) => {
+                  const isExisting = existingVocabLower.has(
+                    name.trim().toLowerCase(),
+                  );
+                  const checked = discovered.selected.has(name);
+                  return (
+                    <li
+                      key={name}
+                      className="flex items-center justify-between gap-2 px-2 py-1 text-sm"
+                    >
+                      <label className="flex flex-1 cursor-pointer items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          disabled={discovered.status === "saving"}
+                          onChange={() => toggleDiscovered(name)}
+                          className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="text-gray-800 dark:text-gray-200">
+                          {name}
+                        </span>
+                      </label>
+                      {isExisting && (
+                        <span className="text-[11px] text-gray-500 dark:text-gray-400">
+                          already in vocab
+                        </span>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+
+            <div className="flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setDiscovered({ status: "idle" })}
+                disabled={discovered.status === "saving"}
+                className="text-sm text-gray-600 hover:underline disabled:opacity-50 dark:text-gray-400"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={onSaveDiscovered}
+                disabled={
+                  discovered.status === "saving" ||
+                  (discovered.status === "ready" &&
+                    discovered.discovered.length === 0)
+                }
+                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {discovered.status === "saving"
+                  ? "Saving…"
+                  : `Add ${discovered.status === "ready" ? discovered.selected.size : 0} to vocab`}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {discovered.status === "saved" && (
+          <div className="mt-3 rounded-md border border-green-300 bg-green-50 p-3 text-sm text-green-900 dark:border-green-800 dark:bg-green-900/20 dark:text-green-200">
+            Added <strong>{discovered.addedCount}</strong> new{" "}
+            {discovered.addedCount === 1 ? "neighbourhood" : "neighbourhoods"}.
+            Your vocab now has <strong>{discovered.totalCount}</strong> total.
+            <button
+              type="button"
+              onClick={() => setDiscovered({ status: "idle" })}
+              className="ml-3 text-xs underline hover:no-underline"
+            >
+              Done
+            </button>
+          </div>
+        )}
+      </section>
+
       {/* Section A — Research Brief */}
       <section className="rounded-lg border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
         <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">
