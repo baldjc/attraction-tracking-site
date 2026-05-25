@@ -3,6 +3,27 @@ import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import prisma from "./prisma";
 
+// `.replit` pins AUTH_URL to the production domain so the deployed app issues
+// cookies and redirects for the right host. In the Replit dev workspace the
+// app is served from a different `.replit.dev` preview origin, but NextAuth
+// will still take AUTH_URL at face value and emit redirects pointing at the
+// production .replit.app — making the post-login redirect a cross-origin
+// hop. With `signIn({ redirect: false })` the client-side fetch follows that
+// hop and the dev origin's Set-Cookie is dropped, so login silently fails
+// from the preview ("Invalid or expired code" even when the code is right).
+//
+// In any non-production runtime, drop AUTH_URL so `trustHost: true` derives
+// the base URL from the incoming request host instead. Production deploys
+// (NODE_ENV=production, REPLIT_DEPLOYMENT=1) keep the pinned value.
+if (process.env.NODE_ENV !== "production" && !process.env.REPLIT_DEPLOYMENT) {
+  if (process.env.AUTH_URL) {
+    delete process.env.AUTH_URL;
+  }
+  if (process.env.NEXTAUTH_URL) {
+    delete process.env.NEXTAUTH_URL;
+  }
+}
+
 // Inlined to avoid circular import with `@/lib/auth-utils` (which itself
 // depends on `auth`). Keep in sync with `getMainOwnerEmail` there.
 function isMainOwnerEmail(email: string | null | undefined): boolean {
