@@ -13,7 +13,7 @@
  *
  *   1. No `\bwhy\b` in spoken dialogue (titles + visual/B-roll tags exempt).
  *   2. No avatar-pander phrases anywhere in dialogue (6 banned phrases).
- *   3. No banned dialogue abbreviations (MOI, DOM, PSF, SP/LP) — full
+ *   3. No banned dialogue abbreviations (MOI, DOM, SP/LP) — full
  *      terms only. Abbreviations remain allowed inside [VISUAL: ...] /
  *      [B-ROLL: ...] tags and data overlays.
  *   4. Numerals on the page for $ amounts, percentages, and MOI values
