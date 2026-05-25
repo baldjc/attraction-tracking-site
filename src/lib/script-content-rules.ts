@@ -231,19 +231,26 @@ export function checkNoAvatarPander(script: string): ScriptViolation[] {
 /* ────────────────────────────────────────────────────────────────────── */
 
 /**
- * Abbreviations Claude is forbidden to emit in spoken dialogue. These are
- * the industry shortcuts the source prompt explicitly bans (it lists MOI,
- * SP/LP, DOM; PSF is added here because it's the next most common Calgary
- * MLS shortcut for "price per square foot" and the spec says "Full terms
- * always"). They remain ALLOWED inside [VISUAL: ...] tags / data overlays,
- * which `stripToDialogue` removes before this rule runs.
+ * Abbreviations Claude is forbidden to emit in spoken dialogue. The
+ * source prompt explicitly enumerates exactly three at lines 90, 110, and
+ * 586 of 2_SCRIPT_BUILDER_MODE.md:
+ *
+ *   > "The abbreviations MOI, SP/LP, DOM NEVER appear in the spoken
+ *   > script body. They are allowed ONLY inside [VISUAL: ...] tags or
+ *   > data overlays..."
+ *
+ * Sticking to the source set deliberately — common real-estate
+ * abbreviations the source does NOT enumerate (YoY, MoM, MLS, CMA,
+ * CMHC, PSF, YTD, GTA, ATL) are NOT banned here. If any of those slip
+ * through during member testing, we extend this list with a documented
+ * source reference rather than guessing now.
  */
 const BANNED_DIALOGUE_ABBREVS: readonly { pattern: RegExp; abbrev: string }[] =
   [
     { pattern: /\bMOI\b/g, abbrev: "MOI" },
     { pattern: /\bDOM\b/g, abbrev: "DOM" },
-    { pattern: /\bPSF\b/g, abbrev: "PSF" },
-    // SP/LP — match the slash form and bare "SP" followed by "/LP".
+    // SP/LP — match the slash form (the only form the source prompt
+    // enumerates as banned).
     { pattern: /\bSP\s*\/\s*LP\b/g, abbrev: "SP/LP" },
   ];
 
