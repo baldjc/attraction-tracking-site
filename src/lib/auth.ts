@@ -30,22 +30,44 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const user = await prisma.user.findUnique({ where: { email } });
         if (!user) return null;
 
-        const recent = await prisma.loginOtp.findFirst({
+        // Check every unused, unexpired OTP for this email — NOT just the
+        // most recent. Users routinely have multiple valid codes in flight
+        // because the resend button, double-clicks, multi-tab requests, and
+        // network retries all insert new rows. Previously we only compared
+        // against the newest row, which silently invalidated every earlier
+        // code the moment a second one was issued — even if those codes
+        // had not expired and were the ones the user actually opened in
+        // their email. Iterating over all valid candidates preserves
+        // single-use semantics (we mark the matched row used) and the
+        // 10-min expiry without that footgun.
+        const candidates = await prisma.loginOtp.findMany({
           where: {
             email,
             usedAt: null,
             expiresAt: { gt: new Date() },
           },
           orderBy: { createdAt: "desc" },
+          // Cap to bound bcrypt work in pathological cases. A user can't
+          // realistically open more than a handful of distinct codes at
+          // once; older valid rows fall off the list rather than being
+          // rejected outright.
+          take: 10,
         });
 
-        if (!recent) return null;
+        if (candidates.length === 0) return null;
 
-        const valid = await bcrypt.compare(code, recent.codeHash);
-        if (!valid) return null;
+        let matched: { id: string } | null = null;
+        for (const c of candidates) {
+          // eslint-disable-next-line no-await-in-loop -- sequential by design
+          if (await bcrypt.compare(code, c.codeHash)) {
+            matched = c;
+            break;
+          }
+        }
+        if (!matched) return null;
 
         await prisma.loginOtp.update({
-          where: { id: recent.id },
+          where: { id: matched.id },
           data: { usedAt: new Date() },
         });
 
