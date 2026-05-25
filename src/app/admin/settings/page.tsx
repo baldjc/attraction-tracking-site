@@ -513,6 +513,7 @@ const V2_FLAG_DEFS: { key: string; label: string; desc: string }[] = [
   { key: "tool_idea_validation", label: "Idea Validation", desc: "v2 — Pre-script idea check against avatar + facts" },
   { key: "tool_script_builder_v2", label: "Script Builder v2", desc: "v2 — Data-grounded script writer" },
   { key: "tool_home_tour_mode", label: "Home Tour Mode", desc: "v2 — Home-tour shoot type in planner" },
+  { key: "tool_neighbourhood_knowledge", label: "Neighbourhood Knowledge", desc: "v2 — Per-neighbourhood fact bank used by Script Builder v2" },
   { key: "nav_v2_hub", label: "v2 Navigation Hub", desc: "v2 — Unified hub entry point for data-first features" },
 ];
 
