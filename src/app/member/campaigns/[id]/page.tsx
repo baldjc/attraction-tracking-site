@@ -33,6 +33,13 @@ interface CampaignData {
   name: string;
   destinationUrl: string;
   leadMagnetUrl: string | null;
+  // Pitch language — feeds the Script Builder. Owner-editable from
+  // this page; admins can also edit cross-account at
+  // /admin/campaigns/[id]. Stored on the Campaign row itself
+  // (model is per-user — Campaign.userId is the owner).
+  description: string | null;
+  pitchOneLiner: string | null;
+  audience: string | null;
   sourceType: string;
   createdAt: string;
   links: TrackingLinkData[];
@@ -160,7 +167,14 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
 
   // Edit campaign
   const [showEditCampaign, setShowEditCampaign] = useState(false);
-  const [campaignEditForm, setCampaignEditForm] = useState({ name: "", destinationUrl: "", leadMagnetUrl: "" });
+  const [campaignEditForm, setCampaignEditForm] = useState({
+    name: "",
+    destinationUrl: "",
+    leadMagnetUrl: "",
+    description: "",
+    pitchOneLiner: "",
+    audience: "",
+  });
   const [analyticsSourceFilter, setAnalyticsSourceFilter] = useState("all");
   const [savingCampaign, setSavingCampaign] = useState(false);
   const [campaignEditError, setCampaignEditError] = useState<string | null>(null);
@@ -307,7 +321,14 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
 
   function openEditCampaign() {
     if (!campaign) return;
-    setCampaignEditForm({ name: campaign.name, destinationUrl: campaign.destinationUrl, leadMagnetUrl: campaign.leadMagnetUrl ?? "" });
+    setCampaignEditForm({
+      name: campaign.name,
+      destinationUrl: campaign.destinationUrl,
+      leadMagnetUrl: campaign.leadMagnetUrl ?? "",
+      description: campaign.description ?? "",
+      pitchOneLiner: campaign.pitchOneLiner ?? "",
+      audience: campaign.audience ?? "",
+    });
     setCampaignEditError(null);
     setShowEditCampaign(true);
   }
@@ -317,10 +338,21 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
     setSavingCampaign(true);
     setCampaignEditError(null);
     try {
+      // The PATCH endpoint already ownership-scopes via
+      // getCampaignForUser, so this 200s only when the current user
+      // owns the campaign. Empty strings → null so clearing a field
+      // actually unsets it instead of writing "".
       const res = await fetch(`/api/campaigns/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...campaignEditForm, leadMagnetUrl: campaignEditForm.leadMagnetUrl || null }),
+        body: JSON.stringify({
+          name: campaignEditForm.name,
+          destinationUrl: campaignEditForm.destinationUrl,
+          leadMagnetUrl: campaignEditForm.leadMagnetUrl || null,
+          description: campaignEditForm.description.trim() || null,
+          pitchOneLiner: campaignEditForm.pitchOneLiner.trim() || null,
+          audience: campaignEditForm.audience.trim() || null,
+        }),
       });
       if (res.ok) {
         setShowEditCampaign(false);
@@ -868,7 +900,7 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
       {/* Edit Campaign Modal */}
       {showEditCampaign && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg border border-[#2f3437]/10 shadow-xl w-full max-w-md p-6">
+          <div className="bg-white rounded-lg border border-[#2f3437]/10 shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
             <div className="flex items-center justify-between mb-5">
               <h2 className="font-bold text-[#2f3437]">Edit Campaign</h2>
               <button onClick={() => setShowEditCampaign(false)} className="text-[#2f3437]/40 hover:text-[#2f3437] text-xl">✕</button>
@@ -886,6 +918,68 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                 <label className="block text-sm font-semibold text-[#2f3437] mb-1.5">Lead Magnet URL <span className="font-normal text-[#2f3437]/40">(optional)</span></label>
                 <input type="url" value={campaignEditForm.leadMagnetUrl} onChange={(e) => setCampaignEditForm({ ...campaignEditForm, leadMagnetUrl: e.target.value })} placeholder="e.g., Google Drive link to your guide" className={INPUT_CLS} />
               </div>
+
+              {/* ── Pitch language for the Script Builder ─────────────
+                  These three fields feed the script writer so it
+                  doesn't invent generic pitch language from the
+                  campaign name alone. See the ASSIGNED ASSETS block
+                  in src/app/api/ai-tools/script-builder-v2/route.ts. */}
+              <div className="pt-2 border-t border-[#2f3437]/10">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-[#2f3437]/40 mb-3">
+                  Pitch language (used by the Script Builder)
+                </p>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-[#2f3437] mb-1.5">
+                      One-liner pitch <span className="font-normal text-[#2f3437]/40">(optional)</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={campaignEditForm.pitchOneLiner}
+                      onChange={(e) => setCampaignEditForm({ ...campaignEditForm, pitchOneLiner: e.target.value })}
+                      placeholder="e.g., A free 10-page neighbourhood relocation guide for Oakville buyers"
+                      maxLength={240}
+                      className={INPUT_CLS}
+                    />
+                    <p className="text-[11px] text-[#2f3437]/40 mt-1">
+                      How you&apos;d describe it in one sentence on camera. {campaignEditForm.pitchOneLiner.length}/240
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-[#2f3437] mb-1.5">
+                      Description <span className="font-normal text-[#2f3437]/40">(optional)</span>
+                    </label>
+                    <textarea
+                      value={campaignEditForm.description}
+                      onChange={(e) => setCampaignEditForm({ ...campaignEditForm, description: e.target.value })}
+                      placeholder="What's inside the lead magnet / landing page? Specific sections, numbers, or promises that the script can reference."
+                      maxLength={1000}
+                      rows={4}
+                      className={INPUT_CLS}
+                    />
+                    <p className="text-[11px] text-[#2f3437]/40 mt-1">
+                      {campaignEditForm.description.length}/1000
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-[#2f3437] mb-1.5">
+                      Audience <span className="font-normal text-[#2f3437]/40">(optional)</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={campaignEditForm.audience}
+                      onChange={(e) => setCampaignEditForm({ ...campaignEditForm, audience: e.target.value })}
+                      placeholder="e.g., First-time buyers relocating from Toronto"
+                      maxLength={240}
+                      className={INPUT_CLS}
+                    />
+                    <p className="text-[11px] text-[#2f3437]/40 mt-1">
+                      Who the lead magnet is for. {campaignEditForm.audience.length}/240
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               {campaignEditError && (
                 <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{campaignEditError}</p>
               )}
