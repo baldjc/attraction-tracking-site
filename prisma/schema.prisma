@@ -352,6 +352,12 @@ model Campaign {
   name           String
   destinationUrl String
   leadMagnetUrl  String?
+  // Lead-magnet detail — feeds the script writer so it doesn't invent
+  // generic pitches from the campaign name alone. See
+  // src/app/api/ai-tools/script-builder-v2/route.ts ASSIGNED ASSETS block.
+  description    String?
+  pitchOneLiner  String?
+  audience       String?
   sourceType     SourceType @default(YOUTUBE)
   deletedAt      DateTime?
   createdAt      DateTime   @default(now())

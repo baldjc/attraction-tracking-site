@@ -74,6 +74,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     name: campaign.name,
     destinationUrl: campaign.destinationUrl,
     leadMagnetUrl: campaign.leadMagnetUrl ?? null,
+    description: campaign.description ?? null,
+    pitchOneLiner: campaign.pitchOneLiner ?? null,
+    audience: campaign.audience ?? null,
     sourceType: campaign.sourceType,
     createdAt: campaign.createdAt,
     member: isAdmin ? campaign.user : undefined,
@@ -95,7 +98,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const campaign = await getCampaignForUser(id, user.id);
   if (!campaign) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const { name, destinationUrl, leadMagnetUrl, sourceType } = await req.json();
+  const {
+    name,
+    destinationUrl,
+    leadMagnetUrl,
+    sourceType,
+    description,
+    pitchOneLiner,
+    audience,
+  } = await req.json();
   try {
     const updated = await prisma.campaign.update({
       where: { id },
@@ -104,6 +115,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         ...(destinationUrl && { destinationUrl: normalizeUrl(destinationUrl) }),
         ...(leadMagnetUrl !== undefined && { leadMagnetUrl: leadMagnetUrl || null }),
         ...(sourceType && { sourceType }),
+        ...(description !== undefined && { description: description || null }),
+        ...(pitchOneLiner !== undefined && { pitchOneLiner: pitchOneLiner || null }),
+        ...(audience !== undefined && { audience: audience || null }),
       },
     });
     return NextResponse.json(updated);

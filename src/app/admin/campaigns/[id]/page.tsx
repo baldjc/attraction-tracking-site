@@ -27,6 +27,9 @@ interface CampaignData {
   destinationUrl: string;
   sourceType: string;
   createdAt: string;
+  description: string | null;
+  pitchOneLiner: string | null;
+  audience: string | null;
   member?: { fullName: string | null; email: string };
   links: TrackingLinkData[];
   totalViews: number | null;
@@ -86,6 +89,12 @@ export default function AdminCampaignDetailPage({ params }: { params: Promise<{ 
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState<string | null>(null);
 
+  const [editForm, setEditForm] = useState({ description: "", pitchOneLiner: "", audience: "" });
+  const [editDirty, setEditDirty] = useState(false);
+  const [editSaving, setEditSaving] = useState(false);
+  const [editSavedAt, setEditSavedAt] = useState<number | null>(null);
+  const [editError, setEditError] = useState<string | null>(null);
+
   const [period, setPeriod] = useState("30d");
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(true);
@@ -109,10 +118,42 @@ export default function AdminCampaignDetailPage({ params }: { params: Promise<{ 
   useEffect(() => {
     fetch(`/api/campaigns/${id}`)
       .then((r) => r.json())
-      .then((d) => { setCampaign(d); setLoading(false); })
+      .then((d) => {
+        setCampaign(d);
+        setEditForm({
+          description: d.description ?? "",
+          pitchOneLiner: d.pitchOneLiner ?? "",
+          audience: d.audience ?? "",
+        });
+        setEditDirty(false);
+        setLoading(false);
+      })
       .catch(() => setLoading(false));
     loadGeoData();
   }, [id, loadGeoData]);
+
+  async function saveLeadMagnetEdits() {
+    setEditSaving(true);
+    setEditError(null);
+    try {
+      const res = await fetch(`/api/campaigns/${id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(editForm),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ error: "Save failed" }));
+        throw new Error(body.error || "Save failed");
+      }
+      setEditDirty(false);
+      setEditSavedAt(Date.now());
+      setCampaign((c) => (c ? { ...c, ...editForm } : c));
+    } catch (err) {
+      setEditError(err instanceof Error ? err.message : "Save failed");
+    } finally {
+      setEditSaving(false);
+    }
+  }
 
   useEffect(() => { loadAnalytics(period); }, [period, loadAnalytics]);
 
@@ -166,6 +207,88 @@ export default function AdminCampaignDetailPage({ params }: { params: Promise<{ 
           >
             {campaign.destinationUrl}
           </a>
+        </div>
+      </div>
+
+      {/* Lead-magnet detail — feeds the Script Builder so it can write
+          an on-brand pitch instead of inventing generic language from
+          the campaign name alone. */}
+      <div className="bg-white border border-[#2f3437]/10 rounded-lg p-5 space-y-3">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h2 className="font-semibold text-[#2f3437]">Lead-magnet detail</h2>
+            <p className="text-xs text-[#2f3437]/50 mt-0.5">
+              Fed verbatim to the Script Builder. Leave blank only if the campaign isn't a lead magnet.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {editSavedAt && !editDirty && !editSaving && (
+              <span className="text-xs text-emerald-600">Saved</span>
+            )}
+            {editError && (
+              <span className="text-xs text-red-600">{editError}</span>
+            )}
+            <button
+              type="button"
+              onClick={saveLeadMagnetEdits}
+              disabled={!editDirty || editSaving}
+              className="text-xs font-medium px-3 py-1.5 rounded-full bg-[#111] text-white disabled:bg-[#2f3437]/20 disabled:cursor-not-allowed"
+            >
+              {editSaving ? "Saving…" : "Save"}
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label className="text-[11px] uppercase tracking-wider font-semibold text-[#2f3437]/55">
+            What it is
+          </label>
+          <textarea
+            value={editForm.description}
+            onChange={(e) => {
+              setEditForm((f) => ({ ...f, description: e.target.value }));
+              setEditDirty(true);
+            }}
+            rows={2}
+            placeholder='e.g. "Monthly Calgary real estate market stats report covering detached / condo / townhome MOI, days on market, sale-to-list ratios, broken down by zone."'
+            className="mt-1 w-full text-sm border border-[#2f3437]/15 rounded-lg px-3 py-2 focus:outline-none focus:border-[#6ba3c7]"
+          />
+        </div>
+
+        <div>
+          <label className="text-[11px] uppercase tracking-wider font-semibold text-[#2f3437]/55">
+            One-line pitch <span className="text-[#2f3437]/40 normal-case font-normal">(used verbatim in [LEAD MAGNET] placements)</span>
+          </label>
+          <textarea
+            value={editForm.pitchOneLiner}
+            onChange={(e) => {
+              setEditForm((f) => ({ ...f, pitchOneLiner: e.target.value }));
+              setEditDirty(true);
+            }}
+            rows={2}
+            placeholder='e.g. "Get the same monthly market data agents use to advise their clients — including which zones are tightening and which have buyer leverage."'
+            className="mt-1 w-full text-sm border border-[#2f3437]/15 rounded-lg px-3 py-2 focus:outline-none focus:border-[#6ba3c7]"
+          />
+          {!editForm.pitchOneLiner.trim() && (
+            <p className="mt-1 text-[11px] italic text-amber-700">
+              Without a one-line pitch, the Script Builder falls back to writing from the description (or invents a generic pitch from the name). Highly recommended for any lead magnet you want pitched on-brand.
+            </p>
+          )}
+        </div>
+
+        <div>
+          <label className="text-[11px] uppercase tracking-wider font-semibold text-[#2f3437]/55">
+            Audience
+          </label>
+          <input
+            value={editForm.audience}
+            onChange={(e) => {
+              setEditForm((f) => ({ ...f, audience: e.target.value }));
+              setEditDirty(true);
+            }}
+            placeholder='e.g. "Calgary families considering when to buy or sell"'
+            className="mt-1 w-full text-sm border border-[#2f3437]/15 rounded-lg px-3 py-2 focus:outline-none focus:border-[#6ba3c7]"
+          />
         </div>
       </div>
 

@@ -120,6 +120,9 @@ interface AssignedCampaign {
   name: string;
   destinationUrl: string;
   leadMagnetUrl: string | null;
+  description: string | null;
+  pitchOneLiner: string | null;
+  audience: string | null;
 }
 
 interface AssignedBingeVideo {
@@ -304,14 +307,29 @@ export async function POST(req: NextRequest) {
   if (plan.linkedCampaignId) {
     const campaign = await prisma.campaign.findFirst({
       where: { id: plan.linkedCampaignId, userId, deletedAt: null },
-      select: { name: true, destinationUrl: true, leadMagnetUrl: true },
+      select: {
+        name: true,
+        destinationUrl: true,
+        leadMagnetUrl: true,
+        description: true,
+        pitchOneLiner: true,
+        audience: true,
+      },
     });
     if (campaign) {
       assignedCampaign = {
         name: campaign.name,
         destinationUrl: campaign.destinationUrl,
         leadMagnetUrl: campaign.leadMagnetUrl,
+        description: campaign.description,
+        pitchOneLiner: campaign.pitchOneLiner,
+        audience: campaign.audience,
       };
+      if (!campaign.pitchOneLiner) {
+        planWarnings.push(
+          `Lead magnet "${campaign.name}" has no calibrated pitch defined — script will fall back to generic pitch language. Edit at /admin/campaigns/${plan.linkedCampaignId} to add a one-line pitch.`,
+        );
+      }
     } else {
       planWarnings.push(
         "The lead magnet campaign assigned to this plan no longer exists — script uses generic placeholders. Reassign one in the planner.",
@@ -899,10 +917,38 @@ function buildInitialUserMessage(args: {
     const url =
       assignedCampaign.leadMagnetUrl ?? assignedCampaign.destinationUrl;
     lines.push(
-      "**Lead magnet** (use this verbatim in all `[LEAD MAGNET 1/3]`, `[LEAD MAGNET 2/3]`, `[LEAD MAGNET 3/3]` placements — do NOT invent a generic substitute):",
+      "**Lead magnet** — this is the SPECIFIC asset the member assigned to this video. Use it in every `[LEAD MAGNET 1/3]`, `[LEAD MAGNET 2/3]`, `[LEAD MAGNET 3/3]` placement. Do NOT invent a generic budget-calculator, report, or guide pitch from the name alone — the fields below tell you what this asset actually is and how the member pitches it.",
     );
-    lines.push(`- Name: ${assignedCampaign.name}`);
-    lines.push(`- URL: ${url}`);
+    lines.push("");
+    lines.push(`- **Name:** ${assignedCampaign.name}`);
+    if (assignedCampaign.description) {
+      lines.push(`- **What it is:** ${assignedCampaign.description}`);
+    }
+    if (assignedCampaign.pitchOneLiner) {
+      lines.push(
+        `- **One-line pitch (USE THIS VERBATIM or with minimal adaptation):** ${assignedCampaign.pitchOneLiner}`,
+      );
+    }
+    if (assignedCampaign.audience) {
+      lines.push(`- **Audience:** ${assignedCampaign.audience}`);
+    }
+    lines.push(`- **URL:** ${url}`);
+    lines.push("");
+    if (assignedCampaign.pitchOneLiner) {
+      lines.push(
+        "The **one-line pitch** above is the member's calibrated pitch language for THIS asset. Use it verbatim in the opening `[LEAD MAGNET 1/3]` pitch and weave it (with minimal rewording) into the mid-body and closing pitches. Do NOT substitute generic pitch language about budget calculators, reports, or guides based on the name.",
+      );
+    } else if (assignedCampaign.description) {
+      lines.push(
+        "No calibrated one-line pitch was provided for this asset. Write each `[LEAD MAGNET]` pitch from the **What it is** description above — do NOT invent a pitch from the name alone (which leads to generic budget-calculator / report-style language that doesn't match the actual asset).",
+      );
+    } else {
+      lines.push(
+        "Only the name was provided for this asset — no description or calibrated pitch. Keep each `[LEAD MAGNET]` placement to a SHORT generic pitch tied to the name (e.g. \"a free " +
+          assignedCampaign.name.toLowerCase() +
+          ' I put together") and do NOT invent specific feature claims about what the asset contains.',
+      );
+    }
     lines.push("");
   } else {
     lines.push(

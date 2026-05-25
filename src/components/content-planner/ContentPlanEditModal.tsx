@@ -431,7 +431,7 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
     bingeVideoId: plan.bingeVideoId ?? "",
     manualSteps: Array.isArray((plan as any).manualSteps) ? ((plan as any).manualSteps as string[]) : [],
   });
-  const [campaigns, setCampaigns] = useState<Array<{ id: string; name: string }>>([]);
+  const [campaigns, setCampaigns] = useState<Array<{ id: string; name: string; pitchOneLiner: string | null }>>([]);
 
   // Binge Video selector state. Options are loaded lazily the first time the
   // dropdown opens (one fetch per modal session) so users who never touch the
@@ -529,7 +529,7 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
     if (isAdmin) return;
     fetch("/api/campaigns")
       .then((r) => (r.ok ? r.json() : []))
-      .then((d) => Array.isArray(d) && setCampaigns(d.map((c: { id: string; name: string }) => ({ id: c.id, name: c.name }))))
+      .then((d) => Array.isArray(d) && setCampaigns(d.map((c: { id: string; name: string; pitchOneLiner?: string | null }) => ({ id: c.id, name: c.name, pitchOneLiner: c.pitchOneLiner ?? null }))))
       .catch(() => {});
   }, [isAdmin]);
   const [driveFolderLink, setDriveFolderLink] = useState(plan.driveFolderLink);
@@ -1959,6 +1959,17 @@ Produce a research brief I can hand to a script writer. For **each talking point
                         {" "}so the script writer can reference it by name.
                       </p>
                     )}
+                    {(() => {
+                      const selected = campaigns.find((c) => c.id === form.linkedCampaignId);
+                      if (!selected || selected.pitchOneLiner) return null;
+                      return (
+                        <p className="mt-1 text-[11px] italic text-amber-700">
+                          This lead magnet has no calibrated pitch defined. The script writer will fall back to a generic pitch from the name.{" "}
+                          <a href={`/admin/campaigns/${selected.id}`} className="underline">Edit lead magnet detail</a>{" "}
+                          to add a one-line pitch.
+                        </p>
+                      );
+                    })()}
                   </div>
                 )}
 
