@@ -196,9 +196,11 @@ export async function POST(req: NextRequest) {
   // safe set we sent. Strip any hallucinated ids so the UI never tries to
   // link to a fact that doesn't exist.
   const knownIds = new Set(facts.map((f) => f.id));
-  if (Array.isArray(parsed.citedFacts)) {
-    parsed.citedFacts = parsed.citedFacts.filter((c) => knownIds.has(c.id));
-  }
+  const originalCited = Array.isArray(parsed.citedFacts) ? parsed.citedFacts : [];
+  const survivingCited = originalCited.filter((c) => knownIds.has(c.id));
+  parsed.citedFacts = survivingCited;
+  const droppedHallucinatedCount = originalCited.length - survivingCited.length;
+
   if (Array.isArray(parsed.relatedAngles)) {
     parsed.relatedAngles = parsed.relatedAngles.map((a) => ({
       ...a,
@@ -206,10 +208,75 @@ export async function POST(req: NextRequest) {
     }));
   }
 
+  // ── Recompute verdict from surviving cited facts ────────────────────
+  // The model's `mode` is built from its pre-filter reasoning chain, so if
+  // any of its evidence got dropped by the hallucination filter the verdict
+  // can be wildly wrong (e.g. claiming "contradicts" because of an invented
+  // MOI number that we just filtered out). Re-derive the verdict from the
+  // surviving citedFacts' `supports` booleans instead.
+  let supportingCount = 0;
+  let contradictingCount = 0;
+  for (const c of survivingCited) {
+    if (c.supports === true) supportingCount += 1;
+    else if (c.supports === false) contradictingCount += 1;
+  }
+
+  let recomputedMode: ValidationResponse["mode"] | null;
+  if (supportingCount === 0 && contradictingCount === 0) {
+    recomputedMode = null;
+  } else if (supportingCount >= 2 && contradictingCount === 0) {
+    recomputedMode = "supports";
+  } else if (supportingCount >= 1 && contradictingCount >= 1) {
+    recomputedMode = "partial";
+  } else if (supportingCount === 0 && contradictingCount >= 1) {
+    recomputedMode = "contradicts";
+  } else {
+    // supportingCount === 1 && contradictingCount === 0 — single supporting
+    // fact is too thin to call "supports" outright; treat as partial so the
+    // member still gets sharper framing.
+    recomputedMode = "partial";
+  }
+
+  const requestId = resp.id;
+
+  if (recomputedMode === null) {
+    console.warn(
+      `[idea-validation] ${requestId}: no valid cited facts after hallucination filter (dropped=${droppedHallucinatedCount}, claimedMode=${parsed.mode}) — returning 422.`,
+    );
+    return NextResponse.json(
+      {
+        error: "no_valid_facts",
+        message:
+          "Your facts library didn't contain enough evidence to validate this idea. Try a different angle or upload fresher data.",
+      },
+      { status: 422 },
+    );
+  }
+
+  let verdictRecomputed = false;
+  if (recomputedMode !== parsed.mode) {
+    verdictRecomputed = true;
+    console.warn(
+      `[idea-validation] ${requestId}: verdict overridden ${parsed.mode} → ${recomputedMode} ` +
+        `(supporting=${supportingCount}, contradicting=${contradictingCount}, droppedHallucinated=${droppedHallucinatedCount})`,
+    );
+    parsed.mode = recomputedMode;
+
+    // When the verdict flips because hallucinated evidence got filtered out,
+    // the model's sharperFraming and relatedAngles were built on reasoning
+    // that no longer applies. Drop them — except in the "partial" case where
+    // sharper framing is genuinely useful (verdict is still mixed).
+    if (recomputedMode !== "partial") {
+      delete parsed.sharperFraming;
+      delete parsed.relatedAngles;
+    }
+  }
+
   return NextResponse.json({
     ...parsed,
     upload: { id: upload.id, monthYear: upload.monthYear, label: upload.label },
     factsConsidered: facts.length,
+    verdictRecomputed,
   });
 }
 
