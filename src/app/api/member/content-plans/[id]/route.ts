@@ -91,7 +91,18 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     }
   }
 
-  if (status !== undefined && !isValidStatus(status, serviceTier)) {
+  // PATCH semantics: only validate `status` against the tier when the
+  // caller is actually changing it. The modal always echoes the current
+  // status back in every save, and legacy plans can carry a status that
+  // pre-dates a tier change (e.g. a DwY member whose plan still says
+  // "Idea" from the Wave 2 wizard default). Rejecting unchanged values
+  // here turns every unrelated edit — lead magnet, binge target, notes —
+  // into a 400, even though the user never touched the status field.
+  if (
+    status !== undefined &&
+    status !== existing.status &&
+    !isValidStatus(status, serviceTier)
+  ) {
     return NextResponse.json({ error: "Invalid status for your membership tier" }, { status: 400 });
   }
 

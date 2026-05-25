@@ -1952,6 +1952,13 @@ Produce a research brief I can hand to a script writer. For **each talking point
                         <option key={c.id} value={c.id}>{c.name}</option>
                       ))}
                     </select>
+                    {campaigns.length === 0 && (
+                      <p className="mt-1 text-[11px] italic text-[#2f3437]/55">
+                        No campaigns yet — create one on the{" "}
+                        <a href="/member/campaigns" className="text-[#185FA5] hover:underline">Campaigns page</a>
+                        {" "}so the script writer can reference it by name.
+                      </p>
+                    )}
                   </div>
                 )}
 

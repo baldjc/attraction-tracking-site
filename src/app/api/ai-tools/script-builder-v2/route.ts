@@ -875,7 +875,7 @@ function buildInitialUserMessage(args: {
     lines.push("");
   } else {
     lines.push(
-      "**Lead magnet:** _none assigned_ — use a brief generic placeholder like `[LEAD MAGNET: your free guide]` and keep the pitch short. Do NOT invent a specific product name.",
+      "**Lead magnet:** _none assigned_ — keep each `[LEAD MAGNET 1/3]`, `[LEAD MAGNET 2/3]`, `[LEAD MAGNET 3/3]` placement to a short generic pitch (e.g. \"a free guide I put together\"). Do NOT invent a specific product name, and do NOT emit literal bracket-text such as `[LEAD MAGNET: your free guide]` in the script — the brackets are placeholders, not on-camera dialogue.",
     );
     lines.push("");
   }
@@ -895,7 +895,7 @@ function buildInitialUserMessage(args: {
     lines.push("");
   } else {
     lines.push(
-      "**Next-video binge target:** _none assigned_ — write a generic next-video tease tied to the body's theme. Do NOT invent a specific title.",
+      "**Next-video binge target:** _none assigned_ — write the closing `[CALLBACK]` as a short tease tied to the body's theme. Do NOT invent a specific title, and do NOT write a generic \"check out the next video right here / over there\" close — name the *topic* you're teasing even if you don't have a title.",
     );
     lines.push("");
   }

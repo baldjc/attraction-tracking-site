@@ -167,6 +167,16 @@ export function ScriptWizardClient({ planSummary, backHref }: Props) {
             </ul>
           </div>
         )}
+        {result.planWarnings && result.planWarnings.length > 0 && (
+          <div className="mt-3 rounded border border-sky-200 bg-sky-50 p-3 text-xs text-sky-900 dark:border-sky-700/50 dark:bg-sky-900/20 dark:text-sky-100">
+            <strong>Planner assignments:</strong>
+            <ul className="ml-4 mt-1 list-disc space-y-0.5">
+              {result.planWarnings.map((w, i) => (
+                <li key={i}>{w}</li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
 
       {saveError && (

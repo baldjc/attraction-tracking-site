@@ -61,6 +61,7 @@ export interface Step5CompletePayload {
   monthSpendUsd: number;
   capUsd: number;
   softWarning: boolean;
+  planWarnings?: string[];
 }
 
 interface StreamError {
@@ -502,6 +503,19 @@ function DoneView({
               <li key={i}>
                 <span className="font-mono">{w.rule}</span> — {w.message}
               </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {done.planWarnings && done.planWarnings.length > 0 && (
+        <div className="rounded-lg border border-sky-300 bg-sky-50 p-4 dark:border-sky-700 dark:bg-sky-950/30">
+          <p className="text-xs font-semibold uppercase tracking-wide text-sky-900 dark:text-sky-200">
+            Planner assignments
+          </p>
+          <ul className="mt-2 list-inside list-disc space-y-1 text-xs text-sky-900 dark:text-sky-100">
+            {done.planWarnings.map((w, i) => (
+              <li key={i}>{w}</li>
             ))}
           </ul>
         </div>
