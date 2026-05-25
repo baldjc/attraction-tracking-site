@@ -229,7 +229,13 @@ export function Step5GenerateStream({
         // Inline frame handler — keeps the parser/dispatch tight and
         // lets us `return` on the terminal events without unwinding
         // multiple loop levels with labelled breaks.
-        const handleFrame = (frame: string): "continue" | "done" => {
+        //
+        // Returns "done" for terminal events, "yield" for phase /
+        // violation / reprompt events whose state changes the user
+        // needs to SEE before the next frame mutates them, and
+        // "continue" for token frames (cheap, append-only — yielding
+        // on each would slow the live-preview update to a crawl).
+        const handleFrame = (frame: string): "continue" | "yield" | "done" => {
           let evt = "message";
           const dataLines: string[] = [];
           for (const rawLine of frame.split("\n")) {
@@ -274,6 +280,7 @@ export function Step5GenerateStream({
                 setLivePreview("");
               }
             }
+            return "yield";
           } else if (evt === "token") {
             const d = data as { text?: string };
             if (typeof d.text === "string") {
@@ -284,6 +291,7 @@ export function Step5GenerateStream({
             // Server already announces "reprompt" as the next phase;
             // nothing extra to render here. Keeping the branch so
             // future UI (e.g. inline rule chips) has a hook.
+            return "yield";
           } else if (evt === "complete") {
             // ── Terminal success ──────────────────────────────
             // Write state BEFORE stop() (architect rule: terminal
@@ -336,7 +344,34 @@ export function Step5GenerateStream({
             buf = buf.slice(idx + 2);
             if (!frame) continue;
             if (ctrl.signal.aborted) return;
-            if (handleFrame(frame) === "done") return;
+            const result = handleFrame(frame);
+            if (result === "done") return;
+            // Yield to the browser after every PHASE-CHANGING frame
+            // (phase / violation) so React can commit the queued state
+            // before the next frame overwrites it.
+            //
+            // Replit's preview proxy (and Next dev's Turbopack pipeline)
+            // sometimes buffer SSE responses and hand the client every
+            // frame in one `reader.read()` payload. Without a yield, the
+            // synchronous frame loop fires every `setPhaseLabel` /
+            // `thinking.resetSteps` call inside a single microtask;
+            // React 18 batches them all and only the FINAL state paints
+            // — which is the `complete` event. The pipeline circles and
+            // status text never appear to update mid-stream even though
+            // every event arrived.
+            //
+            // A 0ms timeout (a macrotask, not a microtask) gives React
+            // a chance to flush the commit phase before the next setter
+            // runs. Token frames don't yield — they append to liveTokens
+            // and would slow live-preview throughput to a crawl. When
+            // frames really do arrive one-per-chunk over the wire (the
+            // happy path), the yield is a ~0.1ms no-op; on a buffered
+            // chunk with 4-6 phase emits, the user sees the pipeline
+            // actually progress instead of jumping straight to done.
+            if (result === "yield") {
+              await new Promise<void>((resolve) => setTimeout(resolve, 0));
+              if (ctrl.signal.aborted) return;
+            }
           }
         }
         // Stream closed without a terminal event. Could be:
