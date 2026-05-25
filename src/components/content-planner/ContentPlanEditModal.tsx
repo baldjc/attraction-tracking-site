@@ -1965,7 +1965,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
                       return (
                         <p className="mt-1 text-[11px] italic text-amber-700">
                           This lead magnet has no calibrated pitch defined. The script writer will fall back to a generic pitch from the name.{" "}
-                          <a href={`/admin/campaigns/${selected.id}`} className="underline">Edit lead magnet detail</a>{" "}
+                          <a href={`/member/campaigns/${selected.id}`} className="underline">Edit lead magnet detail</a>{" "}
                           to add a one-line pitch.
                         </p>
                       );
