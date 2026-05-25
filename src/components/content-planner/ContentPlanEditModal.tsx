@@ -149,6 +149,9 @@ export interface ContentPlan {
   visualPeak?: string | null;
   linkedStoryLeadId?: string | null;
   linkedFactIds?: unknown;
+  // Wave 3 — set by Script Builder v2 save endpoint when a script is
+  // approved ('talking_head' / 'home_tour'). Null on legacy/Wave 2 plans.
+  shootType?: string | null;
 }
 
 // Wave 2.5 — payload returned by GET /api/member/content-plans/[id]/lineage.
@@ -191,6 +194,13 @@ interface Props {
   memberId?: string;
   themes?: ThemeOption[];
   showProgressTrack?: boolean;
+  // Wave 3 — when true AND the plan satisfies the lineage gates
+  // (rotationSlot set, ≥3 linked facts, shootType null or talking_head),
+  // the modal surfaces a "Build Script (v2)" entry point that hands
+  // off to /member/content-planner/wizard/script. The save endpoint
+  // re-checks all of these server-side so the button can be hidden
+  // safely without sacrificing security.
+  scriptBuilderV2Enabled?: boolean;
   onClose: () => void;
   onSaved: (updated: ContentPlan) => void;
   onDeleted?: (id: string) => void;
@@ -373,7 +383,7 @@ function ContentRow({
   );
 }
 
-export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdmin, memberId, themes: themesProp = [], showProgressTrack: showProgressTrackProp = false, onClose, onSaved, onDeleted }: Props) {
+export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdmin, memberId, themes: themesProp = [], showProgressTrack: showProgressTrackProp = false, scriptBuilderV2Enabled = false, onClose, onSaved, onDeleted }: Props) {
   // Self-fetch themes when caller didn't supply any (e.g. opened from Pipeline,
   // auto-open URL link, or other entry points). Falls back to caller-supplied list.
   const [fetchedThemes, setFetchedThemes] = useState<ThemeOption[]>([]);
@@ -1442,6 +1452,42 @@ Produce a research brief I can hand to a script writer. For **each talking point
                 </ul>
               </div>
             )}
+
+            {/* Wave 3 — Script Builder v2 (Talking Head) entry point.
+                Gated on the feature flag PLUS the same lineage preconditions
+                the streaming route and save endpoint enforce server-side:
+                rotationSlot set, linkedFactIds.length >= 3, and shootType
+                null or 'talking_head'. Hidden entirely when any gate fails
+                — Wave 4 will ship a sibling Home Tour entry. */}
+            {scriptBuilderV2Enabled &&
+              plan.rotationSlot &&
+              Array.isArray(plan.linkedFactIds) &&
+              plan.linkedFactIds.filter((x) => typeof x === "string").length >= 3 &&
+              (plan.shootType == null || plan.shootType === "talking_head") && (
+                <div className="-mx-6 px-6 py-3 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-white dark:from-blue-900/10 dark:to-transparent">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-[#185FA5]">
+                        Script Builder v2 · Talking Head
+                      </p>
+                      <p className="mt-0.5 text-xs text-[#2f3437]/70 dark:text-gray-300">
+                        FACT → CLARITY arc, anchored on your cited facts and locked content rules.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        router.push(
+                          `/member/content-planner/wizard/script?planId=${plan.id}`,
+                        )
+                      }
+                      className="shrink-0 inline-flex items-center gap-1.5 rounded-md bg-[#185FA5] px-3.5 py-1.5 text-xs font-medium text-white hover:bg-[#134d87] transition-colors"
+                    >
+                      <span aria-hidden>✨</span> Build Script (v2) →
+                    </button>
+                  </div>
+                </div>
+              )}
 
             {/* Zone 3 — Workflow stepper. Neutral white surface with hairlines;
                 circles/check marks/connectors are blue (no green anywhere). */}

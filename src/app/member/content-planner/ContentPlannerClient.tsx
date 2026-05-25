@@ -33,6 +33,10 @@ export default function ContentPlannerClient({
   const [autoOpenPlan, setAutoOpenPlan] = useState<ContentPlan | null>(null);
   const [showProgressTrack, setShowProgressTrack] = useState(false);
   const [showPipelineTab, setShowPipelineTab] = useState(false);
+  // Wave 3 — gates the "Build Script (v2)" entry point on the edit modal.
+  // The save endpoint also gates on this flag server-side, so a stale
+  // client view can't actually save a v2 script.
+  const [scriptBuilderV2Enabled, setScriptBuilderV2Enabled] = useState(false);
 
   // Sprint 7 — global search + status filter state
   const [searchQuery, setSearchQuery] = useState("");
@@ -50,6 +54,7 @@ export default function ContentPlannerClient({
       .then((d) => {
         if (d?.flags?.progress_track_v1) setShowProgressTrack(true);
         if (d?.flags?.planner_pipeline_view) setShowPipelineTab(true);
+        if (d?.flags?.tool_script_builder_v2) setScriptBuilderV2Enabled(true);
       })
       .catch(() => {});
   }, []);
@@ -175,6 +180,7 @@ export default function ContentPlannerClient({
             serviceTier={serviceTier}
             apiBase={apiBase}
             showProgressTrack={showProgressTrack}
+            scriptBuilderV2Enabled={scriptBuilderV2Enabled}
             onClose={() => setAutoOpenPlan(null)}
             onSaved={(updated) => {
               setAutoOpenPlan(null);
@@ -382,6 +388,7 @@ export default function ContentPlannerClient({
           serviceTier={serviceTier}
           apiBase={apiBase}
           showProgressTrack={showProgressTrack}
+          scriptBuilderV2Enabled={scriptBuilderV2Enabled}
           onClose={() => setAutoOpenPlan(null)}
           onSaved={() => setAutoOpenPlan(null)}
           onDeleted={() => setAutoOpenPlan(null)}

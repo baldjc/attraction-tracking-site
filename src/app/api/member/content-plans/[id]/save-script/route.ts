@@ -1,0 +1,185 @@
+/**
+ * POST /api/member/content-plans/[id]/save-script
+ *
+ * Wave 3 — Script Builder v2 (Talking Head) save endpoint. Persists an
+ * approved script onto a ContentPlan after re-running every server-side
+ * check the streaming route ran, so a direct curl can't bypass the gate.
+ *
+ * Defense-in-depth (same shape as save-idea):
+ *   1. Auth (session).
+ *   2. Feature flag `tool_script_builder_v2`.
+ *   3. Ownership-filtered ContentPlan load (`findFirst` with userId).
+ *   4. Lineage preconditions (rotationSlot + titlePromise present).
+ *   5. `shootType` is null or already 'talking_head' (matches the v2
+ *      button's gate; rejects plans already scoped as Home Tour).
+ *   6. linkedFactIds.length >= 3 on the row.
+ *   7. >= 3 of those facts still survive the ownership filter — between
+ *      generate and approve the member could have deleted an upload or
+ *      facts could have been pruned. Returns 422 with a "re-run the
+ *      wizard to relink" message identical to the streaming route's.
+ *   8. Server-side `validateScript()` re-run — client claims of
+ *      "validation pass" are ignored.
+ *
+ * On success:
+ *   - Writes `script` + promotes `shootType` to 'talking_head'.
+ *   - Leaves `status` alone (status transitions are out of scope for
+ *     this data-first rebuild; members move plans through the pipeline
+ *     in the existing planner UI).
+ *   - Logs a zero-cost `script_builder_v2_save` usage row so the
+ *     monthly-spend rollup counts the save event (no tokens — the
+ *     streaming route already billed for generation).
+ *
+ * `tokenUsage` in the body is informational only — we never re-bill
+ * here. The streaming route is the single source of truth for token
+ * accounting.
+ */
+import { NextResponse, type NextRequest } from "next/server";
+import prisma from "@/lib/prisma";
+import { auth } from "@/lib/auth";
+import { getFeatureFlags } from "@/lib/feature-flags";
+import { logUsage } from "@/lib/ai-tool-cost";
+import { validateScript } from "@/lib/script-content-rules";
+import { loadMarketConfigSummary } from "@/lib/content-engine-context";
+
+export const runtime = "nodejs";
+
+interface SaveScriptBody {
+  script?: string;
+  tokenUsage?: { input?: number; output?: number };
+}
+
+export async function POST(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const session = await auth();
+  const userId = session?.user?.id;
+  const userRole = session?.user?.role ?? null;
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const flags = await getFeatureFlags({ userId, userRole });
+  if (!flags.tool_script_builder_v2) {
+    return NextResponse.json({ error: "Not enabled" }, { status: 404 });
+  }
+
+  const { id: planId } = await params;
+  if (!planId || typeof planId !== "string") {
+    return NextResponse.json({ error: "missing_plan_id" }, { status: 400 });
+  }
+
+  let body: SaveScriptBody;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "invalid_json" }, { status: 400 });
+  }
+
+  const script = typeof body.script === "string" ? body.script.trim() : "";
+  if (!script) {
+    return NextResponse.json({ error: "missing_script" }, { status: 400 });
+  }
+
+  // Ownership-filtered load.
+  const plan = await prisma.contentPlan.findFirst({
+    where: { id: planId, userId },
+    select: {
+      id: true,
+      rotationSlot: true,
+      titlePromise: true,
+      linkedFactIds: true,
+      shootType: true,
+    },
+  });
+  if (!plan) {
+    return NextResponse.json({ error: "plan_not_found" }, { status: 404 });
+  }
+
+  if (!plan.rotationSlot || !plan.titlePromise) {
+    return NextResponse.json(
+      {
+        error: "plan_missing_lineage",
+        message:
+          "This plan isn't a Wave 2 wizard plan — Script Builder v2 needs rotationSlot + titlePromise.",
+      },
+      { status: 409 },
+    );
+  }
+
+  // Shoot-type gate matches the button's precondition. Wave 4 ships
+  // a sibling endpoint for 'home_tour'.
+  if (plan.shootType && plan.shootType !== "talking_head") {
+    return NextResponse.json(
+      {
+        error: "shoot_type_conflict",
+        message: `This plan is already scoped as ${plan.shootType}; Script Builder v2 (Talking Head) can't overwrite it.`,
+      },
+      { status: 409 },
+    );
+  }
+
+  // Re-check cited-fact minimum. The user could have navigated away
+  // between generate and save and deleted facts or an upload.
+  const linkedFactIds: string[] = Array.isArray(plan.linkedFactIds)
+    ? (plan.linkedFactIds as unknown[]).filter(
+        (x): x is string => typeof x === "string",
+      )
+    : [];
+  if (linkedFactIds.length < 3) {
+    return NextResponse.json(
+      {
+        error: "insufficient_linked_facts",
+        message: `Need ≥3 linked facts to save a Script Builder v2 script — this plan has ${linkedFactIds.length}. Re-run the wizard to relink.`,
+      },
+      { status: 422 },
+    );
+  }
+
+  const ownedFacts = await prisma.marketFact.findMany({
+    where: { id: { in: linkedFactIds }, userId },
+    select: { id: true },
+  });
+  if (ownedFacts.length < 3) {
+    return NextResponse.json(
+      {
+        error: "cited_facts_not_found",
+        message: `Only ${ownedFacts.length} of the plan's ${linkedFactIds.length} linked facts are still in your facts library — need ≥3. Re-run the wizard to relink.`,
+      },
+      { status: 422 },
+    );
+  }
+
+  // Server-side validation re-run. Identical options to the streaming
+  // route (neighbourhood vocabulary from the user's market config).
+  const marketConfig = await loadMarketConfigSummary(userId);
+  const validation = validateScript(script, {
+    neighbourhoods: marketConfig?.neighbourhoods ?? [],
+  });
+  if (!validation.ok) {
+    return NextResponse.json(
+      {
+        error: "validation_gate_failed",
+        message:
+          "Server-side validation rejected this script — re-generate via the wizard.",
+        violations: validation.violations,
+        metrics: validation.metrics,
+      },
+      { status: 422 },
+    );
+  }
+
+  // Persist script + promote shootType. Leave status alone.
+  await prisma.contentPlan.update({
+    where: { id: plan.id },
+    data: { script, shootType: "talking_head" },
+  });
+
+  // Zero-cost audit row so dashboards see the save event.
+  await logUsage(userId, "script_builder_v2_save", 0, 0);
+
+  return NextResponse.json({
+    id: plan.id,
+    redirectUrl: `/member/content-planner?plan=${plan.id}`,
+  });
+}
