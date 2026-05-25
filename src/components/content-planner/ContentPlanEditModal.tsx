@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { XMarkIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, ArrowDownTrayIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
 import {
   STATUS_STYLES,
   getStatusOptions,
@@ -585,6 +585,12 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
   // plans pay zero network cost on open.
   const [lineage, setLineage] = useState<IdeaLineage | null>(null);
   const [showAllLineageFacts, setShowAllLineageFacts] = useState(false);
+  // Wave 2.5 — collapsible "Idea card lineage" panel. Collapsed by default
+  // so the panel ships compactly; click the header to expand and see the
+  // theme badge, title promise, visual peak, callouts, story lead, and
+  // cited facts. State is local to this modal instance so reopening a
+  // plan resets to collapsed (matches the modal lifetime).
+  const [lineageCollapsed, setLineageCollapsed] = useState(true);
   useEffect(() => {
     // Always clear at plan-change start so a stale lineage from a previous
     // plan can never bleed through (e.g. fetch fails / returns lineage:null
@@ -592,6 +598,7 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
     // starts collapsed.
     setLineage(null);
     setShowAllLineageFacts(false);
+    setLineageCollapsed(true);
     if (!plan.rotationSlot) return;
     let cancelled = false;
     fetch(`/api/member/content-plans/${plan.id}/lineage`)
@@ -1314,15 +1321,32 @@ Produce a research brief I can hand to a script writer. For **each talking point
                 resolved). v1 plans see nothing. */}
             {lineage && (
               <div className="rounded-xl border border-[#185FA5]/20 bg-[#185FA5]/[0.03] px-4 py-3 space-y-3">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-[#185FA5]">
+                {/* Toggle header — clicking anywhere on the row collapses
+                    or expands the panel body. Chevron rotates 180° when
+                    expanded so the affordance matches native <details>. */}
+                <button
+                  type="button"
+                  onClick={() => setLineageCollapsed((v) => !v)}
+                  aria-expanded={!lineageCollapsed}
+                  aria-controls="idea-card-lineage-body"
+                  className="flex w-full items-center justify-between gap-2 -m-1 p-1 rounded-md hover:bg-[#185FA5]/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#185FA5]/40 transition-colors"
+                >
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-[#185FA5] flex items-center gap-1.5">
                     🎯 Idea card lineage
                   </p>
-                  <span className="inline-flex items-center rounded-md bg-[#185FA5]/10 px-2 py-0.5 text-[11px] font-semibold text-[#185FA5]">
-                    {lineage.themeLabel}
-                  </span>
-                </div>
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center rounded-md bg-[#185FA5]/10 px-2 py-0.5 text-[11px] font-semibold text-[#185FA5]">
+                      {lineage.themeLabel}
+                    </span>
+                    <ChevronDownIcon
+                      className={`h-4 w-4 text-[#185FA5] transition-transform duration-150 ${lineageCollapsed ? "" : "rotate-180"}`}
+                      aria-hidden="true"
+                    />
+                  </div>
+                </button>
 
+                {!lineageCollapsed && (
+                <div id="idea-card-lineage-body" className="space-y-3">
                 {lineage.titlePromise && (
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-wider text-[#2f3437]/50 mb-0.5">Title promise</p>
@@ -1395,6 +1419,8 @@ Produce a research brief I can hand to a script writer. For **each talking point
                       </button>
                     )}
                   </div>
+                )}
+                </div>
                 )}
               </div>
             )}
