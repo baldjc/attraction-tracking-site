@@ -402,8 +402,37 @@ export async function POST(req: NextRequest) {
   let totalInputTokens = 0;
   let totalOutputTokens = 0;
 
+  // Heartbeat — emits an SSE comment line every 2s while the stream is open.
+  // SSE comments start with ":" and are ignored by EventSource clients, but
+  // they force the Replit preview proxy (and nginx/cloudflare-style proxies
+  // generally) to flush whatever they've buffered. Without this, all phase
+  // events and the first ~chunk of tokens arrive in one final flush right
+  // before `complete`, freezing the pipeline UI for 60-90s. Initialized to
+  // null and assigned in start() so cancel() can clear it if the client
+  // disconnects mid-stream.
+  let heartbeat: ReturnType<typeof setInterval> | null = null;
+  const stopHeartbeat = () => {
+    if (heartbeat !== null) {
+      clearInterval(heartbeat);
+      heartbeat = null;
+    }
+  };
+
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
+      heartbeat = setInterval(() => {
+        if (clientSignal.aborted) {
+          stopHeartbeat();
+          return;
+        }
+        try {
+          controller.enqueue(encoder.encode(`: heartbeat ${Date.now()}\n\n`));
+        } catch {
+          // Controller already closed — stop ticking.
+          stopHeartbeat();
+        }
+      }, 2000);
+
       const emit = (event: string, data: unknown) => {
         if (clientSignal.aborted) return;
         try {
@@ -661,6 +690,7 @@ export async function POST(req: NextRequest) {
           );
         }
       } finally {
+        stopHeartbeat();
         clientSignal.removeEventListener("abort", onClientAbort);
         try {
           controller.close();
@@ -672,6 +702,7 @@ export async function POST(req: NextRequest) {
 
     cancel() {
       // Reader closed (client disconnect). Propagate to upstream Anthropic.
+      stopHeartbeat();
       internalAbort.abort();
     },
   });
