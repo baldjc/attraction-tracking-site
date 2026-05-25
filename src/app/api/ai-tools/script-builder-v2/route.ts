@@ -116,6 +116,31 @@ interface PlanContext {
   estimatedRuntime: string | null;
 }
 
+interface AssignedCampaign {
+  name: string;
+  destinationUrl: string;
+  leadMagnetUrl: string | null;
+}
+
+interface AssignedBingeVideo {
+  title: string;
+  theme: string | null;
+  status: string;
+  youtubeVideoId: string | null;
+}
+
+// ContentPlan statuses for which the binge target is not yet usable —
+// we don't want the script to tease a video the member hasn't committed
+// to make yet. Match by case-insensitive trim against ContentPlan.status.
+const EARLY_PLAN_STATUSES = new Set(["idea", "future idea"]);
+
+// Statuses at which the YouTube video id can be embedded as a card URL.
+const PUBLISHED_PLAN_STATUSES = new Set([
+  "live on yt",
+  "live",
+  "published",
+]);
+
 // ───────────────────────────────────────────────────────────────────────
 // POST handler
 // ───────────────────────────────────────────────────────────────────────
@@ -169,6 +194,8 @@ export async function POST(req: NextRequest) {
       thumbnailWords: true,
       linkedFactIds: true,
       researchNotes: true,
+      linkedCampaignId: true,
+      bingeVideoId: true,
     },
   });
   if (!plan) return jsonError(404, "plan_not_found");
@@ -264,6 +291,74 @@ export async function POST(req: NextRequest) {
     trajectory: f.trajectory,
     caveat: f.viewerCaveat,
   }));
+
+  // ── Load assigned lead-magnet campaign + binge-target plan ───────────
+  // Both ownership-filtered. Each fetch is optional — if the plan has
+  // no assignment, we fall back to a generic placement and surface a
+  // soft warning to the client so the wizard can prompt the member to
+  // wire the assets up next time.
+  const planWarnings: string[] = [];
+  let assignedCampaign: AssignedCampaign | null = null;
+  let assignedBingeVideo: AssignedBingeVideo | null = null;
+
+  if (plan.linkedCampaignId) {
+    const campaign = await prisma.campaign.findFirst({
+      where: { id: plan.linkedCampaignId, userId, deletedAt: null },
+      select: { name: true, destinationUrl: true, leadMagnetUrl: true },
+    });
+    if (campaign) {
+      assignedCampaign = {
+        name: campaign.name,
+        destinationUrl: campaign.destinationUrl,
+        leadMagnetUrl: campaign.leadMagnetUrl,
+      };
+    } else {
+      planWarnings.push(
+        "The lead magnet campaign assigned to this plan no longer exists — script uses generic placeholders. Reassign one in the planner.",
+      );
+    }
+  } else {
+    planWarnings.push(
+      "Plan has no lead magnet assigned — script uses generic placeholders. Assign a lead magnet in the planner for specific references.",
+    );
+  }
+
+  if (plan.bingeVideoId) {
+    const binge = await prisma.contentPlan.findFirst({
+      where: { id: plan.bingeVideoId, userId },
+      select: {
+        title: true,
+        theme: true,
+        status: true,
+        youtubeVideoId: true,
+      },
+    });
+    if (binge) {
+      const statusKey = (binge.status ?? "").trim().toLowerCase();
+      if (EARLY_PLAN_STATUSES.has(statusKey)) {
+        planWarnings.push(
+          `Binge target "${binge.title}" is still at "${binge.status}" stage — skipping specific next-video tease to avoid promising a video that doesn't exist yet.`,
+        );
+      } else {
+        assignedBingeVideo = {
+          title: binge.title,
+          theme: binge.theme,
+          status: binge.status,
+          youtubeVideoId: PUBLISHED_PLAN_STATUSES.has(statusKey)
+            ? binge.youtubeVideoId
+            : null,
+        };
+      }
+    } else {
+      planWarnings.push(
+        "The binge target assigned to this plan no longer exists — script uses a generic next-video tease. Reassign one in the planner.",
+      );
+    }
+  } else {
+    planWarnings.push(
+      "Plan has no binge target assigned — script uses a generic next-video tease. Assign a binge target in the planner for specific references.",
+    );
+  }
 
   // ── Load MarketConfig (avatar, sub-personas, MOI thresholds, ...) ────
   const marketConfig = await loadMarketConfigSummary(userId);
@@ -366,6 +461,8 @@ export async function POST(req: NextRequest) {
                   marketConfig,
                   neighbourhoodContext,
                   shootType,
+                  assignedCampaign,
+                  assignedBingeVideo,
                 })
               : buildRetryUserMessage({
                   plan: planContext,
@@ -551,6 +648,7 @@ export async function POST(req: NextRequest) {
             monthSpendUsd: capAfter.monthSpendUsd,
             capUsd: capAfter.capUsd,
             softWarning: capAfter.softWarning,
+            planWarnings,
           });
         } else if (totalInputTokens || totalOutputTokens) {
           // Validation failed / client aborted / claude errored — bill
@@ -679,8 +777,18 @@ function buildInitialUserMessage(args: {
   marketConfig: MarketConfigSummary;
   neighbourhoodContext: Record<string, string>;
   shootType: "talking_head" | "home_tour";
+  assignedCampaign: AssignedCampaign | null;
+  assignedBingeVideo: AssignedBingeVideo | null;
 }): string {
-  const { plan, facts, marketConfig, neighbourhoodContext, shootType } = args;
+  const {
+    plan,
+    facts,
+    marketConfig,
+    neighbourhoodContext,
+    shootType,
+    assignedCampaign,
+    assignedBingeVideo,
+  } = args;
   const lines: string[] = [];
 
   lines.push(`Shoot type: ${shootType}`);
@@ -747,6 +855,49 @@ function buildInitialUserMessage(args: {
       lines.push(neighbourhoodContext[name]);
       lines.push("");
     }
+  }
+
+  // ── ASSIGNED ASSETS ──────────────────────────────────────────────────
+  // The member's planner picks for this video. The script writer MUST
+  // use these verbatim — no generic substitutes — for the [LEAD MAGNET]
+  // placements and the closing [CALLBACK] hook.
+  lines.push("## ASSIGNED ASSETS");
+  lines.push("");
+
+  if (assignedCampaign) {
+    const url =
+      assignedCampaign.leadMagnetUrl ?? assignedCampaign.destinationUrl;
+    lines.push(
+      "**Lead magnet** (use this verbatim in all `[LEAD MAGNET 1/3]`, `[LEAD MAGNET 2/3]`, `[LEAD MAGNET 3/3]` placements — do NOT invent a generic substitute):",
+    );
+    lines.push(`- Name: ${assignedCampaign.name}`);
+    lines.push(`- URL: ${url}`);
+    lines.push("");
+  } else {
+    lines.push(
+      "**Lead magnet:** _none assigned_ — use a brief generic placeholder like `[LEAD MAGNET: your free guide]` and keep the pitch short. Do NOT invent a specific product name.",
+    );
+    lines.push("");
+  }
+
+  if (assignedBingeVideo) {
+    lines.push(
+      "**Next-video binge target** (use this in the closing `[CALLBACK]` hook — match the title and theme so the tease is specific):",
+    );
+    lines.push(`- Title: ${assignedBingeVideo.title}`);
+    if (assignedBingeVideo.theme)
+      lines.push(`- Theme: ${assignedBingeVideo.theme}`);
+    if (assignedBingeVideo.youtubeVideoId) {
+      lines.push(
+        `- YouTube URL: https://youtu.be/${assignedBingeVideo.youtubeVideoId} (this video is live — you may suggest it as an end-screen card)`,
+      );
+    }
+    lines.push("");
+  } else {
+    lines.push(
+      "**Next-video binge target:** _none assigned_ — write a generic next-video tease tied to the body's theme. Do NOT invent a specific title.",
+    );
+    lines.push("");
   }
 
   lines.push("## LOCKED CONTENT RULES (server-side enforced)");
