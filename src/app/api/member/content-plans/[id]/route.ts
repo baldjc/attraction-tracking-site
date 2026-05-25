@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import prisma from "@/lib/prisma";
-import { isValidStatus, PRODUCTION_TIERS } from "@/lib/content-plan-utils";
+import {
+  PRODUCTION_TIERS,
+  getStatusOptions,
+  FOUNDATIONS_STATUSES,
+} from "@/lib/content-plan-utils";
 import { createVideoFolder, isFileInFolder } from "@/lib/google-drive";
 import { getFeatureFlags } from "@/lib/feature-flags";
 
@@ -98,14 +102,34 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   // "Idea" from the Wave 2 wizard default). Rejecting unchanged values
   // here turns every unrelated edit — lead magnet, binge target, notes —
   // into a 400, even though the user never touched the status field.
-  if (
-    status !== undefined &&
-    status !== existing.status &&
-    !isValidStatus(status, serviceTier)
-  ) {
-    return NextResponse.json({ error: "Invalid status for your membership tier" }, { status: 400 });
+  if (status !== undefined && status !== existing.status) {
+    const tierStatuses = getStatusOptions(serviceTier);
+    let allowedStatuses = tierStatuses;
+    // v2-flag override: any user the admin has enrolled in the Wave 2
+    // content-engine flag gets `FOUNDATIONS_STATUSES` ("Idea", etc.)
+    // unioned onto whatever their paid tier normally allows — the Wave 2
+    // wizard defaults new plans to "Idea" regardless of tier, so a DwY
+    // member with v2 access needs both lists or the wizard's output is
+    // unreachable from the editor.
+    if (!tierStatuses.includes(status)) {
+      const flags = await getFeatureFlags({ userId: user.id, userRole: user.role });
+      if (flags.tool_content_engine_v2) {
+        allowedStatuses = Array.from(new Set([...tierStatuses, ...FOUNDATIONS_STATUSES]));
+      }
+    }
+    if (!allowedStatuses.includes(status)) {
+      return NextResponse.json(
+        {
+          error: `Status "${status}" is not allowed for your tier (${serviceTier}). Allowed statuses: ${allowedStatuses.join(", ")}.`,
+          field: "status",
+          value: status,
+          tier: serviceTier,
+          allowed: allowedStatuses,
+        },
+        { status: 400 },
+      );
+    }
   }
-
   // Constrain thumbnail picks to a Drive file that actually lives inside
   // this plan's project folder — otherwise a forged PUT could repoint the
   // proxy at any file the service account can read.
