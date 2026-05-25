@@ -21,7 +21,9 @@ import {
 } from "@/components/ai-tools/script-builder-v2/Step4ShootType";
 import {
   Step5GenerateStream,
+  SmartRegeneratePanel,
   type Step5CompletePayload,
+  type RegenerationBrief,
 } from "@/components/ai-tools/script-builder-v2/Step5GenerateStream";
 
 type Stage = "pick_shoot_type" | "streaming" | "approve";
@@ -43,6 +45,17 @@ export function ScriptWizardClient({ planSummary, backHref }: Props) {
   const [result, setResult] = useState<Step5CompletePayload | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<SaveError | null>(null);
+  /**
+   * Wave 3.5 — Smart Regenerate. When the member submits the panel
+   * below the approved script, we stash the brief here, clear the
+   * current result, and bounce back to the streaming stage. Step5's
+   * effect dep list includes `regenerationBrief`, so the new prop
+   * triggers a fresh stream that POSTs the brief along with the
+   * standard request body. Cleared back to null when a new
+   * generation completes so the next round's panel starts empty.
+   */
+  const [regenerationBrief, setRegenerationBrief] =
+    useState<RegenerationBrief | null>(null);
 
   if (stage === "pick_shoot_type") {
     return (
@@ -62,9 +75,17 @@ export function ScriptWizardClient({ planSummary, backHref }: Props) {
       <Step5GenerateStream
         planId={planSummary.id}
         shootType={shootType}
-        onBack={() => setStage("pick_shoot_type")}
+        regenerationBrief={regenerationBrief}
+        onBack={() => {
+          setRegenerationBrief(null);
+          setStage("pick_shoot_type");
+        }}
         onComplete={(payload) => {
           setResult(payload);
+          // Clear the brief now that it's been consumed — the next
+          // round of the regenerate panel should start with a fresh
+          // empty selection / textarea state.
+          setRegenerationBrief(null);
           setStage("approve");
         }}
       />
@@ -178,6 +199,21 @@ export function ScriptWizardClient({ planSummary, backHref }: Props) {
           </div>
         )}
       </div>
+
+      {/* Wave 3.5 — Smart Regenerate. Surfacing it in the approve view
+          (not inside Step5's DoneView) is intentional: Step5 unmounts
+          as soon as onComplete fires, so the panel needs to live on
+          the stage that actually persists after generation. */}
+      <SmartRegeneratePanel
+        planId={planSummary.id}
+        script={result.script}
+        onRegenerate={(brief) => {
+          setRegenerationBrief(brief);
+          setResult(null);
+          setSaveError(null);
+          setStage("streaming");
+        }}
+      />
 
       {saveError && (
         <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-700/50 dark:bg-red-900/20 dark:text-red-300">

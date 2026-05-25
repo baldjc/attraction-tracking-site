@@ -85,9 +85,20 @@ const MAX_OUTPUT_TOKENS = 12000;
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
+interface RegenerationBrief {
+  selectedSuggestions?: Array<{
+    category?: string;
+    title?: string;
+    regenerationDirective?: string;
+  }>;
+  customNotes?: string;
+  priorScript?: string;
+}
+
 interface RequestBody {
   planId?: string;
   shootType?: "talking_head" | "home_tour";
+  regenerationBrief?: RegenerationBrief;
 }
 
 interface CitedFact {
@@ -510,6 +521,7 @@ export async function POST(req: NextRequest) {
                   shootType,
                   assignedCampaign,
                   assignedBingeVideo,
+                  regenerationBrief: body.regenerationBrief ?? null,
                 })
               : buildRetryUserMessage({
                   plan: planContext,
@@ -828,6 +840,7 @@ function buildInitialUserMessage(args: {
   shootType: "talking_head" | "home_tour";
   assignedCampaign: AssignedCampaign | null;
   assignedBingeVideo: AssignedBingeVideo | null;
+  regenerationBrief: RegenerationBrief | null;
 }): string {
   const {
     plan,
@@ -837,8 +850,76 @@ function buildInitialUserMessage(args: {
     shootType,
     assignedCampaign,
     assignedBingeVideo,
+    regenerationBrief,
   } = args;
   const lines: string[] = [];
+
+  // ── PRIOR ATTEMPT — REVISION NOTES ──────────────────────────────────
+  // Wave 3.5: when the client sends a regenerationBrief, prepend a
+  // targeted-revision block AT THE TOP of the USER message. The cached
+  // system prompt (SCRIPT_BUILDER_MODE_PROMPT) must NOT change between
+  // generations — otherwise prompt caching breaks. All revision context
+  // lives here, in the user-message-only branch.
+  if (regenerationBrief) {
+    const selected = Array.isArray(regenerationBrief.selectedSuggestions)
+      ? regenerationBrief.selectedSuggestions.filter(
+          (s) =>
+            s &&
+            typeof s.title === "string" &&
+            typeof s.regenerationDirective === "string" &&
+            s.regenerationDirective.trim().length > 0,
+        )
+      : [];
+    const notes =
+      typeof regenerationBrief.customNotes === "string"
+        ? regenerationBrief.customNotes.trim()
+        : "";
+    const priorScript =
+      typeof regenerationBrief.priorScript === "string"
+        ? regenerationBrief.priorScript.trim()
+        : "";
+
+    if (selected.length > 0 || notes || priorScript) {
+      lines.push("# PRIOR ATTEMPT — REVISION NOTES");
+      lines.push("");
+      lines.push(
+        "The previous script for this idea is below. The member has asked for the following specific improvements in this regeneration:",
+      );
+      lines.push("");
+      if (selected.length > 0) {
+        for (const s of selected) {
+          lines.push(`- **${s.title}**: ${s.regenerationDirective!.trim()}`);
+        }
+        lines.push("");
+      }
+      if (notes) {
+        // Quote-escape so embedded `"` don't break the prompt's mental model.
+        const safe = notes.replace(/"/g, '\\"');
+        lines.push(`Member's custom note: "${safe}"`);
+        lines.push("");
+      }
+      lines.push(
+        "Generate a FRESH script that addresses these specific improvements while keeping the core thesis (cited facts, title promise, framework, structure). Do NOT just patch the prior script — rewrite it stronger and tighter. The improvements above are the priority; everything else in the existing context still applies.",
+      );
+      lines.push("");
+      if (priorScript) {
+        // Cap at ~24k chars so a pathological prior script doesn't
+        // blow out the context budget. The script writer rewrites
+        // from scratch — they only need the prior as reference.
+        const capped =
+          priorScript.length > 24000
+            ? priorScript.slice(0, 24000) + "\n…[truncated]"
+            : priorScript;
+        lines.push("PRIOR SCRIPT FOR REFERENCE:");
+        lines.push("```");
+        lines.push(capped);
+        lines.push("```");
+        lines.push("");
+      }
+      lines.push("---");
+      lines.push("");
+    }
+  }
 
   lines.push(`Shoot type: ${shootType}`);
   lines.push(`Market: ${marketConfig.marketName}`);

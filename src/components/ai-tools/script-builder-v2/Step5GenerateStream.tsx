@@ -64,6 +64,63 @@ export interface Step5CompletePayload {
   planWarnings?: string[];
 }
 
+/**
+ * Wave 3.5 — Smart Regenerate. The 5 fixed categories (ordered) that
+ * `/api/ai-tools/script-builder-v2/suggest-improvements` returns.
+ */
+const SUGGESTION_CATEGORIES = [
+  "data_depth",
+  "specificity",
+  "audience_reach",
+  "storytelling",
+  "cta_engagement",
+] as const;
+type SuggestionCategory = (typeof SUGGESTION_CATEGORIES)[number];
+
+const SUGGESTION_CATEGORY_META: Record<
+  SuggestionCategory,
+  { icon: string; label: string }
+> = {
+  data_depth: { icon: "🎯", label: "Data depth" },
+  specificity: { icon: "📍", label: "Specificity" },
+  audience_reach: { icon: "👥", label: "Audience reach" },
+  storytelling: { icon: "✍️", label: "Storytelling" },
+  cta_engagement: { icon: "🎬", label: "CTA & engagement" },
+};
+
+interface Suggestion {
+  id: string;
+  category: SuggestionCategory;
+  title: string;
+  description: string;
+  regenerationDirective: string;
+}
+
+interface SuggestImprovementsResponse {
+  suggestions: Suggestion[];
+  metrics: {
+    factsUsed: number;
+    factsAvailable: number;
+    subPersonasMentioned: string[];
+    subPersonasMissing: string[];
+    knowledgeBaseProfilesAvailable: number;
+    knowledgeBaseProfilesReferenced: number;
+    hasLeadMagnet: boolean;
+    hasBingeTarget: boolean;
+  };
+  cost: number;
+}
+
+export interface RegenerationBrief {
+  selectedSuggestions: Array<{
+    category: SuggestionCategory;
+    title: string;
+    regenerationDirective: string;
+  }>;
+  customNotes: string;
+  priorScript: string;
+}
+
 interface StreamError {
   kind: "http" | "stream" | "network";
   status?: number;
@@ -84,6 +141,14 @@ interface Props {
    * "Approve & Save" CTA that POSTs to a save endpoint).
    */
   onComplete: (result: Step5CompletePayload) => void;
+  /**
+   * Wave 3.5 — Smart Regenerate. When non-null, the streaming POST
+   * body includes the brief and the server prepends a PRIOR ATTEMPT
+   * block to the user message. Null on the first generation so the
+   * body is byte-identical to Wave 3 (regression-safe). The reference
+   * is part of the effect deps, so swapping it triggers a fresh run.
+   */
+  regenerationBrief?: RegenerationBrief | null;
 }
 
 const PIPELINE_LABELS = {
@@ -140,6 +205,7 @@ export function Step5GenerateStream({
   shootType,
   onBack,
   onComplete,
+  regenerationBrief = null,
 }: Props) {
   const thinking = useAiThinking({
     mode: "pipeline",
@@ -187,13 +253,20 @@ export function Step5GenerateStream({
 
     (async () => {
       try {
+        // Wave 3.5: attach the regenerationBrief prop if present.
+        // Null on the first generation so the body is byte-identical
+        // to Wave 3 — regression-safe.
         const resp = await fetch("/api/ai-tools/script-builder-v2", {
           method: "POST",
           headers: {
             "content-type": "application/json",
             accept: "text/event-stream",
           },
-          body: JSON.stringify({ planId, shootType }),
+          body: JSON.stringify(
+            regenerationBrief
+              ? { planId, shootType, regenerationBrief }
+              : { planId, shootType },
+          ),
           signal: ctrl.signal,
         });
         if (ctrl.signal.aborted) return;
@@ -402,7 +475,7 @@ export function Step5GenerateStream({
       ctrl.abort();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [planId, shootType]);
+  }, [planId, shootType, regenerationBrief]);
 
   const handleStop = useCallback(() => {
     // User-initiated cancellation — distinct from the cleanup-path
@@ -441,7 +514,7 @@ export function Step5GenerateStream({
     );
   }
 
-  // ── Render: done (parent owns Approve & Save in commit 6) ─────
+  // ── Render: done (parent owns Approve & Save + Smart Regenerate) ─
   if (done) {
     return <DoneView done={done} onBack={onBack} />;
   }
@@ -575,8 +648,262 @@ function DoneView({
         >
           ← Back
         </button>
-        {/* Approve & Save lands in commit 6 — parent wizard owns it. */}
+        {/* Approve & Save + Smart Regenerate live in the parent wizard. */}
       </div>
+    </div>
+  );
+}
+
+// ───────────────────────────────────────────────────────────────────────
+// Wave 3.5 — Smart Regenerate panel
+// ───────────────────────────────────────────────────────────────────────
+
+/**
+ * Renders below the generated script in the done state. On mount,
+ * fires `POST /api/ai-tools/script-builder-v2/suggest-improvements`
+ * (background fetch, AbortController, terminal-state cleanup matching
+ * Step3IdeaCards) and surfaces 5 categorized improvement suggestions.
+ *
+ * Member multi-selects suggestions + types optional free-form notes,
+ * then clicks "Regenerate with notes" — which calls onRegenerate(brief)
+ * on the parent, triggering a fresh streaming generation with the
+ * brief attached. The parent's regenerationNonce bump unmounts this
+ * panel (done state clears) and the streaming UI takes over again.
+ *
+ * AbortController pattern (per feedback_cancelled_flag_finally_race.md):
+ *   - The cleanup function aborts the controller, full stop.
+ *   - No `cancelled` flag gates terminal state writes — the catch
+ *     branch's `ctrl.signal.aborted` check is the source of truth.
+ *   - State writes happen BEFORE the indicator stops so the UI
+ *     hand-off is atomic.
+ */
+export function SmartRegeneratePanel({
+  planId,
+  script,
+  onRegenerate,
+}: {
+  planId: string;
+  script: string;
+  onRegenerate: (brief: RegenerationBrief) => void;
+}) {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [notes, setNotes] = useState("");
+
+  useEffect(() => {
+    const ctrl = new AbortController();
+    setLoading(true);
+    setError(null);
+    setSuggestions([]);
+    setSelectedIds(new Set());
+    setExpandedId(null);
+
+    (async () => {
+      try {
+        const resp = await fetch(
+          "/api/ai-tools/script-builder-v2/suggest-improvements",
+          {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ planId, script }),
+            signal: ctrl.signal,
+          },
+        );
+        if (ctrl.signal.aborted) return;
+        if (!resp.ok) {
+          let msg = "Couldn't load improvement suggestions.";
+          try {
+            const j = (await resp.json()) as { message?: string; error?: string };
+            msg = j.message ?? j.error ?? msg;
+          } catch {
+            // body wasn't JSON
+          }
+          if (ctrl.signal.aborted) return;
+          setError(msg);
+          setLoading(false);
+          return;
+        }
+        const data = (await resp.json()) as SuggestImprovementsResponse;
+        if (ctrl.signal.aborted) return;
+        setSuggestions(Array.isArray(data.suggestions) ? data.suggestions : []);
+        setLoading(false);
+      } catch (e) {
+        if (ctrl.signal.aborted || (e as Error).name === "AbortError") return;
+        setError((e as Error).message ?? "Network error.");
+        setLoading(false);
+      }
+    })();
+
+    return () => {
+      ctrl.abort();
+    };
+  }, [planId, script]);
+
+  const toggle = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const trimmedNotes = notes.trim();
+  const notesTooShort =
+    trimmedNotes.length > 0 && trimmedNotes.length < 10;
+  const notesTooLong = trimmedNotes.length > 500;
+  const canRegenerate =
+    (selectedIds.size > 0 || (trimmedNotes.length >= 10 && !notesTooLong)) &&
+    !notesTooShort &&
+    !notesTooLong;
+
+  const handleClick = useCallback(() => {
+    if (!canRegenerate) return;
+    const selected = suggestions
+      .filter((s) => selectedIds.has(s.id))
+      .map((s) => ({
+        category: s.category,
+        title: s.title,
+        regenerationDirective: s.regenerationDirective,
+      }));
+    onRegenerate({
+      selectedSuggestions: selected,
+      customNotes: trimmedNotes,
+      priorScript: script,
+    });
+  }, [canRegenerate, onRegenerate, script, selectedIds, suggestions, trimmedNotes]);
+
+  return (
+    <div className="rounded-lg border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800">
+      <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+        Improve this script
+      </p>
+      <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
+        Pick targeted improvements + add notes, then regenerate. The new
+        draft will address your selections specifically — not just re-roll
+        with the same prompt.
+      </p>
+
+      {loading && (
+        <p className="mt-4 text-sm italic text-gray-600 dark:text-gray-400">
+          Analysing your script for improvement opportunities…
+        </p>
+      )}
+
+      {error && (
+        <p className="mt-4 text-sm text-red-700 dark:text-red-300">
+          {error} You can still add a free-form note below and regenerate.
+        </p>
+      )}
+
+      {!loading && !error && suggestions.length > 0 && (
+        <div className="mt-4 grid grid-cols-1 gap-2 md:grid-cols-2">
+          {suggestions.map((s) => {
+            const isSelected = selectedIds.has(s.id);
+            const isExpanded = expandedId === s.id;
+            const meta = SUGGESTION_CATEGORY_META[s.category];
+            return (
+              <div
+                key={s.id}
+                className={`rounded-md border text-left transition-colors ${
+                  isSelected
+                    ? "border-emerald-500 bg-emerald-50 dark:border-emerald-600 dark:bg-emerald-950/30"
+                    : "border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900/40"
+                }`}
+              >
+                <div className="flex items-start gap-2 p-3">
+                  <button
+                    type="button"
+                    onClick={() => toggle(s.id)}
+                    className="flex-1 text-left"
+                  >
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                      {meta.icon} {meta.label}
+                    </p>
+                    <p
+                      className={`mt-1 text-sm font-medium ${
+                        isSelected
+                          ? "text-emerald-900 dark:text-emerald-100"
+                          : "text-gray-900 dark:text-gray-100"
+                      }`}
+                    >
+                      {s.title}
+                    </p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setExpandedId((cur) => (cur === s.id ? null : s.id))
+                    }
+                    aria-label={isExpanded ? "Hide details" : "Show details"}
+                    className="rounded-full px-2 text-xs text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+                  >
+                    ⓘ
+                  </button>
+                </div>
+                {isExpanded && (
+                  <p className="border-t border-gray-100 px-3 py-2 text-xs text-gray-700 dark:border-gray-700 dark:text-gray-300">
+                    {s.description}
+                  </p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <div className="mt-5">
+        <label
+          htmlFor="smart-regen-notes"
+          className="block text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400"
+        >
+          Other notes (optional)
+        </label>
+        <textarea
+          id="smart-regen-notes"
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          rows={3}
+          placeholder="e.g. 'make the intro punchier', 'remove the grocery store metaphor', 'add a relocator angle in section 2'"
+          className="mt-1 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-500 focus:outline-none dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100"
+        />
+        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+          {trimmedNotes.length}/500 characters
+          {notesTooShort && (
+            <span className="ml-2 text-amber-700 dark:text-amber-300">
+              Add at least 10 characters or clear the field.
+            </span>
+          )}
+          {notesTooLong && (
+            <span className="ml-2 text-red-700 dark:text-red-300">
+              Trim below 500 characters.
+            </span>
+          )}
+        </p>
+      </div>
+
+      <div className="mt-4 flex items-center justify-end gap-3">
+        {!canRegenerate && !notesTooShort && !notesTooLong && (
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            Select at least one suggestion or add a note to regenerate.
+          </p>
+        )}
+        <button
+          type="button"
+          disabled={!canRegenerate}
+          onClick={handleClick}
+          className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-500 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white dark:disabled:bg-gray-700 dark:disabled:text-gray-500"
+        >
+          Regenerate with notes
+        </button>
+      </div>
+
+      <p className="mt-2 text-right text-[11px] text-gray-500 dark:text-gray-400">
+        Each regeneration ≈ $0.30–0.50 in AI cost. Suggestions ≈ $0.05.
+      </p>
     </div>
   );
 }
