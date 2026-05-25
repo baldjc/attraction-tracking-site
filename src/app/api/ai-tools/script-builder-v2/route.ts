@@ -938,6 +938,39 @@ function buildInitialUserMessage(args: {
 }
 
 /**
+ * Per-violation concrete fix hint for the retry prompt. The system prompt
+ * already lists generic replacements; this surfaces a sentence-shaped
+ * rewrite anchored to the actual offending snippet so Claude can edit in
+ * place instead of re-deriving the rule.
+ */
+function suggestRetryFix(v: ScriptViolation): string {
+  if (v.rule === "no_why" && v.snippet) {
+    const rewritten = v.snippet
+      // "the reason why" → "the reason" (kill the redundant why first)
+      .replace(/\bthe reason why\b/gi, "the reason")
+      // "here's why" / "that's why" / "and here's why" → "here's what's behind" / "what's happening"
+      .replace(/\bhere'?s why\b/gi, "here's what's behind")
+      .replace(/\bthat'?s why\b/gi, "here's what's happening with")
+      // generic standalone "why" → "what's behind"
+      .replace(/\bwhy\b/gi, "what's behind");
+    return (
+      `rewrite without "why". Suggested rewrite: \`${rewritten}\`. ` +
+      'Or pick another replacement from the system prompt — ' +
+      '"the reason", "what\'s causing this", "here\'s what\'s happening", ' +
+      '"what\'s driving this", "what\'s actually going on".'
+    );
+  }
+  if (v.rule === "no_avatar_pander") {
+    return (
+      "remove the avatar-segment phrase and rewrite the sentence to speak " +
+      "to the viewer as a peer, not as a targeted segment. Example: " +
+      '*"for people like you, this matters"* → *"this matters — and here\'s the moment we\'re all in."*'
+    );
+  }
+  return v.message;
+}
+
+/**
  * Retry prompt. Sent when validateScript() returns error-severity
  * violations and we have retries left. Names each violation precisely
  * (rule, message, snippet, line) so Claude can do a targeted fix rather
@@ -952,19 +985,27 @@ function buildRetryUserMessage(args: {
   const lines: string[] = [];
 
   lines.push(
-    `Your previous draft failed ${violations.length} server-side content-rule check(s). Re-emit the FULL script with these violations fixed. Keep everything else — voice, structure, citations, visual tags — the same.`,
+    `Your previous draft failed ${violations.length} server-side content-rule check(s). The rest of the prior script was good — keep its structure, voice, citations, and visual tags. ONLY fix the specific lines named below.`,
   );
   lines.push("");
-  lines.push("## Violations to fix");
+  lines.push("## PRIOR ATTEMPT VIOLATIONS — fix THESE specific lines");
   lines.push("");
   for (const v of violations) {
-    lines.push(
-      `- **[${v.rule}]** ${v.message}${v.line ? ` (line ${v.line})` : ""}`,
-    );
-    if (v.snippet) {
-      lines.push(`  Snippet: \`${v.snippet}\``);
-    }
+    const loc = v.line ? `Line ${v.line}` : "Unlocated line";
+    const snip = v.snippet
+      ? v.snippet.replace(/`/g, "'")
+      : "(snippet unavailable)";
+    lines.push(`### ${loc} — [${v.rule}]`);
+    lines.push("");
+    lines.push(`Offending text: \`${snip}\``);
+    lines.push("");
+    const fix = suggestRetryFix(v);
+    lines.push(`Fix: ${fix}`);
+    lines.push("");
   }
+  lines.push(
+    "Re-generate the script with these specific fixes applied. Do not rewrite sections that weren't flagged. Re-emit the FULL script (the streaming pipeline needs the whole thing), but the only substantive edits should be on the lines above.",
+  );
   lines.push("");
   lines.push("## Title promise to preserve");
   lines.push("");
