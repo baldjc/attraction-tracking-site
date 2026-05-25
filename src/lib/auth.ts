@@ -22,13 +22,17 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         code: { label: "Code", type: "text" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.code) return null;
+        try {
+        if (!credentials?.email || !credentials?.code) {
+          console.warn("[auth.authorize] missing credentials");
+          return null;
+        }
 
         const email = (credentials.email as string).trim().toLowerCase();
         const code = (credentials.code as string).trim();
 
         const user = await prisma.user.findUnique({ where: { email } });
-        if (!user) return null;
+        if (!user) { console.warn("[auth.authorize] no user for", email); return null; }
 
         // Check every unused, unexpired OTP for this email — NOT just the
         // most recent. Users routinely have multiple valid codes in flight
@@ -54,7 +58,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           take: 10,
         });
 
-        if (candidates.length === 0) return null;
+        if (candidates.length === 0) {
+          console.warn("[auth.authorize] no unexpired candidates for", email);
+          return null;
+        }
 
         let matched: { id: string } | null = null;
         for (const c of candidates) {
@@ -64,7 +71,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             break;
           }
         }
-        if (!matched) return null;
+        if (!matched) {
+          console.warn(`[auth.authorize] no match among ${candidates.length} candidates for ${email}`);
+          return null;
+        }
 
         await prisma.loginOtp.update({
           where: { id: matched.id },
@@ -82,6 +92,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           name: user.fullName,
           role: user.role,
         };
+        } catch (err) {
+          // NextAuth v5 silently converts any throw inside authorize() into
+          // an opaque CredentialsSignin error. Log it so a real failure
+          // (DB outage, schema drift, etc.) is debuggable from server logs
+          // instead of looking like "invalid code" to the user.
+          console.error("[auth.authorize] THREW", err);
+          throw err;
+        }
       },
     }),
   ],
