@@ -93,3 +93,17 @@ new `/api/ai-tools/script-builder-v2/route.ts`, the wizard Step 4/5
 components) touch these surfaces.
 
 ---
+
+## Structural anti-pattern — v2 flag prop drilling (Wave 5 refactor)
+
+v2 feature flags are threaded through `ContentPlannerClient` → view components
+(`BoardView`, `ContentPlanTable`, `PipelineView`, `CalendarView`) →
+`ContentPlanEditModal` as explicit props. Every new v2 surface (Wave 4 Home
+Tour, Wave 5 nav reorg, etc.) that needs to gate UI inside the modal will
+require touching 5+ files. The Wave 3 "Build Script (v2)" button shipped
+hidden because two of those forwarding hops were missed — the prop defaulted
+to `false` silently and there was no compile-time signal.
+
+Replace with a `FeatureFlagsContext` provider at the app shell level so the
+modal (and any other deep child) reads its own flag state via `useFeatureFlags()`
+instead of receiving it as a prop. Wave 5 cleanup.

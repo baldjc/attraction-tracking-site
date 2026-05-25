@@ -33,6 +33,9 @@ interface Props {
   themes?: ThemeOption[];
   searchQuery?: string;
   statusFilter?: string[];
+  /** v2 Script Builder flag — forwarded into the inline edit modal so the
+   *  "Build Script (v2)" entry button shows on qualifying plans. */
+  scriptBuilderV2Enabled?: boolean;
 }
 
 const DATE_FIELD: Record<string, keyof ContentPlan> = {
@@ -144,7 +147,7 @@ function DroppableDay({ id, children, isOver }: { id: string; children: React.Re
   );
 }
 
-export default function CalendarView({ apiBase, calendarType, serviceTier, isAdmin, themes = [], searchQuery = "", statusFilter = [] }: Props) {
+export default function CalendarView({ apiBase, calendarType, serviceTier, isAdmin, themes = [], searchQuery = "", statusFilter = [], scriptBuilderV2Enabled = false }: Props) {
   const today = new Date();
   const [year,  setYear]  = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
@@ -431,6 +434,7 @@ export default function CalendarView({ apiBase, calendarType, serviceTier, isAdm
           apiBase={apiBase}
           isAdmin={isAdmin}
           themes={resolvedThemes}
+          scriptBuilderV2Enabled={scriptBuilderV2Enabled}
           onClose={() => setEditingPlan(null)}
           onSaved={handlePlanSaved}
           onDeleted={handlePlanDeleted}

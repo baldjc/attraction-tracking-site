@@ -20,6 +20,9 @@ interface Props {
   searchQuery?: string;
   statusFilter?: string[];
   sortBy?: PipelineSortKey;
+  /** v2 Script Builder flag — forwarded into the inline edit modal so the
+   *  "Build Script (v2)" entry button shows on qualifying plans. */
+  scriptBuilderV2Enabled?: boolean;
 }
 
 function formatShortDate(d: Date | string | null | undefined): string | null {
@@ -50,6 +53,7 @@ export default function PipelineView({
   searchQuery = "",
   statusFilter = [],
   sortBy = "default",
+  scriptBuilderV2Enabled = false,
 }: Props) {
   const pipelineStatuses = useMemo(() => getStatusOptions(serviceTier), [serviceTier]);
   const [plans, setPlans] = useState<ContentPlan[]>([]);
@@ -289,6 +293,7 @@ export default function PipelineView({
           serviceTier={serviceTier}
           apiBase={apiBase}
           isAdmin={isAdmin}
+          scriptBuilderV2Enabled={scriptBuilderV2Enabled}
           onClose={() => setEditingPlan(null)}
           onSaved={(updated) => {
             setPlans((list) => list.map((p) => (p.id === updated.id ? updated : p)));

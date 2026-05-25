@@ -68,6 +68,9 @@ interface Props {
   forcedServiceTier?: string;
   searchQuery?: string;
   statusFilter?: string[];
+  /** v2 Script Builder flag — forwarded into the inline edit modal so the
+   *  "Build Script (v2)" entry button shows on qualifying plans. */
+  scriptBuilderV2Enabled?: boolean;
 }
 
 function StatusBadge({ status }: { status: string }) {
@@ -103,7 +106,7 @@ function toInputDate(d: string | null) {
 
 type EditingCell = { id: string; field: string } | null;
 
-export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServiceTier, searchQuery = "", statusFilter = [] }: Props) {
+export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServiceTier, searchQuery = "", statusFilter = [], scriptBuilderV2Enabled = false }: Props) {
   const [plans, setPlans] = useState<ContentPlan[]>([]);
   const [serviceTier, setServiceTier] = useState<string>(forcedServiceTier ?? "foundations");
   const [themes, setThemes] = useState<Array<{ name: string; emoji?: string | null; colour?: string | null }>>([
@@ -881,6 +884,7 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
           isAdmin={isAdmin}
           themes={themes}
           showProgressTrack={showProgressTrack}
+          scriptBuilderV2Enabled={scriptBuilderV2Enabled}
           onClose={() => setEditingPlan(null)}
           onSaved={(updated) => {
             setPlans((prev) => prev.map((p) => (p.id === updated.id ? { ...p, ...updated } : p)));

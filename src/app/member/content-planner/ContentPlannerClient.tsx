@@ -324,6 +324,7 @@ export default function ContentPlannerClient({
           isAdmin={isAdminView}
           searchQuery={searchQuery}
           statusFilter={statusFilter}
+          scriptBuilderV2Enabled={scriptBuilderV2Enabled}
         />
       )}
 
@@ -335,6 +336,7 @@ export default function ContentPlannerClient({
           isAdmin={isAdminView}
           searchQuery={searchQuery}
           statusFilter={statusFilter}
+          scriptBuilderV2Enabled={scriptBuilderV2Enabled}
         />
       )}
 
@@ -346,6 +348,7 @@ export default function ContentPlannerClient({
           isAdmin={isAdminView}
           searchQuery={searchQuery}
           statusFilter={statusFilter}
+          scriptBuilderV2Enabled={scriptBuilderV2Enabled}
         />
       )}
 
@@ -357,6 +360,7 @@ export default function ContentPlannerClient({
           isAdmin={isAdminView}
           searchQuery={searchQuery}
           statusFilter={statusFilter}
+          scriptBuilderV2Enabled={scriptBuilderV2Enabled}
         />
       )}
 
@@ -368,6 +372,7 @@ export default function ContentPlannerClient({
           searchQuery={searchQuery}
           statusFilter={statusFilter}
           sortBy={pipelineSort}
+          scriptBuilderV2Enabled={scriptBuilderV2Enabled}
         />
       )}
 
@@ -379,6 +384,7 @@ export default function ContentPlannerClient({
           searchQuery={searchQuery}
           statusFilter={statusFilter}
           sortBy={pipelineSort}
+          scriptBuilderV2Enabled={scriptBuilderV2Enabled}
         />
       )}
 

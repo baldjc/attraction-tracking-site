@@ -28,6 +28,11 @@ interface Props {
   searchQuery?: string;
   statusFilter?: string[];
   sortBy?: PlanSortKey;
+  /** v2 Script Builder flag — forwarded into the inline edit modal so the
+   *  "Build Script (v2)" entry button shows on qualifying plans. Defaulting
+   *  to false silently hides the button, which is what masked the Wave 3
+   *  surface until ContentPlannerClient was updated to thread it through. */
+  scriptBuilderV2Enabled?: boolean;
 }
 
 function formatShortDate(d: Date | string | null | undefined): string | null {
@@ -150,7 +155,7 @@ function DroppableColumn({ id, children, isOver }: { id: string; children: React
   );
 }
 
-export default function BoardView({ apiBase, serviceTier, isAdmin, searchQuery = "", statusFilter = [], sortBy = "default" }: Props) {
+export default function BoardView({ apiBase, serviceTier, isAdmin, searchQuery = "", statusFilter = [], sortBy = "default", scriptBuilderV2Enabled = false }: Props) {
   const [plans,   setPlans]   = useState<ContentPlan[]>([]);
   const [themes,  setThemes]  = useState<ThemeObj[]>([]);
   const [artifactsByPlan, setArtifactsByPlan] = useState<Record<string, PlanArtifactsByType>>({});
@@ -450,6 +455,7 @@ export default function BoardView({ apiBase, serviceTier, isAdmin, searchQuery =
           apiBase={apiBase}
           isAdmin={isAdmin}
           themes={themes}
+          scriptBuilderV2Enabled={scriptBuilderV2Enabled}
           onClose={() => setEditingPlan(null)}
           onSaved={handlePlanSaved}
           onDeleted={handlePlanDeleted}
