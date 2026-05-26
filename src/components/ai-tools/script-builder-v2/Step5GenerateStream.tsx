@@ -152,9 +152,9 @@ interface Props {
 }
 
 const PIPELINE_LABELS = {
-  load: "Load context",
-  draft: "Draft script",
-  validate: "Validate content rules",
+  load: "Stacking the facts",
+  draft: "Writing your script",
+  validate: "Final polish",
 } as const;
 
 function buildPipeline(
@@ -206,6 +206,31 @@ function rotationLabelAt(elapsedMs: number): string {
   }
   return pick;
 }
+
+/**
+ * Defensive client-side circle advancement. Mirrors the wall-clock shape of
+ * a typical generation so the pipeline circles stop lying when no server
+ * `phase` events arrive (Replit proxy / Turbopack sometimes buffers SSE):
+ *
+ *   0–16s   load=active   draft=pending   validate=pending
+ *   16–80s  load=complete draft=active    validate=pending
+ *   80s+    load=complete draft=complete  validate=active
+ *
+ * When a real server `phase` event lands, `phaseKeyToPipeline()` REPLACES
+ * this client-timed state (server is authoritative).
+ */
+function rotationPipelineAt(elapsedMs: number): PipelineStep[] {
+  if (elapsedMs < 16_000) return phaseKeyToPipeline("load")!;
+  if (elapsedMs < 80_000) return phaseKeyToPipeline("intro")!;
+  return phaseKeyToPipeline("validate")!;
+}
+
+/** All three circles complete — used on the terminal `complete` event. */
+const ALL_COMPLETE_PIPELINE: PipelineStep[] = buildPipeline(
+  "complete",
+  "complete",
+  "complete",
+);
 
 const SERVER_STALL_RESCUE_MS = 12_000;
 
@@ -287,7 +312,7 @@ export function Step5GenerateStream({
     // "Connecting…") so the user sees a meaningful, in-progress activity
     // on the very first paint, even if no SSE bytes have arrived yet.
     setPhaseLabel(rotationLabelAt(0));
-    thinking.resetSteps(INITIAL_PIPELINE);
+    thinking.resetSteps(rotationPipelineAt(0));
     thinking.start();
 
     const ctrl = new AbortController();
@@ -311,10 +336,28 @@ export function Step5GenerateStream({
     let rotationTimer: ReturnType<typeof setInterval> | null = null;
     let stallRescueTimer: ReturnType<typeof setTimeout> | null = null;
 
+    // Track which rotation window we last applied so we only call
+    // resetSteps on actual window changes (0-16s / 16-80s / 80s+).
+    // useAiThinking.resetSteps is an unconditional setSteps, so without
+    // this guard we'd cause a fresh re-render every 1s tick.
+    let lastWindowKey: "load" | "draft" | "validate" | null = null;
+    const windowKeyAt = (elapsedMs: number): "load" | "draft" | "validate" =>
+      elapsedMs < 16_000 ? "load" : elapsedMs < 80_000 ? "draft" : "validate";
     const startRotation = () => {
       if (rotationTimer !== null) return;
       rotationTimer = setInterval(() => {
-        setPhaseLabel(rotationLabelAt(Date.now() - startedAt));
+        const elapsed = Date.now() - startedAt;
+        setPhaseLabel(rotationLabelAt(elapsed));
+        // Advance pipeline circles client-side so the visual matches the
+        // rotating label. A real server `phase` event still overrides via
+        // `phaseKeyToPipeline` in the event handler (server is
+        // authoritative); we just stop being stuck on the first circle
+        // while the server is silent.
+        const wk = windowKeyAt(elapsed);
+        if (wk !== lastWindowKey) {
+          lastWindowKey = wk;
+          thinking.resetSteps(rotationPipelineAt(elapsed));
+        }
       }, 1000);
     };
     const stopRotation = () => {
@@ -463,10 +506,14 @@ export function Step5GenerateStream({
           } else if (evt === "complete") {
             // ── Terminal success ──────────────────────────────
             // Write state BEFORE stop() (architect rule: terminal
-            // writes precede the indicator hand-off).
+            // writes precede the indicator hand-off). Flip ALL
+            // three circles to complete — earlier we only flipped
+            // `validate`, which left `load`/`draft` stuck on
+            // whatever the last phase event said (often `active`
+            // mid-draft if the server fast-pathed the final phase).
             const payload = data as Step5CompletePayload;
             clearAll();
-            thinking.updateStep("validate", "complete");
+            thinking.resetSteps(ALL_COMPLETE_PIPELINE);
             setDone(payload);
             thinking.stop();
             onCompleteRef.current(payload);
