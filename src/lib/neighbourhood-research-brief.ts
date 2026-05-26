@@ -103,6 +103,33 @@ List 3-7 key sources used for this profile, with URLs where possible.
 7. Source only from authoritative outlets: government statistics, official municipal documents, MLS aggregations, recognized news, established real estate publications. Avoid blog posts, realtor listings as primary sources, or speculative content.
 8. Distinguish between dated facts and current trends. If something has changed in 2024-2026, note the change.
 
+## CRITICAL — OUTPUT FORMAT REINFORCEMENT
+
+You MUST output the literal characters \`###\` and \`**\` in your response, even if your interface renders them as visual headings.
+
+Correct:
+\`\`\`
+### Acadia
+
+**Snapshot**
+Acadia, established in 1960...
+\`\`\`
+
+Incorrect (markdown rendered, not output):
+\`\`\`
+Acadia
+
+Snapshot
+Acadia, established in 1960...
+\`\`\`
+
+If your tool's "Copy" button strips these characters, do ONE of:
+- Use "Download as .md" / "Export as Markdown"
+- Open the conversation in source view
+- Paste the reply into a text editor and save as \`research.md\`
+
+The parser depends on these characters in the file you upload back. Without them, parsing falls back to a paid AI call that may exceed limits on large files.
+
 ## NOW PROCEED
 
 Begin with the first neighbourhood listed and produce one complete profile before moving to the next. Do not summarize or skip sections.

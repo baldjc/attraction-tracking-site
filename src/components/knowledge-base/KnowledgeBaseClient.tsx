@@ -442,6 +442,13 @@ export default function KnowledgeBaseClient({
           .pdf file. We'll split it into per-neighbourhood profiles.
         </p>
 
+        <div className="mt-3 rounded-md border border-blue-200 bg-blue-50 p-3 text-xs text-blue-900 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-200">
+          <strong>Tip:</strong> File upload is more reliable than paste. Chat
+          interfaces sometimes strip the <code>###</code> heading characters
+          from copied text — uploading the source <code>.md</code> file
+          preserves them and parses instantly for free.
+        </div>
+
         {thinking.isThinking ? (
           <div className="mt-4">
             <AiThinking mode="phase" phaseLabel={thinking.phaseLabel} />

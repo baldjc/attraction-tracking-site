@@ -112,14 +112,29 @@ export async function POST(req: NextRequest) {
   try {
     parseResult = await parseResearchDocument(rawContent, vocab);
   } catch (e) {
+    const message = (e as Error).message ?? "Parse failed.";
+    // The parser throws a user-actionable "would cost ~$X — split or
+    // reformat" message when projected input is too large. That's not a
+    // server fault — surface it as 4xx so the UI shows it inline.
+    const isUserActionable = /would cost|split it into|reformat it/i.test(message);
     return Response.json(
       {
         uploadId: uploadRow.id,
-        error: `Parse failed: ${(e as Error).message}`,
+        error: `Parse failed: ${message}`,
       },
-      { status: 500 },
+      { status: isUserActionable ? 413 : 500 },
     );
   }
+
+  // Operator visibility — confirms in workflow logs that template-compliant
+  // uploads are winning on the free deterministic path.
+  console.log(
+    `[knowledge-base-upload] uploadId=${uploadRow.id} userId=${access.user.id} ` +
+      `profiles=${parseResult.profiles.length} ` +
+      `unmatched=${parseResult.unmatchedSections.length} ` +
+      `path=${parseResult.path} ` +
+      `cost=$${parseResult.costUsd.toFixed(2)}`,
+  );
 
   // Upsert each parsed profile by (userId, neighbourhood). Upload is
   // authoritative — replace content + summary.
