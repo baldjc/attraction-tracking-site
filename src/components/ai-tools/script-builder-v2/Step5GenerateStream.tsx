@@ -169,11 +169,45 @@ function buildPipeline(
   ];
 }
 
+/**
+ * The very first paint shows step "load" as ACTIVE — not pending. This is
+ * the defensive UX layer: regardless of whether the first server `phase`
+ * event reaches the client (Replit proxy / Turbopack sometimes buffers the
+ * leading SSE bytes), the user sees motion the moment they click Generate.
+ * When a real `phase` event arrives, `phaseKeyToPipeline()` overrides this.
+ */
 const INITIAL_PIPELINE: PipelineStep[] = buildPipeline(
-  "pending",
+  "active",
   "pending",
   "pending",
 );
+
+/**
+ * Time-keyed rotating activity labels. Used as the fallback when the
+ * server hasn't sent a `phase` event yet, OR when the server stalls between
+ * events for > 12s. Non-uniform intervals — they match the rough wall-clock
+ * shape of a successful generation so the visible label tracks reality even
+ * when no server events arrive.
+ */
+const ROTATION_LABELS: ReadonlyArray<{ atMs: number; label: string }> = [
+  { atMs: 0, label: "Loading your validated facts…" },
+  { atMs: 8_000, label: "Pulling neighbourhood context…" },
+  { atMs: 16_000, label: "Drafting the 3-beat intro…" },
+  { atMs: 32_000, label: "Building data → psychology → clarity…" },
+  { atMs: 56_000, label: "Writing the next-video hook…" },
+  { atMs: 80_000, label: "Validating content rules…" },
+];
+
+function rotationLabelAt(elapsedMs: number): string {
+  let pick = ROTATION_LABELS[0].label;
+  for (const entry of ROTATION_LABELS) {
+    if (elapsedMs >= entry.atMs) pick = entry.label;
+    else break;
+  }
+  return pick;
+}
+
+const SERVER_STALL_RESCUE_MS = 12_000;
 
 /**
  * Map a server phase key → the COMPLETE pipeline state for that key.
@@ -229,6 +263,11 @@ export function Step5GenerateStream({
   // Under StrictMode the second mount overwrites this with its own
   // controller — exactly what we want, the new mount owns cancellation.
   const abortRef = useRef<AbortController | null>(null);
+  // Exposed by the effect so handleStop (outside the closure) can tear
+  // down the rotation + stall-rescue timers. Without this, a user-clicked
+  // Stop would leave both timers ticking until the component finally
+  // unmounts, mutating phaseLabel in the meantime.
+  const clearTimersRef = useRef<(() => void) | null>(null);
 
   const onCompleteRef = useRef(onComplete);
   useEffect(() => {
@@ -244,12 +283,63 @@ export function Step5GenerateStream({
     setError(null);
     setUserStopped(false);
     setRepromptCount(0);
-    setPhaseLabel("Connecting to the script generator…");
+    // Seed the visible label with the first rotation entry (not a generic
+    // "Connecting…") so the user sees a meaningful, in-progress activity
+    // on the very first paint, even if no SSE bytes have arrived yet.
+    setPhaseLabel(rotationLabelAt(0));
     thinking.resetSteps(INITIAL_PIPELINE);
     thinking.start();
 
     const ctrl = new AbortController();
     abortRef.current = ctrl;
+
+    // ── Defensive client-side rotation ───────────────────────────
+    // Two timers cooperating:
+    //   rotationTimer    — ticks every 1s, updates phaseLabel from the
+    //                      ROTATION_LABELS schedule based on elapsed ms.
+    //                      Always running unless a fresh server phase
+    //                      event has overridden it within the rescue
+    //                      window.
+    //   stallRescueTimer — armed every time a server phase event arrives.
+    //                      If no new server phase event fires within
+    //                      SERVER_STALL_RESCUE_MS, we restart the
+    //                      rotation so the UI keeps moving.
+    //
+    // Both are wired so that on terminal events (complete / error /
+    // abort / user stop) they get cleared exactly once via `clearAll`.
+    const startedAt = Date.now();
+    let rotationTimer: ReturnType<typeof setInterval> | null = null;
+    let stallRescueTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const startRotation = () => {
+      if (rotationTimer !== null) return;
+      rotationTimer = setInterval(() => {
+        setPhaseLabel(rotationLabelAt(Date.now() - startedAt));
+      }, 1000);
+    };
+    const stopRotation = () => {
+      if (rotationTimer !== null) {
+        clearInterval(rotationTimer);
+        rotationTimer = null;
+      }
+    };
+    const armStallRescue = () => {
+      if (stallRescueTimer !== null) clearTimeout(stallRescueTimer);
+      stallRescueTimer = setTimeout(() => {
+        // Server went quiet for too long — bring the rotation back so
+        // the visible label keeps moving until the next event (or end).
+        startRotation();
+      }, SERVER_STALL_RESCUE_MS);
+    };
+    const clearAll = () => {
+      stopRotation();
+      if (stallRescueTimer !== null) {
+        clearTimeout(stallRescueTimer);
+        stallRescueTimer = null;
+      }
+    };
+    clearTimersRef.current = clearAll;
+    startRotation();
 
     (async () => {
       try {
@@ -283,6 +373,7 @@ export function Step5GenerateStream({
             // Body wasn't JSON — keep payload empty.
           }
           if (ctrl.signal.aborted) return;
+          clearAll();
           setError({
             kind: "http",
             status: resp.status,
@@ -334,6 +425,10 @@ export function Step5GenerateStream({
 
           if (evt === "phase") {
             const d = data as { key?: string; label?: string };
+            // Server label wins — kill the client rotation and arm a
+            // watchdog so we restart it if the server then goes quiet.
+            stopRotation();
+            armStallRescue();
             if (typeof d.label === "string") setPhaseLabel(d.label);
             if (typeof d.key === "string") {
               const next = phaseKeyToPipeline(d.key);
@@ -370,6 +465,7 @@ export function Step5GenerateStream({
             // Write state BEFORE stop() (architect rule: terminal
             // writes precede the indicator hand-off).
             const payload = data as Step5CompletePayload;
+            clearAll();
             thinking.updateStep("validate", "complete");
             setDone(payload);
             thinking.stop();
@@ -382,6 +478,7 @@ export function Step5GenerateStream({
               violations?: ScriptViolation[];
               metrics?: ScriptMetrics;
             };
+            clearAll();
             setError({
               kind: "stream",
               error: d.error,
@@ -453,6 +550,7 @@ export function Step5GenerateStream({
         //   - Server closed early without emitting complete/error
         // Only the last case needs us to surface anything here.
         if (!ctrl.signal.aborted) {
+          clearAll();
           setError({
             kind: "stream",
             error: "stream_closed_early",
@@ -466,12 +564,14 @@ export function Step5GenerateStream({
         // do NOT touch UI state (architect rule: cleanup never
         // races with the next mount's start()).
         if (ctrl.signal.aborted || (e as Error).name === "AbortError") return;
+        clearAll();
         setError({ kind: "network", message: (e as Error).message });
         thinking.stop();
       }
     })();
 
     return () => {
+      clearAll();
       ctrl.abort();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -479,9 +579,13 @@ export function Step5GenerateStream({
 
   const handleStop = useCallback(() => {
     // User-initiated cancellation — distinct from the cleanup-path
-    // abort because we DO want to update the UI here.
+    // abort because we DO want to update the UI here. Tear down the
+    // rotation + stall-rescue timers BEFORE abort so they don't tick
+    // one more frame and overwrite phaseLabel after the stop view
+    // takes over.
     const c = abortRef.current;
     if (!c || c.signal.aborted) return;
+    clearTimersRef.current?.();
     c.abort();
     setUserStopped(true);
     thinking.stop();
@@ -520,11 +624,35 @@ export function Step5GenerateStream({
   }
 
   // ── Render: live streaming ────────────────────────────────────
+  // The streaming branch is reached when !done && !error && !userStopped,
+  // i.e. exactly when the indeterminate progress bar should be visible —
+  // no separate guard needed here.
   return (
     <div className="space-y-5">
+      {/* Keyframe for the indeterminate slider — declared inline so we
+          don't need to touch tailwind.config.ts. The 1.8s ease-in-out
+          loop is subtle enough to read as "working" without distraction.
+          Honour prefers-reduced-motion: hide the slider gradient (the
+          static track stays) and let Tailwind's motion-reduce: variant
+          disable the pulse on the label. */}
+      <style>{`
+        @keyframes sb-v2-slide {
+          0%   { transform: translateX(-100%); }
+          100% { transform: translateX(400%); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .sb-v2-slider { animation: none !important; opacity: 0; }
+        }
+      `}</style>
       <div className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
         <AiThinking mode="pipeline" steps={thinking.steps} />
-        <p className="mt-3 text-sm text-gray-700 dark:text-gray-300">
+        <div className="mt-3 h-0.5 w-full overflow-hidden rounded bg-gray-100 dark:bg-gray-800">
+          <div
+            className="sb-v2-slider h-full w-1/3 rounded bg-blue-500 dark:bg-blue-400"
+            style={{ animation: "sb-v2-slide 1.8s ease-in-out infinite" }}
+          />
+        </div>
+        <p className="mt-3 animate-pulse text-sm text-gray-700 motion-reduce:animate-none dark:text-gray-300">
           {phaseLabel}
         </p>
         {repromptCount > 0 && (
