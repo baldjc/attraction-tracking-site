@@ -927,8 +927,7 @@ export async function runValidation(uploadId: string): Promise<void> {
     try {
       const written = await persistAggregatedMetrics(uploadId, userId, table);
       console.log(
-        `[runValidation] step: aggregated metrics persisted=${written}`,
-        uploadId,
+        `[aggregated-metric-persist] uploadId=${uploadId} count=${written}`,
       );
     } catch (err) {
       console.error(

@@ -43,7 +43,8 @@ export type ScriptViolationRule =
   | "no_abbrev_in_dialogue"
   | "numerals_on_page"
   | "hyper_local_floor"
-  | "no_misattributed_stats";
+  | "no_misattributed_stats"
+  | "unanchored_stat";
 
 export interface ScriptViolation {
   rule: ScriptViolationRule;
@@ -644,7 +645,7 @@ export function checkNoMisattributedStats(
   }
 
   const violations: ScriptViolation[] = [];
-  const seen = new Set<string>(); // dedupe identical "raw|family" pairs
+  const seen = new Set<string>(); // dedupe identical "raw|family|kind"
   for (const tok of tokens) {
     // Only compare against SoT entries whose family produces the same
     // spoken unit as the token. This is what stops "5%" colliding with
@@ -652,7 +653,37 @@ export function checkNoMisattributedStats(
     const match = sotComparable.find(
       (s) => s.unit === tok.unit && withinTolerance(s.value, tok.value),
     );
-    if (!match) continue;
+
+    // Path A — unmatched stat (fabrication suspect). Token's unit has
+    // matchable SoT/cited-fact entries (i.e. we have anchors to compare
+    // against in that unit), but no anchor matches within 2%. Surfaced
+    // as a WARNING (advisory, never blocks save) so the member sees a
+    // "this number isn't in your data" cue without the re-prompt loop
+    // firing on false positives. If we have zero anchors of this unit,
+    // we skip — that means the rule can't speak to fabrication here.
+    if (!match) {
+      const haveAnchorsOfUnit = sotComparable.some((s) => s.unit === tok.unit);
+      if (!haveAnchorsOfUnit) continue;
+      const dedupeKey = `${tok.raw}|UNANCHORED|${tok.unit}`;
+      if (seen.has(dedupeKey)) continue;
+      seen.add(dedupeKey);
+      violations.push({
+        rule: "unanchored_stat",
+        severity: "warning",
+        message:
+          `Stat "${tok.raw}" doesn't match any value in your deterministic ` +
+          `source-of-truth metrics or the cited-facts block (within 2% tolerance). ` +
+          `Either re-anchor to a real number from the data, or remove the stat — ` +
+          `the channel's edge is precision, not vibes.`,
+        snippet: dialogue
+          .slice(Math.max(0, tok.offset - 60), tok.offset + tok.raw.length + 20)
+          .trim(),
+      });
+      continue;
+    }
+
+    // Path B — misattribution. Token matches an anchor (member's own
+    // data), but the 30-word backward window names CREB/CMHC/BoC/etc.
     const window = attributionWindowBefore(dialogue, tok.offset);
     const outsideMarker = OUTSIDE_SOURCE_PATTERNS.find((p) => p.test(window));
     if (!outsideMarker) continue;
