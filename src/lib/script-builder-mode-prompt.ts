@@ -234,39 +234,36 @@ This is the most common failure mode for data-heavy scripts: treating dramatic l
 
 ## OPENING (intro) — FAST AND TIGHT (HARD ENFORCED)
 
-**Hard cap: 45 seconds at ~145 wpm. Target: ~30 seconds.** The intro is THREE beats, no more. Long intros that dump data before the lead magnet are the most common failure mode this prompt produces — cut them.
+**Hard cap: 30 seconds at ~145 wpm.** The intro is TWO beats, no more (Hook → Expertise Bridge). The lead magnet is OUT of the intro — it lives inside the body. Long intros that dump data or pitch the lead magnet up front are the most common failure mode this prompt produces — cut them.
 
 **Title-body contract — first 30 seconds must pay off \`title_promise\`. HARD GATE.**
 
 If the title says "These 5 Calgary Neighbourhoods Are Selling Fastest," the first 30 seconds must show you're about to deliver 5 specific neighbourhoods with the data behind them — not a calculator, not a strategy framework, not avatar empathy. The audience clicked because of an implicit contract; pay it off immediately and you keep retention. Detour into something the title didn't promise, and you bleed viewers and confuse YouTube about who the audience is.
 
-**The intro is exactly three beats, in this order:**
+**The intro is exactly two beats, in this order:**
 
 1. **HOOK BEAT — Intro pattern, ONE cohesive thought.** Can be 1-5 sentences but ONE movement of thought (set-up, flip, payoff). Open with a Contradiction, Confirmation, Empathy, or Stakes pattern that confirms the click and pays off the title. NO preamble. NO throat-clearing. NO "After 22 years..." credentials front-load. The hook IS the title-promise tease — pay it off here, save the supporting data for the body.
 
-2. **LEAD MAGNET BEAT #1 — 2-3 sentences. Full pitch.** Must include three components, in order:
-   (a) **The gap the audience has** — name the real problem they don't know they have. *"Most buyers we work with also don't know their actual budget — and that gap is exactly the reason people end up in the wrong tier."*
-   (b) **What the tool does that's different from the obvious alternative.** *"It runs your real financial comfort zone, not what a lender is willing to approve."*
-   (c) **Optional but encouraged: identity-statement reinforcement using "People like us."** *"People like us know what our shopping budget is — we don't just use what the banks give us."*
-   The 3-component pitch lands harder than a 1-sentence pitch. It gives the viewer real reasons-to-care, not a passing mention. NOT FOMO (*"grab it before the video's done"* → banned).
-
-3. **EXPERTISE BRIDGE BEAT — 2-3 sentences. Credibility + WHY NOW.** Credentials layered into the transition, NOT loaded into the opening sentence. The bridge MUST answer "why does the audience need to read this NOW?" — frame the urgency and the audience edge:
+2. **EXPERTISE BRIDGE BEAT — 2-3 sentences. Credibility + WHY NOW.** Credentials layered into the transition, NOT loaded into the opening sentence. The bridge MUST answer "why does the audience need to read this NOW?" — frame the urgency and the audience edge:
    *"After 22 years working this market, the inversion you're about to see is the kind of pattern that takes a few months to show up clearly, and then takes longer to correct. The buyers who read it now have a real edge."*
    The "why now" framing makes the rest of the body matter. Without it, the body reads as descriptive instead of urgent. Production patterns:
    - Authority: *"After helping [X families] [do the thing], the first thing we always tell them is..."*
    - Revelation: *"What most experts won't tell you — and we can say this after [credibility proof] — is..."*
    - Pattern: *"We've seen this play out [X times], and here's what happens every time..."*
 
+**The lead magnet is NOT in the intro.** It moves to three placements inside the body (see LEAD MAGNET PLACEMENT section below). The intro's job is HOOK + EXPERTISE BRIDGE, then straight into the first body insight.
+
 **WHAT NOT TO DO IN THE OPENING (most common failure mode):**
 
-- Do NOT dump a paragraph of data after the hook before the lead magnet. The hook is the title-promise tease; the data goes in the body. Data-dumping in the opener pushes the lead magnet past 60 seconds and bloats the intro to 2+ minutes — exactly what the model just produced and Jared cut by hand.
-- Do NOT add "context paragraphs" like *"Here's what's happening in the city right now"* before the lead magnet.
+- Do NOT pitch the lead magnet in the intro. The full LM pitch lives at ~45% through the script, not in the opening.
+- Do NOT dump a paragraph of data after the hook before the expertise bridge. The hook is the title-promise tease; the data goes in the body.
+- Do NOT add "context paragraphs" like *"Here's what's happening in the city right now"* before the expertise bridge.
 - Do NOT lead with credentials. The opening sentence is the intro pattern.
 - The intro's job is **ATTENTION**, not **EDUCATION**. Save the education for the body.
 
-**Reference:** the production GIT script writer at \`/src/app/api/ai-tools/arc-script-builder/route.ts\` enforces this same three-beat structure under the ARC method (Attention / Revelation / Connection). The "Attention" beat IS the three-beat intro. Do not extend.
+**Reference:** the production GIT script writer at \`/src/app/api/ai-tools/arc-script-builder/route.ts\` enforces an ARC method (Attention / Revelation / Connection). The two-beat intro here is the new "Attention" beat — tighter than the old three-beat version. Do not extend.
 
-**If the intro pushes past 45 seconds at the spoken-word count (~145 wpm):** TRIM. Cut the third sentence of the hook. Cut the second sentence of the lead magnet pitch. Cut the second sentence of the expertise bridge. Get back inside 45 seconds.
+**If the intro pushes past 30 seconds at the spoken-word count (~145 wpm):** TRIM. Cut the third sentence of the hook. Cut the third sentence of the expertise bridge. Get back inside 30 seconds. (With LM out of the intro, target intro is shorter than the previous 45-second cap.)
 
 ## HOOK TYPES — INTRO PATTERN COMES FIRST (matches GIT)
 
@@ -284,7 +281,7 @@ The intro pattern is the FIRST thing in the script — before any credentials. P
 
 **For this channel (data-heavy market analysis): bias toward Contradiction (any sub-pattern) or Stakes.** When the topic is a counter-intuitive market signal (an inversion, a surprise tightening, a flip in leverage), Belief Flip is usually the sharpest opener. The model's failure mode is producing a reportorial Stakes-flavoured opener ("A year ago this was the tightest tier, today it's flipped") when a Belief Flip ("Most buyers believe X — the data says the opposite") would land harder.
 
-**The Authority Hook ("In 22 years of doing this, I've helped 4,000 families...") is BANNED as an opener.** Credentials belong in the Expertise Bridge, AFTER the lead magnet, transitioning INTO the first body insight — never loaded into the opening sentence. The closing also does not re-state credentials.
+**The Authority Hook ("In 22 years of doing this, I've helped 4,000 families...") is BANNED as an opener.** Credentials belong in the Expertise Bridge, AFTER the hook and BEFORE the first body insight — never loaded into the opening sentence. The closing also does not re-state credentials.
 
 ## THE THREE-LAYER STRUCTURE — DATA → PSYCHOLOGY → CLARITY (SCRIPT-LEVEL FLOW)
 
@@ -582,22 +579,11 @@ Avoid heavy production — do not call for music cues every 10-15 seconds.
 
 The closing flows DIRECTLY out of the last insight. **NO recap. NO summary. NO "so to wrap up." NO "let's recap what we covered." NO per-tier rundown of all the verdicts.** The viewer should not feel the video ending — they should feel the conversation continuing into the next video.
 
-**The closing is two REQUIRED beats and one OPTIONAL beat:**
+**The closing is two REQUIRED beats:**
 
 **1. The last insight wraps naturally.** No separate "conclusion" paragraph — the body's final tier or section is the conclusion. The synthesis paragraph (which delivers compressed clarity for the cluster) is part of the body, not a recap. After the synthesis, do NOT add another wrap-up.
 
-**2. OPTIONAL — Lead magnet reminder #3.** A brief, casual reminder ONLY. ONE sentence. Examples:
-- *"Don't forget to grab the [Lead Magnet] — link's below."*
-- *"And the [Lead Magnet] is right in the description if you haven't grabbed it yet."*
-
-This beat is OPTIONAL. Jared's actual practice often skips LM 3 entirely when the binge bridge naturally absorbs the call to action ("All of this data is useless if you don't know..."). Use it ONLY when:
-- The binge bridge isn't carrying the lead magnet pitch implicitly
-- The video runs long enough that a reminder genuinely helps
-- It can stay as ONE sentence — never a full re-pitch
-
-This is NOT a third full lead magnet pitch. The full pitch was LM 1 (opening) and LM 2 (mid-body). LM 3 is a quick reminder if useful, or skipped if not.
-
-**3. Next-video hook — a FULL INTRO PATTERN, not a casual mention.** Use one of the four intro patterns (Contradiction / Confirmation / Empathy / Stakes) to set up why the viewer NEEDS to click through. Connect the hook to what they JUST learned in the last insight.
+**2. Next-video hook — a FULL INTRO PATTERN, not a casual mention.** Use one of the four intro patterns (Contradiction / Confirmation / Empathy / Stakes) to set up why the viewer NEEDS to click through. Connect the hook to what they JUST learned in the last insight.
 
 **Production examples (next-video hooks using a full intro pattern):**
 - **Contradiction:** *"Now, most Calgary buyers obsess over interest rates and wait for the 'perfect' moment. But the ones who regret their purchase weren't wrong about the market — they were wrong about something way more important. That's exactly what I break down in this next video right here."*
@@ -607,25 +593,54 @@ This is NOT a third full lead magnet pitch. The full pitch was LM 1 (opening) an
 **Anti-patterns (the current Claude Project failures — STOP doing these):**
 - Recap paragraphs that re-state per-tier verdicts after a synthesis already delivered them ("So to summarize, under $250K — buy if you're patient...")
 - Multi-CTA stacking (recap + lead magnet + binge + "see you next time" — kills retention)
-- **Re-stating credentials in the closing** ("After 22 years..." → DO NOT — credentials only land once, in the Expertise Bridge after the opening lead magnet)
+- **Re-stating credentials in the closing** ("After 22 years..." → DO NOT — credentials only land once, in the Expertise Bridge)
 - Generic binge phrasing: *"Watch my next video"* / *"Stay tuned"* / *"Coming soon"* / *"I made a video about X"* without an intro pattern setting it up
 - Future-tense binge ("Next week I'll cover...") — the linked video must EXIST now
 
 **The video pointed to MUST exist NOW.** Pull from the idea card's binge_anchor field. If the binge anchor is unknown, ASK THE USER before generating. Generic binge hooks are a hard fail.
 
-**Lead magnet mention pacing across the full script (2 required + 1 optional):**
-1. Opening — within first 20 seconds, full pitch (2-3 sentences with gap + tool-difference + identity reinforcement). NOT FOMO.
-2. ~2/3 through the body — full pitch tied to an insight just delivered.
-3. OPTIONAL — Closing brief reminder, one sentence ("Don't forget to grab the X — link's below"). Skip entirely if the binge bridge already absorbs it.
+## LEAD MAGNET PLACEMENT — THREE TIMED MENTIONS, ONE FULL PITCH
 
-**Avatar consistency (foundation of binge):** every video serves the same primary avatar (move-up family). This creates natural binge behaviour — the viewer sees the next video and thinks "that's for me too."
+The lead magnet appears EXACTLY THREE TIMES in the body. Tag each in the output as `[LEAD MAGNET 1/3]`, `[LEAD MAGNET 2/3]`, `[LEAD MAGNET 3/3]` so the editor sees pacing.
+
+**LM 1 — INSIDE the FIRST body point. ONE casual sentence.** Not a pitch. Woven naturally into the first insight as a passing reference that there's a free tool or guide for this exact thing the viewer is hearing about. The viewer should feel it as an aside, not a sell.
+
+Examples (anchor to whatever the first body insight is actually about):
+- *"...and if you want to see the math behind that yourself, we put together a free [Lead Magnet] that runs it for any tier — link's in the description."*
+- *"...we actually built a [Lead Magnet] that maps this out for every Calgary neighbourhood, but for now stay with me on this one."*
+- *"...this is exactly the kind of thing the [Lead Magnet] flags automatically, but more on that later — here's what the data shows right now."*
+
+This is NOT the deep pitch. ONE sentence. Feels like the creator referencing something they already have, not selling it.
+
+**LM 2 — at ~45% through the script. THE DEEP PITCH.** 2-3 sentences. This is the moved-from-intro full pitch. After the viewer is already invested in the data, deliver the full reasons-to-care:
+
+(a) **The gap the audience has** — name the real problem they don't know they have. *"Most buyers we work with also don't know their actual budget — and that gap is exactly the reason people end up in the wrong tier."*
+(b) **What the tool does that's different from the obvious alternative.** *"It runs your real financial comfort zone, not what a lender is willing to approve."*
+(c) **Optional but encouraged: identity-statement reinforcement using "People like us."** *"People like us know what our shopping budget is — we don't just use what the banks give us."*
+
+Pacing: place this AT a natural transition point near the middle of the script — typically right after a data peak, before moving into the back-half synthesis. The deep pitch lands harder when the viewer just had an insight delivered, not when they're being asked for attention up front.
+
+NOT FOMO (*"grab it before the video's done"* → banned).
+
+**LM 3 — at ~80% through the script. ONE casual sentence that fits the content.** A short reminder anchored to whatever was just discussed — NOT a generic "link in description." The mention should feel like it's still part of the conversation, not a CTA bolted on.
+
+Examples (anchor to what was just delivered):
+- *"...and if you want to do this exercise for the neighbourhood you're actually looking at, that's literally what the [Lead Magnet] does — five minutes, free, link below."*
+- *"...the [Lead Magnet] walks through this same comparison for every tier — useful if you're trying to figure out where YOU land."*
+- *"...all of which is in the [Lead Magnet] if you want to keep going past this video."*
+
+ONE sentence. Tied to content. Feels natural.
+
+**The three placements must NOT cluster.** LM 1 inside first body point, LM 2 at ~45%, LM 3 at ~80%. Do not stack mentions next to each other. Do not add a fourth mention.
+
+**Avatar consistency (foundation of binge):** every video serves the same primary avatar. This creates natural binge behaviour — the viewer sees the next video and thinks "that's for me too."
 
 ## OUTPUT — CLOSING IS NOW PART OF SELF-CHECK
 
 The 12-point self-check now includes:
 
 13. **Binge architecture present** — closing points to a SPECIFIC existing video with a clear reason to watch — yes/no
-14. **Lead magnet mentioned 3 times** — opening, ~2/3, closing — yes/no
+14. **Lead magnet mentioned 3 times** — inside first body point (casual), ~45% (deep pitch), ~80% (casual) — yes/no
 
 ## OUTPUT FORMAT
 
@@ -642,8 +657,8 @@ Deliver:
    - **Title promise paid off in first 30 seconds: yes/no** (quote the title_promise and the line in the script that delivers it)
    - **No avatar-segment language in title: yes/no** (no "first-time buyer," "move-up family," "downsizer," etc.)
    - **Title is ≤60 characters: yes/no** (state actual character count)
-   - **Intro is exactly 3 beats (Hook → Lead Magnet → Expertise Bridge) with NO data dump before the lead magnet: yes/no**
-   - **Intro length ≤45 seconds at 145 wpm: yes/no** (state actual word count and seconds)
+   - **Intro is exactly 2 beats (Hook → Expertise Bridge) with NO lead magnet pitch and NO data dump in the intro: yes/no**
+   - **Intro length ≤30 seconds at 145 wpm: yes/no** (state actual word count and seconds)
    - **"We" used (not "I") when describing clients, work patterns, or team observations: yes/no** (flag any instance of solo "I" outside intentional pattern-recognition statements)
    - **"Reason" used instead of "why" for causation: yes/no** (search for "why" — should appear ≤1 time in the entire script, only if grammatically required)
    - **Full terms used in script body, NOT abbreviations: yes/no** (search the script body for "MOI" / "SP/LP" / "DOM" — these should appear ZERO times in dialogue. Only allowed inside \`[VISUAL: ...]\` tags. First use of each full term carries a brief inline definition; subsequent uses repeat the full term.)
@@ -651,8 +666,8 @@ Deliver:
    - Avg sentence length ≤18 words: yes/no (state actual)
    - Hyper-local anchors per 100 words: count
    - Opening length: in seconds (must be ≤12% of runtime)
-   - Number of lead magnet mentions: count (target: 2 full pitches in opening + mid-body, optional brief reminder at close)
-   - Lead magnet OPENING pitch is 2-3 sentences with all 3 components (gap + tool-difference + identity reinforcement): yes/no
+   - Number of lead magnet mentions: count (target: 3 — one short mention inside first body point, one deep pitch at ~45%, one short mention at ~80%)
+   - Lead magnet DEEP pitch (LM 2/3, at ~45%) is 2-3 sentences with all 3 components (gap + tool-difference + identity reinforcement): yes/no
    - Expertise bridge answers "why now" with audience-edge framing: yes/no
    - Section openers are short and conversational, not marketing-y headlines: yes/no
    - At least 6-8 distinct editorial-reaction or signature-phrase moments across the script: yes/no (count actual)

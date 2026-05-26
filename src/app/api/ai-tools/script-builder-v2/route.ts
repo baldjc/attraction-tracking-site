@@ -14,7 +14,7 @@
  *   data: {"key": "load", "label": "Loading your facts and neighbourhood context..."}
  *
  *   event: phase
- *   data: {"key": "intro", "label": "Drafting the 3-beat intro..."}
+ *   data: {"key": "intro", "label": "Drafting the 2-beat intro..."}
  *
  *   event: token
  *   data: {"text": "..."}
@@ -516,10 +516,10 @@ export async function POST(req: NextRequest) {
           // Phase: first attempt walks intro→body→hook; retries jump
           // straight to "fixing rule violations".
           if (attempt === 0) {
-            trace("phase", "Drafting the 3-beat intro...");
+            trace("phase", "Drafting the 2-beat intro...");
             emit("phase", {
               key: "intro",
-              label: "Drafting the 3-beat intro...",
+              label: "Drafting the 2-beat intro...",
             });
           } else {
             const reLabel = `Re-prompting to fix ${lastErrors.length} content-rule violation(s) (attempt ${attempt + 1}/${MAX_REPROMPTS + 1})...`;
@@ -1099,7 +1099,7 @@ function buildInitialUserMessage(args: {
     const url =
       assignedCampaign.leadMagnetUrl ?? assignedCampaign.destinationUrl;
     lines.push(
-      "**Lead magnet** — this is the SPECIFIC asset the member assigned to this video. Use it in every `[LEAD MAGNET 1/3]`, `[LEAD MAGNET 2/3]`, `[LEAD MAGNET 3/3]` placement. Do NOT invent a generic budget-calculator, report, or guide pitch from the name alone — the fields below tell you what this asset actually is and how the member pitches it.",
+      "**Lead magnet** — this is the SPECIFIC asset the member assigned to this video. The script has THREE lead-magnet placements: `[LEAD MAGNET 1/3]` (inside first body point — one casual sentence), `[LEAD MAGNET 2/3]` (at ~45% — the DEEP pitch using the fields below), `[LEAD MAGNET 3/3]` (at ~80% — one casual sentence anchored to content). The `pitchOneLiner` and `description` fields below are the source material for the DEEP pitch at LM 2/3. For LM 1/3 and LM 3/3, write short casual references to the asset by name — do NOT replay the full pitch. Do NOT invent a generic budget-calculator, report, or guide pitch from the name alone — the fields below tell you what this asset actually is and how the member pitches it.",
     );
     lines.push("");
     lines.push(`- **Name:** ${assignedCampaign.name}`);
@@ -1118,7 +1118,7 @@ function buildInitialUserMessage(args: {
     lines.push("");
     if (assignedCampaign.pitchOneLiner) {
       lines.push(
-        "The **one-line pitch** above is the member's calibrated pitch language for THIS asset. Use it verbatim in the opening `[LEAD MAGNET 1/3]` pitch and weave it (with minimal rewording) into the mid-body and closing pitches. Do NOT substitute generic pitch language about budget calculators, reports, or guides based on the name.",
+        "The **one-line pitch** above is the member's calibrated pitch language for THIS asset. Use it verbatim (or with minimal rewording) as the spine of the DEEP pitch at `[LEAD MAGNET 2/3]` (~45% through). For the casual mentions at `[LEAD MAGNET 1/3]` (inside the first body point) and `[LEAD MAGNET 3/3]` (~80%), reference the asset by name in one sentence anchored to the surrounding content — do NOT replay the full pitch. Do NOT substitute generic pitch language about budget calculators, reports, or guides based on the name.",
       );
     } else if (assignedCampaign.description) {
       lines.push(
@@ -1186,7 +1186,7 @@ function buildInitialUserMessage(args: {
   lines.push("## OUTPUT");
   lines.push("");
   lines.push(
-    "Produce the FULL talking-head script in the format the system prompt specifies (3-beat intro → DATA → PSYCHOLOGY → CLARITY body → next-video hook), with `[VISUAL: ...]` tags throughout. Cite every fact from the JSON above by weaving the metric value into dialogue at least once. Title-body contract: the first ~30 seconds (~150 words) must pay off the **Title promise** verbatim or near-verbatim.",
+    "Produce the FULL talking-head script in the format the system prompt specifies (2-beat intro: Hook → Expertise Bridge, then DATA → PSYCHOLOGY → CLARITY body with `[LEAD MAGNET 1/3]` inside the first body point, `[LEAD MAGNET 2/3]` deep pitch at ~45%, `[LEAD MAGNET 3/3]` casual at ~80%, then next-video hook), with `[VISUAL: ...]` tags throughout. Cite every fact from the JSON above by weaving the metric value into dialogue at least once. Title-body contract: the first ~30 seconds (~150 words) must pay off the **Title promise** verbatim or near-verbatim.",
   );
   lines.push("");
   lines.push(
