@@ -306,10 +306,13 @@ function formatValue(family: MetricFamily, value: number): string {
 }
 
 function formatDelta(value: number | null): string {
+  // `yoyDelta` is persisted as a percentage already (csv-aggregate's
+  // `pctDelta()` returns `(curr - prev) / prev * 100`), so a stored
+  // value of `1.5` means "+1.5%", NOT "+150%". Do not auto-scale
+  // — small magnitudes like ±0.4 or ±1.5 are real sub-2% YoY moves.
   if (value == null || !Number.isFinite(value)) return "";
-  const pct = Math.abs(value) <= 2 ? value * 100 : value;
-  const sign = pct >= 0 ? "+" : "";
-  return `${sign}${pct.toFixed(1)}%`;
+  const sign = value >= 0 ? "+" : "";
+  return `${sign}${value.toFixed(1)}%`;
 }
 
 /**
