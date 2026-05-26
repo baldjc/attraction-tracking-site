@@ -559,6 +559,14 @@ DO NOT do as quota-filler:
 
 **Distribute, don't cluster.** 4-5 connection phrases + 2-3 values peppering, spread across the full script. If 4+ land in one section, redistribute or cut.
 
+**Avatar-driven psychology beats (when a VIEWER AVATAR section appears in the user message):**
+
+The phrase list above is scaffolding. The CONTENT of each psychology beat must be drawn from the VIEWER AVATAR section's specific details — their stated situation, the decisions they're agonising over, the internal language they use, the small concrete things that make them feel seen.
+
+The "that's me" test: a real person matching the avatar should hear the beat and feel that the script knows something specific about them that a generic Calgary realtor video wouldn't. Generic empathy ("families in your situation") fails the test. Specific recognition ("if you've been redoing the same mortgage calculation in your phone every time you walk through a listing") passes it.
+
+When no VIEWER AVATAR is provided in the user message, fall back to the editorial-reaction patterns above (the data-heavy script exception) — but do NOT fabricate avatar details. A script with no avatar uses fewer, more data-anchored connection moments; a script WITH an avatar uses the avatar to make each connection moment specific.
+
 ## VISUAL PROOF (identify in script)
 
 Tag with [VISUAL: …]. Options:

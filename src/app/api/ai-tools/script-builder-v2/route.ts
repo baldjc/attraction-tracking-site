@@ -992,15 +992,80 @@ function buildInitialUserMessage(args: {
   lines.push("```");
   lines.push("");
 
-  lines.push("## Member's MarketConfig");
+  // ── VIEWER AVATAR ─────────────────────────────────────────────────────
+  // Promoted to its own section (separate from MarketConfig JSON) so Claude
+  // treats the avatar as the SOURCE for psychology beats, not as background
+  // reference. The connection-language phrase list in the system prompt is
+  // scaffolding; the avatar is what makes those phrases land as recognition.
+  //
+  // Gating is intentionally strict: an empty default MarketConfig still
+  // carries an object-shaped primaryAvatar AND the full preset subPersonas
+  // array (all `enabled: false`), so a truthy check would render an empty
+  // section and confuse Claude. Only render when (a) the avatar has a real
+  // snapshot — non-empty `snappedAt` + at least one of `summary`/`profile`
+  // — and/or (b) at least one sub-persona is enabled.
+  const rawAvatar = marketConfig.primaryAvatar as
+    | { snappedAt?: unknown; summary?: unknown; profile?: unknown }
+    | null
+    | undefined;
+  const hasSubstantiveAvatar = !!(
+    rawAvatar &&
+    typeof rawAvatar === "object" &&
+    typeof rawAvatar.snappedAt === "string" &&
+    rawAvatar.snappedAt.length > 0 &&
+    ((typeof rawAvatar.summary === "string" &&
+      rawAvatar.summary.trim().length > 0) ||
+      (rawAvatar.profile &&
+        typeof rawAvatar.profile === "object" &&
+        Object.keys(rawAvatar.profile as Record<string, unknown>).length > 0))
+  );
+  const rawPersonas = marketConfig.subPersonas;
+  const enabledPersonas = Array.isArray(rawPersonas)
+    ? (rawPersonas as Array<{ id?: unknown; label?: unknown; enabled?: unknown }>)
+        .filter((p) => p && typeof p === "object" && p.enabled === true)
+        .map((p) => ({
+          id: typeof p.id === "string" ? p.id : undefined,
+          label: typeof p.label === "string" ? p.label : undefined,
+        }))
+        .filter((p): p is { id: string; label: string } => !!p.id && !!p.label)
+    : [];
+  if (hasSubstantiveAvatar || enabledPersonas.length > 0) {
+    lines.push("## VIEWER AVATAR — the source for psychology beats");
+    lines.push("");
+    lines.push(
+      "This is the specific viewer this script is for. Use their stated situation, internal language, and decision pressures as the raw material for the 1-3 psychology beats. When you write a 'that's me' recognition moment, cite a specific detail from this avatar profile — NOT the generic phrase list from the system prompt. The system prompt's CONNECTION LANGUAGE phrases are scaffolding; what makes them land is filling them with content drawn from THIS avatar.",
+    );
+    lines.push("");
+    lines.push(
+      "Specifically: at each psychology beat, name something concrete from the avatar's situation (their stage of life, the specific decision they're stuck on, the language they use, the thing they keep doing at 11pm), and connect it to the data you just laid down. Avoid generic 'families like yours' — that's targeting, not recognition.",
+    );
+    lines.push("");
+    if (hasSubstantiveAvatar) {
+      lines.push("### Primary avatar");
+      lines.push("```json");
+      lines.push(JSON.stringify(marketConfig.primaryAvatar, null, 2));
+      lines.push("```");
+      lines.push("");
+    }
+    if (enabledPersonas.length > 0) {
+      lines.push(
+        "### Sub-personas the member has enabled (use as variations within the body where natural)",
+      );
+      lines.push("");
+      for (const p of enabledPersonas) {
+        lines.push(`- **${p.label}** (\`${p.id}\`)`);
+      }
+      lines.push("");
+    }
+  }
+
+  lines.push("## Market context");
   lines.push("");
   lines.push("```json");
   lines.push(
     JSON.stringify(
       {
         marketName: marketConfig.marketName,
-        primaryAvatar: marketConfig.primaryAvatar,
-        subPersonas: marketConfig.subPersonas,
         keywordKit: marketConfig.keywordKit,
         neighbourhoods: marketConfig.neighbourhoods,
         moiThresholds: marketConfig.moiThresholds,
