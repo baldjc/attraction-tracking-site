@@ -709,6 +709,7 @@ export async function POST(req: NextRequest) {
           const validation = validateScript(draft, {
             neighbourhoods: marketConfig.neighbourhoods,
             sourceOfTruth: sourceOfTruthMetrics,
+            citedFacts: citedFacts.map((f) => ({ raw: f.metricValueString })),
           });
 
           if (validation.ok) {

@@ -449,6 +449,18 @@ export interface SourceOfTruthValue {
   metricValue: number;
 }
 
+/**
+ * A free-form cited fact string from the planner (e.g. "$625,000",
+ * "8.3%", "2.1 months on market"). Cross-checked alongside SoT so a
+ * stat the member legitimately surfaced via the planner is NOT flagged
+ * as misattributed, and stats matching either source that are
+ * attributed to outside bodies still warn.
+ */
+export interface CitedFactValue {
+  /** Raw value string as displayed in the cited-facts block. */
+  raw: string;
+}
+
 /** Outside-source attribution markers — case-insensitive whole-word match. */
 const OUTSIDE_SOURCE_PATTERNS = [
   /\bCREB\b/i,
@@ -593,22 +605,41 @@ function attributionWindowBefore(
 export function checkNoMisattributedStats(
   script: string,
   sourceOfTruth: SourceOfTruthValue[] | undefined,
+  citedFacts: CitedFactValue[] | undefined = undefined,
 ): ScriptViolation[] {
-  if (!sourceOfTruth || sourceOfTruth.length === 0) return [];
+  const hasSot = sourceOfTruth && sourceOfTruth.length > 0;
+  const hasCited = citedFacts && citedFacts.length > 0;
+  if (!hasSot && !hasCited) return [];
   const { dialogue } = stripToDialogue(script);
   const tokens = extractStatTokens(dialogue);
   if (tokens.length === 0) return [];
 
-  // Flatten all SoT values into a (family, unit, comparable) list once.
-  // Families with no comparable spoken-script unit (e.g. INVENTORY counts)
-  // are dropped — matching plain integers like "137" against "137 active"
-  // is dominated by coincidence at scale.
+  // Flatten BOTH sources into a (family, unit, comparable) list once.
+  // The rule cross-checks every spoken stat against the union of
+  // (deterministic SoT, member-cited facts) — a number matching either
+  // is member-attributable, so if it's attributed to an outside source
+  // (CREB/CMHC/BoC) we warn. Families with no comparable spoken-script
+  // unit (e.g. INVENTORY counts) are dropped — matching plain integers
+  // like "137" against "137 active" is dominated by coincidence at scale.
   const sotComparable: Array<{ family: string; unit: StatUnit; value: number }> = [];
-  for (const sot of sourceOfTruth) {
-    const unit = unitForFamily(sot.metricFamily);
-    if (!unit) continue;
-    for (const v of normalizeForCompare(sot.metricFamily, sot.metricValue)) {
-      sotComparable.push({ family: sot.metricFamily, unit, value: v });
+  if (hasSot) {
+    for (const sot of sourceOfTruth!) {
+      const unit = unitForFamily(sot.metricFamily);
+      if (!unit) continue;
+      for (const v of normalizeForCompare(sot.metricFamily, sot.metricValue)) {
+        sotComparable.push({ family: sot.metricFamily, unit, value: v });
+      }
+    }
+  }
+  if (hasCited) {
+    // Parse each cited-fact raw string ("$625,000", "8.3%", "2.1 months")
+    // with the same extractor used for the script body, so units stay
+    // consistent on both sides of the comparison.
+    for (const c of citedFacts!) {
+      if (!c.raw) continue;
+      for (const t of extractStatTokens(c.raw)) {
+        sotComparable.push({ family: "CITED_FACT", unit: t.unit, value: t.value });
+      }
     }
   }
 
@@ -656,6 +687,13 @@ export interface ValidateScriptOptions extends HyperLocalOptions {
    * WARNING severity (does NOT block save, does NOT trigger re-prompt).
    */
   sourceOfTruth?: SourceOfTruthValue[];
+  /**
+   * Wave 1 — raw stat strings from the planner's cited-facts block
+   * (e.g. "$625,000", "8.3%", "2.1 months"). Cross-checked alongside
+   * `sourceOfTruth` so a stat the member legitimately surfaced via the
+   * planner is also treated as member-attributable.
+   */
+  citedFacts?: CitedFactValue[];
 }
 
 /**
@@ -682,7 +720,9 @@ export function validateScript(
   const hyperLocal = checkHyperLocalFloor(script, opts);
   violations.push(...hyperLocal.violations);
   // Wave 1 — WARNING severity, never blocks save / triggers re-prompt.
-  violations.push(...checkNoMisattributedStats(script, opts.sourceOfTruth));
+  violations.push(
+    ...checkNoMisattributedStats(script, opts.sourceOfTruth, opts.citedFacts),
+  );
 
   const ok = !violations.some((v) => v.severity === "error");
   return { ok, violations, metrics: hyperLocal.metrics };

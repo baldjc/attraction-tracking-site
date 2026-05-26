@@ -38,12 +38,15 @@ export type MetricFamily =
  * number is too noisy to publish as "the number" and we skip it — the
  * validator's prose facts will still carry caveats for low-N callouts.
  *
- * Per direction:  INVENTORY=1  FAILURE_RATE=5  AVG=5  OTHER=10.
- * Conventional minimums (MEDIAN/MOI/DOM/SP_LP/PSF/BENCHMARK) stay at 5.
+ * Per direction:  INVENTORY=1  FAILURE_RATE=5  AVG=5  MOI=3  OTHER=10.
+ * MOI is intentionally permissive (n≥3) so thin neighbourhoods still
+ * get a deterministic inventory-pressure read — the script's prose
+ * caveats handle the low-volume note.
+ * Conventional minimums (MEDIAN/DOM/SP_LP/PSF/BENCHMARK) stay at 5.
  */
 const SAMPLE_THRESHOLDS: Record<MetricFamily, number> = {
   MEDIAN: 5,
-  MOI: 5,
+  MOI: 3,
   DOM: 5,
   SP_LP: 5,
   PSF: 5,
