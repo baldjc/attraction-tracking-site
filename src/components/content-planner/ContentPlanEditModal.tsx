@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { XMarkIcon, ArrowDownTrayIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
@@ -381,6 +381,98 @@ function ContentRow({
       )}
     </li>
   );
+}
+
+// Debounced auto-save hook. Watches `value` (any reference change triggers
+// the debounce timer) and calls `onSave` after `debounceMs` of no further
+// changes. The first render is skipped so opening the modal doesn't fire a
+// no-op PATCH. In-flight saves coalesce: if a save lands while another is
+// running, the second one waits for the first to resolve and then runs
+// once with the latest snapshot — so rapid changes never produce overlapping
+// PATCHes or stale-value overwrites. `flush()` runs any pending save
+// immediately (used by close handlers so the modal never closes mid-debounce).
+function useAutoSave<T>(
+  value: T,
+  onSave: () => Promise<boolean>,
+  options: { debounceMs?: number; enabled?: boolean } = {},
+) {
+  const { debounceMs = 600, enabled = true } = options;
+  const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+  // Keep onSave in a ref so `flush` stays stable even though `handleSave`
+  // is recreated each render — otherwise the effect below would restart the
+  // debounce timer on every unrelated re-render.
+  const onSaveRef = useRef(onSave);
+  onSaveRef.current = onSave;
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const inFlightRef = useRef<Promise<boolean> | null>(null);
+  const pendingRef = useRef(false);
+  const firstRunRef = useRef(true);
+
+  const flush = useCallback(async (): Promise<boolean> => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    if (inFlightRef.current) {
+      // A save is already running — wait for it, then re-run if a newer
+      // change came in after the in-flight save was started. Critically,
+      // propagate the in-flight result when nothing else is pending: if
+      // the awaited save failed, returning `true` would let `handleClose`
+      // close the modal over unsaved (failed) changes.
+      const inFlightOk = await inFlightRef.current;
+      if (!pendingRef.current) return inFlightOk;
+    }
+    pendingRef.current = false;
+    setStatus("saving");
+    const promise = onSaveRef.current();
+    inFlightRef.current = promise;
+    let ok = false;
+    try {
+      ok = await promise;
+    } finally {
+      inFlightRef.current = null;
+    }
+    if (ok) {
+      setStatus("saved");
+      setLastSavedAt(new Date());
+    } else {
+      setStatus("error");
+    }
+    return ok;
+  }, []);
+
+  useEffect(() => {
+    if (firstRunRef.current) {
+      firstRunRef.current = false;
+      return;
+    }
+    if (!enabled) return;
+    pendingRef.current = true;
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      void flush();
+    }, debounceMs);
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [value, enabled, debounceMs, flush]);
+
+  return { status, lastSavedAt, flush };
+}
+
+// Tiny relative-time formatter for the auto-save status indicator.
+// Examples: "just now", "1 min ago", "5 min ago", "1 hr ago".
+function formatRelativeTime(d: Date): string {
+  const seconds = Math.max(0, Math.floor((Date.now() - d.getTime()) / 1000));
+  if (seconds < 10) return "just now";
+  if (seconds < 60) return `${seconds}s ago`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hr ago`;
+  const days = Math.floor(hours / 24);
+  return `${days} day${days === 1 ? "" : "s"} ago`;
 }
 
 export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdmin, memberId, themes: themesProp = [], showProgressTrack: showProgressTrackProp = false, scriptBuilderV2Enabled = false, onClose, onSaved, onDeleted }: Props) {
@@ -967,10 +1059,20 @@ Produce a research brief I can hand to a script writer. For **each talking point
   const statusOptions = getStatusOptions(serviceTier);
 
   useEffect(() => {
-    const handleKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    const handleKey = (e: KeyboardEvent) => { if (e.key === "Escape") void handleClose(); };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onClose]);
+
+  // Snapshot of every field that handleSave PATCHes. Memoised so the
+  // useAutoSave hook only sees a new reference when something it actually
+  // saves has changed — purely UI-side state (open dropdowns, expansion
+  // toggles, etc.) won't restart the debounce timer.
+  const autoSaveSnapshot = useMemo(
+    () => ({ form, thumbnailFileId, thumbnailFileName }),
+    [form, thumbnailFileId, thumbnailFileName],
+  );
 
   async function handleSave(): Promise<boolean> {
     if (!form.title.trim()) { setError("Title is required."); return false; }
@@ -1024,14 +1126,41 @@ Produce a research brief I can hand to a script writer. For **each talking point
     }
   }
 
-  // Backdrop click → auto-save then close. If the save fails (e.g. missing
-  // required title), keep the modal open and surface the error instead of
-  // silently discarding the user's edits.
+  // Wire the modal up to auto-save. 600ms debounce: long enough that
+  // mid-word typing never fires a PATCH, short enough that the "Saved"
+  // chip lands while the user is still looking at the field they just
+  // edited. Disabled when the plan has no id (defensive — every real
+  // edit-modal open has one).
+  const autoSave = useAutoSave(autoSaveSnapshot, handleSave, {
+    debounceMs: 600,
+    enabled: !!plan.id,
+  });
+
+  // Re-render once a minute so the "Saved · 2 min ago" label keeps ticking
+  // even while the user idles in the modal without touching anything.
+  const [, setRelativeTick] = useState(0);
+  useEffect(() => {
+    if (autoSave.status !== "saved") return;
+    const t = window.setInterval(() => setRelativeTick((x) => x + 1), 30_000);
+    return () => window.clearInterval(t);
+  }, [autoSave.status, autoSave.lastSavedAt]);
+
+  // Centralised close: flush any pending debounce first so the user never
+  // loses keystrokes typed in the last 600ms before clicking away. If the
+  // pending save fails (e.g. title was just cleared), stay open so the
+  // user sees the error chip instead of silently dropping their edits.
+  async function handleClose() {
+    const ok = await autoSave.flush();
+    if (ok) onClose();
+  }
+
+  // Backdrop click → flush pending save then close. Same semantics as
+  // handleClose; kept as a separate handler so it can early-return on
+  // clicks that bubble up from the modal panel itself.
   async function handleBackdropClick(e: React.MouseEvent<HTMLDivElement>) {
     if (e.target !== e.currentTarget) return; // ignore clicks bubbling from the panel
     if (saving) return;
-    const ok = await handleSave();
-    if (ok) onClose();
+    void handleClose();
   }
 
   async function handleDelete() {
@@ -1134,7 +1263,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
           style={isMobile ? { paddingTop: "calc(env(safe-area-inset-top, 0px) + 0.75rem)" } : undefined}
         >
           <h3 className="text-base font-semibold text-[#2f3437]">Edit Video</h3>
-          <button onClick={onClose} className="text-[#2f3437]/40 hover:text-[#2f3437] p-1 -mr-1">
+          <button onClick={() => void handleClose()} className="text-[#2f3437]/40 hover:text-[#2f3437] p-1 -mr-1" aria-label="Close">
             <XMarkIcon className="w-6 h-6" />
           </button>
         </div>
@@ -2130,11 +2259,44 @@ Produce a research brief I can hand to a script writer. For **each talking point
               <button onClick={() => setConfirmDelete(true)} className="text-xs text-[#2f3437]/40 hover:text-red-600 transition-colors">Delete video</button>
             )
           ) : <div />}
-          <div className="flex gap-2">
-            <button onClick={onClose} className="px-4 py-2 text-sm text-[#2f3437]/60 hover:text-[#2f3437] border border-gray-200 rounded-lg">Cancel</button>
-            <button onClick={handleSave} disabled={saving} className="px-4 py-2 text-sm bg-[#2f3437] text-white rounded-lg hover:bg-[#1a1f22] disabled:opacity-50 transition-colors">
-              {saving ? "Saving…" : "Save changes"}
-            </button>
+          <div className="flex items-center gap-3">
+            {/* Auto-save status indicator. Replaces the old explicit "Save
+                changes" button — edits now persist on a 600ms debounce and
+                the chip below tells the user where that save stands. The
+                "Failed · retry" affordance is clickable so a user whose
+                save errored can re-attempt without typing again. */}
+            {autoSave.status === "saving" && (
+              <span className="flex items-center gap-1.5 text-xs text-[#2f3437]/60" aria-live="polite">
+                <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" className="opacity-25" />
+                  <path d="M22 12a10 10 0 0 1-10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                </svg>
+                Saving…
+              </span>
+            )}
+            {autoSave.status === "saved" && autoSave.lastSavedAt && (
+              <span className="flex items-center gap-1.5 text-xs text-emerald-600" aria-live="polite">
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M5 12l4 4 10-10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                Saved · {formatRelativeTime(autoSave.lastSavedAt)}
+              </span>
+            )}
+            {autoSave.status === "error" && (
+              <button
+                type="button"
+                onClick={() => void autoSave.flush()}
+                className="flex items-center gap-1.5 text-xs text-red-600 hover:underline"
+                aria-live="polite"
+                title={error || "Click to retry"}
+              >
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M12 8v5m0 3.5v.01M4.93 19h14.14a2 2 0 0 0 1.74-3l-7.07-12a2 2 0 0 0-3.48 0L3.19 16a2 2 0 0 0 1.74 3z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                Save failed · retry
+              </button>
+            )}
+            <button onClick={() => void handleClose()} className="px-4 py-2 text-sm text-[#2f3437]/60 hover:text-[#2f3437] border border-gray-200 rounded-lg">Close</button>
           </div>
         </div>
       </div>
