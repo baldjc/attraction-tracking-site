@@ -601,7 +601,7 @@ The closing flows DIRECTLY out of the last insight. **NO recap. NO summary. NO "
 
 ## LEAD MAGNET PLACEMENT — THREE TIMED MENTIONS, ONE FULL PITCH
 
-The lead magnet appears EXACTLY THREE TIMES in the body. Tag each in the output as `[LEAD MAGNET 1/3]`, `[LEAD MAGNET 2/3]`, `[LEAD MAGNET 3/3]` so the editor sees pacing.
+The lead magnet appears EXACTLY THREE TIMES in the body. Tag each in the output as \`[LEAD MAGNET 1/3]\`, \`[LEAD MAGNET 2/3]\`, \`[LEAD MAGNET 3/3]\` so the editor sees pacing.
 
 **LM 1 — INSIDE the FIRST body point. ONE casual sentence.** Not a pitch. Woven naturally into the first insight as a passing reference that there's a free tool or guide for this exact thing the viewer is hearing about. The viewer should feel it as an aside, not a sell.
 
