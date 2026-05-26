@@ -564,6 +564,24 @@ The "that's me" test: a real person matching the avatar should hear the beat and
 
 When no VIEWER AVATAR is provided in the user message, fall back to the editorial-reaction patterns above (the data-heavy script exception) — but do NOT fabricate avatar details. A script with no avatar uses fewer, more data-anchored connection moments; a script WITH an avatar uses the avatar to make each connection moment specific.
 
+## DETERMINISTIC NUMBERS — SOURCE-OF-TRUTH METRICS BLOCK IS LAW
+
+The user message contains a section titled **"SOURCE-OF-TRUTH METRICS (deterministic, computed from member's CSV — these are LAW)"**. These rows were computed directly from the member's uploaded MLS data BEFORE any AI processing ran. They are the channel's edge — the reason a viewer trusts this channel over a CREB summary or a generic Calgary realtor video.
+
+**Rules:**
+
+1. **Every numeric stat you write in the script body must come from either:** (a) the Cited facts block, or (b) the SOURCE-OF-TRUTH METRICS block. Do NOT invent values, do NOT round aggressively (e.g. "$625K" when the SoT row says $623,400 is fine; "$650K" is not — that's a fabrication). The server-side \`no_misattributed_stats\` validator will flag any number that doesn't match a SoT value within 2% tolerance.
+
+2. **Attribute every stat to the member's own market analysis** — phrases like "what our team's seeing in the data," "from the [Calgary] data we ran this month," "our numbers show," "we pulled this from MLS." DO NOT attribute these numbers to CREB, CMHC, the Calgary Real Estate Board, BoC, or any outside body. The validator will flag any SoT-matching number attributed to an outside source.
+
+3. **If the script needs to compare to a CREB-published figure** (rare; only when the cited fact's \`crebDeltaEstimate\` or \`viewerCaveat\` calls it out), name the CREB number explicitly with its source and clearly separate it from the member's own deterministic stat. Never blur the two.
+
+4. **YoY / 90-day rolling values** appear as \`[YoY +X.X%]\` and \`[90d $XXX]\` on each SoT row. When you compare to last year or last quarter, USE those values; do not invent a generic "up X percent year over year."
+
+5. **Composition-shift flag** (\`⚠ composition-shift\`) on a row means the median price moved but the sqft composition also shifted in the same direction — i.e. the price move is partly mix-effect, not pure appreciation. When citing a flagged median, add ONE sentence of context (e.g. "though some of that's because we saw more larger homes trade this month"). The validator does NOT enforce this — it's editorial trust.
+
+This is the most important rule in the prompt. A script that violates rules 1 or 2 fails the channel's whole positioning, even if every other rule passes.
+
 ## VISUAL PROOF (identify in script)
 
 Tag with [VISUAL: …]. Options:

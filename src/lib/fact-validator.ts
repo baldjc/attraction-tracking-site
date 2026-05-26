@@ -41,6 +41,7 @@ import {
 } from "@/lib/fact-validator-parser";
 import { getCostCapStatus } from "@/lib/ai-tool-cost";
 import { scheduleBackfillCompletionEmail } from "@/lib/backfill-email";
+import { persistAggregatedMetrics } from "@/lib/aggregated-metrics";
 import type { MarketConfigShape } from "@/lib/market-config";
 
 const SONNET_MODEL = "claude-sonnet-4-20250514";
@@ -916,6 +917,27 @@ export async function runValidation(uploadId: string): Promise<void> {
     // Aggregate (pure compute, no Claude).
     const { table, userId, configSnapshot } = await aggregateUploadFromDb(uploadId);
     console.log('[runValidation] step: aggregated, groups=' + table.groups.length, uploadId);
+
+    // Wave 1: persist deterministic source-of-truth metrics BEFORE the
+    // Sonnet calls run. Script Builder v2 reads these as ground truth so
+    // it can't fabricate or misattribute stats. Idempotent — safe to
+    // re-run on a re-validated upload. Wrapped in try/catch so a persist
+    // failure can never block validation itself; the backfill script can
+    // always recompute them later from the same CSV.
+    try {
+      const written = await persistAggregatedMetrics(uploadId, userId, table);
+      console.log(
+        `[runValidation] step: aggregated metrics persisted=${written}`,
+        uploadId,
+      );
+    } catch (err) {
+      console.error(
+        '[runValidation] persistAggregatedMetrics failed (non-fatal)',
+        uploadId,
+        err,
+      );
+    }
+
     const priorFactsBlock = await serializePriorFacts(userId, uploadId);
 
     // Build the 4 facts chunks + 1 summary/leads chunk. Each is an independent

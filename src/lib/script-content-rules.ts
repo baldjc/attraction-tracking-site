@@ -42,7 +42,8 @@ export type ScriptViolationRule =
   | "no_avatar_pander"
   | "no_abbrev_in_dialogue"
   | "numerals_on_page"
-  | "hyper_local_floor";
+  | "hyper_local_floor"
+  | "no_misattributed_stats";
 
 export interface ScriptViolation {
   rule: ScriptViolationRule;
@@ -435,10 +436,227 @@ export function checkHyperLocalFloor(
 }
 
 /* ────────────────────────────────────────────────────────────────────── */
+/*  Rule 6 (Wave 1): no_misattributed_stats — WARNING severity.           */
+/* ────────────────────────────────────────────────────────────────────── */
+
+/**
+ * Subset of `SourceOfTruthMetric` that this rule needs. Kept local so
+ * the rules module doesn't take a hard dependency on the Prisma client
+ * generated types (the streaming route passes the full row through).
+ */
+export interface SourceOfTruthValue {
+  metricFamily: string;
+  metricValue: number;
+}
+
+/** Outside-source attribution markers — case-insensitive whole-word match. */
+const OUTSIDE_SOURCE_PATTERNS = [
+  /\bCREB\b/i,
+  /\bCMHC\b/i,
+  /\bCalgary\s+Real\s+Estate\s+Board\b/i,
+  /\bBank\s+of\s+Canada\b/i,
+  /\bBoC\b/,
+  /\bStatCan\b/i,
+  /\bStatistics\s+Canada\b/i,
+  /\baccording\s+to\s+(?:the\s+)?(?:bank|board|government|federal|provincial)\b/i,
+];
+
+/**
+ * Unit category of a stat token. Used to scope SoT matching by metric
+ * family so a "5%" mention doesn't collide with a "$5" SoT value, and a
+ * "30 days" mention doesn't collide with a "30 months" inventory figure.
+ * This is the key false-positive guard for the WARNING-severity rule.
+ */
+type StatUnit = "currency" | "percent" | "months" | "days";
+
+interface ExtractedStatToken {
+  value: number;
+  unit: StatUnit;
+  /** Original text, e.g. "$625,000", "21 days", "8.3%", "2.1 months". */
+  raw: string;
+  /** 0-indexed character offset in the dialogue string. */
+  offset: number;
+}
+
+/**
+ * Map a SoT `metricFamily` to the unit category its `metricValue` is
+ * comparable against. Returns null for families with no comparable
+ * spoken-script unit (we never check INVENTORY counts as collision-prone
+ * plain integers).
+ */
+function unitForFamily(family: string): StatUnit | null {
+  switch (family) {
+    case "MEDIAN":
+    case "AVG":
+    case "BENCHMARK":
+    case "PSF":
+      return "currency";
+    case "SP_LP":
+    case "FAILURE_RATE":
+      return "percent";
+    case "MOI":
+      return "months";
+    case "DOM":
+      return "days";
+    default:
+      return null;
+  }
+}
+
+/** Strip thousands separators + currency symbols and parse to a number. */
+function parseStatNumber(raw: string): number | null {
+  const cleaned = raw.replace(/[,$\s]/g, "");
+  const n = Number(cleaned);
+  return Number.isFinite(n) ? n : null;
+}
+
+/**
+ * Pull every numeric stat token out of the dialogue. We only care about
+ * numbers that LOOK like market stats — currency, percentages, "X months",
+ * "X days". Plain integers without a suffix (sample sizes, year refs) are
+ * skipped to keep false-positive rate low for a WARNING-severity rule.
+ */
+function extractStatTokens(dialogue: string): ExtractedStatToken[] {
+  const tokens: ExtractedStatToken[] = [];
+  const patterns: Array<{ re: RegExp; unit: StatUnit }> = [
+    { re: /\$\s*([\d,]+(?:\.\d+)?)\s*[KM]?\b/g, unit: "currency" },
+    { re: /\b(\d+(?:\.\d+)?)\s*%/g, unit: "percent" },
+    { re: /\b(\d+(?:\.\d+)?)\s*months?\b/gi, unit: "months" },
+    { re: /\b(\d+(?:\.\d+)?)\s*days?\b/gi, unit: "days" },
+  ];
+  for (const { re, unit } of patterns) {
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(dialogue)) !== null) {
+      const rawNum = m[1];
+      let n = parseStatNumber(rawNum);
+      if (n == null) continue;
+      // Handle $X K / $X M shorthand (currency only).
+      if (unit === "currency") {
+        const tail = m[0].toUpperCase();
+        if (/[K]\b/.test(tail)) n = n * 1_000;
+        else if (/[M]\b/.test(tail)) n = n * 1_000_000;
+      }
+      tokens.push({ value: n, unit, raw: m[0], offset: m.index });
+    }
+  }
+  return tokens;
+}
+
+/**
+ * Normalize a SoT value into the same "comparable units" as the dialogue
+ * tokens. SP_LP and FAILURE_RATE are stored as ratios (0.994, 0.083) but
+ * written in the script as percentages (99.4%, 8.3%), so we project them
+ * up. Other families are already in the script's units.
+ */
+function normalizeForCompare(family: string, value: number): number[] {
+  if (family === "SP_LP" || family === "FAILURE_RATE") {
+    return value <= 2 ? [value * 100, value] : [value, value / 100];
+  }
+  return [value];
+}
+
+/** Within 2% tolerance — symmetric, percentage of the larger magnitude. */
+function withinTolerance(a: number, b: number): boolean {
+  const denom = Math.max(Math.abs(a), Math.abs(b));
+  if (denom === 0) return a === b;
+  return Math.abs(a - b) / denom <= 0.02;
+}
+
+/**
+ * 30-word window of dialogue immediately preceding `offset`, used to scan
+ * for outside-source attribution markers. We look BACKWARDS only — the
+ * attribution typically precedes the number in spoken English ("CREB says
+ * the median was $625K"), and forward-looking windows over-fire on the
+ * next sentence's framing.
+ */
+function attributionWindowBefore(
+  dialogue: string,
+  offset: number,
+  wordCount = 30,
+): string {
+  const before = dialogue.slice(0, offset);
+  const words = before.split(/\s+/);
+  return words.slice(-wordCount).join(" ");
+}
+
+/**
+ * WARNING-severity rule. For each numeric stat token in the dialogue:
+ *   1. Check if any SoT value matches within 2% tolerance.
+ *   2. If yes, check the 30-word window before the token for an outside
+ *      attribution marker (CREB, CMHC, etc.).
+ *   3. If both true → emit a warning that says "this looks like a member
+ *      stat but is attributed to an outside source".
+ *
+ * Surfaced to the member as advisory; never blocks save, never triggers
+ * the re-prompt loop. Spec: WARNING-mode-first per direction.
+ */
+export function checkNoMisattributedStats(
+  script: string,
+  sourceOfTruth: SourceOfTruthValue[] | undefined,
+): ScriptViolation[] {
+  if (!sourceOfTruth || sourceOfTruth.length === 0) return [];
+  const { dialogue } = stripToDialogue(script);
+  const tokens = extractStatTokens(dialogue);
+  if (tokens.length === 0) return [];
+
+  // Flatten all SoT values into a (family, unit, comparable) list once.
+  // Families with no comparable spoken-script unit (e.g. INVENTORY counts)
+  // are dropped — matching plain integers like "137" against "137 active"
+  // is dominated by coincidence at scale.
+  const sotComparable: Array<{ family: string; unit: StatUnit; value: number }> = [];
+  for (const sot of sourceOfTruth) {
+    const unit = unitForFamily(sot.metricFamily);
+    if (!unit) continue;
+    for (const v of normalizeForCompare(sot.metricFamily, sot.metricValue)) {
+      sotComparable.push({ family: sot.metricFamily, unit, value: v });
+    }
+  }
+
+  const violations: ScriptViolation[] = [];
+  const seen = new Set<string>(); // dedupe identical "raw|family" pairs
+  for (const tok of tokens) {
+    // Only compare against SoT entries whose family produces the same
+    // spoken unit as the token. This is what stops "5%" colliding with
+    // a "$5K" SoT row or "30 days" colliding with "30 months" inventory.
+    const match = sotComparable.find(
+      (s) => s.unit === tok.unit && withinTolerance(s.value, tok.value),
+    );
+    if (!match) continue;
+    const window = attributionWindowBefore(dialogue, tok.offset);
+    const outsideMarker = OUTSIDE_SOURCE_PATTERNS.find((p) => p.test(window));
+    if (!outsideMarker) continue;
+
+    const key = `${tok.raw}|${match.family}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    const matched = window.match(outsideMarker)?.[0] ?? "(outside source)";
+    violations.push({
+      rule: "no_misattributed_stats",
+      severity: "warning",
+      message:
+        `Stat "${tok.raw}" appears to match your own deterministic ${match.family} ` +
+        `aggregation, but is attributed to "${matched}" in the dialogue. ` +
+        `Re-attribute to your own market analysis (e.g. "from the data we ran this month") ` +
+        `so the channel's edge isn't given away to an outside source.`,
+      snippet: dialogue.slice(Math.max(0, tok.offset - 60), tok.offset + tok.raw.length + 20).trim(),
+    });
+  }
+  return violations;
+}
+
+/* ────────────────────────────────────────────────────────────────────── */
 /*  Umbrella validator.                                                   */
 /* ────────────────────────────────────────────────────────────────────── */
 
-export interface ValidateScriptOptions extends HyperLocalOptions {}
+export interface ValidateScriptOptions extends HyperLocalOptions {
+  /**
+   * Wave 1 — deterministic source-of-truth values for the script's cited
+   * uploads. When provided, the `no_misattributed_stats` rule runs at
+   * WARNING severity (does NOT block save, does NOT trigger re-prompt).
+   */
+  sourceOfTruth?: SourceOfTruthValue[];
+}
 
 /**
  * Run all five rules and return a structured result. Used by the v2
@@ -463,6 +681,8 @@ export function validateScript(
   violations.push(...checkNumerals(script));
   const hyperLocal = checkHyperLocalFloor(script, opts);
   violations.push(...hyperLocal.violations);
+  // Wave 1 — WARNING severity, never blocks save / triggers re-prompt.
+  violations.push(...checkNoMisattributedStats(script, opts.sourceOfTruth));
 
   const ok = !violations.some((v) => v.severity === "error");
   return { ok, violations, metrics: hyperLocal.metrics };

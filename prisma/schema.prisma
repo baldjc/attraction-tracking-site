@@ -195,6 +195,7 @@ model User {
   marketConfig      MarketConfig?
   marketDataUploads MarketDataUpload[]
   marketFacts       MarketFact[]
+  aggregatedMetrics AggregatedMetric[]
   marketStoryLeads  MarketStoryLead[]
 
   // Wave 1.5 (data-first rebuild) — additive relations only
@@ -1773,9 +1774,48 @@ model MarketDataUpload {
 
   facts             MarketFact[]
   storyLeads        MarketStoryLead[]
+  aggregatedMetrics AggregatedMetric[]
 
   @@index([userId, monthYear])
   @@map("market_data_uploads")
+}
+
+// Wave 1 deterministic aggregations — ground-truth numbers computed from
+// the CSV BEFORE Sonnet validation runs. Script Builder v2 injects these
+// into Claude as "source of truth" so it can't fabricate or misattribute
+// stats. Backfilled for historical uploads via `scripts/backfill-aggregated-metrics.ts`.
+model AggregatedMetric {
+  id                   String           @id @default(cuid())
+  userId               String
+  user                 User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  uploadId             String
+  upload               MarketDataUpload @relation(fields: [uploadId], references: [id], onDelete: Cascade)
+
+  neighbourhood        String
+  /// "All" when the AggregatedGroup had propertyType=null (city-wide rollup).
+  propertyType         String           @default("All")
+  /// Always null for Wave 1 — tiered subgroups are intentionally NOT persisted
+  /// because the script writer queries on (neighbourhood, propertyType) only.
+  priceTier            String?
+  metricFamily         MetricFamily
+  /// AggregatedGroup field name this row was sourced from, e.g. "medianPrice",
+  /// "moiStrict", "domMedian", "spLpRatio", "psf", "failureRate", "activeCount".
+  /// Disambiguates rows within the same family if we add variants later.
+  metricKey            String
+  metricValue          Float
+  sampleSize           Int
+  monthYear            String
+
+  yoyDelta             Float?
+  rolling90dValue      Float?
+  compositionShiftFlag Boolean          @default(false)
+
+  createdAt            DateTime         @default(now())
+
+  @@unique([userId, uploadId, neighbourhood, propertyType, metricFamily, metricKey])
+  @@index([userId, neighbourhood, propertyType])
+  @@index([uploadId])
+  @@map("aggregated_metrics")
 }
 
 model MarketFact {

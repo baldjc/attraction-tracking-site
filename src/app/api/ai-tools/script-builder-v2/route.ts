@@ -66,6 +66,11 @@ import {
   type ScriptValidationResult,
 } from "@/lib/script-content-rules";
 import {
+  getSourceOfTruthMetrics,
+  renderSourceOfTruthBlock,
+  type SourceOfTruthMetric,
+} from "@/lib/aggregated-metrics";
+import {
   loadMarketConfigSummary,
   type MarketConfigSummary,
 } from "@/lib/content-engine-context";
@@ -273,6 +278,7 @@ export async function POST(req: NextRequest) {
       marketType: true,
       trajectory: true,
       viewerCaveat: true,
+      uploadId: true,
       upload: { select: { monthYear: true } },
     },
   });
@@ -409,6 +415,25 @@ export async function POST(req: NextRequest) {
     "summary",
   );
 
+  // ── Wave 1: load deterministic source-of-truth metrics ───────────────
+  // These were persisted by `persistAggregatedMetrics` immediately before
+  // the Sonnet fact-validator ran. They are the ground truth — Claude
+  // must not invent stats, and the locked validator will flag any number
+  // in the script that doesn't match a SoT value (within 2% tolerance).
+  // Filtered to (cited neighbourhoods ∪ "All Neighbourhoods") to keep
+  // the injected block compact (~30-80 rows typical).
+  const uploadIdsForSot = Array.from(
+    new Set(factRows.map((f) => f.uploadId).filter(Boolean)),
+  );
+  const sourceOfTruthMetrics = await getSourceOfTruthMetrics({
+    userId,
+    uploadIds: uploadIdsForSot,
+    neighbourhoods: neighbourhoodsInScript,
+  });
+  console.log(
+    `[sb-v2:sot] uploadIds=${uploadIdsForSot.length} metrics=${sourceOfTruthMetrics.length}`,
+  );
+
   // ─────────────────────────────────────────────────────────────────────
   // Open the SSE stream and start generation
   // ─────────────────────────────────────────────────────────────────────
@@ -537,6 +562,7 @@ export async function POST(req: NextRequest) {
                   facts: citedFacts,
                   marketConfig,
                   neighbourhoodContext,
+                  sourceOfTruthMetrics,
                   shootType,
                   assignedCampaign,
                   assignedBingeVideo,
@@ -682,6 +708,7 @@ export async function POST(req: NextRequest) {
           });
           const validation = validateScript(draft, {
             neighbourhoods: marketConfig.neighbourhoods,
+            sourceOfTruth: sourceOfTruthMetrics,
           });
 
           if (validation.ok) {
@@ -873,6 +900,7 @@ function buildInitialUserMessage(args: {
   facts: CitedFact[];
   marketConfig: MarketConfigSummary;
   neighbourhoodContext: Record<string, string>;
+  sourceOfTruthMetrics: SourceOfTruthMetric[];
   shootType: "talking_head" | "home_tour";
   assignedCampaign: AssignedCampaign | null;
   assignedBingeVideo: AssignedBingeVideo | null;
@@ -883,6 +911,7 @@ function buildInitialUserMessage(args: {
     facts,
     marketConfig,
     neighbourhoodContext,
+    sourceOfTruthMetrics,
     shootType,
     assignedCampaign,
     assignedBingeVideo,
@@ -991,6 +1020,34 @@ function buildInitialUserMessage(args: {
   lines.push(JSON.stringify(facts, null, 2));
   lines.push("```");
   lines.push("");
+
+  // ── SOURCE-OF-TRUTH METRICS (Wave 1, deterministic) ──────────────────
+  // These rows were computed directly from the member's CSV BEFORE the
+  // Sonnet validator ran. They are the ground truth for any number that
+  // appears in the script. The server-side `no_misattributed_stats`
+  // validator cross-checks every numeric token in the draft against this
+  // set; numbers attributed to outside sources (CREB, CMHC, etc.) that
+  // actually match a SoT value within 2% surface as warnings to the
+  // member. Render the section even when empty so Claude doesn't fill the
+  // vacuum with invented stats.
+  const sotBlock = renderSourceOfTruthBlock(sourceOfTruthMetrics);
+  lines.push(
+    "## SOURCE-OF-TRUTH METRICS (deterministic, computed from member's CSV — these are LAW)",
+  );
+  lines.push("");
+  if (sotBlock) {
+    lines.push(
+      "Every numeric stat you write in the script body must match one of these values within 2% tolerance, and must be attributed to the member's own market analysis (NOT to CREB, CMHC, or any outside body). These are the deterministic aggregations from the member's uploaded MLS data — they are the channel's edge.",
+    );
+    lines.push("");
+    lines.push(sotBlock);
+    lines.push("");
+  } else {
+    lines.push(
+      "No deterministic aggregations were found for the cited neighbourhoods in this script. Use ONLY the numbers from the Cited facts block above; do not introduce stats from any other source.",
+    );
+    lines.push("");
+  }
 
   // ── VIEWER AVATAR ─────────────────────────────────────────────────────
   // Promoted to its own section (separate from MarketConfig JSON) so Claude
