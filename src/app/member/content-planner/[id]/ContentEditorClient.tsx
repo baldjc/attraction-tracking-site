@@ -481,7 +481,20 @@ export default function ContentEditorClient({
   };
 
   // ── completion / next-action mapping ──────────────────────────────────────
-  const steps = stepStatus(plan);
+  // Read step state from the live form (merged with the persisted plan so we
+  // still see server-side fields like bingeVideo). Without this merge the
+  // hero/stepper lag every unsaved keystroke and feel wrong.
+  const livePlan: ContentPlan = useMemo(
+    () => ({
+      ...plan,
+      title: form.title,
+      status: form.status,
+      script: form.script,
+      notes: form.notes,
+    }),
+    [plan, form.title, form.status, form.script, form.notes],
+  );
+  const steps = stepStatus(livePlan);
   const currentStepKey = STEPS.find((s) => steps[s.key] === "current")?.key ?? "review";
   const nextActionLabel = ({
     idea: "Add a working title →",
@@ -492,6 +505,37 @@ export default function ContentEditorClient({
     publish: "Mark as posted →",
     review: "All done — review next batch →",
   } as Record<string, string>)[currentStepKey];
+
+  const titleH1Ref = useRef<HTMLHeadingElement | null>(null);
+  const scriptTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  // Click handler for the hero CTA. Each step routes the cursor to the
+  // most-likely next input, or advances `status` when the leftover work
+  // is production-side (shoot/post/publish) — those only flip when the
+  // member confirms the milestone, so we just bump status and let
+  // auto-save persist it on the next debounce tick.
+  const handleNextAction = () => {
+    switch (currentStepKey) {
+      case "idea":
+        titleH1Ref.current?.focus();
+        break;
+      case "research":
+      case "script":
+        scriptTextareaRef.current?.focus();
+        break;
+      case "shoot":
+        update("status", "Shot - In Post");
+        break;
+      case "post":
+        update("status", "Ready to Post");
+        break;
+      case "publish":
+        update("status", "Posted");
+        break;
+      default:
+        break;
+    }
+  };
 
   // ── back navigation ───────────────────────────────────────────────────────
   const handleBack = async () => {
@@ -572,6 +616,7 @@ export default function ContentEditorClient({
                 {form.status || "Idea"}
               </span>
               <h1
+                ref={titleH1Ref}
                 contentEditable
                 suppressContentEditableWarning
                 onBlur={(e) => {
@@ -614,6 +659,7 @@ export default function ContentEditorClient({
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end" }}>
               <button
+                onClick={handleNextAction}
                 style={{
                   background: "var(--abv-azure, #3B82F6)",
                   color: "white",
@@ -623,13 +669,11 @@ export default function ContentEditorClient({
                   fontWeight: 700,
                   letterSpacing: "0.04em",
                   textTransform: "uppercase",
+                  cursor: "pointer",
                 }}
               >
                 {nextActionLabel}
               </button>
-              <button style={{
-                color: "rgba(255,255,255,0.5)", fontSize: 11,
-              }}>Skip this step</button>
             </div>
           </div>
         </section>
@@ -739,6 +783,7 @@ export default function ContentEditorClient({
             onBuildV2={scriptBuilderV2Enabled ? handleBuildV2 : null}
             planId={planId}
             title={form.title}
+            textareaRef={scriptTextareaRef}
           />
 
           {/* RIGHT: sidebar */}
@@ -814,7 +859,7 @@ function Fact({ label, value }: { label: string; value: string }) {
 }
 
 function ScriptPane({
-  value, onChange, onBlur, onBuildV2, planId, title,
+  value, onChange, onBlur, onBuildV2, planId, title, textareaRef,
 }: {
   value: string;
   onChange: (v: string) => void;
@@ -822,6 +867,7 @@ function ScriptPane({
   onBuildV2: (() => void) | null;
   planId: string;
   title: string;
+  textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
 }) {
   const words = wordCount(value);
   const minutes = Math.max(1, Math.round(words / 175));
@@ -886,6 +932,7 @@ function ScriptPane({
         borderRadius: 14, padding: 24,
       }}>
         <textarea
+          ref={textareaRef}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onBlur={onBlur}

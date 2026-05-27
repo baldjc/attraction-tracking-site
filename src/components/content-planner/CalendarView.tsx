@@ -15,8 +15,9 @@ import {
   type DragOverEvent,
 } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
+import { useRouter } from "next/navigation";
 import { filterPlans } from "@/lib/content-plan-utils";
-import ContentPlanEditModal, { type ContentPlan } from "./ContentPlanEditModal";
+import { type ContentPlan } from "./ContentPlanEditModal";
 
 interface ThemeOption {
   name: string;
@@ -162,10 +163,10 @@ export default function CalendarView({
   const today = new Date();
   const [year, setYear]   = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
+  const router = useRouter();
   const [plans, setPlans] = useState<ContentPlan[]>([]);
   const [localThemes, setLocalThemes] = useState<ThemeOption[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editingPlan, setEditingPlan] = useState<ContentPlan | null>(null);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string>("");
@@ -175,7 +176,10 @@ export default function CalendarView({
     useSensor(TouchSensor,   { activationConstraint: { delay: 250, tolerance: 5 } }),
   );
 
-  const resolvedThemes = themes.length > 0 ? themes : localThemes;
+  // Themes are still resolved (themes prop falling back to local fetch) for
+  // any future inline rendering, but the modal that previously consumed them
+  // has been replaced with a route push to /member/content-planner/[id].
+  void themes; void localThemes;
 
   useEffect(() => {
     fetch(apiBase)
@@ -474,7 +478,7 @@ export default function CalendarView({
                           key={`${ev.plan.id}-${ev.type}-${i}`}
                           event={ev}
                           dragging={activeDragId === `${ev.plan.id}::${ev.type}`}
-                          onClick={() => setEditingPlan(ev.plan)}
+                          onClick={() => router.push(`/member/content-planner/${ev.plan.id}`)}
                         />
                       ))}
                     </div>
@@ -490,28 +494,6 @@ export default function CalendarView({
         </DndContext>
       </section>
 
-      {editingPlan && (
-        <ContentPlanEditModal
-          plan={editingPlan}
-          serviceTier={serviceTier}
-          apiBase={apiBase}
-          isAdmin={isAdmin}
-          themes={resolvedThemes}
-          scriptBuilderV2Enabled={scriptBuilderV2Enabled}
-          onClose={() => setEditingPlan(null)}
-          onSaved={(updated) => {
-            // Wave 4 auto-save: keep the modal open on save; only refresh
-            // the cached row so the calendar reflects the change immediately.
-            if (updated) {
-              setPlans((prev) => prev.map((p) => (p.id === updated.id ? { ...p, ...updated } : p)));
-            }
-          }}
-          onDeleted={(id) => {
-            if (id) setPlans((prev) => prev.filter((p) => p.id !== id));
-            setEditingPlan(null);
-          }}
-        />
-      )}
     </>
   );
 }
