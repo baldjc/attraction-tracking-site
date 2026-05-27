@@ -35,6 +35,15 @@ interface Picked {
   storyLeadId: string | null;
 }
 
+const PROPERTY_TYPE_OPTIONS = [
+  { value: "", label: "Auto (infer from cited facts)" },
+  { value: "Detached", label: "Detached" },
+  { value: "Row/Townhouse", label: "Row/Townhouse" },
+  { value: "Semi-Detached", label: "Semi-Detached" },
+  { value: "Apartment", label: "Apartment" },
+  { value: "All", label: "All property types" },
+];
+
 interface SaveResponse {
   id?: string;
   redirectUrl?: string;
@@ -49,6 +58,7 @@ export function Step4Review({ pickedKey }: { pickedKey?: string }) {
   const [missing, setMissing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [propertyTypeFocus, setPropertyTypeFocus] = useState<string>("");
 
   useEffect(() => {
     if (!pickedKey) {
@@ -85,6 +95,7 @@ export function Step4Review({ pickedKey }: { pickedKey?: string }) {
           ...picked.idea,
           storyLeadId: picked.storyLeadId,
           sourceUploadId: picked.sourceUploadId,
+          propertyTypeFocus: propertyTypeFocus || null,
         }),
       });
       const j = (await r.json()) as SaveResponse;
@@ -161,6 +172,33 @@ export function Step4Review({ pickedKey }: { pickedKey?: string }) {
         <p className="mt-4 text-xs text-gray-500 dark:text-gray-400">
           {c.citedFactIds.length} cited fact(s) will be linked to this content plan.
         </p>
+
+        {/* Wave 4 — propertyType lock. Member picks one type to anchor
+            Script Builder v2 on; "Auto" defers to the citedFacts' caveat
+            (if any) and otherwise falls through to no-lock. */}
+        <div className="mt-5 border-t border-gray-200 pt-4 dark:border-gray-700">
+          <label
+            htmlFor="propertyTypeFocus"
+            className="block text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400"
+          >
+            Property type focus
+          </label>
+          <select
+            id="propertyTypeFocus"
+            value={propertyTypeFocus}
+            onChange={(e) => setPropertyTypeFocus(e.target.value)}
+            className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-800 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+          >
+            {PROPERTY_TYPE_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+          <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+            Locks Script Builder to this property type per neighbourhood so the script can&apos;t pivot to a different type. Leave on Auto if the cited facts already name one.
+          </p>
+        </div>
       </div>
 
       {error && (

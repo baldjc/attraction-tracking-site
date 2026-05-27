@@ -68,6 +68,7 @@ import {
 import {
   getSourceOfTruthMetrics,
   renderSourceOfTruthBlock,
+  renderSourceOfTruthBlockWithLock,
   type SourceOfTruthMetric,
 } from "@/lib/aggregated-metrics";
 import {
@@ -215,6 +216,7 @@ export async function POST(req: NextRequest) {
       researchNotes: true,
       linkedCampaignId: true,
       bingeVideoId: true,
+      propertyTypeFocus: true,
     },
   });
   if (!plan) return jsonError(404, "plan_not_found");
@@ -434,6 +436,28 @@ export async function POST(req: NextRequest) {
     `[sb-v2:sot] uploadIds=${uploadIdsForSot.length} metrics=${sourceOfTruthMetrics.length}`,
   );
 
+  // ── Wave 4 (propertyType lock) — build per-neighbourhood lock map ─────
+  // Per spec: prevent Script Builder v2 scope drift where Claude pivots
+  // from the cited propertyType (e.g. Saddle Ridge Row/Townhouse, MOI
+  // 4.14) to a different type (Detached, MOI 8.5) just because the SoT
+  // block exposed every per-type row. Precedence per neighbourhood:
+  //   1. propertyType extracted from the citedFact's `viewerCaveat`
+  //      (substring match — most specific types first so "Row/Townhouse"
+  //      isn't shadowed by a future "Row" entry).
+  //   2. `plan.propertyTypeFocus` (member-set on the plan).
+  //   3. "All" — no lock, full per-type SoT exposure.
+  // The lock map is consumed by `renderSourceOfTruthBlockWithLock`,
+  // which filters non-citywide neighbourhoods to (lock-matching rows +
+  // "All" rows) and appends an EXCLUDED marker so Claude knows the
+  // omission was intentional.
+  const propertyTypeByHood = buildPropertyTypeLock(
+    citedFacts,
+    plan.propertyTypeFocus ?? null,
+  );
+  console.log(
+    `[sb-v2:lock] planFocus=${plan.propertyTypeFocus ?? "(none)"} hoods=${JSON.stringify(propertyTypeByHood)}`,
+  );
+
   // ─────────────────────────────────────────────────────────────────────
   // Open the SSE stream and start generation
   // ─────────────────────────────────────────────────────────────────────
@@ -563,6 +587,7 @@ export async function POST(req: NextRequest) {
                   marketConfig,
                   neighbourhoodContext,
                   sourceOfTruthMetrics,
+                  propertyTypeByHood,
                   shootType,
                   assignedCampaign,
                   assignedBingeVideo,
@@ -883,6 +908,88 @@ function parseResearchNotesBlob(notes: string): {
 }
 
 // ───────────────────────────────────────────────────────────────────────
+// PropertyType lock helpers (Wave 4)
+// ───────────────────────────────────────────────────────────────────────
+
+// Ordered most-specific-first so a caveat like "Saddle Ridge Row/Townhouse"
+// matches Row/Townhouse before falling through to a hypothetical future
+// "Row" entry. Mirrors the values whitelisted in save-idea/route.ts.
+const PROPERTY_TYPE_PATTERNS: Array<{ type: string; re: RegExp }> = [
+  { type: "Row/Townhouse", re: /\brow\s*\/?\s*townhouse\b|\btownhouse\b|\brow\b/i },
+  { type: "Semi-Detached", re: /\bsemi[-\s]?detached\b/i },
+  { type: "Apartment", re: /\bapartment\b|\bcondo\b/i },
+  { type: "Detached", re: /\bdetached\b/i },
+];
+
+function extractPropertyTypeFromCaveat(caveat: string | null): string | null {
+  if (!caveat) return null;
+  for (const { type, re } of PROPERTY_TYPE_PATTERNS) {
+    if (re.test(caveat)) return type;
+  }
+  return null;
+}
+
+/**
+ * Build the per-neighbourhood propertyType lock map consumed by
+ * `renderSourceOfTruthBlockWithLock`. Precedence per neighbourhood:
+ *   1. caveat-derived type from the first citedFact that mentions one
+ *   2. plan.propertyTypeFocus (member-set on the plan)
+ *   3. "All" — full per-type SoT exposure, no lock
+ *
+ * Caveat takes precedence over the plan-level focus because the cited
+ * fact is the most specific signal — if the wizard linked a Row/Townhouse
+ * stat, that's what the video is anchored on regardless of whether the
+ * member also pinned "Detached" on the plan.
+ */
+function buildPropertyTypeLock(
+  facts: CitedFact[],
+  planFocus: string | null,
+): Record<string, string> {
+  // First pass: group caveat-derived types per hood (preserving citedFact
+  // order so "first caveat wins" remains deterministic). We must scan ALL
+  // facts for a hood before falling back to planFocus / "All" — otherwise
+  // a leading fact with no caveat type would shadow a trailing fact whose
+  // caveat clearly names the type and let drift back in.
+  const caveatTypesByHood = new Map<string, string[]>();
+  const seenHoods: string[] = [];
+  for (const f of facts) {
+    if (!f.neighbourhood) continue;
+    if (!caveatTypesByHood.has(f.neighbourhood)) {
+      caveatTypesByHood.set(f.neighbourhood, []);
+      seenHoods.push(f.neighbourhood);
+    }
+    const t = extractPropertyTypeFromCaveat(f.caveat);
+    if (t) caveatTypesByHood.get(f.neighbourhood)!.push(t);
+  }
+
+  const map: Record<string, string> = {};
+  for (const hood of seenHoods) {
+    const caveatTypes = caveatTypesByHood.get(hood) ?? [];
+    const distinct = Array.from(new Set(caveatTypes));
+    if (distinct.length > 1) {
+      // Multiple cited facts in the same hood disagree on propertyType —
+      // a video that anchors on multiple types for one neighbourhood is
+      // ambiguous. Honour plan.propertyTypeFocus if it picks a side;
+      // otherwise fall through to "All" so no per-type lock is applied
+      // (the cited facts themselves still constrain the script). Log so
+      // the conflict is visible in [sb-v2:lock].
+      console.log(
+        `[sb-v2:lock] conflicting caveat types for ${hood}: ${distinct.join(",")} — planFocus=${planFocus ?? "(none)"}`,
+      );
+      if (planFocus && distinct.includes(planFocus)) {
+        map[hood] = planFocus;
+      } else {
+        map[hood] = planFocus ?? "All";
+      }
+      continue;
+    }
+    const firstCaveat = distinct[0] ?? null;
+    map[hood] = firstCaveat ?? planFocus ?? "All";
+  }
+  return map;
+}
+
+// ───────────────────────────────────────────────────────────────────────
 // User-message builders
 // ───────────────────────────────────────────────────────────────────────
 
@@ -902,6 +1009,7 @@ function buildInitialUserMessage(args: {
   marketConfig: MarketConfigSummary;
   neighbourhoodContext: Record<string, string>;
   sourceOfTruthMetrics: SourceOfTruthMetric[];
+  propertyTypeByHood: Record<string, string>;
   shootType: "talking_head" | "home_tour";
   assignedCampaign: AssignedCampaign | null;
   assignedBingeVideo: AssignedBingeVideo | null;
@@ -913,6 +1021,7 @@ function buildInitialUserMessage(args: {
     marketConfig,
     neighbourhoodContext,
     sourceOfTruthMetrics,
+    propertyTypeByHood,
     shootType,
     assignedCampaign,
     assignedBingeVideo,
@@ -1031,7 +1140,17 @@ function buildInitialUserMessage(args: {
   // actually match a SoT value within 2% surface as warnings to the
   // member. Render the section even when empty so Claude doesn't fill the
   // vacuum with invented stats.
-  const sotBlock = renderSourceOfTruthBlock(sourceOfTruthMetrics);
+  // Wave 4: per-neighbourhood propertyType lock. Non-citywide neighbourhoods
+  // whose lock is set (caveat-derived OR plan.propertyTypeFocus) get filtered
+  // to (lock-matching rows + "All" rows) and an EXCLUDED marker appended.
+  // "All Neighbourhoods" rollup passes through unchanged.
+  const sotBlock = renderSourceOfTruthBlockWithLock(
+    sourceOfTruthMetrics,
+    propertyTypeByHood,
+  );
+  const lockedHoods = Object.entries(propertyTypeByHood).filter(
+    ([, v]) => v && v !== "All",
+  );
   lines.push(
     "## SOURCE-OF-TRUTH METRICS (deterministic, computed from member's CSV — these are LAW)",
   );
@@ -1040,6 +1159,15 @@ function buildInitialUserMessage(args: {
     lines.push(
       "Every numeric stat you write in the script body must match one of these values within 2% tolerance, and must be attributed to the member's own market analysis (NOT to CREB, CMHC, or any outside body). These are the deterministic aggregations from the member's uploaded MLS data — they are the channel's edge.",
     );
+    if (lockedHoods.length > 0) {
+      lines.push("");
+      lines.push(
+        "**PROPERTY-TYPE LOCK** — this video covers a specific property type per neighbourhood. Per-type rows for excluded types have been suppressed and replaced with an `EXCLUDED property types` marker. Writing about an excluded type is a HARD FAIL:",
+      );
+      for (const [hood, type] of lockedHoods) {
+        lines.push(`- ${hood}: **${type}** only`);
+      }
+    }
     lines.push("");
     lines.push(sotBlock);
     lines.push("");

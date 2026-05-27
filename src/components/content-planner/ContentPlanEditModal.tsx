@@ -126,6 +126,9 @@ export interface ContentPlan {
   footageLink: string | null;
   driveFolderLink: string | null;
   linkedCampaignId?: string | null;
+  // Wave 4 — per-plan propertyType lock for Script Builder v2. Null means
+  // "infer from cited facts; fall through to no lock".
+  propertyTypeFocus?: string | null;
   // Binge chain: the previous video this one points viewers back to (forward
   // link), and every other video that has selected THIS plan as its binge
   // target (reverse links). The list endpoint includes both relations so the
@@ -429,6 +432,7 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
     footageLink: plan.footageLink ?? "",
     linkedCampaignId: plan.linkedCampaignId ?? "",
     bingeVideoId: plan.bingeVideoId ?? "",
+    propertyTypeFocus: plan.propertyTypeFocus ?? "",
     manualSteps: Array.isArray((plan as any).manualSteps) ? ((plan as any).manualSteps as string[]) : [],
   });
   const [campaigns, setCampaigns] = useState<Array<{ id: string; name: string; pitchOneLiner: string | null }>>([]);
@@ -999,6 +1003,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
           footageLink: form.footageLink || null,
           linkedCampaignId: form.linkedCampaignId || null,
           bingeVideoId: form.bingeVideoId || null,
+          propertyTypeFocus: form.propertyTypeFocus || null,
           thumbnailFileId: thumbnailFileId || null,
           thumbnailFileName: thumbnailFileName || null,
           // Include manualSteps in every Save so the PUT response (which the
@@ -1218,6 +1223,39 @@ Produce a research brief I can hand to a script writer. For **each talking point
                     ))}
                   </div>
                 )}
+              </ChipPopover>
+
+              {/* Wave 4 — propertyType lock chip. Same ChipPopover pattern as
+                  Theme. "Auto" (empty string) leaves the lock to be derived
+                  from the citedFact caveats inside Script Builder v2. */}
+              <ChipPopover
+                label="Property type"
+                value={form.propertyTypeFocus || "Auto"}
+              >
+                {(close) => {
+                  const opts = [
+                    { value: "", label: "Auto (infer from cited facts)" },
+                    { value: "Detached", label: "Detached" },
+                    { value: "Row/Townhouse", label: "Row/Townhouse" },
+                    { value: "Semi-Detached", label: "Semi-Detached" },
+                    { value: "Apartment", label: "Apartment" },
+                    { value: "All", label: "All property types" },
+                  ];
+                  return (
+                    <div className="p-1 min-w-[240px] max-h-72 overflow-y-auto">
+                      {opts.map((o) => (
+                        <button
+                          key={o.value || "__auto__"}
+                          type="button"
+                          onClick={() => { setForm((f) => ({ ...f, propertyTypeFocus: o.value })); close(); }}
+                          className={`w-full text-left px-3 py-1.5 text-xs rounded hover:bg-gray-50 ${(form.propertyTypeFocus || "") === o.value ? "bg-[#185FA5]/5 text-[#185FA5] font-medium" : "text-[#2f3437]"}`}
+                        >
+                          {o.label}
+                        </button>
+                      ))}
+                    </div>
+                  );
+                }}
               </ChipPopover>
 
               <ChipPopover

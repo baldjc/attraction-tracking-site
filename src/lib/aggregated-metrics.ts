@@ -364,3 +364,66 @@ export function renderSourceOfTruthBlock(
   }
   return lines.join("\n").trimEnd();
 }
+
+/**
+ * Render the source-of-truth metrics with a per-neighbourhood propertyType
+ * lock. For each non-citywide neighbourhood in `propertyTypeByHood`, only
+ * rows matching the locked type (plus rows with propertyType="All") are
+ * emitted; any other per-type rows for that neighbourhood are summarised in
+ * a separate "EXCLUDED property types" header so the writer cannot pivot
+ * to data the wizard ruled out.
+ *
+ * The "All Neighbourhoods" rollup is never subject to the lock — its rows
+ * pass through unchanged so citywide context is always available.
+ *
+ * `propertyTypeByHood` maps neighbourhood → locked type ("Detached" |
+ * "Row/Townhouse" | "Semi-Detached" | "Apartment" | "All"). Neighbourhoods
+ * absent from the map (or mapped to "All") are not filtered.
+ */
+export function renderSourceOfTruthBlockWithLock(
+  rows: SourceOfTruthMetric[],
+  propertyTypeByHood: Record<string, string>,
+): string {
+  if (rows.length === 0) return "";
+
+  // Group by neighbourhood, preserving the original order rows arrive in
+  // (callers already sorted by neighbourhood asc).
+  const byHood = new Map<string, SourceOfTruthMetric[]>();
+  for (const r of rows) {
+    const arr = byHood.get(r.neighbourhood);
+    if (arr) arr.push(r);
+    else byHood.set(r.neighbourhood, [r]);
+  }
+
+  const out: string[] = [];
+  for (const [hood, hoodRows] of byHood) {
+    const isCitywide = hood === "All Neighbourhoods";
+    const lock = isCitywide ? null : propertyTypeByHood[hood] ?? null;
+    const hasLock = lock != null && lock !== "All";
+
+    const presentTypes = Array.from(
+      new Set(hoodRows.map((r) => r.propertyType)),
+    );
+    const allowedRows = hasLock
+      ? hoodRows.filter(
+          (r) => r.propertyType === lock || r.propertyType === "All",
+        )
+      : hoodRows;
+    const excludedTypes = hasLock
+      ? presentTypes.filter((t) => t !== lock && t !== "All")
+      : [];
+
+    const rendered = renderSourceOfTruthBlock(allowedRows);
+    if (rendered) out.push(rendered);
+
+    if (hasLock && excludedTypes.length > 0) {
+      out.push("");
+      out.push(`### ${hood} | EXCLUDED property types`);
+      out.push(
+        `- **${excludedTypes.join(", ")}:** EXCLUDED — this video covers ${hood} ${lock} only. Do NOT write about these property types for ${hood}, even if data appears elsewhere in this message.`,
+      );
+    }
+    out.push("");
+  }
+  return out.join("\n").trimEnd();
+}

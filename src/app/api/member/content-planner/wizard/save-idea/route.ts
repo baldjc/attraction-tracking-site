@@ -45,7 +45,16 @@ interface SaveIdeaBody {
   citedFactIds?: string[];
   storyLeadId?: string | null;
   sourceUploadId?: string;
+  propertyTypeFocus?: string | null;
 }
+
+const ALLOWED_PROPERTY_TYPE_FOCUS = new Set([
+  "Detached",
+  "Row/Townhouse",
+  "Semi-Detached",
+  "Apartment",
+  "All",
+]);
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -214,6 +223,14 @@ export async function POST(req: NextRequest) {
       linkedFactIds: validFactIds,
       linkedStoryLeadId: body.storyLeadId ?? null,
       researchNotes,
+      // Wave 4 — per-plan propertyType focus (Script Builder v2 lock).
+      // Whitelisted to known values; anything else collapses to null
+      // (which Script Builder v2 interprets as "All" / no lock).
+      propertyTypeFocus:
+        body.propertyTypeFocus &&
+        ALLOWED_PROPERTY_TYPE_FOCUS.has(body.propertyTypeFocus)
+          ? body.propertyTypeFocus
+          : null,
     },
     select: { id: true },
   });

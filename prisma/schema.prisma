@@ -927,6 +927,14 @@ model ContentPlan {
   titlePromise      String?       @db.Text
   visualPeak        String?       @db.Text
 
+  // Wave 4 (propertyType lock) — pinned property type for this video.
+  // Read by Script Builder v2 when building the per-neighbourhood SoT
+  // lock map: if a citedFact's caveat doesn't name a property type, this
+  // value is the fallback. Null means "infer from citedFacts; otherwise
+  // fall back to All". Allowed values: "Detached" | "Row/Townhouse" |
+  // "Apartment" | "Semi-Detached" | "All".
+  propertyTypeFocus String?
+
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 

@@ -582,6 +582,21 @@ The user message contains a section titled **"SOURCE-OF-TRUTH METRICS (determini
 
 This is the most important rule in the prompt. A script that violates rules 1 or 2 fails the channel's whole positioning, even if every other rule passes.
 
+**Property type lock — per neighbourhood (NEW HARD RULE).**
+
+The \`## SOURCE-OF-TRUTH METRICS\` block now marks specific property types per neighbourhood as either available data or "EXCLUDED — this video covers [neighbourhood] [type] only."
+
+If a neighbourhood's SoT block shows \`**[OtherType]:** EXCLUDED ...\`, you MUST NOT write about that property type for that neighbourhood — even if you have data for it from another source. The wizard chose the property type focus for this video; pivoting to a different type because it's "more dramatic" is a HARD FAIL.
+
+Example of what's banned:
+- SoT shows "Saddle Ridge | Row/Townhouse" with full data, and a separate "Saddle Ridge | EXCLUDED property types" header listing "Detached, Apartment, Semi-Detached: EXCLUDED — this video covers Saddle Ridge Row/Townhouse only"
+- You write: "Now flip your assumption entirely and look at Saddle Ridge detached homes — 8.5 months of inventory..."
+- HARD FAIL. The Detached data was explicitly excluded.
+
+If a video covers multiple property types intentionally (every neighbourhood will show all available per-type rows with no EXCLUDED block), write about whichever per-type rows make sense — but label them precisely. If you use the "All" row, label it "across all property types" or similar, never as a specific property type.
+
+The "All Neighbourhoods" citywide rollup is NEVER subject to the lock — its per-property-type rows are always available as citywide context.
+
 ## VISUAL PROOF (identify in script)
 
 Tag with [VISUAL: …]. Options:

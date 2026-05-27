@@ -56,7 +56,21 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const serviceTier = dbUser?.serviceTier ?? "foundations";
 
   const body = await req.json();
-  const { title, status, theme, shootDate, shootLocation, publishDate, editDueDate, priority, dramaMode, notes, script, researchNotes, thoughts, thumbnailWords, footageLink, driveFolderLink, youtubeDescription, linkedCampaignId, linkedScriptId, thumbnailFileId, thumbnailFileName, manualSteps } = body;
+  const { title, status, theme, shootDate, shootLocation, publishDate, editDueDate, priority, dramaMode, notes, script, researchNotes, thoughts, thumbnailWords, footageLink, driveFolderLink, youtubeDescription, linkedCampaignId, linkedScriptId, thumbnailFileId, thumbnailFileName, manualSteps, propertyTypeFocus } = body;
+  // Wave 4 — same whitelist as POST. Treat undefined as "field omitted"
+  // (partial PATCH semantics, no write), empty string as "clear", and any
+  // other off-list string as "clear" (safer than persisting garbage).
+  const ALLOWED_PROPERTY_TYPE_FOCUS = new Set(["Detached", "Row/Townhouse", "Semi-Detached", "Apartment", "All"]);
+  let cleanPropertyTypeFocus: string | null | undefined;
+  if (propertyTypeFocus === undefined) {
+    cleanPropertyTypeFocus = undefined;
+  } else if (!propertyTypeFocus) {
+    cleanPropertyTypeFocus = null;
+  } else if (typeof propertyTypeFocus === "string" && ALLOWED_PROPERTY_TYPE_FOCUS.has(propertyTypeFocus)) {
+    cleanPropertyTypeFocus = propertyTypeFocus;
+  } else {
+    cleanPropertyTypeFocus = null;
+  }
   // Whitelist manual step keys so a forged payload can't dump arbitrary JSON
   // into the column. Anything off-list is dropped silently.
   const VALID_STEP_KEYS = new Set(["idea","script","review","title","description","repurpose","ready"]);
@@ -166,6 +180,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       ...(linkedCampaignId !== undefined && { linkedCampaignId: linkedCampaignId ?? null }),
       ...(linkedScriptId !== undefined && { linkedScriptId: linkedScriptId ?? null }),
       ...(bingeVideoId !== undefined && { bingeVideoId: bingeVideoId ?? null }),
+      ...(cleanPropertyTypeFocus !== undefined && { propertyTypeFocus: cleanPropertyTypeFocus }),
       ...(thumbnailFileId !== undefined && { thumbnailFileId: thumbnailFileId ?? null }),
       ...(thumbnailFileName !== undefined && { thumbnailFileName: thumbnailFileName ?? null }),
       ...(manualStepsClean !== undefined && { manualSteps: manualStepsClean }),

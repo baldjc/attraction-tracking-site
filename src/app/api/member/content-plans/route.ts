@@ -51,7 +51,16 @@ export async function POST(req: NextRequest) {
   const serviceTier = dbUser?.serviceTier ?? "foundations";
 
   const body = await req.json();
-  const { title, status, theme, shootDate, shootLocation, publishDate, editDueDate, priority, dramaMode, notes, script, thumbnailWords, footageLink, linkedIdeaId, linkedScriptId, youtubeVideoId, bingeVideoId } = body;
+  const { title, status, theme, shootDate, shootLocation, publishDate, editDueDate, priority, dramaMode, notes, script, thumbnailWords, footageLink, linkedIdeaId, linkedScriptId, youtubeVideoId, bingeVideoId, propertyTypeFocus } = body;
+  // Wave 4 — whitelist propertyTypeFocus so a forged payload can't write
+  // an arbitrary string into the lock column (which Script Builder v2
+  // would then refuse to match against any per-type SoT row, silently
+  // disabling the lock for that hood).
+  const ALLOWED_PROPERTY_TYPE_FOCUS = new Set(["Detached", "Row/Townhouse", "Semi-Detached", "Apartment", "All"]);
+  const cleanPropertyTypeFocus: string | null =
+    propertyTypeFocus && ALLOWED_PROPERTY_TYPE_FOCUS.has(propertyTypeFocus)
+      ? propertyTypeFocus
+      : null;
 
   if (!title || typeof title !== "string" || !title.trim()) {
     return NextResponse.json({ error: "Title is required" }, { status: 400 });
@@ -94,6 +103,7 @@ export async function POST(req: NextRequest) {
       linkedScriptId: linkedScriptId ?? null,
       youtubeVideoId: youtubeVideoId ?? null,
       bingeVideoId: bingeVideoId ?? null,
+      propertyTypeFocus: cleanPropertyTypeFocus,
     },
   });
 
