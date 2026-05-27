@@ -24,6 +24,7 @@
   /* Accents */
   --abv-azure:        #3DC3FF;
   --abv-azure-tint:   rgba(61, 195, 255, 0.10);
+  --abv-azure-tint-strong: rgba(61, 195, 255, 0.16);
   --abv-crimson:      #FF0033;
 
   /* Borders */
@@ -36,7 +37,9 @@
   --abv-ai-tools:       #6BA3C7;
   --abv-ai-tools-tint:  rgba(107, 163, 199, 0.10);
   --abv-hire:           #8B5CF6;
+  --abv-hire-tint:      rgba(139, 92, 246, 0.10);
   --abv-leads:          #E63946;
+  --abv-leads-tint:     rgba(230, 57, 70, 0.10);
   --abv-scores:         #F59E0B;
   --abv-scores-tint:    rgba(245, 158, 11, 0.10);
 

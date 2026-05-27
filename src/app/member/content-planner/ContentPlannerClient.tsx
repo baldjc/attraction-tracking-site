@@ -1,18 +1,30 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { CalendarDaysIcon, ClipboardDocumentIcon, CheckIcon, XMarkIcon, MagnifyingGlassIcon, PlusIcon } from "@heroicons/react/24/outline";
+import {
+  CalendarDaysIcon,
+  ClipboardDocumentIcon,
+  CheckIcon,
+  XMarkIcon,
+  MagnifyingGlassIcon,
+  PlusIcon,
+  AdjustmentsHorizontalIcon,
+  ArrowsUpDownIcon,
+  SparklesIcon,
+} from "@heroicons/react/24/outline";
 import ContentPlanTable from "@/components/content-planner/ContentPlanTable";
 import CalendarView from "@/components/content-planner/CalendarView";
 import BoardView from "@/components/content-planner/BoardView";
 import PipelineView, { type PipelineSortKey } from "@/components/content-planner/PipelineView";
 import ContentPlanEditModal, { type ContentPlan } from "@/components/content-planner/ContentPlanEditModal";
 import MobileCardFeed from "@/components/content-planner/MobileCardFeed";
-import { hasEditDueDate, getStatusOptions, filterPlans } from "@/lib/content-plan-utils";
+import { getStatusOptions, filterPlans } from "@/lib/content-plan-utils";
+import { getStatusDotColor } from "@/lib/content-plan-style";
 import { useIsMobile } from "@/hooks/useIsMobile";
 
-type ViewId = "publish_cal" | "shoot_cal" | "edit_due" | "table" | "by_theme" | "pipeline";
+type ViewId = "publish_cal" | "table" | "by_theme" | "pipeline";
 
 interface Props {
   serviceTier: string;
@@ -33,16 +45,17 @@ export default function ContentPlannerClient({
   const [autoOpenPlan, setAutoOpenPlan] = useState<ContentPlan | null>(null);
   const [showProgressTrack, setShowProgressTrack] = useState(false);
   const [showPipelineTab, setShowPipelineTab] = useState(false);
-  // Wave 3 — gates the "Build Script (v2)" entry point on the edit modal.
-  // The save endpoint also gates on this flag server-side, so a stale
-  // client view can't actually save a v2 script.
   const [scriptBuilderV2Enabled, setScriptBuilderV2Enabled] = useState(false);
+  const [aiWizardEnabled, setAiWizardEnabled] = useState(false);
 
-  // Sprint 7 — global search + status filter state
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [pipelineSort, setPipelineSort] = useState<PipelineSortKey>("default");
+  const [showStatusBar, setShowStatusBar] = useState(true);
   const [allPlans, setAllPlans] = useState<ContentPlan[] | null>(null);
+  // Bumped whenever the parent adds or updates a plan so the table refetches
+  // and the new/changed row appears immediately without a page reload.
+  const [tableRefreshKey, setTableRefreshKey] = useState(0);
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -55,11 +68,12 @@ export default function ContentPlannerClient({
         if (d?.flags?.progress_track_v1) setShowProgressTrack(true);
         if (d?.flags?.planner_pipeline_view) setShowPipelineTab(true);
         if (d?.flags?.tool_script_builder_v2) setScriptBuilderV2Enabled(true);
+        if (d?.flags?.tool_content_engine_v2) setAiWizardEnabled(true);
       })
       .catch(() => {});
   }, []);
 
-  // Auto-open the edit modal when a ?plan=<id> param is present (e.g. from "View in planner →" link)
+  // Auto-open the edit modal when a ?plan=<id> param is present
   useEffect(() => {
     const planId = searchParams.get("plan");
     if (!planId) return;
@@ -70,7 +84,6 @@ export default function ContentPlannerClient({
       .catch(() => {});
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Sprint 7 — fetch plan list once for filter-chip counts + Pipeline default heuristic.
   useEffect(() => {
     fetch(apiBase)
       .then((r) => (r.ok ? r.json() : null))
@@ -78,17 +91,11 @@ export default function ContentPlannerClient({
       .catch(() => {});
   }, [apiBase]);
 
-  // Full Table is the default landing view for all members.
-
-  const showEditDueTab = hasEditDueDate(serviceTier);
-
   const ALL_TABS: { id: ViewId; label: string; restricted: boolean }[] = [
-    { id: "table",       label: "Full Table",        restricted: false },
-    { id: "pipeline",    label: "Pipeline",          restricted: !showPipelineTab },
-    { id: "by_theme",    label: "By Theme",          restricted: false },
-    { id: "publish_cal", label: "Publish Calendar",  restricted: false },
-    { id: "shoot_cal",   label: "Shoot Calendar",    restricted: false },
-    { id: "edit_due",    label: "Edit Calendar",     restricted: !showEditDueTab },
+    { id: "table",       label: "Full Table",       restricted: false },
+    { id: "pipeline",    label: "Pipeline",         restricted: !showPipelineTab },
+    { id: "by_theme",    label: "By Theme",         restricted: false },
+    { id: "publish_cal", label: "Publish Calendar", restricted: false },
   ];
   const TABS = ALL_TABS.filter((t) => !t.restricted);
 
@@ -101,8 +108,6 @@ export default function ContentPlannerClient({
     return counts;
   }, [allPlans]);
 
-  // Live filtered/total counts so the user can see filters are working even
-  // before scrolling the table — also serves as a quick sanity check.
   const filteredCount = useMemo(() => {
     if (!allPlans) return 0;
     return filterPlans(allPlans, searchQuery, statusFilter).length;
@@ -111,10 +116,6 @@ export default function ContentPlannerClient({
 
   function toggleStatus(s: string) {
     setStatusFilter((curr) => curr.includes(s) ? curr.filter((x) => x !== s) : [...curr, s]);
-  }
-  function clearFilters() {
-    setSearchQuery("");
-    setStatusFilter([]);
   }
 
   async function openCalModal() {
@@ -145,6 +146,7 @@ export default function ContentPlannerClient({
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to add");
       setAllPlans((prev) => (prev ? [data.plan as ContentPlan, ...prev] : [data.plan as ContentPlan]));
+      setTableRefreshKey((k) => k + 1);
       setAutoOpenPlan(data.plan as ContentPlan);
     } catch (e: any) {
       alert(`Could not add video: ${e.message}`);
@@ -161,7 +163,7 @@ export default function ContentPlannerClient({
     });
   }
 
-  const filtersActive = searchQuery.trim().length > 0 || statusFilter.length > 0;
+  const sortVisible = view === "pipeline" || view === "by_theme";
 
   if (isMobile) {
     return (
@@ -183,8 +185,6 @@ export default function ContentPlannerClient({
             scriptBuilderV2Enabled={scriptBuilderV2Enabled}
             onClose={() => setAutoOpenPlan(null)}
             onSaved={(updated) => {
-              // Wave 4 auto-save: only refresh the cached list; closing the
-              // modal here would dismiss it after every keystroke.
               if (updated) {
                 setAllPlans((prev) =>
                   prev ? prev.map((p) => (p.id === updated.id ? (updated as ContentPlan) : p)) : prev
@@ -204,57 +204,74 @@ export default function ContentPlannerClient({
   }
 
   return (
-    <div>
-      {/* Sprint 7 — global search + status filter bar */}
-      <div className="mb-4 space-y-2.5">
-        <div className="flex items-center gap-2 flex-wrap">
-          <div className="relative flex-1 min-w-[240px] max-w-md">
-            <MagnifyingGlassIcon className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--abv-text)]/40 pointer-events-none" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="🔍 Search plans…"
-              className="w-full pl-9 pr-8 py-1.5 text-sm bg-white border border-gray-200 rounded-lg text-[var(--abv-text)] placeholder:text-[var(--abv-text)]/40 focus:outline-none focus:border-[var(--abv-azure)] focus:ring-2 focus:ring-[var(--abv-azure)]/20"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--abv-text)]/40 hover:text-[var(--abv-text)]"
-                title="Clear search"
-              >
-                <XMarkIcon className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-          {filtersActive && (
-            <>
-              <span className="text-xs text-[var(--abv-text)]/60 whitespace-nowrap">
-                Showing <span className="font-semibold text-[var(--abv-text)]">{filteredCount}</span> of {totalCount}
-              </span>
-              <button onClick={clearFilters} className="text-xs text-[var(--abv-azure)] hover:underline whitespace-nowrap">
-                Clear filters
-              </button>
-            </>
+    <div className="mx-auto max-w-[1200px] px-1 sm:px-2 pb-16">
+      {/* PageHeader — eyebrow, h1 with azure "ship", subtitle, count badge + CTAs */}
+      <header className="flex justify-between items-end gap-5 mb-7 flex-wrap">
+        <div className="flex-1 min-w-[280px]">
+          <span
+            className="inline-flex items-center gap-1.5 px-2.5 py-[5px] rounded-full text-[11px] font-bold uppercase tracking-[0.12em]"
+            style={{ background: "var(--abv-azure-tint)", color: "var(--abv-azure)" }}
+          >
+            <span className="inline-block w-[5px] h-[5px] rounded-full" style={{ background: "var(--abv-azure)" }} />
+            Content pipeline
+          </span>
+          <h1
+            className="font-display font-black tracking-[-0.03em] leading-[1.05] mt-3.5 mb-2 text-[var(--abv-text)]"
+            style={{ fontSize: "44px", maxWidth: "600px" }}
+          >
+            Plan, track, <span style={{ color: "var(--abv-azure)" }}>ship</span>.
+          </h1>
+          <p className="text-[15px] text-[var(--abv-text-muted)] m-0 max-w-[540px] leading-[1.55]">
+            Every video, from idea through to live on YouTube — in one place, in one workflow.
+          </p>
+        </div>
+        <div className="flex gap-2 items-center shrink-0">
+          {allPlans && (
+            <span
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full font-mono text-[11px] font-semibold tracking-[0.04em] text-[var(--abv-text-muted)]"
+              style={{ background: "var(--abv-bg-warm)", border: "1px solid var(--abv-border)" }}
+            >
+              <span className="text-[var(--abv-text)] font-bold">{totalCount}</span>
+              videos planned
+            </span>
           )}
-          {(view === "pipeline" || view === "by_theme") && (
-            <label className="ml-auto flex items-center gap-1.5 text-xs text-[var(--abv-text)]/60">
-              Sort
-              <select
-                value={pipelineSort}
-                onChange={(e) => setPipelineSort(e.target.value as PipelineSortKey)}
-                className="text-xs bg-white border border-gray-200 rounded-md px-2 py-1 text-[var(--abv-text)] focus:outline-none focus:border-[var(--abv-azure)] focus:ring-2 focus:ring-[var(--abv-azure)]/20"
-              >
-                <option value="default">Default</option>
-                <option value="publish-asc">Publish date ↑</option>
-                <option value="publish-desc">Publish date ↓</option>
-                <option value="shoot-asc">Shoot date ↑</option>
-                <option value="shoot-desc">Shoot date ↓</option>
-              </select>
-            </label>
+          {!isAdminView && (
+            <button
+              onClick={handleQuickAdd}
+              disabled={addingPlan}
+              className="inline-flex items-center gap-1.5 px-4 py-[9px] rounded-full text-[12px] font-semibold uppercase tracking-[0.04em] bg-white text-[var(--abv-text)] hover:bg-[var(--abv-ink)] hover:text-white transition-colors disabled:opacity-50"
+              style={{ border: "1.5px solid var(--abv-ink)" }}
+            >
+              <PlusIcon className="w-[13px] h-[13px]" />
+              {addingPlan ? "Adding…" : "Add Video"}
+            </button>
+          )}
+          {!isAdminView && aiWizardEnabled && (
+            <Link
+              href="/member/content-planner/wizard?step=1"
+              className="inline-flex items-center gap-1.5 px-[18px] py-[11px] rounded-full text-[13px] font-bold text-[var(--abv-ink)] transition-colors"
+              style={{ background: "var(--abv-azure)" }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "#5BCEFF")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = "var(--abv-azure)")}
+            >
+              <SparklesIcon className="w-[14px] h-[14px]" />
+              New Content (AI)
+            </Link>
           )}
         </div>
-        <div className="flex items-center gap-1.5 flex-wrap">
+      </header>
+
+      {/* Status filter bar — card surface, dot + count per pill, ink-fill active */}
+      {showStatusBar && (
+        <div
+          className="flex gap-1.5 p-1 mb-3.5 overflow-x-auto"
+          style={{
+            background: "var(--abv-card)",
+            border: "1px solid var(--abv-border)",
+            borderRadius: "12px",
+            boxShadow: "var(--abv-shadow-sm, 0 1px 3px rgba(0,0,0,0.04))",
+          }}
+        >
           {statusOptions.map((s) => {
             const count = statusCounts[s] ?? 0;
             const selected = statusFilter.includes(s);
@@ -264,58 +281,134 @@ export default function ContentPlannerClient({
                 type="button"
                 onClick={() => toggleStatus(s)}
                 aria-pressed={selected}
-                title={selected ? `Click to remove ${s} filter` : `Filter by ${s}`}
-                className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded border transition-all ${
+                className={`inline-flex items-center gap-[7px] px-3 py-2 rounded-full text-xs font-semibold whitespace-nowrap shrink-0 transition-colors ${
                   selected
-                    ? "bg-[var(--abv-dark)] border-[var(--abv-azure)] text-white font-semibold shadow-sm ring-2 ring-[var(--abv-azure)]/30"
-                    : "bg-white border-gray-200 text-[var(--abv-text)]/70 font-medium hover:border-[var(--abv-azure)]/50 hover:bg-[var(--abv-dark)]/5"
+                    ? "bg-[var(--abv-ink)] text-white"
+                    : "bg-transparent text-[var(--abv-text-muted)] hover:bg-[var(--abv-bg-warm)] hover:text-[var(--abv-text)]"
                 }`}
               >
-                {selected && <CheckIcon className="w-3 h-3" />}
-                <span>{s} ({count})</span>
+                <span
+                  className="inline-block w-[7px] h-[7px] rounded-full"
+                  style={{ background: getStatusDotColor(s) }}
+                />
+                {s}
+                <span
+                  className={`font-mono text-[10.5px] px-[7px] py-[2px] rounded-full font-semibold ml-0.5 ${
+                    selected ? "text-white/85" : "text-[var(--abv-text-dim)]"
+                  }`}
+                  style={{
+                    background: selected ? "rgba(255,255,255,0.15)" : "var(--abv-bg-warm)",
+                  }}
+                >
+                  {count}
+                </span>
               </button>
             );
           })}
         </div>
-      </div>
+      )}
 
-      <div className="flex items-center justify-between gap-3 mb-5 flex-wrap">
-        <div className="flex items-center flex-wrap gap-1 bg-white border border-gray-200 rounded-lg p-1 shadow-sm">
-          {TABS.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setView(tab.id)}
-              className={`text-sm font-medium px-3 py-1.5 rounded-md transition-colors whitespace-nowrap ${
-                view === tab.id
-                  ? "bg-[var(--abv-dark)] text-white shadow-sm"
-                  : "text-[var(--abv-text)]/60 hover:text-[var(--abv-text)] hover:bg-gray-100"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+      {/* View tabs + search + filter/sort icon buttons */}
+      <div className="flex items-center gap-4 mb-[18px] flex-wrap">
+        <div
+          className="inline-flex gap-0 flex-1 items-end"
+          style={{ borderBottom: "1px solid var(--abv-border-strong)" }}
+        >
+          {TABS.map((tab) => {
+            const isOn = view === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setView(tab.id)}
+                className={`text-[13.5px] font-semibold py-[9px] px-0.5 mr-[26px] bg-transparent transition-colors ${
+                  isOn ? "text-[var(--abv-text)]" : "text-[var(--abv-text-muted)] hover:text-[var(--abv-text)]"
+                }`}
+                style={{
+                  borderBottom: isOn ? "2px solid var(--abv-ink)" : "2px solid transparent",
+                  marginBottom: "-1px",
+                }}
+              >
+                {tab.label}
+                {isOn && allPlans && (
+                  <span className="font-mono text-[10.5px] text-[var(--abv-text-dim)] ml-1.5 font-medium">
+                    {filteredCount}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          {!isAdminView && (
+
+        <div
+          className="inline-flex items-center gap-2 bg-white px-[14px] py-[7px] rounded-full text-[12.5px] text-[var(--abv-text-dim)] w-[220px]"
+          style={{ border: "1px solid var(--abv-border-strong)" }}
+        >
+          <MagnifyingGlassIcon className="w-[13px] h-[13px] shrink-0" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search titles, themes…"
+            className="border-0 outline-none flex-1 bg-transparent text-[var(--abv-text)] text-[12.5px] min-w-0 placeholder:text-[var(--abv-text-dim)]"
+          />
+          {searchQuery && (
             <button
-              onClick={handleQuickAdd}
-              disabled={addingPlan}
-              className="flex items-center gap-1.5 text-sm font-semibold text-white bg-[var(--abv-dark)] px-3 py-1.5 rounded-lg hover:bg-black/85 disabled:opacity-50 transition-colors"
+              onClick={() => setSearchQuery("")}
+              className="text-[var(--abv-text-dim)] hover:text-[var(--abv-text)]"
+              title="Clear search"
             >
-              <PlusIcon className="w-4 h-4" />
-              {addingPlan ? "Adding…" : "Add Video"}
+              <XMarkIcon className="w-3.5 h-3.5" />
             </button>
           )}
-          {!isAdminView && (
-            <button
-              onClick={openCalModal}
-              className="flex items-center gap-1.5 text-sm text-[var(--abv-text)]/70 border border-gray-200 bg-white px-3 py-1.5 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors"
-            >
-              <CalendarDaysIcon className="w-4 h-4" />
-              Subscribe to Calendar
-            </button>
-          )}
         </div>
+
+        <button
+          onClick={() => setShowStatusBar((v) => !v)}
+          title={showStatusBar ? "Hide status filters" : "Show status filters"}
+          className="w-9 h-9 inline-flex items-center justify-center bg-white rounded-full text-[var(--abv-text-muted)] hover:text-[var(--abv-text)] transition-colors"
+          style={{ border: "1px solid var(--abv-border-strong)" }}
+        >
+          <AdjustmentsHorizontalIcon className="w-3.5 h-3.5" />
+        </button>
+
+        {sortVisible ? (
+          <div className="relative">
+            <ArrowsUpDownIcon className="w-3.5 h-3.5 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[var(--abv-text-muted)] pointer-events-none" />
+            <select
+              value={pipelineSort}
+              onChange={(e) => setPipelineSort(e.target.value as PipelineSortKey)}
+              title="Sort"
+              className="w-9 h-9 appearance-none rounded-full bg-white text-transparent cursor-pointer"
+              style={{ border: "1px solid var(--abv-border-strong)" }}
+            >
+              <option value="default">Default</option>
+              <option value="publish-asc">Publish date ↑</option>
+              <option value="publish-desc">Publish date ↓</option>
+              <option value="shoot-asc">Shoot date ↑</option>
+              <option value="shoot-desc">Shoot date ↓</option>
+            </select>
+          </div>
+        ) : (
+          <button
+            title="Sort (available in Pipeline and By Theme views)"
+            disabled
+            className="w-9 h-9 inline-flex items-center justify-center bg-white rounded-full text-[var(--abv-text-dim)] opacity-50 cursor-not-allowed"
+            style={{ border: "1px solid var(--abv-border-strong)" }}
+          >
+            <ArrowsUpDownIcon className="w-3.5 h-3.5" />
+          </button>
+        )}
+
+        {!isAdminView && (
+          <button
+            onClick={openCalModal}
+            title="Subscribe to Calendar"
+            className="w-9 h-9 inline-flex items-center justify-center bg-white rounded-full text-[var(--abv-text-muted)] hover:text-[var(--abv-text)] transition-colors"
+            style={{ border: "1px solid var(--abv-border-strong)" }}
+          >
+            <CalendarDaysIcon className="w-3.5 h-3.5" />
+          </button>
+        )}
       </div>
 
       {view === "table" && (
@@ -326,6 +419,8 @@ export default function ContentPlannerClient({
           searchQuery={searchQuery}
           statusFilter={statusFilter}
           scriptBuilderV2Enabled={scriptBuilderV2Enabled}
+          refreshKey={tableRefreshKey}
+          onPlansChanged={(p) => setAllPlans(p)}
         />
       )}
 
@@ -333,30 +428,6 @@ export default function ContentPlannerClient({
         <CalendarView
           apiBase={apiBase}
           calendarType="publish"
-          serviceTier={serviceTier}
-          isAdmin={isAdminView}
-          searchQuery={searchQuery}
-          statusFilter={statusFilter}
-          scriptBuilderV2Enabled={scriptBuilderV2Enabled}
-        />
-      )}
-
-      {view === "shoot_cal" && (
-        <CalendarView
-          apiBase={apiBase}
-          calendarType="shoot"
-          serviceTier={serviceTier}
-          isAdmin={isAdminView}
-          searchQuery={searchQuery}
-          statusFilter={statusFilter}
-          scriptBuilderV2Enabled={scriptBuilderV2Enabled}
-        />
-      )}
-
-      {view === "edit_due" && showEditDueTab && (
-        <CalendarView
-          apiBase={apiBase}
-          calendarType="edit_due"
           serviceTier={serviceTier}
           isAdmin={isAdminView}
           searchQuery={searchQuery}
@@ -389,6 +460,70 @@ export default function ContentPlannerClient({
         />
       )}
 
+      {/* Workflow help block */}
+      <section
+        className="mt-9 px-8 py-7"
+        style={{
+          background: "var(--abv-card)",
+          border: "1px solid var(--abv-border)",
+          borderRadius: "14px",
+          boxShadow: "var(--abv-shadow-sm, 0 1px 3px rgba(0,0,0,0.04))",
+        }}
+      >
+        <div className="mb-[18px] max-w-[580px]">
+          <span
+            className="inline-flex items-center gap-1.5 px-2.5 py-[5px] rounded-full text-[11px] font-bold uppercase tracking-[0.12em]"
+            style={{ background: "var(--abv-azure-tint)", color: "var(--abv-azure)" }}
+          >
+            <span className="inline-block w-[5px] h-[5px] rounded-full" style={{ background: "var(--abv-azure)" }} />
+            How this works
+          </span>
+          <h3
+            className="font-display font-extrabold tracking-[-0.025em] leading-[1.15] mt-2.5 mb-1.5 text-[var(--abv-text)]"
+            style={{ fontSize: "26px" }}
+          >
+            From idea to <span style={{ color: "var(--abv-azure)" }}>live on YouTube</span>, in nine steps.
+          </h3>
+          <p className="text-sm text-[var(--abv-text-muted)] m-0 leading-[1.55]">
+            Every video moves through the same pipeline. Click a row to edit it, filter by status, or generate a fresh batch of ideas with AI.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+          <HelpCard
+            tone="azure"
+            title="Generate with AI"
+            body="New Content (AI) pulls validated ideas anchored to your market data and avatar. Pick one, draft starts."
+            icon={
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                <path d="M12 3l1.8 4.5L18 9l-4.2 1.5L12 15l-1.8-4.5L6 9l4.2-1.5z" />
+              </svg>
+            }
+          />
+          <HelpCard
+            tone="aiTools"
+            title="Track every stage"
+            body="Nine statuses cover the entire pipeline — from Future Idea to Live on YouTube. Filter by status or scope by theme."
+            icon={
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                <rect x="4" y="3" width="16" height="18" rx="2" />
+                <path d="M8 8h8M8 12h8M8 16h5" />
+              </svg>
+            }
+          />
+          <HelpCard
+            tone="academy"
+            title="Ship, then review"
+            body="Once a video goes Live, it auto-routes into Audit. Your Scores update on the next Monday, and your Learning Path adjusts."
+            icon={
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                <circle cx="12" cy="12" r="9" />
+                <path d="M8 12l3 3 5-6" />
+              </svg>
+            }
+          />
+        </div>
+      </section>
+
       {autoOpenPlan && (
         <ContentPlanEditModal
           plan={autoOpenPlan}
@@ -397,11 +532,21 @@ export default function ContentPlannerClient({
           showProgressTrack={showProgressTrack}
           scriptBuilderV2Enabled={scriptBuilderV2Enabled}
           onClose={() => setAutoOpenPlan(null)}
-          // Wave 4 auto-save: no-op on save (modal stays open until the
-          // user explicitly closes it). Delete still closes since the
-          // plan no longer exists.
-          onSaved={() => {}}
-          onDeleted={() => setAutoOpenPlan(null)}
+          onSaved={(updated) => {
+            if (!updated) return;
+            setAllPlans((prev) =>
+              prev ? prev.map((p) => (p.id === updated.id ? { ...p, ...(updated as ContentPlan) } : p)) : prev
+            );
+            // Refresh the table so its locally-cached row matches.
+            setTableRefreshKey((k) => k + 1);
+          }}
+          onDeleted={(id) => {
+            setAutoOpenPlan(null);
+            if (id) {
+              setAllPlans((prev) => (prev ? prev.filter((p) => p.id !== id) : prev));
+              setTableRefreshKey((k) => k + 1);
+            }
+          }}
         />
       )}
 
@@ -453,6 +598,39 @@ export default function ContentPlannerClient({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function HelpCard({
+  tone, title, body, icon,
+}: {
+  tone: "azure" | "academy" | "aiTools";
+  title: string;
+  body: string;
+  icon: React.ReactNode;
+}) {
+  const TONE: Record<typeof tone, { bg: string; fg: string }> = {
+    azure:   { bg: "var(--abv-azure-tint)",    fg: "var(--abv-azure)" },
+    academy: { bg: "var(--abv-academy-tint)",  fg: "var(--abv-academy)" },
+    aiTools: { bg: "var(--abv-ai-tools-tint)", fg: "var(--abv-ai-tools)" },
+  };
+  const t = TONE[tone];
+  return (
+    <div
+      className="flex gap-3.5 items-start p-4"
+      style={{ background: "var(--abv-bg-warm)", borderRadius: "10px" }}
+    >
+      <span
+        className="w-10 h-10 shrink-0 inline-flex items-center justify-center"
+        style={{ background: t.bg, color: t.fg, borderRadius: "10px" }}
+      >
+        {icon}
+      </span>
+      <div>
+        <div className="font-display font-extrabold tracking-[-0.015em] leading-[1.25] text-[14px] text-[var(--abv-text)]">{title}</div>
+        <p className="text-[12.5px] text-[var(--abv-text-muted)] mt-1 leading-[1.5]">{body}</p>
+      </div>
     </div>
   );
 }
