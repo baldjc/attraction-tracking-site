@@ -254,8 +254,9 @@ export default function CalendarView({ apiBase, calendarType, serviceTier, isAdm
   }
 
   function handlePlanSaved(updated: ContentPlan) {
+    // Wave 4 auto-save: do not close the modal on save. See BoardView for
+    // the full rationale — close is owned exclusively by `onClose`.
     setPlans((prev) => prev.map((p) => p.id === updated.id ? updated : p));
-    setEditingPlan(null);
   }
 
   function handlePlanDeleted(id: string) {

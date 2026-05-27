@@ -887,8 +887,9 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
           scriptBuilderV2Enabled={scriptBuilderV2Enabled}
           onClose={() => setEditingPlan(null)}
           onSaved={(updated) => {
+            // Wave 4 auto-save: keep the modal open on save. See BoardView
+            // for the full rationale. Close stays owned by `onClose`.
             setPlans((prev) => prev.map((p) => (p.id === updated.id ? { ...p, ...updated } : p)));
-            setEditingPlan(null);
           }}
           onDeleted={(id) => {
             setPlans((prev) => prev.filter((p) => p.id !== id));

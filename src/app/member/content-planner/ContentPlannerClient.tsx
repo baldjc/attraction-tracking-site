@@ -183,7 +183,8 @@ export default function ContentPlannerClient({
             scriptBuilderV2Enabled={scriptBuilderV2Enabled}
             onClose={() => setAutoOpenPlan(null)}
             onSaved={(updated) => {
-              setAutoOpenPlan(null);
+              // Wave 4 auto-save: only refresh the cached list; closing the
+              // modal here would dismiss it after every keystroke.
               if (updated) {
                 setAllPlans((prev) =>
                   prev ? prev.map((p) => (p.id === updated.id ? (updated as ContentPlan) : p)) : prev
@@ -396,7 +397,10 @@ export default function ContentPlannerClient({
           showProgressTrack={showProgressTrack}
           scriptBuilderV2Enabled={scriptBuilderV2Enabled}
           onClose={() => setAutoOpenPlan(null)}
-          onSaved={() => setAutoOpenPlan(null)}
+          // Wave 4 auto-save: no-op on save (modal stays open until the
+          // user explicitly closes it). Delete still closes since the
+          // plan no longer exists.
+          onSaved={() => {}}
           onDeleted={() => setAutoOpenPlan(null)}
         />
       )}

@@ -296,8 +296,10 @@ export default function PipelineView({
           scriptBuilderV2Enabled={scriptBuilderV2Enabled}
           onClose={() => setEditingPlan(null)}
           onSaved={(updated) => {
+            // Wave 4 auto-save: do NOT close the modal here. Auto-save
+            // fires continuously on every edit; the modal close is owned
+            // exclusively by `onClose`.
             setPlans((list) => list.map((p) => (p.id === updated.id ? updated : p)));
-            setEditingPlan(null);
           }}
           onDeleted={(id) => {
             setPlans((list) => list.filter((p) => p.id !== id));

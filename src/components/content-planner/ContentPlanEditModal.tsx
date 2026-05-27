@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { XMarkIcon, ArrowDownTrayIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
@@ -17,6 +17,7 @@ import MarkdownTextarea from "@/components/MarkdownTextarea";
 import RichMarkdownEditor from "@/components/RichMarkdownEditor";
 import { getScoreBadgeClasses } from "@/lib/score-badge";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { useAutoSave } from "@/hooks/useAutoSave";
 
 /**
  * Convert the stored repurpose-artifact content (which the API saves as a
@@ -557,7 +558,8 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
   // Single-row expansion for the new Content list (Notion-style). Only one
   // of the five rows can be open at a time so the list stays compact.
   const [contentRowExpanded, setContentRowExpanded] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
+  // Wave 4 auto-save: `saving` state from the old manual-save flow is gone.
+  // The bottom-bar indicator reads `autoSaveStatus` from useAutoSave instead.
   const [error, setError] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -915,9 +917,15 @@ Produce a research brief I can hand to a script writer. For **each talking point
     }
   }
 
-  function launchTool(key: string) {
+  async function launchTool(key: string) {
     const route = TOOL_ROUTES[key];
     if (!route) return;
+    // Flush any pending auto-save before navigating away. If the save fails
+    // (blank title, network), bail without navigating so the user sees the
+    // error indicator and can fix it — otherwise the in-flight debounced
+    // edit (e.g. propertyTypeFocus = Row/Townhouse) is silently dropped by
+    // the route change. This is the trigger for the Wave 4 re-attempt.
+    try { await flushSave(); } catch { return; }
     seedToolPrefill(key);
     router.push(buildToolUrl(route, { planId: plan.id, returnTo: "/member/content-planner" }));
   }
@@ -970,73 +978,138 @@ Produce a research brief I can hand to a script writer. For **each talking point
   const useDrive = hasDriveFolder(serviceTier);
   const statusOptions = getStatusOptions(serviceTier);
 
-  useEffect(() => {
-    const handleKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", handleKey);
-    return () => window.removeEventListener("keydown", handleKey);
-  }, [onClose]);
+  // ───────────────────────────────────────────────────────────────────────
+  // Auto-save (Wave 4 second attempt — see useAutoSave.ts for the
+  // Strict-Mode-safe value-identity guard rationale).
+  //
+  // We track `form` plus the externally-held thumbnail picks in a single
+  // memoised object. Any setForm({...f, ...}) or thumbnail picker change
+  // creates a fresh reference → useAutoSave detects the identity change
+  // → debounces 700ms → PUTs the full body. The 700ms window coalesces
+  // typing into 1–2 PATCHes per text-field edit rather than per keystroke.
+  // ───────────────────────────────────────────────────────────────────────
+  const trackedValue = useMemo(
+    () => ({ form, thumbnailFileId, thumbnailFileName }),
+    [form, thumbnailFileId, thumbnailFileName],
+  );
 
-  async function handleSave(): Promise<boolean> {
-    if (!form.title.trim()) { setError("Title is required."); return false; }
-    setSaving(true);
-    setError("");
-    try {
+  // Latest props in a ref so the save callback identity stays stable
+  // (useAutoSave's debounce timer would reset if this changed).
+  const onSavedRef = useRef(onSaved);
+  useEffect(() => { onSavedRef.current = onSaved; });
+
+  const performAutoSave = useCallback(
+    async (snapshot: { form: typeof form; thumbnailFileId: string | null; thumbnailFileName: string | null }) => {
+      const s = snapshot.form;
+      if (!s.title.trim()) {
+        // Don't blow away the user's title field with an empty PUT —
+        // surface a friendly error and skip the network call.
+        throw new Error("Title is required.");
+      }
       const res = await fetch(`${apiBase}/${plan.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title: form.title.trim(),
-          status: form.status,
-          theme: form.theme || null,
-          publishDate: form.publishDate || null,
-          shootDate: form.shootDate || null,
-          shootLocation: form.shootLocation || null,
-          editDueDate: form.editDueDate || null,
-          priority: form.priority || null,
-          dramaMode: Boolean(form.dramaMode),
-          notes: form.notes || null,
-          script: form.script || null,
-          youtubeDescription: form.youtubeDescription || null,
-          researchNotes: form.researchNotes || null,
-          thoughts: form.thoughts || null,
-          thumbnailWords: form.thumbnailWords || null,
-          footageLink: form.footageLink || null,
-          linkedCampaignId: form.linkedCampaignId || null,
-          bingeVideoId: form.bingeVideoId || null,
-          propertyTypeFocus: form.propertyTypeFocus || null,
-          thumbnailFileId: thumbnailFileId || null,
-          thumbnailFileName: thumbnailFileName || null,
-          // Include manualSteps in every Save so the PUT response (which the
-          // parent uses as the authoritative plan) always carries the latest
-          // manual checks. Without this, a Save that races with a per-step
-          // toggle PUT can hand the parent a stale plan whose manualSteps
-          // arrived before the user's click — and the boxes appear unchecked
-          // when the modal is re-opened.
-          manualSteps: form.manualSteps,
+          title: s.title.trim(),
+          status: s.status,
+          theme: s.theme || null,
+          publishDate: s.publishDate || null,
+          shootDate: s.shootDate || null,
+          shootLocation: s.shootLocation || null,
+          editDueDate: s.editDueDate || null,
+          priority: s.priority || null,
+          dramaMode: Boolean(s.dramaMode),
+          notes: s.notes || null,
+          script: s.script || null,
+          youtubeDescription: s.youtubeDescription || null,
+          researchNotes: s.researchNotes || null,
+          thoughts: s.thoughts || null,
+          thumbnailWords: s.thumbnailWords || null,
+          footageLink: s.footageLink || null,
+          linkedCampaignId: s.linkedCampaignId || null,
+          bingeVideoId: s.bingeVideoId || null,
+          propertyTypeFocus: s.propertyTypeFocus || null,
+          thumbnailFileId: snapshot.thumbnailFileId || null,
+          thumbnailFileName: snapshot.thumbnailFileName || null,
+          // Always echo manualSteps so the PUT response (which the parent
+          // treats as the authoritative plan) carries the latest checks.
+          manualSteps: s.manualSteps,
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to save");
       if (data.plan?.driveFolderLink) setDriveFolderLink(data.plan.driveFolderLink);
       setThumbVersion((v) => v + 1);
-      onSaved(data.plan);
-      return true;
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Failed to save");
-      return false;
-    } finally {
-      setSaving(false);
-    }
+      setError("");
+      // Notify the parent so list/board state stays in sync. Parents must
+      // NOT close the modal here (the close contract is owned by onClose
+      // alone now that saves fire continuously instead of on a button).
+      onSavedRef.current(data.plan);
+    },
+    [apiBase, plan.id],
+  );
+
+  const {
+    status: autoSaveStatus,
+    lastSavedAt: autoSaveLastSavedAt,
+    error: autoSaveError,
+    flushSave,
+  } = useAutoSave({ value: trackedValue, delay: 700, onSave: performAutoSave });
+
+  // Hard-coded "time since" label updated every 10s while the modal is
+  // open. Cheap enough that we don't need a global ticker.
+  const [nowTick, setNowTick] = useState(0);
+  useEffect(() => {
+    const id = window.setInterval(() => setNowTick((n) => n + 1), 10000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  function formatRelativeSaveTime(d: Date | null): string {
+    if (!d) return "";
+    void nowTick; // keep the dep
+    const diffSec = Math.max(0, Math.round((Date.now() - d.getTime()) / 1000));
+    if (diffSec < 5) return "just now";
+    if (diffSec < 60) return `${diffSec}s ago`;
+    const m = Math.floor(diffSec / 60);
+    if (m < 60) return `${m}m ago`;
+    return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
   }
 
-  // Backdrop click → auto-save then close. If the save fails (e.g. missing
-  // required title), keep the modal open and surface the error instead of
-  // silently discarding the user's edits.
+  // Manual-retry handler when the auto-save indicator shows an error.
+  const retryAutoSave = useCallback(async () => {
+    try { await performAutoSave(trackedValue); } catch {}
+  }, [performAutoSave, trackedValue]);
+
+  // ───────────────────────────────────────────────────────────────────────
+  // Close + navigation handlers. Every path that leaves the modal context
+  // (backdrop, X, Close, Escape, "Build Script v2" navigation, AI-tool
+  // launches) MUST await flushSave first to prevent loss of in-flight
+  // debounced edits.
+  // ───────────────────────────────────────────────────────────────────────
+  const handleClose = useCallback(async () => {
+    try {
+      await flushSave();
+      onClose();
+    } catch {
+      // Save failed — surface via the indicator and keep the modal open
+      // so the user can fix the issue (e.g. blank title) and try again.
+    }
+  }, [flushSave, onClose]);
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        // fire-and-forget — handleClose itself awaits flushSave.
+        void handleClose();
+      }
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [handleClose]);
+
   async function handleBackdropClick(e: React.MouseEvent<HTMLDivElement>) {
     if (e.target !== e.currentTarget) return; // ignore clicks bubbling from the panel
-    if (saving) return;
-    const ok = await handleSave();
-    if (ok) onClose();
+    await handleClose();
   }
 
   async function handleDelete() {
@@ -1139,7 +1212,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
           style={isMobile ? { paddingTop: "calc(env(safe-area-inset-top, 0px) + 0.75rem)" } : undefined}
         >
           <h3 className="text-base font-semibold text-[#2f3437]">Edit Video</h3>
-          <button onClick={onClose} className="text-[#2f3437]/40 hover:text-[#2f3437] p-1 -mr-1">
+          <button onClick={handleClose} className="text-[#2f3437]/40 hover:text-[#2f3437] p-1 -mr-1">
             <XMarkIcon className="w-6 h-6" />
           </button>
         </div>
@@ -1514,11 +1587,17 @@ Produce a research brief I can hand to a script writer. For **each talking point
                     </div>
                     <button
                       type="button"
-                      onClick={() =>
+                      onClick={async () => {
+                        // Flush debounced auto-save (e.g. the user just set
+                        // Property type and immediately clicked here) before
+                        // routing into the v2 wizard. If save fails, surface
+                        // via the indicator instead of navigating with stale
+                        // server state.
+                        try { await flushSave(); } catch { return; }
                         router.push(
                           `/member/content-planner/wizard/script?planId=${plan.id}`,
-                        )
-                      }
+                        );
+                      }}
                       className="shrink-0 inline-flex items-center gap-1.5 rounded-md bg-[#185FA5] px-3.5 py-1.5 text-xs font-medium text-white hover:bg-[#134d87] transition-colors"
                     >
                       <span aria-hidden>✨</span> Build Script (v2) →
@@ -2168,10 +2247,38 @@ Produce a research brief I can hand to a script writer. For **each talking point
               <button onClick={() => setConfirmDelete(true)} className="text-xs text-[#2f3437]/40 hover:text-red-600 transition-colors">Delete video</button>
             )
           ) : <div />}
-          <div className="flex gap-2">
-            <button onClick={onClose} className="px-4 py-2 text-sm text-[#2f3437]/60 hover:text-[#2f3437] border border-gray-200 rounded-lg">Cancel</button>
-            <button onClick={handleSave} disabled={saving} className="px-4 py-2 text-sm bg-[#2f3437] text-white rounded-lg hover:bg-[#1a1f22] disabled:opacity-50 transition-colors">
-              {saving ? "Saving…" : "Save changes"}
+          <div className="flex items-center gap-3">
+            {/* Auto-save status indicator (Wave 4) — replaces the old manual
+                Save button. Surfaces saving/saved/error states with a
+                relative timestamp; clickable when in error state to retry. */}
+            <div className="text-xs">
+              {autoSaveStatus === "saving" && (
+                <span className="text-[#2f3437]/60">Saving…</span>
+              )}
+              {autoSaveStatus === "saved" && (
+                <span className="text-green-600">
+                  ✓ Saved {formatRelativeSaveTime(autoSaveLastSavedAt)}
+                </span>
+              )}
+              {autoSaveStatus === "error" && (
+                <button
+                  type="button"
+                  onClick={retryAutoSave}
+                  className="text-red-600 hover:underline font-medium"
+                  title={autoSaveError ?? "Save failed"}
+                >
+                  ⚠ Save failed — click to retry
+                </button>
+              )}
+              {autoSaveStatus === "idle" && (
+                <span className="text-[#2f3437]/40">All changes saved</span>
+              )}
+            </div>
+            <button
+              onClick={handleClose}
+              className="px-4 py-2 text-sm text-[#2f3437]/60 hover:text-[#2f3437] border border-gray-200 rounded-lg"
+            >
+              Close
             </button>
           </div>
         </div>

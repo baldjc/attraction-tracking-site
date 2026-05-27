@@ -233,8 +233,10 @@ export default function BoardView({ apiBase, serviceTier, isAdmin, searchQuery =
   }
 
   function handlePlanSaved(updated: ContentPlan) {
+    // Wave 4 auto-save: keep the modal open — saves now fire continuously
+    // on every edit, so closing here would slam the modal shut after the
+    // first keystroke. Close is owned exclusively by `onClose`.
     setPlans((prev) => prev.map((p) => p.id === updated.id ? updated : p));
-    setEditingPlan(null);
   }
 
   function handlePlanDeleted(id: string) {

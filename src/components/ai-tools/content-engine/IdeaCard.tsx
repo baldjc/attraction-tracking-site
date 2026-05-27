@@ -286,7 +286,9 @@ export default function IdeaCard({ idea, theme, onSaved, savedId, onDelete }: Pr
           serviceTier={plannerServiceTier}
           apiBase="/api/member/content-plans"
           onClose={() => setCreatedPlan(null)}
-          onSaved={() => { setCreatedPlan(null); }}
+          // Wave 4 auto-save: keep the modal open on save — close is owned
+          // exclusively by `onClose` now that edits persist continuously.
+          onSaved={() => {}}
           onDeleted={() => { setCreatedPlan(null); setAddedToPlanner(false); }}
         />
       )}
