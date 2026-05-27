@@ -402,10 +402,38 @@ export async function POST(req: NextRequest) {
   const marketConfig = await loadMarketConfigSummary(userId);
   // (extractAvatarNarrativeText helper lives at the bottom of this file.)
   if (!marketConfig) {
-    return jsonError(
-      409,
-      "no_market_config",
-      "Configure your market (avatar, sub-personas, MOI thresholds) before writing a script.",
+    // Onboarding Wizard gate: hand the client a redirectUrl so it can route
+    // the member straight into setup instead of leaving them stuck on a
+    // generic "configure your market" error.
+    return Response.json(
+      {
+        error:
+          "Finish setting up your system before building scripts. You're a few steps away from real output.",
+        code: "incomplete_setup",
+        missing: ["marketConfig"],
+        redirectUrl: "/member/onboarding",
+      },
+      { status: 409 },
+    );
+  }
+  if (
+    !marketConfig.primaryAvatar ||
+    (typeof marketConfig.primaryAvatar === "object" &&
+      Object.keys(marketConfig.primaryAvatar as Record<string, unknown>).length ===
+        0)
+  ) {
+    // Same gate, just a narrower miss — they have a market config row but
+    // never finished Step 3 (avatar), OR finished with an empty {} payload.
+    // Same redirect: the wizard knows where to drop them.
+    return Response.json(
+      {
+        error:
+          "Your scripts need an avatar to write to. Finish the avatar step before building a script.",
+        code: "incomplete_setup",
+        missing: ["primaryAvatar"],
+        redirectUrl: "/member/onboarding?step=3",
+      },
+      { status: 409 },
     );
   }
 

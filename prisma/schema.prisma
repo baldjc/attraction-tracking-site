@@ -136,6 +136,14 @@ model User {
   // Onboarding
   onboardingComplete     Boolean   @default(false)
   onboardingDismissedAt  DateTime?
+  // Onboarding Wizard (member/onboarding) — tracks linear progress through the
+  // tier-aware multi-step setup flow. `onboardingStep` is the last COMPLETED
+  // step (0 = not started). `onboardingCompletedAt` set when the member
+  // finishes Step 9. `onboardingSkippedAt` set when they hit "Save and finish
+  // later" — drives the dashboard nudge banner.
+  onboardingStep         Int       @default(0)
+  onboardingCompletedAt  DateTime?
+  onboardingSkippedAt    DateTime?
   incomeGoal             String?
   postingRhythm          Int?
   biggestChallenge       String?
@@ -1762,6 +1770,15 @@ model MarketConfig {
   voiceGuide            String?   @db.Text
   voiceGuideUploadedAt  DateTime?
   voiceGuideSourceFile  String?
+  // Onboarding Wizard Step 5 — Team credibility numbers. Used by Script Builder
+  // for credibility-moment lines so it never has to invent stats like
+  // "after helping 4,000 families". Auto-fill formula on the wizard:
+  // 8760 / teamAnnualTransactionCount = "a family every N hours".
+  teamYearsInBusiness        Int?
+  teamFamiliesHelped         Int?
+  teamAnnualTransactionCount Int?
+  teamSize                   Int?
+  teamCredibilityNotes       String?   @db.Text
   configuredAt       DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
