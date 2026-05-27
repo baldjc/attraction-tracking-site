@@ -362,22 +362,11 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
       {/* Logo */}
       <div className={`border-b border-white/10 flex-shrink-0 flex items-center ${collapsed ? "px-3 py-4 justify-center" : "px-4 py-4"}`}>
         <Link href={homeHref} className="flex items-center gap-3 min-w-0" aria-label="Attraction by Video">
-          <span
-            aria-hidden="true"
-            className="h-10 w-10 rounded-[11px] shrink-0 flex items-center justify-center overflow-hidden"
-            style={{
-              background:
-                "linear-gradient(135deg, #7AD9FF 0%, var(--abv-azure) 55%, #1FA0E0 100%)",
-              boxShadow:
-                "inset 0 1px 0 rgba(255,255,255,0.4), inset 0 -1px 0 rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.25)",
-            }}
-          >
-            <img
-              src="/logo-icon.png"
-              alt=""
-              className="h-7 w-7 object-contain"
-            />
-          </span>
+          <img
+            src="/logo-icon.png"
+            alt=""
+            className="h-10 w-10 object-contain shrink-0"
+          />
           {!collapsed && (
             <span
               className="text-white text-[17px] leading-none tracking-tight whitespace-nowrap"
@@ -643,22 +632,11 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
         >
           <Bars3Icon className="w-6 h-6" />
         </button>
-        <span
-          aria-hidden="true"
-          className="h-8 w-8 rounded-[9px] shrink-0 flex items-center justify-center overflow-hidden"
-          style={{
-            background:
-              "linear-gradient(135deg, #7AD9FF 0%, var(--abv-azure) 55%, #1FA0E0 100%)",
-            boxShadow:
-              "inset 0 1px 0 rgba(255,255,255,0.4), inset 0 -1px 0 rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.25)",
-          }}
-        >
-          <img
-            src="/logo-icon.png"
-            alt=""
-            className="h-[22px] w-[22px] object-contain"
-          />
-        </span>
+        <img
+          src="/logo-icon.png"
+          alt=""
+          className="h-8 w-8 object-contain shrink-0"
+        />
         {isImpersonating ? (
           <span className="text-xs font-bold text-white uppercase tracking-widest">
             Member View
