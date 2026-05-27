@@ -182,6 +182,108 @@ function wordCount(s: string | null | undefined): number {
   return s.trim().split(/\s+/).filter(Boolean).length;
 }
 
+/** Controlled-ish contentEditable H1 used for the hero title.
+ *
+ * Why a custom component: rendering React children into a `contentEditable`
+ * node is unsafe — every re-render rewrites the DOM under the user's caret
+ * and can drop or duplicate keystrokes. Instead we mount an empty H1, write
+ * its initial text via a ref, commit on `onInput`, and only re-sync from
+ * props while the element is NOT focused. The auto-azure decoration is
+ * shown as a non-editable overlay when blurred, so we keep the visual
+ * treatment without ever mutating the editable node mid-typing. */
+function TitleEditor({
+  value, onCommit, placeholder, style, inputRef,
+}: {
+  value: string;
+  onCommit: (next: string) => void;
+  placeholder?: string;
+  style?: React.CSSProperties;
+  inputRef?: React.RefObject<HTMLHeadingElement | null>;
+}) {
+  const localRef = useRef<HTMLHeadingElement | null>(null);
+  const setRefs = useCallback(
+    (el: HTMLHeadingElement | null) => {
+      localRef.current = el;
+      if (inputRef) {
+        (inputRef as React.MutableRefObject<HTMLHeadingElement | null>).current = el;
+      }
+    },
+    [inputRef],
+  );
+  const [focused, setFocused] = useState(false);
+
+  // Initial paint + external-change resync (only when not focused).
+  useEffect(() => {
+    const el = localRef.current;
+    if (!el) return;
+    if (focused) return;
+    const dom = el.textContent ?? "";
+    if (dom !== value) el.textContent = value;
+  }, [value, focused]);
+
+  const baseStyle: React.CSSProperties = {
+    fontFamily: "var(--font-display, inherit)",
+    fontWeight: 900,
+    fontSize: 38,
+    letterSpacing: "-0.025em",
+    lineHeight: 1.1,
+    margin: "16px 0 14px",
+    outline: "none",
+    minHeight: 44,
+    ...style,
+  };
+
+  return (
+    <div style={{ position: "relative" }}>
+      <h1
+        ref={setRefs}
+        contentEditable
+        suppressContentEditableWarning
+        spellCheck
+        onFocus={() => setFocused(true)}
+        onInput={(e) => {
+          const v = (e.currentTarget as HTMLHeadingElement).textContent ?? "";
+          if (v !== value) onCommit(v);
+        }}
+        onBlur={(e) => {
+          setFocused(false);
+          const v = e.currentTarget.textContent ?? "";
+          if (v !== value) onCommit(v);
+        }}
+        style={{
+          ...baseStyle,
+          // While not focused, hide the raw editable text and let the
+          // decorated overlay below show through. Keeps the caret stable
+          // and prevents React re-renders from rewriting the live DOM.
+          color: focused ? undefined : "transparent",
+          caretColor: "white",
+        }}
+      />
+      {!focused && (
+        <h1
+          aria-hidden
+          onMouseDown={(e) => {
+            // Defer focus until after mousedown so the click lands inside
+            // the editable node and the caret is placed correctly.
+            e.preventDefault();
+            localRef.current?.focus();
+          }}
+          style={{
+            ...baseStyle,
+            position: "absolute",
+            inset: 0,
+            pointerEvents: "auto",
+            cursor: "text",
+            color: value ? "white" : "rgba(255,255,255,0.4)",
+          }}
+        >
+          {value ? renderAutoAzureTitle(value) : (placeholder ?? "")}
+        </h1>
+      )}
+    </div>
+  );
+}
+
 /** Render the title with auto-azure on the FIRST dollar amount, then the
  *  first 4-digit number, then the first capitalised neighbourhood-ish token.
  *  Render-only; never mutates the saved title. */
@@ -615,38 +717,15 @@ export default function ContentEditorClient({
                 }} />
                 {form.status || "Idea"}
               </span>
-              <h1
-                ref={titleH1Ref}
-                contentEditable
-                suppressContentEditableWarning
-                onBlur={(e) => {
-                  const v = e.currentTarget.textContent ?? "";
-                  if (v !== form.title) {
-                    // Commit + flush against the just-typed value so we don't
-                    // miss the latest title on the blur-triggered save.
-                    setForm((f) => {
-                      const next = { ...f, title: v };
-                      queueMicrotask(() => void flush());
-                      return next;
-                    });
-                  } else {
-                    void flush();
-                  }
+              <TitleEditor
+                value={form.title}
+                placeholder="Untitled video"
+                inputRef={titleH1Ref}
+                onCommit={(v) => {
+                  if (v === form.title) return;
+                  setForm((f) => ({ ...f, title: v }));
                 }}
-                style={{
-                  fontFamily: "var(--font-display, inherit)",
-                  fontWeight: 900,
-                  fontSize: 38,
-                  letterSpacing: "-0.025em",
-                  lineHeight: 1.1,
-                  margin: "16px 0 14px",
-                  outline: "none",
-                  minHeight: 44,
-                }}
-              >
-                {/* Render with auto-azure decoration on initial paint. */}
-                {renderAutoAzureTitle(form.title)}
-              </h1>
+              />
               <div style={{
                 display: "flex", gap: 18, flexWrap: "wrap",
                 fontSize: 12, color: "rgba(255,255,255,0.6)",
