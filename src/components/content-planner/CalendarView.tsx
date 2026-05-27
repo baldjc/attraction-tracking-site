@@ -1,6 +1,20 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  useDraggable,
+  useDroppable,
+  type DragEndEvent,
+  type DragStartEvent,
+  type DragOverEvent,
+} from "@dnd-kit/core";
+import { CSS } from "@dnd-kit/utilities";
 import { filterPlans } from "@/lib/content-plan-utils";
 import ContentPlanEditModal, { type ContentPlan } from "./ContentPlanEditModal";
 
@@ -40,6 +54,14 @@ interface CalendarEvent {
   plan: ContentPlan;
   type: EventType;
 }
+
+/** Each event type maps to its underlying ContentPlan date column so the
+ *  drop handler knows which field to PUT when a pill is dragged. */
+const DATE_FIELD: Record<EventType, "shootDate" | "editDueDate" | "publishDate"> = {
+  shoot:   "shootDate",
+  edit:    "editDueDate",
+  publish: "publishDate",
+};
 
 const TYPE_STYLES: Record<EventType, { bg: string; bgHover: string; border: string; dot: string }> = {
   shoot: {
@@ -144,6 +166,14 @@ export default function CalendarView({
   const [localThemes, setLocalThemes] = useState<ThemeOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingPlan, setEditingPlan] = useState<ContentPlan | null>(null);
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
+  const [overId, setOverId] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string>("");
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor,   { activationConstraint: { delay: 250, tolerance: 5 } }),
+  );
 
   const resolvedThemes = themes.length > 0 ? themes : localThemes;
 
@@ -202,6 +232,79 @@ export default function CalendarView({
     setYear(today.getFullYear());
     setMonth(today.getMonth());
   }
+
+  /** Decode a draggable id of the form `${planId}::${type}`. */
+  function decodeDragId(id: string | null): { planId: string; type: EventType } | null {
+    if (!id) return null;
+    const sep = id.lastIndexOf("::");
+    if (sep < 0) return null;
+    const type = id.slice(sep + 2) as EventType;
+    if (type !== "shoot" && type !== "edit" && type !== "publish") return null;
+    return { planId: id.slice(0, sep), type };
+  }
+
+  function handleDragStart(e: DragStartEvent) {
+    setActiveDragId(String(e.active.id));
+  }
+
+  function handleDragOver(e: DragOverEvent) {
+    setOverId(e.over ? String(e.over.id) : null);
+  }
+
+  async function handleDragEnd(e: DragEndEvent) {
+    const dragId = String(e.active.id);
+    const targetDate = e.over ? String(e.over.id) : null;
+    setActiveDragId(null);
+    setOverId(null);
+    if (!targetDate) return;
+
+    const decoded = decodeDragId(dragId);
+    if (!decoded) return;
+    const { planId, type } = decoded;
+    const field = DATE_FIELD[type];
+
+    const plan = plans.find((p) => p.id === planId);
+    if (!plan) return;
+    const oldDateValue = plan[field] as string | null;
+    const oldKey = planDateKey(oldDateValue);
+    if (oldKey === targetDate) return; // dropped on the same day → no-op
+
+    // Optimistic update — store as a noon-UTC ISO so it round-trips through
+    // existing date-parsing without timezone surprises.
+    const newIso = new Date(`${targetDate}T12:00:00Z`).toISOString();
+    setPlans((prev) =>
+      prev.map((p) => (p.id === planId ? { ...p, [field]: newIso } : p))
+    );
+    setErrorMsg("");
+
+    try {
+      const res = await fetch(`${apiBase}/${planId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ [field]: targetDate }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      const data = await res.json();
+      if (data?.plan) {
+        setPlans((prev) => prev.map((p) => (p.id === planId ? data.plan : p)));
+      }
+    } catch {
+      // Rollback
+      setPlans((prev) =>
+        prev.map((p) => (p.id === planId ? { ...p, [field]: oldDateValue } : p))
+      );
+      setErrorMsg("Could not move that date — try again.");
+      setTimeout(() => setErrorMsg(""), 3000);
+    }
+  }
+
+  const activeDrag = decodeDragId(activeDragId);
+  const activeEvent: CalendarEvent | null = activeDrag
+    ? (() => {
+        const p = plans.find((pl) => pl.id === activeDrag.planId);
+        return p ? { plan: p, type: activeDrag.type } : null;
+      })()
+    : null;
 
   if (loading) {
     return <div className="h-[680px] bg-white rounded-[14px] border border-[var(--abv-border)] animate-pulse" />;
@@ -262,6 +365,10 @@ export default function CalendarView({
 
         <span className="flex-1" />
 
+        {errorMsg && (
+          <span className="text-xs font-semibold text-[var(--abv-leads)]">{errorMsg}</span>
+        )}
+
         <button
           onClick={goToday}
           className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white text-xs font-semibold text-[var(--abv-text-muted)] hover:text-[var(--abv-text)] transition-colors"
@@ -299,80 +406,88 @@ export default function CalendarView({
           ))}
         </div>
 
-        {/* Day grid — 1px gap rendered via border colour for the gridlines */}
-        <div
-          className="grid grid-cols-7"
-          style={{
-            gridAutoRows: "minmax(128px, auto)",
-            gap: "1px",
-            background: "var(--abv-border)",
-          }}
+        {/* Day grid — 1px gap rendered via border colour for the gridlines.
+            Wrapped in DndContext so pills can be dragged across days. */}
+        <DndContext
+          sensors={sensors}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDragEnd={handleDragEnd}
+          onDragCancel={() => { setActiveDragId(null); setOverId(null); }}
         >
-          {cells.map(({ date, inMonth }, idx) => {
-            const dow      = date.getDay();
-            const weekend  = dow === 0 || dow === 6;
-            const key      = ymd(date);
-            const isToday  = key === todayKey;
-            const dayEvts  = eventsByDay[key] ?? [];
+          <div
+            className="grid grid-cols-7"
+            style={{
+              gridAutoRows: "minmax(128px, auto)",
+              gap: "1px",
+              background: "var(--abv-border)",
+            }}
+          >
+            {cells.map(({ date, inMonth }, idx) => {
+              const dow      = date.getDay();
+              const weekend  = dow === 0 || dow === 6;
+              const key      = ymd(date);
+              const isToday  = key === todayKey;
+              const dayEvts  = eventsByDay[key] ?? [];
 
-            // Background tone: out-of-month → bg, weekend → soft warm,
-            // default → card white. (weekend tone applies inside or outside
-            // the month, matching the mockup.)
-            const cellBg = !inMonth
-              ? "var(--abv-bg)"
-              : weekend
-              ? "#fcfbf8"
-              : "var(--abv-card)";
-
-            return (
-              <div
-                key={idx}
-                className="flex flex-col gap-1.5 min-w-0"
-                style={{ background: cellBg, padding: "8px 8px 10px" }}
-              >
-                <div
-                  className="font-mono font-semibold flex items-center"
-                  style={{
-                    fontSize: 11,
-                    padding: "2px 0 2px 2px",
-                    color: !inMonth ? "var(--abv-text-dim)" : "var(--abv-text-muted)",
-                    opacity: !inMonth ? 0.6 : 1,
-                  }}
+              return (
+                <DroppableDay
+                  key={idx}
+                  dateKey={key}
+                  inMonth={inMonth}
+                  weekend={weekend}
+                  isOver={overId === key}
+                  dragActive={activeDragId !== null}
                 >
-                  {isToday ? (
-                    <span
-                      className="inline-flex items-center justify-center font-bold"
-                      style={{
-                        background: "var(--abv-ink)",
-                        color: "white",
-                        width: 22,
-                        height: 22,
-                        borderRadius: "50%",
-                        fontSize: 11,
-                      }}
-                    >
-                      {date.getDate()}
-                    </span>
-                  ) : (
-                    date.getDate()
-                  )}
-                </div>
-
-                {dayEvts.length > 0 && (
-                  <div className="flex flex-col min-w-0" style={{ gap: 3 }}>
-                    {dayEvts.map((ev, i) => (
-                      <EventPill
-                        key={`${ev.plan.id}-${ev.type}-${i}`}
-                        event={ev}
-                        onClick={() => setEditingPlan(ev.plan)}
-                      />
-                    ))}
+                  <div
+                    className="font-mono font-semibold flex items-center"
+                    style={{
+                      fontSize: 11,
+                      padding: "2px 0 2px 2px",
+                      color: !inMonth ? "var(--abv-text-dim)" : "var(--abv-text-muted)",
+                      opacity: !inMonth ? 0.6 : 1,
+                    }}
+                  >
+                    {isToday ? (
+                      <span
+                        className="inline-flex items-center justify-center font-bold"
+                        style={{
+                          background: "var(--abv-ink)",
+                          color: "white",
+                          width: 22,
+                          height: 22,
+                          borderRadius: "50%",
+                          fontSize: 11,
+                        }}
+                      >
+                        {date.getDate()}
+                      </span>
+                    ) : (
+                      date.getDate()
+                    )}
                   </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+
+                  {dayEvts.length > 0 && (
+                    <div className="flex flex-col min-w-0" style={{ gap: 3 }}>
+                      {dayEvts.map((ev, i) => (
+                        <EventPill
+                          key={`${ev.plan.id}-${ev.type}-${i}`}
+                          event={ev}
+                          dragging={activeDragId === `${ev.plan.id}::${ev.type}`}
+                          onClick={() => setEditingPlan(ev.plan)}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </DroppableDay>
+              );
+            })}
+          </div>
+
+          <DragOverlay dropAnimation={null}>
+            {activeEvent ? <EventPillPreview event={activeEvent} /> : null}
+          </DragOverlay>
+        </DndContext>
       </section>
 
       {editingPlan && (
@@ -401,17 +516,30 @@ export default function CalendarView({
   );
 }
 
-function EventPill({ event, onClick }: { event: CalendarEvent; onClick: () => void }) {
+function EventPill({
+  event,
+  onClick,
+  dragging = false,
+}: {
+  event: CalendarEvent;
+  onClick: () => void;
+  dragging?: boolean;
+}) {
   const style = TYPE_STYLES[event.type];
   const [hover, setHover] = useState(false);
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: `${event.plan.id}::${event.type}`,
+  });
+  const ghost = dragging || isDragging;
   return (
     <button
+      ref={setNodeRef}
       type="button"
       onClick={onClick}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
-      title={`${event.type} · ${event.plan.title}`}
-      className="flex items-center gap-1.5 text-left min-w-0 cursor-pointer"
+      title={`${event.type} · ${event.plan.title} — drag to reschedule`}
+      className="flex items-center gap-1.5 text-left min-w-0"
       style={{
         padding: "4px 7px 4px 6px",
         borderRadius: 5,
@@ -419,7 +547,13 @@ function EventPill({ event, onClick }: { event: CalendarEvent; onClick: () => vo
         borderLeft: `2.5px solid ${style.border}`,
         transition: "background 120ms",
         lineHeight: 1.25,
+        cursor: ghost ? "grabbing" : "grab",
+        opacity: ghost ? 0.35 : 1,
+        transform: CSS.Translate.toString(transform),
+        touchAction: "none",
       }}
+      {...listeners}
+      {...attributes}
     >
       <span
         className="inline-block rounded-full shrink-0"
@@ -433,5 +567,81 @@ function EventPill({ event, onClick }: { event: CalendarEvent; onClick: () => vo
       </span>
       <ThemeIcon name={event.plan.theme ?? null} />
     </button>
+  );
+}
+
+/** Floating preview rendered inside DragOverlay. Mirrors EventPill visuals but
+ *  is not interactive and has no drag wiring of its own. */
+function EventPillPreview({ event }: { event: CalendarEvent }) {
+  const style = TYPE_STYLES[event.type];
+  return (
+    <div
+      className="flex items-center gap-1.5 text-left min-w-0"
+      style={{
+        padding: "4px 7px 4px 6px",
+        borderRadius: 5,
+        background: style.bgHover,
+        borderLeft: `2.5px solid ${style.border}`,
+        lineHeight: 1.25,
+        cursor: "grabbing",
+        maxWidth: 240,
+        boxShadow: "0 6px 16px rgba(0,0,0,0.18)",
+      }}
+    >
+      <span
+        className="inline-block rounded-full shrink-0"
+        style={{ width: 6, height: 6, background: style.dot }}
+      />
+      <span
+        className="truncate min-w-0 flex-1 font-semibold text-[var(--abv-text)]"
+        style={{ fontSize: 11 }}
+      >
+        {event.plan.title}
+      </span>
+      <ThemeIcon name={event.plan.theme ?? null} />
+    </div>
+  );
+}
+
+/** A single calendar day cell — registered as a dnd-kit drop target keyed by
+ *  its yyyy-mm-dd date string. Surfaces a soft azure tint while a pill is
+ *  hovering above it so the user can see where the drop will land. */
+function DroppableDay({
+  dateKey,
+  inMonth,
+  weekend,
+  isOver,
+  dragActive,
+  children,
+}: {
+  dateKey: string;
+  inMonth: boolean;
+  weekend: boolean;
+  isOver: boolean;
+  dragActive: boolean;
+  children: React.ReactNode;
+}) {
+  const { setNodeRef } = useDroppable({ id: dateKey });
+
+  const baseBg = !inMonth
+    ? "var(--abv-bg)"
+    : weekend
+    ? "#fcfbf8"
+    : "var(--abv-card)";
+
+  return (
+    <div
+      ref={setNodeRef}
+      className="flex flex-col gap-1.5 min-w-0"
+      style={{
+        background: isOver ? "rgba(74, 144, 226, 0.10)" : baseBg,
+        padding: "8px 8px 10px",
+        outline: isOver ? "2px solid var(--abv-azure)" : "none",
+        outlineOffset: "-2px",
+        transition: dragActive ? "background 120ms, outline-color 120ms" : "none",
+      }}
+    >
+      {children}
+    </div>
   );
 }
