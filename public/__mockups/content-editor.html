@@ -1,0 +1,895 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Content Editor — Brief layout</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<link rel="preconnect" href="https://api.fontshare.com" />
+<link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@700,800,900&f[]=satoshi@400,500,600,700&display=swap" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&display=swap" />
+
+<style>
+  :root {
+    --abv-bg: #FAFAF8;
+    --abv-bg-warm: #F5F4F0;
+    --abv-card: #FFFFFF;
+    --abv-ink: #1A1A1A;
+    --abv-text: #1A1A1A;
+    --abv-text-muted: #6B6B6B;
+    --abv-text-dim: #9B9B9B;
+    --abv-border: rgba(0,0,0,0.06);
+    --abv-border-strong: rgba(0,0,0,0.10);
+    --abv-azure: #3DC3FF;
+    --abv-azure-tint: rgba(61,195,255,0.10);
+    --abv-azure-tint-strong: rgba(61,195,255,0.16);
+    --abv-crimson: #FF0033;
+    --abv-crimson-tint: rgba(255,0,51,0.10);
+    --abv-academy: #10B981;
+    --abv-academy-tint: rgba(16,185,129,0.10);
+    --abv-ai-tools: #6BA3C7;
+    --abv-ai-tools-tint: rgba(107,163,199,0.10);
+    --abv-hire: #8B5CF6;
+    --abv-hire-tint: rgba(139,92,246,0.10);
+    --abv-leads: #E63946;
+    --abv-leads-tint: rgba(230,57,70,0.10);
+    --abv-scores: #F59E0B;
+    --abv-scores-tint: rgba(245,158,11,0.10);
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.04);
+    --shadow-md: 0 8px 30px rgba(0,0,0,0.06);
+    --font-display: "Cabinet Grotesk", system-ui, sans-serif;
+    --font-sans: "Satoshi", system-ui, sans-serif;
+    --font-mono: "Geist Mono", ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--abv-bg); color: var(--abv-text); font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+  button, a, input { font-family: inherit; cursor: pointer; }
+  a { text-decoration: none; color: inherit; }
+
+  /* Shell */
+  .shell { display: grid; grid-template-columns: 220px minmax(0, 1fr); min-height: 100vh; }
+
+  /* Sidebar (unchanged) */
+  .side { background: var(--abv-ink); color: white; display: flex; flex-direction: column; }
+  .side-brand { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .side-brand .mark { width: 28px; height: 28px; border-radius: 6px; background: linear-gradient(135deg, #3DC3FF 0%, #1A1A1A 100%); }
+  .side-brand .name { font-family: var(--font-display); font-weight: 800; font-size: 13.5px; line-height: 1.1; }
+  .side-brand .name .by { color: var(--abv-azure); font-style: italic; font-weight: 700; }
+  .side nav { flex: 1; padding: 8px 0; overflow-y: auto; }
+  .side-section { padding: 14px 14px 6px; font-family: var(--font-mono); font-size: 9.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.40); }
+  .side-link { display: flex; align-items: center; gap: 10px; padding: 8px 14px; font-size: 12.5px; color: rgba(255,255,255,0.66); }
+  .side-link:hover { background: rgba(255,255,255,0.04); color: white; }
+  .side-link.active { background: rgba(255,255,255,0.08); color: white; border-left: 2px solid var(--abv-azure); padding-left: 12px; font-weight: 600; }
+  .side-link .ico { width: 16px; text-align: center; font-size: 13px; }
+  .side-link .dot { width: 6px; height: 6px; border-radius: 50%; margin-left: auto; }
+  .side-user { padding: 12px 14px; border-top: 1px solid rgba(255,255,255,0.06); display: flex; align-items: center; gap: 10px; }
+  .side-user .av { width: 26px; height: 26px; border-radius: 9999px; background: var(--abv-azure); color: var(--abv-ink); display: inline-flex; align-items: center; justify-content: center; font-weight: 800; font-size: 11px; }
+  .side-user .name { font-size: 11.5px; font-weight: 600; }
+  .side-user .tier { font-family: var(--font-mono); font-size: 9px; color: rgba(255,255,255,0.45); letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600; }
+
+  /* Body */
+  .body { max-width: 1280px; padding: 24px 36px 64px; }
+
+  /* Crumb + saved */
+  .top-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; font-size: 12px; }
+  .crumb { color: var(--abv-text-muted); }
+  .crumb a { color: var(--abv-text-muted); }
+  .crumb a:hover { color: var(--abv-text); }
+  .crumb .sep { color: var(--abv-text-dim); margin: 0 8px; }
+  .crumb .here { color: var(--abv-text); font-weight: 600; }
+  .saved { margin-left: auto; font-family: var(--font-mono); font-size: 10.5px; color: var(--abv-text-dim); display: inline-flex; align-items: center; gap: 6px; }
+  .saved::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--abv-academy); }
+  .iconbtn { width: 28px; height: 28px; border: 0; background: transparent; border-radius: 9999px; color: var(--abv-text-muted); }
+  .iconbtn:hover { background: var(--abv-bg-warm); color: var(--abv-text); }
+
+  /* Dark hero — Brief pattern */
+  .hero { background: var(--abv-ink); color: white; border-radius: 14px; padding: 24px 28px; margin-bottom: 10px; display: flex; gap: 22px; align-items: flex-end; flex-wrap: wrap; }
+  .hero .l { flex: 1; min-width: 320px; }
+  .hero .eb { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 9999px; background: rgba(245,158,11,0.20); color: #FCD34D; font-size: 10px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; }
+  .hero .eb::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: var(--abv-scores); }
+  .hero h1 { font-family: var(--font-display); font-size: 32px; font-weight: 800; letter-spacing: -0.025em; line-height: 1.08; margin: 10px 0 10px; color: white; max-width: 680px; outline: none; border: 1px solid transparent; padding: 2px 6px; margin-left: -6px; border-radius: 6px; }
+  .hero h1:focus { border-color: var(--abv-azure); background: rgba(61,195,255,0.10); }
+  .hero h1 .az { color: var(--abv-azure); }
+  .hero .meta { font-family: var(--font-mono); font-size: 10.5px; color: rgba(255,255,255,0.55); letter-spacing: 0.06em; text-transform: uppercase; }
+  .hero .meta .sep { color: rgba(255,255,255,0.20); margin: 0 8px; }
+  .hero .meta .v { color: white; }
+  .hero .meta .lock { font-size: 9px; opacity: 0.7; margin-right: 2px; }
+  .hero .r { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+  .hero .next-action { display: inline-flex; align-items: center; gap: 10px; padding: 12px 20px; background: var(--abv-azure); color: var(--abv-ink); border: 0; border-radius: 9999px; font-size: 14px; font-weight: 700; }
+  .hero .next-action:hover { background: #5BCEFF; }
+  .hero .next-action .step-tag { font-family: var(--font-mono); font-size: 9.5px; font-weight: 700; padding: 2px 7px; border-radius: 9999px; background: rgba(26,26,26,0.15); color: var(--abv-ink); letter-spacing: 0.08em; text-transform: uppercase; }
+  .hero .secondary { font-size: 11px; color: rgba(255,255,255,0.55); background: transparent; border: 0; text-decoration: underline; text-underline-offset: 4px; }
+  .hero .secondary:hover { color: white; }
+
+  /* Workflow progress strip — full-width below hero, 7 dots */
+  .workflow { display: flex; padding: 18px 8px 16px 8px; margin-bottom: 18px; }
+  .ws { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; position: relative; cursor: pointer; }
+  .ws .dot { width: 12px; height: 12px; border-radius: 9999px; z-index: 1; border: 2px solid var(--abv-border-strong); background: var(--abv-bg); transition: all 200ms; }
+  .ws.done .dot { background: var(--abv-ink); border-color: var(--abv-ink); }
+  .ws.current .dot { background: var(--abv-azure); border-color: var(--abv-azure); box-shadow: 0 0 0 4px rgba(61,195,255,0.20); }
+  .ws .lbl { font-family: var(--font-mono); font-size: 9.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--abv-text-dim); text-align: center; line-height: 1.25; }
+  .ws.done .lbl { color: var(--abv-text-muted); }
+  .ws.current .lbl { color: var(--abv-azure); font-weight: 700; }
+  .ws:not(:last-child)::after { content: ''; position: absolute; top: 7px; left: calc(50% + 8px); right: calc(-50% + 8px); height: 2px; background: var(--abv-border-strong); z-index: 0; }
+  .ws.done:not(:last-child)::after { background: var(--abv-ink); }
+
+  /* Idea lineage — azure accordion */
+  .lineage { background: var(--abv-azure-tint); border: 1px solid rgba(61,195,255,0.30); border-radius: 12px; margin-bottom: 18px; overflow: hidden; }
+  .lineage-head { display: flex; align-items: center; gap: 10px; padding: 10px 18px; cursor: pointer; }
+  .lineage-head .ico { width: 18px; height: 18px; border-radius: 50%; background: var(--abv-azure); color: white; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; flex-shrink: 0; }
+  .lineage-head .ico::before { content: '◎'; }
+  .lineage-head .label { font-family: var(--font-mono); font-size: 9.5px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; color: var(--abv-azure); }
+  .lineage-head .summary { font-size: 12.5px; color: var(--abv-text-muted); flex: 1; }
+  .lineage-head .summary strong { color: var(--abv-text); font-weight: 600; }
+  .lineage-head .chev { font-size: 14px; color: var(--abv-azure); transition: transform 200ms; }
+  .lineage.expanded .lineage-head .chev { transform: rotate(180deg); }
+  .lineage-body { padding: 14px 18px 16px; border-top: 1px solid rgba(61,195,255,0.20); display: none; }
+  .lineage.expanded .lineage-body { display: block; }
+  .lineage-chain { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .ln { display: inline-flex; align-items: center; gap: 8px; padding: 6px 11px; background: white; border: 1px solid var(--abv-border); border-radius: 8px; font-size: 12px; }
+  .ln .k { font-family: var(--font-mono); font-size: 9px; font-weight: 700; color: var(--abv-text-dim); letter-spacing: 0.08em; text-transform: uppercase; }
+  .ln .v { color: var(--abv-text); font-weight: 600; }
+  .lineage-arrow { color: var(--abv-text-dim); font-size: 14px; }
+  .lineage-facts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .lf { padding: 4px 10px; background: white; border: 1px solid var(--abv-border); border-radius: 9999px; font-family: var(--font-mono); font-size: 10px; color: var(--abv-text-muted); }
+  .lineage-source { margin-top: 10px; font-size: 12px; color: var(--abv-text-muted); }
+  .lineage-source a { color: var(--abv-azure); font-weight: 600; }
+
+  /* Two-pane layout: script + tabbed sidebar */
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 22px; align-items: start; }
+
+  /* Script pane */
+  .script-row { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; gap: 10px; flex-wrap: wrap; }
+  .script-row h3 { font-family: var(--font-display); font-size: 18px; font-weight: 800; letter-spacing: -0.015em; margin: 0; }
+  .word-count { font-family: var(--font-mono); font-size: 11px; color: var(--abv-text-dim); letter-spacing: 0.04em; }
+
+  /* v2 builder strip */
+  .v2-strip { background: var(--abv-azure-tint); border: 1px solid rgba(61,195,255,0.30); border-radius: 12px; padding: 14px 18px; margin-bottom: 14px; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+  .v2-strip .strip-l { flex: 1; min-width: 200px; }
+  .v2-strip .strip-eb { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 9.5px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; color: var(--abv-azure); }
+  .v2-strip .strip-eb::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: var(--abv-azure); }
+  .v2-strip .strip-sub { font-size: 12px; color: var(--abv-text-muted); margin: 4px 0 0; line-height: 1.5; }
+  .v2-strip .strip-sub strong { color: var(--abv-text); font-weight: 600; }
+  .mode-picker { display: inline-flex; padding: 3px; background: white; border: 1px solid rgba(61,195,255,0.30); border-radius: 9999px; }
+  .mode-picker button { font-size: 10.5px; font-weight: 600; padding: 5px 11px; border: 0; border-radius: 9999px; background: transparent; color: var(--abv-text-muted); display: inline-flex; align-items: center; gap: 4px; }
+  .mode-picker button.on { background: var(--abv-azure); color: var(--abv-ink); }
+  .mode-picker button.disabled { color: var(--abv-text-dim); cursor: not-allowed; }
+  .mode-picker .wave-badge { font-family: var(--font-mono); font-size: 8px; font-weight: 700; padding: 1px 4px; border-radius: 3px; background: var(--abv-bg-warm); color: var(--abv-text-dim); letter-spacing: 0.04em; text-transform: uppercase; margin-left: 4px; }
+  .btn-build-v2 { display: inline-flex; align-items: center; gap: 7px; padding: 10px 18px; background: var(--abv-azure); color: var(--abv-ink); border: 0; border-radius: 9999px; font-size: 13px; font-weight: 700; }
+  .btn-build-v2:hover { background: #5BCEFF; }
+  .btn-build-v2 svg { width: 13px; height: 13px; }
+
+  /* Toolbar */
+  .editor-toolbar { display: flex; gap: 4px; padding: 4px; background: var(--abv-bg-warm); border: 1px solid var(--abv-border); border-radius: 9999px; align-self: flex-start; margin-bottom: 12px; }
+  .toolbar-btn { display: inline-flex; align-items: center; gap: 5px; padding: 6px 11px; background: transparent; border: 0; border-radius: 9999px; font-size: 11.5px; font-weight: 600; color: var(--abv-text-muted); }
+  .toolbar-btn:hover { background: white; color: var(--abv-text); }
+  .toolbar-spacer { width: 1px; background: var(--abv-border-strong); margin: 4px 4px; }
+
+  /* Script document */
+  .script { background: var(--abv-card); border: 1px solid var(--abv-border); border-radius: 12px; padding: 32px 40px 24px; box-shadow: var(--shadow-sm); }
+  .script-body { font-size: 14px; line-height: 1.7; color: var(--abv-text); }
+  .script-body h4 { font-family: var(--font-display); font-size: 18px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.2; margin: 22px 0 10px; color: var(--abv-text); }
+  .script-body h4:first-child { margin-top: 0; }
+  .script-body h4 .az { color: var(--abv-azure); }
+  .script-body p { margin: 0 0 12px; }
+  .script-body p.muted { color: var(--abv-text-muted); font-style: italic; }
+
+  /* Inline tags */
+  .tag-inline { display: inline-flex; align-items: center; padding: 1px 7px 1px 6px; border-radius: 4px; font-family: var(--font-mono); font-size: 10px; font-weight: 700; letter-spacing: 0.04em; vertical-align: 1px; margin: 0 1px; line-height: 1.5; }
+  .tag-inline.lm   { background: var(--abv-hire-tint);    color: var(--abv-hire); }
+  .tag-inline.cred { background: var(--abv-scores-tint);  color: #B45309; }
+  .tag-inline.hook { background: var(--abv-leads-tint);   color: var(--abv-leads); }
+  .tag-inline.stat { background: var(--abv-academy-tint); color: #047857; }
+  .tag-inline.stat::before { content: '✓ '; opacity: 0.7; }
+
+  .script-foot { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; padding-top: 12px; margin-top: 8px; border-top: 1px solid var(--abv-border); }
+  .script-foot .mi { font-family: var(--font-mono); font-size: 10.5px; color: var(--abv-text-muted); }
+  .script-foot .mi .n { color: var(--abv-text); font-weight: 600; }
+
+  .tab-pane { display: flex; flex-direction: column; gap: 12px; }
+  .tab-pane[hidden] { display: none; }
+
+  /* Sidebar — tabbed (Planning/Connecting/Tools) */
+  .side-stack { display: flex; flex-direction: column; gap: 12px; position: sticky; top: 16px; }
+  .tab-strip { display: flex; padding: 3px; background: white; border: 1px solid var(--abv-border); border-radius: 9999px; box-shadow: var(--shadow-sm); }
+  .tab-strip button { flex: 1; padding: 7px 10px; border: 0; border-radius: 9999px; cursor: pointer; background: transparent; color: var(--abv-text-muted); font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .tab-strip button.on { background: var(--abv-ink); color: white; }
+  .tab-strip .ct { font-family: var(--font-mono); font-size: 9.5px; margin-left: 4px; opacity: 0.55; }
+
+  .panel { background: white; border: 1px solid var(--abv-border); border-radius: 12px; box-shadow: var(--shadow-sm); }
+  .panel-h { padding: 12px 16px 10px; border-bottom: 1px solid var(--abv-border); display: flex; align-items: center; gap: 8px; }
+  .panel-h .h-label { font-family: var(--font-display); font-size: 13.5px; font-weight: 800; letter-spacing: -0.015em; flex: 1; }
+  .panel-h .count { font-family: var(--font-mono); font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 9999px; background: var(--abv-bg-warm); color: var(--abv-text-muted); letter-spacing: 0.04em; }
+  .panel-h .count.amber   { background: var(--abv-scores-tint);  color: #B45309; }
+  .panel-h .count.academy { background: var(--abv-academy-tint); color: #047857; }
+  .panel-h .count.crimson { background: var(--abv-crimson-tint); color: var(--abv-crimson); }
+  .panel-h .ico-btn { width: 22px; height: 22px; background: transparent; border: 0; color: var(--abv-text-dim); border-radius: 9999px; }
+  .panel-h .ico-btn:hover { background: var(--abv-bg-warm); color: var(--abv-text); }
+
+  /* Status/dates */
+  .row { display: flex; justify-content: space-between; align-items: baseline; padding: 8px 16px; border-bottom: 1px solid var(--abv-border); font-size: 12px; }
+  .row:last-child { border-bottom: 0; }
+  .row .k { font-family: var(--font-mono); font-size: 9px; color: var(--abv-text-dim); letter-spacing: 0.06em; text-transform: uppercase; }
+  .row .v { color: var(--abv-text); font-weight: 500; }
+  .row .v.mono { font-family: var(--font-mono); font-size: 11px; }
+
+  /* Status pill (reused) */
+  .pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 9999px; font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+  .pill::before { content: ''; width: 5px; height: 5px; border-radius: 50%; }
+  .pill.scripted, .pill.edit, .pill.ready { background: var(--abv-scores-tint); color: #B45309; }
+  .pill.scripted::before, .pill.edit::before, .pill.ready::before { background: var(--abv-scores); }
+  .pill.scheduled { background: var(--abv-azure-tint); color: var(--abv-azure); }
+  .pill.scheduled::before { background: var(--abv-azure); }
+  .pill.published { background: var(--abv-academy-tint); color: #047857; }
+  .pill.published::before { background: var(--abv-academy); }
+
+  .panel-body { padding: 6px 0; }
+  .panel-body.padded { padding: 14px 16px; }
+
+  /* Cited facts */
+  .fact { display: flex; gap: 10px; align-items: flex-start; padding: 10px 16px; border-bottom: 1px solid var(--abv-border); }
+  .fact:last-child { border-bottom: 0; }
+  .fact .mark { width: 16px; height: 16px; flex-shrink: 0; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; margin-top: 1px; }
+  .fact.anchored .mark { background: var(--abv-academy); color: white; }
+  .fact.anchored .mark::before { content: '✓'; }
+  .fact.unused .mark { background: var(--abv-bg-warm); color: var(--abv-text-dim); border: 1px solid var(--abv-border); }
+  .fact.unused .mark::before { content: '—'; }
+  .fact .body { flex: 1; min-width: 0; }
+  .fact .text { font-size: 12px; color: var(--abv-text); line-height: 1.45; }
+  .fact .src { display: block; margin-top: 3px; font-family: var(--font-mono); font-size: 9.5px; color: var(--abv-text-dim); letter-spacing: 0.04em; }
+  .ghost-btn { display: flex; width: 100%; padding: 10px 16px; background: transparent; border: 0; border-top: 1px dashed var(--abv-border-strong); font-size: 11.5px; font-weight: 600; color: var(--abv-text-muted); text-align: left; gap: 6px; align-items: center; }
+  .ghost-btn:hover { color: var(--abv-text); background: var(--abv-bg-warm); }
+
+  /* Lead magnets */
+  .lm-slot { display: flex; align-items: center; gap: 8px; padding: 9px 16px; cursor: pointer; }
+  .lm-slot:hover { background: var(--abv-bg-warm); }
+  .lm-slot .slot-num { font-family: var(--font-mono); font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: var(--abv-hire-tint); color: var(--abv-hire); letter-spacing: 0.04em; }
+  .lm-slot .slot-name { font-size: 11.5px; color: var(--abv-text); font-weight: 500; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lm-slot .fit-pill { font-family: var(--font-mono); font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 9999px; letter-spacing: 0.04em; text-transform: uppercase; }
+  .fit-pill.good { background: var(--abv-academy-tint); color: #047857; }
+  .fit-pill.weak { background: var(--abv-scores-tint);  color: #B45309; }
+  .fit-pill.miss { background: var(--abv-crimson-tint); color: var(--abv-crimson); }
+
+  /* Script Review */
+  .violation { padding: 10px 16px; border-bottom: 1px solid var(--abv-border); display: flex; gap: 8px; align-items: flex-start; }
+  .violation:last-of-type { border-bottom: 0; }
+  .violation .sev { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-top: 6px; }
+  .violation.error .sev { background: var(--abv-crimson); box-shadow: 0 0 0 3px var(--abv-crimson-tint); }
+  .violation.warn  .sev { background: var(--abv-scores);  box-shadow: 0 0 0 3px var(--abv-scores-tint); }
+  .violation .body { flex: 1; min-width: 0; }
+  .violation .rule { display: flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 10px; font-weight: 700; color: var(--abv-text); letter-spacing: 0.04em; }
+  .violation .sev-label { font-family: var(--font-mono); font-size: 8.5px; font-weight: 700; padding: 1px 5px; border-radius: 3px; letter-spacing: 0.06em; text-transform: uppercase; }
+  .violation.error .sev-label { background: var(--abv-crimson-tint); color: var(--abv-crimson); }
+  .violation.warn  .sev-label { background: var(--abv-scores-tint);  color: #B45309; }
+  .violation .snippet { font-size: 11px; color: var(--abv-text-muted); margin-top: 3px; line-height: 1.4; font-style: italic; padding-left: 7px; border-left: 2px solid var(--abv-border-strong); }
+  .violation .actions { display: flex; gap: 5px; margin-top: 6px; }
+  .v-btn { padding: 4px 10px; border-radius: 9999px; font-size: 9.5px; font-weight: 700; border: 0; letter-spacing: 0.04em; text-transform: uppercase; }
+  .v-btn.fix { background: var(--abv-ink); color: white; }
+  .v-btn.review { background: white; color: var(--abv-text); border: 1px solid var(--abv-border-strong); }
+  .review-foot { padding: 10px 16px; border-top: 1px solid var(--abv-border); display: flex; align-items: center; gap: 8px; }
+  .review-foot .run-btn { display: inline-flex; align-items: center; gap: 5px; padding: 7px 13px; background: var(--abv-ink); color: white; border: 0; border-radius: 9999px; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+  .review-foot .cost-note { font-family: var(--font-mono); font-size: 9.5px; color: var(--abv-text-dim); letter-spacing: 0.04em; }
+
+  /* Cost tracker */
+  .cost-body { padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; }
+  .cost-row { display: flex; align-items: baseline; gap: 6px; }
+  .cost-row .big { font-family: var(--font-mono); font-size: 18px; font-weight: 700; color: var(--abv-text); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .cost-row .of { font-family: var(--font-mono); font-size: 11px; color: var(--abv-text-dim); }
+  .cost-bar { height: 5px; border-radius: 9999px; background: var(--abv-bg-warm); overflow: hidden; }
+  .cost-bar > span { display: block; height: 100%; background: var(--abv-academy); border-radius: 9999px; }
+  .cost-cap { font-family: var(--font-mono); font-size: 9.5px; color: var(--abv-text-dim); letter-spacing: 0.04em; }
+
+  /* Theme + rotation rows */
+  .lock { font-size: 10px; opacity: 0.6; margin-right: 3px; }
+
+  /* Drive folder card */
+  .drive-link { display: flex; align-items: center; gap: 10px; margin: 12px 16px; padding: 10px 12px; border-radius: 8px; background: var(--abv-bg); border: 1px solid var(--abv-border); text-decoration: none; color: var(--abv-text); }
+  .drive-link:hover { border-color: var(--abv-border-strong); }
+  .drive-link svg { width: 22px; height: 22px; flex-shrink: 0; }
+  .drive-link .name { font-size: 12px; font-weight: 600; }
+  .drive-link .meta { font-family: var(--font-mono); font-size: 10px; color: var(--abv-text-dim); margin-top: 2px; letter-spacing: 0.04em; }
+  .drive-link .arr { margin-left: auto; color: var(--abv-text-dim); }
+  .thumb-slot { margin: 12px 16px; aspect-ratio: 16/9; border: 2px dashed var(--abv-border-strong); border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; color: var(--abv-text-dim); cursor: pointer; background: var(--abv-bg); }
+  .thumb-slot:hover { border-color: var(--abv-azure); color: var(--abv-azure); }
+  .thumb-slot .up { font-size: 18px; opacity: 0.6; }
+  .thumb-slot .lbl { font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+  .thumb-slot .dim { font-family: var(--font-mono); font-size: 9.5px; color: var(--abv-text-dim); letter-spacing: 0.04em; }
+  .drive-foot { display: flex; justify-content: space-between; align-items: center; padding: 0 16px 12px; font-size: 11px; color: var(--abv-text-dim); }
+  .drive-foot .change { color: var(--abv-text-muted); background: transparent; border: 0; padding: 0; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; font-size: 11px; }
+  .drive-foot .change:hover { color: var(--abv-text); }
+  .drive-head-link { font-size: 11px; color: var(--abv-text-muted); display: inline-flex; align-items: center; gap: 4px; font-weight: 600; background: transparent; border: 0; }
+  .drive-head-link:hover { color: var(--abv-azure); }
+  .drive-head-link svg { width: 12px; height: 12px; }
+
+  /* Binge cards */
+  .binge-section { padding: 12px 16px; }
+  .binge-lbl { font-family: var(--font-mono); font-size: 9px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; color: var(--abv-text-dim); margin-bottom: 6px; }
+  .binge { display: flex; gap: 10px; align-items: center; padding: 6px 0; text-decoration: none; color: var(--abv-text); cursor: pointer; }
+  .binge:hover .b-t { color: var(--abv-azure); }
+  .b-thumb { width: 64px; height: 36px; flex-shrink: 0; border-radius: 5px; display: flex; align-items: flex-end; justify-content: flex-start; padding: 3px; font-family: var(--font-mono); font-size: 8.5px; color: rgba(255,255,255,0.55); letter-spacing: 0.04em; position: relative; }
+  .b-thumb::after { content: '▶'; position: absolute; bottom: 3px; right: 4px; color: white; font-size: 8px; opacity: 0.8; }
+  .b-thumb.from { background: linear-gradient(135deg, #1A1A1A 0%, #3DC3FF22 100%); }
+  .b-thumb.to   { background: linear-gradient(135deg, #1A1A1A 0%, #8B5CF622 100%); }
+  .b-body { flex: 1; min-width: 0; }
+  .b-t { font-size: 12px; font-weight: 600; line-height: 1.3; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .b-m { font-family: var(--font-mono); font-size: 9.5px; color: var(--abv-text-dim); letter-spacing: 0.04em; margin-top: 2px; }
+  .this-video-div { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
+  .this-video-div .line { flex: 1; height: 1px; background: var(--abv-border); }
+  .this-video-div .label { font-family: var(--font-mono); font-size: 8.5px; color: var(--abv-text-dim); letter-spacing: 0.08em; text-transform: uppercase; }
+
+  /* Lead magnet rich card */
+  .lm-rich { display: flex; gap: 10px; align-items: flex-start; margin: 12px 16px; padding: 12px; background: var(--abv-bg); border: 1px dashed var(--abv-border-strong); border-radius: 8px; text-decoration: none; color: var(--abv-text); }
+  .lm-rich:hover { background: rgba(61,195,255,0.04); border-color: var(--abv-azure); }
+  .lm-rich .icon { width: 32px; height: 32px; flex-shrink: 0; border-radius: 7px; background: var(--abv-azure-tint); color: var(--abv-azure); display: inline-flex; align-items: center; justify-content: center; font-size: 14px; }
+  .lm-rich .body { flex: 1; min-width: 0; }
+  .lm-rich .eb { font-family: var(--font-mono); font-size: 8.5px; font-weight: 700; color: var(--abv-azure); letter-spacing: 0.08em; text-transform: uppercase; display: block; margin-bottom: 2px; }
+  .lm-rich .name { font-size: 12.5px; font-weight: 600; line-height: 1.3; }
+  .lm-rich .meta { font-family: var(--font-mono); font-size: 9.5px; color: var(--abv-text-dim); margin-top: 3px; letter-spacing: 0.04em; }
+
+  /* Send to AI Tools list */
+  .ai-tools-list { padding: 8px 14px 12px; display: flex; flex-direction: column; gap: 5px; }
+  .ai-tool { display: flex; align-items: center; gap: 9px; padding: 9px 10px; border-radius: 8px; background: var(--abv-bg); border: 1px solid var(--abv-border); cursor: pointer; text-align: left; font-family: inherit; }
+  .ai-tool:hover { border-color: var(--abv-border-strong); }
+  .ai-tool.primary { background: var(--abv-ink); border-color: var(--abv-ink); color: white; }
+  .ai-tool.primary:hover { background: #2a2a2a; }
+  .ai-tool .at-icon { width: 26px; height: 26px; flex-shrink: 0; border-radius: 6px; background: white; border: 1px solid var(--abv-border); display: inline-flex; align-items: center; justify-content: center; font-size: 13px; }
+  .ai-tool.primary .at-icon { background: rgba(255,255,255,0.10); border: 0; color: white; }
+  .ai-tool .at-body { flex: 1; min-width: 0; }
+  .ai-tool .at-name { font-size: 12px; font-weight: 600; line-height: 1.2; display: block; }
+  .ai-tool .at-desc { font-size: 10px; line-height: 1.3; margin-top: 2px; color: var(--abv-text-dim); }
+  .ai-tool.primary .at-desc { color: rgba(255,255,255,0.60); }
+  .ai-tool .at-arr { font-size: 13px; opacity: 0.5; }
+
+  /* Linked facts */
+  .lf-list { padding: 12px 16px; display: flex; flex-direction: column; gap: 6px; }
+  .lf-item { padding: 8px 10px; background: var(--abv-bg); border-radius: 6px; border-left: 2px solid var(--abv-azure); font-size: 11.5px; color: var(--abv-text-muted); line-height: 1.45; }
+  .lf-view-all { font-size: 11px; color: var(--abv-text-dim); background: transparent; border: 0; padding: 4px 0 0; text-align: left; cursor: pointer; }
+  .lf-view-all:hover { color: var(--abv-text); }
+  .ph-add-link { font-size: 11px; color: var(--abv-text-muted); background: transparent; border: 0; cursor: pointer; font-weight: 600; }
+  .ph-add-link:hover { color: var(--abv-text); }
+
+  /* Publish tab */
+  .yt-desc { margin: 12px 16px; padding: 12px 14px; background: var(--abv-bg); border: 1px solid var(--abv-border); border-radius: 8px; font-size: 12px; line-height: 1.5; color: var(--abv-text); white-space: pre-wrap; max-height: 180px; overflow-y: auto; font-family: var(--font-sans); }
+  .yt-desc .ts { font-family: var(--font-mono); color: var(--abv-azure); font-weight: 600; font-size: 11px; }
+  .yt-desc .link { color: var(--abv-azure); text-decoration: underline; text-underline-offset: 2px; }
+  .desc-foot { display: flex; align-items: center; gap: 8px; padding: 0 16px 12px; }
+  .desc-foot .meta { font-family: var(--font-mono); font-size: 10px; color: var(--abv-text-dim); letter-spacing: 0.04em; flex: 1; }
+  .desc-foot .regen { font-size: 10.5px; font-weight: 700; padding: 5px 11px; border-radius: 9999px; border: 1px solid var(--abv-border-strong); background: white; color: var(--abv-text); cursor: pointer; letter-spacing: 0.04em; text-transform: uppercase; }
+
+  .thumb-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 12px 16px; }
+  .thumb-variant { aspect-ratio: 16/9; border-radius: 6px; position: relative; cursor: pointer; overflow: hidden; }
+  .thumb-variant.v1 { background: linear-gradient(135deg, #1A1A1A 0%, #3DC3FF22 100%); }
+  .thumb-variant.v2 { background: linear-gradient(135deg, #1A1A1A 0%, #8B5CF622 100%); }
+  .thumb-variant.v3 { background: linear-gradient(135deg, #1A1A1A 0%, #10B98122 100%); }
+  .thumb-variant.empty { background: var(--abv-bg); border: 2px dashed var(--abv-border-strong); display: flex; align-items: center; justify-content: center; color: var(--abv-text-dim); font-size: 18px; }
+  .thumb-variant .v-tag { position: absolute; top: 4px; left: 4px; font-family: var(--font-mono); font-size: 8.5px; font-weight: 700; padding: 1px 5px; border-radius: 3px; background: rgba(0,0,0,0.50); color: white; letter-spacing: 0.04em; }
+  .thumb-variant .v-score { position: absolute; bottom: 4px; right: 4px; font-family: var(--font-mono); font-size: 8.5px; font-weight: 700; padding: 1px 5px; border-radius: 3px; background: var(--abv-academy-tint); color: #047857; letter-spacing: 0.04em; }
+  .thumb-variant .v-score.amber { background: var(--abv-scores-tint); color: #B45309; }
+
+  .pinned-card { margin: 12px 16px; padding: 12px 14px; background: var(--abv-bg); border: 1px solid var(--abv-border); border-radius: 8px; font-size: 12px; line-height: 1.5; color: var(--abv-text); }
+  .pinned-card .meta { font-family: var(--font-mono); font-size: 10px; color: var(--abv-text-dim); letter-spacing: 0.04em; margin-top: 6px; }
+
+  .chip-row { display: flex; flex-wrap: wrap; gap: 5px; padding: 12px 16px; }
+  .pub-chip { display: inline-flex; align-items: center; gap: 4px; padding: 4px 9px; border-radius: 9999px; background: var(--abv-bg); border: 1px solid var(--abv-border); font-size: 11px; color: var(--abv-text-muted); font-weight: 500; }
+  .pub-chip .x { font-size: 10px; opacity: 0.5; cursor: pointer; }
+  .pub-chip.add { background: transparent; color: var(--abv-text-dim); border-style: dashed; cursor: pointer; font-weight: 600; }
+  .pub-chip.add:hover { color: var(--abv-text); border-color: var(--abv-text-muted); }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <!-- Sidebar -->
+  <aside class="side">
+    <div class="side-brand">
+      <span class="mark"></span>
+      <span class="name">Attraction <span class="by">by</span> Video</span>
+    </div>
+    <nav>
+      <a class="side-link" href="#"><span class="ico">🏠</span>Dashboard</a>
+      <div class="side-section">Create</div>
+      <a class="side-link" href="#"><span class="ico">✨</span>AI Tools<span class="dot" style="background: var(--abv-ai-tools)"></span></a>
+      <a class="side-link active" href="#"><span class="ico">📅</span>Content Planner</a>
+      <div class="side-section">Improve</div>
+      <a class="side-link" href="#"><span class="ico">🏆</span>My Scores<span class="dot" style="background: var(--abv-scores)"></span></a>
+      <a class="side-link" href="#"><span class="ico">🎓</span>Academy<span class="dot" style="background: var(--abv-academy)"></span></a>
+      <a class="side-link" href="#"><span class="ico">📹</span>My Calls</a>
+      <div class="side-section">Grow</div>
+      <a class="side-link" href="#"><span class="ico">🚀</span>Generate Leads<span class="dot" style="background: var(--abv-leads)"></span></a>
+      <a class="side-link" href="#"><span class="ico">🤝</span>Hire a Human<span class="dot" style="background: var(--abv-hire)"></span></a>
+      <div class="side-section">Workspace</div>
+      <a class="side-link" href="#"><span class="ico">📁</span>My Work</a>
+    </nav>
+    <div class="side-user">
+      <span class="av">JC</span>
+      <div>
+        <div class="name">Jared C.</div>
+        <div class="tier">Foundations</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Body -->
+  <main class="body">
+
+    <!-- Crumb + saved -->
+    <div class="top-bar">
+      <div class="crumb">
+        <a href="#">Content Planner</a>
+        <span class="sep">/</span>
+        <span class="here">What $850k buys in Bridgeland today</span>
+      </div>
+      <span class="saved">Saved 14s ago</span>
+      <button class="iconbtn" title="More">···</button>
+    </div>
+
+    <!-- Dark hero — Brief pattern -->
+    <div class="hero">
+      <div class="l">
+        <span class="eb">Ready to Shoot</span>
+        <h1 contenteditable="true" spellcheck="false">What <span class="az">$850k</span> buys in Bridgeland today.</h1>
+        <div class="meta">
+          <span class="v">Neighbourhood Fact</span>
+          <span class="sep">·</span>
+          <span class="lock">🔒</span><span class="v">Detached</span>
+          <span class="sep">·</span>
+          Film <span class="v">May 18</span>
+          <span class="sep">·</span>
+          Edit <span class="v">May 21</span>
+          <span class="sep">·</span>
+          Publish <span class="v">May 22</span>
+        </div>
+      </div>
+      <div class="r">
+        <button class="next-action">
+          <span class="step-tag">Next</span>
+          Build Script with AI →
+        </button>
+        <button class="secondary">Skip this step</button>
+      </div>
+    </div>
+
+    <!-- Workflow progress strip -->
+    <div class="workflow">
+      <div class="ws done"><span class="dot"></span><span class="lbl">01 Configure</span></div>
+      <div class="ws done"><span class="dot"></span><span class="lbl">02 Validate facts</span></div>
+      <div class="ws current"><span class="dot"></span><span class="lbl">03 Build script</span></div>
+      <div class="ws"><span class="dot"></span><span class="lbl">04 Review</span></div>
+      <div class="ws"><span class="dot"></span><span class="lbl">05 Edit</span></div>
+      <div class="ws"><span class="dot"></span><span class="lbl">06 Schedule</span></div>
+      <div class="ws"><span class="dot"></span><span class="lbl">07 Publish</span></div>
+    </div>
+
+    <!-- Idea lineage -->
+    <div class="lineage expanded" id="lineage">
+      <div class="lineage-head" onclick="document.getElementById('lineage').classList.toggle('expanded')">
+        <span class="ico"></span>
+        <span class="label">Idea Card Lineage</span>
+        <span class="summary"><strong>Neighbourhood Fact</strong> &middot; Jordan &amp; Sarah, first-time buyers &middot; 3 cited facts</span>
+        <span class="chev">▾</span>
+      </div>
+      <div class="lineage-body">
+        <div class="lineage-chain">
+          <span class="ln"><span class="k">Avatar</span><span class="v">Jordan &amp; Sarah, first-time buyers</span></span>
+          <span class="lineage-arrow">→</span>
+          <span class="ln"><span class="k">Theme</span><span class="v">Neighbourhood Fact</span></span>
+          <span class="lineage-arrow">→</span>
+          <span class="ln"><span class="k">Idea card</span><span class="v">What $850k buys in Bridgeland</span></span>
+        </div>
+        <div class="lineage-facts">
+          <span class="lf">Bridgeland detached median: $852K (Mar 2026)</span>
+          <span class="lf">Sold over list: 4.14% avg</span>
+          <span class="lf">DOM: 18 days</span>
+        </div>
+        <div class="lineage-source">
+          Validated from your Knowledge Base on Apr 28, 2026.
+          <a href="#">View Idea Validation report →</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Two-pane layout -->
+    <div class="layout">
+
+      <!-- LEFT: script -->
+      <div>
+        <div class="script-row">
+          <h3>Script</h3>
+          <span class="word-count">1,847 words · ~ 9:20 on camera</span>
+        </div>
+
+        <!-- v2 builder strip -->
+        <div class="v2-strip">
+          <div class="strip-l">
+            <span class="strip-eb">Script Builder v2 · Talking Head</span>
+            <p class="strip-sub"><strong>FACT → CLARITY arc</strong>, anchored on your cited facts and locked content rules.</p>
+          </div>
+          <div class="mode-picker">
+            <button class="on">▣ Talking Head</button>
+            <button class="disabled">🏠 Home Tour <span class="wave-badge">Wave 4</span></button>
+          </div>
+          <button class="btn-build-v2">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.5L18 9l-4.2 1.5L12 15l-1.8-4.5L6 9l4.2-1.5z"/></svg>
+            Rebuild (v2) →
+          </button>
+        </div>
+
+        <!-- Toolbar -->
+        <div class="editor-toolbar">
+          <button class="toolbar-btn">↻ Regenerate</button>
+          <span class="toolbar-spacer"></span>
+          <button class="toolbar-btn">✓ Self-Review</button>
+          <button class="toolbar-btn">↧ Auto-Soften</button>
+          <span class="toolbar-spacer"></span>
+          <button class="toolbar-btn">⎘ Copy</button>
+          <button class="toolbar-btn">⇪ Export</button>
+        </div>
+
+        <!-- Script -->
+        <div class="script">
+          <div class="script-body">
+            <h4>If you&rsquo;re looking at Bridgeland and wondering what <span class="az">$850k</span> actually buys you in 2026, this video is the answer.</h4>
+
+            <p><span class="tag-inline hook">[MID-VIDEO HOOK]</span> I&rsquo;m going to show you three real listings from the last month, what they sold for, how long they sat, and what the trade-offs were. By the end you&rsquo;ll know whether Bridgeland fits your budget, or whether you should be looking at Renfrew or Sunnyside instead.</p>
+
+            <p><span class="tag-inline cred">[SIDEWAYS CREDIBILITY]</span> A bit of context before I get into it. I&rsquo;ve been working Calgary&rsquo;s inner city for fourteen years, and Bridgeland specifically since the Centre Street BRT plans first dropped in 2018. So the data I&rsquo;m about to walk through, I&rsquo;ve pulled directly from my brokerage&rsquo;s MLS feed for March 2026.</p>
+
+            <h4>What the numbers actually say.</h4>
+
+            <p>The median detached sale price in Bridgeland for March was <span class="tag-inline stat">[STAT]</span>$852,000. That&rsquo;s up six percent year over year. The average property in that price band sold for <span class="tag-inline stat">[STAT]</span>4.14% over list price, and the median days on market was <span class="tag-inline stat">[STAT]</span>eighteen days. So when I say the market is active, I mean it.</p>
+
+            <p>But the headline number hides a lot. There&rsquo;s a huge range underneath $850k, and the trade-offs matter more than the average.</p>
+
+            <p><span class="tag-inline lm">[LEAD MAGNET 1/3]</span> If you want the full breakdown by street, lot size, and finish quality, I&rsquo;ve put it all in my Bridgeland Buyer&rsquo;s Guide. Link in the description, takes about three minutes to flip through.</p>
+
+            <h4>Listing one: the bungalow on 7th.</h4>
+
+            <p>First property, classic 1950s bungalow on a 50-foot lot just off Centre Street. Listed at $799k, sold for $832k after eleven days. So roughly four percent over list, right in line with the market.</p>
+
+            <p>What you get: 1,100 square feet on the main, a finished basement, two parking off the back lane, and one of the deepest yards I&rsquo;ve seen in the neighbourhood. The kitchen is original but functional. Bathrooms are dated. So you&rsquo;re buying location and land, with a renovation runway whenever you&rsquo;re ready.</p>
+
+            <h4>Listing two: the new infill on 6A.</h4>
+
+            <p>Opposite end of the spectrum. Two-storey infill, 2,100 square feet above grade, triple-pane windows, heated garage, ten-foot ceilings on the main. Listed at $899k, sold for $878k after twenty-three days.</p>
+
+            <p>So we&rsquo;re actually looking at a place that sold a bit under list, which is the first hint that buyers in this band are getting more selective. <span class="tag-inline cred">[SIDEWAYS CREDIBILITY]</span> I&rsquo;ve had two of my own clients look at infills like this in the last six weeks, and both walked away because the lot was too narrow for a future garden suite.</p>
+
+            <p><span class="tag-inline lm">[LEAD MAGNET 2/3]</span> If you&rsquo;re trying to figure out whether a Bridgeland infill is the right call for you specifically, I&rsquo;ve built a 10-question fit quiz. Second link in the description, takes ninety seconds.</p>
+
+            <h4>So, can you live in Bridgeland for $850k?</h4>
+
+            <p>Yes. With trade-offs. Renovation runway on a bungalow, narrower lot on a newer infill, or a heritage home that&rsquo;ll cap your future flexibility. Pick the one whose compromises you can live with.</p>
+
+            <p><span class="tag-inline lm">[LEAD MAGNET 3/3]</span> If you want me to send you the three listings I think are the closest match to what you&rsquo;re looking for, just message me on Instagram, handle&rsquo;s in the description.</p>
+
+            <p class="muted">— Continue writing…</p>
+          </div>
+
+          <div class="script-foot">
+            <span class="mi"><span class="n">1,847</span> words</span>
+            <span class="mi">~ <span class="n">11 min</span> read</span>
+            <span class="mi">~ <span class="n">9:20</span> on camera</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: tabbed sidebar -->
+      <aside class="side-stack">
+        <div class="tab-strip">
+          <button class="on" data-tab="planning">Planning <span class="ct">3</span></button>
+          <button data-tab="connecting">Connecting <span class="ct">3</span></button>
+          <button data-tab="tools">Tools <span class="ct">2</span></button>
+          <button data-tab="publish">Publish <span class="ct">4</span></button>
+        </div>
+
+        <!-- PLANNING TAB -->
+        <div class="tab-pane" data-pane="planning">
+
+          <!-- Status & dates -->
+          <div class="panel">
+            <div class="panel-h">
+              <span class="h-label">Status &amp; dates</span>
+              <button class="ico-btn" title="Edit">✎</button>
+            </div>
+            <div class="panel-body">
+              <div style="padding: 12px 16px 4px;"><span class="pill ready">Ready to Shoot</span></div>
+              <div class="row"><span class="k">Film</span><span class="v mono">Tue May 18</span></div>
+              <div class="row"><span class="k">Edit due</span><span class="v mono">Fri May 21</span></div>
+              <div class="row"><span class="k">Publish</span><span class="v mono">Sun May 22</span></div>
+            </div>
+          </div>
+
+          <!-- Theme & anchor -->
+          <div class="panel">
+            <div class="panel-h">
+              <span class="h-label">Theme &amp; anchor</span>
+              <button class="ico-btn">✎</button>
+            </div>
+            <div class="panel-body">
+              <div class="row"><span class="k">Theme</span><span class="v">Neighbourhood Fact</span></div>
+              <div class="row"><span class="k">Property</span><span class="v"><span class="lock">🔒</span>Detached</span></div>
+              <div class="row"><span class="k">Neighbourhood</span><span class="v">Bridgeland</span></div>
+              <div class="row"><span class="k">Binge</span><span class="v mono">Bridgeland · 3</span></div>
+              <div class="row"><span class="k">Avatar</span><span class="v">Jordan &amp; Sarah</span></div>
+            </div>
+          </div>
+
+          <!-- Quick actions -->
+          <div class="panel">
+            <div class="panel-h"><span class="h-label">Quick actions</span></div>
+            <div class="panel-body padded" style="display: flex; flex-wrap: wrap; gap: 5px;">
+              <button class="v-btn review">⎘ Duplicate</button>
+              <button class="v-btn review">⏱ Snooze</button>
+              <button class="v-btn review">⤓ Export</button>
+              <button class="v-btn review" style="color: var(--abv-crimson); border-color: var(--abv-crimson-tint);">⌫ Archive</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- CONNECTING TAB -->
+        <div class="tab-pane" data-pane="connecting" hidden>
+
+          <!-- Thumbnail & Assets -->
+          <div class="panel">
+            <div class="panel-h">
+              <span class="h-label">Thumbnail &amp; assets</span>
+              <button class="drive-head-link">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#0066DA" d="M7.71 3.5L1.15 15l3.42 6 6.56-11.5z"/><path fill="#EA4335" d="M14.29 3.5L20.85 15l-3.42 6L11.7 15z"/><path fill="#00AC47" d="M16 3.5h-3.7l5.05 8.5h6.5z"/></svg>
+                Drive ↗
+              </button>
+            </div>
+            <div class="thumb-slot">
+              <span class="up">↑</span>
+              <span class="lbl">Upload thumbnail</span>
+              <span class="dim">1280 × 720 · PNG / JPG</span>
+            </div>
+            <a class="drive-link" href="#">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#0066DA" d="M7.71 3.5L1.15 15l3.42 6 6.56-11.5z"/><path fill="#EA4335" d="M14.29 3.5L20.85 15l-3.42 6L11.7 15z"/><path fill="#00AC47" d="M16 3.5h-3.7l5.05 8.5h6.5z"/></svg>
+              <span>
+                <span class="name">Open Drive folder</span>
+                <span class="meta">bridgeland-850k/ · 12 files</span>
+              </span>
+              <span class="arr">↗</span>
+            </a>
+            <div class="drive-foot">
+              <span>B-roll, raw footage, thumbnails</span>
+              <button class="change">Change link</button>
+            </div>
+          </div>
+
+          <!-- Binge Connections -->
+          <div class="panel">
+            <div class="panel-h">
+              <span class="h-label">Binge connections</span>
+              <button class="ph-add-link">✎ Edit</button>
+            </div>
+            <div class="binge-section">
+              <div class="binge-lbl">Binging from</div>
+              <a class="binge" href="#">
+                <span class="b-thumb from">16:9</span>
+                <span class="b-body">
+                  <span class="b-t">The first 30 seconds that hold attention</span>
+                  <span class="b-m">8,920 views · ↳ leads here</span>
+                </span>
+              </a>
+              <div class="this-video-div">
+                <span class="line"></span>
+                <span class="label">This video</span>
+                <span class="line"></span>
+              </div>
+              <div class="binge-lbl">Binging to</div>
+              <a class="binge" href="#">
+                <span class="b-thumb to">16:9</span>
+                <span class="b-body">
+                  <span class="b-t">Niching down without losing reach</span>
+                  <span class="b-m">Draft · ↳ next up</span>
+                </span>
+              </a>
+            </div>
+          </div>
+
+          <!-- Lead Magnet -->
+          <div class="panel">
+            <div class="panel-h">
+              <span class="h-label">Lead magnet</span>
+              <button class="ph-add-link">Change</button>
+            </div>
+            <a class="lm-rich" href="#">
+              <span class="icon">📋</span>
+              <span class="body">
+                <span class="eb">Free checklist</span>
+                <span class="name">The 12 questions to ask before any showing</span>
+                <span class="meta">42 downloads · CTA at 0:23, 4:51</span>
+              </span>
+            </a>
+          </div>
+        </div>
+
+        <!-- TOOLS TAB -->
+        <div class="tab-pane" data-pane="tools" hidden>
+
+          <!-- Send to AI Tools -->
+          <div class="panel">
+            <div class="panel-h">
+              <span class="h-label">Send to AI tools</span>
+              <span class="count" style="font-family: var(--font-mono); font-size: 9.5px;">uses script</span>
+            </div>
+            <div class="ai-tools-list">
+              <button class="ai-tool primary">
+                <span class="at-icon">✅</span>
+                <span class="at-body">
+                  <span class="at-name">Script Review</span>
+                  <span class="at-desc">Score this script before you film</span>
+                </span>
+                <span class="at-arr">→</span>
+              </button>
+              <button class="ai-tool">
+                <span class="at-icon">📝</span>
+                <span class="at-body">
+                  <span class="at-name">ARC Builder</span>
+                  <span class="at-desc">Rebuild from outline</span>
+                </span>
+                <span class="at-arr">→</span>
+              </button>
+              <button class="ai-tool">
+                <span class="at-icon">🔬</span>
+                <span class="at-body">
+                  <span class="at-name">Title &amp; Thumb</span>
+                  <span class="at-desc">A/B test the hook visually</span>
+                </span>
+                <span class="at-arr">→</span>
+              </button>
+              <button class="ai-tool">
+                <span class="at-icon">⚙️</span>
+                <span class="at-body">
+                  <span class="at-name">Content Engine</span>
+                  <span class="at-desc">Spin variations</span>
+                </span>
+                <span class="at-arr">→</span>
+              </button>
+              <button class="ai-tool">
+                <span class="at-icon">🎯</span>
+                <span class="at-body">
+                  <span class="at-name">Avatar Architect</span>
+                  <span class="at-desc">Recheck against your avatar</span>
+                </span>
+                <span class="at-arr">→</span>
+              </button>
+              <button class="ai-tool">
+                <span class="at-icon">🔁</span>
+                <span class="at-body">
+                  <span class="at-name">Repurpose</span>
+                  <span class="at-desc">One video into shorts, threads, emails</span>
+                </span>
+                <span class="at-arr">→</span>
+              </button>
+              <button class="ai-tool">
+                <span class="at-icon">📄</span>
+                <span class="at-body">
+                  <span class="at-name">Description Generator</span>
+                  <span class="at-desc">YouTube descriptions, ready to paste</span>
+                </span>
+                <span class="at-arr">→</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Linked Facts -->
+          <div class="panel">
+            <div class="panel-h">
+              <span class="h-label">Linked facts</span>
+              <button class="ph-add-link">+ Add</button>
+            </div>
+            <div class="lf-list">
+              <div class="lf-item">Detached homes in Bridgeland sold for 4.14% over list (March 2026)</div>
+              <div class="lf-item">Median detached sale price: $852,000 — up 6% year over year</div>
+              <div class="lf-item">Median days on market: 18 days (vs 24 six months ago)</div>
+              <button class="lf-view-all">View all 7 →</button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- PUBLISH TAB -->
+        <div class="tab-pane" data-pane="publish" hidden>
+
+          <!-- YouTube description -->
+          <div class="panel">
+            <div class="panel-h">
+              <span class="h-label">YouTube description</span>
+              <span class="count">412 / 5000</span>
+            </div>
+            <div class="yt-desc">If you&rsquo;re looking at Bridgeland and wondering what $850k actually buys in 2026, this video walks you through three real listings from the last month, what they sold for, how long they sat, and what the trade-offs were.
+
+<span class="ts">00:00</span> Intro — the question every Bridgeland buyer is asking
+<span class="ts">01:14</span> The numbers: median sale, sold-over-list, DOM
+<span class="ts">02:48</span> Listing 1 — the bungalow on 7th
+<span class="ts">05:30</span> Listing 2 — the new infill on 6A
+<span class="ts">07:42</span> Listing 3 — the heritage on McDougall
+<span class="ts">09:00</span> Can you live in Bridgeland for $850k?
+
+📋 FREE: Bridgeland Buyer&rsquo;s Guide → <span class="link">attractionbyvideo.com/bridgeland-guide</span></div>
+            <div class="desc-foot">
+              <span class="meta">3 timestamps · 1 link · 2 emojis</span>
+              <button class="regen">✍ Regenerate</button>
+            </div>
+          </div>
+
+          <!-- Thumbnail variants -->
+          <div class="panel">
+            <div class="panel-h">
+              <span class="h-label">Thumbnail variants</span>
+              <span class="count amber">A/B pending</span>
+            </div>
+            <div class="thumb-grid">
+              <div class="thumb-variant v1"><span class="v-tag">A</span><span class="v-score">7.4</span></div>
+              <div class="thumb-variant v2"><span class="v-tag">B</span><span class="v-score amber">6.1</span></div>
+              <div class="thumb-variant v3"><span class="v-tag">C</span><span class="v-score">7.8</span></div>
+              <div class="thumb-variant empty">+</div>
+            </div>
+            <div class="desc-foot">
+              <span class="meta">3 of 3 scored · best: C</span>
+              <button class="regen">✓ Pick winner</button>
+            </div>
+          </div>
+
+          <!-- Pinned first comment -->
+          <div class="panel">
+            <div class="panel-h">
+              <span class="h-label">Pinned first comment</span>
+              <button class="ph-add-link">✎ Edit</button>
+            </div>
+            <div class="pinned-card">
+              Which Bridgeland trade-off would you make? The renovation runway, the narrow infill lot, or the heritage cap? Drop your answer below 👇
+              <div class="meta">Posts automatically 60s after publish</div>
+            </div>
+          </div>
+
+          <!-- Tags + end screens -->
+          <div class="panel">
+            <div class="panel-h">
+              <span class="h-label">Tags &amp; end screen</span>
+              <span class="count">12 tags</span>
+            </div>
+            <div class="chip-row">
+              <span class="pub-chip">bridgeland calgary <span class="x">×</span></span>
+              <span class="pub-chip">calgary real estate <span class="x">×</span></span>
+              <span class="pub-chip">first time home buyer <span class="x">×</span></span>
+              <span class="pub-chip">$850k home <span class="x">×</span></span>
+              <span class="pub-chip">yyc realtor <span class="x">×</span></span>
+              <span class="pub-chip">inner city calgary <span class="x">×</span></span>
+              <span class="pub-chip add">+ 6 more</span>
+            </div>
+            <div style="padding: 4px 16px 8px;">
+              <div class="binge-lbl">End screen →</div>
+              <a class="binge" href="#">
+                <span class="b-thumb to">16:9</span>
+                <span class="b-body">
+                  <span class="b-t">Niching down without losing reach</span>
+                  <span class="b-m">Suggested next · from Binge connections</span>
+                </span>
+              </a>
+            </div>
+          </div>
+
+        </div>
+      </aside>
+    </div>
+  </main>
+</div>
+
+<script>
+  document.querySelectorAll('.tab-strip button[data-tab]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = btn.dataset.tab;
+      document.querySelectorAll('.tab-strip button[data-tab]').forEach(b => b.classList.toggle('on', b === btn));
+      document.querySelectorAll('.tab-pane').forEach(p => {
+        p.hidden = p.dataset.pane !== target;
+      });
+    });
+  });
+</script>
+</body>
+</html>

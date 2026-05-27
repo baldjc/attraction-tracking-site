@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
-import ContentPlanEditModal, { type ContentPlan } from "@/components/content-planner/ContentPlanEditModal";
+import { type ContentPlan } from "@/components/content-planner/ContentPlanEditModal";
 import UpgradeModal from "@/components/upgrade/UpgradeModal";
 import { useUpgradeGate } from "@/components/upgrade/useUpgradeGate";
 
@@ -121,7 +121,9 @@ export default function IdeaCard({ idea, theme, onSaved, savedId, onDelete }: Pr
         setAddedToPlanner(true);
         if (data.plan) {
           setPlannerServiceTier(data.serviceTier ?? "foundations");
-          setCreatedPlan(data.plan as ContentPlan);
+          // Wave 4 full-page editor: jump straight to the new plan instead
+          // of opening the dormant edit modal.
+          router.push(`/member/content-planner/${(data.plan as ContentPlan).id}`);
         }
       }
     } catch {
@@ -279,19 +281,6 @@ export default function IdeaCard({ idea, theme, onSaved, savedId, onDelete }: Pr
           setShowUpgrade(false);
         }}
       />
-
-      {createdPlan && (
-        <ContentPlanEditModal
-          plan={createdPlan}
-          serviceTier={plannerServiceTier}
-          apiBase="/api/member/content-plans"
-          onClose={() => setCreatedPlan(null)}
-          // Wave 4 auto-save: keep the modal open on save — close is owned
-          // exclusively by `onClose` now that edits persist continuously.
-          onSaved={() => {}}
-          onDeleted={() => { setCreatedPlan(null); setAddedToPlanner(false); }}
-        />
-      )}
 
       {/* Build Script + Add to Planner */}
       <div className="border-t border-[var(--abv-text)]/5 dark:border-white/5 pt-2 flex gap-2">

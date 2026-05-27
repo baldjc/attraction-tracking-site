@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { ChevronUpIcon, ChevronDownIcon, ArrowTopRightOnSquareIcon } from "@heroicons/react/24/outline";
 import DramaMagnet from "@/components/icons/DramaMagnet";
-import ContentPlanEditModal from "./ContentPlanEditModal";
+import { useRouter } from "next/navigation";
 import {
   getStatusOptions,
   hasEditDueDate,
@@ -111,7 +111,7 @@ export default function ContentPlanTable({
   const [themes, setThemes] = useState<Array<{ name: string; emoji?: string | null; colour?: string | null }>>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [editingPlan, setEditingPlan] = useState<ContentPlan | null>(null);
+  const router = useRouter();
   const [sortKey, setSortKey] = useState<keyof ContentPlan | null>("publishDate");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [showProgressTrack, setShowProgressTrack] = useState(false);
@@ -465,8 +465,8 @@ export default function ContentPlanTable({
               key={plan.id}
               role="button"
               tabIndex={0}
-              onClick={() => setEditingPlan(plan)}
-              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setEditingPlan(plan); } }}
+              onClick={() => router.push(`/member/content-planner/${plan.id}`)}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); router.push(`/member/content-planner/${plan.id}`); } }}
               className="grid gap-[14px] px-[22px] py-3.5 items-center cursor-pointer hover:bg-[var(--abv-bg-warm)] transition-colors"
               style={{
                 gridTemplateColumns: colTemplate,
@@ -571,27 +571,6 @@ export default function ContentPlanTable({
         })
       )}
 
-      {editingPlan && (
-        <ContentPlanEditModal
-          plan={editingPlan}
-          serviceTier={serviceTier}
-          apiBase={apiBase}
-          isAdmin={isAdmin}
-          themes={themes}
-          showProgressTrack={showProgressTrack}
-          scriptBuilderV2Enabled={scriptBuilderV2Enabled}
-          onClose={() => setEditingPlan(null)}
-          onSaved={(updated) => {
-            // Wave 4 auto-save: keep the modal open on save; only refresh
-            // the cached row so the table reflects the change immediately.
-            setPlans((prev) => prev.map((p) => (p.id === updated.id ? { ...p, ...updated } : p)));
-          }}
-          onDeleted={(id) => {
-            setPlans((prev) => prev.filter((p) => p.id !== id));
-            setEditingPlan(null);
-          }}
-        />
-      )}
       </div>
     </section>
   );

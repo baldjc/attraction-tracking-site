@@ -18,7 +18,7 @@ import ContentPlanTable from "@/components/content-planner/ContentPlanTable";
 import CalendarView from "@/components/content-planner/CalendarView";
 import BoardView from "@/components/content-planner/BoardView";
 import PipelineView, { type PipelineSortKey } from "@/components/content-planner/PipelineView";
-import ContentPlanEditModal, { type ContentPlan } from "@/components/content-planner/ContentPlanEditModal";
+import { type ContentPlan } from "@/components/content-planner/ContentPlanEditModal";
 import MobileCardFeed from "@/components/content-planner/MobileCardFeed";
 import { getStatusOptions, filterPlans } from "@/lib/content-plan-utils";
 import { getStatusDotColor } from "@/lib/content-plan-style";
@@ -42,7 +42,6 @@ export default function ContentPlannerClient({
   const [calUrl, setCalUrl] = useState<string | null>(null);
   const [calLoading, setCalLoading] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [autoOpenPlan, setAutoOpenPlan] = useState<ContentPlan | null>(null);
   const [showProgressTrack, setShowProgressTrack] = useState(false);
   const [showPipelineTab, setShowPipelineTab] = useState(false);
   const [scriptBuilderV2Enabled, setScriptBuilderV2Enabled] = useState(false);
@@ -76,15 +75,11 @@ export default function ContentPlannerClient({
       .catch(() => {});
   }, []);
 
-  // Auto-open the edit modal when a ?plan=<id> param is present
+  // Auto-open: a ?plan=<id> param now navigates straight to the full-page editor.
   useEffect(() => {
     const planId = searchParams.get("plan");
     if (!planId) return;
-    router.replace("/member/content-planner");
-    fetch(`/api/member/content-plans/${planId}`)
-      .then((r) => r.json())
-      .then((d) => { if (d?.plan) setAutoOpenPlan(d.plan as ContentPlan); })
-      .catch(() => {});
+    router.replace(`/member/content-planner/${planId}`);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -150,7 +145,7 @@ export default function ContentPlannerClient({
       if (!res.ok) throw new Error(data.error ?? "Failed to add");
       setAllPlans((prev) => (prev ? [data.plan as ContentPlan, ...prev] : [data.plan as ContentPlan]));
       setTableRefreshKey((k) => k + 1);
-      setAutoOpenPlan(data.plan as ContentPlan);
+      router.push(`/member/content-planner/${(data.plan as ContentPlan).id}`);
     } catch (e: any) {
       alert(`Could not add video: ${e.message}`);
     } finally {
@@ -174,34 +169,11 @@ export default function ContentPlannerClient({
         <MobileCardFeed
           plans={allPlans}
           statusOptions={statusOptions}
-          onSelectPlan={(p) => setAutoOpenPlan(p)}
+          onSelectPlan={(p) => router.push(`/member/content-planner/${p.id}`)}
           onAddPlan={handleQuickAdd}
           addingPlan={addingPlan}
           isAdminView={isAdminView}
         />
-        {autoOpenPlan && (
-          <ContentPlanEditModal
-            plan={autoOpenPlan}
-            serviceTier={serviceTier}
-            apiBase={apiBase}
-            showProgressTrack={showProgressTrack}
-            scriptBuilderV2Enabled={scriptBuilderV2Enabled}
-            onClose={() => setAutoOpenPlan(null)}
-            onSaved={(updated) => {
-              if (updated) {
-                setAllPlans((prev) =>
-                  prev ? prev.map((p) => (p.id === updated.id ? (updated as ContentPlan) : p)) : prev
-                );
-              }
-            }}
-            onDeleted={(deletedId) => {
-              setAutoOpenPlan(null);
-              if (deletedId) {
-                setAllPlans((prev) => (prev ? prev.filter((p) => p.id !== deletedId) : prev));
-              }
-            }}
-          />
-        )}
       </div>
     );
   }
@@ -537,32 +509,6 @@ export default function ContentPlannerClient({
           />
         </div>
       </section>
-
-      {autoOpenPlan && (
-        <ContentPlanEditModal
-          plan={autoOpenPlan}
-          serviceTier={serviceTier}
-          apiBase={apiBase}
-          showProgressTrack={showProgressTrack}
-          scriptBuilderV2Enabled={scriptBuilderV2Enabled}
-          onClose={() => setAutoOpenPlan(null)}
-          onSaved={(updated) => {
-            if (!updated) return;
-            setAllPlans((prev) =>
-              prev ? prev.map((p) => (p.id === updated.id ? { ...p, ...(updated as ContentPlan) } : p)) : prev
-            );
-            // Refresh the table so its locally-cached row matches.
-            setTableRefreshKey((k) => k + 1);
-          }}
-          onDeleted={(id) => {
-            setAutoOpenPlan(null);
-            if (id) {
-              setAllPlans((prev) => (prev ? prev.filter((p) => p.id !== id) : prev));
-              setTableRefreshKey((k) => k + 1);
-            }
-          }}
-        />
-      )}
 
       {!isAdminView && showCalModal && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">

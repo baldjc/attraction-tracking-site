@@ -19,7 +19,8 @@ import DramaMagnet from "@/components/icons/DramaMagnet";
 import { STATUS_STYLES, getStatusOptions, PRIORITY_OPTIONS, hasEditDueDate, filterPlans, sortPlansByDate, type PlanSortKey } from "@/lib/content-plan-utils";
 import { resolveProgressSteps, type PlanArtifactsByType } from "@/lib/plan-state";
 import ProgressTrack from "./ProgressTrack";
-import ContentPlanEditModal, { type ContentPlan } from "./ContentPlanEditModal";
+import { type ContentPlan } from "./ContentPlanEditModal";
+import { useRouter } from "next/navigation";
 
 interface Props {
   apiBase: string;
@@ -160,7 +161,8 @@ export default function BoardView({ apiBase, serviceTier, isAdmin, searchQuery =
   const [themes,  setThemes]  = useState<ThemeObj[]>([]);
   const [artifactsByPlan, setArtifactsByPlan] = useState<Record<string, PlanArtifactsByType>>({});
   const [loading, setLoading] = useState(true);
-  const [editingPlan,  setEditingPlan]  = useState<ContentPlan | null>(null);
+  const router = useRouter();
+  const openPlan = (plan: ContentPlan) => router.push(`/member/content-planner/${plan.id}`);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [overId,       setOverId]       = useState<string | null>(null);
   const [errorMsg,     setErrorMsg]     = useState("");
@@ -241,7 +243,6 @@ export default function BoardView({ apiBase, serviceTier, isAdmin, searchQuery =
 
   function handlePlanDeleted(id: string) {
     setPlans((prev) => prev.filter((p) => p.id !== id));
-    setEditingPlan(null);
   }
 
   async function handleAddSubmit() {
@@ -349,7 +350,7 @@ export default function BoardView({ apiBase, serviceTier, isAdmin, searchQuery =
                         key={plan.id}
                         plan={plan}
                         artifacts={artifactsByPlan[plan.id] ?? {}}
-                        onEdit={() => setEditingPlan(plan)}
+                        onEdit={() => openPlan(plan)}
                       />
                     ))}
                   </DroppableColumn>
@@ -384,7 +385,7 @@ export default function BoardView({ apiBase, serviceTier, isAdmin, searchQuery =
                     return (
                       <div
                         key={plan.id}
-                        onClick={() => setEditingPlan(plan)}
+                        onClick={() => openPlan(plan)}
                         className="bg-white border border-gray-200 rounded-lg p-3 cursor-pointer hover:border-[var(--abv-azure)] hover:shadow-sm transition-colors"
                       >
                         {plan.thumbnailFileId && (
@@ -449,20 +450,6 @@ export default function BoardView({ apiBase, serviceTier, isAdmin, searchQuery =
           )}
         </DragOverlay>
       </DndContext>
-
-      {editingPlan && (
-        <ContentPlanEditModal
-          plan={editingPlan}
-          serviceTier={serviceTier}
-          apiBase={apiBase}
-          isAdmin={isAdmin}
-          themes={themes}
-          scriptBuilderV2Enabled={scriptBuilderV2Enabled}
-          onClose={() => setEditingPlan(null)}
-          onSaved={handlePlanSaved}
-          onDeleted={handlePlanDeleted}
-        />
-      )}
 
       {showAddModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">

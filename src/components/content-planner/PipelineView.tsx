@@ -3,7 +3,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { VideoCameraIcon, CalendarDaysIcon, FolderIcon } from "@heroicons/react/24/outline";
 import DramaMagnet from "@/components/icons/DramaMagnet";
-import ContentPlanEditModal, { type ContentPlan } from "./ContentPlanEditModal";
+import { type ContentPlan } from "./ContentPlanEditModal";
+import { useRouter } from "next/navigation";
 import ProgressTrack from "./ProgressTrack";
 import { resolveProgressSteps, type PlanArtifactsByType } from "@/lib/plan-state";
 import { STATUS_STYLES, filterPlans, getStatusOptions, sortPlansByDate, type PlanSortKey } from "@/lib/content-plan-utils";
@@ -59,7 +60,8 @@ export default function PipelineView({
   const [plans, setPlans] = useState<ContentPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [editingPlan, setEditingPlan] = useState<ContentPlan | null>(null);
+  const router = useRouter();
+  const openPlan = (plan: ContentPlan) => router.push(`/member/content-planner/${plan.id}`);
   const [dragId, setDragId] = useState<string | null>(null);
   const [dragOverCol, setDragOverCol] = useState<string | null>(null);
   const [artifactsByPlan, setArtifactsByPlan] = useState<Record<string, PlanArtifactsByType>>({});
@@ -140,7 +142,7 @@ export default function PipelineView({
     const steps = resolveProgressSteps(
       { id: plan.id, status: plan.status, script: plan.script },
       artifacts,
-      () => setEditingPlan(plan)
+      () => openPlan(plan)
     );
     const review = artifacts?.script_review?.[0];
     const score = (review?.metadata as { score?: number } | undefined)?.score;
@@ -154,7 +156,7 @@ export default function PipelineView({
           e.dataTransfer.effectAllowed = "move";
         }}
         onDragEnd={() => { setDragId(null); setDragOverCol(null); }}
-        onClick={() => setEditingPlan(plan)}
+        onClick={() => openPlan(plan)}
         className={`bg-white border border-gray-200 rounded-lg p-3 cursor-pointer transition-shadow hover:border-[var(--abv-azure)] hover:shadow-sm ${
           dragId === plan.id ? "opacity-40" : ""
         }`}
@@ -287,26 +289,6 @@ export default function PipelineView({
         </div>
       )}
 
-      {editingPlan && (
-        <ContentPlanEditModal
-          plan={editingPlan}
-          serviceTier={serviceTier}
-          apiBase={apiBase}
-          isAdmin={isAdmin}
-          scriptBuilderV2Enabled={scriptBuilderV2Enabled}
-          onClose={() => setEditingPlan(null)}
-          onSaved={(updated) => {
-            // Wave 4 auto-save: do NOT close the modal here. Auto-save
-            // fires continuously on every edit; the modal close is owned
-            // exclusively by `onClose`.
-            setPlans((list) => list.map((p) => (p.id === updated.id ? updated : p)));
-          }}
-          onDeleted={(id) => {
-            setPlans((list) => list.filter((p) => p.id !== id));
-            setEditingPlan(null);
-          }}
-        />
-      )}
     </>
   );
 }
