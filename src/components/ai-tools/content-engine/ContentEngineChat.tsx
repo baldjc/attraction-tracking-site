@@ -50,7 +50,7 @@ interface Props {
 export default function ContentEngineChat({ theme, onBack }: Props) {
   const themeName = typeof theme === "string" ? theme : theme.name;
   const themeEmoji = typeof theme === "string" ? null : (theme.emoji ?? null);
-  const themeColour = typeof theme === "string" ? "#6ba3c7" : (theme.colour ?? "#6ba3c7");
+  const themeColour = typeof theme === "string" ? "var(--abv-ai-tools)" : (theme.colour ?? "var(--abv-ai-tools)");
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -141,10 +141,10 @@ export default function ContentEngineChat({ theme, onBack }: Props) {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center gap-3 pb-4 border-b border-[#2f3437]/10 dark:border-white/10 mb-4">
+      <div className="flex items-center gap-3 pb-4 border-b border-[var(--abv-text)]/10 dark:border-white/10 mb-4">
         <button
           onClick={onBack}
-          className="text-sm text-[#2f3437]/50 dark:text-white/50 hover:text-[#2f3437] dark:hover:text-white transition-colors flex items-center gap-1"
+          className="text-sm text-[var(--abv-text)]/50 dark:text-white/50 hover:text-[var(--abv-text)] dark:hover:text-white transition-colors flex items-center gap-1"
         >
           ← Back
         </button>
@@ -155,16 +155,16 @@ export default function ContentEngineChat({ theme, onBack }: Props) {
           {themeEmoji && <span>{themeEmoji}</span>}
           <span>{themeName}</span>
         </div>
-        <span className="text-xs text-[#2f3437]/40 dark:text-white/40">Go Deeper mode</span>
+        <span className="text-xs text-[var(--abv-text)]/40 dark:text-white/40">Go Deeper mode</span>
       </div>
 
       {/* Resume draft banner */}
       {draftChecked && showResumeBanner && resumeSnapshot && (
-        <div className="mb-4 bg-[#6ba3c7]/10 border border-[#6ba3c7]/30 rounded-lg p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="mb-4 bg-[var(--abv-ai-tools)]/10 border border-[var(--abv-ai-tools)]/30 rounded-lg p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <p className="font-semibold text-[#2f3437] dark:text-white text-sm">Resume previous conversation</p>
+            <p className="font-semibold text-[var(--abv-text)] dark:text-white text-sm">Resume previous conversation</p>
             {resumeTimestamp && (
-              <p className="text-xs text-[#2f3437]/50 dark:text-white/50 mt-0.5">
+              <p className="text-xs text-[var(--abv-text)]/50 dark:text-white/50 mt-0.5">
                 Last saved {new Date(resumeTimestamp).toLocaleDateString("en-CA", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
               </p>
             )}
@@ -172,13 +172,13 @@ export default function ContentEngineChat({ theme, onBack }: Props) {
           <div className="flex gap-2 shrink-0">
             <button
               onClick={handleResumeDraft}
-              className="px-3 py-1.5 bg-[#6ba3c7] hover:bg-[#5490b5] text-white text-xs font-medium rounded-md transition-colors"
+              className="px-3 py-1.5 $1var(--abv-ai-tools)$2 hover:bg-[var(--abv-ai-tools)]/85 text-white text-xs font-medium rounded-md transition-colors"
             >
               Resume
             </button>
             <button
               onClick={handleDismissDraft}
-              className="px-3 py-1.5 border border-[#2f3437]/20 text-[#2f3437]/60 dark:text-white/50 hover:text-[#2f3437] dark:hover:text-white text-xs font-medium rounded-md transition-colors"
+              className="px-3 py-1.5 border border-[var(--abv-text)]/20 text-[var(--abv-text)]/60 dark:text-white/50 hover:text-[var(--abv-text)] dark:hover:text-white text-xs font-medium rounded-md transition-colors"
             >
               Start fresh
             </button>
@@ -190,8 +190,8 @@ export default function ContentEngineChat({ theme, onBack }: Props) {
         {messages.length === 0 && (
           <div className="text-center py-12">
             <p className="text-2xl mb-3">{themeEmoji ?? "💬"}</p>
-            <p className="text-sm font-medium text-[#2f3437] dark:text-white">Explore the <span style={{ color: themeColour }}>{themeName}</span> theme</p>
-            <p className="text-xs text-[#2f3437]/50 dark:text-white/50 mt-1 max-w-xs mx-auto">
+            <p className="text-sm font-medium text-[var(--abv-text)] dark:text-white">Explore the <span style={{ color: themeColour }}>{themeName}</span> theme</p>
+            <p className="text-xs text-[var(--abv-text)]/50 dark:text-white/50 mt-1 max-w-xs mx-auto">
               Ask for specific ideas, request variations, or explore different angles within this theme.
             </p>
           </div>
@@ -200,7 +200,7 @@ export default function ContentEngineChat({ theme, onBack }: Props) {
         {messages.map((msg, i) => (
           <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
             {msg.role === "user" ? (
-              <div className="bg-[#111] dark:bg-[#6ba3c7]/20 text-white text-sm px-4 py-2.5 rounded-lg rounded-br-sm max-w-[80%]">
+              <div className="bg-[#111] dark:bg-[var(--abv-ai-tools)]/20 text-white text-sm px-4 py-2.5 rounded-lg rounded-br-sm max-w-[80%]">
                 {msg.content}
               </div>
             ) : (
@@ -209,7 +209,7 @@ export default function ContentEngineChat({ theme, onBack }: Props) {
                   seg.type === "idea" && seg.idea ? (
                     <IdeaCard key={j} idea={seg.idea} theme={themeName} />
                   ) : (
-                    <MarkdownMessage key={j} className="text-sm text-[#2f3437]/80 dark:text-white/80 leading-relaxed">
+                    <MarkdownMessage key={j} className="text-sm text-[var(--abv-text)]/80 dark:text-white/80 leading-relaxed">
                       {seg.text ?? ""}
                     </MarkdownMessage>
                   )
@@ -227,7 +227,7 @@ export default function ContentEngineChat({ theme, onBack }: Props) {
         <div ref={bottomRef} />
       </div>
 
-      <div className="pt-4 border-t border-[#2f3437]/10 dark:border-white/10 mt-4">
+      <div className="pt-4 border-t border-[var(--abv-text)]/10 dark:border-white/10 mt-4">
         <div className="flex gap-2">
           <input
             type="text"
@@ -236,12 +236,12 @@ export default function ContentEngineChat({ theme, onBack }: Props) {
             onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
             placeholder={`Ask about the "${themeName}" theme...`}
             disabled={loading}
-            className="flex-1 bg-white dark:bg-[#0f1419] border border-[#2f3437]/20 dark:border-white/20 rounded-lg px-4 py-2.5 text-sm text-[#2f3437] dark:text-white placeholder-[#2f3437]/30 dark:placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40"
+            className="flex-1 bg-white dark:bg-[#0f1419] border border-[var(--abv-text)]/20 dark:border-white/20 rounded-lg px-4 py-2.5 text-sm text-[var(--abv-text)] dark:text-white placeholder-[var(--abv-text)]/30 dark:placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[var(--abv-ai-tools)]/40"
           />
           <button
             onClick={handleSend}
             disabled={loading || !input.trim()}
-            className="bg-[#6ba3c7] hover:bg-[#2bb0ec] text-white text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors disabled:opacity-40"
+            className="bg-[var(--abv-ai-tools)] hover:bg-[#2bb0ec] text-white text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors disabled:opacity-40"
           >
             Send
           </button>

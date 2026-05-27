@@ -50,18 +50,18 @@ export default async function ClientOverviewPage({ params }: { params: Promise<{
   return (
     <div className="max-w-4xl mx-auto">
       <div className="mb-6">
-        <Link href="/admin/intelligence/clients" className="text-sm text-[#2f3437]/50 hover:text-[#2f3437]">← Clients</Link>
+        <Link href="/admin/intelligence/clients" className="text-sm text-[var(--abv-text)]/50 hover:text-[var(--abv-text)]">← Clients</Link>
       </div>
 
-      <div className="bg-white border border-[#2f3437]/10 rounded-xl p-6 mb-6">
+      <div className="bg-white border border-[var(--abv-text)]/10 rounded-xl p-6 mb-6">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-xl font-bold text-[#2f3437]">{client.name}</h1>
-            <p className="text-sm text-[#2f3437]/60 mt-1">
+            <h1 className="text-xl font-bold text-[var(--abv-text)]">{client.name}</h1>
+            <p className="text-sm text-[var(--abv-text)]/60 mt-1">
               {client.city}{client.province ? `, ${client.province}` : ""} · {AUDIENCE_LABELS[client.audiencePrimary] ?? client.audiencePrimary}
             </p>
             {client.niche && (
-              <p className="text-sm text-[#2f3437]/40 mt-0.5">{client.niche}</p>
+              <p className="text-sm text-[var(--abv-text)]/40 mt-0.5">{client.niche}</p>
             )}
           </div>
           <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${client.active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
@@ -71,14 +71,14 @@ export default async function ClientOverviewPage({ params }: { params: Promise<{
         {client.audienceSecondary.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-1.5">
             {client.audienceSecondary.map((a) => (
-              <span key={a} className="px-2 py-0.5 bg-[#6ba3c7]/10 text-[#6ba3c7] text-xs rounded-full">
+              <span key={a} className="px-2 py-0.5 bg-[var(--abv-dark)]/10 text-[var(--abv-azure)] text-xs rounded-full">
                 {AUDIENCE_LABELS[a] ?? a}
               </span>
             ))}
           </div>
         )}
         {client.ownChannelUrl && (
-          <a href={client.ownChannelUrl} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1 text-xs text-[#6ba3c7] hover:underline">
+          <a href={client.ownChannelUrl} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1 text-xs text-[var(--abv-azure)] hover:underline">
             📺 {client.ownChannelUrl}
           </a>
         )}
@@ -89,15 +89,15 @@ export default async function ClientOverviewPage({ params }: { params: Promise<{
           <Link
             key={link.href}
             href={link.href}
-            className="bg-white border border-[#2f3437]/10 rounded-xl p-4 hover:shadow-sm hover:border-[#2f3437]/20 transition-all"
+            className="bg-white border border-[var(--abv-text)]/10 rounded-xl p-4 hover:shadow-sm hover:border-[var(--abv-text)]/20 transition-all"
           >
             <div className="flex items-center justify-between mb-2">
               <span className="text-xl">{link.icon}</span>
               {link.count !== null && (
-                <span className="text-xs text-[#2f3437]/40">{link.count} {link.unit}</span>
+                <span className="text-xs text-[var(--abv-text)]/40">{link.count} {link.unit}</span>
               )}
             </div>
-            <p className="text-sm font-medium text-[#2f3437]">{link.label}</p>
+            <p className="text-sm font-medium text-[var(--abv-text)]">{link.label}</p>
           </Link>
         ))}
       </div>

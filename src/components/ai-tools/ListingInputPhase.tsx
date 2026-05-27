@@ -121,8 +121,8 @@ export default function ListingInputPhase({ onSubmit, loading }: Props) {
     });
   }
 
-  const inputClass = "w-full bg-white dark:bg-[#0f1419] border border-[#2f3437]/20 dark:border-white/20 rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-white placeholder-[#2f3437]/30 dark:placeholder-white/30 focus:outline-none focus:border-[#6ba3c7] transition-colors";
-  const labelClass = "block text-sm font-semibold text-[#2f3437] dark:text-white mb-1.5";
+  const inputClass = "w-full bg-white dark:bg-[#0f1419] border border-[var(--abv-text)]/20 dark:border-white/20 rounded-lg px-4 py-3 text-sm text-[var(--abv-text)] dark:text-white placeholder-[var(--abv-text)]/30 dark:placeholder-white/30 focus:outline-none focus:border-[var(--abv-ai-tools)] transition-colors";
+  const labelClass = "block text-sm font-semibold text-[var(--abv-text)] dark:text-white mb-1.5";
 
   return (
     <div className="space-y-5">
@@ -171,20 +171,20 @@ export default function ListingInputPhase({ onSubmit, loading }: Props) {
       </div>
 
       {/* Optional expandable details */}
-      <div className="border border-[#2f3437]/10 dark:border-white/10 rounded-lg overflow-hidden">
+      <div className="border border-[var(--abv-text)]/10 dark:border-white/10 rounded-lg overflow-hidden">
         <button
           type="button"
           onClick={() => setShowDetails((o) => !o)}
-          className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-[#2f3437] dark:text-white hover:bg-[#6ba3c7]/5 transition-colors"
+          className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-[var(--abv-text)] dark:text-white hover:bg-[var(--abv-ai-tools)]/5 transition-colors"
         >
-          <span>Add More Details <span className="text-[#2f3437]/40 dark:text-white/40 font-normal">(optional — improves results)</span></span>
+          <span>Add More Details <span className="text-[var(--abv-text)]/40 dark:text-white/40 font-normal">(optional — improves results)</span></span>
           {showDetails
-            ? <ChevronUpIcon className="w-4 h-4 text-[#2f3437]/40" />
-            : <ChevronDownIcon className="w-4 h-4 text-[#2f3437]/40" />}
+            ? <ChevronUpIcon className="w-4 h-4 text-[var(--abv-text)]/40" />
+            : <ChevronDownIcon className="w-4 h-4 text-[var(--abv-text)]/40" />}
         </button>
 
         {showDetails && (
-          <div className="px-4 pb-4 space-y-4 border-t border-[#2f3437]/8 dark:border-white/8">
+          <div className="px-4 pb-4 space-y-4 border-t border-[var(--abv-text)]/8 dark:border-white/8">
             <div className="pt-3">
               <label className={labelClass}>Key Features</label>
               <MarkdownTextarea
@@ -232,7 +232,7 @@ export default function ListingInputPhase({ onSubmit, loading }: Props) {
             {/* File upload */}
             <div>
               <label className={labelClass}>
-                Upload Files <span className="text-[#2f3437]/40 dark:text-white/40 font-normal">(PDF, DOCX, XLSX, CSV, TXT — max 3 files)</span>
+                Upload Files <span className="text-[var(--abv-text)]/40 dark:text-white/40 font-normal">(PDF, DOCX, XLSX, CSV, TXT — max 3 files)</span>
               </label>
               <div
                 onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
@@ -241,13 +241,13 @@ export default function ListingInputPhase({ onSubmit, loading }: Props) {
                 onClick={() => fileInputRef.current?.click()}
                 className={`relative border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
                   isDragging
-                    ? "border-[#6ba3c7] bg-[#6ba3c7]/5"
-                    : "border-[#2f3437]/15 dark:border-white/15 hover:border-[#6ba3c7]/50"
+                    ? "border-[var(--abv-ai-tools)] bg-[var(--abv-ai-tools)]/5"
+                    : "border-[var(--abv-text)]/15 dark:border-white/15 hover:border-[var(--abv-ai-tools)]/50"
                 }`}
               >
-                <DocumentArrowUpIcon className="w-7 h-7 text-[#2f3437]/30 dark:text-white/30 mx-auto mb-1.5" />
-                <p className="text-sm text-[#2f3437]/50 dark:text-white/50">
-                  Drag files here or <span className="text-[#6ba3c7] font-medium">click to browse</span>
+                <DocumentArrowUpIcon className="w-7 h-7 text-[var(--abv-text)]/30 dark:text-white/30 mx-auto mb-1.5" />
+                <p className="text-sm text-[var(--abv-text)]/50 dark:text-white/50">
+                  Drag files here or <span className="text-[var(--abv-ai-tools)] font-medium">click to browse</span>
                 </p>
                 <input
                   ref={fileInputRef}
@@ -262,11 +262,11 @@ export default function ListingInputPhase({ onSubmit, loading }: Props) {
               {files.length > 0 && (
                 <ul className="mt-2 space-y-1.5">
                   {files.map((f) => (
-                    <li key={f.file.name} className="flex items-center gap-2 bg-white dark:bg-[#1a1a1a] border border-[#2f3437]/10 dark:border-white/10 rounded-lg px-3 py-2">
-                      <DocumentArrowUpIcon className="w-4 h-4 text-[#6ba3c7] shrink-0" />
-                      <span className="text-sm text-[#2f3437] dark:text-white flex-1 truncate">{f.file.name}</span>
-                      <span className="text-xs text-[#2f3437]/40 dark:text-white/40">{formatBytes(f.file.size)}</span>
-                      <button onClick={() => removeFile(f.file.name)} className="text-[#2f3437]/30 hover:text-red-500 transition-colors">
+                    <li key={f.file.name} className="flex items-center gap-2 bg-white dark:bg-[#1a1a1a] border border-[var(--abv-text)]/10 dark:border-white/10 rounded-lg px-3 py-2">
+                      <DocumentArrowUpIcon className="w-4 h-4 text-[var(--abv-ai-tools)] shrink-0" />
+                      <span className="text-sm text-[var(--abv-text)] dark:text-white flex-1 truncate">{f.file.name}</span>
+                      <span className="text-xs text-[var(--abv-text)]/40 dark:text-white/40">{formatBytes(f.file.size)}</span>
+                      <button onClick={() => removeFile(f.file.name)} className="text-[var(--abv-text)]/30 hover:text-red-500 transition-colors">
                         <XMarkIcon className="w-4 h-4" />
                       </button>
                     </li>
@@ -281,7 +281,7 @@ export default function ListingInputPhase({ onSubmit, loading }: Props) {
       <button
         onClick={handleSubmit}
         disabled={!canSubmit}
-        className="w-full py-3 px-4 bg-[#6ba3c7] hover:bg-[#5a8fb3] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors text-sm"
+        className="w-full py-3 px-4 bg-[var(--abv-ai-tools)] hover:bg-[#5a8fb3] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors text-sm"
       >
         {uploading ? "Reading files…" : loading ? "Building your video concepts…" : "Build My Video Concept"}
       </button>

@@ -64,29 +64,29 @@ function MemberPicker({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between gap-2 px-3 py-2 border border-[#2f3437]/15 rounded-lg text-sm bg-white hover:border-[#6ba3c7]/50 transition-colors"
+        className="w-full flex items-center justify-between gap-2 px-3 py-2 border border-[var(--abv-text)]/15 rounded-lg text-sm bg-white hover:border-[var(--abv-azure)]/50 transition-colors"
       >
-        <span className="text-[#2f3437]/60 truncate">
+        <span className="text-[var(--abv-text)]/60 truncate">
           {selected.length === 0 ? "Add members…" : `${selected.length} member${selected.length !== 1 ? "s" : ""} selected`}
         </span>
-        <ChevronDownIcon className={`w-3.5 h-3.5 text-[#2f3437]/40 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
+        <ChevronDownIcon className={`w-3.5 h-3.5 text-[var(--abv-text)]/40 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
 
       {open && (
-        <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-[#2f3437]/15 rounded-lg shadow-lg z-20 overflow-hidden">
-          <div className="p-2 border-b border-[#2f3437]/8">
+        <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-[var(--abv-text)]/15 rounded-lg shadow-lg z-20 overflow-hidden">
+          <div className="p-2 border-b border-[var(--abv-text)]/8">
             <input
               autoFocus
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search members…"
-              className="w-full px-3 py-1.5 text-sm border border-[#2f3437]/15 rounded-lg focus:outline-none focus:border-[#6ba3c7]"
+              className="w-full px-3 py-1.5 text-sm border border-[var(--abv-text)]/15 rounded-lg focus:outline-none focus:border-[var(--abv-azure)]"
             />
           </div>
-          <ul className="max-h-52 overflow-y-auto divide-y divide-[#2f3437]/6">
+          <ul className="max-h-52 overflow-y-auto divide-y divide-[var(--abv-text)]/6">
             {filtered.length === 0 ? (
-              <li className="px-4 py-3 text-sm text-[#2f3437]/40 text-center">No members found</li>
+              <li className="px-4 py-3 text-sm text-[var(--abv-text)]/40 text-center">No members found</li>
             ) : (
               filtered.map((m) => {
                 const checked = selected.includes(m.id);
@@ -95,14 +95,14 @@ function MemberPicker({
                     <button
                       type="button"
                       onClick={() => toggle(m.id)}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[#6ba3c7]/5 transition-colors text-left"
+                      className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[var(--abv-dark)]/5 transition-colors text-left"
                     >
-                      <span className={`w-4 h-4 rounded border shrink-0 flex items-center justify-center ${checked ? "bg-[#6ba3c7] border-[#6ba3c7]" : "border-[#2f3437]/25"}`}>
+                      <span className={`w-4 h-4 rounded border shrink-0 flex items-center justify-center ${checked ? "bg-[var(--abv-dark)] border-[var(--abv-azure)]" : "border-[var(--abv-text)]/25"}`}>
                         {checked && <CheckIcon className="w-3 h-3 text-white" />}
                       </span>
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-[#2f3437] truncate">{m.fullName || m.email}</p>
-                        {m.youtubeChannelName && <p className="text-xs text-[#2f3437]/40 truncate">{m.youtubeChannelName}</p>}
+                        <p className="text-sm font-medium text-[var(--abv-text)] truncate">{m.fullName || m.email}</p>
+                        {m.youtubeChannelName && <p className="text-xs text-[var(--abv-text)]/40 truncate">{m.youtubeChannelName}</p>}
                       </div>
                     </button>
                   </li>
@@ -116,9 +116,9 @@ function MemberPicker({
       {selectedMembers.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mt-2">
           {selectedMembers.map((m) => (
-            <span key={m.id} className="inline-flex items-center gap-1 bg-[#6ba3c7]/10 text-[#2f3437] text-xs font-medium px-2 py-1 rounded-full">
+            <span key={m.id} className="inline-flex items-center gap-1 bg-[var(--abv-dark)]/10 text-[var(--abv-text)] text-xs font-medium px-2 py-1 rounded-full">
               {m.fullName || m.email}
-              <button type="button" onClick={() => toggle(m.id)} className="hover:text-[#ff0033]">
+              <button type="button" onClick={() => toggle(m.id)} className="hover:text-[var(--abv-crimson)]">
                 <XMarkIcon className="w-3 h-3" />
               </button>
             </span>
@@ -199,11 +199,11 @@ function StaffCard({
     : "bg-amber-100 text-amber-700";
 
   return (
-    <div className="border border-[#2f3437]/10 rounded-lg p-5 space-y-4">
+    <div className="border border-[var(--abv-text)]/10 rounded-lg p-5 space-y-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-[#2f3437] truncate">{staff.fullName || staff.email}</p>
-          <p className="text-xs text-[#2f3437]/50 truncate">{staff.email}</p>
+          <p className="text-sm font-semibold text-[var(--abv-text)] truncate">{staff.fullName || staff.email}</p>
+          <p className="text-xs text-[var(--abv-text)]/50 truncate">{staff.email}</p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <span className={`text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full ${roleBadge}`}>
@@ -214,7 +214,7 @@ function StaffCard({
             onClick={handleViewAs}
             disabled={viewingAs}
             title={`View as ${staff.fullName || staff.email}`}
-            className="text-xs font-medium text-[#6ba3c7] border border-[#6ba3c7]/30 px-2.5 py-1 rounded-lg hover:bg-[#6ba3c7]/10 disabled:opacity-50 transition-colors"
+            className="text-xs font-medium text-[var(--abv-azure)] border border-[var(--abv-azure)]/30 px-2.5 py-1 rounded-lg hover:bg-[var(--abv-dark)]/10 disabled:opacity-50 transition-colors"
           >
             {viewingAs ? "…" : "View as"}
           </button>
@@ -222,7 +222,7 @@ function StaffCard({
             <button
               type="button"
               onClick={() => setConfirmRemove(true)}
-              className="text-[#2f3437]/30 hover:text-[#ff0033] transition-colors"
+              className="text-[var(--abv-text)]/30 hover:text-[var(--abv-crimson)] transition-colors"
               title="Remove account"
             >
               <XMarkIcon className="w-4 h-4" />
@@ -232,13 +232,13 @@ function StaffCard({
       </div>
 
       {confirmRemove && (
-        <div className="bg-[#ff0033]/5 border border-[#ff0033]/20 rounded-lg px-4 py-3 flex items-center justify-between gap-3">
-          <p className="text-xs text-[#2f3437] font-medium">Remove this account permanently?</p>
+        <div className="bg-[var(--abv-crimson)]/5 border border-[var(--abv-crimson)]/20 rounded-lg px-4 py-3 flex items-center justify-between gap-3">
+          <p className="text-xs text-[var(--abv-text)] font-medium">Remove this account permanently?</p>
           <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
               onClick={() => setConfirmRemove(false)}
-              className="text-xs text-[#2f3437]/50 hover:text-[#2f3437] font-medium"
+              className="text-xs text-[var(--abv-text)]/50 hover:text-[var(--abv-text)] font-medium"
             >
               Cancel
             </button>
@@ -246,7 +246,7 @@ function StaffCard({
               type="button"
               onClick={handleRemove}
               disabled={removing}
-              className="text-xs font-semibold text-white bg-[#ff0033] hover:bg-[#ff0033]/80 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+              className="text-xs font-semibold text-white bg-[var(--abv-crimson)] hover:bg-[var(--abv-crimson)]/80 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
             >
               {removing ? "Removing…" : "Remove"}
             </button>
@@ -261,8 +261,8 @@ function StaffCard({
             onClick={() => setFullAccess(true)}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
               fullAccess
-                ? "bg-[#111] text-white border-[#2f3437]"
-                : "bg-white text-[#2f3437]/60 border-[#2f3437]/15 hover:border-[#2f3437]/30"
+                ? "bg-[#111] text-white border-[var(--abv-text)]"
+                : "bg-white text-[var(--abv-text)]/60 border-[var(--abv-text)]/15 hover:border-[var(--abv-text)]/30"
             }`}
           >
             All members
@@ -272,8 +272,8 @@ function StaffCard({
             onClick={() => setFullAccess(false)}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
               !fullAccess
-                ? "bg-[#111] text-white border-[#2f3437]"
-                : "bg-white text-[#2f3437]/60 border-[#2f3437]/15 hover:border-[#2f3437]/30"
+                ? "bg-[#111] text-white border-[var(--abv-text)]"
+                : "bg-white text-[var(--abv-text)]/60 border-[var(--abv-text)]/15 hover:border-[var(--abv-text)]/30"
             }`}
           >
             Custom access
@@ -289,7 +289,7 @@ function StaffCard({
         )}
 
         {fullAccess && (
-          <p className="text-xs text-[#2f3437]/40 italic">This account can see all members.</p>
+          <p className="text-xs text-[var(--abv-text)]/40 italic">This account can see all members.</p>
         )}
       </div>
 
@@ -298,7 +298,7 @@ function StaffCard({
           type="button"
           onClick={handleSave}
           disabled={saving}
-          className="bg-[#6ba3c7] text-white text-xs font-semibold px-4 py-2 rounded-lg hover:bg-[#6ba3c7]/90 disabled:opacity-50 transition-colors"
+          className="bg-[var(--abv-dark)] text-white text-xs font-semibold px-4 py-2 rounded-lg hover:bg-[var(--abv-dark)]/90 disabled:opacity-50 transition-colors"
         >
           {saving ? "Saving…" : "Save"}
         </button>
@@ -345,7 +345,7 @@ function AddStaffForm({ onCreated }: { onCreated: (s: StaffMember) => void }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-[#2f3437]/15 hover:border-[#6ba3c7]/40 rounded-lg py-3 text-sm text-[#2f3437]/40 hover:text-[#6ba3c7] transition-colors font-medium"
+        className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-[var(--abv-text)]/15 hover:border-[var(--abv-azure)]/40 rounded-lg py-3 text-sm text-[var(--abv-text)]/40 hover:text-[var(--abv-azure)] transition-colors font-medium"
       >
         <span className="text-lg leading-none">+</span> Add staff account
       </button>
@@ -353,31 +353,31 @@ function AddStaffForm({ onCreated }: { onCreated: (s: StaffMember) => void }) {
   }
 
   return (
-    <div className="border border-[#6ba3c7]/30 bg-[#6ba3c7]/3 rounded-lg p-5">
+    <div className="border border-[var(--abv-azure)]/30 bg-[var(--abv-dark)]/3 rounded-lg p-5">
       <div className="flex items-center justify-between mb-4">
-        <p className="text-sm font-semibold text-[#2f3437]">New staff account</p>
-        <button type="button" onClick={() => { setOpen(false); setError(""); }} className="text-[#2f3437]/30 hover:text-[#2f3437]">
+        <p className="text-sm font-semibold text-[var(--abv-text)]">New staff account</p>
+        <button type="button" onClick={() => { setOpen(false); setError(""); }} className="text-[var(--abv-text)]/30 hover:text-[var(--abv-text)]">
           <XMarkIcon className="w-4 h-4" />
         </button>
       </div>
       <form onSubmit={handleCreate} className="space-y-3">
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Full name</label>
+            <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Full name</label>
             <input
               type="text"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               placeholder="Jane Smith"
-              className="w-full px-3 py-2 text-sm border border-[#2f3437]/15 rounded-lg focus:outline-none focus:border-[#6ba3c7] bg-white"
+              className="w-full px-3 py-2 text-sm border border-[var(--abv-text)]/15 rounded-lg focus:outline-none focus:border-[var(--abv-azure)] bg-white"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Role</label>
+            <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Role</label>
             <select
               value={role}
               onChange={(e) => setRole(e.target.value as "admin" | "editor")}
-              className="w-full px-3 py-2 text-sm border border-[#2f3437]/15 rounded-lg focus:outline-none focus:border-[#6ba3c7] bg-white"
+              className="w-full px-3 py-2 text-sm border border-[var(--abv-text)]/15 rounded-lg focus:outline-none focus:border-[var(--abv-azure)] bg-white"
             >
               <option value="editor">Staff Admin</option>
               <option value="admin">Admin</option>
@@ -385,29 +385,29 @@ function AddStaffForm({ onCreated }: { onCreated: (s: StaffMember) => void }) {
           </div>
         </div>
         <div>
-          <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Email address <span className="text-[#ff0033]">*</span></label>
+          <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Email address <span className="text-[var(--abv-crimson)]">*</span></label>
           <input
             type="email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="jane@example.com"
-            className="w-full px-3 py-2 text-sm border border-[#2f3437]/15 rounded-lg focus:outline-none focus:border-[#6ba3c7] bg-white"
+            className="w-full px-3 py-2 text-sm border border-[var(--abv-text)]/15 rounded-lg focus:outline-none focus:border-[var(--abv-azure)] bg-white"
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Temporary password <span className="text-[#ff0033]">*</span></label>
+          <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Temporary password <span className="text-[var(--abv-crimson)]">*</span></label>
           <input
             type="text"
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Set a temporary password"
-            className="w-full px-3 py-2 text-sm border border-[#2f3437]/15 rounded-lg focus:outline-none focus:border-[#6ba3c7] bg-white font-mono"
+            className="w-full px-3 py-2 text-sm border border-[var(--abv-text)]/15 rounded-lg focus:outline-none focus:border-[var(--abv-azure)] bg-white font-mono"
           />
-          <p className="text-[10px] text-[#2f3437]/40 mt-1">Share this password with the team member so they can sign in.</p>
+          <p className="text-[10px] text-[var(--abv-text)]/40 mt-1">Share this password with the team member so they can sign in.</p>
         </div>
-        {error && <p className="text-xs text-[#ff0033] font-medium">{error}</p>}
+        {error && <p className="text-xs text-[var(--abv-crimson)] font-medium">{error}</p>}
         <div className="flex items-center gap-3 pt-1">
           <button
             type="submit"
@@ -416,7 +416,7 @@ function AddStaffForm({ onCreated }: { onCreated: (s: StaffMember) => void }) {
           >
             {saving ? "Creating…" : "Create account"}
           </button>
-          <button type="button" onClick={() => { setOpen(false); setError(""); }} className="text-xs text-[#2f3437]/50 hover:text-[#2f3437]">
+          <button type="button" onClick={() => { setOpen(false); setError(""); }} className="text-xs text-[var(--abv-text)]/50 hover:text-[var(--abv-text)]">
             Cancel
           </button>
         </div>
@@ -458,10 +458,10 @@ function StaffAccessSection() {
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6">
       <div className="flex items-center gap-2 mb-1">
-        <UserGroupIcon className="w-5 h-5 text-[#6ba3c7]" />
-        <h2 className="text-base font-semibold text-[#2f3437]">Staff & Editor Access</h2>
+        <UserGroupIcon className="w-5 h-5 text-[var(--abv-azure)]" />
+        <h2 className="text-base font-semibold text-[var(--abv-text)]">Staff & Editor Access</h2>
       </div>
-      <p className="text-sm text-[#2f3437]/50 mb-5">
+      <p className="text-sm text-[var(--abv-text)]/50 mb-5">
         Create and manage admin or editor accounts. Control which members each one can see — &ldquo;All members&rdquo; for full access, or &ldquo;Custom access&rdquo; to restrict by member.
       </p>
 
@@ -560,7 +560,7 @@ function Toggle({ enabled, onChange, disabled }: { enabled: boolean; onChange: (
       disabled={disabled}
       className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors shrink-0 ${
         disabled ? "opacity-40 cursor-not-allowed" : "cursor-pointer"
-      } ${enabled ? "bg-[#6ba3c7]" : "bg-[#111]/20"}`}
+      } ${enabled ? "bg-[var(--abv-dark)]" : "bg-[#111]/20"}`}
     >
       <span
         className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${
@@ -660,19 +660,19 @@ function V2FlagCard({
   }
 
   return (
-    <div className="border border-[#2f3437]/10 rounded-lg p-4 bg-white">
+    <div className="border border-[var(--abv-text)]/10 rounded-lg p-4 bg-white">
       <div className="flex items-start justify-between gap-4 mb-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <code className="text-sm font-semibold text-[#2f3437]">{flagKey}</code>
+            <code className="text-sm font-semibold text-[var(--abv-text)]">{flagKey}</code>
             <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded bg-purple-100 text-purple-700">
               v2
             </span>
           </div>
-          <p className="text-xs text-[#2f3437]/50 mt-0.5">{label} — {desc}</p>
+          <p className="text-xs text-[var(--abv-text)]/50 mt-0.5">{label} — {desc}</p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <span className="text-[11px] font-medium text-[#2f3437]/60">Enabled</span>
+          <span className="text-[11px] font-medium text-[var(--abv-text)]/60">Enabled</span>
           <Toggle
             enabled={draft.enabled}
             onChange={(v) => setDraft({ ...draft, enabled: v })}
@@ -681,13 +681,13 @@ function V2FlagCard({
         </div>
       </div>
 
-      <div className="border-t border-[#2f3437]/8 pt-3">
-        <p className="text-xs font-medium text-[#2f3437]/60 mb-2">
+      <div className="border-t border-[var(--abv-text)]/8 pt-3">
+        <p className="text-xs font-medium text-[var(--abv-text)]/60 mb-2">
           Members with early access (allowlist)
         </p>
 
         {draft.allowedUserIds.length === 0 ? (
-          <p className="text-xs italic text-[#2f3437]/40 mb-2">
+          <p className="text-xs italic text-[var(--abv-text)]/40 mb-2">
             No members in allowlist. Admins still see this flag via admin bypass.
           </p>
         ) : (
@@ -697,22 +697,22 @@ function V2FlagCard({
               return (
                 <li
                   key={id}
-                  className="flex items-center justify-between gap-3 px-3 py-1.5 rounded-md bg-[#6ba3c7]/5 border border-[#6ba3c7]/15"
+                  className="flex items-center justify-between gap-3 px-3 py-1.5 rounded-md bg-[var(--abv-dark)]/5 border border-[var(--abv-azure)]/15"
                 >
                   <div className="min-w-0">
                     {m ? (
                       <>
-                        <p className="text-xs font-medium text-[#2f3437] truncate">
+                        <p className="text-xs font-medium text-[var(--abv-text)] truncate">
                           {m.fullName || m.email}
                         </p>
-                        <p className="text-[10px] text-[#2f3437]/50 truncate font-mono">
+                        <p className="text-[10px] text-[var(--abv-text)]/50 truncate font-mono">
                           {m.email} · {id}
                         </p>
                       </>
                     ) : (
                       <>
                         <p className="text-xs font-medium text-amber-700 truncate">Unknown user</p>
-                        <p className="text-[10px] text-[#2f3437]/50 truncate font-mono">{id}</p>
+                        <p className="text-[10px] text-[var(--abv-text)]/50 truncate font-mono">{id}</p>
                       </>
                     )}
                   </div>
@@ -720,7 +720,7 @@ function V2FlagCard({
                     type="button"
                     onClick={() => removeMember(id)}
                     disabled={saving}
-                    className="text-[11px] font-medium text-[#ff0033] hover:bg-[#ff0033]/10 px-2 py-1 rounded disabled:opacity-40"
+                    className="text-[11px] font-medium text-[var(--abv-crimson)] hover:bg-[var(--abv-crimson)]/10 px-2 py-1 rounded disabled:opacity-40"
                   >
                     Remove
                   </button>
@@ -735,26 +735,26 @@ function V2FlagCard({
             type="button"
             onClick={() => setPickerOpen((v) => !v)}
             disabled={saving}
-            className="text-xs font-medium text-[#6ba3c7] hover:bg-[#6ba3c7]/5 border border-[#6ba3c7]/30 rounded-md px-3 py-1.5 disabled:opacity-40"
+            className="text-xs font-medium text-[var(--abv-azure)] hover:bg-[var(--abv-dark)]/5 border border-[var(--abv-azure)]/30 rounded-md px-3 py-1.5 disabled:opacity-40"
           >
             + Add member
           </button>
 
           {pickerOpen && (
-            <div className="absolute left-0 top-full mt-1 z-20 w-80 bg-white border border-[#2f3437]/15 rounded-lg shadow-lg overflow-hidden">
-              <div className="p-2 border-b border-[#2f3437]/8">
+            <div className="absolute left-0 top-full mt-1 z-20 w-80 bg-white border border-[var(--abv-text)]/15 rounded-lg shadow-lg overflow-hidden">
+              <div className="p-2 border-b border-[var(--abv-text)]/8">
                 <input
                   autoFocus
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search by name or email…"
-                  className="w-full px-3 py-1.5 text-xs border border-[#2f3437]/15 rounded-md focus:outline-none focus:border-[#6ba3c7]"
+                  className="w-full px-3 py-1.5 text-xs border border-[var(--abv-text)]/15 rounded-md focus:outline-none focus:border-[var(--abv-azure)]"
                 />
               </div>
-              <ul className="max-h-56 overflow-y-auto divide-y divide-[#2f3437]/6">
+              <ul className="max-h-56 overflow-y-auto divide-y divide-[var(--abv-text)]/6">
                 {candidates.length === 0 ? (
-                  <li className="px-3 py-3 text-xs text-[#2f3437]/40 text-center">
+                  <li className="px-3 py-3 text-xs text-[var(--abv-text)]/40 text-center">
                     {search ? "No matches" : "No members available"}
                   </li>
                 ) : (
@@ -763,12 +763,12 @@ function V2FlagCard({
                       <button
                         type="button"
                         onClick={() => addMember(m.id)}
-                        className="w-full text-left px-3 py-2 hover:bg-[#6ba3c7]/5"
+                        className="w-full text-left px-3 py-2 hover:bg-[var(--abv-dark)]/5"
                       >
-                        <p className="text-xs font-medium text-[#2f3437] truncate">
+                        <p className="text-xs font-medium text-[var(--abv-text)] truncate">
                           {m.fullName || m.email}
                         </p>
-                        <p className="text-[10px] text-[#2f3437]/50 truncate">{m.email}</p>
+                        <p className="text-[10px] text-[var(--abv-text)]/50 truncate">{m.email}</p>
                       </button>
                     </li>
                   ))
@@ -779,23 +779,23 @@ function V2FlagCard({
         </div>
       </div>
 
-      <div className="flex items-center gap-3 mt-3 pt-3 border-t border-[#2f3437]/8">
+      <div className="flex items-center gap-3 mt-3 pt-3 border-t border-[var(--abv-text)]/8">
         <button
           type="button"
           onClick={handleSave}
           disabled={saving || !dirty}
-          className="bg-[#6ba3c7] text-white text-xs font-semibold px-4 py-1.5 rounded-md hover:bg-[#6ba3c7]/90 disabled:opacity-40 transition-colors"
+          className="bg-[var(--abv-dark)] text-white text-xs font-semibold px-4 py-1.5 rounded-md hover:bg-[var(--abv-dark)]/90 disabled:opacity-40 transition-colors"
         >
           {saving ? "Saving…" : "Save"}
         </button>
         {!dirty && !toast && (
-          <span className="text-[11px] text-[#2f3437]/40">No changes</span>
+          <span className="text-[11px] text-[var(--abv-text)]/40">No changes</span>
         )}
         {toast === "saved" && (
           <span className="text-[11px] text-green-600 font-medium">✓ Saved</span>
         )}
         {toast === "error" && (
-          <span className="text-[11px] text-[#ff0033] font-medium">Failed to save</span>
+          <span className="text-[11px] text-[var(--abv-crimson)] font-medium">Failed to save</span>
         )}
       </div>
     </div>
@@ -880,10 +880,10 @@ function FeatureVisibilitySection() {
     <div className="bg-white rounded-lg border border-gray-200 p-6">
       <div className="mb-5">
         <div className="flex items-center gap-2 mb-1">
-          <EyeIcon className="w-5 h-5 text-[#6ba3c7]" />
-          <h2 className="text-base font-semibold text-[#2f3437]">Feature Visibility</h2>
+          <EyeIcon className="w-5 h-5 text-[var(--abv-azure)]" />
+          <h2 className="text-base font-semibold text-[var(--abv-text)]">Feature Visibility</h2>
         </div>
-        <p className="text-sm text-[#2f3437]/50 mt-0.5">
+        <p className="text-sm text-[var(--abv-text)]/50 mt-0.5">
           Control what members can see and access. Changes take effect immediately.
           You always see everything when viewing as a member.
         </p>
@@ -901,7 +901,7 @@ function FeatureVisibilitySection() {
 
       {flags && (
         <div className="mb-6">
-          <p className="text-[11px] font-bold text-[#2f3437]/50 uppercase tracking-widest mb-3">
+          <p className="text-[11px] font-bold text-[var(--abv-text)]/50 uppercase tracking-widest mb-3">
             Standard flags
           </p>
         </div>
@@ -916,8 +916,8 @@ function FeatureVisibilitySection() {
         const isSubGroup = !!parentFlag;
 
         return (
-          <div key={group.group} className={`mb-5 last:mb-0 ${isSubGroup ? "ml-4 pl-4 border-l-2 border-[#2f3437]/10" : ""}`}>
-            <p className="text-xs font-semibold text-[#2f3437]/40 uppercase tracking-wider mb-2">
+          <div key={group.group} className={`mb-5 last:mb-0 ${isSubGroup ? "ml-4 pl-4 border-l-2 border-[var(--abv-text)]/10" : ""}`}>
+            <p className="text-xs font-semibold text-[var(--abv-text)]/40 uppercase tracking-wider mb-2">
               {group.group}
               {isAiGroup && !aiOn && (
                 <span className="ml-2 font-normal text-amber-600 normal-case tracking-normal">
@@ -946,19 +946,19 @@ function FeatureVisibilitySection() {
                     key={item.key}
                     className={`flex items-center justify-between gap-4 px-4 py-3 rounded-lg border transition-colors ${
                       dimmed
-                        ? "bg-[#111]/3 border-[#2f3437]/5 opacity-50"
+                        ? "bg-[#111]/3 border-[var(--abv-text)]/5 opacity-50"
                         : isOn
-                        ? "bg-white border-[#2f3437]/10"
-                        : "bg-[#ff0033]/3 border-[#ff0033]/15"
+                        ? "bg-white border-[var(--abv-text)]/10"
+                        : "bg-[var(--abv-crimson)]/3 border-[var(--abv-crimson)]/15"
                     }`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${isOn && !dimmed ? "bg-[#6ba3c7]" : "bg-[#111]/20"}`} />
+                      <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${isOn && !dimmed ? "bg-[var(--abv-dark)]" : "bg-[#111]/20"}`} />
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-[#2f3437]">{item.label}</p>
-                        <p className="text-xs text-[#2f3437]/45">{item.desc}</p>
+                        <p className="text-sm font-medium text-[var(--abv-text)]">{item.label}</p>
+                        <p className="text-xs text-[var(--abv-text)]/45">{item.desc}</p>
                         {FLAG_DESCRIPTIONS[item.key] && (
-                          <p className="text-[11px] text-[#2f3437]/40 mt-0.5 leading-relaxed">
+                          <p className="text-[11px] text-[var(--abv-text)]/40 mt-0.5 leading-relaxed">
                             {FLAG_DESCRIPTIONS[item.key]}
                           </p>
                         )}
@@ -966,13 +966,13 @@ function FeatureVisibilitySection() {
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       {!isOn && !dimmed && (
-                        <span className="text-[10px] font-semibold text-[#ff0033] uppercase tracking-wide flex items-center gap-0.5">
+                        <span className="text-[10px] font-semibold text-[var(--abv-crimson)] uppercase tracking-wide flex items-center gap-0.5">
                           <EyeSlashIcon className="w-3 h-3" /> Hidden
                         </span>
                       )}
                       {isSaving ? (
                         <div className="w-9 flex justify-center">
-                          <span className="w-4 h-4 border-2 border-[#6ba3c7] border-t-transparent rounded-full animate-spin" />
+                          <span className="w-4 h-4 border-2 border-[var(--abv-azure)] border-t-transparent rounded-full animate-spin" />
                         </div>
                       ) : (
                         <Toggle
@@ -991,12 +991,12 @@ function FeatureVisibilitySection() {
       })}
 
       {flags && (
-        <div className="mt-8 pt-6 border-t border-[#2f3437]/10">
+        <div className="mt-8 pt-6 border-t border-[var(--abv-text)]/10">
           <div className="mb-4">
-            <p className="text-[11px] font-bold text-[#2f3437]/50 uppercase tracking-widest mb-1">
+            <p className="text-[11px] font-bold text-[var(--abv-text)]/50 uppercase tracking-widest mb-1">
               Per-user gated flags (v2)
             </p>
-            <p className="text-xs text-[#2f3437]/50 leading-relaxed">
+            <p className="text-xs text-[var(--abv-text)]/50 leading-relaxed">
               v2 flags are off for everyone by default. Toggle <em>Enabled</em> to open
               globally, or add specific members to the allowlist for early access.
               Admins and editors see these regardless via staff bypass.
@@ -1079,13 +1079,13 @@ function PromptEditorSection({
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           {icon}
-          <h2 className="text-base font-semibold text-[#2f3437]">{title}</h2>
+          <h2 className="text-base font-semibold text-[var(--abv-text)]">{title}</h2>
         </div>
-        <button onClick={handleReset} className="text-xs text-[#2f3437]/50 hover:text-[#2f3437] underline">
+        <button onClick={handleReset} className="text-xs text-[var(--abv-text)]/50 hover:text-[var(--abv-text)] underline">
           Reset to Default
         </button>
       </div>
-      <p className="text-xs text-[#2f3437]/50 mb-3">{description}</p>
+      <p className="text-xs text-[var(--abv-text)]/50 mb-3">{description}</p>
       {loading ? (
         <div className="h-64 bg-gray-50 rounded-lg animate-pulse" />
       ) : (
@@ -1093,14 +1093,14 @@ function PromptEditorSection({
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           rows={rows}
-          className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-[#2f3437] font-mono focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30 resize-y"
+          className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-[var(--abv-text)] font-mono focus:outline-none focus:ring-2 focus:ring-[var(--abv-azure)]/30 resize-y"
         />
       )}
       <div className="flex items-center gap-3 mt-3">
         <button
           onClick={handleSave}
           disabled={saving || loading}
-          className="bg-[#6ba3c7] hover:bg-[#5490b5] disabled:opacity-50 text-white font-semibold px-5 py-2.5 rounded-lg text-sm transition-colors"
+          className="$1var(--abv-dark)$2 hover:bg-black/85 disabled:opacity-50 text-white font-semibold px-5 py-2.5 rounded-lg text-sm transition-colors"
         >
           {saving ? "Saving…" : "Save Prompt"}
         </button>
@@ -1148,14 +1148,14 @@ function AIScoringPromptSection() {
     <div className="bg-white rounded-lg border border-gray-200 p-6">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <SparklesIcon className="w-5 h-5 text-[#6ba3c7]" />
-          <h2 className="text-base font-semibold text-[#2f3437]">AI Scoring Prompt</h2>
+          <SparklesIcon className="w-5 h-5 text-[var(--abv-azure)]" />
+          <h2 className="text-base font-semibold text-[var(--abv-text)]">AI Scoring Prompt</h2>
         </div>
-        <button onClick={handleReset} className="text-xs text-[#2f3437]/50 hover:text-[#2f3437] underline">
+        <button onClick={handleReset} className="text-xs text-[var(--abv-text)]/50 hover:text-[var(--abv-text)] underline">
           Reset to Default
         </button>
       </div>
-      <p className="text-xs text-[#2f3437]/50 mb-3">
+      <p className="text-xs text-[var(--abv-text)]/50 mb-3">
         System prompt sent to Claude when running audits. Changes take effect on the next audit run.
       </p>
       {loading ? (
@@ -1165,14 +1165,14 @@ function AIScoringPromptSection() {
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           rows={24}
-          className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-[#2f3437] font-mono focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30 resize-y"
+          className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-[var(--abv-text)] font-mono focus:outline-none focus:ring-2 focus:ring-[var(--abv-azure)]/30 resize-y"
         />
       )}
       <div className="flex items-center gap-3 mt-3">
         <button
           onClick={handleSave}
           disabled={saving || loading}
-          className="bg-[#6ba3c7] hover:bg-[#5490b5] disabled:opacity-50 text-white font-semibold px-5 py-2.5 rounded-lg text-sm transition-colors"
+          className="$1var(--abv-dark)$2 hover:bg-black/85 disabled:opacity-50 text-white font-semibold px-5 py-2.5 rounded-lg text-sm transition-colors"
         >
           {saving ? "Saving…" : "Save Prompt"}
         </button>
@@ -1213,8 +1213,8 @@ function CurrencyRateSection() {
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6">
-      <h2 className="text-base font-semibold text-[#2f3437] mb-1">USD → CAD Exchange Rate</h2>
-      <p className="text-xs text-[#2f3437]/50 mb-4">
+      <h2 className="text-base font-semibold text-[var(--abv-text)] mb-1">USD → CAD Exchange Rate</h2>
+      <p className="text-xs text-[var(--abv-text)]/50 mb-4">
         Used to convert USD subscription amounts to CAD across the Members page and MRR card. Update whenever the rate changes.
       </p>
       {loading ? (
@@ -1222,22 +1222,22 @@ function CurrencyRateSection() {
       ) : (
         <div className="flex items-center gap-3">
           <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden w-40">
-            <span className="px-3 py-2.5 text-sm text-[#2f3437]/50 bg-gray-50 border-r border-gray-200 select-none">1 USD =</span>
+            <span className="px-3 py-2.5 text-sm text-[var(--abv-text)]/50 bg-gray-50 border-r border-gray-200 select-none">1 USD =</span>
             <input
               type="number"
               step="0.01"
               min="0.01"
               value={rate}
               onChange={(e) => setRate(e.target.value)}
-              className="w-full px-3 py-2.5 text-sm text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30"
+              className="w-full px-3 py-2.5 text-sm text-[var(--abv-text)] focus:outline-none focus:ring-2 focus:ring-[var(--abv-azure)]/30"
               placeholder="1.38"
             />
           </div>
-          <span className="text-sm text-[#2f3437]/50">CAD</span>
+          <span className="text-sm text-[var(--abv-text)]/50">CAD</span>
           <button
             onClick={handleSave}
             disabled={saving || loading}
-            className="bg-[#6ba3c7] hover:bg-[#5490b5] disabled:opacity-50 text-white font-semibold px-4 py-2.5 rounded-lg text-sm transition-colors"
+            className="$1var(--abv-dark)$2 hover:bg-black/85 disabled:opacity-50 text-white font-semibold px-4 py-2.5 rounded-lg text-sm transition-colors"
           >
             {saving ? "Saving…" : "Save"}
           </button>
@@ -1360,12 +1360,12 @@ function LandingPageSettingsSection() {
       {/* Webinar Configuration card */}
       <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl shadow-sm border border-[#111]/8 dark:border-white/8 overflow-hidden">
         <div className="px-6 py-5 border-b border-[#111]/8 dark:border-white/8 flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-[#6ba3c7]/10 flex items-center justify-center shrink-0">
-            <Cog6ToothIcon className="w-5 h-5 text-[#6ba3c7]" />
+          <div className="w-9 h-9 rounded-lg bg-[var(--abv-dark)]/10 flex items-center justify-center shrink-0">
+            <Cog6ToothIcon className="w-5 h-5 text-[var(--abv-azure)]" />
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-[#2f3437] dark:text-white">Webinar Configuration</h3>
-            <p className="text-xs text-[#2f3437]/50 dark:text-white/40 mt-0.5">
+            <h3 className="text-sm font-semibold text-[var(--abv-text)] dark:text-white">Webinar Configuration</h3>
+            <p className="text-xs text-[var(--abv-text)]/50 dark:text-white/40 mt-0.5">
               These values feed the public landing page and GHL custom values.
             </p>
           </div>
@@ -1373,10 +1373,10 @@ function LandingPageSettingsSection() {
         <div className="divide-y divide-[#111]/5 dark:divide-white/5">
           {webinarRows.map((row) => (
             <div key={row.key} className="px-6 py-4">
-              <label className="block text-xs font-semibold text-[#2f3437]/70 dark:text-white/50 mb-1.5 uppercase tracking-wide">
+              <label className="block text-xs font-semibold text-[var(--abv-text)]/70 dark:text-white/50 mb-1.5 uppercase tracking-wide">
                 {row.label ?? row.key}
                 {row.ghlCustomValueKey && (
-                  <span className="ml-2 normal-case tracking-normal font-normal text-[#6ba3c7]/70">
+                  <span className="ml-2 normal-case tracking-normal font-normal text-[var(--abv-azure)]/70">
                     → GHL: {row.ghlCustomValueKey}
                   </span>
                 )}
@@ -1390,7 +1390,7 @@ function LandingPageSettingsSection() {
                     }))
                   }
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
-                    values[row.key] === "true" ? "bg-[#6ba3c7]" : "bg-[#111]/20 dark:bg-white/20"
+                    values[row.key] === "true" ? "bg-[var(--abv-dark)]" : "bg-[#111]/20 dark:bg-white/20"
                   }`}
                 >
                   <span
@@ -1405,7 +1405,7 @@ function LandingPageSettingsSection() {
                     type="url"
                     value={values[row.key] ?? ""}
                     onChange={(e) => setValues((v) => ({ ...v, [row.key]: e.target.value }))}
-                    className="flex-1 text-sm text-[#2f3437] dark:text-white bg-[#f7f6f3] dark:bg-white/5 border border-[#111]/10 dark:border-white/10 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30 font-mono"
+                    className="flex-1 text-sm text-[var(--abv-text)] dark:text-white bg-[var(--abv-bg)] dark:bg-white/5 border border-[#111]/10 dark:border-white/10 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--abv-azure)]/30 font-mono"
                     placeholder="https://"
                   />
                   {values[row.key] && (
@@ -1413,7 +1413,7 @@ function LandingPageSettingsSection() {
                       href={values[row.key]}
                       target="_blank"
                       rel="noreferrer"
-                      className="text-[#6ba3c7] hover:text-[#5490b5] shrink-0"
+                      className="text-[var(--abv-azure)] hover:text-[var(--abv-azure)] shrink-0"
                       title="Open URL"
                     >
                       <ArrowTopRightOnSquareIcon className="w-4 h-4" />
@@ -1425,7 +1425,7 @@ function LandingPageSettingsSection() {
                   type="text"
                   value={values[row.key] ?? ""}
                   onChange={(e) => setValues((v) => ({ ...v, [row.key]: e.target.value }))}
-                  className="w-full text-sm text-[#2f3437] dark:text-white bg-[#f7f6f3] dark:bg-white/5 border border-[#111]/10 dark:border-white/10 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30"
+                  className="w-full text-sm text-[var(--abv-text)] dark:text-white bg-[var(--abv-bg)] dark:bg-white/5 border border-[#111]/10 dark:border-white/10 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--abv-azure)]/30"
                 />
               )}
             </div>
@@ -1443,7 +1443,7 @@ function LandingPageSettingsSection() {
         <button
           onClick={handleSave}
           disabled={saving}
-          className="inline-flex items-center gap-2 bg-[#6ba3c7] hover:bg-[#5490b5] disabled:opacity-50 text-white font-semibold px-6 py-2.5 rounded-xl text-sm transition-colors"
+          className="inline-flex items-center gap-2 $1var(--abv-dark)$2 hover:bg-black/85 disabled:opacity-50 text-white font-semibold px-6 py-2.5 rounded-xl text-sm transition-colors"
         >
           <CloudArrowUpIcon className="w-4 h-4" />
           {saving ? "Saving…" : "Save & Sync to GHL"}
@@ -1472,29 +1472,29 @@ function ComputedValuesCard({
             <SparklesIcon className="w-5 h-5 text-amber-600 dark:text-amber-400" />
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-[#2f3437] dark:text-white">Computed Values</h3>
-            <p className="text-xs text-[#2f3437]/50 dark:text-white/40 mt-0.5">
+            <h3 className="text-sm font-semibold text-[var(--abv-text)] dark:text-white">Computed Values</h3>
+            <p className="text-xs text-[var(--abv-text)]/50 dark:text-white/40 mt-0.5">
               Auto-generated on save — read-only preview of what gets pushed to GHL.
             </p>
           </div>
         </div>
         <ChevronDownIcon
-          className={`w-4 h-4 text-[#2f3437]/40 dark:text-white/30 transition-transform ${open ? "rotate-180" : ""}`}
+          className={`w-4 h-4 text-[var(--abv-text)]/40 dark:text-white/30 transition-transform ${open ? "rotate-180" : ""}`}
         />
       </button>
       {open && (
         <div className="border-t border-[#111]/8 dark:border-white/8 divide-y divide-[#111]/5 dark:divide-white/5">
           {rows.map((row) => (
             <div key={row.key} className="px-6 py-4">
-              <label className="block text-xs font-semibold text-[#2f3437]/70 dark:text-white/50 mb-1.5 uppercase tracking-wide">
+              <label className="block text-xs font-semibold text-[var(--abv-text)]/70 dark:text-white/50 mb-1.5 uppercase tracking-wide">
                 {row.label ?? row.key}
                 {row.ghlCustomValueKey && (
-                  <span className="ml-2 normal-case tracking-normal font-normal text-[#6ba3c7]/70">
+                  <span className="ml-2 normal-case tracking-normal font-normal text-[var(--abv-azure)]/70">
                     → GHL: {row.ghlCustomValueKey}
                   </span>
                 )}
               </label>
-              <div className="text-sm text-[#2f3437]/60 dark:text-white/40 bg-[#f7f6f3] dark:bg-white/5 border border-[#111]/8 dark:border-white/8 rounded-lg px-3 py-2 font-mono">
+              <div className="text-sm text-[var(--abv-text)]/60 dark:text-white/40 bg-[var(--abv-bg)] dark:bg-white/5 border border-[#111]/8 dark:border-white/8 rounded-lg px-3 py-2 font-mono">
                 {values[row.key] || <span className="italic">will be computed on next save</span>}
               </div>
             </div>
@@ -1551,8 +1551,8 @@ function SettingsPageInner() {
   return (
     <div className="max-w-3xl space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-[#2f3437]">Settings</h1>
-        <p className="text-[#2f3437]/60 mt-1 text-sm">Configure platform preferences, AI scoring, and your own lead tracking.</p>
+        <h1 className="text-2xl font-bold text-[var(--abv-text)]">Settings</h1>
+        <p className="text-[var(--abv-text)]/60 mt-1 text-sm">Configure platform preferences, AI scoring, and your own lead tracking.</p>
       </div>
 
       {/* Tab bar */}
@@ -1563,8 +1563,8 @@ function SettingsPageInner() {
             onClick={() => switchTab(t.id)}
             className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
               activeTab === t.id
-                ? "bg-white dark:bg-[#1a1a1a] text-[#2f3437] dark:text-white shadow-sm"
-                : "text-[#2f3437]/50 dark:text-white/40 hover:text-[#2f3437] dark:hover:text-white"
+                ? "bg-white dark:bg-[#1a1a1a] text-[var(--abv-text)] dark:text-white shadow-sm"
+                : "text-[var(--abv-text)]/50 dark:text-white/40 hover:text-[var(--abv-text)] dark:hover:text-white"
             }`}
           >
             {t.id === "link-tracking" && <LinkIcon className="w-4 h-4" />}
@@ -1582,15 +1582,15 @@ function SettingsPageInner() {
       {activeTab === "landing-page" && (
         <div className="space-y-6">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#6ba3c7]/10 flex items-center justify-center">
-              <Cog6ToothIcon className="w-5 h-5 text-[#6ba3c7]" />
+            <div className="w-10 h-10 rounded-xl bg-[var(--abv-dark)]/10 flex items-center justify-center">
+              <Cog6ToothIcon className="w-5 h-5 text-[var(--abv-azure)]" />
             </div>
             <div>
-              <p className="text-xs font-semibold text-[#6ba3c7] uppercase tracking-widest">Settings</p>
-              <h2 className="text-lg font-bold text-[#2f3437] dark:text-white">Landing Page Settings</h2>
+              <p className="text-xs font-semibold text-[var(--abv-azure)] uppercase tracking-widest">Settings</p>
+              <h2 className="text-lg font-bold text-[var(--abv-text)] dark:text-white">Landing Page Settings</h2>
             </div>
           </div>
-          <p className="text-sm text-[#2f3437]/60 dark:text-white/40 -mt-2">
+          <p className="text-sm text-[var(--abv-text)]/60 dark:text-white/40 -mt-2">
             Manage dynamic content for the public landing pages. Changes sync to GHL custom values automatically.
           </p>
           <LandingPageSettingsSection />
@@ -1611,35 +1611,35 @@ function SettingsPageInner() {
         description="Additional rules appended to the Content Engine system prompt. Controls how the AI frames titles across all themes. The default enforces buy-side title framing for sell-side stress themes. Reset to restore the default buy-side constraint."
         settingKey="content_engine_prompt"
         rows={22}
-        icon={<SparklesIcon className="w-5 h-5 text-[#6ba3c7]" />}
+        icon={<SparklesIcon className="w-5 h-5 text-[var(--abv-azure)]" />}
       />
       <PromptEditorSection
         title="Repurpose Content — Newsletter Prompt"
         description={`System prompt used when generating email newsletters. Use these tokens for dynamic values: {{MEMBER_NAME}}, {{BUSINESS_NAME}}, {{LIST_SIZE_TEXT}}, {{VOICE_STYLE}}, {{AVATAR_TEXT}}.`}
         settingKey="repurpose_newsletter_prompt"
         rows={28}
-        icon={<EnvelopeIcon className="w-5 h-5 text-[#6ba3c7]" />}
+        icon={<EnvelopeIcon className="w-5 h-5 text-[var(--abv-azure)]" />}
       />
       <PromptEditorSection
         title="Repurpose Content — LinkedIn Article Prompt"
         description={`System prompt used when generating LinkedIn articles. Use these tokens for dynamic values: {{MEMBER_NAME}}, {{BUSINESS_NAME}}, {{VOICE_STYLE}}, {{AVATAR_TEXT}}, {{LINKS_TEXT}}.`}
         settingKey="repurpose_linkedin_prompt"
         rows={36}
-        icon={<PencilSquareIcon className="w-5 h-5 text-[#6ba3c7]" />}
+        icon={<PencilSquareIcon className="w-5 h-5 text-[var(--abv-azure)]" />}
       />
       <PromptEditorSection
         title="Avatar Architect — System Prompt"
         description="Full system prompt for the Avatar Architect coaching conversation. Controls the 4-phase flow, question bank, avatar document template, stress theme format, content engine prompt rules, and title frameworks. Reset to restore the built-in prompt."
         settingKey="avatar_architect_prompt"
         rows={50}
-        icon={<SparklesIcon className="w-5 h-5 text-[#6ba3c7]" />}
+        icon={<SparklesIcon className="w-5 h-5 text-[var(--abv-azure)]" />}
       />
       <PromptEditorSection
         title="Theme Builder — System Prompt"
         description="System prompt for the Theme Builder coaching tool inside Avatar Architect. Controls the coaching flow for building a single content theme into a complete content engine prompt, including buy-side framing rules and title framework examples. Reset to restore the built-in prompt."
         settingKey="theme_builder_prompt"
         rows={40}
-        icon={<SparklesIcon className="w-5 h-5 text-[#6ba3c7]" />}
+        icon={<SparklesIcon className="w-5 h-5 text-[var(--abv-azure)]" />}
       />
       </>}
     </div>
@@ -1651,8 +1651,8 @@ export default function SettingsPage() {
     <Suspense fallback={
       <div className="max-w-3xl space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-[#2f3437]">Settings</h1>
-          <p className="text-[#2f3437]/60 mt-1 text-sm">Configure platform preferences, AI scoring, and your own lead tracking.</p>
+          <h1 className="text-2xl font-bold text-[var(--abv-text)]">Settings</h1>
+          <p className="text-[var(--abv-text)]/60 mt-1 text-sm">Configure platform preferences, AI scoring, and your own lead tracking.</p>
         </div>
         <div className="h-12 bg-[#111]/5 dark:bg-white/5 rounded-lg animate-pulse w-72" />
       </div>

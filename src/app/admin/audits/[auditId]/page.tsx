@@ -55,13 +55,13 @@ export default function AuditReportPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64 text-[#2f3437]/40">
+      <div className="flex items-center justify-center h-64 text-[var(--abv-text)]/40">
         Loading report…
       </div>
     );
   }
   if (!audit) {
-    return <div className="text-center py-20 text-[#2f3437]/50">Report not found.</div>;
+    return <div className="text-center py-20 text-[var(--abv-text)]/50">Report not found.</div>;
   }
 
   const member = audit.user;
@@ -79,7 +79,7 @@ export default function AuditReportPage() {
     <div className="flex items-center justify-between no-print">
       <Link
         href={backHref}
-        className="inline-flex items-center gap-1.5 text-sm text-[#2f3437]/50 hover:text-[#2f3437]"
+        className="inline-flex items-center gap-1.5 text-sm text-[var(--abv-text)]/50 hover:text-[var(--abv-text)]"
       >
         <ArrowLeftIcon className="w-4 h-4" />
         {backLabel}
@@ -87,14 +87,14 @@ export default function AuditReportPage() {
       <div className="flex items-center gap-2">
         <button
           onClick={handleCopyLink}
-          className="inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-[#2f3437]/70 transition-colors"
+          className="inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-[var(--abv-text)]/70 transition-colors"
         >
           <ClipboardDocumentIcon className="w-4 h-4" />
           {copied ? "Copied!" : "Share Report"}
         </button>
         <button
           onClick={handlePrint}
-          className="inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-[#2f3437]/70 transition-colors"
+          className="inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-[var(--abv-text)]/70 transition-colors"
         >
           <PrinterIcon className="w-4 h-4" />
           Print / PDF
@@ -102,7 +102,7 @@ export default function AuditReportPage() {
         <button
           onClick={handleDelete}
           disabled={deleting}
-          className="inline-flex items-center gap-1.5 text-sm text-[#ff0033]/60 hover:text-[#ff0033] disabled:opacity-40 transition-colors"
+          className="inline-flex items-center gap-1.5 text-sm text-[var(--abv-crimson)]/60 hover:text-[var(--abv-crimson)] disabled:opacity-40 transition-colors"
         >
           <TrashIcon className="w-4 h-4" />
           {deleting ? "Deleting…" : "Delete"}

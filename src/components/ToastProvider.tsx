@@ -49,13 +49,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const icons = {
     success: <CheckCircleIcon className="w-5 h-5 text-green-500 shrink-0" />,
     error: <XCircleIcon className="w-5 h-5 text-red-500 shrink-0" />,
-    info: <InformationCircleIcon className="w-5 h-5 text-[#6ba3c7] shrink-0" />,
+    info: <InformationCircleIcon className="w-5 h-5 text-[var(--abv-azure)] shrink-0" />,
   };
 
   const borderColors = {
     success: "border-l-4 border-l-green-500",
     error: "border-l-4 border-l-red-500",
-    info: "border-l-4 border-l-[#6ba3c7]",
+    info: "border-l-4 border-l-[var(--abv-azure)]",
   };
 
   return (
@@ -68,10 +68,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             className={`pointer-events-auto flex items-center gap-3 bg-white dark:bg-[#1a2433] ${borderColors[t.type]} rounded-lg shadow-xl px-4 py-3 min-w-[280px] max-w-[400px] animate-slide-in-right`}
           >
             {icons[t.type]}
-            <p className="flex-1 text-sm text-[#2f3437] dark:text-[#e2e8f0]">{t.message}</p>
+            <p className="flex-1 text-sm text-[var(--abv-text)] dark:text-[#e2e8f0]">{t.message}</p>
             <button
               onClick={() => dismiss(t.id)}
-              className="text-[#2f3437]/30 hover:text-[#2f3437]/60 dark:text-white/30 dark:hover:text-white/60 shrink-0"
+              className="text-[var(--abv-text)]/30 hover:text-[var(--abv-text)]/60 dark:text-white/30 dark:hover:text-white/60 shrink-0"
             >
               <XMarkIcon className="w-4 h-4" />
             </button>

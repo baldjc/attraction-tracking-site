@@ -65,38 +65,38 @@ export default function OutlierFeedPage() {
     <div className="max-w-5xl mx-auto">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <Link href="/admin/intelligence" className="text-sm text-[#2f3437]/50 hover:text-[#2f3437]">← Intelligence</Link>
-          <h1 className="text-xl font-bold text-[#2f3437] mt-1">Global Outlier Feed</h1>
-          <p className="text-sm text-[#2f3437]/60 mt-1">Top-performing videos (≥2.5× channel median) across all tracked channels</p>
+          <Link href="/admin/intelligence" className="text-sm text-[var(--abv-text)]/50 hover:text-[var(--abv-text)]">← Intelligence</Link>
+          <h1 className="text-xl font-bold text-[var(--abv-text)] mt-1">Global Outlier Feed</h1>
+          <p className="text-sm text-[var(--abv-text)]/60 mt-1">Top-performing videos (≥2.5× channel median) across all tracked channels</p>
         </div>
-        <Link href="/admin/intelligence/global/swipe-file" className="px-4 py-2 bg-[#f7f6f3] text-[#2f3437]/70 text-sm font-semibold rounded-lg border border-[#2f3437]/10 hover:bg-[#eee] transition-colors">
+        <Link href="/admin/intelligence/global/swipe-file" className="px-4 py-2 bg-[var(--abv-bg)] text-[var(--abv-text)]/70 text-sm font-semibold rounded-lg border border-[var(--abv-text)]/10 hover:bg-[#eee] transition-colors">
           View Swipe File →
         </Link>
       </div>
 
       {loading ? (
         <div className="space-y-2">
-          {[1, 2, 3].map((i) => <div key={i} className="h-24 bg-white border border-[#2f3437]/10 rounded-xl animate-pulse" />)}
+          {[1, 2, 3].map((i) => <div key={i} className="h-24 bg-white border border-[var(--abv-text)]/10 rounded-xl animate-pulse" />)}
         </div>
       ) : outliers.length === 0 ? (
-        <div className="bg-white border border-[#2f3437]/10 rounded-xl p-10 text-center">
+        <div className="bg-white border border-[var(--abv-text)]/10 rounded-xl p-10 text-center">
           <p className="text-3xl mb-3">🚀</p>
-          <p className="font-semibold text-[#2f3437]">No outliers yet</p>
-          <p className="text-sm text-[#2f3437]/50 mt-1">
+          <p className="font-semibold text-[var(--abv-text)]">No outliers yet</p>
+          <p className="text-sm text-[var(--abv-text)]/50 mt-1">
             Outliers are identified after running channel intelligence on synced channels.
           </p>
-          <Link href="/admin/intelligence/new-run" className="mt-4 inline-block px-4 py-2 bg-[#6ba3c7] text-white text-sm font-semibold rounded-lg hover:bg-[#5490b5]">
+          <Link href="/admin/intelligence/new-run" className="mt-4 inline-block px-4 py-2 bg-[var(--abv-dark)] text-white text-sm font-semibold rounded-lg hover:bg-black/85">
             Start a Run →
           </Link>
         </div>
       ) : (
-        <div className="bg-white border border-[#2f3437]/10 rounded-xl divide-y divide-[#2f3437]/6">
+        <div className="bg-white border border-[var(--abv-text)]/10 rounded-xl divide-y divide-[var(--abv-text)]/6">
           {outliers.map((v) => {
             const isExpanded = expanded.has(v.id);
             const isSaved = savedIds.has(v.id);
             const isSaving = savingId === v.id;
             return (
-              <div key={v.id} className="p-4 hover:bg-[#f7f6f3]/30 transition-colors">
+              <div key={v.id} className="p-4 hover:bg-[var(--abv-bg)]/30 transition-colors">
                 <div className="flex items-start gap-4">
                   {v.thumbnailUrl && (
                     <img src={v.thumbnailUrl} alt={v.title} className="w-28 h-16 object-cover rounded-md shrink-0" />
@@ -106,11 +106,11 @@ export default function OutlierFeedPage() {
                       href={`https://youtube.com/watch?v=${v.ytVideoId}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="text-sm font-semibold text-[#2f3437] hover:text-[#6ba3c7] line-clamp-2"
+                      className="text-sm font-semibold text-[var(--abv-text)] hover:text-[var(--abv-azure)] line-clamp-2"
                     >
                       {v.title}
                     </a>
-                    <p className="text-xs text-[#2f3437]/50 mt-1">
+                    <p className="text-xs text-[var(--abv-text)]/50 mt-1">
                       {v.channel.handle ?? v.channel.title}
                       {" · "}
                       {parseInt(v.views).toLocaleString()} views
@@ -120,7 +120,7 @@ export default function OutlierFeedPage() {
                     </p>
                     {v.analysis && (
                       <div className="flex flex-wrap gap-1.5 mt-1.5">
-                        {v.analysis.hookType && <span className="px-2 py-0.5 bg-[#6ba3c7]/10 text-[#6ba3c7] text-xs rounded-full">{v.analysis.hookType}</span>}
+                        {v.analysis.hookType && <span className="px-2 py-0.5 bg-[var(--abv-dark)]/10 text-[var(--abv-azure)] text-xs rounded-full">{v.analysis.hookType}</span>}
                         {v.analysis.titleFramework && <span className="px-2 py-0.5 bg-purple-50 text-purple-700 text-xs rounded-full">{v.analysis.titleFramework}</span>}
                         {v.analysis.stressThemes?.map((t) => (
                           <span key={t} className="px-2 py-0.5 bg-amber-50 text-amber-700 text-xs rounded-full">{t}</span>
@@ -132,20 +132,20 @@ export default function OutlierFeedPage() {
                     <button
                       onClick={() => saveToSwipeFile(v)}
                       disabled={isSaving || isSaved}
-                      className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${isSaved ? "bg-green-50 text-green-700 border-green-200" : "bg-[#f7f6f3] text-[#2f3437]/60 border-[#2f3437]/10 hover:text-[#2f3437]"} disabled:opacity-50`}
+                      className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${isSaved ? "bg-green-50 text-green-700 border-green-200" : "bg-[var(--abv-bg)] text-[var(--abv-text)]/60 border-[var(--abv-text)]/10 hover:text-[var(--abv-text)]"} disabled:opacity-50`}
                     >
                       {isSaved ? "✓ Saved" : isSaving ? "Saving…" : "💾 Save"}
                     </button>
                     {v.analysis && (
-                      <button onClick={() => toggleExpand(v.id)} className="px-3 py-1.5 text-xs font-semibold bg-[#f7f6f3] text-[#2f3437]/60 border border-[#2f3437]/10 hover:text-[#2f3437] rounded-lg">
+                      <button onClick={() => toggleExpand(v.id)} className="px-3 py-1.5 text-xs font-semibold bg-[var(--abv-bg)] text-[var(--abv-text)]/60 border border-[var(--abv-text)]/10 hover:text-[var(--abv-text)] rounded-lg">
                         {isExpanded ? "Less" : "Analysis"}
                       </button>
                     )}
                   </div>
                 </div>
                 {isExpanded && v.analysis?.whyItWorked && (
-                  <div className="mt-3 ml-32 bg-[#f7f6f3] rounded-lg px-4 py-3 text-xs text-[#2f3437]/70 leading-relaxed border border-[#2f3437]/8">
-                    <p className="font-semibold text-[#2f3437] mb-1">Why it worked:</p>
+                  <div className="mt-3 ml-32 bg-[var(--abv-bg)] rounded-lg px-4 py-3 text-xs text-[var(--abv-text)]/70 leading-relaxed border border-[var(--abv-text)]/8">
+                    <p className="font-semibold text-[var(--abv-text)] mb-1">Why it worked:</p>
                     <p>{v.analysis.whyItWorked}</p>
                   </div>
                 )}

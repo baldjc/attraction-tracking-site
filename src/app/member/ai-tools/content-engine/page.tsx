@@ -37,7 +37,7 @@ export default function ContentEnginePage() {
   if (state === "loading") {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="text-[#2f3437]/40 dark:text-white/30 text-sm animate-pulse">Loading Content Engine...</div>
+        <div className="text-[var(--abv-text)]/40 dark:text-white/30 text-sm animate-pulse">Loading Content Engine...</div>
       </div>
     );
   }
@@ -45,15 +45,15 @@ export default function ContentEnginePage() {
   if (state === "no-avatar") {
     return (
       <div className="flex items-center justify-center min-h-[50vh] p-4">
-        <div className="bg-white dark:bg-[#1a1a1a] rounded-lg border border-[#2f3437]/10 dark:border-white/10 p-8 max-w-sm w-full text-center">
+        <div className="bg-white dark:bg-[#1a1a1a] rounded-lg border border-[var(--abv-text)]/10 dark:border-white/10 p-8 max-w-sm w-full text-center">
           <p className="text-3xl mb-4">🎯</p>
-          <h2 className="font-bold text-[#2f3437] text-lg mb-2">Build your avatar first</h2>
-          <p className="text-sm text-[#2f3437]/60 mb-6">
+          <h2 className="font-bold text-[var(--abv-text)] text-lg mb-2">Build your avatar first</h2>
+          <p className="text-sm text-[var(--abv-text)]/60 mb-6">
             Your Content Engine needs an avatar to work. Build yours now — it only takes a few minutes and powers every AI tool.
           </p>
           <Link
             href="/member/ai-tools/avatar-architect"
-            className="inline-block bg-[#6ba3c7] hover:bg-[#2bb0ec] text-white font-semibold text-sm px-6 py-2.5 rounded-lg transition-colors"
+            className="inline-block bg-[var(--abv-ai-tools)] hover:bg-[#2bb0ec] text-white font-semibold text-sm px-6 py-2.5 rounded-lg transition-colors"
           >
             Build your avatar →
           </Link>

@@ -108,14 +108,14 @@ export default async function ReviewerChannelPage({
         <div>
           <Link
             href={resolved.backHref ?? `/admin/intelligence/clients/${clientId}`}
-            className="text-sm text-[#787774] hover:text-[#2f3437]"
+            className="text-sm text-[var(--abv-text-secondary)] hover:text-[var(--abv-text)]"
           >
             {resolved.backLabel ?? "← Client"}
           </Link>
-          <h1 className="mt-2 text-2xl font-bold text-[#2f3437] dark:text-white">
+          <h1 className="mt-2 text-2xl font-bold text-[var(--abv-text)] dark:text-white">
             {resolved.name}
           </h1>
-          <p className="mt-1 text-sm text-[#787774]">
+          <p className="mt-1 text-sm text-[var(--abv-text-secondary)]">
             Analytics Reviewer · channel{" "}
             <code className="font-data text-xs">{resolved.channelRef}</code>
           </p>

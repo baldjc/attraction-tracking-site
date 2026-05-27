@@ -12,9 +12,9 @@ export default async function NewClientPage() {
   return (
     <div className="max-w-2xl mx-auto">
       <div className="mb-6">
-        <Link href="/admin/intelligence/clients" className="text-sm text-[#2f3437]/50 hover:text-[#2f3437]">← Clients</Link>
+        <Link href="/admin/intelligence/clients" className="text-sm text-[var(--abv-text)]/50 hover:text-[var(--abv-text)]">← Clients</Link>
       </div>
-      <h1 className="text-xl font-bold text-[#2f3437] mb-6">Add Client</h1>
+      <h1 className="text-xl font-bold text-[var(--abv-text)] mb-6">Add Client</h1>
       <NewClientForm />
     </div>
   );

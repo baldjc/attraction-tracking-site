@@ -23,7 +23,7 @@ interface BalanceData {
   total: number;
 }
 
-const SLICE_COLORS = ["#f59e0b", "#8b5cf6", "#6ba3c7", "#787774"];
+const SLICE_COLORS = ["var(--abv-scores)", "var(--abv-hire)", "var(--abv-azure)", "var(--abv-text-secondary)"];
 
 function targetState(
   count: number,
@@ -90,13 +90,13 @@ export default function PortfolioBalance({
 
   if (error)
     return (
-      <div className="rounded-xl border border-[#e63946]/30 bg-[#e63946]/5 p-4 text-sm text-[#2f3437]">
+      <div className="rounded-xl border border-[var(--abv-crimson)]/30 bg-[var(--abv-crimson)]/5 p-4 text-sm text-[var(--abv-text)]">
         Could not load Portfolio Balance: {error}
       </div>
     );
   if (!data)
     return (
-      <div className="h-64 animate-pulse rounded-xl border border-[#eaeaea] bg-white" />
+      <div className="h-64 animate-pulse rounded-xl border border-[var(--abv-border-strong)] bg-white" />
     );
 
   const slices = [
@@ -130,17 +130,17 @@ export default function PortfolioBalance({
 
   return (
     <div
-      className="rounded-xl border border-[#eaeaea] bg-white p-5"
+      className="rounded-xl border border-[var(--abv-border-strong)] bg-white p-5"
       style={{
         borderRadius: "var(--atbv-radius-lg)",
         boxShadow: "var(--atbv-shadow-sm)",
       }}
     >
       <div className="mb-3 flex items-baseline justify-between">
-        <h2 className="text-base font-semibold text-[#2f3437]">
+        <h2 className="text-base font-semibold text-[var(--abv-text)]">
           Portfolio Balance
         </h2>
-        <span className="text-xs text-[#787774]">
+        <span className="text-xs text-[var(--abv-text-secondary)]">
           {monthLabel(data.month)} · {data.total} planned
         </span>
       </div>
@@ -153,18 +153,18 @@ export default function PortfolioBalance({
           return (
             <div
               key={t.label}
-              className="rounded-md border border-[#eaeaea] bg-[#f7f6f3] px-3 py-2"
+              className="rounded-md border border-[var(--abv-border-strong)] bg-[var(--abv-bg)] px-3 py-2"
               style={{ borderRadius: "var(--atbv-radius-md)" }}
             >
               <div className="flex items-center gap-1.5">
                 <StatusIcon state={state} />
-                <span className="text-xs font-medium text-[#787774]">
+                <span className="text-xs font-medium text-[var(--abv-text-secondary)]">
                   {t.label}
                 </span>
               </div>
-              <div className="mt-1 font-data text-lg text-[#2f3437] tabular-nums">
+              <div className="mt-1 font-data text-lg text-[var(--abv-text)] tabular-nums">
                 {t.count}
-                <span className="text-sm text-[#787774]">/{t.target}</span>
+                <span className="text-sm text-[var(--abv-text-secondary)]">/{t.target}</span>
               </div>
             </div>
           );
@@ -172,11 +172,11 @@ export default function PortfolioBalance({
       </div>
 
       {data.gaps.length > 0 && (
-        <ul className="mt-4 space-y-1.5 border-t border-[#eaeaea] pt-3">
+        <ul className="mt-4 space-y-1.5 border-t border-[var(--abv-border-strong)] pt-3">
           {data.gaps.map((g, i) => (
             <li
               key={i}
-              className="flex items-start gap-2 text-xs text-[#2f3437]"
+              className="flex items-start gap-2 text-xs text-[var(--abv-text)]"
             >
               <ExclamationTriangleIcon
                 className="mt-0.5 h-3.5 w-3.5 flex-shrink-0"

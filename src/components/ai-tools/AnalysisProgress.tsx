@@ -63,30 +63,30 @@ export default function AnalysisProgress({
     : -1;
 
   return (
-    <div className="mb-5 rounded-lg border border-[#6ba3c7]/30 bg-[#6ba3c7]/5 p-4">
+    <div className="mb-5 rounded-lg border border-[var(--abv-ai-tools)]/30 bg-[var(--abv-ai-tools)]/5 p-4">
       <div className="flex items-center gap-3">
         <span className="flex shrink-0 gap-1">
           {[0, 1, 2].map((i) => (
             <span
               key={i}
-              className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#6ba3c7]"
+              className="h-1.5 w-1.5 animate-bounce rounded-full bg-[var(--abv-ai-tools)]"
               style={{ animationDelay: `${i * 0.15}s` }}
             />
           ))}
         </span>
-        <p className="text-sm font-semibold text-[#2f3437] dark:text-white">
+        <p className="text-sm font-semibold text-[var(--abv-text)] dark:text-white">
           {title}
         </p>
         {step && (
-          <span className="ml-auto text-xs text-[#2f3437]/60 dark:text-white/60">
+          <span className="ml-auto text-xs text-[var(--abv-text)]/60 dark:text-white/60">
             {step}
           </span>
         )}
       </div>
 
-      <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-[#6ba3c7]/15">
+      <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-[var(--abv-ai-tools)]/15">
         <div
-          className="h-full rounded-full bg-[#6ba3c7] transition-[width] duration-300 ease-out"
+          className="h-full rounded-full bg-[var(--abv-ai-tools)] transition-[width] duration-300 ease-out"
           style={{ width: `${pct.toFixed(1)}%` }}
         />
       </div>
@@ -101,10 +101,10 @@ export default function AnalysisProgress({
                 key={s}
                 className={
                   current
-                    ? "font-semibold text-[#6ba3c7]"
+                    ? "font-semibold text-[var(--abv-ai-tools)]"
                     : done
-                      ? "text-[#2f3437]/50 line-through dark:text-white/40"
-                      : "text-[#2f3437]/40 dark:text-white/35"
+                      ? "text-[var(--abv-text)]/50 line-through dark:text-white/40"
+                      : "text-[var(--abv-text)]/40 dark:text-white/35"
                 }
               >
                 {done ? "✓" : current ? "→" : "•"} {s}
@@ -114,7 +114,7 @@ export default function AnalysisProgress({
         </ol>
       )}
 
-      <p className="mt-3 text-xs text-[#2f3437]/55 dark:text-white/45">
+      <p className="mt-3 text-xs text-[var(--abv-text)]/55 dark:text-white/45">
         {hint}
       </p>
     </div>

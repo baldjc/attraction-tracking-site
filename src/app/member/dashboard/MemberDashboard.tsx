@@ -96,12 +96,12 @@ interface TopVideo {
 // ── Nav Cards ─────────────────────────────────────────────────
 
 const NAV_CARDS = [
-  { title: "Academy",        description: "Master the Attraction system, one lesson at a time.",            href: "/member/academy",        emoji: "🎓", colour: "#10B981" },
-  { title: "My Scores",      description: "See how your content stacks up and where to focus.",             href: "/member/scores",         emoji: "🏆", colour: "#F59E0B" },
-  { title: "Content Tools",  description: "Build your avatar, generate ideas, and write scripts.",          href: "/member/ai-tools",       emoji: "✨", colour: "#6ba3c7" },
-  { title: "Generate Leads", description: "Learn to generate leads, track campaigns, and measure results.", href: "/member/generate-leads", emoji: "🚀", colour: "#E63946" },
-  { title: "My Calls",       description: "Watch your 1-on-1 call recordings with Jared.",                 href: "/member/my-calls",       emoji: "📹", colour: "#6ba3c7" },
-  { title: "Hire a Human",   description: "Hire us to help you grow faster.",                               href: "/member/hire",           emoji: "🤝", colour: "#8B5CF6" },
+  { title: "Academy",        description: "Master the Attraction system, one lesson at a time.",            href: "/member/academy",        emoji: "🎓", colour: "var(--abv-academy)" },
+  { title: "My Scores",      description: "See how your content stacks up and where to focus.",             href: "/member/scores",         emoji: "🏆", colour: "var(--abv-scores)" },
+  { title: "Content Tools",  description: "Build your avatar, generate ideas, and write scripts.",          href: "/member/ai-tools",       emoji: "✨", colour: "var(--abv-azure)" },
+  { title: "Generate Leads", description: "Learn to generate leads, track campaigns, and measure results.", href: "/member/generate-leads", emoji: "🚀", colour: "var(--abv-crimson)" },
+  { title: "My Calls",       description: "Watch your 1-on-1 call recordings with Jared.",                 href: "/member/my-calls",       emoji: "📹", colour: "var(--abv-azure)" },
+  { title: "Hire a Human",   description: "Hire us to help you grow faster.",                               href: "/member/hire",           emoji: "🤝", colour: "var(--abv-hire)" },
 ];
 
 // ── Component ─────────────────────────────────────────────────
@@ -140,8 +140,8 @@ export default function MemberDashboard() {
   }, []);
 
   const card = "bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-[#2a2a2a]";
-  const txt = "text-[#2f3437] dark:text-[#e2e8f0]";
-  const muted = "text-[#2f3437]/60 dark:text-[#94a3b8]";
+  const txt = "text-[var(--abv-text)] dark:text-[#e2e8f0]";
+  const muted = "text-[var(--abv-text)]/60 dark:text-[#94a3b8]";
 
   const firstName = data?.firstName ?? null;
   const nextCoachingCall = data?.nextCoachingCall;
@@ -163,7 +163,7 @@ export default function MemberDashboard() {
           </>
         ) : (
           <>
-            <h1 className="text-3xl font-bold text-[#6ba3c7]">
+            <h1 className="text-3xl font-bold text-[var(--abv-azure)]">
               Welcome back{firstName ? `, ${firstName}` : ""}
             </h1>
             <p className={`mt-2 text-base ${muted}`}>
@@ -208,7 +208,7 @@ export default function MemberDashboard() {
             <>
               <p className={`text-lg font-bold ${txt}`}>{coaching.label}</p>
               <div className="flex items-center gap-2 mt-2 flex-wrap">
-                <span className="inline-block text-xs font-medium px-2.5 py-1 rounded-full bg-[#6ba3c7]/15 text-[#6ba3c7]">
+                <span className="inline-block text-xs font-medium px-2.5 py-1 rounded-full bg-[var(--abv-dark)]/15 text-[var(--abv-azure)]">
                   {coaching.relative}
                 </span>
                 {nextCoachingCall?.link && nextCoachingCall.link.startsWith("http") && (
@@ -216,7 +216,7 @@ export default function MemberDashboard() {
                     href={nextCoachingCall.link}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1 rounded-full bg-[#6ba3c7] text-white hover:bg-[#5490b5] transition-colors"
+                    className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1 rounded-full bg-[var(--abv-dark)] text-white hover:bg-black/85 transition-colors"
                   >
                     Join Call →
                   </a>
@@ -227,7 +227,7 @@ export default function MemberDashboard() {
                   href="https://evt.to/gv7c7h0qvlgv"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className={`text-xs ${muted} hover:text-[#6ba3c7] transition-colors`}
+                  className={`text-xs ${muted} hover:text-[var(--abv-azure)] transition-colors`}
                 >
                   Add to calendar
                 </a>
@@ -287,7 +287,7 @@ export default function MemberDashboard() {
               href="https://studio.youtube.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs text-[#6ba3c7] hover:underline shrink-0"
+              className="text-xs text-[var(--abv-azure)] hover:underline shrink-0"
             >
               Open Studio →
             </a>
@@ -313,7 +313,7 @@ export default function MemberDashboard() {
                   href={v.studioUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex gap-3 group rounded-lg p-1 -m-1 hover:bg-gray-50 dark:hover:bg-[#1e2a38] transition-colors"
+                  className="flex gap-3 group rounded-lg p-1 -m-1 hover:bg-gray-50 dark:hover:bg-[var(--abv-dark)] transition-colors"
                 >
                   <div className="relative shrink-0">
                     {v.thumbnailUrl ? (
@@ -332,14 +332,14 @@ export default function MemberDashboard() {
                     </span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className={`text-xs font-medium ${txt} line-clamp-2 leading-snug group-hover:text-[#6ba3c7] transition-colors`}>
+                    <p className={`text-xs font-medium ${txt} line-clamp-2 leading-snug group-hover:text-[var(--abv-azure)] transition-colors`}>
                       {v.title}
                     </p>
                     <div className="flex items-center gap-2 mt-1">
                       <span className={`text-xs font-semibold ${txt}`}>{fmtViews(v.viewCount)} views</span>
                       <span className={`text-xs ${muted}`}>· {fmtUploadDate(v.uploadDate)}</span>
                     </div>
-                    <span className="text-[10px] text-[#6ba3c7] group-hover:underline mt-0.5 block">
+                    <span className="text-[10px] text-[var(--abv-azure)] group-hover:underline mt-0.5 block">
                       Edit in Studio →
                     </span>
                   </div>
@@ -355,7 +355,7 @@ export default function MemberDashboard() {
                 href="https://studio.youtube.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs text-[#6ba3c7] hover:underline mt-2"
+                className="text-xs text-[var(--abv-azure)] hover:underline mt-2"
               >
                 Go to YouTube Studio →
               </a>
@@ -364,7 +364,7 @@ export default function MemberDashboard() {
             <div className="flex flex-col items-center justify-center py-8 text-center">
               <VideoCameraIcon className={`w-8 h-8 ${muted} mb-2`} />
               <p className={`text-sm ${muted}`}>No YouTube channel connected.</p>
-              <Link href="/member/settings" className="text-xs text-[#6ba3c7] hover:underline mt-1">
+              <Link href="/member/settings" className="text-xs text-[var(--abv-azure)] hover:underline mt-1">
                 Add your channel in Settings →
               </Link>
             </div>
@@ -384,7 +384,7 @@ export default function MemberDashboard() {
                 <div className="min-w-0">
                   <p className={`text-sm font-medium ${txt}`}>{entry.title}</p>
                   <p className={`text-xs ${muted} line-clamp-1 mt-0.5`}>{entry.body}</p>
-                  <p className="text-[10px] text-[#2f3437]/30 dark:text-white/20 mt-1">
+                  <p className="text-[10px] text-[var(--abv-text)]/30 dark:text-white/20 mt-1">
                     {new Date(entry.createdAt).toLocaleDateString("en-CA", { month: "short", day: "numeric" })}
                   </p>
                 </div>

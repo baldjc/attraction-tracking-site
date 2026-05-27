@@ -55,32 +55,32 @@ export function SuggestedWinners({ channelRef }: { channelRef: string }) {
 
   return (
     <section
-      className="rounded-xl border border-[#eaeaea] bg-white p-6 dark:border-[#2a2a2a] dark:bg-[#1a1a1a]"
+      className="rounded-xl border border-[var(--abv-border-strong)] bg-white p-6 dark:border-[#2a2a2a] dark:bg-[#1a1a1a]"
       style={{
         borderRadius: "var(--atbv-radius-lg)",
         boxShadow: "var(--atbv-shadow-sm)",
       }}
     >
       <div className="mb-1 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-[#2f3437] dark:text-white">
+        <h2 className="text-lg font-semibold text-[var(--abv-text)] dark:text-white">
           Suggested Winners
         </h2>
-        <p className="eyebrow text-[#787774]">Watch-time magnets · trailing 90d</p>
+        <p className="eyebrow text-[var(--abv-text-secondary)]">Watch-time magnets · trailing 90d</p>
       </div>
-      <p className="mb-5 text-sm text-[#787774]">
+      <p className="mb-5 text-sm text-[var(--abv-text-secondary)]">
         These are your watch-time magnets. When you end-card a Drama video,
         point to one of these — high AVD signals to YouTube that the Drama is a
         valuable traffic source.
       </p>
 
       {loading ? (
-        <p className="text-sm text-[#787774]">Loading…</p>
+        <p className="text-sm text-[var(--abv-text-secondary)]">Loading…</p>
       ) : videos.length === 0 ? (
-        <p className="text-sm text-[#787774]">
+        <p className="text-sm text-[var(--abv-text-secondary)]">
           No analytics yet. Run a sync to populate this list.
         </p>
       ) : (
-        <ul className="divide-y divide-[#eaeaea] dark:divide-[#2a2a2a]">
+        <ul className="divide-y divide-[var(--abv-border-strong)] dark:divide-[#2a2a2a]">
           {videos.map((v) => (
             <li key={v.videoId} className="flex items-center gap-4 py-3">
               <div className="relative h-[54px] w-24 shrink-0 overflow-hidden rounded-md bg-[#f3f3f3]">
@@ -96,10 +96,10 @@ export function SuggestedWinners({ channelRef }: { channelRef: string }) {
                 ) : null}
               </div>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-[#2f3437] dark:text-white">
+                <p className="truncate text-sm font-medium text-[var(--abv-text)] dark:text-white">
                   {v.title}
                 </p>
-                <p className="mt-0.5 text-xs text-[#787774]">
+                <p className="mt-0.5 text-xs text-[var(--abv-text-secondary)]">
                   {formatMinutes(v.avgWatchTimeMinutes)} avg watch ·{" "}
                   {v.avgViewPercentage.toFixed(1)}% AVD
                 </p>
@@ -118,7 +118,7 @@ export function SuggestedWinners({ channelRef }: { channelRef: string }) {
               <button
                 onClick={() => copyUrl(v)}
                 title="Copy URL"
-                className="shrink-0 rounded-md border border-[#eaeaea] px-2 py-1.5 text-xs text-[#2f3437] transition-colors hover:bg-[#f7f6f3] dark:border-[#2a2a2a] dark:text-white dark:hover:bg-[#222]"
+                className="shrink-0 rounded-md border border-[var(--abv-border-strong)] px-2 py-1.5 text-xs text-[var(--abv-text)] transition-colors hover:bg-[var(--abv-bg)] dark:border-[#2a2a2a] dark:text-white dark:hover:bg-[#222]"
               >
                 {copied === v.videoId ? (
                   <span className="flex items-center gap-1">

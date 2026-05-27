@@ -58,22 +58,22 @@ function CallCard({
       <div className="flex items-center gap-3 px-4 py-3.5">
         {/* Date badge */}
         <div className="shrink-0 text-center bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 min-w-[48px]">
-          <p className="text-[9px] font-bold uppercase tracking-wider text-[#6ba3c7]">
+          <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--abv-azure)]">
             {new Date(call.callDate).toLocaleDateString("en-CA", { month: "short", timeZone: "UTC" })}
           </p>
-          <p className="text-base font-bold text-[#2f3437] leading-none">
+          <p className="text-base font-bold text-[var(--abv-text)] leading-none">
             {new Date(call.callDate).toLocaleDateString("en-CA", { day: "numeric", timeZone: "UTC" })}
           </p>
-          <p className="text-[9px] text-[#2f3437]/40">
+          <p className="text-[9px] text-[var(--abv-text)]/40">
             {new Date(call.callDate).getUTCFullYear()}
           </p>
         </div>
 
         {/* Title */}
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-[#2f3437] truncate">{callTitle(call)}</p>
+          <p className="text-sm font-semibold text-[var(--abv-text)] truncate">{callTitle(call)}</p>
           {call.notes && (
-            <p className="text-xs text-[#2f3437]/40 truncate mt-0.5">{call.notes}</p>
+            <p className="text-xs text-[var(--abv-text)]/40 truncate mt-0.5">{call.notes}</p>
           )}
         </div>
 
@@ -84,7 +84,7 @@ function CallCard({
               href={call.fathomUrl!}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 bg-[#2f3437] text-white rounded-lg hover:bg-[#1a1f22] transition-colors"
+              className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 bg-[var(--abv-text)] text-white rounded-lg hover:bg-[#1a1f22] transition-colors"
             >
               <span>🎥</span> Fathom
             </a>
@@ -92,7 +92,7 @@ function CallCard({
           {hasLoom && (
             <button
               onClick={() => setLoomOpen((o) => !o)}
-              className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 border border-gray-200 text-[#2f3437] rounded-lg hover:border-[#6ba3c7]/40 hover:text-[#6ba3c7] transition-colors"
+              className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 border border-gray-200 text-[var(--abv-text)] rounded-lg hover:border-[var(--abv-azure)]/40 hover:text-[var(--abv-azure)] transition-colors"
             >
               {loomOpen ? <ChevronUpIcon className="w-3 h-3" /> : <ChevronDownIcon className="w-3 h-3" />}
               Loom
@@ -101,14 +101,14 @@ function CallCard({
           <div className="w-px h-4 bg-gray-200 mx-0.5" />
           <button
             onClick={() => onEdit(call)}
-            className="p-1.5 text-[#2f3437]/30 hover:text-[#2f3437] rounded-md hover:bg-gray-200 transition-colors"
+            className="p-1.5 text-[var(--abv-text)]/30 hover:text-[var(--abv-text)] rounded-md hover:bg-gray-200 transition-colors"
             title="Edit"
           >
             <PencilIcon className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={() => onDelete(call)}
-            className="p-1.5 text-[#2f3437]/30 hover:text-red-500 rounded-md hover:bg-red-50 transition-colors"
+            className="p-1.5 text-[var(--abv-text)]/30 hover:text-red-500 rounded-md hover:bg-red-50 transition-colors"
             title="Delete"
           >
             <TrashIcon className="w-3.5 h-3.5" />
@@ -133,7 +133,7 @@ function CallCard({
       {/* Full notes */}
       {call.notes && call.notes.length > 60 && (
         <div className="px-4 pb-3 border-t border-gray-100 pt-2.5">
-          <p className="text-xs text-[#2f3437]/60 whitespace-pre-line">{call.notes}</p>
+          <p className="text-xs text-[var(--abv-text)]/60 whitespace-pre-line">{call.notes}</p>
         </div>
       )}
     </div>
@@ -248,10 +248,10 @@ export default function AdminCallsTab({ memberId }: Props) {
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-sm font-semibold text-[#2f3437]">Call Recordings</h2>
+        <h2 className="text-sm font-semibold text-[var(--abv-text)]">Call Recordings</h2>
         <button
           onClick={openAdd}
-          className="flex items-center gap-1.5 text-xs bg-[#2f3437] text-white px-3 py-1.5 rounded-lg hover:bg-[#1a1f22] transition-colors"
+          className="flex items-center gap-1.5 text-xs bg-[var(--abv-text)] text-white px-3 py-1.5 rounded-lg hover:bg-[#1a1f22] transition-colors"
         >
           <PlusIcon className="w-3.5 h-3.5" />
           Add Call
@@ -259,7 +259,7 @@ export default function AdminCallsTab({ memberId }: Props) {
       </div>
 
       {calls.length === 0 ? (
-        <div className="bg-gray-50 border border-gray-200 rounded-xl p-8 text-center text-sm text-[#2f3437]/40">
+        <div className="bg-gray-50 border border-gray-200 rounded-xl p-8 text-center text-sm text-[var(--abv-text)]/40">
           No call recordings for this member yet.
         </div>
       ) : (
@@ -279,58 +279,58 @@ export default function AdminCallsTab({ memberId }: Props) {
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-lg p-6">
             <div className="flex items-center justify-between mb-5">
-              <h3 className="text-base font-semibold text-[#2f3437]">
+              <h3 className="text-base font-semibold text-[var(--abv-text)]">
                 {editing ? "Edit Call" : "Add Call Recording"}
               </h3>
-              <button onClick={() => setShowModal(false)} className="text-[#2f3437]/40 hover:text-[#2f3437]">
+              <button onClick={() => setShowModal(false)} className="text-[var(--abv-text)]/40 hover:text-[var(--abv-text)]">
                 <XMarkIcon className="w-5 h-5" />
               </button>
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Call Date *</label>
+                <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Call Date *</label>
                 <input
                   type="date"
                   value={form.callDate}
                   onChange={(e) => setForm((f) => ({ ...f, callDate: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--abv-azure)]/30"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Topic (optional)</label>
+                <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Topic (optional)</label>
                 <input
                   type="text"
                   value={form.topic}
                   onChange={(e) => setForm((f) => ({ ...f, topic: e.target.value }))}
                   placeholder="e.g., Monthly Strategy Review"
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--abv-azure)]/30"
                 />
               </div>
               <div className="border border-gray-100 rounded-lg p-3 space-y-3 bg-gray-50/50">
-                <p className="text-xs font-medium text-[#2f3437]/50">Video — add at least one</p>
+                <p className="text-xs font-medium text-[var(--abv-text)]/50">Video — add at least one</p>
                 <div>
-                  <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Fathom URL</label>
+                  <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Fathom URL</label>
                   <input
                     type="text"
                     value={form.fathomUrl}
                     onChange={(e) => setForm((f) => ({ ...f, fathomUrl: e.target.value }))}
                     placeholder="https://fathom.video/share/..."
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30 bg-white"
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--abv-azure)]/30 bg-white"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Loom URL</label>
+                  <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Loom URL</label>
                   <input
                     type="text"
                     value={form.loomUrl}
                     onChange={(e) => setForm((f) => ({ ...f, loomUrl: e.target.value }))}
                     placeholder="https://www.loom.com/share/..."
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30 bg-white"
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--abv-azure)]/30 bg-white"
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Notes (optional)</label>
+                <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Notes (optional)</label>
                 <MarkdownTextarea
                   value={form.notes}
                   onChange={(next) => setForm((f) => ({ ...f, notes: next }))}
@@ -344,14 +344,14 @@ export default function AdminCallsTab({ memberId }: Props) {
             <div className="flex gap-2 justify-end mt-6">
               <button
                 onClick={() => setShowModal(false)}
-                className="px-4 py-2 text-sm text-[#2f3437]/60 hover:text-[#2f3437] border border-gray-200 rounded-lg"
+                className="px-4 py-2 text-sm text-[var(--abv-text)]/60 hover:text-[var(--abv-text)] border border-gray-200 rounded-lg"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="px-4 py-2 text-sm bg-[#2f3437] text-white rounded-lg hover:bg-[#1a1f22] disabled:opacity-50 transition-colors"
+                className="px-4 py-2 text-sm bg-[var(--abv-text)] text-white rounded-lg hover:bg-[#1a1f22] disabled:opacity-50 transition-colors"
               >
                 {saving ? "Saving…" : editing ? "Save Changes" : "Add Call"}
               </button>
@@ -363,14 +363,14 @@ export default function AdminCallsTab({ memberId }: Props) {
       {deleteTarget && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6">
-            <h3 className="text-base font-semibold text-[#2f3437] mb-2">Delete call recording?</h3>
-            <p className="text-sm text-[#2f3437]/60 mb-6">
+            <h3 className="text-base font-semibold text-[var(--abv-text)] mb-2">Delete call recording?</h3>
+            <p className="text-sm text-[var(--abv-text)]/60 mb-6">
               The video recordings themselves won&apos;t be affected.
             </p>
             <div className="flex gap-2 justify-end">
               <button
                 onClick={() => setDeleteTarget(null)}
-                className="px-4 py-2 text-sm text-[#2f3437]/60 hover:text-[#2f3437] border border-gray-200 rounded-lg"
+                className="px-4 py-2 text-sm text-[var(--abv-text)]/60 hover:text-[var(--abv-text)] border border-gray-200 rounded-lg"
               >
                 Cancel
               </button>

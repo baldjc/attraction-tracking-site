@@ -163,13 +163,13 @@ export default function AdminClientHubTab({ memberId, serviceTier }: Props) {
     <div className="space-y-6">
       <div className="bg-gray-50 border border-gray-200 rounded-xl p-5">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-[#2f3437]">Assets Drive Folder</h3>
+          <h3 className="text-sm font-semibold text-[var(--abv-text)]">Assets Drive Folder</h3>
           {assetsDriveLink && (
             <a
               href={assetsDriveLink}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1 text-xs text-[#6ba3c7] hover:text-[#5a8fb3] transition-colors"
+              className="flex items-center gap-1 text-xs text-[var(--abv-azure)] hover:text-[#5a8fb3] transition-colors"
             >
               <ArrowTopRightOnSquareIcon className="w-3.5 h-3.5" />
               Open in Drive
@@ -179,17 +179,17 @@ export default function AdminClientHubTab({ memberId, serviceTier }: Props) {
 
         {!assetsDriveLink ? (
           <div className="space-y-3">
-            <p className="text-sm text-[#2f3437]/50">No asset folder has been created for this member yet.</p>
+            <p className="text-sm text-[var(--abv-text)]/50">No asset folder has been created for this member yet.</p>
             <div className="flex items-center gap-3">
               <button
                 onClick={createAssetFolder}
                 disabled={folderCreating}
-                className="flex items-center gap-2 px-4 py-2 text-sm bg-[#6ba3c7] text-white rounded-lg hover:bg-[#5a8fb3] disabled:opacity-50 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 text-sm bg-[var(--abv-dark)] text-white rounded-lg hover:bg-[#5a8fb3] disabled:opacity-50 transition-colors"
               >
                 <FolderPlusIcon className="w-4 h-4" />
                 {folderCreating ? "Creating…" : "Create Folder"}
               </button>
-              <span className="text-xs text-[#2f3437]/40">or paste a URL below</span>
+              <span className="text-xs text-[var(--abv-text)]/40">or paste a URL below</span>
             </div>
             {folderError && <p className="text-sm text-red-600">{folderError}</p>}
             <div className="flex gap-2">
@@ -198,12 +198,12 @@ export default function AdminClientHubTab({ memberId, serviceTier }: Props) {
                 value={assetsDriveLink}
                 onChange={(e) => setAssetsDriveLink(e.target.value)}
                 placeholder="https://drive.google.com/drive/folders/..."
-                className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30 bg-white"
+                className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--abv-azure)]/30 bg-white"
               />
               <button
                 onClick={saveAssetsLink}
                 disabled={assetsSaving || !assetsDriveLink}
-                className="px-4 py-2 text-sm bg-[#2f3437] text-white rounded-lg hover:bg-[#1a1f22] disabled:opacity-50 transition-colors whitespace-nowrap"
+                className="px-4 py-2 text-sm bg-[var(--abv-text)] text-white rounded-lg hover:bg-[#1a1f22] disabled:opacity-50 transition-colors whitespace-nowrap"
               >
                 {assetsSaved ? "Saved ✓" : assetsSaving ? "Saving…" : "Save"}
               </button>
@@ -216,12 +216,12 @@ export default function AdminClientHubTab({ memberId, serviceTier }: Props) {
               value={assetsDriveLink}
               onChange={(e) => setAssetsDriveLink(e.target.value)}
               placeholder="https://drive.google.com/drive/folders/..."
-              className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30 bg-white"
+              className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--abv-azure)]/30 bg-white"
             />
             <button
               onClick={saveAssetsLink}
               disabled={assetsSaving}
-              className="px-4 py-2 text-sm bg-[#2f3437] text-white rounded-lg hover:bg-[#1a1f22] disabled:opacity-50 transition-colors whitespace-nowrap"
+              className="px-4 py-2 text-sm bg-[var(--abv-text)] text-white rounded-lg hover:bg-[#1a1f22] disabled:opacity-50 transition-colors whitespace-nowrap"
             >
               {assetsSaved ? "Saved ✓" : assetsSaving ? "Saving…" : "Save"}
             </button>
@@ -232,10 +232,10 @@ export default function AdminClientHubTab({ memberId, serviceTier }: Props) {
       {showQuickLinks && (
         <div className="bg-gray-50 border border-gray-200 rounded-xl p-5">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-[#2f3437]">Quick Links</h3>
+            <h3 className="text-sm font-semibold text-[var(--abv-text)]">Quick Links</h3>
             <button
               onClick={openAddLink}
-              className="flex items-center gap-1.5 text-xs bg-[#2f3437] text-white px-3 py-1.5 rounded-lg hover:bg-[#1a1f22] transition-colors"
+              className="flex items-center gap-1.5 text-xs bg-[var(--abv-text)] text-white px-3 py-1.5 rounded-lg hover:bg-[#1a1f22] transition-colors"
             >
               <PlusIcon className="w-3.5 h-3.5" />
               Add Link
@@ -245,7 +245,7 @@ export default function AdminClientHubTab({ memberId, serviceTier }: Props) {
           {linksLoading ? (
             <div className="animate-pulse h-16 bg-gray-200 rounded-lg" />
           ) : quickLinks.length === 0 ? (
-            <p className="text-sm text-[#2f3437]/40">No quick links yet.</p>
+            <p className="text-sm text-[var(--abv-text)]/40">No quick links yet.</p>
           ) : (
             <div className="space-y-2">
               {quickLinks.map((link, idx) => (
@@ -257,32 +257,32 @@ export default function AdminClientHubTab({ memberId, serviceTier }: Props) {
                     <button
                       onClick={() => moveLink(link, "up")}
                       disabled={idx === 0}
-                      className="text-[#2f3437]/30 hover:text-[#2f3437] disabled:opacity-20"
+                      className="text-[var(--abv-text)]/30 hover:text-[var(--abv-text)] disabled:opacity-20"
                     >
                       <ArrowUpIcon className="w-3 h-3" />
                     </button>
                     <button
                       onClick={() => moveLink(link, "down")}
                       disabled={idx === quickLinks.length - 1}
-                      className="text-[#2f3437]/30 hover:text-[#2f3437] disabled:opacity-20"
+                      className="text-[var(--abv-text)]/30 hover:text-[var(--abv-text)] disabled:opacity-20"
                     >
                       <ArrowDownIcon className="w-3 h-3" />
                     </button>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-[#2f3437] truncate">{link.label}</p>
-                    <p className="text-xs text-[#2f3437]/40 truncate">{link.url}</p>
+                    <p className="text-sm font-medium text-[var(--abv-text)] truncate">{link.label}</p>
+                    <p className="text-xs text-[var(--abv-text)]/40 truncate">{link.url}</p>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
                     <button
                       onClick={() => openEditLink(link)}
-                      className="p-1.5 text-[#2f3437]/40 hover:text-[#2f3437] rounded hover:bg-gray-100 transition-colors"
+                      className="p-1.5 text-[var(--abv-text)]/40 hover:text-[var(--abv-text)] rounded hover:bg-gray-100 transition-colors"
                     >
                       <PencilIcon className="w-3.5 h-3.5" />
                     </button>
                     <button
                       onClick={() => setDeleteTarget(link)}
-                      className="p-1.5 text-[#2f3437]/40 hover:text-red-600 rounded hover:bg-red-50 transition-colors"
+                      className="p-1.5 text-[var(--abv-text)]/40 hover:text-red-600 rounded hover:bg-red-50 transition-colors"
                     >
                       <TrashIcon className="w-3.5 h-3.5" />
                     </button>
@@ -298,32 +298,32 @@ export default function AdminClientHubTab({ memberId, serviceTier }: Props) {
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
             <div className="flex items-center justify-between mb-5">
-              <h3 className="text-base font-semibold text-[#2f3437]">
+              <h3 className="text-base font-semibold text-[var(--abv-text)]">
                 {editingLink ? "Edit Link" : "Add Quick Link"}
               </h3>
-              <button onClick={() => setShowLinkModal(false)} className="text-[#2f3437]/40 hover:text-[#2f3437]">
+              <button onClick={() => setShowLinkModal(false)} className="text-[var(--abv-text)]/40 hover:text-[var(--abv-text)]">
                 <XMarkIcon className="w-5 h-5" />
               </button>
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Label *</label>
+                <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Label *</label>
                 <input
                   type="text"
                   value={linkForm.label}
                   onChange={(e) => setLinkForm((f) => ({ ...f, label: e.target.value }))}
                   placeholder="e.g., Shared Drive"
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--abv-azure)]/30"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">URL *</label>
+                <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">URL *</label>
                 <input
                   type="url"
                   value={linkForm.url}
                   onChange={(e) => setLinkForm((f) => ({ ...f, url: e.target.value }))}
                   placeholder="https://..."
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--abv-azure)]/30"
                 />
               </div>
               {linkError && <p className="text-sm text-red-600">{linkError}</p>}
@@ -331,14 +331,14 @@ export default function AdminClientHubTab({ memberId, serviceTier }: Props) {
             <div className="flex gap-2 justify-end mt-6">
               <button
                 onClick={() => setShowLinkModal(false)}
-                className="px-4 py-2 text-sm text-[#2f3437]/60 hover:text-[#2f3437] border border-gray-200 rounded-lg"
+                className="px-4 py-2 text-sm text-[var(--abv-text)]/60 hover:text-[var(--abv-text)] border border-gray-200 rounded-lg"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSaveLink}
                 disabled={linkSaving}
-                className="px-4 py-2 text-sm bg-[#2f3437] text-white rounded-lg hover:bg-[#1a1f22] disabled:opacity-50 transition-colors"
+                className="px-4 py-2 text-sm bg-[var(--abv-text)] text-white rounded-lg hover:bg-[#1a1f22] disabled:opacity-50 transition-colors"
               >
                 {linkSaving ? "Saving…" : editingLink ? "Save Changes" : "Add Link"}
               </button>
@@ -350,12 +350,12 @@ export default function AdminClientHubTab({ memberId, serviceTier }: Props) {
       {deleteTarget && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6">
-            <h3 className="text-base font-semibold text-[#2f3437] mb-2">Delete quick link?</h3>
-            <p className="text-sm text-[#2f3437]/60 mb-6">This will remove &ldquo;{deleteTarget.label}&rdquo; from the member&apos;s Client Hub.</p>
+            <h3 className="text-base font-semibold text-[var(--abv-text)] mb-2">Delete quick link?</h3>
+            <p className="text-sm text-[var(--abv-text)]/60 mb-6">This will remove &ldquo;{deleteTarget.label}&rdquo; from the member&apos;s Client Hub.</p>
             <div className="flex gap-2 justify-end">
               <button
                 onClick={() => setDeleteTarget(null)}
-                className="px-4 py-2 text-sm text-[#2f3437]/60 hover:text-[#2f3437] border border-gray-200 rounded-lg"
+                className="px-4 py-2 text-sm text-[var(--abv-text)]/60 hover:text-[var(--abv-text)] border border-gray-200 rounded-lg"
               >
                 Cancel
               </button>

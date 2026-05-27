@@ -71,12 +71,12 @@ export default function ClientRunsPage({ params }: { params: Promise<{ clientId:
   return (
     <div className="max-w-4xl mx-auto">
       <div className="mb-6">
-        <Link href={`/admin/intelligence/clients/${clientId}`} className="text-sm text-[#2f3437]/50 hover:text-[#2f3437]">← Client Overview</Link>
-        <h1 className="text-xl font-bold text-[#2f3437] mt-1">Intelligence Runs</h1>
+        <Link href={`/admin/intelligence/clients/${clientId}`} className="text-sm text-[var(--abv-text)]/50 hover:text-[var(--abv-text)]">← Client Overview</Link>
+        <h1 className="text-xl font-bold text-[var(--abv-text)] mt-1">Intelligence Runs</h1>
       </div>
 
-      <form onSubmit={handleNewRun} className="bg-white border border-[#6ba3c7]/30 rounded-xl p-5 mb-5">
-        <p className="text-sm font-semibold text-[#2f3437] mb-3">Start a New Run</p>
+      <form onSubmit={handleNewRun} className="bg-white border border-[var(--abv-azure)]/30 rounded-xl p-5 mb-5">
+        <p className="text-sm font-semibold text-[var(--abv-text)] mb-3">Start a New Run</p>
         <div className="flex gap-2">
           <input
             type="text"
@@ -84,9 +84,9 @@ export default function ClientRunsPage({ params }: { params: Promise<{ clientId:
             onChange={(e) => setChannelUrl(e.target.value)}
             placeholder="@channelHandle or YouTube URL"
             required
-            className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40"
+            className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--abv-azure)]/40"
           />
-          <button type="submit" disabled={creating || !channelUrl.trim()} className="px-4 py-2 bg-[#6ba3c7] text-white text-sm font-semibold rounded-lg disabled:opacity-50 hover:bg-[#5490b5]">
+          <button type="submit" disabled={creating || !channelUrl.trim()} className="px-4 py-2 bg-[var(--abv-dark)] text-white text-sm font-semibold rounded-lg disabled:opacity-50 hover:bg-black/85">
             {creating ? "Starting…" : "Run"}
           </button>
         </div>
@@ -94,23 +94,23 @@ export default function ClientRunsPage({ params }: { params: Promise<{ clientId:
       </form>
 
       {loading ? (
-        <div className="h-48 bg-white border border-[#2f3437]/10 rounded-xl animate-pulse" />
+        <div className="h-48 bg-white border border-[var(--abv-text)]/10 rounded-xl animate-pulse" />
       ) : runs.length === 0 ? (
-        <div className="bg-white border border-[#2f3437]/10 rounded-xl p-10 text-center">
+        <div className="bg-white border border-[var(--abv-text)]/10 rounded-xl p-10 text-center">
           <p className="text-3xl mb-3">📊</p>
-          <p className="font-semibold text-[#2f3437]">No runs yet</p>
-          <p className="text-sm text-[#2f3437]/50 mt-1">Start an intelligence run to analyse competitor channels and find outlier patterns.</p>
+          <p className="font-semibold text-[var(--abv-text)]">No runs yet</p>
+          <p className="text-sm text-[var(--abv-text)]/50 mt-1">Start an intelligence run to analyse competitor channels and find outlier patterns.</p>
         </div>
       ) : (
-        <div className="bg-white border border-[#2f3437]/10 rounded-xl divide-y divide-[#2f3437]/6">
+        <div className="bg-white border border-[var(--abv-text)]/10 rounded-xl divide-y divide-[var(--abv-text)]/6">
           {runs.map((run) => {
             const s = STATUS_STYLE[run.status] ?? STATUS_STYLE.PENDING;
             return (
-              <div key={run.id} className="p-4 hover:bg-[#f7f6f3]/40 transition-colors">
+              <div key={run.id} className="p-4 hover:bg-[var(--abv-bg)]/40 transition-colors">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-[#2f3437] text-sm truncate">{run.inputChannelUrl}</p>
-                    <p className="text-xs text-[#2f3437]/40 mt-0.5">
+                    <p className="font-semibold text-[var(--abv-text)] text-sm truncate">{run.inputChannelUrl}</p>
+                    <p className="text-xs text-[var(--abv-text)]/40 mt-0.5">
                       {new Date(run.startedAt).toLocaleString("en-CA")}
                       {run.completedAt && ` · Completed ${new Date(run.completedAt).toLocaleString("en-CA")}`}
                       {run.failedReason && <span className="text-red-500 ml-1">— {run.failedReason.slice(0, 80)}</span>}
@@ -120,7 +120,7 @@ export default function ClientRunsPage({ params }: { params: Promise<{ clientId:
                     <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${s.bg} ${s.text}`}>
                       {run.status === "RUNNING" ? "⟳ " : ""}{s.label}
                     </span>
-                    <Link href={`/admin/intelligence/runs/${run.id}`} className="px-3 py-1.5 text-xs font-semibold bg-[#f7f6f3] text-[#2f3437]/60 hover:text-[#2f3437] rounded-lg border border-[#2f3437]/10">
+                    <Link href={`/admin/intelligence/runs/${run.id}`} className="px-3 py-1.5 text-xs font-semibold bg-[var(--abv-bg)] text-[var(--abv-text)]/60 hover:text-[var(--abv-text)] rounded-lg border border-[var(--abv-text)]/10">
                       View →
                     </Link>
                   </div>

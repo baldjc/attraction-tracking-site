@@ -67,7 +67,7 @@ export default function AnnouncementModal() {
         {/* Close */}
         <button
           onClick={dismiss}
-          className="absolute top-4 right-4 text-[#2f3437]/30 dark:text-white/30 hover:text-[#2f3437] dark:hover:text-white transition-colors"
+          className="absolute top-4 right-4 text-[var(--abv-text)]/30 dark:text-white/30 hover:text-[var(--abv-text)] dark:hover:text-white transition-colors"
         >
           <XMarkIcon className="w-5 h-5" />
         </button>
@@ -79,7 +79,7 @@ export default function AnnouncementModal() {
               <span
                 key={i}
                 className={`h-1 rounded-full flex-1 transition-colors ${
-                  i === 0 ? "bg-[#6ba3c7]" : "bg-[#2f3437]/10 dark:bg-white/10"
+                  i === 0 ? "bg-[var(--abv-dark)]" : "bg-[var(--abv-text)]/10 dark:bg-white/10"
                 }`}
               />
             ))}
@@ -90,13 +90,13 @@ export default function AnnouncementModal() {
         <div className="flex items-start gap-4">
           <span className="text-4xl shrink-0 leading-none mt-0.5">{current.emoji}</span>
           <div className="flex-1 min-w-0 pr-4">
-            <p className="text-xs font-semibold text-[#6ba3c7] uppercase tracking-wider mb-1">
+            <p className="text-xs font-semibold text-[var(--abv-azure)] uppercase tracking-wider mb-1">
               {queue.length > 1 ? `Message ${queue.length - queue.length + 1} of ${queue.length}` : "From Jared"}
             </p>
-            <h2 className="text-lg font-bold text-[#2f3437] dark:text-[#e2e8f0] mb-2 leading-snug">
+            <h2 className="text-lg font-bold text-[var(--abv-text)] dark:text-[#e2e8f0] mb-2 leading-snug">
               {current.title}
             </h2>
-            <p className="text-sm text-[#2f3437]/70 dark:text-[#94a3b8] leading-relaxed whitespace-pre-wrap">
+            <p className="text-sm text-[var(--abv-text)]/70 dark:text-[#94a3b8] leading-relaxed whitespace-pre-wrap">
               {current.body}
             </p>
           </div>
@@ -105,7 +105,7 @@ export default function AnnouncementModal() {
         {/* CTA */}
         <button
           onClick={dismiss}
-          className="mt-5 w-full bg-[#6ba3c7] hover:bg-[#5490b5] text-white font-semibold text-sm py-2.5 rounded-xl transition-colors"
+          className="mt-5 w-full $1var(--abv-dark)$2 hover:bg-black/85 text-white font-semibold text-sm py-2.5 rounded-xl transition-colors"
         >
           {queue.length > 1 ? "Next →" : "Got it"}
         </button>

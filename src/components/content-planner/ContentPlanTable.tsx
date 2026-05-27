@@ -323,12 +323,12 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
   function SortIcon({ col }: { col: keyof ContentPlan }) {
     if (sortKey !== col) return <ChevronUpIcon className="w-3 h-3 opacity-20 inline-block ml-0.5 -mt-0.5" />;
     return sortDir === "asc"
-      ? <ChevronUpIcon className="w-3 h-3 text-[#6ba3c7] inline-block ml-0.5 -mt-0.5" />
-      : <ChevronDownIcon className="w-3 h-3 text-[#6ba3c7] inline-block ml-0.5 -mt-0.5" />;
+      ? <ChevronUpIcon className="w-3 h-3 text-[var(--abv-azure)] inline-block ml-0.5 -mt-0.5" />
+      : <ChevronDownIcon className="w-3 h-3 text-[var(--abv-azure)] inline-block ml-0.5 -mt-0.5" />;
   }
 
-  const inputCls = "w-full bg-white text-[#2f3437] text-sm rounded border border-gray-300 px-2 py-1 focus:border-[#6ba3c7] focus:outline-none";
-  const selectCls = "bg-white text-[#2f3437] text-sm rounded border border-gray-300 px-2 py-1 focus:border-[#6ba3c7] focus:outline-none";
+  const inputCls = "w-full bg-white text-[var(--abv-text)] text-sm rounded border border-gray-300 px-2 py-1 focus:border-[var(--abv-azure)] focus:outline-none";
+  const selectCls = "bg-white text-[var(--abv-text)] text-sm rounded border border-gray-300 px-2 py-1 focus:border-[var(--abv-azure)] focus:outline-none";
 
   function renderCell(plan: ContentPlan, field: keyof ContentPlan) {
     const isEditing = editingCell?.id === plan.id && editingCell?.field === field;
@@ -373,7 +373,7 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
       return (
         <div className="cursor-pointer" onClick={() => startEdit(plan.id, "theme", plan.theme)}>
           {plan.theme ? (
-            <span className="inline-flex items-center gap-1.5 text-xs text-[#2f3437] hover:text-[#6ba3c7] transition-colors max-w-full">
+            <span className="inline-flex items-center gap-1.5 text-xs text-[var(--abv-text)] hover:text-[var(--abv-azure)] transition-colors max-w-full">
               {themeMeta?.emoji ? (
                 <span className="text-sm leading-none shrink-0">{themeMeta.emoji}</span>
               ) : themeMeta?.colour ? (
@@ -385,7 +385,7 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
               <span className="truncate" title={plan.theme}>{plan.theme}</span>
             </span>
           ) : (
-            <span className="text-xs text-[#2f3437]/30 italic">Click to set</span>
+            <span className="text-xs text-[var(--abv-text)]/30 italic">Click to set</span>
           )}
         </div>
       );
@@ -436,14 +436,14 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
         >
           {target ? (
             <div
-              className="flex items-start gap-1 text-[#2f3437] hover:text-[#6ba3c7] transition-colors leading-snug"
+              className="flex items-start gap-1 text-[var(--abv-text)] hover:text-[var(--abv-azure)] transition-colors leading-snug"
               title={target.title}
             >
-              <span className="text-[#6ba3c7] shrink-0 leading-snug">↪</span>
+              <span className="text-[var(--abv-azure)] shrink-0 leading-snug">↪</span>
               <span className="line-clamp-3 break-words min-w-0">{target.title}</span>
             </div>
           ) : (
-            <span className="text-[#2f3437]/30 italic">Click to set</span>
+            <span className="text-[var(--abv-text)]/30 italic">Click to set</span>
           )}
         </div>
       );
@@ -467,7 +467,7 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
       const colour = plan.priority === "High" ? "text-red-600 font-medium" : plan.priority === "Medium" ? "text-amber-600 font-medium" : "text-green-600 font-medium";
       return (
         <div className={`cursor-pointer text-xs hover:opacity-80 ${colour}`} onClick={() => startEdit(plan.id, "priority", plan.priority)}>
-          {plan.priority || <span className="text-[#2f3437]/30 italic font-normal">—</span>}
+          {plan.priority || <span className="text-[var(--abv-text)]/30 italic font-normal">—</span>}
         </div>
       );
     }
@@ -501,7 +501,7 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
               {plan.shootLocation}
             </span>
           ) : (
-            <span className="text-[#2f3437]/30 italic">—</span>
+            <span className="text-[var(--abv-text)]/30 italic">—</span>
           )}
         </div>
       );
@@ -522,8 +522,8 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
         );
       }
       return (
-        <div className="cursor-pointer text-xs text-[#2f3437]/70 hover:text-[#2f3437] whitespace-nowrap" onClick={() => startEdit(plan.id, field, toInputDate(plan[field] as string | null))}>
-          {plan[field] ? formatDate(plan[field] as string) : <span className="text-[#2f3437]/30 italic">—</span>}
+        <div className="cursor-pointer text-xs text-[var(--abv-text)]/70 hover:text-[var(--abv-text)] whitespace-nowrap" onClick={() => startEdit(plan.id, field, toInputDate(plan[field] as string | null))}>
+          {plan[field] ? formatDate(plan[field] as string) : <span className="text-[var(--abv-text)]/30 italic">—</span>}
         </div>
       );
     }
@@ -545,13 +545,13 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
       return (
         <div className="max-w-[180px]">
           <div
-            className={`cursor-pointer text-xs text-[#2f3437]/70 hover:text-[#2f3437] ${!isExpanded ? "line-clamp-2" : ""}`}
+            className={`cursor-pointer text-xs text-[var(--abv-text)]/70 hover:text-[var(--abv-text)] ${!isExpanded ? "line-clamp-2" : ""}`}
             onClick={() => startEdit(plan.id, "notes", plan.notes)}
           >
-            {plan.notes || <span className="text-[#2f3437]/30 italic">—</span>}
+            {plan.notes || <span className="text-[var(--abv-text)]/30 italic">—</span>}
           </div>
           {plan.notes && plan.notes.length > 60 && (
-            <button className="text-[10px] text-[#6ba3c7] mt-0.5" onClick={() => setExpandedNotes(isExpanded ? null : plan.id)}>
+            <button className="text-[10px] text-[var(--abv-azure)] mt-0.5" onClick={() => setExpandedNotes(isExpanded ? null : plan.id)}>
               {isExpanded ? "less" : "more"}
             </button>
           )}
@@ -563,7 +563,7 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
       if (!plan.driveFolderLink) {
         return (
           <div className="flex items-center justify-center">
-            <span className="text-[#2f3437]/30 text-xs italic">—</span>
+            <span className="text-[var(--abv-text)]/30 text-xs italic">—</span>
           </div>
         );
       }
@@ -573,7 +573,7 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
             href={plan.driveFolderLink}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center justify-center text-[#6ba3c7] hover:text-[#4a82a6] transition-colors"
+            className="inline-flex items-center justify-center text-[var(--abv-azure)] hover:text-[#4a82a6] transition-colors"
             title="Open Google Drive folder"
           >
             <ArrowTopRightOnSquareIcon className="w-4 h-4" />
@@ -597,8 +597,8 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
       );
     }
     return (
-      <div className="cursor-pointer text-xs text-[#2f3437]/70 hover:text-[#2f3437] truncate max-w-[150px]" onClick={() => startEdit(plan.id, field as string, val)}>
-        {val || <span className="text-[#2f3437]/30 italic">—</span>}
+      <div className="cursor-pointer text-xs text-[var(--abv-text)]/70 hover:text-[var(--abv-text)] truncate max-w-[150px]" onClick={() => startEdit(plan.id, field as string, val)}>
+        {val || <span className="text-[var(--abv-text)]/30 italic">—</span>}
       </div>
     );
   }
@@ -606,7 +606,7 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16">
-        <div className="w-6 h-6 border-2 border-[#6ba3c7] border-t-transparent rounded-full animate-spin" />
+        <div className="w-6 h-6 border-2 border-[var(--abv-azure)] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -618,17 +618,17 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <p className="text-xs text-[#2f3437]/50">{plans.length} video{plans.length !== 1 ? "s" : ""} planned</p>
+        <p className="text-xs text-[var(--abv-text)]/50">{plans.length} video{plans.length !== 1 ? "s" : ""} planned</p>
         <button
           onClick={() => { setAddForm({ status: allStatusOptions[0] }); setShowAddModal(true); }}
-          className="flex items-center gap-1.5 text-sm font-medium bg-[#6ba3c7] hover:bg-[#5a92b6] text-white px-3 py-1.5 rounded-lg transition-colors"
+          className="flex items-center gap-1.5 text-sm font-medium bg-[var(--abv-dark)] hover:bg-[#5a92b6] text-white px-3 py-1.5 rounded-lg transition-colors"
         >
           <PlusIcon className="w-4 h-4" /> Add Video
         </button>
       </div>
 
       {plans.length === 0 ? (
-        <div className="text-center py-16 text-[#2f3437]/40 text-sm bg-white rounded-lg border border-gray-200">
+        <div className="text-center py-16 text-[var(--abv-text)]/40 text-sm bg-white rounded-lg border border-gray-200">
           No videos planned yet. Start building your content calendar by clicking "Add Video" above.
         </div>
       ) : (
@@ -648,54 +648,54 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
               <col style={{ width: colWidths.actions }} />
             </colgroup>
             <thead>
-              <tr className="border-b border-gray-200 bg-gray-50 text-[#2f3437]/50 text-xs uppercase tracking-wide">
+              <tr className="border-b border-gray-200 bg-gray-50 text-[var(--abv-text)]/50 text-xs uppercase tracking-wide">
                 <th className="px-3 py-2.5" />
                 <th className="text-left px-3 py-2.5 font-medium whitespace-nowrap relative group">
-                  <button onClick={() => handleSort("title")} className="flex items-center gap-0.5 hover:text-[#2f3437] transition-colors">
+                  <button onClick={() => handleSort("title")} className="flex items-center gap-0.5 hover:text-[var(--abv-text)] transition-colors">
                     Title <SortIcon col="title" />
                   </button>
                   <ColumnResizeHandle label="Title" handleProps={getColResizeProps("title")} />
                 </th>
                 <th className="text-left px-3 py-2.5 font-medium whitespace-nowrap relative group">
-                  <button onClick={() => handleSort("status")} className="flex items-center gap-0.5 hover:text-[#2f3437] transition-colors">
+                  <button onClick={() => handleSort("status")} className="flex items-center gap-0.5 hover:text-[var(--abv-text)] transition-colors">
                     Status <SortIcon col="status" />
                   </button>
                   <ColumnResizeHandle label="Status" handleProps={getColResizeProps("status")} />
                 </th>
                 <th className="text-left px-3 py-2.5 font-medium whitespace-nowrap relative group">
-                  <button onClick={() => handleSort("theme")} className="flex items-center gap-0.5 hover:text-[#2f3437] transition-colors">
+                  <button onClick={() => handleSort("theme")} className="flex items-center gap-0.5 hover:text-[var(--abv-text)] transition-colors">
                     Theme <SortIcon col="theme" />
                   </button>
                   <ColumnResizeHandle label="Theme" handleProps={getColResizeProps("theme")} />
                 </th>
                 <th className="text-left px-3 py-2.5 font-medium whitespace-nowrap relative group">
-                  <button onClick={() => handleSort("bingeVideoId")} className="flex items-center gap-0.5 hover:text-[#2f3437] transition-colors">
+                  <button onClick={() => handleSort("bingeVideoId")} className="flex items-center gap-0.5 hover:text-[var(--abv-text)] transition-colors">
                     Binge <SortIcon col="bingeVideoId" />
                   </button>
                   <ColumnResizeHandle label="Binge" handleProps={getColResizeProps("binge")} />
                 </th>
                 <th className="text-left px-3 py-2.5 font-medium whitespace-nowrap relative group">
-                  <button onClick={() => handleSort("shootDate")} className="flex items-center gap-0.5 hover:text-[#2f3437] transition-colors">
+                  <button onClick={() => handleSort("shootDate")} className="flex items-center gap-0.5 hover:text-[var(--abv-text)] transition-colors">
                     Shoot <SortIcon col="shootDate" />
                   </button>
                   <ColumnResizeHandle label="Shoot date" handleProps={getColResizeProps("shootDate")} />
                 </th>
                 <th className="text-left px-3 py-2.5 font-medium whitespace-nowrap relative group">
-                  <button onClick={() => handleSort("shootLocation")} className="flex items-center gap-0.5 hover:text-[#2f3437] transition-colors">
+                  <button onClick={() => handleSort("shootLocation")} className="flex items-center gap-0.5 hover:text-[var(--abv-text)] transition-colors">
                     Location <SortIcon col="shootLocation" />
                   </button>
                   <ColumnResizeHandle label="Location" handleProps={getColResizeProps("shootLocation")} />
                 </th>
                 {showEditDue && (
                   <th className="text-left px-3 py-2.5 font-medium whitespace-nowrap relative group">
-                    <button onClick={() => handleSort("editDueDate")} className="flex items-center gap-0.5 hover:text-[#2f3437] transition-colors">
+                    <button onClick={() => handleSort("editDueDate")} className="flex items-center gap-0.5 hover:text-[var(--abv-text)] transition-colors">
                       Edit Due <SortIcon col="editDueDate" />
                     </button>
                     <ColumnResizeHandle label="Edit due date" handleProps={getColResizeProps("editDueDate")} />
                   </th>
                 )}
                 <th className="text-left px-3 py-2.5 font-medium whitespace-nowrap relative group">
-                  <button onClick={() => handleSort("publishDate")} className="flex items-center gap-0.5 hover:text-[#2f3437] transition-colors">
+                  <button onClick={() => handleSort("publishDate")} className="flex items-center gap-0.5 hover:text-[var(--abv-text)] transition-colors">
                     Publish <SortIcon col="publishDate" />
                   </button>
                   <ColumnResizeHandle label="Publish date" handleProps={getColResizeProps("publishDate")} />
@@ -711,18 +711,18 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
             </thead>
             <tbody className="divide-y divide-gray-100">
               {sortedPlans.map((plan) => (
-                <tr key={plan.id} className="hover:bg-[#6ba3c7]/5 transition-colors">
+                <tr key={plan.id} className="hover:bg-[var(--abv-dark)]/5 transition-colors">
                   <td className="px-3 py-2.5 overflow-hidden">
                     <button
                       onClick={() => setEditingPlan(plan)}
-                      className="text-[#2f3437]/20 hover:text-[#6ba3c7] transition-colors p-0.5"
+                      className="text-[var(--abv-text)]/20 hover:text-[var(--abv-azure)] transition-colors p-0.5"
                       title="Edit video"
                     >
                       <PencilSquareIcon className="w-4 h-4" />
                     </button>
                   </td>
                   <td className="px-3 py-2.5 align-top overflow-hidden">
-                    <div className="cursor-pointer text-sm text-[#2f3437] font-medium hover:text-[#6ba3c7] transition-colors flex items-start gap-2 leading-snug" onClick={() => setEditingPlan(plan)}>
+                    <div className="cursor-pointer text-sm text-[var(--abv-text)] font-medium hover:text-[var(--abv-azure)] transition-colors flex items-start gap-2 leading-snug" onClick={() => setEditingPlan(plan)}>
                       {plan.thumbnailFileId ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
@@ -751,10 +751,10 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
                     {confirmDelete === plan.id ? (
                       <div className="flex items-center gap-1">
                         <button onClick={() => deletePlan(plan.id)} className="text-red-500 hover:text-red-700 p-0.5"><CheckIcon className="w-4 h-4" /></button>
-                        <button onClick={() => setConfirmDelete(null)} className="text-[#2f3437]/40 hover:text-[#2f3437] p-0.5"><XMarkIcon className="w-4 h-4" /></button>
+                        <button onClick={() => setConfirmDelete(null)} className="text-[var(--abv-text)]/40 hover:text-[var(--abv-text)] p-0.5"><XMarkIcon className="w-4 h-4" /></button>
                       </div>
                     ) : (
-                      <button onClick={() => setConfirmDelete(plan.id)} className="text-[#2f3437]/20 hover:text-red-500 transition-colors p-0.5">
+                      <button onClick={() => setConfirmDelete(plan.id)} className="text-[var(--abv-text)]/20 hover:text-red-500 transition-colors p-0.5">
                         <TrashIcon className="w-4 h-4" />
                       </button>
                     )}
@@ -770,39 +770,39 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl border border-gray-200 shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-5 border-b border-gray-100">
-              <h2 className="text-base font-semibold text-[#2f3437]">Add Video</h2>
-              <button onClick={() => setShowAddModal(false)} className="text-[#2f3437]/40 hover:text-[#2f3437]">
+              <h2 className="text-base font-semibold text-[var(--abv-text)]">Add Video</h2>
+              <button onClick={() => setShowAddModal(false)} className="text-[var(--abv-text)]/40 hover:text-[var(--abv-text)]">
                 <XMarkIcon className="w-5 h-5" />
               </button>
             </div>
             <div className="p-5 space-y-4">
               <div>
-                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Title <span className="text-red-500">*</span></label>
+                <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Title <span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   value={addForm.title ?? ""}
                   onChange={(e) => setAddForm((f) => ({ ...f, title: e.target.value }))}
                   placeholder="Video title..."
-                  className="w-full border border-gray-200 text-[#2f3437] text-sm rounded-lg px-3 py-2 focus:border-[#6ba3c7] focus:outline-none"
+                  className="w-full border border-gray-200 text-[var(--abv-text)] text-sm rounded-lg px-3 py-2 focus:border-[var(--abv-azure)] focus:outline-none"
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Status</label>
+                  <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Status</label>
                   <select
                     value={addForm.status ?? allStatusOptions[0]}
                     onChange={(e) => setAddForm((f) => ({ ...f, status: e.target.value }))}
-                    className="w-full border border-gray-200 text-[#2f3437] text-sm rounded-lg px-3 py-2 focus:border-[#6ba3c7] focus:outline-none"
+                    className="w-full border border-gray-200 text-[var(--abv-text)] text-sm rounded-lg px-3 py-2 focus:border-[var(--abv-azure)] focus:outline-none"
                   >
                     {allStatusOptions.map((s) => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Priority</label>
+                  <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Priority</label>
                   <select
                     value={addForm.priority ?? ""}
                     onChange={(e) => setAddForm((f) => ({ ...f, priority: e.target.value }))}
-                    className="w-full border border-gray-200 text-[#2f3437] text-sm rounded-lg px-3 py-2 focus:border-[#6ba3c7] focus:outline-none"
+                    className="w-full border border-gray-200 text-[var(--abv-text)] text-sm rounded-lg px-3 py-2 focus:border-[var(--abv-azure)] focus:outline-none"
                   >
                     <option value="">None</option>
                     {PRIORITY_OPTIONS.map((p) => <option key={p} value={p}>{p}</option>)}
@@ -810,11 +810,11 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Theme</label>
+                <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Theme</label>
                 <select
                   value={addForm.theme ?? ""}
                   onChange={(e) => setAddForm((f) => ({ ...f, theme: e.target.value }))}
-                  className="w-full border border-gray-200 text-[#2f3437] text-sm rounded-lg px-3 py-2 focus:border-[#6ba3c7] focus:outline-none"
+                  className="w-full border border-gray-200 text-[var(--abv-text)] text-sm rounded-lg px-3 py-2 focus:border-[var(--abv-azure)] focus:outline-none"
                 >
                   <option value="">Select theme...</option>
                   {themes.map((t) => <option key={t.name} value={t.name}>{t.emoji ? `${t.emoji} ${t.name}` : t.name}</option>)}
@@ -822,20 +822,20 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Shoot Date</label>
-                  <input type="date" value={addForm.shootDate ?? ""} onChange={(e) => setAddForm((f) => ({ ...f, shootDate: e.target.value }))} className="w-full border border-gray-200 text-[#2f3437] text-sm rounded-lg px-3 py-2 focus:border-[#6ba3c7] focus:outline-none" />
+                  <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Shoot Date</label>
+                  <input type="date" value={addForm.shootDate ?? ""} onChange={(e) => setAddForm((f) => ({ ...f, shootDate: e.target.value }))} className="w-full border border-gray-200 text-[var(--abv-text)] text-sm rounded-lg px-3 py-2 focus:border-[var(--abv-azure)] focus:outline-none" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Publish Date</label>
-                  <input type="date" value={addForm.publishDate ?? ""} onChange={(e) => setAddForm((f) => ({ ...f, publishDate: e.target.value }))} className="w-full border border-gray-200 text-[#2f3437] text-sm rounded-lg px-3 py-2 focus:border-[#6ba3c7] focus:outline-none" />
+                  <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Publish Date</label>
+                  <input type="date" value={addForm.publishDate ?? ""} onChange={(e) => setAddForm((f) => ({ ...f, publishDate: e.target.value }))} className="w-full border border-gray-200 text-[var(--abv-text)] text-sm rounded-lg px-3 py-2 focus:border-[var(--abv-azure)] focus:outline-none" />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Shoot Location</label>
+                <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Shoot Location</label>
                 <select
                   value={addForm.shootLocation ?? ""}
                   onChange={(e) => setAddForm((f) => ({ ...f, shootLocation: e.target.value }))}
-                  className="w-full border border-gray-200 text-[#2f3437] text-sm rounded-lg px-3 py-2 focus:border-[#6ba3c7] focus:outline-none"
+                  className="w-full border border-gray-200 text-[var(--abv-text)] text-sm rounded-lg px-3 py-2 focus:border-[var(--abv-azure)] focus:outline-none"
                 >
                   <option value="">Select location...</option>
                   <option value="In Studio">In Studio</option>
@@ -844,31 +844,31 @@ export default function ContentPlanTable({ apiBase, isAdmin = false, forcedServi
               </div>
               {showEditDue && (
                 <div>
-                  <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Edit Due Date</label>
-                  <input type="date" value={addForm.editDueDate ?? ""} onChange={(e) => setAddForm((f) => ({ ...f, editDueDate: e.target.value }))} className="w-full border border-gray-200 text-[#2f3437] text-sm rounded-lg px-3 py-2 focus:border-[#6ba3c7] focus:outline-none" />
+                  <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Edit Due Date</label>
+                  <input type="date" value={addForm.editDueDate ?? ""} onChange={(e) => setAddForm((f) => ({ ...f, editDueDate: e.target.value }))} className="w-full border border-gray-200 text-[var(--abv-text)] text-sm rounded-lg px-3 py-2 focus:border-[var(--abv-azure)] focus:outline-none" />
                 </div>
               )}
               <div>
-                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Thumbnail Words and Ideas</label>
-                <input type="text" value={addForm.thumbnailWords ?? ""} onChange={(e) => setAddForm((f) => ({ ...f, thumbnailWords: e.target.value }))} placeholder="Words for your thumbnail, or quick ideas…" className="w-full border border-gray-200 text-[#2f3437] text-sm rounded-lg px-3 py-2 focus:border-[#6ba3c7] focus:outline-none" />
+                <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Thumbnail Words and Ideas</label>
+                <input type="text" value={addForm.thumbnailWords ?? ""} onChange={(e) => setAddForm((f) => ({ ...f, thumbnailWords: e.target.value }))} placeholder="Words for your thumbnail, or quick ideas…" className="w-full border border-gray-200 text-[var(--abv-text)] text-sm rounded-lg px-3 py-2 focus:border-[var(--abv-azure)] focus:outline-none" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Footage Link</label>
-                <input type="url" value={addForm.footageLink ?? ""} onChange={(e) => setAddForm((f) => ({ ...f, footageLink: e.target.value }))} placeholder="https://..." className="w-full border border-gray-200 text-[#2f3437] text-sm rounded-lg px-3 py-2 focus:border-[#6ba3c7] focus:outline-none" />
+                <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Footage Link</label>
+                <input type="url" value={addForm.footageLink ?? ""} onChange={(e) => setAddForm((f) => ({ ...f, footageLink: e.target.value }))} placeholder="https://..." className="w-full border border-gray-200 text-[var(--abv-text)] text-sm rounded-lg px-3 py-2 focus:border-[var(--abv-azure)] focus:outline-none" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Talking Points</label>
-                <textarea value={addForm.notes ?? ""} onChange={(e) => setAddForm((f) => ({ ...f, notes: e.target.value }))} placeholder="One talking point per line…" rows={3} className="w-full border border-gray-200 text-[#2f3437] text-sm rounded-lg px-3 py-2 focus:border-[#6ba3c7] focus:outline-none resize-none" />
-                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1 mt-3">Script</label>
-                <textarea value={addForm.script ?? ""} onChange={(e) => setAddForm((f) => ({ ...f, script: e.target.value }))} placeholder="Paste your script here…" rows={5} className="w-full border border-gray-200 text-[#2f3437] text-sm rounded-lg px-3 py-2 focus:border-[#6ba3c7] focus:outline-none resize-y" />
+                <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Talking Points</label>
+                <textarea value={addForm.notes ?? ""} onChange={(e) => setAddForm((f) => ({ ...f, notes: e.target.value }))} placeholder="One talking point per line…" rows={3} className="w-full border border-gray-200 text-[var(--abv-text)] text-sm rounded-lg px-3 py-2 focus:border-[var(--abv-azure)] focus:outline-none resize-none" />
+                <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1 mt-3">Script</label>
+                <textarea value={addForm.script ?? ""} onChange={(e) => setAddForm((f) => ({ ...f, script: e.target.value }))} placeholder="Paste your script here…" rows={5} className="w-full border border-gray-200 text-[var(--abv-text)] text-sm rounded-lg px-3 py-2 focus:border-[var(--abv-azure)] focus:outline-none resize-y" />
               </div>
               {addError && <p className="text-red-500 text-xs">{addError}</p>}
             </div>
             <div className="flex gap-3 p-5 pt-0">
-              <button onClick={() => setShowAddModal(false)} className="flex-1 text-sm text-[#2f3437]/60 border border-gray-200 hover:bg-gray-50 px-4 py-2.5 rounded-lg transition-colors">
+              <button onClick={() => setShowAddModal(false)} className="flex-1 text-sm text-[var(--abv-text)]/60 border border-gray-200 hover:bg-gray-50 px-4 py-2.5 rounded-lg transition-colors">
                 Cancel
               </button>
-              <button onClick={handleAddSubmit} disabled={addLoading} className="flex-1 text-sm font-medium bg-[#6ba3c7] hover:bg-[#5a92b6] text-white px-4 py-2.5 rounded-lg transition-colors disabled:opacity-50">
+              <button onClick={handleAddSubmit} disabled={addLoading} className="flex-1 text-sm font-medium bg-[var(--abv-dark)] hover:bg-[#5a92b6] text-white px-4 py-2.5 rounded-lg transition-colors disabled:opacity-50">
                 {addLoading ? "Adding…" : "Add Video"}
               </button>
             </div>

@@ -23,8 +23,8 @@ export default async function IntelligencePage() {
   return (
     <div className="max-w-6xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-[#2f3437]">SEO Intelligence</h1>
-        <p className="text-sm text-[#2f3437]/60 mt-1">
+        <h1 className="text-2xl font-bold text-[var(--abv-text)]">SEO Intelligence</h1>
+        <p className="text-sm text-[var(--abv-text)]/60 mt-1">
           YouTube + SEO research, channel intelligence runs, and global pattern library
         </p>
       </div>
@@ -33,7 +33,7 @@ export default async function IntelligencePage() {
       <div className="mb-6">
         <Link
           href="/admin/intelligence/new-run"
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#6ba3c7] hover:bg-[#5490b5] text-white text-sm font-semibold rounded-lg transition-colors"
+          className="inline-flex items-center gap-2 px-4 py-2.5 $1var(--abv-dark)$2 hover:bg-black/85 text-white text-sm font-semibold rounded-lg transition-colors"
         >
           <span>+</span> New Intelligence Run
         </Link>
@@ -47,7 +47,7 @@ export default async function IntelligencePage() {
           description="DWY client profiles, keyword research, content ideas"
           stat={clientCount}
           statLabel="active clients"
-          colour="#6ba3c7"
+          colour="var(--abv-azure)"
           icon="👥"
         />
         <ModuleCard
@@ -80,10 +80,10 @@ export default async function IntelligencePage() {
       </div>
 
       {/* Recent runs */}
-      <div className="bg-white border border-[#2f3437]/10 rounded-xl p-6">
+      <div className="bg-white border border-[var(--abv-text)]/10 rounded-xl p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-semibold text-[#2f3437]">Recent Runs</h2>
-          <Link href="/admin/intelligence/runs" className="text-xs text-[#6ba3c7] hover:underline">
+          <h2 className="font-semibold text-[var(--abv-text)]">Recent Runs</h2>
+          <Link href="/admin/intelligence/runs" className="text-xs text-[var(--abv-azure)] hover:underline">
             View all
           </Link>
         </div>
@@ -91,26 +91,26 @@ export default async function IntelligencePage() {
         {recentRuns.length === 0 ? (
           <div className="text-center py-10">
             <p className="text-3xl mb-3">🔬</p>
-            <p className="text-sm font-medium text-[#2f3437]">No runs yet</p>
-            <p className="text-xs text-[#2f3437]/50 mt-1">
+            <p className="text-sm font-medium text-[var(--abv-text)]">No runs yet</p>
+            <p className="text-xs text-[var(--abv-text)]/50 mt-1">
               Paste a YouTube channel URL to run your first intelligence report
             </p>
             <Link
               href="/admin/intelligence/new-run"
-              className="mt-4 inline-block px-4 py-2 bg-[#6ba3c7] text-white text-sm font-medium rounded-lg hover:bg-[#5490b5] transition-colors"
+              className="mt-4 inline-block px-4 py-2 bg-[var(--abv-dark)] text-white text-sm font-medium rounded-lg hover:bg-black/85 transition-colors"
             >
               Start a run
             </Link>
           </div>
         ) : (
-          <div className="divide-y divide-[#2f3437]/8">
+          <div className="divide-y divide-[var(--abv-text)]/8">
             {recentRuns.map((run) => (
               <div key={run.id} className="py-3 flex items-center justify-between gap-4">
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-[#2f3437] truncate">
+                  <p className="text-sm font-medium text-[var(--abv-text)] truncate">
                     {run.inputChannelUrl}
                   </p>
-                  <p className="text-xs text-[#2f3437]/50 mt-0.5">
+                  <p className="text-xs text-[var(--abv-text)]/50 mt-0.5">
                     {run.client?.name ?? "No client"} &middot;{" "}
                     {new Date(run.startedAt).toLocaleDateString("en-CA", {
                       month: "short",
@@ -124,7 +124,7 @@ export default async function IntelligencePage() {
                   <StatusBadge status={run.status} />
                   <Link
                     href={`/admin/intelligence/runs/${run.id}`}
-                    className="text-xs text-[#6ba3c7] hover:underline"
+                    className="text-xs text-[var(--abv-azure)] hover:underline"
                   >
                     View →
                   </Link>
@@ -165,7 +165,7 @@ function ModuleCard({
   return (
     <Link
       href={href}
-      className="bg-white border border-[#2f3437]/10 rounded-xl p-5 hover:shadow-md hover:border-[#2f3437]/20 transition-all group"
+      className="bg-white border border-[var(--abv-text)]/10 rounded-xl p-5 hover:shadow-md hover:border-[var(--abv-text)]/20 transition-all group"
     >
       <div
         className="w-10 h-10 rounded-lg flex items-center justify-center text-xl mb-3"
@@ -173,10 +173,10 @@ function ModuleCard({
       >
         {icon}
       </div>
-      <p className="font-semibold text-[#2f3437] group-hover:text-[#6ba3c7] transition-colors">
+      <p className="font-semibold text-[var(--abv-text)] group-hover:text-[var(--abv-azure)] transition-colors">
         {title}
       </p>
-      <p className="text-xs text-[#2f3437]/50 mt-1 leading-relaxed">{description}</p>
+      <p className="text-xs text-[var(--abv-text)]/50 mt-1 leading-relaxed">{description}</p>
       {stat !== null && (
         <p className="text-xs font-semibold mt-3" style={{ color: colour }}>
           {stat} {statLabel}
@@ -190,11 +190,11 @@ function SubCard({ href, icon, label }: { href: string; icon: string; label: str
   return (
     <Link
       href={href}
-      className="bg-white border border-[#2f3437]/10 rounded-xl p-4 flex items-center gap-3 hover:shadow-sm hover:border-[#2f3437]/20 transition-all"
+      className="bg-white border border-[var(--abv-text)]/10 rounded-xl p-4 flex items-center gap-3 hover:shadow-sm hover:border-[var(--abv-text)]/20 transition-all"
     >
       <span className="text-xl">{icon}</span>
-      <span className="text-sm font-medium text-[#2f3437]">{label}</span>
-      <span className="ml-auto text-[#2f3437]/30 text-sm">→</span>
+      <span className="text-sm font-medium text-[var(--abv-text)]">{label}</span>
+      <span className="ml-auto text-[var(--abv-text)]/30 text-sm">→</span>
     </Link>
   );
 }

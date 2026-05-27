@@ -45,18 +45,18 @@ function ScriptCard({ script }: { script: SavedScript }) {
   }
 
   return (
-    <div className="bg-white border border-[#2f3437]/10 rounded-xl overflow-hidden transition-shadow hover:shadow-sm">
+    <div className="bg-white border border-[var(--abv-text)]/10 rounded-xl overflow-hidden transition-shadow hover:shadow-sm">
       <div className="px-5 py-4">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-3 min-w-0">
-            <div className="w-9 h-9 rounded-lg bg-[#6ba3c7]/10 flex items-center justify-center shrink-0 mt-0.5">
-              <DocumentTextIcon className="w-5 h-5 text-[#6ba3c7]" />
+            <div className="w-9 h-9 rounded-lg bg-[var(--abv-ai-tools)]/10 flex items-center justify-center shrink-0 mt-0.5">
+              <DocumentTextIcon className="w-5 h-5 text-[var(--abv-ai-tools)]" />
             </div>
             <div className="min-w-0">
-              <h3 className="text-sm font-semibold text-[#2f3437] leading-snug">{script.videoTitle}</h3>
+              <h3 className="text-sm font-semibold text-[var(--abv-text)] leading-snug">{script.videoTitle}</h3>
               <div className="flex items-center gap-1.5 mt-1">
-                <ClockIcon className="w-3.5 h-3.5 text-[#2f3437]/35 shrink-0" />
-                <span className="text-xs text-[#2f3437]/45">{formatDate(script.createdAt)}</span>
+                <ClockIcon className="w-3.5 h-3.5 text-[var(--abv-text)]/35 shrink-0" />
+                <span className="text-xs text-[var(--abv-text)]/45">{formatDate(script.createdAt)}</span>
               </div>
             </div>
           </div>
@@ -68,7 +68,7 @@ function ScriptCard({ script }: { script: SavedScript }) {
               className={`inline-flex items-center gap-1 text-xs font-medium transition-colors mt-1 ${
                 addedToPlanner
                   ? "text-green-600 cursor-default"
-                  : "text-[#2f3437]/45 hover:text-[#6ba3c7]"
+                  : "text-[var(--abv-text)]/45 hover:text-[var(--abv-ai-tools)]"
               }`}
             >
               <span>{addedToPlanner ? "✓" : "📅"}</span>
@@ -77,7 +77,7 @@ function ScriptCard({ script }: { script: SavedScript }) {
             {hasPreview && (
               <button
                 onClick={() => setExpanded((v) => !v)}
-                className="flex items-center gap-1 text-xs text-[#6ba3c7] hover:text-[#5490b5] font-medium transition-colors mt-1"
+                className="flex items-center gap-1 text-xs text-[var(--abv-ai-tools)] hover:text-[var(--abv-ai-tools)] font-medium transition-colors mt-1"
               >
                 {expanded ? (
                   <>Hide preview <ChevronUpIcon className="w-3.5 h-3.5" /></>
@@ -92,9 +92,9 @@ function ScriptCard({ script }: { script: SavedScript }) {
 
       {expanded && hasPreview && (
         <div className="px-5 pb-5 pt-0">
-          <div className="bg-[#f7f6f3] rounded-lg p-4 border border-[#2f3437]/8">
-            <p className="text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wider mb-2">Script Preview</p>
-            <pre className="text-sm text-[#2f3437]/75 whitespace-pre-wrap font-sans leading-relaxed">
+          <div className="bg-[var(--abv-bg)] rounded-lg p-4 border border-[var(--abv-text)]/8">
+            <p className="text-xs font-semibold text-[var(--abv-text)]/50 uppercase tracking-wider mb-2">Script Preview</p>
+            <pre className="text-sm text-[var(--abv-text)]/75 whitespace-pre-wrap font-sans leading-relaxed">
               {script.scriptOpening}
             </pre>
           </div>
@@ -124,19 +124,19 @@ export default function SavedScriptsPage() {
       <div className="mb-6">
         <Link
           href="/member/ai-tools"
-          className="inline-flex items-center gap-1.5 text-sm text-[#2f3437]/50 hover:text-[#6ba3c7] transition-colors mb-4"
+          className="inline-flex items-center gap-1.5 text-sm text-[var(--abv-text)]/50 hover:text-[var(--abv-ai-tools)] transition-colors mb-4"
         >
           <ArrowLeftIcon className="w-4 h-4" />
           AI Tools
         </Link>
-        <h1 className="text-2xl font-bold text-[#2f3437]">Saved Scripts</h1>
-        <p className="text-sm text-[#2f3437]/60 mt-1">Your last 30 ARC scripts — saved after completing the builder.</p>
+        <h1 className="text-2xl font-bold text-[var(--abv-text)]">Saved Scripts</h1>
+        <p className="text-sm text-[var(--abv-text)]/60 mt-1">Your last 30 ARC scripts — saved after completing the builder.</p>
       </div>
 
       {loading && (
         <div className="space-y-3">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-20 bg-white border border-[#2f3437]/10 rounded-xl animate-pulse" />
+            <div key={i} className="h-20 bg-white border border-[var(--abv-text)]/10 rounded-xl animate-pulse" />
           ))}
         </div>
       )}
@@ -148,15 +148,15 @@ export default function SavedScriptsPage() {
       )}
 
       {!loading && !error && scripts.length === 0 && (
-        <div className="bg-white border border-[#2f3437]/10 rounded-xl px-6 py-12 text-center">
-          <DocumentTextIcon className="w-10 h-10 text-[#2f3437]/20 mx-auto mb-3" />
-          <p className="font-semibold text-[#2f3437] mb-1">No scripts saved yet</p>
-          <p className="text-sm text-[#2f3437]/50 mb-5">
+        <div className="bg-white border border-[var(--abv-text)]/10 rounded-xl px-6 py-12 text-center">
+          <DocumentTextIcon className="w-10 h-10 text-[var(--abv-text)]/20 mx-auto mb-3" />
+          <p className="font-semibold text-[var(--abv-text)] mb-1">No scripts saved yet</p>
+          <p className="text-sm text-[var(--abv-text)]/50 mb-5">
             Complete an ARC Script Builder session and save your script to see it here.
           </p>
           <Link
             href="/member/ai-tools/arc-script-builder"
-            className="inline-flex items-center gap-2 bg-[#6ba3c7] hover:bg-[#5490b5] text-white font-semibold px-5 py-2.5 rounded-lg text-sm transition-colors"
+            className="inline-flex items-center gap-2 $1var(--abv-ai-tools)$2 hover:bg-[var(--abv-ai-tools)]/85 text-white font-semibold px-5 py-2.5 rounded-lg text-sm transition-colors"
           >
             Start building
           </Link>

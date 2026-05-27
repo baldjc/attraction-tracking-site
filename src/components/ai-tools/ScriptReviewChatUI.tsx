@@ -28,13 +28,13 @@ function AssistantBubble({
 }) {
   return (
     <div className="bg-white dark:bg-[#1a1a1a] rounded-lg rounded-tl-sm border border-gray-200 dark:border-white/10 px-4 py-3 max-w-full">
-      <MarkdownMessage className="text-sm text-[#2f3437] dark:text-white leading-relaxed">
+      <MarkdownMessage className="text-sm text-[var(--abv-text)] dark:text-white leading-relaxed">
         {message.content}
       </MarkdownMessage>
       {onDownload && (
         <button
           onClick={onDownload}
-          className="flex items-center gap-1.5 text-xs text-[#2f3437]/50 hover:text-[#6ba3c7] transition-colors mt-3 pt-3 border-t border-gray-100 dark:border-white/10"
+          className="flex items-center gap-1.5 text-xs text-[var(--abv-text)]/50 hover:text-[var(--abv-ai-tools)] transition-colors mt-3 pt-3 border-t border-gray-100 dark:border-white/10"
         >
           <ArrowDownTrayIcon className="w-3.5 h-3.5" />
           Download full report
@@ -278,7 +278,7 @@ export default function ScriptReviewChatUI({ basePath, noAvatar, defaultPlanId }
       {phase === "input" ? (
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-semibold text-[#2f3437] dark:text-white mb-1.5">
+            <label className="block text-sm font-semibold text-[var(--abv-text)] dark:text-white mb-1.5">
               Video Title
             </label>
             <input
@@ -286,12 +286,12 @@ export default function ScriptReviewChatUI({ basePath, noAvatar, defaultPlanId }
               value={videoTitle}
               onChange={(e) => setVideoTitle(e.target.value)}
               placeholder="What is this video called? (or planned title)"
-              className="w-full bg-white dark:bg-[#0f1419] border border-gray-200 dark:border-white/20 rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-white placeholder-gray-400 dark:placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40"
+              className="w-full bg-white dark:bg-[#0f1419] border border-gray-200 dark:border-white/20 rounded-lg px-4 py-3 text-sm text-[var(--abv-text)] dark:text-white placeholder-gray-400 dark:placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[var(--abv-ai-tools)]/40"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-[#2f3437] dark:text-white mb-1.5">
+            <label className="block text-sm font-semibold text-[var(--abv-text)] dark:text-white mb-1.5">
               Script or Transcript
             </label>
             <MarkdownTextarea
@@ -306,7 +306,7 @@ export default function ScriptReviewChatUI({ basePath, noAvatar, defaultPlanId }
           <button
             onClick={handleAnalyze}
             disabled={loading || !videoTitle.trim() || !scriptText.trim()}
-            className="w-full py-3.5 bg-[#6ba3c7] text-white font-semibold rounded-lg hover:bg-[#6ba3c7]/90 disabled:opacity-50 transition-colors"
+            className="w-full py-3.5 bg-[var(--abv-ai-tools)] text-white font-semibold rounded-lg hover:bg-[var(--abv-ai-tools)]/90 disabled:opacity-50 transition-colors"
           >
             {loading ? "Analysing script…" : "Analyse My Script"}
           </button>
@@ -319,7 +319,7 @@ export default function ScriptReviewChatUI({ basePath, noAvatar, defaultPlanId }
       ) : (
         <div className="flex flex-col">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-[#2f3437] dark:text-white truncate max-w-[70%]">
+            <h2 className="text-sm font-semibold text-[var(--abv-text)] dark:text-white truncate max-w-[70%]">
               {videoTitle}
             </h2>
             <div className="flex items-center gap-2 shrink-0">
@@ -331,7 +331,7 @@ export default function ScriptReviewChatUI({ basePath, noAvatar, defaultPlanId }
                 <button
                   onClick={handleDownload}
                   title="Download"
-                  className="p-1.5 rounded-lg text-[#2f3437]/40 dark:text-white/40 hover:text-[#6ba3c7] hover:bg-[#6ba3c7]/10 transition-colors"
+                  className="p-1.5 rounded-lg text-[var(--abv-text)]/40 dark:text-white/40 hover:text-[var(--abv-ai-tools)] hover:bg-[var(--abv-ai-tools)]/10 transition-colors"
                 >
                   <ArrowDownTrayIcon className="w-4 h-4" />
                 </button>
@@ -339,7 +339,7 @@ export default function ScriptReviewChatUI({ basePath, noAvatar, defaultPlanId }
               <button
                 onClick={handleReset}
                 title="New review"
-                className="flex items-center gap-1 px-3 py-1.5 border border-gray-200 dark:border-white/20 rounded-lg text-xs text-[#2f3437]/60 dark:text-white/60 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+                className="flex items-center gap-1 px-3 py-1.5 border border-gray-200 dark:border-white/20 rounded-lg text-xs text-[var(--abv-text)]/60 dark:text-white/60 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
               >
                 <PlusIcon className="w-3 h-3" />
                 New
@@ -354,7 +354,7 @@ export default function ScriptReviewChatUI({ basePath, noAvatar, defaultPlanId }
                 className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
               >
                 {msg.role === "user" ? (
-                  <div className="bg-[#6ba3c7] text-white rounded-lg rounded-tr-sm px-4 py-2.5 max-w-[85%]">
+                  <div className="bg-[var(--abv-ai-tools)] text-white rounded-lg rounded-tr-sm px-4 py-2.5 max-w-[85%]">
                     <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                   </div>
                 ) : (
@@ -405,7 +405,7 @@ export default function ScriptReviewChatUI({ basePath, noAvatar, defaultPlanId }
                 </div>
               ) : (
                 <div className="flex items-center gap-2 flex-wrap">
-                  <p className="text-xs text-[#2f3437]/50 dark:text-white/40 flex-1">
+                  <p className="text-xs text-[var(--abv-text)]/50 dark:text-white/40 flex-1">
                     📅 Came from Content Planner — save your script back once you&apos;re happy with the review.
                   </p>
                   {plannerSaveError && (
@@ -414,7 +414,7 @@ export default function ScriptReviewChatUI({ basePath, noAvatar, defaultPlanId }
                   <button
                     onClick={() => handleSaveScriptToPlan(extractRevisedScript())}
                     disabled={plannerSaving}
-                    className="shrink-0 px-3 py-1.5 text-xs font-semibold bg-[#6ba3c7] text-white rounded-md hover:bg-[#5490b5] disabled:opacity-50 transition-colors"
+                    className="shrink-0 px-3 py-1.5 text-xs font-semibold bg-[var(--abv-ai-tools)] text-white rounded-md hover:bg-[var(--abv-ai-tools)]/85 disabled:opacity-50 transition-colors"
                     title="Saves the most recent revised script from the chat (or your original if none yet)."
                   >
                     {plannerSaving ? "Saving…" : "Save Revised Script to Plan"}
@@ -436,12 +436,12 @@ export default function ScriptReviewChatUI({ basePath, noAvatar, defaultPlanId }
               }}
               placeholder="Ask a follow-up question or request a rewrite…"
               rows={2}
-              className="flex-1 bg-white dark:bg-[#0f1419] border border-gray-200 dark:border-white/20 rounded-lg px-3 py-2 text-sm text-[#2f3437] dark:text-white placeholder-gray-400 dark:placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40 resize-none"
+              className="flex-1 bg-white dark:bg-[#0f1419] border border-gray-200 dark:border-white/20 rounded-lg px-3 py-2 text-sm text-[var(--abv-text)] dark:text-white placeholder-gray-400 dark:placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[var(--abv-ai-tools)]/40 resize-none"
             />
             <button
               onClick={handleSend}
               disabled={loading || !input.trim()}
-              className="self-end p-3 bg-[#6ba3c7] text-white rounded-lg hover:bg-[#6ba3c7]/90 disabled:opacity-50 transition-colors"
+              className="self-end p-3 bg-[var(--abv-ai-tools)] text-white rounded-lg hover:bg-[var(--abv-ai-tools)]/90 disabled:opacity-50 transition-colors"
             >
               <ArrowUpIcon className="w-4 h-4" />
             </button>

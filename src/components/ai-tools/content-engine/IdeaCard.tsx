@@ -152,11 +152,11 @@ export default function IdeaCard({ idea, theme, onSaved, savedId, onDelete }: Pr
   const hasMultipleOptions = titleOptions.length > 1;
 
   return (
-    <div className="bg-[#f8f8f6] dark:bg-[#1a1a1a] rounded-lg border border-[#2f3437]/10 dark:border-white/10 p-4 space-y-3">
+    <div className="bg-[#f8f8f6] dark:bg-[#1a1a1a] rounded-lg border border-[var(--abv-text)]/10 dark:border-white/10 p-4 space-y-3">
       {/* Title options */}
       {hasMultipleOptions ? (
         <div className="space-y-1.5">
-          <p className="text-[10px] font-semibold text-[#2f3437]/40 dark:text-white/40 uppercase tracking-wider">
+          <p className="text-[10px] font-semibold text-[var(--abv-text)]/40 dark:text-white/40 uppercase tracking-wider">
             Pick a title
           </p>
           {titleOptions.map((opt, i) => (
@@ -165,16 +165,16 @@ export default function IdeaCard({ idea, theme, onSaved, savedId, onDelete }: Pr
               onClick={() => setSelectedIdx(i)}
               className={`w-full text-left rounded-lg px-3 py-2.5 border transition-all ${
                 selectedIdx === i
-                  ? "border-[#6ba3c7] bg-[#6ba3c7]/8 dark:bg-[#6ba3c7]/15"
-                  : "border-[#2f3437]/10 dark:border-white/10 hover:border-[#2f3437]/25 dark:hover:border-white/25 bg-white dark:bg-white/5"
+                  ? "border-[var(--abv-ai-tools)] bg-[var(--abv-ai-tools)]/8 dark:bg-[var(--abv-ai-tools)]/15"
+                  : "border-[var(--abv-text)]/10 dark:border-white/10 hover:border-[var(--abv-text)]/25 dark:hover:border-white/25 bg-white dark:bg-white/5"
               }`}
             >
               <div className="flex items-start gap-2">
                 <span
                   className={`shrink-0 mt-0.5 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors ${
                     selectedIdx === i
-                      ? "border-[#6ba3c7] bg-[#6ba3c7]"
-                      : "border-[#2f3437]/30 dark:border-white/30"
+                      ? "border-[var(--abv-ai-tools)] bg-[var(--abv-ai-tools)]"
+                      : "border-[var(--abv-text)]/30 dark:border-white/30"
                   }`}
                 >
                   {selectedIdx === i && (
@@ -182,9 +182,9 @@ export default function IdeaCard({ idea, theme, onSaved, savedId, onDelete }: Pr
                   )}
                 </span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-[#2f3437] dark:text-white leading-snug">{opt.title}</p>
+                  <p className="text-sm font-semibold text-[var(--abv-text)] dark:text-white leading-snug">{opt.title}</p>
                   {opt.framework && (
-                    <p className="text-[10px] text-[#2f3437]/40 dark:text-white/40 mt-0.5">{opt.framework}</p>
+                    <p className="text-[10px] text-[var(--abv-text)]/40 dark:text-white/40 mt-0.5">{opt.framework}</p>
                   )}
                 </div>
               </div>
@@ -193,7 +193,7 @@ export default function IdeaCard({ idea, theme, onSaved, savedId, onDelete }: Pr
         </div>
       ) : (
         <div className="flex items-start justify-between gap-3">
-          <h3 className="font-semibold text-[#2f3437] dark:text-white text-sm leading-snug flex-1">
+          <h3 className="font-semibold text-[var(--abv-text)] dark:text-white text-sm leading-snug flex-1">
             {selectedOption.title}
           </h3>
         </div>
@@ -206,7 +206,7 @@ export default function IdeaCard({ idea, theme, onSaved, savedId, onDelete }: Pr
             onClick={handleDelete}
             disabled={deleting}
             title="Delete saved idea"
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-[#2f3437]/30 dark:text-white/30 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--abv-text)]/30 dark:text-white/30 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
           >
             {deleting ? <span className="text-xs animate-spin">↻</span> : <span className="text-sm">✕</span>}
           </button>
@@ -218,8 +218,8 @@ export default function IdeaCard({ idea, theme, onSaved, savedId, onDelete }: Pr
             title={isSaved ? "Saved" : "Save selected title"}
             className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
               isSaved
-                ? "bg-[#6ba3c7]/20 text-[#6ba3c7]"
-                : "bg-[#111]/5 dark:bg-white/5 hover:bg-[#6ba3c7]/10 text-[#2f3437]/40 dark:text-white/40 hover:text-[#6ba3c7]"
+                ? "bg-[var(--abv-ai-tools)]/20 text-[var(--abv-ai-tools)]"
+                : "bg-[#111]/5 dark:bg-white/5 hover:bg-[var(--abv-ai-tools)]/10 text-[var(--abv-text)]/40 dark:text-white/40 hover:text-[var(--abv-ai-tools)]"
             }`}
           >
             {saving ? (
@@ -233,7 +233,7 @@ export default function IdeaCard({ idea, theme, onSaved, savedId, onDelete }: Pr
 
       {/* Framework badge (single-title mode) */}
       {!hasMultipleOptions && selectedOption.framework && (
-        <span className="inline-block text-xs font-medium text-[#6ba3c7] bg-[#6ba3c7]/10 px-2 py-0.5 rounded-full">
+        <span className="inline-block text-xs font-medium text-[var(--abv-ai-tools)] bg-[var(--abv-ai-tools)]/10 px-2 py-0.5 rounded-full">
           {selectedOption.framework}
         </span>
       )}
@@ -243,13 +243,13 @@ export default function IdeaCard({ idea, theme, onSaved, savedId, onDelete }: Pr
         <>
           <ol className="space-y-1">
             {idea.talkingPoints.map((pt, i) => (
-              <li key={i} className="flex items-start gap-2 text-xs text-[#2f3437]/70 dark:text-white/70">
-                <span className="text-[#6ba3c7] font-bold flex-shrink-0">{i + 1}.</span>
+              <li key={i} className="flex items-start gap-2 text-xs text-[var(--abv-text)]/70 dark:text-white/70">
+                <span className="text-[var(--abv-ai-tools)] font-bold flex-shrink-0">{i + 1}.</span>
                 <span>{pt}</span>
               </li>
             ))}
           </ol>
-          <p className="text-[10px] text-[#2f3437]/40 dark:text-white/40 italic mt-1.5">
+          <p className="text-[10px] text-[var(--abv-text)]/40 dark:text-white/40 italic mt-1.5">
             These are starting points — use fewer, combine them, or add your own.
           </p>
         </>
@@ -257,15 +257,15 @@ export default function IdeaCard({ idea, theme, onSaved, savedId, onDelete }: Pr
 
       {/* Why it works */}
       {idea.whyItWorks && (
-        <p className="text-xs text-[#2f3437]/50 dark:text-white/50 italic border-t border-[#2f3437]/5 dark:border-white/5 pt-2">
+        <p className="text-xs text-[var(--abv-text)]/50 dark:text-white/50 italic border-t border-[var(--abv-text)]/5 dark:border-white/5 pt-2">
           {idea.whyItWorks}
         </p>
       )}
 
       {idea.dataToFind && (
-        <div className="border-t border-[#2f3437]/5 dark:border-white/5 pt-2 mt-1">
-          <p className="text-xs font-medium text-[#2f3437]/60 dark:text-white/60 mb-1">Data to Find:</p>
-          <p className="text-xs text-[#2f3437]/50 dark:text-white/50">
+        <div className="border-t border-[var(--abv-text)]/5 dark:border-white/5 pt-2 mt-1">
+          <p className="text-xs font-medium text-[var(--abv-text)]/60 dark:text-white/60 mb-1">Data to Find:</p>
+          <p className="text-xs text-[var(--abv-text)]/50 dark:text-white/50">
             {idea.dataToFind}
           </p>
         </div>
@@ -294,10 +294,10 @@ export default function IdeaCard({ idea, theme, onSaved, savedId, onDelete }: Pr
       )}
 
       {/* Build Script + Add to Planner */}
-      <div className="border-t border-[#2f3437]/5 dark:border-white/5 pt-2 flex gap-2">
+      <div className="border-t border-[var(--abv-text)]/5 dark:border-white/5 pt-2 flex gap-2">
         <button
           onClick={handleBuildScript}
-          className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-semibold text-[#2f3437] dark:text-white bg-[#111]/5 dark:bg-white/5 hover:bg-[#6ba3c7]/10 hover:text-[#6ba3c7] dark:hover:text-[#6ba3c7] rounded-lg transition-colors"
+          className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-semibold text-[var(--abv-text)] dark:text-white bg-[#111]/5 dark:bg-white/5 hover:bg-[var(--abv-ai-tools)]/10 hover:text-[var(--abv-ai-tools)] dark:hover:text-[var(--abv-ai-tools)] rounded-lg transition-colors"
         >
           <span>🎬</span>
           {createdPlan?.id ? "Build Script (updates this plan)" : "Build Script"}
@@ -314,7 +314,7 @@ export default function IdeaCard({ idea, theme, onSaved, savedId, onDelete }: Pr
           <button
             onClick={handleAddToPlanner}
             disabled={addingToPlanner}
-            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-semibold rounded-lg transition-colors text-[#2f3437] dark:text-white bg-[#111]/5 dark:bg-white/5 hover:bg-[#6ba3c7]/10 hover:text-[#6ba3c7] dark:hover:text-[#6ba3c7]"
+            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-semibold rounded-lg transition-colors text-[var(--abv-text)] dark:text-white bg-[#111]/5 dark:bg-white/5 hover:bg-[var(--abv-ai-tools)]/10 hover:text-[var(--abv-ai-tools)] dark:hover:text-[var(--abv-ai-tools)]"
           >
             <span>📅</span>
             {addingToPlanner ? "Adding…" : "Add to Planner"}

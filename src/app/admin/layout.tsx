@@ -24,7 +24,7 @@ export default async function AdminLayout({
   const reviewerEnabled = role === "admin" ? await isReviewerEnabled() : false;
 
   return (
-    <div className="min-h-screen bg-[#f7f6f3] dark:bg-[#0f1419]">
+    <div className="min-h-screen bg-[var(--abv-bg)] dark:bg-[#0f1419]">
       <div className="print:hidden">
         <Sidebar
           role={role}

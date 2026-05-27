@@ -560,16 +560,16 @@ export default function ArcScriptChatPhase({
           {sectionApprovals.filter((a) => a.key === expandedSection).map((approval) => {
             const label = SECTIONS.find((s) => s.key === approval.key)?.label ?? approval.key;
             return (
-              <div key={approval.key} className="bg-[#6ba3c7]/8 border border-[#6ba3c7]/20 rounded-lg p-4">
+              <div key={approval.key} className="bg-[var(--abv-ai-tools)]/8 border border-[var(--abv-ai-tools)]/20 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-bold text-[#6ba3c7] uppercase tracking-wide">
+                  <span className="text-xs font-bold text-[var(--abv-ai-tools)] uppercase tracking-wide">
                     Approved: {label}
                   </span>
-                  <button onClick={() => setExpandedSection(null)} className="text-[#2f3437]/40 dark:text-white/40 hover:text-[#2f3437] dark:hover:text-white">
+                  <button onClick={() => setExpandedSection(null)} className="text-[var(--abv-text)]/40 dark:text-white/40 hover:text-[var(--abv-text)] dark:hover:text-white">
                     <ChevronUpIcon className="w-4 h-4" />
                   </button>
                 </div>
-                <p className="text-sm text-[#2f3437]/70 dark:text-white/70 line-clamp-4">{approval.snippet}…</p>
+                <p className="text-sm text-[var(--abv-text)]/70 dark:text-white/70 line-clamp-4">{approval.snippet}…</p>
               </div>
             );
           })}
@@ -587,7 +587,7 @@ export default function ArcScriptChatPhase({
                 className={`max-w-[85%] rounded-lg px-4 py-3 ${
                   msg.role === "user"
                     ? "bg-[#111] text-white rounded-tr-sm text-sm leading-relaxed"
-                    : "bg-white dark:bg-[#1a1a1a] border border-[#2f3437]/10 dark:border-white/10 text-[#2f3437] dark:text-white rounded-tl-sm"
+                    : "bg-white dark:bg-[#1a1a1a] border border-[var(--abv-text)]/10 dark:border-white/10 text-[var(--abv-text)] dark:text-white rounded-tl-sm"
                 }`}
               >
                 {msg.role === "user" ? (
@@ -597,7 +597,7 @@ export default function ArcScriptChatPhase({
                 ) : (
                   <div className="flex gap-1.5 items-center h-4">
                     {[0, 1, 2].map((i) => (
-                      <span key={i} className="w-2 h-2 rounded-full bg-[#6ba3c7]/60 animate-bounce"
+                      <span key={i} className="w-2 h-2 rounded-full bg-[var(--abv-ai-tools)]/60 animate-bounce"
                         style={{ animationDelay: `${i * 0.15}s` }} />
                     ))}
                   </div>
@@ -624,7 +624,7 @@ export default function ArcScriptChatPhase({
       {(finalScriptDone || isFinalScript) && (
         <div className="flex flex-col gap-2 mb-3">
           {saving && (
-            <p className="text-xs text-[#2f3437]/45 dark:text-white/35 px-1">Saving your script…</p>
+            <p className="text-xs text-[var(--abv-text)]/45 dark:text-white/35 px-1">Saving your script…</p>
           )}
           {saved && (
             <div className="flex items-center gap-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-500/30 rounded-lg px-4 py-3">
@@ -663,7 +663,7 @@ export default function ArcScriptChatPhase({
                 </a>
               </div>
             ) : plannerSaving ? (
-              <p className="text-xs text-[#2f3437]/45 dark:text-white/35 px-1">Saving script to your Content Plan…</p>
+              <p className="text-xs text-[var(--abv-text)]/45 dark:text-white/35 px-1">Saving script to your Content Plan…</p>
             ) : plannerSaveError ? (
               <div className="flex items-center gap-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg px-4 py-3">
                 <p className="text-sm text-red-600 dark:text-red-400 flex-1">Could not save to Content Plan.</p>
@@ -691,7 +691,7 @@ export default function ArcScriptChatPhase({
               </div>
             ) : (
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs font-medium text-[#2f3437]/60 dark:text-white/50 shrink-0">
+                <span className="text-xs font-medium text-[var(--abv-text)]/60 dark:text-white/50 shrink-0">
                   📅 Save script to Content Plan:
                 </span>
                 {contentPlans.length > 0 ? (
@@ -699,7 +699,7 @@ export default function ArcScriptChatPhase({
                     <select
                       value={selectedPlanId}
                       onChange={(e) => setSelectedPlanId(e.target.value)}
-                      className="flex-1 min-w-0 bg-white dark:bg-[#0f1419] border border-[#2f3437]/20 dark:border-white/20 rounded-md px-3 py-1.5 text-xs text-[#2f3437] dark:text-white focus:outline-none focus:border-[#6ba3c7] transition-colors"
+                      className="flex-1 min-w-0 bg-white dark:bg-[#0f1419] border border-[var(--abv-text)]/20 dark:border-white/20 rounded-md px-3 py-1.5 text-xs text-[var(--abv-text)] dark:text-white focus:outline-none focus:border-[var(--abv-ai-tools)] transition-colors"
                     >
                       <option value="">— Choose a plan —</option>
                       {contentPlans.map((p) => (
@@ -709,7 +709,7 @@ export default function ArcScriptChatPhase({
                     <button
                       onClick={() => { if (selectedPlanId) onSaveToPlanner(selectedPlanId); }}
                       disabled={!selectedPlanId || plannerSaving}
-                      className="shrink-0 px-3 py-1.5 text-xs font-semibold bg-[#6ba3c7] text-white rounded-md hover:bg-[#5490b5] transition-colors disabled:opacity-40"
+                      className="shrink-0 px-3 py-1.5 text-xs font-semibold bg-[var(--abv-ai-tools)] text-white rounded-md hover:bg-[var(--abv-ai-tools)]/85 transition-colors disabled:opacity-40"
                     >
                       {plannerSaving ? "Saving…" : "Save"}
                     </button>
@@ -718,7 +718,7 @@ export default function ArcScriptChatPhase({
                   <button
                     onClick={() => onSaveToPlanner()}
                     disabled={plannerSaving}
-                    className="shrink-0 px-3 py-1.5 text-xs font-semibold bg-[#6ba3c7] text-white rounded-md hover:bg-[#5490b5] transition-colors disabled:opacity-40"
+                    className="shrink-0 px-3 py-1.5 text-xs font-semibold bg-[var(--abv-ai-tools)] text-white rounded-md hover:bg-[var(--abv-ai-tools)]/85 transition-colors disabled:opacity-40"
                   >
                     {plannerSaving ? "Saving…" : "Save to Planner"}
                   </button>
@@ -733,7 +733,7 @@ export default function ArcScriptChatPhase({
           <div className="flex gap-2 flex-wrap">
             <button
               onClick={handleCopy}
-              className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-[#6ba3c7] text-white rounded-lg hover:bg-[#5490b5] transition-colors"
+              className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-[var(--abv-ai-tools)] text-white rounded-lg hover:bg-[var(--abv-ai-tools)]/85 transition-colors"
             >
               {copied ? <CheckIcon className="w-4 h-4" /> : <ClipboardDocumentIcon className="w-4 h-4" />}
               {copied ? "Copied!" : "Copy to Clipboard"}
@@ -741,7 +741,7 @@ export default function ArcScriptChatPhase({
             <button
               onClick={handleSave}
               disabled={saving || saved}
-              className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium border border-[#2f3437]/15 dark:border-white/15 rounded-lg hover:bg-[#111]/5 dark:hover:bg-white/5 transition-colors text-[#2f3437] dark:text-white disabled:opacity-50"
+              className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium border border-[var(--abv-text)]/15 dark:border-white/15 rounded-lg hover:bg-[#111]/5 dark:hover:bg-white/5 transition-colors text-[var(--abv-text)] dark:text-white disabled:opacity-50"
             >
               {saved ? <CheckIcon className="w-4 h-4" /> : <span>💾</span>}
               {saved ? "Saved" : saving ? "Saving…" : "Save Script"}
@@ -756,7 +756,7 @@ export default function ArcScriptChatPhase({
                 }
               }}
               disabled={plannerPushed || plannerSaved || plannerPushing}
-              className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium border border-[#2f3437]/15 dark:border-white/15 rounded-lg hover:bg-[#111]/5 dark:hover:bg-white/5 transition-colors text-[#2f3437] dark:text-white disabled:opacity-50"
+              className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium border border-[var(--abv-text)]/15 dark:border-white/15 rounded-lg hover:bg-[#111]/5 dark:hover:bg-white/5 transition-colors text-[var(--abv-text)] dark:text-white disabled:opacity-50"
             >
               <span>📅</span>
               {plannerPushed || plannerSaved
@@ -769,7 +769,7 @@ export default function ArcScriptChatPhase({
             </button>
             <button
               onClick={onReset}
-              className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium border border-[#2f3437]/15 dark:border-white/15 rounded-lg hover:bg-[#111]/5 dark:hover:bg-white/5 transition-colors text-[#2f3437] dark:text-white"
+              className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium border border-[var(--abv-text)]/15 dark:border-white/15 rounded-lg hover:bg-[#111]/5 dark:hover:bg-white/5 transition-colors text-[var(--abv-text)] dark:text-white"
             >
               <ArrowPathIcon className="w-4 h-4" />
               Build Another Script
@@ -790,45 +790,45 @@ export default function ArcScriptChatPhase({
 
       {plannerOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => !plannerPushing && setPlannerOpen(false)}>
-          <div className="bg-white dark:bg-[#1a1a1a] rounded-lg border border-[#2f3437]/10 dark:border-white/10 max-w-md w-full max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
-            <div className="px-5 py-4 border-b border-[#2f3437]/10 dark:border-white/10">
-              <h3 className="text-sm font-bold text-[#2f3437] dark:text-white">Push to Content Planner</h3>
-              <p className="text-xs text-[#2f3437]/60 dark:text-white/60 mt-0.5">Add this script to an existing item or create a new one.</p>
+          <div className="bg-white dark:bg-[#1a1a1a] rounded-lg border border-[var(--abv-text)]/10 dark:border-white/10 max-w-md w-full max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="px-5 py-4 border-b border-[var(--abv-text)]/10 dark:border-white/10">
+              <h3 className="text-sm font-bold text-[var(--abv-text)] dark:text-white">Push to Content Planner</h3>
+              <p className="text-xs text-[var(--abv-text)]/60 dark:text-white/60 mt-0.5">Add this script to an existing item or create a new one.</p>
             </div>
             <div className="flex-1 overflow-y-auto p-3 space-y-1.5">
               <button
                 onClick={() => pushToPlanner(null)}
                 disabled={plannerPushing}
-                className="w-full text-left px-3 py-2.5 rounded-lg border border-dashed border-[#6ba3c7]/40 hover:bg-[#6ba3c7]/5 text-sm font-semibold text-[#6ba3c7] disabled:opacity-50"
+                className="w-full text-left px-3 py-2.5 rounded-lg border border-dashed border-[var(--abv-ai-tools)]/40 hover:bg-[var(--abv-ai-tools)]/5 text-sm font-semibold text-[var(--abv-ai-tools)] disabled:opacity-50"
               >
                 + Create new planner item for &quot;{initialData.title}&quot;
               </button>
               {plannerLoading && (
-                <p className="text-xs text-[#2f3437]/50 dark:text-white/50 px-3 py-4 text-center">Loading…</p>
+                <p className="text-xs text-[var(--abv-text)]/50 dark:text-white/50 px-3 py-4 text-center">Loading…</p>
               )}
               {!plannerLoading && plannerPlans.length === 0 && (
-                <p className="text-xs text-[#2f3437]/50 dark:text-white/50 px-3 py-4 text-center">No active planner items yet.</p>
+                <p className="text-xs text-[var(--abv-text)]/50 dark:text-white/50 px-3 py-4 text-center">No active planner items yet.</p>
               )}
               {!plannerLoading && plannerPlans.map((p) => (
                 <button
                   key={p.id}
                   onClick={() => pushToPlanner(p.id)}
                   disabled={plannerPushing}
-                  className="w-full text-left px-3 py-2.5 rounded-lg border border-[#2f3437]/10 dark:border-white/10 hover:bg-[#111]/5 dark:hover:bg-white/5 disabled:opacity-50"
+                  className="w-full text-left px-3 py-2.5 rounded-lg border border-[var(--abv-text)]/10 dark:border-white/10 hover:bg-[#111]/5 dark:hover:bg-white/5 disabled:opacity-50"
                 >
-                  <p className="text-sm font-medium text-[#2f3437] dark:text-white truncate">{p.title}</p>
-                  <p className="text-[10px] text-[#2f3437]/50 dark:text-white/50 mt-0.5 uppercase tracking-wide">{p.status}</p>
+                  <p className="text-sm font-medium text-[var(--abv-text)] dark:text-white truncate">{p.title}</p>
+                  <p className="text-[10px] text-[var(--abv-text)]/50 dark:text-white/50 mt-0.5 uppercase tracking-wide">{p.status}</p>
                 </button>
               ))}
             </div>
             {plannerError && (
               <p className="px-5 pb-2 text-xs text-red-500">{plannerError}</p>
             )}
-            <div className="px-5 py-3 border-t border-[#2f3437]/10 dark:border-white/10 flex justify-end">
+            <div className="px-5 py-3 border-t border-[var(--abv-text)]/10 dark:border-white/10 flex justify-end">
               <button
                 onClick={() => setPlannerOpen(false)}
                 disabled={plannerPushing}
-                className="text-xs text-[#2f3437]/60 dark:text-white/60 hover:text-[#2f3437] dark:hover:text-white"
+                className="text-xs text-[var(--abv-text)]/60 dark:text-white/60 hover:text-[var(--abv-text)] dark:hover:text-white"
               >
                 Cancel
               </button>
@@ -838,7 +838,7 @@ export default function ArcScriptChatPhase({
       )}
 
       {!atTurnLimit && (
-        <div className="flex-shrink-0 border-t border-[#2f3437]/10 dark:border-white/10 pt-4">
+        <div className="flex-shrink-0 border-t border-[var(--abv-text)]/10 dark:border-white/10 pt-4">
           <AnalysisProgress
             active={loading}
             title="Generating script…"
@@ -856,25 +856,25 @@ export default function ArcScriptChatPhase({
                   : "Type your reply… (Enter to send, Shift+Enter for new line)"
               }
               rows={2}
-              className="flex-1 bg-white dark:bg-[#0f1419] border border-[#2f3437]/20 dark:border-white/20 rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-white placeholder-[#2f3437]/30 dark:placeholder-white/30 resize-none focus:outline-none focus:border-[#6ba3c7] transition-colors"
+              className="flex-1 bg-white dark:bg-[#0f1419] border border-[var(--abv-text)]/20 dark:border-white/20 rounded-lg px-4 py-3 text-sm text-[var(--abv-text)] dark:text-white placeholder-[var(--abv-text)]/30 dark:placeholder-white/30 resize-none focus:outline-none focus:border-[var(--abv-ai-tools)] transition-colors"
             />
             <button
               onClick={() => { if (input.trim() && !loading) sendMessage(input.trim()); }}
               disabled={loading || !input.trim()}
-              className="flex-shrink-0 w-11 h-11 flex items-center justify-center bg-[#6ba3c7] text-white rounded-lg hover:bg-[#6ba3c7]/90 disabled:opacity-40 transition-colors"
+              className="flex-shrink-0 w-11 h-11 flex items-center justify-center bg-[var(--abv-ai-tools)] text-white rounded-lg hover:bg-[var(--abv-ai-tools)]/90 disabled:opacity-40 transition-colors"
             >
               <PaperAirplaneIcon className="w-5 h-5" />
             </button>
           </div>
           <div className="flex justify-between mt-1.5">
             <div className="flex items-center gap-3">
-              <button onClick={onReset} className="text-xs text-[#2f3437]/30 dark:text-white/30 hover:text-[#2f3437]/60 dark:hover:text-white/60 flex items-center gap-1">
+              <button onClick={onReset} className="text-xs text-[var(--abv-text)]/30 dark:text-white/30 hover:text-[var(--abv-text)]/60 dark:hover:text-white/60 flex items-center gap-1">
                 <ArrowPathIcon className="w-3 h-3" /> Start over
               </button>
               <button
                 onClick={() => handleSaveDraft(messages, currentSection, completedSections, sectionApprovals)}
                 disabled={draftSaving || messages.length < 2}
-                className="text-xs text-[#6ba3c7] hover:text-[#5490b5] dark:text-[#6ba3c7]/80 dark:hover:text-[#6ba3c7] flex items-center gap-1 transition-colors disabled:opacity-40"
+                className="text-xs text-[var(--abv-ai-tools)] hover:text-[var(--abv-ai-tools)] dark:text-[var(--abv-ai-tools)]/80 dark:hover:text-[var(--abv-ai-tools)] flex items-center gap-1 transition-colors disabled:opacity-40"
               >
                 {draftSaving ? (
                   <span>Saving…</span>
@@ -888,7 +888,7 @@ export default function ArcScriptChatPhase({
                 <span className="text-xs text-red-400">Save failed</span>
               )}
             </div>
-            <span className="text-xs text-[#2f3437]/25 dark:text-white/25">{turnCount}/{MAX_TURNS} turns</span>
+            <span className="text-xs text-[var(--abv-text)]/25 dark:text-white/25">{turnCount}/{MAX_TURNS} turns</span>
           </div>
         </div>
       )}

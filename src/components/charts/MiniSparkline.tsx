@@ -7,7 +7,7 @@ interface Props {
   color?: string;
 }
 
-export function MiniSparkline({ data, color = "#6ba3c7" }: Props) {
+export function MiniSparkline({ data, color = "var(--abv-azure)" }: Props) {
   if (!data.length) return null;
   return (
     <ResponsiveContainer width="100%" height={40}>

@@ -101,17 +101,17 @@ function ScriptViewModal({
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
       <div className="relative bg-white dark:bg-[#1a1a1a] rounded-2xl shadow-2xl w-full max-w-2xl my-6">
-        <div className="flex items-start justify-between gap-3 px-6 pt-5 pb-4 border-b border-[#2f3437]/10 dark:border-white/10">
+        <div className="flex items-start justify-between gap-3 px-6 pt-5 pb-4 border-b border-[var(--abv-text)]/10 dark:border-white/10">
           <div className="min-w-0">
             {loading ? (
-              <div className="h-5 w-48 bg-[#2f3437]/10 rounded animate-pulse" />
+              <div className="h-5 w-48 bg-[var(--abv-text)]/10 rounded animate-pulse" />
             ) : (
               <>
-                <h2 className="text-base font-bold text-[#2f3437] dark:text-white leading-snug">
+                <h2 className="text-base font-bold text-[var(--abv-text)] dark:text-white leading-snug">
                   {detail?.videoTitle ?? "Script"}
                 </h2>
                 {detail?.createdAt && (
-                  <p className="text-xs text-[#2f3437]/45 dark:text-white/40 mt-0.5 flex items-center gap-1">
+                  <p className="text-xs text-[var(--abv-text)]/45 dark:text-white/40 mt-0.5 flex items-center gap-1">
                     <ClockIcon className="w-3 h-3" />
                     {formatDate(detail.createdAt)}
                   </p>
@@ -123,7 +123,7 @@ function ScriptViewModal({
             {detail?.fullScript && (
               <button
                 onClick={handleCopy}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#6ba3c7] hover:bg-[#5490b5] text-white text-xs font-semibold transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg $1var(--abv-ai-tools)$2 hover:bg-[var(--abv-ai-tools)]/85 text-white text-xs font-semibold transition-colors"
               >
                 {copied ? (
                   <>
@@ -140,7 +140,7 @@ function ScriptViewModal({
             )}
             <button
               onClick={onClose}
-              className="p-1.5 rounded-lg text-[#2f3437]/40 dark:text-white/40 hover:text-[#2f3437] dark:hover:text-white hover:bg-[#2f3437]/5 dark:hover:bg-white/5 transition-colors"
+              className="p-1.5 rounded-lg text-[var(--abv-text)]/40 dark:text-white/40 hover:text-[var(--abv-text)] dark:hover:text-white hover:bg-[var(--abv-text)]/5 dark:hover:bg-white/5 transition-colors"
               aria-label="Close"
             >
               <XMarkIcon className="w-5 h-5" />
@@ -152,7 +152,7 @@ function ScriptViewModal({
           {loading && (
             <div className="space-y-2">
               {[...Array(6)].map((_, i) => (
-                <div key={i} className="h-4 bg-[#2f3437]/8 rounded animate-pulse" style={{ width: `${70 + (i % 3) * 10}%` }} />
+                <div key={i} className="h-4 bg-[var(--abv-text)]/8 rounded animate-pulse" style={{ width: `${70 + (i % 3) * 10}%` }} />
               ))}
             </div>
           )}
@@ -160,24 +160,24 @@ function ScriptViewModal({
             <p className="text-sm text-red-600">{error}</p>
           )}
           {!loading && !error && detail?.fullScript && (
-            <pre className="text-sm text-[#2f3437]/80 dark:text-white/75 whitespace-pre-wrap font-sans leading-relaxed">
+            <pre className="text-sm text-[var(--abv-text)]/80 dark:text-white/75 whitespace-pre-wrap font-sans leading-relaxed">
               {detail.fullScript}
             </pre>
           )}
           {!loading && !error && !detail?.fullScript && (
-            <p className="text-sm text-[#2f3437]/45">No script text found for this entry.</p>
+            <p className="text-sm text-[var(--abv-text)]/45">No script text found for this entry.</p>
           )}
         </div>
 
         {/* Save to content plan */}
         {!loading && !error && detail?.fullScript && plans.length > 0 && (
-          <div className="px-6 pb-5 pt-0 border-t border-[#2f3437]/8 mt-0">
-            <p className="text-xs font-medium text-[#2f3437]/50 mb-2 mt-4">Save script to a content plan</p>
+          <div className="px-6 pb-5 pt-0 border-t border-[var(--abv-text)]/8 mt-0">
+            <p className="text-xs font-medium text-[var(--abv-text)]/50 mb-2 mt-4">Save script to a content plan</p>
             <div className="flex gap-2 items-center">
               <select
                 value={selectedPlanId}
                 onChange={(e) => { setSelectedPlanId(e.target.value); setSavedToPlan(false); }}
-                className="flex-1 text-sm border border-[#2f3437]/15 rounded-lg px-3 py-1.5 text-[#2f3437] focus:outline-none focus:border-[#6ba3c7] bg-white"
+                className="flex-1 text-sm border border-[var(--abv-text)]/15 rounded-lg px-3 py-1.5 text-[var(--abv-text)] focus:outline-none focus:border-[var(--abv-ai-tools)] bg-white"
               >
                 <option value="">Select a video…</option>
                 {plans.map((p) => (
@@ -190,7 +190,7 @@ function ScriptViewModal({
                 className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
                   savedToPlan
                     ? "bg-green-50 border border-green-200 text-green-600 cursor-default"
-                    : "bg-[#6ba3c7] hover:bg-[#5490b5] text-white disabled:opacity-40 disabled:cursor-not-allowed"
+                    : "$1var(--abv-ai-tools)$2 hover:bg-[var(--abv-ai-tools)]/85 text-white disabled:opacity-40 disabled:cursor-not-allowed"
                 }`}
               >
                 <CalendarDaysIcon className="w-3.5 h-3.5" />
@@ -222,30 +222,30 @@ export default function ScriptHistoryPanel() {
   return (
     <>
       <div className="mb-8">
-        <h2 className="text-sm font-semibold text-[#2f3437] dark:text-white/80 uppercase tracking-wider mb-3">
+        <h2 className="text-sm font-semibold text-[var(--abv-text)] dark:text-white/80 uppercase tracking-wider mb-3">
           My Scripts
         </h2>
         <div className="space-y-2">
           {scripts.map((s) => (
             <div
               key={s.id}
-              className="flex items-center gap-3 bg-white dark:bg-white/5 border border-[#2f3437]/10 dark:border-white/10 rounded-xl px-4 py-3 hover:border-[#6ba3c7]/40 hover:shadow-sm transition-all"
+              className="flex items-center gap-3 bg-white dark:bg-white/5 border border-[var(--abv-text)]/10 dark:border-white/10 rounded-xl px-4 py-3 hover:border-[var(--abv-ai-tools)]/40 hover:shadow-sm transition-all"
             >
-              <div className="w-8 h-8 rounded-lg bg-[#6ba3c7]/10 flex items-center justify-center shrink-0">
-                <DocumentTextIcon className="w-4 h-4 text-[#6ba3c7]" />
+              <div className="w-8 h-8 rounded-lg bg-[var(--abv-ai-tools)]/10 flex items-center justify-center shrink-0">
+                <DocumentTextIcon className="w-4 h-4 text-[var(--abv-ai-tools)]" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-[#2f3437] dark:text-white truncate leading-snug">
+                <p className="text-sm font-medium text-[var(--abv-text)] dark:text-white truncate leading-snug">
                   {s.videoTitle}
                 </p>
-                <p className="text-xs text-[#2f3437]/45 dark:text-white/35 mt-0.5 flex items-center gap-1">
+                <p className="text-xs text-[var(--abv-text)]/45 dark:text-white/35 mt-0.5 flex items-center gap-1">
                   <ClockIcon className="w-3 h-3 shrink-0" />
                   {formatDate(s.createdAt)}
                 </p>
               </div>
               <button
                 onClick={() => setViewingId(s.id)}
-                className="shrink-0 flex items-center gap-1 text-xs font-semibold text-[#6ba3c7] hover:text-[#5490b5] transition-colors"
+                className="shrink-0 flex items-center gap-1 text-xs font-semibold text-[var(--abv-ai-tools)] hover:text-[var(--abv-ai-tools)] transition-colors"
               >
                 View script
                 <ChevronRightIcon className="w-3.5 h-3.5" />

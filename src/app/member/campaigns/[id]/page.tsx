@@ -107,7 +107,7 @@ const PERIODS = [
   { label: "All", value: "all" },
 ];
 
-const INPUT_CLS = "w-full border border-[#2f3437]/20 rounded-lg px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-[#6ba3c7]";
+const INPUT_CLS = "w-full border border-[var(--abv-text)]/20 rounded-lg px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-[var(--abv-azure)]";
 
 function extractVideoId(url: string): string | null {
   try {
@@ -367,8 +367,8 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
     setSavingCampaign(false);
   }
 
-  if (loading) return <div className="text-center py-16 text-[#2f3437]/40">Loading...</div>;
-  if (!campaign) return <div className="text-center py-16 text-[#2f3437]/40">Campaign not found.</div>;
+  if (loading) return <div className="text-center py-16 text-[var(--abv-text)]/40">Loading...</div>;
+  if (!campaign) return <div className="text-center py-16 text-[var(--abv-text)]/40">Campaign not found.</div>;
 
   const ctr = campaign.totalViews && campaign.totalViews > 0
     ? Math.round((campaign.totalClicks / campaign.totalViews) * 100)
@@ -412,18 +412,18 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
         <div className="flex items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <h1 className="text-2xl font-bold text-[#2f3437]">{campaign.name}</h1>
-              <button onClick={openEditCampaign} title="Edit campaign" className="text-[#2f3437]/30 hover:text-[#6ba3c7] transition-colors">
+              <h1 className="text-2xl font-bold text-[var(--abv-text)]">{campaign.name}</h1>
+              <button onClick={openEditCampaign} title="Edit campaign" className="text-[var(--abv-text)]/30 hover:text-[var(--abv-azure)] transition-colors">
                 <PencilIcon className="w-4 h-4" />
               </button>
             </div>
-            <a href={campaign.destinationUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-[#6ba3c7] hover:underline">
+            <a href={campaign.destinationUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-[var(--abv-azure)] hover:underline">
               {campaign.destinationUrl}
             </a>
           </div>
           <button
             onClick={() => setShowNewLink(true)}
-            className="flex-shrink-0 bg-[#6ba3c7] text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-[#6ba3c7]/90 transition-colors"
+            className="flex-shrink-0 bg-[var(--abv-dark)] text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-[var(--abv-dark)]/90 transition-colors"
           >
             + New Link
           </button>
@@ -431,14 +431,14 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
       </div>
 
       {/* Destination URL */}
-      <div className="bg-white border border-[#2f3437]/10 rounded-lg px-4 py-3 flex items-center gap-3">
+      <div className="bg-white border border-[var(--abv-text)]/10 rounded-lg px-4 py-3 flex items-center gap-3">
         <div className="flex-1 min-w-0">
-          <p className="text-[10px] font-semibold text-[#2f3437]/40 uppercase tracking-wide mb-0.5">Landing Page URL</p>
-          <p className="text-sm text-[#2f3437] font-mono truncate">{campaign.destinationUrl}</p>
+          <p className="text-[10px] font-semibold text-[var(--abv-text)]/40 uppercase tracking-wide mb-0.5">Landing Page URL</p>
+          <p className="text-sm text-[var(--abv-text)] font-mono truncate">{campaign.destinationUrl}</p>
         </div>
         <button
           onClick={() => copy(campaign.destinationUrl, "destination-url")}
-          className="text-xs text-[#6ba3c7] hover:text-[#5490b5] font-medium flex-shrink-0 transition-colors"
+          className="text-xs text-[var(--abv-azure)] hover:text-[var(--abv-azure)] font-medium flex-shrink-0 transition-colors"
         >
           {copied === "destination-url" ? "Copied!" : "Copy"}
         </button>
@@ -446,14 +446,14 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
 
       {/* Lead Magnet URL — only shown when set */}
       {campaign.leadMagnetUrl && (
-        <div className="bg-white border border-[#2f3437]/10 rounded-lg px-4 py-3 flex items-center gap-3">
+        <div className="bg-white border border-[var(--abv-text)]/10 rounded-lg px-4 py-3 flex items-center gap-3">
           <div className="flex-1 min-w-0">
-            <p className="text-[10px] font-semibold text-[#2f3437]/40 uppercase tracking-wide mb-0.5">Lead Magnet URL</p>
-            <p className="text-sm text-[#2f3437] font-mono truncate">{campaign.leadMagnetUrl}</p>
+            <p className="text-[10px] font-semibold text-[var(--abv-text)]/40 uppercase tracking-wide mb-0.5">Lead Magnet URL</p>
+            <p className="text-sm text-[var(--abv-text)] font-mono truncate">{campaign.leadMagnetUrl}</p>
           </div>
           <button
             onClick={() => copy(campaign.leadMagnetUrl!, "lead-magnet-url")}
-            className="text-xs text-[#6ba3c7] hover:text-[#5490b5] font-medium flex-shrink-0 transition-colors"
+            className="text-xs text-[var(--abv-azure)] hover:text-[var(--abv-azure)] font-medium flex-shrink-0 transition-colors"
           >
             {copied === "lead-magnet-url" ? "Copied!" : "Copy"}
           </button>
@@ -463,33 +463,33 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
       {/* Stats Bar */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {campaign.totalViews !== null && (
-          <div className="bg-white border border-[#2f3437]/10 rounded-lg p-4 text-center">
-            <div className="text-xl font-bold text-[#2f3437]">{campaign.totalViews.toLocaleString()}</div>
-            <div className="text-xs text-[#2f3437]/40 mt-0.5">Views</div>
+          <div className="bg-white border border-[var(--abv-text)]/10 rounded-lg p-4 text-center">
+            <div className="text-xl font-bold text-[var(--abv-text)]">{campaign.totalViews.toLocaleString()}</div>
+            <div className="text-xs text-[var(--abv-text)]/40 mt-0.5">Views</div>
           </div>
         )}
-        <div className="bg-white border border-[#2f3437]/10 rounded-lg p-4 text-center">
-          <div className="text-xl font-bold text-[#2f3437]">{campaign.totalClicks.toLocaleString()}</div>
-          <div className="text-xs text-[#2f3437]/40 mt-0.5">Clicks</div>
+        <div className="bg-white border border-[var(--abv-text)]/10 rounded-lg p-4 text-center">
+          <div className="text-xl font-bold text-[var(--abv-text)]">{campaign.totalClicks.toLocaleString()}</div>
+          <div className="text-xs text-[var(--abv-text)]/40 mt-0.5">Clicks</div>
         </div>
-        <div className="bg-white border border-[#2f3437]/10 rounded-lg p-4 text-center">
-          <div className="text-xl font-bold text-[#2f3437]">{campaign.totalLeads.toLocaleString()}</div>
-          <div className="text-xs text-[#2f3437]/40 mt-0.5">Leads</div>
+        <div className="bg-white border border-[var(--abv-text)]/10 rounded-lg p-4 text-center">
+          <div className="text-xl font-bold text-[var(--abv-text)]">{campaign.totalLeads.toLocaleString()}</div>
+          <div className="text-xs text-[var(--abv-text)]/40 mt-0.5">Leads</div>
         </div>
-        <div className="bg-white border border-[#2f3437]/10 rounded-lg p-4 text-center">
-          <div className="text-xl font-bold text-[#6ba3c7]">{convRate}%</div>
-          <div className="text-xs text-[#2f3437]/40 mt-0.5">Conversion Rate</div>
+        <div className="bg-white border border-[var(--abv-text)]/10 rounded-lg p-4 text-center">
+          <div className="text-xl font-bold text-[var(--abv-azure)]">{convRate}%</div>
+          <div className="text-xs text-[var(--abv-text)]/40 mt-0.5">Conversion Rate</div>
         </div>
       </div>
 
       {/* Tracking Links */}
-      <div className="bg-white border border-[#2f3437]/10 rounded-lg overflow-hidden">
-        <div className="px-5 py-4 border-b border-[#2f3437]/10 flex items-center justify-between">
-          <h2 className="font-semibold text-[#2f3437]">Tracking Links ({campaign.links.length})</h2>
+      <div className="bg-white border border-[var(--abv-text)]/10 rounded-lg overflow-hidden">
+        <div className="px-5 py-4 border-b border-[var(--abv-text)]/10 flex items-center justify-between">
+          <h2 className="font-semibold text-[var(--abv-text)]">Tracking Links ({campaign.links.length})</h2>
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            className="text-xs border border-[#2f3437]/20 rounded-lg px-2 py-1.5 text-[#2f3437]/60 focus:outline-none"
+            className="text-xs border border-[var(--abv-text)]/20 rounded-lg px-2 py-1.5 text-[var(--abv-text)]/60 focus:outline-none"
           >
             <option value="newest">Newest</option>
             <option value="most_clicks">Most Clicks</option>
@@ -498,9 +498,9 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
         </div>
 
         {sortedLinks.length === 0 ? (
-          <div className="p-10 text-center text-[#2f3437]/40 text-sm">No tracking links yet. Create one to start tracking.</div>
+          <div className="p-10 text-center text-[var(--abv-text)]/40 text-sm">No tracking links yet. Create one to start tracking.</div>
         ) : (
-          <div className="divide-y divide-[#2f3437]/5">
+          <div className="divide-y divide-[var(--abv-text)]/5">
             {sortedLinks.map((link) => (
               <div key={link.id} className="p-5">
                 <div className="flex items-start gap-3">
@@ -510,32 +510,32 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2 min-w-0">
-                        <p className="font-medium text-[#2f3437] text-sm truncate">{link.name}</p>
+                        <p className="font-medium text-[var(--abv-text)] text-sm truncate">{link.name}</p>
                         {(() => { const s = LINK_SOURCE_STYLES[link.source] ?? LINK_SOURCE_STYLES.other; return <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0 ${s.color}`}>{s.label}</span>; })()}
                         {campaign.leadMagnetUrl && link.destinationOverride === "lead_magnet" && (
                           <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0 bg-violet-100 text-violet-700">Lead Magnet</span>
                         )}
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        <button onClick={() => openEdit(link)} className="text-[#2f3437]/30 hover:text-[#6ba3c7] transition-colors" title="Edit link">
+                        <button onClick={() => openEdit(link)} className="text-[var(--abv-text)]/30 hover:text-[var(--abv-azure)] transition-colors" title="Edit link">
                           <PencilIcon className="w-3.5 h-3.5" />
                         </button>
-                        <button onClick={() => resetStats(link)} className="text-xs text-[#2f3437]/30 hover:text-amber-500 transition-colors" title="Reset clicks &amp; leads for testing">Reset</button>
-                        <button onClick={() => deleteLink(link.id)} className="text-xs text-[#2f3437]/30 hover:text-red-500 transition-colors">Delete</button>
+                        <button onClick={() => resetStats(link)} className="text-xs text-[var(--abv-text)]/30 hover:text-amber-500 transition-colors" title="Reset clicks &amp; leads for testing">Reset</button>
+                        <button onClick={() => deleteLink(link.id)} className="text-xs text-[var(--abv-text)]/30 hover:text-red-500 transition-colors">Delete</button>
                       </div>
                     </div>
                     <div className="mt-2 space-y-1.5">
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-semibold text-[#2f3437]/40 uppercase tracking-wide w-16 flex-shrink-0">Direct</span>
-                        <p className="text-xs text-[#2f3437]/50 truncate flex-1 font-mono">{link.trackedUrl}</p>
-                        <button onClick={() => copy(link.trackedUrl, `${link.id}-direct`)} className="text-xs text-[#6ba3c7] hover:text-[#2bb0ec] flex-shrink-0 font-medium">
+                        <span className="text-[10px] font-semibold text-[var(--abv-text)]/40 uppercase tracking-wide w-16 flex-shrink-0">Direct</span>
+                        <p className="text-xs text-[var(--abv-text)]/50 truncate flex-1 font-mono">{link.trackedUrl}</p>
+                        <button onClick={() => copy(link.trackedUrl, `${link.id}-direct`)} className="text-xs text-[var(--abv-azure)] hover:text-[#2bb0ec] flex-shrink-0 font-medium">
                           {copied === `${link.id}-direct` ? "Copied!" : "Copy"}
                         </button>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-semibold text-[#2f3437]/40 uppercase tracking-wide w-16 flex-shrink-0">Short</span>
-                        <p className="text-xs text-[#2f3437]/50 truncate flex-1 font-mono">https://members.attractionbyvideo.com/r/{link.refCode}</p>
-                        <button onClick={() => copy(`https://members.attractionbyvideo.com/r/${link.refCode}`, `${link.id}-short`)} className="text-xs text-[#6ba3c7] hover:text-[#2bb0ec] flex-shrink-0 font-medium">
+                        <span className="text-[10px] font-semibold text-[var(--abv-text)]/40 uppercase tracking-wide w-16 flex-shrink-0">Short</span>
+                        <p className="text-xs text-[var(--abv-text)]/50 truncate flex-1 font-mono">https://members.attractionbyvideo.com/r/{link.refCode}</p>
+                        <button onClick={() => copy(`https://members.attractionbyvideo.com/r/${link.refCode}`, `${link.id}-short`)} className="text-xs text-[var(--abv-azure)] hover:text-[#2bb0ec] flex-shrink-0 font-medium">
                           {copied === `${link.id}-short` ? "Copied!" : "Copy"}
                         </button>
                       </div>
@@ -550,21 +550,21 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                 <div className="grid grid-cols-3 gap-3 mt-3 text-center">
                   {link.source === "youtube" && link.youtubeVideoId && (
                     <div>
-                      <div className="text-sm font-semibold text-[#2f3437]">{link.youtubeViewCount.toLocaleString()}</div>
-                      <div className="text-xs text-[#2f3437]/40">Views</div>
+                      <div className="text-sm font-semibold text-[var(--abv-text)]">{link.youtubeViewCount.toLocaleString()}</div>
+                      <div className="text-xs text-[var(--abv-text)]/40">Views</div>
                     </div>
                   )}
                   <div>
-                    <div className="text-sm font-semibold text-[#2f3437]">{link.clicks}</div>
-                    <div className="text-xs text-[#2f3437]/40">Clicks</div>
+                    <div className="text-sm font-semibold text-[var(--abv-text)]">{link.clicks}</div>
+                    <div className="text-xs text-[var(--abv-text)]/40">Clicks</div>
                   </div>
                   <div>
-                    <div className="text-sm font-semibold text-[#2f3437]">{link.leads}</div>
-                    <div className="text-xs text-[#2f3437]/40">Leads</div>
+                    <div className="text-sm font-semibold text-[var(--abv-text)]">{link.leads}</div>
+                    <div className="text-xs text-[var(--abv-text)]/40">Leads</div>
                   </div>
                   <div>
-                    <div className="text-sm font-semibold text-[#6ba3c7]">{link.conversionRate}%</div>
-                    <div className="text-xs text-[#2f3437]/40">Conv. Rate</div>
+                    <div className="text-sm font-semibold text-[var(--abv-azure)]">{link.conversionRate}%</div>
+                    <div className="text-xs text-[var(--abv-text)]/40">Conv. Rate</div>
                   </div>
                 </div>
               </div>
@@ -574,14 +574,14 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
       </div>
 
       {/* Analytics Charts */}
-      <div className="bg-white border border-[#2f3437]/10 rounded-lg p-5">
+      <div className="bg-white border border-[var(--abv-text)]/10 rounded-lg p-5">
         <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
-          <h2 className="font-semibold text-[#2f3437]">Analytics</h2>
+          <h2 className="font-semibold text-[var(--abv-text)]">Analytics</h2>
           <div className="flex items-center gap-2 flex-wrap">
             <select
               value={analyticsSourceFilter}
               onChange={(e) => setAnalyticsSourceFilter(e.target.value)}
-              className="text-xs border border-[#2f3437]/20 rounded-lg px-2 py-1.5 text-[#2f3437]/60 focus:outline-none"
+              className="text-xs border border-[var(--abv-text)]/20 rounded-lg px-2 py-1.5 text-[var(--abv-text)]/60 focus:outline-none"
             >
               <option value="all">All Sources</option>
               {LINK_SOURCES.map((s) => (
@@ -593,7 +593,7 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                 <button
                   key={p.value}
                   onClick={() => setPeriod(p.value)}
-                  className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${period === p.value ? "bg-[#111] text-white" : "text-[#2f3437]/50 hover:text-[#2f3437]"}`}
+                  className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${period === p.value ? "bg-[#111] text-white" : "text-[var(--abv-text)]/50 hover:text-[var(--abv-text)]"}`}
                 >
                   {p.label}
                 </button>
@@ -612,13 +612,13 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
         ) : (
           <div className="space-y-6">
             <div>
-              <p className="text-xs font-medium text-[#2f3437]/50 mb-3">Clicks &amp; Leads Per Day</p>
+              <p className="text-xs font-medium text-[var(--abv-text)]/50 mb-3">Clicks &amp; Leads Per Day</p>
               <DailyLineChart data={analytics!.daily} />
             </div>
 
             {analytics!.byLink.length > 1 && (
               <div>
-                <p className="text-xs font-medium text-[#2f3437]/50 mb-3">Performance by Tracking Link</p>
+                <p className="text-xs font-medium text-[var(--abv-text)]/50 mb-3">Performance by Tracking Link</p>
                 <LinkBarChart data={analytics!.byLink} />
               </div>
             )}
@@ -628,9 +628,9 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
 
       {/* Click Map — bottom of page, collapsed when no data */}
       {(filteredMarkers.length > 0 || filteredLocations.length > 0) && (
-        <div className="relative z-0 bg-white border border-[#2f3437]/10 rounded-lg p-5">
+        <div className="relative z-0 bg-white border border-[var(--abv-text)]/10 rounded-lg p-5">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-[#2f3437]">Click Map</h2>
+            <h2 className="font-semibold text-[var(--abv-text)]">Click Map</h2>
             {geoData && geoData.links.length > 1 && (
               <select
                 value={geoLinkFilter}
@@ -639,7 +639,7 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                   setGeoLinkFilter(val);
                   loadGeoData(val === "all" ? undefined : val);
                 }}
-                className="text-xs border border-[#2f3437]/20 rounded-lg px-2 py-1.5 text-[#2f3437]/60 focus:outline-none"
+                className="text-xs border border-[var(--abv-text)]/20 rounded-lg px-2 py-1.5 text-[var(--abv-text)]/60 focus:outline-none"
               >
                 <option value="all">All Links</option>
                 {geoData.links.map((l) => (
@@ -651,22 +651,22 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
           <div className="flex flex-col md:flex-row gap-5">
             {/* Left: Top Locations list */}
             <div className="md:w-3/5">
-              <p className="text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wide mb-3">Top Locations</p>
+              <p className="text-xs font-semibold text-[var(--abv-text)]/50 uppercase tracking-wide mb-3">Top Locations</p>
               {filteredLocations.length === 0 ? (
-                <p className="text-sm text-[#2f3437]/40">No location data yet.</p>
+                <p className="text-sm text-[var(--abv-text)]/40">No location data yet.</p>
               ) : (
                 <div className="space-y-1">
                   {filteredLocations.slice(0, 15).map((loc, i) => (
-                    <div key={i} className="flex items-center justify-between py-1.5 border-b border-[#2f3437]/5 last:border-0">
-                      <span className="text-sm text-[#2f3437]">
+                    <div key={i} className="flex items-center justify-between py-1.5 border-b border-[var(--abv-text)]/5 last:border-0">
+                      <span className="text-sm text-[var(--abv-text)]">
                         {loc.city}
                         {(loc.province || loc.country) && (
-                          <span className="text-[#2f3437]/50 ml-1 text-xs">
+                          <span className="text-[var(--abv-text)]/50 ml-1 text-xs">
                             {[loc.province, loc.country].filter(Boolean).join(", ")}
                           </span>
                         )}
                       </span>
-                      <span className="text-sm font-semibold text-[#2f3437] ml-4 shrink-0">{loc.count.toLocaleString()}</span>
+                      <span className="text-sm font-semibold text-[var(--abv-text)] ml-4 shrink-0">{loc.count.toLocaleString()}</span>
                     </div>
                   ))}
                 </div>
@@ -683,10 +683,10 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
       {campaign.hasYoutube && (
         <div className="flex items-center justify-center gap-2">
           {campaign.lastViewsUpdate && (
-            <p className="text-xs text-[#2f3437]/30">YouTube views last updated {new Date(campaign.lastViewsUpdate).toLocaleString()}</p>
+            <p className="text-xs text-[var(--abv-text)]/30">YouTube views last updated {new Date(campaign.lastViewsUpdate).toLocaleString()}</p>
           )}
           {isAdmin && (
-            <button onClick={refreshViews} disabled={refreshing} title="Refresh YouTube view counts now" className="text-[#2f3437]/30 hover:text-[#6ba3c7] disabled:opacity-40 transition-colors">
+            <button onClick={refreshViews} disabled={refreshing} title="Refresh YouTube view counts now" className="text-[var(--abv-text)]/30 hover:text-[var(--abv-azure)] disabled:opacity-40 transition-colors">
               <ArrowPathIcon className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} />
             </button>
           )}
@@ -696,22 +696,22 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
       {/* New Link Modal */}
       {showNewLink && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg border border-[#2f3437]/10 shadow-xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-lg border border-[var(--abv-text)]/10 shadow-xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-5">
               <div>
-                <h2 className="font-bold text-[#2f3437]">New Tracking Link</h2>
-                <p className="text-xs text-[#2f3437]/40 mt-0.5">Add a unique link to track within this campaign</p>
+                <h2 className="font-bold text-[var(--abv-text)]">New Tracking Link</h2>
+                <p className="text-xs text-[var(--abv-text)]/40 mt-0.5">Add a unique link to track within this campaign</p>
               </div>
               <button
                 onClick={() => { setShowNewLink(false); setPreviewThumb(null); setNameTouchedNew(false); setLinkForm({ name: "", youtubeVideoUrl: "" }); setLinkSource("youtube"); setLinkDestination("landing_page"); }}
-                className="text-[#2f3437]/40 hover:text-[#2f3437] text-xl"
+                className="text-[var(--abv-text)]/40 hover:text-[var(--abv-text)] text-xl"
               >✕</button>
             </div>
 
             <div className="space-y-5">
               {/* Source picker */}
               <div>
-                <label className="block text-sm font-semibold text-[#2f3437] mb-2">Source Platform</label>
+                <label className="block text-sm font-semibold text-[var(--abv-text)] mb-2">Source Platform</label>
                 <div className="flex flex-wrap gap-2">
                   {LINK_SOURCES.map((s) => {
                     const style = LINK_SOURCE_STYLES[s.value];
@@ -720,7 +720,7 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                         key={s.value}
                         type="button"
                         onClick={() => { setLinkSource(s.value); if (s.value !== "youtube") setPreviewThumb(null); }}
-                        className={`text-xs px-3 py-1.5 rounded-full font-semibold border transition-colors ${linkSource === s.value ? `${style.color} border-transparent` : "border-[#2f3437]/15 text-[#2f3437]/50 hover:text-[#2f3437]"}`}
+                        className={`text-xs px-3 py-1.5 rounded-full font-semibold border transition-colors ${linkSource === s.value ? `${style.color} border-transparent` : "border-[var(--abv-text)]/15 text-[var(--abv-text)]/50 hover:text-[var(--abv-text)]"}`}
                       >
                         {s.label}
                       </button>
@@ -732,23 +732,23 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
               {/* Destination picker — only when lead magnet URL exists */}
               {campaign.leadMagnetUrl && (
                 <div>
-                  <label className="block text-sm font-semibold text-[#2f3437] mb-2">Destination</label>
+                  <label className="block text-sm font-semibold text-[var(--abv-text)] mb-2">Destination</label>
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
                       onClick={() => setLinkDestination("landing_page")}
-                      className={`text-left px-3 py-2.5 rounded-lg border text-xs transition-colors ${linkDestination === "landing_page" ? "border-[#6ba3c7] bg-[#6ba3c7]/5 text-[#2f3437]" : "border-[#2f3437]/15 text-[#2f3437]/50 hover:text-[#2f3437]"}`}
+                      className={`text-left px-3 py-2.5 rounded-lg border text-xs transition-colors ${linkDestination === "landing_page" ? "border-[var(--abv-azure)] bg-[var(--abv-dark)]/5 text-[var(--abv-text)]" : "border-[var(--abv-text)]/15 text-[var(--abv-text)]/50 hover:text-[var(--abv-text)]"}`}
                     >
                       <div className="font-semibold mb-0.5">Landing Page</div>
-                      <div className="text-[#2f3437]/40 truncate">{campaign.destinationUrl}</div>
+                      <div className="text-[var(--abv-text)]/40 truncate">{campaign.destinationUrl}</div>
                     </button>
                     <button
                       type="button"
                       onClick={() => setLinkDestination("lead_magnet")}
-                      className={`text-left px-3 py-2.5 rounded-lg border text-xs transition-colors ${linkDestination === "lead_magnet" ? "border-[#6ba3c7] bg-[#6ba3c7]/5 text-[#2f3437]" : "border-[#2f3437]/15 text-[#2f3437]/50 hover:text-[#2f3437]"}`}
+                      className={`text-left px-3 py-2.5 rounded-lg border text-xs transition-colors ${linkDestination === "lead_magnet" ? "border-[var(--abv-azure)] bg-[var(--abv-dark)]/5 text-[var(--abv-text)]" : "border-[var(--abv-text)]/15 text-[var(--abv-text)]/50 hover:text-[var(--abv-text)]"}`}
                     >
                       <div className="font-semibold mb-0.5">Lead Magnet</div>
-                      <div className="text-[#2f3437]/40 truncate">{campaign.leadMagnetUrl}</div>
+                      <div className="text-[var(--abv-text)]/40 truncate">{campaign.leadMagnetUrl}</div>
                     </button>
                   </div>
                 </div>
@@ -756,8 +756,8 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
 
               {/* Link name */}
               <div>
-                <label className="block text-sm font-semibold text-[#2f3437] mb-1.5">
-                  {linkSource === "youtube" ? "Video Name" : "Link Name"} <span className="font-normal text-[#2f3437]/40 text-xs">— what is this link for?</span>
+                <label className="block text-sm font-semibold text-[var(--abv-text)] mb-1.5">
+                  {linkSource === "youtube" ? "Video Name" : "Link Name"} <span className="font-normal text-[var(--abv-text)]/40 text-xs">— what is this link for?</span>
                 </label>
                 <input
                   type="text"
@@ -771,8 +771,8 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
               {/* YouTube URL — only when source is youtube */}
               {linkSource === "youtube" && (
                 <div>
-                  <label className="block text-sm font-semibold text-[#2f3437] mb-1.5">
-                    YouTube Video URL <span className="font-normal text-[#2f3437]/40">(optional)</span>
+                  <label className="block text-sm font-semibold text-[var(--abv-text)] mb-1.5">
+                    YouTube Video URL <span className="font-normal text-[var(--abv-text)]/40">(optional)</span>
                   </label>
                   <div className="flex gap-2">
                     <input
@@ -783,26 +783,26 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                       placeholder="https://youtube.com/watch?v=..."
                       className={INPUT_CLS}
                     />
-                    {fetchingYtInfo && <span className="w-5 h-5 mt-2.5 border-2 border-[#6ba3c7] border-t-transparent rounded-full animate-spin flex-shrink-0" />}
+                    {fetchingYtInfo && <span className="w-5 h-5 mt-2.5 border-2 border-[var(--abv-azure)] border-t-transparent rounded-full animate-spin flex-shrink-0" />}
                   </div>
                   {previewThumb && <img src={previewThumb} alt="thumbnail" className="mt-2 w-full h-28 object-cover rounded-lg" />}
-                  <p className="text-xs text-[#2f3437]/40 mt-1">Links view count and thumbnail to this tracking link.</p>
+                  <p className="text-xs text-[var(--abv-text)]/40 mt-1">Links view count and thumbnail to this tracking link.</p>
                 </div>
               )}
 
               {/* URL preview */}
-              <div className="bg-[#f8f9fa] rounded-lg p-3 text-xs text-[#2f3437]/50">
-                <p className="font-medium text-[#2f3437]/70 mb-1">Tracked URL preview</p>
+              <div className="bg-[#f8f9fa] rounded-lg p-3 text-xs text-[var(--abv-text)]/50">
+                <p className="font-medium text-[var(--abv-text)]/70 mb-1">Tracked URL preview</p>
                 {(() => {
                   const dest = (linkDestination === "lead_magnet" && campaign.leadMagnetUrl) ? campaign.leadMagnetUrl : campaign.destinationUrl;
-                  return <p className="break-all font-mono">{dest}{dest.includes("?") ? "&" : "?"}ref=<span className="text-[#6ba3c7]">xxxxxxxx</span></p>;
+                  return <p className="break-all font-mono">{dest}{dest.includes("?") ? "&" : "?"}ref=<span className="text-[var(--abv-azure)]">xxxxxxxx</span></p>;
                 })()}
               </div>
 
               <button
                 onClick={createLink}
                 disabled={creating || !linkForm.name}
-                className="w-full bg-[#6ba3c7] text-white py-2.5 rounded-lg font-semibold text-sm hover:bg-[#6ba3c7]/90 disabled:opacity-50 transition-colors"
+                className="w-full bg-[var(--abv-dark)] text-white py-2.5 rounded-lg font-semibold text-sm hover:bg-[var(--abv-dark)]/90 disabled:opacity-50 transition-colors"
               >
                 {creating ? "Creating..." : "Create Link"}
               </button>
@@ -814,18 +814,18 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
       {/* Edit Link Modal */}
       {editingLink && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg border border-[#2f3437]/10 shadow-xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-lg border border-[var(--abv-text)]/10 shadow-xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-5">
               <div>
-                <h2 className="font-bold text-[#2f3437]">Edit Tracking Link</h2>
-                <p className="text-xs text-[#2f3437]/40 mt-0.5">Update the name, source, or attached YouTube video</p>
+                <h2 className="font-bold text-[var(--abv-text)]">Edit Tracking Link</h2>
+                <p className="text-xs text-[var(--abv-text)]/40 mt-0.5">Update the name, source, or attached YouTube video</p>
               </div>
-              <button onClick={() => setEditingLink(null)} className="text-[#2f3437]/40 hover:text-[#2f3437] text-xl">✕</button>
+              <button onClick={() => setEditingLink(null)} className="text-[var(--abv-text)]/40 hover:text-[var(--abv-text)] text-xl">✕</button>
             </div>
             <div className="space-y-5">
               {/* Source picker */}
               <div>
-                <label className="block text-sm font-semibold text-[#2f3437] mb-2">Source Platform</label>
+                <label className="block text-sm font-semibold text-[var(--abv-text)] mb-2">Source Platform</label>
                 <div className="flex flex-wrap gap-2">
                   {LINK_SOURCES.map((s) => {
                     const style = LINK_SOURCE_STYLES[s.value];
@@ -834,7 +834,7 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                         key={s.value}
                         type="button"
                         onClick={() => { setEditLinkSource(s.value); if (s.value !== "youtube") setEditPreviewThumb(null); }}
-                        className={`text-xs px-3 py-1.5 rounded-full font-semibold border transition-colors ${editLinkSource === s.value ? `${style.color} border-transparent` : "border-[#2f3437]/15 text-[#2f3437]/50 hover:text-[#2f3437]"}`}
+                        className={`text-xs px-3 py-1.5 rounded-full font-semibold border transition-colors ${editLinkSource === s.value ? `${style.color} border-transparent` : "border-[var(--abv-text)]/15 text-[var(--abv-text)]/50 hover:text-[var(--abv-text)]"}`}
                       >
                         {s.label}
                       </button>
@@ -845,50 +845,50 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
               {/* Destination picker — only when lead magnet URL exists */}
               {campaign.leadMagnetUrl && (
                 <div>
-                  <label className="block text-sm font-semibold text-[#2f3437] mb-2">Destination</label>
+                  <label className="block text-sm font-semibold text-[var(--abv-text)] mb-2">Destination</label>
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
                       onClick={() => setEditLinkDestination("landing_page")}
-                      className={`text-left px-3 py-2.5 rounded-lg border text-xs transition-colors ${editLinkDestination === "landing_page" ? "border-[#6ba3c7] bg-[#6ba3c7]/5 text-[#2f3437]" : "border-[#2f3437]/15 text-[#2f3437]/50 hover:text-[#2f3437]"}`}
+                      className={`text-left px-3 py-2.5 rounded-lg border text-xs transition-colors ${editLinkDestination === "landing_page" ? "border-[var(--abv-azure)] bg-[var(--abv-dark)]/5 text-[var(--abv-text)]" : "border-[var(--abv-text)]/15 text-[var(--abv-text)]/50 hover:text-[var(--abv-text)]"}`}
                     >
                       <div className="font-semibold mb-0.5">Landing Page</div>
-                      <div className="text-[#2f3437]/40 truncate">{campaign.destinationUrl}</div>
+                      <div className="text-[var(--abv-text)]/40 truncate">{campaign.destinationUrl}</div>
                     </button>
                     <button
                       type="button"
                       onClick={() => setEditLinkDestination("lead_magnet")}
-                      className={`text-left px-3 py-2.5 rounded-lg border text-xs transition-colors ${editLinkDestination === "lead_magnet" ? "border-[#6ba3c7] bg-[#6ba3c7]/5 text-[#2f3437]" : "border-[#2f3437]/15 text-[#2f3437]/50 hover:text-[#2f3437]"}`}
+                      className={`text-left px-3 py-2.5 rounded-lg border text-xs transition-colors ${editLinkDestination === "lead_magnet" ? "border-[var(--abv-azure)] bg-[var(--abv-dark)]/5 text-[var(--abv-text)]" : "border-[var(--abv-text)]/15 text-[var(--abv-text)]/50 hover:text-[var(--abv-text)]"}`}
                     >
                       <div className="font-semibold mb-0.5">Lead Magnet</div>
-                      <div className="text-[#2f3437]/40 truncate">{campaign.leadMagnetUrl}</div>
+                      <div className="text-[var(--abv-text)]/40 truncate">{campaign.leadMagnetUrl}</div>
                     </button>
                   </div>
                 </div>
               )}
 
               <div>
-                <label className="block text-sm font-semibold text-[#2f3437] mb-1.5">
-                  {editLinkSource === "youtube" ? "Video Name" : "Link Name"} <span className="font-normal text-[#2f3437]/40 text-xs">— what is this link for?</span>
+                <label className="block text-sm font-semibold text-[var(--abv-text)] mb-1.5">
+                  {editLinkSource === "youtube" ? "Video Name" : "Link Name"} <span className="font-normal text-[var(--abv-text)]/40 text-xs">— what is this link for?</span>
                 </label>
                 <input type="text" value={editForm.name} onChange={(e) => { setEditForm({ ...editForm, name: e.target.value }); setNameTouchedEdit(true); }} placeholder={editLinkSource === "youtube" ? "e.g. Buyers Guide Video — March" : "e.g. Spring Newsletter — March 2026"} className={INPUT_CLS} />
               </div>
               {editLinkSource === "youtube" && (
                 <div>
-                  <label className="block text-sm font-semibold text-[#2f3437] mb-1.5">YouTube Video URL <span className="font-normal text-[#2f3437]/40">(optional)</span></label>
+                  <label className="block text-sm font-semibold text-[var(--abv-text)] mb-1.5">YouTube Video URL <span className="font-normal text-[var(--abv-text)]/40">(optional)</span></label>
                   <div className="flex gap-2">
                     <input type="url" value={editForm.youtubeVideoUrl} onChange={(e) => setEditForm({ ...editForm, youtubeVideoUrl: e.target.value })} onBlur={(e) => { if (e.target.value) fetchYtInfoForUrl(e.target.value, { isEdit: true }); }} placeholder="https://youtube.com/watch?v=..." className={INPUT_CLS} />
-                    {fetchingYtEdit && <span className="w-5 h-5 mt-2.5 border-2 border-[#6ba3c7] border-t-transparent rounded-full animate-spin flex-shrink-0" />}
+                    {fetchingYtEdit && <span className="w-5 h-5 mt-2.5 border-2 border-[var(--abv-azure)] border-t-transparent rounded-full animate-spin flex-shrink-0" />}
                   </div>
                   {editPreviewThumb && <img src={editPreviewThumb} alt="thumbnail" className="mt-2 w-full h-28 object-cover rounded-lg" />}
-                  <p className="text-xs text-[#2f3437]/40 mt-1">Adding a URL links views data and the video thumbnail to this tracking link.</p>
+                  <p className="text-xs text-[var(--abv-text)]/40 mt-1">Adding a URL links views data and the video thumbnail to this tracking link.</p>
                 </div>
               )}
               <div className="flex gap-3">
-                <button onClick={saveEdit} disabled={saving || !editForm.name} className="flex-1 bg-[#6ba3c7] text-white py-2.5 rounded-lg font-semibold text-sm hover:bg-[#6ba3c7]/90 disabled:opacity-50 transition-colors">
+                <button onClick={saveEdit} disabled={saving || !editForm.name} className="flex-1 bg-[var(--abv-dark)] text-white py-2.5 rounded-lg font-semibold text-sm hover:bg-[var(--abv-dark)]/90 disabled:opacity-50 transition-colors">
                   {saving ? "Saving..." : "Save Changes"}
                 </button>
-                <button onClick={() => setEditingLink(null)} className="px-5 py-2.5 border border-[#2f3437]/20 rounded-lg text-sm text-[#2f3437]/60 hover:bg-gray-50 transition-colors">
+                <button onClick={() => setEditingLink(null)} className="px-5 py-2.5 border border-[var(--abv-text)]/20 rounded-lg text-sm text-[var(--abv-text)]/60 hover:bg-gray-50 transition-colors">
                   Cancel
                 </button>
               </div>
@@ -900,22 +900,22 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
       {/* Edit Campaign Modal */}
       {showEditCampaign && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg border border-[#2f3437]/10 shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
+          <div className="bg-white rounded-lg border border-[var(--abv-text)]/10 shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
             <div className="flex items-center justify-between mb-5">
-              <h2 className="font-bold text-[#2f3437]">Edit Campaign</h2>
-              <button onClick={() => setShowEditCampaign(false)} className="text-[#2f3437]/40 hover:text-[#2f3437] text-xl">✕</button>
+              <h2 className="font-bold text-[var(--abv-text)]">Edit Campaign</h2>
+              <button onClick={() => setShowEditCampaign(false)} className="text-[var(--abv-text)]/40 hover:text-[var(--abv-text)] text-xl">✕</button>
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-[#2f3437] mb-1.5">Campaign Name</label>
+                <label className="block text-sm font-semibold text-[var(--abv-text)] mb-1.5">Campaign Name</label>
                 <input type="text" value={campaignEditForm.name} onChange={(e) => setCampaignEditForm({ ...campaignEditForm, name: e.target.value })} className={INPUT_CLS} />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-[#2f3437] mb-1.5">Destination URL</label>
+                <label className="block text-sm font-semibold text-[var(--abv-text)] mb-1.5">Destination URL</label>
                 <input type="text" value={campaignEditForm.destinationUrl} onChange={(e) => setCampaignEditForm({ ...campaignEditForm, destinationUrl: e.target.value })} placeholder="https://yoursite.com/free-guide" className={INPUT_CLS} />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-[#2f3437] mb-1.5">Lead Magnet URL <span className="font-normal text-[#2f3437]/40">(optional)</span></label>
+                <label className="block text-sm font-semibold text-[var(--abv-text)] mb-1.5">Lead Magnet URL <span className="font-normal text-[var(--abv-text)]/40">(optional)</span></label>
                 <input type="url" value={campaignEditForm.leadMagnetUrl} onChange={(e) => setCampaignEditForm({ ...campaignEditForm, leadMagnetUrl: e.target.value })} placeholder="e.g., Google Drive link to your guide" className={INPUT_CLS} />
               </div>
 
@@ -924,14 +924,14 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                   doesn't invent generic pitch language from the
                   campaign name alone. See the ASSIGNED ASSETS block
                   in src/app/api/ai-tools/script-builder-v2/route.ts. */}
-              <div className="pt-2 border-t border-[#2f3437]/10">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-[#2f3437]/40 mb-3">
+              <div className="pt-2 border-t border-[var(--abv-text)]/10">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--abv-text)]/40 mb-3">
                   Pitch language (used by the Script Builder)
                 </p>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-semibold text-[#2f3437] mb-1.5">
-                      One-liner pitch <span className="font-normal text-[#2f3437]/40">(optional)</span>
+                    <label className="block text-sm font-semibold text-[var(--abv-text)] mb-1.5">
+                      One-liner pitch <span className="font-normal text-[var(--abv-text)]/40">(optional)</span>
                     </label>
                     <input
                       type="text"
@@ -941,13 +941,13 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                       maxLength={240}
                       className={INPUT_CLS}
                     />
-                    <p className="text-[11px] text-[#2f3437]/40 mt-1">
+                    <p className="text-[11px] text-[var(--abv-text)]/40 mt-1">
                       How you&apos;d describe it in one sentence on camera. {campaignEditForm.pitchOneLiner.length}/240
                     </p>
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-[#2f3437] mb-1.5">
-                      Description <span className="font-normal text-[#2f3437]/40">(optional)</span>
+                    <label className="block text-sm font-semibold text-[var(--abv-text)] mb-1.5">
+                      Description <span className="font-normal text-[var(--abv-text)]/40">(optional)</span>
                     </label>
                     <textarea
                       value={campaignEditForm.description}
@@ -957,13 +957,13 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                       rows={4}
                       className={INPUT_CLS}
                     />
-                    <p className="text-[11px] text-[#2f3437]/40 mt-1">
+                    <p className="text-[11px] text-[var(--abv-text)]/40 mt-1">
                       {campaignEditForm.description.length}/1000
                     </p>
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-[#2f3437] mb-1.5">
-                      Audience <span className="font-normal text-[#2f3437]/40">(optional)</span>
+                    <label className="block text-sm font-semibold text-[var(--abv-text)] mb-1.5">
+                      Audience <span className="font-normal text-[var(--abv-text)]/40">(optional)</span>
                     </label>
                     <input
                       type="text"
@@ -973,7 +973,7 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                       maxLength={240}
                       className={INPUT_CLS}
                     />
-                    <p className="text-[11px] text-[#2f3437]/40 mt-1">
+                    <p className="text-[11px] text-[var(--abv-text)]/40 mt-1">
                       Who the lead magnet is for. {campaignEditForm.audience.length}/240
                     </p>
                   </div>
@@ -984,10 +984,10 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                 <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{campaignEditError}</p>
               )}
               <div className="flex gap-3">
-                <button onClick={saveCampaign} disabled={savingCampaign || !campaignEditForm.name || !campaignEditForm.destinationUrl} className="flex-1 bg-[#6ba3c7] text-white py-2.5 rounded-lg font-semibold text-sm hover:bg-[#6ba3c7]/90 disabled:opacity-50 transition-colors">
+                <button onClick={saveCampaign} disabled={savingCampaign || !campaignEditForm.name || !campaignEditForm.destinationUrl} className="flex-1 bg-[var(--abv-dark)] text-white py-2.5 rounded-lg font-semibold text-sm hover:bg-[var(--abv-dark)]/90 disabled:opacity-50 transition-colors">
                   {savingCampaign ? "Saving..." : "Save Changes"}
                 </button>
-                <button onClick={() => setShowEditCampaign(false)} className="px-5 py-2.5 border border-[#2f3437]/20 rounded-lg text-sm text-[#2f3437]/60 hover:bg-gray-50 transition-colors">
+                <button onClick={() => setShowEditCampaign(false)} className="px-5 py-2.5 border border-[var(--abv-text)]/20 rounded-lg text-sm text-[var(--abv-text)]/60 hover:bg-gray-50 transition-colors">
                   Cancel
                 </button>
               </div>
@@ -999,12 +999,12 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
       {/* Reset Stats Confirmation Modal */}
       {resetConfirmLink && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg border border-[#2f3437]/10 shadow-xl w-full max-w-sm p-6">
-            <h2 className="font-bold text-[#2f3437] text-lg mb-2">Reset Stats?</h2>
-            <p className="text-sm text-[#2f3437]/60 mb-1">
+          <div className="bg-white rounded-lg border border-[var(--abv-text)]/10 shadow-xl w-full max-w-sm p-6">
+            <h2 className="font-bold text-[var(--abv-text)] text-lg mb-2">Reset Stats?</h2>
+            <p className="text-sm text-[var(--abv-text)]/60 mb-1">
               This will clear all clicks and leads recorded for:
             </p>
-            <p className="text-sm font-semibold text-[#2f3437] mb-4">{resetConfirmLink.name}</p>
+            <p className="text-sm font-semibold text-[var(--abv-text)] mb-4">{resetConfirmLink.name}</p>
             <p className="text-xs text-amber-600 bg-amber-50 rounded-lg px-3 py-2 mb-5">
               Use this to wipe test data before sharing your link publicly. This cannot be undone.
             </p>
@@ -1019,7 +1019,7 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
               <button
                 onClick={() => setResetConfirmLink(null)}
                 disabled={resetting}
-                className="px-5 py-2.5 border border-[#2f3437]/20 rounded-lg text-sm text-[#2f3437]/60 hover:bg-gray-50 transition-colors"
+                className="px-5 py-2.5 border border-[var(--abv-text)]/20 rounded-lg text-sm text-[var(--abv-text)]/60 hover:bg-gray-50 transition-colors"
               >
                 Cancel
               </button>

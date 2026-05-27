@@ -23,7 +23,7 @@ function MemberShellInner({ children, role, userName, featureFlags }: Props) {
   }
 
   return (
-    <div className="min-h-screen bg-[#f7f6f3] dark:bg-[#0f1419]">
+    <div className="min-h-screen bg-[var(--abv-bg)] dark:bg-[#0f1419]">
       <Sidebar role={role} userName={userName} featureFlags={featureFlags} />
       <main className={`transition-all duration-300 ease-in-out ${collapsed ? "lg:pl-16" : "lg:pl-[260px]"}`}>
         <div className="pt-14 lg:pt-0">

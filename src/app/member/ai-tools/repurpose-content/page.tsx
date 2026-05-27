@@ -222,18 +222,18 @@ function ResultCard({
 }) {
   const [expanded, setExpanded] = useState(defaultExpanded);
   return (
-    <div className="bg-white dark:bg-[#1a1a1a] border border-[#2f3437]/10 dark:border-white/10 rounded-lg overflow-hidden">
+    <div className="bg-white dark:bg-[#1a1a1a] border border-[var(--abv-text)]/10 dark:border-white/10 rounded-lg overflow-hidden">
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
         className="w-full flex items-center justify-between px-5 py-4 text-left"
       >
-        <span className="font-semibold text-[#2f3437] dark:text-white text-sm">{title}</span>
+        <span className="font-semibold text-[var(--abv-text)] dark:text-white text-sm">{title}</span>
         {expanded
-          ? <ChevronUpIcon className="w-4 h-4 text-[#2f3437]/40 dark:text-white/40" />
-          : <ChevronDownIcon className="w-4 h-4 text-[#2f3437]/40 dark:text-white/40" />}
+          ? <ChevronUpIcon className="w-4 h-4 text-[var(--abv-text)]/40 dark:text-white/40" />
+          : <ChevronDownIcon className="w-4 h-4 text-[var(--abv-text)]/40 dark:text-white/40" />}
       </button>
-      {expanded && <div className="px-5 pb-5 border-t border-[#2f3437]/8 dark:border-white/8 pt-4">{children}</div>}
+      {expanded && <div className="px-5 pb-5 border-t border-[var(--abv-text)]/8 dark:border-white/8 pt-4">{children}</div>}
     </div>
   );
 }
@@ -249,7 +249,7 @@ function CopyButton({ text, rich, label = "Copy" }: { text: string; rich?: boole
     <button
       type="button"
       onClick={handleCopy}
-      className="flex items-center gap-1.5 border border-[#2f3437]/20 dark:border-white/20 text-[#2f3437] dark:text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-[#111]/5 dark:hover:bg-white/5 transition-colors"
+      className="flex items-center gap-1.5 border border-[var(--abv-text)]/20 dark:border-white/20 text-[var(--abv-text)] dark:text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-[#111]/5 dark:hover:bg-white/5 transition-colors"
     >
       {copied ? <CheckIcon className="w-3.5 h-3.5 text-green-500" /> : <ClipboardDocumentIcon className="w-3.5 h-3.5" />}
       {copied ? "Copied!" : label}
@@ -263,7 +263,7 @@ function SaveButton({ onSave, saving, saved }: { onSave: () => void; saving: boo
       type="button"
       onClick={onSave}
       disabled={saving}
-      className="flex items-center gap-1.5 bg-[#6ba3c7] text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-[#6ba3c7]/90 disabled:opacity-60 transition-colors min-w-[100px] justify-center"
+      className="flex items-center gap-1.5 bg-[var(--abv-ai-tools)] text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-[var(--abv-ai-tools)]/90 disabled:opacity-60 transition-colors min-w-[100px] justify-center"
     >
       {saving
         ? <><span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />Saving…</>
@@ -1059,10 +1059,10 @@ function RepurposeContentPageInner() {
     return (
       <div className="max-w-2xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-[#2f3437] dark:text-white">♻️ Repurpose Content</h1>
-          <p className="text-[#2f3437]/60 dark:text-white/60 mt-1">Turn your video transcript into multiple content formats</p>
+          <h1 className="text-2xl font-bold text-[var(--abv-text)] dark:text-white">♻️ Repurpose Content</h1>
+          <p className="text-[var(--abv-text)]/60 dark:text-white/60 mt-1">Turn your video transcript into multiple content formats</p>
         </div>
-        <div className="bg-white dark:bg-[#1a1a1a] border border-[#2f3437]/10 dark:border-white/10 rounded-lg p-6 text-center text-[#2f3437]/40 dark:text-white/40">
+        <div className="bg-white dark:bg-[#1a1a1a] border border-[var(--abv-text)]/10 dark:border-white/10 rounded-lg p-6 text-center text-[var(--abv-text)]/40 dark:text-white/40">
           Loading...
         </div>
       </div>
@@ -1072,40 +1072,40 @@ function RepurposeContentPageInner() {
   return (
     <div className="max-w-2xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-[#2f3437] dark:text-white">♻️ Repurpose Content</h1>
-        <p className="text-[#2f3437]/60 dark:text-white/60 mt-1">Turn your video transcript into a newsletter, LinkedIn article, Facebook post, blog post, or neighbourhood postcard</p>
+        <h1 className="text-2xl font-bold text-[var(--abv-text)] dark:text-white">♻️ Repurpose Content</h1>
+        <p className="text-[var(--abv-text)]/60 dark:text-white/60 mt-1">Turn your video transcript into a newsletter, LinkedIn article, Facebook post, blog post, or neighbourhood postcard</p>
       </div>
 
       {planId && <LinkedPlanBanner planId={planId} />}
       <InlineUpgradeBanner message="Want repurposed content to save back into your Content Planner? That's a Production feature." />
 
       {!isSetup && (
-        <div className="bg-white dark:bg-[#1a1a1a] border border-[#2f3437]/10 dark:border-white/10 rounded-lg p-6">
-          <h2 className="font-semibold text-[#2f3437] dark:text-white mb-4">Quick Setup</h2>
-          <p className="text-sm text-[#2f3437]/60 dark:text-white/60 mb-5">We need a few details to personalise your outputs. You only need to do this once.</p>
+        <div className="bg-white dark:bg-[#1a1a1a] border border-[var(--abv-text)]/10 dark:border-white/10 rounded-lg p-6">
+          <h2 className="font-semibold text-[var(--abv-text)] dark:text-white mb-4">Quick Setup</h2>
+          <p className="text-sm text-[var(--abv-text)]/60 dark:text-white/60 mb-5">We need a few details to personalise your outputs. You only need to do this once.</p>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-semibold text-[#2f3437] dark:text-white mb-1">Your Name</label>
-              <input type="text" value={profile.name} onChange={(e) => setProfile({ ...profile, name: e.target.value })} placeholder="e.g. Jared Chamberlain" className="w-full border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#0f1419] rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-white placeholder-[#2f3437]/30 dark:placeholder-white/30 focus:outline-none focus:border-[#6ba3c7]" />
+              <label className="block text-sm font-semibold text-[var(--abv-text)] dark:text-white mb-1">Your Name</label>
+              <input type="text" value={profile.name} onChange={(e) => setProfile({ ...profile, name: e.target.value })} placeholder="e.g. Jared Chamberlain" className="w-full border border-[var(--abv-text)]/20 dark:border-white/20 bg-white dark:bg-[#0f1419] rounded-lg px-4 py-3 text-sm text-[var(--abv-text)] dark:text-white placeholder-[var(--abv-text)]/30 dark:placeholder-white/30 focus:outline-none focus:border-[var(--abv-ai-tools)]" />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-[#2f3437] dark:text-white mb-1">Business Name</label>
-              <input type="text" value={profile.business} onChange={(e) => setProfile({ ...profile, business: e.target.value })} placeholder="e.g. Chamberlain Real Estate Group" className="w-full border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#0f1419] rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-white placeholder-[#2f3437]/30 dark:placeholder-white/30 focus:outline-none focus:border-[#6ba3c7]" />
+              <label className="block text-sm font-semibold text-[var(--abv-text)] dark:text-white mb-1">Business Name</label>
+              <input type="text" value={profile.business} onChange={(e) => setProfile({ ...profile, business: e.target.value })} placeholder="e.g. Chamberlain Real Estate Group" className="w-full border border-[var(--abv-text)]/20 dark:border-white/20 bg-white dark:bg-[#0f1419] rounded-lg px-4 py-3 text-sm text-[var(--abv-text)] dark:text-white placeholder-[var(--abv-text)]/30 dark:placeholder-white/30 focus:outline-none focus:border-[var(--abv-ai-tools)]" />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-[#2f3437] dark:text-white mb-1">Email List Size <span className="font-normal text-[#2f3437]/40 dark:text-white/40">(optional)</span></label>
-              <input type="text" value={profile.listSize} onChange={(e) => setProfile({ ...profile, listSize: e.target.value })} placeholder="e.g. 5,000" className="w-full border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#0f1419] rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-white placeholder-[#2f3437]/30 dark:placeholder-white/30 focus:outline-none focus:border-[#6ba3c7]" />
+              <label className="block text-sm font-semibold text-[var(--abv-text)] dark:text-white mb-1">Email List Size <span className="font-normal text-[var(--abv-text)]/40 dark:text-white/40">(optional)</span></label>
+              <input type="text" value={profile.listSize} onChange={(e) => setProfile({ ...profile, listSize: e.target.value })} placeholder="e.g. 5,000" className="w-full border border-[var(--abv-text)]/20 dark:border-white/20 bg-white dark:bg-[#0f1419] rounded-lg px-4 py-3 text-sm text-[var(--abv-text)] dark:text-white placeholder-[var(--abv-text)]/30 dark:placeholder-white/30 focus:outline-none focus:border-[var(--abv-ai-tools)]" />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-[#2f3437] dark:text-white mb-1">Voice Style</label>
-              <select value={profile.voice} onChange={(e) => setProfile({ ...profile, voice: e.target.value })} className="w-full border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#0f1419] rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-white focus:outline-none focus:border-[#6ba3c7]">
+              <label className="block text-sm font-semibold text-[var(--abv-text)] dark:text-white mb-1">Voice Style</label>
+              <select value={profile.voice} onChange={(e) => setProfile({ ...profile, voice: e.target.value })} className="w-full border border-[var(--abv-text)]/20 dark:border-white/20 bg-white dark:bg-[#0f1419] rounded-lg px-4 py-3 text-sm text-[var(--abv-text)] dark:text-white focus:outline-none focus:border-[var(--abv-ai-tools)]">
                 <option value="">Select a voice style...</option>
                 <option value="direct">Direct & Data-Driven</option>
                 <option value="warm">Warm & Conversational</option>
                 <option value="authoritative">Authoritative & Educational</option>
               </select>
             </div>
-            <button onClick={saveProfile} disabled={savingProfile || !profile.name || !profile.business || !profile.voice} className="w-full bg-[#6ba3c7] text-white py-3 rounded-lg font-semibold hover:bg-[#6ba3c7]/90 disabled:opacity-50 transition-colors">
+            <button onClick={saveProfile} disabled={savingProfile || !profile.name || !profile.business || !profile.voice} className="w-full bg-[var(--abv-ai-tools)] text-white py-3 rounded-lg font-semibold hover:bg-[var(--abv-ai-tools)]/90 disabled:opacity-50 transition-colors">
               {savingProfile ? "Saving..." : "Save & Continue"}
             </button>
           </div>
@@ -1114,16 +1114,16 @@ function RepurposeContentPageInner() {
 
       {isSetup && !hasResults && (
         <div className="space-y-5">
-          <div className="bg-white dark:bg-[#1a1a1a] border border-[#2f3437]/10 dark:border-white/10 rounded-lg p-6">
+          <div className="bg-white dark:bg-[#1a1a1a] border border-[var(--abv-text)]/10 dark:border-white/10 rounded-lg p-6">
             <div className="space-y-5">
               <div>
-                <label className="block text-sm font-semibold text-[#2f3437] dark:text-white mb-2">Video Title</label>
-                <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Paste your video title here..." className="w-full border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#0f1419] rounded-lg px-4 py-3 text-sm text-[#2f3437] dark:text-white placeholder-[#2f3437]/30 dark:placeholder-white/30 focus:outline-none focus:border-[#6ba3c7] transition-colors" />
+                <label className="block text-sm font-semibold text-[var(--abv-text)] dark:text-white mb-2">Video Title</label>
+                <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Paste your video title here..." className="w-full border border-[var(--abv-text)]/20 dark:border-white/20 bg-white dark:bg-[#0f1419] rounded-lg px-4 py-3 text-sm text-[var(--abv-text)] dark:text-white placeholder-[var(--abv-text)]/30 dark:placeholder-white/30 focus:outline-none focus:border-[var(--abv-ai-tools)] transition-colors" />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-[#2f3437] dark:text-white mb-2">
+                <label className="block text-sm font-semibold text-[var(--abv-text)] dark:text-white mb-2">
                   Transcript
-                  <span className={`font-normal ml-2 ${overLimit ? "text-red-500" : "text-[#2f3437]/40 dark:text-white/40"}`}>
+                  <span className={`font-normal ml-2 ${overLimit ? "text-red-500" : "text-[var(--abv-text)]/40 dark:text-white/40"}`}>
                     {transcriptLength.toLocaleString()}/50,000
                   </span>
                 </label>
@@ -1131,7 +1131,7 @@ function RepurposeContentPageInner() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-[#2f3437] dark:text-white mb-3">Generate</label>
+                <label className="block text-sm font-semibold text-[var(--abv-text)] dark:text-white mb-3">Generate</label>
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                   {[
                     { key: "newsletter" as const, label: "Newsletter", value: generateNewsletter, setter: setGenerateNewsletter },
@@ -1145,16 +1145,16 @@ function RepurposeContentPageInner() {
                         type="checkbox"
                         checked={value}
                         onChange={(e) => setter(e.target.checked)}
-                        className="w-4 h-4 rounded border-[#2f3437]/20 text-[#6ba3c7] focus:ring-[#6ba3c7] shrink-0"
+                        className="w-4 h-4 rounded border-[var(--abv-text)]/20 text-[var(--abv-ai-tools)] focus:ring-[var(--abv-ai-tools)] shrink-0"
                       />
-                      <span className="text-sm text-[#2f3437] dark:text-white leading-tight">{label}</span>
+                      <span className="text-sm text-[var(--abv-text)] dark:text-white leading-tight">{label}</span>
                     </label>
                   ))}
                 </div>
 
                 {generatePostcard && (
                   <div className="mt-3">
-                    <label className="block text-xs font-semibold text-[#2f3437] dark:text-white mb-1.5">
+                    <label className="block text-xs font-semibold text-[var(--abv-text)] dark:text-white mb-1.5">
                       What neighbourhood are you sending this to? <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -1162,7 +1162,7 @@ function RepurposeContentPageInner() {
                       value={neighbourhood}
                       onChange={(e) => setNeighbourhood(e.target.value)}
                       placeholder="e.g. Aspen Woods, Tuscany, Bridgeland"
-                      className="w-full border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#0f1419] rounded-lg px-4 py-2.5 text-sm text-[#2f3437] dark:text-white placeholder-[#2f3437]/30 dark:placeholder-white/30 focus:outline-none focus:border-[#6ba3c7] transition-colors"
+                      className="w-full border border-[var(--abv-text)]/20 dark:border-white/20 bg-white dark:bg-[#0f1419] rounded-lg px-4 py-2.5 text-sm text-[var(--abv-text)] dark:text-white placeholder-[var(--abv-text)]/30 dark:placeholder-white/30 focus:outline-none focus:border-[var(--abv-ai-tools)] transition-colors"
                     />
                   </div>
                 )}
@@ -1170,20 +1170,20 @@ function RepurposeContentPageInner() {
 
               {/* ── Shared campaign picker panel ── */}
               {showCampaignPicker && (
-                <div className="border-t border-[#2f3437]/10 dark:border-white/10 pt-5">
-                  <div className="bg-[#f7f6f3] dark:bg-[#0f1419] rounded-lg p-4 space-y-3">
+                <div className="border-t border-[var(--abv-text)]/10 dark:border-white/10 pt-5">
+                  <div className="bg-[var(--abv-bg)] dark:bg-[#0f1419] rounded-lg p-4 space-y-3">
                     <div className="flex items-center justify-between">
-                      <p className="text-xs font-semibold text-[#2f3437] dark:text-white">Add Campaign Link</p>
-                      <button onClick={closePicker} className="text-xs text-[#2f3437]/40 dark:text-white/40 hover:text-[#2f3437] dark:hover:text-white">Cancel</button>
+                      <p className="text-xs font-semibold text-[var(--abv-text)] dark:text-white">Add Campaign Link</p>
+                      <button onClick={closePicker} className="text-xs text-[var(--abv-text)]/40 dark:text-white/40 hover:text-[var(--abv-text)] dark:hover:text-white">Cancel</button>
                     </div>
                     <div>
-                      <label className="block text-xs text-[#2f3437]/60 dark:text-white/60 mb-1">Select Campaign</label>
+                      <label className="block text-xs text-[var(--abv-text)]/60 dark:text-white/60 mb-1">Select Campaign</label>
                       {campaignsLoading ? (
-                        <p className="text-xs text-[#2f3437]/40 dark:text-white/40">Loading campaigns…</p>
+                        <p className="text-xs text-[var(--abv-text)]/40 dark:text-white/40">Loading campaigns…</p>
                       ) : campaigns.length === 0 ? (
-                        <p className="text-xs text-[#2f3437]/40 dark:text-white/40">No campaigns found. <a href="/member/campaigns" className="text-[#6ba3c7] hover:underline">Create one →</a></p>
+                        <p className="text-xs text-[var(--abv-text)]/40 dark:text-white/40">No campaigns found. <a href="/member/campaigns" className="text-[var(--abv-ai-tools)] hover:underline">Create one →</a></p>
                       ) : (
-                        <select value={pickerCampaignId} onChange={(e) => handlePickerCampaignChange(e.target.value)} className="w-full border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#1a1a1a] text-[#2f3437] dark:text-white rounded-lg px-3 py-2 text-sm">
+                        <select value={pickerCampaignId} onChange={(e) => handlePickerCampaignChange(e.target.value)} className="w-full border border-[var(--abv-text)]/20 dark:border-white/20 bg-white dark:bg-[#1a1a1a] text-[var(--abv-text)] dark:text-white rounded-lg px-3 py-2 text-sm">
                           <option value="">Choose a campaign…</option>
                           {campaigns.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
                         </select>
@@ -1192,38 +1192,38 @@ function RepurposeContentPageInner() {
                     {pickerCampaignId && (
                       <div className="space-y-2">
                         {campaignPickerLinksLoading ? (
-                          <p className="text-xs text-[#2f3437]/40 dark:text-white/40">Loading links…</p>
+                          <p className="text-xs text-[var(--abv-text)]/40 dark:text-white/40">Loading links…</p>
                         ) : (
                           <>
                             {campaignPickerLinks.length > 0 && !newLinkMode && (
                               <div className="space-y-1">
-                                <p className="text-xs text-[#2f3437]/60 dark:text-white/60">Existing links — pick one or create new</p>
+                                <p className="text-xs text-[var(--abv-text)]/60 dark:text-white/60">Existing links — pick one or create new</p>
                                 {campaignPickerLinks.map((link) => {
                                   const currentLinks = pickerForOutput === "linkedin" ? activeCampaignLinks : pickerForOutput === "blog" ? blogActiveCampaignLinks : [];
                                   const alreadyAdded = currentLinks.some((l) => l.linkId === link.id);
                                   return (
                                     <button key={link.id} onClick={() => !alreadyAdded && addExistingCampaignLink(link)} disabled={alreadyAdded}
-                                      className={`w-full text-left flex items-center justify-between gap-2 rounded-lg px-3 py-2 border transition-colors ${alreadyAdded ? "border-[#2f3437]/10 dark:border-white/10 opacity-40 cursor-not-allowed" : "border-[#2f3437]/15 dark:border-white/15 hover:border-[#6ba3c7] hover:bg-[#6ba3c7]/5 cursor-pointer"}`}>
-                                      <span className="text-sm text-[#2f3437] dark:text-white truncate">{link.name}</span>
-                                      <span className="text-xs text-[#2f3437]/40 dark:text-white/40 shrink-0">{link.clicks} clicks</span>
+                                      className={`w-full text-left flex items-center justify-between gap-2 rounded-lg px-3 py-2 border transition-colors ${alreadyAdded ? "border-[var(--abv-text)]/10 dark:border-white/10 opacity-40 cursor-not-allowed" : "border-[var(--abv-text)]/15 dark:border-white/15 hover:border-[var(--abv-ai-tools)] hover:bg-[var(--abv-ai-tools)]/5 cursor-pointer"}`}>
+                                      <span className="text-sm text-[var(--abv-text)] dark:text-white truncate">{link.name}</span>
+                                      <span className="text-xs text-[var(--abv-text)]/40 dark:text-white/40 shrink-0">{link.clicks} clicks</span>
                                     </button>
                                   );
                                 })}
                               </div>
                             )}
                             {!newLinkMode ? (
-                              <button onClick={() => { setNewLinkMode(true); const suffix = pickerForOutput ? OUTPUT_CONFIG[pickerForOutput].labelSuffix : ""; setNewLinkName(title ? `${title} — ${suffix}` : ""); }} className="text-xs text-[#6ba3c7] hover:underline">
+                              <button onClick={() => { setNewLinkMode(true); const suffix = pickerForOutput ? OUTPUT_CONFIG[pickerForOutput].labelSuffix : ""; setNewLinkName(title ? `${title} — ${suffix}` : ""); }} className="text-xs text-[var(--abv-ai-tools)] hover:underline">
                                 + Create new link in this campaign
                               </button>
                             ) : (
-                              <div className="space-y-2 pt-1 border-t border-[#2f3437]/10 dark:border-white/10">
-                                <p className="text-xs text-[#2f3437]/60 dark:text-white/60">Name this link (tracks clicks from this specific content)</p>
-                                <input type="text" value={newLinkName} onChange={(e) => setNewLinkName(e.target.value)} placeholder={`e.g. ${title || "Video Title"} — ${pickerForOutput ? OUTPUT_CONFIG[pickerForOutput].labelSuffix : ""}`} className="w-full border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#1a1a1a] text-[#2f3437] dark:text-white rounded-lg px-3 py-2 text-sm" />
+                              <div className="space-y-2 pt-1 border-t border-[var(--abv-text)]/10 dark:border-white/10">
+                                <p className="text-xs text-[var(--abv-text)]/60 dark:text-white/60">Name this link (tracks clicks from this specific content)</p>
+                                <input type="text" value={newLinkName} onChange={(e) => setNewLinkName(e.target.value)} placeholder={`e.g. ${title || "Video Title"} — ${pickerForOutput ? OUTPUT_CONFIG[pickerForOutput].labelSuffix : ""}`} className="w-full border border-[var(--abv-text)]/20 dark:border-white/20 bg-white dark:bg-[#1a1a1a] text-[var(--abv-text)] dark:text-white rounded-lg px-3 py-2 text-sm" />
                                 <div className="flex gap-2">
-                                  <button onClick={createCampaignLink} disabled={creatingLink || !newLinkName.trim()} className="bg-[#6ba3c7] text-white text-xs font-semibold px-4 py-2 rounded-lg hover:bg-[#6ba3c7]/90 disabled:opacity-50 transition-colors">
+                                  <button onClick={createCampaignLink} disabled={creatingLink || !newLinkName.trim()} className="bg-[var(--abv-ai-tools)] text-white text-xs font-semibold px-4 py-2 rounded-lg hover:bg-[var(--abv-ai-tools)]/90 disabled:opacity-50 transition-colors">
                                     {creatingLink ? "Creating…" : "Create & Add Link"}
                                   </button>
-                                  <button onClick={() => setNewLinkMode(false)} className="text-xs text-[#2f3437]/40 dark:text-white/40 hover:text-[#2f3437] dark:hover:text-white px-2">Back</button>
+                                  <button onClick={() => setNewLinkMode(false)} className="text-xs text-[var(--abv-text)]/40 dark:text-white/40 hover:text-[var(--abv-text)] dark:hover:text-white px-2">Back</button>
                                 </div>
                               </div>
                             )}
@@ -1237,27 +1237,27 @@ function RepurposeContentPageInner() {
 
               {/* ── Per-output link sections ── */}
               {(generateNewsletter || generateLinkedIn || generateFacebook || generateBlog) && !showCampaignPicker && (
-                <div className="border-t border-[#2f3437]/10 dark:border-white/10 pt-5 space-y-5">
+                <div className="border-t border-[var(--abv-text)]/10 dark:border-white/10 pt-5 space-y-5">
 
                   {/* Newsletter link */}
                   {generateNewsletter && (
                     <div className="space-y-2">
-                      <p className="text-xs font-semibold text-[#2f3437] dark:text-white">Newsletter Link <span className="font-normal text-[#2f3437]/40 dark:text-white/40">(optional)</span></p>
+                      <p className="text-xs font-semibold text-[var(--abv-text)] dark:text-white">Newsletter Link <span className="font-normal text-[var(--abv-text)]/40 dark:text-white/40">(optional)</span></p>
                       {(() => {
                         const camp = campaigns.find((c) => c.id === newsletterActiveLink?.campaignId);
                         const noLeadMagnet = camp && !camp.leadMagnetUrl;
                         return (
                           <>
                             {newsletterActiveLink ? (
-                              <div className="flex items-center gap-2 bg-[#6ba3c7]/8 dark:bg-[#6ba3c7]/15 border border-[#6ba3c7]/20 rounded-lg px-3 py-2">
-                                <span className="text-xs font-medium text-[#6ba3c7] shrink-0">Campaign</span>
-                                <span className="text-xs text-[#2f3437]/50 dark:text-white/50 shrink-0">{newsletterActiveLink.campaignName}</span>
-                                <span className="text-xs font-medium text-[#2f3437] dark:text-white flex-1 truncate">{newsletterActiveLink.linkName}</span>
+                              <div className="flex items-center gap-2 bg-[var(--abv-ai-tools)]/8 dark:bg-[var(--abv-ai-tools)]/15 border border-[var(--abv-ai-tools)]/20 rounded-lg px-3 py-2">
+                                <span className="text-xs font-medium text-[var(--abv-ai-tools)] shrink-0">Campaign</span>
+                                <span className="text-xs text-[var(--abv-text)]/50 dark:text-white/50 shrink-0">{newsletterActiveLink.campaignName}</span>
+                                <span className="text-xs font-medium text-[var(--abv-text)] dark:text-white flex-1 truncate">{newsletterActiveLink.linkName}</span>
                                 {newsletterActiveLink.isNew && <span className="text-[10px] font-semibold text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-1.5 py-0.5 rounded-full shrink-0">New</span>}
-                                <button onClick={() => setNewsletterActiveLink(null)} className="text-[#2f3437]/30 dark:text-white/30 hover:text-red-500 text-sm shrink-0 ml-1">✕</button>
+                                <button onClick={() => setNewsletterActiveLink(null)} className="text-[var(--abv-text)]/30 dark:text-white/30 hover:text-red-500 text-sm shrink-0 ml-1">✕</button>
                               </div>
                             ) : (
-                              <button onClick={() => openCampaignPicker("newsletter")} className="text-xs text-[#6ba3c7] hover:underline">+ Add Campaign Link</button>
+                              <button onClick={() => openCampaignPicker("newsletter")} className="text-xs text-[var(--abv-ai-tools)] hover:underline">+ Add Campaign Link</button>
                             )}
                             {noLeadMagnet && (
                               <p className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/40 rounded-lg px-3 py-2">
@@ -1274,21 +1274,21 @@ function RepurposeContentPageInner() {
                   {generateLinkedIn && (
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <p className="text-xs font-semibold text-[#2f3437] dark:text-white">LinkedIn Article Links <span className="font-normal text-[#2f3437]/40 dark:text-white/40">(optional)</span></p>
-                        <button onClick={() => setShowLinkManager(!showLinkManager)} className="text-xs text-[#6ba3c7] hover:underline">{showLinkManager ? "Done" : "Manage Saved Links"}</button>
+                        <p className="text-xs font-semibold text-[var(--abv-text)] dark:text-white">LinkedIn Article Links <span className="font-normal text-[var(--abv-text)]/40 dark:text-white/40">(optional)</span></p>
+                        <button onClick={() => setShowLinkManager(!showLinkManager)} className="text-xs text-[var(--abv-ai-tools)] hover:underline">{showLinkManager ? "Done" : "Manage Saved Links"}</button>
                       </div>
                       {showLinkManager && (
-                        <div className="bg-[#f7f6f3] dark:bg-[#0f1419] rounded-lg p-4 space-y-2">
+                        <div className="bg-[var(--abv-bg)] dark:bg-[#0f1419] rounded-lg p-4 space-y-2">
                           {savedLinks.map((link, i) => (
                             <div key={i} className="flex gap-2">
-                              <input type="text" value={link.label} onChange={(e) => { const u = [...savedLinks]; u[i] = { ...u[i], label: e.target.value }; setSavedLinks(u); }} placeholder="Label" className="flex-1 border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#1a1a1a] text-[#2f3437] dark:text-white rounded-lg px-3 py-2 text-sm" />
-                              <input type="text" value={link.url} onChange={(e) => { const u = [...savedLinks]; u[i] = { ...u[i], url: e.target.value }; setSavedLinks(u); }} placeholder="URL" className="flex-1 border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#1a1a1a] text-[#2f3437] dark:text-white rounded-lg px-3 py-2 text-sm" />
+                              <input type="text" value={link.label} onChange={(e) => { const u = [...savedLinks]; u[i] = { ...u[i], label: e.target.value }; setSavedLinks(u); }} placeholder="Label" className="flex-1 border border-[var(--abv-text)]/20 dark:border-white/20 bg-white dark:bg-[#1a1a1a] text-[var(--abv-text)] dark:text-white rounded-lg px-3 py-2 text-sm" />
+                              <input type="text" value={link.url} onChange={(e) => { const u = [...savedLinks]; u[i] = { ...u[i], url: e.target.value }; setSavedLinks(u); }} placeholder="URL" className="flex-1 border border-[var(--abv-text)]/20 dark:border-white/20 bg-white dark:bg-[#1a1a1a] text-[var(--abv-text)] dark:text-white rounded-lg px-3 py-2 text-sm" />
                               <button onClick={() => setSavedLinks(savedLinks.filter((_, j) => j !== i))} className="text-red-500 text-sm px-2">Remove</button>
                             </div>
                           ))}
                           <div className="flex gap-2 pt-1">
-                            <button onClick={() => setSavedLinks([...savedLinks, { label: "", url: "" }])} className="text-sm text-[#6ba3c7] hover:underline">+ Add Link</button>
-                            <button onClick={() => saveLinks(savedLinks.filter((l) => l.label && l.url))} className="text-sm bg-[#6ba3c7] text-white px-3 py-1 rounded-lg hover:bg-[#6ba3c7]/90">Save Links</button>
+                            <button onClick={() => setSavedLinks([...savedLinks, { label: "", url: "" }])} className="text-sm text-[var(--abv-ai-tools)] hover:underline">+ Add Link</button>
+                            <button onClick={() => saveLinks(savedLinks.filter((l) => l.label && l.url))} className="text-sm bg-[var(--abv-ai-tools)] text-white px-3 py-1 rounded-lg hover:bg-[var(--abv-ai-tools)]/90">Save Links</button>
                           </div>
                         </div>
                       )}
@@ -1296,9 +1296,9 @@ function RepurposeContentPageInner() {
                         <div className="space-y-1.5">
                           {savedLinks.map((link, i) => (
                             <label key={i} className="flex items-center gap-2 cursor-pointer">
-                              <input type="checkbox" checked={selectedLinkIndexes.includes(i)} onChange={(e) => setSelectedLinkIndexes(e.target.checked ? [...selectedLinkIndexes, i] : selectedLinkIndexes.filter((idx) => idx !== i))} className="w-4 h-4 rounded border-[#2f3437]/20 text-[#6ba3c7] focus:ring-[#6ba3c7]" />
-                              <span className="text-sm text-[#2f3437] dark:text-white">{link.label}</span>
-                              <span className="text-xs text-[#2f3437]/40 dark:text-white/40 truncate">{link.url}</span>
+                              <input type="checkbox" checked={selectedLinkIndexes.includes(i)} onChange={(e) => setSelectedLinkIndexes(e.target.checked ? [...selectedLinkIndexes, i] : selectedLinkIndexes.filter((idx) => idx !== i))} className="w-4 h-4 rounded border-[var(--abv-text)]/20 text-[var(--abv-ai-tools)] focus:ring-[var(--abv-ai-tools)]" />
+                              <span className="text-sm text-[var(--abv-text)] dark:text-white">{link.label}</span>
+                              <span className="text-xs text-[var(--abv-text)]/40 dark:text-white/40 truncate">{link.url}</span>
                             </label>
                           ))}
                         </div>
@@ -1306,34 +1306,34 @@ function RepurposeContentPageInner() {
                       {activeCampaignLinks.length > 0 && (
                         <div className="space-y-1.5">
                           {activeCampaignLinks.map((l) => (
-                            <div key={l.linkId} className="flex items-center gap-2 bg-[#6ba3c7]/8 dark:bg-[#6ba3c7]/15 border border-[#6ba3c7]/20 rounded-lg px-3 py-2">
-                              <span className="text-xs font-medium text-[#6ba3c7] shrink-0">Campaign</span>
-                              <span className="text-xs text-[#2f3437]/50 dark:text-white/50 shrink-0">{l.campaignName}</span>
-                              <span className="text-xs font-medium text-[#2f3437] dark:text-white flex-1 truncate">{l.linkName}</span>
+                            <div key={l.linkId} className="flex items-center gap-2 bg-[var(--abv-ai-tools)]/8 dark:bg-[var(--abv-ai-tools)]/15 border border-[var(--abv-ai-tools)]/20 rounded-lg px-3 py-2">
+                              <span className="text-xs font-medium text-[var(--abv-ai-tools)] shrink-0">Campaign</span>
+                              <span className="text-xs text-[var(--abv-text)]/50 dark:text-white/50 shrink-0">{l.campaignName}</span>
+                              <span className="text-xs font-medium text-[var(--abv-text)] dark:text-white flex-1 truncate">{l.linkName}</span>
                               {l.isNew && <span className="text-[10px] font-semibold text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-1.5 py-0.5 rounded-full shrink-0">New</span>}
-                              <button onClick={() => setActiveCampaignLinks((prev) => prev.filter((x) => x.linkId !== l.linkId))} className="text-[#2f3437]/30 dark:text-white/30 hover:text-red-500 text-sm shrink-0 ml-1">✕</button>
+                              <button onClick={() => setActiveCampaignLinks((prev) => prev.filter((x) => x.linkId !== l.linkId))} className="text-[var(--abv-text)]/30 dark:text-white/30 hover:text-red-500 text-sm shrink-0 ml-1">✕</button>
                             </div>
                           ))}
                         </div>
                       )}
-                      <button onClick={() => openCampaignPicker("linkedin")} className="text-xs text-[#6ba3c7] hover:underline">+ Add Campaign Link</button>
+                      <button onClick={() => openCampaignPicker("linkedin")} className="text-xs text-[var(--abv-ai-tools)] hover:underline">+ Add Campaign Link</button>
                     </div>
                   )}
 
                   {/* Facebook link */}
                   {generateFacebook && (
                     <div className="space-y-2">
-                      <p className="text-xs font-semibold text-[#2f3437] dark:text-white">Facebook Post Link <span className="font-normal text-[#2f3437]/40 dark:text-white/40">(optional — placed in first comment)</span></p>
+                      <p className="text-xs font-semibold text-[var(--abv-text)] dark:text-white">Facebook Post Link <span className="font-normal text-[var(--abv-text)]/40 dark:text-white/40">(optional — placed in first comment)</span></p>
                       {facebookActiveLink ? (
-                        <div className="flex items-center gap-2 bg-[#6ba3c7]/8 dark:bg-[#6ba3c7]/15 border border-[#6ba3c7]/20 rounded-lg px-3 py-2">
-                          <span className="text-xs font-medium text-[#6ba3c7] shrink-0">Campaign</span>
-                          <span className="text-xs text-[#2f3437]/50 dark:text-white/50 shrink-0">{facebookActiveLink.campaignName}</span>
-                          <span className="text-xs font-medium text-[#2f3437] dark:text-white flex-1 truncate">{facebookActiveLink.linkName}</span>
+                        <div className="flex items-center gap-2 bg-[var(--abv-ai-tools)]/8 dark:bg-[var(--abv-ai-tools)]/15 border border-[var(--abv-ai-tools)]/20 rounded-lg px-3 py-2">
+                          <span className="text-xs font-medium text-[var(--abv-ai-tools)] shrink-0">Campaign</span>
+                          <span className="text-xs text-[var(--abv-text)]/50 dark:text-white/50 shrink-0">{facebookActiveLink.campaignName}</span>
+                          <span className="text-xs font-medium text-[var(--abv-text)] dark:text-white flex-1 truncate">{facebookActiveLink.linkName}</span>
                           {facebookActiveLink.isNew && <span className="text-[10px] font-semibold text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-1.5 py-0.5 rounded-full shrink-0">New</span>}
-                          <button onClick={() => setFacebookActiveLink(null)} className="text-[#2f3437]/30 dark:text-white/30 hover:text-red-500 text-sm shrink-0 ml-1">✕</button>
+                          <button onClick={() => setFacebookActiveLink(null)} className="text-[var(--abv-text)]/30 dark:text-white/30 hover:text-red-500 text-sm shrink-0 ml-1">✕</button>
                         </div>
                       ) : (
-                        <button onClick={() => openCampaignPicker("facebook")} className="text-xs text-[#6ba3c7] hover:underline">+ Add Campaign Link</button>
+                        <button onClick={() => openCampaignPicker("facebook")} className="text-xs text-[var(--abv-ai-tools)] hover:underline">+ Add Campaign Link</button>
                       )}
                     </div>
                   )}
@@ -1342,21 +1342,21 @@ function RepurposeContentPageInner() {
                   {generateBlog && (
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <p className="text-xs font-semibold text-[#2f3437] dark:text-white">Blog Post Links <span className="font-normal text-[#2f3437]/40 dark:text-white/40">(optional)</span></p>
-                        <button onClick={() => setShowBlogLinkManager(!showBlogLinkManager)} className="text-xs text-[#6ba3c7] hover:underline">{showBlogLinkManager ? "Done" : "Manage Saved Links"}</button>
+                        <p className="text-xs font-semibold text-[var(--abv-text)] dark:text-white">Blog Post Links <span className="font-normal text-[var(--abv-text)]/40 dark:text-white/40">(optional)</span></p>
+                        <button onClick={() => setShowBlogLinkManager(!showBlogLinkManager)} className="text-xs text-[var(--abv-ai-tools)] hover:underline">{showBlogLinkManager ? "Done" : "Manage Saved Links"}</button>
                       </div>
                       {showBlogLinkManager && (
-                        <div className="bg-[#f7f6f3] dark:bg-[#0f1419] rounded-lg p-4 space-y-2">
+                        <div className="bg-[var(--abv-bg)] dark:bg-[#0f1419] rounded-lg p-4 space-y-2">
                           {savedLinks.map((link, i) => (
                             <div key={i} className="flex gap-2">
-                              <input type="text" value={link.label} onChange={(e) => { const u = [...savedLinks]; u[i] = { ...u[i], label: e.target.value }; setSavedLinks(u); }} placeholder="Label" className="flex-1 border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#1a1a1a] text-[#2f3437] dark:text-white rounded-lg px-3 py-2 text-sm" />
-                              <input type="text" value={link.url} onChange={(e) => { const u = [...savedLinks]; u[i] = { ...u[i], url: e.target.value }; setSavedLinks(u); }} placeholder="URL" className="flex-1 border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#1a1a1a] text-[#2f3437] dark:text-white rounded-lg px-3 py-2 text-sm" />
+                              <input type="text" value={link.label} onChange={(e) => { const u = [...savedLinks]; u[i] = { ...u[i], label: e.target.value }; setSavedLinks(u); }} placeholder="Label" className="flex-1 border border-[var(--abv-text)]/20 dark:border-white/20 bg-white dark:bg-[#1a1a1a] text-[var(--abv-text)] dark:text-white rounded-lg px-3 py-2 text-sm" />
+                              <input type="text" value={link.url} onChange={(e) => { const u = [...savedLinks]; u[i] = { ...u[i], url: e.target.value }; setSavedLinks(u); }} placeholder="URL" className="flex-1 border border-[var(--abv-text)]/20 dark:border-white/20 bg-white dark:bg-[#1a1a1a] text-[var(--abv-text)] dark:text-white rounded-lg px-3 py-2 text-sm" />
                               <button onClick={() => setSavedLinks(savedLinks.filter((_, j) => j !== i))} className="text-red-500 text-sm px-2">Remove</button>
                             </div>
                           ))}
                           <div className="flex gap-2 pt-1">
-                            <button onClick={() => setSavedLinks([...savedLinks, { label: "", url: "" }])} className="text-sm text-[#6ba3c7] hover:underline">+ Add Link</button>
-                            <button onClick={() => saveLinks(savedLinks.filter((l) => l.label && l.url))} className="text-sm bg-[#6ba3c7] text-white px-3 py-1 rounded-lg hover:bg-[#6ba3c7]/90">Save Links</button>
+                            <button onClick={() => setSavedLinks([...savedLinks, { label: "", url: "" }])} className="text-sm text-[var(--abv-ai-tools)] hover:underline">+ Add Link</button>
+                            <button onClick={() => saveLinks(savedLinks.filter((l) => l.label && l.url))} className="text-sm bg-[var(--abv-ai-tools)] text-white px-3 py-1 rounded-lg hover:bg-[var(--abv-ai-tools)]/90">Save Links</button>
                           </div>
                         </div>
                       )}
@@ -1364,9 +1364,9 @@ function RepurposeContentPageInner() {
                         <div className="space-y-1.5">
                           {savedLinks.map((link, i) => (
                             <label key={i} className="flex items-center gap-2 cursor-pointer">
-                              <input type="checkbox" checked={blogSelectedLinkIndexes.includes(i)} onChange={(e) => setBlogSelectedLinkIndexes(e.target.checked ? [...blogSelectedLinkIndexes, i] : blogSelectedLinkIndexes.filter((idx) => idx !== i))} className="w-4 h-4 rounded border-[#2f3437]/20 text-[#6ba3c7] focus:ring-[#6ba3c7]" />
-                              <span className="text-sm text-[#2f3437] dark:text-white">{link.label}</span>
-                              <span className="text-xs text-[#2f3437]/40 dark:text-white/40 truncate">{link.url}</span>
+                              <input type="checkbox" checked={blogSelectedLinkIndexes.includes(i)} onChange={(e) => setBlogSelectedLinkIndexes(e.target.checked ? [...blogSelectedLinkIndexes, i] : blogSelectedLinkIndexes.filter((idx) => idx !== i))} className="w-4 h-4 rounded border-[var(--abv-text)]/20 text-[var(--abv-ai-tools)] focus:ring-[var(--abv-ai-tools)]" />
+                              <span className="text-sm text-[var(--abv-text)] dark:text-white">{link.label}</span>
+                              <span className="text-xs text-[var(--abv-text)]/40 dark:text-white/40 truncate">{link.url}</span>
                             </label>
                           ))}
                         </div>
@@ -1374,17 +1374,17 @@ function RepurposeContentPageInner() {
                       {blogActiveCampaignLinks.length > 0 && (
                         <div className="space-y-1.5">
                           {blogActiveCampaignLinks.map((l) => (
-                            <div key={l.linkId} className="flex items-center gap-2 bg-[#6ba3c7]/8 dark:bg-[#6ba3c7]/15 border border-[#6ba3c7]/20 rounded-lg px-3 py-2">
-                              <span className="text-xs font-medium text-[#6ba3c7] shrink-0">Campaign</span>
-                              <span className="text-xs text-[#2f3437]/50 dark:text-white/50 shrink-0">{l.campaignName}</span>
-                              <span className="text-xs font-medium text-[#2f3437] dark:text-white flex-1 truncate">{l.linkName}</span>
+                            <div key={l.linkId} className="flex items-center gap-2 bg-[var(--abv-ai-tools)]/8 dark:bg-[var(--abv-ai-tools)]/15 border border-[var(--abv-ai-tools)]/20 rounded-lg px-3 py-2">
+                              <span className="text-xs font-medium text-[var(--abv-ai-tools)] shrink-0">Campaign</span>
+                              <span className="text-xs text-[var(--abv-text)]/50 dark:text-white/50 shrink-0">{l.campaignName}</span>
+                              <span className="text-xs font-medium text-[var(--abv-text)] dark:text-white flex-1 truncate">{l.linkName}</span>
                               {l.isNew && <span className="text-[10px] font-semibold text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-1.5 py-0.5 rounded-full shrink-0">New</span>}
-                              <button onClick={() => setBlogActiveCampaignLinks((prev) => prev.filter((x) => x.linkId !== l.linkId))} className="text-[#2f3437]/30 dark:text-white/30 hover:text-red-500 text-sm shrink-0 ml-1">✕</button>
+                              <button onClick={() => setBlogActiveCampaignLinks((prev) => prev.filter((x) => x.linkId !== l.linkId))} className="text-[var(--abv-text)]/30 dark:text-white/30 hover:text-red-500 text-sm shrink-0 ml-1">✕</button>
                             </div>
                           ))}
                         </div>
                       )}
-                      <button onClick={() => openCampaignPicker("blog")} className="text-xs text-[#6ba3c7] hover:underline">+ Add Campaign Link</button>
+                      <button onClick={() => openCampaignPicker("blog")} className="text-xs text-[var(--abv-ai-tools)] hover:underline">+ Add Campaign Link</button>
                     </div>
                   )}
 
@@ -1394,7 +1394,7 @@ function RepurposeContentPageInner() {
               <button
                 onClick={generate}
                 disabled={loading || !title.trim() || !transcript.trim() || overLimit || !anySelected || (generatePostcard && !neighbourhood.trim())}
-                className="w-full bg-[#6ba3c7] text-white py-3 rounded-lg font-semibold hover:bg-[#6ba3c7]/90 disabled:opacity-50 transition-colors"
+                className="w-full bg-[var(--abv-ai-tools)] text-white py-3 rounded-lg font-semibold hover:bg-[var(--abv-ai-tools)]/90 disabled:opacity-50 transition-colors"
               >
                 {loading ? "Generating..." : "Generate"}
               </button>
@@ -1402,24 +1402,24 @@ function RepurposeContentPageInner() {
           </div>
 
           {sessions.length > 0 && (
-            <div className="bg-white dark:bg-[#1a1a1a] border border-[#2f3437]/10 dark:border-white/10 rounded-lg overflow-hidden">
+            <div className="bg-white dark:bg-[#1a1a1a] border border-[var(--abv-text)]/10 dark:border-white/10 rounded-lg overflow-hidden">
               <button
                 onClick={() => setShowPastOutputs(!showPastOutputs)}
                 className="w-full flex items-center justify-between px-5 py-4 text-left"
               >
                 <div>
-                  <h2 className="font-semibold text-[#2f3437] dark:text-white text-sm">Content Library</h2>
-                  <p className="text-xs text-[#2f3437]/40 dark:text-white/40 mt-0.5">
+                  <h2 className="font-semibold text-[var(--abv-text)] dark:text-white text-sm">Content Library</h2>
+                  <p className="text-xs text-[var(--abv-text)]/40 dark:text-white/40 mt-0.5">
                     {sessions.length} video{sessions.length !== 1 ? "s" : ""} · saved for 60 days
                   </p>
                 </div>
                 {showPastOutputs
-                  ? <ChevronUpIcon className="w-4 h-4 text-[#2f3437]/40 dark:text-white/40 shrink-0" />
-                  : <ChevronDownIcon className="w-4 h-4 text-[#2f3437]/40 dark:text-white/40 shrink-0" />}
+                  ? <ChevronUpIcon className="w-4 h-4 text-[var(--abv-text)]/40 dark:text-white/40 shrink-0" />
+                  : <ChevronDownIcon className="w-4 h-4 text-[var(--abv-text)]/40 dark:text-white/40 shrink-0" />}
               </button>
 
               {showPastOutputs && (
-                <div className="border-t border-[#2f3437]/8 dark:border-white/8 divide-y divide-[#2f3437]/6 dark:divide-white/6">
+                <div className="border-t border-[var(--abv-text)]/8 dark:border-white/8 divide-y divide-[var(--abv-text)]/6 dark:divide-white/6">
                   {sessions.map((session) => {
                     const activeToolType = expandedSession?.key === session.key ? expandedSession.tool : null;
                     const activeRecord = activeToolType
@@ -1429,10 +1429,10 @@ function RepurposeContentPageInner() {
                     return (
                       <div key={session.key} className="px-5 py-4">
                         <div className="flex items-start justify-between gap-3 mb-3">
-                          <p className="text-sm font-medium text-[#2f3437] dark:text-white leading-snug">
+                          <p className="text-sm font-medium text-[var(--abv-text)] dark:text-white leading-snug">
                             {session.title}
                           </p>
-                          <span className="text-xs text-[#2f3437]/35 dark:text-white/35 shrink-0 mt-0.5 whitespace-nowrap">
+                          <span className="text-xs text-[var(--abv-text)]/35 dark:text-white/35 shrink-0 mt-0.5 whitespace-nowrap">
                             {session.date}
                           </span>
                         </div>
@@ -1441,8 +1441,8 @@ function RepurposeContentPageInner() {
                           {session.items.map((item) => {
                             const isActive = activeToolType === item.toolType;
                             const colors = TOOL_COLORS[item.toolType] ?? {
-                              base: "bg-[#111]/8 text-[#2f3437]/60 dark:bg-white/10 dark:text-white/60 hover:bg-[#111]/15",
-                              active: "bg-[#6ba3c7] text-white",
+                              base: "bg-[#111]/8 text-[var(--abv-text)]/60 dark:bg-white/10 dark:text-white/60 hover:bg-[#111]/15",
+                              active: "bg-[var(--abv-ai-tools)] text-white",
                             };
                             return (
                               <button
@@ -1465,15 +1465,15 @@ function RepurposeContentPageInner() {
                         {activeRecord && (
                           <div className="mt-3 bg-[#f8f9fa] dark:bg-[#0f1419] rounded-lg overflow-hidden">
                             <div className="max-h-72 overflow-y-auto p-4">
-                              <pre className="text-xs text-[#2f3437] dark:text-white whitespace-pre-wrap leading-relaxed">
+                              <pre className="text-xs text-[var(--abv-text)] dark:text-white whitespace-pre-wrap leading-relaxed">
                                 {pastOutputText(activeRecord)}
                               </pre>
                             </div>
-                            <div className="flex items-center justify-between px-4 py-3 border-t border-[#2f3437]/8 dark:border-white/8">
+                            <div className="flex items-center justify-between px-4 py-3 border-t border-[var(--abv-text)]/8 dark:border-white/8">
                               <CopyButton text={pastOutputText(activeRecord)} label="Copy" />
                               <button
                                 onClick={() => setExpandedSession(null)}
-                                className="text-xs text-[#2f3437]/40 dark:text-white/40 hover:text-[#2f3437] dark:hover:text-white transition-colors"
+                                className="text-xs text-[var(--abv-text)]/40 dark:text-white/40 hover:text-[var(--abv-text)] dark:hover:text-white transition-colors"
                               >
                                 Close
                               </button>
@@ -1495,7 +1495,7 @@ function RepurposeContentPageInner() {
           <div className="flex items-center justify-between">
             <button
               onClick={reset}
-              className="flex items-center gap-1.5 text-sm text-[#2f3437]/55 dark:text-white/55 hover:text-[#6ba3c7] dark:hover:text-[#6ba3c7] transition-colors font-medium"
+              className="flex items-center gap-1.5 text-sm text-[var(--abv-text)]/55 dark:text-white/55 hover:text-[var(--abv-ai-tools)] dark:hover:text-[var(--abv-ai-tools)] transition-colors font-medium"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -1528,7 +1528,7 @@ function RepurposeContentPageInner() {
           {(generateNewsletter) && (
             <ResultCard title="Newsletter">
               {loading && !newsletterResult && !newsletterError && (
-                <div className="text-center py-8 text-[#2f3437]/40 dark:text-white/40 text-sm animate-pulse">Generating newsletter…</div>
+                <div className="text-center py-8 text-[var(--abv-text)]/40 dark:text-white/40 text-sm animate-pulse">Generating newsletter…</div>
               )}
               {newsletterError && (
                 <div className="text-center py-6">
@@ -1547,7 +1547,7 @@ function RepurposeContentPageInner() {
                     />
                   </div>
                   <div className="mt-4 pt-4 border-t border-gray-100 dark:border-white/10">
-                    <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/60 dark:text-white/50 mb-1.5">
+                    <label className="block text-[11px] font-semibold uppercase tracking-wider text-[var(--abv-text)]/60 dark:text-white/50 mb-1.5">
                       Redo with feedback (optional)
                     </label>
                     <div className="flex gap-2">
@@ -1558,13 +1558,13 @@ function RepurposeContentPageInner() {
                         placeholder="e.g. shorter, lead with the equity hook, drop the bullet list"
                         maxLength={1000}
                         disabled={redoingNewsletter || generatingNewsletter}
-                        className="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-white/15 bg-white dark:bg-white/5 text-[#2f3437] dark:text-white placeholder:text-[#2f3437]/40 focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40"
+                        className="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-white/15 bg-white dark:bg-white/5 text-[var(--abv-text)] dark:text-white placeholder:text-[var(--abv-text)]/40 focus:outline-none focus:ring-2 focus:ring-[var(--abv-ai-tools)]/40"
                       />
                       <button
                         type="button"
                         onClick={redoNewsletter}
                         disabled={redoingNewsletter || generatingNewsletter || !transcript.trim() || !title.trim()}
-                        className="px-4 py-2 text-sm font-semibold rounded-lg bg-[#6ba3c7] hover:bg-[#5a92b6] disabled:bg-[#6ba3c7]/40 disabled:cursor-not-allowed text-white transition-colors flex items-center gap-1.5"
+                        className="px-4 py-2 text-sm font-semibold rounded-lg bg-[var(--abv-ai-tools)] hover:bg-[#5a92b6] disabled:bg-[var(--abv-ai-tools)]/40 disabled:cursor-not-allowed text-white transition-colors flex items-center gap-1.5"
                         aria-label="Regenerate this output using the feedback above"
                       >
                         {redoingNewsletter ? (
@@ -1577,7 +1577,7 @@ function RepurposeContentPageInner() {
                         )}
                       </button>
                     </div>
-                    <p className="text-[10px] text-[#2f3437]/40 dark:text-white/40 mt-1">
+                    <p className="text-[10px] text-[var(--abv-text)]/40 dark:text-white/40 mt-1">
                       Replaces this output. Your feedback stays so you can refine and run it again.
                     </p>
                   </div>
@@ -1589,7 +1589,7 @@ function RepurposeContentPageInner() {
           {(generateLinkedIn) && (
             <ResultCard title={`LinkedIn Article${linkedInResult?.reading_time ? ` (${linkedInResult.reading_time})` : ""}`}>
               {loading && !linkedInResult && !linkedInError && (
-                <div className="text-center py-8 text-[#2f3437]/40 dark:text-white/40 text-sm animate-pulse">Generating LinkedIn article…</div>
+                <div className="text-center py-8 text-[var(--abv-text)]/40 dark:text-white/40 text-sm animate-pulse">Generating LinkedIn article…</div>
               )}
               {linkedInError && (
                 <div className="text-center py-6">
@@ -1599,7 +1599,7 @@ function RepurposeContentPageInner() {
               {linkedInResult && (
                 <div className="space-y-3">
                   <MarkdownTextarea value={editedLinkedIn} onChange={setEditedLinkedIn} rows={28} ariaLabel="LinkedIn Article" />
-                  <p className="text-xs text-[#2f3437]/40 dark:text-white/40">Plain text — paste directly into LinkedIn&apos;s article editor.</p>
+                  <p className="text-xs text-[var(--abv-text)]/40 dark:text-white/40">Plain text — paste directly into LinkedIn&apos;s article editor.</p>
                   <div className="flex gap-2">
                     <CopyButton text={editedLinkedIn} label="Copy Article" />
                     <SaveButton
@@ -1609,7 +1609,7 @@ function RepurposeContentPageInner() {
                     />
                   </div>
                   <div className="mt-4 pt-4 border-t border-gray-100 dark:border-white/10">
-                    <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/60 dark:text-white/50 mb-1.5">
+                    <label className="block text-[11px] font-semibold uppercase tracking-wider text-[var(--abv-text)]/60 dark:text-white/50 mb-1.5">
                       Redo with feedback (optional)
                     </label>
                     <div className="flex gap-2">
@@ -1620,13 +1620,13 @@ function RepurposeContentPageInner() {
                         placeholder="e.g. punchier opening, more local examples, cut the closing CTA"
                         maxLength={1000}
                         disabled={redoingLinkedIn || generatingLinkedIn}
-                        className="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-white/15 bg-white dark:bg-white/5 text-[#2f3437] dark:text-white placeholder:text-[#2f3437]/40 focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40"
+                        className="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-white/15 bg-white dark:bg-white/5 text-[var(--abv-text)] dark:text-white placeholder:text-[var(--abv-text)]/40 focus:outline-none focus:ring-2 focus:ring-[var(--abv-ai-tools)]/40"
                       />
                       <button
                         type="button"
                         onClick={redoLinkedIn}
                         disabled={redoingLinkedIn || generatingLinkedIn || !transcript.trim() || !title.trim()}
-                        className="px-4 py-2 text-sm font-semibold rounded-lg bg-[#6ba3c7] hover:bg-[#5a92b6] disabled:bg-[#6ba3c7]/40 disabled:cursor-not-allowed text-white transition-colors flex items-center gap-1.5"
+                        className="px-4 py-2 text-sm font-semibold rounded-lg bg-[var(--abv-ai-tools)] hover:bg-[#5a92b6] disabled:bg-[var(--abv-ai-tools)]/40 disabled:cursor-not-allowed text-white transition-colors flex items-center gap-1.5"
                         aria-label="Regenerate this output using the feedback above"
                       >
                         {redoingLinkedIn ? (
@@ -1639,7 +1639,7 @@ function RepurposeContentPageInner() {
                         )}
                       </button>
                     </div>
-                    <p className="text-[10px] text-[#2f3437]/40 dark:text-white/40 mt-1">
+                    <p className="text-[10px] text-[var(--abv-text)]/40 dark:text-white/40 mt-1">
                       Replaces this output. Your feedback stays so you can refine and run it again.
                     </p>
                   </div>
@@ -1651,7 +1651,7 @@ function RepurposeContentPageInner() {
           {(generateFacebook) && (
             <ResultCard title="Facebook Post">
               {loading && !facebookResult && !facebookError && (
-                <div className="text-center py-8 text-[#2f3437]/40 dark:text-white/40 text-sm animate-pulse">Generating Facebook post…</div>
+                <div className="text-center py-8 text-[var(--abv-text)]/40 dark:text-white/40 text-sm animate-pulse">Generating Facebook post…</div>
               )}
               {facebookError && (
                 <div className="text-center py-6">
@@ -1661,18 +1661,18 @@ function RepurposeContentPageInner() {
               {facebookResult && (
                 <div className="space-y-4">
                   <div>
-                    <p className="text-xs font-semibold text-[#2f3437]/50 dark:text-white/50 uppercase tracking-wide mb-1.5">Post body</p>
+                    <p className="text-xs font-semibold text-[var(--abv-text)]/50 dark:text-white/50 uppercase tracking-wide mb-1.5">Post body</p>
                     <MarkdownTextarea value={editedFacebookBody} onChange={setEditedFacebookBody} rows={8} ariaLabel="Facebook Post Body" />
                   </div>
                   <div>
-                    <p className="text-xs font-semibold text-[#2f3437]/50 dark:text-white/50 uppercase tracking-wide mb-1.5">Paste this as your first comment</p>
+                    <p className="text-xs font-semibold text-[var(--abv-text)]/50 dark:text-white/50 uppercase tracking-wide mb-1.5">Paste this as your first comment</p>
                     <MarkdownTextarea value={editedFacebookComment} onChange={setEditedFacebookComment} rows={2} ariaLabel="Facebook First Comment" />
-                    <p className="text-xs text-[#2f3437]/40 dark:text-white/40 mt-1">Facebook suppresses reach for posts with links in the body — paste this as the first comment instead.</p>
+                    <p className="text-xs text-[var(--abv-text)]/40 dark:text-white/40 mt-1">Facebook suppresses reach for posts with links in the body — paste this as the first comment instead.</p>
                   </div>
                   {facebookResult.hashtags?.length > 0 && (
                     <div>
-                      <p className="text-xs font-semibold text-[#2f3437]/50 dark:text-white/50 uppercase tracking-wide mb-1">Hashtags</p>
-                      <p className="text-sm text-[#6ba3c7]">{facebookResult.hashtags.map((h) => `#${h}`).join(" ")}</p>
+                      <p className="text-xs font-semibold text-[var(--abv-text)]/50 dark:text-white/50 uppercase tracking-wide mb-1">Hashtags</p>
+                      <p className="text-sm text-[var(--abv-ai-tools)]">{facebookResult.hashtags.map((h) => `#${h}`).join(" ")}</p>
                     </div>
                   )}
                   <div className="flex gap-2 flex-wrap">
@@ -1688,7 +1688,7 @@ function RepurposeContentPageInner() {
                     />
                   </div>
                   <div className="mt-4 pt-4 border-t border-gray-100 dark:border-white/10">
-                    <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/60 dark:text-white/50 mb-1.5">
+                    <label className="block text-[11px] font-semibold uppercase tracking-wider text-[var(--abv-text)]/60 dark:text-white/50 mb-1.5">
                       Redo with feedback (optional)
                     </label>
                     <div className="flex gap-2">
@@ -1699,13 +1699,13 @@ function RepurposeContentPageInner() {
                         placeholder="e.g. shorter, lose the question opener, no hashtags"
                         maxLength={1000}
                         disabled={redoingFacebook || generatingFacebook}
-                        className="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-white/15 bg-white dark:bg-white/5 text-[#2f3437] dark:text-white placeholder:text-[#2f3437]/40 focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40"
+                        className="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-white/15 bg-white dark:bg-white/5 text-[var(--abv-text)] dark:text-white placeholder:text-[var(--abv-text)]/40 focus:outline-none focus:ring-2 focus:ring-[var(--abv-ai-tools)]/40"
                       />
                       <button
                         type="button"
                         onClick={redoFacebook}
                         disabled={redoingFacebook || generatingFacebook || !transcript.trim() || !title.trim()}
-                        className="px-4 py-2 text-sm font-semibold rounded-lg bg-[#6ba3c7] hover:bg-[#5a92b6] disabled:bg-[#6ba3c7]/40 disabled:cursor-not-allowed text-white transition-colors flex items-center gap-1.5"
+                        className="px-4 py-2 text-sm font-semibold rounded-lg bg-[var(--abv-ai-tools)] hover:bg-[#5a92b6] disabled:bg-[var(--abv-ai-tools)]/40 disabled:cursor-not-allowed text-white transition-colors flex items-center gap-1.5"
                         aria-label="Regenerate this output using the feedback above"
                       >
                         {redoingFacebook ? (
@@ -1718,7 +1718,7 @@ function RepurposeContentPageInner() {
                         )}
                       </button>
                     </div>
-                    <p className="text-[10px] text-[#2f3437]/40 dark:text-white/40 mt-1">
+                    <p className="text-[10px] text-[var(--abv-text)]/40 dark:text-white/40 mt-1">
                       Replaces this output. Your feedback stays so you can refine and run it again.
                     </p>
                   </div>
@@ -1730,7 +1730,7 @@ function RepurposeContentPageInner() {
           {(generateBlog) && (
             <ResultCard title={`Blog Post (AI-Optimized)${blogResult?.reading_time ? ` — ${blogResult.reading_time}` : ""}`}>
               {loading && !blogResult && !blogError && (
-                <div className="text-center py-8 text-[#2f3437]/40 dark:text-white/40 text-sm animate-pulse">Generating blog post…</div>
+                <div className="text-center py-8 text-[var(--abv-text)]/40 dark:text-white/40 text-sm animate-pulse">Generating blog post…</div>
               )}
               {blogError && (
                 <div className="text-center py-6">
@@ -1740,18 +1740,18 @@ function RepurposeContentPageInner() {
               {blogResult && (
                 <div className="space-y-4">
                   <div>
-                    <p className="text-xs font-semibold text-[#2f3437]/50 dark:text-white/50 uppercase tracking-wide mb-1.5">Blog title</p>
-                    <input value={editedBlogTitle} onChange={(e) => setEditedBlogTitle(e.target.value)} className="w-full border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#0f1419] rounded-lg px-4 py-2.5 text-sm font-semibold text-[#2f3437] dark:text-white focus:outline-none focus:border-[#6ba3c7] transition-colors" />
+                    <p className="text-xs font-semibold text-[var(--abv-text)]/50 dark:text-white/50 uppercase tracking-wide mb-1.5">Blog title</p>
+                    <input value={editedBlogTitle} onChange={(e) => setEditedBlogTitle(e.target.value)} className="w-full border border-[var(--abv-text)]/20 dark:border-white/20 bg-white dark:bg-[#0f1419] rounded-lg px-4 py-2.5 text-sm font-semibold text-[var(--abv-text)] dark:text-white focus:outline-none focus:border-[var(--abv-ai-tools)] transition-colors" />
                   </div>
                   <div>
-                    <p className="text-xs font-semibold text-[#2f3437]/50 dark:text-white/50 uppercase tracking-wide mb-1.5">Full article</p>
+                    <p className="text-xs font-semibold text-[var(--abv-text)]/50 dark:text-white/50 uppercase tracking-wide mb-1.5">Full article</p>
                     <MarkdownTextarea value={editedBlogArticle} onChange={setEditedBlogArticle} rows={32} ariaLabel="Blog Article" />
                   </div>
                   <div>
-                    <p className="text-xs font-semibold text-[#2f3437]/50 dark:text-white/50 uppercase tracking-wide mb-1.5">Meta description <span className="font-normal normal-case text-[#2f3437]/30 dark:text-white/30">({editedBlogMeta.length}/160 chars)</span></p>
+                    <p className="text-xs font-semibold text-[var(--abv-text)]/50 dark:text-white/50 uppercase tracking-wide mb-1.5">Meta description <span className="font-normal normal-case text-[var(--abv-text)]/30 dark:text-white/30">({editedBlogMeta.length}/160 chars)</span></p>
                     <MarkdownTextarea value={editedBlogMeta} onChange={setEditedBlogMeta} rows={2} ariaLabel="Meta Description" />
                   </div>
-                  <p className="text-xs text-[#2f3437]/40 dark:text-white/40">Plain text — paste directly into WordPress, Squarespace, Wix, or any CMS editor.</p>
+                  <p className="text-xs text-[var(--abv-text)]/40 dark:text-white/40">Plain text — paste directly into WordPress, Squarespace, Wix, or any CMS editor.</p>
                   <div className="flex gap-2">
                     <CopyButton text={`${editedBlogTitle}\n\n${editedBlogArticle}`} label="Copy Article" />
                     <SaveButton
@@ -1764,7 +1764,7 @@ function RepurposeContentPageInner() {
                     />
                   </div>
                   <div className="mt-4 pt-4 border-t border-gray-100 dark:border-white/10">
-                    <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/60 dark:text-white/50 mb-1.5">
+                    <label className="block text-[11px] font-semibold uppercase tracking-wider text-[var(--abv-text)]/60 dark:text-white/50 mb-1.5">
                       Redo with feedback (optional)
                     </label>
                     <div className="flex gap-2">
@@ -1775,13 +1775,13 @@ function RepurposeContentPageInner() {
                         placeholder="e.g. punchier title, fewer subheadings, add more local data"
                         maxLength={1000}
                         disabled={redoingBlog || generatingBlog}
-                        className="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-white/15 bg-white dark:bg-white/5 text-[#2f3437] dark:text-white placeholder:text-[#2f3437]/40 focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40"
+                        className="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-white/15 bg-white dark:bg-white/5 text-[var(--abv-text)] dark:text-white placeholder:text-[var(--abv-text)]/40 focus:outline-none focus:ring-2 focus:ring-[var(--abv-ai-tools)]/40"
                       />
                       <button
                         type="button"
                         onClick={redoBlog}
                         disabled={redoingBlog || generatingBlog || !transcript.trim() || !title.trim()}
-                        className="px-4 py-2 text-sm font-semibold rounded-lg bg-[#6ba3c7] hover:bg-[#5a92b6] disabled:bg-[#6ba3c7]/40 disabled:cursor-not-allowed text-white transition-colors flex items-center gap-1.5"
+                        className="px-4 py-2 text-sm font-semibold rounded-lg bg-[var(--abv-ai-tools)] hover:bg-[#5a92b6] disabled:bg-[var(--abv-ai-tools)]/40 disabled:cursor-not-allowed text-white transition-colors flex items-center gap-1.5"
                         aria-label="Regenerate this output using the feedback above"
                       >
                         {redoingBlog ? (
@@ -1794,7 +1794,7 @@ function RepurposeContentPageInner() {
                         )}
                       </button>
                     </div>
-                    <p className="text-[10px] text-[#2f3437]/40 dark:text-white/40 mt-1">
+                    <p className="text-[10px] text-[var(--abv-text)]/40 dark:text-white/40 mt-1">
                       Replaces this output. Your feedback stays so you can refine and run it again.
                     </p>
                   </div>
@@ -1806,7 +1806,7 @@ function RepurposeContentPageInner() {
           {(generatePostcard) && (
             <ResultCard title={`Neighbourhood Postcard${neighbourhood ? ` — ${neighbourhood}` : ""}`}>
               {loading && !postcardResult && !postcardError && (
-                <div className="text-center py-8 text-[#2f3437]/40 dark:text-white/40 text-sm animate-pulse">Generating postcard copy…</div>
+                <div className="text-center py-8 text-[var(--abv-text)]/40 dark:text-white/40 text-sm animate-pulse">Generating postcard copy…</div>
               )}
               {postcardError && (
                 <div className="text-center py-6">
@@ -1823,23 +1823,23 @@ function RepurposeContentPageInner() {
                         <p className="text-sm text-white/80 leading-relaxed">{editedPostcardFrontHook}</p>
                       </div>
                     </div>
-                    <div className="bg-[#f7f6f3] dark:bg-[#1a1a1a] border border-[#2f3437]/10 dark:border-white/10 rounded-lg p-5 min-h-[140px] flex flex-col justify-between">
+                    <div className="bg-[var(--abv-bg)] dark:bg-[#1a1a1a] border border-[var(--abv-text)]/10 dark:border-white/10 rounded-lg p-5 min-h-[140px] flex flex-col justify-between">
                       <div>
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-[#2f3437]/40 dark:text-white/40 mb-3">Back</p>
-                        <p className="text-sm text-[#2f3437] dark:text-white leading-relaxed">{editedPostcardBack}</p>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--abv-text)]/40 dark:text-white/40 mb-3">Back</p>
+                        <p className="text-sm text-[var(--abv-text)] dark:text-white leading-relaxed">{editedPostcardBack}</p>
                       </div>
-                      <p className="text-xs text-[#6ba3c7] mt-3 font-medium">{postcardResult.video_url_placeholder}</p>
+                      <p className="text-xs text-[var(--abv-ai-tools)] mt-3 font-medium">{postcardResult.video_url_placeholder}</p>
                     </div>
                   </div>
-                  <p className="text-xs text-[#2f3437]/40 dark:text-white/40">Copy this text into your postcard design tool (Canva, etc.)</p>
+                  <p className="text-xs text-[var(--abv-text)]/40 dark:text-white/40">Copy this text into your postcard design tool (Canva, etc.)</p>
                   <div className="space-y-3">
                     <div>
-                      <p className="text-xs font-semibold text-[#2f3437]/50 dark:text-white/50 uppercase tracking-wide mb-1.5">Edit front copy</p>
-                      <input value={editedPostcardFrontHeadline} onChange={(e) => setEditedPostcardFrontHeadline(e.target.value)} placeholder="Front headline" className="w-full border border-[#2f3437]/20 dark:border-white/20 bg-white dark:bg-[#0f1419] rounded-lg px-4 py-2.5 text-sm text-[#2f3437] dark:text-white focus:outline-none focus:border-[#6ba3c7] transition-colors mb-2" />
+                      <p className="text-xs font-semibold text-[var(--abv-text)]/50 dark:text-white/50 uppercase tracking-wide mb-1.5">Edit front copy</p>
+                      <input value={editedPostcardFrontHeadline} onChange={(e) => setEditedPostcardFrontHeadline(e.target.value)} placeholder="Front headline" className="w-full border border-[var(--abv-text)]/20 dark:border-white/20 bg-white dark:bg-[#0f1419] rounded-lg px-4 py-2.5 text-sm text-[var(--abv-text)] dark:text-white focus:outline-none focus:border-[var(--abv-ai-tools)] transition-colors mb-2" />
                       <MarkdownTextarea value={editedPostcardFrontHook} onChange={setEditedPostcardFrontHook} rows={2} placeholder="Front hook" ariaLabel="Postcard Front Hook" />
                     </div>
                     <div>
-                      <p className="text-xs font-semibold text-[#2f3437]/50 dark:text-white/50 uppercase tracking-wide mb-1.5">Edit back copy</p>
+                      <p className="text-xs font-semibold text-[var(--abv-text)]/50 dark:text-white/50 uppercase tracking-wide mb-1.5">Edit back copy</p>
                       <MarkdownTextarea value={editedPostcardBack} onChange={setEditedPostcardBack} rows={3} ariaLabel="Postcard Back Copy" />
                     </div>
                   </div>
@@ -1855,7 +1855,7 @@ function RepurposeContentPageInner() {
                     />
                   </div>
                   <div className="mt-4 pt-4 border-t border-gray-100 dark:border-white/10">
-                    <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/60 dark:text-white/50 mb-1.5">
+                    <label className="block text-[11px] font-semibold uppercase tracking-wider text-[var(--abv-text)]/60 dark:text-white/50 mb-1.5">
                       Redo with feedback (optional)
                     </label>
                     <div className="flex gap-2">
@@ -1866,13 +1866,13 @@ function RepurposeContentPageInner() {
                         placeholder="e.g. softer hook, mention move-up buyers explicitly"
                         maxLength={1000}
                         disabled={redoingPostcard || generatingPostcard}
-                        className="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-white/15 bg-white dark:bg-white/5 text-[#2f3437] dark:text-white placeholder:text-[#2f3437]/40 focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40"
+                        className="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-white/15 bg-white dark:bg-white/5 text-[var(--abv-text)] dark:text-white placeholder:text-[var(--abv-text)]/40 focus:outline-none focus:ring-2 focus:ring-[var(--abv-ai-tools)]/40"
                       />
                       <button
                         type="button"
                         onClick={redoPostcard}
                         disabled={redoingPostcard || generatingPostcard || !transcript.trim() || !title.trim() || !neighbourhood.trim()}
-                        className="px-4 py-2 text-sm font-semibold rounded-lg bg-[#6ba3c7] hover:bg-[#5a92b6] disabled:bg-[#6ba3c7]/40 disabled:cursor-not-allowed text-white transition-colors flex items-center gap-1.5"
+                        className="px-4 py-2 text-sm font-semibold rounded-lg bg-[var(--abv-ai-tools)] hover:bg-[#5a92b6] disabled:bg-[var(--abv-ai-tools)]/40 disabled:cursor-not-allowed text-white transition-colors flex items-center gap-1.5"
                         aria-label="Regenerate this output using the feedback above"
                       >
                         {redoingPostcard ? (
@@ -1885,7 +1885,7 @@ function RepurposeContentPageInner() {
                         )}
                       </button>
                     </div>
-                    <p className="text-[10px] text-[#2f3437]/40 dark:text-white/40 mt-1">
+                    <p className="text-[10px] text-[var(--abv-text)]/40 dark:text-white/40 mt-1">
                       Replaces this output. Your feedback stays so you can refine and run it again.
                     </p>
                   </div>
@@ -1902,7 +1902,7 @@ function RepurposeContentPageInner() {
             buttonLabel="Open Content Planner"
           />
 
-          <button onClick={reset} className="w-full border border-[#2f3437]/20 dark:border-white/20 text-[#2f3437] dark:text-white py-3 rounded-lg font-semibold hover:bg-[#111]/5 dark:hover:bg-white/5 transition-colors">
+          <button onClick={reset} className="w-full border border-[var(--abv-text)]/20 dark:border-white/20 text-[var(--abv-text)] dark:text-white py-3 rounded-lg font-semibold hover:bg-[#111]/5 dark:hover:bg-white/5 transition-colors">
             Generate Another
           </button>
         </div>

@@ -36,7 +36,7 @@ function AddonCta({
       <button
         onClick={async () => { setSubmitting(true); await onInterested(pkg.id, pkg.name); setSubmitting(false); }}
         disabled={submitting}
-        className={`${base} bg-[#2f3437] dark:bg-white text-white dark:text-[#1e2a38] hover:bg-[#1e2a38] dark:hover:bg-white/90 disabled:opacity-50`}
+        className={`${base} bg-[var(--abv-text)] dark:bg-white text-white dark:text-[var(--abv-dark)] hover:bg-[var(--abv-dark)] dark:hover:bg-white/90 disabled:opacity-50`}
       >
         {submitting ? "Sending…" : "I'm Interested"}
       </button>
@@ -49,7 +49,7 @@ function AddonCta({
         href={pkg.stripeUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className={`${base} flex items-center justify-center gap-2 bg-[#2f3437] dark:bg-white text-white dark:text-[#1e2a38] hover:bg-[#1e2a38] dark:hover:bg-white/90`}
+        className={`${base} flex items-center justify-center gap-2 bg-[var(--abv-text)] dark:bg-white text-white dark:text-[var(--abv-dark)] hover:bg-[var(--abv-dark)] dark:hover:bg-white/90`}
       >
         Get Started <ArrowTopRightOnSquareIcon className="w-4 h-4" />
       </a>
@@ -57,7 +57,7 @@ function AddonCta({
   }
 
   return (
-    <span className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-[#6ba3c7] cursor-default">
+    <span className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-[var(--abv-azure)] cursor-default">
       <ChatBubbleLeftRightIcon className="w-3.5 h-3.5" /> Message us to get started
     </span>
   );
@@ -79,23 +79,23 @@ function AddonCard({
   const priceSuffix = priceParts[1] ?? null;
 
   return (
-    <div className="bg-white dark:bg-[#1a2433] rounded-xl border border-[#eaeaea] dark:border-white/10 p-5 flex flex-col">
-      <p className="text-sm font-bold text-[#2f3437] dark:text-white leading-tight mb-1">
+    <div className="bg-white dark:bg-[#1a2433] rounded-xl border border-[var(--abv-border-strong)] dark:border-white/10 p-5 flex flex-col">
+      <p className="text-sm font-bold text-[var(--abv-text)] dark:text-white leading-tight mb-1">
         {pkg.name}
       </p>
 
       <div className="mb-1">
-        <span className="text-xl font-extrabold text-[#2f3437] dark:text-white">{priceMain}</span>
+        <span className="text-xl font-extrabold text-[var(--abv-text)] dark:text-white">{priceMain}</span>
         {priceSuffix && (
-          <span className="text-sm text-[#2f3437]/40 dark:text-white/30 ml-1">/{priceSuffix}</span>
+          <span className="text-sm text-[var(--abv-text)]/40 dark:text-white/30 ml-1">/{priceSuffix}</span>
         )}
         {pkg.priceNote && (
-          <span className="text-[11px] font-semibold text-[#2f3437]/30 dark:text-white/25 ml-1.5">{pkg.priceNote}</span>
+          <span className="text-[11px] font-semibold text-[var(--abv-text)]/30 dark:text-white/25 ml-1.5">{pkg.priceNote}</span>
         )}
       </div>
 
       {pkg.subtitle && (
-        <p className="text-[12px] text-[#2f3437]/50 dark:text-white/40 mb-2 leading-snug">{pkg.subtitle}</p>
+        <p className="text-[12px] text-[var(--abv-text)]/50 dark:text-white/40 mb-2 leading-snug">{pkg.subtitle}</p>
       )}
 
       {pkg.features.length > 0 && (
@@ -103,7 +103,7 @@ function AddonCard({
           {pkg.features.map((f) => (
             <li key={f} className="flex items-start gap-2">
               <CheckCircleIcon className="w-3.5 h-3.5 text-green-500 mt-0.5 shrink-0" />
-              <span className="text-[13px] text-[#2f3437]/70 dark:text-white/60 leading-snug">{f}</span>
+              <span className="text-[13px] text-[var(--abv-text)]/70 dark:text-white/60 leading-snug">{f}</span>
             </li>
           ))}
         </ul>
@@ -131,11 +131,11 @@ export default function AddOnsSection({
   return (
     <div>
       <div className="mb-5">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-[#2f3437]/40 dark:text-white/30 mb-1">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--abv-text)]/40 dark:text-white/30 mb-1">
           {category.emoji} {category.name}
         </p>
         {category.description && (
-          <p className="text-sm text-[#2f3437]/60 dark:text-white/50">{category.description}</p>
+          <p className="text-sm text-[var(--abv-text)]/60 dark:text-white/50">{category.description}</p>
         )}
       </div>
 

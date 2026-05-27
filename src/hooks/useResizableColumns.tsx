@@ -218,7 +218,7 @@ export function ColumnResizeHandle({
       aria-label={label ? `Resize ${label} column` : "Resize column"}
       tabIndex={0}
       {...handleProps}
-      className="absolute top-0 right-0 h-full w-1.5 cursor-col-resize select-none bg-transparent group-hover:bg-[#6ba3c7]/20 hover:!bg-[#6ba3c7]/60 active:!bg-[#6ba3c7] focus-visible:!bg-[#6ba3c7]/70 focus-visible:outline-none transition-colors"
+      className="absolute top-0 right-0 h-full w-1.5 cursor-col-resize select-none bg-transparent group-hover:bg-[var(--abv-dark)]/20 hover:!bg-[var(--abv-dark)]/60 active:!bg-[var(--abv-dark)] focus-visible:!bg-[var(--abv-dark)]/70 focus-visible:outline-none transition-colors"
     />
   );
 }

@@ -262,7 +262,7 @@ function FoundationsLibraryTab({ moduleType = "foundations" }: { moduleType?: st
     <div className="max-w-4xl">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <p className="text-sm text-[#2f3437]/50 mt-0.5">
+          <p className="text-sm text-[var(--abv-text)]/50 mt-0.5">
             {sections.length} sections · {sections.reduce((a, s) => a + s.lessonCount, 0)} total lessons
           </p>
         </div>
@@ -281,7 +281,7 @@ function FoundationsLibraryTab({ moduleType = "foundations" }: { moduleType?: st
             <div className="flex items-center gap-3 px-4 py-3.5">
               <button
                 onClick={() => toggleExpand(section.id)}
-                className="shrink-0 text-[#2f3437]/50 hover:text-[#2f3437] transition-colors"
+                className="shrink-0 text-[var(--abv-text)]/50 hover:text-[var(--abv-text)] transition-colors"
               >
                 {expanded.has(section.id) ? (
                   <ChevronDownIcon className="w-5 h-5" />
@@ -292,9 +292,9 @@ function FoundationsLibraryTab({ moduleType = "foundations" }: { moduleType?: st
 
               <div className="flex-1 min-w-0" onClick={() => toggleExpand(section.id)} style={{ cursor: "pointer" }}>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-[#2f3437]/40 font-mono w-5 shrink-0">{section.sortOrder}</span>
-                  <span className="text-sm font-semibold text-[#2f3437] truncate">{section.title}</span>
-                  <span className="text-xs text-[#2f3437]/40 shrink-0">({section.lessonCount} lessons)</span>
+                  <span className="text-xs text-[var(--abv-text)]/40 font-mono w-5 shrink-0">{section.sortOrder}</span>
+                  <span className="text-sm font-semibold text-[var(--abv-text)] truncate">{section.title}</span>
+                  <span className="text-xs text-[var(--abv-text)]/40 shrink-0">({section.lessonCount} lessons)</span>
                 </div>
               </div>
 
@@ -302,14 +302,14 @@ function FoundationsLibraryTab({ moduleType = "foundations" }: { moduleType?: st
                 <button
                   onClick={() => moveSection(sectionIdx, "up")}
                   disabled={sectionIdx === 0}
-                  className="p-1 text-[#2f3437]/30 hover:text-[#2f3437] disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+                  className="p-1 text-[var(--abv-text)]/30 hover:text-[var(--abv-text)] disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
                 >
                   <ArrowUpIcon className="w-3.5 h-3.5" />
                 </button>
                 <button
                   onClick={() => moveSection(sectionIdx, "down")}
                   disabled={sectionIdx === sections.length - 1}
-                  className="p-1 text-[#2f3437]/30 hover:text-[#2f3437] disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+                  className="p-1 text-[var(--abv-text)]/30 hover:text-[var(--abv-text)] disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
                 >
                   <ArrowDownIcon className="w-3.5 h-3.5" />
                 </button>
@@ -354,7 +354,7 @@ function FoundationsLibraryTab({ moduleType = "foundations" }: { moduleType?: st
 
               <Link
                 href={`/admin/academy-manager/sections/${section.id}`}
-                className="shrink-0 p-1.5 text-[#2f3437]/50 hover:text-[#6ba3c7] hover:bg-[#6ba3c7]/10 rounded-lg transition-colors"
+                className="shrink-0 p-1.5 text-[var(--abv-text)]/50 hover:text-[var(--abv-azure)] hover:bg-[var(--abv-dark)]/10 rounded-lg transition-colors"
               >
                 <PencilSquareIcon className="w-4 h-4" />
               </Link>
@@ -363,28 +363,28 @@ function FoundationsLibraryTab({ moduleType = "foundations" }: { moduleType?: st
             {expanded.has(section.id) && (
               <div className="border-t border-gray-100">
                 {loadingLessons.has(section.id) ? (
-                  <div className="px-10 py-4 text-sm text-[#2f3437]/40 animate-pulse">Loading lessons…</div>
+                  <div className="px-10 py-4 text-sm text-[var(--abv-text)]/40 animate-pulse">Loading lessons…</div>
                 ) : (
                   <>
                     {(section.lessons ?? []).length === 0 && !addingLessonTo && (
-                      <p className="px-12 py-3 text-sm text-[#2f3437]/30 italic">No lessons yet.</p>
+                      <p className="px-12 py-3 text-sm text-[var(--abv-text)]/30 italic">No lessons yet.</p>
                     )}
 
                     {(section.lessons ?? []).map((lesson, lessonIdx) => (
                       <div key={lesson.id} className="border-b border-gray-50 last:border-0">
                         <div className="flex items-center gap-3 px-4 py-2.5 pl-12 hover:bg-gray-50/50 transition-colors">
-                          <AcademicCapIcon className="w-4 h-4 text-[#2f3437]/20 shrink-0" />
+                          <AcademicCapIcon className="w-4 h-4 text-[var(--abv-text)]/20 shrink-0" />
 
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-xs text-[#2f3437]/40 font-mono w-4 shrink-0">{lesson.sortOrder}</span>
-                              <span className="text-sm font-medium text-[#2f3437] truncate">{lesson.title}</span>
+                              <span className="text-xs text-[var(--abv-text)]/40 font-mono w-4 shrink-0">{lesson.sortOrder}</span>
+                              <span className="text-sm font-medium text-[var(--abv-text)] truncate">{lesson.title}</span>
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   startEditingLesson(lesson);
                                 }}
-                                className="p-1 rounded hover:bg-gray-100 text-[#2f3437]/40 hover:text-[#6ba3c7] transition-colors"
+                                className="p-1 rounded hover:bg-gray-100 text-[var(--abv-text)]/40 hover:text-[var(--abv-azure)] transition-colors"
                                 title="Quick edit"
                               >
                                 <PencilIcon className="w-3.5 h-3.5" />
@@ -392,7 +392,7 @@ function FoundationsLibraryTab({ moduleType = "foundations" }: { moduleType?: st
                             </div>
                             <div className="flex items-center gap-1.5 mt-0.5 pl-6 flex-wrap">
                               {lesson.youtubeUrl && (
-                                <span className="text-[10px] text-[#2f3437]/30">▶ Video</span>
+                                <span className="text-[10px] text-[var(--abv-text)]/30">▶ Video</span>
                               )}
                               {(lesson.principleTags as string[]).slice(0, 2).map((tag) => (
                                 <span key={tag} className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${PRINCIPLE_COLORS[tag] ?? "bg-gray-100 text-gray-600"}`}>
@@ -400,7 +400,7 @@ function FoundationsLibraryTab({ moduleType = "foundations" }: { moduleType?: st
                                 </span>
                               ))}
                               {(lesson.principleTags as string[]).length > 2 && (
-                                <span className="text-[10px] text-[#2f3437]/30">+{(lesson.principleTags as string[]).length - 2}</span>
+                                <span className="text-[10px] text-[var(--abv-text)]/30">+{(lesson.principleTags as string[]).length - 2}</span>
                               )}
                             </div>
                           </div>
@@ -409,14 +409,14 @@ function FoundationsLibraryTab({ moduleType = "foundations" }: { moduleType?: st
                             <button
                               onClick={() => moveLesson(section.id, lessonIdx, "up")}
                               disabled={lessonIdx === 0}
-                              className="p-1 text-[#2f3437]/30 hover:text-[#2f3437] disabled:opacity-20 disabled:cursor-not-allowed"
+                              className="p-1 text-[var(--abv-text)]/30 hover:text-[var(--abv-text)] disabled:opacity-20 disabled:cursor-not-allowed"
                             >
                               <ArrowUpIcon className="w-3 h-3" />
                             </button>
                             <button
                               onClick={() => moveLesson(section.id, lessonIdx, "down")}
                               disabled={lessonIdx === (section.lessons?.length ?? 0) - 1}
-                              className="p-1 text-[#2f3437]/30 hover:text-[#2f3437] disabled:opacity-20 disabled:cursor-not-allowed"
+                              className="p-1 text-[var(--abv-text)]/30 hover:text-[var(--abv-text)] disabled:opacity-20 disabled:cursor-not-allowed"
                             >
                               <ArrowDownIcon className="w-3 h-3" />
                             </button>
@@ -436,7 +436,7 @@ function FoundationsLibraryTab({ moduleType = "foundations" }: { moduleType?: st
 
                           <Link
                             href={`/admin/academy-manager/lessons/${lesson.id}`}
-                            className="shrink-0 p-1.5 text-[#2f3437]/40 hover:text-[#6ba3c7] hover:bg-[#6ba3c7]/10 rounded-lg transition-colors"
+                            className="shrink-0 p-1.5 text-[var(--abv-text)]/40 hover:text-[var(--abv-azure)] hover:bg-[var(--abv-dark)]/10 rounded-lg transition-colors"
                           >
                             <PencilSquareIcon className="w-3.5 h-3.5" />
                           </Link>
@@ -445,40 +445,40 @@ function FoundationsLibraryTab({ moduleType = "foundations" }: { moduleType?: st
                         {editingLessonId === lesson.id && (
                           <div className="bg-gray-50/50 border-t border-gray-100 px-6 py-4 space-y-3">
                             <div>
-                              <label className="text-xs font-medium text-[#2f3437]/60 block mb-1">Title</label>
+                              <label className="text-xs font-medium text-[var(--abv-text)]/60 block mb-1">Title</label>
                               <input
                                 value={editFields.title}
                                 onChange={(e) => setEditFields((f) => ({ ...f, title: e.target.value }))}
-                                className="w-full border border-[#2f3437]/20 bg-white rounded-lg px-3 py-2 text-sm text-[#2f3437] focus:outline-none focus:border-[#6ba3c7]"
+                                className="w-full border border-[var(--abv-text)]/20 bg-white rounded-lg px-3 py-2 text-sm text-[var(--abv-text)] focus:outline-none focus:border-[var(--abv-azure)]"
                               />
                             </div>
                             <div>
-                              <label className="text-xs font-medium text-[#2f3437]/60 block mb-1">Description</label>
+                              <label className="text-xs font-medium text-[var(--abv-text)]/60 block mb-1">Description</label>
                               <textarea
                                 value={editFields.description}
                                 onChange={(e) => setEditFields((f) => ({ ...f, description: e.target.value }))}
                                 rows={2}
-                                className="w-full border border-[#2f3437]/20 bg-white rounded-lg px-3 py-2 text-sm text-[#2f3437] focus:outline-none focus:border-[#6ba3c7] resize-none"
+                                className="w-full border border-[var(--abv-text)]/20 bg-white rounded-lg px-3 py-2 text-sm text-[var(--abv-text)] focus:outline-none focus:border-[var(--abv-azure)] resize-none"
                               />
                             </div>
                             <div className="flex items-center justify-between">
                               <a
                                 href={`/admin/academy-manager/lessons/${lesson.id}`}
-                                className="text-xs text-[#6ba3c7] hover:underline"
+                                className="text-xs text-[var(--abv-azure)] hover:underline"
                               >
                                 Open full editor →
                               </a>
                               <div className="flex gap-2">
                                 <button
                                   onClick={() => setEditingLessonId(null)}
-                                  className="px-3 py-1.5 text-xs rounded-lg border border-[#2f3437]/20 hover:bg-gray-50 text-[#2f3437] transition-colors"
+                                  className="px-3 py-1.5 text-xs rounded-lg border border-[var(--abv-text)]/20 hover:bg-gray-50 text-[var(--abv-text)] transition-colors"
                                 >
                                   Cancel
                                 </button>
                                 <button
                                   onClick={() => handleSaveInlineLesson(lesson.id)}
                                   disabled={savingLesson}
-                                  className="px-3 py-1.5 text-xs bg-[#6ba3c7] text-white rounded-lg hover:bg-[#5490b5] disabled:opacity-50 transition-colors"
+                                  className="px-3 py-1.5 text-xs bg-[var(--abv-dark)] text-white rounded-lg hover:bg-black/85 disabled:opacity-50 transition-colors"
                                 >
                                   {savingLesson ? "Saving…" : "Save"}
                                 </button>
@@ -501,18 +501,18 @@ function FoundationsLibraryTab({ moduleType = "foundations" }: { moduleType?: st
                             if (e.key === "Escape") { setAddingLessonTo(null); setNewLessonTitle(""); }
                           }}
                           placeholder="Lesson title…"
-                          className="flex-1 px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#6ba3c7] focus:border-transparent outline-none"
+                          className="flex-1 px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[var(--abv-azure)] focus:border-transparent outline-none"
                         />
                         <button
                           onClick={() => createLesson(section.id)}
                           disabled={creatingLesson || !newLessonTitle.trim()}
-                          className="px-3 py-1.5 bg-[#6ba3c7] text-white text-sm font-semibold rounded-lg disabled:opacity-50 hover:bg-[#5490b5] transition-colors"
+                          className="px-3 py-1.5 bg-[var(--abv-dark)] text-white text-sm font-semibold rounded-lg disabled:opacity-50 hover:bg-black/85 transition-colors"
                         >
                           {creatingLesson ? "…" : "Create & Edit"}
                         </button>
                         <button
                           onClick={() => { setAddingLessonTo(null); setNewLessonTitle(""); }}
-                          className="px-3 py-1.5 text-sm text-[#2f3437]/50 hover:text-[#2f3437] transition-colors"
+                          className="px-3 py-1.5 text-sm text-[var(--abv-text)]/50 hover:text-[var(--abv-text)] transition-colors"
                         >
                           Cancel
                         </button>
@@ -521,7 +521,7 @@ function FoundationsLibraryTab({ moduleType = "foundations" }: { moduleType?: st
                       <div className="px-12 py-2.5 border-t border-gray-50">
                         <button
                           onClick={() => { setAddingLessonTo(section.id); setNewLessonTitle(""); }}
-                          className="flex items-center gap-1.5 text-sm text-[#6ba3c7] hover:text-[#5490b5] font-medium transition-colors"
+                          className="flex items-center gap-1.5 text-sm text-[var(--abv-azure)] hover:text-[var(--abv-azure)] font-medium transition-colors"
                         >
                           <PlusIcon className="w-4 h-4" />
                           Add Lesson
@@ -536,8 +536,8 @@ function FoundationsLibraryTab({ moduleType = "foundations" }: { moduleType?: st
         ))}
 
         {addingSection ? (
-          <div className="bg-white rounded-lg border border-[#6ba3c7]/30 p-4 flex items-center gap-3">
-            <BookOpenIcon className="w-5 h-5 text-[#6ba3c7] shrink-0" />
+          <div className="bg-white rounded-lg border border-[var(--abv-azure)]/30 p-4 flex items-center gap-3">
+            <BookOpenIcon className="w-5 h-5 text-[var(--abv-azure)] shrink-0" />
             <input
               autoFocus
               type="text"
@@ -548,18 +548,18 @@ function FoundationsLibraryTab({ moduleType = "foundations" }: { moduleType?: st
                 if (e.key === "Escape") { setAddingSection(false); setNewSectionTitle(""); }
               }}
               placeholder="Section title…"
-              className="flex-1 px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#6ba3c7] focus:border-transparent outline-none"
+              className="flex-1 px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[var(--abv-azure)] focus:border-transparent outline-none"
             />
             <button
               onClick={createSection}
               disabled={creatingSection || !newSectionTitle.trim()}
-              className="px-4 py-1.5 bg-[#6ba3c7] text-white text-sm font-semibold rounded-lg disabled:opacity-50 hover:bg-[#5490b5] transition-colors"
+              className="px-4 py-1.5 bg-[var(--abv-dark)] text-white text-sm font-semibold rounded-lg disabled:opacity-50 hover:bg-black/85 transition-colors"
             >
               {creatingSection ? "Creating…" : "Create & Edit"}
             </button>
             <button
               onClick={() => { setAddingSection(false); setNewSectionTitle(""); }}
-              className="px-3 py-1.5 text-sm text-[#2f3437]/50 hover:text-[#2f3437] transition-colors"
+              className="px-3 py-1.5 text-sm text-[var(--abv-text)]/50 hover:text-[var(--abv-text)] transition-colors"
             >
               Cancel
             </button>
@@ -567,7 +567,7 @@ function FoundationsLibraryTab({ moduleType = "foundations" }: { moduleType?: st
         ) : (
           <button
             onClick={() => setAddingSection(true)}
-            className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-gray-200 text-[#2f3437]/40 hover:border-[#6ba3c7] hover:text-[#6ba3c7] rounded-lg text-sm font-medium transition-colors"
+            className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-gray-200 text-[var(--abv-text)]/40 hover:border-[var(--abv-azure)] hover:text-[var(--abv-azure)] rounded-lg text-sm font-medium transition-colors"
           >
             <PlusIcon className="w-5 h-5" />
             Add Section
@@ -639,8 +639,8 @@ interface KBEntry {
 
 interface MemberOption { id: string; fullName: string | null; email: string; }
 
-const INPUT = "w-full border border-[#2f3437]/20 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#6ba3c7]";
-const CARD = "bg-white rounded-lg border border-[#2f3437]/10";
+const INPUT = "w-full border border-[var(--abv-text)]/20 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[var(--abv-azure)]";
+const CARD = "bg-white rounded-lg border border-[var(--abv-text)]/10";
 
 function fmtQA(d: string) {
   return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
@@ -875,16 +875,16 @@ function QACallsTab() {
   return (
     <div className="space-y-6 max-w-6xl">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-[#2f3437]/50">Import Q&A coaching calls from Fathom and review extracted moments</p>
+        <p className="text-sm text-[var(--abv-text)]/50">Import Q&A coaching calls from Fathom and review extracted moments</p>
         <div className="flex items-center gap-3">
-          <button onClick={() => setShowSettings((s) => !s)} className="flex items-center gap-2 px-4 py-2.5 border border-[#2f3437]/20 rounded-lg text-sm text-[#2f3437]/60 hover:bg-gray-50 transition-colors">
+          <button onClick={() => setShowSettings((s) => !s)} className="flex items-center gap-2 px-4 py-2.5 border border-[var(--abv-text)]/20 rounded-lg text-sm text-[var(--abv-text)]/60 hover:bg-gray-50 transition-colors">
             Settings {showSettings ? <ChevronUpIcon className="w-4 h-4" /> : <ChevronDownIcon className="w-4 h-4" />}
           </button>
           <button
             onClick={pullFromFathom}
             disabled={pulling || !settings.apiKeySet}
             title={!settings.apiKeySet ? "Configure Fathom API key in Settings first" : ""}
-            className="flex items-center gap-2 bg-[#6ba3c7] text-white px-4 py-2.5 rounded-lg text-sm font-semibold hover:bg-[#6ba3c7]/90 disabled:opacity-50 transition-colors"
+            className="flex items-center gap-2 bg-[var(--abv-dark)] text-white px-4 py-2.5 rounded-lg text-sm font-semibold hover:bg-[var(--abv-dark)]/90 disabled:opacity-50 transition-colors"
           >
             <ArrowPathIcon className={`w-4 h-4 ${pulling ? "animate-spin" : ""}`} />
             {pulling ? "Pulling..." : "Pull from Fathom"}
@@ -894,10 +894,10 @@ function QACallsTab() {
 
       {showSettings && (
         <div className={CARD + " p-6 space-y-5"}>
-          <h3 className="font-semibold text-[#2f3437]">Fathom Settings</h3>
+          <h3 className="font-semibold text-[var(--abv-text)]">Fathom Settings</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-semibold text-[#2f3437] mb-1.5">API Key</label>
+              <label className="block text-sm font-semibold text-[var(--abv-text)] mb-1.5">API Key</label>
               <input
                 type="password"
                 value={settings.fathomApiKey}
@@ -907,7 +907,7 @@ function QACallsTab() {
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-[#2f3437] mb-1.5">Recording Email</label>
+              <label className="block text-sm font-semibold text-[var(--abv-text)] mb-1.5">Recording Email</label>
               <input
                 type="email"
                 value={settings.fathomRecordingEmail}
@@ -917,7 +917,7 @@ function QACallsTab() {
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-[#2f3437] mb-1.5">Title Filter</label>
+              <label className="block text-sm font-semibold text-[var(--abv-text)] mb-1.5">Title Filter</label>
               <input
                 type="text"
                 value={settings.fathomTitleFilter}
@@ -928,33 +928,33 @@ function QACallsTab() {
             </div>
           </div>
 
-          <div className="border border-[#6ba3c7]/25 rounded-lg bg-[#6ba3c7]/5 p-4 space-y-3">
+          <div className="border border-[var(--abv-azure)]/25 rounded-lg bg-[var(--abv-dark)]/5 p-4 space-y-3">
             <div>
-              <p className="text-sm font-semibold text-[#2f3437] mb-0.5">Webhook (auto-import on call end)</p>
-              <p className="text-xs text-[#2f3437]/50">
+              <p className="text-sm font-semibold text-[var(--abv-text)] mb-0.5">Webhook (auto-import on call end)</p>
+              <p className="text-xs text-[var(--abv-text)]/50">
                 In Fathom → Developers → Add Webhook, paste the URL below. Set triggers to <strong>my_recordings</strong> and enable <strong>include_transcript</strong>. Copy the Webhook Secret and paste it here.
               </p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-[#2f3437]/60 mb-1">Your Webhook URL</label>
+                <label className="block text-xs font-semibold text-[var(--abv-text)]/60 mb-1">Your Webhook URL</label>
                 <div className="flex items-center gap-2">
                   <input
                     readOnly
                     value={webhookUrl}
-                    className="flex-1 border border-[#2f3437]/15 rounded-lg px-3 py-2 text-xs bg-white text-[#2f3437]/70 font-mono select-all"
+                    className="flex-1 border border-[var(--abv-text)]/15 rounded-lg px-3 py-2 text-xs bg-white text-[var(--abv-text)]/70 font-mono select-all"
                   />
                   <button
                     onClick={() => navigator.clipboard.writeText(webhookUrl)}
-                    className="px-2.5 py-2 border border-[#2f3437]/20 rounded-lg text-xs text-[#2f3437]/50 hover:text-[#6ba3c7] hover:border-[#6ba3c7] transition-colors whitespace-nowrap"
+                    className="px-2.5 py-2 border border-[var(--abv-text)]/20 rounded-lg text-xs text-[var(--abv-text)]/50 hover:text-[var(--abv-azure)] hover:border-[var(--abv-azure)] transition-colors whitespace-nowrap"
                   >
                     Copy
                   </button>
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-[#2f3437]/60 mb-1">
-                  Webhook Secret <span className="font-normal text-[#2f3437]/40">(from Fathom)</span>
+                <label className="block text-xs font-semibold text-[var(--abv-text)]/60 mb-1">
+                  Webhook Secret <span className="font-normal text-[var(--abv-text)]/40">(from Fathom)</span>
                 </label>
                 <input
                   type="password"
@@ -968,7 +968,7 @@ function QACallsTab() {
           </div>
 
           <div className="flex items-center justify-between">
-            <div className="text-xs text-[#2f3437]/40">
+            <div className="text-xs text-[var(--abv-text)]/40">
               {lastPullDate && <>Last pull: {fmtQA(lastPullDate)} — <span className={lastPullStatus === "success" ? "text-green-600" : "text-red-500"}>{lastPullStatus}</span></>}
               {!lastPullDate && "No auto-pull has run yet"}
               <span className="ml-2">• Auto-pull runs every Thursday at 8:00 PM</span>
@@ -989,23 +989,23 @@ function QACallsTab() {
 
       {pullResult && (
         <div className={CARD}>
-          <div className="px-6 py-4 border-b border-[#2f3437]/10 flex items-center justify-between">
+          <div className="px-6 py-4 border-b border-[var(--abv-text)]/10 flex items-center justify-between">
             <div>
-              <h3 className="font-semibold text-[#2f3437]">Fathom Calls Found</h3>
-              <p className="text-xs text-[#2f3437]/40 mt-0.5">{pullResult.length} matching call{pullResult.length !== 1 ? "s" : ""} — select new ones to import</p>
+              <h3 className="font-semibold text-[var(--abv-text)]">Fathom Calls Found</h3>
+              <p className="text-xs text-[var(--abv-text)]/40 mt-0.5">{pullResult.length} matching call{pullResult.length !== 1 ? "s" : ""} — select new ones to import</p>
             </div>
             <div className="flex items-center gap-3">
-              <button onClick={() => setPullResult(null)} className="text-sm text-[#2f3437]/40 hover:text-[#2f3437]">✕ Close</button>
+              <button onClick={() => setPullResult(null)} className="text-sm text-[var(--abv-text)]/40 hover:text-[var(--abv-text)]">✕ Close</button>
               <button
                 onClick={importSelected}
                 disabled={importing || selectedIds.size === 0}
-                className="bg-[#6ba3c7] text-white px-4 py-2 rounded-lg text-sm font-semibold disabled:opacity-50 hover:bg-[#6ba3c7]/90 transition-colors"
+                className="bg-[var(--abv-dark)] text-white px-4 py-2 rounded-lg text-sm font-semibold disabled:opacity-50 hover:bg-[var(--abv-dark)]/90 transition-colors"
               >
                 {importing ? "Importing..." : `Import ${selectedIds.size > 0 ? selectedIds.size : ""} Selected`}
               </button>
             </div>
           </div>
-          <div className="divide-y divide-[#2f3437]/5">
+          <div className="divide-y divide-[var(--abv-text)]/5">
             {pullResult.map((call) => (
               <div key={call.fathomId} className={`px-6 py-4 flex items-start gap-4 ${call.alreadyImported ? "opacity-50" : ""}`}>
                 {!call.alreadyImported && (
@@ -1013,19 +1013,19 @@ function QACallsTab() {
                     type="checkbox"
                     checked={selectedIds.has(call.fathomId)}
                     onChange={() => toggleSelect(call.fathomId)}
-                    className="mt-1 w-4 h-4 rounded border-[#2f3437]/30 cursor-pointer"
+                    className="mt-1 w-4 h-4 rounded border-[var(--abv-text)]/30 cursor-pointer"
                   />
                 )}
                 {call.alreadyImported && <div className="w-4 h-4 mt-1" />}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-[#2f3437]">{call.title}</p>
-                  <p className="text-xs text-[#2f3437]/50 mt-0.5">
+                  <p className="text-sm font-semibold text-[var(--abv-text)]">{call.title}</p>
+                  <p className="text-xs text-[var(--abv-text)]/50 mt-0.5">
                     {fmtQA(call.callDate)}
                     {call.duration && ` • ${Math.round(call.duration / 60)} min`}
                     {call.transcript ? ` • Transcript available` : " • No transcript"}
                   </p>
                 </div>
-                {call.alreadyImported && <span className="text-xs text-[#2f3437]/40 bg-[#111]/5 px-2 py-0.5 rounded-full flex-shrink-0">Already imported</span>}
+                {call.alreadyImported && <span className="text-xs text-[var(--abv-text)]/40 bg-[#111]/5 px-2 py-0.5 rounded-full flex-shrink-0">Already imported</span>}
               </div>
             ))}
           </div>
@@ -1033,10 +1033,10 @@ function QACallsTab() {
       )}
 
       <div className={CARD}>
-        <div className="px-6 py-4 border-b border-[#2f3437]/10 flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-[var(--abv-text)]/10 flex items-center justify-between">
           <div>
-            <h3 className="font-semibold text-[#2f3437]">Review Queue</h3>
-            <p className="text-xs text-[#2f3437]/40 mt-0.5">
+            <h3 className="font-semibold text-[var(--abv-text)]">Review Queue</h3>
+            <p className="text-xs text-[var(--abv-text)]/40 mt-0.5">
               {queueLoading ? "Loading..." : `${queueEntries.length} moment${queueEntries.length !== 1 ? "s" : ""} awaiting review`}
             </p>
           </div>
@@ -1053,24 +1053,24 @@ function QACallsTab() {
         </div>
 
         {queueLoading ? (
-          <div className="px-6 py-12 text-center text-sm text-[#2f3437]/40">Loading queue...</div>
+          <div className="px-6 py-12 text-center text-sm text-[var(--abv-text)]/40">Loading queue...</div>
         ) : queueEntries.length === 0 ? (
-          <div className="px-6 py-12 text-center text-sm text-[#2f3437]/40">All caught up — no moments pending review</div>
+          <div className="px-6 py-12 text-center text-sm text-[var(--abv-text)]/40">All caught up — no moments pending review</div>
         ) : (
-          <div className="divide-y divide-[#2f3437]/5">
+          <div className="divide-y divide-[var(--abv-text)]/5">
             {queueEntries.map((entry) => (
               <div key={entry.id} className="px-6 py-4">
                 <div className="flex items-start gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs font-medium text-[#2f3437]/40">{entry.sourceTitle}</span>
-                      {entry.callDate && <span className="text-xs text-[#2f3437]/30">{fmtQA(entry.callDate)}</span>}
+                      <span className="text-xs font-medium text-[var(--abv-text)]/40">{entry.sourceTitle}</span>
+                      {entry.callDate && <span className="text-xs text-[var(--abv-text)]/30">{fmtQA(entry.callDate)}</span>}
                       {entry.timestampStart != null && (
-                        <span className="text-xs text-[#6ba3c7]">@ {fmtQATime(entry.timestampStart)}</span>
+                        <span className="text-xs text-[var(--abv-azure)]">@ {fmtQATime(entry.timestampStart)}</span>
                       )}
                     </div>
-                    <p className="text-sm font-semibold text-[#2f3437] mb-0.5">{entry.subTopic}</p>
-                    <p className="text-xs text-[#2f3437]/60 mb-2">{entry.summary}</p>
+                    <p className="text-sm font-semibold text-[var(--abv-text)] mb-0.5">{entry.subTopic}</p>
+                    <p className="text-xs text-[var(--abv-text)]/60 mb-2">{entry.summary}</p>
                     <div className="flex flex-wrap gap-1 mb-2">
                       {entry.principles.map((p) => (
                         <span key={p} className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${QA_PRINCIPLE_COLORS[p] ?? "bg-gray-100 text-gray-600"}`}>{p}</span>
@@ -1086,13 +1086,13 @@ function QACallsTab() {
                     )}
                   </div>
                   <div className="flex items-center gap-1 flex-shrink-0">
-                    <button onClick={() => openEdit(entry)} className="p-2 rounded-lg text-[#2f3437]/30 hover:text-[#6ba3c7] hover:bg-[#6ba3c7]/5 transition-colors" title="Edit">
+                    <button onClick={() => openEdit(entry)} className="p-2 rounded-lg text-[var(--abv-text)]/30 hover:text-[var(--abv-azure)] hover:bg-[var(--abv-dark)]/5 transition-colors" title="Edit">
                       <PencilIcon className="w-4 h-4" />
                     </button>
-                    <button onClick={() => entryAction(entry.id, "approve")} className="p-2 rounded-lg text-[#2f3437]/30 hover:text-green-600 hover:bg-green-50 transition-colors" title="Approve">
+                    <button onClick={() => entryAction(entry.id, "approve")} className="p-2 rounded-lg text-[var(--abv-text)]/30 hover:text-green-600 hover:bg-green-50 transition-colors" title="Approve">
                       <CheckIcon className="w-4 h-4" />
                     </button>
-                    <button onClick={() => entryAction(entry.id, "reject")} className="p-2 rounded-lg text-[#2f3437]/30 hover:text-red-500 hover:bg-red-50 transition-colors" title="Reject">
+                    <button onClick={() => entryAction(entry.id, "reject")} className="p-2 rounded-lg text-[var(--abv-text)]/30 hover:text-red-500 hover:bg-red-50 transition-colors" title="Reject">
                       <XMarkIcon className="w-4 h-4" />
                     </button>
                   </div>
@@ -1104,17 +1104,17 @@ function QACallsTab() {
       </div>
 
       <div className={CARD}>
-        <div className="px-6 py-4 border-b border-[#2f3437]/10 flex items-center justify-between gap-4">
+        <div className="px-6 py-4 border-b border-[var(--abv-text)]/10 flex items-center justify-between gap-4">
           <div>
-            <h3 className="font-semibold text-[#2f3437]">Imported Calls</h3>
-            <p className="text-xs text-[#2f3437]/40 mt-0.5">{calls.length} call{calls.length !== 1 ? "s" : ""} imported</p>
+            <h3 className="font-semibold text-[var(--abv-text)]">Imported Calls</h3>
+            <p className="text-xs text-[var(--abv-text)]/40 mt-0.5">{calls.length} call{calls.length !== 1 ? "s" : ""} imported</p>
           </div>
           <div className="flex flex-col items-end gap-1">
             <button
               onClick={refreshShareUrls}
               disabled={refreshingUrls}
               title="Re-fetches share_url from Fathom for all imported calls so timestamps work correctly"
-              className="flex items-center gap-1.5 text-xs text-[#2f3437]/50 hover:text-[#6ba3c7] border border-[#2f3437]/15 hover:border-[#6ba3c7]/40 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+              className="flex items-center gap-1.5 text-xs text-[var(--abv-text)]/50 hover:text-[var(--abv-azure)] border border-[var(--abv-text)]/15 hover:border-[var(--abv-azure)]/40 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
             >
               <ArrowPathIcon className={`w-3.5 h-3.5 ${refreshingUrls ? "animate-spin" : ""}`} />
               {refreshingUrls ? "Refreshing…" : "Refresh Share URLs"}
@@ -1125,23 +1125,23 @@ function QACallsTab() {
           </div>
         </div>
         {loading ? (
-          <div className="px-6 py-12 text-center text-sm text-[#2f3437]/40">Loading...</div>
+          <div className="px-6 py-12 text-center text-sm text-[var(--abv-text)]/40">Loading...</div>
         ) : calls.length === 0 ? (
-          <div className="px-6 py-12 text-center text-sm text-[#2f3437]/40">No calls imported yet. Pull from Fathom to get started.</div>
+          <div className="px-6 py-12 text-center text-sm text-[var(--abv-text)]/40">No calls imported yet. Pull from Fathom to get started.</div>
         ) : (
-          <div className="divide-y divide-[#2f3437]/5">
+          <div className="divide-y divide-[var(--abv-text)]/5">
             {calls.map((call) => (
               <div key={call.id}>
                 <div className="px-6 py-4 flex items-center gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-0.5">
-                      <span className="text-sm font-semibold text-[#2f3437]">{call.title}</span>
+                      <span className="text-sm font-semibold text-[var(--abv-text)]">{call.title}</span>
                       {statusBadge(call.status)}
                       {call.pendingCount > 0 && (
                         <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">{call.pendingCount} pending</span>
                       )}
                     </div>
-                    <p className="text-xs text-[#2f3437]/40">
+                    <p className="text-xs text-[var(--abv-text)]/40">
                       {fmtQA(call.callDate)} • {call.momentCount} moment{call.momentCount !== 1 ? "s" : ""}
                     </p>
                     {call.status === "failed" && call.errorMessage && (
@@ -1154,18 +1154,18 @@ function QACallsTab() {
                       <button
                         onClick={() => removeCall(call.id)}
                         disabled={removingId === call.id}
-                        className="px-3 py-1.5 bg-[#e63946] text-white text-xs font-semibold rounded-lg disabled:opacity-50 hover:bg-red-700 transition-colors"
+                        className="px-3 py-1.5 bg-[var(--abv-crimson)] text-white text-xs font-semibold rounded-lg disabled:opacity-50 hover:bg-red-700 transition-colors"
                       >
                         {removingId === call.id ? "Removing…" : "Remove"}
                       </button>
-                      <button onClick={() => setConfirmRemoveId(null)} className="px-3 py-1.5 text-xs text-[#2f3437]/60 hover:text-[#2f3437] transition-colors">
+                      <button onClick={() => setConfirmRemoveId(null)} className="px-3 py-1.5 text-xs text-[var(--abv-text)]/60 hover:text-[var(--abv-text)] transition-colors">
                         Cancel
                       </button>
                     </div>
                   ) : (
                     <button
                       onClick={() => setConfirmRemoveId(call.id)}
-                      className="flex items-center gap-1.5 text-xs text-[#2f3437]/40 hover:text-[#e63946] hover:bg-red-50 px-3 py-1.5 rounded-lg transition-colors"
+                      className="flex items-center gap-1.5 text-xs text-[var(--abv-text)]/40 hover:text-[var(--abv-crimson)] hover:bg-red-50 px-3 py-1.5 rounded-lg transition-colors"
                     >
                       <TrashIcon className="w-3.5 h-3.5" />
                       Remove
@@ -1206,8 +1206,8 @@ function AcademyManagerInner() {
   return (
     <div className="space-y-6 max-w-6xl">
       <div>
-        <h1 className="text-2xl font-bold text-[#2f3437]">Academy Manager</h1>
-        <p className="text-sm text-[#2f3437]/50 mt-1">Manage Foundations Library content and Q&A coaching calls.</p>
+        <h1 className="text-2xl font-bold text-[var(--abv-text)]">Academy Manager</h1>
+        <p className="text-sm text-[var(--abv-text)]/50 mt-1">Manage Foundations Library content and Q&A coaching calls.</p>
       </div>
 
       <div className="flex gap-1 bg-[#111]/5 rounded-lg p-1 w-fit">
@@ -1217,8 +1217,8 @@ function AcademyManagerInner() {
             onClick={() => setActiveTab(t.id)}
             className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium transition-all ${
               tab === t.id
-                ? "bg-white text-[#2f3437] shadow-sm"
-                : "text-[#2f3437]/50 hover:text-[#2f3437]"
+                ? "bg-white text-[var(--abv-text)] shadow-sm"
+                : "text-[var(--abv-text)]/50 hover:text-[var(--abv-text)]"
             }`}
           >
             {t.label}
@@ -1239,8 +1239,8 @@ export default function AcademyManagerPage() {
     <Suspense fallback={
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-[#2f3437]">Academy Manager</h1>
-          <p className="text-sm text-[#2f3437]/50 mt-1">Manage Foundations Library content and Q&A coaching calls.</p>
+          <h1 className="text-2xl font-bold text-[var(--abv-text)]">Academy Manager</h1>
+          <p className="text-sm text-[var(--abv-text)]/50 mt-1">Manage Foundations Library content and Q&A coaching calls.</p>
         </div>
         <div className="h-12 bg-[#111]/5 rounded-lg animate-pulse w-64" />
       </div>

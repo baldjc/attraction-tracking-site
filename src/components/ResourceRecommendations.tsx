@@ -69,7 +69,7 @@ function RecommendationCard({ rec }: { rec: Recommendation }) {
         {isLesson
           ? <AcademicCapIcon className="w-3 h-3 text-blue-500 flex-shrink-0" />
           : <VideoCameraIcon className="w-3 h-3 text-violet-500 flex-shrink-0" />}
-        <span className="text-[10px] font-semibold text-[#2f3437]/55 dark:text-white/45 truncate">
+        <span className="text-[10px] font-semibold text-[var(--abv-text)]/55 dark:text-white/45 truncate">
           {isLesson
             ? rec.source ? `Lesson ${rec.source.lessonNumber}` : "Course Lesson"
             : rec.source ? fmtDate(rec.source.callDate) : "Q&A Call"
@@ -82,8 +82,8 @@ function RecommendationCard({ rec }: { rec: Recommendation }) {
 
       {/* Body */}
       <div className="p-3 space-y-2">
-        <p className="text-xs font-semibold text-[#2f3437] dark:text-white leading-snug line-clamp-2">{rec.subTopic}</p>
-        <p className="text-[11px] text-[#2f3437]/55 dark:text-white/45 leading-relaxed line-clamp-2">{rec.summary}</p>
+        <p className="text-xs font-semibold text-[var(--abv-text)] dark:text-white leading-snug line-clamp-2">{rec.subTopic}</p>
+        <p className="text-[11px] text-[var(--abv-text)]/55 dark:text-white/45 leading-relaxed line-clamp-2">{rec.summary}</p>
         <div className="flex flex-wrap gap-1">
           {rec.principles.slice(0, 2).map((p) => (
             <span key={p} className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${PRINCIPLE_COLORS[p] ?? "bg-gray-100 text-gray-600"}`}>
@@ -103,7 +103,7 @@ function RecommendationCard({ rec }: { rec: Recommendation }) {
             </a>
           )}
           {isLesson && !rec.source?.skoolUrl && (
-            <span className="text-[11px] text-[#2f3437]/30 dark:text-white/25">Find in your course</span>
+            <span className="text-[11px] text-[var(--abv-text)]/30 dark:text-white/25">Find in your course</span>
           )}
           {!isLesson && fathomUrl && (
             <a
@@ -159,10 +159,10 @@ export default function ResourceRecommendations({
   return (
     <div className={`${className}`}>
       <div className={`flex items-center gap-2 mb-3 ${compact ? "" : ""}`}>
-        <BookOpenIcon className="w-4 h-4 text-[#6ba3c7] flex-shrink-0" />
-        <h3 className="text-sm font-semibold text-[#2f3437] dark:text-white">{heading}</h3>
+        <BookOpenIcon className="w-4 h-4 text-[var(--abv-azure)] flex-shrink-0" />
+        <h3 className="text-sm font-semibold text-[var(--abv-text)] dark:text-white">{heading}</h3>
         {!loading && recs.length > 0 && (
-          <span className="text-[10px] text-[#2f3437]/40 dark:text-white/30">{recs.length} item{recs.length !== 1 ? "s" : ""}</span>
+          <span className="text-[10px] text-[var(--abv-text)]/40 dark:text-white/30">{recs.length} item{recs.length !== 1 ? "s" : ""}</span>
         )}
       </div>
 
@@ -204,12 +204,12 @@ export function ResourceRecommendationsInline({
   if (!loading && recs.length === 0) return null;
 
   return (
-    <div className={`rounded-lg border border-[#6ba3c7]/25 bg-[#6ba3c7]/5 p-5 ${className}`}>
+    <div className={`rounded-lg border border-[var(--abv-azure)]/25 bg-[var(--abv-dark)]/5 p-5 ${className}`}>
       <div className="flex items-center gap-2 mb-4">
-        <BookOpenIcon className="w-4 h-4 text-[#6ba3c7]" />
-        <h3 className="text-sm font-semibold text-[#2f3437]">{heading}</h3>
+        <BookOpenIcon className="w-4 h-4 text-[var(--abv-azure)]" />
+        <h3 className="text-sm font-semibold text-[var(--abv-text)]">{heading}</h3>
         {!loading && recs.length > 0 && (
-          <span className="text-[10px] text-[#2f3437]/40">{recs.length} item{recs.length !== 1 ? "s" : ""}</span>
+          <span className="text-[10px] text-[var(--abv-text)]/40">{recs.length} item{recs.length !== 1 ? "s" : ""}</span>
         )}
       </div>
 
@@ -233,7 +233,7 @@ function InlineRecommendationRow({ rec }: { rec: Recommendation }) {
     : null;
 
   return (
-    <div className="flex items-start gap-3 bg-white rounded-lg border border-[#2f3437]/8 px-4 py-3">
+    <div className="flex items-start gap-3 bg-white rounded-lg border border-[var(--abv-text)]/8 px-4 py-3">
       <div className={`flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center mt-0.5 ${
         isLesson ? "bg-blue-100" : "bg-violet-100"
       }`}>
@@ -243,7 +243,7 @@ function InlineRecommendationRow({ rec }: { rec: Recommendation }) {
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-0.5">
-          <span className="text-[10px] text-[#2f3437]/40 font-medium">
+          <span className="text-[10px] text-[var(--abv-text)]/40 font-medium">
             {isLesson
               ? rec.source ? `Lesson ${rec.source.lessonNumber} — ${rec.source.title}` : "Course Lesson"
               : rec.source ? `Q&A Call · ${fmtDate(rec.source.callDate)}` : "Q&A Call"
@@ -253,8 +253,8 @@ function InlineRecommendationRow({ rec }: { rec: Recommendation }) {
             <span className="text-[10px] text-violet-500">@ {fmtTime(rec.timestampStart)}</span>
           )}
         </div>
-        <p className="text-xs font-semibold text-[#2f3437] mb-0.5 leading-snug">{rec.subTopic}</p>
-        <p className="text-[11px] text-[#2f3437]/55 leading-relaxed line-clamp-2">{rec.summary}</p>
+        <p className="text-xs font-semibold text-[var(--abv-text)] mb-0.5 leading-snug">{rec.subTopic}</p>
+        <p className="text-[11px] text-[var(--abv-text)]/55 leading-relaxed line-clamp-2">{rec.summary}</p>
       </div>
       <div className="flex-shrink-0 ml-2 mt-0.5">
         {isLesson && rec.source?.skoolUrl && (

@@ -131,19 +131,19 @@ export function CoachPanel({ channelRef }: { channelRef: string }) {
 
   return (
     <section
-      className="rounded-xl border border-[#eaeaea] bg-white p-6 dark:border-[#2a2a2a] dark:bg-[#1a1a1a]"
+      className="rounded-xl border border-[var(--abv-border-strong)] bg-white p-6 dark:border-[#2a2a2a] dark:bg-[#1a1a1a]"
       style={{
         borderRadius: "var(--atbv-radius-lg)",
         boxShadow: "var(--atbv-shadow-sm)",
       }}
     >
       <div className="mb-1 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-[#2f3437] dark:text-white">
+        <h2 className="text-lg font-semibold text-[var(--abv-text)] dark:text-white">
           Coach Panel
         </h2>
-        <p className="eyebrow text-[#787774]">AI coaching summary</p>
+        <p className="eyebrow text-[var(--abv-text-secondary)]">AI coaching summary</p>
       </div>
-      <p className="mb-5 text-sm text-[#787774]">
+      <p className="mb-5 text-sm text-[var(--abv-text-secondary)]">
         Generates a four-section coaching report from the latest analytics,
         portfolio mix, pulses, glance tests, and watch-time winners.
       </p>
@@ -152,14 +152,14 @@ export function CoachPanel({ channelRef }: { channelRef: string }) {
         onClick={handleRun}
         disabled={busy || isRunning}
         className="rounded-md px-4 py-2 text-sm font-semibold text-white transition-opacity disabled:opacity-50"
-        style={{ backgroundColor: "var(--atbv-primary, #2f3437)" }}
+        style={{ backgroundColor: "var(--atbv-primary, var(--abv-text))" }}
       >
         {isRunning ? "Analysing…" : "Run coaching analysis"}
       </button>
 
       {isRunning && (
-        <div className="mt-4 flex items-center gap-2 text-sm text-[#787774]">
-          <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-[#787774] border-t-transparent" />
+        <div className="mt-4 flex items-center gap-2 text-sm text-[var(--abv-text-secondary)]">
+          <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-[var(--abv-text-secondary)] border-t-transparent" />
           Analysing channel data — usually takes 30 seconds.
         </div>
       )}
@@ -168,8 +168,8 @@ export function CoachPanel({ channelRef }: { channelRef: string }) {
         <div
           className="mt-4 rounded-md border p-3 text-sm"
           style={{
-            borderColor: "var(--atbv-danger, #e63946)",
-            color: "var(--atbv-danger, #e63946)",
+            borderColor: "var(--atbv-danger, var(--abv-crimson))",
+            color: "var(--atbv-danger, var(--abv-crimson))",
           }}
         >
           Run failed: {run.errorMessage ?? "Unknown error"}
@@ -178,10 +178,10 @@ export function CoachPanel({ channelRef }: { channelRef: string }) {
 
       {run && run.status === "complete" && run.reportMarkdown && (
         <div className="mt-6">
-          <article className="prose prose-sm max-w-none text-[#2f3437] dark:prose-invert dark:text-white">
+          <article className="prose prose-sm max-w-none text-[var(--abv-text)] dark:prose-invert dark:text-white">
             <ReactMarkdown>{run.reportMarkdown}</ReactMarkdown>
           </article>
-          <p className="mt-4 text-xs text-[#787774]">
+          <p className="mt-4 text-xs text-[var(--abv-text-secondary)]">
             Last run:{" "}
             {run.finishedAt
               ? new Date(run.finishedAt).toLocaleString("en-CA")
@@ -190,28 +190,28 @@ export function CoachPanel({ channelRef }: { channelRef: string }) {
         </div>
       )}
 
-      <div className="mt-6 border-t border-[#eaeaea] pt-4 dark:border-[#2a2a2a]">
+      <div className="mt-6 border-t border-[var(--abv-border-strong)] pt-4 dark:border-[#2a2a2a]">
         <button
           onClick={() => setHistoryOpen((o) => !o)}
-          className="text-xs font-semibold uppercase tracking-wider text-[#787774] hover:text-[#2f3437] dark:hover:text-white"
+          className="text-xs font-semibold uppercase tracking-wider text-[var(--abv-text-secondary)] hover:text-[var(--abv-text)] dark:hover:text-white"
         >
           {historyOpen ? "Hide" : "Show"} prior runs ({history.length})
         </button>
         {historyOpen && (
           <ul className="mt-3 space-y-1.5">
             {loadingHistory && (
-              <li className="text-sm text-[#787774]">Loading…</li>
+              <li className="text-sm text-[var(--abv-text-secondary)]">Loading…</li>
             )}
             {!loadingHistory && history.length === 0 && (
-              <li className="text-sm text-[#787774]">No prior runs.</li>
+              <li className="text-sm text-[var(--abv-text-secondary)]">No prior runs.</li>
             )}
             {history.map((h) => (
               <li key={h.id}>
                 <button
                   onClick={() => loadRun(h.id)}
-                  className="flex w-full items-center justify-between rounded-md border border-[#eaeaea] px-3 py-2 text-left text-xs transition-colors hover:bg-[#f7f6f3] dark:border-[#2a2a2a] dark:hover:bg-[#222]"
+                  className="flex w-full items-center justify-between rounded-md border border-[var(--abv-border-strong)] px-3 py-2 text-left text-xs transition-colors hover:bg-[var(--abv-bg)] dark:border-[#2a2a2a] dark:hover:bg-[#222]"
                 >
-                  <span className="text-[#2f3437] dark:text-white">
+                  <span className="text-[var(--abv-text)] dark:text-white">
                     {new Date(h.createdAt).toLocaleString("en-CA")}
                   </span>
                   <span

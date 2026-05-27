@@ -238,14 +238,14 @@ export default function AvatarTestPanel({ onAvatarChange }: Props) {
       {/* Label prompt → navigate to Avatar Architect */}
       {buildPromptSlot !== null && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-xl shadow-2xl border border-[#2f3437]/10 w-full max-w-sm p-6 space-y-4">
+          <div className="bg-white rounded-xl shadow-2xl border border-[var(--abv-text)]/10 w-full max-w-sm p-6 space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-[#2f3437]">Name this test avatar</h3>
-              <button onClick={() => setBuildPromptSlot(null)} className="text-[#2f3437]/40 hover:text-[#2f3437]">
+              <h3 className="font-semibold text-[var(--abv-text)]">Name this test avatar</h3>
+              <button onClick={() => setBuildPromptSlot(null)} className="text-[var(--abv-text)]/40 hover:text-[var(--abv-text)]">
                 <XMarkIcon className="w-4 h-4" />
               </button>
             </div>
-            <p className="text-xs text-[#2f3437]/50">This label identifies the avatar in the panel (e.g. "First-Time Buyer", "Investor", "Empty Nester"). You'll build it out with the Avatar Architect.</p>
+            <p className="text-xs text-[var(--abv-text)]/50">This label identifies the avatar in the panel (e.g. "First-Time Buyer", "Investor", "Empty Nester"). You'll build it out with the Avatar Architect.</p>
             <input
               autoFocus
               type="text"
@@ -253,16 +253,16 @@ export default function AvatarTestPanel({ onAvatarChange }: Props) {
               onChange={(e) => setBuildLabel(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") confirmBuild(); }}
               placeholder="e.g. First-Time Buyer"
-              className="w-full text-sm border border-[#2f3437]/15 rounded-lg px-3 py-2.5 outline-none focus:ring-1 focus:ring-[#6ba3c7]"
+              className="w-full text-sm border border-[var(--abv-text)]/15 rounded-lg px-3 py-2.5 outline-none focus:ring-1 focus:ring-[var(--abv-azure)]"
             />
             <div className="flex gap-2">
-              <button onClick={() => setBuildPromptSlot(null)} className="flex-1 text-sm text-[#2f3437]/50 border border-[#2f3437]/15 rounded-lg py-2 hover:bg-gray-50">
+              <button onClick={() => setBuildPromptSlot(null)} className="flex-1 text-sm text-[var(--abv-text)]/50 border border-[var(--abv-text)]/15 rounded-lg py-2 hover:bg-gray-50">
                 Cancel
               </button>
               <button
                 onClick={confirmBuild}
                 disabled={!buildLabel.trim()}
-                className="flex-1 text-sm font-semibold text-white bg-[#6ba3c7] rounded-lg py-2 hover:bg-[#5a8fb3] disabled:opacity-50"
+                className="flex-1 text-sm font-semibold text-white bg-[var(--abv-dark)] rounded-lg py-2 hover:bg-[#5a8fb3] disabled:opacity-50"
               >
                 Start Building →
               </button>
@@ -274,15 +274,15 @@ export default function AvatarTestPanel({ onAvatarChange }: Props) {
       {/* Edit label modal */}
       {showForm !== null && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-xl shadow-2xl border border-[#2f3437]/10 w-full max-w-sm p-6 space-y-4">
+          <div className="bg-white rounded-xl shadow-2xl border border-[var(--abv-text)]/10 w-full max-w-sm p-6 space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-[#2f3437]">Rename test avatar</h3>
-              <button onClick={() => setShowForm(null)} className="text-[#2f3437]/40 hover:text-[#2f3437]">
+              <h3 className="font-semibold text-[var(--abv-text)]">Rename test avatar</h3>
+              <button onClick={() => setShowForm(null)} className="text-[var(--abv-text)]/40 hover:text-[var(--abv-text)]">
                 <XMarkIcon className="w-4 h-4" />
               </button>
             </div>
             <div>
-              <label className="text-xs font-semibold text-[#2f3437]/60 mb-1 block">Label</label>
+              <label className="text-xs font-semibold text-[var(--abv-text)]/60 mb-1 block">Label</label>
               <input
                 autoFocus
                 type="text"
@@ -290,17 +290,17 @@ export default function AvatarTestPanel({ onAvatarChange }: Props) {
                 onChange={(e) => setFormLabel(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter") saveForm(); }}
                 placeholder="e.g. First-Time Buyer"
-                className="w-full text-sm border border-[#2f3437]/15 rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-[#6ba3c7]"
+                className="w-full text-sm border border-[var(--abv-text)]/15 rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-[var(--abv-azure)]"
               />
             </div>
             <div className="flex gap-2">
-              <button onClick={() => setShowForm(null)} className="flex-1 text-sm text-[#2f3437]/50 border border-[#2f3437]/15 rounded-lg py-2 hover:bg-gray-50">
+              <button onClick={() => setShowForm(null)} className="flex-1 text-sm text-[var(--abv-text)]/50 border border-[var(--abv-text)]/15 rounded-lg py-2 hover:bg-gray-50">
                 Cancel
               </button>
               <button
                 onClick={saveForm}
                 disabled={!formLabel.trim() || saving}
-                className="flex-1 text-sm font-semibold text-white bg-[#6ba3c7] rounded-lg py-2 hover:bg-[#5a8fb3] disabled:opacity-50"
+                className="flex-1 text-sm font-semibold text-white bg-[var(--abv-dark)] rounded-lg py-2 hover:bg-[#5a8fb3] disabled:opacity-50"
               >
                 {saving ? "Saving…" : "Rename"}
               </button>
@@ -362,7 +362,7 @@ export default function AvatarTestPanel({ onAvatarChange }: Props) {
                         placeholder="Search members…"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="w-full pl-6 pr-2 py-1.5 text-xs border border-gray-200 rounded-lg outline-none focus:ring-1 focus:ring-[#6ba3c7]"
+                        className="w-full pl-6 pr-2 py-1.5 text-xs border border-gray-200 rounded-lg outline-none focus:ring-1 focus:ring-[var(--abv-azure)]"
                       />
                     </div>
                   </div>
@@ -382,7 +382,7 @@ export default function AvatarTestPanel({ onAvatarChange }: Props) {
                           >
                             <UserCircleIcon className="w-4 h-4 text-gray-400 shrink-0" />
                             <div className="flex-1 min-w-0">
-                              <p className="text-xs font-medium text-[#2f3437] truncate">{m.fullName ?? m.email}</p>
+                              <p className="text-xs font-medium text-[var(--abv-text)] truncate">{m.fullName ?? m.email}</p>
                               {m.fullName && <p className="text-[10px] text-gray-400 truncate">{m.email}</p>}
                             </div>
                             {state.activeTestMemberId === m.id && (
@@ -410,8 +410,8 @@ export default function AvatarTestPanel({ onAvatarChange }: Props) {
               {showCustomManager && (
                 <div className="absolute right-0 top-full mt-1 w-80 bg-white rounded-lg shadow-2xl border border-gray-200 z-50 overflow-hidden">
                   <div className="p-3 border-b border-gray-100">
-                    <p className="text-xs font-semibold text-[#2f3437]">Custom Test Avatars</p>
-                    <p className="text-[10px] text-[#2f3437]/40 mt-0.5">Up to 5 slots for test scenarios</p>
+                    <p className="text-xs font-semibold text-[var(--abv-text)]">Custom Test Avatars</p>
+                    <p className="text-[10px] text-[var(--abv-text)]/40 mt-0.5">Up to 5 slots for test scenarios</p>
                   </div>
                   <ul className="divide-y divide-gray-50">
                     {slots.map((slot) => {
@@ -421,11 +421,11 @@ export default function AvatarTestPanel({ onAvatarChange }: Props) {
                           {avatar ? (
                             <div className="flex items-center gap-2">
                               <div className="flex-1 min-w-0">
-                                <p className="text-xs font-medium text-[#2f3437] truncate">
+                                <p className="text-xs font-medium text-[var(--abv-text)] truncate">
                                   {slot}. {avatar.label}
                                 </p>
                                 {(avatar.avatarName || avatar.city) && (
-                                  <p className="text-[10px] text-[#2f3437]/40">
+                                  <p className="text-[10px] text-[var(--abv-text)]/40">
                                     {[avatar.avatarName, avatar.city].filter(Boolean).join(" · ")}
                                   </p>
                                 )}
@@ -436,21 +436,21 @@ export default function AvatarTestPanel({ onAvatarChange }: Props) {
                                   className={`text-[10px] font-semibold px-2 py-1 rounded ${
                                     state.activeTestAvatarId === avatar.id
                                       ? "bg-amber-100 text-amber-700"
-                                      : "bg-[#6ba3c7]/10 text-[#6ba3c7] hover:bg-[#6ba3c7]/20"
+                                      : "bg-[var(--abv-dark)]/10 text-[var(--abv-azure)] hover:bg-[var(--abv-dark)]/20"
                                   }`}
                                 >
                                   {state.activeTestAvatarId === avatar.id ? "Active" : "Use"}
                                 </button>
                                 <button
                                   onClick={() => { setShowCustomManager(false); openEdit(avatar); }}
-                                  className="p-1 text-[#2f3437]/30 hover:text-[#2f3437]/60"
+                                  className="p-1 text-[var(--abv-text)]/30 hover:text-[var(--abv-text)]/60"
                                   title="Rename"
                                 >
                                   <PencilIcon className="w-3 h-3" />
                                 </button>
                                 <button
                                   onClick={() => deleteAvatar(avatar.id)}
-                                  className="p-1 text-[#2f3437]/30 hover:text-red-500"
+                                  className="p-1 text-[var(--abv-text)]/30 hover:text-red-500"
                                   title="Delete"
                                 >
                                   <TrashIcon className="w-3 h-3" />
@@ -460,10 +460,10 @@ export default function AvatarTestPanel({ onAvatarChange }: Props) {
                           ) : (
                             <button
                               onClick={() => openBuildPrompt(slot)}
-                              className="w-full flex items-center gap-2 text-xs text-[#2f3437]/30 hover:text-[#6ba3c7] transition-colors"
+                              className="w-full flex items-center gap-2 text-xs text-[var(--abv-text)]/30 hover:text-[var(--abv-azure)] transition-colors"
                             >
-                              <span className="text-[#2f3437]/20">{slot}.</span>
-                              <span className="flex-1 text-left border-b border-dashed border-[#2f3437]/10 pb-0.5">empty — click to build</span>
+                              <span className="text-[var(--abv-text)]/20">{slot}.</span>
+                              <span className="flex-1 text-left border-b border-dashed border-[var(--abv-text)]/10 pb-0.5">empty — click to build</span>
                               <PlusIcon className="w-3 h-3 shrink-0" />
                             </button>
                           )}
@@ -479,7 +479,7 @@ export default function AvatarTestPanel({ onAvatarChange }: Props) {
                         if (nextSlot) openBuildPrompt(nextSlot);
                       }}
                       disabled={state.testAvatars.length >= 5}
-                      className="w-full flex items-center justify-center gap-1.5 text-xs font-semibold text-[#6ba3c7] hover:bg-[#6ba3c7]/5 py-2 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="w-full flex items-center justify-center gap-1.5 text-xs font-semibold text-[var(--abv-azure)] hover:bg-[var(--abv-dark)]/5 py-2 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       <PlusIcon className="w-3.5 h-3.5" />
                       {state.testAvatars.length >= 5 ? "All 5 slots filled" : "Build New Custom Avatar"}

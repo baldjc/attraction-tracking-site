@@ -80,21 +80,21 @@ const tierLabels: Record<string, string> = {
   done_with_you: "Done-With-You",
 };
 
-const txt   = "text-[#2f3437]";
-const muted = "text-[#2f3437]/60";
-const dim   = "text-[#2f3437]/30";
+const txt   = "text-[var(--abv-text)]";
+const muted = "text-[var(--abv-text)]/60";
+const dim   = "text-[var(--abv-text)]/30";
 const card  = "bg-white rounded-lg border border-gray-200";
-const thCls = "px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#2f3437]/50 bg-gray-50 whitespace-nowrap select-none cursor-pointer";
+const thCls = "px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[var(--abv-text)]/50 bg-gray-50 whitespace-nowrap select-none cursor-pointer";
 
 function tierBadge(tier: string) {
   const label = tierLabels[tier] || tier;
   const cls =
     tier === "foundations"
-      ? "bg-[#6ba3c7] text-white"
+      ? "bg-[var(--abv-dark)] text-white"
       : tier === "editing_2" || tier === "editing_4"
-      ? "bg-[#f59e0b] text-white"
+      ? "bg-[var(--abv-scores)] text-white"
       : tier === "mastery_2" || tier === "mastery_4"
-      ? "bg-[#8b5cf6] text-white"
+      ? "bg-[var(--abv-hire)] text-white"
       : tier === "done_with_you"
       ? "bg-[#78350f] text-[#fef3c7]"
       : "bg-gray-200 text-gray-700";
@@ -402,8 +402,8 @@ function MembersPageInner() {
   function SortIcon({ col }: { col: SortKey }) {
     if (sortKey !== col) return <span className={`${dim} ml-1`}>↕</span>;
     return sortDir === "asc"
-      ? <ChevronUpIcon className="w-3 h-3 inline ml-1 text-[#6ba3c7]" />
-      : <ChevronDownIcon className="w-3 h-3 inline ml-1 text-[#6ba3c7]" />;
+      ? <ChevronUpIcon className="w-3 h-3 inline ml-1 text-[var(--abv-azure)]" />
+      : <ChevronDownIcon className="w-3 h-3 inline ml-1 text-[var(--abv-azure)]" />;
   }
 
   function FilterBtn({ active, label, activeClass, onClick }: { active: boolean; label: string; activeClass: string; onClick: () => void }) {
@@ -411,7 +411,7 @@ function MembersPageInner() {
       <button
         onClick={onClick}
         className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
-          active ? activeClass : "bg-white text-[#2f3437]/60 border-gray-200 hover:border-gray-300 hover:text-[#2f3437]"
+          active ? activeClass : "bg-white text-[var(--abv-text)]/60 border-gray-200 hover:border-gray-300 hover:text-[var(--abv-text)]"
         }`}
       >
         {label}
@@ -462,7 +462,7 @@ function MembersPageInner() {
         <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={handleExportCSV}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-[#2f3437]/20 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 text-[#2f3437] dark:text-white transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-[var(--abv-text)]/20 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 text-[var(--abv-text)] dark:text-white transition-colors"
           >
             <ArrowDownTrayIcon className="w-4 h-4" />
             Export CSV
@@ -471,7 +471,7 @@ function MembersPageInner() {
             <button
               onClick={handleRefreshAll}
               disabled={refreshing}
-              className="flex items-center gap-2 bg-white hover:bg-gray-50 text-[#2f3437] border border-gray-200 px-4 py-2.5 rounded-lg font-medium transition-colors disabled:opacity-50 text-sm"
+              className="flex items-center gap-2 bg-white hover:bg-gray-50 text-[var(--abv-text)] border border-gray-200 px-4 py-2.5 rounded-lg font-medium transition-colors disabled:opacity-50 text-sm"
             >
               <ArrowPathIcon className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
               {refreshing ? "Syncing…" : "Refresh All Channels"}
@@ -481,7 +481,7 @@ function MembersPageInner() {
             <button
               onClick={handleSync}
               disabled={syncing}
-              className="flex items-center gap-2 bg-[#6ba3c7] hover:bg-[#5490b5] text-white px-4 py-2.5 rounded-lg font-medium transition-colors disabled:opacity-50 text-sm"
+              className="flex items-center gap-2 $1var(--abv-dark)$2 hover:bg-black/85 text-white px-4 py-2.5 rounded-lg font-medium transition-colors disabled:opacity-50 text-sm"
             >
               <ArrowPathIcon className={`w-4 h-4 ${syncing ? "animate-spin" : ""}`} />
               {syncing ? "Syncing from GHL…" : "Sync from GHL"}
@@ -492,12 +492,12 @@ function MembersPageInner() {
 
       {/* Notifications */}
       {!isEditorRole && syncResult && (
-        <div className={`text-sm px-4 py-3 rounded-lg ${syncResult.startsWith("Error") || syncResult.startsWith("Sync failed") ? "bg-red-50 text-red-700" : "bg-[#6ba3c7]/10 text-[#2f3437]"}`}>
+        <div className={`text-sm px-4 py-3 rounded-lg ${syncResult.startsWith("Error") || syncResult.startsWith("Sync failed") ? "bg-red-50 text-red-700" : "bg-[var(--abv-dark)]/10 text-[var(--abv-text)]"}`}>
           {syncResult}
         </div>
       )}
       {!isEditorRole && refreshMsg && (
-        <div className="text-sm px-4 py-3 rounded-lg bg-[#6ba3c7]/10 text-[#2f3437]">{refreshMsg}</div>
+        <div className="text-sm px-4 py-3 rounded-lg bg-[var(--abv-dark)]/10 text-[var(--abv-text)]">{refreshMsg}</div>
       )}
       {!isEditorRole && flaggedInactive.length > 0 && (
         <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
@@ -529,7 +529,7 @@ function MembersPageInner() {
           {/* Videos This Week */}
           <div className={`${card} p-4 flex flex-col justify-between h-[100px]`}>
             <div className="flex items-center gap-1.5">
-              <VideoCameraIcon className="w-4 h-4 text-[#6ba3c7] shrink-0" />
+              <VideoCameraIcon className="w-4 h-4 text-[var(--abv-azure)] shrink-0" />
               <span className={`text-[10px] uppercase tracking-widest font-semibold ${muted}`}>Videos This Week</span>
             </div>
             <div className={`text-3xl font-bold ${txt}`}>{cards.videosThisWeek}</div>
@@ -545,7 +545,7 @@ function MembersPageInner() {
           {/* Link Clicks */}
           <div className={`${card} p-4 flex flex-col justify-between h-[100px]`}>
             <div className="flex items-center gap-1.5">
-              <CursorArrowRaysIcon className="w-4 h-4 text-[#6ba3c7] shrink-0" />
+              <CursorArrowRaysIcon className="w-4 h-4 text-[var(--abv-azure)] shrink-0" />
               <span className={`text-[10px] uppercase tracking-widest font-semibold ${muted}`}>Link Clicks (7d)</span>
             </div>
             <div className={`text-3xl font-bold ${txt}`}>{cards.linkClicks7d}</div>
@@ -580,8 +580,8 @@ function MembersPageInner() {
               <span className={`ml-2 text-sm font-normal ${muted}`}>({recentVideos.length})</span>
             </span>
             {videosOpen
-              ? <ChevronUpIcon className="w-4 h-4 text-[#2f3437]/40" />
-              : <ChevronDownIcon className="w-4 h-4 text-[#2f3437]/40" />}
+              ? <ChevronUpIcon className="w-4 h-4 text-[var(--abv-text)]/40" />
+              : <ChevronDownIcon className="w-4 h-4 text-[var(--abv-text)]/40" />}
           </button>
           {videosOpen && (
             <div className="px-6 pb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 border-t border-gray-100">
@@ -600,7 +600,7 @@ function MembersPageInner() {
                     <div className="p-3 flex flex-col gap-2 flex-1">
                       <Link
                         href={`/admin/members/${video.user.id}`}
-                        className="text-xs text-[#6ba3c7] hover:text-[#5490b5] hover:underline font-medium truncate"
+                        className="text-xs text-[var(--abv-azure)] hover:text-[var(--abv-azure)] hover:underline font-medium truncate"
                         onClick={(e) => e.stopPropagation()}
                       >
                         {video.user.fullName || "Unknown"}
@@ -621,7 +621,7 @@ function MembersPageInner() {
                           <button
                             onClick={() => handleRunAudit(video)}
                             disabled={runningAudit[video.id]}
-                            className="w-full text-xs bg-[#6ba3c7] hover:bg-[#5490b5] disabled:opacity-60 text-white rounded-lg px-3 py-1.5 transition"
+                            className="w-full text-xs $1var(--abv-dark)$2 hover:bg-black/85 disabled:opacity-60 text-white rounded-lg px-3 py-1.5 transition"
                           >
                             {runningAudit[video.id] ? "Starting…" : "Run Audit"}
                           </button>
@@ -630,7 +630,7 @@ function MembersPageInner() {
                           href={`https://www.youtube.com/watch?v=${video.videoId}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="block text-center text-xs text-[#2f3437]/50 border border-[#2f3437]/12 rounded-lg px-3 py-1.5 hover:text-[#2f3437] hover:border-[#2f3437]/25 hover:bg-gray-50 transition"
+                          className="block text-center text-xs text-[var(--abv-text)]/50 border border-[var(--abv-text)]/12 rounded-lg px-3 py-1.5 hover:text-[var(--abv-text)] hover:border-[var(--abv-text)]/25 hover:bg-gray-50 transition"
                         >
                           View on YouTube ↗
                         </a>
@@ -651,12 +651,12 @@ function MembersPageInner() {
           placeholder="Search by name, email, or YouTube handle…"
           value={search}
           onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-          className="w-full max-w-sm px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6ba3c7] focus:border-transparent outline-none text-[#2f3437] bg-white text-sm"
+          className="w-full max-w-sm px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--abv-azure)] focus:border-transparent outline-none text-[var(--abv-text)] bg-white text-sm"
         />
         <select
           value={tierFilter}
           onChange={(e) => { setTierFilter(e.target.value as TierFilter); setPage(1); }}
-          className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-[#2f3437] bg-white focus:ring-2 focus:ring-[#6ba3c7] focus:border-transparent outline-none"
+          className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-[var(--abv-text)] bg-white focus:ring-2 focus:ring-[var(--abv-azure)] focus:border-transparent outline-none"
         >
           {TIER_FILTERS.map((f) => (
             <option key={f.value} value={f.value}>{f.value === "all" ? "All Tiers" : f.label}</option>
@@ -665,7 +665,7 @@ function MembersPageInner() {
         <select
           value={subFilter}
           onChange={(e) => { setSubFilter(e.target.value as SubFilter); setPage(1); }}
-          className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-[#2f3437] bg-white focus:ring-2 focus:ring-[#6ba3c7] focus:border-transparent outline-none"
+          className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-[var(--abv-text)] bg-white focus:ring-2 focus:ring-[var(--abv-azure)] focus:border-transparent outline-none"
         >
           {SUB_FILTERS.map((f) => (
             <option key={f.value} value={f.value}>{f.value === "all" ? "All Subs" : f.label}</option>
@@ -674,7 +674,7 @@ function MembersPageInner() {
         <select
           value={statusFilter}
           onChange={(e) => { setStatusFilter(e.target.value as StatusFilter); setPage(1); }}
-          className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-[#2f3437] bg-white focus:ring-2 focus:ring-[#6ba3c7] focus:border-transparent outline-none"
+          className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-[var(--abv-text)] bg-white focus:ring-2 focus:ring-[var(--abv-azure)] focus:border-transparent outline-none"
         >
           {STATUS_FILTERS.map((f) => (
             <option key={f.value} value={f.value}>{f.value === "all" ? "All Statuses" : f.label}</option>
@@ -685,16 +685,16 @@ function MembersPageInner() {
       {/* Mobile list */}
       <div className="md:hidden bg-white rounded-lg border border-gray-200 divide-y divide-gray-100">
         {loading ? (
-          <div className="px-4 py-10 text-center text-[#2f3437]/40 text-sm">Loading…</div>
+          <div className="px-4 py-10 text-center text-[var(--abv-text)]/40 text-sm">Loading…</div>
         ) : filtered.length === 0 ? (
-          <div className="px-4 py-10 text-center text-[#2f3437]/40 text-sm">
+          <div className="px-4 py-10 text-center text-[var(--abv-text)]/40 text-sm">
             {members.length === 0 ? "No members yet. Sync from GHL to import." : "No members match your search."}
           </div>
         ) : (
           paginated.map((m) => (
             <Link key={m.id} href={`/admin/members/${m.id}`} className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors">
               <div className="flex items-center gap-2 min-w-0 flex-wrap">
-                <span className="font-medium text-[#2f3437] text-sm truncate">{m.fullName || "—"}</span>
+                <span className="font-medium text-[var(--abv-text)] text-sm truncate">{m.fullName || "—"}</span>
                 <span className="shrink-0">{tierBadge(m.serviceTier)}</span>
               </div>
               <div className="text-right shrink-0 ml-2">
@@ -751,7 +751,7 @@ function MembersPageInner() {
                       <td className="px-4 py-3">
                         <Link href={`/admin/members/${m.id}`} className="flex items-center gap-2">
                           <div className="w-2 h-2 bg-green-500 rounded-full shrink-0" />
-                          <span className={`font-medium ${txt} hover:text-[#6ba3c7] transition-colors`}>{m.fullName || "—"}</span>
+                          <span className={`font-medium ${txt} hover:text-[var(--abv-azure)] transition-colors`}>{m.fullName || "—"}</span>
                         </Link>
                         <div className={`text-xs ${dim} ml-4`}>{m.email}</div>
                       </td>
@@ -769,7 +769,7 @@ function MembersPageInner() {
                               <img
                                 src={m.youtubeChannelThumbnail}
                                 alt={m.youtubeHandle || "YouTube"}
-                                className="w-7 h-7 rounded-full object-cover ring-1 ring-gray-200 hover:ring-[#6ba3c7] transition-all"
+                                className="w-7 h-7 rounded-full object-cover ring-1 ring-gray-200 hover:ring-[var(--abv-azure)] transition-all"
                               />
                             ) : (
                               <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-red-50 hover:bg-red-100 transition-colors">

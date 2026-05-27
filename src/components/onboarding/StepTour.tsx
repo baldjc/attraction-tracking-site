@@ -12,15 +12,15 @@ export default function StepTour({ avatarPath, onFinish }: Props) {
     <div className="space-y-5">
       {/* Roadmap */}
       <div className="mb-8">
-        <h2 className="text-lg font-bold text-[#2f3437] dark:text-[#e2e8f0] mb-1">
+        <h2 className="text-lg font-bold text-[var(--abv-text)] dark:text-[#e2e8f0] mb-1">
           You&apos;re all set — here&apos;s your roadmap
         </h2>
-        <p className="text-sm text-[#2f3437]/60 dark:text-[#94a3b8] mb-6">
+        <p className="text-sm text-[var(--abv-text)]/60 dark:text-[#94a3b8] mb-6">
           Follow these steps in your first week to get the most out of the platform.
         </p>
 
         <div className="relative ml-4">
-          <div className="absolute left-3 top-3 bottom-3 w-0.5 bg-[#6ba3c7]/20" />
+          <div className="absolute left-3 top-3 bottom-3 w-0.5 bg-[var(--abv-dark)]/20" />
 
           {[
             {
@@ -67,28 +67,28 @@ export default function StepTour({ avatarPath, onFinish }: Props) {
             <div
               key={step.num}
               className={`relative flex gap-4 pb-6 last:pb-0 ${
-                step.highlight ? "bg-[#6ba3c7]/5 dark:bg-[#6ba3c7]/10 rounded-lg p-3 -ml-1" : ""
+                step.highlight ? "bg-[var(--abv-dark)]/5 dark:bg-[var(--abv-dark)]/10 rounded-lg p-3 -ml-1" : ""
               }`}
             >
               <div
                 className={`relative z-10 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
                   step.highlight
-                    ? "bg-[#6ba3c7] text-white"
-                    : "bg-white dark:bg-[#1a1a1a] border-2 border-[#6ba3c7]/30 text-[#6ba3c7]"
+                    ? "bg-[var(--abv-dark)] text-white"
+                    : "bg-white dark:bg-[#1a1a1a] border-2 border-[var(--abv-azure)]/30 text-[var(--abv-azure)]"
                 }`}
               >
                 {step.num}
               </div>
               <div className="flex-1 min-w-0 pt-0.5">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-sm font-semibold text-[#2f3437] dark:text-[#e2e8f0]">
+                  <span className="text-sm font-semibold text-[var(--abv-text)] dark:text-[#e2e8f0]">
                     {step.title}
                   </span>
-                  <span className="text-[10px] text-[#2f3437]/40 dark:text-white/30 font-medium">
+                  <span className="text-[10px] text-[var(--abv-text)]/40 dark:text-white/30 font-medium">
                     {step.time}
                   </span>
                 </div>
-                <p className="text-xs text-[#2f3437]/60 dark:text-[#94a3b8] mt-0.5 leading-relaxed">
+                <p className="text-xs text-[var(--abv-text)]/60 dark:text-[#94a3b8] mt-0.5 leading-relaxed">
                   {step.desc}
                 </p>
                 {step.highlight && step.highlightNote && (
@@ -103,13 +103,13 @@ export default function StepTour({ avatarPath, onFinish }: Props) {
       </div>
 
       {/* Kit co-pilot card */}
-      <div className="bg-[#6ba3c7]/5 border border-[#6ba3c7]/20 rounded-xl p-4 flex items-start gap-3">
-        <div className="w-10 h-10 rounded-full bg-[#6ba3c7] flex items-center justify-center shrink-0">
+      <div className="bg-[var(--abv-dark)]/5 border border-[var(--abv-azure)]/20 rounded-xl p-4 flex items-start gap-3">
+        <div className="w-10 h-10 rounded-full bg-[var(--abv-dark)] flex items-center justify-center shrink-0">
           <span className="text-xl leading-none">🤖</span>
         </div>
         <div>
-          <p className="text-sm font-semibold text-[#2f3437] dark:text-white">Meet Kit — your co-pilot</p>
-          <p className="text-xs text-[#2f3437]/50 dark:text-white/40 mt-1 leading-relaxed">
+          <p className="text-sm font-semibold text-[var(--abv-text)] dark:text-white">Meet Kit — your co-pilot</p>
+          <p className="text-xs text-[var(--abv-text)]/50 dark:text-white/40 mt-1 leading-relaxed">
             Tap the 🤖 button in the bottom right corner of any page. Ask Kit anything — where to find things, how tools work, or what to do next.
           </p>
         </div>
@@ -117,7 +117,7 @@ export default function StepTour({ avatarPath, onFinish }: Props) {
 
       <button
         onClick={onFinish}
-        className="w-full bg-[#6ba3c7] hover:bg-[#2bb0ec] text-white font-semibold text-sm py-2.5 rounded-lg transition-colors"
+        className="w-full bg-[var(--abv-dark)] hover:bg-[#2bb0ec] text-white font-semibold text-sm py-2.5 rounded-lg transition-colors"
       >
         {avatarPath === "build_later" ? "Build My Avatar Now" : "Go to Dashboard"}
       </button>

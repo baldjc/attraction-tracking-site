@@ -202,7 +202,7 @@ function CohortBar({
   const total = newV + casual + regular;
   if (total === 0) {
     return (
-      <div className="h-2 w-full overflow-hidden rounded-full bg-[#eaeaea]" />
+      <div className="h-2 w-full overflow-hidden rounded-full bg-[var(--abv-border-strong)]" />
     );
   }
   const n = (newV / total) * 100;
@@ -210,11 +210,11 @@ function CohortBar({
   const r = (regular / total) * 100;
   return (
     <div
-      className="flex h-2 w-full overflow-hidden rounded-full bg-[#eaeaea]"
+      className="flex h-2 w-full overflow-hidden rounded-full bg-[var(--abv-border-strong)]"
       title={`new ${newV} · casual ${casual} · regular ${regular}`}
     >
       <div style={{ width: `${n}%`, backgroundColor: "var(--atbv-warning)" }} />
-      <div style={{ width: `${c}%`, backgroundColor: "var(--atbv-primary, #6ba3c7)" }} />
+      <div style={{ width: `${c}%`, backgroundColor: "var(--atbv-primary, var(--abv-azure))" }} />
       <div style={{ width: `${r}%`, backgroundColor: "var(--atbv-success)" }} />
     </div>
   );
@@ -242,17 +242,17 @@ export default async function ReviewerOverviewPage() {
     <div className="mx-auto max-w-6xl px-2 py-2">
       <div className="mb-6 flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-[#2f3437] dark:text-white">
+          <h1 className="text-2xl font-bold text-[var(--abv-text)] dark:text-white">
             Analytics Reviewer
           </h1>
-          <p className="mt-1 text-sm text-[#787774]">
+          <p className="mt-1 text-sm text-[var(--abv-text-secondary)]">
             {cards.length} channel{cards.length === 1 ? "" : "s"} tracked
           </p>
         </div>
         <div className="flex items-center gap-2">
           <Link
             href="/admin/reviewer/settings"
-            className="rounded-md border border-[#eaeaea] px-3 py-2 text-sm font-medium text-[#2f3437] hover:bg-[#f7f6f3] dark:border-[#2a2a2a] dark:text-white dark:hover:bg-[#222]"
+            className="rounded-md border border-[var(--abv-border-strong)] px-3 py-2 text-sm font-medium text-[var(--abv-text)] hover:bg-[var(--abv-bg)] dark:border-[#2a2a2a] dark:text-white dark:hover:bg-[#222]"
           >
             Settings
           </Link>
@@ -263,7 +263,7 @@ export default async function ReviewerOverviewPage() {
       <TrackedChannelsPanel />
 
       {cards.length === 0 ? (
-        <p className="rounded-xl border border-[#eaeaea] bg-white p-8 text-center text-sm text-[#787774]">
+        <p className="rounded-xl border border-[var(--abv-border-strong)] bg-white p-8 text-center text-sm text-[var(--abv-text-secondary)]">
           No channels tracked yet. Add one in the panel above.
         </p>
       ) : (
@@ -272,7 +272,7 @@ export default async function ReviewerOverviewPage() {
             <Link
               key={c.channelRef}
               href={`/admin/intelligence/clients/${c.id}/reviewer`}
-              className="block rounded-xl border border-[#eaeaea] bg-white p-5 transition-shadow hover:shadow-md dark:border-[#2a2a2a] dark:bg-[#1a1a1a]"
+              className="block rounded-xl border border-[var(--abv-border-strong)] bg-white p-5 transition-shadow hover:shadow-md dark:border-[#2a2a2a] dark:bg-[#1a1a1a]"
               style={{
                 borderRadius: "var(--atbv-radius-lg)",
                 boxShadow: "var(--atbv-shadow-sm)",
@@ -287,13 +287,13 @@ export default async function ReviewerOverviewPage() {
                     className="h-10 w-10 rounded-full object-cover"
                   />
                 ) : (
-                  <div className="h-10 w-10 rounded-full bg-[#eaeaea]" />
+                  <div className="h-10 w-10 rounded-full bg-[var(--abv-border-strong)]" />
                 )}
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold text-[#2f3437] dark:text-white">
+                  <p className="truncate text-sm font-semibold text-[var(--abv-text)] dark:text-white">
                     {c.name}
                   </p>
-                  <p className="truncate font-data text-[10px] text-[#787774]">
+                  <p className="truncate font-data text-[10px] text-[var(--abv-text-secondary)]">
                     {c.channelRef}
                   </p>
                 </div>
@@ -308,28 +308,28 @@ export default async function ReviewerOverviewPage() {
 
               <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
                 <div>
-                  <p className="text-[#787774]">28d views</p>
-                  <p className="font-semibold text-[#2f3437] dark:text-white">
+                  <p className="text-[var(--abv-text-secondary)]">28d views</p>
+                  <p className="font-semibold text-[var(--abv-text)] dark:text-white">
                     {c.views28d.toLocaleString("en-CA")}
                   </p>
                 </div>
                 <div>
-                  <p className="text-[#787774]">28d watch (min)</p>
-                  <p className="font-semibold text-[#2f3437] dark:text-white">
+                  <p className="text-[var(--abv-text-secondary)]">28d watch (min)</p>
+                  <p className="font-semibold text-[var(--abv-text)] dark:text-white">
                     {c.watchTime28d.toLocaleString("en-CA")}
                   </p>
                 </div>
               </div>
 
               <div className="mt-3">
-                <p className="mb-1 text-[10px] uppercase tracking-wider text-[#787774]">
+                <p className="mb-1 text-[10px] uppercase tracking-wider text-[var(--abv-text-secondary)]">
                   Viewer cohorts
                 </p>
                 <CohortBar {...c.cohorts} />
               </div>
 
               <div className="mt-3 flex items-center justify-between text-xs">
-                <span className="text-[#787774]">
+                <span className="text-[var(--abv-text-secondary)]">
                   Active 48h pulses: {c.activePulses}
                 </span>
                 {c.avgGlanceScore !== null && (
@@ -357,13 +357,13 @@ export default async function ReviewerOverviewPage() {
         underperforming.length > 0 ||
         lowGlance.length > 0) && (
         <section
-          className="mt-8 rounded-xl border border-[#eaeaea] bg-white p-6 dark:border-[#2a2a2a] dark:bg-[#1a1a1a]"
+          className="mt-8 rounded-xl border border-[var(--abv-border-strong)] bg-white p-6 dark:border-[#2a2a2a] dark:bg-[#1a1a1a]"
           style={{
             borderRadius: "var(--atbv-radius-lg)",
             boxShadow: "var(--atbv-shadow-sm)",
           }}
         >
-          <h2 className="text-lg font-semibold text-[#2f3437] dark:text-white">
+          <h2 className="text-lg font-semibold text-[var(--abv-text)] dark:text-white">
             Issues across all channels
           </h2>
           <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -407,14 +407,14 @@ function IssueGroup({
         {label} ({channels.length})
       </p>
       {channels.length === 0 ? (
-        <p className="text-xs text-[#787774]">None.</p>
+        <p className="text-xs text-[var(--abv-text-secondary)]">None.</p>
       ) : (
         <ul className="space-y-1">
           {channels.map((c) => (
             <li key={c.channelRef}>
               <Link
                 href={`/admin/intelligence/clients/${c.id}/reviewer`}
-                className="text-sm text-[#2f3437] hover:underline dark:text-white"
+                className="text-sm text-[var(--abv-text)] hover:underline dark:text-white"
               >
                 {c.name}
               </Link>

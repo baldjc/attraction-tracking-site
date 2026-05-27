@@ -58,7 +58,7 @@ export default function SavedIdeasPage() {
       {loading && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-44 bg-white border border-[#2f3437]/10 rounded-xl animate-pulse" />
+            <div key={i} className="h-44 bg-white border border-[var(--abv-text)]/10 rounded-xl animate-pulse" />
           ))}
         </div>
       )}
@@ -68,15 +68,15 @@ export default function SavedIdeasPage() {
       )}
 
       {!loading && !error && ideas.length === 0 && (
-        <div className="bg-white border border-[#2f3437]/10 rounded-xl px-6 py-12 text-center">
+        <div className="bg-white border border-[var(--abv-text)]/10 rounded-xl px-6 py-12 text-center">
           <p className="text-3xl mb-3">💡</p>
-          <p className="font-semibold text-[#2f3437] mb-1">No saved ideas yet</p>
-          <p className="text-sm text-[#2f3437]/50 mb-5">
+          <p className="font-semibold text-[var(--abv-text)] mb-1">No saved ideas yet</p>
+          <p className="text-sm text-[var(--abv-text)]/50 mb-5">
             Star ideas in the Content Engine to save them here for later.
           </p>
           <Link
             href="/member/ai-tools/content-engine"
-            className="inline-flex items-center gap-2 bg-[#6ba3c7] hover:bg-[#5490b5] text-white font-semibold px-5 py-2.5 rounded-lg text-sm transition-colors"
+            className="inline-flex items-center gap-2 $1var(--abv-ai-tools)$2 hover:bg-[var(--abv-ai-tools)]/85 text-white font-semibold px-5 py-2.5 rounded-lg text-sm transition-colors"
           >
             Go to Content Engine →
           </Link>
@@ -87,7 +87,7 @@ export default function SavedIdeasPage() {
         <>
           {themes.length > 1 && (
             <div className="flex items-center gap-2 flex-wrap mb-5">
-              <span className="text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wider mr-1">
+              <span className="text-xs font-semibold text-[var(--abv-text)]/50 uppercase tracking-wider mr-1">
                 Filter:
               </span>
               {themes.map((t) => {
@@ -98,8 +98,8 @@ export default function SavedIdeasPage() {
                     onClick={() => toggleTheme(t)}
                     className={`text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${
                       active
-                        ? "bg-[#6ba3c7] border-[#6ba3c7] text-white"
-                        : "bg-white border-[#2f3437]/15 text-[#2f3437]/70 hover:border-[#6ba3c7] hover:text-[#6ba3c7]"
+                        ? "bg-[var(--abv-ai-tools)] border-[var(--abv-ai-tools)] text-white"
+                        : "bg-white border-[var(--abv-text)]/15 text-[var(--abv-text)]/70 hover:border-[var(--abv-ai-tools)] hover:text-[var(--abv-ai-tools)]"
                     }`}
                   >
                     {t}
@@ -109,7 +109,7 @@ export default function SavedIdeasPage() {
               {activeThemes.size > 0 && (
                 <button
                   onClick={() => setActiveThemes(new Set())}
-                  className="text-xs text-[#2f3437]/40 hover:text-[#2f3437] underline"
+                  className="text-xs text-[var(--abv-text)]/40 hover:text-[var(--abv-text)] underline"
                 >
                   Clear
                 </button>
@@ -118,7 +118,7 @@ export default function SavedIdeasPage() {
           )}
 
           {filtered.length === 0 ? (
-            <p className="text-sm text-[#2f3437]/50">No ideas match the selected themes.</p>
+            <p className="text-sm text-[var(--abv-text)]/50">No ideas match the selected themes.</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {filtered.map((idea) => (

@@ -61,14 +61,14 @@ interface NewField {
 function LongTextConfig({ config, onChange }: { config: any; onChange: (c: any) => void }) {
   return (
     <div>
-      <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Rows (default 4)</label>
+      <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Rows (default 4)</label>
       <input
         type="number"
         min={2}
         max={20}
         value={config?.rows ?? 4}
         onChange={(e) => onChange({ ...config, rows: parseInt(e.target.value) || 4 })}
-        className="w-20 px-2 py-1 text-sm border border-gray-200 rounded focus:ring-1 focus:ring-[#6ba3c7] outline-none"
+        className="w-20 px-2 py-1 text-sm border border-gray-200 rounded focus:ring-1 focus:ring-[var(--abv-azure)] outline-none"
       />
     </div>
   );
@@ -95,20 +95,20 @@ function TableConfig({ config, onChange }: { config: any; onChange: (c: any) => 
   return (
     <div className="space-y-3">
       <div>
-        <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Row Count</label>
+        <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Row Count</label>
         <input
           type="number"
           min={1}
           max={30}
           value={rowCount}
           onChange={(e) => onChange({ ...config, rowCount: parseInt(e.target.value) || 3 })}
-          className="w-20 px-2 py-1 text-sm border border-gray-200 rounded focus:ring-1 focus:ring-[#6ba3c7] outline-none"
+          className="w-20 px-2 py-1 text-sm border border-gray-200 rounded focus:ring-1 focus:ring-[var(--abv-azure)] outline-none"
         />
       </div>
       <div>
         <div className="flex items-center justify-between mb-2">
-          <label className="text-xs font-medium text-[#2f3437]/60">Columns</label>
-          <button onClick={addColumn} className="flex items-center gap-1 text-xs text-[#6ba3c7] hover:text-[#5490b5]">
+          <label className="text-xs font-medium text-[var(--abv-text)]/60">Columns</label>
+          <button onClick={addColumn} className="flex items-center gap-1 text-xs text-[var(--abv-azure)] hover:text-[var(--abv-azure)]">
             <PlusIcon className="w-3 h-3" /> Add
           </button>
         </div>
@@ -120,17 +120,17 @@ function TableConfig({ config, onChange }: { config: any; onChange: (c: any) => 
                 value={col.label}
                 onChange={(e) => updateColumn(i, "label", e.target.value)}
                 placeholder="Label"
-                className="flex-1 px-2 py-1 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#6ba3c7] outline-none"
+                className="flex-1 px-2 py-1 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[var(--abv-azure)] outline-none"
               />
               <select
                 value={col.type}
                 onChange={(e) => updateColumn(i, "type", e.target.value)}
-                className="px-2 py-1 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#6ba3c7] outline-none"
+                className="px-2 py-1 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[var(--abv-azure)] outline-none"
               >
                 <option value="text">Text</option>
                 <option value="checkbox">Checkbox</option>
               </select>
-              <button onClick={() => removeColumn(i)} className="text-[#e63946]/60 hover:text-[#e63946]">
+              <button onClick={() => removeColumn(i)} className="text-[var(--abv-crimson)]/60 hover:text-[var(--abv-crimson)]">
                 <XMarkIcon className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -160,29 +160,29 @@ function ChecklistConfig({ config, onChange }: { config: any; onChange: (c: any)
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <label className="text-xs font-medium text-[#2f3437]/60">Items</label>
-        <button onClick={addItem} className="flex items-center gap-1 text-xs text-[#6ba3c7] hover:text-[#5490b5]">
+        <label className="text-xs font-medium text-[var(--abv-text)]/60">Items</label>
+        <button onClick={addItem} className="flex items-center gap-1 text-xs text-[var(--abv-azure)] hover:text-[var(--abv-azure)]">
           <PlusIcon className="w-3 h-3" /> Add Item
         </button>
       </div>
       <div className="space-y-2">
         {items.map((item, i) => (
           <div key={i} className="flex items-center gap-2">
-            <span className="text-xs text-[#2f3437]/30 w-4 shrink-0">{i + 1}.</span>
+            <span className="text-xs text-[var(--abv-text)]/30 w-4 shrink-0">{i + 1}.</span>
             <input
               type="text"
               value={item}
               onChange={(e) => updateItem(i, e.target.value)}
               placeholder="Item text…"
-              className="flex-1 px-2 py-1 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#6ba3c7] outline-none"
+              className="flex-1 px-2 py-1 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[var(--abv-azure)] outline-none"
             />
-            <button onClick={() => removeItem(i)} className="text-[#e63946]/60 hover:text-[#e63946]">
+            <button onClick={() => removeItem(i)} className="text-[var(--abv-crimson)]/60 hover:text-[var(--abv-crimson)]">
               <XMarkIcon className="w-3.5 h-3.5" />
             </button>
           </div>
         ))}
         {items.length === 0 && (
-          <p className="text-xs text-[#2f3437]/30 italic">No items yet. Click "Add Item".</p>
+          <p className="text-xs text-[var(--abv-text)]/30 italic">No items yet. Click "Add Item".</p>
         )}
       </div>
     </div>
@@ -407,14 +407,14 @@ export default function EditLessonPage({ params }: { params: Promise<{ id: strin
   }
 
   const inlineFormContent = (
-    <div className="bg-[#f7f6f3] rounded-lg border border-gray-200 p-4 space-y-3">
+    <div className="bg-[var(--abv-bg)] rounded-lg border border-gray-200 p-4 space-y-3">
       <div className="flex items-center gap-3">
         <div>
-          <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Field Type</label>
+          <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Field Type</label>
           <select
             value={newField.fieldType}
             onChange={(e) => setNewField((f) => ({ ...f, fieldType: e.target.value, config: defaultConfig(e.target.value) }))}
-            className="px-2 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-1 focus:ring-[#6ba3c7] outline-none bg-white"
+            className="px-2 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-1 focus:ring-[var(--abv-azure)] outline-none bg-white"
           >
             {FIELD_TYPES.map((ft) => (
               <option key={ft.value} value={ft.value}>{ft.label}</option>
@@ -422,25 +422,25 @@ export default function EditLessonPage({ params }: { params: Promise<{ id: strin
           </select>
         </div>
         <div className="flex-1">
-          <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Label</label>
+          <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Label</label>
           <input
             type="text"
             value={newField.label}
             onChange={(e) => setNewField((f) => ({ ...f, label: e.target.value }))}
             placeholder="Field label…"
-            className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-1 focus:ring-[#6ba3c7] outline-none bg-white"
+            className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-1 focus:ring-[var(--abv-azure)] outline-none bg-white"
           />
         </div>
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Placeholder Text (optional)</label>
+        <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Placeholder Text (optional)</label>
         <input
           type="text"
           value={newField.placeholderText}
           onChange={(e) => setNewField((f) => ({ ...f, placeholderText: e.target.value }))}
           placeholder="Hint text shown to members…"
-          className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-1 focus:ring-[#6ba3c7] outline-none bg-white"
+          className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-1 focus:ring-[var(--abv-azure)] outline-none bg-white"
         />
       </div>
 
@@ -458,13 +458,13 @@ export default function EditLessonPage({ params }: { params: Promise<{ id: strin
         <button
           onClick={saveField}
           disabled={savingField || !newField.label.trim()}
-          className="px-4 py-1.5 bg-[#6ba3c7] hover:bg-[#5490b5] text-white text-sm font-semibold rounded-lg disabled:opacity-50 transition-colors"
+          className="px-4 py-1.5 $1var(--abv-dark)$2 hover:bg-black/85 text-white text-sm font-semibold rounded-lg disabled:opacity-50 transition-colors"
         >
           {savingField ? "Saving…" : editingFieldId ? "Update Field" : "Add Field"}
         </button>
         <button
           onClick={() => { setAddingField(false); setEditingFieldId(null); }}
-          className="px-4 py-1.5 text-sm text-[#2f3437]/60 hover:text-[#2f3437] transition-colors"
+          className="px-4 py-1.5 text-sm text-[var(--abv-text)]/60 hover:text-[var(--abv-text)] transition-colors"
         >
           Cancel
         </button>
@@ -475,21 +475,21 @@ export default function EditLessonPage({ params }: { params: Promise<{ id: strin
   return (
     <div className="max-w-3xl">
       <div className="flex items-center gap-3 mb-6">
-        <Link href="/admin/academy-manager" className="flex items-center gap-1.5 text-sm text-[#2f3437]/50 hover:text-[#2f3437] transition-colors">
+        <Link href="/admin/academy-manager" className="flex items-center gap-1.5 text-sm text-[var(--abv-text)]/50 hover:text-[var(--abv-text)] transition-colors">
           <ArrowLeftIcon className="w-4 h-4" />
           Academy Manager
         </Link>
-        <span className="text-[#2f3437]/30">/</span>
+        <span className="text-[var(--abv-text)]/30">/</span>
         {sectionTitle && (
           <>
-            <span className="text-sm text-[#2f3437]/50 truncate max-w-[150px]">{sectionTitle}</span>
-            <span className="text-[#2f3437]/30">/</span>
+            <span className="text-sm text-[var(--abv-text)]/50 truncate max-w-[150px]">{sectionTitle}</span>
+            <span className="text-[var(--abv-text)]/30">/</span>
           </>
         )}
-        <span className="text-sm text-[#2f3437] font-medium truncate">Edit Lesson</span>
+        <span className="text-sm text-[var(--abv-text)] font-medium truncate">Edit Lesson</span>
       </div>
 
-      <h1 className="text-xl font-bold text-[#2f3437] mb-6">{form.title || "Edit Lesson"}</h1>
+      <h1 className="text-xl font-bold text-[var(--abv-text)] mb-6">{form.title || "Edit Lesson"}</h1>
 
       {error && <div className="mb-4 bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-lg">{error}</div>}
       {deleteError && <div className="mb-4 bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-lg">{deleteError}</div>}
@@ -497,27 +497,27 @@ export default function EditLessonPage({ params }: { params: Promise<{ id: strin
       <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-5 mb-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-[#2f3437] mb-1.5">Title</label>
+            <label className="block text-sm font-medium text-[var(--abv-text)] mb-1.5">Title</label>
             <input type="text" value={form.title} onChange={(e) => handleTitleChange(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#6ba3c7] focus:border-transparent outline-none" />
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[var(--abv-azure)] focus:border-transparent outline-none" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-[#2f3437] mb-1.5">Slug</label>
+            <label className="block text-sm font-medium text-[var(--abv-text)] mb-1.5">Slug</label>
             <input type="text" value={form.slug}
               onChange={(e) => { setForm((f) => ({ ...f, slug: e.target.value })); setSlugEdited(true); }}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#6ba3c7] focus:border-transparent outline-none font-mono" />
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[var(--abv-azure)] focus:border-transparent outline-none font-mono" />
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[#2f3437] mb-1.5">YouTube URL</label>
+          <label className="block text-sm font-medium text-[var(--abv-text)] mb-1.5">YouTube URL</label>
           <input type="url" value={form.youtubeUrl} onChange={(e) => setForm((f) => ({ ...f, youtubeUrl: e.target.value }))}
             placeholder="https://youtu.be/…"
-            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#6ba3c7] focus:border-transparent outline-none" />
+            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[var(--abv-azure)] focus:border-transparent outline-none" />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[#2f3437] mb-1.5">Description</label>
+          <label className="block text-sm font-medium text-[var(--abv-text)] mb-1.5">Description</label>
           <MarkdownTextarea
             value={form.description}
             onChange={(next) => setForm((f) => ({ ...f, description: next }))}
@@ -528,7 +528,7 @@ export default function EditLessonPage({ params }: { params: Promise<{ id: strin
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[#2f3437] mb-1.5">Key Takeaways</label>
+          <label className="block text-sm font-medium text-[var(--abv-text)] mb-1.5">Key Takeaways</label>
           <MarkdownTextarea
             value={form.keyTakeaways}
             onChange={(next) => setForm((f) => ({ ...f, keyTakeaways: next }))}
@@ -539,7 +539,7 @@ export default function EditLessonPage({ params }: { params: Promise<{ id: strin
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[#2f3437] mb-1.5">Action Items</label>
+          <label className="block text-sm font-medium text-[var(--abv-text)] mb-1.5">Action Items</label>
           <MarkdownTextarea
             value={form.actionItems}
             onChange={(next) => setForm((f) => ({ ...f, actionItems: next }))}
@@ -550,7 +550,7 @@ export default function EditLessonPage({ params }: { params: Promise<{ id: strin
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[#2f3437] mb-2">Principle Tags</label>
+          <label className="block text-sm font-medium text-[var(--abv-text)] mb-2">Principle Tags</label>
           <div className="flex flex-wrap gap-2">
             {PRINCIPLE_SLUGS.map((slug) => {
               const selected = form.principleTags.includes(slug);
@@ -562,7 +562,7 @@ export default function EditLessonPage({ params }: { params: Promise<{ id: strin
                   className={`text-xs px-2.5 py-1 rounded-full font-medium transition-all border ${
                     selected
                       ? `${PRINCIPLE_COLORS[slug]} border-transparent`
-                      : "bg-white border-gray-200 text-[#2f3437]/50 hover:border-gray-300"
+                      : "bg-white border-gray-200 text-[var(--abv-text)]/50 hover:border-gray-300"
                   }`}
                 >
                   {selected && "✓ "}{PRINCIPLE_NAMES[slug]}
@@ -574,57 +574,57 @@ export default function EditLessonPage({ params }: { params: Promise<{ id: strin
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-[#2f3437] mb-1.5">AI Tool Link</label>
+            <label className="block text-sm font-medium text-[var(--abv-text)] mb-1.5">AI Tool Link</label>
             <select
               value={form.aiToolLink}
               onChange={(e) => handleAiToolLinkChange(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#6ba3c7] focus:border-transparent outline-none bg-white"
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[var(--abv-azure)] focus:border-transparent outline-none bg-white"
             >
               {AI_TOOLS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-[#2f3437] mb-1.5">AI Tool Label</label>
+            <label className="block text-sm font-medium text-[var(--abv-text)] mb-1.5">AI Tool Label</label>
             <input type="text" value={form.aiToolLabel}
               onChange={(e) => setForm((f) => ({ ...f, aiToolLabel: e.target.value }))}
               placeholder="e.g. Build Your Avatar"
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#6ba3c7] focus:border-transparent outline-none" />
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[var(--abv-azure)] focus:border-transparent outline-none" />
           </div>
         </div>
 
         <div className="flex items-center gap-3 pt-1 border-t border-gray-100">
           <button
             onClick={() => setForm((f) => ({ ...f, published: !f.published }))}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${form.published ? "bg-[#6ba3c7]" : "bg-gray-200"}`}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${form.published ? "bg-[var(--abv-dark)]" : "bg-gray-200"}`}
           >
             <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${form.published ? "translate-x-6" : "translate-x-1"}`} />
           </button>
-          <span className="text-sm font-medium text-[#2f3437]">
+          <span className="text-sm font-medium text-[var(--abv-text)]">
             {form.published ? "Published" : "Draft"}
           </span>
         </div>
 
         <div className="flex items-center gap-3 pt-2">
           <button onClick={handleSave} disabled={saving}
-            className="px-5 py-2.5 bg-[#6ba3c7] hover:bg-[#5490b5] text-white text-sm font-semibold rounded-lg disabled:opacity-50 transition-colors">
+            className="px-5 py-2.5 $1var(--abv-dark)$2 hover:bg-black/85 text-white text-sm font-semibold rounded-lg disabled:opacity-50 transition-colors">
             {saving ? "Saving…" : saved ? "✓ Saved" : "Save Changes"}
           </button>
           <Link href="/admin/academy-manager"
-            className="px-5 py-2.5 border border-gray-200 text-[#2f3437] text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors">
+            className="px-5 py-2.5 border border-gray-200 text-[var(--abv-text)] text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors">
             Cancel
           </Link>
           <div className="flex-1" />
           {!confirmDelete ? (
             <button onClick={() => setConfirmDelete(true)}
-              className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-[#e63946] hover:bg-red-50 rounded-lg transition-colors">
+              className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-[var(--abv-crimson)] hover:bg-red-50 rounded-lg transition-colors">
               <TrashIcon className="w-4 h-4" />
               Delete
             </button>
           ) : (
             <div className="flex items-center gap-2">
-              <span className="text-xs text-[#e63946] font-medium">Delete this lesson?</span>
+              <span className="text-xs text-[var(--abv-crimson)] font-medium">Delete this lesson?</span>
               <button onClick={() => handleDelete(false)} disabled={deleting}
-                className="px-3 py-1.5 bg-[#e63946] text-white text-xs font-semibold rounded-lg disabled:opacity-50 hover:bg-red-700 transition-colors">
+                className="px-3 py-1.5 bg-[var(--abv-crimson)] text-white text-xs font-semibold rounded-lg disabled:opacity-50 hover:bg-red-700 transition-colors">
                 {deleting ? "…" : "Delete"}
               </button>
               <button onClick={() => handleDelete(true)} disabled={deleting}
@@ -632,7 +632,7 @@ export default function EditLessonPage({ params }: { params: Promise<{ id: strin
                 Force Delete
               </button>
               <button onClick={() => { setConfirmDelete(false); setDeleteError(null); }}
-                className="px-3 py-1.5 text-xs text-[#2f3437]/60 hover:text-[#2f3437] transition-colors">
+                className="px-3 py-1.5 text-xs text-[var(--abv-text)]/60 hover:text-[var(--abv-text)] transition-colors">
                 Cancel
               </button>
             </div>
@@ -642,8 +642,8 @@ export default function EditLessonPage({ params }: { params: Promise<{ id: strin
 
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-base font-semibold text-[#2f3437]">Workbook Fields</h2>
-          <span className="text-xs text-[#2f3437]/40">{fields.length} field{fields.length !== 1 ? "s" : ""}</span>
+          <h2 className="text-base font-semibold text-[var(--abv-text)]">Workbook Fields</h2>
+          <span className="text-xs text-[var(--abv-text)]/40">{fields.length} field{fields.length !== 1 ? "s" : ""}</span>
         </div>
 
         <div className="space-y-2 mb-3">
@@ -661,35 +661,35 @@ export default function EditLessonPage({ params }: { params: Promise<{ id: strin
                   }`}>
                     {FIELD_TYPES.find((t) => t.value === field.fieldType)?.label ?? field.fieldType}
                   </span>
-                  <span className="flex-1 text-sm text-[#2f3437] truncate">{field.label}</span>
+                  <span className="flex-1 text-sm text-[var(--abv-text)] truncate">{field.label}</span>
 
                   <div className="flex items-center gap-0.5 shrink-0">
                     <button onClick={() => moveField(idx, "up")} disabled={idx === 0}
-                      className="p-1 text-[#2f3437]/30 hover:text-[#2f3437] disabled:opacity-20 disabled:cursor-not-allowed">
+                      className="p-1 text-[var(--abv-text)]/30 hover:text-[var(--abv-text)] disabled:opacity-20 disabled:cursor-not-allowed">
                       <ArrowUpIcon className="w-3.5 h-3.5" />
                     </button>
                     <button onClick={() => moveField(idx, "down")} disabled={idx === fields.length - 1}
-                      className="p-1 text-[#2f3437]/30 hover:text-[#2f3437] disabled:opacity-20 disabled:cursor-not-allowed">
+                      className="p-1 text-[var(--abv-text)]/30 hover:text-[var(--abv-text)] disabled:opacity-20 disabled:cursor-not-allowed">
                       <ArrowDownIcon className="w-3.5 h-3.5" />
                     </button>
                     <button onClick={() => startEditField(field)}
-                      className="p-1.5 text-[#2f3437]/50 hover:text-[#6ba3c7] hover:bg-[#6ba3c7]/10 rounded-lg transition-colors">
+                      className="p-1.5 text-[var(--abv-text)]/50 hover:text-[var(--abv-azure)] hover:bg-[var(--abv-dark)]/10 rounded-lg transition-colors">
                       <PencilSquareIcon className="w-3.5 h-3.5" />
                     </button>
                     {confirmDeleteFieldId === field.id ? (
                       <div className="flex items-center gap-1">
                         <button onClick={() => deleteField(field.id)}
-                          className="text-xs text-white bg-[#e63946] px-2 py-1 rounded font-semibold hover:bg-red-700">
+                          className="text-xs text-white bg-[var(--abv-crimson)] px-2 py-1 rounded font-semibold hover:bg-red-700">
                           Delete
                         </button>
                         <button onClick={() => setConfirmDeleteFieldId(null)}
-                          className="text-xs text-[#2f3437]/60 px-1 py-1 hover:text-[#2f3437]">
+                          className="text-xs text-[var(--abv-text)]/60 px-1 py-1 hover:text-[var(--abv-text)]">
                           Cancel
                         </button>
                       </div>
                     ) : (
                       <button onClick={() => setConfirmDeleteFieldId(field.id)}
-                        className="p-1.5 text-[#2f3437]/40 hover:text-[#e63946] hover:bg-red-50 rounded-lg transition-colors">
+                        className="p-1.5 text-[var(--abv-text)]/40 hover:text-[var(--abv-crimson)] hover:bg-red-50 rounded-lg transition-colors">
                         <TrashIcon className="w-3.5 h-3.5" />
                       </button>
                     )}
@@ -700,7 +700,7 @@ export default function EditLessonPage({ params }: { params: Promise<{ id: strin
           ))}
 
           {fields.length === 0 && !addingField && (
-            <div className="py-6 border-2 border-dashed border-gray-100 rounded-lg text-center text-sm text-[#2f3437]/30 italic">
+            <div className="py-6 border-2 border-dashed border-gray-100 rounded-lg text-center text-sm text-[var(--abv-text)]/30 italic">
               No workbook fields yet. Add your first field below.
             </div>
           )}
@@ -711,7 +711,7 @@ export default function EditLessonPage({ params }: { params: Promise<{ id: strin
         ) : (
           <button
             onClick={startAddField}
-            className="flex items-center gap-2 text-sm font-medium text-[#6ba3c7] hover:text-[#5490b5] transition-colors"
+            className="flex items-center gap-2 text-sm font-medium text-[var(--abv-azure)] hover:text-[var(--abv-azure)] transition-colors"
           >
             <PlusIcon className="w-4 h-4" />
             Add Field

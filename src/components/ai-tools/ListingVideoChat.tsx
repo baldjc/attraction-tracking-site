@@ -115,25 +115,25 @@ function OptionCard({
   }
 
   return (
-    <div className="bg-white dark:bg-[#1a1a1a] border border-[#2f3437]/10 dark:border-white/10 rounded-xl p-5 space-y-4">
+    <div className="bg-white dark:bg-[#1a1a1a] border border-[var(--abv-text)]/10 dark:border-white/10 rounded-xl p-5 space-y-4">
       {/* Header */}
       <div className="flex items-start gap-3">
-        <div className="shrink-0 w-9 h-9 rounded-full bg-[#6ba3c7]/10 flex items-center justify-center text-lg">
+        <div className="shrink-0 w-9 h-9 rounded-full bg-[var(--abv-ai-tools)]/10 flex items-center justify-center text-lg">
           {THEME_EMOJI[option.canonicalTheme] ?? "🏠"}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-0.5">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#6ba3c7]">{option.frameworkName}</span>
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#2f3437]/8 dark:bg-white/8 text-[#2f3437]/50 dark:text-white/50 font-medium">
+            <span className="text-xs font-bold uppercase tracking-wider text-[var(--abv-ai-tools)]">{option.frameworkName}</span>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--abv-text)]/8 dark:bg-white/8 text-[var(--abv-text)]/50 dark:text-white/50 font-medium">
               {option.canonicalTheme}
             </span>
           </div>
-          <h3 className="text-sm font-bold text-[#2f3437] dark:text-white leading-snug">{option.workingTitle}</h3>
+          <h3 className="text-sm font-bold text-[var(--abv-text)] dark:text-white leading-snug">{option.workingTitle}</h3>
         </div>
       </div>
 
       {/* Angle */}
-      <p className="text-sm text-[#2f3437]/70 dark:text-white/70 leading-relaxed">{option.angle}</p>
+      <p className="text-sm text-[var(--abv-text)]/70 dark:text-white/70 leading-relaxed">{option.angle}</p>
 
       {/* Shelf life note */}
       <div className="flex items-start gap-2 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/50 rounded-lg px-3 py-2">
@@ -145,7 +145,7 @@ function OptionCard({
       <div>
         <button
           onClick={() => setShowPoints((o) => !o)}
-          className="flex items-center gap-1.5 text-xs font-semibold text-[#2f3437]/60 dark:text-white/60 hover:text-[#6ba3c7] transition-colors"
+          className="flex items-center gap-1.5 text-xs font-semibold text-[var(--abv-text)]/60 dark:text-white/60 hover:text-[var(--abv-ai-tools)] transition-colors"
         >
           {showPoints ? <ChevronUpIcon className="w-3.5 h-3.5" /> : <ChevronDownIcon className="w-3.5 h-3.5" />}
           {showPoints ? "Hide" : "Show"} Talking Points ({option.talkingPoints.length})
@@ -153,8 +153,8 @@ function OptionCard({
         {showPoints && (
           <ol className="mt-2 space-y-1.5">
             {option.talkingPoints.map((pt, i) => (
-              <li key={i} className="flex items-start gap-2 text-xs text-[#2f3437]/70 dark:text-white/70">
-                <span className="text-[#6ba3c7] font-bold shrink-0">{i + 1}.</span>
+              <li key={i} className="flex items-start gap-2 text-xs text-[var(--abv-text)]/70 dark:text-white/70">
+                <span className="text-[var(--abv-ai-tools)] font-bold shrink-0">{i + 1}.</span>
                 <span>{pt}</span>
               </li>
             ))}
@@ -166,35 +166,35 @@ function OptionCard({
       <div>
         <button
           onClick={() => setShowData((o) => !o)}
-          className="flex items-center gap-1.5 text-xs font-semibold text-[#2f3437]/60 dark:text-white/60 hover:text-[#6ba3c7] transition-colors"
+          className="flex items-center gap-1.5 text-xs font-semibold text-[var(--abv-text)]/60 dark:text-white/60 hover:text-[var(--abv-ai-tools)] transition-colors"
         >
           {showData ? <ChevronUpIcon className="w-3.5 h-3.5" /> : <ChevronDownIcon className="w-3.5 h-3.5" />}
           {showData ? "Hide" : "Show"} Data to Find
         </button>
         {showData && (
-          <div className="mt-2 bg-[#f7f6f3] dark:bg-[#0f1419] border border-[#2f3437]/8 dark:border-white/8 rounded-lg px-3 py-2">
-            <p className="text-xs text-[#2f3437]/70 dark:text-white/70 leading-relaxed">{option.dataToFind}</p>
+          <div className="mt-2 bg-[var(--abv-bg)] dark:bg-[#0f1419] border border-[var(--abv-text)]/8 dark:border-white/8 rounded-lg px-3 py-2">
+            <p className="text-xs text-[var(--abv-text)]/70 dark:text-white/70 leading-relaxed">{option.dataToFind}</p>
           </div>
         )}
       </div>
 
       {/* Lead magnet hook */}
       {option.leadMagnetHook && (
-        <div className="flex items-start gap-2 bg-[#6ba3c7]/8 border border-[#6ba3c7]/20 rounded-lg px-3 py-2">
+        <div className="flex items-start gap-2 bg-[var(--abv-ai-tools)]/8 border border-[var(--abv-ai-tools)]/20 rounded-lg px-3 py-2">
           <span className="text-sm">🎁</span>
-          <p className="text-xs text-[#2f3437]/70 dark:text-white/70">{option.leadMagnetHook}</p>
+          <p className="text-xs text-[var(--abv-text)]/70 dark:text-white/70">{option.leadMagnetHook}</p>
         </div>
       )}
 
       {/* Alt titles */}
       {option.titleOptions && option.titleOptions.length > 0 && (
         <div>
-          <p className="text-xs font-semibold text-[#2f3437]/40 dark:text-white/40 uppercase tracking-wider mb-1.5">Alt Titles</p>
+          <p className="text-xs font-semibold text-[var(--abv-text)]/40 dark:text-white/40 uppercase tracking-wider mb-1.5">Alt Titles</p>
           <div className="space-y-1">
             {option.titleOptions.map((t, i) => (
               <div key={i} className="flex items-start gap-2">
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#2f3437]/6 dark:bg-white/6 text-[#2f3437]/50 dark:text-white/40 font-medium shrink-0 mt-0.5">{t.framework}</span>
-                <p className="text-xs text-[#2f3437]/70 dark:text-white/70">{t.title}</p>
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--abv-text)]/6 dark:bg-white/6 text-[var(--abv-text)]/50 dark:text-white/40 font-medium shrink-0 mt-0.5">{t.framework}</span>
+                <p className="text-xs text-[var(--abv-text)]/70 dark:text-white/70">{t.title}</p>
               </div>
             ))}
           </div>
@@ -205,13 +205,13 @@ function OptionCard({
       <div className="flex flex-wrap gap-2 pt-1">
         <button
           onClick={() => onDevelop(option)}
-          className="flex-1 min-w-[120px] py-2 px-3 bg-[#6ba3c7] hover:bg-[#5a8fb3] text-white text-xs font-semibold rounded-lg transition-colors"
+          className="flex-1 min-w-[120px] py-2 px-3 bg-[var(--abv-ai-tools)] hover:bg-[#5a8fb3] text-white text-xs font-semibold rounded-lg transition-colors"
         >
           Develop This One
         </button>
         <button
           onClick={() => onSendToScript(option)}
-          className="flex-1 min-w-[120px] py-2 px-3 border border-[#2f3437]/15 dark:border-white/15 text-[#2f3437] dark:text-white text-xs font-semibold rounded-lg hover:bg-[#2f3437]/5 dark:hover:bg-white/5 transition-colors"
+          className="flex-1 min-w-[120px] py-2 px-3 border border-[var(--abv-text)]/15 dark:border-white/15 text-[var(--abv-text)] dark:text-white text-xs font-semibold rounded-lg hover:bg-[var(--abv-text)]/5 dark:hover:bg-white/5 transition-colors"
         >
           Send to Script Builder
         </button>
@@ -219,7 +219,7 @@ function OptionCard({
           <button
             onClick={handleCalendarSave}
             disabled={calSaving || calSaved}
-            className="py-2 px-3 border border-[#6ba3c7]/30 text-[#6ba3c7] text-xs font-semibold rounded-lg hover:bg-[#6ba3c7]/5 disabled:opacity-50 transition-colors"
+            className="py-2 px-3 border border-[var(--abv-ai-tools)]/30 text-[var(--abv-ai-tools)] text-xs font-semibold rounded-lg hover:bg-[var(--abv-ai-tools)]/5 disabled:opacity-50 transition-colors"
           >
             {calSaved ? "Added to Calendar ✓" : calSaving ? "Adding…" : "📅 Add to Calendar"}
           </button>
@@ -227,7 +227,7 @@ function OptionCard({
         <button
           onClick={handleSave}
           disabled={saving || saved}
-          className="py-2 px-3 border border-[#2f3437]/15 dark:border-white/15 text-[#2f3437]/60 dark:text-white/60 text-xs font-semibold rounded-lg hover:bg-[#2f3437]/5 dark:hover:bg-white/5 disabled:opacity-50 transition-colors"
+          className="py-2 px-3 border border-[var(--abv-text)]/15 dark:border-white/15 text-[var(--abv-text)]/60 dark:text-white/60 text-xs font-semibold rounded-lg hover:bg-[var(--abv-text)]/5 dark:hover:bg-white/5 disabled:opacity-50 transition-colors"
         >
           {saved ? "Saved ✓" : saving ? "Saving…" : "Save to Planner"}
         </button>
@@ -387,7 +387,7 @@ export default function ListingVideoChat({ initialResponse, propertyData, onRese
     <div className="space-y-6">
       {/* Intro text */}
       {displayBefore && (
-        <p className="text-sm text-[#2f3437]/70 dark:text-white/70 leading-relaxed whitespace-pre-wrap">{displayBefore}</p>
+        <p className="text-sm text-[var(--abv-text)]/70 dark:text-white/70 leading-relaxed whitespace-pre-wrap">{displayBefore}</p>
       )}
 
       {/* Options */}
@@ -408,7 +408,7 @@ export default function ListingVideoChat({ initialResponse, propertyData, onRese
           </div>
 
           {displayAfter && (
-            <p className="text-sm text-[#2f3437]/60 dark:text-white/60 leading-relaxed whitespace-pre-wrap">{displayAfter}</p>
+            <p className="text-sm text-[var(--abv-text)]/60 dark:text-white/60 leading-relaxed whitespace-pre-wrap">{displayAfter}</p>
           )}
 
           {/* Regenerate + Reset */}
@@ -416,13 +416,13 @@ export default function ListingVideoChat({ initialResponse, propertyData, onRese
             <button
               onClick={handleRegenerate}
               disabled={regenLoading}
-              className="flex-1 py-2.5 px-4 border border-[#2f3437]/15 dark:border-white/15 text-[#2f3437]/60 dark:text-white/60 text-sm font-medium rounded-lg hover:bg-[#2f3437]/5 dark:hover:bg-white/5 disabled:opacity-50 transition-colors"
+              className="flex-1 py-2.5 px-4 border border-[var(--abv-text)]/15 dark:border-white/15 text-[var(--abv-text)]/60 dark:text-white/60 text-sm font-medium rounded-lg hover:bg-[var(--abv-text)]/5 dark:hover:bg-white/5 disabled:opacity-50 transition-colors"
             >
               {regenLoading ? "Generating…" : "Try Different Angles"}
             </button>
             <button
               onClick={onReset}
-              className="py-2.5 px-4 border border-[#2f3437]/15 dark:border-white/15 text-[#2f3437]/40 dark:text-white/40 text-sm rounded-lg hover:bg-[#2f3437]/5 dark:hover:bg-white/5 transition-colors"
+              className="py-2.5 px-4 border border-[var(--abv-text)]/15 dark:border-white/15 text-[var(--abv-text)]/40 dark:text-white/40 text-sm rounded-lg hover:bg-[var(--abv-text)]/5 dark:hover:bg-white/5 transition-colors"
             >
               Start Over
             </button>
@@ -433,9 +433,9 @@ export default function ListingVideoChat({ initialResponse, propertyData, onRese
       {/* Chat refinement */}
       {selectedOption && (
         <>
-          <div className="bg-[#6ba3c7]/8 border border-[#6ba3c7]/20 rounded-lg px-4 py-3">
-            <p className="text-xs font-semibold text-[#6ba3c7] mb-0.5">Developing</p>
-            <p className="text-sm font-bold text-[#2f3437] dark:text-white">{selectedOption.workingTitle}</p>
+          <div className="bg-[var(--abv-ai-tools)]/8 border border-[var(--abv-ai-tools)]/20 rounded-lg px-4 py-3">
+            <p className="text-xs font-semibold text-[var(--abv-ai-tools)] mb-0.5">Developing</p>
+            <p className="text-sm font-bold text-[var(--abv-text)] dark:text-white">{selectedOption.workingTitle}</p>
           </div>
 
           {/* Message thread */}
@@ -450,11 +450,11 @@ export default function ListingVideoChat({ initialResponse, propertyData, onRese
                 }`}
               >
                 {m.role === "user" ? (
-                  <div className="max-w-sm bg-[#6ba3c7] text-white rounded-xl px-4 py-2.5 text-sm">
+                  <div className="max-w-sm bg-[var(--abv-ai-tools)] text-white rounded-xl px-4 py-2.5 text-sm">
                     {m.content}
                   </div>
                 ) : (
-                  <div className="bg-white dark:bg-[#1a1a1a] border border-[#2f3437]/10 dark:border-white/10 rounded-xl px-4 py-3 text-sm text-[#2f3437] dark:text-white whitespace-pre-wrap leading-relaxed">
+                  <div className="bg-white dark:bg-[#1a1a1a] border border-[var(--abv-text)]/10 dark:border-white/10 rounded-xl px-4 py-3 text-sm text-[var(--abv-text)] dark:text-white whitespace-pre-wrap leading-relaxed">
                     {m.content}
                   </div>
                 )}
@@ -475,12 +475,12 @@ export default function ListingVideoChat({ initialResponse, propertyData, onRese
               }}
               placeholder="Ask for adjustments, alternative titles, more data ideas…"
               rows={2}
-              className="flex-1 bg-white dark:bg-[#0f1419] border border-[#2f3437]/20 dark:border-white/20 rounded-lg px-3 py-2 text-sm text-[#2f3437] dark:text-white placeholder-[#2f3437]/30 dark:placeholder-white/30 resize-none focus:outline-none focus:border-[#6ba3c7] transition-colors"
+              className="flex-1 bg-white dark:bg-[#0f1419] border border-[var(--abv-text)]/20 dark:border-white/20 rounded-lg px-3 py-2 text-sm text-[var(--abv-text)] dark:text-white placeholder-[var(--abv-text)]/30 dark:placeholder-white/30 resize-none focus:outline-none focus:border-[var(--abv-ai-tools)] transition-colors"
             />
             <button
               onClick={handleSendChat}
               disabled={!chatInput.trim() || chatLoading}
-              className="px-4 py-2 bg-[#6ba3c7] hover:bg-[#5a8fb3] disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors self-end"
+              className="px-4 py-2 bg-[var(--abv-ai-tools)] hover:bg-[#5a8fb3] disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors self-end"
             >
               Send
             </button>
@@ -490,19 +490,19 @@ export default function ListingVideoChat({ initialResponse, propertyData, onRese
           <div className="flex gap-2 flex-wrap">
             <button
               onClick={() => handleSendToScript(selectedOption)}
-              className="flex-1 min-w-[140px] py-2 px-3 border border-[#2f3437]/15 dark:border-white/15 text-[#2f3437] dark:text-white text-xs font-semibold rounded-lg hover:bg-[#2f3437]/5 dark:hover:bg-white/5 transition-colors"
+              className="flex-1 min-w-[140px] py-2 px-3 border border-[var(--abv-text)]/15 dark:border-white/15 text-[var(--abv-text)] dark:text-white text-xs font-semibold rounded-lg hover:bg-[var(--abv-text)]/5 dark:hover:bg-white/5 transition-colors"
             >
               Send to Script Builder
             </button>
             <button
               onClick={() => { setSelectedOption(null); setMessages([]); }}
-              className="py-2 px-3 border border-[#2f3437]/15 dark:border-white/15 text-[#2f3437]/50 dark:text-white/50 text-xs rounded-lg hover:bg-[#2f3437]/5 dark:hover:bg-white/5 transition-colors"
+              className="py-2 px-3 border border-[var(--abv-text)]/15 dark:border-white/15 text-[var(--abv-text)]/50 dark:text-white/50 text-xs rounded-lg hover:bg-[var(--abv-text)]/5 dark:hover:bg-white/5 transition-colors"
             >
               ← Back to Options
             </button>
             <button
               onClick={onReset}
-              className="py-2 px-3 border border-[#2f3437]/15 dark:border-white/15 text-[#2f3437]/40 dark:text-white/40 text-xs rounded-lg hover:bg-[#2f3437]/5 dark:hover:bg-white/5 transition-colors"
+              className="py-2 px-3 border border-[var(--abv-text)]/15 dark:border-white/15 text-[var(--abv-text)]/40 dark:text-white/40 text-xs rounded-lg hover:bg-[var(--abv-text)]/5 dark:hover:bg-white/5 transition-colors"
             >
               Start Over
             </button>
@@ -512,7 +512,7 @@ export default function ListingVideoChat({ initialResponse, propertyData, onRese
 
       {/* Fallback if no options parsed */}
       {!options && !displayOptions && (
-        <div className="bg-white dark:bg-[#1a1a1a] border border-[#2f3437]/10 dark:border-white/10 rounded-xl px-4 py-4 text-sm text-[#2f3437] dark:text-white whitespace-pre-wrap leading-relaxed">
+        <div className="bg-white dark:bg-[#1a1a1a] border border-[var(--abv-text)]/10 dark:border-white/10 rounded-xl px-4 py-4 text-sm text-[var(--abv-text)] dark:text-white whitespace-pre-wrap leading-relaxed">
           {displayResponse}
         </div>
       )}

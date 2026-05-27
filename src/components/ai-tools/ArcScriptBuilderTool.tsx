@@ -358,14 +358,14 @@ export default function ArcScriptBuilderTool({ basePath, isAdmin, defaultPlanId 
       <div className="mb-6">
         <Link
           href={basePath}
-          className="inline-flex items-center gap-1.5 text-sm text-[#2f3437]/50 hover:text-[#6ba3c7] transition-colors mb-4"
+          className="inline-flex items-center gap-1.5 text-sm text-[var(--abv-text)]/50 hover:text-[var(--abv-ai-tools)] transition-colors mb-4"
         >
           <ArrowLeftIcon className="w-4 h-4" />
           AI Tools
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-[#2f3437]">ARC Script Builder</h1>
-          <p className="text-sm text-[#2f3437]/60 mt-1">{subtitle}</p>
+          <h1 className="text-2xl font-bold text-[var(--abv-text)]">ARC Script Builder</h1>
+          <p className="text-sm text-[var(--abv-text)]/60 mt-1">{subtitle}</p>
         </div>
       </div>
 
@@ -393,23 +393,23 @@ export default function ArcScriptBuilderTool({ basePath, isAdmin, defaultPlanId 
 
       {/* Resume draft banner */}
       {draftChecked && draftToResume && phase === "upload" && (
-        <div className="mb-4 bg-[#6ba3c7]/10 border border-[#6ba3c7]/30 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="mb-4 bg-[var(--abv-ai-tools)]/10 border border-[var(--abv-ai-tools)]/30 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <p className="font-semibold text-[#2f3437] text-sm">Resume your script in progress</p>
-            <p className="text-xs text-[#2f3437]/60 mt-0.5">
+            <p className="font-semibold text-[var(--abv-text)] text-sm">Resume your script in progress</p>
+            <p className="text-xs text-[var(--abv-text)]/60 mt-0.5">
               &ldquo;{draftToResume.videoTitle}&rdquo; — last saved {new Date(draftToResume.updatedAt).toLocaleDateString("en-CA", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
             </p>
           </div>
           <div className="flex gap-2 shrink-0">
             <button
               onClick={handleResumeDraft}
-              className="px-3 py-1.5 bg-[#6ba3c7] hover:bg-[#5490b5] text-white text-xs font-medium rounded-md transition-colors"
+              className="px-3 py-1.5 $1var(--abv-ai-tools)$2 hover:bg-[var(--abv-ai-tools)]/85 text-white text-xs font-medium rounded-md transition-colors"
             >
               Resume
             </button>
             <button
               onClick={handleDismissDraft}
-              className="px-3 py-1.5 border border-[#2f3437]/20 text-[#2f3437]/60 hover:text-[#2f3437] text-xs font-medium rounded-md transition-colors"
+              className="px-3 py-1.5 border border-[var(--abv-text)]/20 text-[var(--abv-text)]/60 hover:text-[var(--abv-text)] text-xs font-medium rounded-md transition-colors"
             >
               Start fresh
             </button>
@@ -418,15 +418,15 @@ export default function ArcScriptBuilderTool({ basePath, isAdmin, defaultPlanId 
       )}
 
       {isLocked && phase === "upload" ? (
-        <div className="bg-white border border-[#2f3437]/10 rounded-lg p-8 text-center">
+        <div className="bg-white border border-[var(--abv-text)]/10 rounded-lg p-8 text-center">
           <p className="text-2xl mb-3">🚫</p>
-          <p className="font-semibold text-[#2f3437] mb-1">Monthly limit reached</p>
-          <p className="text-sm text-[#2f3437]/60">
+          <p className="font-semibold text-[var(--abv-text)] mb-1">Monthly limit reached</p>
+          <p className="text-sm text-[var(--abv-text)]/60">
             Your AI usage resets on {usage?.resetsAt}. Come back then to build your next script.
           </p>
         </div>
       ) : phase === "upload" ? (
-        <div className="bg-white border border-[#2f3437]/10 rounded-lg p-6">
+        <div className="bg-white border border-[var(--abv-text)]/10 rounded-lg p-6">
           <ArcScriptUploadPhase
             onStartBuilding={handleStartBuilding}
             isAdmin={isAdmin}
@@ -435,7 +435,7 @@ export default function ArcScriptBuilderTool({ basePath, isAdmin, defaultPlanId 
           />
         </div>
       ) : uploadData ? (
-        <div className="bg-white border border-[#2f3437]/10 rounded-lg p-6" style={{ minHeight: "70vh" }}>
+        <div className="bg-white border border-[var(--abv-text)]/10 rounded-lg p-6" style={{ minHeight: "70vh" }}>
           <ArcScriptChatPhase
             initialData={uploadData}
             onReset={handleReset}

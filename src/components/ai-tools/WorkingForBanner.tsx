@@ -76,22 +76,22 @@ export default function WorkingForBanner() {
   });
 
   return (
-    <div className="mb-6 bg-[#6ba3c7]/8 border border-[#6ba3c7]/20 rounded-lg px-4 py-3">
+    <div className="mb-6 bg-[var(--abv-ai-tools)]/8 border border-[var(--abv-ai-tools)]/20 rounded-lg px-4 py-3">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
-          <UserCircleIcon className="w-4 h-4 text-[#2f3437]/40 shrink-0" />
-          <span className="text-xs text-[#2f3437]/50 font-medium shrink-0">Working for:</span>
+          <UserCircleIcon className="w-4 h-4 text-[var(--abv-text)]/40 shrink-0" />
+          <span className="text-xs text-[var(--abv-text)]/50 font-medium shrink-0">Working for:</span>
           {impersonate ? (
-            <span className="text-xs font-semibold text-[#2f3437] truncate">{impersonate.memberName}</span>
+            <span className="text-xs font-semibold text-[var(--abv-text)] truncate">{impersonate.memberName}</span>
           ) : (
-            <span className="text-xs text-[#2f3437]/30 italic">No member selected — using your own data</span>
+            <span className="text-xs text-[var(--abv-text)]/30 italic">No member selected — using your own data</span>
           )}
         </div>
 
         <div className="relative shrink-0" ref={dropdownRef}>
           <button
             onClick={() => setShowPicker((s) => !s)}
-            className="flex items-center gap-1.5 text-xs font-semibold text-[#6ba3c7] border border-[#6ba3c7]/30 px-3 py-1.5 rounded-lg hover:bg-[#6ba3c7]/10 transition-colors whitespace-nowrap"
+            className="flex items-center gap-1.5 text-xs font-semibold text-[var(--abv-ai-tools)] border border-[var(--abv-ai-tools)]/30 px-3 py-1.5 rounded-lg hover:bg-[var(--abv-ai-tools)]/10 transition-colors whitespace-nowrap"
           >
             {impersonate ? "Change" : "Select member"}
             <ChevronDownIcon className={`w-3 h-3 transition-transform ${showPicker ? "rotate-180" : ""}`} />
@@ -108,7 +108,7 @@ export default function WorkingForBanner() {
                     placeholder="Search members…"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="w-full pl-6 pr-2 py-1.5 text-xs border border-gray-200 rounded-lg outline-none focus:ring-1 focus:ring-[#6ba3c7]"
+                    className="w-full pl-6 pr-2 py-1.5 text-xs border border-gray-200 rounded-lg outline-none focus:ring-1 focus:ring-[var(--abv-ai-tools)]"
                   />
                 </div>
               </div>
@@ -122,13 +122,13 @@ export default function WorkingForBanner() {
                     <li key={m.id}>
                       <button
                         onClick={() => selectMember(m)}
-                        className={`w-full flex items-center gap-2 px-3 py-2.5 text-left hover:bg-[#6ba3c7]/5 transition-colors ${
+                        className={`w-full flex items-center gap-2 px-3 py-2.5 text-left hover:bg-[var(--abv-ai-tools)]/5 transition-colors ${
                           impersonate?.memberId === m.id ? "bg-amber-50" : ""
                         }`}
                       >
                         <UserCircleIcon className="w-4 h-4 text-gray-400 shrink-0" />
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs font-medium text-[#2f3437] truncate">{m.fullName ?? m.email}</p>
+                          <p className="text-xs font-medium text-[var(--abv-text)] truncate">{m.fullName ?? m.email}</p>
                           {m.fullName && <p className="text-[10px] text-gray-400 truncate">{m.email}</p>}
                         </div>
                         {impersonate?.memberId === m.id && (
@@ -143,7 +143,7 @@ export default function WorkingForBanner() {
                 <div className="p-2 border-t border-gray-100">
                   <button
                     onClick={clearMember}
-                    className="w-full text-xs text-[#2f3437]/50 hover:text-[#2f3437] py-1.5 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="w-full text-xs text-[var(--abv-text)]/50 hover:text-[var(--abv-text)] py-1.5 rounded-lg hover:bg-gray-50 transition-colors"
                   >
                     Clear — use my own data
                   </button>

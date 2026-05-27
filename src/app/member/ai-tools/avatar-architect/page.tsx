@@ -100,14 +100,14 @@ function MarkdownBlock({ content }: { content: string }) {
     }
 
     if (/^---+$/.test(trimmed)) {
-      nodes.push(<hr key={i} className="my-3 border-[#2f3437]/10" />);
+      nodes.push(<hr key={i} className="my-3 border-[var(--abv-text)]/10" />);
       i++;
       continue;
     }
 
     if (trimmed.startsWith("### ")) {
       nodes.push(
-        <h3 key={i} className="text-xs font-bold text-[#2f3437]/50 uppercase tracking-wider mt-4 mb-1">
+        <h3 key={i} className="text-xs font-bold text-[var(--abv-text)]/50 uppercase tracking-wider mt-4 mb-1">
           {renderInline(trimmed.slice(4))}
         </h3>
       );
@@ -117,7 +117,7 @@ function MarkdownBlock({ content }: { content: string }) {
 
     if (trimmed.startsWith("## ")) {
       nodes.push(
-        <h2 key={i} className="text-sm font-bold text-[#2f3437] mt-5 mb-1.5">
+        <h2 key={i} className="text-sm font-bold text-[var(--abv-text)] mt-5 mb-1.5">
           {renderInline(trimmed.slice(3))}
         </h2>
       );
@@ -127,7 +127,7 @@ function MarkdownBlock({ content }: { content: string }) {
 
     if (trimmed.startsWith("# ")) {
       nodes.push(
-        <h1 key={i} className="text-base font-bold text-[#2f3437] mt-2 mb-2">
+        <h1 key={i} className="text-base font-bold text-[var(--abv-text)] mt-2 mb-2">
           {renderInline(trimmed.slice(2))}
         </h1>
       );
@@ -139,7 +139,7 @@ function MarkdownBlock({ content }: { content: string }) {
       const listItems: React.ReactNode[] = [];
       while (i < lines.length && (lines[i].trim().startsWith("- ") || lines[i].trim().startsWith("* "))) {
         listItems.push(
-          <li key={i} className="text-sm text-[#2f3437]/80 leading-relaxed">
+          <li key={i} className="text-sm text-[var(--abv-text)]/80 leading-relaxed">
             {renderInline(lines[i].trim().slice(2))}
           </li>
         );
@@ -154,7 +154,7 @@ function MarkdownBlock({ content }: { content: string }) {
     }
 
     nodes.push(
-      <p key={i} className="text-sm text-[#2f3437]/80 leading-relaxed my-1.5">
+      <p key={i} className="text-sm text-[var(--abv-text)]/80 leading-relaxed my-1.5">
         {renderInline(trimmed)}
       </p>
     );
@@ -259,43 +259,43 @@ function AvatarProfileCard({
 
   if (editing) {
     return (
-      <div className="bg-white border border-[#6ba3c7]/30 rounded-xl overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-3 bg-[#6ba3c7]/5 border-b border-[#6ba3c7]/15">
-          <span className="text-xs font-semibold text-[#6ba3c7] uppercase tracking-wider">Edit Avatar</span>
+      <div className="bg-white border border-[var(--abv-ai-tools)]/30 rounded-xl overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-3 bg-[var(--abv-ai-tools)]/5 border-b border-[var(--abv-ai-tools)]/15">
+          <span className="text-xs font-semibold text-[var(--abv-ai-tools)] uppercase tracking-wider">Edit Avatar</span>
           <div className="flex items-center gap-2">
             {toast && <span className="text-xs text-green-600 font-medium">{toast}</span>}
-            <button onClick={cancelEdit} disabled={saving} className="text-xs text-[#2f3437]/50 hover:text-[#2f3437] transition-colors">Cancel</button>
-            <button onClick={save} disabled={saving} className="px-3 py-1.5 bg-[#6ba3c7] text-white text-xs font-semibold rounded-lg hover:bg-[#6ba3c7]/90 disabled:opacity-50 transition-colors">
+            <button onClick={cancelEdit} disabled={saving} className="text-xs text-[var(--abv-text)]/50 hover:text-[var(--abv-text)] transition-colors">Cancel</button>
+            <button onClick={save} disabled={saving} className="px-3 py-1.5 bg-[var(--abv-ai-tools)] text-white text-xs font-semibold rounded-lg hover:bg-[var(--abv-ai-tools)]/90 disabled:opacity-50 transition-colors">
               {saving ? "Saving…" : "Save Changes"}
             </button>
           </div>
         </div>
         <div className="p-4 space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wider mb-1.5">Avatar Name</label>
+            <label className="block text-xs font-semibold text-[var(--abv-text)]/50 uppercase tracking-wider mb-1.5">Avatar Name</label>
             <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Sarah the Suburban Mover"
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40" />
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-[var(--abv-text)] focus:outline-none focus:ring-2 focus:ring-[var(--abv-ai-tools)]/40" />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wider mb-1.5">Avatar Description</label>
+            <label className="block text-xs font-semibold text-[var(--abv-text)]/50 uppercase tracking-wider mb-1.5">Avatar Description</label>
             <MarkdownTextarea value={summary} onChange={setSummary} rows={4}
               placeholder="A description of your avatar's situation, fears, and goals…"
               ariaLabel="Avatar Description" />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wider mb-2">Content Themes <span className="font-normal text-[#2f3437]/35">({themes.length}/{MAX_THEMES})</span></label>
+            <label className="block text-xs font-semibold text-[var(--abv-text)]/50 uppercase tracking-wider mb-2">Content Themes <span className="font-normal text-[var(--abv-text)]/35">({themes.length}/{MAX_THEMES})</span></label>
             <div className="space-y-4 mb-3">
               {themes.map((t, i) => (
-                <div key={i} className="border border-[#6ba3c7]/20 rounded-lg overflow-hidden">
-                  <div className="flex items-center gap-2 px-3 py-2 bg-[#6ba3c7]/5">
-                    <span className="w-6 h-6 rounded-full bg-[#6ba3c7]/10 text-[#6ba3c7] text-xs font-bold flex items-center justify-center shrink-0">{i + 1}</span>
-                    <span className="flex-1 px-3 py-1.5 text-sm font-medium text-[#2f3437]">
+                <div key={i} className="border border-[var(--abv-ai-tools)]/20 rounded-lg overflow-hidden">
+                  <div className="flex items-center gap-2 px-3 py-2 bg-[var(--abv-ai-tools)]/5">
+                    <span className="w-6 h-6 rounded-full bg-[var(--abv-ai-tools)]/10 text-[var(--abv-ai-tools)] text-xs font-bold flex items-center justify-center shrink-0">{i + 1}</span>
+                    <span className="flex-1 px-3 py-1.5 text-sm font-medium text-[var(--abv-text)]">
                       {CANONICAL_THEMES.find((ct) => ct.name === t.name)?.emoji ?? "📌"} {t.name}
                     </span>
-                    <button onClick={() => removeTheme(i)} className="p-1 text-[#2f3437]/30 hover:text-red-400 transition-colors"><XMarkIcon className="w-4 h-4" /></button>
+                    <button onClick={() => removeTheme(i)} className="p-1 text-[var(--abv-text)]/30 hover:text-red-400 transition-colors"><XMarkIcon className="w-4 h-4" /></button>
                   </div>
                   <div className="px-3 py-2">
-                    <label className="block text-xs text-[#2f3437]/40 mb-1">AI Context &amp; Prompting</label>
+                    <label className="block text-xs text-[var(--abv-text)]/40 mb-1">AI Context &amp; Prompting</label>
                     <MarkdownTextarea value={t.context} onChange={(v: string) => { setThemes((prev) => prev.map((x, j) => j === i ? { ...x, context: v } : x)); }}
                       rows={3}
                       placeholder="Describe the stresses, angles, tone, and content engine prompting for this theme…"
@@ -305,10 +305,10 @@ function AvatarProfileCard({
                     <label className="flex items-start gap-2 cursor-pointer">
                       <input type="checkbox" checked={t.enforceBuySideTitles}
                         onChange={(e) => { const v = e.target.checked; setThemes((prev) => prev.map((x, j) => j === i ? { ...x, enforceBuySideTitles: v } : x)); }}
-                        className="mt-0.5 rounded border-gray-300 text-[#6ba3c7] focus:ring-[#6ba3c7]/40" />
+                        className="mt-0.5 rounded border-gray-300 text-[var(--abv-ai-tools)] focus:ring-[var(--abv-ai-tools)]/40" />
                       <div>
-                        <span className="text-xs font-semibold text-[#2f3437]/60">Enforce buy-side titles for this theme</span>
-                        <p className="text-xs text-[#2f3437]/40 leading-relaxed mt-0.5">Adds the buy-side hard constraint and title validation for this theme only. Use for sell-side or transition themes like The Equity.</p>
+                        <span className="text-xs font-semibold text-[var(--abv-text)]/60">Enforce buy-side titles for this theme</span>
+                        <p className="text-xs text-[var(--abv-text)]/40 leading-relaxed mt-0.5">Adds the buy-side hard constraint and title validation for this theme only. Use for sell-side or transition themes like The Equity.</p>
                       </div>
                     </label>
                   </div>
@@ -332,7 +332,7 @@ function AvatarProfileCard({
                       }]);
                     }
                   }}
-                  className="w-full border border-dashed border-[#6ba3c7]/40 rounded-lg px-3 py-2 text-sm text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40 bg-white"
+                  className="w-full border border-dashed border-[var(--abv-ai-tools)]/40 rounded-lg px-3 py-2 text-sm text-[var(--abv-text)] focus:outline-none focus:ring-2 focus:ring-[var(--abv-ai-tools)]/40 bg-white"
                 >
                   <option value="" disabled>— choose canonical theme —</option>
                   {availableThemes.map((ct) => (
@@ -342,7 +342,7 @@ function AvatarProfileCard({
                   ))}
                 </select>
               ) : themes.length >= MAX_THEMES ? (
-                <p className="text-xs text-[#2f3437]/30 italic py-1">
+                <p className="text-xs text-[var(--abv-text)]/30 italic py-1">
                   Maximum {MAX_THEMES} themes reached
                 </p>
               ) : null;
@@ -402,20 +402,20 @@ function AvatarProfileCard({
       {showRemapModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[#2f3437]/10">
-              <h2 className="text-sm font-bold text-[#2f3437]">Map themes to canonical list</h2>
-              <button onClick={() => setShowRemapModal(false)} className="text-[#2f3437]/40 hover:text-[#2f3437]"><XMarkIcon className="w-5 h-5" /></button>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--abv-text)]/10">
+              <h2 className="text-sm font-bold text-[var(--abv-text)]">Map themes to canonical list</h2>
+              <button onClick={() => setShowRemapModal(false)} className="text-[var(--abv-text)]/40 hover:text-[var(--abv-text)]"><XMarkIcon className="w-5 h-5" /></button>
             </div>
             <div className="px-5 py-4 space-y-3 max-h-[60vh] overflow-y-auto">
-              <p className="text-xs text-[#2f3437]/60 leading-relaxed">Your existing theme prompts will be preserved — only the name/canonical mapping changes.</p>
+              <p className="text-xs text-[var(--abv-text)]/60 leading-relaxed">Your existing theme prompts will be preserved — only the name/canonical mapping changes.</p>
               {(Array.isArray(avatar.contentThemes) ? avatar.contentThemes : []).map((t, i) => (
                 <div key={i} className="flex items-center gap-3">
-                  <span className="text-sm text-[#2f3437]/60 shrink-0 w-40 truncate">{getThemeName(t)}</span>
-                  <span className="text-[#2f3437]/30">→</span>
+                  <span className="text-sm text-[var(--abv-text)]/60 shrink-0 w-40 truncate">{getThemeName(t)}</span>
+                  <span className="text-[var(--abv-text)]/30">→</span>
                   <select
                     value={remapSelections[i] ?? ""}
                     onChange={(e) => setRemapSelections((prev) => ({ ...prev, [i]: e.target.value }))}
-                    className="flex-1 border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40 bg-white"
+                    className="flex-1 border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-[var(--abv-text)] focus:outline-none focus:ring-2 focus:ring-[var(--abv-ai-tools)]/40 bg-white"
                   >
                     <option value="">— choose canonical theme —</option>
                     {CANONICAL_THEMES.map((ct) => (
@@ -425,9 +425,9 @@ function AvatarProfileCard({
                 </div>
               ))}
             </div>
-            <div className="flex items-center justify-end gap-3 px-5 py-4 border-t border-[#2f3437]/10">
-              <button onClick={() => setShowRemapModal(false)} className="text-sm text-[#2f3437]/50 hover:text-[#2f3437]">Cancel</button>
-              <button onClick={saveRemap} disabled={remapSaving} className="px-4 py-2 bg-[#6ba3c7] text-white text-sm font-semibold rounded-lg hover:bg-[#6ba3c7]/90 disabled:opacity-50 transition-colors">
+            <div className="flex items-center justify-end gap-3 px-5 py-4 border-t border-[var(--abv-text)]/10">
+              <button onClick={() => setShowRemapModal(false)} className="text-sm text-[var(--abv-text)]/50 hover:text-[var(--abv-text)]">Cancel</button>
+              <button onClick={saveRemap} disabled={remapSaving} className="px-4 py-2 bg-[var(--abv-ai-tools)] text-white text-sm font-semibold rounded-lg hover:bg-[var(--abv-ai-tools)]/90 disabled:opacity-50 transition-colors">
                 {remapSaving ? "Saving…" : "Confirm Mapping"}
               </button>
             </div>
@@ -435,25 +435,25 @@ function AvatarProfileCard({
         </div>
       )}
       {/* Identity card */}
-      <div className="bg-white border border-[#2f3437]/10 rounded-xl overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-2.5 bg-[#f7f6f3] border-b border-[#2f3437]/8">
-          <span className="text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wider">Client Avatar</span>
+      <div className="bg-white border border-[var(--abv-text)]/10 rounded-xl overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-2.5 bg-[var(--abv-bg)] border-b border-[var(--abv-text)]/8">
+          <span className="text-xs font-semibold text-[var(--abv-text)]/50 uppercase tracking-wider">Client Avatar</span>
           <div className="flex items-center gap-2">
             {toast && <span className="text-xs text-green-600 font-medium">{toast}</span>}
-            {lastUpdated && <span className="text-xs text-[#2f3437]/30">Updated {lastUpdated}</span>}
-            <button onClick={startEdit} className="flex items-center gap-1 text-xs text-[#6ba3c7] hover:text-[#6ba3c7]/70 font-medium transition-colors">
+            {lastUpdated && <span className="text-xs text-[var(--abv-text)]/30">Updated {lastUpdated}</span>}
+            <button onClick={startEdit} className="flex items-center gap-1 text-xs text-[var(--abv-ai-tools)] hover:text-[var(--abv-ai-tools)]/70 font-medium transition-colors">
               <PencilIcon className="w-3 h-3" /> Edit
             </button>
           </div>
         </div>
         <div className="px-4 py-3">
           {isEmpty ? (
-            <p className="text-sm text-[#2f3437]/40 italic">No avatar saved yet — start a session below to build one.</p>
+            <p className="text-sm text-[var(--abv-text)]/40 italic">No avatar saved yet — start a session below to build one.</p>
           ) : (
             <div className="space-y-2">
-              <p className="text-lg font-bold text-[#2f3437]">{avatar.avatarName}</p>
+              <p className="text-lg font-bold text-[var(--abv-text)]">{avatar.avatarName}</p>
               {avatar.avatarSummary && (
-                <p className="text-sm text-[#2f3437]/65 leading-relaxed line-clamp-3">{avatar.avatarSummary.replace(/\*\*/g, "")}</p>
+                <p className="text-sm text-[var(--abv-text)]/65 leading-relaxed line-clamp-3">{avatar.avatarSummary.replace(/\*\*/g, "")}</p>
               )}
             </div>
           )}
@@ -461,14 +461,14 @@ function AvatarProfileCard({
       </div>
 
       {/* Content Themes — prominent separate card */}
-      <div className={`border rounded-xl overflow-hidden ${!hasThemes ? "border-amber-300" : "border-[#2f3437]/10"}`}>
-        <div className={`flex items-center justify-between px-4 py-2.5 border-b ${!hasThemes ? "bg-amber-50 border-amber-200" : "bg-[#f7f6f3] border-[#2f3437]/8"}`}>
+      <div className={`border rounded-xl overflow-hidden ${!hasThemes ? "border-amber-300" : "border-[var(--abv-text)]/10"}`}>
+        <div className={`flex items-center justify-between px-4 py-2.5 border-b ${!hasThemes ? "bg-amber-50 border-amber-200" : "bg-[var(--abv-bg)] border-[var(--abv-text)]/8"}`}>
           <div>
-            <span className="text-xs font-semibold text-[#2f3437]/60 uppercase tracking-wider">Content Themes</span>
-            <p className="text-xs text-[#2f3437]/40 mt-0.5">Power the Content Engine with personalised video ideas</p>
+            <span className="text-xs font-semibold text-[var(--abv-text)]/60 uppercase tracking-wider">Content Themes</span>
+            <p className="text-xs text-[var(--abv-text)]/40 mt-0.5">Power the Content Engine with personalised video ideas</p>
           </div>
           {hasThemes && (
-            <button onClick={startEdit} className="flex items-center gap-1 text-xs text-[#6ba3c7] hover:text-[#6ba3c7]/70 font-medium transition-colors">
+            <button onClick={startEdit} className="flex items-center gap-1 text-xs text-[var(--abv-ai-tools)] hover:text-[var(--abv-ai-tools)]/70 font-medium transition-colors">
               <PencilIcon className="w-3 h-3" /> Edit
             </button>
           )}
@@ -481,7 +481,7 @@ function AvatarProfileCard({
             </p>
           </div>
         ) : (
-          <div className="bg-white divide-y divide-[#2f3437]/5">
+          <div className="bg-white divide-y divide-[var(--abv-text)]/5">
             {displayThemes.map((t, i) => {
               const tObj = typeof t === "string" ? null : t;
               const hasPrompt = !!tObj?.content_engine_prompt;
@@ -491,10 +491,10 @@ function AvatarProfileCard({
               return (
                 <div key={i} className="px-4 py-3">
                   <div className="flex items-center gap-3">
-                    <span className="w-6 h-6 rounded-full bg-[#6ba3c7]/10 text-[#6ba3c7] text-xs font-bold flex items-center justify-center shrink-0">
+                    <span className="w-6 h-6 rounded-full bg-[var(--abv-ai-tools)]/10 text-[var(--abv-ai-tools)] text-xs font-bold flex items-center justify-center shrink-0">
                       {i + 1}
                     </span>
-                    <span className="flex-1 text-sm font-medium text-[#2f3437]">
+                    <span className="flex-1 text-sm font-medium text-[var(--abv-text)]">
                       {getThemeEmoji(t) && <span className="mr-1.5">{getThemeEmoji(t)}</span>}
                       {getThemeName(t)}
                     </span>
@@ -503,14 +503,14 @@ function AvatarProfileCard({
                     ) : slotState === "building" ? (
                       <span className="text-xs text-amber-600 font-semibold">In progress</span>
                     ) : (
-                      <span className="text-xs text-[#2f3437]/35 font-medium">Not built yet</span>
+                      <span className="text-xs text-[var(--abv-text)]/35 font-medium">Not built yet</span>
                     )}
                   </div>
                   {slotState === "built" && coreStress && (
-                    <p className="text-xs text-[#2f3437]/50 leading-relaxed mt-1 ml-9 italic line-clamp-2">"{coreStress}"</p>
+                    <p className="text-xs text-[var(--abv-text)]/50 leading-relaxed mt-1 ml-9 italic line-clamp-2">"{coreStress}"</p>
                   )}
                   {slotState === "empty" && whyThisFits && (
-                    <p className="text-xs text-[#2f3437]/40 leading-relaxed mt-1 ml-9 line-clamp-2">{whyThisFits}</p>
+                    <p className="text-xs text-[var(--abv-text)]/40 leading-relaxed mt-1 ml-9 line-clamp-2">{whyThisFits}</p>
                   )}
                 </div>
               );
@@ -1149,30 +1149,30 @@ function AvatarArchitectInner() {
       <div className="max-w-5xl mx-auto">
         {/* Header */}
         <div className="mb-6">
-          <Link href="/member/ai-tools" className="flex items-center gap-1.5 text-xs text-[#2f3437]/50 hover:text-[#6ba3c7] transition-colors mb-3">
+          <Link href="/member/ai-tools" className="flex items-center gap-1.5 text-xs text-[var(--abv-text)]/50 hover:text-[var(--abv-ai-tools)] transition-colors mb-3">
             <ArrowLeftIcon className="w-3.5 h-3.5" />
             Back to AI Tools
           </Link>
-          <h1 className="text-2xl font-bold text-[#2f3437]">🎯 Avatar Architect</h1>
-          <p className="text-sm text-[#2f3437]/60 mt-1">Build your ideal client avatar — it powers every AI tool on this platform</p>
+          <h1 className="text-2xl font-bold text-[var(--abv-text)]">🎯 Avatar Architect</h1>
+          <p className="text-sm text-[var(--abv-text)]/60 mt-1">Build your ideal client avatar — it powers every AI tool on this platform</p>
         </div>
 
         {/* How it works — 2-step instructions */}
-        <div className="mb-6 bg-gradient-to-r from-[#6ba3c7]/5 to-[#6ba3c7]/10 border border-[#6ba3c7]/20 rounded-xl p-5">
-          <p className="text-xs font-semibold text-[#6ba3c7] uppercase tracking-wider mb-3">How it works</p>
+        <div className="mb-6 bg-gradient-to-r from-[var(--abv-ai-tools)]/5 to-[var(--abv-ai-tools)]/10 border border-[var(--abv-ai-tools)]/20 rounded-xl p-5">
+          <p className="text-xs font-semibold text-[var(--abv-ai-tools)] uppercase tracking-wider mb-3">How it works</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="flex gap-3">
-              <span className="w-7 h-7 rounded-full bg-[#6ba3c7] text-white text-sm font-bold flex items-center justify-center shrink-0">1</span>
+              <span className="w-7 h-7 rounded-full bg-[var(--abv-ai-tools)] text-white text-sm font-bold flex items-center justify-center shrink-0">1</span>
               <div>
-                <p className="text-sm font-semibold text-[#2f3437]">Build Your Avatar</p>
-                <p className="text-xs text-[#2f3437]/55 leading-relaxed mt-0.5">Use the AI coach to create a deeply detailed profile of your ideal client — who they are, what stresses them, and how they think.</p>
+                <p className="text-sm font-semibold text-[var(--abv-text)]">Build Your Avatar</p>
+                <p className="text-xs text-[var(--abv-text)]/55 leading-relaxed mt-0.5">Use the AI coach to create a deeply detailed profile of your ideal client — who they are, what stresses them, and how they think.</p>
               </div>
             </div>
             <div className="flex gap-3">
-              <span className="w-7 h-7 rounded-full bg-[#6ba3c7] text-white text-sm font-bold flex items-center justify-center shrink-0">2</span>
+              <span className="w-7 h-7 rounded-full bg-[var(--abv-ai-tools)] text-white text-sm font-bold flex items-center justify-center shrink-0">2</span>
               <div>
-                <p className="text-sm font-semibold text-[#2f3437]">Build Your Themes</p>
-                <p className="text-xs text-[#2f3437]/55 leading-relaxed mt-0.5">Use the Theme Builder to flesh out each of your content themes (up to 4) with the depth the Content Engine needs to generate personalised video ideas.</p>
+                <p className="text-sm font-semibold text-[var(--abv-text)]">Build Your Themes</p>
+                <p className="text-xs text-[var(--abv-text)]/55 leading-relaxed mt-0.5">Use the Theme Builder to flesh out each of your content themes (up to 4) with the depth the Content Engine needs to generate personalised video ideas.</p>
               </div>
             </div>
           </div>
@@ -1186,7 +1186,7 @@ function AvatarArchitectInner() {
           {/* Left — Avatar profile + themes (wider) */}
           <div className="lg:col-span-3">
             {avatarLoading ? (
-              <div className="h-48 bg-white border border-[#2f3437]/10 rounded-xl animate-pulse" />
+              <div className="h-48 bg-white border border-[var(--abv-text)]/10 rounded-xl animate-pulse" />
             ) : (
               <AvatarProfileCard avatar={savedAvatar ?? {}} onChange={setSavedAvatar} />
             )}
@@ -1195,36 +1195,36 @@ function AvatarArchitectInner() {
           {/* Right — Actions + Recent */}
           <div className="lg:col-span-2 space-y-4">
             {!avatarLoading && savedAvatar?.avatarName && (
-              <div className="px-4 py-3 bg-[#6ba3c7]/8 border border-[#6ba3c7]/25 rounded-xl text-sm text-[#2f3437]/70 leading-relaxed">
-                You already have an avatar saved (<strong className="text-[#2f3437]">{savedAvatar.avatarName}</strong>). Either option below will let you update it.
+              <div className="px-4 py-3 bg-[var(--abv-ai-tools)]/8 border border-[var(--abv-ai-tools)]/25 rounded-xl text-sm text-[var(--abv-text)]/70 leading-relaxed">
+                You already have an avatar saved (<strong className="text-[var(--abv-text)]">{savedAvatar.avatarName}</strong>). Either option below will let you update it.
               </div>
             )}
 
             <div className="space-y-3">
               <button
                 onClick={startFromScratch}
-                className="group w-full text-left p-5 border-2 border-[#2f3437]/10 hover:border-[#6ba3c7]/50 bg-white hover:bg-[#6ba3c7]/3 rounded-xl transition-all duration-200 hover:shadow-sm"
+                className="group w-full text-left p-5 border-2 border-[var(--abv-text)]/10 hover:border-[var(--abv-ai-tools)]/50 bg-white hover:bg-[var(--abv-ai-tools)]/3 rounded-xl transition-all duration-200 hover:shadow-sm"
               >
                 <div className="flex items-start gap-3">
                   <span className="text-2xl shrink-0">🚀</span>
                   <div>
-                    <p className="font-bold text-[#2f3437] text-sm mb-1 group-hover:text-[#6ba3c7] transition-colors">
+                    <p className="font-bold text-[var(--abv-text)] text-sm mb-1 group-hover:text-[var(--abv-ai-tools)] transition-colors">
                       {savedAvatar?.avatarName ? "Rebuild from Scratch" : "Start from Scratch"}
                     </p>
-                    <p className="text-xs text-[#2f3437]/50 leading-relaxed">Guided coaching conversation — the AI will ask you questions and extract your avatar automatically</p>
+                    <p className="text-xs text-[var(--abv-text)]/50 leading-relaxed">Guided coaching conversation — the AI will ask you questions and extract your avatar automatically</p>
                   </div>
                 </div>
               </button>
 
               <button
                 onClick={() => setScreen("import")}
-                className="group w-full text-left p-5 border-2 border-[#2f3437]/10 hover:border-[#6ba3c7]/50 bg-white hover:bg-[#6ba3c7]/3 rounded-xl transition-all duration-200 hover:shadow-sm"
+                className="group w-full text-left p-5 border-2 border-[var(--abv-text)]/10 hover:border-[var(--abv-ai-tools)]/50 bg-white hover:bg-[var(--abv-ai-tools)]/3 rounded-xl transition-all duration-200 hover:shadow-sm"
               >
                 <div className="flex items-start gap-3">
                   <span className="text-2xl shrink-0">📋</span>
                   <div>
-                    <p className="font-bold text-[#2f3437] text-sm mb-1 group-hover:text-[#6ba3c7] transition-colors">I Have an Existing Avatar</p>
-                    <p className="text-xs text-[#2f3437]/50 leading-relaxed">Paste in notes, docs, or bullet points — the AI will structure it and fill in the gaps</p>
+                    <p className="font-bold text-[var(--abv-text)] text-sm mb-1 group-hover:text-[var(--abv-ai-tools)] transition-colors">I Have an Existing Avatar</p>
+                    <p className="text-xs text-[var(--abv-text)]/50 leading-relaxed">Paste in notes, docs, or bullet points — the AI will structure it and fill in the gaps</p>
                   </div>
                 </div>
               </button>
@@ -1245,10 +1245,10 @@ function AvatarArchitectInner() {
         {!avatarLoading && savedAvatar?.avatarName && Array.isArray(savedAvatar.contentThemes) && savedAvatar.contentThemes.length > 0 && (
           <div className="mt-8">
             <div className="flex items-center gap-3 mb-4">
-              <span className="w-7 h-7 rounded-full bg-[#6ba3c7] text-white text-sm font-bold flex items-center justify-center shrink-0">2</span>
+              <span className="w-7 h-7 rounded-full bg-[var(--abv-ai-tools)] text-white text-sm font-bold flex items-center justify-center shrink-0">2</span>
               <div>
-                <h2 className="text-lg font-bold text-[#2f3437]">Theme Builder</h2>
-                <p className="text-xs text-[#2f3437]/55">Select a theme below to build out its depth with the AI coach — stresses, angles, tone, and Content Engine prompts.</p>
+                <h2 className="text-lg font-bold text-[var(--abv-text)]">Theme Builder</h2>
+                <p className="text-xs text-[var(--abv-text)]/55">Select a theme below to build out its depth with the AI coach — stresses, angles, tone, and Content Engine prompts.</p>
               </div>
             </div>
 
@@ -1271,7 +1271,7 @@ function AvatarArchitectInner() {
                     <div
                       key={i}
                       className={`text-left border-2 rounded-xl transition-all duration-200 overflow-hidden ${
-                        isActive ? "border-[#6ba3c7] shadow-sm" : "border-green-200 bg-white hover:border-green-300 hover:shadow-sm"
+                        isActive ? "border-[var(--abv-ai-tools)] shadow-sm" : "border-green-200 bg-white hover:border-green-300 hover:shadow-sm"
                       }`}
                     >
                       {/* Built header */}
@@ -1279,21 +1279,21 @@ function AvatarArchitectInner() {
                         <div className="flex items-center gap-2 mb-2">
                           <span className="w-6 h-6 rounded-full bg-green-100 text-green-700 text-xs font-bold flex items-center justify-center shrink-0">{i + 1}</span>
                           {emoji && <span className="text-base">{emoji}</span>}
-                          <span className="flex-1 text-sm font-semibold text-[#2f3437] leading-tight">{name}</span>
+                          <span className="flex-1 text-sm font-semibold text-[var(--abv-text)] leading-tight">{name}</span>
                           <span className="text-xs text-green-600 font-semibold bg-green-50 border border-green-200 px-2 py-0.5 rounded-full shrink-0">Built ✓</span>
                         </div>
                         {coreStress && (
-                          <p className="text-xs text-[#2f3437]/55 italic leading-relaxed line-clamp-2 mb-2">"{coreStress}"</p>
+                          <p className="text-xs text-[var(--abv-text)]/55 italic leading-relaxed line-clamp-2 mb-2">"{coreStress}"</p>
                         )}
                         {promptPreview && (
-                          <p className="text-xs text-[#2f3437]/40 leading-relaxed line-clamp-2">{promptPreview}…</p>
+                          <p className="text-xs text-[var(--abv-text)]/40 leading-relaxed line-clamp-2">{promptPreview}…</p>
                         )}
                       </div>
                       {/* Built footer actions */}
                       <div className="flex items-center gap-2 px-4 pb-3 pt-1 border-t border-green-100">
                         <button
                           onClick={() => isActive ? setThemeBuilderOpen(null) : startThemeBuilder(i)}
-                          className="text-xs font-semibold text-[#6ba3c7] hover:text-[#4a8ab0] transition-colors"
+                          className="text-xs font-semibold text-[var(--abv-ai-tools)] hover:text-[#4a8ab0] transition-colors"
                         >
                           {isActive ? "Close" : "Edit / Rebuild →"}
                         </button>
@@ -1308,29 +1308,29 @@ function AvatarArchitectInner() {
                     key={i}
                     className={`text-left border-2 rounded-xl transition-all duration-200 overflow-hidden ${
                       isActive
-                        ? "border-[#6ba3c7] bg-[#6ba3c7]/5 shadow-sm"
+                        ? "border-[var(--abv-ai-tools)] bg-[var(--abv-ai-tools)]/5 shadow-sm"
                         : slotState === "building"
-                          ? "border-amber-200 bg-amber-50/30 hover:border-[#6ba3c7]/50 hover:shadow-sm"
-                          : "border-dashed border-[#2f3437]/20 bg-white hover:border-[#6ba3c7]/50 hover:bg-[#6ba3c7]/3 hover:shadow-sm"
+                          ? "border-amber-200 bg-amber-50/30 hover:border-[var(--abv-ai-tools)]/50 hover:shadow-sm"
+                          : "border-dashed border-[var(--abv-text)]/20 bg-white hover:border-[var(--abv-ai-tools)]/50 hover:bg-[var(--abv-ai-tools)]/3 hover:shadow-sm"
                     }`}
                   >
                     {/* Empty/building header */}
                     <div className="px-4 pt-4 pb-3">
                       <div className="flex items-center gap-2 mb-2">
-                        <span className="w-6 h-6 rounded-full bg-[#2f3437]/8 text-[#2f3437]/50 text-xs font-bold flex items-center justify-center shrink-0">{i + 1}</span>
+                        <span className="w-6 h-6 rounded-full bg-[var(--abv-text)]/8 text-[var(--abv-text)]/50 text-xs font-bold flex items-center justify-center shrink-0">{i + 1}</span>
                         {emoji && <span className="text-base">{emoji}</span>}
-                        <span className="flex-1 text-sm font-semibold text-[#2f3437] leading-tight">{name}</span>
+                        <span className="flex-1 text-sm font-semibold text-[var(--abv-text)] leading-tight">{name}</span>
                         {slotState === "building" ? (
                           <span className="text-xs text-amber-600 font-semibold bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full shrink-0">In progress</span>
                         ) : (
-                          <span className="text-xs text-[#2f3437]/35 font-medium bg-[#2f3437]/5 border border-[#2f3437]/10 px-2 py-0.5 rounded-full shrink-0">Not built yet</span>
+                          <span className="text-xs text-[var(--abv-text)]/35 font-medium bg-[var(--abv-text)]/5 border border-[var(--abv-text)]/10 px-2 py-0.5 rounded-full shrink-0">Not built yet</span>
                         )}
                       </div>
                       {coreStress && (
-                        <p className="text-xs text-[#2f3437]/45 italic leading-relaxed line-clamp-2 mb-1.5">"{coreStress}"</p>
+                        <p className="text-xs text-[var(--abv-text)]/45 italic leading-relaxed line-clamp-2 mb-1.5">"{coreStress}"</p>
                       )}
                       {whyThisFits && (
-                        <p className="text-xs text-[#2f3437]/40 leading-relaxed line-clamp-2">{whyThisFits}</p>
+                        <p className="text-xs text-[var(--abv-text)]/40 leading-relaxed line-clamp-2">{whyThisFits}</p>
                       )}
                     </div>
                     {/* Prominent CTA */}
@@ -1339,8 +1339,8 @@ function AvatarArchitectInner() {
                         onClick={() => isActive ? setThemeBuilderOpen(null) : startThemeBuilder(i)}
                         className={`w-full py-2 rounded-lg text-xs font-semibold transition-colors ${
                           isActive
-                            ? "bg-[#6ba3c7]/20 text-[#6ba3c7] hover:bg-[#6ba3c7]/30"
-                            : "bg-[#6ba3c7] text-white hover:bg-[#4a8ab0]"
+                            ? "bg-[var(--abv-ai-tools)]/20 text-[var(--abv-ai-tools)] hover:bg-[var(--abv-ai-tools)]/30"
+                            : "bg-[var(--abv-ai-tools)] text-white hover:bg-[#4a8ab0]"
                         }`}
                       >
                         {isActive ? "Close Builder" : slotState === "building" ? "Continue Building →" : "Build This Theme →"}
@@ -1353,15 +1353,15 @@ function AvatarArchitectInner() {
 
             {/* Theme Builder Chat */}
             {themeBuilderOpen !== null && (
-              <div className="mt-4 border border-[#6ba3c7]/30 rounded-xl overflow-hidden bg-white">
-                <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 bg-[#6ba3c7]/5 border-b border-[#6ba3c7]/15">
+              <div className="mt-4 border border-[var(--abv-ai-tools)]/30 rounded-xl overflow-hidden bg-white">
+                <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 bg-[var(--abv-ai-tools)]/5 border-b border-[var(--abv-ai-tools)]/15">
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-xs font-semibold text-[#6ba3c7] uppercase tracking-wider truncate">
+                    <span className="text-xs font-semibold text-[var(--abv-ai-tools)] uppercase tracking-wider truncate">
                       Building: {getThemeName(savedAvatar.contentThemes[themeBuilderOpen])}
                     </span>
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
-                    <button onClick={() => setThemeBuilderOpen(null)} className="text-xs text-[#2f3437]/50 hover:text-[#2f3437] transition-colors">
+                    <button onClick={() => setThemeBuilderOpen(null)} className="text-xs text-[var(--abv-text)]/50 hover:text-[var(--abv-text)] transition-colors">
                       Close
                     </button>
                   </div>
@@ -1375,7 +1375,7 @@ function AvatarArchitectInner() {
                         className={`max-w-[85%] rounded-lg px-4 py-3 text-sm leading-relaxed ${
                           msg.role === "user"
                             ? "bg-[#111] text-white rounded-tr-sm whitespace-pre-wrap"
-                            : "bg-[#f7f6f3] border border-[#2f3437]/10 text-[#2f3437] rounded-tl-sm"
+                            : "bg-[var(--abv-bg)] border border-[var(--abv-text)]/10 text-[var(--abv-text)] rounded-tl-sm"
                         }`}
                       >
                         {msg.role === "assistant" ? (
@@ -1388,11 +1388,11 @@ function AvatarArchitectInner() {
                   ))}
                   {themeLoading && (
                     <div className="flex justify-start">
-                      <div className="bg-[#f7f6f3] border border-[#2f3437]/10 rounded-lg rounded-tl-sm px-4 py-3">
+                      <div className="bg-[var(--abv-bg)] border border-[var(--abv-text)]/10 rounded-lg rounded-tl-sm px-4 py-3">
                         <div className="flex gap-1.5">
-                          <span className="w-2 h-2 bg-[#6ba3c7]/40 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                          <span className="w-2 h-2 bg-[#6ba3c7]/40 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                          <span className="w-2 h-2 bg-[#6ba3c7]/40 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                          <span className="w-2 h-2 bg-[var(--abv-ai-tools)]/40 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                          <span className="w-2 h-2 bg-[var(--abv-ai-tools)]/40 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                          <span className="w-2 h-2 bg-[var(--abv-ai-tools)]/40 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
                         </div>
                       </div>
                     </div>
@@ -1402,14 +1402,14 @@ function AvatarArchitectInner() {
 
                 {/* Save theme banner */}
                 {pendingThemeData && !themeSaved && (
-                  <div className="mx-4 mb-2 flex items-center justify-between gap-3 bg-[#6ba3c7]/10 border border-[#6ba3c7]/30 rounded-lg p-3">
+                  <div className="mx-4 mb-2 flex items-center justify-between gap-3 bg-[var(--abv-ai-tools)]/10 border border-[var(--abv-ai-tools)]/30 rounded-lg p-3">
                     <div>
-                      <p className="text-sm font-semibold text-[#2f3437]">Theme ready: <strong>{pendingThemeData.name}</strong></p>
-                      <p className="text-xs text-[#2f3437]/55 mt-0.5">Save it to your avatar profile so the Content Engine can use it.</p>
+                      <p className="text-sm font-semibold text-[var(--abv-text)]">Theme ready: <strong>{pendingThemeData.name}</strong></p>
+                      <p className="text-xs text-[var(--abv-text)]/55 mt-0.5">Save it to your avatar profile so the Content Engine can use it.</p>
                     </div>
                     <button
                       onClick={saveThemeData}
-                      className="px-4 py-2 bg-[#6ba3c7] text-white text-xs font-semibold rounded-lg hover:bg-[#6ba3c7]/90 transition-colors shrink-0"
+                      className="px-4 py-2 bg-[var(--abv-ai-tools)] text-white text-xs font-semibold rounded-lg hover:bg-[var(--abv-ai-tools)]/90 transition-colors shrink-0"
                     >
                       Save Theme
                     </button>
@@ -1423,19 +1423,19 @@ function AvatarArchitectInner() {
                 )}
 
                 {/* Input */}
-                <div className="border-t border-[#2f3437]/10 p-3 flex gap-2">
+                <div className="border-t border-[var(--abv-text)]/10 p-3 flex gap-2">
                   <textarea
                     value={themeInput}
                     onChange={(e) => setThemeInput(e.target.value)}
                     onKeyDown={handleThemeKey}
                     rows={2}
                     placeholder="Type your response…"
-                    className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm text-[#2f3437] placeholder-[#2f3437]/30 focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40 resize-none"
+                    className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm text-[var(--abv-text)] placeholder-[var(--abv-text)]/30 focus:outline-none focus:ring-2 focus:ring-[var(--abv-ai-tools)]/40 resize-none"
                   />
                   <button
                     onClick={sendThemeMessage}
                     disabled={!themeInput.trim() || themeLoading}
-                    className="self-end px-4 py-2 bg-[#6ba3c7] text-white text-sm font-semibold rounded-lg hover:bg-[#6ba3c7]/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    className="self-end px-4 py-2 bg-[var(--abv-ai-tools)] text-white text-sm font-semibold rounded-lg hover:bg-[var(--abv-ai-tools)]/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   >
                     Send
                   </button>
@@ -1454,16 +1454,16 @@ function AvatarArchitectInner() {
         <div className="mb-5">
           <Link
             href="/member/ai-tools"
-            className="flex items-center gap-1.5 text-xs text-[#2f3437]/50 hover:text-[#6ba3c7] transition-colors mb-3"
+            className="flex items-center gap-1.5 text-xs text-[var(--abv-text)]/50 hover:text-[var(--abv-ai-tools)] transition-colors mb-3"
           >
             <ArrowLeftIcon className="w-3.5 h-3.5" />
             Back to AI Tools
           </Link>
-          <h1 className="text-2xl font-bold text-[#2f3437]">🎯 Avatar Architect</h1>
-          <p className="text-sm text-[#2f3437]/60 mt-1">Import your existing avatar notes</p>
+          <h1 className="text-2xl font-bold text-[var(--abv-text)]">🎯 Avatar Architect</h1>
+          <p className="text-sm text-[var(--abv-text)]/60 mt-1">Import your existing avatar notes</p>
         </div>
 
-        <p className="text-sm text-[#2f3437]/70 mb-4 leading-relaxed">
+        <p className="text-sm text-[var(--abv-text)]/70 mb-4 leading-relaxed">
           Paste your avatar notes below — this can be a full avatar document, rough notes, bullet points, or anything you&apos;ve already written about your ideal client. The more you give me, the less I&apos;ll need to ask.
         </p>
 
@@ -1478,7 +1478,7 @@ function AvatarArchitectInner() {
         <div className="flex items-center justify-between mt-4">
           <button
             onClick={() => setScreen("landing")}
-            className="flex items-center gap-1.5 text-sm text-[#2f3437]/50 hover:text-[#6ba3c7] transition-colors"
+            className="flex items-center gap-1.5 text-sm text-[var(--abv-text)]/50 hover:text-[var(--abv-ai-tools)] transition-colors"
           >
             <ArrowLeftIcon className="w-4 h-4" />
             Back to options
@@ -1486,7 +1486,7 @@ function AvatarArchitectInner() {
           <button
             onClick={startFromImport}
             disabled={!importText.trim()}
-            className="bg-[#6ba3c7] text-white px-6 py-2.5 rounded-lg text-sm font-semibold hover:bg-[#6ba3c7]/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="bg-[var(--abv-ai-tools)] text-white px-6 py-2.5 rounded-lg text-sm font-semibold hover:bg-[var(--abv-ai-tools)]/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             Start Building →
           </button>
@@ -1500,7 +1500,7 @@ function AvatarArchitectInner() {
       <div className="flex-shrink-0 mb-1">
         <Link
           href={isTestAvatarMode ? "/admin/ai-tools" : "/member/ai-tools"}
-          className="flex items-center gap-1.5 text-xs text-[#2f3437]/50 hover:text-[#6ba3c7] transition-colors"
+          className="flex items-center gap-1.5 text-xs text-[var(--abv-text)]/50 hover:text-[var(--abv-ai-tools)] transition-colors"
         >
           <ArrowLeftIcon className="w-3.5 h-3.5" />
           {isTestAvatarMode ? "Back to Admin AI Tools" : "Back to AI Tools"}
@@ -1521,12 +1521,12 @@ function AvatarArchitectInner() {
 
       <div className="flex items-center justify-between mb-4 flex-shrink-0">
         <div>
-          <h1 className="text-xl font-bold text-[#2f3437]">🎯 Avatar Architect</h1>
-          <p className="text-sm text-[#2f3437]/50">Chat with your AI coach</p>
+          <h1 className="text-xl font-bold text-[var(--abv-text)]">🎯 Avatar Architect</h1>
+          <p className="text-sm text-[var(--abv-text)]/50">Chat with your AI coach</p>
         </div>
         <button
           onClick={() => { setScreen("landing"); setMessages([]); setDetectedAvatar(null); setSaved(false); setConfirmReplace(false); setImportText(""); setChatError(null); setStreamingContent(null); convIdRef.current = null; setConversationId(null); }}
-          className="flex items-center gap-2 text-sm text-[#2f3437]/60 hover:text-[#2f3437] border border-[#2f3437]/20 px-3 py-1.5 rounded-lg transition-colors"
+          className="flex items-center gap-2 text-sm text-[var(--abv-text)]/60 hover:text-[var(--abv-text)] border border-[var(--abv-text)]/20 px-3 py-1.5 rounded-lg transition-colors"
         >
           <ArrowPathIcon className="w-4 h-4" />
           New Session
@@ -1535,18 +1535,18 @@ function AvatarArchitectInner() {
 
       {/* Avatar save banner */}
       {detectedAvatar && !saved && (
-        <div className="flex-shrink-0 mb-3 bg-[#6ba3c7]/10 border border-[#6ba3c7]/30 rounded-lg p-4">
+        <div className="flex-shrink-0 mb-3 bg-[var(--abv-ai-tools)]/10 border border-[var(--abv-ai-tools)]/30 rounded-lg p-4">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="font-semibold text-[#2f3437] text-sm">
+              <p className="font-semibold text-[var(--abv-text)] text-sm">
                 ✅ Avatar ready: <strong>{detectedAvatar.avatar_name}</strong>
               </p>
               {isTestAvatarMode ? (
-                <p className="text-xs text-[#2f3437]/60 mt-0.5">
+                <p className="text-xs text-[var(--abv-text)]/60 mt-0.5">
                   Save as <strong>{testAvatarLabel || `Slot ${testAvatarSlot}`}</strong> in test avatar slot {testAvatarSlot}.
                 </p>
               ) : (
-                <p className="text-xs text-[#2f3437]/60 mt-0.5">Save it to your profile so all AI tools can use it.</p>
+                <p className="text-xs text-[var(--abv-text)]/60 mt-0.5">Save it to your profile so all AI tools can use it.</p>
               )}
               {!isTestAvatarMode && confirmReplace && (
                 <p className="text-xs text-amber-700 mt-1">
@@ -1557,7 +1557,7 @@ function AvatarArchitectInner() {
             <div className="flex items-center gap-2 flex-shrink-0">
               <button
                 onClick={copyAvatar}
-                className="flex items-center gap-1.5 text-xs text-[#2f3437]/60 hover:text-[#2f3437] border border-[#2f3437]/20 px-3 py-1.5 rounded-lg transition-colors"
+                className="flex items-center gap-1.5 text-xs text-[var(--abv-text)]/60 hover:text-[var(--abv-text)] border border-[var(--abv-text)]/20 px-3 py-1.5 rounded-lg transition-colors"
               >
                 {copied ? <CheckIcon className="w-3.5 h-3.5" /> : <ClipboardDocumentIcon className="w-3.5 h-3.5" />}
                 {copied ? "Copied!" : "Copy text"}
@@ -1568,7 +1568,7 @@ function AvatarArchitectInner() {
                 className={`text-xs px-4 py-1.5 rounded-lg font-semibold transition-colors ${
                   !isTestAvatarMode && confirmReplace
                     ? "bg-amber-500 text-white hover:bg-amber-600"
-                    : "bg-[#6ba3c7] text-white hover:bg-[#6ba3c7]/90"
+                    : "bg-[var(--abv-ai-tools)] text-white hover:bg-[var(--abv-ai-tools)]/90"
                 }`}
               >
                 {saving ? "Saving..." : isTestAvatarMode ? "Save Test Avatar" : confirmReplace ? "Yes, Replace" : "Save to My Profile"}
@@ -1610,7 +1610,7 @@ function AvatarArchitectInner() {
               className={`max-w-[80%] rounded-lg px-4 py-3 text-sm leading-relaxed ${
                 msg.role === "user"
                   ? "bg-[#111] text-white rounded-tr-sm whitespace-pre-wrap"
-                  : "bg-white border border-[#2f3437]/10 text-[#2f3437] rounded-tl-sm"
+                  : "bg-white border border-[var(--abv-text)]/10 text-[var(--abv-text)] rounded-tl-sm"
               }`}
             >
               {msg.role === "assistant" ? (
@@ -1623,9 +1623,9 @@ function AvatarArchitectInner() {
         ))}
         {loading && streamingContent !== null && streamingContent.length > 0 && (
           <div className="flex justify-start">
-            <div className="bg-white border border-[#2f3437]/10 rounded-lg rounded-tl-sm px-4 py-3 max-w-[85%] whitespace-pre-wrap text-sm leading-relaxed text-[#2f3437]">
+            <div className="bg-white border border-[var(--abv-text)]/10 rounded-lg rounded-tl-sm px-4 py-3 max-w-[85%] whitespace-pre-wrap text-sm leading-relaxed text-[var(--abv-text)]">
               {streamingContent}
-              <span className="inline-block w-1.5 h-4 bg-[#6ba3c7] ml-0.5 animate-pulse align-middle" />
+              <span className="inline-block w-1.5 h-4 bg-[var(--abv-ai-tools)] ml-0.5 animate-pulse align-middle" />
             </div>
           </div>
         )}
@@ -1651,7 +1651,7 @@ function AvatarArchitectInner() {
       </div>
 
       {/* Input area */}
-      <div className="flex-shrink-0 border-t border-[#2f3437]/10 pt-4">
+      <div className="flex-shrink-0 border-t border-[var(--abv-text)]/10 pt-4">
         <div className="flex gap-3 items-end">
           <textarea
             ref={textareaRef}
@@ -1660,12 +1660,12 @@ function AvatarArchitectInner() {
             onKeyDown={handleKey}
             placeholder="Type your reply... (Enter to send, Shift+Enter for new line)"
             rows={2}
-            className="flex-1 bg-white border border-[#2f3437]/20 rounded-lg px-4 py-3 text-sm text-[#2f3437] placeholder-[#2f3437]/30 resize-none focus:outline-none focus:border-[#6ba3c7] transition-colors"
+            className="flex-1 bg-white border border-[var(--abv-text)]/20 rounded-lg px-4 py-3 text-sm text-[var(--abv-text)] placeholder-[var(--abv-text)]/30 resize-none focus:outline-none focus:border-[var(--abv-ai-tools)] transition-colors"
           />
           <button
             onClick={sendMessage}
             disabled={loading || !input.trim()}
-            className="flex-shrink-0 w-11 h-11 flex items-center justify-center bg-[#6ba3c7] text-white rounded-lg hover:bg-[#6ba3c7]/90 disabled:opacity-40 transition-colors"
+            className="flex-shrink-0 w-11 h-11 flex items-center justify-center bg-[var(--abv-ai-tools)] text-white rounded-lg hover:bg-[var(--abv-ai-tools)]/90 disabled:opacity-40 transition-colors"
           >
             <PaperAirplaneIcon className="w-5 h-5" />
           </button>

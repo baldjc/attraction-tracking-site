@@ -38,17 +38,17 @@ export default function FeatureFlagToggle({
 
   return (
     <div
-      className="mb-6 flex items-center justify-between rounded-xl border border-[#eaeaea] bg-white p-4"
+      className="mb-6 flex items-center justify-between rounded-xl border border-[var(--abv-border-strong)] bg-white p-4"
       style={{
         borderRadius: "var(--atbv-radius-lg)",
         boxShadow: "var(--atbv-shadow-sm)",
       }}
     >
       <div>
-        <p className="text-sm font-semibold text-[#2f3437]">
+        <p className="text-sm font-semibold text-[var(--abv-text)]">
           Analytics Reviewer feature
         </p>
-        <p className="mt-0.5 text-xs text-[#787774]">
+        <p className="mt-0.5 text-xs text-[var(--abv-text-secondary)]">
           Controls visibility of all Reviewer routes and the sidebar section.
         </p>
       </div>

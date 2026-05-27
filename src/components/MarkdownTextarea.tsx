@@ -55,7 +55,7 @@ export default function MarkdownTextarea({
         <button
           type="button"
           onClick={() => setExpanded(true)}
-          className="flex items-center gap-1 text-[11px] px-2 py-0.5 rounded text-[#2f3437]/50 hover:text-[#6ba3c7] hover:bg-[#6ba3c7]/10 transition-colors"
+          className="flex items-center gap-1 text-[11px] px-2 py-0.5 rounded text-[var(--abv-text)]/50 hover:text-[var(--abv-azure)] hover:bg-[var(--abv-dark)]/10 transition-colors"
           title="Open large editor with formatting tools"
           aria-label="Expand editor"
         >
@@ -69,7 +69,7 @@ export default function MarkdownTextarea({
         placeholder={placeholder}
         ariaLabel={ariaLabel}
         hideToolbar
-        className={`${className} relative overflow-auto resize-y block rounded-lg border border-[#eaeaea] bg-white p-4`}
+        className={`${className} relative overflow-auto resize-y block rounded-lg border border-[var(--abv-border-strong)] bg-white p-4`}
         height={`${Math.max(rows, 3) * 1.6}rem`}
       />
 
@@ -82,14 +82,14 @@ export default function MarkdownTextarea({
             className="bg-white rounded-xl shadow-2xl w-full max-w-5xl h-[94vh] flex flex-col overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-[#eaeaea]">
-              <h3 className="text-sm font-semibold text-[#2f3437] truncate">
+            <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-[var(--abv-border-strong)]">
+              <h3 className="text-sm font-semibold text-[var(--abv-text)] truncate">
                 {ariaLabel ?? "Editor"}
               </h3>
               <button
                 type="button"
                 onClick={() => setExpanded(false)}
-                className="p-1.5 rounded hover:bg-[#eaeaea]/60 text-[#2f3437]/60"
+                className="p-1.5 rounded hover:bg-[var(--abv-border-strong)]/60 text-[var(--abv-text)]/60"
                 aria-label="Close expanded editor"
               >
                 <XMarkIcon className="w-5 h-5" />
@@ -105,12 +105,12 @@ export default function MarkdownTextarea({
               />
             </div>
 
-            <div className="flex items-center justify-between gap-3 px-5 py-3 border-t border-[#eaeaea] text-xs text-[#2f3437]/50">
+            <div className="flex items-center justify-between gap-3 px-5 py-3 border-t border-[var(--abv-border-strong)] text-xs text-[var(--abv-text)]/50">
               <span>Esc or click outside to close. Changes save automatically.</span>
               <button
                 type="button"
                 onClick={() => setExpanded(false)}
-                className="px-3 py-1.5 rounded-md bg-[#2f3437] text-white hover:bg-[#2f3437]/90"
+                className="px-3 py-1.5 rounded-md bg-[var(--abv-text)] text-white hover:bg-[var(--abv-text)]/90"
               >
                 Done
               </button>

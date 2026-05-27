@@ -1,134 +1,145 @@
-/* ============================================================
-   Attraction by Video — globals.css (drop-in)
-   Target: Next.js 16 App Router, Tailwind CSS v4
-   Replaces: src/app/globals.css
-   Keeps: existing class-based dark mode, scrollbar-hide utility,
-          print rules, slide-in-right animation.
-   Adds:  one source of truth for color/spacing/radius/shadow
-          tokens, consolidated typography, tightened dark-mode
-          overrides. No breaking changes to Tailwind classnames
-          currently in use.
-   ============================================================ */
-
 @import "tailwindcss";
-
-/* ── Class-based dark mode for dark: Tailwind variants ──────── */
 @custom-variant dark (&:is(.dark *));
 
-/* ── Scrollbar hide utility ─────────────────────────────────── */
 @utility scrollbar-hide {
   scrollbar-width: none;
   -ms-overflow-style: none;
   &::-webkit-scrollbar { display: none; }
 }
 
-/* ============================================================
-   DESIGN TOKENS
-   ============================================================ */
 :root {
-  /* ── Core brand palette ───────────────────────────────────── */
-  --atbv-bg: #f7f6f3;
-  --atbv-surface: #ffffff;
-  --atbv-sidebar: #1e2a38;
-  --atbv-text: #2f3437;
-  --atbv-text-muted: #787774;
-  --atbv-text-dim: rgba(47, 52, 55, 0.4);
-  --atbv-border: #eaeaea;
-  --atbv-hover: #f4f3f0;
-  --atbv-input: #ffffff;
+  /* Surfaces */
+  --abv-bg:           #FAFAF8;
+  --abv-bg-warm:      #F5F4F0;
+  --abv-card:         #FFFFFF;
+  --abv-dark:         #1A1A1A;
 
-  /* ── Accents (per-module identity) ────────────────────────── */
-  --atbv-primary: #6ba3c7;         /* sky — brand primary */
-  --atbv-primary-hover: #5490b5;
-  --atbv-danger: #e63946;          /* alert / Generate Leads */
-  --atbv-success: #10b981;         /* emerald — Academy */
-  --atbv-warning: #f59e0b;         /* amber — My Scores */
-  --atbv-purple: #8b5cf6;          /* Hire a Human */
+  /* Text */
+  --abv-text:           #1A1A1A;
+  --abv-text-secondary: #6B6B6B;
+  --abv-text-muted:     #9B9B9B;
 
-  /* ── Radii ─────────────────────────────────────────────────── */
-  --atbv-radius-sm: 0.375rem;  /* 6  — small buttons, inputs */
-  --atbv-radius-md: 0.5rem;    /* 8  — default */
-  --atbv-radius-lg: 0.75rem;   /* 12 — cards */
-  --atbv-radius-xl: 1rem;      /* 16 — modals */
+  /* Accents */
+  --abv-azure:        #3DC3FF;
+  --abv-azure-tint:   rgba(61, 195, 255, 0.10);
+  --abv-crimson:      var(--abv-crimson);
 
-  /* ── Shadows (near-flat) ───────────────────────────────────── */
-  --atbv-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.03);
-  --atbv-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
-  --atbv-shadow-md: 0 2px 8px rgba(0, 0, 0, 0.08);
-  --atbv-shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.08);
-  --atbv-shadow-xl: 0 12px 32px rgba(0, 0, 0, 0.12);
+  /* Borders */
+  --abv-border:        rgba(0, 0, 0, 0.06);
+  --abv-border-strong: rgba(0, 0, 0, 0.10);
 
-  /* ── Motion ────────────────────────────────────────────────── */
-  --atbv-dur-fast: 150ms;
-  --atbv-dur-base: 200ms;
-  --atbv-dur-slow: 400ms;
+  /* Feature colours (members platform only) */
+  --abv-academy:  var(--abv-academy);
+  --abv-ai-tools: var(--abv-azure);
+  --abv-hire:     var(--abv-hire);
+  --abv-leads:    var(--abv-crimson);
+  --abv-scores:   var(--abv-scores);
+
+  /* Shape */
+  --abv-radius:      8px;
+  --abv-radius-pill: 9999px;
+
+  /* Shadows */
+  --abv-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
+  --abv-shadow-md: 0 8px 30px rgba(0, 0, 0, 0.06);
+  --abv-shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.08);
+
+  /* Motion */
+  --abv-dur-fast: 150ms;
+  --abv-dur-base: 200ms;
+  --abv-dur-slow: 400ms;
+
+  /* Font stacks */
+  --abv-font-display: "Cabinet Grotesk", system-ui, sans-serif;
+  --abv-font-sans:    "Satoshi", system-ui, sans-serif;
+  --abv-font-mono:    var(--font-mono), "Geist Mono", ui-monospace, monospace;
+}
+
+/* Sprint 0.4 — Tailwind v4 reads CSS custom properties via @theme inline.
+   This block exposes the brand tokens as utility-class colors/radii/shadows/fonts
+   so future code can write `bg-abv-dark text-abv-azure rounded-abv shadow-abv-md`
+   instead of the verbose `bg-[var(--abv-dark)]` arbitrary-value form. Both work;
+   clean form is the goal state. */
+@theme inline {
+  --color-abv-bg:               var(--abv-bg);
+  --color-abv-bg-warm:          var(--abv-bg-warm);
+  --color-abv-card:             var(--abv-card);
+  --color-abv-dark:             var(--abv-dark);
+  --color-abv-text:             var(--abv-text);
+  --color-abv-text-secondary:   var(--abv-text-secondary);
+  --color-abv-text-muted:       var(--abv-text-muted);
+  --color-abv-azure:            var(--abv-azure);
+  --color-abv-azure-tint:       var(--abv-azure-tint);
+  --color-abv-crimson:          var(--abv-crimson);
+  --color-abv-border:           var(--abv-border);
+  --color-abv-border-strong:    var(--abv-border-strong);
+  --color-abv-academy:          var(--abv-academy);
+  --color-abv-ai-tools:         var(--abv-ai-tools);
+  --color-abv-hire:             var(--abv-hire);
+  --color-abv-leads:            var(--abv-leads);
+  --color-abv-scores:           var(--abv-scores);
+
+  --radius-abv:                 var(--abv-radius);
+  --radius-abv-pill:            var(--abv-radius-pill);
+
+  --shadow-abv-sm:              var(--abv-shadow-sm);
+  --shadow-abv-md:              var(--abv-shadow-md);
+  --shadow-abv-lg:              var(--abv-shadow-lg);
+
+  --font-display:               var(--abv-font-display);
+  --font-sans:                  var(--abv-font-sans);
+  --font-mono:                  var(--abv-font-mono);
 }
 
 html.dark {
-  --atbv-bg: #0f1419;
-  --atbv-surface: #1a2232;
-  --atbv-sidebar: #0f1419;
-  --atbv-text: #e2e8f0;
-  --atbv-text-muted: #94a3b8;
-  --atbv-text-dim: #64748b;
-  --atbv-border: #2d3748;
-  --atbv-hover: #2d3748;
-  --atbv-input: #2d3748;
+  --abv-bg:    #0F1419;
+  --abv-card:  #1A2232;
+  --abv-text:  #E2E8F0;
+  --abv-text-secondary: #94A3B8;
+  --abv-text-muted:     #64748B;
+  --abv-border:        rgba(255, 255, 255, 0.08);
+  --abv-border-strong: rgba(255, 255, 255, 0.14);
+  --abv-azure:         #5DD0FF;
 }
 
-/* ── Smooth colour transitions everywhere ───────────────────── */
 *, *::before, *::after {
   transition-property: background-color, border-color, color;
-  transition-duration: var(--atbv-dur-base);
+  transition-duration: var(--abv-dur-base);
   transition-timing-function: ease;
 }
 
 body {
-  background-color: var(--atbv-bg);
-  color: var(--atbv-text);
-  font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  background-color: var(--abv-bg);
+  color: var(--abv-text);
+  font-family: var(--abv-font-sans);
 }
 
-/* ============================================================
-   TYPOGRAPHY UTILITIES
-   ============================================================ */
-.font-display {
-  font-family: var(--font-serif), Georgia, "Times New Roman", serif;
-  font-feature-settings: "kern" 1;
-  letter-spacing: -0.02em;
-  font-weight: 400;
+h1, h2, h3, h4, .font-display {
+  font-family: var(--abv-font-display);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.05;
 }
 
-.font-data,
-.tabular-nums {
-  font-family: var(--font-mono), ui-monospace, "SFMono-Regular", "Courier New", monospace;
+.font-data, .tabular-nums, .font-mono {
+  font-family: var(--abv-font-mono);
   font-variant-numeric: tabular-nums;
 }
 
 .eyebrow {
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.1em;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--atbv-text-muted);
+  color: var(--abv-azure);
 }
 
-/* ============================================================
-   ANIMATIONS
-   ============================================================ */
-/*
-  IMPORTANT: Do NOT use transform in fade-in-up. A non-none
-  transform on an ancestor creates a CSS stacking context,
-  trapping position:fixed descendants (modal backdrops) so they
-  position relative to the animated element instead of the
-  viewport. Opacity-only animation avoids this entirely.
-*/
 @keyframes fade-in-up {
   from { opacity: 0; }
   to   { opacity: 1; }
 }
 .animate-fade-in-up {
-  animation: fade-in-up var(--atbv-dur-slow) ease both;
+  animation: fade-in-up var(--abv-dur-slow) ease both;
   animation-delay: calc(var(--index, 0) * 60ms);
 }
 
@@ -137,45 +148,33 @@ body {
   to   { transform: translateX(0);    opacity: 1; }
 }
 .animate-slide-in-right {
-  animation: slide-in-right 0.2s ease-out;
+  animation: slide-in-right var(--abv-dur-base) ease-out;
 }
 
 /* ============================================================
-   DARK-MODE OVERRIDES for hardcoded Tailwind classes
-   (identical to existing globals.css; kept for compat)
+   PRESERVED — Dark-mode overrides for hardcoded Tailwind hexes.
+   These keep older arbitrary-value classes readable in dark mode
+   until they're migrated to brand tokens. Safe to remove once all
+   hex utilities are gone from src/.
    ============================================================ */
-html.dark .bg-white { background-color: var(--atbv-surface) !important; }
-html.dark .bg-\[\#f7f6f3\] { background-color: var(--atbv-bg) !important; }
-html.dark .bg-\[\#f8f9fa\] { background-color: var(--atbv-hover) !important; }
-html.dark .hover\:bg-\[\#f8f9fa\]:hover { background-color: var(--atbv-hover) !important; }
-html.dark .bg-gray-50 { background-color: var(--atbv-hover) !important; }
-html.dark .bg-gray-100 { background-color: var(--atbv-border) !important; }
+html.dark .bg-white { background-color: var(--abv-card) !important; }
+html.dark .bg-\[\var(--abv-bg)\] { background-color: var(--abv-bg) !important; }
+html.dark .bg-\[\#FAFAF8\] { background-color: var(--abv-bg) !important; }
+html.dark .bg-gray-50 { background-color: var(--abv-bg-warm) !important; }
+html.dark .bg-gray-100 { background-color: var(--abv-border-strong) !important; }
 
-html.dark .text-\[\#2f3437\] { color: var(--atbv-text) !important; }
-html.dark .text-\[\#2f3437\]\/80 { color: var(--atbv-text-muted) !important; }
-html.dark .text-\[\#2f3437\]\/70 { color: var(--atbv-text-muted) !important; }
-html.dark .text-\[\#2f3437\]\/60 { color: var(--atbv-text-muted) !important; }
-html.dark .text-\[\#2f3437\]\/50 { color: var(--atbv-text-muted) !important; }
-html.dark .text-\[\#2f3437\]\/40 { color: var(--atbv-text-dim) !important; }
-html.dark .text-\[\#2f3437\]\/30 { color: var(--atbv-text-dim) !important; }
-html.dark .text-\[\#2f3437\]\/20 { color: var(--atbv-text-dim) !important; }
-html.dark .text-gray-400 { color: var(--atbv-text-dim) !important; }
-html.dark .text-gray-500 { color: var(--atbv-text-muted) !important; }
+html.dark .text-\[\var(--abv-text)\] { color: var(--abv-text) !important; }
+html.dark .text-\[\#1A1A1A\] { color: var(--abv-text) !important; }
+html.dark .text-gray-400 { color: var(--abv-text-muted) !important; }
+html.dark .text-gray-500 { color: var(--abv-text-secondary) !important; }
 html.dark .text-gray-600,
 html.dark .text-gray-700,
 html.dark .text-gray-800,
-html.dark .text-gray-900 { color: var(--atbv-text) !important; }
+html.dark .text-gray-900 { color: var(--abv-text) !important; }
 
-html.dark .border-\[\#2f3437\]\/5 { border-color: var(--atbv-border) !important; }
-html.dark .border-\[\#2f3437\]\/10 { border-color: var(--atbv-border) !important; }
-html.dark .border-\[\#2f3437\]\/15 { border-color: var(--atbv-border) !important; }
-html.dark .border-\[\#2f3437\]\/20 { border-color: var(--atbv-border) !important; }
+html.dark .border-\[\var(--abv-border-strong)\] { border-color: var(--abv-border-strong) !important; }
 html.dark .border-gray-100,
-html.dark .border-gray-200,
-html.dark .border-\[\#eaeaea\] { border-color: var(--atbv-border) !important; }
-
-html.dark .divide-\[\#2f3437\]\/5 > * + * { border-color: var(--atbv-border) !important; }
-html.dark .divide-gray-50 > * + * { border-color: var(--atbv-border) !important; }
+html.dark .border-gray-200 { border-color: var(--abv-border) !important; }
 
 /* Inputs & selects */
 html.dark input[type="date"],
@@ -186,14 +185,14 @@ html.dark input[type="search"],
 html.dark input[type="password"],
 html.dark select,
 html.dark textarea {
-  background-color: var(--atbv-input) !important;
-  color: var(--atbv-text) !important;
-  border-color: var(--atbv-border) !important;
+  background-color: var(--abv-card) !important;
+  color: var(--abv-text) !important;
+  border-color: var(--abv-border-strong) !important;
   color-scheme: dark;
 }
 
 /* ============================================================
-   PRINT STYLES
+   PRESERVED — Print styles (unchanged from prior globals.css)
    ============================================================ */
 @media print {
   *, *::before, *::after {
@@ -206,7 +205,7 @@ html.dark textarea {
 
   body {
     background: #fff !important;
-    color: #2f3437 !important;
+    color: var(--abv-text) !important;
     font-size: 11pt;
   }
 
@@ -226,7 +225,7 @@ html.dark textarea {
     text-align: center;
     font-size: 14pt;
     font-weight: bold;
-    color: #2f3437;
+    color: var(--abv-text);
     margin-bottom: 8pt;
   }
 
@@ -240,9 +239,11 @@ html.dark textarea {
   }
 }
 
-/* ───────────────────────────────────────── */
-/* AI Thinking Indicator (Wave 0.5)         */
-/* ───────────────────────────────────────── */
+/* ============================================================
+   PRESERVED — AI Thinking Indicator (Wave 0.5)
+   Uses its own --ai-thinking-primary variable; non-conflicting
+   with brand tokens. Kept verbatim.
+   ============================================================ */
 
 :root {
   --ai-thinking-primary: #6ba3c7;

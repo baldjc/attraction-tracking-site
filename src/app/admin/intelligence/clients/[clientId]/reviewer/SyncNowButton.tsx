@@ -35,11 +35,11 @@ export default function SyncNowButton({ channelId }: { channelId: string }) {
         onClick={handle}
         disabled={busy}
         className="rounded-md px-3 py-2 text-sm font-semibold text-white transition-opacity disabled:opacity-50"
-        style={{ backgroundColor: "var(--atbv-primary, #2f3437)" }}
+        style={{ backgroundColor: "var(--atbv-primary, var(--abv-text))" }}
       >
         {busy ? "Syncing…" : "Sync now"}
       </button>
-      {msg && <p className="mt-2 text-xs text-[#787774]">{msg}</p>}
+      {msg && <p className="mt-2 text-xs text-[var(--abv-text-secondary)]">{msg}</p>}
     </div>
   );
 }

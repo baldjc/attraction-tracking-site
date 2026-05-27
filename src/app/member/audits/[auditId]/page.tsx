@@ -54,13 +54,13 @@ const LEARNING_PATH: Record<string, string> = {
 function scoreBg(score: number) {
   if (score >= 7) return "bg-green-100 text-green-700";
   if (score >= 5) return "bg-yellow-100 text-yellow-700";
-  return "bg-red-100 text-[#ff0033]";
+  return "bg-red-100 text-[var(--abv-crimson)]";
 }
 
 function scoreText(score: number) {
   if (score >= 7) return "text-green-600";
   if (score >= 5) return "text-yellow-600";
-  return "text-[#ff0033]";
+  return "text-[var(--abv-crimson)]";
 }
 
 function fmt(date: string) {
@@ -106,8 +106,8 @@ export default function MemberAuditReportPage() {
       .catch(() => {});
   }, []);
 
-  if (loading) return <div className="flex items-center justify-center h-64 text-[#2f3437]/40">Loading report…</div>;
-  if (!audit) return <div className="text-center py-20 text-[#2f3437]/50">Report not found.</div>;
+  if (loading) return <div className="flex items-center justify-center h-64 text-[var(--abv-text)]/40">Loading report…</div>;
+  if (!audit) return <div className="text-center py-20 text-[var(--abv-text)]/50">Report not found.</div>;
 
   const report = audit.reportContent as any;
   const rawScores = audit.scores ?? report?.audit_results ?? report?.scores ?? null;
@@ -135,10 +135,10 @@ export default function MemberAuditReportPage() {
         <>
           {/* ── Single Video: Title + Stats Row ── */}
           <div>
-            <h1 className="text-2xl font-bold text-[#2f3437] dark:text-[#e2e8f0] leading-tight">
+            <h1 className="text-2xl font-bold text-[var(--abv-text)] dark:text-[#e2e8f0] leading-tight">
               {singleVideo.title ?? "Untitled Video"}
             </h1>
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-2 text-sm text-[#2f3437]/50 dark:text-[#94a3b8]">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-2 text-sm text-[var(--abv-text)]/50 dark:text-[#94a3b8]">
               {singleVideo.viewCount != null && (
                 <span>{fmtViews(singleVideo.viewCount)}</span>
               )}
@@ -153,7 +153,7 @@ export default function MemberAuditReportPage() {
                 href={`https://studio.youtube.com/video/${singleVideo.videoId}/edit`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-[#6ba3c7] hover:underline"
+                className="inline-flex items-center gap-1 text-[var(--abv-azure)] hover:underline"
               >
                 Edit in Studio
                 <ArrowTopRightOnSquareIcon className="w-3 h-3" />
@@ -163,7 +163,7 @@ export default function MemberAuditReportPage() {
                 href={`https://youtube.com/watch?v=${singleVideo.videoId}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-[#6ba3c7] hover:underline"
+                className="inline-flex items-center gap-1 text-[var(--abv-azure)] hover:underline"
               >
                 Watch on YouTube
                 <ArrowTopRightOnSquareIcon className="w-3 h-3" />
@@ -185,11 +185,11 @@ export default function MemberAuditReportPage() {
                   <p className="text-xs opacity-40 mt-1">Avg: {Number(report.raw_average).toFixed(1)}</p>
                 )}
               </div>
-              <div className="bg-[#6ba3c7]/10 border border-[#6ba3c7]/30 rounded-lg p-4 md:p-5 flex-1 flex flex-col justify-center">
-                <p className="text-xs font-semibold text-[#6ba3c7] uppercase tracking-wider mb-1">Single Video Audit</p>
-                <p className="text-sm text-[#2f3437]/50 dark:text-[#94a3b8] mb-2">{fmt(audit.createdAt)}</p>
+              <div className="bg-[var(--abv-dark)]/10 border border-[var(--abv-azure)]/30 rounded-lg p-4 md:p-5 flex-1 flex flex-col justify-center">
+                <p className="text-xs font-semibold text-[var(--abv-azure)] uppercase tracking-wider mb-1">Single Video Audit</p>
+                <p className="text-sm text-[var(--abv-text)]/50 dark:text-[#94a3b8] mb-2">{fmt(audit.createdAt)}</p>
                 {report?.one_sentence_diagnosis && (
-                  <p className="text-sm italic text-[#2f3437]/80 dark:text-[#e2e8f0]/70">
+                  <p className="text-sm italic text-[var(--abv-text)]/80 dark:text-[#e2e8f0]/70">
                     &ldquo;{report.one_sentence_diagnosis}&rdquo;
                   </p>
                 )}
@@ -221,11 +221,11 @@ export default function MemberAuditReportPage() {
               <p className="text-xs opacity-40 mt-1">Avg: {Number(report.raw_average).toFixed(1)}</p>
             )}
           </div>
-          <div className="bg-[#6ba3c7]/10 border border-[#6ba3c7]/30 rounded-lg p-4 md:p-5 flex-1 flex flex-col justify-center">
-            <p className="text-xs font-semibold text-[#6ba3c7] uppercase tracking-wider mb-1">Attraction by Video — {typeLabel}</p>
-            <p className="text-sm text-[#2f3437]/50 mb-2">{fmt(audit.createdAt)}</p>
+          <div className="bg-[var(--abv-dark)]/10 border border-[var(--abv-azure)]/30 rounded-lg p-4 md:p-5 flex-1 flex flex-col justify-center">
+            <p className="text-xs font-semibold text-[var(--abv-azure)] uppercase tracking-wider mb-1">Attraction by Video — {typeLabel}</p>
+            <p className="text-sm text-[var(--abv-text)]/50 mb-2">{fmt(audit.createdAt)}</p>
             {report?.one_sentence_diagnosis && (
-              <p className="text-sm italic text-[#2f3437]/80">&ldquo;{report.one_sentence_diagnosis}&rdquo;</p>
+              <p className="text-sm italic text-[var(--abv-text)]/80">&ldquo;{report.one_sentence_diagnosis}&rdquo;</p>
             )}
           </div>
         </div>
@@ -233,9 +233,9 @@ export default function MemberAuditReportPage() {
 
       {/* Scores */}
       <div className="bg-white dark:bg-[#1a1a1a] rounded-lg border border-gray-200 dark:border-[#2a2a2a] p-6">
-        <h2 className="text-base font-semibold text-[#2f3437] dark:text-[#e2e8f0] mb-4">16-Principle Breakdown</h2>
+        <h2 className="text-base font-semibold text-[var(--abv-text)] dark:text-[#e2e8f0] mb-4">16-Principle Breakdown</h2>
         {!hasScores ? (
-          <p className="text-sm text-[#2f3437]/50 italic">Score data unavailable for this audit.</p>
+          <p className="text-sm text-[var(--abv-text)]/50 italic">Score data unavailable for this audit.</p>
         ) : (
         <div className="space-y-1">
           {Object.entries(scores).map(([key, val]: [string, any]) => {
@@ -247,28 +247,28 @@ export default function MemberAuditReportPage() {
               <div key={key}>
                 <button
                   onClick={() => setExpanded(isOpen ? null : key)}
-                  className="w-full flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-gray-50 dark:hover:bg-[#1e2a38] transition-colors"
+                  className="w-full flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-gray-50 dark:hover:bg-[var(--abv-dark)] transition-colors"
                 >
-                  <span className={`text-sm text-left ${isNA ? "text-[#2f3437]/40 dark:text-[#94a3b8]/40" : "text-[#2f3437] dark:text-[#e2e8f0]"}`}>{PRINCIPLE_LABELS[key] ?? key}</span>
+                  <span className={`text-sm text-left ${isNA ? "text-[var(--abv-text)]/40 dark:text-[#94a3b8]/40" : "text-[var(--abv-text)] dark:text-[#e2e8f0]"}`}>{PRINCIPLE_LABELS[key] ?? key}</span>
                   <div className="flex items-center gap-2 shrink-0">
                     {!isNA && delta != null && (
-                      <span className={`text-xs font-semibold ${delta > 0 ? "text-green-600" : delta < 0 ? "text-[#ff0033]" : "text-gray-400"}`}>
+                      <span className={`text-xs font-semibold ${delta > 0 ? "text-green-600" : delta < 0 ? "text-[var(--abv-crimson)]" : "text-gray-400"}`}>
                         {delta > 0 ? `+${delta.toFixed(1)}` : delta.toFixed(1)}
                       </span>
                     )}
                     <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${isNA ? "bg-gray-100 text-gray-400" : scoreBg(val.score)}`}>
                       {isNA ? "N/A" : val.score.toFixed(1)}
                     </span>
-                    <span className="text-[#2f3437]/30 text-xs">{isOpen ? "▲" : "▼"}</span>
+                    <span className="text-[var(--abv-text)]/30 text-xs">{isOpen ? "▲" : "▼"}</span>
                   </div>
                 </button>
                 {isOpen && (val.evidence || principlesWithLessons.has(toAcademySlug(key))) && (
-                  <div className="mx-3 mb-1 px-3 py-2 bg-gray-50 dark:bg-[#1e2a38] rounded-lg text-xs text-[#2f3437]/70 dark:text-[#94a3b8] space-y-1">
+                  <div className="mx-3 mb-1 px-3 py-2 bg-gray-50 dark:bg-[var(--abv-dark)] rounded-lg text-xs text-[var(--abv-text)]/70 dark:text-[#94a3b8] space-y-1">
                     {val.evidence && <p className="italic">{val.evidence}</p>}
                     {principlesWithLessons.has(toAcademySlug(key)) && (
                       <Link
                         href={`/member/academy?tab=browse&tag=${toAcademySlug(key)}`}
-                        className="inline-block font-semibold text-[#6ba3c7] hover:underline"
+                        className="inline-block font-semibold text-[var(--abv-azure)] hover:underline"
                       >
                         See lessons →
                       </Link>
@@ -299,12 +299,12 @@ export default function MemberAuditReportPage() {
       {/* Gaps */}
       {report?.biggest_gaps?.length > 0 && (
         <div className="bg-white dark:bg-[#1a1a1a] rounded-lg border border-gray-200 dark:border-[#2a2a2a] p-6">
-          <h2 className="text-base font-semibold text-[#2f3437] dark:text-[#e2e8f0] mb-3">🎯 Three Biggest Gaps</h2>
+          <h2 className="text-base font-semibold text-[var(--abv-text)] dark:text-[#e2e8f0] mb-3">🎯 Three Biggest Gaps</h2>
           <ul className="space-y-3">
             {report.biggest_gaps.map((g: string, i: number) => (
               <li key={i} className="flex items-start gap-3">
-                <span className="bg-[#ff0033]/10 text-[#ff0033] text-xs font-bold px-2 py-0.5 rounded-full shrink-0 mt-0.5">{i + 1}</span>
-                <span className="text-sm text-[#2f3437]/80 dark:text-[#e2e8f0]/70">{g}</span>
+                <span className="bg-[var(--abv-crimson)]/10 text-[var(--abv-crimson)] text-xs font-bold px-2 py-0.5 rounded-full shrink-0 mt-0.5">{i + 1}</span>
+                <span className="text-sm text-[var(--abv-text)]/80 dark:text-[#e2e8f0]/70">{g}</span>
               </li>
             ))}
           </ul>
@@ -313,24 +313,24 @@ export default function MemberAuditReportPage() {
 
       {/* Learning Path */}
       {gaps.length > 0 && (
-        <div className="bg-[#6ba3c7]/10 border border-[#6ba3c7]/30 rounded-lg p-6">
-          <h2 className="text-base font-semibold text-[#2f3437] dark:text-[#e2e8f0] mb-3">📚 Your Learning Path</h2>
+        <div className="bg-[var(--abv-dark)]/10 border border-[var(--abv-azure)]/30 rounded-lg p-6">
+          <h2 className="text-base font-semibold text-[var(--abv-text)] dark:text-[#e2e8f0] mb-3">📚 Your Learning Path</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {gaps.map(([key, val]: [string, any]) => (
               <div key={key} className="flex items-center justify-between bg-white dark:bg-[#1a1a1a] rounded-lg px-3 py-2">
                 <div>
-                  <span className="text-sm text-[#2f3437] dark:text-[#e2e8f0]">{PRINCIPLE_LABELS[key]}</span>
+                  <span className="text-sm text-[var(--abv-text)] dark:text-[#e2e8f0]">{PRINCIPLE_LABELS[key]}</span>
                   <span className={`ml-2 text-xs font-bold ${scoreBg(val.score)} px-1.5 py-0.5 rounded-full`}>{val.score.toFixed(1)}</span>
                 </div>
                 {principlesWithLessons.has(toAcademySlug(key)) ? (
                   <Link
                     href={`/member/academy?tab=browse&tag=${toAcademySlug(key)}`}
-                    className="text-xs text-[#6ba3c7] font-semibold hover:underline shrink-0"
+                    className="text-xs text-[var(--abv-azure)] font-semibold hover:underline shrink-0"
                   >
                     See lessons →
                   </Link>
                 ) : (
-                  <span className="text-xs text-[#6ba3c7] font-semibold shrink-0">{LEARNING_PATH[key] ?? "—"}</span>
+                  <span className="text-xs text-[var(--abv-azure)] font-semibold shrink-0">{LEARNING_PATH[key] ?? "—"}</span>
                 )}
               </div>
             ))}
@@ -341,22 +341,22 @@ export default function MemberAuditReportPage() {
       {/* Videos Analysed — only for non-single-video audits */}
       {!isSingleVideo && videos.length > 0 && (
         <div className="bg-white dark:bg-[#1a1a1a] rounded-lg border border-gray-200 dark:border-[#2a2a2a] p-6">
-          <h2 className="text-base font-semibold text-[#2f3437] dark:text-[#e2e8f0] mb-4">Videos Analysed</h2>
+          <h2 className="text-base font-semibold text-[var(--abv-text)] dark:text-[#e2e8f0] mb-4">Videos Analysed</h2>
           <ul className="space-y-2">
             {videos.map((v: any, i: number) => (
               <li key={i} className="flex items-center justify-between">
-                <a href={`https://youtube.com/watch?v=${v.videoId}`} target="_blank" rel="noopener noreferrer" className="text-sm text-[#6ba3c7] hover:underline flex items-center gap-1">
+                <a href={`https://youtube.com/watch?v=${v.videoId}`} target="_blank" rel="noopener noreferrer" className="text-sm text-[var(--abv-azure)] hover:underline flex items-center gap-1">
                   {v.title}
                   <ArrowTopRightOnSquareIcon className="w-3 h-3 shrink-0" />
                 </a>
-                <span className="text-xs text-[#2f3437]/50 dark:text-[#94a3b8]">{fmtDuration(v.durationSeconds)}</span>
+                <span className="text-xs text-[var(--abv-text)]/50 dark:text-[#94a3b8]">{fmtDuration(v.durationSeconds)}</span>
               </li>
             ))}
           </ul>
         </div>
       )}
 
-      <div className="text-center py-6 text-sm text-[#2f3437]/40 border-t border-gray-200 dark:border-[#2a2a2a]">
+      <div className="text-center py-6 text-sm text-[var(--abv-text)]/40 border-t border-gray-200 dark:border-[#2a2a2a]">
         Prepared by Jared Chamberlain ~ Founder of Attraction by Video
       </div>
     </div>

@@ -155,12 +155,12 @@ export default function PipelineView({
         }}
         onDragEnd={() => { setDragId(null); setDragOverCol(null); }}
         onClick={() => setEditingPlan(plan)}
-        className={`bg-white border border-gray-200 rounded-lg p-3 cursor-pointer transition-shadow hover:border-[#6ba3c7] hover:shadow-sm ${
+        className={`bg-white border border-gray-200 rounded-lg p-3 cursor-pointer transition-shadow hover:border-[var(--abv-azure)] hover:shadow-sm ${
           dragId === plan.id ? "opacity-40" : ""
         }`}
       >
         <div className="flex items-start justify-between gap-2 mb-2">
-          <p className="text-xs font-medium text-[#2f3437] leading-snug flex-1" title={plan.title}>
+          <p className="text-xs font-medium text-[var(--abv-text)] leading-snug flex-1" title={plan.title}>
             {truncate(plan.title, 60)}
           </p>
           {typeof score === "number" && (
@@ -174,7 +174,7 @@ export default function PipelineView({
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
-              className="text-[#6ba3c7] hover:text-[#5a8fb0] transition-colors shrink-0 mt-0.5"
+              className="text-[var(--abv-azure)] hover:text-[#5a8fb0] transition-colors shrink-0 mt-0.5"
               title="Open Google Drive folder"
             >
               <FolderIcon className="w-3.5 h-3.5" />
@@ -198,7 +198,7 @@ export default function PipelineView({
               {plan.theme}
             </span>
           ) : <span />}
-          <div className="flex items-center gap-2 text-[#2f3437]/50 shrink-0">
+          <div className="flex items-center gap-2 text-[var(--abv-text)]/50 shrink-0">
             {shootDate && (
               <span className="inline-flex items-center gap-0.5" title={`Shoot date: ${shootDate}`}>
                 <VideoCameraIcon className="w-3 h-3" />
@@ -254,7 +254,7 @@ export default function PipelineView({
                 if (id) void moveTo(id, status);
               }}
               className={`w-72 shrink-0 snap-start bg-white border rounded-xl overflow-hidden transition-colors ${
-                isOver ? "border-[#6ba3c7] ring-2 ring-[#6ba3c7]/30" : "border-gray-200"
+                isOver ? "border-[var(--abv-azure)] ring-2 ring-[var(--abv-azure)]/30" : "border-gray-200"
               }`}
             >
               <div className="h-1" style={{ backgroundColor: style.bg }} />
@@ -271,7 +271,7 @@ export default function PipelineView({
               </div>
               <div className="p-2 space-y-2 min-h-[200px] max-h-[70vh] overflow-y-auto">
                 {colPlans.length === 0 ? (
-                  <p className="text-[11px] text-[#2f3437]/30 italic text-center py-4">Drop here</p>
+                  <p className="text-[11px] text-[var(--abv-text)]/30 italic text-center py-4">Drop here</p>
                 ) : (
                   colPlans.map((plan) => <Card key={plan.id} plan={plan} />)
                 )}

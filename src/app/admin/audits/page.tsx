@@ -84,7 +84,7 @@ function scoreBg(score: number | null) {
   if (score == null) return "bg-gray-100 text-gray-500";
   if (score >= 7) return "bg-green-100 text-green-700";
   if (score >= 5) return "bg-yellow-100 text-yellow-700";
-  return "bg-red-100 text-[#ff0033]";
+  return "bg-red-100 text-[var(--abv-crimson)]";
 }
 
 function fmt(date: string) {
@@ -583,7 +583,7 @@ export default function AuditsPage() {
   return (
     <div>
       <div className="mb-4">
-        <h1 className="text-2xl font-bold text-[#2f3437]">Audits</h1>
+        <h1 className="text-2xl font-bold text-[var(--abv-text)]">Audits</h1>
       </div>
 
       {/* Tab bar */}
@@ -592,35 +592,35 @@ export default function AuditsPage() {
           onClick={() => setTab("audits")}
           className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
             tab === "audits"
-              ? "bg-white text-[#2f3437] shadow-sm"
-              : "text-[#2f3437]/50 hover:text-[#2f3437]"
+              ? "bg-white text-[var(--abv-text)] shadow-sm"
+              : "text-[var(--abv-text)]/50 hover:text-[var(--abv-text)]"
           }`}
         >
           Member Audits
-          <span className="ml-2 text-xs text-[#2f3437]/40 font-normal">{audits.length}</span>
+          <span className="ml-2 text-xs text-[var(--abv-text)]/40 font-normal">{audits.length}</span>
         </button>
         <button
           onClick={() => setTab("lead-audits")}
           className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
             tab === "lead-audits"
-              ? "bg-white text-[#2f3437] shadow-sm"
-              : "text-[#2f3437]/50 hover:text-[#2f3437]"
+              ? "bg-white text-[var(--abv-text)] shadow-sm"
+              : "text-[var(--abv-text)]/50 hover:text-[var(--abv-text)]"
           }`}
         >
           Lead Audits
-          <span className="ml-2 text-xs text-[#2f3437]/40 font-normal">{leadAudits.length}</span>
+          <span className="ml-2 text-xs text-[var(--abv-text)]/40 font-normal">{leadAudits.length}</span>
         </button>
         <button
           onClick={() => setTab("requests")}
           className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
             tab === "requests"
-              ? "bg-white text-[#2f3437] shadow-sm"
-              : "text-[#2f3437]/50 hover:text-[#2f3437]"
+              ? "bg-white text-[var(--abv-text)] shadow-sm"
+              : "text-[var(--abv-text)]/50 hover:text-[var(--abv-text)]"
           }`}
         >
           Audit Requests
           {pendingCount > 0 && (
-            <span className="ml-2 px-1.5 py-0.5 rounded-full bg-[#6ba3c7] text-white text-xs font-bold">
+            <span className="ml-2 px-1.5 py-0.5 rounded-full bg-[var(--abv-dark)] text-white text-xs font-bold">
               {pendingCount}
             </span>
           )}
@@ -631,13 +631,13 @@ export default function AuditsPage() {
       {tab === "lead-audits" && (
         <div>
           <div className="flex items-center justify-between mb-4">
-            <p className="text-sm text-[#2f3437]/60">
+            <p className="text-sm text-[var(--abv-text)]/60">
               {leadAudits.length} lead audit{leadAudits.length !== 1 ? "s" : ""}
             </p>
             <div className="flex items-center gap-3">
               <button
                 onClick={fetchLeadAudits}
-                className="flex items-center gap-1.5 text-xs text-[#2f3437]/50 hover:text-[#2f3437] transition-colors"
+                className="flex items-center gap-1.5 text-xs text-[var(--abv-text)]/50 hover:text-[var(--abv-text)] transition-colors"
               >
                 <ArrowPathIcon className="w-3.5 h-3.5" /> Refresh
               </button>
@@ -663,31 +663,31 @@ export default function AuditsPage() {
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {leadAuditsLoading ? (
-                    <tr><td colSpan={5} className="px-6 py-12 text-center text-[#2f3437]/40">Loading…</td></tr>
+                    <tr><td colSpan={5} className="px-6 py-12 text-center text-[var(--abv-text)]/40">Loading…</td></tr>
                   ) : leadAudits.length === 0 ? (
-                    <tr><td colSpan={5} className="px-6 py-12 text-center text-[#2f3437]/40">No lead audits yet.</td></tr>
+                    <tr><td colSpan={5} className="px-6 py-12 text-center text-[var(--abv-text)]/40">No lead audits yet.</td></tr>
                   ) : leadAudits.map((a) => (
                     <tr key={a.id} className="hover:bg-amber-50/40 transition-colors">
-                      <td className="px-6 py-4 text-[#2f3437]/70 whitespace-nowrap">{fmt(a.createdAt)}</td>
+                      <td className="px-6 py-4 text-[var(--abv-text)]/70 whitespace-nowrap">{fmt(a.createdAt)}</td>
                       <td className="px-6 py-4">
                         {a.user ? (
                           <Link href={`/admin/members/${a.user.id}`} className="text-amber-700 hover:underline font-medium whitespace-nowrap">
                             {a.leadFullName ?? a.user.fullName ?? a.user.email}
                           </Link>
                         ) : (
-                          <span className="font-medium text-[#2f3437] whitespace-nowrap">{a.leadFullName ?? "—"}</span>
+                          <span className="font-medium text-[var(--abv-text)] whitespace-nowrap">{a.leadFullName ?? "—"}</span>
                         )}
                         {a.leadYoutubeChannelUrl ? (
                           <a
                             href={a.leadYoutubeChannelUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="block text-xs text-[#6ba3c7] hover:underline mt-0.5 truncate max-w-[260px]"
+                            className="block text-xs text-[var(--abv-azure)] hover:underline mt-0.5 truncate max-w-[260px]"
                           >
                             {a.leadYoutubeChannelUrl}
                           </a>
                         ) : a.user?.youtubeChannelName ? (
-                          <p className="text-xs text-[#2f3437]/50 mt-0.5">{a.user.youtubeChannelName}</p>
+                          <p className="text-xs text-[var(--abv-text)]/50 mt-0.5">{a.user.youtubeChannelName}</p>
                         ) : null}
                       </td>
                       <td className="px-6 py-4">
@@ -710,7 +710,7 @@ export default function AuditsPage() {
                           <button
                             onClick={() => handleRerunAudit(a, true)}
                             disabled={busyAuditId === a.id || !a.user?.id}
-                            className="flex items-center gap-1 text-xs font-medium text-[#2f3437]/60 hover:text-amber-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                            className="flex items-center gap-1 text-xs font-medium text-[var(--abv-text)]/60 hover:text-amber-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                             title="Delete this audit and run a fresh one"
                           >
                             <ArrowPathIcon className="w-3.5 h-3.5" />
@@ -738,17 +738,17 @@ export default function AuditsPage() {
       {tab === "requests" && (
         <div>
           <div className="flex items-center justify-between mb-4">
-            <p className="text-sm text-[#2f3437]/60">{auditReqs.length} request{auditReqs.length !== 1 ? "s" : ""}</p>
+            <p className="text-sm text-[var(--abv-text)]/60">{auditReqs.length} request{auditReqs.length !== 1 ? "s" : ""}</p>
             <div className="flex items-center gap-3">
               <button
                 onClick={fetchAuditRequests}
-                className="flex items-center gap-1.5 text-xs text-[#2f3437]/50 hover:text-[#2f3437] transition-colors"
+                className="flex items-center gap-1.5 text-xs text-[var(--abv-text)]/50 hover:text-[var(--abv-text)] transition-colors"
               >
                 <ArrowPathIcon className="w-3.5 h-3.5" /> Refresh
               </button>
               <button
                 onClick={openAddModal}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#6ba3c7] hover:bg-[#2ab0ec] text-white transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[var(--abv-dark)] hover:bg-[#2ab0ec] text-white transition-colors"
               >
                 <PlusIcon className="w-3.5 h-3.5" /> Add Request Manually
               </button>
@@ -760,35 +760,35 @@ export default function AuditsPage() {
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-200">
                     {["Date", "Lead", "YouTube Channel", "Current Income", "Desired Income", "Status", "Action"].map((h) => (
-                      <th key={h} className="text-left px-5 py-3 text-xs font-semibold text-[#2f3437]/60 uppercase tracking-wider whitespace-nowrap">{h}</th>
+                      <th key={h} className="text-left px-5 py-3 text-xs font-semibold text-[var(--abv-text)]/60 uppercase tracking-wider whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {auditReqsLoading ? (
-                    <tr><td colSpan={7} className="px-6 py-12 text-center text-[#2f3437]/40">Loading…</td></tr>
+                    <tr><td colSpan={7} className="px-6 py-12 text-center text-[var(--abv-text)]/40">Loading…</td></tr>
                   ) : auditReqs.length === 0 ? (
-                    <tr><td colSpan={7} className="px-6 py-12 text-center text-[#2f3437]/40">No audit requests yet.</td></tr>
+                    <tr><td colSpan={7} className="px-6 py-12 text-center text-[var(--abv-text)]/40">No audit requests yet.</td></tr>
                   ) : auditReqs.map((r) => (
                     <tr key={r.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-5 py-3 text-[#2f3437]/60 whitespace-nowrap text-xs">{fmt(r.createdAt)}</td>
+                      <td className="px-5 py-3 text-[var(--abv-text)]/60 whitespace-nowrap text-xs">{fmt(r.createdAt)}</td>
                       <td className="px-5 py-3">
-                        <p className="font-medium text-[#2f3437]">{r.fullName}</p>
-                        <p className="text-xs text-[#2f3437]/50">{r.email}</p>
-                        {r.phone && <p className="text-xs text-[#2f3437]/40">{r.phone}</p>}
+                        <p className="font-medium text-[var(--abv-text)]">{r.fullName}</p>
+                        <p className="text-xs text-[var(--abv-text)]/50">{r.email}</p>
+                        {r.phone && <p className="text-xs text-[var(--abv-text)]/40">{r.phone}</p>}
                       </td>
                       <td className="px-5 py-3 max-w-[220px]">
                         <a
                           href={r.youtubeChannelUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-[#6ba3c7] hover:underline text-xs truncate block"
+                          className="text-[var(--abv-azure)] hover:underline text-xs truncate block"
                         >
                           {r.youtubeChannelUrl}
                         </a>
                       </td>
-                      <td className="px-5 py-3 text-xs text-[#2f3437]/70 whitespace-nowrap">{r.currentYoutubeIncome ?? "—"}</td>
-                      <td className="px-5 py-3 text-xs text-[#2f3437]/70 whitespace-nowrap">{r.desiredYoutubeIncome ?? "—"}</td>
+                      <td className="px-5 py-3 text-xs text-[var(--abv-text)]/70 whitespace-nowrap">{r.currentYoutubeIncome ?? "—"}</td>
+                      <td className="px-5 py-3 text-xs text-[var(--abv-text)]/70 whitespace-nowrap">{r.desiredYoutubeIncome ?? "—"}</td>
                       <td className="px-5 py-3">
                         <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${
                           r.status === "audited"
@@ -801,12 +801,12 @@ export default function AuditsPage() {
                       <td className="px-5 py-3">
                         <div className="flex items-center gap-2 whitespace-nowrap">
                           {r.status === "audited" && r.auditId && (
-                            <Link href={`/admin/audits/${r.auditId}`} className="text-[#6ba3c7] hover:underline text-xs font-medium">
+                            <Link href={`/admin/audits/${r.auditId}`} className="text-[var(--abv-azure)] hover:underline text-xs font-medium">
                               View Report →
                             </Link>
                           )}
                           {r.status === "audited" && !r.auditId && r.userId && (
-                            <Link href={`/admin/members/${r.userId}`} className="text-[#6ba3c7] hover:underline text-xs font-medium">
+                            <Link href={`/admin/members/${r.userId}`} className="text-[var(--abv-azure)] hover:underline text-xs font-medium">
                               View Member →
                             </Link>
                           )}
@@ -815,8 +815,8 @@ export default function AuditsPage() {
                             disabled={runningRequestId === r.id}
                             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium disabled:opacity-50 transition-colors whitespace-nowrap ${
                               r.status === "audited"
-                                ? "border border-[#6ba3c7]/40 text-[#6ba3c7] hover:bg-[#6ba3c7]/10"
-                                : "bg-[#6ba3c7] hover:bg-[#2ab0ec] text-white"
+                                ? "border border-[var(--abv-azure)]/40 text-[var(--abv-azure)] hover:bg-[var(--abv-dark)]/10"
+                                : "bg-[var(--abv-dark)] hover:bg-[#2ab0ec] text-white"
                             }`}
                             title={r.status === "audited" ? "Delete previous audit and run a fresh one against the channel as it is right now" : undefined}
                           >
@@ -853,25 +853,25 @@ export default function AuditsPage() {
               className="w-full flex items-center justify-between px-5 py-3 hover:bg-gray-50 transition-colors"
             >
               <div className="flex items-center gap-2">
-                <h2 className="text-sm font-semibold text-[#2f3437]">Webhook Activity</h2>
-                <span className="text-xs text-[#2f3437]/40">Last 50 GHL → backend calls</span>
+                <h2 className="text-sm font-semibold text-[var(--abv-text)]">Webhook Activity</h2>
+                <span className="text-xs text-[var(--abv-text)]/40">Last 50 GHL → backend calls</span>
               </div>
-              <ChevronDownIcon className={`w-4 h-4 text-[#2f3437]/40 transition-transform ${webhookOpen ? "rotate-180" : ""}`} />
+              <ChevronDownIcon className={`w-4 h-4 text-[var(--abv-text)]/40 transition-transform ${webhookOpen ? "rotate-180" : ""}`} />
             </button>
             {webhookOpen && (
               <div className="border-t border-gray-200">
                 <div className="flex items-center justify-end px-5 py-2 border-b border-gray-100">
                   <button
                     onClick={fetchWebhookLogs}
-                    className="flex items-center gap-1.5 text-xs text-[#2f3437]/50 hover:text-[#2f3437] transition-colors"
+                    className="flex items-center gap-1.5 text-xs text-[var(--abv-text)]/50 hover:text-[var(--abv-text)] transition-colors"
                   >
                     <ArrowPathIcon className="w-3.5 h-3.5" /> Refresh
                   </button>
                 </div>
                 {webhookLoading ? (
-                  <div className="px-5 py-8 text-center text-sm text-[#2f3437]/40">Loading…</div>
+                  <div className="px-5 py-8 text-center text-sm text-[var(--abv-text)]/40">Loading…</div>
                 ) : webhookLogs.length === 0 ? (
-                  <div className="px-5 py-8 text-center text-sm text-[#2f3437]/40">No webhook activity yet.</div>
+                  <div className="px-5 py-8 text-center text-sm text-[var(--abv-text)]/40">No webhook activity yet.</div>
                 ) : (
                   <ul className="divide-y divide-gray-100">
                     {webhookLogs.map((log) => {
@@ -885,18 +885,18 @@ export default function AuditsPage() {
                               {Icon && <Icon className="w-3 h-3" />}
                               {cfg.label}
                             </span>
-                            <span className="text-xs text-[#2f3437]/50 whitespace-nowrap">{relativeTime(log.createdAt)}</span>
-                            {log.email && <span className="text-xs text-[#2f3437]/70">{log.email}</span>}
-                            <span className="text-xs text-[#2f3437]/60 flex-1 min-w-[200px]">{log.message ?? "—"}</span>
+                            <span className="text-xs text-[var(--abv-text)]/50 whitespace-nowrap">{relativeTime(log.createdAt)}</span>
+                            {log.email && <span className="text-xs text-[var(--abv-text)]/70">{log.email}</span>}
+                            <span className="text-xs text-[var(--abv-text)]/60 flex-1 min-w-[200px]">{log.message ?? "—"}</span>
                             <button
                               onClick={() => setExpandedPayloadId(expanded ? null : log.id)}
-                              className="text-xs text-[#6ba3c7] hover:underline whitespace-nowrap"
+                              className="text-xs text-[var(--abv-azure)] hover:underline whitespace-nowrap"
                             >
                               {expanded ? "Hide payload" : "View payload"}
                             </button>
                           </div>
                           {expanded && (
-                            <pre className="mt-2 text-[11px] bg-gray-50 border border-gray-200 rounded-md p-3 overflow-x-auto text-[#2f3437]/80 whitespace-pre-wrap break-words">
+                            <pre className="mt-2 text-[11px] bg-gray-50 border border-gray-200 rounded-md p-3 overflow-x-auto text-[var(--abv-text)]/80 whitespace-pre-wrap break-words">
                               {JSON.stringify(log.payload, null, 2)}
                             </pre>
                           )}
@@ -920,34 +920,34 @@ export default function AuditsPage() {
             className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4"
           >
             <div>
-              <h2 className="text-lg font-bold text-[#2f3437]">Add Audit Request</h2>
-              <p className="text-xs text-[#2f3437]/50 mt-0.5">Manually create a lead request, then click Run Audit on the row.</p>
+              <h2 className="text-lg font-bold text-[var(--abv-text)]">Add Audit Request</h2>
+              <p className="text-xs text-[var(--abv-text)]/50 mt-0.5">Manually create a lead request, then click Run Audit on the row.</p>
             </div>
             {addError && (
               <div className="text-xs bg-red-50 text-red-700 border border-red-200 rounded-md px-3 py-2">{addError}</div>
             )}
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Full name *</label>
+                <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Full name *</label>
                 <input
                   required
                   value={addForm.fullName}
                   onChange={(e) => setAddForm({ ...addForm, fullName: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[var(--abv-azure)]/40"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Email *</label>
+                <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Email *</label>
                 <input
                   required
                   type="email"
                   value={addForm.email}
                   onChange={(e) => setAddForm({ ...addForm, email: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[var(--abv-azure)]/40"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">YouTube channel URL *</label>
+                <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">YouTube channel URL *</label>
                 <input
                   required
                   pattern=".*(youtube\.com|youtu\.be).*"
@@ -955,32 +955,32 @@ export default function AuditsPage() {
                   placeholder="https://youtube.com/@yourhandle"
                   value={addForm.youtubeChannelUrl}
                   onChange={(e) => setAddForm({ ...addForm, youtubeChannelUrl: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[var(--abv-azure)]/40"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Phone</label>
+                <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Phone</label>
                 <input
                   value={addForm.phone}
                   onChange={(e) => setAddForm({ ...addForm, phone: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[var(--abv-azure)]/40"
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Current YT income</label>
+                  <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Current YT income</label>
                   <input
                     value={addForm.currentYoutubeIncome}
                     onChange={(e) => setAddForm({ ...addForm, currentYoutubeIncome: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[var(--abv-azure)]/40"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Desired YT income</label>
+                  <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Desired YT income</label>
                   <input
                     value={addForm.desiredYoutubeIncome}
                     onChange={(e) => setAddForm({ ...addForm, desiredYoutubeIncome: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[var(--abv-azure)]/40"
                   />
                 </div>
               </div>
@@ -990,14 +990,14 @@ export default function AuditsPage() {
                 type="button"
                 onClick={() => setAddOpen(false)}
                 disabled={addSubmitting}
-                className="px-3 py-1.5 text-sm text-[#2f3437]/70 hover:text-[#2f3437] disabled:opacity-50"
+                className="px-3 py-1.5 text-sm text-[var(--abv-text)]/70 hover:text-[var(--abv-text)] disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={addSubmitting}
-                className="px-4 py-1.5 text-sm font-semibold rounded-lg bg-[#6ba3c7] hover:bg-[#2ab0ec] text-white disabled:opacity-50"
+                className="px-4 py-1.5 text-sm font-semibold rounded-lg bg-[var(--abv-dark)] hover:bg-[#2ab0ec] text-white disabled:opacity-50"
               >
                 {addSubmitting ? "Creating…" : "Create Request"}
               </button>
@@ -1015,15 +1015,15 @@ export default function AuditsPage() {
             className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4"
           >
             <div>
-              <h2 className="text-lg font-bold text-[#2f3437]">Add Lead Audit</h2>
-              <p className="text-xs text-[#2f3437]/50 mt-0.5">Kicks off the same audit pipeline as a form submission.</p>
+              <h2 className="text-lg font-bold text-[var(--abv-text)]">Add Lead Audit</h2>
+              <p className="text-xs text-[var(--abv-text)]/50 mt-0.5">Kicks off the same audit pipeline as a form submission.</p>
             </div>
             {addLeadError && (
               <div className="text-xs bg-red-50 text-red-700 border border-red-200 rounded-md px-3 py-2">{addLeadError}</div>
             )}
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Lead name *</label>
+                <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Lead name *</label>
                 <input
                   required
                   value={addLeadForm.fullName}
@@ -1032,7 +1032,7 @@ export default function AuditsPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Email *</label>
+                <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Email *</label>
                 <input
                   required
                   type="email"
@@ -1042,7 +1042,7 @@ export default function AuditsPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Phone</label>
+                <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Phone</label>
                 <input
                   value={addLeadForm.phone}
                   onChange={(e) => setAddLeadForm({ ...addLeadForm, phone: e.target.value })}
@@ -1050,7 +1050,7 @@ export default function AuditsPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">YouTube channel URL *</label>
+                <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">YouTube channel URL *</label>
                 <input
                   required
                   pattern=".*(youtube\.com|youtu\.be).*"
@@ -1063,7 +1063,7 @@ export default function AuditsPage() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">GCI bracket</label>
+                  <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">GCI bracket</label>
                   <input
                     placeholder="e.g. $100k–$250k"
                     value={addLeadForm.currentYoutubeIncome}
@@ -1072,7 +1072,7 @@ export default function AuditsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Desired GCI</label>
+                  <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Desired GCI</label>
                   <input
                     placeholder="e.g. $500k"
                     value={addLeadForm.desiredYoutubeIncome}
@@ -1087,7 +1087,7 @@ export default function AuditsPage() {
                 type="button"
                 onClick={() => setAddLeadOpen(false)}
                 disabled={addLeadSubmitting}
-                className="px-3 py-1.5 text-sm text-[#2f3437]/70 hover:text-[#2f3437] disabled:opacity-50"
+                className="px-3 py-1.5 text-sm text-[var(--abv-text)]/70 hover:text-[var(--abv-text)] disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -1115,7 +1115,7 @@ export default function AuditsPage() {
           className="w-full flex items-center justify-between px-5 py-3 hover:bg-gray-50 transition-colors"
         >
           <div className="flex items-center gap-3">
-            <span className="text-sm font-semibold text-[#2f3437]">Batch Operations</span>
+            <span className="text-sm font-semibold text-[var(--abv-text)]">Batch Operations</span>
             {isBatchActive && (
               <span className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">
                 <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse" />
@@ -1123,12 +1123,12 @@ export default function AuditsPage() {
               </span>
             )}
             {!isBatchActive && (lastRun || baselineLastRun) && (
-              <span className="text-xs text-[#2f3437]/40">
+              <span className="text-xs text-[var(--abv-text)]/40">
                 Last run: {new Date((lastRun?.date || baselineLastRun?.date)!).toLocaleDateString("en-CA")}
               </span>
             )}
           </div>
-          <ChevronDownIcon className={`w-4 h-4 text-[#2f3437]/40 transition-transform duration-200 ${batchOpen ? "rotate-180" : ""}`} />
+          <ChevronDownIcon className={`w-4 h-4 text-[var(--abv-text)]/40 transition-transform duration-200 ${batchOpen ? "rotate-180" : ""}`} />
         </button>
 
         {/* Panel content — collapsible */}
@@ -1139,7 +1139,7 @@ export default function AuditsPage() {
               <button
                 onClick={handleRunAllBaseline}
                 disabled={baselineLaunching || isBaselineRunning || isRunning}
-                className="flex items-center gap-2 bg-[#6ba3c7] hover:bg-[#2ab0ec] disabled:opacity-50 text-white px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors"
+                className="flex items-center gap-2 bg-[var(--abv-dark)] hover:bg-[#2ab0ec] disabled:opacity-50 text-white px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors"
               >
                 <PlayIcon className={`w-4 h-4 ${isBaselineRunning ? "animate-pulse" : ""}`} />
                 {isBaselineRunning ? `Running… ${baselineBatchStatus!.current}/${baselineBatchStatus!.total}` : baselineLaunching ? "Starting…" : "Run All Baseline Audits"}
@@ -1156,17 +1156,17 @@ export default function AuditsPage() {
 
             {/* Active Jobs section */}
             {activeJobs.length > 0 && (
-              <div className="bg-white border border-[#6ba3c7]/30 rounded-lg overflow-hidden">
-                <div className="flex items-center justify-between px-4 py-3 border-b border-[#6ba3c7]/20 bg-[#e8f7ff]/40">
+              <div className="bg-white border border-[var(--abv-azure)]/30 rounded-lg overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--abv-azure)]/20 bg-[#e8f7ff]/40">
                   <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-[#6ba3c7] animate-pulse" />
-                    <span className="text-sm font-semibold text-[#2f3437]">
+                    <div className="w-2 h-2 rounded-full bg-[var(--abv-dark)] animate-pulse" />
+                    <span className="text-sm font-semibold text-[var(--abv-text)]">
                       {activeJobs.length} Audit{activeJobs.length !== 1 ? "s" : ""} In Progress
                     </span>
                   </div>
                   <button
                     onClick={fetchActiveJobs}
-                    className="text-xs text-[#2f3437]/50 hover:text-[#2f3437] flex items-center gap-1"
+                    className="text-xs text-[var(--abv-text)]/50 hover:text-[var(--abv-text)] flex items-center gap-1"
                   >
                     <ArrowPathIcon className="w-3 h-3" /> Refresh
                   </button>
@@ -1174,33 +1174,33 @@ export default function AuditsPage() {
                 <div className="divide-y divide-gray-100">
                   {activeJobs.map((job) => (
                     <div key={job.id} className="flex items-center gap-4 px-4 py-3">
-                      <div className="w-4 h-4 border-2 border-[#6ba3c7] border-t-transparent rounded-full animate-spin shrink-0" />
+                      <div className="w-4 h-4 border-2 border-[var(--abv-azure)] border-t-transparent rounded-full animate-spin shrink-0" />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           {job.user ? (
                             <Link
                               href={`/admin/members/${job.user.id}`}
-                              className="text-sm font-medium text-[#6ba3c7] hover:underline truncate"
+                              className="text-sm font-medium text-[var(--abv-azure)] hover:underline truncate"
                             >
                               {job.user.fullName ?? job.user.email}
                             </Link>
                           ) : (
-                            <span className="text-sm font-medium text-[#2f3437]/60">Unknown member</span>
+                            <span className="text-sm font-medium text-[var(--abv-text)]/60">Unknown member</span>
                           )}
-                          <span className="text-xs px-1.5 py-0.5 rounded bg-[#111]/10 text-[#2f3437]/60 capitalize shrink-0">
+                          <span className="text-xs px-1.5 py-0.5 rounded bg-[#111]/10 text-[var(--abv-text)]/60 capitalize shrink-0">
                             {job.auditType.replace("_", " ")}
                           </span>
                         </div>
                         <div className="flex items-center gap-2 mt-0.5">
-                          <span className="text-xs text-[#2f3437]/50">{job.message}</span>
-                          <span className="text-xs text-[#2f3437]/30">·</span>
-                          <span className="text-xs text-[#2f3437]/40">{elapsedLabel(job.createdAt)}</span>
+                          <span className="text-xs text-[var(--abv-text)]/50">{job.message}</span>
+                          <span className="text-xs text-[var(--abv-text)]/30">·</span>
+                          <span className="text-xs text-[var(--abv-text)]/40">{elapsedLabel(job.createdAt)}</span>
                         </div>
                       </div>
                       <button
                         onClick={() => handleCancelJob(job.id)}
                         disabled={cancellingJobId === job.id}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-red-50 text-[#ff0033] hover:bg-red-100 disabled:opacity-50 transition-colors shrink-0"
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-red-50 text-[var(--abv-crimson)] hover:bg-red-100 disabled:opacity-50 transition-colors shrink-0"
                       >
                         <XCircleIcon className="w-3.5 h-3.5" />
                         {cancellingJobId === job.id ? "Cancelling…" : "Cancel"}
@@ -1213,17 +1213,17 @@ export default function AuditsPage() {
 
             {/* Monthly batch progress */}
             {isRunning && (
-              <div className="bg-white border border-[#6ba3c7]/30 rounded-lg p-4">
+              <div className="bg-white border border-[var(--abv-azure)]/30 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-sm font-semibold text-[#2f3437]">Monthly batch in progress…</p>
+                  <p className="text-sm font-semibold text-[var(--abv-text)]">Monthly batch in progress…</p>
                   <div className="flex items-center gap-3">
-                    <p className="text-sm text-[#2f3437]/50">{batchStatus.current} / {batchStatus.total} members</p>
-                    <button onClick={dismissMonthlyBatch} className="text-xs text-[#2f3437]/40 hover:text-[#ff0033] transition-colors" title="Dismiss">✕</button>
+                    <p className="text-sm text-[var(--abv-text)]/50">{batchStatus.current} / {batchStatus.total} members</p>
+                    <button onClick={dismissMonthlyBatch} className="text-xs text-[var(--abv-text)]/40 hover:text-[var(--abv-crimson)] transition-colors" title="Dismiss">✕</button>
                   </div>
                 </div>
                 <div className="w-full bg-gray-100 rounded-full h-2 mb-3">
                   <div
-                    className="bg-[#6ba3c7] h-2 rounded-full transition-all duration-500"
+                    className="bg-[var(--abv-dark)] h-2 rounded-full transition-all duration-500"
                     style={{ width: `${batchStatus.total > 0 ? (batchStatus.current / batchStatus.total) * 100 : 0}%` }}
                   />
                 </div>
@@ -1231,11 +1231,11 @@ export default function AuditsPage() {
                   <div className="space-y-1 max-h-48 overflow-y-auto">
                     {batchStatus.results.slice().reverse().map((r, i) => (
                       <div key={i} className="flex items-center gap-2 text-xs">
-                        <span className={r.status === "success" ? "text-green-600" : r.status === "failed" ? "text-[#ff0033]" : "text-[#2f3437]/40"}>
+                        <span className={r.status === "success" ? "text-green-600" : r.status === "failed" ? "text-[var(--abv-crimson)]" : "text-[var(--abv-text)]/40"}>
                           {r.status === "success" ? "✓" : r.status === "failed" ? "✗" : "–"}
                         </span>
-                        <span className="text-[#2f3437]">{r.memberName}</span>
-                        {r.reason && <span className="text-[#2f3437]/40">({r.reason})</span>}
+                        <span className="text-[var(--abv-text)]">{r.memberName}</span>
+                        {r.reason && <span className="text-[var(--abv-text)]/40">({r.reason})</span>}
                       </div>
                     ))}
                   </div>
@@ -1248,10 +1248,10 @@ export default function AuditsPage() {
               <div className="bg-white border border-gray-200 rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-1">
                   <CheckCircleIcon className="w-4 h-4 text-green-500 shrink-0" />
-                  <p className="text-sm font-semibold text-[#2f3437]">Last monthly batch complete</p>
-                  <p className="text-xs text-[#2f3437]/40 ml-auto">{fmtDateTime(batchStatus.completed)}</p>
+                  <p className="text-sm font-semibold text-[var(--abv-text)]">Last monthly batch complete</p>
+                  <p className="text-xs text-[var(--abv-text)]/40 ml-auto">{fmtDateTime(batchStatus.completed)}</p>
                 </div>
-                <p className="text-xs text-[#2f3437]/60">
+                <p className="text-xs text-[var(--abv-text)]/60">
                   {batchStatus.results?.filter(r => r.status === "success").length ?? 0} audits completed ·{" "}
                   {batchStatus.results?.filter(r => r.status === "skipped").length ?? 0} skipped ·{" "}
                   {batchStatus.results?.filter(r => r.status === "failed").length ?? 0} failed
@@ -1261,8 +1261,8 @@ export default function AuditsPage() {
 
             {/* Last monthly run from DB */}
             {lastRun && !isRunning && !(batchStatus?.status === "complete") && (
-              <div className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-xs text-[#2f3437]/60">
-                <span className="font-medium text-[#2f3437]">Last monthly run:</span>{" "}
+              <div className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-xs text-[var(--abv-text)]/60">
+                <span className="font-medium text-[var(--abv-text)]">Last monthly run:</span>{" "}
                 {fmtDateTime(lastRun.date)} —{" "}
                 {lastRun.audits_queued} audits completed, {lastRun.skipped_no_new_videos + lastRun.skipped_no_baseline + (lastRun.skipped_no_youtube ?? 0)} skipped
                 {lastRun.failures > 0 && `, ${lastRun.failures} failed`}
@@ -1271,17 +1271,17 @@ export default function AuditsPage() {
 
             {/* Baseline batch progress */}
             {isBaselineRunning && (
-              <div className="bg-white border border-[#6ba3c7]/30 rounded-lg p-4">
+              <div className="bg-white border border-[var(--abv-azure)]/30 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-sm font-semibold text-[#2f3437]">Baseline batch in progress…</p>
+                  <p className="text-sm font-semibold text-[var(--abv-text)]">Baseline batch in progress…</p>
                   <div className="flex items-center gap-3">
-                    <p className="text-sm text-[#2f3437]/50">{baselineBatchStatus!.current} / {baselineBatchStatus!.total} members</p>
-                    <button onClick={dismissBaselineBatch} className="text-xs text-[#2f3437]/40 hover:text-[#ff0033] transition-colors" title="Dismiss">✕</button>
+                    <p className="text-sm text-[var(--abv-text)]/50">{baselineBatchStatus!.current} / {baselineBatchStatus!.total} members</p>
+                    <button onClick={dismissBaselineBatch} className="text-xs text-[var(--abv-text)]/40 hover:text-[var(--abv-crimson)] transition-colors" title="Dismiss">✕</button>
                   </div>
                 </div>
                 <div className="w-full bg-gray-100 rounded-full h-2 mb-3">
                   <div
-                    className="bg-[#6ba3c7] h-2 rounded-full transition-all duration-500"
+                    className="bg-[var(--abv-dark)] h-2 rounded-full transition-all duration-500"
                     style={{ width: `${baselineBatchStatus!.total > 0 ? (baselineBatchStatus!.current / baselineBatchStatus!.total) * 100 : 0}%` }}
                   />
                 </div>
@@ -1289,11 +1289,11 @@ export default function AuditsPage() {
                   <div className="space-y-1 max-h-48 overflow-y-auto">
                     {baselineBatchStatus!.results.slice().reverse().map((r, i) => (
                       <div key={i} className="flex items-center gap-2 text-xs">
-                        <span className={r.status === "success" ? "text-green-600" : r.status === "failed" ? "text-[#ff0033]" : "text-[#2f3437]/40"}>
+                        <span className={r.status === "success" ? "text-green-600" : r.status === "failed" ? "text-[var(--abv-crimson)]" : "text-[var(--abv-text)]/40"}>
                           {r.status === "success" ? "✓" : r.status === "failed" ? "✗" : "–"}
                         </span>
-                        <span className="text-[#2f3437]">{r.memberName}</span>
-                        {r.reason && <span className="text-[#2f3437]/40">({r.reason})</span>}
+                        <span className="text-[var(--abv-text)]">{r.memberName}</span>
+                        {r.reason && <span className="text-[var(--abv-text)]/40">({r.reason})</span>}
                       </div>
                     ))}
                   </div>
@@ -1303,13 +1303,13 @@ export default function AuditsPage() {
 
             {/* Baseline batch summary */}
             {!isBaselineRunning && baselineBatchStatus?.status === "complete" && baselineBatchStatus.completed && (
-              <div className="bg-white border border-[#6ba3c7]/20 rounded-lg p-4">
+              <div className="bg-white border border-[var(--abv-azure)]/20 rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-1">
-                  <CheckCircleIcon className="w-4 h-4 text-[#6ba3c7] shrink-0" />
-                  <p className="text-sm font-semibold text-[#2f3437]">Baseline batch complete</p>
-                  <p className="text-xs text-[#2f3437]/40 ml-auto">{fmtDateTime(baselineBatchStatus.completed)}</p>
+                  <CheckCircleIcon className="w-4 h-4 text-[var(--abv-azure)] shrink-0" />
+                  <p className="text-sm font-semibold text-[var(--abv-text)]">Baseline batch complete</p>
+                  <p className="text-xs text-[var(--abv-text)]/40 ml-auto">{fmtDateTime(baselineBatchStatus.completed)}</p>
                 </div>
-                <p className="text-xs text-[#2f3437]/60">
+                <p className="text-xs text-[var(--abv-text)]/60">
                   {baselineBatchStatus.results?.filter(r => r.status === "success").length ?? 0} new baselines generated ·{" "}
                   {baselineBatchStatus.results?.filter(r => r.status === "failed").length ?? 0} failed
                 </p>
@@ -1318,8 +1318,8 @@ export default function AuditsPage() {
 
             {/* Last baseline run from DB */}
             {baselineLastRun && !isBaselineRunning && !(baselineBatchStatus?.status === "complete") && (
-              <div className="px-4 py-3 bg-[#e8f7ff]/60 border border-[#6ba3c7]/20 rounded-lg text-xs text-[#2f3437]/60">
-                <span className="font-medium text-[#2f3437]">Last baseline run:</span>{" "}
+              <div className="px-4 py-3 bg-[#e8f7ff]/60 border border-[var(--abv-azure)]/20 rounded-lg text-xs text-[var(--abv-text)]/60">
+                <span className="font-medium text-[var(--abv-text)]">Last baseline run:</span>{" "}
                 {fmtDateTime(baselineLastRun.date)} — {baselineLastRun.generated} baseline{baselineLastRun.generated !== 1 ? "s" : ""} generated
                 {baselineLastRun.failures > 0 && `, ${baselineLastRun.failures} failed`}
               </div>
@@ -1334,12 +1334,12 @@ export default function AuditsPage() {
           placeholder="Search by member name…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6ba3c7] focus:border-transparent outline-none text-[#2f3437] bg-white text-sm"
+          className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--abv-azure)] focus:border-transparent outline-none text-[var(--abv-text)] bg-white text-sm"
         />
         <select
           value={typeFilter}
           onChange={(e) => setTypeFilter(e.target.value)}
-          className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6ba3c7] outline-none text-[#2f3437] bg-white text-sm"
+          className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--abv-azure)] outline-none text-[var(--abv-text)] bg-white text-sm"
         >
           <option value="">All Types</option>
           <option value="baseline">Baseline</option>
@@ -1348,7 +1348,7 @@ export default function AuditsPage() {
         </select>
         <button
           onClick={() => { fetchAudits(); fetchBatchStatus(); fetchBaselineBatchStatus(); fetchActiveJobs(); }}
-          className="flex items-center gap-2 px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-[#2f3437] hover:bg-gray-50"
+          className="flex items-center gap-2 px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-[var(--abv-text)] hover:bg-gray-50"
         >
           <ArrowPathIcon className="w-4 h-4" /> Refresh
         </button>
@@ -1360,15 +1360,15 @@ export default function AuditsPage() {
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
                 {["Date", "Member", "Audit", "Score", "Action"].map((h) => (
-                  <th key={h} className="text-left px-6 py-3 text-xs font-semibold text-[#2f3437]/60 uppercase tracking-wider">{h}</th>
+                  <th key={h} className="text-left px-6 py-3 text-xs font-semibold text-[var(--abv-text)]/60 uppercase tracking-wider">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {loading ? (
-                <tr><td colSpan={5} className="px-6 py-12 text-center text-[#2f3437]/40">Loading…</td></tr>
+                <tr><td colSpan={5} className="px-6 py-12 text-center text-[var(--abv-text)]/40">Loading…</td></tr>
               ) : filtered.length === 0 ? (
-                <tr><td colSpan={5} className="px-6 py-12 text-center text-[#2f3437]/40">No audits found.</td></tr>
+                <tr><td colSpan={5} className="px-6 py-12 text-center text-[var(--abv-text)]/40">No audits found.</td></tr>
               ) : filtered.map((a) => {
                 const isSingleVideo = a.auditType === "single_video";
                 const firstVideo = (a.videosAnalysed as any)?.[0] ?? null;
@@ -1381,10 +1381,10 @@ export default function AuditsPage() {
 
                 return (
                 <tr key={a.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 text-[#2f3437]/70 whitespace-nowrap">{fmt(a.createdAt)}</td>
+                  <td className="px-6 py-4 text-[var(--abv-text)]/70 whitespace-nowrap">{fmt(a.createdAt)}</td>
                   <td className="px-6 py-4">
                     {a.user ? (
-                      <Link href={`/admin/members/${a.user.id}`} className="text-[#6ba3c7] hover:underline font-medium whitespace-nowrap">
+                      <Link href={`/admin/members/${a.user.id}`} className="text-[var(--abv-azure)] hover:underline font-medium whitespace-nowrap">
                         {a.user.fullName ?? a.user.email}
                       </Link>
                     ) : "—"}
@@ -1411,7 +1411,7 @@ export default function AuditsPage() {
                       ) : (
                         <div className={`w-[41px] h-[41px] rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
                           a.auditType === "baseline"
-                            ? "bg-[#6ba3c7]/15 text-[#6ba3c7]"
+                            ? "bg-[var(--abv-dark)]/15 text-[var(--abv-azure)]"
                             : "bg-purple-100 text-purple-600"
                         }`}>
                           {a.auditType === "baseline" ? "B" : "M"}
@@ -1419,11 +1419,11 @@ export default function AuditsPage() {
                       )}
                       {/* Type label + video title */}
                       <div className="min-w-0">
-                        <p className="text-xs font-semibold text-[#2f3437]/60 uppercase tracking-wide">
+                        <p className="text-xs font-semibold text-[var(--abv-text)]/60 uppercase tracking-wide">
                           {a.auditType.replace("_", " ")}
                         </p>
                         {isSingleVideo && videoTitle && (
-                          <p className="text-sm text-[#2f3437] mt-0.5 line-clamp-2 max-w-[280px]">
+                          <p className="text-sm text-[var(--abv-text)] mt-0.5 line-clamp-2 max-w-[280px]">
                             {videoTitle}
                           </p>
                         )}
@@ -1439,13 +1439,13 @@ export default function AuditsPage() {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3 whitespace-nowrap">
-                      <Link href={`/admin/audits/${a.id}`} className="text-[#6ba3c7] hover:underline text-xs font-medium">
+                      <Link href={`/admin/audits/${a.id}`} className="text-[var(--abv-azure)] hover:underline text-xs font-medium">
                         View Report →
                       </Link>
                       <button
                         onClick={() => handleRerunAudit(a, false)}
                         disabled={busyAuditId === a.id || !a.user?.id}
-                        className="flex items-center gap-1 text-xs font-medium text-[#2f3437]/60 hover:text-[#6ba3c7] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        className="flex items-center gap-1 text-xs font-medium text-[var(--abv-text)]/60 hover:text-[var(--abv-azure)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                         title="Delete this audit and run a fresh one"
                       >
                         <ArrowPathIcon className="w-3.5 h-3.5" />

@@ -91,7 +91,7 @@ function ShortTextField({
   const debouncedSave = useDebounce((v: string) => onSave(field.id, { value: v }), 1000);
   return (
     <div>
-      <label className="block text-sm font-medium text-[#2f3437] dark:text-white mb-1.5">
+      <label className="block text-sm font-medium text-[var(--abv-text)] dark:text-white mb-1.5">
         {field.label}
       </label>
       <input
@@ -99,7 +99,7 @@ function ShortTextField({
         value={value}
         placeholder={field.placeholderText ?? ""}
         onChange={(e) => { setValue(e.target.value); debouncedSave(e.target.value); }}
-        className="w-full px-3 py-2 text-sm border border-[#eaeaea] dark:border-white/20 rounded-lg bg-white dark:bg-white/5 text-[#2f3437] dark:text-white focus:ring-2 focus:ring-[#6ba3c7] focus:border-transparent outline-none"
+        className="w-full px-3 py-2 text-sm border border-[var(--abv-border-strong)] dark:border-white/20 rounded-lg bg-white dark:bg-white/5 text-[var(--abv-text)] dark:text-white focus:ring-2 focus:ring-[var(--abv-azure)] focus:border-transparent outline-none"
       />
     </div>
   );
@@ -117,7 +117,7 @@ function LongTextField({
   const debouncedSave = useDebounce((v: string) => onSave(field.id, { value: v }), 1000);
   return (
     <div>
-      <label className="block text-sm font-medium text-[#2f3437] dark:text-white mb-1.5">
+      <label className="block text-sm font-medium text-[var(--abv-text)] dark:text-white mb-1.5">
         {field.label}
       </label>
       <textarea
@@ -125,7 +125,7 @@ function LongTextField({
         rows={rows}
         placeholder={field.placeholderText ?? ""}
         onChange={(e) => { setValue(e.target.value); debouncedSave(e.target.value); }}
-        className="w-full px-3 py-2 text-sm border border-[#eaeaea] dark:border-white/20 rounded-lg bg-white dark:bg-white/5 text-[#2f3437] dark:text-white focus:ring-2 focus:ring-[#6ba3c7] focus:border-transparent outline-none resize-y"
+        className="w-full px-3 py-2 text-sm border border-[var(--abv-border-strong)] dark:border-white/20 rounded-lg bg-white dark:bg-white/5 text-[var(--abv-text)] dark:text-white focus:ring-2 focus:ring-[var(--abv-azure)] focus:border-transparent outline-none resize-y"
       />
     </div>
   );
@@ -151,7 +151,7 @@ function ChecklistField({
 
   return (
     <div>
-      <label className="block text-sm font-medium text-[#2f3437] dark:text-white mb-2">
+      <label className="block text-sm font-medium text-[var(--abv-text)] dark:text-white mb-2">
         {field.label}
       </label>
       <div className="space-y-2">
@@ -161,8 +161,8 @@ function ChecklistField({
               onClick={() => toggle(i)}
               className={`mt-0.5 w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors cursor-pointer ${
                 checked[i]
-                  ? "bg-[#6ba3c7] border-[#6ba3c7]"
-                  : "border-[#eaeaea] dark:border-white/30 group-hover:border-[#6ba3c7]"
+                  ? "bg-[var(--abv-dark)] border-[var(--abv-azure)]"
+                  : "border-[var(--abv-border-strong)] dark:border-white/30 group-hover:border-[var(--abv-azure)]"
               }`}
             >
               {checked[i] && <CheckIcon className="w-2.5 h-2.5 text-white" />}
@@ -171,8 +171,8 @@ function ChecklistField({
               onClick={() => toggle(i)}
               className={`text-sm leading-relaxed ${
                 checked[i]
-                  ? "line-through text-[#2f3437]/40 dark:text-white/40"
-                  : "text-[#2f3437] dark:text-white"
+                  ? "line-through text-[var(--abv-text)]/40 dark:text-white/40"
+                  : "text-[var(--abv-text)] dark:text-white"
               }`}
             >
               {item}
@@ -215,15 +215,15 @@ function TableField({
 
   return (
     <div>
-      <label className="block text-sm font-medium text-[#2f3437] dark:text-white mb-2">
+      <label className="block text-sm font-medium text-[var(--abv-text)] dark:text-white mb-2">
         {field.label}
       </label>
-      <div className="overflow-x-auto rounded-lg border border-[#eaeaea] dark:border-white/20">
+      <div className="overflow-x-auto rounded-lg border border-[var(--abv-border-strong)] dark:border-white/20">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-[#f7f6f3] dark:bg-white/5 border-b border-[#eaeaea] dark:border-white/20">
+            <tr className="bg-[var(--abv-bg)] dark:bg-white/5 border-b border-[var(--abv-border-strong)] dark:border-white/20">
               {columns.map((col) => (
-                <th key={col.key} className="px-3 py-2 text-left text-xs font-semibold text-[#2f3437]/60 dark:text-white/60 uppercase tracking-wider">
+                <th key={col.key} className="px-3 py-2 text-left text-xs font-semibold text-[var(--abv-text)]/60 dark:text-white/60 uppercase tracking-wider">
                   {col.label}
                 </th>
               ))}
@@ -231,7 +231,7 @@ function TableField({
           </thead>
           <tbody>
             {rows.map((row, rowIdx) => (
-              <tr key={rowIdx} className="border-b border-[#eaeaea] dark:border-white/10 last:border-0">
+              <tr key={rowIdx} className="border-b border-[var(--abv-border-strong)] dark:border-white/10 last:border-0">
                 {columns.map((col) => (
                   <td key={col.key} className="px-2 py-1.5">
                     {col.type === "checkbox" ? (
@@ -239,14 +239,14 @@ function TableField({
                         type="checkbox"
                         checked={row[col.key] === "true"}
                         onChange={(e) => update(rowIdx, col.key, e.target.checked ? "true" : "false")}
-                        className="w-4 h-4 accent-[#6ba3c7]"
+                        className="w-4 h-4 accent-[var(--abv-azure)]"
                       />
                     ) : (
                       <input
                         type="text"
                         value={row[col.key] ?? ""}
                         onChange={(e) => update(rowIdx, col.key, e.target.value)}
-                        className="w-full px-2 py-1 text-sm bg-transparent text-[#2f3437] dark:text-white outline-none focus:bg-[#f7f6f3] dark:focus:bg-white/5 rounded transition-colors"
+                        className="w-full px-2 py-1 text-sm bg-transparent text-[var(--abv-text)] dark:text-white outline-none focus:bg-[var(--abv-bg)] dark:focus:bg-white/5 rounded transition-colors"
                       />
                     )}
                   </td>
@@ -285,10 +285,10 @@ function LessonSidebar({
         >
           <span className="text-xl leading-none">{getSectionIcon(sectionSortOrder, sectionSlug)}</span>
           <div>
-            <p className="text-xs font-semibold text-[#2f3437]/40 dark:text-white/40 uppercase tracking-wider group-hover:text-[#6ba3c7] transition-colors">
+            <p className="text-xs font-semibold text-[var(--abv-text)]/40 dark:text-white/40 uppercase tracking-wider group-hover:text-[var(--abv-azure)] transition-colors">
               Section {sectionSortOrder}
             </p>
-            <p className="text-sm font-bold text-[#2f3437] dark:text-white mt-0.5 leading-snug group-hover:text-[#6ba3c7] transition-colors">{sectionTitle}</p>
+            <p className="text-sm font-bold text-[var(--abv-text)] dark:text-white mt-0.5 leading-snug group-hover:text-[var(--abv-azure)] transition-colors">{sectionTitle}</p>
           </div>
         </Link>
       </div>
@@ -300,34 +300,34 @@ function LessonSidebar({
             href={`/member/academy/foundations/${sectionSlug}/${l.slug}`}
             className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
               isCurrent
-                ? "bg-[#6ba3c7]/10 text-[#6ba3c7] font-medium"
-                : "text-[#2f3437]/70 dark:text-white/60 hover:bg-[#f7f6f3] dark:hover:bg-white/5"
+                ? "bg-[var(--abv-dark)]/10 text-[var(--abv-azure)] font-medium"
+                : "text-[var(--abv-text)]/70 dark:text-white/60 hover:bg-[var(--abv-bg)] dark:hover:bg-white/5"
             }`}
           >
             <div className="shrink-0">
               {l.completed ? (
                 <CheckCircleIcon className="w-4 h-4 text-green-500" />
               ) : isCurrent ? (
-                <PlayCircleIcon className="w-4 h-4 text-[#6ba3c7]" />
+                <PlayCircleIcon className="w-4 h-4 text-[var(--abv-azure)]" />
               ) : (
                 <div className="w-4 h-4 rounded-full border-2 border-[#d0d0d0] dark:border-white/20" />
               )}
             </div>
             <span className="truncate">
-              <span className="text-[#2f3437]/30 dark:text-white/30 mr-1">{i + 1}.</span>
+              <span className="text-[var(--abv-text)]/30 dark:text-white/30 mr-1">{i + 1}.</span>
               {l.title}
             </span>
           </Link>
         );
       })}
-      <div className="pt-3 mt-2 border-t border-[#eaeaea] dark:border-white/10">
-        <div className="flex items-center justify-between text-xs text-[#2f3437]/40 dark:text-white/40 mb-1">
+      <div className="pt-3 mt-2 border-t border-[var(--abv-border-strong)] dark:border-white/10">
+        <div className="flex items-center justify-between text-xs text-[var(--abv-text)]/40 dark:text-white/40 mb-1">
           <span>Progress</span>
           <span>{completedCount}/{lessons.length}</span>
         </div>
-        <div className="h-1.5 bg-[#eaeaea] dark:bg-white/10 rounded-full overflow-hidden">
+        <div className="h-1.5 bg-[var(--abv-border-strong)] dark:bg-white/10 rounded-full overflow-hidden">
           <div
-            className="h-full bg-[#6ba3c7] rounded-full transition-all"
+            className="h-full bg-[var(--abv-dark)] rounded-full transition-all"
             style={{ width: `${lessons.length > 0 ? Math.round((completedCount / lessons.length) * 100) : 0}%` }}
           />
         </div>
@@ -431,9 +431,9 @@ export default function LessonClient({
     return (
       <div className="max-w-5xl">
         <div className="animate-pulse space-y-4">
-          <div className="h-4 bg-[#eaeaea] dark:bg-white/10 rounded w-2/3" />
-          <div className="h-8 bg-[#eaeaea] dark:bg-white/10 rounded w-full" />
-          <div className="aspect-video bg-[#eaeaea] dark:bg-white/10 rounded-lg" />
+          <div className="h-4 bg-[var(--abv-border-strong)] dark:bg-white/10 rounded w-2/3" />
+          <div className="h-8 bg-[var(--abv-border-strong)] dark:bg-white/10 rounded w-full" />
+          <div className="aspect-video bg-[var(--abv-border-strong)] dark:bg-white/10 rounded-lg" />
         </div>
       </div>
     );
@@ -442,7 +442,7 @@ export default function LessonClient({
   if (!lesson) {
     return (
       <div className="max-w-5xl">
-        <p className="text-sm text-[#2f3437]/50 dark:text-white/50">Lesson not found.</p>
+        <p className="text-sm text-[var(--abv-text)]/50 dark:text-white/50">Lesson not found.</p>
       </div>
     );
   }
@@ -463,13 +463,13 @@ export default function LessonClient({
       {/* Main content */}
       <div className="flex-1 min-w-0">
         {/* Mobile section dropdown */}
-        <details className="lg:hidden mb-4 bg-white dark:bg-[#1a2433] border border-[#eaeaea] dark:border-white/10 rounded-lg">
-          <summary className="px-4 py-3 text-sm font-medium text-[#2f3437] dark:text-white cursor-pointer flex items-center justify-between">
+        <details className="lg:hidden mb-4 bg-white dark:bg-[#1a2433] border border-[var(--abv-border-strong)] dark:border-white/10 rounded-lg">
+          <summary className="px-4 py-3 text-sm font-medium text-[var(--abv-text)] dark:text-white cursor-pointer flex items-center justify-between">
             <span className="flex items-center gap-2">
               <span>{getSectionIcon(lesson.section.sortOrder, lesson.section.slug)}</span>
               <span>Section {lesson.section.sortOrder}: {lesson.section.title}</span>
             </span>
-            <ChevronDownIcon className="w-4 h-4 text-[#2f3437]/40 dark:text-white/40" />
+            <ChevronDownIcon className="w-4 h-4 text-[var(--abv-text)]/40 dark:text-white/40" />
           </summary>
           <div className="px-2 pb-2">
             <LessonSidebar
@@ -484,28 +484,28 @@ export default function LessonClient({
 
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 mb-5 flex-wrap text-sm">
-          <Link href="/member/academy" className="flex items-center gap-1 text-[#2f3437]/50 dark:text-white/50 hover:text-[#2f3437] dark:hover:text-white transition-colors">
+          <Link href="/member/academy" className="flex items-center gap-1 text-[var(--abv-text)]/50 dark:text-white/50 hover:text-[var(--abv-text)] dark:hover:text-white transition-colors">
             <ArrowLeftOutline className="w-4 h-4" />
             Academy
           </Link>
-          <span className="text-[#2f3437]/30 dark:text-white/30">/</span>
-          <Link href="/member/academy/foundations" className="text-[#2f3437]/50 dark:text-white/50 hover:text-[#2f3437] dark:hover:text-white transition-colors">
+          <span className="text-[var(--abv-text)]/30 dark:text-white/30">/</span>
+          <Link href="/member/academy/foundations" className="text-[var(--abv-text)]/50 dark:text-white/50 hover:text-[var(--abv-text)] dark:hover:text-white transition-colors">
             Foundations
           </Link>
-          <span className="text-[#2f3437]/30 dark:text-white/30">/</span>
-          <Link href={`/member/academy/foundations/${sectionSlug}`} className="text-[#2f3437]/50 dark:text-white/50 hover:text-[#2f3437] dark:hover:text-white transition-colors truncate">
+          <span className="text-[var(--abv-text)]/30 dark:text-white/30">/</span>
+          <Link href={`/member/academy/foundations/${sectionSlug}`} className="text-[var(--abv-text)]/50 dark:text-white/50 hover:text-[var(--abv-text)] dark:hover:text-white transition-colors truncate">
             {lesson.section.title}
           </Link>
-          <span className="text-[#2f3437]/30 dark:text-white/30">/</span>
-          <span className="text-[#2f3437] dark:text-white font-medium truncate">{lesson.title}</span>
+          <span className="text-[var(--abv-text)]/30 dark:text-white/30">/</span>
+          <span className="text-[var(--abv-text)] dark:text-white font-medium truncate">{lesson.title}</span>
         </div>
 
         {/* Title + tags */}
         <div className="mb-5">
-          <h1 className="text-2xl font-bold text-[#2f3437] dark:text-white mb-3">{lesson.title}</h1>
+          <h1 className="text-2xl font-bold text-[var(--abv-text)] dark:text-white mb-3">{lesson.title}</h1>
           {(lesson.principleTags as string[]).length > 0 && (
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-[#2f3437]/40 dark:text-white/40 mb-1.5">
+              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--abv-text)]/40 dark:text-white/40 mb-1.5">
                 Attraction Principles in this video
               </p>
               <div className="flex flex-wrap gap-1.5">
@@ -535,17 +535,17 @@ export default function LessonClient({
         {/* Merged content — single scroll (description, takeaways, workbook, action items) */}
         <div className="space-y-6">
           {lesson.description && (
-            <div className="bg-white dark:bg-[#1a2433] rounded-lg border border-[#eaeaea] dark:border-white/10 p-6">
-              <p className="text-sm text-[#2f3437] dark:text-white leading-relaxed">{lesson.description}</p>
+            <div className="bg-white dark:bg-[#1a2433] rounded-lg border border-[var(--abv-border-strong)] dark:border-white/10 p-6">
+              <p className="text-sm text-[var(--abv-text)] dark:text-white leading-relaxed">{lesson.description}</p>
             </div>
           )}
 
           {lesson.keyTakeaways && (
-            <div className="bg-white dark:bg-[#1a2433] rounded-lg border border-[#eaeaea] dark:border-white/10 p-6">
-              <h3 className="text-sm font-bold text-[#2f3437] dark:text-white uppercase tracking-wider mb-3">
+            <div className="bg-white dark:bg-[#1a2433] rounded-lg border border-[var(--abv-border-strong)] dark:border-white/10 p-6">
+              <h3 className="text-sm font-bold text-[var(--abv-text)] dark:text-white uppercase tracking-wider mb-3">
                 Key Takeaways
               </h3>
-              <div className="prose prose-sm max-w-none text-[#2f3437] dark:text-white [&_ul]:space-y-2 [&_li]:leading-relaxed [&_p]:leading-relaxed">
+              <div className="prose prose-sm max-w-none text-[var(--abv-text)] dark:text-white [&_ul]:space-y-2 [&_li]:leading-relaxed [&_p]:leading-relaxed">
                 <ReactMarkdown>{lesson.keyTakeaways}</ReactMarkdown>
               </div>
             </div>
@@ -554,14 +554,14 @@ export default function LessonClient({
           {lesson.workbookFields.length > 0 && (
             <div>
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-bold text-[#2f3437] dark:text-white uppercase tracking-wider">
+                <h3 className="text-sm font-bold text-[var(--abv-text)] dark:text-white uppercase tracking-wider">
                   Workbook
                 </h3>
                 <span className={`text-xs font-medium ${
-                  saveStatus === "saving" ? "text-[#2f3437]/40 dark:text-white/40" :
+                  saveStatus === "saving" ? "text-[var(--abv-text)]/40 dark:text-white/40" :
                   saveStatus === "saved" ? "text-green-600 dark:text-green-400" :
-                  saveStatus === "error" ? "text-[#e63946]" :
-                  "text-[#2f3437]/20 dark:text-white/20"
+                  saveStatus === "error" ? "text-[var(--abv-crimson)]" :
+                  "text-[var(--abv-text)]/20 dark:text-white/20"
                 }`}>
                   {saveStatus === "saving" && "Saving\u2026"}
                   {saveStatus === "saved" && "\u2713 All changes saved"}
@@ -571,7 +571,7 @@ export default function LessonClient({
               </div>
               <div className="space-y-5">
                 {lesson.workbookFields.map((field) => (
-                  <div key={field.id} className="bg-white dark:bg-[#1a2433] rounded-lg border border-[#eaeaea] dark:border-white/10 p-5">
+                  <div key={field.id} className="bg-white dark:bg-[#1a2433] rounded-lg border border-[var(--abv-border-strong)] dark:border-white/10 p-5">
                     {field.fieldType === "short_text" && <ShortTextField field={field} onSave={saveWorkbookField} />}
                     {field.fieldType === "long_text" && <LongTextField field={field} onSave={saveWorkbookField} />}
                     {field.fieldType === "checklist" && <ChecklistField field={field} onSave={saveWorkbookField} />}
@@ -583,11 +583,11 @@ export default function LessonClient({
           )}
 
           {lesson.actionItems && (
-            <div className="bg-white dark:bg-[#1a2433] rounded-lg border border-[#eaeaea] dark:border-white/10 p-6">
-              <h3 className="text-sm font-bold text-[#2f3437] dark:text-white uppercase tracking-wider mb-3">
+            <div className="bg-white dark:bg-[#1a2433] rounded-lg border border-[var(--abv-border-strong)] dark:border-white/10 p-6">
+              <h3 className="text-sm font-bold text-[var(--abv-text)] dark:text-white uppercase tracking-wider mb-3">
                 Action Items
               </h3>
-              <div className="prose prose-sm max-w-none text-[#2f3437] dark:text-white [&_ul]:space-y-2 [&_li]:leading-relaxed">
+              <div className="prose prose-sm max-w-none text-[var(--abv-text)] dark:text-white [&_ul]:space-y-2 [&_li]:leading-relaxed">
                 <ReactMarkdown>{lesson.actionItems}</ReactMarkdown>
               </div>
             </div>
@@ -596,8 +596,8 @@ export default function LessonClient({
 
         {/* Homework section */}
         {homeworkItems.length > 0 && (
-          <div className="mt-8 bg-white dark:bg-[#1a2433] rounded-lg border border-[#eaeaea] dark:border-white/10 p-6">
-            <h3 className="text-sm font-bold text-[#2f3437] dark:text-white uppercase tracking-wider mb-4">
+          <div className="mt-8 bg-white dark:bg-[#1a2433] rounded-lg border border-[var(--abv-border-strong)] dark:border-white/10 p-6">
+            <h3 className="text-sm font-bold text-[var(--abv-text)] dark:text-white uppercase tracking-wider mb-4">
               Homework
             </h3>
             <div className="space-y-3">
@@ -607,8 +607,8 @@ export default function LessonClient({
                     onClick={() => toggleHomework(i)}
                     className={`mt-0.5 w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors cursor-pointer ${
                       item.completed
-                        ? "bg-[#6ba3c7] border-[#6ba3c7]"
-                        : "border-[#eaeaea] dark:border-white/30 group-hover:border-[#6ba3c7]"
+                        ? "bg-[var(--abv-dark)] border-[var(--abv-azure)]"
+                        : "border-[var(--abv-border-strong)] dark:border-white/30 group-hover:border-[var(--abv-azure)]"
                     }`}
                   >
                     {item.completed && <CheckIcon className="w-3 h-3 text-white" />}
@@ -617,8 +617,8 @@ export default function LessonClient({
                     onClick={() => toggleHomework(i)}
                     className={`text-sm leading-relaxed ${
                       item.completed
-                        ? "line-through text-[#2f3437]/40 dark:text-white/40"
-                        : "text-[#2f3437] dark:text-white"
+                        ? "line-through text-[var(--abv-text)]/40 dark:text-white/40"
+                        : "text-[var(--abv-text)] dark:text-white"
                     }`}
                   >
                     {item.label}
@@ -631,23 +631,23 @@ export default function LessonClient({
 
         {/* AI Tool CTA */}
         {lesson.aiToolLink && lesson.aiToolLabel && (
-          <div className="mt-6 bg-[#6ba3c7]/8 dark:bg-[#6ba3c7]/10 border border-[#6ba3c7]/20 rounded-lg p-5 flex items-center justify-between gap-4">
+          <div className="mt-6 bg-[var(--abv-dark)]/8 dark:bg-[var(--abv-dark)]/10 border border-[var(--abv-azure)]/20 rounded-lg p-5 flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-[#6ba3c7]/15 rounded-lg shrink-0">
-                <SparklesIcon className="w-5 h-5 text-[#6ba3c7]" />
+              <div className="p-2 bg-[var(--abv-dark)]/15 rounded-lg shrink-0">
+                <SparklesIcon className="w-5 h-5 text-[var(--abv-azure)]" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-[#2f3437] dark:text-white">
+                <p className="text-sm font-semibold text-[var(--abv-text)] dark:text-white">
                   Ready to put this into practice?
                 </p>
-                <p className="text-xs text-[#2f3437]/50 dark:text-white/50 mt-0.5">
+                <p className="text-xs text-[var(--abv-text)]/50 dark:text-white/50 mt-0.5">
                   Use the {lesson.aiToolLabel} tool to apply what you've learned.
                 </p>
               </div>
             </div>
             <Link
               href={lesson.aiToolLink}
-              className="shrink-0 flex items-center gap-1.5 bg-[#6ba3c7] hover:bg-[#5490b5] text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+              className="shrink-0 flex items-center gap-1.5 $1var(--abv-dark)$2 hover:bg-black/85 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
             >
               {lesson.aiToolLabel}
               <ArrowRightIcon className="w-4 h-4" />
@@ -656,12 +656,12 @@ export default function LessonClient({
         )}
 
         {/* Mark as Complete + Navigation */}
-        <div className="mt-8 pt-6 border-t border-[#eaeaea] dark:border-white/10 flex items-center justify-between gap-4 flex-wrap">
+        <div className="mt-8 pt-6 border-t border-[var(--abv-border-strong)] dark:border-white/10 flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3">
             {lesson.prevLesson ? (
               <Link
                 href={`/member/academy/foundations/${lesson.prevLesson.sectionSlug}/${lesson.prevLesson.slug}`}
-                className="flex items-center gap-1.5 text-sm text-[#2f3437]/60 dark:text-white/60 hover:text-[#2f3437] dark:hover:text-white transition-colors"
+                className="flex items-center gap-1.5 text-sm text-[var(--abv-text)]/60 dark:text-white/60 hover:text-[var(--abv-text)] dark:hover:text-white transition-colors"
               >
                 <ArrowLeftIcon className="w-4 h-4" />
                 Previous
@@ -677,7 +677,7 @@ export default function LessonClient({
             className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all disabled:opacity-50 ${
               completed
                 ? "bg-green-500 hover:bg-green-600 text-white"
-                : "border border-[#eaeaea] dark:border-white/20 text-[#2f3437] dark:text-white hover:border-green-500 hover:text-green-600 dark:hover:text-green-400"
+                : "border border-[var(--abv-border-strong)] dark:border-white/20 text-[var(--abv-text)] dark:text-white hover:border-green-500 hover:text-green-600 dark:hover:text-green-400"
             } ${justCompleted ? "scale-105 ring-2 ring-green-400 ring-offset-2" : ""}`}
           >
             <CheckCircleIcon className={`w-5 h-5 ${justCompleted ? "animate-bounce" : ""}`} />
@@ -687,7 +687,7 @@ export default function LessonClient({
           {lesson.nextLesson ? (
             <Link
               href={`/member/academy/foundations/${lesson.nextLesson.sectionSlug}/${lesson.nextLesson.slug}`}
-              className="flex items-center gap-1.5 text-sm text-[#2f3437]/60 dark:text-white/60 hover:text-[#6ba3c7] transition-colors"
+              className="flex items-center gap-1.5 text-sm text-[var(--abv-text)]/60 dark:text-white/60 hover:text-[var(--abv-azure)] transition-colors"
             >
               Next Lesson
               <ArrowRightIcon className="w-4 h-4" />
@@ -695,7 +695,7 @@ export default function LessonClient({
           ) : (
             <Link
               href="/member/academy/foundations"
-              className="flex items-center gap-1.5 text-sm text-[#6ba3c7] hover:text-[#5490b5] transition-colors"
+              className="flex items-center gap-1.5 text-sm text-[var(--abv-azure)] hover:text-[var(--abv-azure)] transition-colors"
             >
               All Sections
               <ArrowRightIcon className="w-4 h-4" />

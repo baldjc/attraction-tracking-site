@@ -239,12 +239,12 @@ export default function PrinciplesTab() {
     <div>
       {/* Header row */}
       <div className="flex items-center justify-between mb-5">
-        <p className="text-sm text-[#2f3437]/50">
+        <p className="text-sm text-[var(--abv-text)]/50">
           Manage the principles used to tag lessons, knowledge base entries, and live calls.
         </p>
         <button
           onClick={openAdd}
-          className="flex items-center gap-1.5 bg-[#6ba3c7] text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-[#5a8fb3] transition-colors shrink-0"
+          className="flex items-center gap-1.5 bg-[var(--abv-dark)] text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-[#5a8fb3] transition-colors shrink-0"
         >
           <PlusIcon className="w-4 h-4" />
           Add Principle
@@ -254,9 +254,9 @@ export default function PrinciplesTab() {
       {/* Table */}
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         {loading ? (
-          <div className="py-16 text-center text-[#2f3437]/40 text-sm">Loading…</div>
+          <div className="py-16 text-center text-[var(--abv-text)]/40 text-sm">Loading…</div>
         ) : principles.length === 0 ? (
-          <div className="py-16 text-center text-[#2f3437]/40 text-sm">
+          <div className="py-16 text-center text-[var(--abv-text)]/40 text-sm">
             No principles yet. Click "Add Principle" to get started.
           </div>
         ) : (
@@ -264,11 +264,11 @@ export default function PrinciplesTab() {
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50">
                 <th className="w-8 px-3 py-3" />
-                <th className="px-4 py-3 text-left text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wide">Principle</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wide hidden md:table-cell">Slug</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wide hidden lg:table-cell">Description</th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wide">Active</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wide">Actions</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--abv-text)]/50 uppercase tracking-wide">Principle</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--abv-text)]/50 uppercase tracking-wide hidden md:table-cell">Slug</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--abv-text)]/50 uppercase tracking-wide hidden lg:table-cell">Description</th>
+                <th className="px-4 py-3 text-center text-xs font-semibold text-[var(--abv-text)]/50 uppercase tracking-wide">Active</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-[var(--abv-text)]/50 uppercase tracking-wide">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -280,9 +280,9 @@ export default function PrinciplesTab() {
                   onDragEnter={() => onDragEnter(p.id)}
                   onDragEnd={onDragEnd}
                   onDragOver={(e) => e.preventDefault()}
-                  className={`transition-colors ${dragging === p.id ? "opacity-40" : ""} ${dragOver === p.id ? "bg-[#6ba3c7]/5" : "hover:bg-gray-50"}`}
+                  className={`transition-colors ${dragging === p.id ? "opacity-40" : ""} ${dragOver === p.id ? "bg-[var(--abv-dark)]/5" : "hover:bg-gray-50"}`}
                 >
-                  <td className="px-3 py-3 text-center text-[#2f3437]/25 cursor-grab active:cursor-grabbing">
+                  <td className="px-3 py-3 text-center text-[var(--abv-text)]/25 cursor-grab active:cursor-grabbing">
                     <Bars3Icon className="w-4 h-4" />
                   </td>
                   <td className="px-4 py-3">
@@ -290,9 +290,9 @@ export default function PrinciplesTab() {
                       {p.name}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-[#2f3437]/50 font-mono text-xs hidden md:table-cell">{p.slug}</td>
-                  <td className="px-4 py-3 text-[#2f3437]/50 text-xs hidden lg:table-cell max-w-xs truncate">
-                    {p.description ?? <span className="italic text-[#2f3437]/25">—</span>}
+                  <td className="px-4 py-3 text-[var(--abv-text)]/50 font-mono text-xs hidden md:table-cell">{p.slug}</td>
+                  <td className="px-4 py-3 text-[var(--abv-text)]/50 text-xs hidden lg:table-cell max-w-xs truncate">
+                    {p.description ?? <span className="italic text-[var(--abv-text)]/25">—</span>}
                   </td>
                   <td className="px-4 py-3 text-center">
                     <button
@@ -311,14 +311,14 @@ export default function PrinciplesTab() {
                     <div className="flex items-center justify-end gap-1">
                       <button
                         onClick={() => openEdit(p)}
-                        className="p-1.5 text-[#2f3437]/40 hover:text-[#6ba3c7] hover:bg-[#6ba3c7]/10 rounded-md transition-colors"
+                        className="p-1.5 text-[var(--abv-text)]/40 hover:text-[var(--abv-azure)] hover:bg-[var(--abv-dark)]/10 rounded-md transition-colors"
                         title="Edit"
                       >
                         <PencilIcon className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => { setDeleteConfirm(p); setDeleteError(null); }}
-                        className="p-1.5 text-[#2f3437]/40 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
+                        className="p-1.5 text-[var(--abv-text)]/40 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
                         title="Delete"
                       >
                         <TrashIcon className="w-3.5 h-3.5" />
@@ -332,7 +332,7 @@ export default function PrinciplesTab() {
         )}
       </div>
       {reordering && (
-        <p className="text-xs text-[#2f3437]/40 text-center mt-2">Saving order…</p>
+        <p className="text-xs text-[var(--abv-text)]/40 text-center mt-2">Saving order…</p>
       )}
 
       {/* Add / Edit Modal */}
@@ -340,17 +340,17 @@ export default function PrinciplesTab() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="bg-white rounded-xl shadow-2xl border border-gray-200 w-full max-w-md p-6 space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="font-semibold text-[#2f3437]">
+              <h2 className="font-semibold text-[var(--abv-text)]">
                 {showModal === "add" ? "Add Principle" : "Edit Principle"}
               </h2>
-              <button onClick={() => setShowModal(null)} className="text-[#2f3437]/40 hover:text-[#2f3437] p-1">
+              <button onClick={() => setShowModal(null)} className="text-[var(--abv-text)]/40 hover:text-[var(--abv-text)] p-1">
                 <XMarkIcon className="w-5 h-5" />
               </button>
             </div>
 
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-semibold text-[#2f3437]/60 mb-1">
+                <label className="block text-xs font-semibold text-[var(--abv-text)]/60 mb-1">
                   Name <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -359,11 +359,11 @@ export default function PrinciplesTab() {
                   value={form.name}
                   onChange={(e) => handleNameChange(e.target.value)}
                   placeholder="e.g. Avatar Clarity"
-                  className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-[#6ba3c7]"
+                  className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-[var(--abv-azure)]"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-[#2f3437]/60 mb-1">
+                <label className="block text-xs font-semibold text-[var(--abv-text)]/60 mb-1">
                   Slug <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -371,14 +371,14 @@ export default function PrinciplesTab() {
                   value={form.slug}
                   onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))}
                   placeholder="e.g. avatar_clarity"
-                  className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 font-mono outline-none focus:ring-1 focus:ring-[#6ba3c7]"
+                  className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 font-mono outline-none focus:ring-1 focus:ring-[var(--abv-azure)]"
                 />
-                <p className="text-[10px] text-[#2f3437]/40 mt-0.5">
+                <p className="text-[10px] text-[var(--abv-text)]/40 mt-0.5">
                   Auto-generated from name. Used for course lesson tagging.
                 </p>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-[#2f3437]/60 mb-1">Description</label>
+                <label className="block text-xs font-semibold text-[var(--abv-text)]/60 mb-1">Description</label>
                 <MarkdownTextarea
                   value={form.description}
                   onChange={(next) => setForm((f) => ({ ...f, description: next }))}
@@ -388,7 +388,7 @@ export default function PrinciplesTab() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-[#2f3437]/60 mb-2">Color</label>
+                <label className="block text-xs font-semibold text-[var(--abv-text)]/60 mb-2">Color</label>
                 <div className="grid grid-cols-6 gap-2">
                   {COLOR_PRESETS.map((c) => (
                     <button
@@ -397,14 +397,14 @@ export default function PrinciplesTab() {
                       onClick={() => setForm((f) => ({ ...f, colorLight: c.value }))}
                       className={`h-8 rounded-lg border-2 transition-all ${c.value.split(" ").slice(0, 2).join(" ")} ${
                         form.colorLight === c.value
-                          ? "border-[#2f3437] scale-110 shadow-md"
+                          ? "border-[var(--abv-text)] scale-110 shadow-md"
                           : "border-transparent"
                       }`}
                     />
                   ))}
                 </div>
                 <div className="mt-2 flex items-center gap-2">
-                  <span className="text-xs text-[#2f3437]/50">Preview:</span>
+                  <span className="text-xs text-[var(--abv-text)]/50">Preview:</span>
                   <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${form.colorLight}`}>
                     {form.name || "Principle Name"}
                   </span>
@@ -418,21 +418,21 @@ export default function PrinciplesTab() {
                   onChange={(e) => setForm((f) => ({ ...f, isActive: e.target.checked }))}
                   className="rounded"
                 />
-                <label htmlFor="principleIsActive" className="text-sm text-[#2f3437]">Active</label>
+                <label htmlFor="principleIsActive" className="text-sm text-[var(--abv-text)]">Active</label>
               </div>
             </div>
 
             <div className="flex gap-2 pt-1">
               <button
                 onClick={() => setShowModal(null)}
-                className="flex-1 text-sm text-[#2f3437]/50 border border-gray-200 rounded-lg py-2 hover:bg-gray-50"
+                className="flex-1 text-sm text-[var(--abv-text)]/50 border border-gray-200 rounded-lg py-2 hover:bg-gray-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSave}
                 disabled={saving || !form.name.trim() || !form.slug.trim()}
-                className="flex-1 text-sm font-semibold text-white bg-[#6ba3c7] rounded-lg py-2 hover:bg-[#5a8fb3] disabled:opacity-50"
+                className="flex-1 text-sm font-semibold text-white bg-[var(--abv-dark)] rounded-lg py-2 hover:bg-[#5a8fb3] disabled:opacity-50"
               >
                 {saving ? "Saving…" : showModal === "add" ? "Create" : "Save Changes"}
               </button>
@@ -446,10 +446,10 @@ export default function PrinciplesTab() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="bg-white rounded-xl shadow-2xl border border-gray-200 w-full max-w-sm p-6 space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="font-semibold text-[#2f3437]">Delete Principle</h2>
+              <h2 className="font-semibold text-[var(--abv-text)]">Delete Principle</h2>
               <button
                 onClick={() => { setDeleteConfirm(null); setDeleteError(null); }}
-                className="text-[#2f3437]/40 hover:text-[#2f3437] p-1"
+                className="text-[var(--abv-text)]/40 hover:text-[var(--abv-text)] p-1"
               >
                 <XMarkIcon className="w-5 h-5" />
               </button>
@@ -463,7 +463,7 @@ export default function PrinciplesTab() {
                 <div className="flex gap-2">
                   <button
                     onClick={() => { setDeleteConfirm(null); setDeleteError(null); }}
-                    className="flex-1 text-sm text-[#2f3437]/50 border border-gray-200 rounded-lg py-2 hover:bg-gray-50"
+                    className="flex-1 text-sm text-[var(--abv-text)]/50 border border-gray-200 rounded-lg py-2 hover:bg-gray-50"
                   >
                     Cancel
                   </button>
@@ -477,13 +477,13 @@ export default function PrinciplesTab() {
               </div>
             ) : (
               <>
-                <p className="text-sm text-[#2f3437]/70">
+                <p className="text-sm text-[var(--abv-text)]/70">
                   Are you sure you want to delete <strong>"{deleteConfirm.name}"</strong>? This cannot be undone.
                 </p>
                 <div className="flex gap-2">
                   <button
                     onClick={() => { setDeleteConfirm(null); setDeleteError(null); }}
-                    className="flex-1 text-sm text-[#2f3437]/50 border border-gray-200 rounded-lg py-2 hover:bg-gray-50"
+                    className="flex-1 text-sm text-[var(--abv-text)]/50 border border-gray-200 rounded-lg py-2 hover:bg-gray-50"
                   >
                     Cancel
                   </button>

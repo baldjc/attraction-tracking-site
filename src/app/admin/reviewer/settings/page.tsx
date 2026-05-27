@@ -36,14 +36,14 @@ export default async function ReviewerSettingsPage({
       <div className="mb-8">
         <Link
           href="/admin"
-          className="text-sm text-[#787774] hover:text-[#2f3437]"
+          className="text-sm text-[var(--abv-text-secondary)] hover:text-[var(--abv-text)]"
         >
           ← Admin
         </Link>
-        <h1 className="mt-2 text-2xl font-bold text-[#2f3437]">
+        <h1 className="mt-2 text-2xl font-bold text-[var(--abv-text)]">
           Analytics Reviewer — Settings
         </h1>
-        <p className="mt-2 text-sm text-[#787774]">
+        <p className="mt-2 text-sm text-[var(--abv-text-secondary)]">
           Admin-only coaching layer. Connect YouTube Analytics to enable
           channel data sync.
         </p>
@@ -53,7 +53,7 @@ export default async function ReviewerSettingsPage({
 
       {!flagOn && (
         <div
-          className="mb-6 rounded-xl border border-[#f59e0b]/30 bg-[#f59e0b]/5 p-4 text-sm text-[#2f3437]"
+          className="mb-6 rounded-xl border border-[var(--abv-scores)]/30 bg-[var(--abv-scores)]/5 p-4 text-sm text-[var(--abv-text)]"
           style={{ borderRadius: "var(--atbv-radius-lg)" }}
         >
           <strong className="font-semibold">Feature flag is OFF.</strong>{" "}
@@ -63,13 +63,13 @@ export default async function ReviewerSettingsPage({
       )}
 
       {params.oauth === "success" && (
-        <div className="mb-6 rounded-xl border border-[#10b981]/30 bg-[#10b981]/5 p-4 text-sm text-[#2f3437]">
+        <div className="mb-6 rounded-xl border border-[var(--abv-academy)]/30 bg-[var(--abv-academy)]/5 p-4 text-sm text-[var(--abv-text)]">
           Connected successfully.
         </div>
       )}
 
       {params.oauth === "failed" && (
-        <div className="mb-6 rounded-xl border border-[#e63946]/30 bg-[#e63946]/5 p-4 text-sm text-[#2f3437]">
+        <div className="mb-6 rounded-xl border border-[var(--abv-crimson)]/30 bg-[var(--abv-crimson)]/5 p-4 text-sm text-[var(--abv-text)]">
           Connection failed: {params.reason || "unknown error"}
         </div>
       )}

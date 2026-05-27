@@ -1,26 +1,14 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Source_Serif_4, JetBrains_Mono } from "next/font/google";
+import { Geist_Mono } from "next/font/google";
 import "./globals.css";
 import SessionProvider from "@/components/SessionProvider";
 import ThemeProvider from "@/components/ThemeProvider";
 
-// Notion-inspired type system. Inter = clean UI/body, Source Serif 4 =
-// editorial display alternative to paid Lyon Text, JetBrains Mono = data /
-// monospace. All loaded as CSS variable fonts via next/font for zero CLS
-// and automatic preconnect.
-const inter = Inter({
-  variable: "--font-sans",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-const sourceSerif = Source_Serif_4({
-  variable: "--font-serif",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-const jetbrainsMono = JetBrains_Mono({
+// Brand fonts: Cabinet Grotesk (display) + Satoshi (body) ship via Fontshare CDN
+// in the <head> below. Local-font wiring through `next/font/local` is a future
+// improvement once the woff2 files are uploaded to public/fonts/. Geist Mono
+// stays via next/font/google for tabular numerics.
+const geistMono = Geist_Mono({
   variable: "--font-mono",
   subsets: ["latin"],
   display: "swap",
@@ -50,6 +38,11 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <link rel="preconnect" href="https://api.fontshare.com" />
+        <link
+          rel="stylesheet"
+          href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@700,800,900&f[]=satoshi@400,500,600,700&display=swap"
+        />
         <script
           suppressHydrationWarning
           dangerouslySetInnerHTML={{
@@ -58,7 +51,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${inter.variable} ${sourceSerif.variable} ${jetbrainsMono.variable} antialiased`}
+        className={`${geistMono.variable} antialiased`}
         suppressHydrationWarning
       >
         <SessionProvider>

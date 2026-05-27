@@ -36,19 +36,19 @@ export default function ArcProgressBar({ currentSection, completedSections, onSe
               <div
                 className={`h-1.5 rounded-full transition-all ${
                   isCurrent
-                    ? "bg-[#6ba3c7]"
+                    ? "bg-[var(--abv-ai-tools)]"
                     : isCompleted
-                    ? "bg-[#6ba3c7]/50 hover:bg-[#6ba3c7]/70"
+                    ? "bg-[var(--abv-ai-tools)]/50 hover:bg-[var(--abv-ai-tools)]/70"
                     : "bg-[#111]/10"
                 }`}
               />
               <p
                 className={`text-[10px] mt-1.5 text-center leading-tight truncate transition-colors ${
                   isCurrent
-                    ? "text-[#6ba3c7] font-bold"
+                    ? "text-[var(--abv-ai-tools)] font-bold"
                     : isCompleted
-                    ? "text-[#6ba3c7]/70 font-medium"
-                    : "text-[#2f3437]/25 dark:text-white/25"
+                    ? "text-[var(--abv-ai-tools)]/70 font-medium"
+                    : "text-[var(--abv-text)]/25 dark:text-white/25"
                 } ${isCompleted ? "cursor-pointer" : "cursor-default"}`}
               >
                 {i + 1}. {section.label}

@@ -99,8 +99,8 @@ export function fmtDuration(seconds: number): string {
 export function EmptyState({ message, sub }: { message: string; sub?: string }) {
   return (
     <div className="text-center py-16">
-      <p className="text-[#2f3437]/40 dark:text-white/30 text-sm font-medium">{message}</p>
-      {sub && <p className="text-[#2f3437]/30 dark:text-white/20 text-xs mt-1">{sub}</p>}
+      <p className="text-[var(--abv-text)]/40 dark:text-white/30 text-sm font-medium">{message}</p>
+      {sub && <p className="text-[var(--abv-text)]/30 dark:text-white/20 text-xs mt-1">{sub}</p>}
     </div>
   );
 }
@@ -129,8 +129,8 @@ export function PrincipleFilter({
         onClick={() => onChange(null)}
         className={`flex-shrink-0 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all ${
           selected === null
-            ? "bg-[#111] text-white border-[#2f3437] dark:bg-white dark:text-[#2f3437]"
-            : "border-[#2f3437]/20 dark:border-white/20 text-[#2f3437]/60 dark:text-white/50 hover:border-[#2f3437]/40"
+            ? "bg-[#111] text-white border-[var(--abv-text)] dark:bg-white dark:text-[var(--abv-text)]"
+            : "border-[var(--abv-text)]/20 dark:border-white/20 text-[var(--abv-text)]/60 dark:text-white/50 hover:border-[var(--abv-text)]/40"
         }`}
       >
         All Principles
@@ -143,7 +143,7 @@ export function PrincipleFilter({
           className={`flex-shrink-0 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all ${
             selected === p
               ? `${PRINCIPLE_COLORS[p] ?? "bg-gray-100 text-gray-600"} border-transparent`
-              : "border-[#2f3437]/15 dark:border-white/15 text-[#2f3437]/55 dark:text-white/45 hover:border-[#2f3437]/30"
+              : "border-[var(--abv-text)]/15 dark:border-white/15 text-[var(--abv-text)]/55 dark:text-white/45 hover:border-[var(--abv-text)]/30"
           }`}
         >
           {p}
@@ -203,7 +203,7 @@ export function EntryCard({
     return (
       <>
         {text.slice(0, idx)}
-        <mark className="bg-[#6ba3c7]/25 text-inherit rounded px-0.5">{text.slice(idx, idx + word.length)}</mark>
+        <mark className="bg-[var(--abv-dark)]/25 text-inherit rounded px-0.5">{text.slice(idx, idx + word.length)}</mark>
         {text.slice(idx + word.length)}
       </>
     );
@@ -231,7 +231,7 @@ export function EntryCard({
               ? <AcademicCapIcon className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
               : <VideoCameraIcon className="w-3.5 h-3.5 text-violet-500 flex-shrink-0" />
           }
-          <span className="text-xs font-medium text-[#2f3437]/60 dark:text-white/50 truncate">
+          <span className="text-xs font-medium text-[var(--abv-text)]/60 dark:text-white/50 truncate">
             {isFoundations
               ? (entry as any).sectionTitle ? `Foundations · ${(entry as any).sectionTitle}` : "Foundations Library"
               : isLesson
@@ -268,10 +268,10 @@ export function EntryCard({
       <div className="p-4">
         <div className="flex items-start gap-3">
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-[#2f3437] dark:text-white text-sm mb-1.5 leading-snug">
+            <h3 className="font-semibold text-[var(--abv-text)] dark:text-white text-sm mb-1.5 leading-snug">
               {highlightText(entry.subTopic)}
             </h3>
-            <p className="text-xs text-[#2f3437]/65 dark:text-white/55 leading-relaxed mb-3">
+            <p className="text-xs text-[var(--abv-text)]/65 dark:text-white/55 leading-relaxed mb-3">
               {highlightText(entry.summary)}
             </p>
             <div className="flex flex-wrap gap-1">
@@ -284,7 +284,7 @@ export function EntryCard({
           </div>
         </div>
 
-        <div className="flex items-center gap-2 mt-3 pt-3 border-t border-[#2f3437]/5 dark:border-white/5">
+        <div className="flex items-center gap-2 mt-3 pt-3 border-t border-[var(--abv-text)]/5 dark:border-white/5">
           {isFoundations && academyUrl && (
             <a
               href={academyUrl}
@@ -320,8 +320,8 @@ export function EntryCard({
               className="p-1.5 rounded-lg hover:bg-[#111]/5 dark:hover:bg-white/5 transition-colors disabled:opacity-50"
             >
               {saved
-                ? <BookmarkSolid className="w-4 h-4 text-[#6ba3c7]" />
-                : <BookmarkOutline className="w-4 h-4 text-[#2f3437]/30 dark:text-white/30" />
+                ? <BookmarkSolid className="w-4 h-4 text-[var(--abv-azure)]" />
+                : <BookmarkOutline className="w-4 h-4 text-[var(--abv-text)]/30 dark:text-white/30" />
               }
             </button>
           )}
@@ -378,7 +378,7 @@ export function TranscriptMatchCard({
     return (
       <span>
         {text.slice(0, idx)}
-        <mark className="bg-[#6ba3c7]/30 text-inherit rounded px-0.5 font-semibold">
+        <mark className="bg-[var(--abv-dark)]/30 text-inherit rounded px-0.5 font-semibold">
           {text.slice(idx, idx + word.length)}
         </mark>
         {text.slice(idx + word.length)}
@@ -399,7 +399,7 @@ export function TranscriptMatchCard({
           {isCall
             ? <VideoCameraIcon className="w-3.5 h-3.5 text-violet-500 flex-shrink-0" />
             : <AcademicCapIcon className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />}
-          <span className="text-xs font-medium text-[#2f3437]/60 dark:text-white/50 truncate">
+          <span className="text-xs font-medium text-[var(--abv-text)]/60 dark:text-white/50 truncate">
             {isCall
               ? `${match.title}${match.date ? ` · ${fmtDate(match.date)}` : ""}`
               : `Lesson ${match.lessonNumber} — ${match.title}`}
@@ -407,14 +407,14 @@ export function TranscriptMatchCard({
         </div>
         {ts && (
           <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
-            <span className="inline-flex items-center gap-1 text-[10px] font-mono font-semibold text-[#6ba3c7] bg-[#6ba3c7]/10 px-2 py-0.5 rounded-full">
+            <span className="inline-flex items-center gap-1 text-[10px] font-mono font-semibold text-[var(--abv-azure)] bg-[var(--abv-dark)]/10 px-2 py-0.5 rounded-full">
               <ClockIcon className="w-3 h-3" />
               ~{ts}
             </span>
             <button
               onClick={copyTs}
               title="Copy timestamp"
-              className="text-[10px] text-[#2f3437]/30 dark:text-white/30 hover:text-[#6ba3c7] transition-colors px-1.5 py-0.5 rounded hover:bg-[#6ba3c7]/10"
+              className="text-[10px] text-[var(--abv-text)]/30 dark:text-white/30 hover:text-[var(--abv-azure)] transition-colors px-1.5 py-0.5 rounded hover:bg-[var(--abv-dark)]/10"
             >
               {tsCopied ? "Copied!" : "Copy"}
             </button>
@@ -423,12 +423,12 @@ export function TranscriptMatchCard({
       </div>
 
       <div className="px-4 py-3">
-        <p className="text-xs text-[#2f3437]/70 dark:text-white/55 leading-relaxed font-mono">
+        <p className="text-xs text-[var(--abv-text)]/70 dark:text-white/55 leading-relaxed font-mono">
           {highlightSnippet(match.snippet)}
         </p>
       </div>
 
-      <div className="flex items-center gap-3 px-4 py-2 border-t border-[#2f3437]/5 dark:border-white/5">
+      <div className="flex items-center gap-3 px-4 py-2 border-t border-[var(--abv-text)]/5 dark:border-white/5">
         {isCall && match.fathomShareUrl && (
           <a
             href={match.fathomShareUrl}
@@ -503,14 +503,14 @@ export function MomentDetailModal({
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div className="w-full max-w-2xl bg-white dark:bg-[#1a2232] rounded-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-        <div className="flex items-start gap-3 px-6 py-4 border-b border-[#eaeaea] dark:border-white/10 flex-shrink-0">
+        <div className="flex items-start gap-3 px-6 py-4 border-b border-[var(--abv-border-strong)] dark:border-white/10 flex-shrink-0">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-violet-600 dark:text-violet-400 bg-violet-100 dark:bg-violet-400/15 px-2 py-0.5 rounded-full">
                 <VideoCameraIcon className="w-3 h-3" /> Q&A Call
               </span>
               {ts && (
-                <span className="inline-flex items-center gap-1.5 text-[11px] font-mono text-[#6ba3c7] bg-[#6ba3c7]/10 px-2 py-0.5 rounded-full">
+                <span className="inline-flex items-center gap-1.5 text-[11px] font-mono text-[var(--abv-azure)] bg-[var(--abv-dark)]/10 px-2 py-0.5 rounded-full">
                   @ {ts}
                   <button
                     onClick={() => {
@@ -519,7 +519,7 @@ export function MomentDetailModal({
                       setTimeout(() => setTsCopied(false), 2000);
                     }}
                     title="Copy timestamp to clipboard"
-                    className="text-[#6ba3c7]/60 hover:text-[#6ba3c7] transition-colors"
+                    className="text-[var(--abv-azure)]/60 hover:text-[var(--abv-azure)] transition-colors"
                   >
                     {tsCopied
                       ? <span className="text-[9px] font-sans font-semibold not-italic">Copied!</span>
@@ -529,9 +529,9 @@ export function MomentDetailModal({
                 </span>
               )}
             </div>
-            <h2 className="text-base font-bold text-[#2f3437] dark:text-white mt-1.5 leading-snug">{entry.subTopic}</h2>
+            <h2 className="text-base font-bold text-[var(--abv-text)] dark:text-white mt-1.5 leading-snug">{entry.subTopic}</h2>
             {entry.source && (
-              <p className="text-xs text-[#2f3437]/50 dark:text-white/40 mt-0.5">
+              <p className="text-xs text-[var(--abv-text)]/50 dark:text-white/40 mt-0.5">
                 {entry.source.title ?? "Q&A Call"}
                 {entry.source.callDate && <span className="ml-1.5">· {fmtDate(entry.source.callDate)}</span>}
               </p>
@@ -539,7 +539,7 @@ export function MomentDetailModal({
           </div>
           <button
             onClick={onClose}
-            className="flex-shrink-0 p-1.5 text-[#2f3437]/30 dark:text-white/30 hover:text-[#2f3437] dark:hover:text-white rounded-lg hover:bg-[#111]/5 dark:hover:bg-white/10 transition-colors mt-0.5"
+            className="flex-shrink-0 p-1.5 text-[var(--abv-text)]/30 dark:text-white/30 hover:text-[var(--abv-text)] dark:hover:text-white rounded-lg hover:bg-[#111]/5 dark:hover:bg-white/10 transition-colors mt-0.5"
             aria-label="Close"
           >
             <XMarkIcon className="w-5 h-5" />
@@ -549,24 +549,24 @@ export function MomentDetailModal({
         <div className="overflow-y-auto flex-1 px-6 py-5 space-y-5">
           {entry.summary && (
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-[#2f3437]/40 dark:text-white/35 mb-1.5">Summary</p>
-              <p className="text-sm text-[#2f3437]/80 dark:text-white/80 leading-relaxed">{entry.summary}</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--abv-text)]/40 dark:text-white/35 mb-1.5">Summary</p>
+              <p className="text-sm text-[var(--abv-text)]/80 dark:text-white/80 leading-relaxed">{entry.summary}</p>
             </div>
           )}
           {transcript && (
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-[#2f3437]/40 dark:text-white/35 mb-1.5">Transcript Excerpt</p>
-              <div className="bg-[#f7f6f3] dark:bg-white/5 border border-[#eaeaea] dark:border-white/8 rounded-lg px-4 py-3 max-h-48 overflow-y-auto">
-                <p className="text-[13px] text-[#2f3437]/70 dark:text-white/65 leading-relaxed whitespace-pre-wrap">{transcript}</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--abv-text)]/40 dark:text-white/35 mb-1.5">Transcript Excerpt</p>
+              <div className="bg-[var(--abv-bg)] dark:bg-white/5 border border-[var(--abv-border-strong)] dark:border-white/8 rounded-lg px-4 py-3 max-h-48 overflow-y-auto">
+                <p className="text-[13px] text-[var(--abv-text)]/70 dark:text-white/65 leading-relaxed whitespace-pre-wrap">{transcript}</p>
               </div>
             </div>
           )}
           {entry.principles.length > 0 && (
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-[#2f3437]/40 dark:text-white/35 mb-1.5">Principles</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--abv-text)]/40 dark:text-white/35 mb-1.5">Principles</p>
               <div className="flex flex-wrap gap-1.5">
                 {entry.principles.map((p) => (
-                  <span key={p} className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-[#111]/8 dark:bg-white/10 text-[#2f3437]/60 dark:text-white/70">
+                  <span key={p} className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-[#111]/8 dark:bg-white/10 text-[var(--abv-text)]/60 dark:text-white/70">
                     {p}
                   </span>
                 ))}
@@ -575,15 +575,15 @@ export function MomentDetailModal({
           )}
         </div>
 
-        <div className="px-6 py-4 border-t border-[#eaeaea] dark:border-white/10 flex-shrink-0 space-y-2.5">
+        <div className="px-6 py-4 border-t border-[var(--abv-border-strong)] dark:border-white/10 flex-shrink-0 space-y-2.5">
           <div className="flex items-center gap-3">
             <button
               onClick={toggleSave}
               disabled={modalSaving}
               className={`flex items-center gap-1.5 text-sm font-medium px-3.5 py-2 rounded-lg border transition-all disabled:opacity-50 ${
                 modalSaved
-                  ? "border-[#6ba3c7]/40 text-[#6ba3c7] bg-[#6ba3c7]/10"
-                  : "bg-white dark:bg-transparent border border-[#eaeaea] dark:border-white/15 text-[#2f3437] dark:text-white/50 hover:border-[#2f3437]/30 dark:hover:border-white/30"
+                  ? "border-[var(--abv-azure)]/40 text-[var(--abv-azure)] bg-[var(--abv-dark)]/10"
+                  : "bg-white dark:bg-transparent border border-[var(--abv-border-strong)] dark:border-white/15 text-[var(--abv-text)] dark:text-white/50 hover:border-[var(--abv-text)]/30 dark:hover:border-white/30"
               }`}
             >
               {modalSaved ? <BookmarkSolid className="w-4 h-4" /> : <BookmarkOutline className="w-4 h-4" />}
@@ -593,19 +593,19 @@ export function MomentDetailModal({
               href={fathomUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex-1 flex items-center justify-center gap-2 bg-[#1e2a38] hover:bg-[#2a3a4d] text-white font-bold text-sm py-2.5 rounded-lg transition-colors"
+              className="flex-1 flex items-center justify-center gap-2 bg-[var(--abv-dark)] hover:bg-[#2a3a4d] text-white font-bold text-sm py-2.5 rounded-lg transition-colors"
             >
               <VideoCameraIcon className="w-4 h-4" />
               Watch in Fathom ↗
             </a>
           </div>
           {ts && (
-            <div className="bg-[#f7f6f3] dark:bg-white/5 border border-[#eaeaea] dark:border-white/10 rounded-lg px-4 py-3 text-center">
-              <p className="text-sm text-[#2f3437]/70 dark:text-white/80 leading-relaxed">
-                Jump to <span className="font-mono font-semibold text-[#6ba3c7]">{ts}</span> in the recording.
+            <div className="bg-[var(--abv-bg)] dark:bg-white/5 border border-[var(--abv-border-strong)] dark:border-white/10 rounded-lg px-4 py-3 text-center">
+              <p className="text-sm text-[var(--abv-text)]/70 dark:text-white/80 leading-relaxed">
+                Jump to <span className="font-mono font-semibold text-[var(--abv-azure)]">{ts}</span> in the recording.
               </p>
-              <p className="text-xs text-[#2f3437]/50 dark:text-white/50 mt-1 leading-relaxed">
-                Tip: Open the <strong className="text-[#2f3437]/70 dark:text-white/70">Transcript</strong> tab in Fathom and search for the excerpt above — timestamps there are clickable.
+              <p className="text-xs text-[var(--abv-text)]/50 dark:text-white/50 mt-1 leading-relaxed">
+                Tip: Open the <strong className="text-[var(--abv-text)]/70 dark:text-white/70">Transcript</strong> tab in Fathom and search for the excerpt above — timestamps there are clickable.
               </p>
             </div>
           )}

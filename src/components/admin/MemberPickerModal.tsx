@@ -86,17 +86,17 @@ export default function MemberPickerModal({ onClose, adminEmail }: Props) {
         <button
           onClick={() => handleSelect(user)}
           disabled={!!selecting}
-          className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-[#6ba3c7]/5 transition-colors text-left disabled:opacity-50"
+          className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-[var(--abv-dark)]/5 transition-colors text-left disabled:opacity-50"
         >
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${isStaff ? "bg-[#1e2a38]/10" : "bg-[#111]/8"}`}>
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${isStaff ? "bg-[var(--abv-dark)]/10" : "bg-[#111]/8"}`}>
             {isStaff
-              ? <ShieldCheckIcon className="w-4 h-4 text-[#1e2a38]/50" />
-              : <UserCircleIcon className="w-5 h-5 text-[#2f3437]/40" />
+              ? <ShieldCheckIcon className="w-4 h-4 text-[var(--abv-dark)]/50" />
+              : <UserCircleIcon className="w-5 h-5 text-[var(--abv-text)]/40" />
             }
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-[#2f3437] truncate">{displayName}</p>
-            <p className="text-xs text-[#2f3437]/40 truncate">
+            <p className="text-sm font-medium text-[var(--abv-text)] truncate">{displayName}</p>
+            <p className="text-xs text-[var(--abv-text)]/40 truncate">
               {user.fullName ? user.email : ""}
               {isStaff && (
                 <span className={`ml-1 capitalize ${user.fullName ? "" : ""}`}>
@@ -106,7 +106,7 @@ export default function MemberPickerModal({ onClose, adminEmail }: Props) {
             </p>
           </div>
           {isSelecting && (
-            <div className="w-4 h-4 border-2 border-[#6ba3c7] border-t-transparent rounded-full animate-spin shrink-0" />
+            <div className="w-4 h-4 border-2 border-[var(--abv-azure)] border-t-transparent rounded-full animate-spin shrink-0" />
           )}
         </button>
       </li>
@@ -117,27 +117,27 @@ export default function MemberPickerModal({ onClose, adminEmail }: Props) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
       <div className="bg-white rounded-lg shadow-2xl w-full max-w-md flex flex-col max-h-[80vh]">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[#eaeaea]">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--abv-border-strong)]">
           <div>
-            <h2 className="text-base font-semibold text-[#2f3437]">Switch View</h2>
-            <p className="text-xs text-[#2f3437]/50 mt-0.5">Pick any user to see the platform as they do</p>
+            <h2 className="text-base font-semibold text-[var(--abv-text)]">Switch View</h2>
+            <p className="text-xs text-[var(--abv-text)]/50 mt-0.5">Pick any user to see the platform as they do</p>
           </div>
-          <button onClick={onClose} className="text-[#2f3437]/30 hover:text-[#2f3437] transition-colors">
+          <button onClick={onClose} className="text-[var(--abv-text)]/30 hover:text-[var(--abv-text)] transition-colors">
             <XMarkIcon className="w-5 h-5" />
           </button>
         </div>
 
         {/* Search */}
-        <div className="px-4 py-3 border-b border-[#eaeaea]">
+        <div className="px-4 py-3 border-b border-[var(--abv-border-strong)]">
           <div className="relative">
-            <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#2f3437]/30" />
+            <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--abv-text)]/30" />
             <input
               ref={searchRef}
               type="text"
               placeholder="Search by name or email…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 text-sm border border-[#eaeaea] rounded-lg focus:ring-2 focus:ring-[#6ba3c7] focus:border-transparent outline-none"
+              className="w-full pl-9 pr-4 py-2 text-sm border border-[var(--abv-border-strong)] rounded-lg focus:ring-2 focus:ring-[var(--abv-azure)] focus:border-transparent outline-none"
             />
           </div>
         </div>
@@ -145,23 +145,23 @@ export default function MemberPickerModal({ onClose, adminEmail }: Props) {
         {/* List */}
         <div className="flex-1 overflow-y-auto">
           {loading ? (
-            <div className="py-12 text-center text-sm text-[#2f3437]/40">Loading…</div>
+            <div className="py-12 text-center text-sm text-[var(--abv-text)]/40">Loading…</div>
           ) : totalShown === 0 ? (
-            <div className="py-12 text-center text-sm text-[#2f3437]/40">No users found</div>
+            <div className="py-12 text-center text-sm text-[var(--abv-text)]/40">No users found</div>
           ) : (
-            <ul className="divide-y divide-[#eaeaea]/60">
+            <ul className="divide-y divide-[var(--abv-border-strong)]/60">
               {filteredStaff.length > 0 && (
                 <>
-                  <li className="px-5 py-2 bg-[#f7f6f3]">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-[#2f3437]/40">Staff</p>
+                  <li className="px-5 py-2 bg-[var(--abv-bg)]">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--abv-text)]/40">Staff</p>
                   </li>
                   {filteredStaff.map((u) => <UserRow key={u.id} user={u} />)}
                 </>
               )}
               {filteredMembers.length > 0 && (
                 <>
-                  <li className="px-5 py-2 bg-[#f7f6f3]">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-[#2f3437]/40">
+                  <li className="px-5 py-2 bg-[var(--abv-bg)]">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--abv-text)]/40">
                       Foundations Members
                     </p>
                   </li>
@@ -172,8 +172,8 @@ export default function MemberPickerModal({ onClose, adminEmail }: Props) {
           )}
         </div>
 
-        <div className="px-5 py-3 border-t border-[#eaeaea]">
-          <p className="text-xs text-[#2f3437]/40 text-center">
+        <div className="px-5 py-3 border-t border-[var(--abv-border-strong)]">
+          <p className="text-xs text-[var(--abv-text)]/40 text-center">
             {staff.length} staff · {members.length} member{members.length !== 1 ? "s" : ""}
           </p>
         </div>

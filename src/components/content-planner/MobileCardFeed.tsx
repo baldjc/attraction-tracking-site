@@ -74,12 +74,12 @@ export default function MobileCardFeed({
   return (
     <div className="relative -mx-4 -mt-4 sm:mx-0 sm:mt-0">
       {/* Sticky search/filter/add toolbar */}
-      <div className="sticky top-0 z-10 bg-[#f7f6f3]/95 backdrop-blur-md border-b border-gray-100 px-4 py-3 flex items-center justify-between gap-2">
-        <div className="text-sm font-semibold text-[#2f3437]">
+      <div className="sticky top-0 z-10 bg-[var(--abv-bg)]/95 backdrop-blur-md border-b border-gray-100 px-4 py-3 flex items-center justify-between gap-2">
+        <div className="text-sm font-semibold text-[var(--abv-text)]">
           {filtersActive ? (
             <>
-              <span className="text-[#6ba3c7]">{sortedFiltered.length}</span>
-              <span className="text-[#2f3437]/50"> of {plans?.length ?? 0}</span>
+              <span className="text-[var(--abv-azure)]">{sortedFiltered.length}</span>
+              <span className="text-[var(--abv-text)]/50"> of {plans?.length ?? 0}</span>
             </>
           ) : (
             <>{plans?.length ?? 0} videos</>
@@ -89,7 +89,7 @@ export default function MobileCardFeed({
           <button
             type="button"
             onClick={() => setSearchOpen(true)}
-            className="w-10 h-10 flex items-center justify-center rounded-full text-[#2f3437]/70 hover:bg-white transition-colors"
+            className="w-10 h-10 flex items-center justify-center rounded-full text-[var(--abv-text)]/70 hover:bg-white transition-colors"
             aria-label="Search videos"
           >
             <MagnifyingGlassIcon className="w-5 h-5" />
@@ -99,14 +99,14 @@ export default function MobileCardFeed({
             onClick={() => setFilterOpen(true)}
             className={`relative w-10 h-10 flex items-center justify-center rounded-full transition-colors ${
               statusFilter.length > 0
-                ? "text-[#6ba3c7] bg-[#6ba3c7]/10"
-                : "text-[#2f3437]/70 hover:bg-white"
+                ? "text-[var(--abv-azure)] bg-[var(--abv-dark)]/10"
+                : "text-[var(--abv-text)]/70 hover:bg-white"
             }`}
             aria-label="Filter videos"
           >
             <FunnelIcon className="w-5 h-5" />
             {statusFilter.length > 0 && (
-              <span className="absolute top-1 right-1 w-2 h-2 bg-[#6ba3c7] rounded-full" />
+              <span className="absolute top-1 right-1 w-2 h-2 bg-[var(--abv-dark)] rounded-full" />
             )}
           </button>
           {!isAdminView && (
@@ -114,7 +114,7 @@ export default function MobileCardFeed({
               type="button"
               onClick={onAddPlan}
               disabled={addingPlan}
-              className="w-10 h-10 flex items-center justify-center rounded-full bg-[#6ba3c7] text-white hover:bg-[#5a92b6] disabled:opacity-50 transition-colors ml-1 shadow-sm"
+              className="w-10 h-10 flex items-center justify-center rounded-full bg-[var(--abv-dark)] text-white hover:bg-[#5a92b6] disabled:opacity-50 transition-colors ml-1 shadow-sm"
               aria-label="Add video"
             >
               <PlusIcon className="w-5 h-5" />
@@ -126,9 +126,9 @@ export default function MobileCardFeed({
       {/* Card list */}
       <div className="px-4 pt-4 pb-24 space-y-3">
         {plans === null ? (
-          <div className="text-center text-sm text-[#2f3437]/50 py-12">Loading…</div>
+          <div className="text-center text-sm text-[var(--abv-text)]/50 py-12">Loading…</div>
         ) : sortedFiltered.length === 0 ? (
-          <div className="text-center text-sm text-[#2f3437]/50 py-12">
+          <div className="text-center text-sm text-[var(--abv-text)]/50 py-12">
             {filtersActive ? "No videos match your filters." : "No videos yet — tap + to add one."}
           </div>
         ) : (
@@ -181,28 +181,28 @@ export default function MobileCardFeed({
                       className="w-20 h-12 object-cover rounded-lg shrink-0 bg-gray-100 border border-gray-200"
                     />
                   ) : null}
-                  <h2 className="text-base font-semibold text-[#2f3437] leading-snug pr-2 flex-1 min-w-0">
-                    {p.title || <span className="italic text-[#2f3437]/40">Untitled</span>}
+                  <h2 className="text-base font-semibold text-[var(--abv-text)] leading-snug pr-2 flex-1 min-w-0">
+                    {p.title || <span className="italic text-[var(--abv-text)]/40">Untitled</span>}
                   </h2>
                 </div>
 
-                <div className="flex items-center justify-between text-xs text-[#2f3437]/60 gap-2">
+                <div className="flex items-center justify-between text-xs text-[var(--abv-text)]/60 gap-2">
                   <div className="flex items-center gap-3 min-w-0">
                     {p.theme && (
                       <span className="inline-flex items-center gap-1 truncate">
-                        <PlayCircleIcon className="w-4 h-4 text-[#2f3437]/40 shrink-0" />
+                        <PlayCircleIcon className="w-4 h-4 text-[var(--abv-text)]/40 shrink-0" />
                         <span className="truncate">{p.theme}</span>
                       </span>
                     )}
                     {nextDateStr && (
                       <span className="inline-flex items-center gap-1 shrink-0">
-                        <CalendarIcon className="w-4 h-4 text-[#2f3437]/40" />
-                        <span className="font-medium text-[#2f3437]/80">{nextDateStr}</span>
-                        <span className="text-[10px] text-[#2f3437]/40 uppercase">{nextDateLabel}</span>
+                        <CalendarIcon className="w-4 h-4 text-[var(--abv-text)]/40" />
+                        <span className="font-medium text-[var(--abv-text)]/80">{nextDateStr}</span>
+                        <span className="text-[10px] text-[var(--abv-text)]/40 uppercase">{nextDateLabel}</span>
                       </span>
                     )}
                   </div>
-                  <ChevronRightIcon className="w-4 h-4 text-[#2f3437]/30 shrink-0" />
+                  <ChevronRightIcon className="w-4 h-4 text-[var(--abv-text)]/30 shrink-0" />
                 </div>
               </button>
             );
@@ -215,27 +215,27 @@ export default function MobileCardFeed({
         <div className="fixed inset-0 z-50 bg-white flex flex-col">
           <div className="px-4 pt-4 pb-3 border-b border-gray-100 flex items-center gap-3" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1rem)" }}>
             <div className="flex-1 relative">
-              <MagnifyingGlassIcon className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-[#2f3437]/40" />
+              <MagnifyingGlassIcon className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--abv-text)]/40" />
               <input
                 autoFocus
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search videos, themes…"
-                className="w-full bg-gray-100 rounded-xl py-2.5 pl-10 pr-4 text-sm text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/50"
+                className="w-full bg-gray-100 rounded-xl py-2.5 pl-10 pr-4 text-sm text-[var(--abv-text)] focus:outline-none focus:ring-2 focus:ring-[var(--abv-azure)]/50"
               />
             </div>
             <button
               type="button"
               onClick={() => setSearchOpen(false)}
-              className="text-sm font-medium text-[#2f3437]/70 px-2"
+              className="text-sm font-medium text-[var(--abv-text)]/70 px-2"
             >
               Done
             </button>
           </div>
-          <div className="flex-1 overflow-y-auto bg-[#f7f6f3] px-4 py-4 space-y-3">
+          <div className="flex-1 overflow-y-auto bg-[var(--abv-bg)] px-4 py-4 space-y-3">
             {sortedFiltered.length === 0 ? (
-              <div className="text-center text-sm text-[#2f3437]/50 py-12">
+              <div className="text-center text-sm text-[var(--abv-text)]/50 py-12">
                 {searchQuery ? `No videos found for "${searchQuery}"` : "Start typing to search."}
               </div>
             ) : (
@@ -255,9 +255,9 @@ export default function MobileCardFeed({
                       >
                         {p.status}
                       </span>
-                      {p.theme && <span className="text-[11px] text-[#2f3437]/50 truncate">{p.theme}</span>}
+                      {p.theme && <span className="text-[11px] text-[var(--abv-text)]/50 truncate">{p.theme}</span>}
                     </div>
-                    <p className="text-sm font-medium text-[#2f3437] truncate">{p.title || "Untitled"}</p>
+                    <p className="text-sm font-medium text-[var(--abv-text)] truncate">{p.title || "Untitled"}</p>
                   </button>
                 );
               })
@@ -275,11 +275,11 @@ export default function MobileCardFeed({
           />
           <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-50 p-6 pb-10 shadow-2xl max-h-[80vh] overflow-y-auto" style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 2.5rem)" }}>
             <div className="flex items-center justify-between mb-5">
-              <h3 className="font-bold text-base text-[#2f3437]">Filter by status</h3>
+              <h3 className="font-bold text-base text-[var(--abv-text)]">Filter by status</h3>
               <button
                 type="button"
                 onClick={() => setFilterOpen(false)}
-                className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-full text-[#2f3437]/70"
+                className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-full text-[var(--abv-text)]/70"
                 aria-label="Close filters"
               >
                 <XMarkIcon className="w-4 h-4" />
@@ -295,7 +295,7 @@ export default function MobileCardFeed({
                     type="button"
                     onClick={() => toggleStatus(s)}
                     className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all inline-flex items-center gap-1.5 ${
-                      selected ? "ring-2 ring-[#6ba3c7] ring-offset-1" : ""
+                      selected ? "ring-2 ring-[var(--abv-azure)] ring-offset-1" : ""
                     }`}
                     style={{ backgroundColor: style.bg, color: style.text }}
                   >
@@ -310,14 +310,14 @@ export default function MobileCardFeed({
                 type="button"
                 onClick={() => setStatusFilter([])}
                 disabled={statusFilter.length === 0}
-                className="flex-1 py-2.5 text-sm font-medium text-[#2f3437]/70 bg-gray-100 rounded-xl disabled:opacity-40"
+                className="flex-1 py-2.5 text-sm font-medium text-[var(--abv-text)]/70 bg-gray-100 rounded-xl disabled:opacity-40"
               >
                 Clear
               </button>
               <button
                 type="button"
                 onClick={() => setFilterOpen(false)}
-                className="flex-1 py-2.5 text-sm font-semibold text-white bg-[#6ba3c7] rounded-xl hover:bg-[#5a92b6]"
+                className="flex-1 py-2.5 text-sm font-semibold text-white bg-[var(--abv-dark)] rounded-xl hover:bg-[#5a92b6]"
               >
                 Show {sortedFiltered.length} {sortedFiltered.length === 1 ? "video" : "videos"}
               </button>

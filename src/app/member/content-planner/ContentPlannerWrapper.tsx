@@ -23,7 +23,7 @@ export default function ContentPlannerWrapper() {
   if (!serviceTier) {
     return (
       <div className="flex items-center justify-center py-16">
-        <div className="w-6 h-6 border-2 border-[#6ba3c7] border-t-transparent rounded-full animate-spin" />
+        <div className="w-6 h-6 border-2 border-[var(--abv-azure)] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }

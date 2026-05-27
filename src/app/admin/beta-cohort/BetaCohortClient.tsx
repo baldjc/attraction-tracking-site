@@ -95,10 +95,10 @@ export default function BetaCohortClient() {
   return (
     <div className="p-6 max-w-5xl mx-auto">
       <header className="mb-6">
-        <h1 className="text-2xl font-bold text-[#2f3437] dark:text-white">
+        <h1 className="text-2xl font-bold text-[var(--abv-text)] dark:text-white">
           Beta Cohort Manager
         </h1>
-        <p className="mt-1 text-sm text-[#2f3437]/70 dark:text-white/70 leading-relaxed">
+        <p className="mt-1 text-sm text-[var(--abv-text)]/70 dark:text-white/70 leading-relaxed">
           Add or remove members from the v2 beta. Adding resets their
           onboarding wizard and grants access to all v2 features. Removing
           reverts both.
@@ -107,18 +107,18 @@ export default function BetaCohortClient() {
 
       {/* Beta summary card */}
       <section className="mb-6 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a2433] p-5">
-        <p className="text-sm font-semibold text-[#2f3437] dark:text-white">
+        <p className="text-sm font-semibold text-[var(--abv-text)] dark:text-white">
           {betaSummary
             ? `${betaSummary.count} member${betaSummary.count === 1 ? "" : "s"} currently in beta`
             : "Loading beta cohort…"}
         </p>
         {betaSummary && betaSummary.count > 0 && (
-          <ul className="mt-2 space-y-1 text-sm text-[#2f3437]/80 dark:text-white/80">
+          <ul className="mt-2 space-y-1 text-sm text-[var(--abv-text)]/80 dark:text-white/80">
             {betaSummary.members.map((m) => (
               <li key={m.id} className="flex items-center gap-2">
                 <span>•</span>
                 <span>{m.name || "(no name)"}</span>
-                <span className="text-xs text-[#2f3437]/50 dark:text-white/50">
+                <span className="text-xs text-[var(--abv-text)]/50 dark:text-white/50">
                   {m.email} · {m.serviceTier ?? "—"}
                 </span>
               </li>
@@ -126,7 +126,7 @@ export default function BetaCohortClient() {
           </ul>
         )}
         {betaSummary && betaSummary.count === 0 && (
-          <p className="mt-2 text-sm text-[#2f3437]/60 dark:text-white/60 italic">
+          <p className="mt-2 text-sm text-[var(--abv-text)]/60 dark:text-white/60 italic">
             Nobody is in the beta yet. Search for a member below to add them.
           </p>
         )}
@@ -139,19 +139,19 @@ export default function BetaCohortClient() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search by email or name…"
-          className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#0f1825] px-4 py-2.5 text-sm text-[#2f3437] dark:text-white placeholder:text-[#2f3437]/40 dark:placeholder:text-white/40"
+          className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#0f1825] px-4 py-2.5 text-sm text-[var(--abv-text)] dark:text-white placeholder:text-[var(--abv-text)]/40 dark:placeholder:text-white/40"
         />
       </div>
 
       {/* Member list */}
       <section className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a2433] overflow-hidden">
         {loading && (
-          <div className="p-8 text-center text-sm text-[#2f3437]/60 dark:text-white/60">
+          <div className="p-8 text-center text-sm text-[var(--abv-text)]/60 dark:text-white/60">
             Loading…
           </div>
         )}
         {!loading && memberCount === 0 && (
-          <div className="p-8 text-center text-sm text-[#2f3437]/60 dark:text-white/60">
+          <div className="p-8 text-center text-sm text-[var(--abv-text)]/60 dark:text-white/60">
             No members match that search.
           </div>
         )}
@@ -168,7 +168,7 @@ export default function BetaCohortClient() {
           </ul>
         )}
         {!loading && memberCount === 50 && (
-          <p className="px-4 py-2 text-xs text-[#2f3437]/50 dark:text-white/50 bg-gray-50 dark:bg-[#0f1825] border-t border-gray-100 dark:border-gray-800">
+          <p className="px-4 py-2 text-xs text-[var(--abv-text)]/50 dark:text-white/50 bg-gray-50 dark:bg-[#0f1825] border-t border-gray-100 dark:border-gray-800">
             Showing 50 — narrow your search to see more.
           </p>
         )}
@@ -199,10 +199,10 @@ function MemberRow({
   return (
     <li className="flex items-center justify-between gap-4 px-5 py-4">
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold text-[#2f3437] dark:text-white truncate">
+        <p className="text-sm font-semibold text-[var(--abv-text)] dark:text-white truncate">
           {member.name || "(no name)"}
         </p>
-        <p className="text-xs text-[#2f3437]/60 dark:text-white/60 truncate">
+        <p className="text-xs text-[var(--abv-text)]/60 dark:text-white/60 truncate">
           {member.email}
         </p>
         <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
@@ -236,7 +236,7 @@ function MemberRow({
           <button
             type="button"
             onClick={onAdd}
-            className="rounded-full bg-[#2f3437] dark:bg-white px-4 py-1.5 text-xs font-semibold text-white dark:text-[#2f3437] hover:opacity-90"
+            className="rounded-full bg-[var(--abv-text)] dark:bg-white px-4 py-1.5 text-xs font-semibold text-white dark:text-[var(--abv-text)] hover:opacity-90"
           >
             Add to beta
           </button>
@@ -288,10 +288,10 @@ function ConfirmModal({
         className="w-full max-w-md rounded-xl bg-white dark:bg-[#1a2433] p-6 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-lg font-bold text-[#2f3437] dark:text-white">
+        <h2 className="text-lg font-bold text-[var(--abv-text)] dark:text-white">
           {isAdd ? "Add to beta?" : "Remove from beta?"}
         </h2>
-        <p className="mt-3 text-sm text-[#2f3437]/80 dark:text-white/80 leading-relaxed">
+        <p className="mt-3 text-sm text-[var(--abv-text)]/80 dark:text-white/80 leading-relaxed">
           <strong>{memberLabel}</strong>
           {isAdd ? (
             <>
@@ -311,7 +311,7 @@ function ConfirmModal({
             type="button"
             onClick={onCancel}
             disabled={working}
-            className="rounded-full px-4 py-2 text-sm font-medium text-[#2f3437]/70 dark:text-white/70 hover:text-[#2f3437] dark:hover:text-white disabled:opacity-50"
+            className="rounded-full px-4 py-2 text-sm font-medium text-[var(--abv-text)]/70 dark:text-white/70 hover:text-[var(--abv-text)] dark:hover:text-white disabled:opacity-50"
           >
             Cancel
           </button>
@@ -320,7 +320,7 @@ function ConfirmModal({
             onClick={onConfirm}
             disabled={working}
             className={`rounded-full px-5 py-2 text-sm font-semibold text-white disabled:opacity-50 ${
-              isAdd ? "bg-[#2f3437] hover:opacity-90" : "bg-red-600 hover:bg-red-700"
+              isAdd ? "bg-[var(--abv-text)] hover:opacity-90" : "bg-red-600 hover:bg-red-700"
             }`}
           >
             {working ? "Working…" : isAdd ? "Add to beta" : "Remove from beta"}

@@ -100,20 +100,20 @@ const editorLinks = [
 const PRODUCTION_TIERS = ["editing_2", "editing_4", "mastery_2", "mastery_4", "done_with_you"];
 
 const memberLinks = [
-  { href: "/member/dashboard",       label: "Dashboard",       icon: HomeIcon,         featureKey: null,        colour: "#6ba3c7", tierRequired: null },
-  { href: "/member/academy",         label: "Academy",         icon: AcademicCapIcon,  featureKey: null,        colour: "#10B981", tierRequired: null,           section: "Learn" },
-  { href: "/member/academy?tab=live-calls", label: "Live Calls", icon: VideoCameraIcon, featureKey: null,        colour: "#10B981", tierRequired: null },
-  { href: "/member/scores",          label: "My Scores",       icon: StarIcon,         featureKey: null,        colour: "#F59E0B", tierRequired: null },
-  { href: "/member/content-planner", label: "Content Planner", icon: CalendarDaysIcon, featureKey: null,        colour: "#6ba3c7", tierRequired: PRODUCTION_TIERS, section: "Create" },
-  { href: "/member/market-data",     label: "Market Data",     icon: ChartBarSquareIcon, featureKey: "tool_market_data", colour: "#6ba3c7", tierRequired: null },
-  { href: "/member/knowledge-base",  label: "Knowledge Base",  icon: BookOpenIcon,     featureKey: "tool_neighbourhood_knowledge", colour: "#6ba3c7", tierRequired: null },
-  { href: "/member/ai-tools",        label: "Content Tools",        icon: SparklesIcon,     featureKey: "ai_tools",  colour: "#6ba3c7", tierRequired: null },
-  { href: "/member/my-work",         label: "My Work",         icon: FolderIcon,       featureKey: "ai_tools",  colour: "#6ba3c7", tierRequired: null },
+  { href: "/member/dashboard",       label: "Dashboard",       icon: HomeIcon,         featureKey: null,        colour: "var(--abv-azure)", tierRequired: null },
+  { href: "/member/academy",         label: "Academy",         icon: AcademicCapIcon,  featureKey: null,        colour: "var(--abv-academy)", tierRequired: null,           section: "Learn" },
+  { href: "/member/academy?tab=live-calls", label: "Live Calls", icon: VideoCameraIcon, featureKey: null,        colour: "var(--abv-academy)", tierRequired: null },
+  { href: "/member/scores",          label: "My Scores",       icon: StarIcon,         featureKey: null,        colour: "var(--abv-scores)", tierRequired: null },
+  { href: "/member/content-planner", label: "Content Planner", icon: CalendarDaysIcon, featureKey: null,        colour: "var(--abv-azure)", tierRequired: PRODUCTION_TIERS, section: "Create" },
+  { href: "/member/market-data",     label: "Market Data",     icon: ChartBarSquareIcon, featureKey: "tool_market_data", colour: "var(--abv-azure)", tierRequired: null },
+  { href: "/member/knowledge-base",  label: "Knowledge Base",  icon: BookOpenIcon,     featureKey: "tool_neighbourhood_knowledge", colour: "var(--abv-azure)", tierRequired: null },
+  { href: "/member/ai-tools",        label: "Content Tools",        icon: SparklesIcon,     featureKey: "ai_tools",  colour: "var(--abv-ai-tools)", tierRequired: null },
+  { href: "/member/my-work",         label: "My Work",         icon: FolderIcon,       featureKey: "ai_tools",  colour: "var(--abv-ai-tools)", tierRequired: null },
   { href: "/member/generate-leads",  label: "Generate Leads",  icon: RocketLaunchIcon, featureKey: "campaigns", colour: "#E63946", tierRequired: null,           section: "Grow" },
-  { href: "/member/client-hub",      label: "Client Hub",      icon: Squares2X2Icon,   featureKey: null,        colour: "#6ba3c7", tierRequired: PRODUCTION_TIERS },
-  { href: "/member/my-calls",        label: "My Calls",        icon: VideoCameraIcon,  featureKey: null,        colour: "#6ba3c7", tierRequired: null,           section: "Support" },
-  { href: "/member/hire",            label: "Hire a Human",    icon: UserGroupIcon,    featureKey: null,        colour: "#8B5CF6", tierRequired: null },
-  { href: "/member/settings",        label: "Settings",        icon: Cog6ToothIcon,    featureKey: null,        colour: "#6ba3c7", tierRequired: null },
+  { href: "/member/client-hub",      label: "Client Hub",      icon: Squares2X2Icon,   featureKey: null,        colour: "var(--abv-azure)", tierRequired: PRODUCTION_TIERS },
+  { href: "/member/my-calls",        label: "My Calls",        icon: VideoCameraIcon,  featureKey: null,        colour: "var(--abv-azure)", tierRequired: null,           section: "Support" },
+  { href: "/member/hire",            label: "Hire a Human",    icon: UserGroupIcon,    featureKey: null,        colour: "var(--abv-hire)", tierRequired: null },
+  { href: "/member/settings",        label: "Settings",        icon: Cog6ToothIcon,    featureKey: null,        colour: "var(--abv-azure)", tierRequired: null },
 ];
 
 interface ImpersonateState {
@@ -281,7 +281,7 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
               ? "bg-amber-500"
               : isImpersonating
               ? "bg-[#e63946]"
-              : "bg-[#6ba3c7]/20"
+              : "bg-[var(--abv-dark)]/20"
           }`}
         >
           <EyeIcon className={`w-3.5 h-3.5 shrink-0 ${isImpersonating ? "text-white/80" : "text-white/50"}`} />
@@ -320,7 +320,7 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
               ? "bg-amber-500"
               : isImpersonating
               ? "bg-[#e63946]"
-              : "bg-[#6ba3c7]/20"
+              : "bg-[var(--abv-dark)]/20"
           }`}
         >
           {isImpersonating ? (
@@ -412,7 +412,7 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
                       collapsed ? "px-3 justify-center border-l-0" : "px-3"
                     } ${
                       active
-                        ? "border-[#6ba3c7] bg-white/10 text-white"
+                        ? "border-[var(--abv-azure)] bg-white/10 text-white"
                         : "border-transparent text-white/60 hover:text-white hover:bg-white/8"
                     }`}
                   >
@@ -433,7 +433,7 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
                   </Link>
                 )}
                 {!collapsed && lockedTooltip === link.label && isLocked && (
-                  <div className="ml-8 mt-1 mb-1 bg-[#1e2a38] border border-white/10 text-white text-xs rounded-lg px-3 py-2 shadow-lg">
+                  <div className="ml-8 mt-1 mb-1 bg-[var(--abv-dark)] border border-white/10 text-white text-xs rounded-lg px-3 py-2 shadow-lg">
                     {link.label === "Content Planner" && "Unlocks with Production membership — manage your video pipeline"}
                     {link.label === "Client Hub" && "Unlocks with Production membership — your production assets and status"}
                   </div>
@@ -554,14 +554,14 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
             max-lg:bottom-0 max-lg:left-0 max-lg:right-0 max-lg:h-[80vh]
             lg:bottom-6 lg:w-[380px] lg:h-[500px] ${collapsed ? "lg:left-20" : "lg:left-[272px]"}`}
         >
-          <div className="w-full h-full bg-white dark:bg-[#1a1a1a] border border-[#2f3437]/10 dark:border-[#2a2a2a] shadow-2xl overflow-hidden rounded-t-2xl lg:rounded-2xl">
+          <div className="w-full h-full bg-white dark:bg-[#1a1a1a] border border-[var(--abv-text)]/10 dark:border-[#2a2a2a] shadow-2xl overflow-hidden rounded-t-2xl lg:rounded-2xl">
             <HelpChat onClose={() => setHelpOpen(false)} />
           </div>
         </div>
       )}
 
       {/* Mobile top bar */}
-      <div className={`lg:hidden fixed top-0 left-0 right-0 z-40 h-14 flex items-center px-4 gap-3 transition-colors ${isImpersonating ? "bg-[#e63946]" : "bg-[#1e2a38]"}`}>
+      <div className={`lg:hidden fixed top-0 left-0 right-0 z-40 h-14 flex items-center px-4 gap-3 transition-colors ${isImpersonating ? "bg-[#e63946]" : "bg-[var(--abv-dark)]"}`}>
         <button
           onClick={() => setMobileOpen(true)}
           className="text-white/70 hover:text-white transition-colors p-1"
@@ -597,7 +597,7 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
 
       {/* Mobile drawer */}
       <aside
-        className={`lg:hidden fixed inset-y-0 left-0 z-50 w-[260px] bg-[#1e2a38] shadow-2xl flex flex-col transform transition-transform duration-300 ease-in-out ${
+        className={`lg:hidden fixed inset-y-0 left-0 z-50 w-[260px] bg-[var(--abv-dark)] shadow-2xl flex flex-col transform transition-transform duration-300 ease-in-out ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -617,7 +617,7 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
 
       {/* Desktop fixed sidebar */}
       <aside
-        className={`hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 lg:left-0 bg-[#1e2a38] z-30 transition-all duration-300 ease-in-out ${
+        className={`hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 lg:left-0 bg-[var(--abv-dark)] z-30 transition-all duration-300 ease-in-out ${
           collapsed ? "lg:w-16" : "lg:w-[260px]"
         }`}
       >

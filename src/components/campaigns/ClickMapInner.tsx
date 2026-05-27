@@ -118,7 +118,7 @@ export default function ClickMapInner({ markers, height = 400 }: Props) {
           bounds.push(ll);
           const circle = markerIcon([lat, lng], {
             radius: 7,
-            fillColor: "#6ba3c7",
+            fillColor: "var(--abv-azure)",
             color: "#1e88c7",
             weight: 1.5,
             opacity: 1,
@@ -147,13 +147,13 @@ export default function ClickMapInner({ markers, height = 400 }: Props) {
     <div className="relative" style={{ height }}>
       <div ref={mapRef} style={{ height: "100%", width: "100%", borderRadius: "0.75rem" }} />
       {geocoding && (
-        <div className="absolute top-3 left-1/2 -translate-x-1/2 bg-white/90 border border-[#2f3437]/10 rounded-full px-4 py-1.5 text-xs text-[#2f3437]/60 pointer-events-none z-[500]">
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 bg-white/90 border border-[var(--abv-text)]/10 rounded-full px-4 py-1.5 text-xs text-[var(--abv-text)]/60 pointer-events-none z-[500]">
           Geocoding locations…
         </div>
       )}
       {noData && (
         <div className="absolute inset-0 flex items-center justify-center bg-[#f8f9fa]/80 rounded-lg z-[500]">
-          <p className="text-sm text-[#2f3437]/40">No location data yet</p>
+          <p className="text-sm text-[var(--abv-text)]/40">No location data yet</p>
         </div>
       )}
     </div>

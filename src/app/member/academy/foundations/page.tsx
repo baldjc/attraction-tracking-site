@@ -30,18 +30,18 @@ export default function FoundationsPage() {
       <div className="flex items-center gap-3 mb-6">
         <Link
           href="/member/academy"
-          className="flex items-center gap-1.5 text-sm text-[#2f3437]/50 dark:text-white/50 hover:text-[#2f3437] dark:hover:text-white transition-colors"
+          className="flex items-center gap-1.5 text-sm text-[var(--abv-text)]/50 dark:text-white/50 hover:text-[var(--abv-text)] dark:hover:text-white transition-colors"
         >
           <ArrowLeftIcon className="w-4 h-4" />
           Academy
         </Link>
-        <span className="text-[#2f3437]/30 dark:text-white/30">/</span>
-        <span className="text-sm text-[#2f3437] dark:text-white font-medium">The Foundations Library</span>
+        <span className="text-[var(--abv-text)]/30 dark:text-white/30">/</span>
+        <span className="text-sm text-[var(--abv-text)] dark:text-white font-medium">The Foundations Library</span>
       </div>
 
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-[#2f3437] dark:text-white">The Foundations Library</h1>
-        <p className="text-[#2f3437]/50 dark:text-white/50 mt-1 text-sm">
+        <h1 className="text-2xl font-bold text-[var(--abv-text)] dark:text-white">The Foundations Library</h1>
+        <p className="text-[var(--abv-text)]/50 dark:text-white/50 mt-1 text-sm">
           Master the Attraction by Video system — from avatar clarity to packaging
         </p>
       </div>
@@ -49,7 +49,7 @@ export default function FoundationsPage() {
       {loading ? (
         <div className="space-y-4">
           {[...Array(6)].map((_, i) => (
-            <div key={i} className="bg-white dark:bg-[#1a2433] rounded-lg border border-[#eaeaea] dark:border-white/10 p-6 animate-pulse h-24" />
+            <div key={i} className="bg-white dark:bg-[#1a2433] rounded-lg border border-[var(--abv-border-strong)] dark:border-white/10 p-6 animate-pulse h-24" />
           ))}
         </div>
       ) : (
@@ -62,12 +62,12 @@ export default function FoundationsPage() {
               <Link
                 key={section.id}
                 href={`/member/academy/foundations/${section.slug}`}
-                className="block bg-white dark:bg-[#1a2433] rounded-lg border border-[#eaeaea] dark:border-white/10 p-6 hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] transition-all group"
+                className="block bg-white dark:bg-[#1a2433] rounded-lg border border-[var(--abv-border-strong)] dark:border-white/10 p-6 hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] transition-all group"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs font-bold text-[#2f3437]/30 dark:text-white/30 uppercase tracking-wider">
+                      <span className="text-xs font-bold text-[var(--abv-text)]/30 dark:text-white/30 uppercase tracking-wider">
                         Section {section.sortOrder}
                       </span>
                       {done && (
@@ -77,30 +77,30 @@ export default function FoundationsPage() {
                         </span>
                       )}
                     </div>
-                    <h2 className="text-base font-semibold text-[#2f3437] dark:text-white group-hover:text-[#6ba3c7] transition-colors mb-1">
+                    <h2 className="text-base font-semibold text-[var(--abv-text)] dark:text-white group-hover:text-[var(--abv-azure)] transition-colors mb-1">
                       {section.title}
                     </h2>
                     {section.description && (
-                      <p className="text-sm text-[#2f3437]/50 dark:text-white/50 leading-relaxed line-clamp-2">
+                      <p className="text-sm text-[var(--abv-text)]/50 dark:text-white/50 leading-relaxed line-clamp-2">
                         {section.description}
                       </p>
                     )}
                   </div>
                   <div className="shrink-0 text-right">
-                    <p className="text-sm font-semibold text-[#2f3437] dark:text-white">
+                    <p className="text-sm font-semibold text-[var(--abv-text)] dark:text-white">
                       {section.completedCount}/{section.lessonCount}
                     </p>
-                    <p className="text-xs text-[#2f3437]/40 dark:text-white/40">lessons</p>
+                    <p className="text-xs text-[var(--abv-text)]/40 dark:text-white/40">lessons</p>
                   </div>
                 </div>
 
                 <div className="mt-4">
-                  <div className="flex items-center justify-between text-xs text-[#2f3437]/40 dark:text-white/40 mb-1">
+                  <div className="flex items-center justify-between text-xs text-[var(--abv-text)]/40 dark:text-white/40 mb-1">
                     <span>{pct}% complete</span>
                   </div>
-                  <div className="h-1.5 bg-[#eaeaea] dark:bg-white/10 rounded-full overflow-hidden">
+                  <div className="h-1.5 bg-[var(--abv-border-strong)] dark:bg-white/10 rounded-full overflow-hidden">
                     <div
-                      className={`h-full rounded-full transition-all ${done ? "bg-green-500" : "bg-[#6ba3c7]"}`}
+                      className={`h-full rounded-full transition-all ${done ? "bg-green-500" : "bg-[var(--abv-dark)]"}`}
                       style={{ width: `${pct}%` }}
                     />
                   </div>

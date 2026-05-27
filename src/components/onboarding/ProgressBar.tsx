@@ -11,19 +11,19 @@ export default function ProgressBar({ currentStep, totalSteps }: { currentStep: 
             <div
               className={`w-3 h-3 rounded-full transition-all ${
                 i < currentStep
-                  ? "bg-[#6ba3c7]"
+                  ? "bg-[var(--abv-dark)]"
                   : i === currentStep
-                  ? "bg-[#6ba3c7] ring-4 ring-[#6ba3c7]/20"
-                  : "bg-[#2f3437]/10 dark:bg-white/10"
+                  ? "bg-[var(--abv-dark)] ring-4 ring-[var(--abv-azure)]/20"
+                  : "bg-[var(--abv-text)]/10 dark:bg-white/10"
               }`}
             />
             <span
               className={`hidden sm:block text-[10px] mt-1.5 font-medium transition-colors whitespace-nowrap ${
                 i === currentStep
-                  ? "text-[#6ba3c7]"
+                  ? "text-[var(--abv-azure)]"
                   : i < currentStep
-                  ? "text-[#2f3437]/50 dark:text-white/40"
-                  : "text-[#2f3437]/25 dark:text-white/20"
+                  ? "text-[var(--abv-text)]/50 dark:text-white/40"
+                  : "text-[var(--abv-text)]/25 dark:text-white/20"
               }`}
             >
               {LABELS[i]}
@@ -32,7 +32,7 @@ export default function ProgressBar({ currentStep, totalSteps }: { currentStep: 
           {i < totalSteps - 1 && (
             <div
               className={`h-[2px] flex-1 mx-2 mb-4 transition-colors ${
-                i < currentStep ? "bg-[#6ba3c7]" : "bg-[#2f3437]/10 dark:bg-white/10"
+                i < currentStep ? "bg-[var(--abv-dark)]" : "bg-[var(--abv-text)]/10 dark:bg-white/10"
               }`}
             />
           )}

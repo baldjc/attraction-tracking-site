@@ -63,14 +63,14 @@ function scoreBadge(score: number | null) {
   if (score == null) return "bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400";
   if (score >= 7) return "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400";
   if (score >= 5) return "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400";
-  return "bg-red-100 text-[#ff0033] dark:bg-red-900/40 dark:text-red-400";
+  return "bg-red-100 text-[var(--abv-crimson)] dark:bg-red-900/40 dark:text-red-400";
 }
 
 function scoreBarColor(score: number | null) {
   if (score == null) return "bg-gray-200 dark:bg-gray-600";
   if (score >= 7) return "bg-green-500";
   if (score >= 5) return "bg-yellow-400";
-  return "bg-[#ff0033]";
+  return "bg-[var(--abv-crimson)]";
 }
 
 function fmt(date: string) {
@@ -110,8 +110,8 @@ export default function MemberScoresPage() {
       .catch(() => {});
   }, []);
 
-  const txt = "text-[#2f3437] dark:text-[#e2e8f0]";
-  const muted = "text-[#2f3437]/60 dark:text-[#94a3b8]";
+  const txt = "text-[var(--abv-text)] dark:text-[#e2e8f0]";
+  const muted = "text-[var(--abv-text)]/60 dark:text-[#94a3b8]";
   const card = "bg-white dark:bg-[#1a1a1a] rounded-lg border border-gray-200 dark:border-[#2a2a2a]";
   const divider = "divide-gray-100 dark:divide-[#2a2a2a]";
   const thClass = `text-left px-5 py-3 text-xs font-semibold uppercase tracking-wider ${muted} bg-gray-50 dark:bg-[#1e2530]`;
@@ -120,7 +120,7 @@ export default function MemberScoresPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-4 border-[#6ba3c7] border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-4 border-[var(--abv-azure)] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -133,7 +133,7 @@ export default function MemberScoresPage() {
           title="My Scores"
           description="See where you stand and where to focus next."
         />
-        <div className="bg-[#6ba3c7]/10 border border-[#6ba3c7]/30 rounded-lg p-10 text-center">
+        <div className="bg-[var(--abv-dark)]/10 border border-[var(--abv-azure)]/30 rounded-lg p-10 text-center">
           <p className={`font-medium ${txt} mb-2`}>No audits yet</p>
           <p className={`text-sm ${muted}`}>
             Your Attraction Scores will appear here after your first audit is completed by your coach.
@@ -211,7 +211,7 @@ export default function MemberScoresPage() {
         action={
           <button
             onClick={load}
-            className={`shrink-0 flex items-center gap-2 px-3 py-1.5 border border-gray-200 dark:border-[#2a2a2a] rounded-lg text-sm ${txt} hover:bg-gray-50 dark:hover:bg-[#1e2a38] transition-colors`}
+            className={`shrink-0 flex items-center gap-2 px-3 py-1.5 border border-gray-200 dark:border-[#2a2a2a] rounded-lg text-sm ${txt} hover:bg-gray-50 dark:hover:bg-[var(--abv-dark)] transition-colors`}
           >
             <ArrowPathIcon className="w-4 h-4" /> Refresh
           </button>
@@ -267,7 +267,7 @@ export default function MemberScoresPage() {
                     ? "border-green-400 bg-green-50 dark:bg-green-900/20"
                     : latestChannelAudit.overallScore >= 5
                     ? "border-yellow-400 bg-yellow-50 dark:bg-yellow-900/20"
-                    : "border-[#ff0033] bg-red-50 dark:bg-red-900/20"
+                    : "border-[var(--abv-crimson)] bg-red-50 dark:bg-red-900/20"
                 }`}
               >
                 <span
@@ -276,7 +276,7 @@ export default function MemberScoresPage() {
                       ? "text-green-600 dark:text-green-400"
                       : latestChannelAudit.overallScore >= 5
                       ? "text-yellow-600 dark:text-yellow-400"
-                      : "text-[#ff0033]"
+                      : "text-[var(--abv-crimson)]"
                   }`}
                 >
                   {Number(latestChannelAudit.overallScore).toFixed(1)}
@@ -331,16 +331,16 @@ export default function MemberScoresPage() {
                       fontSize: 12,
                       color: "#e2e8f0",
                     }}
-                    cursor={{ stroke: "#6ba3c7", strokeWidth: 1, strokeDasharray: "4 4" }}
+                    cursor={{ stroke: "var(--abv-azure)", strokeWidth: 1, strokeDasharray: "4 4" }}
                   />
                   {hasChannelLine && (
                     <Line
                       type="monotone"
                       dataKey="channelScore"
-                      stroke="#6ba3c7"
+                      stroke="var(--abv-azure)"
                       strokeWidth={2.5}
-                      dot={{ r: 4, fill: "#6ba3c7", strokeWidth: 0 }}
-                      activeDot={{ r: 6, fill: "#6ba3c7" }}
+                      dot={{ r: 4, fill: "var(--abv-azure)", strokeWidth: 0 }}
+                      activeDot={{ r: 6, fill: "var(--abv-azure)" }}
                       connectNulls
                     />
                   )}
@@ -363,7 +363,7 @@ export default function MemberScoresPage() {
                 {hasChannelLine && (
                   <div className="flex items-center gap-1.5">
                     <svg width="20" height="8" className="shrink-0">
-                      <line x1="0" y1="4" x2="20" y2="4" stroke="#6ba3c7" strokeWidth="2.5" />
+                      <line x1="0" y1="4" x2="20" y2="4" stroke="var(--abv-azure)" strokeWidth="2.5" />
                     </svg>
                     <span className={`text-xs ${muted}`}>Channel Score</span>
                   </div>
@@ -442,7 +442,7 @@ export default function MemberScoresPage() {
                           />
                         )}
                         <div>
-                          <p className={`text-xs font-medium ${txt} line-clamp-2 group-hover:text-[#6ba3c7] transition-colors leading-snug`}>
+                          <p className={`text-xs font-medium ${txt} line-clamp-2 group-hover:text-[var(--abv-azure)] transition-colors leading-snug`}>
                             {title}
                           </p>
                           <div className="flex items-center justify-between mt-1.5">
@@ -453,7 +453,7 @@ export default function MemberScoresPage() {
                               </span>
                             )}
                           </div>
-                          <span className="text-xs text-[#6ba3c7] font-medium group-hover:underline mt-0.5 inline-block">
+                          <span className="text-xs text-[var(--abv-azure)] font-medium group-hover:underline mt-0.5 inline-block">
                             View Report →
                           </span>
                         </div>
@@ -500,7 +500,7 @@ export default function MemberScoresPage() {
                   <React.Fragment key={key}>
                     <tr
                       onClick={() => setExpanded(isOpen ? null : key)}
-                      className={`cursor-pointer hover:bg-gray-50 dark:hover:bg-[#1e2a38] transition-colors ${
+                      className={`cursor-pointer hover:bg-gray-50 dark:hover:bg-[var(--abv-dark)] transition-colors ${
                         isOpen ? "bg-gray-50 dark:bg-[#0f1419]" : ""
                       }`}
                     >
@@ -516,7 +516,7 @@ export default function MemberScoresPage() {
                         {principlesWithLessons.has(toAcademySlug(key)) ? (
                           <Link
                             href={`/member/academy?tab=browse&tag=${toAcademySlug(key)}`}
-                            className="text-[#6ba3c7] hover:underline font-medium"
+                            className="text-[var(--abv-azure)] hover:underline font-medium"
                           >
                             See lessons →
                           </Link>
@@ -549,7 +549,7 @@ export default function MemberScoresPage() {
                                 delta > 0
                                   ? "text-green-600 dark:text-green-400"
                                   : delta < 0
-                                  ? "text-[#ff0033]"
+                                  ? "text-[var(--abv-crimson)]"
                                   : muted
                               }`}
                             >
@@ -567,7 +567,7 @@ export default function MemberScoresPage() {
                           colSpan={baselineAudit ? 5 : 4}
                           className={`px-5 pb-3 pt-0 text-xs italic ${muted}`}
                         >
-                          <div className="border-l-2 border-[#6ba3c7] pl-3 ml-1">
+                          <div className="border-l-2 border-[var(--abv-azure)] pl-3 ml-1">
                             {val.evidence}
                           </div>
                         </td>
@@ -587,7 +587,7 @@ export default function MemberScoresPage() {
         {/* Learning Path */}
         {gaps.length > 0 && (
           <div className={`${card} overflow-hidden`}>
-            <div className="px-5 py-4 border-b border-gray-200 dark:border-[#2a2a2a] bg-[#6ba3c7]/5">
+            <div className="px-5 py-4 border-b border-gray-200 dark:border-[#2a2a2a] bg-[var(--abv-dark)]/5">
               <h2 className={`text-sm font-semibold ${txt}`}>📚 Your Learning Path</h2>
               <p className={`text-xs ${muted} mt-0.5`}>Revisit these lessons to close your gaps</p>
             </div>
@@ -601,7 +601,7 @@ export default function MemberScoresPage() {
               </thead>
               <tbody className={`divide-y ${divider}`}>
                 {gaps.map(({ key, val }) => (
-                  <tr key={key} className="hover:bg-gray-50 dark:hover:bg-[#1e2a38] transition-colors">
+                  <tr key={key} className="hover:bg-gray-50 dark:hover:bg-[var(--abv-dark)] transition-colors">
                     <td className={`${tdClass} font-medium ${txt}`}>{PRINCIPLE_LABELS[key]}</td>
                     <td className={tdClass}>
                       <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${scoreBadge(val.score)}`}>
@@ -612,12 +612,12 @@ export default function MemberScoresPage() {
                       {principlesWithLessons.has(toAcademySlug(key)) ? (
                         <Link
                           href={`/member/academy?tab=browse&tag=${toAcademySlug(key)}`}
-                          className="text-[#6ba3c7] font-semibold hover:underline"
+                          className="text-[var(--abv-azure)] font-semibold hover:underline"
                         >
                           See lessons →
                         </Link>
                       ) : (
-                        <span className="text-[#6ba3c7] font-semibold">{LEARNING_PATH[key] ?? "—"}</span>
+                        <span className="text-[var(--abv-azure)] font-semibold">{LEARNING_PATH[key] ?? "—"}</span>
                       )}
                     </td>
                   </tr>
@@ -645,7 +645,7 @@ export default function MemberScoresPage() {
                 <Link
                   key={a.id}
                   href={`/member/audits/${a.id}`}
-                  className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 dark:hover:bg-[#1e2a38] transition-colors group"
+                  className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 dark:hover:bg-[var(--abv-dark)] transition-colors group"
                 >
                   {/* Left: thumbnail or type icon */}
                   <div className="shrink-0">
@@ -664,7 +664,7 @@ export default function MemberScoresPage() {
                     ) : (
                       <div className={`w-[41px] h-[41px] rounded-full flex items-center justify-center text-xs font-bold ${
                         a.auditType === "baseline"
-                          ? "bg-[#6ba3c7]/15 text-[#6ba3c7]"
+                          ? "bg-[var(--abv-dark)]/15 text-[var(--abv-azure)]"
                           : "bg-purple-100 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400"
                       }`}>
                         {a.auditType === "baseline" ? "B" : "M"}
@@ -674,7 +674,7 @@ export default function MemberScoresPage() {
 
                   {/* Middle: title + date */}
                   <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-medium ${txt} line-clamp-2 leading-snug group-hover:text-[#6ba3c7] transition-colors`}>
+                    <p className={`text-sm font-medium ${txt} line-clamp-2 leading-snug group-hover:text-[var(--abv-azure)] transition-colors`}>
                       {title}
                     </p>
                     <p className={`text-xs ${muted} mt-0.5`}>
@@ -691,7 +691,7 @@ export default function MemberScoresPage() {
                     ) : (
                       <span className={`text-xs ${muted}`}>—</span>
                     )}
-                    <span className="text-xs font-medium text-[#6ba3c7] group-hover:underline whitespace-nowrap">
+                    <span className="text-xs font-medium text-[var(--abv-azure)] group-hover:underline whitespace-nowrap">
                       View Report →
                     </span>
                   </div>

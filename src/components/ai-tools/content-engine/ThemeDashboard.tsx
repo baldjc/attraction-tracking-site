@@ -100,7 +100,7 @@ export default function ThemeDashboard({ themes, niche, city }: Props) {
 
   if (chatTheme) {
     return (
-      <div className="bg-white dark:bg-[#1a1a1a] rounded-lg border border-[#2f3437]/10 dark:border-white/10 p-6 h-[calc(100vh-200px)] flex flex-col">
+      <div className="bg-white dark:bg-[#1a1a1a] rounded-lg border border-[var(--abv-text)]/10 dark:border-white/10 p-6 h-[calc(100vh-200px)] flex flex-col">
         <ContentEngineChat theme={chatTheme} onBack={() => setChatTheme(null)} />
       </div>
     );
@@ -113,21 +113,21 @@ export default function ThemeDashboard({ themes, niche, city }: Props) {
         <div>
           <Link
             href="/member/ai-tools"
-            className="flex items-center gap-1.5 text-xs text-[#2f3437]/50 dark:text-white/50 hover:text-[#6ba3c7] transition-colors mb-3"
+            className="flex items-center gap-1.5 text-xs text-[var(--abv-text)]/50 dark:text-white/50 hover:text-[var(--abv-ai-tools)] transition-colors mb-3"
           >
             <ArrowLeftIcon className="w-3.5 h-3.5" />
             Back to AI Tools
           </Link>
           <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-2xl font-bold text-[#2f3437] dark:text-white">🚀 Content Engine</h1>
+            <h1 className="text-2xl font-bold text-[var(--abv-text)] dark:text-white">🚀 Content Engine</h1>
             <Link
               href="/member/ai-tools/saved-ideas"
-              className="text-xs font-medium text-[#6ba3c7] hover:text-[#5490b5] transition-colors"
+              className="text-xs font-medium text-[var(--abv-ai-tools)] hover:text-[var(--abv-ai-tools)] transition-colors"
             >
               💡 My saved ideas →
             </Link>
           </div>
-          <p className="text-sm text-[#2f3437]/50 dark:text-white/50 mt-0.5">
+          <p className="text-sm text-[var(--abv-text)]/50 dark:text-white/50 mt-0.5">
             {currentNiche
               ? `${currentNiche === "real_estate" ? "Real Estate" : currentNiche === "financial_planning" ? "Financial Planning" : "Other"}${currentCity ? ` · ${currentCity}` : ""}`
               : "No niche set"}
@@ -139,13 +139,13 @@ export default function ThemeDashboard({ themes, niche, city }: Props) {
               <button
                 onClick={saveOrder}
                 disabled={savingOrder}
-                className="text-sm bg-[#6ba3c7] hover:bg-[#2bb0ec] text-white font-semibold px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+                className="text-sm bg-[var(--abv-ai-tools)] hover:bg-[#2bb0ec] text-white font-semibold px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
               >
                 {savingOrder ? "Saving..." : "Save Order"}
               </button>
               <button
                 onClick={cancelReorder}
-                className="text-sm border border-[#2f3437]/20 dark:border-white/20 text-[#2f3437]/60 dark:text-white/60 hover:text-[#2f3437] dark:hover:text-white px-4 py-2 rounded-lg transition-colors"
+                className="text-sm border border-[var(--abv-text)]/20 dark:border-white/20 text-[var(--abv-text)]/60 dark:text-white/60 hover:text-[var(--abv-text)] dark:hover:text-white px-4 py-2 rounded-lg transition-colors"
               >
                 Cancel
               </button>
@@ -155,20 +155,20 @@ export default function ThemeDashboard({ themes, niche, city }: Props) {
               <button
                 onClick={handleGenerateAll}
                 disabled={generatingAll}
-                className="text-sm bg-[#6ba3c7] hover:bg-[#2bb0ec] text-white font-semibold px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+                className="text-sm bg-[var(--abv-ai-tools)] hover:bg-[#2bb0ec] text-white font-semibold px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
               >
                 {generatingAll ? "Generating..." : "Generate All"}
               </button>
               <button
                 onClick={() => setReordering(true)}
-                className="w-9 h-9 rounded-lg border border-[#2f3437]/20 dark:border-white/20 flex items-center justify-center text-[#2f3437]/50 dark:text-white/50 hover:text-[#2f3437] dark:hover:text-white hover:border-[#2f3437]/40 dark:hover:border-white/40 transition-colors"
+                className="w-9 h-9 rounded-lg border border-[var(--abv-text)]/20 dark:border-white/20 flex items-center justify-center text-[var(--abv-text)]/50 dark:text-white/50 hover:text-[var(--abv-text)] dark:hover:text-white hover:border-[var(--abv-text)]/40 dark:hover:border-white/40 transition-colors"
                 title="Reorder themes"
               >
                 ↕
               </button>
               <button
                 onClick={() => setShowNicheModal(true)}
-                className="w-9 h-9 rounded-lg border border-[#2f3437]/20 dark:border-white/20 flex items-center justify-center text-[#2f3437]/50 dark:text-white/50 hover:text-[#2f3437] dark:hover:text-white hover:border-[#2f3437]/40 dark:hover:border-white/40 transition-colors"
+                className="w-9 h-9 rounded-lg border border-[var(--abv-text)]/20 dark:border-white/20 flex items-center justify-center text-[var(--abv-text)]/50 dark:text-white/50 hover:text-[var(--abv-text)] dark:hover:text-white hover:border-[var(--abv-text)]/40 dark:hover:border-white/40 transition-colors"
                 title="Edit niche settings"
               >
                 ⚙
@@ -198,32 +198,32 @@ export default function ThemeDashboard({ themes, niche, city }: Props) {
 
       {reordering ? (
         <div className="space-y-3">
-          <p className="text-xs text-[#2f3437]/40 dark:text-white/40 mb-4">Use the arrows to set the order you want, then click Save Order.</p>
+          <p className="text-xs text-[var(--abv-text)]/40 dark:text-white/40 mb-4">Use the arrows to set the order you want, then click Save Order.</p>
           {orderedThemes.map((t, i) => {
             const obj = typeof t === "string" ? null : t as ContentTheme;
             const name = typeof t === "string" ? t : t.name;
             const emoji = obj?.emoji ?? "🎯";
-            const colour = obj?.colour ?? "#6ba3c7";
+            const colour = obj?.colour ?? "var(--abv-ai-tools)";
             return (
-              <div key={i} className="flex items-center gap-3 bg-white dark:bg-[#1a1a1a] rounded-lg border border-[#2f3437]/10 dark:border-white/10 p-4">
+              <div key={i} className="flex items-center gap-3 bg-white dark:bg-[#1a1a1a] rounded-lg border border-[var(--abv-text)]/10 dark:border-white/10 p-4">
                 <span className="text-xl flex-shrink-0">{emoji}</span>
                 <div
                   className="w-1 h-8 rounded-full flex-shrink-0"
                   style={{ backgroundColor: colour }}
                 />
-                <span className="flex-1 font-medium text-[#2f3437] dark:text-white text-sm">{name}</span>
+                <span className="flex-1 font-medium text-[var(--abv-text)] dark:text-white text-sm">{name}</span>
                 <div className="flex flex-col gap-1">
                   <button
                     onClick={() => moveTheme(i, -1)}
                     disabled={i === 0}
-                    className="w-7 h-7 rounded-md border border-[#2f3437]/15 dark:border-white/15 flex items-center justify-center text-[#2f3437]/50 dark:text-white/50 hover:text-[#2f3437] dark:hover:text-white hover:border-[#2f3437]/30 dark:hover:border-white/30 disabled:opacity-20 disabled:cursor-not-allowed transition-colors text-xs"
+                    className="w-7 h-7 rounded-md border border-[var(--abv-text)]/15 dark:border-white/15 flex items-center justify-center text-[var(--abv-text)]/50 dark:text-white/50 hover:text-[var(--abv-text)] dark:hover:text-white hover:border-[var(--abv-text)]/30 dark:hover:border-white/30 disabled:opacity-20 disabled:cursor-not-allowed transition-colors text-xs"
                   >
                     ▲
                   </button>
                   <button
                     onClick={() => moveTheme(i, 1)}
                     disabled={i === orderedThemes.length - 1}
-                    className="w-7 h-7 rounded-md border border-[#2f3437]/15 dark:border-white/15 flex items-center justify-center text-[#2f3437]/50 dark:text-white/50 hover:text-[#2f3437] dark:hover:text-white hover:border-[#2f3437]/30 dark:hover:border-white/30 disabled:opacity-20 disabled:cursor-not-allowed transition-colors text-xs"
+                    className="w-7 h-7 rounded-md border border-[var(--abv-text)]/15 dark:border-white/15 flex items-center justify-center text-[var(--abv-text)]/50 dark:text-white/50 hover:text-[var(--abv-text)] dark:hover:text-white hover:border-[var(--abv-text)]/30 dark:hover:border-white/30 disabled:opacity-20 disabled:cursor-not-allowed transition-colors text-xs"
                   >
                     ▼
                   </button>
@@ -248,12 +248,12 @@ export default function ThemeDashboard({ themes, niche, city }: Props) {
 
       {showNicheModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-[#1a1a1a] rounded-lg border border-[#2f3437]/10 dark:border-white/10 p-6 w-full max-w-md shadow-xl">
+          <div className="bg-white dark:bg-[#1a1a1a] rounded-lg border border-[var(--abv-text)]/10 dark:border-white/10 p-6 w-full max-w-md shadow-xl">
             <div className="flex items-center justify-between mb-5">
-              <h2 className="font-bold text-[#2f3437] dark:text-white">Niche Settings</h2>
+              <h2 className="font-bold text-[var(--abv-text)] dark:text-white">Niche Settings</h2>
               <button
                 onClick={() => setShowNicheModal(false)}
-                className="text-[#2f3437]/40 dark:text-white/40 hover:text-[#2f3437] dark:hover:text-white text-xl"
+                className="text-[var(--abv-text)]/40 dark:text-white/40 hover:text-[var(--abv-text)] dark:hover:text-white text-xl"
               >
                 ✕
               </button>

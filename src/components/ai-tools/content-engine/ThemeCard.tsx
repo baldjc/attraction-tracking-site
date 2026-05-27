@@ -32,7 +32,7 @@ interface Props {
 }
 
 const FALLBACK_EMOJIS = ["🎯", "⚡", "🔥", "🌿", "💡", "💎", "🌊", "🚀"];
-const FALLBACK_COLOURS = ["#3B82F6", "#F59E0B", "#EF4444", "#10B981", "#8B5CF6", "#EC4899", "#06B6D4", "#F97316"];
+const FALLBACK_COLOURS = ["#3B82F6", "var(--abv-scores)", "#EF4444", "var(--abv-academy)", "var(--abv-hire)", "#EC4899", "#06B6D4", "#F97316"];
 
 function themeObj(t: ContentTheme | string, index: number): ContentTheme {
   const fallbackEmoji = FALLBACK_EMOJIS[index % FALLBACK_EMOJIS.length];
@@ -45,7 +45,7 @@ function themeObj(t: ContentTheme | string, index: number): ContentTheme {
 
 export default function ThemeCard({ theme, index, onGoDeeper, initialIdeas }: Props) {
   const t = themeObj(theme, index);
-  const colour = t.colour ?? "#6ba3c7";
+  const colour = t.colour ?? "var(--abv-ai-tools)";
 
   const [expanded, setExpanded] = useState(false);
   const [ideas, setIdeas] = useState<Idea[]>([]);
@@ -176,7 +176,7 @@ export default function ThemeCard({ theme, index, onGoDeeper, initialIdeas }: Pr
 
   return (
     <div
-      className="bg-white dark:bg-[#1a1a1a] rounded-lg border border-[#2f3437]/10 dark:border-white/10 overflow-hidden"
+      className="bg-white dark:bg-[#1a1a1a] rounded-lg border border-[var(--abv-text)]/10 dark:border-white/10 overflow-hidden"
       style={{ borderTopColor: colour, borderTopWidth: 3 }}
     >
       <div className="p-5">
@@ -184,21 +184,21 @@ export default function ThemeCard({ theme, index, onGoDeeper, initialIdeas }: Pr
           <div className="flex items-center gap-2 flex-1 min-w-0">
             {t.emoji && <span className="text-2xl flex-shrink-0">{t.emoji}</span>}
             <div className="min-w-0">
-              <h3 className="font-bold text-[#2f3437] dark:text-white text-sm">{t.name}</h3>
+              <h3 className="font-bold text-[var(--abv-text)] dark:text-white text-sm">{t.name}</h3>
               {t.coreStress && (
-                <p className="text-xs text-[#2f3437]/50 dark:text-white/50 mt-0.5 italic leading-relaxed">"{t.coreStress}"</p>
+                <p className="text-xs text-[var(--abv-text)]/50 dark:text-white/50 mt-0.5 italic leading-relaxed">"{t.coreStress}"</p>
               )}
             </div>
           </div>
           <div className="flex items-center gap-1 flex-shrink-0">
             {displaySavedCount > 0 && (
-              <span className="text-xs bg-[#f7f6f3] dark:bg-white/10 text-[#2f3437]/60 dark:text-white/60 px-2 py-0.5 rounded-full font-medium">
+              <span className="text-xs bg-[var(--abv-bg)] dark:bg-white/10 text-[var(--abv-text)]/60 dark:text-white/60 px-2 py-0.5 rounded-full font-medium">
                 {displaySavedCount} saved
               </span>
             )}
             <button
               onClick={handleExpand}
-              className="text-[#2f3437]/30 dark:text-white/30 hover:text-[#2f3437]/60 dark:hover:text-white/60 transition-colors text-sm px-1"
+              className="text-[var(--abv-text)]/30 dark:text-white/30 hover:text-[var(--abv-text)]/60 dark:hover:text-white/60 transition-colors text-sm px-1"
             >
               {expanded ? "▲" : "▼"}
             </button>
@@ -216,7 +216,7 @@ export default function ThemeCard({ theme, index, onGoDeeper, initialIdeas }: Pr
           </button>
           <button
             onClick={() => onGoDeeper(theme)}
-            className="px-4 text-sm font-semibold py-2 rounded-lg border border-[#2f3437]/20 dark:border-white/20 text-[#2f3437] dark:text-white hover:border-[#2f3437]/40 dark:hover:border-white/40 transition-colors"
+            className="px-4 text-sm font-semibold py-2 rounded-lg border border-[var(--abv-text)]/20 dark:border-white/20 text-[var(--abv-text)] dark:text-white hover:border-[var(--abv-text)]/40 dark:hover:border-white/40 transition-colors"
           >
             Go Deeper
           </button>
@@ -224,7 +224,7 @@ export default function ThemeCard({ theme, index, onGoDeeper, initialIdeas }: Pr
       </div>
 
       {expanded && (
-        <div className="border-t border-[#2f3437]/10 dark:border-white/10 bg-[#fafafa] dark:bg-[#0f1419]">
+        <div className="border-t border-[var(--abv-text)]/10 dark:border-white/10 bg-[#fafafa] dark:bg-[#0f1419]">
           {generateError && (
             <div className="mx-4 mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-700 dark:text-red-400">
               {generateError}
@@ -238,11 +238,11 @@ export default function ThemeCard({ theme, index, onGoDeeper, initialIdeas }: Pr
           {ideas.length > 0 && (
             <div className="p-4">
               <div className="flex items-center justify-between mb-3">
-                <h4 className="text-xs font-semibold text-[#2f3437]/50 dark:text-white/50 uppercase tracking-wide">Generated Ideas</h4>
+                <h4 className="text-xs font-semibold text-[var(--abv-text)]/50 dark:text-white/50 uppercase tracking-wide">Generated Ideas</h4>
                 <button
                   onClick={handleGenerateMore}
                   disabled={generating}
-                  className="text-xs text-[#6ba3c7] hover:text-[#2bb0ec] font-medium disabled:opacity-50"
+                  className="text-xs text-[var(--abv-ai-tools)] hover:text-[#2bb0ec] font-medium disabled:opacity-50"
                 >
                   {generating ? "Generating..." : "Generate More"}
                 </button>
@@ -282,18 +282,18 @@ export default function ThemeCard({ theme, index, onGoDeeper, initialIdeas }: Pr
           )}
 
           {generating && ideas.length === 0 && (
-            <div className="p-6 text-center text-sm text-[#2f3437]/40 dark:text-white/40">Generating ideas...</div>
+            <div className="p-6 text-center text-sm text-[var(--abv-text)]/40 dark:text-white/40">Generating ideas...</div>
           )}
 
-          <div className="p-4 border-t border-[#2f3437]/10 dark:border-white/10">
-            <h4 className="text-xs font-semibold text-[#2f3437]/50 dark:text-white/50 uppercase tracking-wide mb-3">
+          <div className="p-4 border-t border-[var(--abv-text)]/10 dark:border-white/10">
+            <h4 className="text-xs font-semibold text-[var(--abv-text)]/50 dark:text-white/50 uppercase tracking-wide mb-3">
               Saved Ideas {savedTotal > 0 && `(${savedTotal})`}
             </h4>
 
             {loadingSaved ? (
-              <p className="text-xs text-[#2f3437]/40 dark:text-white/40 text-center py-4">Loading saved ideas...</p>
+              <p className="text-xs text-[var(--abv-text)]/40 dark:text-white/40 text-center py-4">Loading saved ideas...</p>
             ) : savedIdeas.length === 0 ? (
-              <p className="text-xs text-[#2f3437]/40 dark:text-white/40 text-center py-4">No saved ideas yet. Generate some and star the ones you like.</p>
+              <p className="text-xs text-[var(--abv-text)]/40 dark:text-white/40 text-center py-4">No saved ideas yet. Generate some and star the ones you like.</p>
             ) : (
               <div className="space-y-3">
                 {savedIdeas.map((idea) => (
@@ -308,7 +308,7 @@ export default function ThemeCard({ theme, index, onGoDeeper, initialIdeas }: Pr
                 {savedTotal > savedIdeas.length && (
                   <button
                     onClick={() => loadSaved(savedPage + 1)}
-                    className="w-full text-xs text-[#6ba3c7] hover:text-[#2bb0ec] font-medium py-2"
+                    className="w-full text-xs text-[var(--abv-ai-tools)] hover:text-[#2bb0ec] font-medium py-2"
                   >
                     Load more
                   </button>

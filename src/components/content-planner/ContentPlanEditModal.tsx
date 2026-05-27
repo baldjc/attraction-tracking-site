@@ -250,12 +250,12 @@ function CollapsedPreview({ value, placeholder, onExpand }: { value: string; pla
     <button
       type="button"
       onClick={onExpand}
-      className="w-full text-left flex items-center justify-between gap-3 rounded-lg border border-gray-200 bg-white hover:border-[#6ba3c7]/50 hover:bg-[#6ba3c7]/5 transition-colors px-3 py-2"
+      className="w-full text-left flex items-center justify-between gap-3 rounded-lg border border-gray-200 bg-white hover:border-[var(--abv-azure)]/50 hover:bg-[var(--abv-dark)]/5 transition-colors px-3 py-2"
     >
-      <span className={`text-xs truncate ${preview ? "text-[#2f3437]" : "italic text-[#2f3437]/40"}`}>
+      <span className={`text-xs truncate ${preview ? "text-[var(--abv-text)]" : "italic text-[var(--abv-text)]/40"}`}>
         {preview || placeholder}
       </span>
-      <span className="text-[10px] font-semibold uppercase tracking-wider text-[#6ba3c7] shrink-0">Edit</span>
+      <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--abv-azure)] shrink-0">Edit</span>
     </button>
   );
 }
@@ -266,8 +266,8 @@ function CollapsedPreview({ value, placeholder, onExpand }: { value: string; pla
 const STATUS_DOT_COLOR: Record<string, string> = {
   "Idea": "#94a3b8",
   "Drafting": "#a78bfa",
-  "Ready to Shoot": "#f59e0b",
-  "Shooting": "#f59e0b",
+  "Ready to Shoot": "var(--abv-scores)",
+  "Shooting": "var(--abv-scores)",
   "Shot - In Post": "#0ea5e9",
   "Ready to Post": "#22c55e",
   "Posted": "#185FA5",
@@ -313,15 +313,15 @@ function ChipPopover({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex items-center gap-1.5 rounded-md bg-gray-100 hover:bg-gray-200 transition-colors px-2.5 py-1 text-[12px] text-[#2f3437]/80"
+        className="inline-flex items-center gap-1.5 rounded-md bg-gray-100 hover:bg-gray-200 transition-colors px-2.5 py-1 text-[12px] text-[var(--abv-text)]/80"
         aria-haspopup="true"
         aria-expanded={open}
       >
         {dotColor && (
           <span className="inline-block w-2 h-2 rounded-full shrink-0" style={{ background: dotColor }} aria-hidden />
         )}
-        <span className="text-[#2f3437]/55">{label}:</span>
-        <span className="text-[#2f3437] truncate max-w-[140px]">{value}</span>
+        <span className="text-[var(--abv-text)]/55">{label}:</span>
+        <span className="text-[var(--abv-text)] truncate max-w-[140px]">{value}</span>
       </button>
       {open && (
         <div className="absolute left-0 top-full z-30 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg min-w-[200px] overflow-hidden">
@@ -365,16 +365,16 @@ function ContentRow({
         className="w-full flex items-center justify-between gap-3 px-3.5 py-2.5 text-left hover:bg-gray-50/60 transition-colors"
         aria-expanded={expanded}
       >
-        <span className={`text-[13px] shrink-0 ${filled ? "font-medium text-[#2f3437]" : "text-[#2f3437]/65"}`}>{label}</span>
+        <span className={`text-[13px] shrink-0 ${filled ? "font-medium text-[var(--abv-text)]" : "text-[var(--abv-text)]/65"}`}>{label}</span>
         <span className="flex items-center gap-2 min-w-0">
           {filled ? (
-            <span className="text-[12px] text-[#2f3437]/60 truncate text-right" style={{ maxWidth: "60%", minWidth: 0 }}>
+            <span className="text-[12px] text-[var(--abv-text)]/60 truncate text-right" style={{ maxWidth: "60%", minWidth: 0 }}>
               {preview}
             </span>
           ) : (
-            <span className="text-[12px] text-[#2f3437]/40 truncate text-right">{emptyHint}</span>
+            <span className="text-[12px] text-[var(--abv-text)]/40 truncate text-right">{emptyHint}</span>
           )}
-          <span className={`text-[#2f3437]/35 transition-transform shrink-0 ${expanded ? "rotate-90" : ""}`}>▸</span>
+          <span className={`text-[var(--abv-text)]/35 transition-transform shrink-0 ${expanded ? "rotate-90" : ""}`}>▸</span>
         </span>
       </button>
       {expanded && (
@@ -1140,7 +1140,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
     }
   }
 
-  const field = "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30";
+  const field = "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--abv-azure)]/30";
 
   function pushToAITool(tool: "title" | "script-builder" | "script-review") {
     // Delegate to the unified launcher so prefill seeding stays in one place.
@@ -1211,8 +1211,8 @@ Produce a research brief I can hand to a script writer. For **each talking point
           }
           style={isMobile ? { paddingTop: "calc(env(safe-area-inset-top, 0px) + 0.75rem)" } : undefined}
         >
-          <h3 className="text-base font-semibold text-[#2f3437]">Edit Video</h3>
-          <button onClick={handleClose} className="text-[#2f3437]/40 hover:text-[#2f3437] p-1 -mr-1">
+          <h3 className="text-base font-semibold text-[var(--abv-text)]">Edit Video</h3>
+          <button onClick={handleClose} className="text-[var(--abv-text)]/40 hover:text-[var(--abv-text)] p-1 -mr-1">
             <XMarkIcon className="w-6 h-6" />
           </button>
         </div>
@@ -1232,19 +1232,19 @@ Produce a research brief I can hand to a script writer. For **each talking point
                   onFocus={() => setTitleFocused(true)}
                   onBlur={() => setTitleFocused(false)}
                   placeholder="Untitled video"
-                  className="w-full bg-transparent border-0 focus:ring-0 px-0 py-1 font-medium text-[#2f3437] placeholder:text-[#2f3437]/30"
+                  className="w-full bg-transparent border-0 focus:ring-0 px-0 py-1 font-medium text-[var(--abv-text)] placeholder:text-[var(--abv-text)]/30"
                   style={{ fontSize: 19, lineHeight: 1.3 }}
                   aria-label="Video title"
                 />
                 {titleFocused ? (
-                  <div className={`text-[11px] mt-0.5 ${form.title.length > 80 ? "text-red-500" : form.title.length > 60 ? "text-amber-500" : "text-[#2f3437]/40"}`}>
+                  <div className={`text-[11px] mt-0.5 ${form.title.length > 80 ? "text-red-500" : form.title.length > 60 ? "text-amber-500" : "text-[var(--abv-text)]/40"}`}>
                     {form.title.length} / 60 characters
                   </div>
                 ) : (
                   <button
                     type="button"
                     onClick={() => titleInputRef.current?.focus()}
-                    className="mt-0.5 text-[10px] uppercase tracking-wider text-[#2f3437]/40 hover:text-[#185FA5] transition-colors"
+                    className="mt-0.5 text-[10px] uppercase tracking-wider text-[var(--abv-text)]/40 hover:text-[#185FA5] transition-colors"
                     title="Edit title"
                   >
                     Edit
@@ -1262,7 +1262,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
                 />
               ) : (
                 <div
-                  className="shrink-0 rounded-md bg-gray-50 border border-dashed border-gray-300 flex items-center justify-center text-[9px] uppercase tracking-wider text-[#2f3437]/40"
+                  className="shrink-0 rounded-md bg-gray-50 border border-dashed border-gray-300 flex items-center justify-center text-[9px] uppercase tracking-wider text-[var(--abv-text)]/40"
                   style={{ width: 112, height: 63 }}
                   aria-label="No thumbnail set"
                 >
@@ -1288,7 +1288,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
                         key={s}
                         type="button"
                         onClick={() => { setForm((f) => ({ ...f, status: s })); close(); }}
-                        className={`w-full text-left px-3 py-1.5 text-xs rounded hover:bg-gray-50 flex items-center gap-2 ${form.status === s ? "bg-[#185FA5]/5 text-[#185FA5] font-medium" : "text-[#2f3437]"}`}
+                        className={`w-full text-left px-3 py-1.5 text-xs rounded hover:bg-gray-50 flex items-center gap-2 ${form.status === s ? "bg-[#185FA5]/5 text-[#185FA5] font-medium" : "text-[var(--abv-text)]"}`}
                       >
                         <span className="inline-block w-2 h-2 rounded-full shrink-0" style={{ background: statusDotColor(s) }} aria-hidden />
                         {s}
@@ -1321,7 +1321,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
                           key={o.value || "__auto__"}
                           type="button"
                           onClick={() => { setForm((f) => ({ ...f, propertyTypeFocus: o.value })); close(); }}
-                          className={`w-full text-left px-3 py-1.5 text-xs rounded hover:bg-gray-50 ${(form.propertyTypeFocus || "") === o.value ? "bg-[#185FA5]/5 text-[#185FA5] font-medium" : "text-[#2f3437]"}`}
+                          className={`w-full text-left px-3 py-1.5 text-xs rounded hover:bg-gray-50 ${(form.propertyTypeFocus || "") === o.value ? "bg-[#185FA5]/5 text-[#185FA5] font-medium" : "text-[var(--abv-text)]"}`}
                         >
                           {o.label}
                         </button>
@@ -1340,7 +1340,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
                     <button
                       type="button"
                       onClick={() => { setForm((f) => ({ ...f, theme: "" })); close(); }}
-                      className={`w-full text-left px-3 py-1.5 text-xs rounded hover:bg-gray-50 ${!form.theme ? "bg-[#185FA5]/5 text-[#185FA5] font-medium" : "italic text-[#2f3437]/55"}`}
+                      className={`w-full text-left px-3 py-1.5 text-xs rounded hover:bg-gray-50 ${!form.theme ? "bg-[#185FA5]/5 text-[#185FA5] font-medium" : "italic text-[var(--abv-text)]/55"}`}
                     >
                       — none —
                     </button>
@@ -1349,12 +1349,12 @@ Produce a research brief I can hand to a script writer. For **each talking point
                         key={t.name}
                         type="button"
                         onClick={() => { setForm((f) => ({ ...f, theme: t.name })); close(); }}
-                        className={`w-full text-left px-3 py-1.5 text-xs rounded hover:bg-gray-50 ${form.theme === t.name ? "bg-[#185FA5]/5 text-[#185FA5] font-medium" : "text-[#2f3437]"}`}
+                        className={`w-full text-left px-3 py-1.5 text-xs rounded hover:bg-gray-50 ${form.theme === t.name ? "bg-[#185FA5]/5 text-[#185FA5] font-medium" : "text-[var(--abv-text)]"}`}
                       >
                         {t.emoji ? `${t.emoji} ${t.name}` : t.name}
                       </button>
                     )) : (
-                      <p className="px-3 py-2 text-[11px] italic text-[#2f3437]/45">No themes yet — add some in Settings.</p>
+                      <p className="px-3 py-2 text-[11px] italic text-[var(--abv-text)]/45">No themes yet — add some in Settings.</p>
                     )}
                   </div>
                 )}
@@ -1365,12 +1365,12 @@ Produce a research brief I can hand to a script writer. For **each talking point
               <button
                 type="button"
                 onClick={() => setForm((f) => ({ ...f, dramaMode: !f.dramaMode }))}
-                className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[12px] transition-colors ${form.dramaMode ? "bg-[#185FA5]/10 text-[#185FA5] font-medium" : "bg-gray-100 text-[#2f3437]/80 hover:bg-gray-200"}`}
+                className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[12px] transition-colors ${form.dramaMode ? "bg-[#185FA5]/10 text-[#185FA5] font-medium" : "bg-gray-100 text-[var(--abv-text)]/80 hover:bg-gray-200"}`}
                 role="switch"
                 aria-checked={form.dramaMode}
                 title="Drama Mode — flag as the monthly wide-net video"
               >
-                <span className="text-[#2f3437]/55">Drama:</span>
+                <span className="text-[var(--abv-text)]/55">Drama:</span>
                 <span>{form.dramaMode ? "On" : "Off"}</span>
               </button>
 
@@ -1388,7 +1388,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
                       autoFocus
                     />
                     <div className="flex justify-between gap-2 mt-2">
-                      <button type="button" onClick={() => { setForm((f) => ({ ...f, publishDate: "" })); }} className="text-[11px] text-[#2f3437]/50 hover:text-red-500">Clear</button>
+                      <button type="button" onClick={() => { setForm((f) => ({ ...f, publishDate: "" })); }} className="text-[11px] text-[var(--abv-text)]/50 hover:text-red-500">Clear</button>
                       <button type="button" onClick={close} className="text-[11px] font-medium text-[#185FA5] hover:underline">Done</button>
                     </div>
                   </div>
@@ -1410,7 +1410,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
                         key={opt.value || "none"}
                         type="button"
                         onClick={() => { setForm((f) => ({ ...f, shootLocation: opt.value })); close(); }}
-                        className={`w-full text-left px-3 py-1.5 text-xs rounded hover:bg-gray-50 ${form.shootLocation === opt.value ? "bg-[#185FA5]/5 text-[#185FA5] font-medium" : opt.italic ? "italic text-[#2f3437]/55" : "text-[#2f3437]"}`}
+                        className={`w-full text-left px-3 py-1.5 text-xs rounded hover:bg-gray-50 ${form.shootLocation === opt.value ? "bg-[#185FA5]/5 text-[#185FA5] font-medium" : opt.italic ? "italic text-[var(--abv-text)]/55" : "text-[var(--abv-text)]"}`}
                       >
                         {opt.label}
                       </button>
@@ -1470,24 +1470,24 @@ Produce a research brief I can hand to a script writer. For **each talking point
                 <div id="idea-card-lineage-body" className="space-y-3">
                 {lineage.titlePromise && (
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-[#2f3437]/50 mb-0.5">Title promise</p>
-                    <p className="text-xs text-[#2f3437] leading-snug">{lineage.titlePromise}</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--abv-text)]/50 mb-0.5">Title promise</p>
+                    <p className="text-xs text-[var(--abv-text)] leading-snug">{lineage.titlePromise}</p>
                   </div>
                 )}
 
                 {lineage.visualPeak && (
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-[#2f3437]/50 mb-0.5">Visual peak</p>
-                    <p className="text-xs text-[#2f3437] leading-snug">{lineage.visualPeak}</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--abv-text)]/50 mb-0.5">Visual peak</p>
+                    <p className="text-xs text-[var(--abv-text)] leading-snug">{lineage.visualPeak}</p>
                   </div>
                 )}
 
                 {lineage.thumbnailCallouts.length > 0 && (
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-[#2f3437]/50 mb-1">Thumbnail words</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--abv-text)]/50 mb-1">Thumbnail words</p>
                     <div className="flex flex-wrap gap-1.5">
                       {lineage.thumbnailCallouts.map((c, i) => (
-                        <span key={i} className="inline-flex items-center rounded-md bg-white border border-gray-200 px-2 py-0.5 text-[11px] font-medium text-[#2f3437]">
+                        <span key={i} className="inline-flex items-center rounded-md bg-white border border-gray-200 px-2 py-0.5 text-[11px] font-medium text-[var(--abv-text)]">
                           {c}
                         </span>
                       ))}
@@ -1497,10 +1497,10 @@ Produce a research brief I can hand to a script writer. For **each talking point
 
                 {lineage.storyLead && (
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-[#2f3437]/50 mb-0.5">Story lead</p>
-                    <p className="text-xs text-[#2f3437] leading-snug font-medium">{lineage.storyLead.pattern}</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--abv-text)]/50 mb-0.5">Story lead</p>
+                    <p className="text-xs text-[var(--abv-text)] leading-snug font-medium">{lineage.storyLead.pattern}</p>
                     {lineage.storyLead.whyItMattersPreview && (
-                      <p className="text-[11px] text-[#2f3437]/65 leading-snug mt-0.5">
+                      <p className="text-[11px] text-[var(--abv-text)]/65 leading-snug mt-0.5">
                         {lineage.storyLead.whyItMattersPreview}
                       </p>
                     )}
@@ -1509,23 +1509,23 @@ Produce a research brief I can hand to a script writer. For **each talking point
 
                 {lineage.totalCited > 0 && (
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-[#2f3437]/50 mb-1">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--abv-text)]/50 mb-1">
                       Cited facts ({lineage.facts.length}/{lineage.totalCited})
                     </p>
                     <ul className="space-y-1">
                       {(showAllLineageFacts ? lineage.facts : lineage.facts.slice(0, 5)).map((f) => (
-                        <li key={f.id} className="text-[11px] text-[#2f3437] leading-snug flex flex-wrap items-baseline gap-x-1.5">
+                        <li key={f.id} className="text-[11px] text-[var(--abv-text)] leading-snug flex flex-wrap items-baseline gap-x-1.5">
                           <span className="font-medium">{f.neighbourhood}</span>
-                          <span className="text-[#2f3437]/60">·</span>
+                          <span className="text-[var(--abv-text)]/60">·</span>
                           <span>{f.metricLabel}</span>
                           {f.metricValueString && (
                             <>
-                              <span className="text-[#2f3437]/60">·</span>
-                              <span className="font-mono text-[#2f3437]/80">{f.metricValueString}</span>
+                              <span className="text-[var(--abv-text)]/60">·</span>
+                              <span className="font-mono text-[var(--abv-text)]/80">{f.metricValueString}</span>
                             </>
                           )}
                           {f.monthYear && (
-                            <span className="text-[#2f3437]/45">({f.monthYear})</span>
+                            <span className="text-[var(--abv-text)]/45">({f.monthYear})</span>
                           )}
                         </li>
                       ))}
@@ -1549,13 +1549,13 @@ Produce a research brief I can hand to a script writer. For **each talking point
             {/* Notes from team banner — surfaced near the top so members see
                 feedback the moment they open the modal. */}
             {!isAdmin && teamNotes.length > 0 && (
-              <div className="rounded-xl border border-[#6ba3c7]/25 bg-[#6ba3c7]/5 px-4 py-3 space-y-2">
-                <p className="text-xs font-bold uppercase tracking-wider text-[#6ba3c7]">📝 Notes from your team</p>
+              <div className="rounded-xl border border-[var(--abv-azure)]/25 bg-[var(--abv-dark)]/5 px-4 py-3 space-y-2">
+                <p className="text-xs font-bold uppercase tracking-wider text-[var(--abv-azure)]">📝 Notes from your team</p>
                 <ul className="space-y-2">
                   {teamNotes.map((n) => (
-                    <li key={n.id} className="text-sm text-[#2f3437]">
+                    <li key={n.id} className="text-sm text-[var(--abv-text)]">
                       <p className="whitespace-pre-wrap leading-relaxed">{n.note}</p>
-                      <p className="text-[11px] text-[#2f3437]/50 mt-0.5">
+                      <p className="text-[11px] text-[var(--abv-text)]/50 mt-0.5">
                         {n.author.name} · {new Date(n.createdAt).toLocaleDateString()}
                       </p>
                     </li>
@@ -1581,7 +1581,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
                       <p className="text-[11px] font-semibold uppercase tracking-wider text-[#185FA5]">
                         Script Builder v2 · Talking Head
                       </p>
-                      <p className="mt-0.5 text-xs text-[#2f3437]/70 dark:text-gray-300">
+                      <p className="mt-0.5 text-xs text-[var(--abv-text)]/70 dark:text-gray-300">
                         FACT → CLARITY arc, anchored on your cited facts and locked content rules.
                       </p>
                     </div>
@@ -1611,7 +1611,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
             {showProgressTrack && progressSteps.length > 0 && (
               <div className="-mx-6 px-6 py-4 space-y-3 border-y border-gray-200 bg-white">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/50">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--abv-text)]/50">
                     Workflow{(() => {
                       const total = progressSteps.length;
                       const currentIdx = progressSteps.findIndex((s) => s.status === "current");
@@ -1646,7 +1646,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
                           key={tool.key}
                           type="button"
                           onClick={() => launchTool(tool.key)}
-                          className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-[#2f3437]/70 bg-white border border-gray-200 rounded-lg hover:border-[#6ba3c7] hover:text-[#6ba3c7] transition-colors"
+                          className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-[var(--abv-text)]/70 bg-white border border-gray-200 rounded-lg hover:border-[var(--abv-azure)] hover:text-[var(--abv-azure)] transition-colors"
                         >
                           <span>{tool.icon}</span>
                           <span>{tool.label}</span>
@@ -1672,9 +1672,9 @@ Produce a research brief I can hand to a script writer. For **each talking point
                       className="flex-1 min-w-0 flex items-center justify-start gap-2 px-4 py-2.5 text-left hover:bg-gray-50/60 transition-colors rounded-lg"
                       aria-expanded={expanded}
                     >
-                      <span className={`text-[#2f3437]/40 transition-transform ${expanded ? "rotate-90" : ""}`}>▸</span>
-                      <span className="text-[13px] font-medium text-[#2f3437]">Project folder</span>
-                      <span className="text-[12px] text-[#2f3437]/50 truncate">
+                      <span className={`text-[var(--abv-text)]/40 transition-transform ${expanded ? "rotate-90" : ""}`}>▸</span>
+                      <span className="text-[13px] font-medium text-[var(--abv-text)]">Project folder</span>
+                      <span className="text-[12px] text-[var(--abv-text)]/50 truncate">
                         {fileCount} file{fileCount === 1 ? "" : "s"}{thumbnailFileId ? " · thumbnail set" : ""}
                       </span>
                     </button>
@@ -1706,15 +1706,15 @@ Produce a research brief I can hand to a script writer. For **each talking point
                             className="w-20 h-12 object-cover rounded bg-gray-100"
                           />
                           <div className="flex-1 min-w-0">
-                            <p className="text-[10px] uppercase tracking-wider font-semibold text-[#2f3437]/60">Thumbnail</p>
-                            <p className="text-xs text-[#2f3437] truncate" title={thumbnailFileName ?? ""}>
+                            <p className="text-[10px] uppercase tracking-wider font-semibold text-[var(--abv-text)]/60">Thumbnail</p>
+                            <p className="text-xs text-[var(--abv-text)] truncate" title={thumbnailFileName ?? ""}>
                               {thumbnailFileName ?? "Selected file"}
                             </p>
                           </div>
                           <button
                             type="button"
                             onClick={() => { setThumbnailFileId(null); setThumbnailFileName(null); }}
-                            className="text-[11px] font-medium text-[#2f3437]/50 hover:text-red-500 px-1.5"
+                            className="text-[11px] font-medium text-[var(--abv-text)]/50 hover:text-red-500 px-1.5"
                             title="Remove thumbnail"
                           >Clear</button>
                         </div>
@@ -1724,7 +1724,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
                           const isImage = (f.mimeType ?? "").startsWith("image/");
                           const isPicked = f.id === thumbnailFileId;
                           return (
-                            <li key={f.id} className="text-xs text-[#2f3437]/80 flex items-center justify-between gap-2 px-1 py-1 rounded hover:bg-gray-50">
+                            <li key={f.id} className="text-xs text-[var(--abv-text)]/80 flex items-center justify-between gap-2 px-1 py-1 rounded hover:bg-gray-50">
                               <a
                                 href={f.webViewLink ?? driveFolderLink}
                                 target="_blank"
@@ -1735,7 +1735,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
                               <div className="flex items-center gap-2 shrink-0">
                                 {isImage && (
                                   isPicked ? (
-                                    <span className="text-[10px] font-semibold uppercase tracking-wider text-[#2f3437]/70 bg-gray-100 px-1.5 py-0.5 rounded">Thumbnail</span>
+                                    <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--abv-text)]/70 bg-gray-100 px-1.5 py-0.5 rounded">Thumbnail</span>
                                   ) : (
                                     <button
                                       type="button"
@@ -1745,16 +1745,16 @@ Produce a research brief I can hand to a script writer. For **each talking point
                                   )
                                 )}
                                 {f.modifiedTime && (
-                                  <span className="text-[10px] text-[#2f3437]/40">{new Date(f.modifiedTime).toLocaleDateString()}</span>
+                                  <span className="text-[10px] text-[var(--abv-text)]/40">{new Date(f.modifiedTime).toLocaleDateString()}</span>
                                 )}
                               </div>
                             </li>
                           );
                         })}
                       </ul>
-                      {driveFilesLoading && <p className="text-[10px] text-[#2f3437]/40 italic">Refreshing…</p>}
+                      {driveFilesLoading && <p className="text-[10px] text-[var(--abv-text)]/40 italic">Refreshing…</p>}
                       {thumbnailFileId && (
-                        <p className="text-[10px] text-[#2f3437]/40 italic">Save to apply your thumbnail across the planner.</p>
+                        <p className="text-[10px] text-[var(--abv-text)]/40 italic">Save to apply your thumbnail across the planner.</p>
                       )}
                     </div>
                   )}
@@ -1766,20 +1766,20 @@ Produce a research brief I can hand to a script writer. For **each talking point
                 Publish date is also editable from the chip strip; this is the
                 canonical picker that always shows all three dates side-by-side. */}
             <div className="rounded-lg border border-gray-200 bg-white p-3 space-y-3">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/60">Schedule</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--abv-text)]/60">Schedule</p>
               <div className={`grid gap-3 grid-cols-1 ${showEditDue ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
                 <div>
-                  <label className="block text-[11px] font-medium text-[#2f3437]/70 mb-1">Shoot date</label>
+                  <label className="block text-[11px] font-medium text-[var(--abv-text)]/70 mb-1">Shoot date</label>
                   <input type="date" value={form.shootDate} onChange={(e) => setForm((f) => ({ ...f, shootDate: e.target.value }))} className={field} />
                 </div>
                 {showEditDue && (
                   <div>
-                    <label className="block text-[11px] font-medium text-[#2f3437]/70 mb-1">Edit due</label>
+                    <label className="block text-[11px] font-medium text-[var(--abv-text)]/70 mb-1">Edit due</label>
                     <input type="date" value={form.editDueDate} onChange={(e) => setForm((f) => ({ ...f, editDueDate: e.target.value }))} className={field} />
                   </div>
                 )}
                 <div>
-                  <label className="block text-[11px] font-medium text-[#2f3437]/70 mb-1">Publish date</label>
+                  <label className="block text-[11px] font-medium text-[var(--abv-text)]/70 mb-1">Publish date</label>
                   <input type="date" value={form.publishDate} onChange={(e) => setForm((f) => ({ ...f, publishDate: e.target.value }))} className={field} />
                 </div>
               </div>
@@ -1788,7 +1788,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
             {/* Zone 6 — Content list. Notion-style: one bordered card with five
                 collapsible single-line rows. Only one row is open at a time. */}
             <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
-              <p className="px-3.5 pt-2.5 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/60">Content</p>
+              <p className="px-3.5 pt-2.5 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--abv-text)]/60">Content</p>
               <ul className="divide-y divide-gray-100 border-t border-gray-100">
                 <ContentRow
                   label="Talking points / outline"
@@ -1864,7 +1864,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
                       <button
                         type="button"
                         onClick={() => setShowDownloadMenu((v) => !v)}
-                        className="flex items-center gap-1.5 text-xs text-[#2f3437]/50 hover:text-[#185FA5] transition-colors"
+                        className="flex items-center gap-1.5 text-xs text-[var(--abv-text)]/50 hover:text-[#185FA5] transition-colors"
                       >
                         <ArrowDownTrayIcon className="w-3.5 h-3.5" />
                         Download Script
@@ -1876,7 +1876,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
                               key={fmt}
                               type="button"
                               onClick={() => downloadScript(fmt)}
-                              className="w-full text-left px-3 py-1.5 text-xs text-[#2f3437] hover:bg-gray-50 transition-colors"
+                              className="w-full text-left px-3 py-1.5 text-xs text-[var(--abv-text)] hover:bg-gray-50 transition-colors"
                             >
                               .{fmt}{fmt === "pdf" ? " (print)" : ""}
                             </button>
@@ -1943,12 +1943,12 @@ Produce a research brief I can hand to a script writer. For **each talking point
                 on the top row, Lead Magnet / Drive Folder (or Footage Link) on
                 the bottom. All four outbound links live in one card. */}
             <div className="rounded-lg border border-gray-200 bg-white p-3 space-y-3">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/60">Linking &amp; campaigns</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--abv-text)]/60">Linking &amp; campaigns</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 {/* Binge Video card — links this video to the previous video the
                     member wants to drive viewers back to. */}
                 <div ref={bingeRef} className="relative rounded-md bg-gray-50 px-3 py-2.5">
-                  <p className="text-[11px] uppercase tracking-wider font-semibold text-[#2f3437]/55 mb-1">Binge video</p>
+                  <p className="text-[11px] uppercase tracking-wider font-semibold text-[var(--abv-text)]/55 mb-1">Binge video</p>
                   {selectedBinge && !bingeOpen ? (
                     <div className="flex items-center gap-2">
                       <button
@@ -1957,15 +1957,15 @@ Produce a research brief I can hand to a script writer. For **each talking point
                         className="min-w-0 flex-1 text-left"
                         title="Change binge target"
                       >
-                        <p className="text-[13px] text-[#2f3437] truncate">{selectedBinge.title}</p>
-                        <p className="text-[11px] text-[#2f3437]/55 truncate">
+                        <p className="text-[13px] text-[var(--abv-text)] truncate">{selectedBinge.title}</p>
+                        <p className="text-[11px] text-[var(--abv-text)]/55 truncate">
                           {formatTheme(selectedBinge.theme) || <span className="italic">No theme</span>}
                         </p>
                       </button>
                       <button
                         type="button"
                         onClick={() => setForm((f) => ({ ...f, bingeVideoId: "" }))}
-                        className="shrink-0 p-1 rounded hover:bg-white text-[#2f3437]/50 hover:text-red-600 transition-colors"
+                        className="shrink-0 p-1 rounded hover:bg-white text-[var(--abv-text)]/50 hover:text-red-600 transition-colors"
                         aria-label="Clear binge video"
                       >
                         <XMarkIcon className="w-4 h-4" />
@@ -1975,10 +1975,10 @@ Produce a research brief I can hand to a script writer. For **each talking point
                     <button
                       type="button"
                       onClick={() => { setBingeQuery(""); setBingeOpen((v) => !v); }}
-                      className="w-full text-left text-[13px] text-[#2f3437]/50 hover:text-[#185FA5] flex items-center justify-between gap-2"
+                      className="w-full text-left text-[13px] text-[var(--abv-text)]/50 hover:text-[#185FA5] flex items-center justify-between gap-2"
                     >
                       <span className="truncate">{bingeLoading ? "Loading videos…" : "Select a video to binge to…"}</span>
-                      <svg className="w-3.5 h-3.5 text-[#2f3437]/45 shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.06l3.71-3.83a.75.75 0 111.08 1.04l-4.25 4.39a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z" clipRule="evenodd" /></svg>
+                      <svg className="w-3.5 h-3.5 text-[var(--abv-text)]/45 shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.06l3.71-3.83a.75.75 0 111.08 1.04l-4.25 4.39a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z" clipRule="evenodd" /></svg>
                     </button>
                   )}
                   {bingeOpen && (
@@ -1993,9 +1993,9 @@ Produce a research brief I can hand to a script writer. For **each talking point
                       />
                       <div className="overflow-y-auto">
                         {bingeLoading && bingeOptions.length === 0 ? (
-                          <p className="px-3 py-3 text-xs text-[#2f3437]/45 italic">Loading…</p>
+                          <p className="px-3 py-3 text-xs text-[var(--abv-text)]/45 italic">Loading…</p>
                         ) : filteredBingeOptions.length === 0 ? (
-                          <p className="px-3 py-3 text-xs text-[#2f3437]/45 italic">
+                          <p className="px-3 py-3 text-xs text-[var(--abv-text)]/45 italic">
                             {bingeOptions.length === 0
                               ? "No other videos to link yet — create more videos in the planner first."
                               : "No matches."}
@@ -2011,8 +2011,8 @@ Produce a research brief I can hand to a script writer. For **each talking point
                                     onClick={() => { setForm((f) => ({ ...f, bingeVideoId: opt.id })); setBingeOpen(false); }}
                                     className={`w-full text-left px-3 py-2 hover:bg-[#185FA5]/5 transition-colors ${active ? "bg-[#185FA5]/10" : ""}`}
                                   >
-                                    <p className="text-sm font-medium text-[#2f3437] truncate">{opt.title}</p>
-                                    <p className="text-[11px] text-[#2f3437]/55 truncate">
+                                    <p className="text-sm font-medium text-[var(--abv-text)] truncate">{opt.title}</p>
+                                    <p className="text-[11px] text-[var(--abv-text)]/55 truncate">
                                       {formatTheme(opt.theme) || <span className="italic">No theme</span>}
                                     </p>
                                   </button>
@@ -2028,14 +2028,14 @@ Produce a research brief I can hand to a script writer. For **each talking point
 
                 {/* Binged FROM card — read-only list of videos that point back. */}
                 <div className="rounded-md bg-gray-50 px-3 py-2.5">
-                  <p className="text-[11px] uppercase tracking-wider font-semibold text-[#2f3437]/55 mb-1">Binged from</p>
+                  <p className="text-[11px] uppercase tracking-wider font-semibold text-[var(--abv-text)]/55 mb-1">Binged from</p>
                   {plan.bingedFromList && plan.bingedFromList.length > 0 ? (
                     <ul className="space-y-1.5">
                       {plan.bingedFromList.map((b) => (
                         <li key={b.id} className="flex items-center justify-between gap-2">
                           <div className="min-w-0 flex-1">
-                            <p className="text-[13px] text-[#2f3437] truncate">{b.title}</p>
-                            <p className="text-[11px] text-[#2f3437]/55 truncate">
+                            <p className="text-[13px] text-[var(--abv-text)] truncate">{b.title}</p>
+                            <p className="text-[11px] text-[var(--abv-text)]/55 truncate">
                               {formatTheme(b.theme) || <span className="italic">No theme</span>}
                             </p>
                           </div>
@@ -2050,7 +2050,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
                       ))}
                     </ul>
                   ) : (
-                    <p className="text-[12px] italic text-[#2f3437]/45">No videos point here yet</p>
+                    <p className="text-[12px] italic text-[var(--abv-text)]/45">No videos point here yet</p>
                   )}
                 </div>
 
@@ -2058,7 +2058,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
                     separate campaigns scope). */}
                 {!isAdmin && (
                   <div className="rounded-md bg-gray-50 px-3 py-2.5">
-                    <p className="text-[11px] uppercase tracking-wider font-semibold text-[#2f3437]/55 mb-1">Lead magnet campaign</p>
+                    <p className="text-[11px] uppercase tracking-wider font-semibold text-[var(--abv-text)]/55 mb-1">Lead magnet campaign</p>
                     <select
                       value={form.linkedCampaignId}
                       onChange={(e) => setForm((f) => ({ ...f, linkedCampaignId: e.target.value }))}
@@ -2070,7 +2070,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
                       ))}
                     </select>
                     {campaigns.length === 0 && (
-                      <p className="mt-1 text-[11px] italic text-[#2f3437]/55">
+                      <p className="mt-1 text-[11px] italic text-[var(--abv-text)]/55">
                         No campaigns yet — create one on the{" "}
                         <a href="/member/campaigns" className="text-[#185FA5] hover:underline">Campaigns page</a>
                         {" "}so the script writer can reference it by name.
@@ -2094,7 +2094,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
                     member's tier uses managed Drive folders. */}
                 {useDrive ? (
                   <div className="rounded-md bg-gray-50 px-3 py-2.5">
-                    <p className="text-[11px] uppercase tracking-wider font-semibold text-[#2f3437]/55 mb-1">Drive folder</p>
+                    <p className="text-[11px] uppercase tracking-wider font-semibold text-[var(--abv-text)]/55 mb-1">Drive folder</p>
                     {driveFolderLink ? (
                       <a
                         href={driveFolderLink}
@@ -2125,12 +2125,12 @@ Produce a research brief I can hand to a script writer. For **each talking point
                         {folderError && <p className="text-xs text-red-600 mt-1">{folderError}</p>}
                       </div>
                     ) : (
-                      <p className="text-[12px] italic text-[#2f3437]/45">Created automatically when status moves to shooting / post.</p>
+                      <p className="text-[12px] italic text-[var(--abv-text)]/45">Created automatically when status moves to shooting / post.</p>
                     )}
                   </div>
                 ) : (
                   <div className="rounded-md bg-gray-50 px-3 py-2.5">
-                    <p className="text-[11px] uppercase tracking-wider font-semibold text-[#2f3437]/55 mb-1">Footage link</p>
+                    <p className="text-[11px] uppercase tracking-wider font-semibold text-[var(--abv-text)]/55 mb-1">Footage link</p>
                     <input
                       type="text"
                       value={form.footageLink}
@@ -2154,8 +2154,8 @@ Produce a research brief I can hand to a script writer. For **each talking point
               ) : (
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-[11px] font-semibold uppercase tracking-wider text-[#2f3437]/60">Notes &amp; thoughts</span>
-                    <button type="button" onClick={() => toggleSection("thoughts")} className="text-[11px] text-[#2f3437]/50 hover:text-[#185FA5]">Collapse</button>
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--abv-text)]/60">Notes &amp; thoughts</span>
+                    <button type="button" onClick={() => toggleSection("thoughts")} className="text-[11px] text-[var(--abv-text)]/50 hover:text-[#185FA5]">Collapse</button>
                   </div>
                   <MarkdownTextarea
                     value={form.thoughts}
@@ -2190,7 +2190,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
                     const feedback = meta.feedback_used?.trim() || "";
                     const updated = latest!.updatedAt ? new Date(latest!.updatedAt as string) : null;
                     return (
-                      <li key={latest!.id} className="text-xs text-[#2f3437]/85">
+                      <li key={latest!.id} className="text-xs text-[var(--abv-text)]/85">
                         <div className="flex items-center justify-between gap-2">
                           <button
                             type="button"
@@ -2206,13 +2206,13 @@ Produce a research brief I can hand to a script writer. For **each talking point
                             {REPURPOSE_LABELS[type] ?? type}
                           </button>
                           {updated && (
-                            <span className="text-[10px] text-[#2f3437]/40 shrink-0">
+                            <span className="text-[10px] text-[var(--abv-text)]/40 shrink-0">
                               {updated.toLocaleDateString()}
                             </span>
                           )}
                         </div>
                         {feedback && (
-                          <p className="text-[10px] italic text-[#2f3437]/55 mt-0.5 truncate" title={feedback}>
+                          <p className="text-[10px] italic text-[var(--abv-text)]/55 mt-0.5 truncate" title={feedback}>
                             Last revision: &ldquo;{feedback}&rdquo;
                           </p>
                         )}
@@ -2241,10 +2241,10 @@ Produce a research brief I can hand to a script writer. For **each talking point
                 <button onClick={handleDelete} disabled={deleting} className="text-xs text-red-600 font-medium hover:underline disabled:opacity-50">
                   {deleting ? "Deleting…" : "Yes, delete"}
                 </button>
-                <button onClick={() => setConfirmDelete(false)} className="text-xs text-[#2f3437]/50 hover:text-[#2f3437]">Cancel</button>
+                <button onClick={() => setConfirmDelete(false)} className="text-xs text-[var(--abv-text)]/50 hover:text-[var(--abv-text)]">Cancel</button>
               </div>
             ) : (
-              <button onClick={() => setConfirmDelete(true)} className="text-xs text-[#2f3437]/40 hover:text-red-600 transition-colors">Delete video</button>
+              <button onClick={() => setConfirmDelete(true)} className="text-xs text-[var(--abv-text)]/40 hover:text-red-600 transition-colors">Delete video</button>
             )
           ) : <div />}
           <div className="flex items-center gap-3">
@@ -2253,7 +2253,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
                 relative timestamp; clickable when in error state to retry. */}
             <div className="text-xs">
               {autoSaveStatus === "saving" && (
-                <span className="text-[#2f3437]/60">Saving…</span>
+                <span className="text-[var(--abv-text)]/60">Saving…</span>
               )}
               {autoSaveStatus === "saved" && (
                 <span className="text-green-600">
@@ -2271,12 +2271,12 @@ Produce a research brief I can hand to a script writer. For **each talking point
                 </button>
               )}
               {autoSaveStatus === "idle" && (
-                <span className="text-[#2f3437]/40">All changes saved</span>
+                <span className="text-[var(--abv-text)]/40">All changes saved</span>
               )}
             </div>
             <button
               onClick={handleClose}
-              className="px-4 py-2 text-sm text-[#2f3437]/60 hover:text-[#2f3437] border border-gray-200 rounded-lg"
+              className="px-4 py-2 text-sm text-[var(--abv-text)]/60 hover:text-[var(--abv-text)] border border-gray-200 rounded-lg"
             >
               Close
             </button>
@@ -2299,8 +2299,8 @@ Produce a research brief I can hand to a script writer. For **each talking point
             className="bg-white dark:bg-[#1a1a1a] rounded-xl shadow-2xl w-full max-w-5xl h-[94vh] flex flex-col overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-[#eaeaea] dark:border-white/10">
-              <h3 className="text-sm font-semibold text-[#2f3437] dark:text-white truncate">
+            <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-[var(--abv-border-strong)] dark:border-white/10">
+              <h3 className="text-sm font-semibold text-[var(--abv-text)] dark:text-white truncate">
                 {viewingArtifact.label}
               </h3>
               <div className="flex items-center gap-2">
@@ -2316,8 +2316,8 @@ Produce a research brief I can hand to a script writer. For **each talking point
                   }}
                   className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
                     copiedArtifact
-                      ? "bg-[#6ba3c7]/15 text-[#6ba3c7]"
-                      : "text-[#6ba3c7] hover:bg-[#6ba3c7]/10"
+                      ? "bg-[var(--abv-dark)]/15 text-[var(--abv-azure)]"
+                      : "text-[var(--abv-azure)] hover:bg-[var(--abv-dark)]/10"
                   }`}
                 >
                   {copiedArtifact ? "Copied!" : "Copy"}
@@ -2325,7 +2325,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
                 <button
                   type="button"
                   onClick={() => setViewingArtifact(null)}
-                  className="p-1.5 rounded hover:bg-[#eaeaea]/60 dark:hover:bg-white/10 text-[#2f3437]/60 dark:text-white/60"
+                  className="p-1.5 rounded hover:bg-[var(--abv-border-strong)]/60 dark:hover:bg-white/10 text-[var(--abv-text)]/60 dark:text-white/60"
                   aria-label="Close"
                 >
                   <XMarkIcon className="w-5 h-5" />
@@ -2344,23 +2344,23 @@ Produce a research brief I can hand to a script writer. For **each talking point
                 ariaLabel={`Edit ${viewingArtifact.label}`}
               />
             </div>
-            <div className="flex items-center justify-between gap-3 px-5 py-3 border-t border-[#eaeaea] dark:border-white/10">
+            <div className="flex items-center justify-between gap-3 px-5 py-3 border-t border-[var(--abv-border-strong)] dark:border-white/10">
               <div className="text-xs">
                 {artifactSaveError ? (
                   <span className="text-red-600 dark:text-red-400">{artifactSaveError}</span>
                 ) : savedArtifact ? (
                   <span className="text-green-600 dark:text-green-400 font-medium">Saved ✓</span>
                 ) : editingArtifactContent !== viewingArtifact.content ? (
-                  <span className="text-[#2f3437]/50 dark:text-white/40">Unsaved changes</span>
+                  <span className="text-[var(--abv-text)]/50 dark:text-white/40">Unsaved changes</span>
                 ) : (
-                  <span className="text-[#2f3437]/40 dark:text-white/30">Esc or click outside to close</span>
+                  <span className="text-[var(--abv-text)]/40 dark:text-white/30">Esc or click outside to close</span>
                 )}
               </div>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setViewingArtifact(null)}
-                  className="px-3 py-1.5 text-xs font-medium text-[#2f3437] dark:text-white/80 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg transition-colors"
+                  className="px-3 py-1.5 text-xs font-medium text-[var(--abv-text)] dark:text-white/80 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg transition-colors"
                 >
                   Close
                 </button>

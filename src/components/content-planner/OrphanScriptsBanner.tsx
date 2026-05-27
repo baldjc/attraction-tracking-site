@@ -62,14 +62,14 @@ export default function OrphanScriptsBanner() {
 
   return (
     <>
-      <div className="bg-[#6ba3c7]/10 border border-[#6ba3c7]/30 rounded-lg px-4 py-3 mb-4 flex items-center gap-3">
+      <div className="bg-[var(--abv-dark)]/10 border border-[var(--abv-azure)]/30 rounded-lg px-4 py-3 mb-4 flex items-center gap-3">
         <span className="text-lg shrink-0">📎</span>
-        <p className="text-sm text-[#2f3437] flex-1">
+        <p className="text-sm text-[var(--abv-text)] flex-1">
           You have <span className="font-semibold">{scripts.length}</span>{" "}
           script{scripts.length === 1 ? "" : "s"} not linked to a plan.{" "}
           <button
             onClick={() => setOpen(true)}
-            className="font-semibold text-[#6ba3c7] hover:text-[#5490b5] underline"
+            className="font-semibold text-[var(--abv-azure)] hover:text-[var(--abv-azure)] underline"
           >
             Link them →
           </button>
@@ -77,7 +77,7 @@ export default function OrphanScriptsBanner() {
         <button
           onClick={handleDismiss}
           aria-label="Dismiss"
-          className="text-[#2f3437]/40 hover:text-[#2f3437] text-sm shrink-0"
+          className="text-[var(--abv-text)]/40 hover:text-[var(--abv-text)] text-sm shrink-0"
         >
           ✕
         </button>

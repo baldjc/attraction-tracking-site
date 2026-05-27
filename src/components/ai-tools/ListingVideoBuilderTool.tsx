@@ -85,14 +85,14 @@ export default function ListingVideoBuilderTool({ basePath, isAdmin, calendarEna
       <div className="mb-6">
         <Link
           href={basePath}
-          className="inline-flex items-center gap-1.5 text-sm text-[#2f3437]/50 hover:text-[#6ba3c7] transition-colors mb-4"
+          className="inline-flex items-center gap-1.5 text-sm text-[var(--abv-text)]/50 hover:text-[var(--abv-ai-tools)] transition-colors mb-4"
         >
           <ArrowLeftIcon className="w-4 h-4" />
           AI Tools
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-[#2f3437] dark:text-white">🏠 Listing Video Builder</h1>
-          <p className="text-sm text-[#2f3437]/60 dark:text-white/60 mt-1">{subtitle}</p>
+          <h1 className="text-2xl font-bold text-[var(--abv-text)] dark:text-white">🏠 Listing Video Builder</h1>
+          <p className="text-sm text-[var(--abv-text)]/60 dark:text-white/60 mt-1">{subtitle}</p>
         </div>
       </div>
 
@@ -103,7 +103,7 @@ export default function ListingVideoBuilderTool({ basePath, isAdmin, calendarEna
         </div>
       )}
 
-      <div className="bg-white dark:bg-[#1a1a1a] border border-[#2f3437]/10 dark:border-white/10 rounded-xl p-6">
+      <div className="bg-white dark:bg-[#1a1a1a] border border-[var(--abv-text)]/10 dark:border-white/10 rounded-xl p-6">
         {phase === "input" ? (
           <ListingInputPhase onSubmit={handleSubmit} loading={loading} />
         ) : propertyData ? (

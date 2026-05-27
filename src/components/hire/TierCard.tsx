@@ -56,15 +56,15 @@ function VideoToggle({
   onChange: (v: number) => void;
 }) {
   return (
-    <div className="inline-flex rounded-lg border border-[#2f3437]/15 dark:border-white/15 overflow-hidden text-[11px] font-semibold">
+    <div className="inline-flex rounded-lg border border-[var(--abv-text)]/15 dark:border-white/15 overflow-hidden text-[11px] font-semibold">
       {options.map((n) => (
         <button
           key={n}
           onClick={() => onChange(n)}
           className={`px-3 py-1.5 transition-colors ${
             value === n
-              ? "bg-[#2f3437] dark:bg-white text-white dark:text-[#1e2a38]"
-              : "text-[#2f3437]/50 dark:text-white/50 hover:text-[#2f3437] dark:hover:text-white"
+              ? "bg-[var(--abv-text)] dark:bg-white text-white dark:text-[var(--abv-dark)]"
+              : "text-[var(--abv-text)]/50 dark:text-white/50 hover:text-[var(--abv-text)] dark:hover:text-white"
           }`}
         >
           {n} videos/mo
@@ -80,7 +80,7 @@ function Feature({ children }: { children: React.ReactNode }) {
   return (
     <li className="flex items-start gap-2">
       <CheckCircleIcon className="w-3.5 h-3.5 text-green-500 mt-0.5 shrink-0" />
-      <span className="text-[13px] text-[#2f3437]/70 dark:text-white/60 leading-snug">{children}</span>
+      <span className="text-[13px] text-[var(--abv-text)]/70 dark:text-white/60 leading-snug">{children}</span>
     </li>
   );
 }
@@ -146,7 +146,7 @@ function CtaButton({
   }
 
   return (
-    <span className="flex items-center justify-center gap-1.5 text-xs font-semibold text-[#6ba3c7] cursor-default">
+    <span className="flex items-center justify-center gap-1.5 text-xs font-semibold text-[var(--abv-azure)] cursor-default">
       <ChatBubbleLeftRightIcon className="w-3.5 h-3.5" /> Message us to get started
     </span>
   );
@@ -207,8 +207,8 @@ export default function TierCard({
   // ── CTA style ─────────────────────────────────────────────
   const ctaClass = `w-full py-2.5 rounded-lg text-sm font-bold transition-colors ${
     category.highlighted
-      ? "bg-[#8B5CF6] hover:bg-[#7c3aed] text-white"
-      : "bg-[#2f3437] dark:bg-white text-white dark:text-[#1e2a38] hover:bg-[#1e2a38] dark:hover:bg-white/90"
+      ? "bg-[var(--abv-hire)] hover:bg-[#7c3aed] text-white"
+      : "bg-[var(--abv-text)] dark:bg-white text-white dark:text-[var(--abv-dark)] hover:bg-[var(--abv-dark)] dark:hover:bg-white/90"
   }`;
 
   // Badge: show alongside label for non-highlighted, non-addon packages
@@ -221,14 +221,14 @@ export default function TierCard({
     <div
       className={`bg-white dark:bg-[#1a2433] rounded-xl flex flex-col h-full p-5 relative ${
         category.highlighted
-          ? "border-2 border-[#8B5CF6]"
-          : "border border-[#eaeaea] dark:border-white/10"
+          ? "border-2 border-[var(--abv-hire)]"
+          : "border border-[var(--abv-border-strong)] dark:border-white/10"
       }`}
     >
       {/* Most Popular pill */}
       {category.highlighted && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-          <span className="text-[10px] font-bold uppercase tracking-widest bg-[#8B5CF6] text-white px-3 py-1 rounded-full">
+          <span className="text-[10px] font-bold uppercase tracking-widest bg-[var(--abv-hire)] text-white px-3 py-1 rounded-full">
             Most Popular
           </span>
         </div>
@@ -238,13 +238,13 @@ export default function TierCard({
       <div className={`flex items-center mb-2 ${showBadge ? "justify-between" : ""} ${category.highlighted ? "mt-1" : ""}`}>
         <p className={`text-[10px] font-bold uppercase tracking-widest ${
           category.highlighted
-            ? "text-[#8B5CF6]/60"
-            : "text-[#2f3437]/40 dark:text-white/30"
+            ? "text-[var(--abv-hire)]/60"
+            : "text-[var(--abv-text)]/40 dark:text-white/30"
         }`}>
           {category.emoji} {category.name}
         </p>
         {showBadge && (
-          <span className="text-[10px] font-bold uppercase tracking-widest bg-[#2f3437] dark:bg-white text-white dark:text-[#1e2a38] px-2 py-0.5 rounded-full">
+          <span className="text-[10px] font-bold uppercase tracking-widest bg-[var(--abv-text)] dark:bg-white text-white dark:text-[var(--abv-dark)] px-2 py-0.5 rounded-full">
             {activePackage!.badge}
           </span>
         )}
@@ -252,7 +252,7 @@ export default function TierCard({
 
       {/* Tagline */}
       {category.tagline && (
-        <h3 className="text-base font-bold text-[#2f3437] dark:text-white leading-tight">
+        <h3 className="text-base font-bold text-[var(--abv-text)] dark:text-white leading-tight">
           {category.tagline}
         </h3>
       )}
@@ -272,12 +272,12 @@ export default function TierCard({
 
       {/* Price */}
       <div className="mb-4">
-        <span className="text-3xl font-extrabold text-[#2f3437] dark:text-white">{priceMain}</span>
+        <span className="text-3xl font-extrabold text-[var(--abv-text)] dark:text-white">{priceMain}</span>
         {priceSuffix && (
-          <span className="text-sm text-[#2f3437]/40 dark:text-white/30 ml-1">/{priceSuffix}</span>
+          <span className="text-sm text-[var(--abv-text)]/40 dark:text-white/30 ml-1">/{priceSuffix}</span>
         )}
         {activePackage?.priceNote && (
-          <span className="text-[11px] font-semibold text-[#2f3437]/30 dark:text-white/25 ml-1.5">
+          <span className="text-[11px] font-semibold text-[var(--abv-text)]/30 dark:text-white/25 ml-1.5">
             {activePackage.priceNote}
           </span>
         )}
@@ -285,14 +285,14 @@ export default function TierCard({
 
       {/* Footer note */}
       {category.footerNote && (
-        <p className="text-[12px] text-[#2f3437]/40 dark:text-white/30 -mt-2 mb-4">
+        <p className="text-[12px] text-[var(--abv-text)]/40 dark:text-white/30 -mt-2 mb-4">
           {category.footerNote}
         </p>
       )}
 
       {/* Includes ref */}
       {category.includesRef && (
-        <p className="text-[11px] font-semibold text-[#2f3437]/50 dark:text-white/40 uppercase tracking-wide mb-2">
+        <p className="text-[11px] font-semibold text-[var(--abv-text)]/50 dark:text-white/40 uppercase tracking-wide mb-2">
           {category.includesRef}
         </p>
       )}
@@ -311,8 +311,8 @@ export default function TierCard({
         <ul className={`space-y-2 ${cardExtras && cardExtras.length > 0 ? "mb-3" : "mb-4 flex-1"}`}>
           {activePackage.highlightFeatures.map((f) => (
             <li key={f} className="flex items-start gap-2">
-              <CheckCircleIcon className="w-3.5 h-3.5 text-[#8B5CF6] mt-0.5 shrink-0" />
-              <span className="text-[13px] text-[#2f3437]/70 dark:text-white/60 leading-snug">{f}</span>
+              <CheckCircleIcon className="w-3.5 h-3.5 text-[var(--abv-hire)] mt-0.5 shrink-0" />
+              <span className="text-[13px] text-[var(--abv-text)]/70 dark:text-white/60 leading-snug">{f}</span>
             </li>
           ))}
         </ul>
@@ -320,25 +320,25 @@ export default function TierCard({
 
       {/* Addon checkbox */}
       {hasAddon && (
-        <div className="border-t border-[#eaeaea] dark:border-white/10 pt-3 mb-4">
+        <div className="border-t border-[var(--abv-border-strong)] dark:border-white/10 pt-3 mb-4">
           <label className="flex items-start gap-2.5 cursor-pointer group">
             <input
               type="checkbox"
               checked={addJared}
               onChange={(e) => setAddJared(e.target.checked)}
-              className="mt-0.5 w-3.5 h-3.5 accent-[#8B5CF6] shrink-0 cursor-pointer"
+              className="mt-0.5 w-3.5 h-3.5 accent-[var(--abv-hire)] shrink-0 cursor-pointer"
             />
             <div>
-              <span className="text-[13px] text-[#2f3437] dark:text-white font-medium group-hover:text-[#8B5CF6] transition-colors">
+              <span className="text-[13px] text-[var(--abv-text)] dark:text-white font-medium group-hover:text-[var(--abv-hire)] transition-colors">
                 {category.addonLabel}
               </span>
               {addonPrice !== null && (
-                <span className="text-[13px] text-[#8B5CF6] font-semibold ml-1">
+                <span className="text-[13px] text-[var(--abv-hire)] font-semibold ml-1">
                   +${addonPrice.toLocaleString()}/mo
                 </span>
               )}
               {category.addonPriceNote && (
-                <p className="text-[11px] text-[#2f3437]/50 dark:text-white/40 mt-0.5">
+                <p className="text-[11px] text-[var(--abv-text)]/50 dark:text-white/40 mt-0.5">
                   {category.addonPriceNote}
                 </p>
               )}
@@ -349,23 +349,23 @@ export default function TierCard({
 
       {/* Jared included callout */}
       {category.jaredIncludedNote && (
-        <div className="flex items-center gap-2 bg-[#8B5CF6]/8 rounded-lg px-3 py-2 mb-4">
-          <CheckCircleIcon className="w-3.5 h-3.5 text-[#8B5CF6] shrink-0" />
-          <span className="text-[12px] font-medium text-[#8B5CF6]">{category.jaredIncludedNote}</span>
+        <div className="flex items-center gap-2 bg-[var(--abv-hire)]/8 rounded-lg px-3 py-2 mb-4">
+          <CheckCircleIcon className="w-3.5 h-3.5 text-[var(--abv-hire)] shrink-0" />
+          <span className="text-[12px] font-medium text-[var(--abv-hire)]">{category.jaredIncludedNote}</span>
         </div>
       )}
 
       {/* Card extras (The real difference) */}
       {cardExtras && cardExtras.length > 0 && (
-        <div className="border-t border-[#eaeaea] dark:border-white/10 pt-3 mb-4 flex-1">
-          <p className="text-[11px] font-semibold text-[#2f3437]/50 dark:text-white/40 uppercase tracking-wide mb-2">
+        <div className="border-t border-[var(--abv-border-strong)] dark:border-white/10 pt-3 mb-4 flex-1">
+          <p className="text-[11px] font-semibold text-[var(--abv-text)]/50 dark:text-white/40 uppercase tracking-wide mb-2">
             The real difference:
           </p>
           <ul className="space-y-2">
             {cardExtras.map((text) => (
               <li key={text} className="flex items-start gap-2">
                 <span className="text-sm leading-none mt-0.5 shrink-0">💎</span>
-                <span className="text-[13px] text-[#2f3437] dark:text-white/80 leading-snug font-medium">{text}</span>
+                <span className="text-[13px] text-[var(--abv-text)] dark:text-white/80 leading-snug font-medium">{text}</span>
               </li>
             ))}
           </ul>

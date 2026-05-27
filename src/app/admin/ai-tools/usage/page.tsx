@@ -129,12 +129,12 @@ export default function AIToolsUsagePage() {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
-          <Link href="/admin/ai-tools" className="text-[#2f3437]/40 hover:text-[#6ba3c7] transition-colors">
+          <Link href="/admin/ai-tools" className="text-[var(--abv-text)]/40 hover:text-[var(--abv-azure)] transition-colors">
             <ArrowLeftIcon className="w-5 h-5" />
           </Link>
           <div>
-            <h1 className="text-xl font-bold text-[#2f3437] dark:text-[#e2e8f0]">AI Tools Usage</h1>
-            <p className="text-sm text-[#2f3437]/50 dark:text-white/40">Track how members use AI tools across the platform.</p>
+            <h1 className="text-xl font-bold text-[var(--abv-text)] dark:text-[#e2e8f0]">AI Tools Usage</h1>
+            <p className="text-sm text-[var(--abv-text)]/50 dark:text-white/40">Track how members use AI tools across the platform.</p>
           </div>
         </div>
       </div>
@@ -152,8 +152,8 @@ export default function AIToolsUsagePage() {
             onClick={() => setActiveDays(days)}
             className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-colors ${
               activeDays === days
-                ? "bg-[#6ba3c7] text-white"
-                : "bg-gray-100 dark:bg-white/10 text-[#2f3437]/60 dark:text-white/40 hover:bg-gray-200 dark:hover:bg-white/20"
+                ? "bg-[var(--abv-dark)] text-white"
+                : "bg-gray-100 dark:bg-white/10 text-[var(--abv-text)]/60 dark:text-white/40 hover:bg-gray-200 dark:hover:bg-white/20"
             }`}
           >
             {label}
@@ -161,7 +161,7 @@ export default function AIToolsUsagePage() {
         ))}
         <button
           onClick={handleExport}
-          className="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-[#2f3437]/20 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 text-[#2f3437] dark:text-white transition-colors"
+          className="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-[var(--abv-text)]/20 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 text-[var(--abv-text)] dark:text-white transition-colors"
         >
           <ArrowDownTrayIcon className="w-4 h-4" />
           Export CSV
@@ -188,8 +188,8 @@ export default function AIToolsUsagePage() {
               { label: "Tools Used", value: byTool.length },
             ].map((s) => (
               <div key={s.label} className="bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-[#2a2a2a] p-4">
-                <p className="text-3xl font-black text-[#2f3437] dark:text-white">{s.value}</p>
-                <p className="text-xs text-[#2f3437]/50 dark:text-white/40 uppercase tracking-wider mt-1">{s.label}</p>
+                <p className="text-3xl font-black text-[var(--abv-text)] dark:text-white">{s.value}</p>
+                <p className="text-xs text-[var(--abv-text)]/50 dark:text-white/40 uppercase tracking-wider mt-1">{s.label}</p>
               </div>
             ))}
           </div>
@@ -197,7 +197,7 @@ export default function AIToolsUsagePage() {
           {/* By Tool */}
           <div className="bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-[#2a2a2a] overflow-hidden">
             <div className="px-5 py-3 border-b border-gray-100 dark:border-[#2a2a2a]">
-              <h2 className="text-sm font-semibold text-[#2f3437] dark:text-[#e2e8f0]">Usage by Tool</h2>
+              <h2 className="text-sm font-semibold text-[var(--abv-text)] dark:text-[#e2e8f0]">Usage by Tool</h2>
             </div>
             <div className="divide-y divide-gray-100 dark:divide-[#2a2a2a]">
               {Object.entries(TOOL_LABELS).map(([toolType, label]) => {
@@ -207,15 +207,15 @@ export default function AIToolsUsagePage() {
                     <div className="flex items-center gap-3">
                       <span className="text-xl">{TOOL_ICONS[toolType]}</span>
                       <div>
-                        <p className="text-sm font-medium text-[#2f3437] dark:text-[#e2e8f0]">{label}</p>
-                        <p className="text-xs text-[#2f3437]/40 dark:text-white/30">
+                        <p className="text-sm font-medium text-[var(--abv-text)] dark:text-[#e2e8f0]">{label}</p>
+                        <p className="text-xs text-[var(--abv-text)]/40 dark:text-white/30">
                           {data ? `${data.members.size} member${data.members.size !== 1 ? "s" : ""}` : "No usage"}
                         </p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-lg font-bold text-[#2f3437] dark:text-white">{data?.count ?? 0}</div>
-                      <div className="text-xs text-[#2f3437]/40 dark:text-white/30">
+                      <div className="text-lg font-bold text-[var(--abv-text)] dark:text-white">{data?.count ?? 0}</div>
+                      <div className="text-xs text-[var(--abv-text)]/40 dark:text-white/30">
                         {data?.downloads ? `${data.downloads} downloads` : "conversations"}
                       </div>
                     </div>
@@ -229,42 +229,42 @@ export default function AIToolsUsagePage() {
           {byMember.length > 0 && (
             <div className="bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-[#2a2a2a] overflow-hidden">
               <div className="px-5 py-3 border-b border-gray-100 dark:border-[#2a2a2a]">
-                <h2 className="text-sm font-semibold text-[#2f3437] dark:text-[#e2e8f0]">Member Activity</h2>
+                <h2 className="text-sm font-semibold text-[var(--abv-text)] dark:text-[#e2e8f0]">Member Activity</h2>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="border-b bg-gray-50 dark:bg-white/5">
-                      <th className="text-left px-4 py-2 font-medium text-[#2f3437]/50 dark:text-white/40">Member</th>
-                      <th className="text-center px-3 py-2 font-medium text-[#2f3437]/50 dark:text-white/40">Total</th>
+                      <th className="text-left px-4 py-2 font-medium text-[var(--abv-text)]/50 dark:text-white/40">Member</th>
+                      <th className="text-center px-3 py-2 font-medium text-[var(--abv-text)]/50 dark:text-white/40">Total</th>
                       {Object.entries(TOOL_LABELS).map(([key, label]) => (
-                        <th key={key} className="text-center px-3 py-2 font-medium text-[#2f3437]/50 dark:text-white/40" title={label}>
+                        <th key={key} className="text-center px-3 py-2 font-medium text-[var(--abv-text)]/50 dark:text-white/40" title={label}>
                           {TOOL_ICONS[key]}
                         </th>
                       ))}
-                      <th className="text-right px-4 py-2 font-medium text-[#2f3437]/50 dark:text-white/40">Last Active</th>
+                      <th className="text-right px-4 py-2 font-medium text-[var(--abv-text)]/50 dark:text-white/40">Last Active</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 dark:divide-[#2a2a2a]">
                     {byMember.map(([userId, m]) => (
                       <tr key={userId} className="hover:bg-gray-50 dark:hover:bg-white/5">
                         <td className="px-4 py-2.5">
-                          <Link href={`/admin/members/${userId}`} className="font-medium text-[#2f3437] dark:text-[#e2e8f0] hover:text-[#6ba3c7]">
+                          <Link href={`/admin/members/${userId}`} className="font-medium text-[var(--abv-text)] dark:text-[#e2e8f0] hover:text-[var(--abv-azure)]">
                             {m.name}
                           </Link>
-                          <p className="text-[10px] text-[#2f3437]/30 dark:text-white/20">{m.email}</p>
+                          <p className="text-[10px] text-[var(--abv-text)]/30 dark:text-white/20">{m.email}</p>
                         </td>
                         <td className="text-center px-3 py-2.5">
-                          <span className="inline-flex items-center justify-center w-7 h-7 bg-[#6ba3c7]/10 text-[#6ba3c7] font-bold rounded-full text-xs">
+                          <span className="inline-flex items-center justify-center w-7 h-7 bg-[var(--abv-dark)]/10 text-[var(--abv-azure)] font-bold rounded-full text-xs">
                             {m.total}
                           </span>
                         </td>
                         {Object.keys(TOOL_LABELS).map((tool) => (
-                          <td key={tool} className="text-center px-3 py-2.5 text-[#2f3437]/50 dark:text-white/40">
+                          <td key={tool} className="text-center px-3 py-2.5 text-[var(--abv-text)]/50 dark:text-white/40">
                             {m.byTool[tool] || "—"}
                           </td>
                         ))}
-                        <td className="text-right px-4 py-2.5 text-[#2f3437]/40 dark:text-white/30">
+                        <td className="text-right px-4 py-2.5 text-[var(--abv-text)]/40 dark:text-white/30">
                           {new Date(m.lastActive).toLocaleDateString("en-CA", { month: "short", day: "numeric" })}
                         </td>
                       </tr>

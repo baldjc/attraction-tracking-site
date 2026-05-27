@@ -96,12 +96,12 @@ export default function LiveCallDetailPage({ params }: { params: Promise<{ callI
       <div className="max-w-3xl">
         <Link
           href="/member/academy?tab=live-calls"
-          className="inline-flex items-center gap-1.5 text-sm text-[#2f3437]/50 dark:text-white/40 hover:text-[#2f3437] dark:hover:text-white mb-6 transition-colors"
+          className="inline-flex items-center gap-1.5 text-sm text-[var(--abv-text)]/50 dark:text-white/40 hover:text-[var(--abv-text)] dark:hover:text-white mb-6 transition-colors"
         >
           <ArrowLeftIcon className="w-4 h-4" />
           Back to Live Calls
         </Link>
-        <p className="text-[#2f3437]/50 dark:text-white/40 text-sm">Call not found.</p>
+        <p className="text-[var(--abv-text)]/50 dark:text-white/40 text-sm">Call not found.</p>
       </div>
     );
   }
@@ -110,18 +110,18 @@ export default function LiveCallDetailPage({ params }: { params: Promise<{ callI
     <div className="max-w-3xl space-y-6">
       <Link
         href="/member/academy?tab=live-calls"
-        className="inline-flex items-center gap-1.5 text-sm text-[#2f3437]/50 dark:text-white/40 hover:text-[#2f3437] dark:hover:text-white transition-colors"
+        className="inline-flex items-center gap-1.5 text-sm text-[var(--abv-text)]/50 dark:text-white/40 hover:text-[var(--abv-text)] dark:hover:text-white transition-colors"
       >
         <ArrowLeftIcon className="w-4 h-4" />
         Back to Live Calls
       </Link>
 
-      <div className="bg-white dark:bg-[#1a2433] rounded-lg border border-[#eaeaea] dark:border-white/10 p-6">
-        <h1 className="text-2xl font-bold text-[#2f3437] dark:text-white mb-2 leading-tight">
+      <div className="bg-white dark:bg-[#1a2433] rounded-lg border border-[var(--abv-border-strong)] dark:border-white/10 p-6">
+        <h1 className="text-2xl font-bold text-[var(--abv-text)] dark:text-white mb-2 leading-tight">
           {call.title}
         </h1>
 
-        <div className="flex flex-wrap items-center gap-3 mb-4 text-sm text-[#2f3437]/50 dark:text-white/40">
+        <div className="flex flex-wrap items-center gap-3 mb-4 text-sm text-[var(--abv-text)]/50 dark:text-white/40">
           <span>{fmtLongDate(call.callDate)}</span>
           {call.duration != null && (
             <>
@@ -145,7 +145,7 @@ export default function LiveCallDetailPage({ params }: { params: Promise<{ callI
           href={call.fathomShareUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 bg-[#6ba3c7] hover:bg-[#5490b5] text-white font-bold text-sm px-6 py-3 rounded-lg transition-colors"
+          className="inline-flex items-center gap-2 $1var(--abv-dark)$2 hover:bg-black/85 text-white font-bold text-sm px-6 py-3 rounded-lg transition-colors"
         >
           <PlayCircleIcon className="w-5 h-5" />
           Watch on Fathom
@@ -154,32 +154,32 @@ export default function LiveCallDetailPage({ params }: { params: Promise<{ callI
 
       {moments.length > 0 && (
         <div>
-          <h2 className="text-lg font-bold text-[#2f3437] dark:text-white mb-3">Key Talking Points</h2>
+          <h2 className="text-lg font-bold text-[var(--abv-text)] dark:text-white mb-3">Key Talking Points</h2>
           <div className="space-y-3">
             {moments.map((moment) => (
               <div
                 key={moment.id}
-                className="bg-white dark:bg-[#1a2433] rounded-lg border border-[#eaeaea] dark:border-white/10 p-4"
+                className="bg-white dark:bg-[#1a2433] rounded-lg border border-[var(--abv-border-strong)] dark:border-white/10 p-4"
               >
                 <div className="flex items-start justify-between gap-3 mb-2">
-                  <h3 className="font-semibold text-[#2f3437] dark:text-white text-sm leading-snug flex-1">
+                  <h3 className="font-semibold text-[var(--abv-text)] dark:text-white text-sm leading-snug flex-1">
                     {moment.subTopic}
                   </h3>
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {moment.isMine && (
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#6ba3c7]/15 text-[#6ba3c7]">
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[var(--abv-dark)]/15 text-[var(--abv-azure)]">
                         Your moment
                       </span>
                     )}
                     {moment.timestampStart != null && (
-                      <span className="text-[10px] font-mono font-semibold text-[#2f3437]/40 dark:text-white/30">
+                      <span className="text-[10px] font-mono font-semibold text-[var(--abv-text)]/40 dark:text-white/30">
                         @ {fmtTimestamp(moment.timestampStart)}
                       </span>
                     )}
                   </div>
                 </div>
 
-                <p className="text-xs text-[#2f3437]/65 dark:text-white/55 leading-relaxed mb-3">
+                <p className="text-xs text-[var(--abv-text)]/65 dark:text-white/55 leading-relaxed mb-3">
                   {moment.summary}
                 </p>
 
@@ -200,7 +200,7 @@ export default function LiveCallDetailPage({ params }: { params: Promise<{ callI
 
       {relatedLessons.length > 0 && (
         <div>
-          <h2 className="text-lg font-bold text-[#2f3437] dark:text-white mb-3">Related Lessons</h2>
+          <h2 className="text-lg font-bold text-[var(--abv-text)] dark:text-white mb-3">Related Lessons</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {relatedLessons.map((lesson) => (
               <Link
@@ -210,11 +210,11 @@ export default function LiveCallDetailPage({ params }: { params: Promise<{ callI
               >
                 <div className="flex items-center gap-1.5 mb-1.5">
                   <AcademicCapIcon className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
-                  <span className="text-[11px] font-medium text-[#2f3437]/50 dark:text-white/40 truncate">
+                  <span className="text-[11px] font-medium text-[var(--abv-text)]/50 dark:text-white/40 truncate">
                     {lesson.sectionTitle}
                   </span>
                 </div>
-                <p className="text-sm font-semibold text-[#2f3437] dark:text-white leading-snug mb-2">
+                <p className="text-sm font-semibold text-[var(--abv-text)] dark:text-white leading-snug mb-2">
                   {lesson.title}
                 </p>
                 {lesson.principleTags.length > 0 && (

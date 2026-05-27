@@ -58,18 +58,18 @@ export default function PrinciplesPage() {
       <div className="flex items-center gap-3 mb-6">
         <Link
           href="/member/academy"
-          className="flex items-center gap-1.5 text-sm text-[#2f3437]/50 dark:text-white/50 hover:text-[#2f3437] dark:hover:text-white transition-colors"
+          className="flex items-center gap-1.5 text-sm text-[var(--abv-text)]/50 dark:text-white/50 hover:text-[var(--abv-text)] dark:hover:text-white transition-colors"
         >
           <ArrowLeftIcon className="w-4 h-4" />
           Academy
         </Link>
-        <span className="text-[#2f3437]/30 dark:text-white/30">/</span>
-        <span className="text-sm text-[#2f3437] dark:text-white font-medium">Browse by Principle</span>
+        <span className="text-[var(--abv-text)]/30 dark:text-white/30">/</span>
+        <span className="text-sm text-[var(--abv-text)] dark:text-white font-medium">Browse by Principle</span>
       </div>
 
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-[#2f3437] dark:text-white">Browse by Principle</h1>
-        <p className="text-[#2f3437]/50 dark:text-white/50 mt-1 text-sm">
+        <h1 className="text-2xl font-bold text-[var(--abv-text)] dark:text-white">Browse by Principle</h1>
+        <p className="text-[var(--abv-text)]/50 dark:text-white/50 mt-1 text-sm">
           The 17 core principles behind the Attraction by Video system. Click a principle to see its lessons.
         </p>
       </div>
@@ -77,7 +77,7 @@ export default function PrinciplesPage() {
       {loadingPrinciples ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {[...Array(9)].map((_, i) => (
-            <div key={i} className="bg-white dark:bg-[#1a2433] rounded-lg border border-[#eaeaea] dark:border-white/10 p-4 animate-pulse h-16" />
+            <div key={i} className="bg-white dark:bg-[#1a2433] rounded-lg border border-[var(--abv-border-strong)] dark:border-white/10 p-4 animate-pulse h-16" />
           ))}
         </div>
       ) : (
@@ -88,8 +88,8 @@ export default function PrinciplesPage() {
               onClick={() => setSelected(selected === p.slug ? null : p.slug)}
               className={`text-left p-4 rounded-lg border transition-all ${
                 selected === p.slug
-                  ? "border-[#6ba3c7] bg-[#6ba3c7]/5 dark:bg-[#6ba3c7]/10"
-                  : "bg-white dark:bg-[#1a2433] border-[#eaeaea] dark:border-white/10 hover:border-[#6ba3c7]/40 hover:shadow-sm"
+                  ? "border-[var(--abv-azure)] bg-[var(--abv-dark)]/5 dark:bg-[var(--abv-dark)]/10"
+                  : "bg-white dark:bg-[#1a2433] border-[var(--abv-border-strong)] dark:border-white/10 hover:border-[var(--abv-azure)]/40 hover:shadow-sm"
               }`}
             >
               <div className="flex items-start gap-2">
@@ -97,10 +97,10 @@ export default function PrinciplesPage() {
                   <TagIcon className="w-2.5 h-2.5" />
                 </span>
                 <div>
-                  <p className="text-sm font-semibold text-[#2f3437] dark:text-white leading-tight">
+                  <p className="text-sm font-semibold text-[var(--abv-text)] dark:text-white leading-tight">
                     {p.name}
                   </p>
-                  <p className="text-xs text-[#2f3437]/40 dark:text-white/40 mt-0.5">
+                  <p className="text-xs text-[var(--abv-text)]/40 dark:text-white/40 mt-0.5">
                     {p.lessonCount} lesson{p.lessonCount !== 1 ? "s" : ""}
                   </p>
                 </div>
@@ -116,7 +116,7 @@ export default function PrinciplesPage() {
             <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${PRINCIPLE_COLORS[selected] ?? "bg-gray-100 text-gray-600"}`}>
               {PRINCIPLE_NAMES[selected] ?? selected}
             </span>
-            <span className="text-sm text-[#2f3437]/50 dark:text-white/50">
+            <span className="text-sm text-[var(--abv-text)]/50 dark:text-white/50">
               {loadingLessons ? "Loading…" : `${lessons.length} lesson${lessons.length !== 1 ? "s" : ""}`}
             </span>
           </div>
@@ -124,7 +124,7 @@ export default function PrinciplesPage() {
           {loadingLessons ? (
             <div className="space-y-3">
               {[...Array(3)].map((_, i) => (
-                <div key={i} className="bg-white dark:bg-[#1a2433] rounded-lg border border-[#eaeaea] dark:border-white/10 p-4 animate-pulse h-14" />
+                <div key={i} className="bg-white dark:bg-[#1a2433] rounded-lg border border-[var(--abv-border-strong)] dark:border-white/10 p-4 animate-pulse h-14" />
               ))}
             </div>
           ) : (
@@ -133,15 +133,15 @@ export default function PrinciplesPage() {
                 <Link
                   key={l.id}
                   href={`/member/academy/foundations/${l.sectionSlug}/${l.slug}`}
-                  className="flex items-center justify-between gap-3 bg-white dark:bg-[#1a2433] rounded-lg border border-[#eaeaea] dark:border-white/10 p-4 hover:shadow-sm hover:border-[#6ba3c7]/30 transition-all group"
+                  className="flex items-center justify-between gap-3 bg-white dark:bg-[#1a2433] rounded-lg border border-[var(--abv-border-strong)] dark:border-white/10 p-4 hover:shadow-sm hover:border-[var(--abv-azure)]/30 transition-all group"
                 >
                   <div>
-                    <p className="text-sm font-medium text-[#2f3437] dark:text-white group-hover:text-[#6ba3c7] transition-colors">
+                    <p className="text-sm font-medium text-[var(--abv-text)] dark:text-white group-hover:text-[var(--abv-azure)] transition-colors">
                       {l.title}
                     </p>
-                    <p className="text-xs text-[#2f3437]/40 dark:text-white/40 mt-0.5">{l.sectionTitle}</p>
+                    <p className="text-xs text-[var(--abv-text)]/40 dark:text-white/40 mt-0.5">{l.sectionTitle}</p>
                   </div>
-                  <span className="text-xs text-[#6ba3c7] font-medium shrink-0">View →</span>
+                  <span className="text-xs text-[var(--abv-azure)] font-medium shrink-0">View →</span>
                 </Link>
               ))}
             </div>

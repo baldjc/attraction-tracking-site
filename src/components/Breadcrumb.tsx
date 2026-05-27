@@ -20,16 +20,16 @@ export default function Breadcrumb({ items }: BreadcrumbProps) {
         return (
           <span key={index} className="inline-flex items-center gap-1.5 shrink-0">
             {index > 0 && (
-              <ChevronRightIcon className="w-3 h-3 text-[#2f3437]/30 dark:text-white/20" />
+              <ChevronRightIcon className="w-3 h-3 text-[var(--abv-text)]/30 dark:text-white/20" />
             )}
             {isLast || !item.href ? (
-              <span className="text-[#2f3437]/70 dark:text-[#94a3b8] font-medium truncate max-w-[200px]">
+              <span className="text-[var(--abv-text)]/70 dark:text-[#94a3b8] font-medium truncate max-w-[200px]">
                 {item.label}
               </span>
             ) : (
               <Link
                 href={item.href}
-                className="text-[#2f3437]/50 dark:text-[#94a3b8]/70 hover:text-[#6ba3c7] transition-colors"
+                className="text-[var(--abv-text)]/50 dark:text-[#94a3b8]/70 hover:text-[var(--abv-azure)] transition-colors"
               >
                 {item.label}
               </Link>

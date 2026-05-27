@@ -99,8 +99,8 @@ const TABS = [
 type TabId = typeof TABS[number]["id"];
 
 function tierColors(tier: string) {
-  if (tier === "foundations") return { badge: "bg-[#6ba3c7]/20 text-[#6ba3c7]", dot: "#6ba3c7" };
-  if (tier === "editing_2" || tier === "editing_4") return { badge: "bg-amber-100 text-amber-700", dot: "#f59e0b" };
+  if (tier === "foundations") return { badge: "bg-[var(--abv-dark)]/20 text-[var(--abv-azure)]", dot: "var(--abv-azure)" };
+  if (tier === "editing_2" || tier === "editing_4") return { badge: "bg-amber-100 text-amber-700", dot: "var(--abv-scores)" };
   if (tier === "mastery_2" || tier === "mastery_4") return { badge: "bg-purple-100 text-purple-700", dot: "#7c3aed" };
   if (tier === "done_with_you") return { badge: "bg-[#d97706]/20 text-[#d97706]", dot: "#d97706" };
   return { badge: "bg-gray-100 text-gray-500", dot: "#9ca3af" };
@@ -110,14 +110,14 @@ function scoreColor(score: number | null | undefined) {
   if (score == null) return "text-gray-400";
   if (score >= 7) return "text-green-600";
   if (score >= 5) return "text-yellow-600";
-  return "text-[#ff0033]";
+  return "text-[var(--abv-crimson)]";
 }
 
 function scoreBg(score: number | null | undefined) {
   if (score == null) return "bg-gray-100 text-gray-500";
   if (score >= 7) return "bg-green-100 text-green-700";
   if (score >= 5) return "bg-yellow-100 text-yellow-700";
-  return "bg-red-100 text-[#ff0033]";
+  return "bg-red-100 text-[var(--abv-crimson)]";
 }
 
 function fmt(date: string | null | undefined) {
@@ -134,9 +134,9 @@ function tierLabel(value: string) {
 }
 
 function Delta({ val }: { val: number | null }) {
-  const dim = "text-[#2f3437]/30";
+  const dim = "text-[var(--abv-text)]/30";
   if (val === null) return <span className={`text-xs ${dim}`}>—</span>;
-  const color = val > 0 ? "text-emerald-600" : val < 0 ? "text-[#ff0033]" : "text-[#2f3437]/50";
+  const color = val > 0 ? "text-emerald-600" : val < 0 ? "text-[var(--abv-crimson)]" : "text-[var(--abv-text)]/50";
   return <span className={`text-xs font-medium ${color}`}>{val > 0 ? "+" : ""}{val.toLocaleString()}</span>;
 }
 
@@ -174,7 +174,7 @@ export default function MemberDetailPage() {
     border:       `1px solid ${isDark ? "#2a2a2a" : "#e5e7eb"}`,
     borderRadius: 8,
     fontSize:     12,
-    color:        isDark ? "#e2e8f0" : "#2f3437",
+    color:        isDark ? "#e2e8f0" : "var(--abv-text)",
   };
 
   const [member, setMember] = useState<any>(null);
@@ -649,7 +649,7 @@ export default function MemberDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64 text-[#2f3437]/40">
+      <div className="flex items-center justify-center h-64 text-[var(--abv-text)]/40">
         Loading member…
       </div>
     );
@@ -658,8 +658,8 @@ export default function MemberDetailPage() {
   if (!member) {
     return (
       <div className="text-center py-20">
-        <p className="text-[#2f3437]/50">Member not found.</p>
-        <Link href="/admin/members" className="text-[#6ba3c7] text-sm mt-2 inline-block">
+        <p className="text-[var(--abv-text)]/50">Member not found.</p>
+        <Link href="/admin/members" className="text-[var(--abv-azure)] text-sm mt-2 inline-block">
           ← Back to Members
         </Link>
       </div>
@@ -718,7 +718,7 @@ export default function MemberDetailPage() {
       {/* Back */}
       <Link
         href="/admin/members"
-        className="inline-flex items-center gap-1.5 text-sm text-[#2f3437]/50 hover:text-[#2f3437] transition-colors"
+        className="inline-flex items-center gap-1.5 text-sm text-[var(--abv-text)]/50 hover:text-[var(--abv-text)] transition-colors"
       >
         <ArrowLeftIcon className="w-4 h-4" />
         Back to Members
@@ -728,26 +728,26 @@ export default function MemberDetailPage() {
       {jobStatus && (
         <div className={`rounded-lg px-5 py-3.5 flex items-center justify-between gap-4 ${
           jobStatus === "complete" ? "bg-green-50 border border-green-200" :
-          jobStatus === "failed" ? "bg-red-50 border border-[#ff0033]/20" :
-          "bg-[#6ba3c7]/10 border border-[#6ba3c7]/30"
+          jobStatus === "failed" ? "bg-red-50 border border-[var(--abv-crimson)]/20" :
+          "bg-[var(--abv-dark)]/10 border border-[var(--abv-azure)]/30"
         }`}>
           <div className="flex items-center gap-3">
             {!["complete", "failed"].includes(jobStatus) && (
-              <div className="w-4 h-4 border-2 border-[#6ba3c7] border-t-transparent rounded-full animate-spin shrink-0" />
+              <div className="w-4 h-4 border-2 border-[var(--abv-azure)] border-t-transparent rounded-full animate-spin shrink-0" />
             )}
             {jobStatus === "complete" && <span className="text-green-600 text-lg">✓</span>}
-            {jobStatus === "failed" && <span className="text-[#ff0033] text-lg">✕</span>}
+            {jobStatus === "failed" && <span className="text-[var(--abv-crimson)] text-lg">✕</span>}
             <span className={`text-sm font-medium ${
               jobStatus === "complete" ? "text-green-700" :
-              jobStatus === "failed" ? "text-[#ff0033]" :
-              "text-[#2f3437]"
+              jobStatus === "failed" ? "text-[var(--abv-crimson)]" :
+              "text-[var(--abv-text)]"
             }`}>
               {jobStatus === "failed" ? (jobError ?? "Audit failed") : jobMessage}
             </span>
           </div>
           <button
             onClick={() => { setJobId(null); setJobStatus(""); setJobMessage(""); setJobError(null); }}
-            className="text-xs text-[#2f3437]/40 hover:text-[#2f3437]"
+            className="text-xs text-[var(--abv-text)]/40 hover:text-[var(--abv-text)]"
           >
             Dismiss
           </button>
@@ -755,7 +755,7 @@ export default function MemberDetailPage() {
       )}
 
       {/* HEADER BANNER */}
-      <div className="rounded-lg bg-gradient-to-r from-[#2f3437] via-[#2c4a6e] to-[#6ba3c7] p-6 pt-10">
+      <div className="rounded-lg bg-gradient-to-r from-[var(--abv-text)] via-[#2c4a6e] to-[var(--abv-azure)] p-6 pt-10">
         <div className="flex flex-col gap-3">
           <div className="min-w-0">
             <h1 className="text-xl sm:text-2xl font-bold text-white leading-snug break-words">
@@ -799,7 +799,7 @@ export default function MemberDetailPage() {
                 href={member.youtubeChannelUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 bg-white text-[#2f3437] text-sm font-semibold px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+                className="inline-flex items-center gap-1.5 bg-white text-[var(--abv-text)] text-sm font-semibold px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors"
               >
                 <ArrowTopRightOnSquareIcon className="w-4 h-4" />
                 View Channel
@@ -824,7 +824,7 @@ export default function MemberDetailPage() {
                       <button
                         key={value}
                         onClick={() => value === "single_video" ? openVideoModal() : runAudit(value)}
-                        className="w-full text-left px-4 py-2.5 text-sm text-[#2f3437] hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg"
+                        className="w-full text-left px-4 py-2.5 text-sm text-[var(--abv-text)] hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg"
                       >
                         {label}
                       </button>
@@ -836,7 +836,7 @@ export default function MemberDetailPage() {
             {member.role === "audit_lead" && (
               <button
                 onClick={() => setConvertOpen(true)}
-                className="inline-flex items-center gap-1.5 bg-amber-400 hover:bg-amber-500 text-[#2f3437] text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+                className="inline-flex items-center gap-1.5 bg-amber-400 hover:bg-amber-500 text-[var(--abv-text)] text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
               >
                 Convert to Member →
               </button>
@@ -846,7 +846,7 @@ export default function MemberDetailPage() {
                 <button
                   onClick={handleSendPaymentReminder}
                   disabled={sendingReminder}
-                  className="inline-flex items-center gap-1.5 bg-amber-400 hover:bg-amber-500 disabled:opacity-60 text-[#2f3437] text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+                  className="inline-flex items-center gap-1.5 bg-amber-400 hover:bg-amber-500 disabled:opacity-60 text-[var(--abv-text)] text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
                 >
                   {sendingReminder ? "Sending…" : "Send Payment Reminder"}
                 </button>
@@ -885,8 +885,8 @@ export default function MemberDetailPage() {
           { label: "Total Audits", value: member.audits?.length ?? 0 },
         ].map((stat) => (
           <div key={stat.label} className="bg-white rounded-lg border border-gray-200 p-4">
-            <p className="text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wider mb-1">{stat.label}</p>
-            <p className={`text-2xl font-bold ${stat.colored ? scoreColor(stat.score) : "text-[#2f3437]"}`}>
+            <p className="text-xs font-semibold text-[var(--abv-text)]/50 uppercase tracking-wider mb-1">{stat.label}</p>
+            <p className={`text-2xl font-bold ${stat.colored ? scoreColor(stat.score) : "text-[var(--abv-text)]"}`}>
               {stat.value}
             </p>
           </div>
@@ -898,7 +898,7 @@ export default function MemberDetailPage() {
         <select
           value={activeTab}
           onChange={(e) => setActiveTab(e.target.value as TabId)}
-          className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2.5 text-sm font-medium text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40"
+          className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2.5 text-sm font-medium text-[var(--abv-text)] focus:outline-none focus:ring-2 focus:ring-[var(--abv-azure)]/40"
         >
           {TABS.filter((t) => !t.tierRequired || t.tierRequired.includes(member.serviceTier)).map((t) => (
             <option key={t.id} value={t.id}>
@@ -915,14 +915,14 @@ export default function MemberDetailPage() {
             onClick={() => setActiveTab(t.id)}
             className={`px-4 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap flex items-center gap-1.5 ${
               activeTab === t.id
-                ? "bg-[#2f3437] text-white"
-                : "text-[#2f3437]/60 hover:text-[#2f3437] hover:bg-gray-50"
+                ? "bg-[var(--abv-text)] text-white"
+                : "text-[var(--abv-text)]/60 hover:text-[var(--abv-text)] hover:bg-gray-50"
             }`}
           >
             {t.label}
             {t.id === "progress" && (member.audits?.length ?? 0) > 0 && (
               <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${
-                activeTab === t.id ? "bg-white/20 text-white" : "bg-[#6ba3c7]/15 text-[#6ba3c7]"
+                activeTab === t.id ? "bg-white/20 text-white" : "bg-[var(--abv-dark)]/15 text-[var(--abv-azure)]"
               }`}>
                 {member.audits.length}
               </span>
@@ -935,22 +935,22 @@ export default function MemberDetailPage() {
       {activeTab === "analytics" && (
         <div className="space-y-6">
           {analyticsLoading ? (
-            <div className="flex items-center justify-center h-48 text-[#2f3437]/40">
+            <div className="flex items-center justify-center h-48 text-[var(--abv-text)]/40">
               <ArrowPathIcon className="w-5 h-5 animate-spin mr-2" />
               Loading analytics…
             </div>
           ) : !analyticsData || analyticsData.error ? (
-            <p className="text-sm text-[#2f3437]/50 text-center py-12">No analytics data available.</p>
+            <p className="text-sm text-[var(--abv-text)]/50 text-center py-12">No analytics data available.</p>
           ) : (
             <>
               {/* Channel Stats */}
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-base font-semibold text-[#2f3437]">YouTube Activity</h2>
+                  <h2 className="text-base font-semibold text-[var(--abv-text)]">YouTube Activity</h2>
                   <button
                     onClick={handleRefreshChannel}
                     disabled={refreshingChannel}
-                    className="flex items-center gap-1.5 border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-60 text-[#2f3437] text-xs font-medium px-3 py-1.5 rounded-lg transition"
+                    className="flex items-center gap-1.5 border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-60 text-[var(--abv-text)] text-xs font-medium px-3 py-1.5 rounded-lg transition"
                   >
                     <ArrowPathIcon className={`w-3.5 h-3.5 ${refreshingChannel ? "animate-spin" : ""}`} />
                     {refreshingChannel ? "Refreshing…" : "Refresh Channel"}
@@ -959,29 +959,29 @@ export default function MemberDetailPage() {
                 {analyticsData.channelStats ? (
                   <div className="grid grid-cols-3 gap-4">
                     <div className="bg-white rounded-lg border border-gray-200 p-4">
-                      <div className="text-xs text-[#2f3437]/50 uppercase tracking-wide mb-1">Subscribers</div>
-                      <div className="text-2xl font-bold text-[#2f3437]">{analyticsData.channelStats.subscriberCount.toLocaleString()}</div>
+                      <div className="text-xs text-[var(--abv-text)]/50 uppercase tracking-wide mb-1">Subscribers</div>
+                      <div className="text-2xl font-bold text-[var(--abv-text)]">{analyticsData.channelStats.subscriberCount.toLocaleString()}</div>
                       <div className="mt-1 flex items-center gap-1.5">
                         <Delta val={analyticsData.channelStats.subscriberChange30d} />
-                        <span className="text-xs text-[#2f3437]/30">30d</span>
+                        <span className="text-xs text-[var(--abv-text)]/30">30d</span>
                       </div>
                     </div>
                     <div className="bg-white rounded-lg border border-gray-200 p-4">
-                      <div className="text-xs text-[#2f3437]/50 uppercase tracking-wide mb-1">Total Views</div>
-                      <div className="text-2xl font-bold text-[#2f3437]">{analyticsData.channelStats.totalViewCount.toLocaleString()}</div>
+                      <div className="text-xs text-[var(--abv-text)]/50 uppercase tracking-wide mb-1">Total Views</div>
+                      <div className="text-2xl font-bold text-[var(--abv-text)]">{analyticsData.channelStats.totalViewCount.toLocaleString()}</div>
                       <div className="mt-1 flex items-center gap-1.5">
                         <Delta val={analyticsData.channelStats.viewChange30d} />
-                        <span className="text-xs text-[#2f3437]/30">30d</span>
+                        <span className="text-xs text-[var(--abv-text)]/30">30d</span>
                       </div>
                     </div>
                     <div className="bg-white rounded-lg border border-gray-200 p-4">
-                      <div className="text-xs text-[#2f3437]/50 uppercase tracking-wide mb-1">Videos/Week</div>
-                      <div className="text-2xl font-bold text-[#2f3437]">{analyticsData.channelStats.videosPerWeek30d ?? "—"}</div>
-                      <div className="text-xs text-[#2f3437]/30 mt-1">30d avg</div>
+                      <div className="text-xs text-[var(--abv-text)]/50 uppercase tracking-wide mb-1">Videos/Week</div>
+                      <div className="text-2xl font-bold text-[var(--abv-text)]">{analyticsData.channelStats.videosPerWeek30d ?? "—"}</div>
+                      <div className="text-xs text-[var(--abv-text)]/30 mt-1">30d avg</div>
                     </div>
                   </div>
                 ) : (
-                  <p className="text-sm text-[#2f3437]/50 bg-white border border-gray-200 rounded-lg p-6 text-center">
+                  <p className="text-sm text-[var(--abv-text)]/50 bg-white border border-gray-200 rounded-lg p-6 text-center">
                     No channel snapshot yet. Click Refresh Channel to sync.
                   </p>
                 )}
@@ -990,9 +990,9 @@ export default function MemberDetailPage() {
               {/* Score Trend */}
               <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-6">
                 <div>
-                  <h2 className="text-base font-semibold text-[#2f3437] mb-3">Channel Score Trend</h2>
+                  <h2 className="text-base font-semibold text-[var(--abv-text)] mb-3">Channel Score Trend</h2>
                   {chartData.length === 0 ? (
-                    <p className="text-sm text-[#2f3437]/50 text-center py-6">Scores will appear after the first audit.</p>
+                    <p className="text-sm text-[var(--abv-text)]/50 text-center py-6">Scores will appear after the first audit.</p>
                   ) : chartData.length === 1 ? (
                     <div>
                       <ResponsiveContainer width="100%" height={150}>
@@ -1000,10 +1000,10 @@ export default function MemberDetailPage() {
                           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                           <XAxis dataKey="date" tick={{ fontSize: 11 }} />
                           <YAxis domain={[0, 10]} tick={{ fontSize: 11 }} />
-                          <ReferenceDot x={chartData[0].date} y={chartData[0].score} r={5} fill="#6ba3c7" />
+                          <ReferenceDot x={chartData[0].date} y={chartData[0].score} r={5} fill="var(--abv-azure)" />
                         </LineChart>
                       </ResponsiveContainer>
-                      <p className="text-xs text-center text-[#2f3437]/40 mt-1">Only 1 audit — add another to see a trend.</p>
+                      <p className="text-xs text-center text-[var(--abv-text)]/40 mt-1">Only 1 audit — add another to see a trend.</p>
                     </div>
                   ) : (
                     <ResponsiveContainer width="100%" height={180}>
@@ -1018,16 +1018,16 @@ export default function MemberDetailPage() {
                             return (
                               <div className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs">
                                 <p className="font-semibold capitalize">{d.type.replace("_", " ")}</p>
-                                <p className="text-[#2f3437]/60">{d.date} · Score: <strong>{d.score.toFixed(1)}</strong></p>
+                                <p className="text-[var(--abv-text)]/60">{d.date} · Score: <strong>{d.score.toFixed(1)}</strong></p>
                               </div>
                             );
                           }}
                         />
                         <Line
-                          type="monotone" dataKey="score" stroke="#6ba3c7" strokeWidth={2.5}
+                          type="monotone" dataKey="score" stroke="var(--abv-azure)" strokeWidth={2.5}
                           dot={({ cx, cy, payload }: any) => (
                             <circle key={`dot-${cx}-${cy}`} cx={cx} cy={cy} r={4}
-                              fill={payload.type === "baseline" ? "#2f3437" : "#6ba3c7"}
+                              fill={payload.type === "baseline" ? "var(--abv-text)" : "var(--abv-azure)"}
                               stroke="#fff" strokeWidth={1.5}
                             />
                           )}
@@ -1038,7 +1038,7 @@ export default function MemberDetailPage() {
                 </div>
                 {videoAuditData.length > 1 && (
                   <div>
-                    <h2 className="text-base font-semibold text-[#2f3437] mb-3">Single Video Audits</h2>
+                    <h2 className="text-base font-semibold text-[var(--abv-text)] mb-3">Single Video Audits</h2>
                     <ResponsiveContainer width="100%" height={180}>
                       <LineChart data={videoAuditData}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -1050,8 +1050,8 @@ export default function MemberDetailPage() {
                             const d = payload[0].payload;
                             return (
                               <div className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs max-w-[220px]">
-                                <p className="font-semibold text-[#2f3437] mb-0.5">{d.title}</p>
-                                <p className="text-[#2f3437]/60">{d.date} · Score: <span className="font-bold text-[#2f3437]">{d.score.toFixed(1)}</span></p>
+                                <p className="font-semibold text-[var(--abv-text)] mb-0.5">{d.title}</p>
+                                <p className="text-[var(--abv-text)]/60">{d.date} · Score: <span className="font-bold text-[var(--abv-text)]">{d.score.toFixed(1)}</span></p>
                               </div>
                             );
                           }}
@@ -1069,26 +1069,26 @@ export default function MemberDetailPage() {
 
               {/* Most Viewed — Last 30 Days */}
               <div className="bg-white rounded-lg border border-gray-200 p-6">
-                <h2 className="text-base font-semibold text-[#2f3437] mb-4">Most Viewed — Last 30 Days</h2>
+                <h2 className="text-base font-semibold text-[var(--abv-text)] mb-4">Most Viewed — Last 30 Days</h2>
                 {topVideosLoading ? (
-                  <p className="text-sm text-[#2f3437]/50 text-center py-6">Loading videos…</p>
+                  <p className="text-sm text-[var(--abv-text)]/50 text-center py-6">Loading videos…</p>
                 ) : topVideosNoChannel ? (
-                  <p className="text-sm text-[#2f3437]/50 text-center py-6">No YouTube channel connected.</p>
+                  <p className="text-sm text-[var(--abv-text)]/50 text-center py-6">No YouTube channel connected.</p>
                 ) : topVideosNoUploads ? (
                   <p className="text-sm text-amber-500 text-center py-6">No uploads in the last 30 days.</p>
                 ) : topVideos.length === 0 ? (
-                  <p className="text-sm text-[#2f3437]/50 text-center py-6">No videos found.</p>
+                  <p className="text-sm text-[var(--abv-text)]/50 text-center py-6">No videos found.</p>
                 ) : (
                   <div className="space-y-3">
                     {topVideos.map((v, i) => (
                       <a key={v.videoId} href={v.watchUrl} target="_blank" rel="noopener noreferrer"
                         className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors group"
                       >
-                        <span className="text-xs font-bold text-[#2f3437]/30 w-4 shrink-0">{i + 1}</span>
+                        <span className="text-xs font-bold text-[var(--abv-text)]/30 w-4 shrink-0">{i + 1}</span>
                         <img src={v.thumbnailUrl} alt={v.title} className="w-20 h-[45px] object-cover rounded shrink-0" />
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-[#2f3437] leading-snug line-clamp-2 group-hover:text-[#6ba3c7] transition-colors">{v.title}</p>
-                          <p className="text-xs text-[#2f3437]/40 mt-0.5">
+                          <p className="text-sm font-medium text-[var(--abv-text)] leading-snug line-clamp-2 group-hover:text-[var(--abv-azure)] transition-colors">{v.title}</p>
+                          <p className="text-xs text-[var(--abv-text)]/40 mt-0.5">
                             {Number(v.viewCount).toLocaleString()} views
                             {v.uploadDate && <span className="ml-2">{new Date(v.uploadDate).toLocaleDateString()}</span>}
                           </p>
@@ -1102,7 +1102,7 @@ export default function MemberDetailPage() {
               {/* Recent Videos */}
               {analyticsData.videos?.length > 0 && (
                 <div>
-                  <h2 className="text-base font-semibold text-[#2f3437] mb-3">Recent Videos</h2>
+                  <h2 className="text-base font-semibold text-[var(--abv-text)] mb-3">Recent Videos</h2>
                   <div className="space-y-3">
                     {analyticsData.videos.slice(0, 10).map((video: any) => {
                       const latestAuditV = video.audits?.[0];
@@ -1113,12 +1113,12 @@ export default function MemberDetailPage() {
                             <img src={video.thumbnailUrl} alt={video.title} className="w-24 h-14 object-cover rounded-lg flex-shrink-0" />
                           ) : (
                             <div className="w-24 h-14 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                              <VideoCameraIcon className="w-6 h-6 text-[#2f3437]/30" />
+                              <VideoCameraIcon className="w-6 h-6 text-[var(--abv-text)]/30" />
                             </div>
                           )}
                           <div className="flex-1 min-w-0">
-                            <div className="text-sm text-[#2f3437] font-medium truncate">{video.title}</div>
-                            <div className="text-xs text-[#2f3437]/40 mt-0.5">{fmt(video.publishedAt)} · {video.viewCount.toLocaleString()} views</div>
+                            <div className="text-sm text-[var(--abv-text)] font-medium truncate">{video.title}</div>
+                            <div className="text-xs text-[var(--abv-text)]/40 mt-0.5">{fmt(video.publishedAt)} · {video.viewCount.toLocaleString()} views</div>
                           </div>
                           <div className="flex-shrink-0 flex items-center gap-2">
                             {latestAuditV ? (
@@ -1129,12 +1129,12 @@ export default function MemberDetailPage() {
                                 View Audit {latestAuditV.overallScore !== null ? `(${Number(latestAuditV.overallScore).toFixed(1)})` : ""}
                               </Link>
                             ) : started ? (
-                              <span className="text-xs text-[#2f3437]/30">Queued…</span>
+                              <span className="text-xs text-[var(--abv-text)]/30">Queued…</span>
                             ) : (
                               <button
                                 onClick={() => handleRunVideoAudit(video)}
                                 disabled={runningAudit[video.id]}
-                                className="text-xs bg-[#6ba3c7] hover:bg-[#29b0f0] disabled:opacity-60 text-white rounded-lg px-3 py-1.5 transition whitespace-nowrap"
+                                className="text-xs bg-[var(--abv-dark)] hover:bg-[#29b0f0] disabled:opacity-60 text-white rounded-lg px-3 py-1.5 transition whitespace-nowrap"
                               >
                                 {runningAudit[video.id] ? "Starting…" : "Run Audit"}
                               </button>
@@ -1144,7 +1144,7 @@ export default function MemberDetailPage() {
                                 href={`https://www.youtube.com/watch?v=${video.videoId}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-xs text-[#2f3437]/50 border border-[#2f3437]/12 rounded-lg px-3 py-1.5 hover:text-[#2f3437] hover:border-[#2f3437]/25 hover:bg-gray-50 transition whitespace-nowrap"
+                                className="text-xs text-[var(--abv-text)]/50 border border-[var(--abv-text)]/12 rounded-lg px-3 py-1.5 hover:text-[var(--abv-text)] hover:border-[var(--abv-text)]/25 hover:bg-gray-50 transition whitespace-nowrap"
                               >
                                 View on YouTube ↗
                               </a>
@@ -1160,34 +1160,34 @@ export default function MemberDetailPage() {
               {/* Click Trend */}
               {analyticsData.campaigns?.length > 0 && (
                 <div>
-                  <h2 className="text-base font-semibold text-[#2f3437] mb-3">Campaign Performance</h2>
+                  <h2 className="text-base font-semibold text-[var(--abv-text)] mb-3">Campaign Performance</h2>
                   <div className="space-y-4 mb-4">
                     {analyticsData.campaigns.map((campaign: any) => (
                       <div key={campaign.id} className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-                        <div className="px-4 py-3 border-b border-gray-100 text-sm font-semibold text-[#2f3437]">{campaign.name}</div>
+                        <div className="px-4 py-3 border-b border-gray-100 text-sm font-semibold text-[var(--abv-text)]">{campaign.name}</div>
                         {campaign.links.length > 0 ? (
                           <table className="w-full text-sm">
                             <thead>
                               <tr>
                                 {["Link", "Clicks (7d)", "Clicks (All)", "Conv. (7d)", "Conv. (All)"].map((h) => (
-                                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#2f3437]/50 bg-gray-50">{h}</th>
+                                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[var(--abv-text)]/50 bg-gray-50">{h}</th>
                                 ))}
                               </tr>
                             </thead>
                             <tbody>
                               {campaign.links.map((link: any) => (
                                 <tr key={link.id} className="border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors">
-                                  <td className="px-4 py-2 text-[#2f3437]/70">{link.name}</td>
-                                  <td className="px-4 py-2 text-[#2f3437]/70">{link.clicks7d}</td>
-                                  <td className="px-4 py-2 text-[#2f3437]/70">{link.clicksAllTime}</td>
-                                  <td className="px-4 py-2 text-[#2f3437]/70">{link.conversions7d}</td>
-                                  <td className="px-4 py-2 text-[#2f3437]/70">{link.conversionsAllTime}</td>
+                                  <td className="px-4 py-2 text-[var(--abv-text)]/70">{link.name}</td>
+                                  <td className="px-4 py-2 text-[var(--abv-text)]/70">{link.clicks7d}</td>
+                                  <td className="px-4 py-2 text-[var(--abv-text)]/70">{link.clicksAllTime}</td>
+                                  <td className="px-4 py-2 text-[var(--abv-text)]/70">{link.conversions7d}</td>
+                                  <td className="px-4 py-2 text-[var(--abv-text)]/70">{link.conversionsAllTime}</td>
                                 </tr>
                               ))}
                             </tbody>
                           </table>
                         ) : (
-                          <div className="px-4 py-3 text-sm text-[#2f3437]/30">No links yet.</div>
+                          <div className="px-4 py-3 text-sm text-[var(--abv-text)]/30">No links yet.</div>
                         )}
                       </div>
                     ))}
@@ -1195,14 +1195,14 @@ export default function MemberDetailPage() {
 
                   {analyticsData.clickTrend30d?.length > 0 && (
                     <div className="bg-white border border-gray-200 rounded-lg p-4">
-                      <div className="text-sm font-semibold text-[#2f3437] mb-3">Click Trend (30 days)</div>
+                      <div className="text-sm font-semibold text-[var(--abv-text)] mb-3">Click Trend (30 days)</div>
                       <ResponsiveContainer width="100%" height={160}>
                         <BarChart data={analyticsData.clickTrend30d} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
                           <CartesianGrid strokeDasharray="3 3" stroke={chartGrid} />
                           <XAxis dataKey="date" tick={{ fontSize: 10, fill: chartTick }} tickFormatter={(v) => v.slice(5)} axisLine={false} tickLine={false} />
                           <YAxis tick={{ fontSize: 10, fill: chartTick }} axisLine={false} tickLine={false} />
                           <Tooltip contentStyle={chartTooltip} />
-                          <Bar dataKey="clicks" fill="#6ba3c7" radius={[2, 2, 0, 0]} />
+                          <Bar dataKey="clicks" fill="var(--abv-azure)" radius={[2, 2, 0, 0]} />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
@@ -1213,23 +1213,23 @@ export default function MemberDetailPage() {
               {/* Tool Usage */}
               {analyticsData.toolUsage?.length > 0 && (
                 <div>
-                  <h2 className="text-base font-semibold text-[#2f3437] mb-3">Tool Usage</h2>
+                  <h2 className="text-base font-semibold text-[var(--abv-text)] mb-3">Tool Usage</h2>
                   <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
                     <table className="w-full text-sm">
                       <thead>
                         <tr>
                           {["Tool", "Uses (7d)", "All Time", "Last Used"].map((h) => (
-                            <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#2f3437]/50 bg-gray-50">{h}</th>
+                            <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[var(--abv-text)]/50 bg-gray-50">{h}</th>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
                         {analyticsData.toolUsage.map((t: any) => (
                           <tr key={t.tool} className="border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors">
-                            <td className="px-4 py-3 font-medium text-[#2f3437]">{t.tool}</td>
-                            <td className="px-4 py-3 text-[#2f3437]/70">{t.uses7d}</td>
-                            <td className="px-4 py-3 text-[#2f3437]/70">{t.usesAllTime}</td>
-                            <td className="px-4 py-3 text-xs text-[#2f3437]/40">{fmt(t.lastUsed)}</td>
+                            <td className="px-4 py-3 font-medium text-[var(--abv-text)]">{t.tool}</td>
+                            <td className="px-4 py-3 text-[var(--abv-text)]/70">{t.uses7d}</td>
+                            <td className="px-4 py-3 text-[var(--abv-text)]/70">{t.usesAllTime}</td>
+                            <td className="px-4 py-3 text-xs text-[var(--abv-text)]/40">{fmt(t.lastUsed)}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -1249,7 +1249,7 @@ export default function MemberDetailPage() {
             {/* Member Info */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-base font-semibold text-[#2f3437]">Member Info</h2>
+                <h2 className="text-base font-semibold text-[var(--abv-text)]">Member Info</h2>
                 {!isEditorRole && (
                   !editing ? (
                     <button
@@ -1266,7 +1266,7 @@ export default function MemberDetailPage() {
                         });
                         setEditing(true);
                       }}
-                      className="flex items-center gap-1.5 text-sm text-[#6ba3c7] hover:text-[#5490b5]"
+                      className="flex items-center gap-1.5 text-sm text-[var(--abv-azure)] hover:text-[var(--abv-azure)]"
                     >
                       <PencilIcon className="w-4 h-4" /> Edit
                     </button>
@@ -1290,28 +1290,28 @@ export default function MemberDetailPage() {
                   { label: "Phone", field: "phone", type: "text" as const, placeholder: "+1 555 000 0000" },
                 ].map(({ label, field, placeholder }) => (
                   <div key={field} className="flex flex-col sm:flex-row sm:items-center gap-1">
-                    <span className="text-[#2f3437]/50 w-40 shrink-0">{label}</span>
+                    <span className="text-[var(--abv-text)]/50 w-40 shrink-0">{label}</span>
                     {editing ? (
-                      <input value={editFields[field] ?? ""} onChange={(e) => setEditFields((f: any) => ({ ...f, [field]: e.target.value }))} placeholder={placeholder} className="flex-1 border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30" />
+                      <input value={editFields[field] ?? ""} onChange={(e) => setEditFields((f: any) => ({ ...f, [field]: e.target.value }))} placeholder={placeholder} className="flex-1 border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--abv-azure)]/30" />
                     ) : (
-                      <span className="text-[#2f3437]">{member[field] || <span className="text-gray-400">—</span>}</span>
+                      <span className="text-[var(--abv-text)]">{member[field] || <span className="text-gray-400">—</span>}</span>
                     )}
                   </div>
                 ))}
 
                 {/* YouTube Channel */}
                 <div className="flex flex-col sm:flex-row sm:items-center gap-1">
-                  <span className="text-[#2f3437]/50 w-40 shrink-0">YouTube Channel</span>
+                  <span className="text-[var(--abv-text)]/50 w-40 shrink-0">YouTube Channel</span>
                   {editing ? (
                     <div className="flex-1 space-y-1.5">
-                      <input value={editFields.youtubeChannelUrl ?? ""} onChange={(e) => setEditFields((f: any) => ({ ...f, youtubeChannelUrl: e.target.value }))} className="w-full border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30" placeholder="YouTube URL" />
-                      <input value={editFields.youtubeHandle ?? ""} onChange={(e) => setEditFields((f: any) => ({ ...f, youtubeHandle: e.target.value }))} className="w-full border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30" placeholder="Handle (@channel)" />
-                      <input value={editFields.youtubeChannelName ?? ""} onChange={(e) => setEditFields((f: any) => ({ ...f, youtubeChannelName: e.target.value }))} className="w-full border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30" placeholder="Channel name" />
+                      <input value={editFields.youtubeChannelUrl ?? ""} onChange={(e) => setEditFields((f: any) => ({ ...f, youtubeChannelUrl: e.target.value }))} className="w-full border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--abv-azure)]/30" placeholder="YouTube URL" />
+                      <input value={editFields.youtubeHandle ?? ""} onChange={(e) => setEditFields((f: any) => ({ ...f, youtubeHandle: e.target.value }))} className="w-full border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--abv-azure)]/30" placeholder="Handle (@channel)" />
+                      <input value={editFields.youtubeChannelName ?? ""} onChange={(e) => setEditFields((f: any) => ({ ...f, youtubeChannelName: e.target.value }))} className="w-full border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--abv-azure)]/30" placeholder="Channel name" />
                     </div>
                   ) : (
-                    <span className="text-[#2f3437] break-all">
+                    <span className="text-[var(--abv-text)] break-all">
                       {member.youtubeChannelUrl ? (
-                        <a href={member.youtubeChannelUrl} target="_blank" rel="noopener noreferrer" className="text-[#6ba3c7] hover:underline flex items-center gap-1">
+                        <a href={member.youtubeChannelUrl} target="_blank" rel="noopener noreferrer" className="text-[var(--abv-azure)] hover:underline flex items-center gap-1">
                           {member.youtubeChannelName
                             ? (member.youtubeHandle && !isRawChannelId(member.youtubeHandle)
                                 ? `${member.youtubeChannelName} (${member.youtubeHandle})`
@@ -1328,13 +1328,13 @@ export default function MemberDetailPage() {
 
                 {/* GHL */}
                 <div className="flex flex-col sm:flex-row sm:items-center gap-1">
-                  <span className="text-[#2f3437]/50 w-40 shrink-0">GHL Contact ID</span>
+                  <span className="text-[var(--abv-text)]/50 w-40 shrink-0">GHL Contact ID</span>
                   {editing ? (
-                    <input value={editFields.ghlContactId ?? ""} onChange={(e) => setEditFields((f: any) => ({ ...f, ghlContactId: e.target.value }))} className="flex-1 border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30" />
+                    <input value={editFields.ghlContactId ?? ""} onChange={(e) => setEditFields((f: any) => ({ ...f, ghlContactId: e.target.value }))} className="flex-1 border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--abv-azure)]/30" />
                   ) : (
-                    <span className="text-[#2f3437] break-all">
+                    <span className="text-[var(--abv-text)] break-all">
                       {member.ghlContactId ? (
-                        <a href={`https://app.gohighlevel.com/v2/location/${GHL_LOCATION_ID}/contacts/detail/${member.ghlContactId}`} target="_blank" rel="noopener noreferrer" className="text-[#6ba3c7] hover:underline">{member.ghlContactId}</a>
+                        <a href={`https://app.gohighlevel.com/v2/location/${GHL_LOCATION_ID}/contacts/detail/${member.ghlContactId}`} target="_blank" rel="noopener noreferrer" className="text-[var(--abv-azure)] hover:underline">{member.ghlContactId}</a>
                       ) : <span className="text-gray-400">—</span>}
                     </span>
                   )}
@@ -1342,9 +1342,9 @@ export default function MemberDetailPage() {
 
                 {/* Membership Level */}
                 <div className="flex flex-col sm:flex-row sm:items-center gap-1">
-                  <span className="text-[#2f3437]/50 w-40 shrink-0">Membership Level</span>
+                  <span className="text-[var(--abv-text)]/50 w-40 shrink-0">Membership Level</span>
                   {editing ? (
-                    <select value={editFields.serviceTier ?? "foundations"} onChange={(e) => setEditFields((f: any) => ({ ...f, serviceTier: e.target.value }))} className="border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30">
+                    <select value={editFields.serviceTier ?? "foundations"} onChange={(e) => setEditFields((f: any) => ({ ...f, serviceTier: e.target.value }))} className="border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--abv-azure)]/30">
                       {SERVICE_TIERS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
                     </select>
                   ) : (
@@ -1356,8 +1356,8 @@ export default function MemberDetailPage() {
 
                 {/* Account info */}
                 <div className="flex flex-col sm:flex-row sm:items-center gap-1 pt-1 border-t border-gray-100">
-                  <span className="text-[#2f3437]/50 w-40 shrink-0">Member Since</span>
-                  <span className="text-[#2f3437]">{fmt(member.invitedAt ?? member.createdAt)}</span>
+                  <span className="text-[var(--abv-text)]/50 w-40 shrink-0">Member Since</span>
+                  <span className="text-[var(--abv-text)]">{fmt(member.invitedAt ?? member.createdAt)}</span>
                 </div>
               </div>
             </div>
@@ -1365,14 +1365,14 @@ export default function MemberDetailPage() {
             {/* COACHING NOTES */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-3">
-                <h2 className="text-base font-semibold text-[#2f3437]">Coaching Notes</h2>
+                <h2 className="text-base font-semibold text-[var(--abv-text)]">Coaching Notes</h2>
                 {notesUpdated && (
-                  <span className="text-xs text-[#2f3437]/40">Last saved {fmt(notesUpdated)}</span>
+                  <span className="text-xs text-[var(--abv-text)]/40">Last saved {fmt(notesUpdated)}</span>
                 )}
               </div>
               {isEditorRole ? (
-                <div className="text-sm text-[#2f3437] whitespace-pre-wrap bg-gray-50 rounded-lg px-4 py-3 min-h-[80px]">
-                  {notes || <span className="text-[#2f3437]/30 italic">No coaching notes yet.</span>}
+                <div className="text-sm text-[var(--abv-text)] whitespace-pre-wrap bg-gray-50 rounded-lg px-4 py-3 min-h-[80px]">
+                  {notes || <span className="text-[var(--abv-text)]/30 italic">No coaching notes yet.</span>}
                 </div>
               ) : (
                 <>
@@ -1400,11 +1400,11 @@ export default function MemberDetailPage() {
             {/* Membership Level quick selector */}
             {!isEditorRole && (
               <div className="bg-white rounded-lg border border-gray-200 p-5">
-                <h2 className="text-sm font-semibold text-[#2f3437] mb-3">Membership Level</h2>
+                <h2 className="text-sm font-semibold text-[var(--abv-text)] mb-3">Membership Level</h2>
                 <select
                   value={quickTier}
                   onChange={(e) => setQuickTier(e.target.value)}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-[#2f3437] focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30 mb-2"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-[var(--abv-text)] focus:outline-none focus:ring-2 focus:ring-[var(--abv-azure)]/30 mb-2"
                 >
                   {SERVICE_TIERS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
                 </select>
@@ -1423,42 +1423,42 @@ export default function MemberDetailPage() {
 
             {/* AI Tools Usage */}
             <div className="bg-white rounded-lg border border-gray-200 p-5">
-              <h2 className="text-sm font-semibold text-[#2f3437] mb-3">AI Tools Usage</h2>
+              <h2 className="text-sm font-semibold text-[var(--abv-text)] mb-3">AI Tools Usage</h2>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-[#2f3437]/50">Avatar saved</span>
-                  <span className={`text-xs font-semibold ${member?.avatarName ? "text-green-600" : "text-[#2f3437]/30"}`}>
+                  <span className="text-xs text-[var(--abv-text)]/50">Avatar saved</span>
+                  <span className={`text-xs font-semibold ${member?.avatarName ? "text-green-600" : "text-[var(--abv-text)]/30"}`}>
                     {member?.avatarName ? `✓ ${member.avatarName}` : "None"}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-[#2f3437]/50">Themes saved</span>
+                  <span className="text-xs text-[var(--abv-text)]/50">Themes saved</span>
                   {(() => {
                     const ctCount = Array.isArray(member?.contentThemes) ? (member.contentThemes as unknown[]).length : 0;
                     const hasThemes = ctCount > 0 || !!member?.videoThemes;
                     return (
-                      <span className={`text-xs font-semibold ${hasThemes ? "text-green-600" : "text-[#2f3437]/30"}`}>
+                      <span className={`text-xs font-semibold ${hasThemes ? "text-green-600" : "text-[var(--abv-text)]/30"}`}>
                         {ctCount > 0 ? `✓ ${ctCount} theme${ctCount !== 1 ? "s" : ""}` : hasThemes ? "✓ Yes" : "None"}
                       </span>
                     );
                   })()}
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-[#2f3437]/50">Scripts built</span>
-                  <span className="text-xs font-semibold text-[#2f3437]">{toolsUsage?.scriptsCount ?? "—"}</span>
+                  <span className="text-xs text-[var(--abv-text)]/50">Scripts built</span>
+                  <span className="text-xs font-semibold text-[var(--abv-text)]">{toolsUsage?.scriptsCount ?? "—"}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-[#2f3437]/50">Title analyses</span>
-                  <span className="text-xs font-semibold text-[#2f3437]">{toolsUsage?.analysesCount ?? "—"}</span>
+                  <span className="text-xs text-[var(--abv-text)]/50">Title analyses</span>
+                  <span className="text-xs font-semibold text-[var(--abv-text)]">{toolsUsage?.analysesCount ?? "—"}</span>
                 </div>
                 {toolsUsage?.lastActivity && (
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-[#2f3437]/50">Last active</span>
-                    <span className="text-xs font-semibold text-[#2f3437]">{new Date(toolsUsage.lastActivity).toLocaleDateString()}</span>
+                    <span className="text-xs text-[var(--abv-text)]/50">Last active</span>
+                    <span className="text-xs font-semibold text-[var(--abv-text)]">{new Date(toolsUsage.lastActivity).toLocaleDateString()}</span>
                   </div>
                 )}
                 {!member?.avatarName && !toolsUsage?.scriptsCount && (
-                  <p className="text-xs text-[#2f3437]/30 italic pt-1">No AI tool activity yet</p>
+                  <p className="text-xs text-[var(--abv-text)]/30 italic pt-1">No AI tool activity yet</p>
                 )}
               </div>
             </div>
@@ -1466,16 +1466,16 @@ export default function MemberDetailPage() {
             {/* Stripe — editors see Plan + Renews only (no customer link, no $ amount) */}
             {(!isEditorRole || member.stripeCustomerId) && (!isEditorRole || member.stripePlanName || member.stripeCurrentPeriodEnd) && (
               <div className="bg-white rounded-lg border border-gray-200 p-5">
-                <h2 className="text-sm font-semibold text-[#2f3437] mb-3">Stripe</h2>
+                <h2 className="text-sm font-semibold text-[var(--abv-text)] mb-3">Stripe</h2>
                 {member.stripeCustomerId ? (
                   <div className="space-y-2 text-sm">
                     {!isEditorRole && (
                       <div className="flex items-start justify-between gap-2">
-                        <span className="text-[#2f3437]/50 text-xs shrink-0">Customer</span>
+                        <span className="text-[var(--abv-text)]/50 text-xs shrink-0">Customer</span>
                         <a
                           href={`https://dashboard.stripe.com/customers/${member.stripeCustomerId}`}
                           target="_blank" rel="noopener noreferrer"
-                          className="text-[#6ba3c7] hover:underline font-mono text-xs truncate text-right"
+                          className="text-[var(--abv-azure)] hover:underline font-mono text-xs truncate text-right"
                         >
                           {member.stripeCustomerId}
                         </a>
@@ -1483,9 +1483,9 @@ export default function MemberDetailPage() {
                     )}
                     {member.stripePlanName && (
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-[#2f3437]/50 text-xs">Plan</span>
+                        <span className="text-[var(--abv-text)]/50 text-xs">Plan</span>
                         <div className="flex items-center gap-1.5">
-                          <span className="text-xs font-semibold text-[#2f3437]">{member.stripePlanName}</span>
+                          <span className="text-xs font-semibold text-[var(--abv-text)]">{member.stripePlanName}</span>
                           {member.subscriptionStatus && (() => {
                             const cfg = subCfg[member.subscriptionStatus];
                             if (!cfg) return null;
@@ -1500,18 +1500,18 @@ export default function MemberDetailPage() {
                     )}
                     {!isEditorRole && member.stripePriceAmount != null && (
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-[#2f3437]/50 text-xs">Amount</span>
+                        <span className="text-[var(--abv-text)]/50 text-xs">Amount</span>
                         <span className="text-xs font-semibold text-emerald-700">
                           ${Math.round(member.stripePriceAmount / 100).toLocaleString("en-CA")}/mo
                           {member.stripeCurrency && (
-                            <span className="ml-1 font-normal text-[#2f3437]/40">{member.stripeCurrency}</span>
+                            <span className="ml-1 font-normal text-[var(--abv-text)]/40">{member.stripeCurrency}</span>
                           )}
                         </span>
                       </div>
                     )}
                     {!isEditorRole && Array.isArray(member.stripeLineItems) && member.stripeLineItems.length > 1 && (
                       <div className="pt-2 mt-1 border-t border-gray-100">
-                        <div className="text-[10px] uppercase tracking-wide text-[#2f3437]/40 mb-1.5">Line items</div>
+                        <div className="text-[10px] uppercase tracking-wide text-[var(--abv-text)]/40 mb-1.5">Line items</div>
                         <ul className="space-y-1.5">
                           {member.stripeLineItems.map((li: {
                             productId: string | null;
@@ -1533,15 +1533,15 @@ export default function MemberDetailPage() {
                             const intervalSuffix = li.interval === "year" ? "/yr" : li.interval ? "/mo" : "";
                             return (
                               <li key={li.priceId || idx} className="flex items-start justify-between gap-2 text-xs">
-                                <span className="text-[#2f3437]/70 truncate" title={li.productName ?? li.priceId}>
+                                <span className="text-[var(--abv-text)]/70 truncate" title={li.productName ?? li.priceId}>
                                   {li.productName || "Line item"}
                                 </span>
                                 <span className="text-right shrink-0">
                                   {lineAmount && (
-                                    <span className="font-medium text-[#2f3437]">{lineAmount}{intervalSuffix}</span>
+                                    <span className="font-medium text-[var(--abv-text)]">{lineAmount}{intervalSuffix}</span>
                                   )}
                                   {unitDisplay && li.quantity > 1 && (
-                                    <span className="block text-[10px] text-[#2f3437]/40">{unitDisplay}</span>
+                                    <span className="block text-[10px] text-[var(--abv-text)]/40">{unitDisplay}</span>
                                   )}
                                 </span>
                               </li>
@@ -1552,10 +1552,10 @@ export default function MemberDetailPage() {
                     )}
                     {member.stripeCurrentPeriodEnd && (
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-[#2f3437]/50 text-xs">
+                        <span className="text-[var(--abv-text)]/50 text-xs">
                           {member.subscriptionStatus === "cancelled" ? "Ended" : "Renews"}
                         </span>
-                        <span className="text-xs text-[#2f3437]/70">
+                        <span className="text-xs text-[var(--abv-text)]/70">
                           {new Date(member.stripeCurrentPeriodEnd).toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" })}
                         </span>
                       </div>
@@ -1563,10 +1563,10 @@ export default function MemberDetailPage() {
                   </div>
                 ) : (
                   <div>
-                    <p className="text-xs text-[#2f3437]/40 mb-2">No Stripe customer linked.</p>
+                    <p className="text-xs text-[var(--abv-text)]/40 mb-2">No Stripe customer linked.</p>
                     <button
                       onClick={() => setStripeLinkOpen(true)}
-                      className="w-full text-xs font-medium text-[#6ba3c7] border border-[#6ba3c7]/30 hover:bg-[#6ba3c7]/5 px-3 py-1.5 rounded-lg transition-colors"
+                      className="w-full text-xs font-medium text-[var(--abv-azure)] border border-[var(--abv-azure)]/30 hover:bg-[var(--abv-dark)]/5 px-3 py-1.5 rounded-lg transition-colors"
                     >
                       Link Stripe Customer
                     </button>
@@ -1577,27 +1577,27 @@ export default function MemberDetailPage() {
 
             {/* Quick Actions */}
             <div className="bg-white rounded-lg border border-gray-200 p-5">
-              <h2 className="text-sm font-semibold text-[#2f3437] mb-4">Quick Actions</h2>
+              <h2 className="text-sm font-semibold text-[var(--abv-text)] mb-4">Quick Actions</h2>
               <div className="space-y-2">
                 {member.youtubeChannelUrl && (
                   <a href={member.youtubeChannelUrl} target="_blank" rel="noopener noreferrer"
-                    className="w-full flex items-center gap-2 border border-gray-200 hover:bg-gray-50 text-[#2f3437] text-sm font-medium px-4 py-2.5 rounded-lg transition-colors"
+                    className="w-full flex items-center gap-2 border border-gray-200 hover:bg-gray-50 text-[var(--abv-text)] text-sm font-medium px-4 py-2.5 rounded-lg transition-colors"
                   >
-                    <ArrowTopRightOnSquareIcon className="w-4 h-4 text-[#6ba3c7]" />
+                    <ArrowTopRightOnSquareIcon className="w-4 h-4 text-[var(--abv-azure)]" />
                     View on YouTube
                   </a>
                 )}
                 <a href={`mailto:${member.email}`}
-                  className="w-full flex items-center gap-2 border border-gray-200 hover:bg-gray-50 text-[#2f3437] text-sm font-medium px-4 py-2.5 rounded-lg transition-colors"
+                  className="w-full flex items-center gap-2 border border-gray-200 hover:bg-gray-50 text-[var(--abv-text)] text-sm font-medium px-4 py-2.5 rounded-lg transition-colors"
                 >
-                  <EnvelopeIcon className="w-4 h-4 text-[#6ba3c7]" />
+                  <EnvelopeIcon className="w-4 h-4 text-[var(--abv-azure)]" />
                   Email Member
                 </a>
                 {member.phone && (
                   <a href={`tel:${member.phone}`}
-                    className="w-full flex items-center gap-2 border border-gray-200 hover:bg-gray-50 text-[#2f3437] text-sm font-medium px-4 py-2.5 rounded-lg transition-colors"
+                    className="w-full flex items-center gap-2 border border-gray-200 hover:bg-gray-50 text-[var(--abv-text)] text-sm font-medium px-4 py-2.5 rounded-lg transition-colors"
                   >
-                    <PhoneIcon className="w-4 h-4 text-[#6ba3c7]" />
+                    <PhoneIcon className="w-4 h-4 text-[var(--abv-azure)]" />
                     Call Member
                   </a>
                 )}
@@ -1605,7 +1605,7 @@ export default function MemberDetailPage() {
                   <a
                     href={`https://app.gohighlevel.com/v2/location/${GHL_LOCATION_ID}/contacts/detail/${member.ghlContactId}`}
                     target="_blank" rel="noopener noreferrer"
-                    className="w-full flex items-center gap-2 border border-gray-200 hover:bg-gray-50 text-[#2f3437] text-sm font-medium px-4 py-2.5 rounded-lg transition-colors"
+                    className="w-full flex items-center gap-2 border border-gray-200 hover:bg-gray-50 text-[var(--abv-text)] text-sm font-medium px-4 py-2.5 rounded-lg transition-colors"
                   >
                     <ArrowTopRightOnSquareIcon className="w-4 h-4 text-gray-400" />
                     View in GHL
@@ -1643,7 +1643,7 @@ export default function MemberDetailPage() {
                       <button onClick={handleDeleteMember} disabled={deletingMember} className="flex-1 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 px-4 py-2.5 rounded-lg transition-colors disabled:opacity-50">
                         {deletingMember ? "Deleting…" : "Yes, Delete"}
                       </button>
-                      <button onClick={() => setConfirmDeleteMember(false)} className="flex-1 text-sm font-medium text-[#2f3437] border border-gray-200 hover:bg-gray-50 px-4 py-2.5 rounded-lg transition-colors">
+                      <button onClick={() => setConfirmDeleteMember(false)} className="flex-1 text-sm font-medium text-[var(--abv-text)] border border-gray-200 hover:bg-gray-50 px-4 py-2.5 rounded-lg transition-colors">
                         Cancel
                       </button>
                     </div>
@@ -1661,10 +1661,10 @@ export default function MemberDetailPage() {
           {/* Audit History */}
           <div className="bg-white rounded-lg border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-semibold text-[#2f3437]">Audit History</h2>
+              <h2 className="text-base font-semibold text-[var(--abv-text)]">Audit History</h2>
             </div>
             {member.audits?.length === 0 ? (
-              <p className="text-sm text-[#2f3437]/50 text-center py-8">
+              <p className="text-sm text-[var(--abv-text)]/50 text-center py-8">
                 No audits yet — use the Run Audit button in the header to generate the first baseline.
               </p>
             ) : (
@@ -1673,15 +1673,15 @@ export default function MemberDetailPage() {
                   <thead>
                     <tr className="border-b border-gray-100">
                       {["Date", "Type", "Score", "Actions"].map((h, i) => (
-                        <th key={h} className={`py-2 pr-4 text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wider ${i === 3 ? "text-right" : "text-left"}`}>{h}</th>
+                        <th key={h} className={`py-2 pr-4 text-xs font-semibold text-[var(--abv-text)]/50 uppercase tracking-wider ${i === 3 ? "text-right" : "text-left"}`}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {member.audits.map((audit: any) => (
                       <tr key={audit.id} className="border-b border-gray-50 last:border-0">
-                        <td className="py-3 pr-4 text-[#2f3437]/70">{fmt(audit.createdAt)}</td>
-                        <td className="py-3 pr-4 text-[#2f3437]">
+                        <td className="py-3 pr-4 text-[var(--abv-text)]/70">{fmt(audit.createdAt)}</td>
+                        <td className="py-3 pr-4 text-[var(--abv-text)]">
                           {audit.auditType === "single_video" ? (() => {
                             const vid = (audit.videosAnalysed as any)?.[0];
                             const videoId = vid?.videoId;
@@ -1709,17 +1709,17 @@ export default function MemberDetailPage() {
                         <td className="py-3 text-right">
                           {!isEditorRole && confirmDeleteId === audit.id ? (
                             <span className="inline-flex items-center gap-2">
-                              <span className="text-xs text-[#2f3437]/50">Delete?</span>
-                              <button onClick={() => handleDeleteAudit(audit.id)} disabled={deletingAuditId === audit.id} className="text-xs text-[#ff0033] font-semibold hover:underline">
+                              <span className="text-xs text-[var(--abv-text)]/50">Delete?</span>
+                              <button onClick={() => handleDeleteAudit(audit.id)} disabled={deletingAuditId === audit.id} className="text-xs text-[var(--abv-crimson)] font-semibold hover:underline">
                                 {deletingAuditId === audit.id ? "Deleting…" : "Yes"}
                               </button>
                               <button onClick={() => setConfirmDeleteId(null)} className="text-xs text-gray-400 hover:text-gray-600">No</button>
                             </span>
                           ) : (
                             <span className="inline-flex items-center gap-3">
-                              <Link href={`/admin/audits/${audit.id}`} className="text-[#6ba3c7] hover:underline text-xs">View →</Link>
+                              <Link href={`/admin/audits/${audit.id}`} className="text-[var(--abv-azure)] hover:underline text-xs">View →</Link>
                               {!isEditorRole && (
-                                <button onClick={() => setConfirmDeleteId(audit.id)} className="text-xs text-gray-300 hover:text-[#ff0033] transition-colors">Delete</button>
+                                <button onClick={() => setConfirmDeleteId(audit.id)} className="text-xs text-gray-300 hover:text-[var(--abv-crimson)] transition-colors">Delete</button>
                               )}
                             </span>
                           )}
@@ -1738,16 +1738,16 @@ export default function MemberDetailPage() {
               onClick={() => setBreakdownOpen((o) => !o)}
               className="w-full flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition-colors"
             >
-              <span className="text-base font-semibold text-[#2f3437]">16-Principle Breakdown</span>
+              <span className="text-base font-semibold text-[var(--abv-text)]">16-Principle Breakdown</span>
               <div className="flex items-center gap-2">
-                {latestAudit && <span className="text-xs text-[#2f3437]/40 font-medium">{DIMENSIONS.length} categories</span>}
-                <ChevronDownIcon className={`w-4 h-4 text-[#2f3437]/40 transition-transform duration-200 ${breakdownOpen ? "rotate-180" : ""}`} />
+                {latestAudit && <span className="text-xs text-[var(--abv-text)]/40 font-medium">{DIMENSIONS.length} categories</span>}
+                <ChevronDownIcon className={`w-4 h-4 text-[var(--abv-text)]/40 transition-transform duration-200 ${breakdownOpen ? "rotate-180" : ""}`} />
               </div>
             </button>
             {breakdownOpen && (
               <div className="px-6 pb-6 border-t border-gray-100">
                 {!latestAudit ? (
-                  <p className="text-sm text-[#2f3437]/50 text-center py-8">Scores will appear after the first audit.</p>
+                  <p className="text-sm text-[var(--abv-text)]/50 text-center py-8">Scores will appear after the first audit.</p>
                 ) : (
                   <div className="space-y-6 pt-4">
                     {DIMENSIONS.map((dim) => {
@@ -1756,7 +1756,7 @@ export default function MemberDetailPage() {
                       return (
                         <div key={dim.label}>
                           <div className="flex items-center justify-between mb-2">
-                            <h3 className="text-sm font-semibold text-[#2f3437]">{dim.label}</h3>
+                            <h3 className="text-sm font-semibold text-[var(--abv-text)]">{dim.label}</h3>
                             {dimAvg != null && (
                               <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${scoreBg(dimAvg)}`}>Avg {dimAvg.toFixed(1)}</span>
                             )}
@@ -1764,9 +1764,9 @@ export default function MemberDetailPage() {
                           <table className="w-full text-sm">
                             <thead>
                               <tr className="border-b border-gray-100">
-                                <th className="text-left pb-1.5 text-xs text-[#2f3437]/40 font-medium">Principle</th>
-                                <th className="text-center pb-1.5 text-xs text-[#2f3437]/40 font-medium">Score</th>
-                                <th className="text-center pb-1.5 text-xs text-[#2f3437]/40 font-medium">Δ Baseline</th>
+                                <th className="text-left pb-1.5 text-xs text-[var(--abv-text)]/40 font-medium">Principle</th>
+                                <th className="text-center pb-1.5 text-xs text-[var(--abv-text)]/40 font-medium">Score</th>
+                                <th className="text-center pb-1.5 text-xs text-[var(--abv-text)]/40 font-medium">Δ Baseline</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -1777,7 +1777,7 @@ export default function MemberDetailPage() {
                                 const delta = score != null && base != null ? score - base : null;
                                 return (
                                   <tr key={principle} className="border-b border-gray-50 last:border-0">
-                                    <td className="py-2 text-[#2f3437]">{principle}</td>
+                                    <td className="py-2 text-[var(--abv-text)]">{principle}</td>
                                     <td className="py-2 text-center">
                                       {score != null ? (
                                         <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${scoreBg(score)}`}>{score.toFixed(1)}</span>
@@ -1786,7 +1786,7 @@ export default function MemberDetailPage() {
                                     <td className="py-2 text-center text-xs font-semibold">
                                       {delta == null ? <span className="text-gray-400">—</span>
                                         : delta > 0 ? <span className="text-green-600">+{delta.toFixed(1)}</span>
-                                        : delta < 0 ? <span className="text-[#ff0033]">{delta.toFixed(1)}</span>
+                                        : delta < 0 ? <span className="text-[var(--abv-crimson)]">{delta.toFixed(1)}</span>
                                         : <span className="text-gray-400">0.0</span>}
                                     </td>
                                   </tr>
@@ -1807,16 +1807,16 @@ export default function MemberDetailPage() {
           {academyProgress && (
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-base font-semibold text-[#2f3437]">Academy Progress</h2>
-                <span className="text-sm font-bold text-[#6ba3c7]">{academyProgress.overall?.pct ?? 0}%</span>
+                <h2 className="text-base font-semibold text-[var(--abv-text)]">Academy Progress</h2>
+                <span className="text-sm font-bold text-[var(--abv-azure)]">{academyProgress.overall?.pct ?? 0}%</span>
               </div>
               <div className="mb-5">
-                <div className="flex items-center justify-between text-xs text-[#2f3437]/50 mb-1">
+                <div className="flex items-center justify-between text-xs text-[var(--abv-text)]/50 mb-1">
                   <span>Overall</span>
                   <span>{academyProgress.overall?.completed ?? 0}/{academyProgress.overall?.total ?? 0} lessons</span>
                 </div>
                 <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-[#6ba3c7] rounded-full transition-all" style={{ width: `${academyProgress.overall?.pct ?? 0}%` }} />
+                  <div className="h-full bg-[var(--abv-dark)] rounded-full transition-all" style={{ width: `${academyProgress.overall?.pct ?? 0}%` }} />
                 </div>
               </div>
               {Array.isArray(academyProgress.sections) && academyProgress.sections.length > 0 && (
@@ -1825,12 +1825,12 @@ export default function MemberDetailPage() {
                     const pct = sec.total > 0 ? Math.round((sec.completed / sec.total) * 100) : 0;
                     return (
                       <div key={sec.id}>
-                        <div className="flex items-center justify-between text-xs text-[#2f3437]/60 mb-0.5">
+                        <div className="flex items-center justify-between text-xs text-[var(--abv-text)]/60 mb-0.5">
                           <span className="truncate max-w-[200px]">{sec.title}</span>
                           <span className="shrink-0 ml-2">{sec.completed}/{sec.total}</span>
                         </div>
                         <div className="h-1 bg-gray-100 rounded-full overflow-hidden">
-                          <div className={`h-full rounded-full ${pct === 100 ? "bg-green-500" : "bg-[#6ba3c7]"}`} style={{ width: `${pct}%` }} />
+                          <div className={`h-full rounded-full ${pct === 100 ? "bg-green-500" : "bg-[var(--abv-dark)]"}`} style={{ width: `${pct}%` }} />
                         </div>
                       </div>
                     );
@@ -1839,33 +1839,33 @@ export default function MemberDetailPage() {
               )}
               <div className="grid grid-cols-2 gap-3 mb-4">
                 <div className="bg-gray-50 rounded-lg p-3 text-center">
-                  <p className="text-lg font-bold text-[#2f3437]">
+                  <p className="text-lg font-bold text-[var(--abv-text)]">
                     {academyProgress.workbook?.filled ?? 0}
-                    <span className="text-sm font-normal text-[#2f3437]/40">/{academyProgress.workbook?.total ?? 0}</span>
+                    <span className="text-sm font-normal text-[var(--abv-text)]/40">/{academyProgress.workbook?.total ?? 0}</span>
                   </p>
-                  <p className="text-xs text-[#2f3437]/50 mt-0.5">Workbook fields</p>
+                  <p className="text-xs text-[var(--abv-text)]/50 mt-0.5">Workbook fields</p>
                 </div>
                 <div className="bg-gray-50 rounded-lg p-3 text-center">
-                  <p className="text-lg font-bold text-[#2f3437]">
+                  <p className="text-lg font-bold text-[var(--abv-text)]">
                     {academyProgress.homework?.completed ?? 0}
-                    <span className="text-sm font-normal text-[#2f3437]/40">/{academyProgress.homework?.total ?? 0}</span>
+                    <span className="text-sm font-normal text-[var(--abv-text)]/40">/{academyProgress.homework?.total ?? 0}</span>
                   </p>
-                  <p className="text-xs text-[#2f3437]/50 mt-0.5">Homework items</p>
+                  <p className="text-xs text-[var(--abv-text)]/50 mt-0.5">Homework items</p>
                 </div>
               </div>
               {academyProgress.lastLesson && (
                 <div className="border-t border-gray-100 pt-3">
-                  <p className="text-xs text-[#2f3437]/50 mb-0.5">Last completed lesson</p>
-                  <p className="text-sm font-medium text-[#2f3437] truncate">{academyProgress.lastLesson.title}</p>
+                  <p className="text-xs text-[var(--abv-text)]/50 mb-0.5">Last completed lesson</p>
+                  <p className="text-sm font-medium text-[var(--abv-text)] truncate">{academyProgress.lastLesson.title}</p>
                   {academyProgress.lastLesson.date && (
-                    <p className="text-xs text-[#2f3437]/40 mt-0.5">
+                    <p className="text-xs text-[var(--abv-text)]/40 mt-0.5">
                       {new Date(academyProgress.lastLesson.date).toLocaleDateString("en-CA", { year: "numeric", month: "short", day: "numeric" })}
                     </p>
                   )}
                 </div>
               )}
               {academyProgress.overall?.total === 0 && (
-                <p className="text-sm text-[#2f3437]/40 italic">No academy content published yet.</p>
+                <p className="text-sm text-[var(--abv-text)]/40 italic">No academy content published yet.</p>
               )}
             </div>
           )}
@@ -1877,18 +1877,18 @@ export default function MemberDetailPage() {
         <div className="space-y-6">
           <div className="bg-white rounded-lg border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-semibold text-[#2f3437]">Tracking Links</h2>
-              <button className="text-sm text-[#6ba3c7] hover:text-[#5490b5] font-medium">+ Create Link</button>
+              <h2 className="text-base font-semibold text-[var(--abv-text)]">Tracking Links</h2>
+              <button className="text-sm text-[var(--abv-azure)] hover:text-[var(--abv-azure)] font-medium">+ Create Link</button>
             </div>
             {member.links?.length === 0 ? (
-              <p className="text-sm text-[#2f3437]/50 text-center py-6">No tracking links yet.</p>
+              <p className="text-sm text-[var(--abv-text)]/50 text-center py-6">No tracking links yet.</p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-100">
                       {["Link Name", "Short URL", "Clicks", "Conversions", "Conv. Rate"].map((h) => (
-                        <th key={h} className="text-left py-2 pr-4 text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wider last:text-right">{h}</th>
+                        <th key={h} className="text-left py-2 pr-4 text-xs font-semibold text-[var(--abv-text)]/50 uppercase tracking-wider last:text-right">{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -1899,11 +1899,11 @@ export default function MemberDetailPage() {
                       const rate = clicks > 0 ? ((conversions / clicks) * 100).toFixed(1) + "%" : "—";
                       return (
                         <tr key={link.id} className="border-b border-gray-50 last:border-0">
-                          <td className="py-3 pr-4 text-[#2f3437]">{link.name}</td>
-                          <td className="py-3 pr-4"><span className="text-[#6ba3c7] font-mono text-xs">/{link.refCode}</span></td>
-                          <td className="py-3 pr-4 text-[#2f3437]">{clicks}</td>
-                          <td className="py-3 pr-4 text-[#2f3437]">{conversions}</td>
-                          <td className="py-3 text-right text-[#2f3437]">{rate}</td>
+                          <td className="py-3 pr-4 text-[var(--abv-text)]">{link.name}</td>
+                          <td className="py-3 pr-4"><span className="text-[var(--abv-azure)] font-mono text-xs">/{link.refCode}</span></td>
+                          <td className="py-3 pr-4 text-[var(--abv-text)]">{clicks}</td>
+                          <td className="py-3 pr-4 text-[var(--abv-text)]">{conversions}</td>
+                          <td className="py-3 text-right text-[var(--abv-text)]">{rate}</td>
                         </tr>
                       );
                     })}
@@ -1922,17 +1922,17 @@ export default function MemberDetailPage() {
           <div className="bg-white rounded-lg border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h2 className="text-base font-semibold text-[#2f3437]">Avatar Profile</h2>
-                <p className="text-xs text-[#2f3437]/50 mt-0.5">The ideal customer avatar document used as AI context</p>
+                <h2 className="text-base font-semibold text-[var(--abv-text)]">Avatar Profile</h2>
+                <p className="text-xs text-[var(--abv-text)]/50 mt-0.5">The ideal customer avatar document used as AI context</p>
               </div>
               {member?.avatarName && (
-                <span className="text-xs text-[#6ba3c7] bg-[#6ba3c7]/10 px-2.5 py-1 rounded-full font-medium">{member.avatarName}</span>
+                <span className="text-xs text-[var(--abv-azure)] bg-[var(--abv-dark)]/10 px-2.5 py-1 rounded-full font-medium">{member.avatarName}</span>
               )}
             </div>
             {member?.avatarProfile && (
               <div className="mb-4">
                 {member.avatarSummary && (
-                  <p className="text-sm text-[#2f3437]/70 mb-3 leading-relaxed">{member.avatarSummary}</p>
+                  <p className="text-sm text-[var(--abv-text)]/70 mb-3 leading-relaxed">{member.avatarSummary}</p>
                 )}
                 {Array.isArray(member.contentThemes) && member.contentThemes.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mb-4">
@@ -1941,7 +1941,7 @@ export default function MemberDetailPage() {
                         : t && typeof t === "object" && "name" in t
                           ? `${(t as any).emoji ?? ""} ${(t as any).name ?? ""}`.trim() : null;
                       return label ? (
-                        <span key={i} className="text-xs bg-[#6ba3c7]/10 text-[#6ba3c7] px-2.5 py-1 rounded-full font-medium">{label}</span>
+                        <span key={i} className="text-xs bg-[var(--abv-dark)]/10 text-[var(--abv-azure)] px-2.5 py-1 rounded-full font-medium">{label}</span>
                       ) : null;
                     })}
                   </div>
@@ -1949,13 +1949,13 @@ export default function MemberDetailPage() {
               </div>
             )}
             {!member?.avatarProfile && (
-              <p className="text-sm text-[#2f3437]/40 mb-3">No avatar saved for this member yet.</p>
+              <p className="text-sm text-[var(--abv-text)]/40 mb-3">No avatar saved for this member yet.</p>
             )}
             {isEditorRole ? (
               avatarText ? (
-                <div className="text-sm text-[#2f3437] whitespace-pre-wrap bg-gray-50 rounded-lg px-4 py-3 font-mono max-h-72 overflow-y-auto">{avatarText}</div>
+                <div className="text-sm text-[var(--abv-text)] whitespace-pre-wrap bg-gray-50 rounded-lg px-4 py-3 font-mono max-h-72 overflow-y-auto">{avatarText}</div>
               ) : (
-                <p className="text-sm text-[#2f3437]/30 italic">No avatar document saved.</p>
+                <p className="text-sm text-[var(--abv-text)]/30 italic">No avatar document saved.</p>
               )
             ) : (
               <>
@@ -1964,7 +1964,7 @@ export default function MemberDetailPage() {
                   onChange={(e) => setAvatarText(e.target.value)}
                   rows={10}
                   placeholder="Paste or type the avatar document here. You can use plain text or JSON."
-                  className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-[#2f3437] font-mono focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30 resize-none"
+                  className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-[var(--abv-text)] font-mono focus:outline-none focus:ring-2 focus:ring-[var(--abv-azure)]/30 resize-none"
                 />
                 <div className="flex items-center justify-between mt-2">
                   <button
@@ -1982,12 +1982,12 @@ export default function MemberDetailPage() {
           {/* Video Themes */}
           <div className="bg-white rounded-lg border border-gray-200 p-6">
             <div className="mb-4">
-              <h2 className="text-base font-semibold text-[#2f3437]">Video Themes</h2>
-              <p className="text-xs text-[#2f3437]/50 mt-0.5">Recurring themes and content pillars for this member&apos;s channel — used as AI context</p>
+              <h2 className="text-base font-semibold text-[var(--abv-text)]">Video Themes</h2>
+              <p className="text-xs text-[var(--abv-text)]/50 mt-0.5">Recurring themes and content pillars for this member&apos;s channel — used as AI context</p>
             </div>
             {isEditorRole ? (
-              <div className="text-sm text-[#2f3437] whitespace-pre-wrap bg-gray-50 rounded-lg px-4 py-3 min-h-[120px] leading-relaxed">
-                {videoThemes || <span className="text-[#2f3437]/30 italic">No themes saved yet.</span>}
+              <div className="text-sm text-[var(--abv-text)] whitespace-pre-wrap bg-gray-50 rounded-lg px-4 py-3 min-h-[120px] leading-relaxed">
+                {videoThemes || <span className="text-[var(--abv-text)]/30 italic">No themes saved yet.</span>}
               </div>
             ) : (
               <>
@@ -2019,22 +2019,22 @@ export default function MemberDetailPage() {
           <div className="bg-white rounded-lg shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
               <div>
-                <h2 className="text-base font-bold text-[#2f3437]">Select a Video to Audit</h2>
-                <p className="text-xs text-[#2f3437]/50 mt-0.5">Choose from {member.fullName}&apos;s 10 most recent long-form videos</p>
+                <h2 className="text-base font-bold text-[var(--abv-text)]">Select a Video to Audit</h2>
+                <p className="text-xs text-[var(--abv-text)]/50 mt-0.5">Choose from {member.fullName}&apos;s 10 most recent long-form videos</p>
               </div>
-              <button onClick={() => setShowVideoModal(false)} className="text-[#2f3437]/40 hover:text-[#2f3437] transition-colors">
+              <button onClick={() => setShowVideoModal(false)} className="text-[var(--abv-text)]/40 hover:text-[var(--abv-text)] transition-colors">
                 <XMarkIcon className="w-5 h-5" />
               </button>
             </div>
             <div className="overflow-y-auto flex-1 p-4">
               {videoModalLoading && (
                 <div className="flex flex-col items-center justify-center h-48 gap-3">
-                  <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-200 border-t-[#6ba3c7]" />
-                  <p className="text-sm text-[#2f3437]/50">Fetching videos…</p>
+                  <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-200 border-t-[var(--abv-azure)]" />
+                  <p className="text-sm text-[var(--abv-text)]/50">Fetching videos…</p>
                 </div>
               )}
               {videoModalError && (
-                <div className="bg-[#ffe5ea] border border-[#ff0033]/20 text-[#ff0033] rounded-lg p-4 text-sm">{videoModalError}</div>
+                <div className="bg-[#ffe5ea] border border-[var(--abv-crimson)]/20 text-[var(--abv-crimson)] rounded-lg p-4 text-sm">{videoModalError}</div>
               )}
               {!videoModalLoading && !videoModalError && (
                 <div className="space-y-2">
@@ -2043,32 +2043,32 @@ export default function MemberDetailPage() {
                       key={v.videoId}
                       onClick={() => setSelectedVideoId(v.videoId)}
                       className={`w-full flex items-center gap-3 p-3 rounded-lg border-2 text-left transition-colors ${
-                        selectedVideoId === v.videoId ? "border-[#6ba3c7] bg-[#e8f7ff]" : "border-gray-100 hover:border-gray-200 hover:bg-gray-50"
+                        selectedVideoId === v.videoId ? "border-[var(--abv-azure)] bg-[#e8f7ff]" : "border-gray-100 hover:border-gray-200 hover:bg-gray-50"
                       }`}
                     >
                       <img src={v.thumbnailUrl} alt="" className="w-24 h-14 rounded object-cover shrink-0 bg-gray-100" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-[#2f3437] line-clamp-2 leading-snug">{v.title}</p>
-                        <p className="text-xs text-[#2f3437]/50 mt-1">
+                        <p className="text-sm font-medium text-[var(--abv-text)] line-clamp-2 leading-snug">{v.title}</p>
+                        <p className="text-xs text-[var(--abv-text)]/50 mt-1">
                           {v.durationFormatted} · {new Date(v.uploadDate).toLocaleDateString("en-CA", { year: "numeric", month: "short", day: "numeric" })} · {v.viewCount?.toLocaleString()} views
                         </p>
                       </div>
-                      {selectedVideoId === v.videoId && <CheckIcon className="w-5 h-5 text-[#6ba3c7] shrink-0" />}
+                      {selectedVideoId === v.videoId && <CheckIcon className="w-5 h-5 text-[var(--abv-azure)] shrink-0" />}
                     </button>
                   ))}
                 </div>
               )}
             </div>
             <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between gap-3">
-              <p className="text-xs text-[#2f3437]/40">
+              <p className="text-xs text-[var(--abv-text)]/40">
                 {selectedVideoId ? "Video selected — ready to audit" : "Click a video to select it"}
               </p>
               <div className="flex gap-3">
-                <button onClick={() => setShowVideoModal(false)} className="px-4 py-2 text-sm font-medium text-[#2f3437] hover:bg-gray-50 rounded-lg transition-colors">Cancel</button>
+                <button onClick={() => setShowVideoModal(false)} className="px-4 py-2 text-sm font-medium text-[var(--abv-text)] hover:bg-gray-50 rounded-lg transition-colors">Cancel</button>
                 <button
                   onClick={() => { setShowVideoModal(false); runAudit("single_video", selectedVideoId!); }}
                   disabled={!selectedVideoId}
-                  className="px-4 py-2 text-sm font-semibold bg-[#6ba3c7] hover:bg-[#5490b5] text-white rounded-lg disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  className="px-4 py-2 text-sm font-semibold $1var(--abv-dark)$2 hover:bg-black/85 text-white rounded-lg disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
                   Run Audit
                 </button>
@@ -2084,10 +2084,10 @@ export default function MemberDetailPage() {
           <div className="bg-white rounded-lg shadow-2xl w-full max-w-lg flex flex-col max-h-[80vh]">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
               <div>
-                <h2 className="text-base font-bold text-[#2f3437]">Link Stripe Customer</h2>
-                <p className="text-xs text-[#2f3437]/50 mt-0.5">Search by name or email to find the matching Stripe customer</p>
+                <h2 className="text-base font-bold text-[var(--abv-text)]">Link Stripe Customer</h2>
+                <p className="text-xs text-[var(--abv-text)]/50 mt-0.5">Search by name or email to find the matching Stripe customer</p>
               </div>
-              <button onClick={() => { setStripeLinkOpen(false); setStripeSearchQ(""); setStripeSearchResults([]); setStripeSearchDone(false); }} className="text-[#2f3437]/40 hover:text-[#2f3437]">
+              <button onClick={() => { setStripeLinkOpen(false); setStripeSearchQ(""); setStripeSearchResults([]); setStripeSearchDone(false); }} className="text-[var(--abv-text)]/40 hover:text-[var(--abv-text)]">
                 <XMarkIcon className="w-5 h-5" />
               </button>
             </div>
@@ -2099,12 +2099,12 @@ export default function MemberDetailPage() {
                   onChange={(e) => setStripeSearchQ(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && searchStripeCustomers()}
                   placeholder="Name or email…"
-                  className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30"
+                  className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--abv-azure)]/30"
                 />
                 <button
                   onClick={searchStripeCustomers}
                   disabled={stripeSearchLoading || !stripeSearchQ.trim()}
-                  className="px-4 py-2 bg-[#6ba3c7] hover:bg-[#5490b5] text-white text-sm font-semibold rounded-lg disabled:opacity-50 transition-colors"
+                  className="px-4 py-2 $1var(--abv-dark)$2 hover:bg-black/85 text-white text-sm font-semibold rounded-lg disabled:opacity-50 transition-colors"
                 >
                   {stripeSearchLoading ? "…" : "Search"}
                 </button>
@@ -2113,29 +2113,29 @@ export default function MemberDetailPage() {
             <div className="overflow-y-auto flex-1 px-6 py-4">
               {stripeSearchLoading && (
                 <div className="flex justify-center py-8">
-                  <div className="animate-spin rounded-full h-6 w-6 border-2 border-gray-200 border-t-[#6ba3c7]" />
+                  <div className="animate-spin rounded-full h-6 w-6 border-2 border-gray-200 border-t-[var(--abv-azure)]" />
                 </div>
               )}
               {!stripeSearchLoading && stripeSearchDone && stripeSearchResults.length === 0 && (
-                <p className="text-sm text-center text-[#2f3437]/40 py-8">No Stripe customers found.</p>
+                <p className="text-sm text-center text-[var(--abv-text)]/40 py-8">No Stripe customers found.</p>
               )}
               {!stripeSearchLoading && stripeSearchResults.length > 0 && (
                 <div className="space-y-2">
                   {stripeSearchResults.map((c: any) => (
                     <div key={c.id} className="flex items-center justify-between gap-3 border border-gray-100 rounded-lg px-4 py-3 hover:border-gray-200 hover:bg-gray-50 transition-colors">
                       <div className="min-w-0">
-                        <p className="text-sm font-semibold text-[#2f3437] truncate">{c.name ?? "—"}</p>
-                        <p className="text-xs text-[#2f3437]/50 truncate">{c.email ?? "—"}</p>
+                        <p className="text-sm font-semibold text-[var(--abv-text)] truncate">{c.name ?? "—"}</p>
+                        <p className="text-xs text-[var(--abv-text)]/50 truncate">{c.email ?? "—"}</p>
                         {c.subscription ? (
-                          <p className="text-xs text-[#2f3437]/40 mt-0.5">{c.subscription.planName ?? "Unknown plan"} · <span className="capitalize">{c.subscription.status}</span></p>
+                          <p className="text-xs text-[var(--abv-text)]/40 mt-0.5">{c.subscription.planName ?? "Unknown plan"} · <span className="capitalize">{c.subscription.status}</span></p>
                         ) : (
-                          <p className="text-xs text-[#2f3437]/30 mt-0.5 italic">No subscription</p>
+                          <p className="text-xs text-[var(--abv-text)]/30 mt-0.5 italic">No subscription</p>
                         )}
                       </div>
                       <button
                         onClick={() => handleStripeLink(c.id)}
                         disabled={linking}
-                        className="shrink-0 px-3 py-1.5 text-xs font-semibold bg-[#2f3437] hover:bg-[#1e2a38] text-white rounded-lg disabled:opacity-50 transition-colors"
+                        className="shrink-0 px-3 py-1.5 text-xs font-semibold bg-[var(--abv-text)] hover:bg-[var(--abv-dark)] text-white rounded-lg disabled:opacity-50 transition-colors"
                       >
                         {linking ? "Linking…" : "Link"}
                       </button>
@@ -2144,7 +2144,7 @@ export default function MemberDetailPage() {
                 </div>
               )}
               {!stripeSearchDone && !stripeSearchLoading && (
-                <p className="text-xs text-center text-[#2f3437]/30 py-6">Type a name or email above and click Search.</p>
+                <p className="text-xs text-center text-[var(--abv-text)]/30 py-6">Type a name or email above and click Search.</p>
               )}
             </div>
           </div>
@@ -2153,7 +2153,7 @@ export default function MemberDetailPage() {
 
       {activeTab === "content_planner" && member && (
         <div className="bg-white rounded-lg border border-gray-200 p-5">
-          <h2 className="text-sm font-semibold text-[#2f3437] mb-4">Content Planner</h2>
+          <h2 className="text-sm font-semibold text-[var(--abv-text)] mb-4">Content Planner</h2>
           <ContentPlanTable
             apiBase={`/api/admin/members/${member.id}/content-plans`}
             isAdmin
@@ -2169,7 +2169,7 @@ export default function MemberDetailPage() {
 
       {activeTab === "client_hub" && member && (
         <div className="bg-white rounded-lg border border-gray-200 p-5">
-          <h2 className="text-sm font-semibold text-[#2f3437] mb-4">Client Hub Settings</h2>
+          <h2 className="text-sm font-semibold text-[var(--abv-text)] mb-4">Client Hub Settings</h2>
           <AdminClientHubTab memberId={member.id} serviceTier={member.serviceTier} />
         </div>
       )}
@@ -2184,12 +2184,12 @@ export default function MemberDetailPage() {
             className="bg-white rounded-xl shadow-xl max-w-md w-full p-6"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-lg font-bold text-[#2f3437] mb-1">Convert Lead to Member</h3>
-            <p className="text-sm text-[#2f3437]/60 mb-5">
+            <h3 className="text-lg font-bold text-[var(--abv-text)] mb-1">Convert Lead to Member</h3>
+            <p className="text-sm text-[var(--abv-text)]/60 mb-5">
               {member.fullName ?? member.email} will become a paying member. A fresh full Baseline audit will be queued automatically.
             </p>
 
-            <label className="block text-xs font-semibold text-[#2f3437]/70 uppercase tracking-wider mb-1">
+            <label className="block text-xs font-semibold text-[var(--abv-text)]/70 uppercase tracking-wider mb-1">
               Membership tier
             </label>
             <select
@@ -2204,8 +2204,8 @@ export default function MemberDetailPage() {
               <option value="done_with_you">Done-With-You</option>
             </select>
 
-            <label className="block text-xs font-semibold text-[#2f3437]/70 uppercase tracking-wider mb-1">
-              Stripe customer ID <span className="text-[#2f3437]/40 font-normal normal-case">(optional — leave blank to send a payment link via GHL)</span>
+            <label className="block text-xs font-semibold text-[var(--abv-text)]/70 uppercase tracking-wider mb-1">
+              Stripe customer ID <span className="text-[var(--abv-text)]/40 font-normal normal-case">(optional — leave blank to send a payment link via GHL)</span>
             </label>
             <input
               type="text"
@@ -2220,7 +2220,7 @@ export default function MemberDetailPage() {
               <button
                 onClick={() => setConvertOpen(false)}
                 disabled={converting}
-                className="px-4 py-2 text-sm font-medium text-[#2f3437]/70 hover:bg-gray-100 rounded-lg disabled:opacity-50"
+                className="px-4 py-2 text-sm font-medium text-[var(--abv-text)]/70 hover:bg-gray-100 rounded-lg disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -2252,7 +2252,7 @@ export default function MemberDetailPage() {
                   }
                 }}
                 disabled={converting}
-                className="px-4 py-2 text-sm font-semibold bg-[#2f3437] hover:bg-[#3a4145] text-white rounded-lg disabled:opacity-50"
+                className="px-4 py-2 text-sm font-semibold bg-[var(--abv-text)] hover:bg-[#3a4145] text-white rounded-lg disabled:opacity-50"
               >
                 {converting ? "Converting…" : "Confirm Conversion"}
               </button>

@@ -72,25 +72,25 @@ export default function ContentPlannerUpgrade() {
     <div className="space-y-8 pb-12">
       {/* Hero */}
       <div className="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#2a2a2a] rounded-xl p-8 text-center">
-        <div className="inline-flex items-center justify-center w-14 h-14 bg-[#6ba3c7]/10 rounded-full mb-4">
-          <CalendarDaysIcon className="w-7 h-7 text-[#6ba3c7]" />
+        <div className="inline-flex items-center justify-center w-14 h-14 bg-[var(--abv-dark)]/10 rounded-full mb-4">
+          <CalendarDaysIcon className="w-7 h-7 text-[var(--abv-azure)]" />
         </div>
-        <h1 className="text-xl font-bold text-[#2f3437] dark:text-[#e2e8f0] mb-2">
+        <h1 className="text-xl font-bold text-[var(--abv-text)] dark:text-[#e2e8f0] mb-2">
           Content Planner
         </h1>
-        <p className="text-sm text-[#2f3437]/60 dark:text-[#94a3b8] max-w-lg mx-auto leading-relaxed mb-3">
+        <p className="text-sm text-[var(--abv-text)]/60 dark:text-[#94a3b8] max-w-lg mx-auto leading-relaxed mb-3">
           Plan, schedule, and track every video from idea to published. See your shoot calendar,
           publish dates, and status at a glance — so nothing falls through the cracks and your
           channel never misses a week.
         </p>
-        <p className="text-xs text-[#2f3437]/40 dark:text-white/30">
+        <p className="text-xs text-[var(--abv-text)]/40 dark:text-white/30">
           Available on Production, Growth, and Done-With-You plans.
         </p>
       </div>
 
       {/* Feature Cards */}
       <div>
-        <h2 className="text-sm font-semibold text-[#2f3437] dark:text-[#e2e8f0] mb-4">
+        <h2 className="text-sm font-semibold text-[var(--abv-text)] dark:text-[#e2e8f0] mb-4">
           What&apos;s included with the Content Planner
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -106,8 +106,8 @@ export default function ContentPlannerUpgrade() {
             >
               <span className="text-xl shrink-0">{item.icon}</span>
               <div>
-                <p className="text-sm font-semibold text-[#2f3437] dark:text-[#e2e8f0]">{item.title}</p>
-                <p className="text-xs text-[#2f3437]/50 dark:text-[#94a3b8] mt-0.5 leading-relaxed">{item.desc}</p>
+                <p className="text-sm font-semibold text-[var(--abv-text)] dark:text-[#e2e8f0]">{item.title}</p>
+                <p className="text-xs text-[var(--abv-text)]/50 dark:text-[#94a3b8] mt-0.5 leading-relaxed">{item.desc}</p>
               </div>
             </div>
           ))}
@@ -116,10 +116,10 @@ export default function ContentPlannerUpgrade() {
 
       {/* Tier Cards */}
       <div>
-        <h2 className="text-sm font-semibold text-[#2f3437] dark:text-[#e2e8f0] mb-1">
+        <h2 className="text-sm font-semibold text-[var(--abv-text)] dark:text-[#e2e8f0] mb-1">
           Choose a plan to unlock the Content Planner
         </h2>
-        <p className="text-xs text-[#2f3437]/40 dark:text-white/30 mb-4">
+        <p className="text-xs text-[var(--abv-text)]/40 dark:text-white/30 mb-4">
           Each plan adds to your Foundations membership. The Content Planner comes included with all of them.
         </p>
 
@@ -129,12 +129,12 @@ export default function ContentPlannerUpgrade() {
               key={tier.name}
               className={`bg-white dark:bg-[#1a1a1a] rounded-xl border-2 overflow-hidden flex flex-col ${
                 tier.highlight
-                  ? "border-[#8B5CF6] shadow-lg shadow-[#8B5CF6]/10"
+                  ? "border-[var(--abv-hire)] shadow-lg shadow-[var(--abv-hire)]/10"
                   : "border-gray-200 dark:border-[#2a2a2a]"
               }`}
             >
               {tier.highlight && tier.badge && (
-                <div className="bg-[#8B5CF6] text-white text-[10px] font-bold uppercase tracking-wider text-center py-1.5">
+                <div className="bg-[var(--abv-hire)] text-white text-[10px] font-bold uppercase tracking-wider text-center py-1.5">
                   {tier.badge}
                 </div>
               )}
@@ -143,19 +143,19 @@ export default function ContentPlannerUpgrade() {
                 <div className="mb-4">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-xl">{tier.emoji}</span>
-                    <h3 className="text-base font-bold text-[#2f3437] dark:text-[#e2e8f0]">{tier.name}</h3>
+                    <h3 className="text-base font-bold text-[var(--abv-text)] dark:text-[#e2e8f0]">{tier.name}</h3>
                   </div>
-                  <p className="text-xs text-[#2f3437]/50 dark:text-[#94a3b8]">{tier.tagline}</p>
-                  <p className="text-lg font-black text-[#2f3437] dark:text-white mt-2">{tier.price}</p>
+                  <p className="text-xs text-[var(--abv-text)]/50 dark:text-[#94a3b8]">{tier.tagline}</p>
+                  <p className="text-lg font-black text-[var(--abv-text)] dark:text-white mt-2">{tier.price}</p>
                 </div>
 
                 <div className="mb-4">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[#2f3437]/30 dark:text-white/20 mb-2">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--abv-text)]/30 dark:text-white/20 mb-2">
                     What you get
                   </p>
                   <ul className="space-y-1.5">
                     {tier.features.map((f, i) => (
-                      <li key={i} className="flex items-start gap-2 text-xs text-[#2f3437]/70 dark:text-[#94a3b8]">
+                      <li key={i} className="flex items-start gap-2 text-xs text-[var(--abv-text)]/70 dark:text-[#94a3b8]">
                         <CheckIcon className="w-3.5 h-3.5 text-green-500 shrink-0 mt-0.5" />
                         <span>{f}</span>
                       </li>
@@ -163,14 +163,14 @@ export default function ContentPlannerUpgrade() {
                   </ul>
                 </div>
 
-                <div className="mb-5 bg-[#6ba3c7]/5 dark:bg-[#6ba3c7]/10 rounded-lg p-3">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[#6ba3c7] mb-2">
+                <div className="mb-5 bg-[var(--abv-dark)]/5 dark:bg-[var(--abv-dark)]/10 rounded-lg p-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--abv-azure)] mb-2">
                     📅 Content Planner includes
                   </p>
                   <ul className="space-y-1">
                     {tier.plannerFeatures.map((f, i) => (
-                      <li key={i} className="flex items-start gap-2 text-xs text-[#2f3437]/60 dark:text-[#94a3b8]">
-                        <CalendarDaysIcon className="w-3 h-3 text-[#6ba3c7] shrink-0 mt-0.5" />
+                      <li key={i} className="flex items-start gap-2 text-xs text-[var(--abv-text)]/60 dark:text-[#94a3b8]">
+                        <CalendarDaysIcon className="w-3 h-3 text-[var(--abv-azure)] shrink-0 mt-0.5" />
                         <span>{f}</span>
                       </li>
                     ))}
@@ -182,8 +182,8 @@ export default function ContentPlannerUpgrade() {
                     href="/member/hire"
                     className={`flex items-center justify-center gap-2 w-full text-sm font-semibold rounded-lg px-4 py-2.5 transition-colors ${
                       tier.highlight
-                        ? "bg-[#8B5CF6] text-white hover:bg-[#7C3AED]"
-                        : "bg-[#2f3437] dark:bg-white text-white dark:text-[#2f3437] hover:bg-[#2f3437]/90 dark:hover:bg-white/90"
+                        ? "bg-[var(--abv-hire)] text-white hover:bg-[#7C3AED]"
+                        : "bg-[var(--abv-text)] dark:bg-white text-white dark:text-[var(--abv-text)] hover:bg-[var(--abv-text)]/90 dark:hover:bg-white/90"
                     }`}
                   >
                     View {tier.name} Plan
@@ -198,12 +198,12 @@ export default function ContentPlannerUpgrade() {
 
       {/* Bottom CTA */}
       <div className="text-center">
-        <p className="text-xs text-[#2f3437]/40 dark:text-white/30 mb-3">
+        <p className="text-xs text-[var(--abv-text)]/40 dark:text-white/30 mb-3">
           Not sure which plan is right for you? All plans add to your current Foundations membership.
         </p>
         <Link
           href="/member/hire"
-          className="inline-flex items-center gap-2 text-sm font-semibold text-[#6ba3c7] hover:text-[#5490b5] transition-colors"
+          className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--abv-azure)] hover:text-[var(--abv-azure)] transition-colors"
         >
           Compare all plans on Hire a Human →
         </Link>

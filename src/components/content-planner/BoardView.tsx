@@ -78,7 +78,7 @@ function DraggableCard({
       style={style}
       {...attributes}
       onClick={onEdit}
-      className={`bg-white border border-gray-200 rounded-lg p-3 cursor-pointer transition-shadow ${isDragging ? "outline-dashed outline-2 outline-purple-300 opacity-40" : "hover:border-[#6ba3c7] hover:shadow-sm"}`}
+      className={`bg-white border border-gray-200 rounded-lg p-3 cursor-pointer transition-shadow ${isDragging ? "outline-dashed outline-2 outline-purple-300 opacity-40" : "hover:border-[var(--abv-azure)] hover:shadow-sm"}`}
     >
       {plan.thumbnailFileId && (
         <div {...listeners} className="-mx-3 -mt-3 mb-2 cursor-grab active:cursor-grabbing">
@@ -93,7 +93,7 @@ function DraggableCard({
       )}
       <div className="flex items-start justify-between gap-2 mb-2">
         <div {...listeners} className="flex-1 min-w-0 cursor-grab active:cursor-grabbing">
-          <p className="text-xs font-medium text-[#2f3437] leading-snug">{plan.title}</p>
+          <p className="text-xs font-medium text-[var(--abv-text)] leading-snug">{plan.title}</p>
         </div>
         {plan.driveFolderLink && (
           <a
@@ -101,7 +101,7 @@ function DraggableCard({
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
-            className="text-[#6ba3c7] hover:text-[#5a8fb0] transition-colors shrink-0 mt-0.5"
+            className="text-[var(--abv-azure)] hover:text-[#5a8fb0] transition-colors shrink-0 mt-0.5"
             title="Open Google Drive folder"
           >
             <FolderIcon className="w-3.5 h-3.5" />
@@ -127,13 +127,13 @@ function DraggableCard({
           {plan.status}
         </span>
         {shootDate && (
-          <span className="inline-flex items-center gap-0.5 text-xs text-[#2f3437]/50" title={`Shoot date: ${shootDate}`}>
+          <span className="inline-flex items-center gap-0.5 text-xs text-[var(--abv-text)]/50" title={`Shoot date: ${shootDate}`}>
             <VideoCameraIcon className="w-3 h-3" />
             {shootDate}
           </span>
         )}
         {publishDate && (
-          <span className="inline-flex items-center gap-0.5 text-xs text-[#2f3437]/50" title={`Publish date: ${publishDate}`}>
+          <span className="inline-flex items-center gap-0.5 text-xs text-[var(--abv-text)]/50" title={`Publish date: ${publishDate}`}>
             <CalendarDaysIcon className="w-3 h-3" />
             {publishDate}
           </span>
@@ -301,7 +301,7 @@ export default function BoardView({ apiBase, serviceTier, isAdmin, searchQuery =
 
   if (hasNoThemes && plans.length === 0) {
     return (
-      <div className="bg-white rounded-xl border border-gray-200 p-12 text-center text-sm text-[#2f3437]/40">
+      <div className="bg-white rounded-xl border border-gray-200 p-12 text-center text-sm text-[var(--abv-text)]/40">
         Set up your avatar in the Avatar Architect to see your content themes here. For now, you can assign themes manually in the Table view.
       </div>
     );
@@ -313,7 +313,7 @@ export default function BoardView({ apiBase, serviceTier, isAdmin, searchQuery =
         {errorMsg ? <p className="text-xs text-red-500">{errorMsg}</p> : <div />}
         <button
           onClick={() => { setAddForm({ status: allStatusOptions[0] }); setAddError(null); setShowAddModal(true); }}
-          className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 bg-[#6ba3c7] hover:bg-[#5a92b6] text-white rounded-lg transition-colors"
+          className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 bg-[var(--abv-dark)] hover:bg-[#5a92b6] text-white rounded-lg transition-colors"
         >
           <PlusIcon className="w-4 h-4" />
           Add Video
@@ -337,7 +337,7 @@ export default function BoardView({ apiBase, serviceTier, isAdmin, searchQuery =
               <div key={col.id} className="w-64 shrink-0 bg-white border border-gray-200 rounded-xl overflow-hidden">
                 <div className="h-1" style={{ backgroundColor: col.colour }} />
                 <div className="flex items-center justify-between px-3 py-2.5 border-b border-gray-100">
-                  <span className="text-xs font-semibold text-[#2f3437] truncate">{col.label}</span>
+                  <span className="text-xs font-semibold text-[var(--abv-text)] truncate">{col.label}</span>
                   <span className="text-xs font-medium bg-[#E3E2E0] text-[#3F3D38] px-1.5 py-0.5 rounded shrink-0 ml-1">
                     {colPlans.length}
                   </span>
@@ -369,14 +369,14 @@ export default function BoardView({ apiBase, serviceTier, isAdmin, searchQuery =
               <div key={col.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden">
                 <div className="h-1" style={{ backgroundColor: col.colour }} />
                 <div className="flex items-center justify-between px-3 py-2.5 border-b border-gray-100">
-                  <span className="text-xs font-semibold text-[#2f3437]">{col.label}</span>
+                  <span className="text-xs font-semibold text-[var(--abv-text)]">{col.label}</span>
                   <span className="text-xs font-medium bg-[#E3E2E0] text-[#3F3D38] px-1.5 py-0.5 rounded">
                     {colPlans.length}
                   </span>
                 </div>
                 <div className="p-2 space-y-2">
                   {colPlans.length === 0 ? (
-                    <p className="text-xs text-[#2f3437]/30 text-center py-4">No videos</p>
+                    <p className="text-xs text-[var(--abv-text)]/30 text-center py-4">No videos</p>
                   ) : colPlans.map((plan) => {
                     const s = STATUS_STYLES[plan.status] ?? { bg: "#f3f4f6", text: "#6b7280" };
                     const publishDate = formatShortDate(plan.publishDate);
@@ -385,7 +385,7 @@ export default function BoardView({ apiBase, serviceTier, isAdmin, searchQuery =
                       <div
                         key={plan.id}
                         onClick={() => setEditingPlan(plan)}
-                        className="bg-white border border-gray-200 rounded-lg p-3 cursor-pointer hover:border-[#6ba3c7] hover:shadow-sm transition-colors"
+                        className="bg-white border border-gray-200 rounded-lg p-3 cursor-pointer hover:border-[var(--abv-azure)] hover:shadow-sm transition-colors"
                       >
                         {plan.thumbnailFileId && (
                           <div className="-mx-3 -mt-3 mb-2">
@@ -399,14 +399,14 @@ export default function BoardView({ apiBase, serviceTier, isAdmin, searchQuery =
                           </div>
                         )}
                         <div className="flex items-start justify-between gap-2 mb-2">
-                          <p className="text-xs font-medium text-[#2f3437] leading-snug flex-1 min-w-0">{plan.title}</p>
+                          <p className="text-xs font-medium text-[var(--abv-text)] leading-snug flex-1 min-w-0">{plan.title}</p>
                           {plan.driveFolderLink && (
                             <a
                               href={plan.driveFolderLink}
                               target="_blank"
                               rel="noopener noreferrer"
                               onClick={(e) => e.stopPropagation()}
-                              className="text-[#6ba3c7] hover:text-[#5a8fb0] shrink-0 mt-0.5"
+                              className="text-[var(--abv-azure)] hover:text-[#5a8fb0] shrink-0 mt-0.5"
                               title="Open Google Drive folder"
                             >
                               <FolderIcon className="w-3.5 h-3.5" />
@@ -418,13 +418,13 @@ export default function BoardView({ apiBase, serviceTier, isAdmin, searchQuery =
                             {plan.status}
                           </span>
                           {shootDate && (
-                            <span className="inline-flex items-center gap-0.5 text-xs text-[#2f3437]/50" title={`Shoot date: ${shootDate}`}>
+                            <span className="inline-flex items-center gap-0.5 text-xs text-[var(--abv-text)]/50" title={`Shoot date: ${shootDate}`}>
                               <VideoCameraIcon className="w-3 h-3" />
                               {shootDate}
                             </span>
                           )}
                           {publishDate && (
-                            <span className="inline-flex items-center gap-0.5 text-xs text-[#2f3437]/50" title={`Publish date: ${publishDate}`}>
+                            <span className="inline-flex items-center gap-0.5 text-xs text-[var(--abv-text)]/50" title={`Publish date: ${publishDate}`}>
                               <CalendarDaysIcon className="w-3 h-3" />
                               {publishDate}
                             </span>
@@ -444,7 +444,7 @@ export default function BoardView({ apiBase, serviceTier, isAdmin, searchQuery =
             <div
               className="w-60 bg-white border border-purple-300 rounded-lg p-3 shadow-lg opacity-90 cursor-grabbing"
             >
-              <p className="text-xs font-medium text-[#2f3437] leading-snug">{activePlan.title}</p>
+              <p className="text-xs font-medium text-[var(--abv-text)] leading-snug">{activePlan.title}</p>
             </div>
           )}
         </DragOverlay>
@@ -468,39 +468,39 @@ export default function BoardView({ apiBase, serviceTier, isAdmin, searchQuery =
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl border border-gray-200 shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-5 border-b border-gray-100">
-              <h2 className="text-base font-semibold text-[#2f3437]">Add Video</h2>
-              <button onClick={() => setShowAddModal(false)} className="text-[#2f3437]/40 hover:text-[#2f3437]">
+              <h2 className="text-base font-semibold text-[var(--abv-text)]">Add Video</h2>
+              <button onClick={() => setShowAddModal(false)} className="text-[var(--abv-text)]/40 hover:text-[var(--abv-text)]">
                 <XMarkIcon className="w-5 h-5" />
               </button>
             </div>
             <div className="p-5 space-y-4">
               <div>
-                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Title <span className="text-red-500">*</span></label>
+                <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Title <span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   value={addForm.title ?? ""}
                   onChange={(e) => setAddForm((f) => ({ ...f, title: e.target.value }))}
                   placeholder="Video title..."
-                  className="w-full border border-gray-200 text-[#2f3437] text-sm rounded-lg px-3 py-2 focus:border-[#6ba3c7] focus:outline-none"
+                  className="w-full border border-gray-200 text-[var(--abv-text)] text-sm rounded-lg px-3 py-2 focus:border-[var(--abv-azure)] focus:outline-none"
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Status</label>
+                  <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Status</label>
                   <select
                     value={addForm.status ?? allStatusOptions[0]}
                     onChange={(e) => setAddForm((f) => ({ ...f, status: e.target.value }))}
-                    className="w-full border border-gray-200 text-[#2f3437] text-sm rounded-lg px-3 py-2 focus:border-[#6ba3c7] focus:outline-none"
+                    className="w-full border border-gray-200 text-[var(--abv-text)] text-sm rounded-lg px-3 py-2 focus:border-[var(--abv-azure)] focus:outline-none"
                   >
                     {allStatusOptions.map((s) => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Priority</label>
+                  <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Priority</label>
                   <select
                     value={addForm.priority ?? ""}
                     onChange={(e) => setAddForm((f) => ({ ...f, priority: e.target.value }))}
-                    className="w-full border border-gray-200 text-[#2f3437] text-sm rounded-lg px-3 py-2 focus:border-[#6ba3c7] focus:outline-none"
+                    className="w-full border border-gray-200 text-[var(--abv-text)] text-sm rounded-lg px-3 py-2 focus:border-[var(--abv-azure)] focus:outline-none"
                   >
                     <option value="">None</option>
                     {PRIORITY_OPTIONS.map((p) => <option key={p} value={p}>{p}</option>)}
@@ -508,11 +508,11 @@ export default function BoardView({ apiBase, serviceTier, isAdmin, searchQuery =
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Theme</label>
+                <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Theme</label>
                 <select
                   value={addForm.theme ?? ""}
                   onChange={(e) => setAddForm((f) => ({ ...f, theme: e.target.value }))}
-                  className="w-full border border-gray-200 text-[#2f3437] text-sm rounded-lg px-3 py-2 focus:border-[#6ba3c7] focus:outline-none"
+                  className="w-full border border-gray-200 text-[var(--abv-text)] text-sm rounded-lg px-3 py-2 focus:border-[var(--abv-azure)] focus:outline-none"
                 >
                   <option value="">Select theme...</option>
                   {themes.map((t) => <option key={t.name} value={t.name}>{t.emoji ? `${t.emoji} ${t.name}` : t.name}</option>)}
@@ -520,31 +520,31 @@ export default function BoardView({ apiBase, serviceTier, isAdmin, searchQuery =
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Shoot Date</label>
-                  <input type="date" value={addForm.shootDate ?? ""} onChange={(e) => setAddForm((f) => ({ ...f, shootDate: e.target.value }))} className="w-full border border-gray-200 text-[#2f3437] text-sm rounded-lg px-3 py-2 focus:border-[#6ba3c7] focus:outline-none" />
+                  <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Shoot Date</label>
+                  <input type="date" value={addForm.shootDate ?? ""} onChange={(e) => setAddForm((f) => ({ ...f, shootDate: e.target.value }))} className="w-full border border-gray-200 text-[var(--abv-text)] text-sm rounded-lg px-3 py-2 focus:border-[var(--abv-azure)] focus:outline-none" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Publish Date</label>
-                  <input type="date" value={addForm.publishDate ?? ""} onChange={(e) => setAddForm((f) => ({ ...f, publishDate: e.target.value }))} className="w-full border border-gray-200 text-[#2f3437] text-sm rounded-lg px-3 py-2 focus:border-[#6ba3c7] focus:outline-none" />
+                  <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Publish Date</label>
+                  <input type="date" value={addForm.publishDate ?? ""} onChange={(e) => setAddForm((f) => ({ ...f, publishDate: e.target.value }))} className="w-full border border-gray-200 text-[var(--abv-text)] text-sm rounded-lg px-3 py-2 focus:border-[var(--abv-azure)] focus:outline-none" />
                 </div>
               </div>
               {showEditDue && (
                 <div>
-                  <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Edit Due Date</label>
-                  <input type="date" value={addForm.editDueDate ?? ""} onChange={(e) => setAddForm((f) => ({ ...f, editDueDate: e.target.value }))} className="w-full border border-gray-200 text-[#2f3437] text-sm rounded-lg px-3 py-2 focus:border-[#6ba3c7] focus:outline-none" />
+                  <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Edit Due Date</label>
+                  <input type="date" value={addForm.editDueDate ?? ""} onChange={(e) => setAddForm((f) => ({ ...f, editDueDate: e.target.value }))} className="w-full border border-gray-200 text-[var(--abv-text)] text-sm rounded-lg px-3 py-2 focus:border-[var(--abv-azure)] focus:outline-none" />
                 </div>
               )}
               <div>
-                <label className="block text-xs font-medium text-[#2f3437]/60 mb-1">Talking Points / Notes</label>
-                <textarea value={addForm.notes ?? ""} onChange={(e) => setAddForm((f) => ({ ...f, notes: e.target.value }))} placeholder="One talking point per line…" rows={3} className="w-full border border-gray-200 text-[#2f3437] text-sm rounded-lg px-3 py-2 focus:border-[#6ba3c7] focus:outline-none resize-none" />
+                <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Talking Points / Notes</label>
+                <textarea value={addForm.notes ?? ""} onChange={(e) => setAddForm((f) => ({ ...f, notes: e.target.value }))} placeholder="One talking point per line…" rows={3} className="w-full border border-gray-200 text-[var(--abv-text)] text-sm rounded-lg px-3 py-2 focus:border-[var(--abv-azure)] focus:outline-none resize-none" />
               </div>
               {addError && <p className="text-red-500 text-xs">{addError}</p>}
             </div>
             <div className="flex gap-3 p-5 pt-0">
-              <button onClick={() => setShowAddModal(false)} className="flex-1 text-sm text-[#2f3437]/60 border border-gray-200 hover:bg-gray-50 px-4 py-2.5 rounded-lg transition-colors">
+              <button onClick={() => setShowAddModal(false)} className="flex-1 text-sm text-[var(--abv-text)]/60 border border-gray-200 hover:bg-gray-50 px-4 py-2.5 rounded-lg transition-colors">
                 Cancel
               </button>
-              <button onClick={handleAddSubmit} disabled={addLoading} className="flex-1 text-sm font-medium bg-[#6ba3c7] hover:bg-[#5a92b6] text-white px-4 py-2.5 rounded-lg transition-colors disabled:opacity-50">
+              <button onClick={handleAddSubmit} disabled={addLoading} className="flex-1 text-sm font-medium bg-[var(--abv-dark)] hover:bg-[#5a92b6] text-white px-4 py-2.5 rounded-lg transition-colors disabled:opacity-50">
                 {addLoading ? "Adding…" : "Add Video"}
               </button>
             </div>

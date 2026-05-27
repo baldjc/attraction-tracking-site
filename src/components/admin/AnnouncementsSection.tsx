@@ -132,30 +132,30 @@ export default function AnnouncementsSection() {
             <MegaphoneIcon className="w-5 h-5 text-amber-600 dark:text-amber-400" />
           </div>
           <div>
-            <p className="text-xs font-semibold text-[#6ba3c7] uppercase tracking-widest">Messaging</p>
-            <h2 className="text-lg font-bold text-[#2f3437] dark:text-white">Announcements & What's New</h2>
+            <p className="text-xs font-semibold text-[var(--abv-azure)] uppercase tracking-widest">Messaging</p>
+            <h2 className="text-lg font-bold text-[var(--abv-text)] dark:text-white">Announcements & What's New</h2>
           </div>
         </div>
         <button
           onClick={() => { setShowForm((v) => !v); setSaveErr(""); }}
-          className="flex items-center gap-2 bg-[#6ba3c7] hover:bg-[#5490b5] text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+          className="flex items-center gap-2 $1var(--abv-dark)$2 hover:bg-black/85 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
         >
           <PlusIcon className="w-4 h-4" />
           New Message
         </button>
       </div>
 
-      <p className="text-sm text-[#2f3437]/60 dark:text-white/40">
-        <strong className="font-medium text-[#2f3437] dark:text-white">Announcements</strong> pop up as a modal the next time a member loads the platform — great for important news or action items.{" "}
-        <strong className="font-medium text-[#2f3437] dark:text-white">What's New</strong> entries appear as a quiet card on the member dashboard.
+      <p className="text-sm text-[var(--abv-text)]/60 dark:text-white/40">
+        <strong className="font-medium text-[var(--abv-text)] dark:text-white">Announcements</strong> pop up as a modal the next time a member loads the platform — great for important news or action items.{" "}
+        <strong className="font-medium text-[var(--abv-text)] dark:text-white">What's New</strong> entries appear as a quiet card on the member dashboard.
       </p>
 
       {/* Compose form */}
       {showForm && (
         <div className={`${card} p-5 space-y-4`}>
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-[#2f3437] dark:text-white">New Message</h3>
-            <button onClick={() => setShowForm(false)} className="text-[#2f3437]/30 dark:text-white/30 hover:text-[#2f3437] dark:hover:text-white">
+            <h3 className="text-sm font-semibold text-[var(--abv-text)] dark:text-white">New Message</h3>
+            <button onClick={() => setShowForm(false)} className="text-[var(--abv-text)]/30 dark:text-white/30 hover:text-[var(--abv-text)] dark:hover:text-white">
               <XMarkIcon className="w-4 h-4" />
             </button>
           </div>
@@ -169,12 +169,12 @@ export default function AnnouncementsSection() {
                 onClick={() => setForm((f) => ({ ...f, type: opt.id, emoji: opt.id === "announcement" ? "📣" : "✨" }))}
                 className={`text-left p-3 rounded-lg border-2 transition-all ${
                   form.type === opt.id
-                    ? "border-[#6ba3c7] bg-[#6ba3c7]/5 dark:bg-[#6ba3c7]/10"
-                    : "border-gray-200 dark:border-white/10 hover:border-[#6ba3c7]/40"
+                    ? "border-[var(--abv-azure)] bg-[var(--abv-dark)]/5 dark:bg-[var(--abv-dark)]/10"
+                    : "border-gray-200 dark:border-white/10 hover:border-[var(--abv-azure)]/40"
                 }`}
               >
-                <p className="text-sm font-semibold text-[#2f3437] dark:text-white">{opt.label}</p>
-                <p className="text-xs text-[#2f3437]/50 dark:text-white/40 mt-0.5 leading-snug">{opt.desc}</p>
+                <p className="text-sm font-semibold text-[var(--abv-text)] dark:text-white">{opt.label}</p>
+                <p className="text-xs text-[var(--abv-text)]/50 dark:text-white/40 mt-0.5 leading-snug">{opt.desc}</p>
               </button>
             ))}
           </div>
@@ -182,29 +182,29 @@ export default function AnnouncementsSection() {
           <form onSubmit={submit} className="space-y-3">
             <div className="flex gap-2">
               <div className="w-16">
-                <label className="block text-xs font-medium text-[#2f3437]/60 dark:text-white/40 mb-1">Emoji</label>
+                <label className="block text-xs font-medium text-[var(--abv-text)]/60 dark:text-white/40 mb-1">Emoji</label>
                 <input
                   type="text"
                   value={form.emoji}
                   onChange={(e) => setForm((f) => ({ ...f, emoji: e.target.value }))}
                   maxLength={4}
-                  className="w-full text-center bg-white dark:bg-[#0f1419] border border-gray-200 dark:border-white/10 rounded-lg px-2 py-2 text-lg focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40"
+                  className="w-full text-center bg-white dark:bg-[#0f1419] border border-gray-200 dark:border-white/10 rounded-lg px-2 py-2 text-lg focus:outline-none focus:ring-2 focus:ring-[var(--abv-azure)]/40"
                 />
               </div>
               <div className="flex-1">
-                <label className="block text-xs font-medium text-[#2f3437]/60 dark:text-white/40 mb-1">Title</label>
+                <label className="block text-xs font-medium text-[var(--abv-text)]/60 dark:text-white/40 mb-1">Title</label>
                 <input
                   type="text"
                   value={form.title}
                   onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
                   placeholder="e.g. New feature: My Work Hub"
-                  className="w-full bg-white dark:bg-[#0f1419] border border-gray-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-[#2f3437] dark:text-[#e2e8f0] placeholder:text-[#2f3437]/30 dark:placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40"
+                  className="w-full bg-white dark:bg-[#0f1419] border border-gray-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-[var(--abv-text)] dark:text-[#e2e8f0] placeholder:text-[var(--abv-text)]/30 dark:placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-[var(--abv-azure)]/40"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-[#2f3437]/60 dark:text-white/40 mb-1">Message</label>
+              <label className="block text-xs font-medium text-[var(--abv-text)]/60 dark:text-white/40 mb-1">Message</label>
               <MarkdownTextarea
                 value={form.body}
                 onChange={(next) => setForm((f) => ({ ...f, body: next }))}
@@ -217,13 +217,13 @@ export default function AnnouncementsSection() {
             {saveErr && <p className="text-sm text-red-600 dark:text-red-400">{saveErr}</p>}
 
             <div className="flex gap-2 justify-end">
-              <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 text-sm text-[#2f3437]/60 dark:text-white/40 hover:text-[#2f3437] dark:hover:text-white transition-colors">
+              <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 text-sm text-[var(--abv-text)]/60 dark:text-white/40 hover:text-[var(--abv-text)] dark:hover:text-white transition-colors">
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={saving}
-                className="flex items-center gap-2 bg-[#6ba3c7] hover:bg-[#5490b5] disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+                className="flex items-center gap-2 $1var(--abv-dark)$2 hover:bg-black/85 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
               >
                 {saving ? "Publishing…" : "Publish Now"}
               </button>
@@ -239,8 +239,8 @@ export default function AnnouncementsSection() {
         </div>
       ) : entries.length === 0 ? (
         <div className={`${card} p-10 text-center`}>
-          <MegaphoneIcon className="w-8 h-8 text-[#2f3437]/20 dark:text-white/20 mx-auto mb-2" />
-          <p className="text-sm text-[#2f3437]/50 dark:text-white/40">No messages yet. Create your first one above.</p>
+          <MegaphoneIcon className="w-8 h-8 text-[var(--abv-text)]/20 dark:text-white/20 mx-auto mb-2" />
+          <p className="text-sm text-[var(--abv-text)]/50 dark:text-white/40">No messages yet. Create your first one above.</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -254,16 +254,16 @@ export default function AnnouncementsSection() {
                       {entry.type === "announcement" ? "Announcement" : "What's New"}
                     </span>
                     {!entry.published && (
-                      <span className="text-[10px] font-medium text-[#2f3437]/40 dark:text-white/30 bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded-full">
+                      <span className="text-[10px] font-medium text-[var(--abv-text)]/40 dark:text-white/30 bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded-full">
                         Unpublished
                       </span>
                     )}
-                    <span className="text-[10px] text-[#2f3437]/30 dark:text-white/20">
+                    <span className="text-[10px] text-[var(--abv-text)]/30 dark:text-white/20">
                       {new Date(entry.createdAt).toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" })}
                     </span>
                   </div>
-                  <p className="text-sm font-semibold text-[#2f3437] dark:text-[#e2e8f0]">{entry.title}</p>
-                  <p className="text-xs text-[#2f3437]/50 dark:text-white/40 mt-0.5 line-clamp-2">{entry.body}</p>
+                  <p className="text-sm font-semibold text-[var(--abv-text)] dark:text-[#e2e8f0]">{entry.title}</p>
+                  <p className="text-xs text-[var(--abv-text)]/50 dark:text-white/40 mt-0.5 line-clamp-2">{entry.body}</p>
                 </div>
 
                 {/* Actions */}
@@ -272,7 +272,7 @@ export default function AnnouncementsSection() {
                   <button
                     onClick={() => openViewers(entry.id)}
                     title="See who viewed this"
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-[#2f3437]/50 dark:text-white/40 hover:text-[#6ba3c7] hover:bg-[#6ba3c7]/5 transition-all"
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-[var(--abv-text)]/50 dark:text-white/40 hover:text-[var(--abv-azure)] hover:bg-[var(--abv-dark)]/5 transition-all"
                   >
                     <EyeIcon className="w-4 h-4" />
                     {entry._count.views}
@@ -285,7 +285,7 @@ export default function AnnouncementsSection() {
                     className={`p-1.5 rounded-lg transition-colors ${
                       entry.published
                         ? "text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20"
-                        : "text-[#2f3437]/30 dark:text-white/20 hover:text-[#2f3437] dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5"
+                        : "text-[var(--abv-text)]/30 dark:text-white/20 hover:text-[var(--abv-text)] dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5"
                     }`}
                   >
                     <CheckCircleIcon className="w-4 h-4" />
@@ -295,7 +295,7 @@ export default function AnnouncementsSection() {
                   <button
                     onClick={() => deleteEntry(entry.id)}
                     title="Delete"
-                    className="p-1.5 rounded-lg text-[#2f3437]/20 dark:text-white/20 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                    className="p-1.5 rounded-lg text-[var(--abv-text)]/20 dark:text-white/20 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                   >
                     <TrashIcon className="w-4 h-4" />
                   </button>
@@ -312,16 +312,16 @@ export default function AnnouncementsSection() {
           <div className="bg-white dark:bg-[#1a2433] rounded-2xl shadow-2xl max-w-md w-full p-6 max-h-[80vh] flex flex-col">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-base font-bold text-[#2f3437] dark:text-white">Who saw this</h3>
+                <h3 className="text-base font-bold text-[var(--abv-text)] dark:text-white">Who saw this</h3>
                 {!viewersLoading && (
-                  <p className="text-xs text-[#2f3437]/50 dark:text-white/40 mt-0.5">
+                  <p className="text-xs text-[var(--abv-text)]/50 dark:text-white/40 mt-0.5">
                     {viewers.length} member{viewers.length !== 1 ? "s" : ""} saw this message
                   </p>
                 )}
               </div>
               <button
                 onClick={() => setViewersEntryId(null)}
-                className="text-[#2f3437]/30 dark:text-white/30 hover:text-[#2f3437] dark:hover:text-white transition-colors"
+                className="text-[var(--abv-text)]/30 dark:text-white/30 hover:text-[var(--abv-text)] dark:hover:text-white transition-colors"
               >
                 <XMarkIcon className="w-5 h-5" />
               </button>
@@ -334,22 +334,22 @@ export default function AnnouncementsSection() {
                 </div>
               ) : viewers.length === 0 ? (
                 <div className="text-center py-10">
-                  <EyeIcon className="w-8 h-8 text-[#2f3437]/20 dark:text-white/20 mx-auto mb-2" />
-                  <p className="text-sm text-[#2f3437]/40 dark:text-white/30">No one has seen this yet.</p>
+                  <EyeIcon className="w-8 h-8 text-[var(--abv-text)]/20 dark:text-white/20 mx-auto mb-2" />
+                  <p className="text-sm text-[var(--abv-text)]/40 dark:text-white/30">No one has seen this yet.</p>
                 </div>
               ) : (
                 <div className="space-y-2">
                   {viewers.map((v) => (
                     <div key={v.userId} className="flex items-center justify-between gap-3 py-2 border-b border-gray-100 dark:border-white/5 last:border-0">
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-[#2f3437] dark:text-[#e2e8f0] truncate">
+                        <p className="text-sm font-medium text-[var(--abv-text)] dark:text-[#e2e8f0] truncate">
                           {v.fullName || v.email}
                         </p>
                         {v.fullName && (
-                          <p className="text-xs text-[#2f3437]/40 dark:text-white/30 truncate">{v.email}</p>
+                          <p className="text-xs text-[var(--abv-text)]/40 dark:text-white/30 truncate">{v.email}</p>
                         )}
                       </div>
-                      <span className="text-xs text-[#2f3437]/30 dark:text-white/20 shrink-0">
+                      <span className="text-xs text-[var(--abv-text)]/30 dark:text-white/20 shrink-0">
                         {new Date(v.seenAt).toLocaleDateString("en-CA", { month: "short", day: "numeric" })}
                       </span>
                     </div>

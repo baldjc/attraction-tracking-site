@@ -37,7 +37,7 @@ function AcademyContent() {
 
 export default function AcademyPage() {
   return (
-    <Suspense fallback={<div className="h-48 animate-pulse bg-[#f7f6f3] dark:bg-[#1a2433] rounded-xl" />}>
+    <Suspense fallback={<div className="h-48 animate-pulse bg-[var(--abv-bg)] dark:bg-[#1a2433] rounded-xl" />}>
       <AcademyContent />
     </Suspense>
   );

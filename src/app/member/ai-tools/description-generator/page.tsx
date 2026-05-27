@@ -347,20 +347,20 @@ function DescriptionGeneratorPageInner() {
       {contentPlanId && <LinkedPlanBanner planId={contentPlanId} />}
 
       {/* INPUT SECTION */}
-      <div className="bg-white dark:bg-[#1a1a1a] rounded-xl border border-[#2f3437]/10 dark:border-white/10 shadow-sm p-6 space-y-4 mb-6">
+      <div className="bg-white dark:bg-[#1a1a1a] rounded-xl border border-[var(--abv-text)]/10 dark:border-white/10 shadow-sm p-6 space-y-4 mb-6">
         <div>
-          <label className="block text-xs font-medium text-[#2f3437]/60 dark:text-white/60 mb-1">Video Title</label>
+          <label className="block text-xs font-medium text-[var(--abv-text)]/60 dark:text-white/60 mb-1">Video Title</label>
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="e.g. Calgary Real Estate Market Update — April 2026"
-            className="w-full border border-[#2f3437]/10 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-[#2f3437] dark:text-white bg-white dark:bg-[#111] placeholder:text-[#2f3437]/30 dark:placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/30"
+            className="w-full border border-[var(--abv-text)]/10 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-[var(--abv-text)] dark:text-white bg-white dark:bg-[#111] placeholder:text-[var(--abv-text)]/30 dark:placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-[var(--abv-ai-tools)]/30"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-[#2f3437]/60 dark:text-white/60 mb-1">Transcript or Script</label>
+          <label className="block text-xs font-medium text-[var(--abv-text)]/60 dark:text-white/60 mb-1">Transcript or Script</label>
           <MarkdownTextarea
             value={transcript}
             onChange={setTranscript}
@@ -369,24 +369,24 @@ function DescriptionGeneratorPageInner() {
             ariaLabel="Transcript or Script"
           />
           {transcript.length > 0 && (
-            <p className="text-xs text-[#2f3437]/40 dark:text-white/40 mt-1">{transcript.length.toLocaleString()} characters</p>
+            <p className="text-xs text-[var(--abv-text)]/40 dark:text-white/40 mt-1">{transcript.length.toLocaleString()} characters</p>
           )}
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-[#2f3437]/60 dark:text-white/60 mb-1">Landing Page Tracking Link <span className="font-normal text-[#2f3437]/40 dark:text-white/30">(optional)</span></label>
+          <label className="block text-xs font-medium text-[var(--abv-text)]/60 dark:text-white/60 mb-1">Landing Page Tracking Link <span className="font-normal text-[var(--abv-text)]/40 dark:text-white/30">(optional)</span></label>
           {activeLink ? (
-            <div className="flex items-center gap-2 bg-[#6ba3c7]/8 border border-[#6ba3c7]/20 rounded-lg px-3 py-2">
-              <span className="text-xs font-medium text-[#6ba3c7] shrink-0">Campaign</span>
-              <span className="text-xs text-[#2f3437]/50 dark:text-white/50">{activeLink.campaignName}</span>
-              <span className="text-xs font-medium text-[#2f3437] dark:text-white flex-1 truncate">{activeLink.linkName}</span>
+            <div className="flex items-center gap-2 bg-[var(--abv-ai-tools)]/8 border border-[var(--abv-ai-tools)]/20 rounded-lg px-3 py-2">
+              <span className="text-xs font-medium text-[var(--abv-ai-tools)] shrink-0">Campaign</span>
+              <span className="text-xs text-[var(--abv-text)]/50 dark:text-white/50">{activeLink.campaignName}</span>
+              <span className="text-xs font-medium text-[var(--abv-text)] dark:text-white flex-1 truncate">{activeLink.linkName}</span>
               {activeLink.isNew && <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full">New</span>}
-              <button onClick={() => setActiveLink(null)} className="text-sm text-[#2f3437]/40 hover:text-[#2f3437]/70 shrink-0">✕</button>
+              <button onClick={() => setActiveLink(null)} className="text-sm text-[var(--abv-text)]/40 hover:text-[var(--abv-text)]/70 shrink-0">✕</button>
             </div>
           ) : (
             <button
               onClick={openCampaignPicker}
-              className="w-full border border-dashed border-[#2f3437]/20 dark:border-white/20 rounded-lg px-3 py-2 text-sm text-[#2f3437]/40 dark:text-white/40 hover:border-[#6ba3c7]/40 hover:text-[#6ba3c7] transition-colors text-left"
+              className="w-full border border-dashed border-[var(--abv-text)]/20 dark:border-white/20 rounded-lg px-3 py-2 text-sm text-[var(--abv-text)]/40 dark:text-white/40 hover:border-[var(--abv-ai-tools)]/40 hover:text-[var(--abv-ai-tools)] transition-colors text-left"
             >
               + Select or create a tracking link
             </button>
@@ -396,7 +396,7 @@ function DescriptionGeneratorPageInner() {
         <button
           onClick={generate}
           disabled={generating || !title.trim() || !transcript.trim()}
-          className="w-full bg-[#6ba3c7] text-white font-medium rounded-lg py-2.5 text-sm hover:bg-[#5a8fb3] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="w-full bg-[var(--abv-ai-tools)] text-white font-medium rounded-lg py-2.5 text-sm hover:bg-[#5a8fb3] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {generating ? "Generating…" : "Generate Description"}
         </button>
@@ -410,50 +410,50 @@ function DescriptionGeneratorPageInner() {
 
       {/* OUTPUT SECTION */}
       {description && (
-        <div className="bg-white dark:bg-[#1a1a1a] rounded-xl border border-[#2f3437]/10 dark:border-white/10 shadow-sm p-6 mb-6">
+        <div className="bg-white dark:bg-[#1a1a1a] rounded-xl border border-[var(--abv-text)]/10 dark:border-white/10 shadow-sm p-6 mb-6">
           <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-            <h2 className="text-sm font-semibold text-[#2f3437] dark:text-white">Generated Description</h2>
+            <h2 className="text-sm font-semibold text-[var(--abv-text)] dark:text-white">Generated Description</h2>
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={copyToClipboard}
-                className="text-xs bg-[#2f3437] dark:bg-white text-white dark:text-[#1a1a1a] px-3 py-1.5 rounded-lg hover:opacity-80 transition-opacity"
+                className="text-xs bg-[var(--abv-text)] dark:bg-white text-white dark:text-[#1a1a1a] px-3 py-1.5 rounded-lg hover:opacity-80 transition-opacity"
               >
                 {copied ? "Copied!" : "Copy to Clipboard"}
               </button>
               <button
                 onClick={handleSaveToPlan}
                 disabled={savingToPlan}
-                className="text-xs bg-[#6ba3c7] text-white px-3 py-1.5 rounded-lg hover:bg-[#5a8fb3] disabled:opacity-50 transition-colors"
+                className="text-xs bg-[var(--abv-ai-tools)] text-white px-3 py-1.5 rounded-lg hover:bg-[#5a8fb3] disabled:opacity-50 transition-colors"
               >
                 {savedToPlan ? "Saved!" : savingToPlan ? "Saving…" : "Save to Content Plan"}
               </button>
               <button
                 onClick={generate}
                 disabled={generating}
-                className="text-xs border border-[#2f3437]/10 dark:border-white/10 text-[#2f3437]/60 dark:text-white/60 px-3 py-1.5 rounded-lg hover:bg-[#f8f8f6] dark:hover:bg-white/5 transition-colors"
+                className="text-xs border border-[var(--abv-text)]/10 dark:border-white/10 text-[var(--abv-text)]/60 dark:text-white/60 px-3 py-1.5 rounded-lg hover:bg-[#f8f8f6] dark:hover:bg-white/5 transition-colors"
               >
                 Regenerate
               </button>
             </div>
           </div>
-          <div className="bg-[#f8f8f6] dark:bg-[#111] rounded-lg p-4 whitespace-pre-wrap font-mono text-sm text-[#2f3437] dark:text-white/80 leading-relaxed">
+          <div className="bg-[#f8f8f6] dark:bg-[#111] rounded-lg p-4 whitespace-pre-wrap font-mono text-sm text-[var(--abv-text)] dark:text-white/80 leading-relaxed">
             {description}
           </div>
         </div>
       )}
 
       {/* BOILERPLATE SECTION */}
-      <div className="bg-white dark:bg-[#1a1a1a] rounded-xl border border-[#2f3437]/10 dark:border-white/10 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-[#1a1a1a] rounded-xl border border-[var(--abv-text)]/10 dark:border-white/10 shadow-sm overflow-hidden">
         <button
           onClick={() => setBoilerplateExpanded(!boilerplateExpanded)}
-          className="w-full flex items-center justify-between px-6 py-3 text-sm font-medium text-[#2f3437]/60 dark:text-white/60 hover:bg-[#f8f8f6] dark:hover:bg-white/5 transition-colors"
+          className="w-full flex items-center justify-between px-6 py-3 text-sm font-medium text-[var(--abv-text)]/60 dark:text-white/60 hover:bg-[#f8f8f6] dark:hover:bg-white/5 transition-colors"
         >
           <span>Your Boilerplate (contact info &amp; social links)</span>
           <span className="text-xs">{boilerplateExpanded ? "▲" : "▼"}</span>
         </button>
         {boilerplateExpanded && (
-          <div className="px-6 pb-5 space-y-3 border-t border-[#2f3437]/5 dark:border-white/5 pt-4">
-            <p className="text-xs text-[#2f3437]/40 dark:text-white/40">This text is automatically appended to every generated description. Save it once, use it everywhere.</p>
+          <div className="px-6 pb-5 space-y-3 border-t border-[var(--abv-text)]/5 dark:border-white/5 pt-4">
+            <p className="text-xs text-[var(--abv-text)]/40 dark:text-white/40">This text is automatically appended to every generated description. Save it once, use it everywhere.</p>
             <MarkdownTextarea
               value={boilerplate}
               onChange={(v: string) => { setBoilerplate(v); setBoilerplateSaved(false); }}
@@ -464,7 +464,7 @@ function DescriptionGeneratorPageInner() {
             <button
               onClick={saveBoilerplate}
               disabled={savingBoilerplate}
-              className="text-xs bg-[#2f3437] dark:bg-white text-white dark:text-[#1a1a1a] px-4 py-1.5 rounded-lg hover:opacity-80 disabled:opacity-50 transition-opacity"
+              className="text-xs bg-[var(--abv-text)] dark:bg-white text-white dark:text-[#1a1a1a] px-4 py-1.5 rounded-lg hover:opacity-80 disabled:opacity-50 transition-opacity"
             >
               {boilerplateSaved ? "Saved!" : savingBoilerplate ? "Saving…" : "Save Boilerplate"}
             </button>
@@ -477,16 +477,16 @@ function DescriptionGeneratorPageInner() {
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setShowCampaignPicker(false)}>
           <div className="bg-white dark:bg-[#1a1a1a] rounded-xl shadow-xl w-full max-w-md p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-[#2f3437] dark:text-white">Select Tracking Link</h3>
-              <button onClick={() => setShowCampaignPicker(false)} className="text-[#2f3437]/40 dark:text-white/40 hover:text-[#2f3437] dark:hover:text-white">✕</button>
+              <h3 className="text-sm font-semibold text-[var(--abv-text)] dark:text-white">Select Tracking Link</h3>
+              <button onClick={() => setShowCampaignPicker(false)} className="text-[var(--abv-text)]/40 dark:text-white/40 hover:text-[var(--abv-text)] dark:hover:text-white">✕</button>
             </div>
             {campaignsLoading ? (
-              <p className="text-xs text-[#2f3437]/40 dark:text-white/40">Loading campaigns…</p>
+              <p className="text-xs text-[var(--abv-text)]/40 dark:text-white/40">Loading campaigns…</p>
             ) : (
               <select
                 value={pickerCampaignId}
                 onChange={(e) => handlePickerCampaignChange(e.target.value)}
-                className="w-full border border-[#2f3437]/10 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-[#2f3437] dark:text-white bg-white dark:bg-[#111]"
+                className="w-full border border-[var(--abv-text)]/10 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-[var(--abv-text)] dark:text-white bg-white dark:bg-[#111]"
               >
                 <option value="">Select a campaign…</option>
                 {campaigns.map((c) => (
@@ -497,22 +497,22 @@ function DescriptionGeneratorPageInner() {
             {pickerCampaignId && !newLinkMode && (
               <div className="space-y-2">
                 {campaignPickerLinksLoading ? (
-                  <p className="text-xs text-[#2f3437]/40 dark:text-white/40">Loading links…</p>
+                  <p className="text-xs text-[var(--abv-text)]/40 dark:text-white/40">Loading links…</p>
                 ) : (
                   <>
                     {campaignPickerLinks.map((link) => (
                       <button
                         key={link.id}
                         onClick={() => pickExistingLink(link)}
-                        className="w-full text-left border border-[#2f3437]/10 dark:border-white/10 rounded-lg px-3 py-2 hover:border-[#6ba3c7]/40 transition-colors"
+                        className="w-full text-left border border-[var(--abv-text)]/10 dark:border-white/10 rounded-lg px-3 py-2 hover:border-[var(--abv-ai-tools)]/40 transition-colors"
                       >
-                        <span className="text-sm font-medium text-[#2f3437] dark:text-white">{link.name}</span>
-                        <span className="text-xs text-[#2f3437]/40 dark:text-white/40 ml-2">{link.clicks} clicks</span>
+                        <span className="text-sm font-medium text-[var(--abv-text)] dark:text-white">{link.name}</span>
+                        <span className="text-xs text-[var(--abv-text)]/40 dark:text-white/40 ml-2">{link.clicks} clicks</span>
                       </button>
                     ))}
                     <button
                       onClick={() => { setNewLinkMode(true); setNewLinkName(title ? `${title} — YouTube Description` : "YouTube Description"); }}
-                      className="w-full text-left text-xs text-[#6ba3c7] hover:text-[#5a8fb3] py-1"
+                      className="w-full text-left text-xs text-[var(--abv-ai-tools)] hover:text-[#5a8fb3] py-1"
                     >
                       + Create new link in this campaign
                     </button>
@@ -527,17 +527,17 @@ function DescriptionGeneratorPageInner() {
                   value={newLinkName}
                   onChange={(e) => setNewLinkName(e.target.value)}
                   placeholder="Link name"
-                  className="w-full border border-[#2f3437]/10 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-[#2f3437] dark:text-white bg-white dark:bg-[#111]"
+                  className="w-full border border-[var(--abv-text)]/10 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-[var(--abv-text)] dark:text-white bg-white dark:bg-[#111]"
                 />
                 <div className="flex gap-2">
                   <button
                     onClick={createNewLink}
                     disabled={creatingLink || !newLinkName.trim()}
-                    className="text-xs bg-[#6ba3c7] text-white px-4 py-1.5 rounded-lg hover:bg-[#5a8fb3] disabled:opacity-50"
+                    className="text-xs bg-[var(--abv-ai-tools)] text-white px-4 py-1.5 rounded-lg hover:bg-[#5a8fb3] disabled:opacity-50"
                   >
                     {creatingLink ? "Creating…" : "Create Link"}
                   </button>
-                  <button onClick={() => setNewLinkMode(false)} className="text-xs text-[#2f3437]/40 dark:text-white/40 hover:text-[#2f3437] dark:hover:text-white px-3 py-1.5">
+                  <button onClick={() => setNewLinkMode(false)} className="text-xs text-[var(--abv-text)]/40 dark:text-white/40 hover:text-[var(--abv-text)] dark:hover:text-white px-3 py-1.5">
                     Cancel
                   </button>
                 </div>
@@ -552,21 +552,21 @@ function DescriptionGeneratorPageInner() {
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setShowPlanPicker(false)}>
           <div className="bg-white dark:bg-[#1a1a1a] rounded-xl shadow-xl w-full max-w-md p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-[#2f3437] dark:text-white">Save to Content Plan</h3>
-              <button onClick={() => setShowPlanPicker(false)} className="text-[#2f3437]/40 dark:text-white/40 hover:text-[#2f3437] dark:hover:text-white">✕</button>
+              <h3 className="text-sm font-semibold text-[var(--abv-text)] dark:text-white">Save to Content Plan</h3>
+              <button onClick={() => setShowPlanPicker(false)} className="text-[var(--abv-text)]/40 dark:text-white/40 hover:text-[var(--abv-text)] dark:hover:text-white">✕</button>
             </div>
             <div className="space-y-2 max-h-60 overflow-y-auto">
               {contentPlans.length === 0 ? (
-                <p className="text-xs text-[#2f3437]/40 dark:text-white/40">No content plans found.</p>
+                <p className="text-xs text-[var(--abv-text)]/40 dark:text-white/40">No content plans found.</p>
               ) : (
                 contentPlans.map((plan) => (
                   <button
                     key={plan.id}
                     onClick={() => saveToContentPlan(plan.id)}
                     disabled={savingToPlan}
-                    className="w-full text-left border border-[#2f3437]/10 dark:border-white/10 rounded-lg px-3 py-2 hover:border-[#6ba3c7]/40 transition-colors"
+                    className="w-full text-left border border-[var(--abv-text)]/10 dark:border-white/10 rounded-lg px-3 py-2 hover:border-[var(--abv-ai-tools)]/40 transition-colors"
                   >
-                    <span className="text-sm text-[#2f3437] dark:text-white">{plan.title || "Untitled Plan"}</span>
+                    <span className="text-sm text-[var(--abv-text)] dark:text-white">{plan.title || "Untitled Plan"}</span>
                   </button>
                 ))
               )}

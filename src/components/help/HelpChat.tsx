@@ -89,16 +89,16 @@ export default function HelpChat({ onClose }: Props) {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-[#2f3437]/10 dark:border-[#2a2a2a] shrink-0">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--abv-text)]/10 dark:border-[#2a2a2a] shrink-0">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-full bg-[#6ba3c7] flex items-center justify-center shrink-0">
+          <div className="w-7 h-7 rounded-full bg-[var(--abv-dark)] flex items-center justify-center shrink-0">
             <span className="text-sm leading-none">🤖</span>
           </div>
-          <span className="font-semibold text-sm text-[#2f3437] dark:text-white">Kit</span>
+          <span className="font-semibold text-sm text-[var(--abv-text)] dark:text-white">Kit</span>
         </div>
         <button
           onClick={onClose}
-          className="p-1 rounded-lg text-[#2f3437]/40 dark:text-white/40 hover:text-[#2f3437] dark:hover:text-white hover:bg-[#2f3437]/5 dark:hover:bg-white/5 transition-colors"
+          className="p-1 rounded-lg text-[var(--abv-text)]/40 dark:text-white/40 hover:text-[var(--abv-text)] dark:hover:text-white hover:bg-[var(--abv-text)]/5 dark:hover:bg-white/5 transition-colors"
         >
           <XMarkIcon className="w-4 h-4" />
         </button>
@@ -108,7 +108,7 @@ export default function HelpChat({ onClose }: Props) {
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {!loaded && (
           <div className="flex justify-start">
-            <div className="bg-[#f7f6f3] dark:bg-[#0f1419] rounded-2xl rounded-bl-md px-3.5 py-2 text-sm text-[#2f3437]/40 dark:text-white/30 animate-pulse max-w-[85%]">
+            <div className="bg-[var(--abv-bg)] dark:bg-[#0f1419] rounded-2xl rounded-bl-md px-3.5 py-2 text-sm text-[var(--abv-text)]/40 dark:text-white/30 animate-pulse max-w-[85%]">
               Loading...
             </div>
           </div>
@@ -118,8 +118,8 @@ export default function HelpChat({ onClose }: Props) {
             <div
               className={`px-3.5 py-2 text-sm max-w-[85%] leading-relaxed whitespace-pre-wrap ${
                 msg.role === "user"
-                  ? "bg-[#6ba3c7] text-white rounded-2xl rounded-br-md"
-                  : "bg-[#f7f6f3] dark:bg-[#0f1419] text-[#2f3437] dark:text-[#e2e8f0] rounded-2xl rounded-bl-md"
+                  ? "bg-[var(--abv-dark)] text-white rounded-2xl rounded-br-md"
+                  : "bg-[var(--abv-bg)] dark:bg-[#0f1419] text-[var(--abv-text)] dark:text-[#e2e8f0] rounded-2xl rounded-bl-md"
               }`}
             >
               {msg.content}
@@ -131,7 +131,7 @@ export default function HelpChat({ onClose }: Props) {
       </div>
 
       {/* Input */}
-      <div className="p-3 border-t border-[#2f3437]/10 dark:border-[#2a2a2a] shrink-0">
+      <div className="p-3 border-t border-[var(--abv-text)]/10 dark:border-[#2a2a2a] shrink-0">
         <div className="flex gap-2 items-end">
           <textarea
             value={input}
@@ -140,13 +140,13 @@ export default function HelpChat({ onClose }: Props) {
             placeholder="Ask a question..."
             rows={1}
             disabled={sending}
-            className="flex-1 border border-[#2f3437]/20 dark:border-white/20 rounded-lg px-3 py-2 text-sm text-[#2f3437] dark:text-white placeholder-[#2f3437]/30 dark:placeholder-white/30 bg-white dark:bg-[#0f1419] focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40 resize-none disabled:opacity-50"
+            className="flex-1 border border-[var(--abv-text)]/20 dark:border-white/20 rounded-lg px-3 py-2 text-sm text-[var(--abv-text)] dark:text-white placeholder-[var(--abv-text)]/30 dark:placeholder-white/30 bg-white dark:bg-[#0f1419] focus:outline-none focus:ring-2 focus:ring-[var(--abv-azure)]/40 resize-none disabled:opacity-50"
             style={{ minHeight: "38px", maxHeight: "100px" }}
           />
           <button
             onClick={handleSend}
             disabled={sending || !input.trim()}
-            className="px-3 py-2 bg-[#6ba3c7] text-white rounded-lg hover:bg-[#2bb0ec] disabled:opacity-40 transition-colors shrink-0"
+            className="px-3 py-2 bg-[var(--abv-dark)] text-white rounded-lg hover:bg-[#2bb0ec] disabled:opacity-40 transition-colors shrink-0"
           >
             <PaperAirplaneIcon className="w-4 h-4" />
           </button>

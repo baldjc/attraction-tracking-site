@@ -31,9 +31,9 @@ function Tooltip({ children, content }: { children: React.ReactNode; content: st
     >
       {children}
       {visible && content && (
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-[#1e2a38] text-white text-[10px] rounded whitespace-nowrap z-50 pointer-events-none shadow-lg">
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-[var(--abv-dark)] text-white text-[10px] rounded whitespace-nowrap z-50 pointer-events-none shadow-lg">
           {content}
-          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#1e2a38]" />
+          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[var(--abv-dark)]" />
         </div>
       )}
     </div>
@@ -162,7 +162,7 @@ export default function ProgressTrack({ steps, compact = false }: Props) {
                     ? "text-[#185FA5]"
                     : step.status === "current"
                     ? "font-bold text-[#185FA5]"
-                    : "text-[#2f3437]/60 dark:text-[#94a3b8]"
+                    : "text-[var(--abv-text)]/60 dark:text-[#94a3b8]"
                 }`}
               >
                 {step.label}
@@ -196,7 +196,7 @@ export default function ProgressTrack({ steps, compact = false }: Props) {
                   </span>
                   <span
                     className={`text-[9px] uppercase tracking-wider transition-colors ${
-                      step.manualDone ? "text-[#185FA5] font-semibold" : "text-[#2f3437]/45 group-hover:text-[#185FA5]"
+                      step.manualDone ? "text-[#185FA5] font-semibold" : "text-[var(--abv-text)]/45 group-hover:text-[#185FA5]"
                     }`}
                   >
                     Done

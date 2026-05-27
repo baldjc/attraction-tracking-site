@@ -209,18 +209,18 @@ export default function ContentPlannerClient({
       <div className="mb-4 space-y-2.5">
         <div className="flex items-center gap-2 flex-wrap">
           <div className="relative flex-1 min-w-[240px] max-w-md">
-            <MagnifyingGlassIcon className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#2f3437]/40 pointer-events-none" />
+            <MagnifyingGlassIcon className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--abv-text)]/40 pointer-events-none" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="🔍 Search plans…"
-              className="w-full pl-9 pr-8 py-1.5 text-sm bg-white border border-gray-200 rounded-lg text-[#2f3437] placeholder:text-[#2f3437]/40 focus:outline-none focus:border-[#6ba3c7] focus:ring-2 focus:ring-[#6ba3c7]/20"
+              className="w-full pl-9 pr-8 py-1.5 text-sm bg-white border border-gray-200 rounded-lg text-[var(--abv-text)] placeholder:text-[var(--abv-text)]/40 focus:outline-none focus:border-[var(--abv-azure)] focus:ring-2 focus:ring-[var(--abv-azure)]/20"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery("")}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-[#2f3437]/40 hover:text-[#2f3437]"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--abv-text)]/40 hover:text-[var(--abv-text)]"
                 title="Clear search"
               >
                 <XMarkIcon className="w-4 h-4" />
@@ -229,21 +229,21 @@ export default function ContentPlannerClient({
           </div>
           {filtersActive && (
             <>
-              <span className="text-xs text-[#2f3437]/60 whitespace-nowrap">
-                Showing <span className="font-semibold text-[#2f3437]">{filteredCount}</span> of {totalCount}
+              <span className="text-xs text-[var(--abv-text)]/60 whitespace-nowrap">
+                Showing <span className="font-semibold text-[var(--abv-text)]">{filteredCount}</span> of {totalCount}
               </span>
-              <button onClick={clearFilters} className="text-xs text-[#6ba3c7] hover:underline whitespace-nowrap">
+              <button onClick={clearFilters} className="text-xs text-[var(--abv-azure)] hover:underline whitespace-nowrap">
                 Clear filters
               </button>
             </>
           )}
           {(view === "pipeline" || view === "by_theme") && (
-            <label className="ml-auto flex items-center gap-1.5 text-xs text-[#2f3437]/60">
+            <label className="ml-auto flex items-center gap-1.5 text-xs text-[var(--abv-text)]/60">
               Sort
               <select
                 value={pipelineSort}
                 onChange={(e) => setPipelineSort(e.target.value as PipelineSortKey)}
-                className="text-xs bg-white border border-gray-200 rounded-md px-2 py-1 text-[#2f3437] focus:outline-none focus:border-[#6ba3c7] focus:ring-2 focus:ring-[#6ba3c7]/20"
+                className="text-xs bg-white border border-gray-200 rounded-md px-2 py-1 text-[var(--abv-text)] focus:outline-none focus:border-[var(--abv-azure)] focus:ring-2 focus:ring-[var(--abv-azure)]/20"
               >
                 <option value="default">Default</option>
                 <option value="publish-asc">Publish date ↑</option>
@@ -267,8 +267,8 @@ export default function ContentPlannerClient({
                 title={selected ? `Click to remove ${s} filter` : `Filter by ${s}`}
                 className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded border transition-all ${
                   selected
-                    ? "bg-[#6ba3c7] border-[#6ba3c7] text-white font-semibold shadow-sm ring-2 ring-[#6ba3c7]/30"
-                    : "bg-white border-gray-200 text-[#2f3437]/70 font-medium hover:border-[#6ba3c7]/50 hover:bg-[#6ba3c7]/5"
+                    ? "bg-[var(--abv-dark)] border-[var(--abv-azure)] text-white font-semibold shadow-sm ring-2 ring-[var(--abv-azure)]/30"
+                    : "bg-white border-gray-200 text-[var(--abv-text)]/70 font-medium hover:border-[var(--abv-azure)]/50 hover:bg-[var(--abv-dark)]/5"
                 }`}
               >
                 {selected && <CheckIcon className="w-3 h-3" />}
@@ -287,8 +287,8 @@ export default function ContentPlannerClient({
               onClick={() => setView(tab.id)}
               className={`text-sm font-medium px-3 py-1.5 rounded-md transition-colors whitespace-nowrap ${
                 view === tab.id
-                  ? "bg-[#6ba3c7] text-white shadow-sm"
-                  : "text-[#2f3437]/60 hover:text-[#2f3437] hover:bg-gray-100"
+                  ? "bg-[var(--abv-dark)] text-white shadow-sm"
+                  : "text-[var(--abv-text)]/60 hover:text-[var(--abv-text)] hover:bg-gray-100"
               }`}
             >
               {tab.label}
@@ -300,7 +300,7 @@ export default function ContentPlannerClient({
             <button
               onClick={handleQuickAdd}
               disabled={addingPlan}
-              className="flex items-center gap-1.5 text-sm font-semibold text-white bg-[#6ba3c7] px-3 py-1.5 rounded-lg hover:bg-[#5490b5] disabled:opacity-50 transition-colors"
+              className="flex items-center gap-1.5 text-sm font-semibold text-white bg-[var(--abv-dark)] px-3 py-1.5 rounded-lg hover:bg-black/85 disabled:opacity-50 transition-colors"
             >
               <PlusIcon className="w-4 h-4" />
               {addingPlan ? "Adding…" : "Add Video"}
@@ -309,7 +309,7 @@ export default function ContentPlannerClient({
           {!isAdminView && (
             <button
               onClick={openCalModal}
-              className="flex items-center gap-1.5 text-sm text-[#2f3437]/70 border border-gray-200 bg-white px-3 py-1.5 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors"
+              className="flex items-center gap-1.5 text-sm text-[var(--abv-text)]/70 border border-gray-200 bg-white px-3 py-1.5 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors"
             >
               <CalendarDaysIcon className="w-4 h-4" />
               Subscribe to Calendar
@@ -410,10 +410,10 @@ export default function ContentPlannerClient({
           <div className="bg-white rounded-xl shadow-xl w-full max-w-lg p-6">
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-2">
-                <CalendarDaysIcon className="w-5 h-5 text-[#6ba3c7]" />
-                <h3 className="text-base font-semibold text-[#2f3437]">Subscribe to Calendar</h3>
+                <CalendarDaysIcon className="w-5 h-5 text-[var(--abv-azure)]" />
+                <h3 className="text-base font-semibold text-[var(--abv-text)]">Subscribe to Calendar</h3>
               </div>
-              <button onClick={() => setShowCalModal(false)} className="text-[#2f3437]/40 hover:text-[#2f3437]">
+              <button onClick={() => setShowCalModal(false)} className="text-[var(--abv-text)]/40 hover:text-[var(--abv-text)]">
                 <XMarkIcon className="w-5 h-5" />
               </button>
             </div>
@@ -426,11 +426,11 @@ export default function ContentPlannerClient({
                   type="text"
                   readOnly
                   value={calUrl}
-                  className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-xs text-[#2f3437]/70 bg-gray-50 focus:outline-none"
+                  className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-xs text-[var(--abv-text)]/70 bg-gray-50 focus:outline-none"
                 />
                 <button
                   onClick={copyUrl}
-                  className="flex items-center gap-1.5 px-3 py-2 bg-[#6ba3c7] hover:bg-[#5a8fb0] text-white text-sm rounded-lg transition-colors shrink-0"
+                  className="flex items-center gap-1.5 px-3 py-2 bg-[var(--abv-dark)] hover:bg-[#5a8fb0] text-white text-sm rounded-lg transition-colors shrink-0"
                 >
                   {copied ? <CheckIcon className="w-4 h-4" /> : <ClipboardDocumentIcon className="w-4 h-4" />}
                   {copied ? "Copied!" : "Copy"}
@@ -440,13 +440,13 @@ export default function ContentPlannerClient({
               <p className="text-sm text-red-600 mb-4">Failed to generate your calendar link. Please try again.</p>
             )}
 
-            <div className="space-y-3 text-sm text-[#2f3437]/70">
+            <div className="space-y-3 text-sm text-[var(--abv-text)]/70">
               <div className="bg-gray-50 rounded-lg p-4 space-y-2">
-                <p className="font-medium text-[#2f3437]">How to subscribe:</p>
+                <p className="font-medium text-[var(--abv-text)]">How to subscribe:</p>
                 <p><span className="font-medium">Google Calendar:</span> Settings → Add calendar → From URL → paste the link</p>
                 <p><span className="font-medium">Apple Calendar:</span> File → New Calendar Subscription → paste the link</p>
               </div>
-              <p className="text-xs text-[#2f3437]/40">
+              <p className="text-xs text-[var(--abv-text)]/40">
                 Your calendar updates automatically when you make changes. Google Calendar refreshes every 12–24 hours. Apple Calendar refreshes every 15–60 minutes.
               </p>
             </div>

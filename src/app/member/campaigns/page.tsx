@@ -43,7 +43,7 @@ const LINK_SOURCE_STYLES: Record<string, { label: string; color: string }> = {
   other:      { label: "Other",      color: "bg-gray-100 text-gray-600" },
 };
 
-const INPUT_CLS = "w-full border border-[#2f3437]/20 rounded-lg px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-[#6ba3c7]";
+const INPUT_CLS = "w-full border border-[var(--abv-text)]/20 rounded-lg px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-[var(--abv-azure)]";
 
 export default function CampaignsPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -112,10 +112,10 @@ export default function CampaignsPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-[#2f3437]">Campaigns</h1>
-          <p className="text-sm text-[#2f3437]/50 mt-0.5">Track clicks and leads from your content</p>
+          <h1 className="text-2xl font-bold text-[var(--abv-text)]">Campaigns</h1>
+          <p className="text-sm text-[var(--abv-text)]/50 mt-0.5">Track clicks and leads from your content</p>
         </div>
-        <button onClick={() => setShowModal(true)} className="bg-[#6ba3c7] text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-[#6ba3c7]/90 transition-colors">
+        <button onClick={() => setShowModal(true)} className="bg-[var(--abv-dark)] text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-[var(--abv-dark)]/90 transition-colors">
           + New Campaign
         </button>
       </div>
@@ -134,23 +134,23 @@ export default function CampaignsPage() {
       {/* Summary Dashboard */}
       {analytics && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-          <Link href="/member/analytics?tab=overview" className="bg-white border border-[#2f3437]/10 rounded-lg p-4 hover:border-[#6ba3c7]/40 hover:shadow-sm transition-all block">
-            <p className="text-xs text-[#2f3437]/50 font-medium mb-1">Clicks (30d)</p>
-            <p className="text-2xl font-bold text-[#2f3437]">{analytics.totalClicks.toLocaleString()}</p>
+          <Link href="/member/analytics?tab=overview" className="bg-white border border-[var(--abv-text)]/10 rounded-lg p-4 hover:border-[var(--abv-azure)]/40 hover:shadow-sm transition-all block">
+            <p className="text-xs text-[var(--abv-text)]/50 font-medium mb-1">Clicks (30d)</p>
+            <p className="text-2xl font-bold text-[var(--abv-text)]">{analytics.totalClicks.toLocaleString()}</p>
             <div className="mt-2">
-              <MiniSparkline data={analytics.sparkline.map((s) => ({ value: s.clicks }))} color="#6ba3c7" />
+              <MiniSparkline data={analytics.sparkline.map((s) => ({ value: s.clicks }))} color="var(--abv-azure)" />
             </div>
           </Link>
-          <Link href="/member/analytics?tab=conversions" className="bg-white border border-[#2f3437]/10 rounded-lg p-4 hover:border-[#6ba3c7]/40 hover:shadow-sm transition-all block">
-            <p className="text-xs text-[#2f3437]/50 font-medium mb-1">Leads (30d)</p>
-            <p className="text-2xl font-bold text-[#2f3437]">{analytics.totalLeads.toLocaleString()}</p>
+          <Link href="/member/analytics?tab=conversions" className="bg-white border border-[var(--abv-text)]/10 rounded-lg p-4 hover:border-[var(--abv-azure)]/40 hover:shadow-sm transition-all block">
+            <p className="text-xs text-[var(--abv-text)]/50 font-medium mb-1">Leads (30d)</p>
+            <p className="text-2xl font-bold text-[var(--abv-text)]">{analytics.totalLeads.toLocaleString()}</p>
             <div className="mt-2">
-              <MiniSparkline data={(analytics.leadsSparkline ?? []).map((s) => ({ value: s.leads }))} color="#2f3437" />
+              <MiniSparkline data={(analytics.leadsSparkline ?? []).map((s) => ({ value: s.leads }))} color="var(--abv-text)" />
             </div>
           </Link>
-          <Link href="/member/analytics?tab=overview" className="bg-white border border-[#2f3437]/10 rounded-lg p-4 hover:border-[#6ba3c7]/40 hover:shadow-sm transition-all block">
-            <p className="text-xs text-[#2f3437]/50 font-medium mb-1">Conv. Rate (30d)</p>
-            <p className="text-2xl font-bold text-[#6ba3c7]">{analytics.conversionRate}%</p>
+          <Link href="/member/analytics?tab=overview" className="bg-white border border-[var(--abv-text)]/10 rounded-lg p-4 hover:border-[var(--abv-azure)]/40 hover:shadow-sm transition-all block">
+            <p className="text-xs text-[var(--abv-text)]/50 font-medium mb-1">Conv. Rate (30d)</p>
+            <p className="text-2xl font-bold text-[var(--abv-azure)]">{analytics.conversionRate}%</p>
             {analytics.previousConversionRate > 0 && (
               <div className={`flex items-center gap-1 mt-1 text-xs font-medium ${convRateDelta >= 0 ? "text-green-600" : "text-red-500"}`}>
                 {convRateDelta >= 0
@@ -160,29 +160,29 @@ export default function CampaignsPage() {
               </div>
             )}
           </Link>
-          <Link href="/member/analytics?tab=videos" className="bg-white border border-[#2f3437]/10 rounded-lg p-4 hover:border-[#6ba3c7]/40 hover:shadow-sm transition-all block">
-            <p className="text-xs text-[#2f3437]/50 font-medium mb-1">Top Link (30d)</p>
+          <Link href="/member/analytics?tab=videos" className="bg-white border border-[var(--abv-text)]/10 rounded-lg p-4 hover:border-[var(--abv-azure)]/40 hover:shadow-sm transition-all block">
+            <p className="text-xs text-[var(--abv-text)]/50 font-medium mb-1">Top Link (30d)</p>
             {analytics.topLink ? (
               <>
-                <p className="text-sm font-semibold text-[#2f3437] leading-tight">{analytics.topLink.name}</p>
-                <p className="text-xs text-[#2f3437]/40 mt-0.5 truncate">{analytics.topLink.campaignName}</p>
-                <p className="text-xs text-[#6ba3c7] font-semibold mt-1">{analytics.topLink.leads} lead{analytics.topLink.leads !== 1 ? "s" : ""}</p>
+                <p className="text-sm font-semibold text-[var(--abv-text)] leading-tight">{analytics.topLink.name}</p>
+                <p className="text-xs text-[var(--abv-text)]/40 mt-0.5 truncate">{analytics.topLink.campaignName}</p>
+                <p className="text-xs text-[var(--abv-azure)] font-semibold mt-1">{analytics.topLink.leads} lead{analytics.topLink.leads !== 1 ? "s" : ""}</p>
               </>
             ) : (
-              <p className="text-sm text-[#2f3437]/30 mt-1">No leads yet</p>
+              <p className="text-sm text-[var(--abv-text)]/30 mt-1">No leads yet</p>
             )}
           </Link>
         </div>
       )}
 
       {loading ? (
-        <div className="text-center py-16 text-[#2f3437]/40">Loading...</div>
+        <div className="text-center py-16 text-[var(--abv-text)]/40">Loading...</div>
       ) : campaigns.length === 0 ? (
-        <div className="bg-white dark:bg-[#1a1a1a] border border-[#2f3437]/10 dark:border-white/10 rounded-lg p-12 text-center">
+        <div className="bg-white dark:bg-[#1a1a1a] border border-[var(--abv-text)]/10 dark:border-white/10 rounded-lg p-12 text-center">
           <div className="text-4xl mb-3">🔗</div>
-          <h2 className="font-semibold text-[#2f3437] dark:text-white mb-2">No campaigns yet</h2>
-          <p className="text-sm text-[#2f3437]/50 dark:text-white/50 mb-5">Create a campaign for each lead magnet you want to track.</p>
-          <button onClick={() => setShowModal(true)} className="bg-[#6ba3c7] text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-[#6ba3c7]/90 transition-colors">
+          <h2 className="font-semibold text-[var(--abv-text)] dark:text-white mb-2">No campaigns yet</h2>
+          <p className="text-sm text-[var(--abv-text)]/50 dark:text-white/50 mb-5">Create a campaign for each lead magnet you want to track.</p>
+          <button onClick={() => setShowModal(true)} className="bg-[var(--abv-dark)] text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-[var(--abv-dark)]/90 transition-colors">
             Create your first campaign
           </button>
         </div>
@@ -192,10 +192,10 @@ export default function CampaignsPage() {
             const memberName = c.member?.fullName || c.member?.email;
             const sources = Array.from(new Set(c.linkSources ?? []));
             return (
-              <div key={c.id} className="relative group bg-white border border-[#2f3437]/10 rounded-lg hover:border-[#6ba3c7]/40 hover:shadow-sm transition-all">
+              <div key={c.id} className="relative group bg-white border border-[var(--abv-text)]/10 rounded-lg hover:border-[var(--abv-azure)]/40 hover:shadow-sm transition-all">
                 <Link href={`/member/campaigns/${c.id}`} className="block p-5">
                   <div className="flex items-start justify-between gap-3 mb-1">
-                    <h3 className="font-semibold text-[#2f3437]">{c.name}</h3>
+                    <h3 className="font-semibold text-[var(--abv-text)]">{c.name}</h3>
                     {sources.length > 0 && (
                       <div className="flex items-center gap-1 flex-shrink-0 flex-wrap justify-end">
                         {sources.map((s) => {
@@ -205,35 +205,35 @@ export default function CampaignsPage() {
                       </div>
                     )}
                   </div>
-                  <p className="text-xs text-[#2f3437]/40 truncate mb-4">{c.destinationUrl}</p>
+                  <p className="text-xs text-[var(--abv-text)]/40 truncate mb-4">{c.destinationUrl}</p>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-center">
                     {c.totalViews !== null && (
                       <div>
-                        <div className="text-lg font-bold text-[#2f3437]">{c.totalViews.toLocaleString()}</div>
-                        <div className="text-xs text-[#2f3437]/40">Views</div>
+                        <div className="text-lg font-bold text-[var(--abv-text)]">{c.totalViews.toLocaleString()}</div>
+                        <div className="text-xs text-[var(--abv-text)]/40">Views</div>
                       </div>
                     )}
                     <div>
-                      <div className="text-lg font-bold text-[#2f3437]">{c.totalClicks}</div>
-                      <div className="text-xs text-[#2f3437]/40">Clicks</div>
+                      <div className="text-lg font-bold text-[var(--abv-text)]">{c.totalClicks}</div>
+                      <div className="text-xs text-[var(--abv-text)]/40">Clicks</div>
                     </div>
                     <div>
-                      <div className="text-lg font-bold text-[#2f3437]">{c.totalLeads}</div>
-                      <div className="text-xs text-[#2f3437]/40">Leads</div>
+                      <div className="text-lg font-bold text-[var(--abv-text)]">{c.totalLeads}</div>
+                      <div className="text-xs text-[var(--abv-text)]/40">Leads</div>
                     </div>
                     <div>
-                      <div className="text-lg font-bold text-[#6ba3c7]">{c.conversionRate}%</div>
-                      <div className="text-xs text-[#2f3437]/40">Conv. Rate</div>
+                      <div className="text-lg font-bold text-[var(--abv-azure)]">{c.conversionRate}%</div>
+                      <div className="text-xs text-[var(--abv-text)]/40">Conv. Rate</div>
                     </div>
                   </div>
-                  <div className="mt-3 pt-3 border-t border-[#2f3437]/5 flex items-center justify-between text-xs text-[#2f3437]/40">
+                  <div className="mt-3 pt-3 border-t border-[var(--abv-text)]/5 flex items-center justify-between text-xs text-[var(--abv-text)]/40">
                     <span>{c.linkCount} tracking link{c.linkCount !== 1 ? "s" : ""}</span>
                     {memberName && <span className="truncate ml-2">{memberName}</span>}
                   </div>
                 </Link>
                 <button
                   onClick={(e) => { e.preventDefault(); setConfirmDeleteId(c.id); }}
-                  className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity text-[#2f3437]/20 hover:text-[#ff0033] p-1.5 rounded-lg hover:bg-[#ff0033]/5"
+                  className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity text-[var(--abv-text)]/20 hover:text-[var(--abv-crimson)] p-1.5 rounded-lg hover:bg-[var(--abv-crimson)]/5"
                   title="Delete campaign"
                 >
                   <TrashIcon className="w-3.5 h-3.5" />
@@ -247,23 +247,23 @@ export default function CampaignsPage() {
       {/* New Campaign Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg border border-[#2f3437]/10 shadow-xl w-full max-w-md p-6">
+          <div className="bg-white rounded-lg border border-[var(--abv-text)]/10 shadow-xl w-full max-w-md p-6">
             <div className="flex items-center justify-between mb-5">
-              <h2 className="font-bold text-[#2f3437]">New Campaign</h2>
-              <button onClick={() => { setShowModal(false); setCreateError(null); }} className="text-[#2f3437]/40 hover:text-[#2f3437] text-xl">✕</button>
+              <h2 className="font-bold text-[var(--abv-text)]">New Campaign</h2>
+              <button onClick={() => { setShowModal(false); setCreateError(null); }} className="text-[var(--abv-text)]/40 hover:text-[var(--abv-text)] text-xl">✕</button>
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-[#2f3437] mb-1.5">Campaign Name</label>
+                <label className="block text-sm font-semibold text-[var(--abv-text)] mb-1.5">Campaign Name</label>
                 <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Free Home Valuation Guide" className={INPUT_CLS} />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-[#2f3437] mb-1.5">Destination URL</label>
+                <label className="block text-sm font-semibold text-[var(--abv-text)] mb-1.5">Destination URL</label>
                 <input type="text" value={form.destinationUrl} onChange={(e) => setForm({ ...form, destinationUrl: e.target.value })} placeholder="https://yoursite.com/free-guide" className={INPUT_CLS} />
-                <p className="text-xs text-[#2f3437]/40 mt-1">The lead magnet or landing page URL</p>
+                <p className="text-xs text-[var(--abv-text)]/40 mt-1">The lead magnet or landing page URL</p>
               </div>
               <div>
-                <label className="block text-sm font-semibold text-[#2f3437] mb-1.5">Lead Magnet URL <span className="font-normal text-[#2f3437]/40">(optional)</span></label>
+                <label className="block text-sm font-semibold text-[var(--abv-text)] mb-1.5">Lead Magnet URL <span className="font-normal text-[var(--abv-text)]/40">(optional)</span></label>
                 <input type="url" value={form.leadMagnetUrl} onChange={(e) => setForm({ ...form, leadMagnetUrl: e.target.value })} placeholder="e.g., Google Drive link to your guide" className={INPUT_CLS} />
               </div>
               {hasTyUrl === false && (
@@ -275,7 +275,7 @@ export default function CampaignsPage() {
               {createError && (
                 <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{createError}</p>
               )}
-              <button onClick={createCampaign} disabled={creating || !form.name || !form.destinationUrl} className="w-full bg-[#6ba3c7] text-white py-2.5 rounded-lg font-semibold text-sm hover:bg-[#6ba3c7]/90 disabled:opacity-50 transition-colors">
+              <button onClick={createCampaign} disabled={creating || !form.name || !form.destinationUrl} className="w-full bg-[var(--abv-dark)] text-white py-2.5 rounded-lg font-semibold text-sm hover:bg-[var(--abv-dark)]/90 disabled:opacity-50 transition-colors">
                 {creating ? "Creating..." : "Create Campaign"}
               </button>
             </div>
@@ -286,15 +286,15 @@ export default function CampaignsPage() {
       {/* Delete Confirmation Modal */}
       {confirmDeleteId && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg border border-[#2f3437]/10 shadow-xl w-full max-w-sm p-6">
-            <h2 className="font-bold text-[#2f3437] mb-2">Delete Campaign?</h2>
-            <p className="text-sm text-[#2f3437]/60 mb-1">Delete <span className="font-semibold text-[#2f3437]">{confirmingName}</span>?</p>
-            <p className="text-xs text-[#2f3437]/40 mb-5">Historical click and lead data will be preserved.</p>
+          <div className="bg-white rounded-lg border border-[var(--abv-text)]/10 shadow-xl w-full max-w-sm p-6">
+            <h2 className="font-bold text-[var(--abv-text)] mb-2">Delete Campaign?</h2>
+            <p className="text-sm text-[var(--abv-text)]/60 mb-1">Delete <span className="font-semibold text-[var(--abv-text)]">{confirmingName}</span>?</p>
+            <p className="text-xs text-[var(--abv-text)]/40 mb-5">Historical click and lead data will be preserved.</p>
             <div className="flex gap-3">
-              <button onClick={() => deleteCampaign(confirmDeleteId)} disabled={!!deletingId} className="flex-1 bg-[#ff0033] text-white py-2.5 rounded-lg font-semibold text-sm hover:bg-[#ff0033]/80 disabled:opacity-50 transition-colors">
+              <button onClick={() => deleteCampaign(confirmDeleteId)} disabled={!!deletingId} className="flex-1 bg-[var(--abv-crimson)] text-white py-2.5 rounded-lg font-semibold text-sm hover:bg-[var(--abv-crimson)]/80 disabled:opacity-50 transition-colors">
                 {deletingId ? "Deleting..." : "Delete"}
               </button>
-              <button onClick={() => setConfirmDeleteId(null)} className="flex-1 border border-[#2f3437]/20 text-[#2f3437]/60 py-2.5 rounded-lg text-sm hover:bg-gray-50 transition-colors">
+              <button onClick={() => setConfirmDeleteId(null)} className="flex-1 border border-[var(--abv-text)]/20 text-[var(--abv-text)]/60 py-2.5 rounded-lg text-sm hover:bg-gray-50 transition-colors">
                 Cancel
               </button>
             </div>

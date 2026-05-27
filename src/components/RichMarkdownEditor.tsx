@@ -87,7 +87,7 @@ export default function RichMarkdownEditor({
       attributes: {
         "aria-label": ariaLabel ?? "Editor",
         class:
-          "max-w-none focus:outline-none text-[#2f3437] text-[15px] leading-relaxed " +
+          "max-w-none focus:outline-none text-[var(--abv-text)] text-[15px] leading-relaxed " +
           "[&_h1]:text-3xl [&_h1]:font-bold [&_h1]:mt-5 [&_h1]:mb-3 [&_h1]:leading-tight " +
           "[&_h2]:text-2xl [&_h2]:font-bold [&_h2]:mt-4 [&_h2]:mb-2 [&_h2]:leading-tight " +
           "[&_h3]:text-xl [&_h3]:font-semibold [&_h3]:mt-4 [&_h3]:mb-2 [&_h3]:leading-tight " +
@@ -95,11 +95,11 @@ export default function RichMarkdownEditor({
           "[&_ul]:list-disc [&_ul]:pl-6 [&_ul]:my-3 " +
           "[&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:my-3 " +
           "[&_li]:my-1 [&_li>p]:my-0 " +
-          "[&_blockquote]:border-l-4 [&_blockquote]:border-[#6ba3c7] [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-[#2f3437]/80 [&_blockquote]:my-3 " +
+          "[&_blockquote]:border-l-4 [&_blockquote]:border-[var(--abv-azure)] [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-[var(--abv-text)]/80 [&_blockquote]:my-3 " +
           "[&_hr]:border-0 [&_hr]:border-t [&_hr]:border-[#d4d4d4] [&_hr]:my-6 " +
-          "[&_strong]:font-semibold [&_strong]:text-[#2f3437] " +
-          "[&_em]:italic [&_s]:line-through [&_s]:text-[#2f3437]/60 " +
-          "[&_a]:text-[#6ba3c7] [&_a]:underline",
+          "[&_strong]:font-semibold [&_strong]:text-[var(--abv-text)] " +
+          "[&_em]:italic [&_s]:line-through [&_s]:text-[var(--abv-text)]/60 " +
+          "[&_a]:text-[var(--abv-azure)] [&_a]:underline",
       },
     },
     onUpdate: ({ editor }) => {
@@ -122,7 +122,7 @@ export default function RichMarkdownEditor({
 
   if (!editor) {
     return (
-      <div className="w-full h-full flex items-center justify-center text-sm text-[#2f3437]/40">
+      <div className="w-full h-full flex items-center justify-center text-sm text-[var(--abv-text)]/40">
         Loading editor…
       </div>
     );
@@ -134,7 +134,7 @@ export default function RichMarkdownEditor({
       <div
         className={
           className ??
-          `relative flex-1 min-h-0 overflow-auto rounded-lg border border-[#eaeaea] bg-white p-4 ${
+          `relative flex-1 min-h-0 overflow-auto rounded-lg border border-[var(--abv-border-strong)] bg-white p-4 ${
             hideToolbar ? "" : "mt-2 p-6"
           }`
         }
@@ -147,7 +147,7 @@ export default function RichMarkdownEditor({
       >
         {!value.trim() && editor.isEmpty && placeholder && (
           <p
-            className="pointer-events-none text-[#2f3437]/30 absolute select-none whitespace-normal break-words"
+            className="pointer-events-none text-[var(--abv-text)]/30 absolute select-none whitespace-normal break-words"
             style={{ width: "calc(100% - 2rem)" }}
           >
             {placeholder}
@@ -163,12 +163,12 @@ function Toolbar({ editor }: { editor: Editor }) {
   const btn = (active: boolean) =>
     `px-2 py-1 rounded text-[12px] flex items-center gap-1 transition-colors ${
       active
-        ? "bg-[#6ba3c7]/15 text-[#2f3437] font-medium"
-        : "text-[#2f3437]/70 hover:text-[#2f3437] hover:bg-[#eaeaea]/60"
+        ? "bg-[var(--abv-dark)]/15 text-[var(--abv-text)] font-medium"
+        : "text-[var(--abv-text)]/70 hover:text-[var(--abv-text)] hover:bg-[var(--abv-border-strong)]/60"
     }`;
 
   return (
-    <div className="flex items-center flex-wrap gap-0.5 border border-[#eaeaea] rounded-lg bg-[#fafafa] px-1 py-1">
+    <div className="flex items-center flex-wrap gap-0.5 border border-[var(--abv-border-strong)] rounded-lg bg-[#fafafa] px-1 py-1">
       <button
         type="button"
         className={btn(editor.isActive("heading", { level: 2 }))}
@@ -193,7 +193,7 @@ function Toolbar({ editor }: { editor: Editor }) {
       >
         Paragraph
       </button>
-      <span className="w-px h-5 bg-[#eaeaea] mx-1" />
+      <span className="w-px h-5 bg-[var(--abv-border-strong)] mx-1" />
       <button
         type="button"
         className={btn(editor.isActive("bold"))}
@@ -218,7 +218,7 @@ function Toolbar({ editor }: { editor: Editor }) {
       >
         S
       </button>
-      <span className="w-px h-5 bg-[#eaeaea] mx-1" />
+      <span className="w-px h-5 bg-[var(--abv-border-strong)] mx-1" />
       <button
         type="button"
         className={btn(editor.isActive("bulletList"))}
@@ -251,7 +251,7 @@ function Toolbar({ editor }: { editor: Editor }) {
       >
         <span className="inline-block w-4 border-t-2 border-current" />
       </button>
-      <span className="w-px h-5 bg-[#eaeaea] mx-1" />
+      <span className="w-px h-5 bg-[var(--abv-border-strong)] mx-1" />
       <button
         type="button"
         className={btn(false)}

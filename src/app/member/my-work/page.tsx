@@ -79,8 +79,8 @@ export default function MyWorkPage() {
               onClick={() => setActiveTab(tab.id)}
               className={`flex-shrink-0 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
                 activeTab === tab.id
-                  ? "bg-white dark:bg-[#1a1a1a] text-[#2f3437] dark:text-white shadow-sm"
-                  : "text-[#2f3437]/50 dark:text-white/40 hover:text-[#2f3437] dark:hover:text-white"
+                  ? "bg-white dark:bg-[#1a1a1a] text-[var(--abv-text)] dark:text-white shadow-sm"
+                  : "text-[var(--abv-text)]/50 dark:text-white/40 hover:text-[var(--abv-text)] dark:hover:text-white"
               }`}
             >
               {tab.label}
@@ -92,28 +92,28 @@ export default function MyWorkPage() {
           placeholder="Search by title..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full sm:w-64 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#2a2a2a] rounded-lg px-3 py-2 text-sm text-[#2f3437] dark:text-[#e2e8f0] placeholder:text-[#2f3437]/40 dark:placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40"
+          className="w-full sm:w-64 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#2a2a2a] rounded-lg px-3 py-2 text-sm text-[var(--abv-text)] dark:text-[#e2e8f0] placeholder:text-[var(--abv-text)]/40 dark:placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-[var(--abv-azure)]/40"
         />
       </div>
 
       {loading && (
         <div className="space-y-3 animate-pulse">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-20 bg-[#eaeaea] dark:bg-white/10 rounded-lg" />
+            <div key={i} className="h-20 bg-[var(--abv-border-strong)] dark:bg-white/10 rounded-lg" />
           ))}
         </div>
       )}
 
       {!loading && items.length === 0 && (
-        <div className="bg-white dark:bg-[#1a1a1a] border border-[#2f3437]/10 dark:border-white/10 rounded-xl p-12 text-center">
-          <FolderIcon className="w-10 h-10 text-[#2f3437]/20 dark:text-white/20 mx-auto mb-3" />
-          <h2 className="font-semibold text-[#2f3437] dark:text-white mb-2">No saved work yet</h2>
-          <p className="text-sm text-[#2f3437]/50 dark:text-white/50 mb-4">
+        <div className="bg-white dark:bg-[#1a1a1a] border border-[var(--abv-text)]/10 dark:border-white/10 rounded-xl p-12 text-center">
+          <FolderIcon className="w-10 h-10 text-[var(--abv-text)]/20 dark:text-white/20 mx-auto mb-3" />
+          <h2 className="font-semibold text-[var(--abv-text)] dark:text-white mb-2">No saved work yet</h2>
+          <p className="text-sm text-[var(--abv-text)]/50 dark:text-white/50 mb-4">
             Head to AI Tools to start creating scripts, ideas, and more. Everything you save will show up here.
           </p>
           <Link
             href="/member/ai-tools"
-            className="inline-flex items-center gap-2 bg-[#6ba3c7] text-white rounded-lg px-4 py-2.5 text-sm font-semibold hover:bg-[#5490b5] transition-colors"
+            className="inline-flex items-center gap-2 bg-[var(--abv-dark)] text-white rounded-lg px-4 py-2.5 text-sm font-semibold hover:bg-black/85 transition-colors"
           >
             Open AI Tools →
           </Link>
@@ -121,8 +121,8 @@ export default function MyWorkPage() {
       )}
 
       {!loading && items.length > 0 && filtered.length === 0 && (
-        <div className="bg-white dark:bg-[#1a1a1a] border border-[#2f3437]/10 dark:border-white/10 rounded-lg p-8 text-center">
-          <p className="text-sm text-[#2f3437]/50 dark:text-white/50">
+        <div className="bg-white dark:bg-[#1a1a1a] border border-[var(--abv-text)]/10 dark:border-white/10 rounded-lg p-8 text-center">
+          <p className="text-sm text-[var(--abv-text)]/50 dark:text-white/50">
             No items match your current filter. Try a different tab or search term.
           </p>
         </div>
@@ -136,7 +136,7 @@ export default function MyWorkPage() {
               <Link
                 key={`${item.type}-${item.id}`}
                 href={item.toolUrl}
-                className="block bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#2a2a2a] rounded-lg p-4 hover:border-[#6ba3c7]/40 hover:shadow-sm transition-all group"
+                className="block bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#2a2a2a] rounded-lg p-4 hover:border-[var(--abv-azure)]/40 hover:shadow-sm transition-all group"
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex-1 min-w-0">
@@ -151,14 +151,14 @@ export default function MyWorkPage() {
                         </span>
                       )}
                     </div>
-                    <h3 className="text-sm font-semibold text-[#2f3437] dark:text-[#e2e8f0] group-hover:text-[#6ba3c7] transition-colors truncate">
+                    <h3 className="text-sm font-semibold text-[var(--abv-text)] dark:text-[#e2e8f0] group-hover:text-[var(--abv-azure)] transition-colors truncate">
                       {item.title}
                     </h3>
-                    <p className="text-xs text-[#2f3437]/40 dark:text-white/30 mt-0.5">
+                    <p className="text-xs text-[var(--abv-text)]/40 dark:text-white/30 mt-0.5">
                       {new Date(item.createdAt).toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" })}
                     </p>
                   </div>
-                  <span className="text-xs text-[#6ba3c7] font-medium opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                  <span className="text-xs text-[var(--abv-azure)] font-medium opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                     Open →
                   </span>
                 </div>

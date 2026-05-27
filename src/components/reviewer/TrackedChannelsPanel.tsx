@@ -103,10 +103,10 @@ export default function TrackedChannelsPanel() {
         boxShadow: "var(--atbv-shadow-sm)",
       }}
     >
-      <h2 className="text-lg font-semibold text-[#2f3437] dark:text-white">
+      <h2 className="text-lg font-semibold text-[var(--abv-text)] dark:text-white">
         Tracked channels
       </h2>
-      <p className="mt-1 text-sm text-[#787774]">
+      <p className="mt-1 text-sm text-[var(--abv-text-secondary)]">
         Pick a member with a saved YouTube handle, paste a channel URL/ID
         manually, or both. The next sync will pull this channel&apos;s data.
       </p>
@@ -116,7 +116,7 @@ export default function TrackedChannelsPanel() {
           value={memberId}
           onChange={(e) => setMemberId(e.target.value)}
           disabled={busy}
-          className="rounded-md border border-[#e6e6e3] bg-white px-3 py-2 text-sm text-[#2f3437]"
+          className="rounded-md border border-[#e6e6e3] bg-white px-3 py-2 text-sm text-[var(--abv-text)]"
         >
           <option value="">— Pick a member with a saved channel —</option>
           {members.map((m) => (
@@ -131,13 +131,13 @@ export default function TrackedChannelsPanel() {
           onChange={(e) => setManualInput(e.target.value)}
           placeholder="Or paste @handle, channel URL, or UC… ID"
           disabled={busy}
-          className="rounded-md border border-[#e6e6e3] bg-white px-3 py-2 text-sm text-[#2f3437]"
+          className="rounded-md border border-[#e6e6e3] bg-white px-3 py-2 text-sm text-[var(--abv-text)]"
         />
         <button
           type="button"
           onClick={add}
           disabled={busy || (!memberId && !manualInput)}
-          className="rounded-md bg-[#6ba3c7] px-4 py-2 text-sm font-medium text-white hover:bg-[#5490b5] disabled:opacity-50"
+          className="rounded-md bg-[var(--abv-dark)] px-4 py-2 text-sm font-medium text-white hover:bg-black/85 disabled:opacity-50"
         >
           {busy ? "Adding…" : "Add channel"}
         </button>
@@ -149,9 +149,9 @@ export default function TrackedChannelsPanel() {
 
       <div className="mt-6">
         {loading ? (
-          <p className="text-sm text-[#787774]">Loading…</p>
+          <p className="text-sm text-[var(--abv-text-secondary)]">Loading…</p>
         ) : channels.length === 0 ? (
-          <p className="text-sm text-[#787774]">
+          <p className="text-sm text-[var(--abv-text-secondary)]">
             No channels tracked yet. Add one above.
           </p>
         ) : (
@@ -172,10 +172,10 @@ export default function TrackedChannelsPanel() {
                   <div className="h-10 w-10 rounded-full bg-[#e6e6e3]" />
                 )}
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-[#2f3437] truncate">
+                  <div className="text-sm font-medium text-[var(--abv-text)] truncate">
                     {c.channelName}
                   </div>
-                  <div className="text-xs text-[#787774] truncate">
+                  <div className="text-xs text-[var(--abv-text-secondary)] truncate">
                     {c.channelHandle ?? c.channelRef}
                     {c.user
                       ? ` · ${c.user.fullName ?? c.user.email}`
@@ -186,7 +186,7 @@ export default function TrackedChannelsPanel() {
                   type="button"
                   onClick={() => remove(c.id)}
                   disabled={busy}
-                  className="text-xs text-[#787774] hover:text-red-600"
+                  className="text-xs text-[var(--abv-text-secondary)] hover:text-red-600"
                 >
                   Remove
                 </button>

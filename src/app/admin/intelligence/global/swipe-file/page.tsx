@@ -72,41 +72,41 @@ export default function SwipeFilePage() {
     <div className="max-w-5xl mx-auto">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <Link href="/admin/intelligence" className="text-sm text-[#2f3437]/50 hover:text-[#2f3437]">← Intelligence</Link>
-          <h1 className="text-xl font-bold text-[#2f3437] mt-1">Swipe File</h1>
-          <p className="text-sm text-[#2f3437]/60 mt-1">Saved videos, titles, and thumbnails for reference</p>
+          <Link href="/admin/intelligence" className="text-sm text-[var(--abv-text)]/50 hover:text-[var(--abv-text)]">← Intelligence</Link>
+          <h1 className="text-xl font-bold text-[var(--abv-text)] mt-1">Swipe File</h1>
+          <p className="text-sm text-[var(--abv-text)]/60 mt-1">Saved videos, titles, and thumbnails for reference</p>
         </div>
-        <button onClick={() => setShowAdd((v) => !v)} className="px-4 py-2 bg-[#6ba3c7] text-white text-sm font-semibold rounded-lg hover:bg-[#5490b5] transition-colors">
+        <button onClick={() => setShowAdd((v) => !v)} className="px-4 py-2 bg-[var(--abv-dark)] text-white text-sm font-semibold rounded-lg hover:bg-black/85 transition-colors">
           + Add Entry
         </button>
       </div>
 
       {showAdd && (
-        <form onSubmit={handleAdd} className="bg-white border border-[#6ba3c7]/30 rounded-xl p-5 mb-5 space-y-3">
-          <p className="text-sm font-semibold text-[#2f3437]">Add to Swipe File</p>
+        <form onSubmit={handleAdd} className="bg-white border border-[var(--abv-azure)]/30 rounded-xl p-5 mb-5 space-y-3">
+          <p className="text-sm font-semibold text-[var(--abv-text)]">Add to Swipe File</p>
           <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title / description *" required
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40" />
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--abv-azure)]/40" />
           <input type="text" value={tags} onChange={(e) => setTags(e.target.value)} placeholder="Tags (comma-separated)"
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40" />
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--abv-azure)]/40" />
           <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="Notes…"
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40 resize-none" />
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--abv-azure)]/40 resize-none" />
           <div className="flex gap-2">
-            <button type="submit" disabled={saving} className="px-4 py-2 bg-[#6ba3c7] text-white text-sm font-semibold rounded-lg disabled:opacity-50">{saving ? "Saving…" : "Save"}</button>
-            <button type="button" onClick={() => setShowAdd(false)} className="px-4 py-2 text-sm text-[#2f3437]/50">Cancel</button>
+            <button type="submit" disabled={saving} className="px-4 py-2 bg-[var(--abv-dark)] text-white text-sm font-semibold rounded-lg disabled:opacity-50">{saving ? "Saving…" : "Save"}</button>
+            <button type="button" onClick={() => setShowAdd(false)} className="px-4 py-2 text-sm text-[var(--abv-text)]/50">Cancel</button>
           </div>
         </form>
       )}
 
       <div className="flex gap-2 mb-4">
         <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search swipe file…"
-          className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40 bg-white" />
+          className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--abv-azure)]/40 bg-white" />
       </div>
 
       {allTags.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mb-4">
           {allTags.map((tag) => (
             <button key={tag} onClick={() => setSearch(tag === search ? "" : tag)}
-              className={`px-2.5 py-1 text-xs rounded-full border transition-colors ${tag === search ? "bg-[#2f3437] text-white border-[#2f3437]" : "bg-white text-[#2f3437]/60 border-[#2f3437]/15 hover:border-[#2f3437]/30"}`}>
+              className={`px-2.5 py-1 text-xs rounded-full border transition-colors ${tag === search ? "bg-[var(--abv-text)] text-white border-[var(--abv-text)]" : "bg-white text-[var(--abv-text)]/60 border-[var(--abv-text)]/15 hover:border-[var(--abv-text)]/30"}`}>
               {tag}
             </button>
           ))}
@@ -114,36 +114,36 @@ export default function SwipeFilePage() {
       )}
 
       {loading ? (
-        <div className="h-48 bg-white border border-[#2f3437]/10 rounded-xl animate-pulse" />
+        <div className="h-48 bg-white border border-[var(--abv-text)]/10 rounded-xl animate-pulse" />
       ) : filtered.length === 0 ? (
-        <div className="bg-white border border-[#2f3437]/10 rounded-xl p-10 text-center">
+        <div className="bg-white border border-[var(--abv-text)]/10 rounded-xl p-10 text-center">
           <p className="text-3xl mb-3">🗂️</p>
-          <p className="font-semibold text-[#2f3437]">{entries.length === 0 ? "Swipe file is empty" : "No matching entries"}</p>
-          <p className="text-sm text-[#2f3437]/50 mt-1">Save interesting videos from the Outlier Feed and Run Reports here.</p>
+          <p className="font-semibold text-[var(--abv-text)]">{entries.length === 0 ? "Swipe file is empty" : "No matching entries"}</p>
+          <p className="text-sm text-[var(--abv-text)]/50 mt-1">Save interesting videos from the Outlier Feed and Run Reports here.</p>
         </div>
       ) : (
-        <div className="bg-white border border-[#2f3437]/10 rounded-xl divide-y divide-[#2f3437]/6">
+        <div className="bg-white border border-[var(--abv-text)]/10 rounded-xl divide-y divide-[var(--abv-text)]/6">
           {filtered.map((e) => (
-            <div key={e.id} className="p-4 flex items-start gap-4 hover:bg-[#f7f6f3]/40 transition-colors">
+            <div key={e.id} className="p-4 flex items-start gap-4 hover:bg-[var(--abv-bg)]/40 transition-colors">
               {e.thumbnailUrl && (
                 <img src={e.thumbnailUrl} alt={e.title} className="w-28 h-16 object-cover rounded-md shrink-0" />
               )}
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-[#2f3437] line-clamp-1">{e.title}</p>
-                {e.notes && <p className="text-xs text-[#2f3437]/50 mt-0.5">{e.notes}</p>}
+                <p className="text-sm font-semibold text-[var(--abv-text)] line-clamp-1">{e.title}</p>
+                {e.notes && <p className="text-xs text-[var(--abv-text)]/50 mt-0.5">{e.notes}</p>}
                 <div className="flex flex-wrap gap-1.5 mt-1.5">
                   {e.tags.map((tag) => (
-                    <span key={tag} className="px-2 py-0.5 bg-[#f7f6f3] text-xs text-[#2f3437]/60 rounded-full border border-[#2f3437]/8">{tag}</span>
+                    <span key={tag} className="px-2 py-0.5 bg-[var(--abv-bg)] text-xs text-[var(--abv-text)]/60 rounded-full border border-[var(--abv-text)]/8">{tag}</span>
                   ))}
                   {e.audience && <span className="px-2 py-0.5 bg-blue-50 text-xs text-blue-700 rounded-full">{e.audience}</span>}
                   {e.theme && <span className="px-2 py-0.5 bg-amber-50 text-xs text-amber-700 rounded-full">{e.theme}</span>}
-                  <span className="text-xs text-[#2f3437]/30">{new Date(e.createdAt).toLocaleDateString("en-CA")}</span>
+                  <span className="text-xs text-[var(--abv-text)]/30">{new Date(e.createdAt).toLocaleDateString("en-CA")}</span>
                 </div>
               </div>
               <div className="flex flex-col gap-2 shrink-0">
                 {e.videoId && (
                   <a href={`https://youtube.com/watch?v=${e.videoId}`} target="_blank" rel="noreferrer"
-                    className="px-3 py-1.5 text-xs font-semibold bg-[#f7f6f3] text-[#2f3437]/60 hover:text-[#2f3437] rounded-lg border border-[#2f3437]/10">
+                    className="px-3 py-1.5 text-xs font-semibold bg-[var(--abv-bg)] text-[var(--abv-text)]/60 hover:text-[var(--abv-text)] rounded-lg border border-[var(--abv-text)]/10">
                     YT ↗
                   </a>
                 )}

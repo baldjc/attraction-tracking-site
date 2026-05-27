@@ -25,12 +25,12 @@ interface Pulse {
 }
 
 const VERDICT_STYLE: Record<Verdict, { bg: string; fg: string; label: string }> = {
-  overperforming: { bg: "#10b981", fg: "#ffffff", label: "Overperforming" },
-  "on-pace": { bg: "#787774", fg: "#ffffff", label: "On pace" },
-  underperforming: { bg: "#e63946", fg: "#ffffff", label: "Underperforming" },
+  overperforming: { bg: "var(--abv-academy)", fg: "#ffffff", label: "Overperforming" },
+  "on-pace": { bg: "var(--abv-text-secondary)", fg: "#ffffff", label: "On pace" },
+  underperforming: { bg: "var(--abv-crimson)", fg: "#ffffff", label: "Underperforming" },
   "insufficient-data": {
-    bg: "#eaeaea",
-    fg: "#2f3437",
+    bg: "var(--abv-border-strong)",
+    fg: "var(--abv-text)",
     label: "Insufficient data",
   },
 };
@@ -88,29 +88,29 @@ export default function FortyEightHourPulse({
 
   if (error)
     return (
-      <div className="rounded-xl border border-[#e63946]/30 bg-[#e63946]/5 p-4 text-sm text-[#2f3437]">
+      <div className="rounded-xl border border-[var(--abv-crimson)]/30 bg-[var(--abv-crimson)]/5 p-4 text-sm text-[var(--abv-text)]">
         Could not load 48-Hour Pulse: {error}
       </div>
     );
   if (!pulses)
     return (
-      <div className="h-40 animate-pulse rounded-xl border border-[#eaeaea] bg-white" />
+      <div className="h-40 animate-pulse rounded-xl border border-[var(--abv-border-strong)] bg-white" />
     );
 
   return (
     <div
-      className="rounded-xl border border-[#eaeaea] bg-white p-5"
+      className="rounded-xl border border-[var(--abv-border-strong)] bg-white p-5"
       style={{
         borderRadius: "var(--atbv-radius-lg)",
         boxShadow: "var(--atbv-shadow-sm)",
       }}
     >
-      <h2 className="mb-3 text-base font-semibold text-[#2f3437]">
+      <h2 className="mb-3 text-base font-semibold text-[var(--abv-text)]">
         48-Hour Pulse
       </h2>
 
       {pulses.length === 0 ? (
-        <p className="text-sm text-[#787774]">
+        <p className="text-sm text-[var(--abv-text-secondary)]">
           No videos in the 48-hour window. Next video → check back within 2
           days of publish.
         </p>
@@ -119,11 +119,11 @@ export default function FortyEightHourPulse({
           {pulses.map((p) => (
             <li
               key={p.videoId}
-              className="flex gap-3 rounded-md border border-[#eaeaea] bg-[#f7f6f3] p-3"
+              className="flex gap-3 rounded-md border border-[var(--abv-border-strong)] bg-[var(--abv-bg)] p-3"
               style={{ borderRadius: "var(--atbv-radius-md)" }}
             >
               {p.thumbnailUrl ? (
-                <div className="relative h-16 w-28 flex-shrink-0 overflow-hidden rounded-sm bg-[#eaeaea]">
+                <div className="relative h-16 w-28 flex-shrink-0 overflow-hidden rounded-sm bg-[var(--abv-border-strong)]">
                   <Image
                     src={p.thumbnailUrl}
                     alt=""
@@ -133,21 +133,21 @@ export default function FortyEightHourPulse({
                   />
                 </div>
               ) : (
-                <div className="h-16 w-28 flex-shrink-0 rounded-sm bg-[#eaeaea]" />
+                <div className="h-16 w-28 flex-shrink-0 rounded-sm bg-[var(--abv-border-strong)]" />
               )}
               <div className="min-w-0 flex-1">
                 <div className="flex items-start justify-between gap-2">
-                  <h3 className="line-clamp-2 text-sm font-medium text-[#2f3437]">
+                  <h3 className="line-clamp-2 text-sm font-medium text-[var(--abv-text)]">
                     {p.title}
                   </h3>
                   {p.dramaMode && (
                     <DramaMagnet
                       size={16}
-                      className="flex-shrink-0 text-[#8b5cf6]"
+                      className="flex-shrink-0 text-[var(--abv-hire)]"
                     />
                   )}
                 </div>
-                <div className="mt-1 flex items-center gap-3 text-xs text-[#787774]">
+                <div className="mt-1 flex items-center gap-3 text-xs text-[var(--abv-text-secondary)]">
                   <span>{p.hoursSincePublish}h ago</span>
                   <span className="font-data tabular-nums">
                     {p.views.toLocaleString("en-CA")} views

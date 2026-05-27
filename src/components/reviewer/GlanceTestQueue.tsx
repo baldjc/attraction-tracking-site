@@ -78,7 +78,7 @@ export default function GlanceTestQueue({
 
   if (error)
     return (
-      <div className="rounded-xl border border-[#e63946]/30 bg-[#e63946]/5 p-4 text-sm text-[#2f3437]">
+      <div className="rounded-xl border border-[var(--abv-crimson)]/30 bg-[var(--abv-crimson)]/5 p-4 text-sm text-[var(--abv-text)]">
         Could not load Glance Test Queue: {error}
       </div>
     );
@@ -93,21 +93,21 @@ export default function GlanceTestQueue({
 
   return (
     <div
-      className="rounded-xl border border-[#eaeaea] bg-white p-5"
+      className="rounded-xl border border-[var(--abv-border-strong)] bg-white p-5"
       style={{
         borderRadius: "var(--atbv-radius-lg)",
         boxShadow: "var(--atbv-shadow-sm)",
       }}
     >
       <div className="mb-3 flex items-center justify-between gap-2">
-        <h2 className="text-base font-semibold text-[#2f3437]">
+        <h2 className="text-base font-semibold text-[var(--abv-text)]">
           Glance Test Queue
         </h2>
         <div className="flex items-center gap-2">
           <select
             value={sort}
             onChange={(e) => setSort(e.target.value as SortMode)}
-            className="rounded-md border border-[#eaeaea] bg-white px-2 py-1 text-xs text-[#2f3437]"
+            className="rounded-md border border-[var(--abv-border-strong)] bg-white px-2 py-1 text-xs text-[var(--abv-text)]"
             style={{ borderRadius: "var(--atbv-radius-sm)" }}
           >
             <option value="lowest">Lowest score first</option>
@@ -116,7 +116,7 @@ export default function GlanceTestQueue({
           <button
             onClick={runBatch}
             disabled={running}
-            className="flex items-center gap-1.5 rounded-md bg-[#6ba3c7] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#5490b5] disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-md bg-[var(--abv-dark)] px-3 py-1.5 text-xs font-medium text-white hover:bg-black/85 disabled:opacity-50"
             style={{ borderRadius: "var(--atbv-radius-md)" }}
           >
             <ArrowPathIcon
@@ -128,9 +128,9 @@ export default function GlanceTestQueue({
       </div>
 
       {!sorted ? (
-        <div className="h-40 animate-pulse rounded-md bg-[#f7f6f3]" />
+        <div className="h-40 animate-pulse rounded-md bg-[var(--abv-bg)]" />
       ) : sorted.length === 0 ? (
-        <p className="text-sm text-[#787774]">
+        <p className="text-sm text-[var(--abv-text-secondary)]">
           No glance tests yet. Click <em>Run new batch</em> to score the most
           recent thumbnails.
         </p>
@@ -142,10 +142,10 @@ export default function GlanceTestQueue({
             return (
               <div
                 key={r.id}
-                className="overflow-hidden rounded-md border border-[#eaeaea] bg-[#f7f6f3]"
+                className="overflow-hidden rounded-md border border-[var(--abv-border-strong)] bg-[var(--abv-bg)]"
                 style={{ borderRadius: "var(--atbv-radius-md)" }}
               >
-                <div className="relative aspect-video bg-[#eaeaea]">
+                <div className="relative aspect-video bg-[var(--abv-border-strong)]">
                   {r.thumbnailUrl && (
                     <Image
                       src={r.thumbnailUrl}
@@ -166,19 +166,19 @@ export default function GlanceTestQueue({
                   </div>
                 </div>
                 <div className="p-3">
-                  <h3 className="line-clamp-2 text-sm font-medium text-[#2f3437]">
+                  <h3 className="line-clamp-2 text-sm font-medium text-[var(--abv-text)]">
                     {r.title}
                   </h3>
                   {obs && (
-                    <p className="mt-1.5 line-clamp-2 text-xs text-[#787774]">
-                      <span className="font-medium text-[#2f3437]">
+                    <p className="mt-1.5 line-clamp-2 text-xs text-[var(--abv-text-secondary)]">
+                      <span className="font-medium text-[var(--abv-text)]">
                         Note:
                       </span>{" "}
                       {obs}
                     </p>
                   )}
                   {imp && (
-                    <p className="mt-1 line-clamp-2 text-xs text-[#787774]">
+                    <p className="mt-1 line-clamp-2 text-xs text-[var(--abv-text-secondary)]">
                       <span
                         className="font-medium"
                         style={{ color: "var(--atbv-primary)" }}

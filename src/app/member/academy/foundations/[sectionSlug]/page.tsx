@@ -48,20 +48,20 @@ export default function SectionPage({ params }: { params: Promise<{ sectionSlug:
       <div className="flex items-center gap-3 mb-6 flex-wrap">
         <Link
           href="/member/academy"
-          className="flex items-center gap-1.5 text-sm text-[#2f3437]/50 dark:text-white/50 hover:text-[#2f3437] dark:hover:text-white transition-colors"
+          className="flex items-center gap-1.5 text-sm text-[var(--abv-text)]/50 dark:text-white/50 hover:text-[var(--abv-text)] dark:hover:text-white transition-colors"
         >
           <ArrowLeftIcon className="w-4 h-4" />
           Academy
         </Link>
-        <span className="text-[#2f3437]/30 dark:text-white/30">/</span>
+        <span className="text-[var(--abv-text)]/30 dark:text-white/30">/</span>
         <Link
           href="/member/academy/foundations"
-          className="text-sm text-[#2f3437]/50 dark:text-white/50 hover:text-[#2f3437] dark:hover:text-white transition-colors"
+          className="text-sm text-[var(--abv-text)]/50 dark:text-white/50 hover:text-[var(--abv-text)] dark:hover:text-white transition-colors"
         >
           Foundations
         </Link>
-        <span className="text-[#2f3437]/30 dark:text-white/30">/</span>
-        <span className="text-sm text-[#2f3437] dark:text-white font-medium truncate">
+        <span className="text-[var(--abv-text)]/30 dark:text-white/30">/</span>
+        <span className="text-sm text-[var(--abv-text)] dark:text-white font-medium truncate">
           {section?.title ?? sectionSlug}
         </span>
       </div>
@@ -71,19 +71,19 @@ export default function SectionPage({ params }: { params: Promise<{ sectionSlug:
           <div className="flex items-center gap-3 mb-2">
             <span className="text-3xl">{getSectionIcon(section.sortOrder, section.slug)}</span>
             <div>
-              <p className="text-xs font-bold text-[#2f3437]/30 dark:text-white/30 uppercase tracking-wider">
+              <p className="text-xs font-bold text-[var(--abv-text)]/30 dark:text-white/30 uppercase tracking-wider">
                 Section {section.sortOrder}
               </p>
-              <h1 className="text-2xl font-bold text-[#2f3437] dark:text-white">{section.title}</h1>
+              <h1 className="text-2xl font-bold text-[var(--abv-text)] dark:text-white">{section.title}</h1>
             </div>
           </div>
           {section.description && (
-            <p className="text-[#2f3437]/60 dark:text-white/60 mt-2 text-sm leading-relaxed">
+            <p className="text-[var(--abv-text)]/60 dark:text-white/60 mt-2 text-sm leading-relaxed">
               {section.description}
             </p>
           )}
           {!loading && (
-            <p className="text-xs text-[#2f3437]/40 dark:text-white/40 mt-2">
+            <p className="text-xs text-[var(--abv-text)]/40 dark:text-white/40 mt-2">
               {section.completedCount}/{section.lessonCount} lessons complete
             </p>
           )}
@@ -93,7 +93,7 @@ export default function SectionPage({ params }: { params: Promise<{ sectionSlug:
       {loading ? (
         <div className="space-y-3">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="bg-white dark:bg-[#1a2433] rounded-lg border border-[#eaeaea] dark:border-white/10 p-5 animate-pulse h-20" />
+            <div key={i} className="bg-white dark:bg-[#1a2433] rounded-lg border border-[var(--abv-border-strong)] dark:border-white/10 p-5 animate-pulse h-20" />
           ))}
         </div>
       ) : (
@@ -102,36 +102,36 @@ export default function SectionPage({ params }: { params: Promise<{ sectionSlug:
             <Link
               key={lesson.id}
               href={`/member/academy/foundations/${sectionSlug}/${lesson.slug}`}
-              className="flex items-start gap-4 bg-white dark:bg-[#1a2433] rounded-lg border border-[#eaeaea] dark:border-white/10 p-5 hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] transition-all group"
+              className="flex items-start gap-4 bg-white dark:bg-[#1a2433] rounded-lg border border-[var(--abv-border-strong)] dark:border-white/10 p-5 hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] transition-all group"
             >
               <div className="shrink-0 mt-0.5">
                 {lesson.completed ? (
                   <CheckCircleIcon className="w-6 h-6 text-green-500" />
                 ) : (
-                  <div className="w-6 h-6 rounded-full border-2 border-[#eaeaea] dark:border-white/20" />
+                  <div className="w-6 h-6 rounded-full border-2 border-[var(--abv-border-strong)] dark:border-white/20" />
                 )}
               </div>
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-start gap-2 flex-wrap">
-                  <p className="text-sm font-semibold text-[#2f3437] dark:text-white group-hover:text-[#6ba3c7] transition-colors">
-                    <span className="text-[#2f3437]/30 dark:text-white/30 font-normal mr-1.5">{i + 1}.</span>
+                  <p className="text-sm font-semibold text-[var(--abv-text)] dark:text-white group-hover:text-[var(--abv-azure)] transition-colors">
+                    <span className="text-[var(--abv-text)]/30 dark:text-white/30 font-normal mr-1.5">{i + 1}.</span>
                     {lesson.title}
                   </p>
                 </div>
                 {lesson.description && (
-                  <p className="text-xs text-[#2f3437]/55 dark:text-white/45 mt-1 leading-relaxed line-clamp-2">
+                  <p className="text-xs text-[var(--abv-text)]/55 dark:text-white/45 mt-1 leading-relaxed line-clamp-2">
                     {lesson.description}
                   </p>
                 )}
                 <div className="flex items-center gap-1.5 mt-2 flex-wrap">
                   {lesson.youtubeUrl ? (
-                    <span className="flex items-center gap-1 text-[10px] text-[#2f3437]/40 dark:text-white/40">
+                    <span className="flex items-center gap-1 text-[10px] text-[var(--abv-text)]/40 dark:text-white/40">
                       <PlayCircleIcon className="w-3.5 h-3.5" />
                       Video
                     </span>
                   ) : (
-                    <span className="flex items-center gap-1 text-[10px] text-[#2f3437]/40 dark:text-white/40">
+                    <span className="flex items-center gap-1 text-[10px] text-[var(--abv-text)]/40 dark:text-white/40">
                       <DocumentTextIcon className="w-3.5 h-3.5" />
                       Workbook
                     </span>

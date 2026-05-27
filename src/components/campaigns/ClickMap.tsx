@@ -21,7 +21,7 @@ const ClickMapInner = dynamic(() => import("./ClickMapInner"), {
       className="w-full bg-[#f8f9fa] rounded-lg flex items-center justify-center"
       style={{ height: 400 }}
     >
-      <p className="text-sm text-[#2f3437]/40">Loading map…</p>
+      <p className="text-sm text-[var(--abv-text)]/40">Loading map…</p>
     </div>
   ),
 });

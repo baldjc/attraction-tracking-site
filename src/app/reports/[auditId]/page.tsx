@@ -32,18 +32,18 @@ export default function SharedReportPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f7f6f3]">
-        <p className="text-[#2f3437]/40">Loading report…</p>
+      <div className="min-h-screen flex items-center justify-center bg-[var(--abv-bg)]">
+        <p className="text-[var(--abv-text)]/40">Loading report…</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f7f6f3]">
+      <div className="min-h-screen flex items-center justify-center bg-[var(--abv-bg)]">
         <div className="text-center">
-          <p className="text-[#2f3437]/60 mb-2">{error}</p>
-          <a href="/login" className="text-sm text-[#6ba3c7] hover:underline">
+          <p className="text-[var(--abv-text)]/60 mb-2">{error}</p>
+          <a href="/login" className="text-sm text-[var(--abv-azure)] hover:underline">
             Sign in to view this report
           </a>
         </div>
@@ -66,20 +66,20 @@ export default function SharedReportPage() {
 
   const chrome = (
     <div className="flex items-center justify-between no-print">
-      <span className="text-xs font-bold text-[#2f3437] tracking-tight">
+      <span className="text-xs font-bold text-[var(--abv-text)] tracking-tight">
         Attraction by Video
       </span>
       <div className="flex items-center gap-2">
         <button
           onClick={handleCopyLink}
-          className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-[#2f3437]/70 transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-[var(--abv-text)]/70 transition-colors"
         >
           <ClipboardDocumentIcon className="w-4 h-4" />
           {copied ? "Copied!" : "Copy Link"}
         </button>
         <button
           onClick={handlePrint}
-          className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-[#2f3437]/70 transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-[var(--abv-text)]/70 transition-colors"
         >
           <PrinterIcon className="w-4 h-4" />
           Print / PDF
@@ -89,7 +89,7 @@ export default function SharedReportPage() {
   );
 
   return (
-    <div className="min-h-screen bg-[#f7f6f3] py-8 px-4">
+    <div className="min-h-screen bg-[var(--abv-bg)] py-8 px-4">
       <div className="max-w-4xl mx-auto">
         <AuditReportView audit={audit} chrome={chrome} />
       </div>

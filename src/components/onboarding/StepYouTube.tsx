@@ -57,24 +57,24 @@ export default function StepYouTube({ initialUrl, initialHandle, initialName, in
   if (channelLocked && initialUrl) {
     return (
       <div className="space-y-4">
-        <div className="flex items-center gap-3 p-4 bg-[#f7f6f3] dark:bg-[#0f1419] rounded-xl border border-[#2f3437]/10 dark:border-white/10">
+        <div className="flex items-center gap-3 p-4 bg-[var(--abv-bg)] dark:bg-[#0f1419] rounded-xl border border-[var(--abv-text)]/10 dark:border-white/10">
           {initialThumbnail ? (
             <Image src={initialThumbnail} alt={initialName ?? ""} width={44} height={44} className="rounded-full object-cover shrink-0" />
           ) : (
-            <div className="w-11 h-11 rounded-full bg-[#6ba3c7]/20 flex items-center justify-center shrink-0">
-              <span className="text-[#6ba3c7] font-bold text-sm">YT</span>
+            <div className="w-11 h-11 rounded-full bg-[var(--abv-dark)]/20 flex items-center justify-center shrink-0">
+              <span className="text-[var(--abv-azure)] font-bold text-sm">YT</span>
             </div>
           )}
           <div className="min-w-0">
-            <p className="font-semibold text-sm text-[#2f3437] dark:text-white truncate">{initialName ?? "Your Channel"}</p>
-            <p className="text-xs text-[#2f3437]/50 dark:text-white/40 truncate">{initialHandle ?? initialUrl}</p>
+            <p className="font-semibold text-sm text-[var(--abv-text)] dark:text-white truncate">{initialName ?? "Your Channel"}</p>
+            <p className="text-xs text-[var(--abv-text)]/50 dark:text-white/40 truncate">{initialHandle ?? initialUrl}</p>
           </div>
           <CheckCircleIcon className="w-5 h-5 text-green-500 shrink-0 ml-auto" />
         </div>
-        <p className="text-xs text-[#2f3437]/40 dark:text-white/30">Your channel is already linked. Contact your admin to change it.</p>
+        <p className="text-xs text-[var(--abv-text)]/40 dark:text-white/30">Your channel is already linked. Contact your admin to change it.</p>
         <button
           onClick={handleContinue}
-          className="w-full bg-[#6ba3c7] hover:bg-[#2bb0ec] text-white font-semibold text-sm py-2.5 rounded-lg transition-colors"
+          className="w-full bg-[var(--abv-dark)] hover:bg-[#2bb0ec] text-white font-semibold text-sm py-2.5 rounded-lg transition-colors"
         >
           Continue →
         </button>
@@ -88,7 +88,7 @@ export default function StepYouTube({ initialUrl, initialHandle, initialName, in
       {!noChannel && (
         <>
           <div>
-            <label className="block text-sm font-medium text-[#2f3437] dark:text-white mb-1.5">YouTube Channel URL</label>
+            <label className="block text-sm font-medium text-[var(--abv-text)] dark:text-white mb-1.5">YouTube Channel URL</label>
             <div className="flex gap-2">
               <input
                 type="url"
@@ -96,12 +96,12 @@ export default function StepYouTube({ initialUrl, initialHandle, initialName, in
                 onChange={(e) => { setUrl(e.target.value); setResolved(null); setError(null); }}
                 onBlur={resolveChannel}
                 placeholder="https://www.youtube.com/@YourHandle"
-                className="flex-1 border border-[#2f3437]/20 dark:border-white/20 rounded-lg px-3 py-2 text-sm text-[#2f3437] dark:text-white placeholder-[#2f3437]/30 dark:placeholder-white/30 bg-white dark:bg-[#0f1419] focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40"
+                className="flex-1 border border-[var(--abv-text)]/20 dark:border-white/20 rounded-lg px-3 py-2 text-sm text-[var(--abv-text)] dark:text-white placeholder-[var(--abv-text)]/30 dark:placeholder-white/30 bg-white dark:bg-[#0f1419] focus:outline-none focus:ring-2 focus:ring-[var(--abv-azure)]/40"
               />
               <button
                 onClick={resolveChannel}
                 disabled={resolving || !url.trim()}
-                className="px-4 py-2 text-sm font-semibold bg-[#2f3437]/10 dark:bg-white/10 text-[#2f3437] dark:text-white rounded-lg hover:bg-[#2f3437]/15 disabled:opacity-40 transition-colors"
+                className="px-4 py-2 text-sm font-semibold bg-[var(--abv-text)]/10 dark:bg-white/10 text-[var(--abv-text)] dark:text-white rounded-lg hover:bg-[var(--abv-text)]/15 disabled:opacity-40 transition-colors"
               >
                 {resolving ? "..." : "Check"}
               </button>
@@ -113,13 +113,13 @@ export default function StepYouTube({ initialUrl, initialHandle, initialName, in
               {resolved.thumbnail ? (
                 <Image src={resolved.thumbnail} alt={resolved.name} width={36} height={36} className="rounded-full object-cover shrink-0" />
               ) : (
-                <div className="w-9 h-9 rounded-full bg-[#6ba3c7]/20 flex items-center justify-center shrink-0">
-                  <span className="text-[#6ba3c7] font-bold text-xs">YT</span>
+                <div className="w-9 h-9 rounded-full bg-[var(--abv-dark)]/20 flex items-center justify-center shrink-0">
+                  <span className="text-[var(--abv-azure)] font-bold text-xs">YT</span>
                 </div>
               )}
               <div className="min-w-0 flex-1">
-                <p className="font-semibold text-sm text-[#2f3437] dark:text-white truncate">{resolved.name}</p>
-                <p className="text-xs text-[#2f3437]/50 dark:text-white/40">{resolved.handle}</p>
+                <p className="font-semibold text-sm text-[var(--abv-text)] dark:text-white truncate">{resolved.name}</p>
+                <p className="text-xs text-[var(--abv-text)]/50 dark:text-white/40">{resolved.handle}</p>
               </div>
               <CheckCircleIcon className="w-5 h-5 text-green-500 shrink-0" />
             </div>
@@ -134,15 +134,15 @@ export default function StepYouTube({ initialUrl, initialHandle, initialName, in
           type="checkbox"
           checked={noChannel}
           onChange={(e) => { setNoChannel(e.target.checked); if (e.target.checked) { setResolved(null); setError(null); } }}
-          className="rounded border-[#2f3437]/30 text-[#6ba3c7] focus:ring-[#6ba3c7]/40"
+          className="rounded border-[var(--abv-text)]/30 text-[var(--abv-azure)] focus:ring-[var(--abv-azure)]/40"
         />
-        <span className="text-sm text-[#2f3437]/60 dark:text-white/50">I don&apos;t have a YouTube channel yet</span>
+        <span className="text-sm text-[var(--abv-text)]/60 dark:text-white/50">I don&apos;t have a YouTube channel yet</span>
       </label>
 
       <button
         onClick={handleContinue}
         disabled={!canContinue}
-        className="w-full bg-[#6ba3c7] hover:bg-[#2bb0ec] text-white font-semibold text-sm py-2.5 rounded-lg transition-colors disabled:opacity-40"
+        className="w-full bg-[var(--abv-dark)] hover:bg-[#2bb0ec] text-white font-semibold text-sm py-2.5 rounded-lg transition-colors disabled:opacity-40"
       >
         Continue →
       </button>

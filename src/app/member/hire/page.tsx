@@ -10,7 +10,7 @@ import AddOnsSection from "@/components/hire/AddOnsSection";
 
 function Toast({ message, onDismiss }: { message: string; onDismiss: () => void }) {
   return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-[#1e2a38] text-white text-sm font-medium px-5 py-3.5 rounded-xl shadow-2xl max-w-md w-[calc(100vw-2rem)] animate-slide-up">
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-[var(--abv-dark)] text-white text-sm font-medium px-5 py-3.5 rounded-xl shadow-2xl max-w-md w-[calc(100vw-2rem)] animate-slide-up">
       <CheckCircleIcon className="w-5 h-5 text-green-400 shrink-0" />
       <span className="flex-1">{message}</span>
       <button onClick={onDismiss} className="shrink-0 opacity-60 hover:opacity-100 transition-opacity">
@@ -67,22 +67,22 @@ export default function HireAHumanPage() {
         <div>
           <PageHeader emoji="🤝" title="Hire a Human" />
 
-          <p className="text-2xl font-bold text-[#2f3437] dark:text-white leading-snug max-w-2xl mb-6">
+          <p className="text-2xl font-bold text-[var(--abv-text)] dark:text-white leading-snug max-w-2xl mb-6">
             You didn&apos;t get to where you are only to spend your weekends and evenings editing videos.
           </p>
 
           <div className="pl-5 max-w-2xl" style={{ borderLeft: "3px solid rgba(139,92,246,0.30)" }}>
-            <p className="text-sm text-[#2f3437]/60 dark:text-white/60 leading-relaxed">
-              <span className="font-semibold text-[#2f3437] dark:text-white">You know what to say on camera.</span>{" "}
+            <p className="text-sm text-[var(--abv-text)]/60 dark:text-white/60 leading-relaxed">
+              <span className="font-semibold text-[var(--abv-text)] dark:text-white">You know what to say on camera.</span>{" "}
               It&apos;s everything after you hit stop that kills your momentum.
             </p>
-            <p className="text-sm text-[#2f3437]/60 dark:text-white/60 leading-relaxed mt-4">
-              <span className="font-semibold text-[#2f3437] dark:text-white">One skipped week becomes two.</span>{" "}
+            <p className="text-sm text-[var(--abv-text)]/60 dark:text-white/60 leading-relaxed mt-4">
+              <span className="font-semibold text-[var(--abv-text)] dark:text-white">One skipped week becomes two.</span>{" "}
               Then a month. Then you&apos;re starting over.
             </p>
-            <p className="text-sm text-[#2f3437]/60 dark:text-white/60 leading-relaxed mt-4">
+            <p className="text-sm text-[var(--abv-text)]/60 dark:text-white/60 leading-relaxed mt-4">
               The agents who grow fastest aren&apos;t better on camera —{" "}
-              <span className="font-semibold text-[#2f3437] dark:text-white">they just never stop publishing.</span>
+              <span className="font-semibold text-[var(--abv-text)] dark:text-white">they just never stop publishing.</span>
             </p>
           </div>
         </div>
@@ -91,7 +91,7 @@ export default function HireAHumanPage() {
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-96 bg-[#eaeaea] dark:bg-white/10 rounded-xl animate-pulse" />
+              <div key={i} className="h-96 bg-[var(--abv-border-strong)] dark:bg-white/10 rounded-xl animate-pulse" />
             ))}
           </div>
         ) : (

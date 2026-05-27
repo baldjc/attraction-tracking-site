@@ -113,42 +113,42 @@ function FoundationsTab() {
 
   if (loading) {
     return (
-      <div className="bg-white dark:bg-[#1a2433] rounded-lg border border-[#eaeaea] dark:border-white/10 p-8 text-center text-sm text-[#2f3437]/40 dark:text-white/40">
+      <div className="bg-white dark:bg-[#1a2433] rounded-lg border border-[var(--abv-border-strong)] dark:border-white/10 p-8 text-center text-sm text-[var(--abv-text)]/40 dark:text-white/40">
         Loading…
       </div>
     );
   }
 
   return (
-    <div className="bg-white dark:bg-[#1a2433] rounded-lg border border-[#eaeaea] dark:border-white/10 p-8">
+    <div className="bg-white dark:bg-[#1a2433] rounded-lg border border-[var(--abv-border-strong)] dark:border-white/10 p-8">
       <div className="flex items-start gap-5">
-        <div className="p-3 bg-[#6ba3c7]/10 rounded-xl shrink-0">
-          <AcademicCapIcon className="w-8 h-8 text-[#6ba3c7]" />
+        <div className="p-3 bg-[var(--abv-dark)]/10 rounded-xl shrink-0">
+          <AcademicCapIcon className="w-8 h-8 text-[var(--abv-azure)]" />
         </div>
         <div className="flex-1 min-w-0">
-          <h2 className="text-xl font-bold text-[#2f3437] dark:text-white mb-1">
+          <h2 className="text-xl font-bold text-[var(--abv-text)] dark:text-white mb-1">
             The Foundations Library
           </h2>
-          <p className="text-sm text-[#2f3437]/60 dark:text-white/60 mb-5">
+          <p className="text-sm text-[var(--abv-text)]/60 dark:text-white/60 mb-5">
             Master the Attraction by Video system — from avatar clarity to packaging
           </p>
 
           <div className="mb-5">
-            <div className="flex items-center justify-between text-xs text-[#2f3437]/50 dark:text-white/50 mb-1.5">
+            <div className="flex items-center justify-between text-xs text-[var(--abv-text)]/50 dark:text-white/50 mb-1.5">
               <span>Overall progress</span>
               <span className="font-semibold">{totalCompleted}/{totalLessons} lessons complete</span>
             </div>
-            <div className="h-2 bg-[#eaeaea] dark:bg-white/10 rounded-full overflow-hidden">
-              <div className="h-full bg-[#6ba3c7] rounded-full transition-all" style={{ width: `${overallPct}%` }} />
+            <div className="h-2 bg-[var(--abv-border-strong)] dark:bg-white/10 rounded-full overflow-hidden">
+              <div className="h-full bg-[var(--abv-dark)] rounded-full transition-all" style={{ width: `${overallPct}%` }} />
             </div>
-            <p className="text-xs text-[#2f3437]/40 dark:text-white/40 mt-1">{overallPct}% complete</p>
+            <p className="text-xs text-[var(--abv-text)]/40 dark:text-white/40 mt-1">{overallPct}% complete</p>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3">
             {continueSection && (
               <Link
                 href={`/member/academy/foundations/${continueSection.slug}`}
-                className="flex items-center gap-2 bg-[#6ba3c7] hover:bg-[#5490b5] text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors"
+                className="flex items-center gap-2 $1var(--abv-dark)$2 hover:bg-black/85 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors"
               >
                 {totalCompleted === 0 ? "Start Learning" : "Continue Learning"}
                 <ArrowRightIcon className="w-4 h-4" />
@@ -156,13 +156,13 @@ function FoundationsTab() {
             )}
             <Link
               href="/member/academy/foundations"
-              className="flex items-center gap-2 border border-[#eaeaea] dark:border-white/10 text-[#2f3437] dark:text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-[#f7f6f3] dark:hover:bg-white/5 transition-colors"
+              className="flex items-center gap-2 border border-[var(--abv-border-strong)] dark:border-white/10 text-[var(--abv-text)] dark:text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-[var(--abv-bg)] dark:hover:bg-white/5 transition-colors"
             >
               Browse All Sections
             </Link>
             <Link
               href="/member/academy?tab=browse"
-              className="flex items-center gap-2 border border-[#eaeaea] dark:border-white/10 text-[#2f3437] dark:text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-[#f7f6f3] dark:hover:bg-white/5 transition-colors"
+              className="flex items-center gap-2 border border-[var(--abv-border-strong)] dark:border-white/10 text-[var(--abv-text)] dark:text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-[var(--abv-bg)] dark:hover:bg-white/5 transition-colors"
             >
               Browse by Principle
             </Link>
@@ -171,8 +171,8 @@ function FoundationsTab() {
       </div>
 
       {sections.length > 0 && (
-        <div className="mt-8 pt-6 border-t border-[#eaeaea] dark:border-white/10">
-          <h3 className="text-sm font-semibold text-[#2f3437]/60 dark:text-white/60 uppercase tracking-wider mb-3">
+        <div className="mt-8 pt-6 border-t border-[var(--abv-border-strong)] dark:border-white/10">
+          <h3 className="text-sm font-semibold text-[var(--abv-text)]/60 dark:text-white/60 uppercase tracking-wider mb-3">
             Sections
           </h3>
           <div className="space-y-1">
@@ -184,31 +184,31 @@ function FoundationsTab() {
               const lessons = lessonMap.get(s.id) ?? [];
 
               return (
-                <div key={s.id} className="rounded-lg border border-transparent hover:border-[#eaeaea] dark:hover:border-white/10 transition-colors">
+                <div key={s.id} className="rounded-lg border border-transparent hover:border-[var(--abv-border-strong)] dark:hover:border-white/10 transition-colors">
                   <button
                     onClick={() => toggleSection(s)}
-                    className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-[#f7f6f3] dark:hover:bg-white/5 transition-colors group text-left"
+                    className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-[var(--abv-bg)] dark:hover:bg-white/5 transition-colors group text-left"
                   >
                     {isExpanded ? (
-                      <ChevronDownIcon className="w-4 h-4 text-[#2f3437]/40 dark:text-white/40 shrink-0 transition-transform" />
+                      <ChevronDownIcon className="w-4 h-4 text-[var(--abv-text)]/40 dark:text-white/40 shrink-0 transition-transform" />
                     ) : (
-                      <ChevronRightIcon className="w-4 h-4 text-[#2f3437]/40 dark:text-white/40 shrink-0 transition-transform" />
+                      <ChevronRightIcon className="w-4 h-4 text-[var(--abv-text)]/40 dark:text-white/40 shrink-0 transition-transform" />
                     )}
                     {done ? (
                       <CheckCircleIcon className="w-5 h-5 text-green-500 shrink-0" />
                     ) : (
-                      <div className="w-5 h-5 rounded-full border-2 border-[#eaeaea] dark:border-white/20 shrink-0" />
+                      <div className="w-5 h-5 rounded-full border-2 border-[var(--abv-border-strong)] dark:border-white/20 shrink-0" />
                     )}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-[#2f3437] dark:text-white group-hover:text-[#6ba3c7] transition-colors truncate">
+                      <p className="text-sm font-medium text-[var(--abv-text)] dark:text-white group-hover:text-[var(--abv-azure)] transition-colors truncate">
                         {s.sortOrder}. {s.title}
                       </p>
                     </div>
-                    <span className="text-xs text-[#2f3437]/40 dark:text-white/40 shrink-0">
+                    <span className="text-xs text-[var(--abv-text)]/40 dark:text-white/40 shrink-0">
                       {s.completedCount}/{s.lessonCount}
                     </span>
-                    <div className="w-16 h-1.5 bg-[#eaeaea] dark:bg-white/10 rounded-full overflow-hidden shrink-0">
-                      <div className="h-full bg-[#6ba3c7] rounded-full" style={{ width: `${pct}%` }} />
+                    <div className="w-16 h-1.5 bg-[var(--abv-border-strong)] dark:bg-white/10 rounded-full overflow-hidden shrink-0">
+                      <div className="h-full bg-[var(--abv-dark)] rounded-full" style={{ width: `${pct}%` }} />
                     </div>
                   </button>
 
@@ -224,16 +224,16 @@ function FoundationsTab() {
                         {isLoadingLessons ? (
                           <div className="space-y-2 py-2">
                             {[...Array(3)].map((_, i) => (
-                              <div key={i} className="h-10 rounded bg-[#f7f6f3] dark:bg-white/5 animate-pulse" />
+                              <div key={i} className="h-10 rounded bg-[var(--abv-bg)] dark:bg-white/5 animate-pulse" />
                             ))}
                           </div>
                         ) : (
-                          <div className="border-l-2 border-[#eaeaea] dark:border-white/10 ml-2 pl-4 space-y-0.5 py-1">
+                          <div className="border-l-2 border-[var(--abv-border-strong)] dark:border-white/10 ml-2 pl-4 space-y-0.5 py-1">
                             {lessons.map((lesson, i) => (
                               <Link
                                 key={lesson.id}
                                 href={`/member/academy/foundations/${s.slug}/${lesson.slug}`}
-                                className="flex items-start gap-3 py-2.5 px-2 rounded-lg hover:bg-[#f7f6f3] dark:hover:bg-white/5 transition-colors group/lesson"
+                                className="flex items-start gap-3 py-2.5 px-2 rounded-lg hover:bg-[var(--abv-bg)] dark:hover:bg-white/5 transition-colors group/lesson"
                               >
                                 <div className="shrink-0 mt-0.5">
                                   {lesson.completed ? (
@@ -243,12 +243,12 @@ function FoundationsTab() {
                                   )}
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-medium text-[#2f3437] dark:text-white group-hover/lesson:text-[#6ba3c7] transition-colors leading-snug">
-                                    <span className="text-[#2f3437]/30 dark:text-white/30 font-normal mr-1">{i + 1}.</span>
+                                  <p className="text-sm font-medium text-[var(--abv-text)] dark:text-white group-hover/lesson:text-[var(--abv-azure)] transition-colors leading-snug">
+                                    <span className="text-[var(--abv-text)]/30 dark:text-white/30 font-normal mr-1">{i + 1}.</span>
                                     {lesson.title}
                                   </p>
                                   {lesson.description && (
-                                    <p className="text-xs text-[#2f3437]/50 dark:text-white/40 mt-0.5 leading-relaxed line-clamp-2">
+                                    <p className="text-xs text-[var(--abv-text)]/50 dark:text-white/40 mt-0.5 leading-relaxed line-clamp-2">
                                       {lesson.description}
                                     </p>
                                   )}
@@ -263,7 +263,7 @@ function FoundationsTab() {
                                         </span>
                                       ))}
                                       {(lesson.principleTags as string[]).length > 3 && (
-                                        <span className="text-[10px] text-[#2f3437]/30 dark:text-white/30">
+                                        <span className="text-[10px] text-[var(--abv-text)]/30 dark:text-white/30">
                                           +{(lesson.principleTags as string[]).length - 3}
                                         </span>
                                       )}
@@ -303,7 +303,7 @@ function LiveCallsTab() {
     return (
       <div className="space-y-4">
         {[...Array(3)].map((_, i) => (
-          <div key={i} className="bg-white dark:bg-[#1a1a1a] rounded-lg border border-[#eaeaea] dark:border-white/10 h-36 animate-pulse" />
+          <div key={i} className="bg-white dark:bg-[#1a1a1a] rounded-lg border border-[var(--abv-border-strong)] dark:border-white/10 h-36 animate-pulse" />
         ))}
       </div>
     );
@@ -322,7 +322,7 @@ function LiveCallsTab() {
     <div className="space-y-8">
       {months.map((month) => (
         <div key={month.label}>
-          <h3 className="text-sm font-semibold text-[#2f3437]/60 dark:text-white/60 uppercase tracking-wider mb-3">
+          <h3 className="text-sm font-semibold text-[var(--abv-text)]/60 dark:text-white/60 uppercase tracking-wider mb-3">
             {month.label}
           </h3>
           <div className="space-y-3">
@@ -345,7 +345,7 @@ function LiveCallCard({ call }: { call: LiveCall }) {
       <div className="flex items-center justify-between px-4 py-2 border-b bg-violet-50 dark:bg-violet-900/10 border-violet-100 dark:border-violet-900/20">
         <div className="flex items-center gap-2">
           <VideoCameraIcon className="w-3.5 h-3.5 text-violet-500 flex-shrink-0" />
-          <span className="text-xs font-medium text-[#2f3437]/60 dark:text-white/50">
+          <span className="text-xs font-medium text-[var(--abv-text)]/60 dark:text-white/50">
             Q&A Call · {fmtDate(call.callDate)}
           </span>
         </div>
@@ -357,11 +357,11 @@ function LiveCallCard({ call }: { call: LiveCall }) {
       </div>
 
       <div className="p-4">
-        <h3 className="font-semibold text-[#2f3437] dark:text-white text-sm mb-1.5 leading-snug">
+        <h3 className="font-semibold text-[var(--abv-text)] dark:text-white text-sm mb-1.5 leading-snug">
           {call.title}
         </h3>
         {call.summary && (
-          <p className="text-xs text-[#2f3437]/60 dark:text-white/50 leading-relaxed mb-3 line-clamp-2">
+          <p className="text-xs text-[var(--abv-text)]/60 dark:text-white/50 leading-relaxed mb-3 line-clamp-2">
             {call.summary}
           </p>
         )}
@@ -373,7 +373,7 @@ function LiveCallCard({ call }: { call: LiveCall }) {
               </span>
             ))}
             {call.principles.length > 3 && (
-              <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[#111]/5 dark:bg-white/10 text-[#2f3437]/50 dark:text-white/40">
+              <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[#111]/5 dark:bg-white/10 text-[var(--abv-text)]/50 dark:text-white/40">
                 +{call.principles.length - 3} more
               </span>
             )}
@@ -468,8 +468,8 @@ function BrowseTab({
               onClick={() => setSourceType(s)}
               className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all ${
                 sourceType === s
-                  ? "bg-[#111] text-white border-[#2f3437] dark:bg-white dark:text-[#2f3437]"
-                  : "border-[#2f3437]/20 dark:border-white/20 text-[#2f3437]/55 dark:text-white/45 hover:border-[#2f3437]/40"
+                  ? "bg-[#111] text-white border-[var(--abv-text)] dark:bg-white dark:text-[var(--abv-text)]"
+                  : "border-[var(--abv-text)]/20 dark:border-white/20 text-[var(--abv-text)]/55 dark:text-white/45 hover:border-[var(--abv-text)]/40"
               }`}
             >
               {s === "" && "All Content"}
@@ -484,7 +484,7 @@ function BrowseTab({
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {[...Array(6)].map((_, i) => (
-            <div key={i} className="bg-white dark:bg-[#1a1a1a] rounded-lg border border-[#2f3437]/10 h-44 animate-pulse" />
+            <div key={i} className="bg-white dark:bg-[#1a1a1a] rounded-lg border border-[var(--abv-text)]/10 h-44 animate-pulse" />
           ))}
         </div>
       ) : entries.length === 0 ? (
@@ -494,7 +494,7 @@ function BrowseTab({
         />
       ) : (
         <>
-          <p className="text-xs text-[#2f3437]/40 dark:text-white/30">{entries.length} item{entries.length !== 1 ? "s" : ""}</p>
+          <p className="text-xs text-[var(--abv-text)]/40 dark:text-white/30">{entries.length} item{entries.length !== 1 ? "s" : ""}</p>
           <EntryGrid entries={entries} onSaved={onSaved} onPlay={onPlay} />
         </>
       )}
@@ -578,17 +578,17 @@ function SearchTab({
     <div className="space-y-5">
       <div className="space-y-3">
         <div className="relative">
-          <MagnifyingGlassIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#2f3437]/30 dark:text-white/30" />
+          <MagnifyingGlassIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--abv-text)]/30 dark:text-white/30" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search coaching moments, topics, summaries, transcripts..."
-            className="w-full pl-10 pr-4 py-3 border border-[#2f3437]/15 dark:border-white/15 rounded-lg text-sm bg-white dark:bg-[#1a1a1a] text-[#2f3437] dark:text-white placeholder-[#2f3437]/30 dark:placeholder-white/25 focus:outline-none focus:border-[#6ba3c7] transition-colors"
+            className="w-full pl-10 pr-4 py-3 border border-[var(--abv-text)]/15 dark:border-white/15 rounded-lg text-sm bg-white dark:bg-[#1a1a1a] text-[var(--abv-text)] dark:text-white placeholder-[var(--abv-text)]/30 dark:placeholder-white/25 focus:outline-none focus:border-[var(--abv-azure)] transition-colors"
             autoFocus
           />
           {searchQuery && (
-            <button onClick={() => setSearchQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#2f3437]/30 hover:text-[#2f3437] dark:hover:text-white">
+            <button onClick={() => setSearchQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--abv-text)]/30 hover:text-[var(--abv-text)] dark:hover:text-white">
               <XMarkIcon className="w-4 h-4" />
             </button>
           )}
@@ -596,27 +596,27 @@ function SearchTab({
 
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2">
-            <CalendarDaysIcon className="w-4 h-4 text-[#2f3437]/30 dark:text-white/30 flex-shrink-0" />
+            <CalendarDaysIcon className="w-4 h-4 text-[var(--abv-text)]/30 dark:text-white/30 flex-shrink-0" />
             <input
               type="date"
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
-              className="text-xs border border-[#2f3437]/15 dark:border-white/15 rounded-lg px-2 py-1.5 bg-white dark:bg-[#1a1a1a] text-[#2f3437] dark:text-white focus:outline-none focus:border-[#6ba3c7] transition-colors"
+              className="text-xs border border-[var(--abv-text)]/15 dark:border-white/15 rounded-lg px-2 py-1.5 bg-white dark:bg-[#1a1a1a] text-[var(--abv-text)] dark:text-white focus:outline-none focus:border-[var(--abv-azure)] transition-colors"
               title="From date"
             />
-            <span className="text-[#2f3437]/30 dark:text-white/30 text-xs">–</span>
+            <span className="text-[var(--abv-text)]/30 dark:text-white/30 text-xs">–</span>
             <input
               type="date"
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
               min={dateFrom || undefined}
-              className="text-xs border border-[#2f3437]/15 dark:border-white/15 rounded-lg px-2 py-1.5 bg-white dark:bg-[#1a1a1a] text-[#2f3437] dark:text-white focus:outline-none focus:border-[#6ba3c7] transition-colors"
+              className="text-xs border border-[var(--abv-text)]/15 dark:border-white/15 rounded-lg px-2 py-1.5 bg-white dark:bg-[#1a1a1a] text-[var(--abv-text)] dark:text-white focus:outline-none focus:border-[var(--abv-azure)] transition-colors"
               title="To date"
             />
             {(dateFrom || dateTo) && (
               <button
                 onClick={() => { setDateFrom(""); setDateTo(""); }}
-                className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-full bg-[#6ba3c7]/15 text-[#6ba3c7] hover:bg-[#6ba3c7]/25 transition-colors"
+                className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-full bg-[var(--abv-dark)]/15 text-[var(--abv-azure)] hover:bg-[var(--abv-dark)]/25 transition-colors"
               >
                 {dateFrom && dateTo
                   ? `${new Date(dateFrom).toLocaleDateString("en-US", { month: "short", day: "numeric" })} – ${new Date(dateTo).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`
@@ -633,9 +633,9 @@ function SearchTab({
       </div>
 
       {searching ? (
-        <div className="text-center py-8 text-sm text-[#2f3437]/40 dark:text-white/30">Searching...</div>
+        <div className="text-center py-8 text-sm text-[var(--abv-text)]/40 dark:text-white/30">Searching...</div>
       ) : !searchQuery.trim() && !searchPrinciple && !dateFrom && !dateTo ? (
-        <div className="text-center py-16 text-[#2f3437]/30 dark:text-white/20">
+        <div className="text-center py-16 text-[var(--abv-text)]/30 dark:text-white/20">
           <MagnifyingGlassIcon className="w-10 h-10 mx-auto mb-3 opacity-40" />
           <p className="text-sm font-medium">Type to search coaching moments and full transcripts</p>
           <p className="text-xs mt-1">Or filter by date range and principle above</p>
@@ -647,7 +647,7 @@ function SearchTab({
           {searchResults.length > 0 && (
             <div className="space-y-4">
               <div className="flex items-center gap-3">
-                <h3 className="text-sm font-semibold text-[#2f3437] dark:text-white">Tagged Moments</h3>
+                <h3 className="text-sm font-semibold text-[var(--abv-text)] dark:text-white">Tagged Moments</h3>
                 <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300">
                   {searchResults.length} curated result{searchResults.length !== 1 ? "s" : ""}
                 </span>
@@ -659,12 +659,12 @@ function SearchTab({
           {transcriptMatches.length > 0 && (
             <div className="space-y-4">
               <div className="flex items-center gap-3">
-                <h3 className="text-sm font-semibold text-[#2f3437] dark:text-white">Also mentioned in these recordings</h3>
-                <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-[#6ba3c7]/15 text-[#6ba3c7]">
+                <h3 className="text-sm font-semibold text-[var(--abv-text)] dark:text-white">Also mentioned in these recordings</h3>
+                <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-[var(--abv-dark)]/15 text-[var(--abv-azure)]">
                   {transcriptTotal} occurrence{transcriptTotal !== 1 ? "s" : ""}
                 </span>
               </div>
-              <p className="text-xs text-[#2f3437]/40 dark:text-white/30 -mt-2">
+              <p className="text-xs text-[var(--abv-text)]/40 dark:text-white/30 -mt-2">
                 Every time this keyword was said on any call or lesson — timestamps are approximate.
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -677,7 +677,7 @@ function SearchTab({
                   <button
                     onClick={loadMoreTranscripts}
                     disabled={txLoading}
-                    className="text-sm font-medium text-[#6ba3c7] hover:text-[#6ba3c7]/80 disabled:opacity-50 transition-colors"
+                    className="text-sm font-medium text-[var(--abv-azure)] hover:text-[var(--abv-azure)]/80 disabled:opacity-50 transition-colors"
                   >
                     {txLoading ? "Loading…" : `Load more (${transcriptTotal - transcriptMatches.length} remaining)`}
                   </button>
@@ -718,7 +718,7 @@ function MomentsTab({
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="bg-white dark:bg-[#1a1a1a] rounded-lg border border-[#2f3437]/10 h-44 animate-pulse" />
+            <div key={i} className="bg-white dark:bg-[#1a1a1a] rounded-lg border border-[var(--abv-text)]/10 h-44 animate-pulse" />
           ))}
         </div>
       ) : moments.length === 0 ? (
@@ -728,7 +728,7 @@ function MomentsTab({
         />
       ) : (
         <>
-          <p className="text-xs text-[#2f3437]/40 dark:text-white/30">{moments.length} moment{moments.length !== 1 ? "s" : ""}</p>
+          <p className="text-xs text-[var(--abv-text)]/40 dark:text-white/30">{moments.length} moment{moments.length !== 1 ? "s" : ""}</p>
           <EntryGrid entries={moments} onSaved={onSaved} onPlay={onPlay} />
         </>
       )}
@@ -764,7 +764,7 @@ function SavedTab({
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="bg-white dark:bg-[#1a1a1a] rounded-lg border border-[#2f3437]/10 h-44 animate-pulse" />
+            <div key={i} className="bg-white dark:bg-[#1a1a1a] rounded-lg border border-[var(--abv-text)]/10 h-44 animate-pulse" />
           ))}
         </div>
       ) : savedEntries.length === 0 ? (
@@ -774,7 +774,7 @@ function SavedTab({
         />
       ) : (
         <>
-          <p className="text-xs text-[#2f3437]/40 dark:text-white/30">{savedEntries.length} saved item{savedEntries.length !== 1 ? "s" : ""}</p>
+          <p className="text-xs text-[var(--abv-text)]/40 dark:text-white/30">{savedEntries.length} saved item{savedEntries.length !== 1 ? "s" : ""}</p>
           <EntryGrid entries={savedEntries} onSaved={handleSaved} onPlay={onPlay} />
         </>
       )}
@@ -826,7 +826,7 @@ function AcademyTabsInner({ routePath }: { routePath: string }) {
       {routePath === "/member/academy" && (
         <Link
           href="/member/academy"
-          className="flex items-center gap-1.5 text-xs text-[#2f3437]/50 dark:text-white/50 hover:text-[#6ba3c7] transition-colors mb-3"
+          className="flex items-center gap-1.5 text-xs text-[var(--abv-text)]/50 dark:text-white/50 hover:text-[var(--abv-azure)] transition-colors mb-3"
         >
           <ArrowLeftIcon className="w-3.5 h-3.5" />
           Back to Academy
@@ -840,8 +840,8 @@ function AcademyTabsInner({ routePath }: { routePath: string }) {
             onClick={() => setActiveTab(t.id)}
             className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
               tab === t.id
-                ? "bg-white dark:bg-[#1a1a1a] text-[#2f3437] dark:text-white shadow-sm"
-                : "text-[#2f3437]/50 dark:text-white/40 hover:text-[#2f3437] dark:hover:text-white"
+                ? "bg-white dark:bg-[#1a1a1a] text-[var(--abv-text)] dark:text-white shadow-sm"
+                : "text-[var(--abv-text)]/50 dark:text-white/40 hover:text-[var(--abv-text)] dark:hover:text-white"
             }`}
           >
             {t.label}

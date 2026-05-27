@@ -106,7 +106,7 @@ export default function StepAvatar({ existingAvatarName, existingContentThemes, 
           {themes.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mt-2">
               {themes.map((t: any, i: number) => (
-                <span key={i} className="text-xs bg-[#6ba3c7]/10 text-[#6ba3c7] border border-[#6ba3c7]/20 rounded-full px-2 py-0.5">
+                <span key={i} className="text-xs bg-[var(--abv-dark)]/10 text-[var(--abv-azure)] border border-[var(--abv-azure)]/20 rounded-full px-2 py-0.5">
                   {t.emoji ? `${t.emoji} ` : ""}{t.name ?? t}
                 </span>
               ))}
@@ -118,7 +118,7 @@ export default function StepAvatar({ existingAvatarName, existingContentThemes, 
         </div>
         <button
           onClick={() => onNext({ avatarPath: "existing" })}
-          className="w-full bg-[#6ba3c7] hover:bg-[#2bb0ec] text-white font-semibold text-sm py-2.5 rounded-lg transition-colors"
+          className="w-full bg-[var(--abv-dark)] hover:bg-[#2bb0ec] text-white font-semibold text-sm py-2.5 rounded-lg transition-colors"
         >
           Continue →
         </button>
@@ -133,19 +133,19 @@ export default function StepAvatar({ existingAvatarName, existingContentThemes, 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <button
             onClick={() => setSubState("importing")}
-            className="p-4 border-2 border-[#2f3437]/10 dark:border-white/10 rounded-xl hover:border-[#6ba3c7]/50 transition-colors text-left"
+            className="p-4 border-2 border-[var(--abv-text)]/10 dark:border-white/10 rounded-xl hover:border-[var(--abv-azure)]/50 transition-colors text-left"
           >
             <div className="text-2xl mb-2">📄</div>
-            <p className="font-semibold text-sm text-[#2f3437] dark:text-white">I have an existing avatar</p>
-            <p className="text-xs text-[#2f3437]/50 dark:text-white/40 mt-1">Paste your document and we&apos;ll extract what we need</p>
+            <p className="font-semibold text-sm text-[var(--abv-text)] dark:text-white">I have an existing avatar</p>
+            <p className="text-xs text-[var(--abv-text)]/50 dark:text-white/40 mt-1">Paste your document and we&apos;ll extract what we need</p>
           </button>
           <button
             onClick={() => onNext({ avatarPath: "build_later" })}
-            className="p-4 border-2 border-[#2f3437]/10 dark:border-white/10 rounded-xl hover:border-[#6ba3c7]/50 transition-colors text-left"
+            className="p-4 border-2 border-[var(--abv-text)]/10 dark:border-white/10 rounded-xl hover:border-[var(--abv-azure)]/50 transition-colors text-left"
           >
             <div className="text-2xl mb-2">🛠️</div>
-            <p className="font-semibold text-sm text-[#2f3437] dark:text-white">I need to build one</p>
-            <p className="text-xs text-[#2f3437]/50 dark:text-white/40 mt-1">The Avatar Architect will guide you through it (~10 min)</p>
+            <p className="font-semibold text-sm text-[var(--abv-text)] dark:text-white">I need to build one</p>
+            <p className="text-xs text-[var(--abv-text)]/50 dark:text-white/40 mt-1">The Avatar Architect will guide you through it (~10 min)</p>
           </button>
         </div>
       </div>
@@ -161,20 +161,20 @@ export default function StepAvatar({ existingAvatarName, existingContentThemes, 
           onChange={(e) => { setPastedText(e.target.value); setExtractError(null); }}
           rows={8}
           placeholder="Paste your ideal client avatar document here..."
-          className="w-full border border-[#2f3437]/20 dark:border-white/20 rounded-lg px-3 py-2 text-sm text-[#2f3437] dark:text-white placeholder-[#2f3437]/30 dark:placeholder-white/30 bg-white dark:bg-[#0f1419] focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40 resize-y"
+          className="w-full border border-[var(--abv-text)]/20 dark:border-white/20 rounded-lg px-3 py-2 text-sm text-[var(--abv-text)] dark:text-white placeholder-[var(--abv-text)]/30 dark:placeholder-white/30 bg-white dark:bg-[#0f1419] focus:outline-none focus:ring-2 focus:ring-[var(--abv-azure)]/40 resize-y"
         />
         {extractError && <p className="text-sm text-red-500">{extractError}</p>}
         <div className="flex gap-2">
           <button
             onClick={() => { setSubState("choice"); setExtractError(null); }}
-            className="text-sm text-[#2f3437]/50 dark:text-white/40 hover:text-[#2f3437] dark:hover:text-white transition-colors"
+            className="text-sm text-[var(--abv-text)]/50 dark:text-white/40 hover:text-[var(--abv-text)] dark:hover:text-white transition-colors"
           >
             ← Back
           </button>
           <button
             onClick={handleExtract}
             disabled={extracting || !pastedText.trim()}
-            className="flex-1 bg-[#6ba3c7] hover:bg-[#2bb0ec] text-white font-semibold text-sm py-2.5 rounded-lg transition-colors disabled:opacity-40"
+            className="flex-1 bg-[var(--abv-dark)] hover:bg-[#2bb0ec] text-white font-semibold text-sm py-2.5 rounded-lg transition-colors disabled:opacity-40"
           >
             {extracting ? "Analysing your avatar..." : "Extract & Continue"}
           </button>
@@ -186,45 +186,45 @@ export default function StepAvatar({ existingAvatarName, existingContentThemes, 
   // Confirming
   return (
     <div className="space-y-4">
-      <div className="bg-[#f7f6f3] dark:bg-[#0f1419] rounded-lg p-4 space-y-3">
+      <div className="bg-[var(--abv-bg)] dark:bg-[#0f1419] rounded-lg p-4 space-y-3">
         {extractedData?.avatar_name && (
           <div>
-            <p className="text-xs font-semibold text-[#2f3437]/40 dark:text-white/30 uppercase tracking-wide">Avatar Name</p>
-            <p className="text-sm text-[#2f3437] dark:text-white mt-0.5">{extractedData.avatar_name}</p>
+            <p className="text-xs font-semibold text-[var(--abv-text)]/40 dark:text-white/30 uppercase tracking-wide">Avatar Name</p>
+            <p className="text-sm text-[var(--abv-text)] dark:text-white mt-0.5">{extractedData.avatar_name}</p>
           </div>
         )}
         {extractedData?.avatar_summary && (
           <div>
-            <p className="text-xs font-semibold text-[#2f3437]/40 dark:text-white/30 uppercase tracking-wide">Avatar Description</p>
-            <p className="text-sm text-[#2f3437]/70 dark:text-white/60 mt-0.5 line-clamp-3">{extractedData.avatar_summary}</p>
+            <p className="text-xs font-semibold text-[var(--abv-text)]/40 dark:text-white/30 uppercase tracking-wide">Avatar Description</p>
+            <p className="text-sm text-[var(--abv-text)]/70 dark:text-white/60 mt-0.5 line-clamp-3">{extractedData.avatar_summary}</p>
           </div>
         )}
         {extractedData?.content_themes && Array.isArray(extractedData.content_themes) && extractedData.content_themes.length > 0 && (
           <div>
-            <p className="text-xs font-semibold text-[#2f3437]/40 dark:text-white/30 uppercase tracking-wide mb-1.5">Content Themes</p>
+            <p className="text-xs font-semibold text-[var(--abv-text)]/40 dark:text-white/30 uppercase tracking-wide mb-1.5">Content Themes</p>
             <div className="flex flex-wrap gap-1.5">
               {extractedData.content_themes.map((t: any, i: number) => (
-                <span key={i} className="text-xs bg-[#6ba3c7]/10 text-[#6ba3c7] rounded-full px-2 py-0.5">
+                <span key={i} className="text-xs bg-[var(--abv-dark)]/10 text-[var(--abv-azure)] rounded-full px-2 py-0.5">
                   {t.emoji ? `${t.emoji} ` : ""}{t.name ?? t}
                 </span>
               ))}
             </div>
           </div>
         )}
-        <p className="text-xs text-[#2f3437]/40 dark:text-white/30">
+        <p className="text-xs text-[var(--abv-text)]/40 dark:text-white/30">
           Does this look right? You can refine it later in the Avatar Architect.
         </p>
       </div>
       <div className="flex gap-2">
         <button
           onClick={() => { setSubState("importing"); setExtractedData(null); }}
-          className="text-sm text-[#2f3437]/50 dark:text-white/40 hover:text-[#2f3437] dark:hover:text-white transition-colors"
+          className="text-sm text-[var(--abv-text)]/50 dark:text-white/40 hover:text-[var(--abv-text)] dark:hover:text-white transition-colors"
         >
           ← Re-paste
         </button>
         <button
           onClick={() => onNext({ avatarPath: "imported", extractedAvatar: extractedData })}
-          className="flex-1 bg-[#6ba3c7] hover:bg-[#2bb0ec] text-white font-semibold text-sm py-2.5 rounded-lg transition-colors"
+          className="flex-1 bg-[var(--abv-dark)] hover:bg-[#2bb0ec] text-white font-semibold text-sm py-2.5 rounded-lg transition-colors"
         >
           Looks Good — Continue
         </button>

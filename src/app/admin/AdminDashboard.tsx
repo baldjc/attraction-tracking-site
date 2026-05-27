@@ -67,8 +67,8 @@ function fmtHours(h: number | null): string {
 function FlowKpi({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-[10px] uppercase tracking-wider text-[#2f3437]/50 dark:text-white/40">{label}</p>
-      <p className="text-xl font-bold text-[#6ba3c7] mt-0.5">{value}</p>
+      <p className="text-[10px] uppercase tracking-wider text-[var(--abv-text)]/50 dark:text-white/40">{label}</p>
+      <p className="text-xl font-bold text-[var(--abv-azure)] mt-0.5">{value}</p>
     </div>
   );
 }
@@ -305,8 +305,8 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-bold text-[#2f3437] dark:text-[#e2e8f0]">Dashboard</h1>
-        <p className="text-sm text-[#2f3437]/50 dark:text-white/40 mt-0.5">
+        <h1 className="text-xl font-bold text-[var(--abv-text)] dark:text-[#e2e8f0]">Dashboard</h1>
+        <p className="text-sm text-[var(--abv-text)]/50 dark:text-white/40 mt-0.5">
           Overview of your platform —{" "}
           {new Date().toLocaleDateString("en-CA", { weekday: "long", month: "long", day: "numeric" })}
         </p>
@@ -321,14 +321,14 @@ export default function AdminDashboard() {
             className="bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-[#2a2a2a] p-4 hover:shadow-md transition-shadow"
           >
             <div className="flex items-center gap-2 mb-1">
-              <s.icon className="w-4 h-4 text-[#6ba3c7]" />
-              <p className="text-xs text-[#2f3437]/50 dark:text-white/40 uppercase tracking-wider">
+              <s.icon className="w-4 h-4 text-[var(--abv-azure)]" />
+              <p className="text-xs text-[var(--abv-text)]/50 dark:text-white/40 uppercase tracking-wider">
                 {s.label}
               </p>
             </div>
-            <p className="text-2xl font-bold text-[#6ba3c7]">{s.value}</p>
+            <p className="text-2xl font-bold text-[var(--abv-azure)]">{s.value}</p>
             {s.subtitle && (
-              <p className="text-[10px] text-[#2f3437]/30 dark:text-white/20 mt-0.5 leading-tight">
+              <p className="text-[10px] text-[var(--abv-text)]/30 dark:text-white/20 mt-0.5 leading-tight">
                 {s.subtitle}
               </p>
             )}
@@ -353,16 +353,16 @@ export default function AdminDashboard() {
               >
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-3xl font-black text-[#2f3437] dark:text-white">{a.count}</p>
-                    <p className="text-xs text-[#2f3437]/50 dark:text-white/40 uppercase tracking-wider mt-1">
+                    <p className="text-3xl font-black text-[var(--abv-text)] dark:text-white">{a.count}</p>
+                    <p className="text-xs text-[var(--abv-text)]/50 dark:text-white/40 uppercase tracking-wider mt-1">
                       {a.label}
                     </p>
-                    <p className="text-[10px] text-[#2f3437]/30 dark:text-white/20 mt-0.5 leading-tight">
+                    <p className="text-[10px] text-[var(--abv-text)]/30 dark:text-white/20 mt-0.5 leading-tight">
                       {a.subtitle}
                     </p>
                   </div>
                   <a.icon
-                    className={`w-5 h-5 shrink-0 ${a.urgent ? "text-amber-500" : "text-[#2f3437]/20 dark:text-white/20"}`}
+                    className={`w-5 h-5 shrink-0 ${a.urgent ? "text-amber-500" : "text-[var(--abv-text)]/20 dark:text-white/20"}`}
                   />
                 </div>
               </Link>
@@ -375,13 +375,13 @@ export default function AdminDashboard() {
                 className="bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-[#2a2a2a] p-4 hover:shadow-md transition-shadow"
               >
                 <div className="flex items-center gap-2 mb-1">
-                  <s.icon className="w-4 h-4 text-[#6ba3c7]" />
-                  <p className="text-xs text-[#2f3437]/50 dark:text-white/40 uppercase tracking-wider">
+                  <s.icon className="w-4 h-4 text-[var(--abv-azure)]" />
+                  <p className="text-xs text-[var(--abv-text)]/50 dark:text-white/40 uppercase tracking-wider">
                     {s.label}
                   </p>
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <p className="text-2xl font-bold text-[#6ba3c7]">{s.value}</p>
+                  <p className="text-2xl font-bold text-[var(--abv-azure)]">{s.value}</p>
                   {s.trend === "up" && (
                     <ArrowTrendingUpIcon className="w-4 h-4 text-emerald-500 shrink-0" />
                   )}
@@ -393,7 +393,7 @@ export default function AdminDashboard() {
                   )}
                 </div>
                 {s.subtitle && (
-                  <p className="text-[10px] text-[#2f3437]/30 dark:text-white/20 mt-0.5 leading-tight">
+                  <p className="text-[10px] text-[var(--abv-text)]/30 dark:text-white/20 mt-0.5 leading-tight">
                     {s.subtitle}
                   </p>
                 )}
@@ -423,86 +423,86 @@ export default function AdminDashboard() {
                     className="block bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-[#2a2a2a] p-5 hover:shadow-md transition-shadow"
                   >
                     <div className="flex items-center gap-2 mb-2">
-                      <CurrencyDollarIcon className="w-4 h-4 text-[#6ba3c7]" />
-                      <p className="text-xs text-[#2f3437]/50 dark:text-white/40 uppercase tracking-wider">
+                      <CurrencyDollarIcon className="w-4 h-4 text-[var(--abv-azure)]" />
+                      <p className="text-xs text-[var(--abv-text)]/50 dark:text-white/40 uppercase tracking-wider">
                         Monthly Recurring Revenue
                       </p>
                     </div>
-                    <p className="text-4xl font-black text-[#6ba3c7] leading-none">
+                    <p className="text-4xl font-black text-[var(--abv-azure)] leading-none">
                       {mrrData.mrr > 0 ? fmtMrr(mrrData.mrr) : "—"}
                     </p>
-                    <p className="text-[10px] text-[#2f3437]/30 dark:text-white/20 mt-1">
+                    <p className="text-[10px] text-[var(--abv-text)]/30 dark:text-white/20 mt-1">
                       Active + past-due subs · ~CAD
                     </p>
                     <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-gray-100 dark:border-[#2a2a2a]">
                       <div>
-                        <p className="text-xl font-bold text-[#2f3437] dark:text-white">
+                        <p className="text-xl font-bold text-[var(--abv-text)] dark:text-white">
                           {mrrData.payingMembers}
                         </p>
-                        <p className="text-[10px] uppercase tracking-wider text-[#2f3437]/50 dark:text-white/40 mt-0.5">
+                        <p className="text-[10px] uppercase tracking-wider text-[var(--abv-text)]/50 dark:text-white/40 mt-0.5">
                           Paying
                         </p>
                       </div>
                       <div>
-                        <p className="text-xl font-bold text-[#2f3437] dark:text-white">
+                        <p className="text-xl font-bold text-[var(--abv-text)] dark:text-white">
                           {mrrData.mrr > 0 ? fmtMrr(mrrData.mrr * 12) : "—"}
                         </p>
-                        <p className="text-[10px] uppercase tracking-wider text-[#2f3437]/50 dark:text-white/40 mt-0.5">
+                        <p className="text-[10px] uppercase tracking-wider text-[var(--abv-text)]/50 dark:text-white/40 mt-0.5">
                           ARR
                         </p>
                       </div>
                       <div>
-                        <p className="text-xl font-bold text-[#2f3437] dark:text-white">
+                        <p className="text-xl font-bold text-[var(--abv-text)] dark:text-white">
                           {mrrData.payingMembers > 0
                             ? fmtMrr(Math.round(mrrData.mrr / mrrData.payingMembers))
                             : "—"}
                         </p>
-                        <p className="text-[10px] uppercase tracking-wider text-[#2f3437]/50 dark:text-white/40 mt-0.5">
+                        <p className="text-[10px] uppercase tracking-wider text-[var(--abv-text)]/50 dark:text-white/40 mt-0.5">
                           ARPU
                         </p>
                       </div>
                     </div>
                     <div className="mt-4 pt-4 border-t border-gray-100 dark:border-[#2a2a2a]">
-                      <p className="text-[10px] uppercase tracking-wider text-[#2f3437]/50 dark:text-white/40 mb-2">
+                      <p className="text-[10px] uppercase tracking-wider text-[var(--abv-text)]/50 dark:text-white/40 mb-2">
                         By Program
                       </p>
                       <div className="grid grid-cols-3 gap-3">
                         <div>
-                          <p className="text-base font-bold text-[#6ba3c7]">
+                          <p className="text-base font-bold text-[var(--abv-azure)]">
                             {mrrData.byTier.foundations > 0 ? fmtMrr(mrrData.byTier.foundations) : "—"}
                           </p>
-                          <p className="text-[10px] uppercase tracking-wider text-[#2f3437]/50 dark:text-white/40 mt-0.5">
+                          <p className="text-[10px] uppercase tracking-wider text-[var(--abv-text)]/50 dark:text-white/40 mt-0.5">
                             Foundations
                           </p>
-                          <p className="text-[10px] text-[#2f3437]/30 dark:text-white/20">
+                          <p className="text-[10px] text-[var(--abv-text)]/30 dark:text-white/20">
                             {mrrData.countByTier.foundations} member{mrrData.countByTier.foundations === 1 ? "" : "s"}
                           </p>
                         </div>
                         <div>
-                          <p className="text-base font-bold text-[#6ba3c7]">
+                          <p className="text-base font-bold text-[var(--abv-azure)]">
                             {mrrData.byTier.growth > 0 ? fmtMrr(mrrData.byTier.growth) : "—"}
                           </p>
-                          <p className="text-[10px] uppercase tracking-wider text-[#2f3437]/50 dark:text-white/40 mt-0.5">
+                          <p className="text-[10px] uppercase tracking-wider text-[var(--abv-text)]/50 dark:text-white/40 mt-0.5">
                             Growth
                           </p>
-                          <p className="text-[10px] text-[#2f3437]/30 dark:text-white/20">
+                          <p className="text-[10px] text-[var(--abv-text)]/30 dark:text-white/20">
                             {mrrData.countByTier.growth} member{mrrData.countByTier.growth === 1 ? "" : "s"}
                           </p>
                         </div>
                         <div>
-                          <p className="text-base font-bold text-[#6ba3c7]">
+                          <p className="text-base font-bold text-[var(--abv-azure)]">
                             {mrrData.byTier.doneWithYou > 0 ? fmtMrr(mrrData.byTier.doneWithYou) : "—"}
                           </p>
-                          <p className="text-[10px] uppercase tracking-wider text-[#2f3437]/50 dark:text-white/40 mt-0.5">
+                          <p className="text-[10px] uppercase tracking-wider text-[var(--abv-text)]/50 dark:text-white/40 mt-0.5">
                             Done With You
                           </p>
-                          <p className="text-[10px] text-[#2f3437]/30 dark:text-white/20">
+                          <p className="text-[10px] text-[var(--abv-text)]/30 dark:text-white/20">
                             {mrrData.countByTier.doneWithYou} member{mrrData.countByTier.doneWithYou === 1 ? "" : "s"}
                           </p>
                         </div>
                       </div>
                       {mrrData.byTier.other > 0 && (
-                        <p className="text-[10px] text-[#2f3437]/40 dark:text-white/30 mt-2">
+                        <p className="text-[10px] text-[var(--abv-text)]/40 dark:text-white/30 mt-2">
                           + {fmtMrr(mrrData.byTier.other)} from {mrrData.countByTier.other} other
                         </p>
                       )}
@@ -520,25 +520,25 @@ export default function AdminDashboard() {
               className="block bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-[#2a2a2a] p-5 hover:shadow-md transition-shadow"
             >
               <div className="flex items-center justify-between mb-3">
-                <h2 className="text-sm font-semibold text-[#2f3437] dark:text-[#e2e8f0]">🎬 Team Pipeline</h2>
-                <span className="text-xs text-[#6ba3c7]">Open →</span>
+                <h2 className="text-sm font-semibold text-[var(--abv-text)] dark:text-[#e2e8f0]">🎬 Team Pipeline</h2>
+                <span className="text-xs text-[var(--abv-azure)]">Open →</span>
               </div>
               <div className="grid grid-cols-4 gap-3">
                 <div>
-                  <p className="text-2xl font-bold text-[#6ba3c7]">{teamPipeline.scripted}</p>
-                  <p className="text-[10px] uppercase tracking-wider text-[#2f3437]/50 dark:text-white/40 mt-0.5">Scripted</p>
+                  <p className="text-2xl font-bold text-[var(--abv-azure)]">{teamPipeline.scripted}</p>
+                  <p className="text-[10px] uppercase tracking-wider text-[var(--abv-text)]/50 dark:text-white/40 mt-0.5">Scripted</p>
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-[#10B981]">{teamPipeline.filmed}</p>
-                  <p className="text-[10px] uppercase tracking-wider text-[#2f3437]/50 dark:text-white/40 mt-0.5">Filmed</p>
+                  <p className="text-2xl font-bold text-[var(--abv-academy)]">{teamPipeline.filmed}</p>
+                  <p className="text-[10px] uppercase tracking-wider text-[var(--abv-text)]/50 dark:text-white/40 mt-0.5">Filmed</p>
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-[#2f3437] dark:text-white">{teamPipeline.assignedToMe}</p>
-                  <p className="text-[10px] uppercase tracking-wider text-[#2f3437]/50 dark:text-white/40 mt-0.5">Assigned to me</p>
+                  <p className="text-2xl font-bold text-[var(--abv-text)] dark:text-white">{teamPipeline.assignedToMe}</p>
+                  <p className="text-[10px] uppercase tracking-wider text-[var(--abv-text)]/50 dark:text-white/40 mt-0.5">Assigned to me</p>
                 </div>
                 <div>
-                  <p className={`text-2xl font-bold ${teamPipeline.unassigned > 0 ? "text-amber-500" : "text-[#2f3437] dark:text-white"}`}>{teamPipeline.unassigned}</p>
-                  <p className="text-[10px] uppercase tracking-wider text-[#2f3437]/50 dark:text-white/40 mt-0.5">Unassigned</p>
+                  <p className={`text-2xl font-bold ${teamPipeline.unassigned > 0 ? "text-amber-500" : "text-[var(--abv-text)] dark:text-white"}`}>{teamPipeline.unassigned}</p>
+                  <p className="text-[10px] uppercase tracking-wider text-[var(--abv-text)]/50 dark:text-white/40 mt-0.5">Unassigned</p>
                 </div>
               </div>
             </Link>
@@ -548,11 +548,11 @@ export default function AdminDashboard() {
           {flowMetrics && (
             <div className="bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-[#2a2a2a] p-5">
               <div className="flex items-center justify-between mb-3">
-                <h2 className="text-sm font-semibold text-[#2f3437] dark:text-[#e2e8f0] flex items-center gap-1.5">
-                  <ChartBarIcon className="w-4 h-4 text-[#6ba3c7]" />
+                <h2 className="text-sm font-semibold text-[var(--abv-text)] dark:text-[#e2e8f0] flex items-center gap-1.5">
+                  <ChartBarIcon className="w-4 h-4 text-[var(--abv-azure)]" />
                   Content Flow Metrics
                 </h2>
-                <Link href="/admin/flow-metrics" className="text-xs text-[#6ba3c7] hover:underline">
+                <Link href="/admin/flow-metrics" className="text-xs text-[var(--abv-azure)] hover:underline">
                   View full report →
                 </Link>
               </div>
@@ -569,11 +569,11 @@ export default function AdminDashboard() {
                     const pct = (row.count / max) * 100;
                     return (
                       <div key={row.status} className="flex items-center gap-2 text-xs">
-                        <div className="w-28 shrink-0 text-[#2f3437]/60 dark:text-white/50 truncate">{row.status}</div>
+                        <div className="w-28 shrink-0 text-[var(--abv-text)]/60 dark:text-white/50 truncate">{row.status}</div>
                         <div className="flex-1 h-3 bg-gray-100 dark:bg-white/5 rounded overflow-hidden">
-                          <div className="h-full bg-[#6ba3c7]" style={{ width: `${pct}%` }} />
+                          <div className="h-full bg-[var(--abv-dark)]" style={{ width: `${pct}%` }} />
                         </div>
-                        <div className="w-8 text-right tabular-nums text-[#2f3437]/60 dark:text-white/50">{row.count}</div>
+                        <div className="w-8 text-right tabular-nums text-[var(--abv-text)]/60 dark:text-white/50">{row.count}</div>
                       </div>
                     );
                   })}
@@ -586,7 +586,7 @@ export default function AdminDashboard() {
           {activities.length > 0 ? (
             <div className="bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-[#2a2a2a] overflow-hidden">
               <div className="px-5 py-3 border-b border-gray-100 dark:border-[#2a2a2a]">
-                <h2 className="text-sm font-semibold text-[#2f3437] dark:text-[#e2e8f0]">Recent Activity</h2>
+                <h2 className="text-sm font-semibold text-[var(--abv-text)] dark:text-[#e2e8f0]">Recent Activity</h2>
               </div>
               <div className="divide-y divide-gray-100 dark:divide-[#2a2a2a]">
                 {activities.slice(0, 10).map((a, i) => (
@@ -597,10 +597,10 @@ export default function AdminDashboard() {
                   >
                     <span className="text-lg">{TYPE_EMOJI[a.type] || "📌"}</span>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-[#2f3437] dark:text-[#e2e8f0] truncate">{a.title}</p>
-                      <p className="text-xs text-[#2f3437]/40 dark:text-white/30">{a.description}</p>
+                      <p className="text-sm font-medium text-[var(--abv-text)] dark:text-[#e2e8f0] truncate">{a.title}</p>
+                      <p className="text-xs text-[var(--abv-text)]/40 dark:text-white/30">{a.description}</p>
                     </div>
-                    <span className="text-xs text-[#2f3437]/30 dark:text-white/20 shrink-0">
+                    <span className="text-xs text-[var(--abv-text)]/30 dark:text-white/20 shrink-0">
                       {timeAgo(a.timestamp)}
                     </span>
                   </Link>
@@ -609,7 +609,7 @@ export default function AdminDashboard() {
             </div>
           ) : (
             <div className="bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-[#2a2a2a] p-5">
-              <h2 className="text-sm font-semibold text-[#2f3437] dark:text-[#e2e8f0] mb-3">Quick Links</h2>
+              <h2 className="text-sm font-semibold text-[var(--abv-text)] dark:text-[#e2e8f0] mb-3">Quick Links</h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {[
                   { label: "View Members", href: "/admin/members", emoji: "👥" },
@@ -623,7 +623,7 @@ export default function AdminDashboard() {
                     className="flex items-center gap-2 p-3 rounded-lg border border-gray-100 dark:border-[#2a2a2a] hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
                   >
                     <span className="text-lg">{link.emoji}</span>
-                    <span className="text-sm font-medium text-[#2f3437] dark:text-[#e2e8f0]">{link.label}</span>
+                    <span className="text-sm font-medium text-[var(--abv-text)] dark:text-[#e2e8f0]">{link.label}</span>
                   </Link>
                 ))}
               </div>

@@ -76,25 +76,25 @@ export default function PromptEditor({ toolKey, defaultPrompt, placeholders }: P
   }
 
   return (
-    <div className="mb-6 border border-[#6ba3c7]/30 rounded-lg overflow-hidden">
+    <div className="mb-6 border border-[var(--abv-ai-tools)]/30 rounded-lg overflow-hidden">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center justify-between px-4 py-3 bg-[#6ba3c7]/5 hover:bg-[#6ba3c7]/10 transition-colors"
+        className="w-full flex items-center justify-between px-4 py-3 bg-[var(--abv-ai-tools)]/5 hover:bg-[var(--abv-ai-tools)]/10 transition-colors"
       >
-        <span className="text-xs font-semibold text-[#6ba3c7] uppercase tracking-wider">
+        <span className="text-xs font-semibold text-[var(--abv-ai-tools)] uppercase tracking-wider">
           ⚙️ Edit System Prompt
         </span>
         {open ? (
-          <ChevronUpIcon className="w-4 h-4 text-[#6ba3c7]" />
+          <ChevronUpIcon className="w-4 h-4 text-[var(--abv-ai-tools)]" />
         ) : (
-          <ChevronDownIcon className="w-4 h-4 text-[#6ba3c7]" />
+          <ChevronDownIcon className="w-4 h-4 text-[var(--abv-ai-tools)]" />
         )}
       </button>
 
       {open && (
         <div className="p-4 bg-white space-y-3">
           {loading ? (
-            <p className="text-sm text-[#2f3437]/40 animate-pulse">Loading prompt…</p>
+            <p className="text-sm text-[var(--abv-text)]/40 animate-pulse">Loading prompt…</p>
           ) : (
             <>
               <MarkdownTextarea
@@ -105,17 +105,17 @@ export default function PromptEditor({ toolKey, defaultPrompt, placeholders }: P
               />
 
               {placeholders && placeholders.length > 0 && (
-                <div className="bg-[#f7f6f3] rounded-lg p-3">
-                  <p className="text-xs font-semibold text-[#2f3437]/60 uppercase tracking-wider mb-2">
+                <div className="bg-[var(--abv-bg)] rounded-lg p-3">
+                  <p className="text-xs font-semibold text-[var(--abv-text)]/60 uppercase tracking-wider mb-2">
                     Available Placeholders
                   </p>
                   <div className="space-y-1">
                     {placeholders.map((p) => (
                       <div key={p.key} className="flex items-start gap-2 text-xs">
-                        <code className="bg-white px-1.5 py-0.5 rounded font-mono text-[#6ba3c7] border border-[#6ba3c7]/20 shrink-0">
+                        <code className="bg-white px-1.5 py-0.5 rounded font-mono text-[var(--abv-ai-tools)] border border-[var(--abv-ai-tools)]/20 shrink-0">
                           {p.key}
                         </code>
-                        <span className="text-[#2f3437]/60">{p.description}</span>
+                        <span className="text-[var(--abv-text)]/60">{p.description}</span>
                       </div>
                     ))}
                   </div>
@@ -126,14 +126,14 @@ export default function PromptEditor({ toolKey, defaultPrompt, placeholders }: P
                 <button
                   onClick={handleSave}
                   disabled={saving}
-                  className="px-4 py-2 bg-[#6ba3c7] text-white text-xs font-semibold rounded-lg hover:bg-[#6ba3c7]/90 disabled:opacity-50 transition-colors"
+                  className="px-4 py-2 bg-[var(--abv-ai-tools)] text-white text-xs font-semibold rounded-lg hover:bg-[var(--abv-ai-tools)]/90 disabled:opacity-50 transition-colors"
                 >
                   {saving ? "Saving…" : "Save Prompt"}
                 </button>
                 <button
                   onClick={handleReset}
                   disabled={saving}
-                  className="px-4 py-2 border border-gray-200 text-[#2f3437]/60 text-xs font-semibold rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors"
+                  className="px-4 py-2 border border-gray-200 text-[var(--abv-text)]/60 text-xs font-semibold rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors"
                 >
                   Reset to Default
                 </button>

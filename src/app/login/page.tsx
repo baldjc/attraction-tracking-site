@@ -129,7 +129,7 @@ export default function LoginPage() {
     <div
       className="min-h-screen flex items-center justify-center px-4"
       style={{
-        background: "linear-gradient(135deg, #f7f6f3 0%, #ede9e3 100%)",
+        background: "linear-gradient(135deg, var(--abv-bg) 0%, #ede9e3 100%)",
       }}
     >
       <div className="w-full max-w-md animate-fade-in-up">
@@ -147,12 +147,12 @@ export default function LoginPage() {
           />
         </div>
 
-        <div className="bg-white rounded-lg border border-[#eaeaea] p-8 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+        <div className="bg-white rounded-lg border border-[var(--abv-border-strong)] p-8 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
           {step === "email" ? (
             <form onSubmit={handleSendCode} className="space-y-5">
               <div>
-                <h2 className="font-display text-2xl text-[#2f3437]">Sign in</h2>
-                <p className="text-sm text-[#787774] mt-1">
+                <h2 className="font-display text-2xl text-[var(--abv-text)]">Sign in</h2>
+                <p className="text-sm text-[var(--abv-text-secondary)] mt-1">
                   Enter your email and we'll send you a login code.
                 </p>
               </div>
@@ -166,7 +166,7 @@ export default function LoginPage() {
               <div>
                 <label
                   htmlFor="email"
-                  className="block text-sm font-medium text-[#2f3437] mb-1.5"
+                  className="block text-sm font-medium text-[var(--abv-text)] mb-1.5"
                 >
                   Email address
                 </label>
@@ -177,7 +177,7 @@ export default function LoginPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   autoFocus
-                  className="w-full px-4 py-2.5 border border-[#eaeaea] rounded-md focus:ring-2 focus:ring-[#6ba3c7] focus:border-transparent outline-none text-[#2f3437] text-sm"
+                  className="w-full px-4 py-2.5 border border-[var(--abv-border-strong)] rounded-md focus:ring-2 focus:ring-[var(--abv-azure)] focus:border-transparent outline-none text-[var(--abv-text)] text-sm"
                   placeholder="you@example.com"
                 />
               </div>
@@ -185,7 +185,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-[#111] hover:bg-[#2a3a4d] active:scale-[0.98] text-white font-medium py-2.5 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-[var(--abv-dark)] hover:bg-[#2a3a4d] active:scale-[0.98] text-white font-medium py-2.5 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? "Sending code..." : "Send login code"}
               </button>
@@ -193,10 +193,10 @@ export default function LoginPage() {
           ) : (
             <form id="code-form" onSubmit={handleVerifyCode} className="space-y-5">
               <div>
-                <h2 className="font-display text-2xl text-[#2f3437]">Check your email</h2>
-                <p className="text-sm text-[#787774] mt-1">
+                <h2 className="font-display text-2xl text-[var(--abv-text)]">Check your email</h2>
+                <p className="text-sm text-[var(--abv-text-secondary)] mt-1">
                   We sent a 6-digit code to{" "}
-                  <span className="font-medium text-[#2f3437]">{email}</span>
+                  <span className="font-medium text-[var(--abv-text)]">{email}</span>
                 </p>
               </div>
 
@@ -207,7 +207,7 @@ export default function LoginPage() {
               )}
 
               <div>
-                <label className="block text-sm font-medium text-[#2f3437] mb-3">
+                <label className="block text-sm font-medium text-[var(--abv-text)] mb-3">
                   Enter your code
                 </label>
                 <div className="flex gap-2 justify-between" onPaste={handlePaste}>
@@ -222,7 +222,7 @@ export default function LoginPage() {
                       value={digit}
                       onChange={(e) => handleDigitChange(i, e.target.value)}
                       onKeyDown={(e) => handleDigitKeyDown(i, e)}
-                      className="w-12 h-14 text-center text-2xl font-bold border border-[#eaeaea] rounded-md focus:ring-2 focus:ring-[#6ba3c7] focus:border-[#6ba3c7] outline-none text-[#2f3437] transition-colors font-data"
+                      className="w-12 h-14 text-center text-2xl font-bold border border-[var(--abv-border-strong)] rounded-md focus:ring-2 focus:ring-[var(--abv-azure)] focus:border-[var(--abv-azure)] outline-none text-[var(--abv-text)] transition-colors font-data"
                     />
                   ))}
                 </div>
@@ -231,7 +231,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading || code.join("").length < 6}
-                className="w-full bg-[#111] hover:bg-[#2a3a4d] active:scale-[0.98] text-white font-medium py-2.5 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-[var(--abv-dark)] hover:bg-[#2a3a4d] active:scale-[0.98] text-white font-medium py-2.5 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? "Verifying..." : "Sign in"}
               </button>
@@ -240,7 +240,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => { setStep("email"); setError(""); setCode(["", "", "", "", "", ""]); }}
-                  className="text-sm text-[#787774] hover:text-[#2f3437] transition-colors"
+                  className="text-sm text-[var(--abv-text-secondary)] hover:text-[var(--abv-text)] transition-colors"
                 >
                   Change email
                 </button>
@@ -248,7 +248,7 @@ export default function LoginPage() {
                   type="button"
                   onClick={handleResend}
                   disabled={resendCooldown > 0 || loading}
-                  className="text-sm text-[#6ba3c7] hover:text-[#5490b5] disabled:text-[#787774] disabled:cursor-not-allowed transition-colors"
+                  className="text-sm text-[var(--abv-azure)] hover:text-[var(--abv-azure)] disabled:text-[var(--abv-text-secondary)] disabled:cursor-not-allowed transition-colors"
                 >
                   {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend code"}
                 </button>
@@ -257,7 +257,7 @@ export default function LoginPage() {
           )}
         </div>
 
-        <p className="text-center text-xs text-[#787774] mt-6">
+        <p className="text-center text-xs text-[var(--abv-text-secondary)] mt-6">
           Attraction by Video — Member Platform
         </p>
       </div>

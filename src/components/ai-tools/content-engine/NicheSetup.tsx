@@ -42,11 +42,11 @@ export default function NicheSetup({ initialNiche, initialCity, onSaved, isModal
   }
 
   return (
-    <div className={isModal ? "" : "bg-white dark:bg-[#1a1a1a] rounded-lg border border-[#2f3437]/10 dark:border-white/10 p-8 max-w-md mx-auto"}>
+    <div className={isModal ? "" : "bg-white dark:bg-[#1a1a1a] rounded-lg border border-[var(--abv-text)]/10 dark:border-white/10 p-8 max-w-md mx-auto"}>
       {!isModal && (
         <div className="mb-6">
-          <h2 className="text-lg font-bold text-[#2f3437] dark:text-white">Set your niche</h2>
-          <p className="text-sm text-[#2f3437]/60 dark:text-white/60 mt-1">
+          <h2 className="text-lg font-bold text-[var(--abv-text)] dark:text-white">Set your niche</h2>
+          <p className="text-sm text-[var(--abv-text)]/60 dark:text-white/60 mt-1">
             This helps us optimize your video titles for search in your market.
           </p>
         </div>
@@ -54,11 +54,11 @@ export default function NicheSetup({ initialNiche, initialCity, onSaved, isModal
 
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-[#2f3437] dark:text-white mb-1.5">Niche</label>
+          <label className="block text-sm font-medium text-[var(--abv-text)] dark:text-white mb-1.5">Niche</label>
           <select
             value={niche}
             onChange={(e) => setNiche(e.target.value)}
-            className="w-full border border-[#2f3437]/20 dark:border-white/20 rounded-lg px-3 py-2 text-sm text-[#2f3437] dark:text-white bg-white dark:bg-[#0f1419] focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40"
+            className="w-full border border-[var(--abv-text)]/20 dark:border-white/20 rounded-lg px-3 py-2 text-sm text-[var(--abv-text)] dark:text-white bg-white dark:bg-[#0f1419] focus:outline-none focus:ring-2 focus:ring-[var(--abv-ai-tools)]/40"
           >
             <option value="">Select your niche...</option>
             {NICHES.map((n) => (
@@ -69,13 +69,13 @@ export default function NicheSetup({ initialNiche, initialCity, onSaved, isModal
 
         {niche === "real_estate" && (
           <div>
-            <label className="block text-sm font-medium text-[#2f3437] dark:text-white mb-1.5">City / Market</label>
+            <label className="block text-sm font-medium text-[var(--abv-text)] dark:text-white mb-1.5">City / Market</label>
             <input
               type="text"
               value={city}
               onChange={(e) => setCity(e.target.value)}
               placeholder="e.g. Calgary, Houston, Toronto"
-              className="w-full border border-[#2f3437]/20 dark:border-white/20 rounded-lg px-3 py-2 text-sm text-[#2f3437] dark:text-white placeholder-[#2f3437]/30 dark:placeholder-white/30 bg-white dark:bg-[#0f1419] focus:outline-none focus:ring-2 focus:ring-[#6ba3c7]/40"
+              className="w-full border border-[var(--abv-text)]/20 dark:border-white/20 rounded-lg px-3 py-2 text-sm text-[var(--abv-text)] dark:text-white placeholder-[var(--abv-text)]/30 dark:placeholder-white/30 bg-white dark:bg-[#0f1419] focus:outline-none focus:ring-2 focus:ring-[var(--abv-ai-tools)]/40"
             />
           </div>
         )}
@@ -85,7 +85,7 @@ export default function NicheSetup({ initialNiche, initialCity, onSaved, isModal
         <button
           onClick={handleSave}
           disabled={saving}
-          className="w-full bg-[#6ba3c7] hover:bg-[#2bb0ec] text-white font-semibold text-sm py-2.5 rounded-lg transition-colors disabled:opacity-50"
+          className="w-full bg-[var(--abv-ai-tools)] hover:bg-[#2bb0ec] text-white font-semibold text-sm py-2.5 rounded-lg transition-colors disabled:opacity-50"
         >
           {saving ? "Saving..." : "Save and continue"}
         </button>

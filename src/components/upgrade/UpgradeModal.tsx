@@ -139,7 +139,7 @@ export default function UpgradeModal({ trigger, open, onClose, onContinue, conti
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#1e2a38]/60"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[var(--abv-dark)]/60"
       onClick={handleDismiss}
     >
       <div
@@ -149,34 +149,34 @@ export default function UpgradeModal({ trigger, open, onClose, onContinue, conti
         <button
           onClick={handleDismiss}
           aria-label="Dismiss"
-          className="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center text-[#2f3437]/40 hover:text-[#2f3437] hover:bg-[#2f3437]/5 transition-colors"
+          className="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center text-[var(--abv-text)]/40 hover:text-[var(--abv-text)] hover:bg-[var(--abv-text)]/5 transition-colors"
         >
           ✕
         </button>
 
         <div className="space-y-4">
-          <div className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider bg-[#6ba3c7]/10 text-[#6ba3c7] px-2.5 py-1 rounded-full">
+          <div className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider bg-[var(--abv-dark)]/10 text-[var(--abv-azure)] px-2.5 py-1 rounded-full">
             <span>⬆</span> Production feature
           </div>
-          <h2 className="text-xl font-bold text-[#2f3437] leading-tight">{copy.title}</h2>
-          <p className="text-sm text-[#2f3437]/70 leading-relaxed">{copy.body}</p>
+          <h2 className="text-xl font-bold text-[var(--abv-text)] leading-tight">{copy.title}</h2>
+          <p className="text-sm text-[var(--abv-text)]/70 leading-relaxed">{copy.body}</p>
 
           <ul className="space-y-2 pt-1">
             {copy.bullets.map((b, i) => (
-              <li key={i} className="flex items-start gap-2 text-sm text-[#2f3437]/80">
-                <span className="text-[#10B981] font-bold mt-0.5">✓</span>
+              <li key={i} className="flex items-start gap-2 text-sm text-[var(--abv-text)]/80">
+                <span className="text-[var(--abv-academy)] font-bold mt-0.5">✓</span>
                 <span>{b}</span>
               </li>
             ))}
           </ul>
 
-          <p className="text-xs text-[#2f3437]/50 italic">{copy.price}</p>
+          <p className="text-xs text-[var(--abv-text)]/50 italic">{copy.price}</p>
 
           <div className="flex items-center gap-2 pt-2">
             <Link
               href={copy.ctaHref}
               onClick={handleDismiss}
-              className="flex-1 text-center bg-[#6ba3c7] hover:bg-[#5490b5] text-white font-semibold text-sm py-2.5 rounded-lg transition-colors"
+              className="flex-1 text-center $1var(--abv-dark)$2 hover:bg-black/85 text-white font-semibold text-sm py-2.5 rounded-lg transition-colors"
             >
               {copy.ctaLabel}
             </Link>
@@ -185,7 +185,7 @@ export default function UpgradeModal({ trigger, open, onClose, onContinue, conti
                 await handleDismissOnly();
                 if (onContinue) onContinue();
               }}
-              className="text-sm font-medium text-[#2f3437]/50 hover:text-[#2f3437] px-4 py-2.5 rounded-lg transition-colors"
+              className="text-sm font-medium text-[var(--abv-text)]/50 hover:text-[var(--abv-text)] px-4 py-2.5 rounded-lg transition-colors"
             >
               {onContinue ? (continueLabel ?? "Continue anyway") : "Not now"}
             </button>

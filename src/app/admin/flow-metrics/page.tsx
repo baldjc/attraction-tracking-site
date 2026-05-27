@@ -148,13 +148,13 @@ export default function FlowMetricsPage() {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-xl font-bold text-[#2f3437] dark:text-[#e2e8f0]">Content Flow Metrics</h1>
-          <p className="text-sm text-[#2f3437]/50 dark:text-white/40 mt-0.5">
+          <h1 className="text-xl font-bold text-[var(--abv-text)] dark:text-[#e2e8f0]">Content Flow Metrics</h1>
+          <p className="text-sm text-[var(--abv-text)]/50 dark:text-white/40 mt-0.5">
             Production, Growth & DWY tiers · cached 15 min
           </p>
         </div>
         <div className="flex items-end gap-2">
-          <label className="text-xs text-[#2f3437]/60 dark:text-white/50">
+          <label className="text-xs text-[var(--abv-text)]/60 dark:text-white/50">
             <span className="block mb-1">Start</span>
             <input
               type="date"
@@ -163,7 +163,7 @@ export default function FlowMetricsPage() {
               className="px-2 py-1.5 rounded border border-gray-200 dark:border-[#2a2a2a] bg-white dark:bg-[#1a1a1a] text-sm"
             />
           </label>
-          <label className="text-xs text-[#2f3437]/60 dark:text-white/50">
+          <label className="text-xs text-[var(--abv-text)]/60 dark:text-white/50">
             <span className="block mb-1">End</span>
             <input
               type="date"
@@ -175,7 +175,7 @@ export default function FlowMetricsPage() {
           <button
             onClick={downloadCsv}
             disabled={!data}
-            className="px-3 py-1.5 rounded bg-[#6ba3c7] text-white text-sm font-medium hover:bg-[#5a92b6] disabled:opacity-50"
+            className="px-3 py-1.5 rounded bg-[var(--abv-dark)] text-white text-sm font-medium hover:bg-[#5a92b6] disabled:opacity-50"
           >
             Export CSV
           </button>
@@ -207,9 +207,9 @@ export default function FlowMetricsPage() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div className="bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-[#2a2a2a] p-4">
-              <h2 className="text-sm font-semibold text-[#2f3437] dark:text-[#e2e8f0] mb-3">Plans by status</h2>
+              <h2 className="text-sm font-semibold text-[var(--abv-text)] dark:text-[#e2e8f0] mb-3">Plans by status</h2>
               {data.plansByStatus.length === 0 ? (
-                <p className="text-sm text-[#2f3437]/40 dark:text-white/30">No plans in range</p>
+                <p className="text-sm text-[var(--abv-text)]/40 dark:text-white/30">No plans in range</p>
               ) : (
                 <div style={{ width: "100%", height: 260 }}>
                   <ResponsiveContainer>
@@ -218,7 +218,7 @@ export default function FlowMetricsPage() {
                       <XAxis dataKey="status" tick={{ fontSize: 10 }} angle={-30} textAnchor="end" interval={0} />
                       <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
                       <Tooltip />
-                      <Bar dataKey="count" fill="#6ba3c7" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="count" fill="var(--abv-azure)" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -226,9 +226,9 @@ export default function FlowMetricsPage() {
             </div>
 
             <div className="bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-[#2a2a2a] p-4">
-              <h2 className="text-sm font-semibold text-[#2f3437] dark:text-[#e2e8f0] mb-3">Weekly activity</h2>
+              <h2 className="text-sm font-semibold text-[var(--abv-text)] dark:text-[#e2e8f0] mb-3">Weekly activity</h2>
               {data.weekly.length === 0 ? (
-                <p className="text-sm text-[#2f3437]/40 dark:text-white/30">No activity in range</p>
+                <p className="text-sm text-[var(--abv-text)]/40 dark:text-white/30">No activity in range</p>
               ) : (
                 <div style={{ width: "100%", height: 260 }}>
                   <ResponsiveContainer>
@@ -238,9 +238,9 @@ export default function FlowMetricsPage() {
                       <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
                       <Tooltip />
                       <Legend wrapperStyle={{ fontSize: 11 }} />
-                      <Line type="monotone" dataKey="plansCreated" stroke="#6ba3c7" strokeWidth={2} dot={false} name="Created" />
-                      <Line type="monotone" dataKey="plansPublished" stroke="#10B981" strokeWidth={2} dot={false} name="Published" />
-                      <Line type="monotone" dataKey="repurposesGenerated" stroke="#f59e0b" strokeWidth={2} dot={false} name="Repurposes" />
+                      <Line type="monotone" dataKey="plansCreated" stroke="var(--abv-azure)" strokeWidth={2} dot={false} name="Created" />
+                      <Line type="monotone" dataKey="plansPublished" stroke="var(--abv-academy)" strokeWidth={2} dot={false} name="Published" />
+                      <Line type="monotone" dataKey="repurposesGenerated" stroke="var(--abv-scores)" strokeWidth={2} dot={false} name="Repurposes" />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
@@ -250,14 +250,14 @@ export default function FlowMetricsPage() {
 
           <div className="bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-[#2a2a2a] overflow-hidden">
             <div className="px-4 py-3 border-b border-gray-100 dark:border-[#2a2a2a]">
-              <h2 className="text-sm font-semibold text-[#2f3437] dark:text-[#e2e8f0]">Top members (per-funnel)</h2>
+              <h2 className="text-sm font-semibold text-[var(--abv-text)] dark:text-[#e2e8f0]">Top members (per-funnel)</h2>
             </div>
             {sortedFunnel.length === 0 ? (
-              <p className="px-4 py-6 text-sm text-[#2f3437]/40 dark:text-white/30">No member activity in range</p>
+              <p className="px-4 py-6 text-sm text-[var(--abv-text)]/40 dark:text-white/30">No member activity in range</p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="min-w-full text-sm">
-                  <thead className="bg-gray-50 dark:bg-[#0f0f0f] text-xs uppercase tracking-wider text-[#2f3437]/50 dark:text-white/40">
+                  <thead className="bg-gray-50 dark:bg-[#0f0f0f] text-xs uppercase tracking-wider text-[var(--abv-text)]/50 dark:text-white/40">
                     <tr>
                       <th className="text-left px-4 py-2">Member</th>
                       <SortHeader label="Plans"     active={sortKey === "planCount"}      dir={sortDir} onClick={() => toggleSort("planCount")} />
@@ -270,8 +270,8 @@ export default function FlowMetricsPage() {
                     {sortedFunnel.map((row) => (
                       <tr key={row.userId} className="hover:bg-gray-50 dark:hover:bg-white/5">
                         <td className="px-4 py-2">
-                          <div className="font-medium text-[#2f3437] dark:text-[#e2e8f0]">{row.name}</div>
-                          <div className="text-xs text-[#2f3437]/40 dark:text-white/30">{row.email}</div>
+                          <div className="font-medium text-[var(--abv-text)] dark:text-[#e2e8f0]">{row.name}</div>
+                          <div className="text-xs text-[var(--abv-text)]/40 dark:text-white/30">{row.email}</div>
                         </td>
                         <td className="px-4 py-2 text-right tabular-nums">{row.planCount}</td>
                         <td className="px-4 py-2 text-right tabular-nums">{row.scriptedCount}</td>
@@ -285,7 +285,7 @@ export default function FlowMetricsPage() {
             )}
           </div>
 
-          <p className="text-[10px] text-[#2f3437]/30 dark:text-white/20">
+          <p className="text-[10px] text-[var(--abv-text)]/30 dark:text-white/20">
             Generated {new Date(data.generatedAt).toLocaleString("en-CA")}. Foundations members excluded.
           </p>
         </>
@@ -297,9 +297,9 @@ export default function FlowMetricsPage() {
 function Kpi({ label, value, subtitle }: { label: string; value: string; subtitle?: string }) {
   return (
     <div className="bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-[#2a2a2a] p-4">
-      <p className="text-xs text-[#2f3437]/50 dark:text-white/40 uppercase tracking-wider">{label}</p>
-      <p className="text-2xl font-bold text-[#6ba3c7] mt-1">{value}</p>
-      {subtitle && <p className="text-[10px] text-[#2f3437]/30 dark:text-white/20 mt-0.5">{subtitle}</p>}
+      <p className="text-xs text-[var(--abv-text)]/50 dark:text-white/40 uppercase tracking-wider">{label}</p>
+      <p className="text-2xl font-bold text-[var(--abv-azure)] mt-1">{value}</p>
+      {subtitle && <p className="text-[10px] text-[var(--abv-text)]/30 dark:text-white/20 mt-0.5">{subtitle}</p>}
     </div>
   );
 }
@@ -317,7 +317,7 @@ function SortHeader({
 }) {
   return (
     <th className="text-right px-4 py-2">
-      <button onClick={onClick} className="inline-flex items-center gap-1 hover:text-[#6ba3c7]">
+      <button onClick={onClick} className="inline-flex items-center gap-1 hover:text-[var(--abv-azure)]">
         {label}
         {active && <span>{dir === "asc" ? "▲" : "▼"}</span>}
       </button>

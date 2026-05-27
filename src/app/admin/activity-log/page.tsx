@@ -54,8 +54,8 @@ export default function ActivityLogPage() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-xl font-bold text-[#2f3437] dark:text-[#e2e8f0]">Activity Log</h1>
-        <p className="text-sm text-[#2f3437]/50 dark:text-white/40 mt-0.5">Track admin actions across the platform.</p>
+        <h1 className="text-xl font-bold text-[var(--abv-text)] dark:text-[#e2e8f0]">Activity Log</h1>
+        <p className="text-sm text-[var(--abv-text)]/50 dark:text-white/40 mt-0.5">Track admin actions across the platform.</p>
       </div>
 
       <div className="flex gap-2">
@@ -69,8 +69,8 @@ export default function ActivityLogPage() {
             onClick={() => setDays(opt.value)}
             className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-colors ${
               days === opt.value
-                ? "bg-[#6ba3c7] text-white"
-                : "bg-gray-100 dark:bg-white/10 text-[#2f3437]/60 dark:text-white/40 hover:bg-gray-200 dark:hover:bg-white/20"
+                ? "bg-[var(--abv-dark)] text-white"
+                : "bg-gray-100 dark:bg-white/10 text-[var(--abv-text)]/60 dark:text-white/40 hover:bg-gray-200 dark:hover:bg-white/20"
             }`}
           >
             {opt.label}
@@ -86,8 +86,8 @@ export default function ActivityLogPage() {
         </div>
       ) : actions.length === 0 ? (
         <div className="bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-[#2a2a2a] p-12 text-center">
-          <ClockIcon className="w-10 h-10 text-[#2f3437]/15 dark:text-white/10 mx-auto mb-3" />
-          <p className="text-sm text-[#2f3437]/40 dark:text-white/30">No activity recorded in this period.</p>
+          <ClockIcon className="w-10 h-10 text-[var(--abv-text)]/15 dark:text-white/10 mx-auto mb-3" />
+          <p className="text-sm text-[var(--abv-text)]/40 dark:text-white/30">No activity recorded in this period.</p>
         </div>
       ) : (
         <div className="bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-[#2a2a2a] divide-y divide-gray-100 dark:divide-[#2a2a2a] overflow-hidden">
@@ -98,15 +98,15 @@ export default function ActivityLogPage() {
               <div key={a.id} className="flex items-center gap-3 px-5 py-3">
                 <span className="text-lg shrink-0">{meta.emoji}</span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-[#2f3437] dark:text-[#e2e8f0]">
+                  <p className="text-sm text-[var(--abv-text)] dark:text-[#e2e8f0]">
                     <span className="font-medium">{a.actorEmail}</span>
-                    <span className="text-[#2f3437]/50 dark:text-white/40"> — {meta.label}</span>
+                    <span className="text-[var(--abv-text)]/50 dark:text-white/40"> — {meta.label}</span>
                   </p>
                   {details && (
-                    <p className="text-xs text-[#2f3437]/40 dark:text-white/30 mt-0.5 truncate">{details}</p>
+                    <p className="text-xs text-[var(--abv-text)]/40 dark:text-white/30 mt-0.5 truncate">{details}</p>
                   )}
                 </div>
-                <span className="text-xs text-[#2f3437]/30 dark:text-white/20 shrink-0">
+                <span className="text-xs text-[var(--abv-text)]/30 dark:text-white/20 shrink-0">
                   {new Date(a.createdAt).toLocaleString("en-CA", {
                     month: "short",
                     day: "numeric",

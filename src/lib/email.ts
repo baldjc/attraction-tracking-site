@@ -26,21 +26,21 @@ export async function sendLoginCode(to: string, code: string, name?: string | nu
           <!-- Logo -->
           <tr>
             <td align="center" style="padding-bottom:32px;">
-              <div style="display:inline-block;background:#1e2a38;border-radius:16px;padding:12px;">
+              <div style="display:inline-block;background:var(--abv-dark);border-radius:16px;padding:12px;">
                 <span style="font-size:28px;">📹</span>
               </div>
-              <div style="margin-top:12px;font-size:18px;font-weight:700;color:#1e2a38;">Attraction by Video</div>
+              <div style="margin-top:12px;font-size:18px;font-weight:700;color:var(--abv-dark);">Attraction by Video</div>
             </td>
           </tr>
           <!-- Card -->
           <tr>
             <td style="background:#ffffff;border-radius:16px;padding:40px 36px;border:1px solid #e5e7eb;">
-              <p style="margin:0 0 8px;font-size:15px;color:#1e2a38;">${greeting}</p>
-              <p style="margin:0 0 28px;font-size:15px;color:#1e2a38;">Here is your login code:</p>
+              <p style="margin:0 0 8px;font-size:15px;color:var(--abv-dark);">${greeting}</p>
+              <p style="margin:0 0 28px;font-size:15px;color:var(--abv-dark);">Here is your login code:</p>
 
               <!-- Code box -->
               <div style="background:#f1f1ef;border-radius:12px;padding:24px;text-align:center;margin-bottom:28px;letter-spacing:0.25em;">
-                <span style="font-size:40px;font-weight:800;color:#1e2a38;font-family:'Courier New',monospace;">${code}</span>
+                <span style="font-size:40px;font-weight:800;color:var(--abv-dark);font-family:'Courier New',monospace;">${code}</span>
               </div>
 
               <p style="margin:0 0 8px;font-size:13px;color:#6b7280;">This code expires in <strong>10 minutes</strong> and can only be used once.</p>
@@ -97,21 +97,21 @@ export async function sendWaitlistNotification(
         <table width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;">
           <tr>
             <td align="center" style="padding-bottom:32px;">
-              <div style="display:inline-block;background:#1e2a38;border-radius:16px;padding:12px;">
+              <div style="display:inline-block;background:var(--abv-dark);border-radius:16px;padding:12px;">
                 <span style="font-size:28px;">📹</span>
               </div>
-              <div style="margin-top:12px;font-size:18px;font-weight:700;color:#1e2a38;">Attraction by Video</div>
+              <div style="margin-top:12px;font-size:18px;font-weight:700;color:var(--abv-dark);">Attraction by Video</div>
             </td>
           </tr>
           <tr>
             <td style="background:#ffffff;border-radius:16px;padding:40px 36px;border:1px solid #e5e7eb;">
-              <p style="margin:0 0 16px;font-size:15px;color:#1e2a38;font-weight:600;">New Waitlist Request</p>
+              <p style="margin:0 0 16px;font-size:15px;color:var(--abv-dark);font-weight:600;">New Waitlist Request</p>
               <p style="margin:0 0 24px;font-size:15px;color:#374151;">
                 <strong>${memberName}</strong> (${memberEmail}) is interested in the <strong>${packageName}</strong> package (${categoryName}) and would like to learn more and join the waitlist.
               </p>
               <div style="background:#f1f1ef;border-radius:12px;padding:16px 20px;">
                 <p style="margin:0 0 6px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:#6b7280;">Package</p>
-                <p style="margin:0;font-size:15px;font-weight:700;color:#1e2a38;">${packageName}</p>
+                <p style="margin:0;font-size:15px;font-weight:700;color:var(--abv-dark);">${packageName}</p>
                 <p style="margin:4px 0 0;font-size:13px;color:#6b7280;">${categoryName}</p>
               </div>
             </td>
@@ -205,12 +205,12 @@ export async function sendAuditReadyEmail(params: {
           </tr>
           <tr>
             <td style="background:#ffffff;border-radius:16px;padding:40px 36px;border:1px solid #e5e7eb;">
-              <p style="margin:0 0 16px;font-size:15px;color:#1e2a38;">${greeting}</p>
-              <p style="margin:0 0 16px;font-size:15px;color:#1e2a38;">Your ${auditLabel} is ready to view.</p>
+              <p style="margin:0 0 16px;font-size:15px;color:var(--abv-dark);">${greeting}</p>
+              <p style="margin:0 0 16px;font-size:15px;color:var(--abv-dark);">Your ${auditLabel} is ready to view.</p>
               <p style="margin:0 0 28px;font-size:15px;color:#374151;">${contextLine}</p>
 
               <div style="text-align:center;margin:0 0 28px;">
-                <a href="${auditUrl}" style="display:inline-block;background:#1e2a38;color:#ffffff;border-radius:100px;padding:14px 28px;font-weight:700;text-decoration:none;font-size:15px;">View your audit →</a>
+                <a href="${auditUrl}" style="display:inline-block;background:var(--abv-dark);color:#ffffff;border-radius:100px;padding:14px 28px;font-weight:700;text-decoration:none;font-size:15px;">View your audit →</a>
               </div>
 
               <p style="margin:0 0 8px;font-size:13px;color:#6b7280;line-height:1.6;">
@@ -313,7 +313,7 @@ export function renderBackfillCompletionEmail(
     if (succeededMonths.length === 0) return "";
     if (succeededMonths.length > 10) {
       return `
-            <p style="margin:24px 0 8px;font-size:14px;font-weight:600;color:#1e2a38;">${succeededMonths.length} months validated</p>
+            <p style="margin:24px 0 8px;font-size:14px;font-weight:600;color:var(--abv-dark);">${succeededMonths.length} months validated</p>
             <p style="margin:0;font-size:13px;color:#374151;">From ${succeededMonths[0].label} through ${succeededMonths[succeededMonths.length - 1].label}.</p>
       `.trim();
     }
@@ -324,7 +324,7 @@ export function renderBackfillCompletionEmail(
       )
       .join("");
     return `
-            <p style="margin:24px 0 8px;font-size:14px;font-weight:600;color:#1e2a38;">Validated</p>
+            <p style="margin:24px 0 8px;font-size:14px;font-weight:600;color:var(--abv-dark);">Validated</p>
             <ul style="margin:0;padding-left:20px;">${lines}</ul>
     `.trim();
   })();
@@ -369,14 +369,14 @@ export function renderBackfillCompletionEmail(
           </tr>
           <tr>
             <td style="background:#ffffff;border-radius:16px;padding:36px 32px;border:1px solid #e5e7eb;">
-              <p style="margin:0 0 16px;font-size:15px;color:#1e2a38;">${greeting}</p>
-              <p style="margin:0 0 8px;font-size:15px;color:#1e2a38;">${summaryLine}</p>
+              <p style="margin:0 0 16px;font-size:15px;color:var(--abv-dark);">${greeting}</p>
+              <p style="margin:0 0 8px;font-size:15px;color:var(--abv-dark);">${summaryLine}</p>
 
               ${successBlock}
               ${failureBlock}
 
               <div style="text-align:center;margin:28px 0 8px;">
-                <a href="${marketDataUrl}" style="display:inline-block;background:#1e2a38;color:#ffffff;border-radius:100px;padding:14px 28px;font-weight:700;text-decoration:none;font-size:15px;">Open Market Data →</a>
+                <a href="${marketDataUrl}" style="display:inline-block;background:var(--abv-dark);color:#ffffff;border-radius:100px;padding:14px 28px;font-weight:700;text-decoration:none;font-size:15px;">Open Market Data →</a>
               </div>
 
               <p style="margin:20px 0 0;font-size:13px;color:#6b7280;">— The Attraction by Video Team</p>

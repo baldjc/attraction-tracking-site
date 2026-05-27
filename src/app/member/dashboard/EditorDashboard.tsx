@@ -18,7 +18,7 @@ function scoreBg(score: number | null) {
   if (score == null) return "bg-gray-100 text-gray-400";
   if (score >= 7) return "bg-green-100 text-green-700";
   if (score >= 5) return "bg-yellow-100 text-yellow-700";
-  return "bg-red-100 text-[#ff0033]";
+  return "bg-red-100 text-[var(--abv-crimson)]";
 }
 
 export default function EditorDashboard() {
@@ -62,31 +62,31 @@ export default function EditorDashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-[#2f3437]">Dashboard</h1>
-        <p className="text-[#2f3437]/60 mt-1">
+        <h1 className="text-2xl font-bold text-[var(--abv-text)]">Dashboard</h1>
+        <p className="text-[var(--abv-text)]/60 mt-1">
           Select a member to view their scores, content, and AI tools.
         </p>
       </div>
 
       <div className="relative">
-        <MagnifyingGlassIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#2f3437]/30" />
+        <MagnifyingGlassIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--abv-text)]/30" />
         <input
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search members…"
-          className="w-full pl-10 pr-4 py-2.5 border border-[#2f3437]/15 rounded-lg text-sm bg-white focus:outline-none focus:border-[#6ba3c7]"
+          className="w-full pl-10 pr-4 py-2.5 border border-[var(--abv-text)]/15 rounded-lg text-sm bg-white focus:outline-none focus:border-[var(--abv-azure)]"
         />
       </div>
 
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="bg-white rounded-lg border border-[#2f3437]/10 p-5 h-28 animate-pulse" />
+            <div key={i} className="bg-white rounded-lg border border-[var(--abv-text)]/10 p-5 h-28 animate-pulse" />
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <p className="text-sm text-[#2f3437]/40 text-center py-16">
+        <p className="text-sm text-[var(--abv-text)]/40 text-center py-16">
           {search ? "No members match your search." : "No members assigned yet."}
         </p>
       ) : (
@@ -96,19 +96,19 @@ export default function EditorDashboard() {
             return (
               <div
                 key={member.id}
-                className="bg-white rounded-lg border border-[#2f3437]/10 p-5 flex flex-col gap-3 hover:shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-shadow"
+                className="bg-white rounded-lg border border-[var(--abv-text)]/10 p-5 flex flex-col gap-3 hover:shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-shadow"
               >
                 <div className="flex items-start gap-3">
-                  <UserCircleIcon className="w-8 h-8 text-[#2f3437]/20 shrink-0 mt-0.5" />
+                  <UserCircleIcon className="w-8 h-8 text-[var(--abv-text)]/20 shrink-0 mt-0.5" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-[#2f3437] truncate">
+                    <p className="text-sm font-semibold text-[var(--abv-text)] truncate">
                       {member.fullName || member.email}
                     </p>
                     {member.fullName && (
-                      <p className="text-xs text-[#2f3437]/40 truncate">{member.email}</p>
+                      <p className="text-xs text-[var(--abv-text)]/40 truncate">{member.email}</p>
                     )}
                     {member.youtubeHandle && (
-                      <p className="text-xs text-[#6ba3c7] truncate mt-0.5">{member.youtubeHandle}</p>
+                      <p className="text-xs text-[var(--abv-azure)] truncate mt-0.5">{member.youtubeHandle}</p>
                     )}
                   </div>
                   {score !== null && (
@@ -118,13 +118,13 @@ export default function EditorDashboard() {
                   )}
                 </div>
                 <div className="flex items-center justify-between pt-1">
-                  <span className="text-xs text-[#2f3437]/40">
+                  <span className="text-xs text-[var(--abv-text)]/40">
                     {member._count.audits} audit{member._count.audits !== 1 ? "s" : ""}
                   </span>
                   <button
                     onClick={() => viewAsMember(member)}
                     disabled={viewingId === member.id}
-                    className="text-xs font-semibold text-[#6ba3c7] border border-[#6ba3c7]/30 px-3 py-1.5 rounded-lg hover:bg-[#6ba3c7]/10 disabled:opacity-50 transition-colors"
+                    className="text-xs font-semibold text-[var(--abv-azure)] border border-[var(--abv-azure)]/30 px-3 py-1.5 rounded-lg hover:bg-[var(--abv-dark)]/10 disabled:opacity-50 transition-colors"
                   >
                     {viewingId === member.id ? "Opening…" : "View as"}
                   </button>

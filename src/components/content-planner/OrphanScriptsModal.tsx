@@ -118,7 +118,7 @@ export default function OrphanScriptsModal({ scripts, onClose }: Props) {
   const length = current.scriptOpening.length;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#1e2a38]/60" onClick={() => onClose(linkedCount > 0)}>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[var(--abv-dark)]/60" onClick={() => onClose(linkedCount > 0)}>
       <div
         className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 relative max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
@@ -126,26 +126,26 @@ export default function OrphanScriptsModal({ scripts, onClose }: Props) {
         <button
           onClick={() => onClose(linkedCount > 0)}
           aria-label="Close"
-          className="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center text-[#2f3437]/40 hover:text-[#2f3437] hover:bg-[#2f3437]/5 transition-colors"
+          className="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center text-[var(--abv-text)]/40 hover:text-[var(--abv-text)] hover:bg-[var(--abv-text)]/5 transition-colors"
         >
           ✕
         </button>
 
-        <p className="text-xs font-semibold uppercase tracking-wider text-[#6ba3c7] mb-1">
+        <p className="text-xs font-semibold uppercase tracking-wider text-[var(--abv-azure)] mb-1">
           Linked {linkedCount} of {total} scripts
         </p>
-        <h2 className="text-lg font-bold text-[#2f3437] leading-tight mb-3">Link this script to a plan</h2>
+        <h2 className="text-lg font-bold text-[var(--abv-text)] leading-tight mb-3">Link this script to a plan</h2>
 
-        <div className="bg-[#f7f6f3] rounded-lg p-3 mb-4">
-          <p className="text-sm font-semibold text-[#2f3437] leading-snug">{previewTitle}</p>
-          <p className="text-[11px] text-[#2f3437]/50 mt-1">
+        <div className="bg-[var(--abv-bg)] rounded-lg p-3 mb-4">
+          <p className="text-sm font-semibold text-[var(--abv-text)] leading-snug">{previewTitle}</p>
+          <p className="text-[11px] text-[var(--abv-text)]/50 mt-1">
             Saved {dateStr} · ~{length} chars
           </p>
         </div>
 
         <div className="space-y-3 mb-4">
           {/* Create new plan */}
-          <label className="block border border-[#2f3437]/15 rounded-lg p-3 cursor-pointer hover:border-[#6ba3c7] transition-colors">
+          <label className="block border border-[var(--abv-text)]/15 rounded-lg p-3 cursor-pointer hover:border-[var(--abv-azure)] transition-colors">
             <div className="flex items-start gap-2">
               <input
                 type="radio"
@@ -154,8 +154,8 @@ export default function OrphanScriptsModal({ scripts, onClose }: Props) {
                 className="mt-1"
               />
               <div className="flex-1">
-                <p className="text-sm font-semibold text-[#2f3437]">Create a new plan</p>
-                <p className="text-xs text-[#2f3437]/55 mb-2">A new ContentPlan with status &quot;Scripted&quot; linked to this script.</p>
+                <p className="text-sm font-semibold text-[var(--abv-text)]">Create a new plan</p>
+                <p className="text-xs text-[var(--abv-text)]/55 mb-2">A new ContentPlan with status &quot;Scripted&quot; linked to this script.</p>
                 <input
                   type="text"
                   value={titleInput}
@@ -163,7 +163,7 @@ export default function OrphanScriptsModal({ scripts, onClose }: Props) {
                     setTitleInput(e.target.value);
                     if (decision.kind === "create") setDecision({ kind: "create", title: e.target.value });
                   }}
-                  className="w-full text-sm border border-[#2f3437]/15 rounded-md px-2.5 py-1.5 focus:outline-none focus:border-[#6ba3c7]"
+                  className="w-full text-sm border border-[var(--abv-text)]/15 rounded-md px-2.5 py-1.5 focus:outline-none focus:border-[var(--abv-azure)]"
                   placeholder="Plan title"
                 />
               </div>
@@ -171,7 +171,7 @@ export default function OrphanScriptsModal({ scripts, onClose }: Props) {
           </label>
 
           {/* Attach to existing */}
-          <label className="block border border-[#2f3437]/15 rounded-lg p-3 cursor-pointer hover:border-[#6ba3c7] transition-colors">
+          <label className="block border border-[var(--abv-text)]/15 rounded-lg p-3 cursor-pointer hover:border-[var(--abv-azure)] transition-colors">
             <div className="flex items-start gap-2">
               <input
                 type="radio"
@@ -180,8 +180,8 @@ export default function OrphanScriptsModal({ scripts, onClose }: Props) {
                 className="mt-1"
               />
               <div className="flex-1">
-                <p className="text-sm font-semibold text-[#2f3437]">Attach to existing plan</p>
-                <p className="text-xs text-[#2f3437]/55 mb-2">Set the script as the linked script on a plan you already have.</p>
+                <p className="text-sm font-semibold text-[var(--abv-text)]">Attach to existing plan</p>
+                <p className="text-xs text-[var(--abv-text)]/55 mb-2">Set the script as the linked script on a plan you already have.</p>
                 <select
                   value={selectedPlanId}
                   onChange={(e) => {
@@ -189,7 +189,7 @@ export default function OrphanScriptsModal({ scripts, onClose }: Props) {
                     if (decision.kind === "attach") setDecision({ kind: "attach", planId: e.target.value });
                   }}
                   disabled={plans.length === 0}
-                  className="w-full text-sm border border-[#2f3437]/15 rounded-md px-2.5 py-1.5 focus:outline-none focus:border-[#6ba3c7]"
+                  className="w-full text-sm border border-[var(--abv-text)]/15 rounded-md px-2.5 py-1.5 focus:outline-none focus:border-[var(--abv-azure)]"
                 >
                   {plans.length === 0 && <option value="">No plans yet — use &quot;Create new plan&quot; above</option>}
                   {plans.map((p) => (
@@ -203,18 +203,18 @@ export default function OrphanScriptsModal({ scripts, onClose }: Props) {
           </label>
         </div>
 
-        <div className="flex items-center gap-2 pt-2 border-t border-[#2f3437]/5">
+        <div className="flex items-center gap-2 pt-2 border-t border-[var(--abv-text)]/5">
           <button
             onClick={handleApply}
             disabled={working || (decision.kind === "attach" && !selectedPlanId)}
-            className="flex-1 bg-[#6ba3c7] hover:bg-[#5490b5] disabled:opacity-50 text-white font-semibold text-sm py-2.5 rounded-lg transition-colors"
+            className="flex-1 $1var(--abv-dark)$2 hover:bg-black/85 disabled:opacity-50 text-white font-semibold text-sm py-2.5 rounded-lg transition-colors"
           >
             {working ? "Linking…" : "Link script →"}
           </button>
           <button
             onClick={() => advance(false)}
             disabled={working}
-            className="text-sm font-medium text-[#2f3437]/60 hover:text-[#2f3437] px-4 py-2.5 rounded-lg transition-colors"
+            className="text-sm font-medium text-[var(--abv-text)]/60 hover:text-[var(--abv-text)] px-4 py-2.5 rounded-lg transition-colors"
           >
             Skip
           </button>

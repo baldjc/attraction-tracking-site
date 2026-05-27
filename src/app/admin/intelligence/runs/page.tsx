@@ -19,43 +19,43 @@ export default async function RunsPage() {
     <div className="max-w-5xl mx-auto">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <Link href="/admin/intelligence" className="text-sm text-[#2f3437]/50 hover:text-[#2f3437]">← Intelligence</Link>
-          <h1 className="text-xl font-bold text-[#2f3437] mt-1">Intelligence Runs</h1>
+          <Link href="/admin/intelligence" className="text-sm text-[var(--abv-text)]/50 hover:text-[var(--abv-text)]">← Intelligence</Link>
+          <h1 className="text-xl font-bold text-[var(--abv-text)] mt-1">Intelligence Runs</h1>
         </div>
-        <Link href="/admin/intelligence/new-run" className="px-4 py-2 bg-[#6ba3c7] text-white text-sm font-semibold rounded-lg hover:bg-[#5490b5] transition-colors">
+        <Link href="/admin/intelligence/new-run" className="px-4 py-2 bg-[var(--abv-dark)] text-white text-sm font-semibold rounded-lg hover:bg-black/85 transition-colors">
           + New Run
         </Link>
       </div>
 
-      <div className="bg-white border border-[#2f3437]/10 rounded-xl">
+      <div className="bg-white border border-[var(--abv-text)]/10 rounded-xl">
         {runs.length === 0 ? (
           <div className="text-center py-16">
             <p className="text-3xl mb-3">🔬</p>
-            <p className="font-semibold text-[#2f3437]">No runs yet</p>
-            <p className="text-sm text-[#2f3437]/50 mt-1">Start your first intelligence run</p>
+            <p className="font-semibold text-[var(--abv-text)]">No runs yet</p>
+            <p className="text-sm text-[var(--abv-text)]/50 mt-1">Start your first intelligence run</p>
           </div>
         ) : (
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-[#2f3437]/10 text-left">
-                <th className="px-5 py-3 text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wide">Channel</th>
-                <th className="px-5 py-3 text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wide">Client</th>
-                <th className="px-5 py-3 text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wide">Status</th>
-                <th className="px-5 py-3 text-xs font-semibold text-[#2f3437]/50 uppercase tracking-wide">Date</th>
+              <tr className="border-b border-[var(--abv-text)]/10 text-left">
+                <th className="px-5 py-3 text-xs font-semibold text-[var(--abv-text)]/50 uppercase tracking-wide">Channel</th>
+                <th className="px-5 py-3 text-xs font-semibold text-[var(--abv-text)]/50 uppercase tracking-wide">Client</th>
+                <th className="px-5 py-3 text-xs font-semibold text-[var(--abv-text)]/50 uppercase tracking-wide">Status</th>
+                <th className="px-5 py-3 text-xs font-semibold text-[var(--abv-text)]/50 uppercase tracking-wide">Date</th>
                 <th className="px-5 py-3"></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#2f3437]/6">
+            <tbody className="divide-y divide-[var(--abv-text)]/6">
               {runs.map((run) => (
-                <tr key={run.id} className="hover:bg-[#f7f6f3]/60">
-                  <td className="px-5 py-3 text-[#2f3437] font-medium truncate max-w-[220px]">{run.inputChannelUrl}</td>
-                  <td className="px-5 py-3 text-[#2f3437]/60">{run.client?.name ?? "—"}</td>
+                <tr key={run.id} className="hover:bg-[var(--abv-bg)]/60">
+                  <td className="px-5 py-3 text-[var(--abv-text)] font-medium truncate max-w-[220px]">{run.inputChannelUrl}</td>
+                  <td className="px-5 py-3 text-[var(--abv-text)]/60">{run.client?.name ?? "—"}</td>
                   <td className="px-5 py-3">
                     <StatusBadge status={run.status} />
                   </td>
-                  <td className="px-5 py-3 text-[#2f3437]/50 text-xs">{new Date(run.startedAt).toLocaleDateString("en-CA")}</td>
+                  <td className="px-5 py-3 text-[var(--abv-text)]/50 text-xs">{new Date(run.startedAt).toLocaleDateString("en-CA")}</td>
                   <td className="px-5 py-3 text-right">
-                    <Link href={`/admin/intelligence/runs/${run.id}`} className="text-xs text-[#6ba3c7] hover:underline">View →</Link>
+                    <Link href={`/admin/intelligence/runs/${run.id}`} className="text-xs text-[var(--abv-azure)] hover:underline">View →</Link>
                   </td>
                 </tr>
               ))}

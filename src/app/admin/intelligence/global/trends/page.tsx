@@ -48,35 +48,35 @@ export default async function TrendsPage() {
   return (
     <div className="max-w-4xl mx-auto">
       <div className="mb-6">
-        <Link href="/admin/intelligence" className="text-sm text-[#2f3437]/50 hover:text-[#2f3437]">← Intelligence</Link>
-        <h1 className="text-xl font-bold text-[#2f3437] mt-1">Topic Trends</h1>
-        <p className="text-sm text-[#2f3437]/60 mt-1">Rising topics and hook patterns across all tracked channels ({analyses.length} outlier analyses)</p>
+        <Link href="/admin/intelligence" className="text-sm text-[var(--abv-text)]/50 hover:text-[var(--abv-text)]">← Intelligence</Link>
+        <h1 className="text-xl font-bold text-[var(--abv-text)] mt-1">Topic Trends</h1>
+        <p className="text-sm text-[var(--abv-text)]/60 mt-1">Rising topics and hook patterns across all tracked channels ({analyses.length} outlier analyses)</p>
       </div>
 
       {analyses.length === 0 ? (
-        <div className="bg-white border border-[#2f3437]/10 rounded-xl p-10 text-center">
+        <div className="bg-white border border-[var(--abv-text)]/10 rounded-xl p-10 text-center">
           <p className="text-3xl mb-3">📈</p>
-          <p className="font-semibold text-[#2f3437]">No trend data yet</p>
-          <p className="text-sm text-[#2f3437]/50 mt-1">Run channel intelligence on competitor channels to see topic trends emerge.</p>
-          <Link href="/admin/intelligence/new-run" className="mt-4 inline-block px-4 py-2 bg-[#6ba3c7] text-white text-sm font-semibold rounded-lg hover:bg-[#5490b5]">
+          <p className="font-semibold text-[var(--abv-text)]">No trend data yet</p>
+          <p className="text-sm text-[var(--abv-text)]/50 mt-1">Run channel intelligence on competitor channels to see topic trends emerge.</p>
+          <Link href="/admin/intelligence/new-run" className="mt-4 inline-block px-4 py-2 bg-[var(--abv-dark)] text-white text-sm font-semibold rounded-lg hover:bg-black/85">
             Start a Run →
           </Link>
         </div>
       ) : (
         <div className="grid gap-6">
           {sortedThemes.length > 0 && (
-            <div className="bg-white border border-[#2f3437]/10 rounded-xl overflow-hidden">
-              <div className="px-5 py-3 bg-[#f7f6f3] border-b border-[#2f3437]/8">
-                <p className="text-sm font-semibold text-[#2f3437]">💥 Stress Themes — Frequency in Outliers</p>
+            <div className="bg-white border border-[var(--abv-text)]/10 rounded-xl overflow-hidden">
+              <div className="px-5 py-3 bg-[var(--abv-bg)] border-b border-[var(--abv-text)]/8">
+                <p className="text-sm font-semibold text-[var(--abv-text)]">💥 Stress Themes — Frequency in Outliers</p>
               </div>
               <div className="p-4 space-y-2.5">
                 {sortedThemes.map(([theme, count]) => (
                   <div key={theme}>
                     <div className="flex items-center justify-between mb-0.5">
-                      <span className="text-sm text-[#2f3437]">{theme}</span>
-                      <span className="text-xs font-semibold text-[#2f3437]/50">{count} videos</span>
+                      <span className="text-sm text-[var(--abv-text)]">{theme}</span>
+                      <span className="text-xs font-semibold text-[var(--abv-text)]/50">{count} videos</span>
                     </div>
-                    <div className="h-2 bg-[#f7f6f3] rounded-full overflow-hidden">
+                    <div className="h-2 bg-[var(--abv-bg)] rounded-full overflow-hidden">
                       <div className="h-full bg-amber-400 rounded-full" style={{ width: `${(count / maxTheme) * 100}%` }} />
                     </div>
                   </div>
@@ -86,19 +86,19 @@ export default async function TrendsPage() {
           )}
 
           {sortedHooks.length > 0 && (
-            <div className="bg-white border border-[#2f3437]/10 rounded-xl overflow-hidden">
-              <div className="px-5 py-3 bg-[#f7f6f3] border-b border-[#2f3437]/8">
-                <p className="text-sm font-semibold text-[#2f3437]">🎣 Hook Types — Frequency in Outliers</p>
+            <div className="bg-white border border-[var(--abv-text)]/10 rounded-xl overflow-hidden">
+              <div className="px-5 py-3 bg-[var(--abv-bg)] border-b border-[var(--abv-text)]/8">
+                <p className="text-sm font-semibold text-[var(--abv-text)]">🎣 Hook Types — Frequency in Outliers</p>
               </div>
               <div className="p-4 space-y-2.5">
                 {sortedHooks.map(([hook, count]) => (
                   <div key={hook}>
                     <div className="flex items-center justify-between mb-0.5">
-                      <span className="text-sm text-[#2f3437]">{hook}</span>
-                      <span className="text-xs font-semibold text-[#2f3437]/50">{count} videos</span>
+                      <span className="text-sm text-[var(--abv-text)]">{hook}</span>
+                      <span className="text-xs font-semibold text-[var(--abv-text)]/50">{count} videos</span>
                     </div>
-                    <div className="h-2 bg-[#f7f6f3] rounded-full overflow-hidden">
-                      <div className="h-full bg-[#6ba3c7] rounded-full" style={{ width: `${(count / maxHook) * 100}%` }} />
+                    <div className="h-2 bg-[var(--abv-bg)] rounded-full overflow-hidden">
+                      <div className="h-full bg-[var(--abv-dark)] rounded-full" style={{ width: `${(count / maxHook) * 100}%` }} />
                     </div>
                   </div>
                 ))}
@@ -107,18 +107,18 @@ export default async function TrendsPage() {
           )}
 
           {sortedFrameworks.length > 0 && (
-            <div className="bg-white border border-[#2f3437]/10 rounded-xl overflow-hidden">
-              <div className="px-5 py-3 bg-[#f7f6f3] border-b border-[#2f3437]/8">
-                <p className="text-sm font-semibold text-[#2f3437]">📐 Title Frameworks — Frequency in Outliers</p>
+            <div className="bg-white border border-[var(--abv-text)]/10 rounded-xl overflow-hidden">
+              <div className="px-5 py-3 bg-[var(--abv-bg)] border-b border-[var(--abv-text)]/8">
+                <p className="text-sm font-semibold text-[var(--abv-text)]">📐 Title Frameworks — Frequency in Outliers</p>
               </div>
               <div className="p-4 space-y-2.5">
                 {sortedFrameworks.map(([framework, count]) => (
                   <div key={framework}>
                     <div className="flex items-center justify-between mb-0.5">
-                      <span className="text-sm text-[#2f3437]">{framework}</span>
-                      <span className="text-xs font-semibold text-[#2f3437]/50">{count} videos</span>
+                      <span className="text-sm text-[var(--abv-text)]">{framework}</span>
+                      <span className="text-xs font-semibold text-[var(--abv-text)]/50">{count} videos</span>
                     </div>
-                    <div className="h-2 bg-[#f7f6f3] rounded-full overflow-hidden">
+                    <div className="h-2 bg-[var(--abv-bg)] rounded-full overflow-hidden">
                       <div className="h-full bg-purple-400 rounded-full" style={{ width: `${(count / maxFramework) * 100}%` }} />
                     </div>
                   </div>

@@ -120,24 +120,24 @@ export default function SavedIdeaCard({
 
   return (
     <>
-      <div className="bg-white rounded-xl border border-[#2f3437]/10 p-4 space-y-3 hover:shadow-sm transition-shadow">
+      <div className="bg-white rounded-xl border border-[var(--abv-text)]/10 p-4 space-y-3 hover:shadow-sm transition-shadow">
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap mb-1">
-              <span className="text-[10px] font-semibold uppercase tracking-wider bg-[#6ba3c7]/10 text-[#6ba3c7] px-2 py-0.5 rounded-full">
+              <span className="text-[10px] font-semibold uppercase tracking-wider bg-[var(--abv-ai-tools)]/10 text-[var(--abv-ai-tools)] px-2 py-0.5 rounded-full">
                 {idea.theme}
               </span>
               {idea.framework && (
-                <span className="text-[10px] text-[#2f3437]/40">{idea.framework}</span>
+                <span className="text-[10px] text-[var(--abv-text)]/40">{idea.framework}</span>
               )}
             </div>
-            <h3 className="font-semibold text-[#2f3437] text-sm leading-snug">{idea.title}</h3>
+            <h3 className="font-semibold text-[var(--abv-text)] text-sm leading-snug">{idea.title}</h3>
           </div>
           <button
             onClick={handleDelete}
             disabled={deleting}
             title="Delete idea"
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-[#2f3437]/30 hover:text-red-500 hover:bg-red-50 transition-colors shrink-0"
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--abv-text)]/30 hover:text-red-500 hover:bg-red-50 transition-colors shrink-0"
           >
             {deleting ? <span className="text-xs animate-spin">↻</span> : <span className="text-sm">🗑</span>}
           </button>
@@ -146,8 +146,8 @@ export default function SavedIdeaCard({
         {talkingPoints.length > 0 && (
           <ol className="space-y-1">
             {talkingPoints.map((pt, i) => (
-              <li key={i} className="flex items-start gap-2 text-xs text-[#2f3437]/70">
-                <span className="text-[#6ba3c7] font-bold">{i + 1}.</span>
+              <li key={i} className="flex items-start gap-2 text-xs text-[var(--abv-text)]/70">
+                <span className="text-[var(--abv-ai-tools)] font-bold">{i + 1}.</span>
                 <span>{pt}</span>
               </li>
             ))}
@@ -155,22 +155,22 @@ export default function SavedIdeaCard({
         )}
 
         {idea.whyItWorks && (
-          <p className="text-xs text-[#2f3437]/50 italic border-t border-[#2f3437]/5 pt-2">
+          <p className="text-xs text-[var(--abv-text)]/50 italic border-t border-[var(--abv-text)]/5 pt-2">
             {idea.whyItWorks}
           </p>
         )}
 
         {idea.dataToFind && (
-          <div className="border-t border-[#2f3437]/5 pt-2">
-            <p className="text-xs font-medium text-[#2f3437]/60 mb-1">Data to Find:</p>
-            <p className="text-xs text-[#2f3437]/50">{idea.dataToFind}</p>
+          <div className="border-t border-[var(--abv-text)]/5 pt-2">
+            <p className="text-xs font-medium text-[var(--abv-text)]/60 mb-1">Data to Find:</p>
+            <p className="text-xs text-[var(--abv-text)]/50">{idea.dataToFind}</p>
           </div>
         )}
 
-        <div className="border-t border-[#2f3437]/5 pt-2 flex gap-2">
+        <div className="border-t border-[var(--abv-text)]/5 pt-2 flex gap-2">
           <button
             onClick={handleBuildScript}
-            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-semibold text-[#2f3437] bg-[#111]/5 hover:bg-[#6ba3c7]/10 hover:text-[#6ba3c7] rounded-lg transition-colors"
+            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-semibold text-[var(--abv-text)] bg-[#111]/5 hover:bg-[var(--abv-ai-tools)]/10 hover:text-[var(--abv-ai-tools)] rounded-lg transition-colors"
           >
             <span>🎬</span> Build Script
           </button>
@@ -185,7 +185,7 @@ export default function SavedIdeaCard({
             <button
               onClick={handleAddToPlanner}
               disabled={adding}
-              className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-semibold rounded-lg text-[#2f3437] bg-[#111]/5 hover:bg-[#6ba3c7]/10 hover:text-[#6ba3c7] transition-colors"
+              className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-semibold rounded-lg text-[var(--abv-text)] bg-[#111]/5 hover:bg-[var(--abv-ai-tools)]/10 hover:text-[var(--abv-ai-tools)] transition-colors"
             >
               <span>📅</span>
               {adding ? "Adding…" : "Add to Planner"}
@@ -193,7 +193,7 @@ export default function SavedIdeaCard({
           )}
         </div>
 
-        <p className="text-[10px] text-[#2f3437]/35">
+        <p className="text-[10px] text-[var(--abv-text)]/35">
           Saved {new Date(idea.createdAt).toLocaleDateString()}
         </p>
       </div>
