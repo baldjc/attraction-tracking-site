@@ -1,0 +1,593 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Content Planner — Calendar view</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<link rel="preconnect" href="https://api.fontshare.com" />
+<link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@700,800,900&f[]=satoshi@400,500,600,700&display=swap" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&display=swap" />
+
+<style>
+  :root {
+    --abv-bg: #FAFAF8;
+    --abv-bg-warm: #F5F4F0;
+    --abv-card: #FFFFFF;
+    --abv-ink: #1A1A1A;
+    --abv-text: #1A1A1A;
+    --abv-text-muted: #6B6B6B;
+    --abv-text-dim: #9B9B9B;
+    --abv-border: rgba(0,0,0,0.06);
+    --abv-border-strong: rgba(0,0,0,0.10);
+    --abv-azure: #3DC3FF;
+    --abv-azure-tint: rgba(61,195,255,0.10);
+    --abv-azure-tint-strong: rgba(61,195,255,0.16);
+    --abv-crimson: #FF0033;
+    --abv-academy: #10B981;
+    --abv-academy-tint: rgba(16,185,129,0.10);
+    --abv-ai-tools: #6BA3C7;
+    --abv-ai-tools-tint: rgba(107,163,199,0.10);
+    --abv-hire: #8B5CF6;
+    --abv-hire-tint: rgba(139,92,246,0.10);
+    --abv-leads: #E63946;
+    --abv-leads-tint: rgba(230,57,70,0.10);
+    --abv-scores: #F59E0B;
+    --abv-scores-tint: rgba(245,158,11,0.10);
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.04);
+    --shadow-md: 0 8px 30px rgba(0,0,0,0.06);
+    --font-display: "Cabinet Grotesk", system-ui, sans-serif;
+    --font-sans: "Satoshi", system-ui, sans-serif;
+    --font-mono: "Geist Mono", ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--abv-bg); color: var(--abv-text); font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+  button, a, input { font-family: inherit; cursor: pointer; }
+  a { text-decoration: none; color: inherit; }
+
+  /* Shell */
+  .shell { display: grid; grid-template-columns: 220px minmax(0, 1fr); min-height: 100vh; }
+
+  /* Sidebar */
+  .side { background: var(--abv-ink); color: white; display: flex; flex-direction: column; }
+  .side-brand { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .side-brand .mark { width: 28px; height: 28px; border-radius: 6px; background: linear-gradient(135deg, #3DC3FF 0%, #1A1A1A 100%); }
+  .side-brand .name { font-family: var(--font-display); font-weight: 800; font-size: 13.5px; line-height: 1.1; }
+  .side-brand .name .by { color: var(--abv-azure); font-style: italic; font-weight: 700; }
+  .side nav { flex: 1; padding: 8px 0; overflow-y: auto; }
+  .side-section { padding: 14px 14px 6px; font-family: var(--font-mono); font-size: 9.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.40); }
+  .side-link { display: flex; align-items: center; gap: 10px; padding: 8px 14px; font-size: 12.5px; color: rgba(255,255,255,0.66); }
+  .side-link:hover { background: rgba(255,255,255,0.04); color: white; }
+  .side-link.active { background: rgba(255,255,255,0.08); color: white; border-left: 2px solid var(--abv-azure); padding-left: 12px; font-weight: 600; }
+  .side-link .ico { width: 16px; text-align: center; font-size: 13px; }
+  .side-link .dot { width: 6px; height: 6px; border-radius: 50%; margin-left: auto; }
+  .side-user { padding: 12px 14px; border-top: 1px solid rgba(255,255,255,0.06); display: flex; align-items: center; gap: 10px; }
+  .side-user .av { width: 26px; height: 26px; border-radius: 9999px; background: var(--abv-azure); color: var(--abv-ink); display: inline-flex; align-items: center; justify-content: center; font-weight: 800; font-size: 11px; }
+  .side-user .name { font-size: 11.5px; font-weight: 600; }
+  .side-user .tier { font-family: var(--font-mono); font-size: 9px; color: rgba(255,255,255,0.45); letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600; }
+
+  /* Body */
+  .body { max-width: 1280px; padding: 36px 40px 64px; }
+
+  /* PageHeader */
+  .ph { display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; margin-bottom: 28px; flex-wrap: wrap; }
+  .ph-l { flex: 1; min-width: 280px; }
+  .eb { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 9999px; background: var(--abv-azure-tint); color: var(--abv-azure); font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+  .eb::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: var(--abv-azure); }
+  .ph h1 { font-family: var(--font-display); font-size: 44px; font-weight: 900; letter-spacing: -0.03em; line-height: 1.05; margin: 14px 0 8px; max-width: 600px; text-wrap: pretty; }
+  .ph h1 .azure { color: var(--abv-azure); }
+  .ph .sub { font-size: 15px; color: var(--abv-text-muted); margin: 0; max-width: 540px; line-height: 1.55; }
+  .ph-r { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+
+  .count-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 9999px; background: var(--abv-bg-warm); border: 1px solid var(--abv-border); font-family: var(--font-mono); font-size: 11px; font-weight: 600; color: var(--abv-text-muted); letter-spacing: 0.04em; }
+  .count-badge .num { color: var(--abv-text); font-weight: 700; }
+
+  .btn-out { display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; background: white; border: 1.5px solid var(--abv-ink); border-radius: 9999px; font-size: 12px; font-weight: 600; color: var(--abv-text); letter-spacing: 0.04em; text-transform: uppercase; }
+  .btn-out:hover { background: var(--abv-ink); color: white; }
+  .btn-primary { display: inline-flex; align-items: center; gap: 6px; padding: 11px 18px; background: var(--abv-azure); color: var(--abv-ink); border: 0; border-radius: 9999px; font-size: 13px; font-weight: 700; }
+  .btn-primary:hover { background: #5BCEFF; }
+  .btn-primary svg { width: 14px; height: 14px; }
+
+  /* View tabs */
+  .controls { display: flex; align-items: center; gap: 16px; margin-bottom: 18px; flex-wrap: wrap; }
+  .view-tabs { display: inline-flex; gap: 0; border-bottom: 1px solid var(--abv-border-strong); flex: 1; align-items: flex-end; }
+  .view-tab { font-family: var(--font-sans); font-size: 13.5px; font-weight: 600; padding: 9px 2px; margin-right: 26px; border: 0; background: transparent; color: var(--abv-text-muted); border-bottom: 2px solid transparent; }
+  .view-tab.on { color: var(--abv-text); border-bottom-color: var(--abv-ink); }
+
+  /* Month header */
+  .month-bar { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; flex-wrap: wrap; }
+  .month-nav { display: inline-flex; align-items: center; gap: 8px; }
+  .month-nav .arrow { width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; background: white; border: 1px solid var(--abv-border-strong); border-radius: 9999px; color: var(--abv-text-muted); font-size: 14px; }
+  .month-nav .arrow:hover { color: var(--abv-text); border-color: var(--abv-ink); }
+  .month-title { font-family: var(--font-display); font-size: 24px; font-weight: 800; letter-spacing: -0.025em; color: var(--abv-text); margin: 0 4px; }
+  .month-spacer { flex: 1; }
+  .today-btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; background: white; border: 1px solid var(--abv-border-strong); border-radius: 9999px; font-size: 12px; font-weight: 600; color: var(--abv-text-muted); }
+  .today-btn:hover { color: var(--abv-text); border-color: var(--abv-ink); }
+
+  /* Legend */
+  .legend { display: inline-flex; gap: 18px; padding: 6px 14px; background: var(--abv-bg-warm); border: 1px solid var(--abv-border); border-radius: 9999px; }
+  .legend-item { display: inline-flex; align-items: center; gap: 7px; font-family: var(--font-mono); font-size: 10.5px; font-weight: 600; color: var(--abv-text-muted); letter-spacing: 0.08em; text-transform: uppercase; }
+  .legend-item .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .legend-item .dot.shoot { background: var(--abv-leads); }
+  .legend-item .dot.edit { background: var(--abv-azure); }
+  .legend-item .dot.publish { background: var(--abv-academy); }
+
+  /* Calendar grid */
+  .cal { background: var(--abv-card); border: 1px solid var(--abv-border); border-radius: 14px; overflow: hidden; box-shadow: var(--shadow-sm); }
+  .cal-week-head { display: grid; grid-template-columns: repeat(7, 1fr); background: var(--abv-bg-warm); border-bottom: 1px solid var(--abv-border); }
+  .cal-week-head .wd { padding: 10px 12px; font-family: var(--font-mono); font-size: 9.5px; font-weight: 700; color: var(--abv-text-muted); letter-spacing: 0.10em; text-transform: uppercase; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); grid-auto-rows: minmax(128px, auto); gap: 1px; background: var(--abv-border); }
+  .cal-day { background: var(--abv-card); padding: 8px 8px 10px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .cal-day.out { background: var(--abv-bg); }
+  .cal-day.weekend { background: #fcfbf8; }
+  .day-num { font-family: var(--font-mono); font-size: 11px; font-weight: 600; color: var(--abv-text-muted); padding: 2px 0 2px 2px; display: flex; align-items: center; gap: 4px; }
+  .cal-day.out .day-num { color: var(--abv-text-dim); opacity: 0.6; }
+  .day-num.today { color: white; }
+  .day-num.today .pill { background: var(--abv-ink); color: white; width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 11px; }
+  .day-num .pill { display: inline-flex; align-items: center; justify-content: center; }
+
+  /* Events */
+  .events { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .ev { display: flex; align-items: center; gap: 6px; padding: 4px 7px 4px 6px; border-radius: 5px; font-size: 11px; font-weight: 600; color: var(--abv-text); line-height: 1.25; cursor: pointer; min-width: 0; position: relative; border-left: 2.5px solid transparent; transition: background 120ms; }
+  .ev:hover { background: var(--abv-bg-warm); }
+  .ev .ev-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .ev .ev-t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; flex: 1; font-weight: 600; font-size: 11px; }
+  .ev .ev-theme { width: 11px; height: 11px; flex-shrink: 0; opacity: 0.85; }
+  .ev .ev-theme svg { width: 100%; height: 100%; }
+
+  .ev.shoot   { background: var(--abv-leads-tint); border-left-color: var(--abv-leads); }
+  .ev.shoot   .ev-dot { background: var(--abv-leads); }
+  .ev.shoot:hover { background: rgba(230,57,70,0.16); }
+  .ev.edit    { background: var(--abv-azure-tint); border-left-color: var(--abv-azure); }
+  .ev.edit    .ev-dot { background: var(--abv-azure); }
+  .ev.edit:hover { background: var(--abv-azure-tint-strong); }
+  .ev.publish { background: var(--abv-academy-tint); border-left-color: var(--abv-academy); }
+  .ev.publish .ev-dot { background: var(--abv-academy); }
+  .ev.publish:hover { background: rgba(16,185,129,0.16); }
+
+  .ev .ev-theme.neighbourhood { color: var(--abv-leads); }
+  .ev .ev-theme.market        { color: var(--abv-azure); }
+  .ev .ev-theme.listing       { color: var(--abv-academy); }
+  .ev .ev-theme.contrarian    { color: var(--abv-hire); }
+  .ev .ev-theme.howto         { color: var(--abv-scores); }
+  .ev .ev-theme.story         { color: var(--abv-ai-tools); }
+
+  /* Workflow help block */
+  .help { background: var(--abv-card); border: 1px solid var(--abv-border); border-radius: 14px; padding: 28px 32px; margin-top: 36px; box-shadow: var(--shadow-sm); }
+  .help-h { margin-bottom: 18px; max-width: 580px; }
+  .help-h h3 { font-family: var(--font-display); font-size: 26px; font-weight: 800; letter-spacing: -0.025em; line-height: 1.15; margin: 10px 0 6px; }
+  .help-h h3 .azure { color: var(--abv-azure); }
+  .help-h .desc { font-size: 14px; color: var(--abv-text-muted); margin: 0; line-height: 1.55; }
+  .help-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .help-card { display: flex; gap: 14px; align-items: flex-start; padding: 16px; background: var(--abv-bg-warm); border-radius: 10px; }
+  .help-icon { width: 40px; height: 40px; flex-shrink: 0; border-radius: 10px; background: var(--abv-ai-tools-tint); color: var(--abv-ai-tools); display: inline-flex; align-items: center; justify-content: center; }
+  .help-icon svg { width: 20px; height: 20px; }
+  .help-card.azure .help-icon { background: var(--abv-azure-tint); color: var(--abv-azure); }
+  .help-card.academy .help-icon { background: var(--abv-academy-tint); color: var(--abv-academy); }
+  .help-card .t { font-family: var(--font-display); font-size: 14px; font-weight: 800; letter-spacing: -0.015em; color: var(--abv-text); line-height: 1.25; }
+  .help-card .b { font-size: 12.5px; color: var(--abv-text-muted); margin: 4px 0 0; line-height: 1.5; }
+
+  /* Annot */
+  .annot { background: var(--abv-bg-warm); border: 1px solid var(--abv-border); border-radius: 12px; padding: 18px 22px; margin-top: 36px; }
+  .annot-label { font-family: var(--font-mono); font-size: 10px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; color: var(--abv-text-dim); margin-bottom: 10px; }
+  .annot ul { margin: 0; padding-left: 18px; font-size: 13px; color: var(--abv-text-muted); line-height: 1.6; }
+  .annot li + li { margin-top: 6px; }
+  .annot strong { color: var(--abv-text); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <!-- Sidebar -->
+  <aside class="side">
+    <div class="side-brand">
+      <span class="mark"></span>
+      <span class="name">Attraction <span class="by">by</span> Video</span>
+    </div>
+    <nav>
+      <a class="side-link" href="#"><span class="ico">🏠</span>Dashboard</a>
+      <div class="side-section">Create</div>
+      <a class="side-link" href="#"><span class="ico">✨</span>AI Tools<span class="dot" style="background: var(--abv-ai-tools)"></span></a>
+      <a class="side-link active" href="#"><span class="ico">📅</span>Content Planner</a>
+      <div class="side-section">Improve</div>
+      <a class="side-link" href="#"><span class="ico">🏆</span>My Scores<span class="dot" style="background: var(--abv-scores)"></span></a>
+      <a class="side-link" href="#"><span class="ico">🎓</span>Academy<span class="dot" style="background: var(--abv-academy)"></span></a>
+      <a class="side-link" href="#"><span class="ico">📹</span>My Calls</a>
+      <div class="side-section">Grow</div>
+      <a class="side-link" href="#"><span class="ico">🚀</span>Generate Leads<span class="dot" style="background: var(--abv-leads)"></span></a>
+      <a class="side-link" href="#"><span class="ico">🤝</span>Hire a Human<span class="dot" style="background: var(--abv-hire)"></span></a>
+      <div class="side-section">Workspace</div>
+      <a class="side-link" href="#"><span class="ico">📁</span>My Work</a>
+    </nav>
+    <div class="side-user">
+      <span class="av">JC</span>
+      <div>
+        <div class="name">Jared C.</div>
+        <div class="tier">Foundations</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Body -->
+  <main class="body">
+    <!-- PageHeader -->
+    <header class="ph">
+      <div class="ph-l">
+        <span class="eb">Content pipeline</span>
+        <h1>Plan, track, <span class="azure">ship</span>.</h1>
+        <p class="sub">Every shoot, edit, and publish on one calendar — colour-coded so you can spot the week ahead at a glance.</p>
+      </div>
+      <div class="ph-r">
+        <span class="count-badge"><span class="num">17</span> events this month</span>
+        <button class="btn-out">+ Add Video</button>
+        <button class="btn-primary">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.5L18 9l-4.2 1.5L12 15l-1.8-4.5L6 9l4.2-1.5z"/></svg>
+          New Content (AI)
+        </button>
+      </div>
+    </header>
+
+    <!-- View tabs -->
+    <div class="controls">
+      <div class="view-tabs">
+        <button class="view-tab">Table</button>
+        <button class="view-tab on">Calendar</button>
+        <button class="view-tab">Pipeline</button>
+        <button class="view-tab">Themes</button>
+      </div>
+    </div>
+
+    <!-- Month header -->
+    <div class="month-bar">
+      <div class="month-nav">
+        <button class="arrow" aria-label="Previous month">‹</button>
+        <h2 class="month-title">May 2026</h2>
+        <button class="arrow" aria-label="Next month">›</button>
+      </div>
+      <div class="legend">
+        <span class="legend-item"><span class="dot shoot"></span>Shoot</span>
+        <span class="legend-item"><span class="dot edit"></span>Edit</span>
+        <span class="legend-item"><span class="dot publish"></span>Publish</span>
+      </div>
+      <span class="month-spacer"></span>
+      <button class="today-btn">Today</button>
+    </div>
+
+    <!-- Calendar -->
+    <section class="cal">
+      <div class="cal-week-head">
+        <div class="wd">Sun</div>
+        <div class="wd">Mon</div>
+        <div class="wd">Tue</div>
+        <div class="wd">Wed</div>
+        <div class="wd">Thu</div>
+        <div class="wd">Fri</div>
+        <div class="wd">Sat</div>
+      </div>
+      <div class="cal-grid">
+
+        <!-- Week 1 — May 2026 starts Friday May 1 -->
+        <div class="cal-day out weekend"><span class="day-num"><span class="pill">26</span></span></div>
+        <div class="cal-day out"><span class="day-num"><span class="pill">27</span></span></div>
+        <div class="cal-day out"><span class="day-num"><span class="pill">28</span></span></div>
+        <div class="cal-day out"><span class="day-num"><span class="pill">29</span></span></div>
+        <div class="cal-day out"><span class="day-num"><span class="pill">30</span></span></div>
+        <div class="cal-day">
+          <span class="day-num"><span class="pill">1</span></span>
+          <div class="events">
+            <div class="ev publish" title="Click to edit">
+              <span class="ev-dot"></span>
+              <span class="ev-t">EP 027 · April market wrap</span>
+              <span class="ev-theme market"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V10m4 11V13m4 8V7m4 14v-5m4 5V4"/></svg></span>
+            </div>
+          </div>
+        </div>
+        <div class="cal-day weekend">
+          <span class="day-num"><span class="pill">2</span></span>
+          <div class="events">
+            <div class="ev edit" title="Click to edit">
+              <span class="ev-dot"></span>
+              <span class="ev-t">EP 028 · 5 Calgary neighbourhoods</span>
+              <span class="ev-theme neighbourhood"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3c-2 4 1 5 1 8a4 4 0 11-8 0c0-2 1-3 2-4 0 2 2 2 2 0 0-3 1-4 3-4z"/></svg></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Week 2 -->
+        <div class="cal-day weekend">
+          <span class="day-num"><span class="pill">3</span></span>
+        </div>
+        <div class="cal-day">
+          <span class="day-num"><span class="pill">4</span></span>
+          <div class="events">
+            <div class="ev shoot">
+              <span class="ev-dot"></span>
+              <span class="ev-t">EP 029 · Why this $1.2M home isn't selling</span>
+              <span class="ev-theme listing"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8v9a2 2 0 01-2 2h-4v-7H10v7H6a2 2 0 01-2-2z"/></svg></span>
+            </div>
+          </div>
+        </div>
+        <div class="cal-day">
+          <span class="day-num"><span class="pill">5</span></span>
+          <div class="events">
+            <div class="ev publish">
+              <span class="ev-dot"></span>
+              <span class="ev-t">EP 028 · 5 Calgary neighbourhoods</span>
+              <span class="ev-theme neighbourhood"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3c-2 4 1 5 1 8a4 4 0 11-8 0c0-2 1-3 2-4 0 2 2 2 2 0 0-3 1-4 3-4z"/></svg></span>
+            </div>
+          </div>
+        </div>
+        <div class="cal-day">
+          <span class="day-num"><span class="pill">6</span></span>
+        </div>
+        <div class="cal-day">
+          <span class="day-num"><span class="pill">7</span></span>
+          <div class="events">
+            <div class="ev shoot">
+              <span class="ev-dot"></span>
+              <span class="ev-t">EP 030 · The 3 month rule</span>
+              <span class="ev-theme howto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22V12m0 0L4 7m8 5l8-5M4 7v10l8 5"/></svg></span>
+            </div>
+          </div>
+        </div>
+        <div class="cal-day">
+          <span class="day-num"><span class="pill">8</span></span>
+        </div>
+        <div class="cal-day weekend">
+          <span class="day-num"><span class="pill">9</span></span>
+          <div class="events">
+            <div class="ev publish">
+              <span class="ev-dot"></span>
+              <span class="ev-t">EP 029 · Why this home isn't selling</span>
+              <span class="ev-theme listing"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8v9a2 2 0 01-2 2h-4v-7H10v7H6a2 2 0 01-2-2z"/></svg></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Week 3 — today = May 11 -->
+        <div class="cal-day weekend">
+          <span class="day-num"><span class="pill">10</span></span>
+        </div>
+        <div class="cal-day">
+          <span class="day-num today"><span class="pill">11</span></span>
+          <div class="events">
+            <div class="ev shoot">
+              <span class="ev-dot"></span>
+              <span class="ev-t">EP 031 · April market update</span>
+              <span class="ev-theme market"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V10m4 11V13m4 8V7m4 14v-5m4 5V4"/></svg></span>
+            </div>
+            <div class="ev edit">
+              <span class="ev-dot"></span>
+              <span class="ev-t">EP 030 · The 3 month rule</span>
+              <span class="ev-theme howto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22V12m0 0L4 7m8 5l8-5M4 7v10l8 5"/></svg></span>
+            </div>
+          </div>
+        </div>
+        <div class="cal-day">
+          <span class="day-num"><span class="pill">12</span></span>
+          <div class="events">
+            <div class="ev publish">
+              <span class="ev-dot"></span>
+              <span class="ev-t">EP 030 · The 3 month rule</span>
+              <span class="ev-theme howto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22V12m0 0L4 7m8 5l8-5M4 7v10l8 5"/></svg></span>
+            </div>
+          </div>
+        </div>
+        <div class="cal-day">
+          <span class="day-num"><span class="pill">13</span></span>
+          <div class="events">
+            <div class="ev shoot">
+              <span class="ev-dot"></span>
+              <span class="ev-t">EP 032 · Hooks that earn 30s</span>
+              <span class="ev-theme howto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22V12m0 0L4 7m8 5l8-5M4 7v10l8 5"/></svg></span>
+            </div>
+          </div>
+        </div>
+        <div class="cal-day">
+          <span class="day-num"><span class="pill">14</span></span>
+          <div class="events">
+            <div class="ev edit">
+              <span class="ev-dot"></span>
+              <span class="ev-t">EP 031 · April market update</span>
+              <span class="ev-theme market"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V10m4 11V13m4 8V7m4 14v-5m4 5V4"/></svg></span>
+            </div>
+          </div>
+        </div>
+        <div class="cal-day">
+          <span class="day-num"><span class="pill">15</span></span>
+          <div class="events">
+            <div class="ev publish">
+              <span class="ev-dot"></span>
+              <span class="ev-t">EP 031 · April market update</span>
+              <span class="ev-theme market"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V10m4 11V13m4 8V7m4 14v-5m4 5V4"/></svg></span>
+            </div>
+          </div>
+        </div>
+        <div class="cal-day weekend">
+          <span class="day-num"><span class="pill">16</span></span>
+          <div class="events">
+            <div class="ev edit">
+              <span class="ev-dot"></span>
+              <span class="ev-t">EP 032 · Hooks that earn 30s</span>
+              <span class="ev-theme howto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22V12m0 0L4 7m8 5l8-5M4 7v10l8 5"/></svg></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Week 4 -->
+        <div class="cal-day weekend">
+          <span class="day-num"><span class="pill">17</span></span>
+        </div>
+        <div class="cal-day">
+          <span class="day-num"><span class="pill">18</span></span>
+          <div class="events">
+            <div class="ev shoot">
+              <span class="ev-dot"></span>
+              <span class="ev-t">EP 033 · What $850k buys</span>
+              <span class="ev-theme neighbourhood"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3c-2 4 1 5 1 8a4 4 0 11-8 0c0-2 1-3 2-4 0 2 2 2 2 0 0-3 1-4 3-4z"/></svg></span>
+            </div>
+            <div class="ev publish">
+              <span class="ev-dot"></span>
+              <span class="ev-t">EP 032 · Hooks that earn 30s</span>
+              <span class="ev-theme howto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22V12m0 0L4 7m8 5l8-5M4 7v10l8 5"/></svg></span>
+            </div>
+          </div>
+        </div>
+        <div class="cal-day">
+          <span class="day-num"><span class="pill">19</span></span>
+        </div>
+        <div class="cal-day">
+          <span class="day-num"><span class="pill">20</span></span>
+          <div class="events">
+            <div class="ev shoot">
+              <span class="ev-dot"></span>
+              <span class="ev-t">EP 034 · Stop staging your listings</span>
+              <span class="ev-theme contrarian"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6l5 6-5 6M21 6l-5 6 5 6"/></svg></span>
+            </div>
+          </div>
+        </div>
+        <div class="cal-day">
+          <span class="day-num"><span class="pill">21</span></span>
+          <div class="events">
+            <div class="ev edit">
+              <span class="ev-dot"></span>
+              <span class="ev-t">EP 033 · What $850k buys</span>
+              <span class="ev-theme neighbourhood"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3c-2 4 1 5 1 8a4 4 0 11-8 0c0-2 1-3 2-4 0 2 2 2 2 0 0-3 1-4 3-4z"/></svg></span>
+            </div>
+          </div>
+        </div>
+        <div class="cal-day">
+          <span class="day-num"><span class="pill">22</span></span>
+          <div class="events">
+            <div class="ev publish">
+              <span class="ev-dot"></span>
+              <span class="ev-t">EP 033 · What $850k buys</span>
+              <span class="ev-theme neighbourhood"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3c-2 4 1 5 1 8a4 4 0 11-8 0c0-2 1-3 2-4 0 2 2 2 2 0 0-3 1-4 3-4z"/></svg></span>
+            </div>
+          </div>
+        </div>
+        <div class="cal-day weekend">
+          <span class="day-num"><span class="pill">23</span></span>
+          <div class="events">
+            <div class="ev edit">
+              <span class="ev-dot"></span>
+              <span class="ev-t">EP 034 · Stop staging</span>
+              <span class="ev-theme contrarian"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6l5 6-5 6M21 6l-5 6 5 6"/></svg></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Week 5 -->
+        <div class="cal-day weekend">
+          <span class="day-num"><span class="pill">24</span></span>
+        </div>
+        <div class="cal-day">
+          <span class="day-num"><span class="pill">25</span></span>
+          <div class="events">
+            <div class="ev publish">
+              <span class="ev-dot"></span>
+              <span class="ev-t">EP 034 · Stop staging your listings</span>
+              <span class="ev-theme contrarian"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6l5 6-5 6M21 6l-5 6 5 6"/></svg></span>
+            </div>
+          </div>
+        </div>
+        <div class="cal-day">
+          <span class="day-num"><span class="pill">26</span></span>
+        </div>
+        <div class="cal-day">
+          <span class="day-num"><span class="pill">27</span></span>
+          <div class="events">
+            <div class="ev shoot">
+              <span class="ev-dot"></span>
+              <span class="ev-t">EP 035 · The agent who said no</span>
+              <span class="ev-theme story"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg></span>
+            </div>
+          </div>
+        </div>
+        <div class="cal-day">
+          <span class="day-num"><span class="pill">28</span></span>
+        </div>
+        <div class="cal-day">
+          <span class="day-num"><span class="pill">29</span></span>
+        </div>
+        <div class="cal-day weekend">
+          <span class="day-num"><span class="pill">30</span></span>
+          <div class="events">
+            <div class="ev edit">
+              <span class="ev-dot"></span>
+              <span class="ev-t">EP 035 · The agent who said no</span>
+              <span class="ev-theme story"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Week 6 — May ends Sun May 31 -->
+        <div class="cal-day weekend">
+          <span class="day-num"><span class="pill">31</span></span>
+        </div>
+        <div class="cal-day out"><span class="day-num"><span class="pill">1</span></span></div>
+        <div class="cal-day out"><span class="day-num"><span class="pill">2</span></span></div>
+        <div class="cal-day out"><span class="day-num"><span class="pill">3</span></span></div>
+        <div class="cal-day out"><span class="day-num"><span class="pill">4</span></span></div>
+        <div class="cal-day out"><span class="day-num"><span class="pill">5</span></span></div>
+        <div class="cal-day out weekend"><span class="day-num"><span class="pill">6</span></span></div>
+
+      </div>
+    </section>
+
+    <!-- Workflow help block -->
+    <section class="help">
+      <div class="help-h">
+        <span class="eb">How this works</span>
+        <h3>From idea to <span class="azure">live on YouTube</span>, in nine steps.</h3>
+        <p class="desc">Every video moves through the same pipeline. Three dates per video — shoot, edit, publish — light up on the calendar in their own colour so the week ahead reads at a glance.</p>
+      </div>
+      <div class="help-grid">
+        <div class="help-card azure">
+          <span class="help-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.5L18 9l-4.2 1.5L12 15l-1.8-4.5L6 9l4.2-1.5z"/></svg>
+          </span>
+          <div>
+            <div class="t">Generate with AI</div>
+            <p class="b">New Content (AI) pulls 5 validated ideas anchored to your market data and avatar. Pick one, draft starts.</p>
+          </div>
+        </div>
+        <div class="help-card">
+          <span class="help-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+          </span>
+          <div>
+            <div class="t">Three dates, three colours</div>
+            <p class="b">Crimson for shoot, azure for edit, emerald for publish. One video appears up to three times in a month — you can see the path it takes.</p>
+          </div>
+        </div>
+        <div class="help-card academy">
+          <span class="help-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg>
+          </span>
+          <div>
+            <div class="t">Ship, then review</div>
+            <p class="b">Once a video goes Live, it auto-routes into Audit. Your Scores update the next Monday, your Learning Path adjusts.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Annot -->
+    <div class="annot">
+      <div class="annot-label">Design notes</div>
+      <ul>
+        <li><strong>Three event colours, one per date type:</strong> crimson shoot, azure edit, emerald publish. The same video can appear up to three times in a month — its progress along the pipeline is the colour shift you scan for.</li>
+        <li><strong>Each event pill has a 2.5px left border</strong> in the date-type colour plus a leading dot — redundant by design, so colourblind members can rely on shape and position even when hue fails them.</li>
+        <li><strong>Theme is a small trailing icon</strong> in the theme's feature colour (crimson Neighbourhood, azure Market, emerald Listing, purple Contrarian, amber How-To, sky Story) — keeps the row scannable without competing with the date-type colour grammar.</li>
+        <li><strong>Today is a 22px ink-filled circle</strong> around the day number — high contrast, hard to miss, doesn't tint the whole cell.</li>
+        <li><strong>Out-of-month cells get the warm-bg tone</strong> and dim text so the current month reads as the foreground without a heavy border around it.</li>
+        <li><strong>Clicking any event opens the existing edit modal</strong> — same modal used from the table view, no per-view bespoke editor.</li>
+      </ul>
+    </div>
+  </main>
+</div>
+</body>
+</html>

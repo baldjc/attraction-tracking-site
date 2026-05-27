@@ -1,23 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import {
-  DndContext,
-  DragOverlay,
-  PointerSensor,
-  TouchSensor,
-  useSensor,
-  useSensors,
-  useDraggable,
-  useDroppable,
-  type DragEndEvent,
-  type DragStartEvent,
-} from "@dnd-kit/core";
-import { CSS } from "@dnd-kit/utilities";
-import { ChevronLeftIcon, ChevronRightIcon, PlusIcon, XMarkIcon } from "@heroicons/react/24/outline";
-import { STATUS_STYLES, getStatusOptions, PRIORITY_OPTIONS, hasEditDueDate, filterPlans } from "@/lib/content-plan-utils";
+import { useState, useEffect, useMemo } from "react";
+import { filterPlans } from "@/lib/content-plan-utils";
 import ContentPlanEditModal, { type ContentPlan } from "./ContentPlanEditModal";
-import DramaMagnet from "@/components/icons/DramaMagnet";
 
 interface ThemeOption {
   name: string;
@@ -27,151 +12,140 @@ interface ThemeOption {
 
 interface Props {
   apiBase: string;
-  calendarType: "publish" | "shoot" | "edit_due";
+  /** Legacy prop — ignored. The reskinned calendar always shows all three
+   *  date types (shoot/edit/publish) overlaid on one grid. Kept in the
+   *  signature so the parent doesn't need to change its prop list. */
+  calendarType?: "publish" | "shoot" | "edit_due";
   serviceTier: string;
   isAdmin?: boolean;
   themes?: ThemeOption[];
   searchQuery?: string;
   statusFilter?: string[];
-  /** v2 Script Builder flag — forwarded into the inline edit modal so the
-   *  "Build Script (v2)" entry button shows on qualifying plans. */
   scriptBuilderV2Enabled?: boolean;
+  /** Bumped by the parent (ContentPlannerClient) whenever quick-add or the
+   *  parent-owned edit modal mutates a plan, so the calendar refetches and
+   *  the new/updated/deleted pill appears without a page reload. */
+  refreshKey?: number;
 }
-
-const DATE_FIELD: Record<string, keyof ContentPlan> = {
-  publish:   "publishDate",
-  shoot:     "shootDate",
-  edit_due:  "editDueDate",
-};
 
 const WEEK_DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
 
-function dayKey(year: number, month: number, day: number) {
-  return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+type EventType = "shoot" | "edit" | "publish";
+
+interface CalendarEvent {
+  plan: ContentPlan;
+  type: EventType;
 }
 
-function planDateKey(dateStr: string | null) {
-  if (!dateStr) return null;
-  return new Date(dateStr).toISOString().slice(0, 10);
+const TYPE_STYLES: Record<EventType, { bg: string; bgHover: string; border: string; dot: string }> = {
+  shoot: {
+    bg: "var(--abv-leads-tint)",
+    bgHover: "rgba(230,57,70,0.16)",
+    border: "var(--abv-leads)",
+    dot: "var(--abv-leads)",
+  },
+  edit: {
+    bg: "var(--abv-azure-tint)",
+    bgHover: "var(--abv-azure-tint-strong)",
+    border: "var(--abv-azure)",
+    dot: "var(--abv-azure)",
+  },
+  publish: {
+    bg: "var(--abv-academy-tint)",
+    bgHover: "rgba(16,185,129,0.16)",
+    border: "var(--abv-academy)",
+    dot: "var(--abv-academy)",
+  },
+};
+
+// Theme name → icon path + feature colour. Keys match common ContentPlan.theme
+// strings; we also fall back on substring matching below so themes named e.g.
+// "Monthly Market Update – April" still pick up the market icon.
+const THEME_MAP: Array<{ match: RegExp; icon: string; colour: string }> = [
+  { match: /neighbour/i,         icon: "sprout",   colour: "var(--abv-leads)"     },
+  { match: /market/i,            icon: "bars",     colour: "var(--abv-azure)"     },
+  { match: /listing|teardown/i,  icon: "house",    colour: "var(--abv-academy)"   },
+  { match: /contrarian/i,        icon: "arrows",   colour: "var(--abv-hire)"      },
+  { match: /how[-\s]?to|buyer/i, icon: "path",     colour: "var(--abv-scores)"    },
+  { match: /story/i,             icon: "lines",    colour: "var(--abv-ai-tools)"  },
+];
+
+function ThemeIcon({ name }: { name: string | null }) {
+  if (!name) return null;
+  const match = THEME_MAP.find((m) => m.match.test(name));
+  const colour = match?.colour ?? "var(--abv-text-dim)";
+  const which  = match?.icon   ?? "lines";
+  const path = (() => {
+    switch (which) {
+      case "sprout":  return <path d="M12 3c-2 4 1 5 1 8a4 4 0 11-8 0c0-2 1-3 2-4 0 2 2 2 2 0 0-3 1-4 3-4z" />;
+      case "bars":    return <path d="M3 21h18M5 21V10m4 11V13m4 8V7m4 14v-5m4 5V4" />;
+      case "house":   return <path d="M3 11l9-8 9 8v9a2 2 0 01-2 2h-4v-7H10v7H6a2 2 0 01-2-2z" />;
+      case "arrows":  return <path d="M3 12h18M3 6l5 6-5 6M21 6l-5 6 5 6" />;
+      case "path":    return <path d="M12 22V12m0 0L4 7m8 5l8-5M4 7v10l8 5" />;
+      case "lines":
+      default:        return <path d="M4 6h16M4 12h16M4 18h10" />;
+    }
+  })();
+  return (
+    <span
+      className="shrink-0 inline-flex items-center justify-center"
+      style={{ width: 11, height: 11, color: colour, opacity: 0.85 }}
+      aria-hidden
+    >
+      <svg viewBox="0 0 24 24" width={11} height={11} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+        {path}
+      </svg>
+    </span>
+  );
 }
 
-function getMonthGrid(year: number, month: number): (number | null)[][] {
+/** Returns 42-cell array (6 weeks × 7 days) starting from the Sunday before
+ *  (or equal to) the first of the visible month. Each cell carries a Date and
+ *  whether it belongs to the visible month. */
+function getSixWeekGrid(year: number, month: number) {
   const firstDay = new Date(year, month, 1);
-  const lastDay  = new Date(year, month + 1, 0);
   const startDow = firstDay.getDay(); // Sun = 0
-  const days: (number | null)[] = [];
-  for (let i = 0; i < startDow; i++) days.push(null);
-  for (let d = 1; d <= lastDay.getDate(); d++) days.push(d);
-  while (days.length % 7 !== 0) days.push(null);
-  const weeks: (number | null)[][] = [];
-  for (let i = 0; i < days.length; i += 7) weeks.push(days.slice(i, i + 7));
-  return weeks;
+  const start = new Date(year, month, 1 - startDow);
+  const cells: Array<{ date: Date; inMonth: boolean }> = [];
+  for (let i = 0; i < 42; i++) {
+    const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
+    cells.push({ date: d, inMonth: d.getMonth() === month });
+  }
+  return cells;
 }
 
-function StatusPill({ plan, onClick, dragging, themeOption }: { plan: ContentPlan; onClick?: () => void; dragging?: boolean; themeOption?: ThemeOption }) {
-  const s = STATUS_STYLES[plan.status] ?? { bg: "#f3f4f6", text: "#6b7280" };
-  const themeEmoji = themeOption?.emoji ?? null;
-  const themeColour = themeOption?.colour ?? null;
-  // Three-line card: title, status, theme. Status-colored left rail keeps the
-  // strong color cue from the old pill without dominating the entire chip.
-  // Drama Mode badge + theme emoji appear on the title row for at-a-glance
-  // recognition; the theme name keeps its own line below the status.
-  const titleAttr = [
-    plan.dramaMode ? "Drama Mode" : null,
-    plan.theme ?? null,
-    plan.title,
-  ].filter(Boolean).join(" • ");
-  return (
-    <div
-      onClick={onClick}
-      className={`bg-white border border-gray-200 rounded cursor-pointer select-none transition-shadow overflow-hidden ${
-        dragging ? "opacity-40 outline-dashed outline-2 outline-purple-400" : "hover:shadow-sm hover:border-[var(--abv-azure)]"
-      }`}
-      title={titleAttr}
-    >
-      <div className="flex">
-        <div className="w-1 shrink-0" style={{ backgroundColor: s.bg }} />
-        <div className="flex-1 min-w-0 px-1.5 py-1 leading-tight">
-          <div className="flex items-center gap-1 min-w-0">
-            {plan.dramaMode && (
-              <DramaMagnet className="w-3 h-3 text-orange-600 shrink-0" aria-label="Drama Mode" />
-            )}
-            {themeEmoji && (
-              <span className="text-[11px] leading-none shrink-0" aria-hidden>
-                {themeEmoji}
-              </span>
-            )}
-            <p className="text-[11px] font-medium text-[var(--abv-text)] truncate min-w-0">{plan.title}</p>
-          </div>
-          <p
-            className="text-[9px] font-semibold uppercase tracking-wide truncate"
-            style={{ color: s.text }}
-          >
-            {plan.status}
-          </p>
-          {plan.theme && (
-            <p
-              className="text-[9px] truncate"
-              style={{ color: themeColour ?? "rgba(47,52,55,0.5)" }}
-              title={plan.theme}
-            >
-              {plan.theme}
-            </p>
-          )}
-        </div>
-      </div>
-    </div>
-  );
+function ymd(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-function DraggablePill({ plan, onClick, themeOption }: { plan: ContentPlan; onClick: () => void; themeOption?: ThemeOption }) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: plan.id });
-  const style = { transform: CSS.Translate.toString(transform) };
-  return (
-    <div ref={setNodeRef} style={style} {...listeners} {...attributes}>
-      <StatusPill plan={plan} onClick={isDragging ? undefined : onClick} dragging={isDragging} themeOption={themeOption} />
-    </div>
-  );
+function planDateKey(value: string | null | undefined) {
+  if (!value) return null;
+  return new Date(value).toISOString().slice(0, 10);
 }
 
-function DroppableDay({ id, children, isOver }: { id: string; children: React.ReactNode; isOver: boolean }) {
-  const { setNodeRef } = useDroppable({ id });
-  return (
-    <div
-      ref={setNodeRef}
-      className={`min-h-[80px] rounded-md transition-colors ${isOver ? "bg-purple-50 border border-dashed border-purple-300" : ""}`}
-    >
-      {children}
-    </div>
-  );
-}
-
-export default function CalendarView({ apiBase, calendarType, serviceTier, isAdmin, themes = [], searchQuery = "", statusFilter = [], scriptBuilderV2Enabled = false }: Props) {
+export default function CalendarView({
+  apiBase,
+  serviceTier,
+  isAdmin,
+  themes = [],
+  searchQuery = "",
+  statusFilter = [],
+  scriptBuilderV2Enabled = false,
+  refreshKey = 0,
+}: Props) {
   const today = new Date();
-  const [year,  setYear]  = useState(today.getFullYear());
+  const [year, setYear]   = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
   const [plans, setPlans] = useState<ContentPlan[]>([]);
   const [localThemes, setLocalThemes] = useState<ThemeOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingPlan, setEditingPlan] = useState<ContentPlan | null>(null);
-  const [activeDragId, setActiveDragId] = useState<string | null>(null);
-  const [overId, setOverId] = useState<string | null>(null);
-  const [errorMsg, setErrorMsg] = useState("");
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [addForm, setAddForm] = useState<Record<string, string>>({});
-  const [addLoading, setAddLoading] = useState(false);
-  const [addError, setAddError] = useState<string | null>(null);
 
   const resolvedThemes = themes.length > 0 ? themes : localThemes;
-  const allStatusOptions = getStatusOptions(serviceTier);
-  const showEditDue = isAdmin || hasEditDueDate(serviceTier);
-  const dateField = DATE_FIELD[calendarType];
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } })
-  );
 
   useEffect(() => {
     fetch(apiBase)
@@ -183,250 +157,223 @@ export default function CalendarView({ apiBase, calendarType, serviceTier, isAdm
       .then((r) => r.json())
       .then((d) => { if (d.themes?.length > 0) setLocalThemes(d.themes); })
       .catch(() => {});
-  }, [apiBase]);
+  }, [apiBase, refreshKey]);
+
+  const visiblePlans = useMemo(
+    () => filterPlans(plans, searchQuery, statusFilter),
+    [plans, searchQuery, statusFilter]
+  );
+
+  // Index events (shoot/edit/publish) by ymd date key. One plan can land in
+  // up to three days. Sort each cell's events in pipeline order so a single
+  // video reads shoot → edit → publish top-to-bottom.
+  const eventsByDay = useMemo(() => {
+    const map: Record<string, CalendarEvent[]> = {};
+    const push = (key: string, ev: CalendarEvent) => {
+      (map[key] ??= []).push(ev);
+    };
+    for (const plan of visiblePlans) {
+      const shootKey   = planDateKey(plan.shootDate);
+      const editKey    = planDateKey(plan.editDueDate as string | null);
+      const publishKey = planDateKey(plan.publishDate);
+      if (shootKey)   push(shootKey,   { plan, type: "shoot" });
+      if (editKey)    push(editKey,    { plan, type: "edit" });
+      if (publishKey) push(publishKey, { plan, type: "publish" });
+    }
+    const order: Record<EventType, number> = { shoot: 0, edit: 1, publish: 2 };
+    for (const k of Object.keys(map)) {
+      map[k].sort((a, b) => order[a.type] - order[b.type]);
+    }
+    return map;
+  }, [visiblePlans]);
+
+  const cells = useMemo(() => getSixWeekGrid(year, month), [year, month]);
+  const todayKey = ymd(today);
 
   function prevMonth() {
-    if (month === 0) { setMonth(11); setYear(y => y - 1); }
-    else setMonth(m => m - 1);
+    if (month === 0) { setMonth(11); setYear((y) => y - 1); }
+    else setMonth((m) => m - 1);
   }
   function nextMonth() {
-    if (month === 11) { setMonth(0); setYear(y => y + 1); }
-    else setMonth(m => m + 1);
+    if (month === 11) { setMonth(0); setYear((y) => y + 1); }
+    else setMonth((m) => m + 1);
   }
-  function goToday() { setYear(today.getFullYear()); setMonth(today.getMonth()); }
-
-  const visiblePlans = filterPlans(plans, searchQuery, statusFilter);
-
-  const plansByDay = visiblePlans.reduce<Record<string, ContentPlan[]>>((acc, plan) => {
-    const dateVal = plan[dateField] as string | null;
-    const key = planDateKey(dateVal);
-    if (key) { acc[key] = acc[key] ? [...acc[key], plan] : [plan]; }
-    return acc;
-  }, {});
-
-  const weeks = getMonthGrid(year, month);
-
-  const themeByName = resolvedThemes.reduce<Record<string, ThemeOption>>((acc, t) => {
-    acc[t.name] = t;
-    return acc;
-  }, {});
-  const themeFor = (plan: ContentPlan) => (plan.theme ? themeByName[plan.theme] : undefined);
-
-  function handleDragStart(e: DragStartEvent) {
-    setActiveDragId(String(e.active.id));
-  }
-
-  async function handleDragEnd(e: DragEndEvent) {
-    setActiveDragId(null);
-    setOverId(null);
-    const { active, over } = e;
-    if (!over || !over.id) return;
-    const planId  = String(active.id);
-    const newDate = String(over.id); // "2026-04-15" format
-
-    const plan = plans.find((p) => p.id === planId);
-    if (!plan) return;
-    const oldDate = planDateKey(plan[dateField] as string | null);
-    if (oldDate === newDate) return;
-
-    setPlans((prev) =>
-      prev.map((p) =>
-        p.id === planId ? { ...p, [dateField]: new Date(`${newDate}T12:00:00Z`).toISOString() } : p
-      )
-    );
-    setErrorMsg("");
-
-    try {
-      const res = await fetch(`${apiBase}/${planId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ [dateField]: newDate }),
-      });
-      if (!res.ok) throw new Error("Failed");
-      const data = await res.json();
-      setPlans((prev) => prev.map((p) => p.id === planId ? data.plan : p));
-    } catch {
-      setPlans((prev) =>
-        prev.map((p) => p.id === planId ? { ...p, [dateField]: oldDate } : p)
-      );
-      setErrorMsg("Failed to move video. Please try again.");
-    }
-  }
-
-  function handlePlanSaved(updated: ContentPlan) {
-    // Wave 4 auto-save: do not close the modal on save. See BoardView for
-    // the full rationale — close is owned exclusively by `onClose`.
-    setPlans((prev) => prev.map((p) => p.id === updated.id ? updated : p));
-  }
-
-  function handlePlanDeleted(id: string) {
-    setPlans((prev) => prev.filter((p) => p.id !== id));
-    setEditingPlan(null);
-  }
-
-  async function handleAddSubmit() {
-    if (!addForm.title?.trim()) { setAddError("Title is required"); return; }
-    setAddLoading(true);
-    setAddError(null);
-    try {
-      const res = await fetch(apiBase, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: addForm.title,
-          status: addForm.status || allStatusOptions[0],
-          theme: addForm.theme || null,
-          shootDate: addForm.shootDate || null,
-          publishDate: addForm.publishDate || null,
-          editDueDate: addForm.editDueDate || null,
-          priority: addForm.priority || null,
-          notes: addForm.notes || null,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Failed to add");
-      setPlans((prev) => [data.plan, ...prev]);
-      setShowAddModal(false);
-      setAddForm({});
-    } catch (e: any) {
-      setAddError(e.message);
-    } finally {
-      setAddLoading(false);
-    }
+  function goToday() {
+    setYear(today.getFullYear());
+    setMonth(today.getMonth());
   }
 
   if (loading) {
-    return <div className="h-96 bg-white rounded-xl border border-gray-200 animate-pulse" />;
+    return <div className="h-[680px] bg-white rounded-[14px] border border-[var(--abv-border)] animate-pulse" />;
   }
-
-  const activePlan = plans.find((p) => p.id === activeDragId);
-
-  const todayKey = dayKey(today.getFullYear(), today.getMonth(), today.getDate());
-  const currentMonthKey = (d: number) => dayKey(year, month, d);
-
-  const label = calendarType === "publish" ? "Publish Calendar" : calendarType === "shoot" ? "Shoot Calendar" : "Edit Due Calendar";
 
   return (
     <>
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        {/* Toolbar */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-          <div className="flex items-center gap-2">
-            <button onClick={prevMonth} className="p-1.5 rounded-md hover:bg-gray-100 transition-colors text-[var(--abv-text)]/60 hover:text-[var(--abv-text)]">
-              <ChevronLeftIcon className="w-4 h-4" />
-            </button>
-            <span className="text-sm font-semibold text-[var(--abv-text)] min-w-[140px] text-center">
-              {MONTHS[month]} {year}
-            </span>
-            <button onClick={nextMonth} className="p-1.5 rounded-md hover:bg-gray-100 transition-colors text-[var(--abv-text)]/60 hover:text-[var(--abv-text)]">
-              <ChevronRightIcon className="w-4 h-4" />
-            </button>
-          </div>
-          <div className="flex items-center gap-2">
-            {errorMsg && <span className="text-xs text-red-500">{errorMsg}</span>}
-            <button
-              onClick={() => { setAddForm({ status: allStatusOptions[0] }); setAddError(null); setShowAddModal(true); }}
-              className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 bg-[var(--abv-dark)] hover:bg-[#5a92b6] text-white rounded-lg transition-colors"
+      {/* Month bar — prev/title/next on the left, legend pill in the middle,
+          Today button on the right. */}
+      <div className="flex items-center gap-3.5 mb-3.5 flex-wrap">
+        <div className="inline-flex items-center gap-2">
+          <button
+            onClick={prevMonth}
+            aria-label="Previous month"
+            className="w-8 h-8 inline-flex items-center justify-center rounded-full bg-white text-[var(--abv-text-muted)] hover:text-[var(--abv-text)] transition-colors"
+            style={{ border: "1px solid var(--abv-border-strong)" }}
+            onMouseEnter={(e) => (e.currentTarget.style.borderColor = "var(--abv-ink)")}
+            onMouseLeave={(e) => (e.currentTarget.style.borderColor = "var(--abv-border-strong)")}
+          >
+            ‹
+          </button>
+          <h2
+            className="font-display font-extrabold m-0 text-[var(--abv-text)]"
+            style={{ fontSize: 24, letterSpacing: "-0.025em" }}
+          >
+            {MONTHS[month]} {year}
+          </h2>
+          <button
+            onClick={nextMonth}
+            aria-label="Next month"
+            className="w-8 h-8 inline-flex items-center justify-center rounded-full bg-white text-[var(--abv-text-muted)] hover:text-[var(--abv-text)] transition-colors"
+            style={{ border: "1px solid var(--abv-border-strong)" }}
+            onMouseEnter={(e) => (e.currentTarget.style.borderColor = "var(--abv-ink)")}
+            onMouseLeave={(e) => (e.currentTarget.style.borderColor = "var(--abv-border-strong)")}
+          >
+            ›
+          </button>
+        </div>
+
+        <span
+          className="inline-flex gap-[18px] px-3.5 py-1.5 rounded-full"
+          style={{ background: "var(--abv-bg-warm)", border: "1px solid var(--abv-border)" }}
+        >
+          {(["shoot", "edit", "publish"] as EventType[]).map((t) => (
+            <span
+              key={t}
+              className="inline-flex items-center gap-[7px] font-mono font-semibold uppercase text-[var(--abv-text-muted)]"
+              style={{ fontSize: 10.5, letterSpacing: "0.08em" }}
             >
-              <PlusIcon className="w-3.5 h-3.5" />
-              Add Video
-            </button>
-            <button onClick={goToday} className="text-xs px-3 py-1.5 border border-gray-200 rounded-lg hover:bg-gray-50 text-[var(--abv-text)]/70 transition-colors">
-              Today
-            </button>
-          </div>
+              <span
+                className="inline-block rounded-full"
+                style={{ width: 8, height: 8, background: TYPE_STYLES[t].dot }}
+              />
+              {t}
+            </span>
+          ))}
+        </span>
+
+        <span className="flex-1" />
+
+        <button
+          onClick={goToday}
+          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white text-xs font-semibold text-[var(--abv-text-muted)] hover:text-[var(--abv-text)] transition-colors"
+          style={{ border: "1px solid var(--abv-border-strong)" }}
+          onMouseEnter={(e) => (e.currentTarget.style.borderColor = "var(--abv-ink)")}
+          onMouseLeave={(e) => (e.currentTarget.style.borderColor = "var(--abv-border-strong)")}
+        >
+          Today
+        </button>
+      </div>
+
+      {/* Calendar card */}
+      <section
+        className="overflow-hidden"
+        style={{
+          background: "var(--abv-card)",
+          border: "1px solid var(--abv-border)",
+          borderRadius: 14,
+          boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+        }}
+      >
+        {/* Week head */}
+        <div
+          className="grid grid-cols-7"
+          style={{ background: "var(--abv-bg-warm)", borderBottom: "1px solid var(--abv-border)" }}
+        >
+          {WEEK_DAYS.map((d) => (
+            <div
+              key={d}
+              className="font-mono font-bold uppercase text-[var(--abv-text-muted)]"
+              style={{ padding: "10px 12px", fontSize: 9.5, letterSpacing: "0.10em" }}
+            >
+              {d}
+            </div>
+          ))}
         </div>
 
-        {/* Desktop calendar grid (hidden on mobile) */}
-        <div className="hidden sm:block">
-          <DndContext sensors={sensors} onDragStart={handleDragStart} onDragOver={(e) => setOverId(e.over ? String(e.over.id) : null)} onDragEnd={handleDragEnd} onDragCancel={() => { setActiveDragId(null); setOverId(null); }}>
-            <div className="grid grid-cols-7 border-b border-gray-100">
-              {WEEK_DAYS.map((d) => (
-                <div key={d} className="text-center text-xs font-medium text-[var(--abv-text)]/50 py-2">{d}</div>
-              ))}
-            </div>
-            <div className="divide-y divide-gray-100">
-              {weeks.map((week, wi) => (
-                <div key={wi} className="grid grid-cols-7 divide-x divide-gray-100">
-                  {week.map((day, di) => {
-                    if (!day) {
-                      return <div key={di} className="min-h-[88px] bg-gray-50/50" />;
-                    }
-                    const key = currentMonthKey(day);
-                    const dayPlans = plansByDay[key] ?? [];
-                    const isToday = key === todayKey;
-                    const isOver = overId === key;
-                    return (
-                      <DroppableDay key={di} id={key} isOver={isOver}>
-                        <div className="p-1">
-                          <span className={`inline-flex items-center justify-center w-6 h-6 text-xs mb-1 rounded-full ${isToday ? "bg-[var(--abv-dark)] text-white font-semibold" : "text-[var(--abv-text)]/60"}`}>
-                            {day}
-                          </span>
-                          <div className="space-y-0.5">
-                            {dayPlans.map((plan) => (
-                              <DraggablePill
-                                key={plan.id}
-                                plan={plan}
-                                onClick={() => setEditingPlan(plan)}
-                                themeOption={themeFor(plan)}
-                              />
-                            ))}
-                          </div>
-                        </div>
-                      </DroppableDay>
-                    );
-                  })}
-                </div>
-              ))}
-            </div>
-            <DragOverlay>
-              {activePlan && (
-                <div className="text-xs font-medium px-1.5 py-0.5 rounded shadow-lg cursor-grabbing opacity-90"
+        {/* Day grid — 1px gap rendered via border colour for the gridlines */}
+        <div
+          className="grid grid-cols-7"
+          style={{
+            gridAutoRows: "minmax(128px, auto)",
+            gap: "1px",
+            background: "var(--abv-border)",
+          }}
+        >
+          {cells.map(({ date, inMonth }, idx) => {
+            const dow      = date.getDay();
+            const weekend  = dow === 0 || dow === 6;
+            const key      = ymd(date);
+            const isToday  = key === todayKey;
+            const dayEvts  = eventsByDay[key] ?? [];
+
+            // Background tone: out-of-month → bg, weekend → soft warm,
+            // default → card white. (weekend tone applies inside or outside
+            // the month, matching the mockup.)
+            const cellBg = !inMonth
+              ? "var(--abv-bg)"
+              : weekend
+              ? "#fcfbf8"
+              : "var(--abv-card)";
+
+            return (
+              <div
+                key={idx}
+                className="flex flex-col gap-1.5 min-w-0"
+                style={{ background: cellBg, padding: "8px 8px 10px" }}
+              >
+                <div
+                  className="font-mono font-semibold flex items-center"
                   style={{
-                    backgroundColor: STATUS_STYLES[activePlan.status]?.bg ?? "#f3f4f6",
-                    color: STATUS_STYLES[activePlan.status]?.text ?? "#6b7280",
-                  }}>
-                  {activePlan.title}
+                    fontSize: 11,
+                    padding: "2px 0 2px 2px",
+                    color: !inMonth ? "var(--abv-text-dim)" : "var(--abv-text-muted)",
+                    opacity: !inMonth ? 0.6 : 1,
+                  }}
+                >
+                  {isToday ? (
+                    <span
+                      className="inline-flex items-center justify-center font-bold"
+                      style={{
+                        background: "var(--abv-ink)",
+                        color: "white",
+                        width: 22,
+                        height: 22,
+                        borderRadius: "50%",
+                        fontSize: 11,
+                      }}
+                    >
+                      {date.getDate()}
+                    </span>
+                  ) : (
+                    date.getDate()
+                  )}
                 </div>
-              )}
-            </DragOverlay>
-          </DndContext>
-        </div>
 
-        {/* Mobile list view */}
-        <div className="sm:hidden divide-y divide-gray-100">
-          {(() => {
-            const daysWithPlans = Object.entries(plansByDay)
-              .filter(([key]) => key.startsWith(`${year}-${String(month + 1).padStart(2, "0")}`))
-              .sort(([a], [b]) => a.localeCompare(b));
-            if (daysWithPlans.length === 0) {
-              return (
-                <div className="p-8 text-center text-[var(--abv-text)]/40 text-sm">
-                  No {label.toLowerCase()} dates this month.
-                </div>
-              );
-            }
-            return daysWithPlans.map(([key, dayPlans]) => {
-              const [, , d] = key.split("-");
-              const dateLabel = new Date(`${key}T12:00:00Z`).toLocaleDateString("en-CA", {
-                weekday: "short", month: "short", day: "numeric",
-              });
-              return (
-                <div key={key} className="px-4 py-3">
-                  <p className="text-xs font-semibold text-[var(--abv-text)]/50 mb-2">{dateLabel}</p>
-                  <div className="space-y-1">
-                    {dayPlans.map((plan) => (
-                      <div key={plan.id} onClick={() => setEditingPlan(plan)}>
-                        <StatusPill plan={plan} themeOption={themeFor(plan)} />
-                      </div>
+                {dayEvts.length > 0 && (
+                  <div className="flex flex-col min-w-0" style={{ gap: 3 }}>
+                    {dayEvts.map((ev, i) => (
+                      <EventPill
+                        key={`${ev.plan.id}-${ev.type}-${i}`}
+                        event={ev}
+                        onClick={() => setEditingPlan(ev.plan)}
+                      />
                     ))}
                   </div>
-                </div>
-              );
-            });
-          })()}
+                )}
+              </div>
+            );
+          })}
         </div>
-      </div>
+      </section>
 
       {editingPlan && (
         <ContentPlanEditModal
@@ -437,98 +384,54 @@ export default function CalendarView({ apiBase, calendarType, serviceTier, isAdm
           themes={resolvedThemes}
           scriptBuilderV2Enabled={scriptBuilderV2Enabled}
           onClose={() => setEditingPlan(null)}
-          onSaved={handlePlanSaved}
-          onDeleted={handlePlanDeleted}
+          onSaved={(updated) => {
+            // Wave 4 auto-save: keep the modal open on save; only refresh
+            // the cached row so the calendar reflects the change immediately.
+            if (updated) {
+              setPlans((prev) => prev.map((p) => (p.id === updated.id ? { ...p, ...updated } : p)));
+            }
+          }}
+          onDeleted={(id) => {
+            if (id) setPlans((prev) => prev.filter((p) => p.id !== id));
+            setEditingPlan(null);
+          }}
         />
       )}
-
-      {showAddModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl border border-gray-200 shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-5 border-b border-gray-100">
-              <h2 className="text-base font-semibold text-[var(--abv-text)]">Add Video</h2>
-              <button onClick={() => setShowAddModal(false)} className="text-[var(--abv-text)]/40 hover:text-[var(--abv-text)]">
-                <XMarkIcon className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="p-5 space-y-4">
-              <div>
-                <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Title <span className="text-red-500">*</span></label>
-                <input
-                  type="text"
-                  value={addForm.title ?? ""}
-                  onChange={(e) => setAddForm((f) => ({ ...f, title: e.target.value }))}
-                  placeholder="Video title..."
-                  className="w-full border border-gray-200 text-[var(--abv-text)] text-sm rounded-lg px-3 py-2 focus:border-[var(--abv-azure)] focus:outline-none"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Status</label>
-                  <select
-                    value={addForm.status ?? allStatusOptions[0]}
-                    onChange={(e) => setAddForm((f) => ({ ...f, status: e.target.value }))}
-                    className="w-full border border-gray-200 text-[var(--abv-text)] text-sm rounded-lg px-3 py-2 focus:border-[var(--abv-azure)] focus:outline-none"
-                  >
-                    {allStatusOptions.map((s) => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Priority</label>
-                  <select
-                    value={addForm.priority ?? ""}
-                    onChange={(e) => setAddForm((f) => ({ ...f, priority: e.target.value }))}
-                    className="w-full border border-gray-200 text-[var(--abv-text)] text-sm rounded-lg px-3 py-2 focus:border-[var(--abv-azure)] focus:outline-none"
-                  >
-                    <option value="">None</option>
-                    {PRIORITY_OPTIONS.map((p) => <option key={p} value={p}>{p}</option>)}
-                  </select>
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Theme</label>
-                <select
-                  value={addForm.theme ?? ""}
-                  onChange={(e) => setAddForm((f) => ({ ...f, theme: e.target.value }))}
-                  className="w-full border border-gray-200 text-[var(--abv-text)] text-sm rounded-lg px-3 py-2 focus:border-[var(--abv-azure)] focus:outline-none"
-                >
-                  <option value="">Select theme...</option>
-                  {resolvedThemes.map((t) => <option key={t.name} value={t.name}>{t.emoji ? `${t.emoji} ${t.name}` : t.name}</option>)}
-                </select>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Shoot Date</label>
-                  <input type="date" value={addForm.shootDate ?? ""} onChange={(e) => setAddForm((f) => ({ ...f, shootDate: e.target.value }))} className="w-full border border-gray-200 text-[var(--abv-text)] text-sm rounded-lg px-3 py-2 focus:border-[var(--abv-azure)] focus:outline-none" />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Publish Date</label>
-                  <input type="date" value={addForm.publishDate ?? ""} onChange={(e) => setAddForm((f) => ({ ...f, publishDate: e.target.value }))} className="w-full border border-gray-200 text-[var(--abv-text)] text-sm rounded-lg px-3 py-2 focus:border-[var(--abv-azure)] focus:outline-none" />
-                </div>
-              </div>
-              {showEditDue && (
-                <div>
-                  <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Edit Due Date</label>
-                  <input type="date" value={addForm.editDueDate ?? ""} onChange={(e) => setAddForm((f) => ({ ...f, editDueDate: e.target.value }))} className="w-full border border-gray-200 text-[var(--abv-text)] text-sm rounded-lg px-3 py-2 focus:border-[var(--abv-azure)] focus:outline-none" />
-                </div>
-              )}
-              <div>
-                <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Talking Points / Notes</label>
-                <textarea value={addForm.notes ?? ""} onChange={(e) => setAddForm((f) => ({ ...f, notes: e.target.value }))} placeholder="One talking point per line…" rows={3} className="w-full border border-gray-200 text-[var(--abv-text)] text-sm rounded-lg px-3 py-2 focus:border-[var(--abv-azure)] focus:outline-none resize-none" />
-              </div>
-              {addError && <p className="text-red-500 text-xs">{addError}</p>}
-            </div>
-            <div className="flex gap-3 p-5 pt-0">
-              <button onClick={() => setShowAddModal(false)} className="flex-1 text-sm text-[var(--abv-text)]/60 border border-gray-200 hover:bg-gray-50 px-4 py-2.5 rounded-lg transition-colors">
-                Cancel
-              </button>
-              <button onClick={handleAddSubmit} disabled={addLoading} className="flex-1 text-sm font-medium bg-[var(--abv-dark)] hover:bg-[#5a92b6] text-white px-4 py-2.5 rounded-lg transition-colors disabled:opacity-50">
-                {addLoading ? "Adding…" : "Add Video"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </>
+  );
+}
+
+function EventPill({ event, onClick }: { event: CalendarEvent; onClick: () => void }) {
+  const style = TYPE_STYLES[event.type];
+  const [hover, setHover] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      title={`${event.type} · ${event.plan.title}`}
+      className="flex items-center gap-1.5 text-left min-w-0 cursor-pointer"
+      style={{
+        padding: "4px 7px 4px 6px",
+        borderRadius: 5,
+        background: hover ? style.bgHover : style.bg,
+        borderLeft: `2.5px solid ${style.border}`,
+        transition: "background 120ms",
+        lineHeight: 1.25,
+      }}
+    >
+      <span
+        className="inline-block rounded-full shrink-0"
+        style={{ width: 6, height: 6, background: style.dot }}
+      />
+      <span
+        className="truncate min-w-0 flex-1 font-semibold text-[var(--abv-text)]"
+        style={{ fontSize: 11 }}
+      >
+        {event.plan.title}
+      </span>
+      <ThemeIcon name={event.plan.theme ?? null} />
+    </button>
   );
 }

@@ -441,12 +441,12 @@ export default function ContentPlannerClient({
       {view === "publish_cal" && (
         <CalendarView
           apiBase={apiBase}
-          calendarType="publish"
           serviceTier={serviceTier}
           isAdmin={isAdminView}
           searchQuery={searchQuery}
           statusFilter={statusFilter}
           scriptBuilderV2Enabled={scriptBuilderV2Enabled}
+          refreshKey={tableRefreshKey}
         />
       )}
 
@@ -515,8 +515,8 @@ export default function ContentPlannerClient({
           />
           <HelpCard
             tone="aiTools"
-            title="Track every stage"
-            body="Nine statuses cover the entire pipeline — from Future Idea to Live on YouTube. Filter by status or scope by theme."
+            title="Three dates, three colours"
+            body="Crimson for shoot, azure for edit, emerald for publish. One video appears up to three times in a month — you can see the path it takes."
             icon={
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
                 <rect x="4" y="3" width="16" height="18" rx="2" />
