@@ -540,13 +540,14 @@ export async function POST(req: NextRequest) {
       // whether phase events are being produced on time or whether
       // they're stalled in our own code. Pair with proxy/client logs
       // to isolate the buffering layer.
-      const startTime = Date.now();
-      const ms = () => Date.now() - startTime;
+      const t0 = Date.now();
+      const ms = () => Date.now() - t0;
       const trace = (event: string, label: string) => {
         console.log(
           `[sb-v2:emit] t=${ms()}ms event=${event} label="${label.slice(0, 40)}"`,
         );
       };
+      console.log(`[sb-v2 telemetry] +0ms stream-start user=${userId}`);
       console.log(`[sb-v2:start] t=${ms()}ms user=${userId}`);
 
       heartbeat = setInterval(() => {
@@ -555,8 +556,10 @@ export async function POST(req: NextRequest) {
           return;
         }
         try {
+          console.log(`[sb-v2 telemetry] +${ms()}ms heartbeat enqueueing`);
           console.log(`[sb-v2:heartbeat] t=${ms()}ms`);
           controller.enqueue(encoder.encode(`: heartbeat ${Date.now()}\n\n`));
+          console.log(`[sb-v2 telemetry] +${ms()}ms heartbeat enqueued`);
         } catch {
           // Controller already closed — stop ticking.
           stopHeartbeat();
@@ -565,12 +568,26 @@ export async function POST(req: NextRequest) {
 
       const emit = (event: string, data: unknown) => {
         if (clientSignal.aborted) return;
+        const payload = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+        const frame = encoder.encode(payload);
+        const frameBytes = frame.byteLength;
+        const key =
+          data && typeof data === "object" && data !== null && "key" in data
+            ? String((data as { key?: unknown }).key ?? "—")
+            : "—";
+        console.log(
+          `[sb-v2 telemetry] +${ms()}ms emit event=${event} key=${key} bytes=${frameBytes} (pre-enqueue)`,
+        );
         try {
-          controller.enqueue(
-            encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`),
+          controller.enqueue(frame);
+          console.log(
+            `[sb-v2 telemetry] +${ms()}ms emit event=${event} key=${key} bytes=${frameBytes} (post-enqueue)`,
           );
         } catch {
           // Controller already closed — ignore.
+          console.log(
+            `[sb-v2 telemetry] +${ms()}ms emit event=${event} key=${key} bytes=${frameBytes} (enqueue-failed: controller closed)`,
+          );
         }
       };
 
@@ -683,6 +700,8 @@ export async function POST(req: NextRequest) {
           let attemptInputTokens = 0;
           let attemptOutputTokens = 0;
           let firstTokenLogged = false;
+          let tokenCount = 0;
+          let lastTokenAtMs = 0;
           try {
             // Anthropic streaming API. `signal: internalAbort.signal`
             // ensures abort propagates upstream so we stop being billed
@@ -727,14 +746,27 @@ export async function POST(req: NextRequest) {
                 const text = event.delta.text;
                 if (!firstTokenLogged) {
                   console.log(
+                    `[sb-v2 telemetry] +${ms()}ms token#1 (first) attempt=${attempt}`,
+                  );
+                  console.log(
                     `[sb-v2:anthropic-first-token] t=${ms()}ms attempt=${attempt}`,
                   );
                   firstTokenLogged = true;
+                }
+                tokenCount += 1;
+                lastTokenAtMs = ms();
+                if (tokenCount % 10 === 0) {
+                  console.log(
+                    `[sb-v2 telemetry] +${lastTokenAtMs}ms token#${tokenCount} attempt=${attempt}`,
+                  );
                 }
                 draft += text;
                 emit("token", { text });
               }
             }
+            console.log(
+              `[sb-v2 telemetry] +${ms()}ms token#${tokenCount} (last, last-token-at=+${lastTokenAtMs}ms) attempt=${attempt}`,
+            );
             console.log(
               `[sb-v2:anthropic-end] t=${ms()}ms attempt=${attempt} tokens=${attemptOutputTokens}`,
             );
@@ -754,10 +786,16 @@ export async function POST(req: NextRequest) {
               internalAbort.signal.aborted ||
               (err as Error).name === "AbortError"
             ) {
+              console.log(
+                `[sb-v2 telemetry] +${ms()}ms TERMINAL event=abort attempt=${attempt}`,
+              );
               break;
             }
             const msg = (err as { message?: string })?.message ?? String(err);
             console.error("[script-builder-v2] anthropic error:", msg);
+            console.log(
+              `[sb-v2 telemetry] +${ms()}ms TERMINAL event=error (claude_call_failed) attempt=${attempt}`,
+            );
             emit("error", {
               error: "claude_call_failed",
               message:
@@ -855,6 +893,9 @@ export async function POST(req: NextRequest) {
             (v) => v.severity === "error",
           );
           if (attempt === MAX_REPROMPTS) {
+            console.log(
+              `[sb-v2 telemetry] +${ms()}ms TERMINAL event=error (validation_gate_failed)`,
+            );
             emit("error", {
               error: "validation_gate_failed",
               message: `Couldn't produce a script that passes the locked content rules after ${MAX_REPROMPTS + 1} attempts. ${lastErrors.length} error-severity violation(s) remain — see "violations" for details.`,
@@ -889,6 +930,7 @@ export async function POST(req: NextRequest) {
             totalOutputTokens,
           );
           const capAfter = await getCostCapStatus(userId);
+          console.log(`[sb-v2 telemetry] +${ms()}ms TERMINAL event=complete`);
           emit("complete", {
             script: finalScript,
             attempt: finalAttempt,
@@ -925,20 +967,27 @@ export async function POST(req: NextRequest) {
 
     cancel() {
       // Reader closed (client disconnect). Propagate to upstream Anthropic.
+      console.log(
+        `[sb-v2 telemetry] cancel() called — client disconnected (reader closed)`,
+      );
       stopHeartbeat();
       internalAbort.abort();
     },
   });
 
+  const responseHeaders = {
+    "content-type": "text/event-stream; charset=utf-8",
+    "cache-control": "no-cache, no-transform",
+    // Defensive: tells nginx/cloudflare-style proxies not to buffer.
+    "x-accel-buffering": "no",
+    connection: "keep-alive",
+  };
+  console.log(
+    `[sb-v2 telemetry] response constructed, headers: ${JSON.stringify(responseHeaders)}`,
+  );
   return new Response(stream, {
     status: 200,
-    headers: {
-      "content-type": "text/event-stream; charset=utf-8",
-      "cache-control": "no-cache, no-transform",
-      // Defensive: tells nginx/cloudflare-style proxies not to buffer.
-      "x-accel-buffering": "no",
-      connection: "keep-alive",
-    },
+    headers: responseHeaders,
   });
 }
 
