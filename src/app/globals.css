@@ -17,23 +17,28 @@
   /* Text */
   --abv-text:           #1A1A1A;
   --abv-text-secondary: #6B6B6B;
-  --abv-text-muted:     #9B9B9B;
+  --abv-text-muted:     #6B6B6B;
+  --abv-text-dim:       #9B9B9B;
+  --abv-ink:            #1A1A1A;
 
   /* Accents */
   --abv-azure:        #3DC3FF;
   --abv-azure-tint:   rgba(61, 195, 255, 0.10);
-  --abv-crimson:      var(--abv-crimson);
+  --abv-crimson:      #FF0033;
 
   /* Borders */
   --abv-border:        rgba(0, 0, 0, 0.06);
   --abv-border-strong: rgba(0, 0, 0, 0.10);
 
   /* Feature colours (members platform only) */
-  --abv-academy:  var(--abv-academy);
-  --abv-ai-tools: var(--abv-azure);
-  --abv-hire:     var(--abv-hire);
-  --abv-leads:    var(--abv-crimson);
-  --abv-scores:   var(--abv-scores);
+  --abv-academy:        #10B981;
+  --abv-academy-tint:   rgba(16, 185, 129, 0.10);
+  --abv-ai-tools:       #6BA3C7;
+  --abv-ai-tools-tint:  rgba(107, 163, 199, 0.10);
+  --abv-hire:           #8B5CF6;
+  --abv-leads:          #E63946;
+  --abv-scores:         #F59E0B;
+  --abv-scores-tint:    rgba(245, 158, 11, 0.10);
 
   /* Shape */
   --abv-radius:      8px;

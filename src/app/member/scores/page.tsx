@@ -551,7 +551,7 @@ function TrajectoryChart({
       className="w-full h-[220px]"
     >
       {/* gridlines */}
-      <line x1={padL} x2={W - padR} y1={200} y2={200} stroke="rgba(0,0,0,0.10)" strokeWidth={1} />
+      <line x1={padL} x2={W - padR} y1={200} y2={200} style={{ stroke: "var(--abv-border-strong)" }} strokeWidth={1} />
       {[160, 120, 80, 40].map((y) => (
         <line
           key={y}
@@ -559,7 +559,7 @@ function TrajectoryChart({
           x2={W - padR}
           y1={y}
           y2={y}
-          stroke="rgba(0,0,0,0.10)"
+          style={{ stroke: "var(--abv-border-strong)" }}
           strokeWidth={1}
           strokeDasharray="2 3"
         />
@@ -577,18 +577,17 @@ function TrajectoryChart({
           key={val}
           x={val === 10 ? 10 : 14}
           y={y}
-          className="font-mono"
-          style={{ fontSize: 10, fill: "var(--abv-text-dim)" }}
+          style={{ fontSize: 10, fill: "var(--abv-text-dim)", fontFamily: "var(--abv-font-mono)" }}
         >
           {val}
         </text>
       ))}
       {/* area + line */}
-      <path d={areaD} fill="var(--abv-azure-tint)" />
+      <path d={areaD} style={{ fill: "var(--abv-azure-tint)" }} />
       <path
         d={lineD}
         fill="none"
-        stroke="var(--abv-text)"
+        style={{ stroke: "var(--abv-azure)" }}
         strokeWidth={2.5}
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -596,34 +595,41 @@ function TrajectoryChart({
       {/* dots */}
       {points.map((p, i) =>
         i === lastIdx ? null : (
-          <circle key={i} cx={xFor(i)} cy={yFor(p.score)} r={3} fill="var(--abv-text)" />
+          <circle
+            key={i}
+            cx={xFor(i)}
+            cy={yFor(p.score)}
+            r={4}
+            style={{ fill: "white", stroke: "var(--abv-azure)" }}
+            strokeWidth={2}
+          />
         ),
       )}
       {/* end cursor */}
       <circle
         cx={xFor(lastIdx)}
         cy={yFor(last.score)}
-        r={5}
-        fill="white"
-        stroke={tierStroke[lastTier]}
-        strokeWidth={2}
+        r={6}
+        style={{ fill: "white", stroke: tierStroke[lastTier] }}
+        strokeWidth={2.5}
       />
       {/* tooltip on last point */}
       <g transform={`translate(${tooltipX}, 18)`}>
-        <rect width={74} height={38} rx={6} fill="var(--abv-ink)" />
+        <rect width={84} height={42} rx={6} style={{ fill: "var(--abv-ink)" }} />
         <text
-          x={8}
-          y={14}
-          style={{ fill: "rgba(255,255,255,0.65)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase" as const, fontFamily: "var(--font-mono)" }}
+          x={10}
+          y={16}
+          style={{ fill: "rgba(255,255,255,0.65)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase" as const, fontFamily: "var(--abv-font-mono)" }}
         >
           {fmtShort(last.date)}
         </text>
         <text
-          x={8}
-          y={30}
-          style={{ fill: "white", fontSize: 11, fontWeight: 600, fontFamily: "var(--font-mono)" }}
+          x={10}
+          y={33}
+          style={{ fill: "var(--abv-azure)", fontSize: 12, fontWeight: 700, fontFamily: "var(--abv-font-mono)" }}
         >
-          {last.score.toFixed(1)} / 10
+          {last.score.toFixed(1)}
+          <tspan style={{ fill: "rgba(255,255,255,0.55)", fontWeight: 500 }}> / 10</tspan>
         </text>
       </g>
       {/* x labels */}
@@ -633,8 +639,7 @@ function TrajectoryChart({
           x={xFor(i)}
           y={218}
           textAnchor="middle"
-          className="font-mono"
-          style={{ fontSize: 10, fill: "var(--abv-text-dim)" }}
+          style={{ fontSize: 10, fill: "var(--abv-text-dim)", fontFamily: "var(--abv-font-mono)" }}
         >
           {fmtShort(p.date)}
         </text>

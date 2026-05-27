@@ -9,6 +9,8 @@ interface FeatureFlags {
   tool_arc_script_builder?: boolean;
   tool_title_analyzer?: boolean;
   tool_script_review?: boolean;
+  tool_repurpose_content?: boolean;
+  tool_description_generator?: boolean;
   [key: string]: boolean | undefined;
 }
 
@@ -59,6 +61,18 @@ const IconCheckCircle = (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7">
     <circle cx="12" cy="12" r="9" />
     <path d="M8 12l3 3 5-6" />
+  </svg>
+);
+const IconRepurpose = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7">
+    <path d="M4 7h12a4 4 0 014 4v0M20 17H8a4 4 0 01-4-4v0" />
+    <path d="M16 4l3 3-3 3M8 14l-3 3 3 3" />
+  </svg>
+);
+const IconDescription = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7">
+    <rect x="4" y="3" width="16" height="18" rx="2" />
+    <path d="M8 8h8M8 12h8M8 16h5" />
   </svg>
 );
 
@@ -146,6 +160,22 @@ export default function AIToolsHub({ basePath, featureFlags }: Props) {
       featureKey: "tool_script_review",
       activity: reviewActivity,
     },
+    {
+      href: `${basePath}/repurpose-content`,
+      name: "Repurpose",
+      tag: "One video into shorts, threads, emails.",
+      icon: IconRepurpose,
+      featureKey: "tool_repurpose_content",
+      activity: null,
+    },
+    {
+      href: `${basePath}/description-generator`,
+      name: "Description Generator",
+      tag: "YouTube descriptions, ready to paste.",
+      icon: IconDescription,
+      featureKey: "tool_description_generator",
+      activity: null,
+    },
   ].filter((t) => !featureFlags || featureFlags[t.featureKey] !== false);
 
   const workflow = [
@@ -185,14 +215,16 @@ export default function AIToolsHub({ basePath, featureFlags }: Props) {
     <div className="font-sans text-[var(--abv-text)]">
       {/* Tools grid — 2 cols; 5th centers below */}
       <section className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mb-12">
-        {tools.map((tool, i) => (
+        {tools.map((tool, i) => {
+          const isOrphan = tools.length % 2 === 1 && i === tools.length - 1;
+          return (
           <Link
             key={tool.href}
             href={tool.href}
             className={[
               "bg-white border border-[var(--abv-border)] rounded-[14px] p-[22px] flex gap-[18px] items-start shadow-[0_1px_3px_rgba(0,0,0,0.04)]",
               "hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] hover:border-[var(--abv-border-strong)] hover:-translate-y-px transition-all",
-              tools.length === 5 && i === 4
+              isOrphan
                 ? "sm:col-span-2 sm:max-w-[calc(50%-7px)] sm:justify-self-center w-full"
                 : "",
             ].join(" ")}
@@ -209,8 +241,8 @@ export default function AIToolsHub({ basePath, featureFlags }: Props) {
               </div>
               <div className="flex items-center justify-between gap-3 mt-2.5 pt-3 border-t border-[var(--abv-border)]">
                 {tool.activity ? (
-                  <span className="font-mono text-[10.5px] text-[var(--abv-text-dim)] tracking-[0.04em] inline-flex items-center gap-1.5">
-                    <span className="w-[5px] h-[5px] rounded-full bg-[var(--abv-academy)]" />
+                  <span className="font-mono text-[10.5px] text-[var(--abv-text-dim)] tracking-[0.04em] inline-flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-[var(--abv-academy)]" />
                     {tool.activity}
                   </span>
                 ) : (
@@ -224,7 +256,8 @@ export default function AIToolsHub({ basePath, featureFlags }: Props) {
               </div>
             </div>
           </Link>
-        ))}
+          );
+        })}
       </section>
 
       {/* Workflow block */}
