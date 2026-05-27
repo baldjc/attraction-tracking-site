@@ -61,6 +61,7 @@ import { getCostCapStatus, logUsage } from "@/lib/ai-tool-cost";
 import prisma from "@/lib/prisma";
 import { SCRIPT_BUILDER_MODE_PROMPT } from "@/lib/script-builder-mode-prompt";
 import {
+  autoFixMechanicalRules,
   validateScript,
   type ScriptViolation,
   type ScriptValidationResult,
@@ -741,6 +742,14 @@ export async function POST(req: NextRequest) {
           for (const t of midStreamTimers) clearTimeout(t);
 
           if (internalAbort.signal.aborted) break;
+
+          // Wave 6 — auto-fix mechanical rule violations before validation.
+          // Some locked rules are mechanical substitutions (replace word X
+          // with word Y). Running these as regex passes BEFORE the
+          // validator gate saves retry budget for genuine violations
+          // (fabrications, misattributions) and lets Claude focus on
+          // content quality instead of word-level discipline.
+          draft = autoFixMechanicalRules(draft);
 
           // ─ Server-side validation gate ──────────────────────────────
           trace("phase", "Validating content rules...");

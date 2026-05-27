@@ -1012,3 +1012,82 @@ export function validateScript(
   const ok = !violations.some((v) => v.severity === "error");
   return { ok, violations, metrics: hyperLocal.metrics };
 }
+
+/**
+ * Wave 6 — mechanical post-generation fixes.
+ *
+ * Applied AFTER Claude generates and BEFORE validation runs. Catches
+ * mechanical violations that Claude struggles to maintain across long
+ * scripts (no_why, no_abbrev_in_dialogue). Does NOT touch content inside
+ * `[VISUAL: ...]` tags — abbreviations are allowed there.
+ *
+ * Returns the rewritten script. Idempotent on already-clean scripts.
+ */
+export function autoFixMechanicalRules(script: string): string {
+  // Split into dialogue-vs-bracket-tag segments. Only rewrite dialogue.
+  // [VISUAL: ...] tags, [LEAD MAGNET n/3] markers, [CALLBACK], [CONNECTION]
+  // tags are preserved verbatim.
+  const TAG_PATTERN =
+    /\[(?:VISUAL|LEAD MAGNET[^\]]*|CALLBACK|CONNECTION[^\]]*)[^\]]*\]/g;
+  const segments: Array<{ kind: "tag" | "dialogue"; text: string }> = [];
+  let lastIndex = 0;
+  for (const match of script.matchAll(TAG_PATTERN)) {
+    const idx = match.index ?? 0;
+    if (idx > lastIndex) {
+      segments.push({ kind: "dialogue", text: script.slice(lastIndex, idx) });
+    }
+    segments.push({ kind: "tag", text: match[0] });
+    lastIndex = idx + match[0].length;
+  }
+  if (lastIndex < script.length) {
+    segments.push({ kind: "dialogue", text: script.slice(lastIndex) });
+  }
+
+  for (const seg of segments) {
+    if (seg.kind === "tag") continue;
+    let t = seg.text;
+
+    // ─ no_abbrev_in_dialogue ─────────────────────────────────────────────
+    // Whole-word, case-insensitive expansion. Use \b to avoid corrupting
+    // composed words. Don't touch occurrences inside parentheses that are
+    // already glossing (e.g. "months of inventory (MOI)") — those are
+    // author intent, not violations. Detect with a `)` lookahead.
+    const ABBREV_MAP: Array<[RegExp, string]> = [
+      [/\bMOI\b(?!\s*\))/g, "months of inventory"],
+      [/\bDOM\b(?!\s*\))/g, "days on market"],
+      [/\bPSF\b(?!\s*\))/g, "price per square foot"],
+      [/\bSP\/LP\b(?!\s*\))/g, "sales to list price ratio"],
+      [/\bSP-LP\b(?!\s*\))/g, "sales to list price ratio"],
+    ];
+    for (const [re, replacement] of ABBREV_MAP) {
+      t = t.replace(re, replacement);
+    }
+
+    // ─ no_why ────────────────────────────────────────────────────────────
+    // Replace "why" with context-appropriate alternatives. Order matters:
+    // longer/more-specific patterns first.
+    const WHY_REWRITES: Array<[RegExp, string]> = [
+      // "the reason why X" → "the reason X" (redundant "why")
+      [/\bthe\s+reason\s+why\b/gi, "the reason"],
+      // "Here's why ..." → "Here's the reason ..."
+      [/\bHere'?s\s+why\b/g, "Here's the reason"],
+      [/\bhere'?s\s+why\b/g, "here's the reason"],
+      // "That's why ..." → "That's the reason ..."
+      [/\bThat'?s\s+why\b/g, "That's the reason"],
+      [/\bthat'?s\s+why\b/g, "that's the reason"],
+      // "Why X is happening" → "Here's what's behind X happening"
+      [/^Why\b/gm, "Here's what's behind"],
+      // Rhetorical sentence-end: "...but why?" — drop or rewrite
+      [/\?\s*but\s+why\?/gi, "? What's behind it?"],
+      // Generic "why" → "the reason" (catch-all, lowest priority)
+      [/\bwhy\b/gi, "the reason"],
+    ];
+    for (const [re, replacement] of WHY_REWRITES) {
+      t = t.replace(re, replacement);
+    }
+
+    seg.text = t;
+  }
+
+  return segments.map((s) => s.text).join("");
+}
