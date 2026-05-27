@@ -101,31 +101,34 @@ const editorLinks = [
 
 const PRODUCTION_TIERS = ["editing_2", "editing_4", "mastery_2", "mastery_4", "done_with_you"];
 
-// Sprint 9: Sidebar IA streamline — Dashboard sits above the four semantic
-// groups (CREATE / IMPROVE / GROW / WORKSPACE). Settings + Help live in the
-// footer. Market Data, Knowledge Base, Live Calls (now an Academy sub-tab),
-// and the standalone Settings entry are intentionally dropped from the
-// primary nav per spec; they remain reachable via direct URL.
+// Sprint 9 + partial revert: Dashboard sits above four semantic groups
+// (CREATE / IMPROVE / GROW / WORKSPACE). Help + Notifications stay in the
+// footer; Settings moved back into WORKSPACE per iteration brief. Market
+// Data and Knowledge Base restored under CREATE. Live Calls remains an
+// Academy sub-tab and is intentionally not in the primary nav.
 const memberLinks = [
   // Home
-  { href: "/member/dashboard",       label: "Dashboard",       icon: HomeIcon,         featureKey: null,        colour: "var(--abv-azure)",   tierRequired: null },
+  { href: "/member/dashboard",       label: "Dashboard",       icon: HomeIcon,                 featureKey: null,        colour: "var(--abv-azure)",   tierRequired: null },
 
   // CREATE
-  { href: "/member/ai-tools",        label: "AI Tools",        icon: SparklesIcon,     featureKey: "ai_tools",  colour: "var(--abv-ai-tools)", tierRequired: null,           section: "CREATE",    badgeKey: "unread_tools" },
-  { href: "/member/content-planner", label: "Content Planner", icon: CalendarDaysIcon, featureKey: null,        colour: "var(--abv-azure)",   tierRequired: PRODUCTION_TIERS },
+  { href: "/member/ai-tools",        label: "AI Tools",        icon: SparklesIcon,             featureKey: "ai_tools",  colour: "var(--abv-ai-tools)", tierRequired: null,           section: "CREATE",    badgeKey: "unread_tools" },
+  { href: "/member/content-planner", label: "Content Planner", icon: CalendarDaysIcon,         featureKey: null,        colour: "var(--abv-azure)",   tierRequired: PRODUCTION_TIERS },
+  { href: "/member/market-data",     label: "Market Data",     icon: ChartBarSquareIcon,       featureKey: null,        colour: "var(--abv-azure)",   tierRequired: null },
+  { href: "/member/knowledge-base",  label: "Knowledge Base",  icon: BookOpenIcon,             featureKey: null,        colour: "var(--abv-azure)",   tierRequired: null },
 
   // IMPROVE
-  { href: "/member/scores",          label: "My Scores",       icon: StarIcon,         featureKey: null,        colour: "var(--abv-scores)",  tierRequired: null,           section: "IMPROVE",   featureColour: "var(--abv-scores)" },
-  { href: "/member/academy",         label: "Academy",         icon: AcademicCapIcon,  featureKey: null,        colour: "var(--abv-academy)", tierRequired: null,                                 featureColour: "var(--abv-academy)" },
-  { href: "/member/my-calls",        label: "My Calls",        icon: VideoCameraIcon,  featureKey: null,        colour: "var(--abv-azure)",   tierRequired: null,                                 badgeKey: "unwatched_calls" },
+  { href: "/member/scores",          label: "My Scores",       icon: StarIcon,                 featureKey: null,        colour: "var(--abv-scores)",  tierRequired: null,           section: "IMPROVE",   featureColour: "var(--abv-scores)" },
+  { href: "/member/academy",         label: "Academy",         icon: AcademicCapIcon,          featureKey: null,        colour: "var(--abv-academy)", tierRequired: null,                                 featureColour: "var(--abv-academy)" },
+  { href: "/member/my-calls",        label: "My Calls",        icon: VideoCameraIcon,          featureKey: null,        colour: "var(--abv-azure)",   tierRequired: null,                                 badgeKey: "unwatched_calls" },
 
   // GROW
-  { href: "/member/generate-leads",  label: "Generate Leads",  icon: RocketLaunchIcon, featureKey: "campaigns", colour: "var(--abv-leads)",   tierRequired: null,           section: "GROW",      featureColour: "var(--abv-leads)" },
-  { href: "/member/hire",            label: "Hire a Human",    icon: UserGroupIcon,    featureKey: null,        colour: "var(--abv-hire)",    tierRequired: null,                                 featureColour: "var(--abv-hire)" },
+  { href: "/member/generate-leads",  label: "Generate Leads",  icon: RocketLaunchIcon,         featureKey: "campaigns", colour: "var(--abv-leads)",   tierRequired: null,           section: "GROW",      featureColour: "var(--abv-leads)" },
+  { href: "/member/hire",            label: "Hire a Human",    icon: UserGroupIcon,            featureKey: null,        colour: "var(--abv-hire)",    tierRequired: null,                                 featureColour: "var(--abv-hire)" },
 
   // WORKSPACE
-  { href: "/member/my-work",         label: "My Work",         icon: FolderIcon,       featureKey: "ai_tools",  colour: "var(--abv-ai-tools)", tierRequired: null,           section: "WORKSPACE" },
-  { href: "/member/client-hub",      label: "Client Hub",      icon: Squares2X2Icon,   featureKey: null,        colour: "var(--abv-azure)",   tierRequired: PRODUCTION_TIERS },
+  { href: "/member/my-work",         label: "My Work",         icon: FolderIcon,               featureKey: "ai_tools",  colour: "var(--abv-ai-tools)", tierRequired: null,           section: "WORKSPACE" },
+  { href: "/member/client-hub",      label: "Client Hub",      icon: Squares2X2Icon,           featureKey: null,        colour: "var(--abv-azure)",   tierRequired: PRODUCTION_TIERS },
+  { href: "/member/settings",        label: "Settings",        icon: Cog6ToothIcon,            featureKey: null,        colour: "var(--abv-azure)",   tierRequired: null },
 ];
 
 interface ImpersonateState {
@@ -496,15 +499,6 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
             >
               <BellIcon className="w-5 h-5 shrink-0" />
             </button>
-            {role === "member" && (
-              <Link
-                href="/member/settings"
-                title="Settings"
-                className="flex items-center gap-3 py-2.5 text-sm font-medium text-white/50 hover:text-white hover:bg-white/5 transition-colors duration-200 w-full rounded-md px-3 justify-center"
-              >
-                <Cog6ToothIcon className="w-5 h-5 shrink-0" />
-              </Link>
-            )}
             <button
               onClick={toggleTheme}
               title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
@@ -542,16 +536,6 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
                   <BellIcon className="w-5 h-5 shrink-0" />
                   <span>Notifications</span>
                 </button>
-                {role === "member" && (
-                  <Link
-                    href="/member/settings"
-                    onClick={() => setUserMenuOpen(false)}
-                    className="flex items-center gap-3 py-2.5 px-3 text-sm font-medium text-white/60 hover:text-white hover:bg-white/5 transition-colors duration-200 w-full rounded-md"
-                  >
-                    <Cog6ToothIcon className="w-5 h-5 shrink-0" />
-                    <span>Settings</span>
-                  </Link>
-                )}
                 <button
                   onClick={() => { toggleTheme(); }}
                   className="flex items-center gap-3 py-2.5 px-3 text-sm font-medium text-white/60 hover:text-white hover:bg-white/5 transition-colors duration-200 w-full rounded-md"
