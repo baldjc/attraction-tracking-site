@@ -194,6 +194,44 @@ const AVATAR_PANDER_PHRASES: readonly string[] = [
   "you're not alone",
   "let me be direct with you here",
   "i want you to sit with that",
+  // ── Voice-guide additions (Wave 8) ────────────────────────────────
+  // Generic AI / corporate tells — no clean mechanical substitution;
+  // catching them as validator hits forces Claude to rewrite instead
+  // of reaching for the easy cliché.
+  "dive into",
+  "synergize",
+  "circle back",
+  "touch base",
+  "best practices",
+  "robust",
+  "streamline",
+  "ecosystem",
+  "bandwidth",
+  "move the needle",
+  "unpack",
+  "in today's fast-paced",
+  "a powerful tool",
+  "navigate the complexities of",
+  "it's important to note",
+  // `leverage` is overloaded — banned as a VERB ("leverage our/the/
+  // this/that data"), fine as a NOUN ("buyers have leverage"). The
+  // four specific verb-context starts catch the verb use without
+  // false-flagging the noun.
+  "leverage our",
+  "leverage the",
+  "leverage this",
+  "leverage that",
+  // Realtor cringe.
+  "won't last",
+  "unicorn home",
+  "hot hot hot",
+  "location, location, location",
+  "priced to sell",
+  "act now",
+  // Hype / urgency.
+  "crazy market",
+  "don't miss out",
+  "once in a lifetime",
 ];
 
 /**
@@ -1113,6 +1151,55 @@ export function autoFixMechanicalRules(script: string): string {
       [/\bI\s+want\s+you\s+to\s+sit\s+with\s+that\b/gi, "Think about that"],
     ];
     for (const [re, replacement] of PANDER_REWRITES) {
+      t = t.replace(re, replacement);
+    }
+
+    // ─ Em-dash ban (voice guide — HARD RULE) ────────────────────────────
+    // Em dashes are not Jared's voice. Replace with comma (default) or
+    // period+space (when the dash separates two complete sentences,
+    // detected by an uppercase letter following the dash).
+    //
+    // Detection: " — " (space, em dash, space). Don't touch bare "—"
+    // without surrounding spaces — those could appear inside quoted
+    // sources or tables.
+    const EM_DASH_PATTERN = /\s+—\s+/g;
+    t = t.replace(EM_DASH_PATTERN, (match, offset: number, full: string) => {
+      const next = full.slice(offset + match.length, offset + match.length + 1);
+      if (next && /[A-Z]/.test(next)) return ". ";
+      return ", ";
+    });
+
+    // ─ Jargon → plain language (voice-guide substitution table) ─────────
+    const JARGON_REWRITES: Array<[RegExp, string]> = [
+      [/\bpre-?approval\b/gi, "shopping budget"],
+      [
+        /\bsimultaneous\s+transactions?\b/gi,
+        "selling and buying at the same time",
+      ],
+      [/\btimeline\s+synchronization\b/gi, "coordinating your closings"],
+      [/\bmortgage\s+qualifications?\b/gi, "financial comfort zone"],
+      [/\bmove-?up\s+propert(?:y|ies)\b/gi, "lifestyle upgrade"],
+      [
+        /\bselling\s+price\s+to\s+list\s+price\s+ratio\b/gi,
+        "how close homes are selling to asking price",
+      ],
+      // Softer fix — "smooth transition" gets re-cast.
+      [/\bsmooth\s+transition\b/gi, "making the move feel manageable"],
+    ];
+    for (const [re, replacement] of JARGON_REWRITES) {
+      t = t.replace(re, replacement);
+    }
+
+    // ─ Audience-as-group → one viewer (voice-guide rule #1) ─────────────
+    // "Hey guys" dropped (with trailing punct/space). "you guys" → "you".
+    // We deliberately do NOT touch "everyone" / "everybody" — too many
+    // legitimate uses ("everyone in Calgary…").
+    const ONE_VIEWER_REWRITES: Array<[RegExp, string]> = [
+      [/\bHey\s+guys[,!\.]?\s*/g, ""],
+      [/\bhey\s+guys[,!\.]?\s*/g, ""],
+      [/\byou\s+guys\b/gi, "you"],
+    ];
+    for (const [re, replacement] of ONE_VIEWER_REWRITES) {
       t = t.replace(re, replacement);
     }
 
