@@ -51,28 +51,83 @@ function PaymentBanner() {
   if (!pastDue) return null;
 
   return (
-    <div className="rounded-lg bg-amber-50 border border-amber-300 px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:justify-between">
+    <div className="rounded-xl bg-[var(--abv-bg-warm)] border border-[var(--abv-border-strong)] px-6 py-5 flex flex-col sm:flex-row sm:items-center gap-4 sm:justify-between mb-6">
       <div>
-        <p className="font-semibold text-amber-800 text-sm">Your subscription payment is past due</p>
-        <p className="text-amber-700 text-sm mt-0.5">Please update your payment details to keep your access.</p>
+        <p className="font-semibold text-[var(--abv-text)] text-sm">Your subscription payment is past due.</p>
+        <p className="text-[var(--abv-text-secondary)] text-sm mt-0.5">Update your payment details to keep your access.</p>
       </div>
-      {retryUrl ? (
-        <a
-          href={retryUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="shrink-0 inline-block bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
-        >
-          Update Payment
-        </a>
-      ) : (
-        <a
-          href="mailto:support@attractionbyvideo.com"
-          className="shrink-0 inline-block bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
-        >
-          Contact Support
-        </a>
-      )}
+      <a
+        href={retryUrl ?? "mailto:support@attractionbyvideo.com"}
+        target={retryUrl ? "_blank" : undefined}
+        rel={retryUrl ? "noopener noreferrer" : undefined}
+        className="inline-flex items-center justify-center px-6 py-2.5 rounded-full bg-[var(--abv-dark)] text-white font-semibold text-sm hover:bg-black/90 transition-colors shrink-0"
+      >
+        {retryUrl ? "Update payment" : "Contact support"}
+      </a>
+    </div>
+  );
+}
+
+// ── Next Step Card ────────────────────────────────────────────
+
+interface NextStep {
+  principleLabel: string;
+  score: number;
+  lessonHref: string;
+  lessonDuration: string;
+  lessonTopic: string;
+}
+
+const NEXT_STEP_DISMISS_KEY = "abv:nextStepDismissedAt";
+const NEXT_STEP_DISMISS_MS = 7 * 24 * 60 * 60 * 1000;
+
+function NextStepCard() {
+  const [nextStep, setNextStep] = useState<NextStep | null>(null);
+
+  useEffect(() => {
+    // Honor 7-day localStorage dismiss
+    try {
+      const raw = localStorage.getItem(NEXT_STEP_DISMISS_KEY);
+      if (raw && Date.now() - Number(raw) < NEXT_STEP_DISMISS_MS) return;
+    } catch {}
+
+    fetch("/api/member/dashboard/next-step")
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => {
+        if (d && d.principleLabel) setNextStep(d);
+      })
+      .catch(() => {});
+  }, []);
+
+  function dismissNextStep() {
+    try { localStorage.setItem(NEXT_STEP_DISMISS_KEY, String(Date.now())); } catch {}
+    setNextStep(null);
+  }
+
+  if (!nextStep) return null;
+
+  return (
+    <div className="rounded-2xl bg-[var(--abv-dark)] text-white p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
+      <div className="flex-1">
+        <span className="inline-flex items-center gap-1.5 mb-3 px-2.5 py-1 rounded-full bg-white/10 text-[var(--abv-azure)] text-[11px] font-bold uppercase tracking-[0.12em]">
+          <span className="w-1.5 h-1.5 rounded-full bg-[var(--abv-azure)]" />
+          Your next step
+        </span>
+        <h2 className="font-display text-2xl sm:text-3xl text-white mb-2">
+          Your <span className="text-[var(--abv-azure)]">{nextStep.principleLabel}</span> score is <span className="font-mono tabular-nums">{nextStep.score.toFixed(1)}</span>. Lowest on your channel.
+        </h2>
+        <p className="text-white/70 text-sm sm:text-base">
+          Watch the {nextStep.lessonDuration}-minute lesson on {nextStep.lessonTopic}. Then run your next script through Script Review to test it.
+        </p>
+      </div>
+      <div className="flex items-center gap-3 shrink-0">
+        <Link href={nextStep.lessonHref} className="inline-flex items-center px-6 py-2.5 rounded-full bg-white text-[var(--abv-dark)] font-semibold text-sm hover:bg-[var(--abv-bg)] transition-colors">
+          Watch lesson →
+        </Link>
+        <button onClick={dismissNextStep} className="text-white/50 hover:text-white text-xs font-semibold uppercase tracking-wide">
+          Dismiss
+        </button>
+      </div>
     </div>
   );
 }
@@ -95,13 +150,17 @@ interface TopVideo {
 
 // ── Nav Cards ─────────────────────────────────────────────────
 
+// Sprint 3.2: reordered + tagline-style copy. Tinted 40x40 icon block on the
+// LEFT replaces the previous emoji-only header. Background is the feature
+// colour at ~10% opacity (`${colour}1A` suffix when colour is a hex).
 const NAV_CARDS = [
-  { title: "Academy",        description: "Master the Attraction system, one lesson at a time.",            href: "/member/academy",        emoji: "🎓", colour: "var(--abv-academy)" },
-  { title: "My Scores",      description: "See how your content stacks up and where to focus.",             href: "/member/scores",         emoji: "🏆", colour: "var(--abv-scores)" },
-  { title: "Content Tools",  description: "Build your avatar, generate ideas, and write scripts.",          href: "/member/ai-tools",       emoji: "✨", colour: "var(--abv-azure)" },
-  { title: "Generate Leads", description: "Learn to generate leads, track campaigns, and measure results.", href: "/member/generate-leads", emoji: "🚀", colour: "var(--abv-crimson)" },
-  { title: "My Calls",       description: "Watch your 1-on-1 call recordings with Jared.",                 href: "/member/my-calls",       emoji: "📹", colour: "var(--abv-azure)" },
-  { title: "Hire a Human",   description: "Hire us to help you grow faster.",                               href: "/member/hire",           emoji: "🤝", colour: "var(--abv-hire)" },
+  { title: "AI Tools",        tagline: "Build, write, review.",         href: "/member/ai-tools",        emoji: "✨", colour: "var(--abv-ai-tools)" },
+  { title: "My Scores",       tagline: "See where you stand.",          href: "/member/scores",          emoji: "🏆", colour: "var(--abv-scores)" },
+  { title: "Academy",         tagline: "Watch a lesson.",               href: "/member/academy",         emoji: "🎓", colour: "var(--abv-academy)" },
+  { title: "Content Planner", tagline: "Plan next week.",               href: "/member/content-planner", emoji: "📅", colour: "var(--abv-azure)" },
+  { title: "Generate Leads",  tagline: "Run a campaign.",               href: "/member/generate-leads",  emoji: "🚀", colour: "var(--abv-leads)" },
+  { title: "My Calls",        tagline: "Watch your recordings.",        href: "/member/my-calls",        emoji: "📹", colour: "var(--abv-azure)" },
+  { title: "Hire a Human",    tagline: "Get help when you're stuck.",   href: "/member/hire",            emoji: "🤝", colour: "var(--abv-hire)" },
 ];
 
 // ── Component ─────────────────────────────────────────────────
@@ -139,9 +198,10 @@ export default function MemberDashboard() {
       .catch(() => { setTopVideos([]); setVideosLoading(false); });
   }, []);
 
-  const card = "bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-[#2a2a2a]";
-  const txt = "text-[var(--abv-text)] dark:text-[#e2e8f0]";
-  const muted = "text-[var(--abv-text)]/60 dark:text-[#94a3b8]";
+  // Sprint 3.2: unified Card primitive — abv-card surface, abv-border, rounded-2xl
+  const card = "bg-[var(--abv-card)] rounded-2xl border border-[var(--abv-border)]";
+  const txt = "text-[var(--abv-text)]";
+  const muted = "text-[var(--abv-text-secondary)]";
 
   const firstName = data?.firstName ?? null;
   const nextCoachingCall = data?.nextCoachingCall;
@@ -155,39 +215,46 @@ export default function MemberDashboard() {
       <PaymentBanner />
 
       {/* ── Greeting ── */}
-      <div className="pt-2 text-center">
+      <div className="pt-2">
         {loading ? (
           <>
-            <div className="h-9 w-72 bg-gray-200 dark:bg-[#2a2a2a] rounded-lg animate-pulse mx-auto mb-3" />
-            <div className="h-5 w-96 bg-gray-100 dark:bg-[#1e1e1e] rounded animate-pulse mx-auto" />
+            <div className="h-10 w-[28rem] max-w-full bg-gray-200 dark:bg-[#2a2a2a] rounded-lg animate-pulse mb-3" />
+            <div className="h-6 w-72 bg-gray-100 dark:bg-[#1e1e1e] rounded animate-pulse" />
           </>
         ) : (
           <>
-            <h1 className="text-3xl font-bold text-[var(--abv-azure)]">
-              Welcome back{firstName ? `, ${firstName}` : ""}
+            <h1 className="font-display text-4xl text-[var(--abv-text)]">
+              Welcome back{firstName ? `, ${firstName}` : ""}. Let&apos;s make something that <span className="text-[var(--abv-azure)]">converts</span>.
             </h1>
-            <p className={`mt-2 text-base ${muted}`}>
-              Let&apos;s create something that converts. What would you like to work on today?
+            <p className="mt-3 text-lg text-[var(--abv-text-secondary)]">
+              Pick where to spend your hour today.
             </p>
           </>
         )}
       </div>
 
-      {/* ── 6-Card Nav Grid ── */}
+      {/* ── Your next step ── */}
+      <NextStepCard />
+
+      {/* ── 7-Card Nav Grid (tinted icon block on the left) ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {NAV_CARDS.map(({ title, description, href, emoji, colour }) => (
+        {NAV_CARDS.map(({ title, tagline, href, emoji, colour }) => (
           <Link
             key={href}
             href={href}
-            className={`${card} p-6 flex flex-col gap-4 hover:shadow-md transition-all group border-l-[3px]`}
-            style={{ borderLeftColor: "transparent" }}
-            onMouseEnter={(e) => { e.currentTarget.style.borderLeftColor = colour; }}
-            onMouseLeave={(e) => { e.currentTarget.style.borderLeftColor = "transparent"; }}
+            className="group p-6 bg-[var(--abv-card)] border border-[var(--abv-border)] rounded-2xl hover:shadow-[var(--shadow-abv-md)] hover:border-[var(--abv-border-strong)] transition-all"
           >
-            <span className="text-3xl leading-none">{emoji}</span>
-            <div>
-              <p className={`text-base font-bold ${txt} transition-colors`}>{title}</p>
-              <p className={`text-sm mt-1 ${muted} leading-snug`}>{description}</p>
+            <div className="flex items-start gap-4">
+              <span
+                className="inline-flex items-center justify-center w-10 h-10 rounded-md text-xl shrink-0"
+                style={{ backgroundColor: `color-mix(in srgb, ${colour} 10%, transparent)` }}
+              >
+                {emoji}
+              </span>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-display text-xl text-[var(--abv-text)]">{title}</h3>
+                <p className="text-sm text-[var(--abv-text-secondary)] mt-1">{tagline}</p>
+              </div>
             </div>
           </Link>
         ))}
@@ -208,7 +275,8 @@ export default function MemberDashboard() {
             <>
               <p className={`text-lg font-bold ${txt}`}>{coaching.label}</p>
               <div className="flex items-center gap-2 mt-2 flex-wrap">
-                <span className="inline-block text-xs font-medium px-2.5 py-1 rounded-full bg-[var(--abv-dark)]/15 text-[var(--abv-azure)]">
+                {/* Sprint 3.2: tint pill (no border, no opacity) */}
+                <span className="inline-block text-xs font-semibold px-2.5 py-1 rounded-full bg-[var(--abv-azure-tint)] text-[var(--abv-azure)]">
                   {coaching.relative}
                 </span>
                 {nextCoachingCall?.link && nextCoachingCall.link.startsWith("http") && (
@@ -216,7 +284,7 @@ export default function MemberDashboard() {
                     href={nextCoachingCall.link}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1 rounded-full bg-[var(--abv-dark)] text-white hover:bg-black/85 transition-colors"
+                    className="inline-flex items-center gap-1 px-6 py-2.5 rounded-full bg-[var(--abv-dark)] text-white font-semibold text-sm hover:bg-black/90 transition-colors"
                   >
                     Join Call →
                   </a>
@@ -283,11 +351,12 @@ export default function MemberDashboard() {
         <div className={`${card} p-6`}>
           <div className="flex items-center justify-between mb-4">
             <h2 className={`text-sm font-semibold ${muted} uppercase tracking-wider`}>Most Viewed — Last 30 Days</h2>
+            {/* Sprint 3.2: muted (not azure) — keep one azure moment per region */}
             <a
               href="https://studio.youtube.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs text-[var(--abv-azure)] hover:underline shrink-0"
+              className="text-sm text-[var(--abv-text)]/50 hover:text-[var(--abv-text)] transition-colors shrink-0"
             >
               Open Studio →
             </a>
@@ -336,7 +405,8 @@ export default function MemberDashboard() {
                       {v.title}
                     </p>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className={`text-xs font-semibold ${txt}`}>{fmtViews(v.viewCount)} views</span>
+                      {/* Sprint 3.2: view counts in Geist Mono, tabular */}
+                      <span className={`text-xs font-semibold font-mono tabular-nums ${txt}`}>{fmtViews(v.viewCount)} views</span>
                       <span className={`text-xs ${muted}`}>· {fmtUploadDate(v.uploadDate)}</span>
                     </div>
                     <span className="text-[10px] text-[var(--abv-azure)] group-hover:underline mt-0.5 block">
@@ -375,8 +445,12 @@ export default function MemberDashboard() {
 
       {/* ── What's New ── */}
       {changelog.length > 0 && (
-        <div className={`${card} p-5`}>
-          <h3 className={`text-sm font-semibold ${txt} mb-3`}>What&apos;s New</h3>
+        <div className={`${card} p-6`}>
+          {/* Sprint 3.2: azure eyebrow pill replaces the heading */}
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--abv-azure-tint)] text-[var(--abv-azure)] text-[11px] font-bold uppercase tracking-[0.12em] mb-3">
+            <span className="w-1.5 h-1.5 rounded-full bg-[var(--abv-azure)]" />
+            What&apos;s new
+          </span>
           <div className="space-y-3">
             {changelog.slice(0, 3).map((entry) => (
               <div key={entry.id} className="flex gap-3">

@@ -40,6 +40,8 @@ import {
   ClockIcon,
   ArrowTrendingUpIcon,
   ChartBarSquareIcon,
+  QuestionMarkCircleIcon,
+  BellIcon,
 } from "@heroicons/react/24/outline";
 import { useState, useEffect, useRef } from "react";
 import { IMPERSONATE_LS_KEY } from "@/lib/impersonate-constants";
@@ -99,21 +101,31 @@ const editorLinks = [
 
 const PRODUCTION_TIERS = ["editing_2", "editing_4", "mastery_2", "mastery_4", "done_with_you"];
 
+// Sprint 9: Sidebar IA streamline — Dashboard sits above the four semantic
+// groups (CREATE / IMPROVE / GROW / WORKSPACE). Settings + Help live in the
+// footer. Market Data, Knowledge Base, Live Calls (now an Academy sub-tab),
+// and the standalone Settings entry are intentionally dropped from the
+// primary nav per spec; they remain reachable via direct URL.
 const memberLinks = [
-  { href: "/member/dashboard",       label: "Dashboard",       icon: HomeIcon,         featureKey: null,        colour: "var(--abv-azure)", tierRequired: null },
-  { href: "/member/academy",         label: "Academy",         icon: AcademicCapIcon,  featureKey: null,        colour: "var(--abv-academy)", tierRequired: null,           section: "Learn" },
-  { href: "/member/academy?tab=live-calls", label: "Live Calls", icon: VideoCameraIcon, featureKey: null,        colour: "var(--abv-academy)", tierRequired: null },
-  { href: "/member/scores",          label: "My Scores",       icon: StarIcon,         featureKey: null,        colour: "var(--abv-scores)", tierRequired: null },
-  { href: "/member/content-planner", label: "Content Planner", icon: CalendarDaysIcon, featureKey: null,        colour: "var(--abv-azure)", tierRequired: PRODUCTION_TIERS, section: "Create" },
-  { href: "/member/market-data",     label: "Market Data",     icon: ChartBarSquareIcon, featureKey: "tool_market_data", colour: "var(--abv-azure)", tierRequired: null },
-  { href: "/member/knowledge-base",  label: "Knowledge Base",  icon: BookOpenIcon,     featureKey: "tool_neighbourhood_knowledge", colour: "var(--abv-azure)", tierRequired: null },
-  { href: "/member/ai-tools",        label: "Content Tools",        icon: SparklesIcon,     featureKey: "ai_tools",  colour: "var(--abv-ai-tools)", tierRequired: null },
-  { href: "/member/my-work",         label: "My Work",         icon: FolderIcon,       featureKey: "ai_tools",  colour: "var(--abv-ai-tools)", tierRequired: null },
-  { href: "/member/generate-leads",  label: "Generate Leads",  icon: RocketLaunchIcon, featureKey: "campaigns", colour: "#E63946", tierRequired: null,           section: "Grow" },
-  { href: "/member/client-hub",      label: "Client Hub",      icon: Squares2X2Icon,   featureKey: null,        colour: "var(--abv-azure)", tierRequired: PRODUCTION_TIERS },
-  { href: "/member/my-calls",        label: "My Calls",        icon: VideoCameraIcon,  featureKey: null,        colour: "var(--abv-azure)", tierRequired: null,           section: "Support" },
-  { href: "/member/hire",            label: "Hire a Human",    icon: UserGroupIcon,    featureKey: null,        colour: "var(--abv-hire)", tierRequired: null },
-  { href: "/member/settings",        label: "Settings",        icon: Cog6ToothIcon,    featureKey: null,        colour: "var(--abv-azure)", tierRequired: null },
+  // Home
+  { href: "/member/dashboard",       label: "Dashboard",       icon: HomeIcon,         featureKey: null,        colour: "var(--abv-azure)",   tierRequired: null },
+
+  // CREATE
+  { href: "/member/ai-tools",        label: "AI Tools",        icon: SparklesIcon,     featureKey: "ai_tools",  colour: "var(--abv-ai-tools)", tierRequired: null,           section: "CREATE",    badgeKey: "unread_tools" },
+  { href: "/member/content-planner", label: "Content Planner", icon: CalendarDaysIcon, featureKey: null,        colour: "var(--abv-azure)",   tierRequired: PRODUCTION_TIERS },
+
+  // IMPROVE
+  { href: "/member/scores",          label: "My Scores",       icon: StarIcon,         featureKey: null,        colour: "var(--abv-scores)",  tierRequired: null,           section: "IMPROVE",   featureColour: "var(--abv-scores)" },
+  { href: "/member/academy",         label: "Academy",         icon: AcademicCapIcon,  featureKey: null,        colour: "var(--abv-academy)", tierRequired: null,                                 featureColour: "var(--abv-academy)" },
+  { href: "/member/my-calls",        label: "My Calls",        icon: VideoCameraIcon,  featureKey: null,        colour: "var(--abv-azure)",   tierRequired: null,                                 badgeKey: "unwatched_calls" },
+
+  // GROW
+  { href: "/member/generate-leads",  label: "Generate Leads",  icon: RocketLaunchIcon, featureKey: "campaigns", colour: "var(--abv-leads)",   tierRequired: null,           section: "GROW",      featureColour: "var(--abv-leads)" },
+  { href: "/member/hire",            label: "Hire a Human",    icon: UserGroupIcon,    featureKey: null,        colour: "var(--abv-hire)",    tierRequired: null,                                 featureColour: "var(--abv-hire)" },
+
+  // WORKSPACE
+  { href: "/member/my-work",         label: "My Work",         icon: FolderIcon,       featureKey: "ai_tools",  colour: "var(--abv-ai-tools)", tierRequired: null,           section: "WORKSPACE" },
+  { href: "/member/client-hub",      label: "Client Hub",      icon: Squares2X2Icon,   featureKey: null,        colour: "var(--abv-azure)",   tierRequired: PRODUCTION_TIERS },
 ];
 
 interface ImpersonateState {
@@ -135,6 +147,9 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
   const [showSwitch, setShowSwitch] = useState(false);
   const [qaCallsPending, setQaCallsPending] = useState(0);
   const [hireWaitlist, setHireWaitlist] = useState(0);
+  // Sprint 9: placeholders — badge counts wire up in a later sprint
+  const [unreadTools] = useState(0);
+  const [unwatchedCalls] = useState(0);
   const [memberTier, setMemberTier] = useState<string | null>(null);
   const [clientHubEnabled, setClientHubEnabled] = useState(true);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -359,7 +374,12 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
       {/* Nav */}
       <nav className="flex-1 px-2 py-4 space-y-0.5 overflow-y-auto">
         {(() => {
-          const badges: Record<string, number> = { qaCallsPending, hireWaitlist };
+          const badges: Record<string, number> = {
+            qaCallsPending,
+            hireWaitlist,
+            unread_tools: unreadTools,
+            unwatched_calls: unwatchedCalls,
+          };
           const renderedSections = new Set<string>();
           return links.map((link) => {
             const Icon = link.icon;
@@ -367,12 +387,14 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
             const sectionLabel = (link as any).section as string | undefined;
             const badgeKey = (link as any).badgeKey as string | undefined;
             const badgeCount = badgeKey ? (badges[badgeKey] ?? 0) : 0;
+            const featureColour = (link as any).featureColour as string | undefined;
 
+            // Sprint 9: mono-uppercase group label with extra vertical breathing room
             const sectionHeader = !collapsed && sectionLabel && !renderedSections.has(sectionLabel) ? (() => {
               renderedSections.add(sectionLabel);
               return (
-                <div key={`section-${sectionLabel}`} className="px-3 pt-4 pb-1">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-white/30">{sectionLabel}</p>
+                <div key={`section-${sectionLabel}`} className="px-3 pt-5 pb-1">
+                  <p className="px-2 mb-1.5 text-[10px] font-mono font-semibold tracking-[0.10em] uppercase text-white/30">{sectionLabel}</p>
                 </div>
               );
             })() : null;
@@ -420,6 +442,14 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
                     {!collapsed && (
                       <>
                         <span className="leading-tight flex-1">{link.label}</span>
+                        {/* Sprint 9: feature dot — only when item has featureColour and no badge */}
+                        {featureColour && badgeCount === 0 && (
+                          <span
+                            className="w-1.5 h-1.5 rounded-full shrink-0"
+                            style={{ backgroundColor: featureColour }}
+                            aria-hidden
+                          />
+                        )}
                         {badgeCount > 0 && (
                           <span className="bg-amber-500 text-amber-900 text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">
                             {badgeCount}
@@ -456,8 +486,25 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
               title="Help"
               className="flex items-center gap-3 py-2.5 text-sm font-medium text-white/50 hover:text-white hover:bg-white/5 transition-colors duration-200 w-full rounded-md px-3 justify-center"
             >
-              <span className="text-base leading-none shrink-0">🤖</span>
+              <QuestionMarkCircleIcon className="w-5 h-5 shrink-0" />
             </button>
+            {/* Sprint 9: NotificationBell placeholder — wires up in Sprint 1.6 */}
+            <button
+              type="button"
+              title="Notifications"
+              className="flex items-center gap-3 py-2.5 text-sm font-medium text-white/50 hover:text-white hover:bg-white/5 transition-colors duration-200 w-full rounded-md px-3 justify-center"
+            >
+              <BellIcon className="w-5 h-5 shrink-0" />
+            </button>
+            {role === "member" && (
+              <Link
+                href="/member/settings"
+                title="Settings"
+                className="flex items-center gap-3 py-2.5 text-sm font-medium text-white/50 hover:text-white hover:bg-white/5 transition-colors duration-200 w-full rounded-md px-3 justify-center"
+              >
+                <Cog6ToothIcon className="w-5 h-5 shrink-0" />
+              </Link>
+            )}
             <button
               onClick={toggleTheme}
               title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
@@ -484,9 +531,27 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
                   onClick={() => { setHelpOpen((v) => !v); setUserMenuOpen(false); }}
                   className="flex items-center gap-3 py-2.5 px-3 text-sm font-medium text-white/60 hover:text-white hover:bg-white/5 transition-colors duration-200 w-full rounded-md"
                 >
-                  <span className="text-base leading-none shrink-0">🤖</span>
+                  <QuestionMarkCircleIcon className="w-5 h-5 shrink-0" />
                   <span>Help</span>
                 </button>
+                {/* Sprint 9: NotificationBell placeholder */}
+                <button
+                  type="button"
+                  className="flex items-center gap-3 py-2.5 px-3 text-sm font-medium text-white/60 hover:text-white hover:bg-white/5 transition-colors duration-200 w-full rounded-md"
+                >
+                  <BellIcon className="w-5 h-5 shrink-0" />
+                  <span>Notifications</span>
+                </button>
+                {role === "member" && (
+                  <Link
+                    href="/member/settings"
+                    onClick={() => setUserMenuOpen(false)}
+                    className="flex items-center gap-3 py-2.5 px-3 text-sm font-medium text-white/60 hover:text-white hover:bg-white/5 transition-colors duration-200 w-full rounded-md"
+                  >
+                    <Cog6ToothIcon className="w-5 h-5 shrink-0" />
+                    <span>Settings</span>
+                  </Link>
+                )}
                 <button
                   onClick={() => { toggleTheme(); }}
                   className="flex items-center gap-3 py-2.5 px-3 text-sm font-medium text-white/60 hover:text-white hover:bg-white/5 transition-colors duration-200 w-full rounded-md"
