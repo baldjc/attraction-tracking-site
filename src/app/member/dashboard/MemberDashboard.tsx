@@ -223,6 +223,10 @@ export default function MemberDashboard() {
           </>
         ) : (
           <>
+            <span className="inline-flex items-center gap-1.5 mb-4 px-3 py-1 rounded-full bg-[var(--abv-azure-tint)] text-[var(--abv-azure)] text-[11px] font-bold uppercase tracking-[0.12em]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--abv-azure)]" />
+              Welcome back
+            </span>
             <h1 className="font-display text-4xl text-[var(--abv-text)]">
               Welcome back{firstName ? `, ${firstName}` : ""}. Let&apos;s make something that <span className="text-[var(--abv-azure)]">converts</span>.
             </h1>
@@ -246,7 +250,7 @@ export default function MemberDashboard() {
           >
             <div className="flex items-start gap-4">
               <span
-                className="inline-flex items-center justify-center w-10 h-10 rounded-md text-xl shrink-0"
+                className="inline-flex items-center justify-center w-16 h-16 rounded-xl text-2xl shrink-0"
                 style={{ backgroundColor: `color-mix(in srgb, ${colour} 10%, transparent)` }}
               >
                 {emoji}
