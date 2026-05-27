@@ -361,15 +361,34 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
 
       {/* Logo */}
       <div className={`border-b border-white/10 flex-shrink-0 flex items-center ${collapsed ? "px-3 py-4 justify-center" : "px-4 py-4"}`}>
-        <Link href={homeHref} className="flex items-center gap-3 min-w-0">
-          <img src="/logo-icon.png" alt="" className="h-10 w-10 rounded-lg object-cover shrink-0" />
+        <Link href={homeHref} className="flex items-center gap-3 min-w-0" aria-label="Attraction by Video">
+          <span
+            aria-hidden="true"
+            className="h-10 w-10 rounded-[11px] shrink-0 block"
+            style={{
+              background:
+                "linear-gradient(135deg, #7AD9FF 0%, var(--abv-azure) 55%, #1FA0E0 100%)",
+              boxShadow:
+                "inset 0 1px 0 rgba(255,255,255,0.4), inset 0 -1px 0 rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.25)",
+            }}
+          />
           {!collapsed && (
-            <img
-              src="/logo-transparent.png"
-              alt="Attraction by Video"
-              className="h-8 w-auto object-contain"
-              style={{ filter: "brightness(0) invert(1)" }}
-            />
+            <span
+              className="text-white text-[17px] leading-none tracking-tight whitespace-nowrap"
+              style={{ fontFamily: "var(--abv-font-display)", fontWeight: 700 }}
+            >
+              Attraction{" "}
+              <span
+                style={{
+                  fontStyle: "italic",
+                  fontWeight: 700,
+                  color: "var(--abv-azure)",
+                }}
+              >
+                by
+              </span>{" "}
+              Video
+            </span>
           )}
         </Link>
       </div>
@@ -618,13 +637,37 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
         >
           <Bars3Icon className="w-6 h-6" />
         </button>
-        <img src="/logo-icon.png" alt="" className="h-8 w-8 rounded-lg object-cover" />
+        <span
+          aria-hidden="true"
+          className="h-8 w-8 rounded-[9px] shrink-0 block"
+          style={{
+            background:
+              "linear-gradient(135deg, #7AD9FF 0%, var(--abv-azure) 55%, #1FA0E0 100%)",
+            boxShadow:
+              "inset 0 1px 0 rgba(255,255,255,0.4), inset 0 -1px 0 rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.25)",
+          }}
+        />
         {isImpersonating ? (
           <span className="text-xs font-bold text-white uppercase tracking-widest">
             Member View
           </span>
         ) : (
-          <img src="/logo-transparent.png" alt="Attraction by Video" className="h-6 w-auto object-contain" style={{ filter: "brightness(0) invert(1)" }} />
+          <span
+            className="text-white text-[15px] leading-none tracking-tight whitespace-nowrap"
+            style={{ fontFamily: "var(--abv-font-display)", fontWeight: 700 }}
+          >
+            Attraction{" "}
+            <span
+              style={{
+                fontStyle: "italic",
+                fontWeight: 700,
+                color: "var(--abv-azure)",
+              }}
+            >
+              by
+            </span>{" "}
+            Video
+          </span>
         )}
         {isStaff && isImpersonating && (
           <button
