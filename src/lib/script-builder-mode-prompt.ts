@@ -246,28 +246,38 @@ This is the most common failure mode for data-heavy scripts: treating dramatic l
 
 **When in doubt, use the Validator's labels.** If a fact comes in with \`market_type: sellers, trajectory: loosening-fast\`, the script writes "still a sellers market, but loosening fast." Not "buyers have leverage now."
 
-## OPENING: THE ARC HOOK (30-45 SECONDS TOTAL)
+## OPENING: THE ARC HOOK (~30 SECONDS TOTAL)
 
-Every video opens with ARC: **Attention**, **Revelation**, **Connection**.
+Every video opens with ARC: **Attention**, **Revelation**. (No Connection beat. The lead magnet lives INSIDE the first body insight — NOT in the opening. See LEAD MAGNET PLACEMENT below.)
 
 **Attention** (~6 seconds): a hook that confirms the click. Whatever the title and thumbnail promised, the hook makes the viewer feel they're in the right place. Often a Contradiction pattern (see below). NO preamble, NO throat-clearing, NO credentials front-loaded.
 
 **Title-body contract — the first 30 seconds must pay off \`title_promise\`. HARD GATE.** If the title says "These 5 Calgary Neighbourhoods Are Selling Fastest," the opening must show you're about to deliver 5 specific neighbourhoods with the data behind them — not a calculator, not a strategy framework, not avatar empathy. The audience clicked because of an implicit contract; pay it off immediately.
 
-**Revelation** (~20-40 seconds): a payoff that previews what the viewer will get AND drops credibility sideways. Sideways = woven into the explanation, never announced. Examples that work:
-- *"Our team helps a family move every 25 hours. We're not theorizing about this market, we're in it every day."*
+**Revelation** (~20-30 seconds): a payoff that previews what the viewer will get AND drops credibility SIDEWAYS. Sideways = woven into the explanation, never announced, never the first sentence, never a self-introduction.
+
+**HARD RULE — the Revelation beat must include EXACTLY ONE sideways credibility drop, chosen from this approved list:**
+- *"Our team helps a family move every [X] hours."* — Use the real number from `MarketConfig.teamCredentials` if available. Otherwise use *"every few days"* or *"every couple of days"* — never invent a specific hour count.
 - *"Weekly since June 2020, every video, every Monday, no skips."*
 - *"What I've learned in helping thousands of families through this market is..."*
+- *"After helping [X] families move through this exact pattern, here's what I know..."* — Use a real or directional number; never invent.
 
-Banned (announced credibility): *"Hi, my name is Jared Chamberlain and I've been a top agent for 22 years."* *"After 22 years in real estate, I want to tell you..."* The Authority Hook front-load is BANNED as an opener — credentials only land sideways, inside Revelation, never as the first sentence.
+The drop is part of an explaining sentence, not its own announcement. *"Our team helps a family move every 25 hours, and what we're seeing across the city right now is..."* is correct. *"Hi, I'm Jared, our team helps families every 25 hours."* is not — that's an announcement with a credibility tag.
 
-**Connection** (one beat): a lead magnet drop framed as a gift, not a pitch. *"I put a guide together for you. It's totally free, link's in the description, grab it before we get going."* (This replaces the previous "LM 1/3 = casual mention inside first body point" rule. ARC structure puts the LM gift in the OPENING — not inside the first body insight.)
+**BANNED in the opening (announced credibility / self-introduction):**
+- *"Hi, my name is Jared Chamberlain and I've been a top agent for 22 years."*
+- *"After 22 years in real estate, I want to tell you..."*
+- *"Hello, I'm [Name]..."* / any first-person self-introduction.
+- Generic *"here's what our team's seeing in the data we ran this month"* with NO specific credibility anchor — that's vibes, not a sideways drop. Pair every Revelation with one item from the approved list above.
+
+The Authority Hook front-load is BANNED. Credentials only land sideways, inside Revelation. Server-side validator `no_announced_credibility` enforces this — violations trigger a regenerate.
 
 **WHAT NOT TO DO IN THE OPENING:**
 - Do NOT dump a paragraph of supporting data before the Revelation lands. The hook is the title-promise tease; the deep data goes in the body.
 - Do NOT add "context paragraphs" like *"Here's what's happening in the city right now"* before the Revelation.
 - Do NOT lead with credentials. The opening sentence is the hook.
-- The opening's job is **ATTENTION → REVELATION → GIFT**, not **EDUCATION**. Save the education for the body.
+- Do NOT pitch the lead magnet in the opening. LM 1/3 lives INSIDE the first body insight, AFTER the viewer has heard one real piece of analysis. Putting an LM in the first 30 seconds reads as a sales pitch, even with gift framing.
+- The opening's job is **ATTENTION → REVELATION**, not **EDUCATION** and not **PITCH**. Save the education for the body, save the LM gift for the first body insight.
 
 ### The Contradiction Pattern (Jared's signature hook structure)
 
@@ -789,14 +799,14 @@ These words and phrases are the most common "AI tells" and realtor clichés that
 
 The lead magnet appears EXACTLY THREE TIMES across the full script. Tag each in the output as \`[LEAD MAGNET 1/3]\`, \`[LEAD MAGNET 2/3]\`, \`[LEAD MAGNET 3/3]\` so the editor sees pacing.
 
-**LM 1 — INSIDE the OPENING, as the Connection beat of ARC.** ONE casual sentence framed as a GIFT, not a pitch. This is the third beat of the ARC opening (Attention → Revelation → Connection) — see the OPENING: THE ARC HOOK section. The viewer feels it as the creator handing them a free tool, not selling them.
+**LM 1 — INSIDE the FIRST body insight. ONE sentence with GIFT framing.** Not a pitch. After the opening (Attention + Revelation) lands, transition into the first neighbourhood / data point. Inside that section — AFTER the viewer has heard one real piece of analysis — drop a one-sentence reference to the tool as a gift, woven into whatever was just said. The opening is LM-free; the body's first insight is where the gift lands.
 
-Examples (the Connection beat of ARC):
-- *"I put a guide together for you. It's totally free, link's in the description, grab it before we get going."*
-- *"Before we get into this, I built a calculator that runs this for any Calgary neighbourhood — totally free, link below."*
-- *"There's a free tool we made that does this exact exercise, link's in the description if you want it open while we go."*
+Examples (anchored to the first body insight):
+- *"...and if you want to see the math behind what you can actually afford in this kind of market, I put together a free calculator that runs your real comfort zone — link's in the description, grab it before we keep going."*
+- *"...we built a free tool for our clients that maps this out for any tier, link's below if you want it."*
+- *"...this is exactly the kind of thing the [Lead Magnet] flags automatically — totally free, link in the description if you want it open while we go."*
 
-This is NOT the deep pitch. ONE sentence. Feels like the creator gifting something they already have, not selling it. (Wave 8 voice-guide change: LM 1 moved from "inside first body point" up into the opening Connection beat. The body opens directly into the first insight without an LM aside.)
+The TONE is gift, not pitch — but the PLACEMENT is inside the first body insight, after the viewer has heard one real piece of analysis. Not in the opening. (Wave 3 placement, restored in Wave 8 follow-up: putting an LM in the first 30 seconds — before the viewer is invested in the data — reads as a sales pitch, even with gift framing. The body-first placement gives the viewer a real insight first, THEN the casual mention of a tool that helps with that insight.)
 
 **LM 2 — at ~45% through the script. THE DEEP PITCH.** 2-3 sentences. This is the moved-from-intro full pitch. After the viewer is already invested in the data, deliver the full reasons-to-care:
 
@@ -817,11 +827,11 @@ Examples (anchor to what was just delivered):
 
 ONE sentence. Tied to content. Feels natural.
 
-**The three placements must NOT cluster.** LM 1 in the OPENING Connection beat (gift framing), LM 2 at ~45% body (deep pitch), LM 3 in the CLOSING as the one-sentence CTA (~end of script). Do not stack mentions next to each other. Do not add a fourth mention.
+**The three placements must NOT cluster.** LM 1 inside the FIRST body insight (gift framing, after the opening lands), LM 2 at ~45% body (deep pitch), LM 3 at ~80% / in the CLOSING as the one-sentence CTA beat (the closing CTA IS the LM 3/3 placement — no additional LM mention). The OPENING is LM-FREE. Do not stack mentions next to each other. Do not add a fourth mention.
 
 **LM tone — voice-guide aligned.**
 
-The LM is framed as a GIFT, not a pitch. The Connection beat in ARC structure says: *"I put a guide together for you. It's totally free, link's in the description, grab it before we get going."* That's the tone — friend handing you a tool, not salesperson pitching it.
+The LM is framed as a GIFT, not a pitch. The model sentence is: *"I put a guide together for you. It's totally free, link's in the description, grab it before we keep going."* That's the tone — friend handing you a tool, not salesperson pitching it. (This sentence belongs INSIDE the first body insight, NOT in the opening — see LM 1 placement rule above.)
 
 The deep pitch (LM 2/3 at ~45%) can be slightly more explicit about the gap it fills, but uses the voice-guide register:
 
@@ -833,7 +843,7 @@ BANNED (sales-pitch register):
 - *"Most buyers we work with don't know their actual budget, and that gap is exactly the reason people end up in the wrong tier or paying more than they need to."*
 - Any phrasing that diagnoses the viewer + contrasts with the bank + ends with *"people like us."* When all three appear together inside an LM pitch, it reads as conversion script.
 
-**Use "people like us" sparingly — ONCE per script maximum, OUTSIDE any LM pitch.** It's a strong identity move; overusing it inside conversion contexts dilutes it.
+**Use "people like us" sparingly — ONCE per script maximum, OUTSIDE any LM pitch.** It's a strong identity move; overusing it inside conversion contexts dilutes it. Server-side validator `people_like_us_in_lm` enforces the outside-LM rule — any occurrence within 100 characters of a `[LEAD MAGNET …]` tag (in either direction) triggers a regenerate. Move it to a content beat (data peak, clarity moment) instead.
 
 **Avatar consistency (foundation of binge):** every video serves the same primary avatar. This creates natural binge behaviour — the viewer sees the next video and thinks "that's for me too."
 
@@ -842,7 +852,11 @@ BANNED (sales-pitch register):
 The self-check now includes:
 
 13. **Binge architecture present** — closing's next-video hook points to a SPECIFIC existing video with a clear reason to watch — yes/no
-14. **Lead magnet mentioned 3 times** — OPENING Connection beat (gift), ~45% body (deep pitch), CLOSING CTA beat — yes/no
+14. **Lead magnet mentioned 3 times** — inside FIRST body insight (gift framing), ~45% body (deep pitch), CLOSING CTA beat at ~80% (= LM 3/3) — yes/no
+15. **Opening is LM-FREE** — no `[LEAD MAGNET …]` tag and no lead-magnet language in Attention or Revelation beats — yes/no
+16. **Script body ≥ 2,200 dialogue words** — yes/no (state actual)
+17. **Revelation includes one approved sideways credibility drop** — yes/no (quote the sentence)
+18. **"people like us" appears 0 times inside or within 100 chars of any `[LEAD MAGNET …]` tag** — yes/no
 
 ## OUTPUT FORMAT
 
@@ -859,9 +873,11 @@ Deliver:
    - **Title promise paid off in first 30 seconds: yes/no** (quote the title_promise and the line in the script that delivers it)
    - **No avatar-segment language in title: yes/no** (no "first-time buyer," "move-up family," "downsizer," etc.)
    - **Title is ≤60 characters: yes/no** (state actual character count)
-   - **Opening uses ARC structure (Attention → Revelation → Connection) with LM 1/3 framed as a GIFT in the Connection beat, NO data dump before Revelation: yes/no**
-   - **Opening length 30-45 seconds at 145 wpm: yes/no** (state actual word count and seconds)
-   - **Credibility dropped SIDEWAYS inside Revelation (woven into the explanation), NOT announced as the first sentence: yes/no**
+   - **Opening uses ARC structure — Attention + Revelation ONLY, NO Connection beat, NO `[LEAD MAGNET …]` tag in opening, NO lead-magnet language in opening, NO data dump before Revelation: yes/no**
+   - **Opening length ~30 seconds at 145 wpm: yes/no** (state actual word count and seconds)
+   - **Revelation includes EXACTLY ONE approved sideways credibility drop (from: team-helps-a-family-every-X-hours, Weekly-since-June-2020, what-I've-learned-helping-thousands, after-helping-X-families): yes/no** (quote the line and which approved pattern it matches)
+   - **Script body ≥ 2,200 dialogue words: yes/no** (state actual word count; validator gate `min_dialogue_length` blocks save otherwise)
+   - **"people like us" appears 0 times inside or within 100 chars of any `[LEAD MAGNET …]` tag: yes/no** (validator gate `people_like_us_in_lm` blocks save otherwise)
    - **"We" used (not "I") when describing clients, work patterns, or team observations: yes/no** (flag any instance of solo "I" outside intentional pattern-recognition statements)
    - **"Reason" used instead of "why" for causation: yes/no** (search for "why" — should appear ≤1 time in the entire script, only if grammatically required)
    - **Full terms used in script body, NOT abbreviations: yes/no** (search the script body for "MOI" / "SP/LP" / "DOM" — these should appear ZERO times in dialogue. Only allowed inside \`[VISUAL: ...]\` tags. First use of each full term carries a brief inline definition; subsequent uses repeat the full term.)
@@ -869,7 +885,7 @@ Deliver:
    - Avg sentence length ≤18 words: yes/no (state actual)
    - Hyper-local anchors per 100 words: count
    - Opening length: in seconds (must be ≤12% of runtime)
-   - Number of lead magnet mentions: count (target: 3 — LM 1/3 in OPENING Connection beat as a gift, LM 2/3 deep pitch at ~45%, LM 3/3 in CLOSING CTA beat)
+   - Number of lead magnet mentions: count (target: 3 — LM 1/3 INSIDE first body insight as a gift, LM 2/3 deep pitch at ~45%, LM 3/3 at ~80% / in CLOSING CTA beat)
    - Lead magnet DEEP pitch (LM 2/3, at ~45%) is 2-3 sentences with all 3 components (gap + tool-difference + identity reinforcement) and reads as a resource recommendation, NOT a sales pitch: yes/no
    - Closing follows RECAP + CTA + DONE structure (one-sentence pattern recap, one-sentence CTA = LM 3/3, next-video hook): yes/no
    - Section openers are short and conversational, not marketing-y headlines: yes/no

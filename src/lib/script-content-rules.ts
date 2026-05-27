@@ -44,7 +44,13 @@ export type ScriptViolationRule =
   | "numerals_on_page"
   | "hyper_local_floor"
   | "no_misattributed_stats"
-  | "unanchored_stat";
+  | "unanchored_stat"
+  /** Wave 8 Fix 2 — script body fell below the 2,200-dialogue-word floor. */
+  | "min_dialogue_length"
+  /** Wave 8 Fix 3 — opening announced credibility instead of sideways drop. */
+  | "no_announced_credibility"
+  /** Wave 8 Fix 4 — "people like us" appeared inside a [LEAD MAGNET …] window. */
+  | "people_like_us_in_lm";
 
 export interface ScriptViolation {
   rule: ScriptViolationRule;
@@ -979,6 +985,141 @@ export function checkNoMisattributedStats(
 }
 
 /* ────────────────────────────────────────────────────────────────────── */
+/*  Wave 8 Fix 2 — min_dialogue_length (ERROR).                           */
+/*                                                                        */
+/*  The script body must clear 2,200 dialogue words. Anything shorter is  */
+/*  a structural fail — the runtime can't hit the channel target without  */
+/*  it. Counts ONLY dialogue (post-strip), so bracket annotations and     */
+/*  heading lines don't pad the total.                                    */
+/* ────────────────────────────────────────────────────────────────────── */
+
+export const MIN_DIALOGUE_WORDS = 2200;
+
+export function checkMinDialogueLength(script: string): ScriptViolation[] {
+  const { dialogue } = stripToDialogue(script);
+  const wordCount = dialogue.split(/\s+/).filter(Boolean).length;
+  if (wordCount >= MIN_DIALOGUE_WORDS) return [];
+  return [
+    {
+      rule: "min_dialogue_length",
+      severity: "error",
+      message:
+        `Script body is ${wordCount} dialogue words, below the ${MIN_DIALOGUE_WORDS}-word floor. ` +
+        `Expand using the FULL neighbourhood profile content already in your system prompt — ` +
+        `add named anchors, specific data points, editorial reactions, and back-half synthesis. ` +
+        `DO NOT pad with filler, restated thesis, or generic framing.`,
+    },
+  ];
+}
+
+/* ────────────────────────────────────────────────────────────────────── */
+/*  Wave 8 Fix 3 — no_announced_credibility (ERROR).                      */
+/*                                                                        */
+/*  The voice guide bans announced credibility ("Hi my name is X, I've    */
+/*  been a top agent for N years"). Credentials only land sideways,       */
+/*  woven into Revelation. Flagged patterns are channel-banned wherever   */
+/*  they appear, but the most common offence site is the opening, so      */
+/*  the retry hint points the model back at the ARC Revelation rules.    */
+/* ────────────────────────────────────────────────────────────────────── */
+
+const ANNOUNCED_CREDIBILITY_PATTERNS: RegExp[] = [
+  // "I've been a top agent for 22 years" / "leading agent for N years"
+  /\b(?:i'?ve\s+been|been)\s+(?:a\s+)?(?:top|leading|best|number\s*one)\s+(?:real\s*estate\s+)?agent\s+for\s+\d+\+?\s+years?\b/i,
+  // "After 22 years in real estate" — the announced front-load
+  /\bafter\s+\d+\+?\s+years?\s+in\s+(?:real\s*estate|the\s+real\s*estate\s+business|the\s+(?:business|industry))\b/i,
+  // First-person introduction: "Hi, my name is …" / "Hello, I'm Jared …"
+  /\b(?:hi|hello|hey),?\s+(?:my\s+name\s+is|i'?m)\s+[A-Z][a-z]+/i,
+  // Bare "my name is <Name>" intro at the start of a line
+  /^\s*my\s+name\s+is\s+[A-Z][a-z]+/im,
+];
+
+export function checkNoAnnouncedCredibility(script: string): ScriptViolation[] {
+  const { dialogue, dialogueLineMap } = stripToDialogue(script);
+  const violations: ScriptViolation[] = [];
+  const seen = new Set<string>();
+  for (const re of ANNOUNCED_CREDIBILITY_PATTERNS) {
+    const m = dialogue.match(re);
+    if (!m || m.index === undefined) continue;
+    const key = m[0].toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    // Map character offset → 1-indexed dialogue line → original line.
+    const before = dialogue.slice(0, m.index);
+    const dialogueLi = before.split("\n").length - 1;
+    const originalLine = dialogueLineMap[dialogueLi];
+    violations.push({
+      rule: "no_announced_credibility",
+      severity: "error",
+      message:
+        `Announced credibility detected: "${m[0]}". The Revelation beat in your ARC ` +
+        `opening must drop credibility SIDEWAYS, not announce it. Use one of: ` +
+        `"Our team helps a family move every [X] hours" (use the real number from ` +
+        `MarketConfig.teamCredentials if available, else "every few days"), ` +
+        `"Weekly since June 2020", "What I've learned in helping thousands of ` +
+        `families through this market is...", or "After helping [X] families ` +
+        `move through this exact pattern, here's what I know...". Sideways = ` +
+        `woven into the explanation, never the first sentence, never a self-introduction.`,
+      snippet: dialogue
+        .slice(Math.max(0, m.index - 30), m.index + m[0].length + 30)
+        .trim(),
+      line: originalLine,
+    });
+  }
+  return violations;
+}
+
+/* ────────────────────────────────────────────────────────────────────── */
+/*  Wave 8 Fix 4 — people_like_us_in_lm (ERROR).                          */
+/*                                                                        */
+/*  The phrase "people like us" is a high-impact identity move and must   */
+/*  appear OUTSIDE any lead-magnet placement (voice guide). Flag any      */
+/*  occurrence within 100 characters of a [LEAD MAGNET …] tag (in either  */
+/*  direction). Distance is measured on the RAW script text (with tags    */
+/*  intact), since the tag boundary is what defines the LM window.        */
+/* ────────────────────────────────────────────────────────────────────── */
+
+const LEAD_MAGNET_TAG_RE = /\[LEAD\s*MAGNET[^\]]*\]/gi;
+const PEOPLE_LIKE_US_RE = /\bpeople\s+like\s+us\b/gi;
+const PEOPLE_LIKE_US_LM_WINDOW = 100;
+
+export function checkPeopleLikeUsInLm(script: string): ScriptViolation[] {
+  const lmTagOffsets: Array<{ start: number; end: number }> = [];
+  for (const m of script.matchAll(LEAD_MAGNET_TAG_RE)) {
+    if (m.index === undefined) continue;
+    lmTagOffsets.push({ start: m.index, end: m.index + m[0].length });
+  }
+  if (lmTagOffsets.length === 0) return [];
+  const violations: ScriptViolation[] = [];
+  const seen = new Set<number>();
+  for (const m of script.matchAll(PEOPLE_LIKE_US_RE)) {
+    if (m.index === undefined) continue;
+    const phraseStart = m.index;
+    const phraseEnd = m.index + m[0].length;
+    const nearLm = lmTagOffsets.find(
+      ({ start, end }) =>
+        phraseStart - end <= PEOPLE_LIKE_US_LM_WINDOW &&
+        start - phraseEnd <= PEOPLE_LIKE_US_LM_WINDOW,
+    );
+    if (!nearLm) continue;
+    if (seen.has(phraseStart)) continue;
+    seen.add(phraseStart);
+    violations.push({
+      rule: "people_like_us_in_lm",
+      severity: "error",
+      message:
+        `The phrase "people like us" must appear outside lead magnet placements per voice guide. ` +
+        `It's a high-impact identity move that loses power when used inside conversion pitches. ` +
+        `Move it to a content beat (data peak, clarity moment) or remove it from this script.`,
+      snippet: script
+        .slice(Math.max(0, phraseStart - 40), phraseEnd + 40)
+        .replace(/\s+/g, " ")
+        .trim(),
+    });
+  }
+  return violations;
+}
+
+/* ────────────────────────────────────────────────────────────────────── */
 /*  Umbrella validator.                                                   */
 /* ────────────────────────────────────────────────────────────────────── */
 
@@ -1046,6 +1187,11 @@ export function validateScript(
       opts.profileText,
     ),
   );
+  // Wave 8 Fix 2 / Fix 3 / Fix 4 — ERROR severity, all gated through the
+  // existing re-prompt loop.
+  violations.push(...checkMinDialogueLength(script));
+  violations.push(...checkNoAnnouncedCredibility(script));
+  violations.push(...checkPeopleLikeUsInLm(script));
 
   const ok = !violations.some((v) => v.severity === "error");
   return { ok, violations, metrics: hyperLocal.metrics };

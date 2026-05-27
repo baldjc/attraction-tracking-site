@@ -1330,7 +1330,7 @@ function buildInitialUserMessage(args: {
     const url =
       assignedCampaign.leadMagnetUrl ?? assignedCampaign.destinationUrl;
     lines.push(
-      "**Lead magnet** — this is the SPECIFIC asset the member assigned to this video. The script has THREE lead-magnet placements: `[LEAD MAGNET 1/3]` (inside first body point — one casual sentence), `[LEAD MAGNET 2/3]` (at ~45% — the DEEP pitch using the fields below), `[LEAD MAGNET 3/3]` (at ~80% — one casual sentence anchored to content). The `pitchOneLiner` and `description` fields below are the source material for the DEEP pitch at LM 2/3. For LM 1/3 and LM 3/3, write short casual references to the asset by name — do NOT replay the full pitch. Do NOT invent a generic budget-calculator, report, or guide pitch from the name alone — the fields below tell you what this asset actually is and how the member pitches it.",
+      "**Lead magnet** — this is the SPECIFIC asset the member assigned to this video. The script has THREE lead-magnet placements: `[LEAD MAGNET 1/3]` (INSIDE the first body insight — one casual sentence with GIFT framing, NOT in the opening), `[LEAD MAGNET 2/3]` (at ~45% — the DEEP pitch using the fields below), `[LEAD MAGNET 3/3]` (in the CLOSING CTA beat at ~80% — this IS the LM 3/3 placement, no additional LM mention; one casual sentence anchored to what the video just delivered). The `pitchOneLiner` and `description` fields below are the source material for the DEEP pitch at LM 2/3. For LM 1/3 and LM 3/3, write short casual references to the asset by name — do NOT replay the full pitch. Do NOT invent a generic budget-calculator, report, or guide pitch from the name alone — the fields below tell you what this asset actually is and how the member pitches it.",
     );
     lines.push("");
     lines.push(`- **Name:** ${assignedCampaign.name}`);
@@ -1349,7 +1349,7 @@ function buildInitialUserMessage(args: {
     lines.push("");
     if (assignedCampaign.pitchOneLiner) {
       lines.push(
-        "The **one-line pitch** above is the member's calibrated pitch language for THIS asset. Use it verbatim (or with minimal rewording) as the spine of the DEEP pitch at `[LEAD MAGNET 2/3]` (~45% through). For the casual mentions at `[LEAD MAGNET 1/3]` (inside the first body point) and `[LEAD MAGNET 3/3]` (~80%), reference the asset by name in one sentence anchored to the surrounding content — do NOT replay the full pitch. Do NOT substitute generic pitch language about budget calculators, reports, or guides based on the name.",
+        "The **one-line pitch** above is the member's calibrated pitch language for THIS asset. Use it verbatim (or with minimal rewording) as the spine of the DEEP pitch at `[LEAD MAGNET 2/3]` (~45% through). For the casual mentions at `[LEAD MAGNET 1/3]` (INSIDE the first body insight, with GIFT framing — NOT in the opening) and `[LEAD MAGNET 3/3]` (in the CLOSING CTA beat at ~80% — this is the only LM placement in the closing, no additional LM mention), reference the asset by name in one sentence anchored to the surrounding content — do NOT replay the full pitch. Do NOT substitute generic pitch language about budget calculators, reports, or guides based on the name.",
       );
     } else if (assignedCampaign.description) {
       lines.push(
@@ -1417,7 +1417,7 @@ function buildInitialUserMessage(args: {
   lines.push("## OUTPUT");
   lines.push("");
   lines.push(
-    "Produce the FULL talking-head script in the format the system prompt specifies (2-beat intro: Hook → Expertise Bridge, then DATA → PSYCHOLOGY → CLARITY body with `[LEAD MAGNET 1/3]` inside the first body point, `[LEAD MAGNET 2/3]` deep pitch at ~45%, `[LEAD MAGNET 3/3]` casual at ~80%, then next-video hook), with `[VISUAL: ...]` tags throughout. Cite every fact from the JSON above by weaving the metric value into dialogue at least once. Title-body contract: the first ~30 seconds (~150 words) must pay off the **Title promise** verbatim or near-verbatim.",
+    "Produce the FULL talking-head script in the format the system prompt specifies (ARC opening: Attention + Revelation only — NO Connection beat, NO lead magnet in opening, ONE sideways credibility drop from the approved list inside Revelation, then DATA → PSYCHOLOGY → CLARITY body with `[LEAD MAGNET 1/3]` inside the FIRST body insight as a gift, `[LEAD MAGNET 2/3]` deep pitch at ~45%, `[LEAD MAGNET 3/3]` at ~80% / in the CLOSING CTA beat, then next-video hook), with `[VISUAL: ...]` tags throughout. Body must be ≥ 2,200 dialogue words. Cite every fact from the JSON above by weaving the metric value into dialogue at least once. Title-body contract: the first ~30 seconds (~150 words) must pay off the **Title promise** verbatim or near-verbatim.",
   );
   lines.push("");
   lines.push(
@@ -1484,6 +1484,45 @@ function suggestRetryFix(v: ScriptViolation): string {
       "to the viewer as a peer, not as a targeted segment. Example: " +
       '*"for people like you, this matters"* → *"this matters — and here\'s the moment we\'re all in."*'
     );
+  }
+  if (v.rule === "min_dialogue_length") {
+    // Wave 8 Fix 2 — body fell below the 2,200-word floor. Force expansion
+    // using real profile content, not filler.
+    return [
+      "expand the body to clear 2,200 dialogue words using the FULL",
+      "neighbourhood profile content already in your system prompt — add",
+      "named anchors, specific data points, editorial reactions, and a",
+      "back-half synthesis paragraph. DO NOT pad with filler, restated",
+      "thesis, or generic framing. DO NOT invent stats — every new number",
+      "must come from the Source-of-truth metrics or cited-facts block.",
+    ].join(" ");
+  }
+  if (v.rule === "no_announced_credibility") {
+    // Wave 8 Fix 3 — opening announced credibility instead of dropping it
+    // sideways. Point the model back at the approved-list patterns.
+    return [
+      "rewrite the Revelation beat so credibility lands SIDEWAYS, woven",
+      "into the explanation. Replace this sentence with exactly one of the",
+      "approved sideways drops:",
+      '"Our team helps a family move every [X] hours" (real number from',
+      'MarketConfig.teamCredentials if available, else "every few days"),',
+      '"Weekly since June 2020, every video, every Monday, no skips",',
+      '"What I\'ve learned in helping thousands of families through this',
+      'market is...", or "After helping [X] families move through this',
+      'exact pattern, here\'s what I know...". Never the first sentence,',
+      "never a self-introduction, never paired with a name.",
+    ].join(" ");
+  }
+  if (v.rule === "people_like_us_in_lm") {
+    // Wave 8 Fix 4 — high-impact identity phrase inside an LM window.
+    return [
+      'move "people like us" out of the lead-magnet placement entirely.',
+      "It's a high-impact identity move that loses power when used inside",
+      "conversion pitches. Either (a) relocate it to a content beat (data",
+      "peak, clarity moment) at least 100 characters away from any",
+      "`[LEAD MAGNET …]` tag, or (b) remove it from the script. Use it",
+      "AT MOST once per script, never inside or adjacent to an LM tag.",
+    ].join(" ");
   }
   return v.message;
 }
