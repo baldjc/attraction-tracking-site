@@ -1086,6 +1086,36 @@ export function autoFixMechanicalRules(script: string): string {
       t = t.replace(re, replacement);
     }
 
+    // ─ no_avatar_pander — mechanical phrase rewrites ────────────────────
+    // Banned avatar-pander phrases that have clean mechanical
+    // substitutions. Phrases that require deeper sentence restructuring
+    // (e.g. "I see you", "I want you to sit with that" is borderline)
+    // stay on the validator gate; they're rare enough that the retry
+    // loop handles them. Do NOT touch "you're not alone in feeling..."
+    // (Wave 5 Fix B approved-phrase whitelist) or "I see you" (no clean
+    // mechanical substitution).
+    const PANDER_REWRITES: Array<[RegExp, string]> = [
+      // "for people like you" → "for those" (drops the targeting "you").
+      [/\bfor\s+people\s+like\s+you\b/gi, "for those"],
+      // "{cohort} in your situation" → "{cohort} in this situation".
+      // Group covers buyers/sellers/owners/families/households; the
+      // captured noun is preserved verbatim via $1.
+      [
+        /\b(buyers|sellers|owners|families|households)\s+in\s+your\s+situation\b/gi,
+        "$1 in this situation",
+      ],
+      // "Let me be direct with you here" — pure signposting; drop the
+      // whole clause along with its trailing punctuation/whitespace.
+      [/\bLet\s+me\s+be\s+direct\s+with\s+you\s+here[\.\,]?\s*/g, ""],
+      [/\blet\s+me\s+be\s+direct\s+with\s+you\s+here[\.\,]?\s*/g, ""],
+      // "I want you to sit with that" → "Think about that" (an approved
+      // editorial reaction phrase per the master prompt).
+      [/\bI\s+want\s+you\s+to\s+sit\s+with\s+that\b/gi, "Think about that"],
+    ];
+    for (const [re, replacement] of PANDER_REWRITES) {
+      t = t.replace(re, replacement);
+    }
+
     seg.text = t;
   }
 
