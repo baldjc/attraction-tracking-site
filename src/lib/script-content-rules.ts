@@ -1207,7 +1207,64 @@ export function validateScript(
  *
  * Returns the rewritten script. Idempotent on already-clean scripts.
  */
-export function autoFixMechanicalRules(script: string): string {
+export function autoFixMechanicalRules(input: string): string {
+  // Wave 9 — people_like_us_in_lm proximity strip (runs on FULL script,
+  // BEFORE the dialogue/tag split below). Strips "people like us" if
+  // it appears within 100 chars of any [LEAD MAGNET ...] tag. Usage
+  // elsewhere in the script (content beats, data peaks) is preserved.
+  // Mirrors the validator's PEOPLE_LIKE_US_LM_WINDOW (= 100); the
+  // validator runs AFTER this auto-fix, so a clean strip here means
+  // no people_like_us_in_lm violation reaches the retry gate.
+  let script = input;
+  const LM_TAG_PATTERN_AF = /\[LEAD\s*MAGNET[^\]]*\]/gi;
+  // Horizontal whitespace only ([ \t]) — never \s — so the strip cannot
+  // consume newlines around the phrase and collapse paragraph structure.
+  const PEOPLE_LIKE_US_PATTERN_AF =
+    /[ \t,;.\u2014-]*(?:People|people)[ \t]+like[ \t]+us[ \t,;.\u2014-]*/g;
+  const lmTagMatches = Array.from(script.matchAll(LM_TAG_PATTERN_AF));
+  if (lmTagMatches.length > 0) {
+    const windows = lmTagMatches.map((m) => ({
+      start: Math.max(0, (m.index ?? 0) - 100),
+      end: Math.min(script.length, (m.index ?? 0) + m[0].length + 100),
+    }));
+    const phraseMatches = Array.from(
+      script.matchAll(PEOPLE_LIKE_US_PATTERN_AF),
+    );
+    const removals: Array<{ start: number; end: number }> = [];
+    for (const pm of phraseMatches) {
+      const start = pm.index ?? 0;
+      const phraseCenter = start + Math.floor(pm[0].length / 2);
+      const insideWindow = windows.some(
+        (w) => phraseCenter >= w.start && phraseCenter <= w.end,
+      );
+      if (insideWindow) {
+        removals.push({ start, end: start + pm[0].length });
+      }
+    }
+    // Apply removals in reverse so earlier indices stay valid. If the
+    // phrase sits between newlines (its own line), drop it entirely;
+    // otherwise replace with a single space so adjoining words don't
+    // collide.
+    removals.sort((a, b) => b.start - a.start);
+    for (const r of removals) {
+      const before = r.start > 0 ? script[r.start - 1] : "\n";
+      const after = r.end < script.length ? script[r.end] : "\n";
+      const isLineIsolated =
+        (before === "\n" || before === "\r") &&
+        (after === "\n" || after === "\r");
+      const filler = isLineIsolated ? "" : " ";
+      script = script.slice(0, r.start) + filler + script.slice(r.end);
+    }
+    if (removals.length > 0) {
+      // Newline-safe cleanup: only collapse runs of tabs/spaces and pull
+      // orphaned punctuation back to the preceding word. Leave \n alone
+      // so paragraph structure survives.
+      script = script
+        .replace(/[ \t]+([,;.!?])/g, "$1")
+        .replace(/[ \t]{2,}/g, " ");
+    }
+  }
+
   // Split into dialogue-vs-bracket-tag segments. Only rewrite dialogue.
   // [VISUAL: ...] tags, [LEAD MAGNET n/3] markers, [CALLBACK], [CONNECTION]
   // tags are preserved verbatim.
