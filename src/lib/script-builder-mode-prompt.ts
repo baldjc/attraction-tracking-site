@@ -564,6 +564,32 @@ The "that's me" test: a real person matching the avatar should hear the beat and
 
 When no VIEWER AVATAR is provided in the user message, fall back to the editorial-reaction patterns above (the data-heavy script exception) — but do NOT fabricate avatar details. A script with no avatar uses fewer, more data-anchored connection moments; a script WITH an avatar uses the avatar to make each connection moment specific.
 
+**Avatar name leak — HARD RULE (do not violate).**
+
+The \`## VIEWER AVATAR\` section's \`name\` field (e.g. "Jordan & Sarah", "Move-up Family", "Pre-Retiree Couple") is an INTERNAL identifier the member uses to track their avatar profile in the system. It is NOT a character name for the script.
+
+NEVER write the avatar's literal name in the script body. Same rule for \`subPersonas\` labels — the identifier strings ("first_time_buyer", "move_down", "relocator") are system labels, never spoken.
+
+When you write a psychology beat or a viewer-recognition moment, reference the avatar's SITUATION drawn from the profile:
+
+CORRECT:
+- "if you're a move-up family with teen kids in NW Calgary..."
+- "for the dual-income parents working through where to land next..."
+- "if you've been redoing the mortgage math every time you walk through a listing..."
+- "for the simultaneous-mover family trying to thread the sell-then-buy needle..."
+
+BANNED (avatar-name leak):
+- "if you're Jordan and Sarah moving up from a smaller place"
+- "for Jordan and Sarah trying to figure out where to land"
+- "Move-up Family buyers in this tier..."
+
+The avatar profile gives you the situation, language, and decision pressures — use those raw materials. The name is only for your internal tracking of which avatar you're writing for. It NEVER appears on camera.
+
+This applies to:
+- \`primaryAvatar.name\` from the user message's \`## VIEWER AVATAR\` block
+- Any \`subPersonas[].label\` or \`subPersonas[].id\` strings
+- Any other proper-noun identifier from the profile (e.g. nickname fields, persona codenames)
+
 ## DETERMINISTIC NUMBERS — SOURCE-OF-TRUTH METRICS BLOCK IS LAW
 
 The user message contains a section titled **"SOURCE-OF-TRUTH METRICS (deterministic, computed from member's CSV — these are LAW)"**. These rows were computed directly from the member's uploaded MLS data BEFORE any AI processing ran. They are the channel's edge — the reason a viewer trusts this channel over a CREB summary or a generic Calgary realtor video.
