@@ -62,6 +62,7 @@ import prisma from "@/lib/prisma";
 import { SCRIPT_BUILDER_MODE_PROMPT } from "@/lib/script-builder-mode-prompt";
 import {
   autoFixMechanicalRules,
+  autoSoftenUnanchoredStats,
   validateScript,
   type ScriptViolation,
   type ScriptValidationResult,
@@ -750,6 +751,36 @@ export async function POST(req: NextRequest) {
           // (fabrications, misattributions) and lets Claude focus on
           // content quality instead of word-level discipline.
           draft = autoFixMechanicalRules(draft);
+
+          // Wave 11 — pre-validation soften pass for unanchored stats.
+          // When Claude fabricates a stat (e.g. "6.2%" not in SoT), the
+          // validator's unanchored_stat rule fires ERROR + retry loop,
+          // which often fabricates a DIFFERENT plausible number, burns
+          // the retry budget, and hard-blocks the member. This pass
+          // mirrors the validator's anchored-check logic and rewrites
+          // the surrounding phrase to directional language ("down
+          // meaningfully" / "well above the citywide average") for
+          // tokens the validator would flag — preserving data integrity
+          // (no invented substitute number) while letting the script
+          // ship. Real numbers from SoT / cited facts / profile text are
+          // never touched. Tokens with no matching softening rule fall
+          // through to the validator → retry loop → hard-block as
+          // before, so the safety net is intact.
+          const softenResult = autoSoftenUnanchoredStats(
+            draft,
+            sourceOfTruthMetrics,
+            citedFacts.map((f) => ({ raw: f.metricValueString })),
+            [
+              ...Object.values(neighbourhoodContext ?? {}),
+              ...extractAvatarNarrativeText(marketConfig.primaryAvatar),
+            ],
+          );
+          draft = softenResult.script;
+          if (softenResult.softenedCount > 0) {
+            console.log(
+              `[sb-v2:auto-soften] softened ${softenResult.softenedCount} unanchored stat(s): ${softenResult.softenedTokens.join(", ")}`,
+            );
+          }
 
           // ─ Server-side validation gate ──────────────────────────────
           trace("phase", "Validating content rules...");

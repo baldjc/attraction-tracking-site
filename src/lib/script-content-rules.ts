@@ -1411,3 +1411,380 @@ export function autoFixMechanicalRules(input: string): string {
 
   return segments.map((s) => s.text).join("");
 }
+
+/* ────────────────────────────────────────────────────────────────────── */
+/*  Wave 11 — autoSoftenUnanchoredStats (pre-validation pass).            */
+/*                                                                        */
+/*  When Claude fabricates a stat (e.g. "6.2%" that doesn't appear in     */
+/*  SoT / cited facts / profile text), the validator's unanchored_stat    */
+/*  rule fires at ERROR severity and the retry loop kicks in. Real-world */
+/*  result: Claude often fabricates a DIFFERENT plausible number on the   */
+/*  retry, retries burn out, hard-block, member can't ship the script.    */
+/*                                                                        */
+/*  This pass runs AFTER autoFixMechanicalRules and BEFORE validation.    */
+/*  For each unanchored numeric token in the dialogue, it tries to        */
+/*  rewrite the surrounding phrase to directional language ("down         */
+/*  meaningfully" / "well above the citywide average" / "most listings")  */
+/*  while leaving the rest of the sentence intact. Data integrity is      */
+/*  preserved (we never invent a substitute number) and the script ships. */
+/*                                                                        */
+/*  Anchored decision MUST mirror checkNoMisattributedStats — same        */
+/*  inputs, same SoT/cited/profile whitelists, same time-reference        */
+/*  filter, same 2% tolerance — so we only soften what the validator      */
+/*  would actually flag.                                                  */
+/* ────────────────────────────────────────────────────────────────────── */
+
+/** Escape a string for use inside a RegExp literal. */
+function escRe(s: string): string {
+  return s.replace(/[$.*+?^{}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * Build the set of token-specific softening rules for one unanchored
+ * raw token (e.g. "6.2%", "$340,000", "47 days"). Each rule's regex
+ * embeds the token literally so anchored stats with the same surrounding
+ * verb ("up 8.3%" when 8.3% IS in SoT) are NOT touched.
+ */
+function softenRulesForToken(
+  raw: string,
+  unit: StatUnit,
+): Array<[RegExp, string]> {
+  const esc = escRe(raw);
+  if (unit === "percent") {
+    return [
+      // Directional movement
+      [new RegExp(`\\bdown\\s+${esc}`, "gi"), "down meaningfully"],
+      [new RegExp(`\\bup\\s+${esc}`, "gi"), "up meaningfully"],
+      [new RegExp(`\\bdropped\\s+${esc}`, "gi"), "dropped meaningfully"],
+      [new RegExp(`\\brose\\s+${esc}`, "gi"), "rose meaningfully"],
+      [new RegExp(`\\bgrew\\s+${esc}`, "gi"), "grew meaningfully"],
+      [new RegExp(`\\bfell\\s+${esc}`, "gi"), "fell meaningfully"],
+      [new RegExp(`\\bdeclined\\s+${esc}`, "gi"), "declined meaningfully"],
+      [new RegExp(`\\bincreased\\s+${esc}`, "gi"), "increased meaningfully"],
+      [new RegExp(`\\bdecreased\\s+${esc}`, "gi"), "decreased meaningfully"],
+      // Threshold language
+      [
+        new RegExp(`\\babove\\s+${esc}`, "gi"),
+        "well above the citywide average",
+      ],
+      [
+        new RegExp(`\\bbelow\\s+${esc}`, "gi"),
+        "well below the citywide average",
+      ],
+      [
+        new RegExp(`\\bover\\s+${esc}`, "gi"),
+        "well over the citywide average",
+      ],
+      [
+        new RegExp(`\\bunder\\s+${esc}`, "gi"),
+        "well under the citywide average",
+      ],
+      // Failure/success/close framings with the token leading
+      [
+        new RegExp(`${esc}\\s+(failure|success|fail|close)`, "gi"),
+        "most $1",
+      ],
+      [
+        new RegExp(
+          `${esc}\\s+of\\s+(listings|buyers|sellers|families|homes|sales|deals)`,
+          "gi",
+        ),
+        "most $1",
+      ],
+      // Bare "at X%" / "around X%" / "near X%"
+      [new RegExp(`\\bat\\s+${esc}`, "gi"), "at a meaningful level"],
+      [new RegExp(`\\baround\\s+${esc}`, "gi"), "around a meaningful level"],
+      [new RegExp(`\\bnear\\s+${esc}`, "gi"), "near a meaningful level"],
+      // Last-resort: bare token in any context → directional language
+      [new RegExp(`\\b${esc}`, "gi"), "a meaningful percentage"],
+    ];
+  }
+  if (unit === "currency") {
+    return [
+      [
+        new RegExp(`${esc}\\s+homes?`, "gi"),
+        "meaningfully-priced homes",
+      ],
+      [new RegExp(`\\bover\\s+${esc}`, "gi"), "over a meaningful amount"],
+      [new RegExp(`\\bunder\\s+${esc}`, "gi"), "under a meaningful amount"],
+      [new RegExp(`\\babove\\s+${esc}`, "gi"), "above a meaningful amount"],
+      [new RegExp(`\\bbelow\\s+${esc}`, "gi"), "below a meaningful amount"],
+      [new RegExp(`\\baround\\s+${esc}`, "gi"), "around a meaningful price"],
+      [new RegExp(`\\bnear\\s+${esc}`, "gi"), "near a meaningful price"],
+      [new RegExp(`\\bat\\s+${esc}`, "gi"), "at a meaningful price"],
+    ];
+  }
+  if (unit === "months" || unit === "days") {
+    const span = unit === "months" ? "months" : "days";
+    return [
+      [
+        new RegExp(`\\bin\\s+the\\s+last\\s+${esc}`, "gi"),
+        "recently",
+      ],
+      [
+        new RegExp(`\\bover\\s+the\\s+next\\s+${esc}`, "gi"),
+        `in the coming ${span}`,
+      ],
+      [
+        new RegExp(`\\bover\\s+the\\s+last\\s+${esc}`, "gi"),
+        "over recent history",
+      ],
+      [
+        new RegExp(`\\bwithin\\s+${esc}`, "gi"),
+        `within a meaningful number of ${span}`,
+      ],
+    ];
+  }
+  return [];
+}
+
+export interface AutoSoftenResult {
+  script: string;
+  softenedCount: number;
+  softenedTokens: string[];
+}
+
+/**
+ * Pre-validation softening pass for unanchored stat tokens.
+ *
+ * MUST be called AFTER autoFixMechanicalRules and BEFORE validateScript.
+ * Mirrors the anchored-check logic in checkNoMisattributedStats so we
+ * only touch tokens the validator would actually flag with
+ * unanchored_stat.
+ *
+ * Idempotent — running on an already-softened script produces identical
+ * output (softened phrases no longer contain numeric tokens, so the
+ * extractor finds nothing to re-soften).
+ */
+export function autoSoftenUnanchoredStats(
+  script: string,
+  sourceOfTruth: SourceOfTruthValue[] | undefined,
+  citedFacts: CitedFactValue[] | undefined = undefined,
+  profileText: string[] = [],
+): AutoSoftenResult {
+  const hasSot = sourceOfTruth && sourceOfTruth.length > 0;
+  const hasCited = citedFacts && citedFacts.length > 0;
+  // Match the validator's early-return: with no anchors we can't decide
+  // anchored-vs-not, so we silently no-op.
+  if (!hasSot && !hasCited) {
+    return { script, softenedCount: 0, softenedTokens: [] };
+  }
+
+  // Build the SAME anchored sets the validator builds.
+  const profileTokenSet = new Set<string>();
+  const profileNumbers: ProfileNumber[] = [];
+  for (const t of profileText) {
+    for (const p of extractProfileNumbers(t)) {
+      profileTokenSet.add(p.normalized);
+      profileNumbers.push(p);
+    }
+  }
+
+  const sotComparable: Array<{ unit: StatUnit; value: number }> = [];
+  if (hasSot) {
+    for (const sot of sourceOfTruth!) {
+      const unit = unitForFamily(sot.metricFamily);
+      if (!unit) continue;
+      for (const v of normalizeForCompare(sot.metricFamily, sot.metricValue)) {
+        sotComparable.push({ unit, value: v });
+      }
+      // SP/LP derivation (mirror of validator)
+      if (sot.metricFamily === "SP_LP") {
+        const ratio =
+          sot.metricValue <= 2 ? sot.metricValue : sot.metricValue / 100;
+        const discount = (1 - ratio) * 100;
+        if (discount > 0) {
+          sotComparable.push({ unit: "percent", value: discount });
+        } else if (discount < 0) {
+          sotComparable.push({ unit: "percent", value: -discount });
+        }
+      }
+    }
+  }
+  if (hasCited) {
+    for (const c of citedFacts!) {
+      if (!c.raw) continue;
+      for (const t of extractStatTokens(c.raw)) {
+        sotComparable.push({ unit: t.unit, value: t.value });
+      }
+    }
+  }
+
+  // Mirror stripToDialogue's surface so we only soften tokens that
+  // would reach the validator:
+  //   - Whole lines matching HEADING_OR_TITLE_LINE_RE or
+  //     ANNOTATION_ONLY_LINE_RE are stripped by the validator → NEVER
+  //     soften.
+  //   - Within remaining lines, SQUARE_BRACKET_ANNOTATION_RE and
+  //     BOLD_LAYER_LABEL_RE spans are also stripped → don't soften
+  //     inside them. Everything else is softenable dialogue.
+  //
+  // We process line-by-line, then split each softenable line into
+  // alternating softenable / non-softenable spans by collecting all
+  // bracket-annotation + bold-label matches. This is stricter than the
+  // earlier Wave 11 narrow-tag splitter and matches the validator's
+  // visible surface exactly.
+
+  let softenedCount = 0;
+  const softenedTokens: string[] = [];
+  const seen = new Set<string>();
+
+  // Soften a single softenable text span in-place. Returns the new text.
+  const softenSpan = (input: string): string => {
+    let dialogue = input;
+    // Re-extract tokens after each successful softening pass — offsets
+    // shift and a phrase we already rewrote shouldn't be revisited.
+    let changed = true;
+    while (changed) {
+      changed = false;
+      const tokens = extractStatTokens(dialogue);
+      for (const tok of tokens) {
+        // Mirror validator: skip narrative time references unless
+        // anchored to a market-time phrase.
+        if (
+          (tok.unit === "months" || tok.unit === "days") &&
+          TIME_REFERENCE_PATTERN.test(tok.raw) &&
+          !isMarketTimeAnchored(dialogue, tok.offset)
+        ) {
+          continue;
+        }
+
+        // Same unit must have at least one anchor; otherwise the
+        // validator can't speak to fabrication here, so we don't either.
+        const haveAnchorsOfUnit = sotComparable.some(
+          (s) => s.unit === tok.unit,
+        );
+        if (!haveAnchorsOfUnit) continue;
+
+        // SoT/cited match within 2% tolerance → anchored, leave alone.
+        const sotMatch = sotComparable.find(
+          (s) => s.unit === tok.unit && withinTolerance(s.value, tok.value),
+        );
+        if (sotMatch) continue;
+
+        // Profile verbatim / unit-tolerance whitelist (Wave 5 Fix A).
+        const normalizedRaw = tok.raw.replace(/[$,%\s]/g, "");
+        if (profileTokenSet.has(normalizedRaw)) continue;
+        const profileMatch = profileNumbers.some(
+          (p) => p.unit === tok.unit && withinTolerance(p.value, tok.value),
+        );
+        if (profileMatch) continue;
+
+        // Unanchored. Try token-specific softening rules in order.
+        const rules = softenRulesForToken(tok.raw, tok.unit);
+        let softenedHere = false;
+        for (const [re, replacement] of rules) {
+          const before = dialogue;
+          dialogue = dialogue.replace(re, replacement);
+          if (dialogue !== before) {
+            softenedHere = true;
+            const key = `${tok.raw}|${tok.unit}`;
+            if (!seen.has(key)) {
+              seen.add(key);
+              softenedTokens.push(tok.raw);
+            }
+            softenedCount++;
+            break;
+          }
+        }
+
+        if (softenedHere) {
+          // Re-extract from scratch — offsets and remaining-token set
+          // both shifted.
+          changed = true;
+          break;
+        }
+        // else: no rule matched — fall through to validator/retry loop.
+      }
+    }
+    return dialogue;
+  };
+
+  // Split one line into alternating softenable / non-softenable spans
+  // by collecting SQUARE_BRACKET_ANNOTATION + BOLD_LAYER_LABEL matches.
+  // Non-softenable spans are preserved verbatim; only softenable spans
+  // are fed to softenSpan().
+  const softenLine = (line: string): string => {
+    type Span = { start: number; end: number };
+    const blocks: Span[] = [];
+    const collect = (re: RegExp) => {
+      // Fresh regex per call so we don't share lastIndex state.
+      const rx = new RegExp(re.source, re.flags);
+      let m: RegExpExecArray | null;
+      while ((m = rx.exec(line)) !== null) {
+        blocks.push({ start: m.index, end: m.index + m[0].length });
+        if (m[0].length === 0) rx.lastIndex++;
+      }
+    };
+    collect(SQUARE_BRACKET_ANNOTATION_RE);
+    collect(BOLD_LAYER_LABEL_RE);
+    if (blocks.length === 0) return softenSpan(line);
+    blocks.sort((a, b) => a.start - b.start);
+
+    // Defensively merge overlapping / adjacent non-softenable spans.
+    // SQUARE_BRACKET and BOLD_LABEL can't structurally overlap (one is
+    // `[...]`, the other `**...**`), but a malformed line with nested or
+    // touching matches would otherwise cause duplicate non-softenable
+    // text in the rebuilt output. Merging guarantees alternating
+    // softenable / non-softenable spans with no overlap.
+    const merged: Span[] = [];
+    for (const b of blocks) {
+      const last = merged[merged.length - 1];
+      if (last && b.start <= last.end) {
+        last.end = Math.max(last.end, b.end);
+      } else {
+        merged.push({ start: b.start, end: b.end });
+      }
+    }
+
+    const out: string[] = [];
+    let cursor = 0;
+    for (const b of merged) {
+      if (b.start > cursor) {
+        out.push(softenSpan(line.slice(cursor, b.start)));
+      }
+      out.push(line.slice(b.start, b.end));
+      cursor = b.end;
+    }
+    if (cursor < line.length) {
+      out.push(softenSpan(line.slice(cursor)));
+    }
+    return out.join("");
+
+    // Cross-boundary note: stripToDialogue concatenates pre/post text
+    // after removing non-softenable spans, so a stat fragmented by an
+    // inline annotation (e.g. "12[VISUAL: …]34%") would be tokenised by
+    // the validator as "1234%". This pass tokenises pre/post spans
+    // independently and therefore won't see such tokens. That's an
+    // acceptable strict subset: any token we can't see in the source
+    // text we can't regex-replace anyway, and the validator → retry
+    // loop catches them (per spec: "If a stat token can't be softened,
+    // it falls through to validator → retry → hard-block as today").
+    // Claude's output never splits numbers across annotations, so this
+    // is theoretical.
+  };
+
+  const lines = script.split(/\r?\n/);
+  const rebuilt: string[] = [];
+  for (const line of lines) {
+    if (
+      HEADING_OR_TITLE_LINE_RE.test(line) ||
+      ANNOTATION_ONLY_LINE_RE.test(line)
+    ) {
+      // Validator strips this line; never soften.
+      rebuilt.push(line);
+      continue;
+    }
+    rebuilt.push(softenLine(line));
+  }
+  // Preserve the original line-ending style as best we can: split was
+  // /\r?\n/, so join with \n. Real script bodies use \n; CRLF would
+  // only appear if upstream sources injected it, in which case
+  // normalising to \n is acceptable and matches how validateScript
+  // observes the text.
+  return {
+    script: rebuilt.join("\n"),
+    softenedCount,
+    softenedTokens,
+  };
+}
