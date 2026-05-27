@@ -407,14 +407,21 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // ── Load NeighbourhoodProfile summaries for the cited neighbourhoods ─
+  // ── Load FULL NeighbourhoodProfile content for the cited neighbourhoods ─
+  // Wave 5: switched from "summary" (~200 words) to "full" (~1000 words) so
+  // Claude has hyper-local demographic, housing-stock, lifestyle, transit,
+  // and market-positioning context to weave into each section. Two effects
+  // we're chasing: (1) longer scripts (2500-3500 dialogue word target) and
+  // (2) fewer fabricated stats because the model has real specifics to
+  // reach for instead of inventing round narrative numbers. Cost impact:
+  // ~5-8k extra input tokens per generation (~$0.02 at Sonnet pricing).
   const neighbourhoodsInScript = Array.from(
     new Set(citedFacts.map((f) => f.neighbourhood).filter(Boolean)),
   );
   const neighbourhoodContext = await getNeighbourhoodContext(
     userId,
     neighbourhoodsInScript,
-    "summary",
+    "full",
   );
 
   // ── Wave 1: load deterministic source-of-truth metrics ───────────────
@@ -558,6 +565,11 @@ export async function POST(req: NextRequest) {
         let finalAttempt = 0;
         let lastDraft = "";
         let lastErrors: ScriptViolation[] = [];
+        // Wave 5 — carry the prior draft's validation metrics across the
+        // retry boundary so `buildRetryUserMessage` can tell the model
+        // whether it also needs to expand toward the 2500-word target
+        // while re-anchoring the flagged stats.
+        let lastDraftMetrics: ScriptValidationResult["metrics"] | null = null;
 
         for (let attempt = 0; attempt <= MAX_REPROMPTS; attempt++) {
           if (internalAbort.signal.aborted) break;
@@ -597,6 +609,11 @@ export async function POST(req: NextRequest) {
                   plan: planContext,
                   previousDraft: lastDraft,
                   violations: lastErrors,
+                  // Wave 5 — feed the prior draft's dialogue word count
+                  // into the retry so the model knows whether to expand
+                  // (under 2500) while it re-anchors flagged stats.
+                  previousDialogueWordCount:
+                    lastDraftMetrics?.dialogueWordCount ?? null,
                 });
 
           // Mid-stream phase pulses — fire-and-forget timers that emit
@@ -747,6 +764,7 @@ export async function POST(req: NextRequest) {
           // Validation failed — retry if budget left, otherwise surface
           // the structured violations to the client and stop.
           lastDraft = draft;
+          lastDraftMetrics = validation.metrics;
           lastErrors = validation.violations.filter(
             (v) => v.severity === "error",
           );
@@ -1389,6 +1407,34 @@ function buildInitialUserMessage(args: {
  * place instead of re-deriving the rule.
  */
 function suggestRetryFix(v: ScriptViolation): string {
+  if (v.rule === "unanchored_stat") {
+    // Wave 5 — fabricated stat. Tell the model exactly what its three
+    // legal options are (mirrors the system-prompt rule). Replacement
+    // value can't be inferred here without re-extracting tokens; the
+    // model has the SoT block + cited facts in its system message and
+    // can pick the right anchor itself.
+    return [
+      `this number isn't in your Source-of-truth metrics block or the`,
+      `cited-facts block. Either (a) replace it with the real value from`,
+      `the data, (b) rewrite the sentence with directional language`,
+      `("meaningfully above the citywide average", "most listings aren't`,
+      `closing", "more sellers walking away than completing"), or (c)`,
+      `remove the claim if it was load-bearing only for narrative. DO`,
+      `NOT invent a replacement number.`,
+    ].join(" ");
+  }
+  if (v.rule === "no_misattributed_stats") {
+    // Wave 5 — member's own stat attributed to CREB/CMHC/BoC. Tell the
+    // model how to re-attribute without dropping the number.
+    return [
+      `this number is your own deterministic aggregation but the`,
+      `sentence credits an outside source (CREB / CMHC / BoC / etc.).`,
+      `Keep the number; rewrite the attribution to the member's own`,
+      `market analysis — "from the data we ran this month," "what our`,
+      `team's seeing in the numbers," "we pulled this from MLS," "our`,
+      `analysis shows."`,
+    ].join(" ");
+  }
   if (v.rule === "no_why" && v.snippet) {
     const rewritten = v.snippet
       // "the reason why" → "the reason" (kill the redundant why first)
@@ -1425,13 +1471,65 @@ function buildRetryUserMessage(args: {
   plan: PlanContext;
   previousDraft: string;
   violations: ScriptViolation[];
+  /**
+   * Wave 5 — dialogue word count of the previous draft. When the prior
+   * draft fell short of the 2500-word target, the retry message asks
+   * the model to expand using real neighbourhood context (NOT fabricated
+   * stats) while it fixes the flagged violations.
+   */
+  previousDialogueWordCount?: number | null;
 }): string {
-  const { plan, previousDraft, violations } = args;
+  const { plan, previousDraft, violations, previousDialogueWordCount } = args;
   const lines: string[] = [];
+
+  // Wave 5 — distinguish data-integrity violations (the gate that just
+  // got promoted to ERROR) from the other locked rules so the model
+  // gets a clear "stop fabricating" signal up front instead of buried
+  // inside the per-line fix list.
+  const statViolations = violations.filter(
+    (v) => v.rule === "unanchored_stat" || v.rule === "no_misattributed_stats",
+  );
+  const shortOfTarget =
+    typeof previousDialogueWordCount === "number" &&
+    previousDialogueWordCount < 2500;
 
   lines.push(
     `Your previous draft failed ${violations.length} server-side content-rule check(s). The rest of the prior script was good — keep its structure, voice, citations, and visual tags. ONLY fix the specific lines named below.`,
   );
+
+  if (statViolations.length > 0) {
+    lines.push("");
+    lines.push("## DATA INTEGRITY GATE — unsourced or misattributed stats");
+    lines.push("");
+    lines.push(
+      `Your previous draft contained ${statViolations.length} unsourced or misattributed stat(s) that triggered the data integrity gate. These are HARD FAILS — the channel's edge is precision, not vibes. Regenerate the FULL script. Replace each flagged stat with either:`,
+    );
+    lines.push("");
+    lines.push(
+      "(a) the real value from `## Source-of-truth metrics` or the cited facts block, OR",
+    );
+    lines.push(
+      '(b) directional language ("most listings", "meaningfully above the citywide average", "more sellers walk away than complete the sale") if no real value applies, OR',
+    );
+    lines.push(
+      "(c) remove the claim entirely if it was load-bearing only for narrative.",
+    );
+    lines.push("");
+    lines.push(
+      "DO NOT invent a replacement number. DO NOT swap one fabricated threshold for another (e.g. \"above 50%\" → \"above 40%\"). Use real values or directional language.",
+    );
+    if (shortOfTarget) {
+      lines.push("");
+      lines.push(
+        `Your previous draft was ${previousDialogueWordCount} dialogue words — short of the 2500-word target. Expand by adding REAL neighbourhood context from the FULL profiles in your system message (demographics, housing stock, lifestyle, recent developments). DO NOT introduce new fabricated stats to hit the word count.`,
+      );
+    }
+  } else if (shortOfTarget) {
+    lines.push("");
+    lines.push(
+      `Note: previous draft was ${previousDialogueWordCount} dialogue words — short of the 2500-word target. While you fix the flagged lines, also expand the neighbourhood sections using real profile content (demographics, housing stock, lifestyle, recent developments). No fabricated stats.`,
+    );
+  }
   lines.push("");
   lines.push("## PRIOR ATTEMPT VIOLATIONS — fix THESE specific lines");
   lines.push("");

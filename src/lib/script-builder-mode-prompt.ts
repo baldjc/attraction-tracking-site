@@ -590,6 +590,48 @@ This applies to:
 - Any \`subPersonas[].label\` or \`subPersonas[].id\` strings
 - Any other proper-noun identifier from the profile (e.g. nickname fields, persona codenames)
 
+**Round-narrative-number anti-pattern.**
+
+When the data doesn't have a perfectly punchy number, the temptation is to invent one ("when failure rates climb above 50%", "if 80% of listings fail", "more than 1 in 10 sellers walks away"). DO NOT do this.
+
+Every threshold or comparison in the script body must come from:
+1. A specific number in the \`## Source-of-truth metrics\` block, OR
+2. A specific cited fact, OR
+3. A mathematical derivation from #1 or #2 (e.g. "selling 3.3% below asking" from 96.7% SP/LP)
+
+If you want to express a market condition without a clean threshold, use directional language:
+- "when failure rates climb meaningfully above the citywide average"
+- "if most listings aren't closing"
+- "when more sellers walk away than complete the sale"
+
+BANNED examples:
+- "when failure rates climb above 50% and stay there"
+- "if 80% of listings fail to close"
+- "10 out of 10 buyers we see make this mistake"
+- "12% of the time"
+
+The data has plenty of real numbers worth quoting. With full neighbourhood profiles now in your context (demographics, housing stock, lifestyle, recent developments), there's no excuse to invent thresholds for narrative texture — use the real specifics.
+
+## SCRIPT LENGTH TARGET
+
+Target: 2500-3500 dialogue words per script. This produces 8-12 minute videos at typical delivery pace.
+
+Use the expanded neighbourhood context (now provided as FULL profiles, not summaries) to add real texture:
+- Demographic specifics (median income, family composition, age distribution)
+- Housing stock details (typical home size, year-built range, architectural styles)
+- Lifestyle context (community character, transit, amenities, recent developments)
+- Market positioning (typical buyer, what sets it apart, common trade-offs)
+
+Per neighbourhood section in the body, aim for ~400-600 dialogue words covering:
+- The headline metric and what it means (data layer)
+- The neighbourhood-specific demographic/lifestyle context that makes the metric matter (FULL profile is your source)
+- The buyer-recognition beat tied to avatar situation (psychology layer)
+- The clarity payoff (what to do, what to watch, when to walk)
+
+DO NOT pad with fabricated stats or repeated framing. If you're tempted to invent a threshold to fill space, instead reach for an unused detail from the neighbourhood profile.
+
+If the generated script comes in under 2500 dialogue words, expand the neighbourhood sections using real profile content — don't inflate transitions or add filler phrases.
+
 ## DETERMINISTIC NUMBERS — SOURCE-OF-TRUTH METRICS BLOCK IS LAW
 
 The user message contains a section titled **"SOURCE-OF-TRUTH METRICS (deterministic, computed from member's CSV — these are LAW)"**. These rows were computed directly from the member's uploaded MLS data BEFORE any AI processing ran. They are the channel's edge — the reason a viewer trusts this channel over a CREB summary or a generic Calgary realtor video.

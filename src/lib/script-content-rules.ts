@@ -462,6 +462,62 @@ export interface CitedFactValue {
   raw: string;
 }
 
+/**
+ * Wave 5 — durational time references that look like stat tokens but
+ * aren't. Examples from real generations that produced false positives:
+ *   - "18 months to show up clearly in the trend"
+ *   - "5 months running of the same pattern"
+ *   - "over the next 90 days"
+ *
+ * These are narrative time spans, not market metrics. The naive
+ * `\b\d+\s*months?\b` extractor catches them, the SoT comparison fails
+ * (no MOI in the data near those values), and a fabrication warning
+ * fires on what is actually correct copy. We filter them out UNLESS
+ * the surrounding ~10-word window names a recognised market-time
+ * metric (months of inventory, days on market, 90-day rolling), in
+ * which case the token IS a real market stat and should stay in play.
+ *
+ * `TIME_REFERENCE_PATTERN` matches any "N (months|days|weeks|years)"
+ * fragment in raw form; the per-token check (`isMarketTimeAnchored`)
+ * decides whether to keep or drop.
+ */
+const TIME_REFERENCE_PATTERN = /\b\d+(?:\.\d+)?\s*(?:months?|days?|weeks?|years?)\b/i;
+
+const MARKET_TIME_ANCHORS: RegExp[] = [
+  /months?\s+of\s+inventory/i,
+  /months?\s+supply/i,
+  /days?\s+on\s+market/i,
+  /day\s+rolling/i,
+  /day-rolling/i,
+  /\bMOI\b/, // abbreviation may appear in nearby tags / overlays
+  /\bDOM\b/,
+];
+
+/**
+ * 10-word bidirectional window around `offset` (5 words before, 5 after,
+ * plus the token itself). The market-anchor phrasing can sit on either
+ * side of the number in spoken English — "4.1 months of inventory" puts
+ * the anchor AFTER, while "inventory sitting at 4.1 months" puts it
+ * BEFORE — so we look both ways.
+ */
+function windowAround(dialogue: string, offset: number, wordsEachSide = 5): string {
+  const before = dialogue.slice(0, offset).split(/\s+/).slice(-wordsEachSide).join(" ");
+  const after = dialogue.slice(offset).split(/\s+/).slice(0, wordsEachSide + 1).join(" ");
+  return `${before} ${after}`;
+}
+
+/**
+ * Whether a "months" / "days" / etc. token in the dialogue is a real
+ * market-time metric (months of inventory, days on market, 90-day
+ * rolling) — vs. a narrative time span ("18 months to show up clearly").
+ * Used to drop unanchored time references BEFORE the fabrication path
+ * fires on them. See `TIME_REFERENCE_PATTERN` doc comment for examples.
+ */
+function isMarketTimeAnchored(dialogue: string, offset: number): boolean {
+  const window = windowAround(dialogue, offset);
+  return MARKET_TIME_ANCHORS.some((re) => re.test(window));
+}
+
 /** Outside-source attribution markers — case-insensitive whole-word match. */
 const OUTSIDE_SOURCE_PATTERNS = [
   /\bCREB\b/i,
@@ -630,6 +686,30 @@ export function checkNoMisattributedStats(
       for (const v of normalizeForCompare(sot.metricFamily, sot.metricValue)) {
         sotComparable.push({ family: sot.metricFamily, unit, value: v });
       }
+      // Wave 5 — SP/LP derivation acceptance.
+      //
+      // SP_LP is the sale-price-to-list-price ratio, stored as a fraction
+      // (0.967 = 96.7%). The script frequently expresses it as the
+      // INVERSE ("selling 3.3% below asking", "5% discount off list") or
+      // (above 100%) as a premium ("selling 2.4% above asking"). The
+      // naive comparison only matches 96.7%/0.967 — a "3.3% below" line
+      // looks like an unanchored fabrication.
+      //
+      // Push the derived percent values explicitly so the
+      // withinTolerance match in the main loop picks them up. The
+      // derivation rule itself is documented in the system prompt under
+      // "Round-narrative-number anti-pattern" rule 3.
+      if (sot.metricFamily === "SP_LP") {
+        const ratio = sot.metricValue <= 2 ? sot.metricValue : sot.metricValue / 100;
+        const discount = (1 - ratio) * 100;
+        if (discount > 0) {
+          // "3.3% below asking" / "selling X below list" — push the gap.
+          sotComparable.push({ family: "SP_LP_DERIVED", unit: "percent", value: discount });
+        } else if (discount < 0) {
+          // Premium case — "2.4% above asking".
+          sotComparable.push({ family: "SP_LP_DERIVED", unit: "percent", value: -discount });
+        }
+      }
     }
   }
   if (hasCited) {
@@ -647,6 +727,18 @@ export function checkNoMisattributedStats(
   const violations: ScriptViolation[] = [];
   const seen = new Set<string>(); // dedupe identical "raw|family|kind"
   for (const tok of tokens) {
+    // Wave 5 — drop narrative time references ("18 months to show up
+    // clearly", "over the next 90 days") that look like stat tokens but
+    // aren't. Only applies to month/day units; currency + percent are
+    // unaffected. See `TIME_REFERENCE_PATTERN` for full rationale.
+    if (
+      (tok.unit === "months" || tok.unit === "days") &&
+      TIME_REFERENCE_PATTERN.test(tok.raw) &&
+      !isMarketTimeAnchored(dialogue, tok.offset)
+    ) {
+      continue;
+    }
+
     // Only compare against SoT entries whose family produces the same
     // spoken unit as the token. This is what stops "5%" colliding with
     // a "$5K" SoT row or "30 days" colliding with "30 months" inventory.
@@ -669,7 +761,12 @@ export function checkNoMisattributedStats(
       seen.add(dedupeKey);
       violations.push({
         rule: "unanchored_stat",
-        severity: "warning",
+        // Wave 5 — promoted from "warning" to "error" so the existing
+        // re-prompt loop fires on fabricated stats. Safe to promote now
+        // that the time-reference filter and SP/LP derivation
+        // acceptance above have eliminated the known false-positive
+        // sources (narrative time spans + inverse-ratio percentages).
+        severity: "error",
         message:
           `Stat "${tok.raw}" doesn't match any value in your deterministic ` +
           `source-of-truth metrics or the cited-facts block (within 2% tolerance). ` +
@@ -695,7 +792,11 @@ export function checkNoMisattributedStats(
     const matched = window.match(outsideMarker)?.[0] ?? "(outside source)";
     violations.push({
       rule: "no_misattributed_stats",
-      severity: "warning",
+      // Wave 5 — promoted from "warning" to "error". Misattribution is
+      // a hard editorial fail (gives the channel's edge away to CREB /
+      // CMHC / BoC). The re-prompt loop now corrects it instead of
+      // surfacing as advisory-only.
+      severity: "error",
       message:
         `Stat "${tok.raw}" appears to match your own deterministic ${match.family} ` +
         `aggregation, but is attributed to "${matched}" in the dialogue. ` +
@@ -750,7 +851,10 @@ export function validateScript(
   violations.push(...checkNumerals(script));
   const hyperLocal = checkHyperLocalFloor(script, opts);
   violations.push(...hyperLocal.violations);
-  // Wave 1 — WARNING severity, never blocks save / triggers re-prompt.
+  // Wave 5 — ERROR severity (promoted from Wave 1 WARNING). The two
+  // known false-positive sources (narrative time spans, inverse-ratio
+  // percentages) are pre-filtered inside `checkNoMisattributedStats`,
+  // so the re-prompt loop can safely fire on what's left.
   violations.push(
     ...checkNoMisattributedStats(script, opts.sourceOfTruth, opts.citedFacts),
   );
