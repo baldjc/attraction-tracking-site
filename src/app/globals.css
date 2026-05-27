@@ -158,12 +158,10 @@ h1, h2, h3, h4, .font-display {
    hex utilities are gone from src/.
    ============================================================ */
 html.dark .bg-white { background-color: var(--abv-card) !important; }
-html.dark .bg-\[\var(--abv-bg)\] { background-color: var(--abv-bg) !important; }
 html.dark .bg-\[\#FAFAF8\] { background-color: var(--abv-bg) !important; }
 html.dark .bg-gray-50 { background-color: var(--abv-bg-warm) !important; }
 html.dark .bg-gray-100 { background-color: var(--abv-border-strong) !important; }
 
-html.dark .text-\[\var(--abv-text)\] { color: var(--abv-text) !important; }
 html.dark .text-\[\#1A1A1A\] { color: var(--abv-text) !important; }
 html.dark .text-gray-400 { color: var(--abv-text-muted) !important; }
 html.dark .text-gray-500 { color: var(--abv-text-secondary) !important; }
@@ -172,7 +170,6 @@ html.dark .text-gray-700,
 html.dark .text-gray-800,
 html.dark .text-gray-900 { color: var(--abv-text) !important; }
 
-html.dark .border-\[\var(--abv-border-strong)\] { border-color: var(--abv-border-strong) !important; }
 html.dark .border-gray-100,
 html.dark .border-gray-200 { border-color: var(--abv-border) !important; }
 
