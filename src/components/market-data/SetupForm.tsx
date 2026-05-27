@@ -12,16 +12,125 @@ import {
   type SubPersona,
 } from "@/lib/market-config";
 
+interface VoiceGuideInfo {
+  charCount: number;
+  uploadedAt: string | null;
+  sourceFile: string | null;
+}
+
 interface Props {
   initial: MarketConfigShape;
   isEdit: boolean;
+  voiceGuideEnabled?: boolean;
+  voiceGuideInitial?: VoiceGuideInfo | null;
 }
 
-export default function SetupForm({ initial, isEdit }: Props) {
+export default function SetupForm({
+  initial,
+  isEdit,
+  voiceGuideEnabled = false,
+  voiceGuideInitial = null,
+}: Props) {
   const router = useRouter();
   const [state, setState] = useState<MarketConfigShape>(initial);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Ship B — Voice Guide upload state (DWY tier only; section is completely
+  // hidden when `voiceGuideEnabled === false`). Lives outside MarketConfigShape
+  // on purpose: the voice guide is uploaded through a dedicated endpoint, not
+  // through the main config PUT.
+  const [voiceGuide, setVoiceGuide] = useState<VoiceGuideInfo | null>(
+    voiceGuideInitial,
+  );
+  const [voicePaste, setVoicePaste] = useState("");
+  const [voiceBusy, setVoiceBusy] = useState(false);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
+  const [voiceNotice, setVoiceNotice] = useState<string | null>(null);
+  const [voiceHelpOpen, setVoiceHelpOpen] = useState(false);
+
+  async function saveVoiceGuide(formData: FormData) {
+    setVoiceBusy(true);
+    setVoiceError(null);
+    setVoiceNotice(null);
+    try {
+      const res = await fetch("/api/member/voice-guide/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setVoiceError(data.error || "Could not save voice guide.");
+        return;
+      }
+      setVoiceGuide({
+        charCount: data.charCount,
+        uploadedAt: data.uploadedAt ?? new Date().toISOString(),
+        sourceFile: data.sourceFile ?? null,
+      });
+      setVoicePaste("");
+      setVoiceNotice("Voice guide saved.");
+    } catch (e) {
+      setVoiceError((e as Error).message);
+    } finally {
+      setVoiceBusy(false);
+    }
+  }
+
+  async function onSaveVoicePaste() {
+    const text = voicePaste.trim();
+    if (text.length < 500) {
+      setVoiceError(
+        "Voice guide must be at least 500 characters to be substantive enough to use.",
+      );
+      return;
+    }
+    if (text.length > 50_000) {
+      setVoiceError(
+        "Voice guide is too long (50,000 character max). Trim to operational rules.",
+      );
+      return;
+    }
+    const fd = new FormData();
+    fd.set("text", text);
+    await saveVoiceGuide(fd);
+  }
+
+  async function onUploadVoiceFile(file: File) {
+    const fd = new FormData();
+    fd.set("file", file);
+    await saveVoiceGuide(fd);
+  }
+
+  async function onResetVoiceGuide() {
+    if (
+      !confirm(
+        "Remove your uploaded voice guide and revert scripts to the default voice register?",
+      )
+    ) {
+      return;
+    }
+    setVoiceBusy(true);
+    setVoiceError(null);
+    setVoiceNotice(null);
+    try {
+      const res = await fetch("/api/member/voice-guide/upload", {
+        method: "DELETE",
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setVoiceError(data.error || "Could not reset voice guide.");
+        return;
+      }
+      setVoiceGuide(null);
+      setVoicePaste("");
+      setVoiceNotice("Voice guide cleared. Scripts will use the default voice.");
+    } catch (e) {
+      setVoiceError((e as Error).message);
+    } finally {
+      setVoiceBusy(false);
+    }
+  }
 
   const [avatarSource, setAvatarSource] = useState<{
     hasAvatar: boolean;
@@ -599,6 +708,174 @@ export default function SetupForm({ initial, isEdit }: Props) {
           </div>
         )}
       </section>
+
+      {/* Voice Guide (Ship B) — Done-With-You tier only. The section is
+          completely hidden when the feature flag is off, so Foundations
+          members never see it. */}
+      {voiceGuideEnabled && (
+        <section className="space-y-3 rounded-md border border-purple-200 bg-purple-50/40 p-4 dark:border-purple-900/40 dark:bg-purple-950/20">
+          <div>
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-purple-700 dark:text-purple-300">
+              Voice Guide (advanced)
+            </h2>
+            <p className="mt-2 text-xs leading-relaxed text-gray-700 dark:text-gray-300">
+              By default your scripts use the channel&apos;s standard voice
+              register — coach-style, plain-language, Calgary real-estate
+              context. If you&apos;ve developed your own voice register and
+              want scripts to use it instead, upload a voice guide here. It
+              will override the channel default on tone, opener patterns,
+              and signature phrases — but data integrity rules (no
+              fabrication, no misattribution) always apply.
+            </p>
+          </div>
+
+          {voiceGuide && (
+            <div className="rounded-md border border-purple-200 bg-white p-3 text-xs dark:border-purple-800 dark:bg-gray-950">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-full bg-purple-100 px-2 py-0.5 text-[11px] font-medium text-purple-700 dark:bg-purple-900/40 dark:text-purple-300">
+                  Active
+                </span>
+                <span className="text-gray-700 dark:text-gray-300">
+                  {voiceGuide.charCount.toLocaleString()} characters
+                </span>
+                {voiceGuide.sourceFile && (
+                  <span className="text-gray-500 dark:text-gray-500">
+                    · {voiceGuide.sourceFile}
+                  </span>
+                )}
+              </div>
+              {voiceGuide.uploadedAt && (
+                <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-500">
+                  Last uploaded{" "}
+                  {new Date(voiceGuide.uploadedAt).toLocaleString()}
+                </p>
+              )}
+            </div>
+          )}
+
+          <label className="block">
+            <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+              Paste markdown
+            </span>
+            <textarea
+              value={voicePaste}
+              onChange={(e) => setVoicePaste(e.target.value)}
+              rows={10}
+              placeholder="# Voice guide&#10;&#10;## Tone register&#10;Warm coach, plain-language, occasionally direct.&#10;&#10;## Banned phrases&#10;- 'as a real estate professional'&#10;- 'let's dive in'&#10;&#10;## Signature phrases&#10;- 'here's the thing'&#10;- 'most people don't realize…'&#10;..."
+              className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-xs font-mono dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+              disabled={voiceBusy}
+            />
+            <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-500">
+              {voicePaste.length.toLocaleString()} / 50,000 characters
+              (minimum 500)
+            </p>
+          </label>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={onSaveVoicePaste}
+              disabled={voiceBusy || voicePaste.trim().length === 0}
+              className="rounded-md bg-purple-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-purple-700 disabled:opacity-50"
+            >
+              {voiceBusy ? "Saving…" : "Save voice guide"}
+            </button>
+
+            <label className="cursor-pointer rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-white dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-900">
+              <span>Upload .md / .txt / .docx</span>
+              <input
+                type="file"
+                accept=".md,.txt,.docx,text/markdown,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                className="hidden"
+                disabled={voiceBusy}
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) {
+                    onUploadVoiceFile(f);
+                    e.target.value = "";
+                  }
+                }}
+              />
+            </label>
+
+            {voiceGuide && (
+              <button
+                type="button"
+                onClick={onResetVoiceGuide}
+                disabled={voiceBusy}
+                className="rounded-md border border-red-300 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-900/20"
+              >
+                Reset to default
+              </button>
+            )}
+          </div>
+
+          {voiceError && (
+            <div className="rounded-md border border-red-300 bg-red-50 p-2 text-xs text-red-800 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300">
+              {voiceError}
+            </div>
+          )}
+          {voiceNotice && (
+            <div className="rounded-md border border-green-300 bg-green-50 p-2 text-xs text-green-800 dark:border-green-800 dark:bg-green-900/20 dark:text-green-300">
+              {voiceNotice}
+            </div>
+          )}
+
+          <div>
+            <button
+              type="button"
+              onClick={() => setVoiceHelpOpen((v) => !v)}
+              className="text-xs font-medium text-purple-700 hover:underline dark:text-purple-300"
+            >
+              {voiceHelpOpen ? "Hide" : "What makes a good voice guide?"}
+            </button>
+            {voiceHelpOpen && (
+              <div className="mt-2 rounded-md border border-purple-200 bg-white p-3 text-xs leading-relaxed text-gray-700 dark:border-purple-900/40 dark:bg-gray-950 dark:text-gray-300">
+                <p>
+                  A useful voice guide is 2,000-15,000 characters and
+                  includes:
+                </p>
+                <ul className="mt-2 list-disc space-y-1 pl-5">
+                  <li>
+                    Your <strong>TONE REGISTER</strong> (warm coach? sharp
+                    analyst? funny storyteller? professional advisor?)
+                  </li>
+                  <li>
+                    Your <strong>AUDIENCE</strong> in one sentence (who is
+                    the single viewer you imagine?)
+                  </li>
+                  <li>
+                    <strong>BANNED PHRASES</strong> specific to your channel
+                    (jargon, off-brand language, generic-AI-sounding
+                    clichés)
+                  </li>
+                  <li>
+                    <strong>APPROVED PHRASES</strong> you use as signatures
+                  </li>
+                  <li>
+                    <strong>OPENER PATTERNS</strong> you favor (Belief Flip?
+                    Story? Question? Direct address?)
+                  </li>
+                  <li>
+                    <strong>CONNECTION LANGUAGE</strong> — how you address
+                    the viewer
+                  </li>
+                  <li>
+                    <strong>CLOSING PATTERN</strong> — recap + CTA +
+                    sign-off? Just CTA? Cliffhanger to next video?
+                  </li>
+                </ul>
+                <p className="mt-2">
+                  You don&apos;t need all of these. The more specific you
+                  are, the more your scripts will sound like you. Skip
+                  philosophical framing — focus on operational rules and
+                  concrete phrases.
+                </p>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* Sub-personas */}
       <section className="space-y-3">

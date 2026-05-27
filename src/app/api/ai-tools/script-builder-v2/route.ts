@@ -1321,6 +1321,55 @@ function buildInitialUserMessage(args: {
     }
   }
 
+  // ── MEMBER VOICE OVERRIDES (Ship B) ────────────────────────────────────
+  // Layer-2 override on top of the default voice register baked into
+  // script-builder-mode-prompt.ts. Foundations members never have voiceGuide
+  // populated (no upload UI). Done-With-You members may upload their own
+  // voice guide here. The system-prompt rule (added near the top of the
+  // voice-register section) tells Claude how to weigh this against the
+  // default. HARD RULES (data integrity, no_why, no_abbrev, propertyType
+  // lock, ARC structure, LM placement, stat anchoring) ALWAYS win.
+  const voiceGuide =
+    typeof marketConfig.voiceGuide === "string"
+      ? marketConfig.voiceGuide.trim()
+      : "";
+  if (voiceGuide.length >= 500) {
+    lines.push(
+      "## MEMBER VOICE OVERRIDES — applies on top of default voice register",
+    );
+    lines.push("");
+    lines.push(
+      "This member has uploaded their own voice guide. It overrides the default voice register from the system prompt WHERE THE TWO CONFLICT on STYLISTIC concerns (opener patterns, signature phrases, sentence rhythm, tone register, audience-recognition language).",
+    );
+    lines.push("");
+    lines.push(
+      "HARD RULES from the system prompt still apply — these CANNOT be overridden by the voice guide:",
+    );
+    lines.push(
+      "- Data integrity (no fabrication, no misattribution, sources must match)",
+    );
+    lines.push(
+      "- Locked content rules (no_why in dialogue, no_avatar_pander base list, no_abbrev_in_dialogue, no_announced_credibility)",
+    );
+    lines.push("- propertyType lock per neighbourhood");
+    lines.push("- ARC opening structure (Attention + Revelation)");
+    lines.push(
+      "- LM placement (LM 1/3 inside first body insight, LM 2/3 at ~45%, LM 3/3 in closing CTA)",
+    );
+    lines.push(
+      "- Stat anchoring against AggregatedMetric + citedFacts + profile text",
+    );
+    lines.push("");
+    lines.push(
+      "Within those guardrails, use the voice guide below to shape HOW the script sounds. If the voice guide conflicts with a HARD RULE, the HARD RULE wins and the override on that specific point is silently dropped.",
+    );
+    lines.push("");
+    lines.push("```markdown");
+    lines.push(voiceGuide);
+    lines.push("```");
+    lines.push("");
+  }
+
   lines.push("## Market context");
   lines.push("");
   lines.push("```json");

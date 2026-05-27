@@ -106,6 +106,9 @@ export interface MarketConfigSummary {
   primaryAvatar: unknown;
   subPersonas: unknown;
   moiThresholds: unknown;
+  // Ship B — member-uploaded voice guide markdown. Null when the member is on
+  // Foundations tier (no upload UI), or DWY but hasn't uploaded yet.
+  voiceGuide: string | null;
 }
 
 /**
@@ -125,6 +128,7 @@ export async function loadMarketConfigSummary(
       primaryAvatar: true,
       subPersonas: true,
       moiThresholds: true,
+      voiceGuide: true,
     },
   });
   if (!cfg) return null;
@@ -135,6 +139,7 @@ export async function loadMarketConfigSummary(
     primaryAvatar: cfg.primaryAvatar,
     subPersonas: cfg.subPersonas,
     moiThresholds: cfg.moiThresholds,
+    voiceGuide: cfg.voiceGuide,
   };
 }
 

@@ -32,6 +32,11 @@ export interface FeatureFlags {
   tool_script_builder_v2: boolean;
   tool_home_tour_mode: boolean;
   tool_neighbourhood_knowledge: boolean;
+  // Ship B — Done-With-You member voice guide upload. Default closed; admin
+  // gates per-user via the object form `{ enabled, allowedUserIds }` so DWY
+  // tier members (and Jared's test account) see the upload UI inside
+  // SetupForm while Foundations members never see the section at all.
+  tool_member_voice_guide: boolean;
   nav_v2_hub: boolean;
   [key: string]: boolean;
 }
@@ -74,6 +79,7 @@ export const DEFAULT_FLAGS: FeatureFlags = {
   tool_script_builder_v2: false,
   tool_home_tour_mode: false,
   tool_neighbourhood_knowledge: false,
+  tool_member_voice_guide: false,
   nav_v2_hub: false,
 };
 

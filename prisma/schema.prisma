@@ -1755,6 +1755,13 @@ model MarketConfig {
   keywordKit         Json?
   primaryAvatar      Json?
   subPersonas        Json?
+  // Ship B — Done-With-You member voice guide. Layer-2 override on top of the
+  // default voice register baked into script-builder-mode-prompt.ts. Gated by
+  // the `tool_member_voice_guide` feature flag — Foundations tier members do
+  // not see the upload UI and these fields stay null for them.
+  voiceGuide            String?   @db.Text
+  voiceGuideUploadedAt  DateTime?
+  voiceGuideSourceFile  String?
   configuredAt       DateTime @default(now())
   updatedAt          DateTime @updatedAt
 

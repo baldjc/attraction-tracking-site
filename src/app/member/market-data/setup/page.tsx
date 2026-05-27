@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import prisma from "@/lib/prisma";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import { getFeatureFlags } from "@/lib/feature-flags";
 import { emptyMarketConfig } from "@/lib/market-config";
@@ -21,6 +22,36 @@ export default async function MarketDataSetupPage() {
   const initial = existing ?? emptyMarketConfig();
   const isEdit = !!existing;
 
+  // Ship B — voice-guide upload is gated by its own flag (Done-With-You
+  // tier + allowlist). Foundations members never see the section. Pull the
+  // existing voice-guide metadata so the UI can render the "Last uploaded"
+  // pill + source-file pill without an extra round-trip.
+  const voiceGuideEnabled = !!flags.tool_member_voice_guide;
+  let voiceGuideInitial: {
+    charCount: number;
+    uploadedAt: string | null;
+    sourceFile: string | null;
+  } | null = null;
+  if (voiceGuideEnabled && isEdit) {
+    const row = await prisma.marketConfig.findUnique({
+      where: { userId: user.id },
+      select: {
+        voiceGuide: true,
+        voiceGuideUploadedAt: true,
+        voiceGuideSourceFile: true,
+      },
+    });
+    if (row?.voiceGuide && row.voiceGuide.trim().length > 0) {
+      voiceGuideInitial = {
+        charCount: row.voiceGuide.length,
+        uploadedAt: row.voiceGuideUploadedAt
+          ? row.voiceGuideUploadedAt.toISOString()
+          : null,
+        sourceFile: row.voiceGuideSourceFile,
+      };
+    }
+  }
+
   return (
     <div className="max-w-3xl mx-auto">
       <header className="mb-6">
@@ -33,7 +64,12 @@ export default async function MarketDataSetupPage() {
           defaults you can adjust later.
         </p>
       </header>
-      <SetupForm initial={initial} isEdit={isEdit} />
+      <SetupForm
+        initial={initial}
+        isEdit={isEdit}
+        voiceGuideEnabled={voiceGuideEnabled}
+        voiceGuideInitial={voiceGuideInitial}
+      />
     </div>
   );
 }
