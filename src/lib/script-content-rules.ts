@@ -196,6 +196,29 @@ const AVATAR_PANDER_PHRASES: readonly string[] = [
   "i want you to sit with that",
 ];
 
+/**
+ * Wave 5 follow-up — phrases the master prompt EXPLICITLY APPROVES as
+ * connection language (2_SCRIPT_BUILDER_MODE.md lines 505-518). The
+ * `you're not alone in feeling…` form is approved even though
+ * `you're not alone` (bare) is on the AVATAR_PANDER_PHRASES list. Without
+ * this whitelist we have a rule-vs-prompt conflict: the prompt teaches
+ * Claude to use the phrase, then the validator rejects it.
+ *
+ * Matching strategy: if any approved phrase occurs on a dialogue line
+ * and a banned-phrase hit falls INSIDE that approved phrase's character
+ * span, the banned hit is suppressed. (We do not blanket-suppress the
+ * whole line — "I see you" still flags even if a different approved
+ * phrase appears earlier on the same line.)
+ */
+const APPROVED_CONNECTION_PHRASES: readonly string[] = [
+  "you're not alone in feeling",
+  "i want you to hear this",
+  "here's what i need you to understand",
+  "it makes sense that you'd think",
+  "i sense that you",
+  "i've got you",
+];
+
 function normalizeApostrophes(text: string): string {
   return text.replace(/[’‘`]/g, "'");
 }
@@ -206,9 +229,27 @@ export function checkNoAvatarPander(script: string): ScriptViolation[] {
   const lines = dialogue.split("\n");
   for (let li = 0; li < lines.length; li++) {
     const normalized = normalizeApostrophes(lines[li]).toLowerCase();
+    // Build the approved-phrase character ranges for this line so we can
+    // suppress banned hits that fall inside an approved span (see
+    // APPROVED_CONNECTION_PHRASES doc comment).
+    const approvedRanges: Array<{ start: number; end: number }> = [];
+    for (const approved of APPROVED_CONNECTION_PHRASES) {
+      let from = 0;
+      while (true) {
+        const at = normalized.indexOf(approved, from);
+        if (at === -1) break;
+        approvedRanges.push({ start: at, end: at + approved.length });
+        from = at + approved.length;
+      }
+    }
     for (const phrase of AVATAR_PANDER_PHRASES) {
       const idx = normalized.indexOf(phrase);
       if (idx === -1) continue;
+      // If the banned hit sits inside an approved phrase, skip it.
+      const insideApproved = approvedRanges.some(
+        (r) => idx >= r.start && idx + phrase.length <= r.end,
+      );
+      if (insideApproved) continue;
       const fakeMatch = {
         index: idx,
         0: lines[li].slice(idx, idx + phrase.length),
@@ -659,14 +700,85 @@ function attributionWindowBefore(
  * Surfaced to the member as advisory; never blocks save, never triggers
  * the re-prompt loop. Spec: WARNING-mode-first per direction.
  */
+/**
+ * Wave 5 follow-up — pull numeric tokens out of arbitrary prose
+ * (neighbourhood-profile text, avatar summary) so the stat validator
+ * can accept "median household income $89,000" lines whose anchor
+ * lives in the profile, not in the SoT block.
+ *
+ * Hardened pass: every extracted token carries its UNIT (currency /
+ * percent / months / days / unknown), inferred from the `$` prefix,
+ * the `%` suffix, or the trailing "months"/"days" word. The tolerance
+ * fallback in the validator only accepts a match when units agree, so
+ * a stray "0.5" from a JSON id can't whitelist a "$500K" dialogue
+ * stat. The verbatim raw-token set still works unit-agnostically
+ * (exact `$89,000` → `89000` match), which is safe because the
+ * collision probability for an exact multi-digit string match is
+ * already very low.
+ */
+type ProfileNumber = {
+  /** Numeric value (commas stripped). */
+  value: number;
+  /** Canonical normalised string (no `$`, no commas, no `%`, no spaces). */
+  normalized: string;
+  /** Inferred unit, or `null` when we can't tell from local context. */
+  unit: StatUnit | null;
+};
+
+const PROFILE_NUMBER_RE =
+  /(\$?)(\d[\d,]*(?:\.\d+)?)(\s*%|\s+(?:months?|days?))?/gi;
+
+function extractProfileNumbers(text: string): ProfileNumber[] {
+  const out: ProfileNumber[] = [];
+  if (!text) return out;
+  PROFILE_NUMBER_RE.lastIndex = 0;
+  let m: RegExpExecArray | null;
+  while ((m = PROFILE_NUMBER_RE.exec(text)) !== null) {
+    const [, dollar, num, suffix] = m;
+    const normalized = num.replace(/,/g, "");
+    const value = Number(normalized);
+    if (!Number.isFinite(value)) continue;
+    let unit: StatUnit | null = null;
+    if (dollar) unit = "currency";
+    else if (suffix) {
+      const s = suffix.trim().toLowerCase();
+      if (s === "%") unit = "percent";
+      else if (s.startsWith("month")) unit = "months";
+      else if (s.startsWith("day")) unit = "days";
+    }
+    out.push({ value, normalized, unit });
+  }
+  return out;
+}
+
 export function checkNoMisattributedStats(
   script: string,
   sourceOfTruth: SourceOfTruthValue[] | undefined,
   citedFacts: CitedFactValue[] | undefined = undefined,
+  profileText: string[] = [],
 ): ScriptViolation[] {
   const hasSot = sourceOfTruth && sourceOfTruth.length > 0;
   const hasCited = citedFacts && citedFacts.length > 0;
+  // Wave 5 follow-up — even with no SoT/cited facts, if we have profile
+  // text we want to be silent (don't flag) rather than scan with no
+  // anchors. The original early-return preserves that behaviour.
   if (!hasSot && !hasCited) return [];
+
+  // Wave 5 follow-up — build the profile-sourced numeric set ONCE per
+  // validation call. Used as a fallback whitelist before flagging
+  // unanchored_stat, so legitimate demographic/lifestyle numbers from
+  // the FULL neighbourhood profile (and the avatar summary) don't
+  // bounce as fabrications. Tokens carry units so the tolerance check
+  // can refuse cross-unit matches (no "$500K" whitelisted by a bare
+  // "0.5" from a JSON id).
+  const profileTokenSet = new Set<string>();
+  const profileNumbers: ProfileNumber[] = [];
+  for (const t of profileText) {
+    for (const p of extractProfileNumbers(t)) {
+      profileTokenSet.add(p.normalized);
+      profileNumbers.push(p);
+    }
+  }
   const { dialogue } = stripToDialogue(script);
   const tokens = extractStatTokens(dialogue);
   if (tokens.length === 0) return [];
@@ -756,6 +868,26 @@ export function checkNoMisattributedStats(
     if (!match) {
       const haveAnchorsOfUnit = sotComparable.some((s) => s.unit === tok.unit);
       if (!haveAnchorsOfUnit) continue;
+
+      // Wave 5 follow-up — profile-sourced whitelist. Before flagging
+      // this token as fabricated, check whether its raw form appears
+      // verbatim in the neighbourhood/avatar profile text OR whether
+      // any UNIT-MATCHED profile number is within the 2% tolerance
+      // band. Profile text holds demographic numbers (median income,
+      // household size, year-built ranges) that legitimately surface
+      // in dialogue but are NOT in the SoT/cited-facts blocks.
+      //
+      // Verbatim match is unit-agnostic (exact multi-digit string
+      // collision is rare enough to trust). Tolerance match is
+      // unit-aware so a stray identifier digit in profile JSON can't
+      // mask a real fabrication of a different unit.
+      const normalizedRaw = tok.raw.replace(/[$,%\s]/g, "");
+      if (profileTokenSet.has(normalizedRaw)) continue;
+      const profileMatch = profileNumbers.some(
+        (p) => p.unit === tok.unit && withinTolerance(p.value, tok.value),
+      );
+      if (profileMatch) continue;
+
       const dedupeKey = `${tok.raw}|UNANCHORED|${tok.unit}`;
       if (seen.has(dedupeKey)) continue;
       seen.add(dedupeKey);
@@ -826,6 +958,19 @@ export interface ValidateScriptOptions extends HyperLocalOptions {
    * planner is also treated as member-attributable.
    */
   citedFacts?: CitedFactValue[];
+  /**
+   * Wave 5 follow-up — arbitrary prose strings (full neighbourhood
+   * profile content, primary-avatar summary, avatar profile JSON
+   * flattened, etc.) that the stat validator treats as additional
+   * legal anchor sources. A spoken stat whose raw form appears
+   * verbatim in this prose, OR whose numeric value is within 2% of
+   * any number in this prose, is accepted instead of flagged.
+   *
+   * Set this from the v2 route with the FULL neighbourhoodContext
+   * map values plus the avatar text. Leaving it empty preserves the
+   * pre-follow-up behaviour (SoT + cited facts only).
+   */
+  profileText?: string[];
 }
 
 /**
@@ -856,7 +1001,12 @@ export function validateScript(
   // percentages) are pre-filtered inside `checkNoMisattributedStats`,
   // so the re-prompt loop can safely fire on what's left.
   violations.push(
-    ...checkNoMisattributedStats(script, opts.sourceOfTruth, opts.citedFacts),
+    ...checkNoMisattributedStats(
+      script,
+      opts.sourceOfTruth,
+      opts.citedFacts,
+      opts.profileText,
+    ),
   );
 
   const ok = !violations.some((v) => v.severity === "error");

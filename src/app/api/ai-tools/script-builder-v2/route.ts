@@ -67,7 +67,6 @@ import {
 } from "@/lib/script-content-rules";
 import {
   getSourceOfTruthMetrics,
-  renderSourceOfTruthBlock,
   renderSourceOfTruthBlockWithLock,
   type SourceOfTruthMetric,
 } from "@/lib/aggregated-metrics";
@@ -399,6 +398,7 @@ export async function POST(req: NextRequest) {
 
   // ── Load MarketConfig (avatar, sub-personas, MOI thresholds, ...) ────
   const marketConfig = await loadMarketConfigSummary(userId);
+  // (extractAvatarNarrativeText helper lives at the bottom of this file.)
   if (!marketConfig) {
     return jsonError(
       409,
@@ -752,6 +752,24 @@ export async function POST(req: NextRequest) {
             neighbourhoods: marketConfig.neighbourhoods,
             sourceOfTruth: sourceOfTruthMetrics,
             citedFacts: citedFacts.map((f) => ({ raw: f.metricValueString })),
+            // Wave 5 follow-up — feed the FULL neighbourhood profile
+            // text + the avatar's NARRATIVE fields into the stat
+            // validator so demographic/lifestyle numbers Claude pulled
+            // from those sources (median income, household size,
+            // year-built ranges) are accepted as legitimate anchors
+            // instead of flagged as fabrications. The SoT block can't
+            // see profile prose, but the script body legitimately
+            // reaches into it now that Fix 1 switched the context
+            // loader to "full" mode.
+            //
+            // IMPORTANT: don't `JSON.stringify(primaryAvatar)` — that
+            // leaks ID/UUID/timestamp digits into the whitelist. We
+            // pull `summary` + string-leaf values out of `profile` so
+            // only narrative content reaches the validator.
+            profileText: [
+              ...Object.values(neighbourhoodContext ?? {}),
+              ...extractAvatarNarrativeText(marketConfig.primaryAvatar),
+            ],
           });
 
           if (validation.ok) {
@@ -1530,6 +1548,58 @@ function buildRetryUserMessage(args: {
       `Note: previous draft was ${previousDialogueWordCount} dialogue words — short of the 2500-word target. While you fix the flagged lines, also expand the neighbourhood sections using real profile content (demographics, housing stock, lifestyle, recent developments). No fabricated stats.`,
     );
   }
+
+  // Wave 5 follow-up — hard-stop guidance for the two rules Claude
+  // keeps tripping across retries (no_why, no_abbrev_in_dialogue).
+  // Counting per-rule occurrences makes the message concrete instead of
+  // generic, so the model can see how many fixes it still has to do.
+  const whyCount = violations.filter((v) => v.rule === "no_why").length;
+  if (whyCount > 0) {
+    lines.push("");
+    lines.push("**no_why violations — HARD STOP.**");
+    lines.push("");
+    lines.push(
+      `Your previous draft used the word "why" ${whyCount} time(s) in dialogue. This is a HARD FAIL on this channel. Every instance of "why" must be rewritten using one of:`,
+    );
+    lines.push("- \"the reason\"");
+    lines.push("- \"what's causing this\"");
+    lines.push("- \"what's behind this\"");
+    lines.push("- \"here's what's happening\"");
+    lines.push("- \"the mechanism\"");
+    lines.push("- \"what's driving this\"");
+    lines.push("- \"what's actually going on\"");
+    lines.push("");
+    lines.push(
+      'DO NOT use "why" anywhere in spoken dialogue, not even as a transition or rhetorical question. Titles can use "why" freely; only the body is checked.',
+    );
+  }
+
+  const abbrevHits = violations.filter(
+    (v) => v.rule === "no_abbrev_in_dialogue",
+  );
+  if (abbrevHits.length > 0) {
+    // Extract the offending abbreviations from messages so the model
+    // gets back the exact strings it used. Messages look like:
+    //   Found banned dialogue abbreviation "MOI". …
+    const offenders = Array.from(
+      new Set(
+        abbrevHits
+          .map((v) => v.message.match(/abbreviation "([^"]+)"/)?.[1])
+          .filter((s): s is string => Boolean(s)),
+      ),
+    );
+    const list = offenders.length > 0 ? offenders.join(", ") : "MOI / DOM / SP/LP";
+    lines.push("");
+    lines.push("**no_abbrev_in_dialogue violations — HARD STOP.**");
+    lines.push("");
+    lines.push(
+      `Your previous draft used ${list} in spoken dialogue. Abbreviations MOI, DOM, PSF, SP/LP, SP-LP must be spelled out fully in dialogue (months of inventory, days on market, price per square foot, sales-to-list-price ratio).`,
+    );
+    lines.push("");
+    lines.push(
+      "Abbreviations remain allowed ONLY inside [VISUAL: ...] tags and on-screen overlays.",
+    );
+  }
   lines.push("");
   lines.push("## PRIOR ATTEMPT VIOLATIONS — fix THESE specific lines");
   lines.push("");
@@ -1565,4 +1635,71 @@ function buildRetryUserMessage(args: {
   );
 
   return lines.join("\n");
+}
+
+/**
+ * Wave 5 follow-up (hardened) — extract NARRATIVE text from the
+ * primary-avatar payload for the stat validator's profile-sourced
+ * whitelist. We deliberately avoid `JSON.stringify(avatar)` because
+ * the avatar object carries IDs, UUIDs, timestamps, version markers,
+ * and other numeric metadata that would over-broaden the whitelist
+ * and let fabricated stats slip through.
+ *
+ * Two layers of filtering:
+ *   1. KEY-based: when walking the profile object, skip any field
+ *      whose key looks like metadata (id / uuid / *At timestamp /
+ *      version / source / hash / etc.).
+ *   2. VALUE-based: skip leaf strings that look like a UUID, ISO
+ *      timestamp, or pure long-digit identifier — these are the
+ *      shapes that carry incidental digits with no narrative value.
+ *
+ * Only `summary` (string) plus the surviving string leaves of
+ * `profile` (recursive) reach the validator.
+ */
+const AVATAR_METADATA_KEY_RE =
+  /^(?:id|_?id|uuid|hash|version|source|snappedAt|createdAt|updatedAt|.*At|.*Id|.*Uuid)$/i;
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const ISO_TIMESTAMP_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
+const PURE_LONG_DIGIT_RE = /^\d{6,}$/;
+
+function looksLikeMetadataValue(s: string): boolean {
+  const trimmed = s.trim();
+  if (!trimmed) return true;
+  if (UUID_RE.test(trimmed)) return true;
+  if (ISO_TIMESTAMP_RE.test(trimmed)) return true;
+  if (PURE_LONG_DIGIT_RE.test(trimmed)) return true;
+  return false;
+}
+
+function extractAvatarNarrativeText(avatar: unknown): string[] {
+  const out: string[] = [];
+  if (!avatar || typeof avatar !== "object") {
+    if (typeof avatar === "string") out.push(avatar);
+    return out;
+  }
+  const a = avatar as Record<string, unknown>;
+  if (typeof a.summary === "string" && !looksLikeMetadataValue(a.summary)) {
+    out.push(a.summary);
+  }
+  const profile = a.profile;
+  if (profile && typeof profile === "object") {
+    const walk = (node: unknown) => {
+      if (typeof node === "string") {
+        if (!looksLikeMetadataValue(node)) out.push(node);
+      } else if (Array.isArray(node)) {
+        for (const x of node) walk(x);
+      } else if (node && typeof node === "object") {
+        for (const [key, v] of Object.entries(
+          node as Record<string, unknown>,
+        )) {
+          if (AVATAR_METADATA_KEY_RE.test(key)) continue;
+          walk(v);
+        }
+      }
+    };
+    walk(profile);
+  }
+  return out;
 }
