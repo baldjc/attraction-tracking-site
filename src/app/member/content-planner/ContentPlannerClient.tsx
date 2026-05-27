@@ -222,7 +222,7 @@ export default function ContentPlannerClient({
             className="font-display font-black tracking-[-0.03em] leading-[1.05] mt-3.5 mb-2 text-[var(--abv-text)]"
             style={{ fontSize: "44px", maxWidth: "600px" }}
           >
-            Plan, track, <span style={{ color: "var(--abv-azure)" }}>ship</span>.
+            Plan, track, <span style={{ color: "var(--abv-azure)" }}>publish</span>.
           </h1>
           <p className="text-[15px] text-[var(--abv-text-muted)] m-0 max-w-[540px] leading-[1.55]">
             Every video, from idea through to live on YouTube — in one place, in one workflow.
