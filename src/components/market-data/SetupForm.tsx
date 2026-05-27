@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   KEYWORD_KIT_TEMPLATE,
@@ -48,6 +48,22 @@ export default function SetupForm({
   const [voiceError, setVoiceError] = useState<string | null>(null);
   const [voiceNotice, setVoiceNotice] = useState<string | null>(null);
   const [voiceHelpOpen, setVoiceHelpOpen] = useState(false);
+
+  // Hydration-safe locale formatting. The server renders dates in the
+  // container's locale/timezone; the browser renders in the user's locale.
+  // Those almost always differ, which yields a "server rendered text didn't
+  // match the client" hydration error on this page. Guard locale-sensitive
+  // text behind a post-mount flag so the first paint is deterministic.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const voiceUploadedAtLabel = useMemo(() => {
+    if (!mounted || !voiceGuide?.uploadedAt) return null;
+    try {
+      return new Date(voiceGuide.uploadedAt).toLocaleString();
+    } catch {
+      return null;
+    }
+  }, [mounted, voiceGuide?.uploadedAt]);
 
   async function saveVoiceGuide(formData: FormData) {
     setVoiceBusy(true);
@@ -736,7 +752,7 @@ export default function SetupForm({
                   Active
                 </span>
                 <span className="text-gray-700 dark:text-gray-300">
-                  {voiceGuide.charCount.toLocaleString()} characters
+                  {voiceGuide.charCount} characters
                 </span>
                 {voiceGuide.sourceFile && (
                   <span className="text-gray-500 dark:text-gray-500">
@@ -744,10 +760,9 @@ export default function SetupForm({
                   </span>
                 )}
               </div>
-              {voiceGuide.uploadedAt && (
+              {voiceUploadedAtLabel && (
                 <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-500">
-                  Last uploaded{" "}
-                  {new Date(voiceGuide.uploadedAt).toLocaleString()}
+                  Last uploaded {voiceUploadedAtLabel}
                 </p>
               )}
             </div>
@@ -766,8 +781,7 @@ export default function SetupForm({
               disabled={voiceBusy}
             />
             <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-500">
-              {voicePaste.length.toLocaleString()} / 50,000 characters
-              (minimum 500)
+              {voicePaste.length} / 50,000 characters (minimum 500)
             </p>
           </label>
 
