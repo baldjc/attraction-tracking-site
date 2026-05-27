@@ -1,25 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
-import { ArrowPathIcon, StarIcon } from "@heroicons/react/24/outline";
-import PageHeader from "@/components/PageHeader";
-
-const AUDIT_KEY_TO_ACADEMY_SLUG: Record<string, string> = {
-  lead_magnet_system: "lead_magnet",
-};
-function toAcademySlug(key: string): string {
-  return AUDIT_KEY_TO_ACADEMY_SLUG[key] ?? key;
-}
 
 const PRINCIPLE_LABELS: Record<string, string> = {
   avatar_clarity: "Avatar Clarity",
@@ -31,7 +13,7 @@ const PRINCIPLE_LABELS: Record<string, string> = {
   approve_the_click: "Approve the Click",
   lead_magnet_system: "Lead Magnet System",
   curiosity_bridges: "Curiosity Bridges",
-  show_dont_tell: "Show Don't Tell (est.)",
+  show_dont_tell: "Show Don't Tell",
   values_peppering: "Values Peppering",
   connection_language: "Connection Language",
   story_proof: "Story Proof",
@@ -40,61 +22,75 @@ const PRINCIPLE_LABELS: Record<string, string> = {
   consistency: "Consistency",
 };
 
-const LEARNING_PATH: Record<string, string> = {
-  avatar_clarity: "Lessons 1.1 + 1.2",
-  themes_over_topics: "Lesson 1.3",
-  lead_magnet_system: "Lesson 1.4",
-  values_peppering: "Lesson 2.1",
-  connection_language: "Lesson 2.2",
-  arc_attention: "Lessons 2.5 + 2.5a + 3.2",
-  arc_revelation: "Lesson 2.5",
-  arc_connection: "Lessons 2.2 + 2.5",
-  curiosity_bridges: "Lesson 2.5",
-  story_proof: "Lesson 2.5",
-  show_dont_tell: "Lesson 3.3",
-  approve_the_click: "Lessons 4.1 + 2.5",
-  title_frameworks: "Lesson 4.2",
-  binge_architecture: "Lesson 1.3",
-  grade_5_language: "N/A",
-  consistency: "Lessons 1.3 + 2.4",
+const AUDIT_KEY_TO_ACADEMY_SLUG: Record<string, string> = {
+  lead_magnet_system: "lead_magnet",
+};
+const toAcademySlug = (k: string) => AUDIT_KEY_TO_ACADEMY_SLUG[k] ?? k;
+
+type Tier = "academy" | "amber" | "crimson" | "dim";
+function tier(score: number | null | undefined): Tier {
+  if (score == null) return "dim";
+  if (score >= 7.5) return "academy";
+  if (score >= 5) return "amber";
+  return "crimson";
+}
+const tierText: Record<Tier, string> = {
+  academy: "text-[var(--abv-academy)]",
+  amber: "text-[var(--abv-scores)]",
+  crimson: "text-[var(--abv-crimson)]",
+  dim: "text-[var(--abv-text-dim)]",
+};
+const tierStroke: Record<Tier, string> = {
+  academy: "var(--abv-academy)",
+  amber: "var(--abv-scores)",
+  crimson: "var(--abv-crimson)",
+  dim: "rgba(0,0,0,0.2)",
+};
+const tierBarBg: Record<Tier, string> = {
+  academy: "bg-[var(--abv-academy)]",
+  amber: "bg-[var(--abv-scores)]",
+  crimson: "bg-[var(--abv-crimson)]",
+  dim: "bg-black/10",
 };
 
-function scoreBadge(score: number | null) {
-  if (score == null) return "bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400";
-  if (score >= 7) return "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400";
-  if (score >= 5) return "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400";
-  return "bg-red-100 text-[var(--abv-crimson)] dark:bg-red-900/40 dark:text-red-400";
+const LP_THUMB_BG = [
+  "linear-gradient(135deg, #1A1A1A 0%, rgba(61,195,255,0.40) 100%)",
+  "linear-gradient(135deg, #1A1A1A 0%, rgba(245,158,11,0.40) 100%)",
+  "linear-gradient(135deg, #1A1A1A 0%, rgba(16,185,129,0.40) 100%)",
+];
+
+function fmtShort(date: string | Date) {
+  return new Date(date).toLocaleDateString("en-CA", { month: "short", day: "numeric" });
 }
 
-function scoreBarColor(score: number | null) {
-  if (score == null) return "bg-gray-200 dark:bg-gray-600";
-  if (score >= 7) return "bg-green-500";
-  if (score >= 5) return "bg-yellow-400";
-  return "bg-[var(--abv-crimson)]";
-}
-
-function fmt(date: string) {
-  return new Date(date).toLocaleDateString("en-CA", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-}
+type RangeKey = "4w" | "12w" | "6m" | "all";
+const RANGE_LIMIT: Record<RangeKey, number | null> = {
+  "4w": 4,
+  "12w": 12,
+  "6m": 24,
+  all: null,
+};
 
 export default function MemberScoresPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [expanded, setExpanded] = useState<string | null>(null);
   const [principlesWithLessons, setPrinciplesWithLessons] = useState<Set<string>>(new Set());
+  const [range, setRange] = useState<RangeKey>("12w");
 
   function load() {
     setLoading(true);
     fetch("/api/member/scores")
       .then((r) => r.json())
-      .then((d) => { setData(d); setLoading(false); });
+      .then((d) => {
+        setData(d);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
   }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
   useEffect(() => {
     fetch("/api/member/academy/principles")
@@ -103,604 +99,546 @@ export default function MemberScoresPage() {
         const slugs = new Set<string>(
           (d.principles ?? [])
             .filter((p: any) => p.lessonCount > 0)
-            .map((p: any) => p.slug)
+            .map((p: any) => p.slug),
         );
         setPrinciplesWithLessons(slugs);
       })
       .catch(() => {});
   }, []);
 
-  const txt = "text-[var(--abv-text)] dark:text-[#e2e8f0]";
-  const muted = "text-[var(--abv-text)]/60 dark:text-[#94a3b8]";
-  const card = "bg-white dark:bg-[#1a1a1a] rounded-lg border border-gray-200 dark:border-[#2a2a2a]";
-  const divider = "divide-gray-100 dark:divide-[#2a2a2a]";
-  const thClass = `text-left px-5 py-3 text-xs font-semibold uppercase tracking-wider ${muted} bg-gray-50 dark:bg-[#1e2530]`;
-  const tdClass = `px-5 py-3.5`;
+  // Computed views (defensive — always defined so hook order stays stable)
+  const latestChannelAudit = useMemo(() => {
+    const audits = (data?.audits ?? []) as any[];
+    return audits.find((a) => a.auditType === "baseline" || a.auditType === "monthly") ?? null;
+  }, [data]);
 
+  const baselineAudit = data?.baselineAudit ?? null;
+
+  const channelAuditsAsc = useMemo(() => {
+    const audits = ((data?.audits ?? []) as any[])
+      .filter(
+        (a) =>
+          (a.auditType === "baseline" || a.auditType === "monthly") &&
+          a.overallScore != null,
+      )
+      .sort(
+        (a, b) =>
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+      );
+    return audits;
+  }, [data]);
+
+  const trajectoryPoints = useMemo(() => {
+    const limit = RANGE_LIMIT[range];
+    const slice = limit ? channelAuditsAsc.slice(-limit) : channelAuditsAsc;
+    return slice.map((a) => ({
+      score: Number(a.overallScore),
+      date: new Date(a.createdAt),
+    }));
+  }, [channelAuditsAsc, range]);
+
+  const principleRows = useMemo(() => {
+    const scores = (latestChannelAudit?.scores ?? {}) as Record<
+      string,
+      { score: number | null; evidence?: string }
+    >;
+    return Object.entries(scores).map(([key, val]) => ({ key, ...val }));
+  }, [latestChannelAudit]);
+
+  const learningPath = useMemo(() => {
+    return [...principleRows]
+      .filter((r) => r.key !== "show_dont_tell" && r.score != null)
+      .sort((a, b) => (a.score! - b.score!))
+      .slice(0, 3);
+  }, [principleRows]);
+
+  const recentVideoAudits = useMemo(() => {
+    const sixty = Date.now() - 60 * 86_400_000;
+    return ((data?.audits ?? []) as any[])
+      .filter(
+        (a) =>
+          a.auditType === "single_video" &&
+          new Date(a.createdAt).getTime() >= sixty,
+      )
+      .slice(0, 12);
+  }, [data]);
+
+  const overallScore =
+    latestChannelAudit?.overallScore != null
+      ? Number(latestChannelAudit.overallScore)
+      : null;
+  const overallTier = tier(overallScore);
+  const trendVsBaseline =
+    overallScore != null && baselineAudit?.overallScore != null
+      ? overallScore - Number(baselineAudit.overallScore)
+      : null;
+
+  // ── Render ─────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex items-center justify-center min-h-[40vh]">
         <div className="w-8 h-8 border-4 border-[var(--abv-azure)] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
-  if (!data?.latestAudit) {
-    return (
-      <div>
-        <PageHeader
-          emoji="🏆"
-          title="My Scores"
-          description="See where you stand and where to focus next."
-        />
-        <div className="bg-[var(--abv-dark)]/10 border border-[var(--abv-azure)]/30 rounded-lg p-10 text-center">
-          <p className={`font-medium ${txt} mb-2`}>No audits yet</p>
-          <p className={`text-sm ${muted}`}>
-            Your Attraction Scores will appear here after your first audit is completed by your coach.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  const { latestAudit, baselineAudit, audits, channelBannerUrl, channelThumbnailUrl, channelName, youtubeChannelUrl } = data;
-
-  // Current Attraction Score: exclude single video audits — they are per-video checks, not overall channel scores
-  // Only baseline or monthly audits represent a full channel score.
-  // Single video audits have different scoring (no Consistency, different weighting)
-  // and must never feed the score circle, chart channel line, or 16-Principle table.
-  const latestChannelAudit: any =
-    (audits ?? []).find((a: any) => a.auditType === "baseline" || a.auditType === "monthly") ?? null;
-
-  const scores = (latestChannelAudit?.scores ?? {}) as Record<string, { score: number | null; evidence?: string }>;
-  const baselineScores = (baselineAudit?.scores as any) ?? null;
-
-  // Build merged chart data with two separate series, sorted chronologically
-  const allAuditsChron = [...(audits ?? [])]
-    .filter((a: any) => a.overallScore != null)
-    .sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-
-  const channelChartData = allAuditsChron
-    .filter((a: any) => a.auditType === "baseline" || a.auditType === "monthly")
-    .map((a: any) => ({
-      ts: new Date(a.createdAt).getTime(),
-      date: new Date(a.createdAt).toLocaleDateString("en-CA", { month: "short", day: "numeric" }),
-      channelScore: parseFloat(Number(a.overallScore).toFixed(1)),
-    }));
-
-  const videoChartData = allAuditsChron
-    .filter((a: any) => a.auditType === "single_video")
-    .map((a: any) => ({
-      ts: new Date(a.createdAt).getTime(),
-      date: new Date(a.createdAt).toLocaleDateString("en-CA", { month: "short", day: "numeric" }),
-      videoScore: parseFloat(Number(a.overallScore).toFixed(1)),
-    }));
-
-  // Merge into a unified date axis sorted by actual timestamp
-  const mergedPoints = Array.from(
-    new Map(
-      [...channelChartData, ...videoChartData]
-        .sort((a, b) => a.ts - b.ts)
-        .map((d) => [d.date, d])
-    ).values()
-  );
-  const chartData = mergedPoints.map(({ date }) => ({
-    date,
-    channelScore: channelChartData.find((d) => d.date === date)?.channelScore ?? null,
-    videoScore: videoChartData.find((d) => d.date === date)?.videoScore ?? null,
-  }));
-  const hasChannelLine = channelChartData.length >= 1;
-  const hasVideoLine = videoChartData.length >= 1;
-
-  const principleRows = Object.entries(scores).map(([key, val]) => {
-    const base = baselineScores?.[key]?.score ?? null;
-    const delta = base != null && val.score != null ? val.score - base : null;
-    return { key, val, base, delta };
-  });
-
-  const gaps = principleRows.filter(
-    ({ key, val }) => key !== "show_dont_tell" && val.score != null && val.score < 7
-  );
-
   return (
-    <div className="space-y-5 pb-10">
-      <PageHeader
-        emoji="🏆"
-        title="My Scores"
-        description="See where you stand and where to focus next."
-        action={
-          <button
-            onClick={load}
-            className={`shrink-0 flex items-center gap-2 px-3 py-1.5 border border-gray-200 dark:border-[#2a2a2a] rounded-lg text-sm ${txt} hover:bg-gray-50 dark:hover:bg-[var(--abv-dark)] transition-colors`}
-          >
-            <ArrowPathIcon className="w-4 h-4" /> Refresh
-          </button>
-        }
-      />
-      {/* YouTube Channel Banner */}
-      {channelBannerUrl && (
-        <div className="rounded-lg overflow-hidden border border-gray-200 dark:border-[#2a2a2a] relative">
-          <img
-            src={channelBannerUrl}
-            alt={channelName ? `${channelName} YouTube banner` : "YouTube channel banner"}
-            className="w-full object-cover"
-            style={{ maxHeight: 220, objectPosition: "center" }}
-          />
-          {/* Gradient overlay + channel info */}
-          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent px-5 py-4">
-            <div className="flex items-end justify-between gap-4">
-              <div>
-                {channelName && (
-                  <p className="text-white font-bold text-lg leading-tight drop-shadow">
-                    {channelName}
-                  </p>
-                )}
-              </div>
-              {youtubeChannelUrl && (
-                <a
-                  href={youtubeChannelUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="shrink-0 flex items-center gap-1.5 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white text-xs font-semibold px-3 py-1.5 rounded-lg border border-white/20 transition-colors"
-                >
-                  <svg className="w-4 h-4 fill-white" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
-                  View Channel
-                </a>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Row 1: Score Hero + Chart */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-        {/* Overall Score */}
-        <div className={`lg:col-span-2 ${card} p-6 flex flex-col items-center justify-center text-center`}>
-          <p className={`text-xs font-semibold uppercase tracking-widest ${muted} mb-3`}>
-            Current Attraction Score
+    <div className="font-sans text-[var(--abv-text)]">
+      {/* PageHeader */}
+      <header className="mb-8 flex flex-wrap items-end justify-between gap-5">
+        <div className="flex-1 min-w-[280px]">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--abv-azure-tint)] text-[var(--abv-azure)] text-[11px] font-bold uppercase tracking-[0.12em]">
+            <span className="w-[5px] h-[5px] rounded-full bg-[var(--abv-azure)]" />
+            Weekly review
+          </span>
+          <h1 className="font-display font-black tracking-[-0.03em] leading-[1.05] text-[44px] mt-3.5 mb-2 max-w-[600px] text-pretty">
+            Your score, <span className="text-[var(--abv-azure)]">this week</span>.
+          </h1>
+          <p className="text-[15px] text-[var(--abv-text-muted)] m-0 max-w-[540px] leading-[1.55]">
+            Where you stand against the 16 principles that move channels forward.
           </p>
-          {latestChannelAudit ? (
-            <>
-              <div
-                className={`w-36 h-36 rounded-full flex flex-col items-center justify-center border-4 ${
-                  latestChannelAudit.overallScore >= 7
-                    ? "border-green-400 bg-green-50 dark:bg-green-900/20"
-                    : latestChannelAudit.overallScore >= 5
-                    ? "border-yellow-400 bg-yellow-50 dark:bg-yellow-900/20"
-                    : "border-[var(--abv-crimson)] bg-red-50 dark:bg-red-900/20"
+        </div>
+        <div className="flex gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={load}
+            className="inline-flex items-center gap-1.5 px-4 py-[9px] bg-white border border-[var(--abv-border-strong)] rounded-full text-xs font-semibold text-[var(--abv-text)] hover:border-[var(--abv-ink)] transition-colors"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-[13px] h-[13px]">
+              <path d="M21 12a9 9 0 11-3-6.7L21 8" />
+              <path d="M21 3v5h-5" />
+            </svg>
+            Refresh
+          </button>
+          {data?.youtubeChannelUrl && (
+            <a
+              href={data.youtubeChannelUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-4 py-[9px] bg-white border border-[var(--abv-border-strong)] rounded-full text-xs font-semibold text-[var(--abv-text)] hover:border-[var(--abv-ink)] transition-colors"
+            >
+              View Channel
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-[13px] h-[13px]">
+                <path d="M7 17L17 7M9 7h8v8" />
+              </svg>
+            </a>
+          )}
+        </div>
+      </header>
+
+      {/* Hero score + chart */}
+      {!latestChannelAudit ? (
+        <section className="mb-8 bg-white border border-[var(--abv-border)] rounded-[14px] p-10 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+          <p className="font-medium text-[var(--abv-text)] mb-1">No channel audit yet</p>
+          <p className="text-sm text-[var(--abv-text-muted)]">
+            Your Attraction Scores will appear here after your first audit is completed.
+          </p>
+        </section>
+      ) : (
+        <section className="grid grid-cols-1 lg:grid-cols-[320px_minmax(0,1fr)] gap-5 mb-8">
+          {/* Score card */}
+          <div className="bg-white border border-[var(--abv-border)] rounded-[14px] px-6 py-8 shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex flex-col items-center gap-3.5">
+            <ScoreArc score={overallScore!} tier={overallTier} />
+            <span className="font-mono text-[10.5px] text-[var(--abv-text-muted)] uppercase tracking-[0.08em]">
+              Channel score · last 90 days
+            </span>
+            {trendVsBaseline != null && (
+              <span
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-mono text-[10.5px] font-bold tracking-[0.04em] ${
+                  trendVsBaseline >= 0
+                    ? "bg-[var(--abv-academy-tint)] text-[#047857]"
+                    : "bg-[rgba(255,0,51,0.10)] text-[var(--abv-crimson)]"
                 }`}
               >
-                <span
-                  className={`text-5xl font-black ${
-                    latestChannelAudit.overallScore >= 7
-                      ? "text-green-600 dark:text-green-400"
-                      : latestChannelAudit.overallScore >= 5
-                      ? "text-yellow-600 dark:text-yellow-400"
-                      : "text-[var(--abv-crimson)]"
-                  }`}
-                >
-                  {Number(latestChannelAudit.overallScore).toFixed(1)}
-                </span>
-                <span className={`text-xs font-medium ${muted} mt-0.5`}>/ 10</span>
-              </div>
-              <p className={`text-xs ${muted} mt-4`}>from {fmt(latestChannelAudit.createdAt)}</p>
-            </>
-          ) : (
-            <>
-              <div className="w-36 h-36 rounded-full flex flex-col items-center justify-center border-4 border-gray-200 dark:border-[#2a2a2a] bg-gray-50 dark:bg-[#1a1a1a]">
-                <span className="text-4xl font-black text-gray-300 dark:text-[#3a3a3a]">—</span>
-              </div>
-              <p className={`text-xs ${muted} mt-4`}>No channel audit yet</p>
-            </>
-          )}
-          {baselineAudit && (
-            <p className={`text-xs ${muted} mt-1`}>
-              Baseline:{" "}
-              <span className="font-semibold">
-                {Number(baselineAudit.overallScore).toFixed(1)}
+                {trendVsBaseline >= 0 ? "↑" : "↓"} {trendVsBaseline >= 0 ? "+" : ""}
+                {trendVsBaseline.toFixed(1)} vs. start
               </span>
-            </p>
-          )}
-        </div>
-
-        {/* Score Over Time */}
-        <div className={`lg:col-span-3 ${card} p-6`}>
-          <h2 className={`text-sm font-semibold ${txt} mb-4`}>Score Over Time</h2>
-          {chartData.length >= 2 ? (
-            <>
-              <ResponsiveContainer width="100%" height={170}>
-                <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} />
-                  <XAxis dataKey="date" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
-                  <YAxis
-                    domain={[0, 10]}
-                    tick={{ fontSize: 11, fill: "#94a3b8" }}
-                    axisLine={false}
-                    tickLine={false}
-                    width={28}
-                  />
-                  <Tooltip
-                    formatter={(v, name) => [
-                      typeof v === "number" ? v.toFixed(1) : v,
-                      name === "channelScore" ? "Channel Score" : "Video Score",
-                    ]}
-                    contentStyle={{
-                      background: "#1a1a1a",
-                      border: "1px solid #2a2a2a",
-                      borderRadius: 8,
-                      fontSize: 12,
-                      color: "#e2e8f0",
-                    }}
-                    cursor={{ stroke: "var(--abv-azure)", strokeWidth: 1, strokeDasharray: "4 4" }}
-                  />
-                  {hasChannelLine && (
-                    <Line
-                      type="monotone"
-                      dataKey="channelScore"
-                      stroke="var(--abv-azure)"
-                      strokeWidth={2.5}
-                      dot={{ r: 4, fill: "var(--abv-azure)", strokeWidth: 0 }}
-                      activeDot={{ r: 6, fill: "var(--abv-azure)" }}
-                      connectNulls
-                    />
-                  )}
-                  {hasVideoLine && (
-                    <Line
-                      type="monotone"
-                      dataKey="videoScore"
-                      stroke="#94a3b8"
-                      strokeWidth={1.5}
-                      strokeDasharray="5 3"
-                      dot={{ r: 3, fill: "#94a3b8", strokeWidth: 0 }}
-                      activeDot={{ r: 5, fill: "#94a3b8" }}
-                      connectNulls
-                    />
-                  )}
-                </LineChart>
-              </ResponsiveContainer>
-              {/* Legend */}
-              <div className="flex items-center justify-center gap-5 mt-2">
-                {hasChannelLine && (
-                  <div className="flex items-center gap-1.5">
-                    <svg width="20" height="8" className="shrink-0">
-                      <line x1="0" y1="4" x2="20" y2="4" stroke="var(--abv-azure)" strokeWidth="2.5" />
-                    </svg>
-                    <span className={`text-xs ${muted}`}>Channel Score</span>
-                  </div>
-                )}
-                {hasVideoLine && (
-                  <div className="flex items-center gap-1.5">
-                    <svg width="20" height="8" className="shrink-0">
-                      <line x1="0" y1="4" x2="20" y2="4" stroke="#94a3b8" strokeWidth="1.5" strokeDasharray="5 3" />
-                    </svg>
-                    <span className={`text-xs ${muted}`}>Video Scores</span>
-                  </div>
-                )}
-              </div>
-            </>
-          ) : chartData.length === 1 ? (
-            <div className="flex flex-col items-center justify-center h-44 text-center">
-              <p className={`text-4xl font-black ${txt}`}>
-                {(chartData[0].channelScore ?? chartData[0].videoScore ?? 0).toFixed(1)}
-              </p>
-              <p className={`text-sm ${muted} mt-2`}>
-                1 audit completed — more will build the trend line
-              </p>
-            </div>
-          ) : (
-            <div className={`flex items-center justify-center h-44 text-sm ${muted}`}>
-              No score data yet
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Recent Video Audits */}
-      {(() => {
-        const sixtyDaysAgo = new Date();
-        sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
-        const recentVideoAudits = (audits ?? []).filter(
-          (a: any) => a.auditType === "single_video" && new Date(a.createdAt) >= sixtyDaysAgo
-        );
-        return (
-          <div className={`${card} overflow-hidden`}>
-            <div className={`px-5 py-4 border-b border-gray-200 dark:border-[#2a2a2a]`}>
-              <h2 className={`text-sm font-semibold ${txt}`}>Recent Video Audits</h2>
-              <p className={`text-xs ${muted} mt-0.5`}>Every video is audited for Production and Growth members. Foundations members receive audits when videos are reviewed on live Member Calls.</p>
-              <p className={`text-xs font-semibold ${muted} mt-0.5`}>If you'd like your video reviewed DM Jared in Slack with the URL of the last video</p>
-            </div>
-            {recentVideoAudits.length === 0 ? (
-              <div className="px-5 py-10 text-center">
-                <p className={`text-sm font-medium ${txt}`}>No video audits in the last 60 days</p>
-                <p className={`text-xs ${muted} mt-1`}>When the Attraction team runs a single video audit, you will see them show up here.</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <div className="flex gap-4 px-5 py-4" style={{ minWidth: "max-content" }}>
-                  {recentVideoAudits.map((a: any) => {
-                    const v = (a.videosAnalysed as any[])?.[0];
-                    const videoId = v?.videoId;
-                    const thumbUrl = videoId ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg` : null;
-                    const title = v?.title ?? "Untitled Video";
-                    return (
-                      <Link
-                        key={a.id}
-                        href={`/member/audits/${a.id}`}
-                        className="flex flex-col gap-2 w-52 shrink-0 group"
-                      >
-                        {thumbUrl ? (
-                          <img
-                            src={thumbUrl}
-                            alt={title}
-                            className="w-full rounded-lg object-cover"
-                            style={{ aspectRatio: "16/9" }}
-                          />
-                        ) : (
-                          <div
-                            className="w-full rounded-lg bg-gray-100 dark:bg-[#2a2a2a]"
-                            style={{ aspectRatio: "16/9" }}
-                          />
-                        )}
-                        <div>
-                          <p className={`text-xs font-medium ${txt} line-clamp-2 group-hover:text-[var(--abv-azure)] transition-colors leading-snug`}>
-                            {title}
-                          </p>
-                          <div className="flex items-center justify-between mt-1.5">
-                            <span className={`text-xs ${muted}`}>{v?.uploadDate ? fmt(v.uploadDate) : fmt(a.createdAt)}</span>
-                            {a.overallScore != null && (
-                              <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${scoreBadge(Number(a.overallScore))}`}>
-                                {Number(a.overallScore).toFixed(1)}
-                              </span>
-                            )}
-                          </div>
-                          <span className="text-xs text-[var(--abv-azure)] font-medium group-hover:underline mt-0.5 inline-block">
-                            View Report →
-                          </span>
-                        </div>
-                      </Link>
-                    );
-                  })}
-                </div>
-              </div>
             )}
           </div>
-        );
-      })()}
 
-      {/* 16-Principle Breakdown Table */}
-      <div className={`${card} overflow-hidden`}>
-        <div className={`px-5 py-4 border-b border-gray-200 dark:border-[#2a2a2a]`}>
-          <h2 className={`text-sm font-semibold ${txt}`}>16-Principle Breakdown</h2>
-          <p className={`text-xs ${muted} mt-0.5`}>Click any row to see the evidence note from your audit</p>
+          {/* Chart card */}
+          <div className="bg-white border border-[var(--abv-border)] rounded-[14px] px-6 py-[22px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex flex-col gap-3.5">
+            <div className="flex justify-between items-baseline">
+              <h3 className="font-display text-[18px] font-extrabold tracking-[-0.015em] m-0">
+                Score trajectory
+              </h3>
+              <div className="inline-flex gap-[2px] p-[2px] bg-[var(--abv-bg-warm)] rounded-full">
+                {(["4w", "12w", "6m", "all"] as RangeKey[]).map((k) => (
+                  <button
+                    key={k}
+                    onClick={() => setRange(k)}
+                    className={`font-mono text-[10.5px] font-semibold px-[11px] py-[5px] rounded-full transition-colors ${
+                      range === k
+                        ? "bg-[var(--abv-ink)] text-white"
+                        : "bg-transparent text-[var(--abv-text-muted)]"
+                    }`}
+                  >
+                    {k === "all" ? "All" : k}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <TrajectoryChart points={trajectoryPoints} />
+          </div>
+        </section>
+      )}
+
+      {/* 16 principles */}
+      {principleRows.length > 0 && (
+        <section className="bg-white border border-[var(--abv-border)] rounded-[14px] overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04)] mb-8">
+          <div className="grid grid-cols-[1fr_200px_120px_90px] gap-4 px-[22px] py-3.5 bg-[var(--abv-bg-warm)] border-b border-[var(--abv-border)] font-mono text-[9.5px] font-bold tracking-[0.10em] uppercase text-[var(--abv-text-muted)]">
+            <span>Principle</span>
+            <span>Score</span>
+            <span className="text-right">/ 10</span>
+            <span className="text-right" />
+          </div>
+          {principleRows.map((row) => {
+            const t = tier(row.score);
+            const academySlug = toAcademySlug(row.key);
+            const hasLesson = principlesWithLessons.has(academySlug);
+            const inner = (
+              <>
+                <span className="text-sm text-[var(--abv-text)] font-medium">
+                  {PRINCIPLE_LABELS[row.key] ?? row.key}
+                </span>
+                <span className="h-[5px] rounded-full bg-black/5 overflow-hidden self-center">
+                  <span
+                    className={`block h-full rounded-full ${tierBarBg[t]}`}
+                    style={{ width: row.score != null ? `${(row.score / 10) * 100}%` : "0%" }}
+                  />
+                </span>
+                <span className="font-mono text-[13.5px] font-semibold text-[var(--abv-text)] text-right tabular-nums">
+                  {row.score != null ? row.score.toFixed(1) : "—"}
+                </span>
+                <span className="text-[11px] font-semibold text-right opacity-0 group-hover:opacity-100 text-[var(--abv-text-dim)] group-hover:text-[var(--abv-azure)] transition-opacity">
+                  View report →
+                </span>
+              </>
+            );
+            return hasLesson ? (
+              <Link
+                key={row.key}
+                href={`/member/academy?tab=browse&tag=${academySlug}`}
+                className="group grid grid-cols-[1fr_200px_120px_90px] gap-4 px-[22px] py-3.5 items-center border-b border-[var(--abv-border)] last:border-b-0 hover:bg-[var(--abv-bg-warm)] transition-colors cursor-pointer"
+              >
+                {inner}
+              </Link>
+            ) : (
+              <div
+                key={row.key}
+                className="group grid grid-cols-[1fr_200px_120px_90px] gap-4 px-[22px] py-3.5 items-center border-b border-[var(--abv-border)] last:border-b-0 hover:bg-[var(--abv-bg-warm)] transition-colors"
+              >
+                {inner}
+              </div>
+            );
+          })}
+        </section>
+      )}
+
+      {/* Learning Path */}
+      {learningPath.length > 0 && (
+        <section className="bg-[var(--abv-azure-tint)] border border-[var(--abv-azure)] rounded-[14px] px-7 pt-7 pb-6 mb-8">
+          <div className="flex flex-wrap items-end justify-between gap-3 mb-[18px]">
+            <div className="max-w-[600px]">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--abv-azure-tint)] text-[var(--abv-azure)] text-[11px] font-bold uppercase tracking-[0.12em]">
+                <span className="w-[5px] h-[5px] rounded-full bg-[var(--abv-azure)]" />
+                Learning Path
+              </span>
+              <h3 className="font-display text-[24px] font-extrabold tracking-[-0.025em] leading-[1.15] mt-2.5 mb-1 max-w-[540px]">
+                Your next 3 lessons, picked from your{" "}
+                <span className="text-[var(--abv-azure)]">lowest scores</span>.
+              </h3>
+              <p className="text-[13.5px] text-[var(--abv-text-muted)] m-0">
+                Targeted at the three principles dragging your score the most. About 35 minutes total.
+              </p>
+            </div>
+            <Link
+              href="/member/academy"
+              className="inline-flex items-center gap-1.5 px-4 py-[9px] bg-white border border-[var(--abv-border-strong)] rounded-full text-xs font-semibold text-[var(--abv-text)] hover:border-[var(--abv-ink)] transition-colors"
+            >
+              View all lessons →
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {learningPath.map((p, i) => {
+              const academySlug = toAcademySlug(p.key);
+              const hasLesson = principlesWithLessons.has(academySlug);
+              const href = hasLesson
+                ? `/member/academy?tab=browse&tag=${academySlug}`
+                : `/member/academy`;
+              return (
+                <Link
+                  key={p.key}
+                  href={href}
+                  className="bg-white border border-[var(--abv-border)] rounded-[10px] p-3.5 flex flex-col gap-2.5 hover:-translate-y-px hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] transition-all"
+                >
+                  <div
+                    className="aspect-[16/9] rounded-md relative overflow-hidden"
+                    style={{ background: LP_THUMB_BG[i] }}
+                  >
+                    <span className="absolute top-1.5 left-2 font-mono text-[9px] font-bold text-white px-[7px] py-[2px] rounded-full bg-black/45 uppercase tracking-[0.06em]">
+                      {(PRINCIPLE_LABELS[p.key] ?? p.key)} · {p.score?.toFixed(1)}
+                    </span>
+                    <span className="absolute bottom-1.5 right-2 text-white text-[11px] opacity-85">▶</span>
+                  </div>
+                  <div className="text-[13.5px] font-semibold text-[var(--abv-text)] leading-[1.35]">
+                    {PRINCIPLE_LABELS[p.key] ?? p.key}
+                  </div>
+                  <div className="font-mono text-[10.5px] text-[var(--abv-text-dim)] tracking-[0.04em] flex gap-1.5 items-center mt-auto">
+                    <span>⏱ ~12 min</span>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* Recent video audits */}
+      <section className="mb-8">
+        <div className="flex justify-between items-baseline mb-3.5">
+          <h3 className="font-display text-[22px] font-extrabold tracking-[-0.02em] m-0">
+            Recent video audits.
+          </h3>
+          {recentVideoAudits.length > 0 && (
+            <Link
+              href="/member/audits"
+              className="text-xs text-[var(--abv-text-muted)] hover:text-[var(--abv-text)]"
+            >
+              View all {recentVideoAudits.length} →
+            </Link>
+          )}
         </div>
-        {principleRows.length === 0 ? (
-          <div className="px-5 py-10 text-center">
-            <p className={`text-sm font-medium ${txt}`}>No channel audit data yet</p>
-            <p className={`text-xs ${muted} mt-1`}>
-              Complete a full channel audit (baseline or monthly) to see your 16-principle breakdown.
+        {recentVideoAudits.length === 0 ? (
+          <div className="bg-white border border-[var(--abv-border)] rounded-[14px] p-8 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+            <p className="text-sm font-medium text-[var(--abv-text)]">
+              No video audits in the last 60 days
+            </p>
+            <p className="text-xs text-[var(--abv-text-muted)] mt-1">
+              When the Attraction team runs a single video audit, you&apos;ll see them show up here.
             </p>
           </div>
         ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className={`border-b border-gray-200 dark:border-[#2a2a2a]`}>
-                <th className={thClass} style={{ width: "36%" }}>Principle</th>
-                <th className={thClass} style={{ width: "20%" }}>Learning Path</th>
-                <th className={thClass} style={{ width: "24%" }}>Score</th>
-                <th className={thClass} style={{ width: "10%" }}>Current</th>
-                {baselineAudit && <th className={thClass} style={{ width: "10%" }}>vs Baseline</th>}
-              </tr>
-            </thead>
-            <tbody className={`divide-y ${divider}`}>
-              {principleRows.map(({ key, val, base, delta }) => {
-                const isOpen = expanded === key;
-                const score = val.score;
-                return (
-                  <React.Fragment key={key}>
-                    <tr
-                      onClick={() => setExpanded(isOpen ? null : key)}
-                      className={`cursor-pointer hover:bg-gray-50 dark:hover:bg-[var(--abv-dark)] transition-colors ${
-                        isOpen ? "bg-gray-50 dark:bg-[#0f1419]" : ""
-                      }`}
-                    >
-                      <td className={`${tdClass} font-medium ${txt}`}>
-                        <span className="flex items-center gap-1.5">
-                          {PRINCIPLE_LABELS[key] ?? key}
-                          {val.evidence && (
-                            <span className={`text-xs ${muted}`}>{isOpen ? "▲" : "▼"}</span>
-                          )}
-                        </span>
-                      </td>
-                      <td className={`${tdClass} text-xs`}>
-                        {principlesWithLessons.has(toAcademySlug(key)) ? (
-                          <Link
-                            href={`/member/academy?tab=browse&tag=${toAcademySlug(key)}`}
-                            className="text-[var(--abv-azure)] hover:underline font-medium"
-                          >
-                            See lessons →
-                          </Link>
-                        ) : (
-                          <span className={muted}>{LEARNING_PATH[key] ?? "—"}</span>
-                        )}
-                      </td>
-                      <td className={tdClass}>
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1 bg-gray-100 dark:bg-[#0f1419] rounded-full h-1.5 max-w-[120px]">
-                            <div
-                              className={`h-1.5 rounded-full transition-all ${scoreBarColor(score)}`}
-                              style={{ width: score != null ? `${(score / 10) * 100}%` : "0%" }}
-                            />
-                          </div>
-                        </div>
-                      </td>
-                      <td className={tdClass}>
-                        <span
-                          className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${scoreBadge(score)}`}
-                        >
-                          {score != null ? score.toFixed(1) : "—"}
-                        </span>
-                      </td>
-                      {baselineAudit && (
-                        <td className={tdClass}>
-                          {delta != null ? (
-                            <span
-                              className={`text-xs font-semibold ${
-                                delta > 0
-                                  ? "text-green-600 dark:text-green-400"
-                                  : delta < 0
-                                  ? "text-[var(--abv-crimson)]"
-                                  : muted
-                              }`}
-                            >
-                              {delta > 0 ? `+${delta.toFixed(1)}` : delta.toFixed(1)}
-                            </span>
-                          ) : (
-                            <span className={`text-xs ${muted}`}>—</span>
-                          )}
-                        </td>
-                      )}
-                    </tr>
-                    {isOpen && val.evidence && (
-                      <tr className="bg-gray-50 dark:bg-[#0f1419]">
-                        <td
-                          colSpan={baselineAudit ? 5 : 4}
-                          className={`px-5 pb-3 pt-0 text-xs italic ${muted}`}
-                        >
-                          <div className="border-l-2 border-[var(--abv-azure)] pl-3 ml-1">
-                            {val.evidence}
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </React.Fragment>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-        )}
-      </div>
-
-      {/* Row 3: Learning Path + Audit History */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Learning Path */}
-        {gaps.length > 0 && (
-          <div className={`${card} overflow-hidden`}>
-            <div className="px-5 py-4 border-b border-gray-200 dark:border-[#2a2a2a] bg-[var(--abv-dark)]/5">
-              <h2 className={`text-sm font-semibold ${txt}`}>📚 Your Learning Path</h2>
-              <p className={`text-xs ${muted} mt-0.5`}>Revisit these lessons to close your gaps</p>
-            </div>
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-200 dark:border-[#2a2a2a]">
-                  <th className={thClass}>Principle</th>
-                  <th className={thClass}>Score</th>
-                  <th className={thClass}>Lesson</th>
-                </tr>
-              </thead>
-              <tbody className={`divide-y ${divider}`}>
-                {gaps.map(({ key, val }) => (
-                  <tr key={key} className="hover:bg-gray-50 dark:hover:bg-[var(--abv-dark)] transition-colors">
-                    <td className={`${tdClass} font-medium ${txt}`}>{PRINCIPLE_LABELS[key]}</td>
-                    <td className={tdClass}>
-                      <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${scoreBadge(val.score)}`}>
-                        {val.score?.toFixed(1)}
-                      </span>
-                    </td>
-                    <td className={`${tdClass} text-xs`}>
-                      {principlesWithLessons.has(toAcademySlug(key)) ? (
-                        <Link
-                          href={`/member/academy?tab=browse&tag=${toAcademySlug(key)}`}
-                          className="text-[var(--abv-azure)] font-semibold hover:underline"
-                        >
-                          See lessons →
-                        </Link>
-                      ) : (
-                        <span className="text-[var(--abv-azure)] font-semibold">{LEARNING_PATH[key] ?? "—"}</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {/* Audit History */}
-        <div className={`${card} overflow-hidden ${gaps.length === 0 ? "lg:col-span-2" : ""}`}>
-          <div className="px-5 py-4 border-b border-gray-200 dark:border-[#2a2a2a]">
-            <h2 className={`text-sm font-semibold ${txt}`}>Audit History</h2>
-            <p className={`text-xs ${muted} mt-0.5`}>{audits.length} audit{audits.length !== 1 ? "s" : ""} completed</p>
-          </div>
-          <div className={`divide-y ${divider}`}>
-            {audits.map((a: any) => {
-              const isSV = a.auditType === "single_video";
-              const v = isSV ? (a.videosAnalysed as any[])?.[0] : null;
+          <div className="flex gap-3 overflow-x-auto pb-1">
+            {recentVideoAudits.map((a: any) => {
+              const v = (a.videosAnalysed as any[])?.[0];
               const videoId = v?.videoId;
-              const thumbUrl = videoId ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg` : null;
-              const title = isSV ? (v?.title ?? "Single Video") : (a.auditType === "baseline" ? "Baseline Audit" : "Monthly Audit");
-              const uploadDate = v?.uploadDate;
+              const thumbUrl = videoId
+                ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`
+                : null;
+              const title = v?.title ?? "Untitled video";
+              const score = a.overallScore != null ? Number(a.overallScore) : null;
+              const t = tier(score);
               return (
                 <Link
                   key={a.id}
                   href={`/member/audits/${a.id}`}
-                  className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 dark:hover:bg-[var(--abv-dark)] transition-colors group"
+                  className="flex-shrink-0 w-[280px] bg-white border border-[var(--abv-border)] rounded-[12px] p-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] hover:-translate-y-px transition-all cursor-pointer"
                 >
-                  {/* Left: thumbnail or type icon */}
-                  <div className="shrink-0">
-                    {thumbUrl ? (
+                  <div
+                    className="aspect-[16/9] rounded-md flex items-end justify-end p-1.5 mb-3 relative overflow-hidden"
+                    style={{
+                      background: thumbUrl
+                        ? undefined
+                        : "linear-gradient(135deg, #1A1A1A 0%, rgba(61,195,255,0.25) 100%)",
+                    }}
+                  >
+                    {thumbUrl && (
                       <img
                         src={thumbUrl}
                         alt={title}
-                        className="w-[72px] h-[41px] rounded object-cover"
+                        className="absolute inset-0 w-full h-full object-cover rounded-md"
                       />
-                    ) : channelThumbnailUrl ? (
-                      <img
-                        src={channelThumbnailUrl}
-                        alt={channelName ?? "Channel"}
-                        className="w-[41px] h-[41px] rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className={`w-[41px] h-[41px] rounded-full flex items-center justify-center text-xs font-bold ${
-                        a.auditType === "baseline"
-                          ? "bg-[var(--abv-dark)]/15 text-[var(--abv-azure)]"
-                          : "bg-purple-100 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400"
-                      }`}>
-                        {a.auditType === "baseline" ? "B" : "M"}
-                      </div>
                     )}
                   </div>
-
-                  {/* Middle: title + date */}
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-medium ${txt} line-clamp-2 leading-snug group-hover:text-[var(--abv-azure)] transition-colors`}>
-                      {title}
-                    </p>
-                    <p className={`text-xs ${muted} mt-0.5`}>
-                      {uploadDate ? fmt(uploadDate) : fmt(a.createdAt)}
-                    </p>
+                  <div className="text-[13.5px] font-semibold text-[var(--abv-text)] leading-[1.35] mb-2 min-h-[36px] line-clamp-2">
+                    {title}
                   </div>
-
-                  {/* Right: score + link */}
-                  <div className="shrink-0 flex flex-col items-end gap-1.5">
-                    {a.overallScore != null ? (
-                      <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${scoreBadge(Number(a.overallScore))}`}>
-                        {Number(a.overallScore).toFixed(1)}
-                      </span>
-                    ) : (
-                      <span className={`text-xs ${muted}`}>—</span>
-                    )}
-                    <span className="text-xs font-medium text-[var(--abv-azure)] group-hover:underline whitespace-nowrap">
-                      View Report →
+                  <div className="flex items-baseline justify-between pt-2 border-t border-[var(--abv-border)]">
+                    <span
+                      className={`font-display font-extrabold text-[22px] tracking-[-0.02em] leading-none tabular-nums ${tierText[t]}`}
+                    >
+                      {score != null ? score.toFixed(1) : "—"}
+                    </span>
+                    <span className="font-mono text-[10px] text-[var(--abv-text-dim)] tracking-[0.04em]">
+                      Audited {fmtShort(a.createdAt)}
                     </span>
                   </div>
                 </Link>
               );
             })}
           </div>
-        </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
+// ── Subcomponents ────────────────────────────────────────────────────────
+
+function ScoreArc({ score, tier: t }: { score: number; tier: Tier }) {
+  const R = 44;
+  const circumference = 2 * Math.PI * R;
+  const filled = (score / 10) * circumference;
+  const stroke = tierStroke[t];
+  return (
+    <div className="relative w-[220px] h-[220px]">
+      <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+        <circle
+          cx="50"
+          cy="50"
+          r={R}
+          fill="none"
+          stroke="rgba(0,0,0,0.05)"
+          strokeWidth={8}
+        />
+        <circle
+          cx="50"
+          cy="50"
+          r={R}
+          fill="none"
+          stroke={stroke}
+          strokeWidth={8}
+          strokeLinecap="round"
+          strokeDasharray={`${filled} ${circumference}`}
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="font-display font-black text-[76px] tracking-[-0.04em] text-[var(--abv-text)] leading-[0.9] tabular-nums">
+          {score.toFixed(1)}
+        </span>
+        <span className="text-sm text-[var(--abv-text-dim)] mt-2 font-medium">/ 10</span>
       </div>
     </div>
+  );
+}
+
+function TrajectoryChart({
+  points,
+}: {
+  points: { score: number; date: Date }[];
+}) {
+  if (points.length === 0) {
+    return (
+      <div className="h-[220px] flex items-center justify-center text-sm text-[var(--abv-text-muted)]">
+        No channel audits yet
+      </div>
+    );
+  }
+  const W = 720;
+  const H = 220;
+  const padL = 32;
+  const padR = 32;
+  const xMin = padL + 24;
+  const xMax = W - padR;
+  const yTop = 0;
+  const yBottom = 200;
+  const xFor = (i: number) =>
+    points.length === 1 ? xMax : xMin + (i * (xMax - xMin)) / (points.length - 1);
+  const yFor = (s: number) => yBottom - (s / 10) * (yBottom - yTop);
+  const lastIdx = points.length - 1;
+  const last = points[lastIdx];
+  const lastTier = tier(last.score);
+  const lineD = points
+    .map((p, i) => `${i === 0 ? "M" : "L"} ${xFor(i).toFixed(1)},${yFor(p.score).toFixed(1)}`)
+    .join(" ");
+  const areaD = `${lineD} L ${xMax},${yBottom} L ${xMin},${yBottom} Z`;
+  const tooltipX = Math.min(W - 84, xFor(lastIdx) - 28);
+  return (
+    <svg
+      viewBox={`0 0 ${W} ${H}`}
+      preserveAspectRatio="none"
+      className="w-full h-[220px]"
+    >
+      {/* gridlines */}
+      <line x1={padL} x2={W - padR} y1={200} y2={200} stroke="rgba(0,0,0,0.10)" strokeWidth={1} />
+      {[160, 120, 80, 40].map((y) => (
+        <line
+          key={y}
+          x1={padL}
+          x2={W - padR}
+          y1={y}
+          y2={y}
+          stroke="rgba(0,0,0,0.10)"
+          strokeWidth={1}
+          strokeDasharray="2 3"
+        />
+      ))}
+      {/* y labels */}
+      {[
+        [0, 204],
+        [2, 164],
+        [4, 124],
+        [6, 84],
+        [8, 44],
+        [10, 14],
+      ].map(([val, y]) => (
+        <text
+          key={val}
+          x={val === 10 ? 10 : 14}
+          y={y}
+          className="font-mono"
+          style={{ fontSize: 10, fill: "var(--abv-text-dim)" }}
+        >
+          {val}
+        </text>
+      ))}
+      {/* area + line */}
+      <path d={areaD} fill="var(--abv-azure-tint)" />
+      <path
+        d={lineD}
+        fill="none"
+        stroke="var(--abv-text)"
+        strokeWidth={2.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      {/* dots */}
+      {points.map((p, i) =>
+        i === lastIdx ? null : (
+          <circle key={i} cx={xFor(i)} cy={yFor(p.score)} r={3} fill="var(--abv-text)" />
+        ),
+      )}
+      {/* end cursor */}
+      <circle
+        cx={xFor(lastIdx)}
+        cy={yFor(last.score)}
+        r={5}
+        fill="white"
+        stroke={tierStroke[lastTier]}
+        strokeWidth={2}
+      />
+      {/* tooltip on last point */}
+      <g transform={`translate(${tooltipX}, 18)`}>
+        <rect width={74} height={38} rx={6} fill="var(--abv-ink)" />
+        <text
+          x={8}
+          y={14}
+          style={{ fill: "rgba(255,255,255,0.65)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase" as const, fontFamily: "var(--font-mono)" }}
+        >
+          {fmtShort(last.date)}
+        </text>
+        <text
+          x={8}
+          y={30}
+          style={{ fill: "white", fontSize: 11, fontWeight: 600, fontFamily: "var(--font-mono)" }}
+        >
+          {last.score.toFixed(1)} / 10
+        </text>
+      </g>
+      {/* x labels */}
+      {points.map((p, i) => (
+        <text
+          key={i}
+          x={xFor(i)}
+          y={218}
+          textAnchor="middle"
+          className="font-mono"
+          style={{ fontSize: 10, fill: "var(--abv-text-dim)" }}
+        >
+          {fmtShort(p.date)}
+        </text>
+      ))}
+    </svg>
   );
 }

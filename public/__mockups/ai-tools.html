@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>AI Tools hub — Member mockup</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<link rel="preconnect" href="https://api.fontshare.com" />
+<link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@700,800,900&f[]=satoshi@400,500,600,700&display=swap" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&display=swap" />
+
+<style>
+  :root {
+    --abv-bg: #FAFAF8;
+    --abv-bg-warm: #F5F4F0;
+    --abv-card: #FFFFFF;
+    --abv-ink: #1A1A1A;
+    --abv-text: #1A1A1A;
+    --abv-text-muted: #6B6B6B;
+    --abv-text-dim: #9B9B9B;
+    --abv-border: rgba(0,0,0,0.06);
+    --abv-border-strong: rgba(0,0,0,0.10);
+    --abv-azure: #3DC3FF;
+    --abv-azure-tint: rgba(61,195,255,0.10);
+    --abv-crimson: #FF0033;
+    --abv-academy: #10B981;
+    --abv-ai-tools: #6BA3C7;
+    --abv-ai-tools-tint: rgba(107,163,199,0.10);
+    --abv-hire: #8B5CF6;
+    --abv-leads: #E63946;
+    --abv-scores: #F59E0B;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.04);
+    --shadow-md: 0 8px 30px rgba(0,0,0,0.06);
+    --font-display: "Cabinet Grotesk", system-ui, sans-serif;
+    --font-sans: "Satoshi", system-ui, sans-serif;
+    --font-mono: "Geist Mono", ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--abv-bg); color: var(--abv-text); font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+  button, a { font-family: inherit; cursor: pointer; }
+  a { text-decoration: none; color: inherit; }
+
+  /* Shell */
+  .shell { display: grid; grid-template-columns: 220px minmax(0, 1fr); min-height: 100vh; }
+
+  /* Sidebar */
+  .side { background: var(--abv-ink); color: white; display: flex; flex-direction: column; }
+  .side-brand { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .side-brand .mark { width: 28px; height: 28px; border-radius: 6px; background: linear-gradient(135deg, #3DC3FF 0%, #1A1A1A 100%); }
+  .side-brand .name { font-family: var(--font-display); font-weight: 800; font-size: 13.5px; line-height: 1.1; }
+  .side-brand .name .by { color: var(--abv-azure); font-style: italic; font-weight: 700; }
+  .side nav { flex: 1; padding: 8px 0; overflow-y: auto; }
+  .side-section { padding: 14px 14px 6px; font-family: var(--font-mono); font-size: 9.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.40); }
+  .side-link { display: flex; align-items: center; gap: 10px; padding: 8px 14px; font-size: 12.5px; color: rgba(255,255,255,0.66); }
+  .side-link:hover { background: rgba(255,255,255,0.04); color: white; }
+  .side-link.active { background: rgba(255,255,255,0.08); color: white; border-left: 2px solid var(--abv-azure); padding-left: 12px; font-weight: 600; }
+  .side-link .ico { width: 16px; text-align: center; font-size: 13px; }
+  .side-link .dot { width: 6px; height: 6px; border-radius: 50%; margin-left: auto; }
+  .side-user { padding: 12px 14px; border-top: 1px solid rgba(255,255,255,0.06); display: flex; align-items: center; gap: 10px; }
+  .side-user .av { width: 26px; height: 26px; border-radius: 9999px; background: var(--abv-azure); color: var(--abv-ink); display: inline-flex; align-items: center; justify-content: center; font-weight: 800; font-size: 11px; }
+  .side-user .name { font-size: 11.5px; font-weight: 600; }
+  .side-user .tier { font-family: var(--font-mono); font-size: 9px; color: rgba(255,255,255,0.45); letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600; }
+
+  /* Body */
+  .body { max-width: 1080px; padding: 36px 40px 64px; }
+
+  /* PageHeader */
+  .ph { margin-bottom: 36px; }
+  .eb { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 9999px; background: var(--abv-azure-tint); color: var(--abv-azure); font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+  .eb::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: var(--abv-azure); }
+  .ph h1 { font-family: var(--font-display); font-size: 48px; font-weight: 900; letter-spacing: -0.03em; line-height: 1.05; margin: 14px 0 12px; max-width: 720px; }
+  .ph h1 .azure { color: var(--abv-azure); }
+  .ph .sub { font-size: 15.5px; color: var(--abv-text-muted); margin: 0; max-width: 620px; line-height: 1.55; }
+
+  /* Tools grid — 2 cols, 5th card centers */
+  .tools { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-bottom: 48px; }
+  .tools .tool:nth-child(5) { grid-column: 1 / -1; max-width: calc(50% - 7px); justify-self: center; }
+  .tool { background: var(--abv-card); border: 1px solid var(--abv-border); border-radius: 14px; padding: 22px; display: flex; gap: 18px; align-items: flex-start; box-shadow: var(--shadow-sm); transition: box-shadow 200ms, border-color 200ms, transform 200ms; }
+  .tool:hover { box-shadow: var(--shadow-md); border-color: var(--abv-border-strong); transform: translateY(-1px); }
+  .tool-icon { width: 64px; height: 64px; flex-shrink: 0; border-radius: 14px; background: var(--abv-ai-tools-tint); color: var(--abv-ai-tools); display: inline-flex; align-items: center; justify-content: center; }
+  .tool-icon svg { width: 28px; height: 28px; }
+  .tool-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+  .tool-name { font-family: var(--font-display); font-size: 20px; font-weight: 800; letter-spacing: -0.02em; color: var(--abv-text); line-height: 1.2; }
+  .tool-tag { font-size: 14px; color: var(--abv-text-muted); line-height: 1.45; }
+  .tool-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px; padding-top: 12px; border-top: 1px solid var(--abv-border); }
+  .tool-activity { font-family: var(--font-mono); font-size: 10.5px; color: var(--abv-text-dim); letter-spacing: 0.04em; display: inline-flex; align-items: center; gap: 6px; }
+  .tool-activity::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: var(--abv-academy); }
+  .btn-out { display: inline-flex; align-items: center; gap: 6px; padding: 7px 16px; background: transparent; color: var(--abv-text); border: 1.5px solid var(--abv-ink); border-radius: 9999px; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+  .btn-out:hover { background: var(--abv-ink); color: white; }
+
+  /* Workflow block */
+  .workflow { background: var(--abv-card); border: 1px solid var(--abv-border); border-radius: 14px; padding: 32px 36px; box-shadow: var(--shadow-sm); }
+  .workflow-h { margin-bottom: 22px; max-width: 620px; }
+  .workflow-h h3 { font-family: var(--font-display); font-size: 30px; font-weight: 800; letter-spacing: -0.025em; line-height: 1.1; margin: 12px 0 6px; }
+  .workflow-h h3 .azure { color: var(--abv-azure); }
+  .workflow-h .desc { font-size: 14px; color: var(--abv-text-muted); margin: 0; line-height: 1.55; }
+  .workflow-list { display: flex; flex-direction: column; gap: 14px; counter-reset: step; }
+  .workflow-step { display: flex; gap: 18px; align-items: flex-start; padding: 14px 0; border-bottom: 1px solid var(--abv-border); }
+  .workflow-step:last-child { border-bottom: 0; padding-bottom: 0; }
+  .workflow-num { counter-increment: step; flex-shrink: 0; width: 36px; height: 36px; border-radius: 9999px; background: var(--abv-bg-warm); display: inline-flex; align-items: center; justify-content: center; font-family: var(--font-display); font-weight: 800; font-size: 15px; color: var(--abv-ink); letter-spacing: -0.01em; }
+  .workflow-num::before { content: counter(step, decimal-leading-zero); }
+  .workflow-text { font-size: 14.5px; color: var(--abv-text); line-height: 1.5; padding-top: 7px; }
+  .workflow-text strong { color: var(--abv-text); font-weight: 700; }
+  .workflow-text .tag { display: inline-block; margin-left: 6px; padding: 2px 7px; border-radius: 9999px; background: var(--abv-bg-warm); font-family: var(--font-mono); font-size: 9.5px; color: var(--abv-text-dim); letter-spacing: 0.06em; text-transform: uppercase; font-weight: 600; }
+
+  /* Annot */
+  .annot { background: var(--abv-bg-warm); border: 1px solid var(--abv-border); border-radius: 12px; padding: 18px 22px; margin-top: 40px; }
+  .annot-label { font-family: var(--font-mono); font-size: 10px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; color: var(--abv-text-dim); margin-bottom: 10px; }
+  .annot ul { margin: 0; padding-left: 18px; font-size: 13px; color: var(--abv-text-muted); line-height: 1.6; }
+  .annot li + li { margin-top: 6px; }
+  .annot strong { color: var(--abv-text); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <!-- Sidebar -->
+  <aside class="side">
+    <div class="side-brand">
+      <span class="mark"></span>
+      <span class="name">Attraction <span class="by">by</span> Video</span>
+    </div>
+    <nav>
+      <a class="side-link" href="#"><span class="ico">🏠</span>Dashboard</a>
+      <div class="side-section">Create</div>
+      <a class="side-link active" href="#"><span class="ico">✨</span>AI Tools<span class="dot" style="background: var(--abv-ai-tools)"></span></a>
+      <a class="side-link" href="#"><span class="ico">📅</span>Content Planner</a>
+      <div class="side-section">Improve</div>
+      <a class="side-link" href="#"><span class="ico">🏆</span>My Scores<span class="dot" style="background: var(--abv-scores)"></span></a>
+      <a class="side-link" href="#"><span class="ico">🎓</span>Academy<span class="dot" style="background: var(--abv-academy)"></span></a>
+      <a class="side-link" href="#"><span class="ico">📹</span>My Calls</a>
+      <div class="side-section">Grow</div>
+      <a class="side-link" href="#"><span class="ico">🚀</span>Generate Leads<span class="dot" style="background: var(--abv-leads)"></span></a>
+      <a class="side-link" href="#"><span class="ico">🤝</span>Hire a Human<span class="dot" style="background: var(--abv-hire)"></span></a>
+      <div class="side-section">Workspace</div>
+      <a class="side-link" href="#"><span class="ico">📁</span>My Work</a>
+    </nav>
+    <div class="side-user">
+      <span class="av">JC</span>
+      <div>
+        <div class="name">Jared C.</div>
+        <div class="tier">Foundations</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Body -->
+  <main class="body">
+    <!-- PageHeader -->
+    <header class="ph">
+      <span class="eb">Members tools</span>
+      <h1>Build, write, <span class="azure">review</span>.</h1>
+      <p class="sub">Five tools that turn your channel into a system. Use them in this order until they become muscle memory.</p>
+    </header>
+
+    <!-- 5 tools -->
+    <section class="tools">
+
+      <!-- 1. Avatar Architect -->
+      <a class="tool" href="#">
+        <span class="tool-icon">
+          <!-- target / bullseye -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"/>
+            <circle cx="12" cy="12" r="5.5"/>
+            <circle cx="12" cy="12" r="2" fill="currentColor"/>
+          </svg>
+        </span>
+        <div class="tool-body">
+          <div class="tool-name">Avatar Architect</div>
+          <div class="tool-tag">Define who you talk to.</div>
+          <div class="tool-foot">
+            <span class="tool-activity">Last edited 3 days ago</span>
+            <span class="btn-out">Open →</span>
+          </div>
+        </div>
+      </a>
+
+      <!-- 2. Content Engine -->
+      <a class="tool" href="#">
+        <span class="tool-icon">
+          <!-- sparkles -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3l1.8 4.5L18 9l-4.2 1.5L12 15l-1.8-4.5L6 9l4.2-1.5z"/>
+            <path d="M19 14l.8 2L22 17l-2.2 1L19 20l-.8-2L16 17l2.2-1z"/>
+            <path d="M5 17l.6 1.4L7 19l-1.4.6L5 21l-.6-1.4L3 19l1.4-.6z"/>
+          </svg>
+        </span>
+        <div class="tool-body">
+          <div class="tool-name">Content Engine</div>
+          <div class="tool-tag">Generate ideas at scale.</div>
+          <div class="tool-foot">
+            <span class="tool-activity">12 ideas generated this week</span>
+            <span class="btn-out">Open →</span>
+          </div>
+        </div>
+      </a>
+
+      <!-- 3. ARC Script Builder -->
+      <a class="tool" href="#">
+        <span class="tool-icon">
+          <!-- document with pencil -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2v-8"/>
+            <path d="M18 2.5l3.5 3.5L13 14.5 9 15.5l1-4z"/>
+            <path d="M8 13h3M8 17h5"/>
+          </svg>
+        </span>
+        <div class="tool-body">
+          <div class="tool-name">ARC Script Builder</div>
+          <div class="tool-tag">Write scripts that hold attention.</div>
+          <div class="tool-foot">
+            <span class="tool-activity">5 drafts in progress</span>
+            <span class="btn-out">Open →</span>
+          </div>
+        </div>
+      </a>
+
+      <!-- 4. Title & Thumbnail Analyzer -->
+      <a class="tool" href="#">
+        <span class="tool-icon">
+          <!-- microscope/analysis -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="13" rx="2"/>
+            <path d="M3 17h18"/>
+            <path d="M8 21h8"/>
+            <path d="M12 17v4"/>
+            <path d="M7 13l3-4 3 3 4-5"/>
+          </svg>
+        </span>
+        <div class="tool-body">
+          <div class="tool-name">Title &amp; Thumbnail Analyzer</div>
+          <div class="tool-tag">Score before you publish.</div>
+          <div class="tool-foot">
+            <span class="tool-activity">2 score reports pending review</span>
+            <span class="btn-out">Open →</span>
+          </div>
+        </div>
+      </a>
+
+      <!-- 5. Script Review (centers below) -->
+      <a class="tool" href="#">
+        <span class="tool-icon">
+          <!-- check-circle -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"/>
+            <path d="M8 12l3 3 5-6"/>
+          </svg>
+        </span>
+        <div class="tool-body">
+          <div class="tool-name">Script Review</div>
+          <div class="tool-tag">Get a second pair of eyes.</div>
+          <div class="tool-foot">
+            <span class="tool-activity">Last review: yesterday</span>
+            <span class="btn-out">Open →</span>
+          </div>
+        </div>
+      </a>
+    </section>
+
+    <!-- Workflow block -->
+    <section class="workflow">
+      <div class="workflow-h">
+        <span class="eb">Workflow</span>
+        <h3>The order <span class="azure">matters</span>.</h3>
+        <p class="desc">Five tools, used in sequence, become muscle memory for shipping a channel that converts. Follow the order until you can run it from memory.</p>
+      </div>
+      <ol class="workflow-list" style="list-style: none; padding: 0; margin: 0;">
+        <li class="workflow-step">
+          <span class="workflow-num"></span>
+          <span class="workflow-text">Start with <strong>Avatar Architect</strong> to define exactly who you&rsquo;re talking to. <span class="tag">Once per quarter</span></span>
+        </li>
+        <li class="workflow-step">
+          <span class="workflow-num"></span>
+          <span class="workflow-text">Run <strong>Content Engine</strong> weekly to generate validated ideas from your data. <span class="tag">Weekly</span></span>
+        </li>
+        <li class="workflow-step">
+          <span class="workflow-num"></span>
+          <span class="workflow-text">Use <strong>ARC Script Builder</strong> to write the script, with cited facts auto-anchored. <span class="tag">Per video</span></span>
+        </li>
+        <li class="workflow-step">
+          <span class="workflow-num"></span>
+          <span class="workflow-text">Score with <strong>Title &amp; Thumbnail Analyzer</strong> before you publish. <span class="tag">Per video</span></span>
+        </li>
+        <li class="workflow-step">
+          <span class="workflow-num"></span>
+          <span class="workflow-text">Run <strong>Script Review</strong> for a second-pass quality check. <span class="tag">Per video</span></span>
+        </li>
+      </ol>
+    </section>
+
+    <!-- Annot -->
+    <div class="annot">
+      <div class="annot-label">Design notes</div>
+      <ul>
+        <li><strong>The 64×64 sky-tinted icon blocks</strong> use the AI Tools feature colour (<code>#6BA3C7</code> at 10% opacity background, full saturation icon). All five cards share the colour because this is the index, not the individual tools — the per-tool colour identity comes later, inside each tool page.</li>
+        <li><strong>The recent activity badge prevents the page from reading as static.</strong> "Last edited 3 days ago" / "12 ideas this week" / "5 drafts in progress" communicates "I&rsquo;m a tool that I&rsquo;ve actually used." Without it the page looks like a marketing brochure.</li>
+        <li><strong>The workflow block at the bottom doubles as in-app onboarding.</strong> First-time members learn the order; returning members get a glanceable reminder. Frequency tags (<em>once per quarter</em>, <em>weekly</em>, <em>per video</em>) tell them what to plan around.</li>
+        <li><strong>One azure moment per region:</strong> the eyebrow pill at the top and the &ldquo;matters&rdquo; word in the workflow heading. Cards stay quiet on warm off-white, so the tools themselves don&rsquo;t fight each other for attention.</li>
+        <li><strong>The 5th card centers below</strong> the 2&times;2 grid rather than orphaning in a third column &mdash; visually pleasant, and reinforces Script Review&rsquo;s position as the final pass.</li>
+      </ul>
+    </div>
+  </main>
+</div>
+</body>
+</html>

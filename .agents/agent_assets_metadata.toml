@@ -36,3 +36,15 @@ id = "uBwjFC6wUx-IQjaQZYAS9"
 uri = "file://attached_assets/screenshots/mockups/6-edit-SectionNav.png"
 type = "image"
 title = "Editor — Section-Nav (sticky pill nav, single scroll)"
+
+[[outputs]]
+id = "0ofTJ7cYrLINhHm2UbULo"
+uri = "file://screenshots/scores-mockup.jpg"
+type = "image"
+title = "Scores — mockup (target)"
+
+[[outputs]]
+id = "Vx6CyOTDlU-ukuTzZaXeP"
+uri = "file://screenshots/aitools-mockup.jpg"
+type = "image"
+title = "AI Tools — mockup (target)"

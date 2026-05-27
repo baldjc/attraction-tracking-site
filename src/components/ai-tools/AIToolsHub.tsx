@@ -1,30 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
-import UpgradeModal, { type UpgradeTrigger } from "@/components/upgrade/UpgradeModal";
-import { useUpgradeGate } from "@/components/upgrade/useUpgradeGate";
-
-interface AvatarData {
-  avatarName?: string | null;
-  updatedAt?: string | null;
-}
-
-interface SavedScript {
-  id: string;
-  videoTitle: string;
-  createdAt: string;
-}
-
-interface UsageData {
-  percentUsed: number;
-  cap: string;
-  totalCost: string;
-  remaining: string;
-  breakdown: Record<string, string>;
-  resetsAt: string;
-}
+import { useEffect, useState, type ReactNode } from "react";
 
 interface FeatureFlags {
   tool_avatar_architect?: boolean;
@@ -40,433 +17,255 @@ interface Props {
   featureFlags?: FeatureFlags | null;
 }
 
-const TOOL_LABELS: Record<string, string> = {
-  arc_script_builder: "ARC Script Builder",
-  avatar_architect: "Avatar Architect",
-  content_engine: "Content Engine",
-  title_thumbnail_analyzer: "Title & Thumbnail Analyzer",
-  script_review: "Script Review",
-  description_generator: "Description Generator",
-  listing_video_builder: "Listing Video Builder",
-};
-
-function UsageCard({ usage }: { usage: UsageData }) {
-  const pct = Math.min(100, usage.percentUsed);
-  const barColor = pct >= 90 ? "bg-red-500" : pct >= 75 ? "bg-amber-400" : "bg-[var(--abv-ai-tools)]";
-  const textColor = pct >= 90 ? "text-red-600 dark:text-red-400" : pct >= 75 ? "text-amber-600 dark:text-amber-400" : "text-[var(--abv-ai-tools)]";
-
-  const breakdownEntries = Object.entries(usage.breakdown).filter(([, v]) => parseFloat(v) > 0);
-
-  return (
-    <div className="bg-white dark:bg-[#1a1a1a] border border-[var(--abv-text)]/10 dark:border-white/10 rounded-lg p-5 space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-[var(--abv-text)] dark:text-white text-sm">My AI Usage</h3>
-        <span className={`text-xs font-semibold ${textColor}`}>{Math.round(pct)}%</span>
-      </div>
-
-      <div>
-        <div className="h-2 bg-[#111]/10 dark:bg-white/10 rounded-full overflow-hidden">
-          <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${pct}%` }} />
-        </div>
-        <p className="text-xs text-[var(--abv-text)]/50 dark:text-white/50 mt-2">
-          {Math.round(pct)}% of monthly allowance used
-        </p>
-      </div>
-
-      {breakdownEntries.length > 0 && (
-        <div className="space-y-1 pt-1 border-t border-[var(--abv-text)]/5 dark:border-white/5">
-          {breakdownEntries.map(([tool, cost]) => {
-            const toolPct = parseFloat(usage.cap) > 0
-              ? ((parseFloat(cost) / parseFloat(usage.cap)) * 100).toFixed(1)
-              : "0.0";
-            return (
-              <div key={tool} className="flex items-center justify-between">
-                <span className="text-xs text-[var(--abv-text)]/60 dark:text-white/60">{TOOL_LABELS[tool] ?? tool}</span>
-                <span className="text-xs text-[var(--abv-text)]/50 dark:text-white/50">{toolPct}%</span>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      <p className="text-xs text-[var(--abv-text)]/40 dark:text-white/40">Resets {usage.resetsAt}</p>
-    </div>
-  );
+interface ActivitySummary {
+  avatar: { name: string | null; lastEditedLabel: string | null };
+  contentEngine: { ideasThisWeek: number };
+  arcScript: { draftsInProgress: number };
+  titleAnalyzer: { pendingReports: number };
+  scriptReview: { lastReviewLabel: string | null };
 }
 
-const SECTIONS = [
-  {
-    id: "start",
-    icon: "🏁",
-    label: "Get Started",
-    description: "Everything starts with knowing who you're talking to.",
-    tools: ["avatar_architect"],
-    columns: 1,
-  },
-  {
-    id: "create",
-    icon: "✍️",
-    label: "Create",
-    description: "Turn your avatar into ideas and scripts.",
-    tools: ["content_engine", "arc_script_builder", "listing_video_builder"],
-    columns: 2,
-  },
-  {
-    id: "refine",
-    icon: "🔍",
-    label: "Refine",
-    description: "Score and improve before you publish.",
-    tools: ["title_analyzer", "script_review"],
-    columns: 2,
-  },
-  {
-    id: "distribute",
-    icon: "📤",
-    label: "Distribute",
-    description: "Turn one video into content everywhere.",
-    tools: ["repurpose_content", "description_generator"],
-    columns: 2,
-  },
-  {
-    id: "library",
-    icon: "💡",
-    label: "Library",
-    description: "Everything you've saved, in one place.",
-    tools: ["saved_ideas"],
-    columns: 1,
-    flagKey: "saved_ideas_page",
-  },
-];
+const IconTarget = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7">
+    <circle cx="12" cy="12" r="9" />
+    <circle cx="12" cy="12" r="5.5" />
+    <circle cx="12" cy="12" r="2" fill="currentColor" />
+  </svg>
+);
+const IconSparkles = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7">
+    <path d="M12 3l1.8 4.5L18 9l-4.2 1.5L12 15l-1.8-4.5L6 9l4.2-1.5z" />
+    <path d="M19 14l.8 2L22 17l-2.2 1L19 20l-.8-2L16 17l2.2-1z" />
+    <path d="M5 17l.6 1.4L7 19l-1.4.6L5 21l-.6-1.4L3 19l1.4-.6z" />
+  </svg>
+);
+const IconDocPencil = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7">
+    <path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2v-8" />
+    <path d="M18 2.5l3.5 3.5L13 14.5 9 15.5l1-4z" />
+    <path d="M8 13h3M8 17h5" />
+  </svg>
+);
+const IconChart = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7">
+    <rect x="3" y="4" width="18" height="13" rx="2" />
+    <path d="M3 17h18" />
+    <path d="M8 21h8" />
+    <path d="M12 17v4" />
+    <path d="M7 13l3-4 3 3 4-5" />
+  </svg>
+);
+const IconCheckCircle = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7">
+    <circle cx="12" cy="12" r="9" />
+    <path d="M8 12l3 3 5-6" />
+  </svg>
+);
+
+interface ToolCard {
+  href: string;
+  name: string;
+  tag: string;
+  icon: ReactNode;
+  featureKey: keyof FeatureFlags;
+  activity: string | null;
+}
 
 export default function AIToolsHub({ basePath, featureFlags }: Props) {
-  const { data: session } = useSession();
-  const isAdmin = (session?.user as any)?.role === "admin";
-  const upgradeGate = useUpgradeGate();
-  const [upgradeTrigger, setUpgradeTrigger] = useState<UpgradeTrigger | null>(null);
-  const [avatar, setAvatar] = useState<AvatarData | null>(null);
-  const [lastScript, setLastScript] = useState<SavedScript | null>(null);
-  const [lastReview, setLastReview] = useState<SavedScript | null>(null);
+  const [summary, setSummary] = useState<ActivitySummary | null>(null);
   const [loading, setLoading] = useState(true);
-  const [usage, setUsage] = useState<UsageData | null>(null);
-  const [savedIdeasCount, setSavedIdeasCount] = useState<number | null>(null);
-  const [reviewsCount, setReviewsCount] = useState<number | null>(null);
-
-  const scriptReviewHref = `${basePath}/script-review`;
 
   useEffect(() => {
-    Promise.all([
-      fetch("/api/member/avatar").then((r) => r.json()).catch(() => ({})),
-      fetch("/api/ai-tools/saved-scripts").then((r) => r.json()).catch(() => ({ scripts: [] })),
-      fetch("/api/ai-tools/conversations?toolType=script_review").then((r) => r.json()).catch(() => []),
-      fetch("/api/ai-tools/usage/me").then((r) => r.json()).catch(() => null),
-      fetch("/api/ai-tools/content-engine/saved-ideas?limit=1").then((r) => r.json()).catch(() => null),
-    ]).then(([av, sc, sr, us, si]) => {
-      setAvatar(av);
-      setLastScript(sc.scripts?.[0] ?? null);
-      const count = Array.isArray(sr) ? sr.length : (sr?.conversations?.length ?? 0);
-      setReviewsCount(count);
-      if (us && us.percentUsed > 0) setUsage(us);
-      if (si?.total != null) setSavedIdeasCount(si.total);
-      setLoading(false);
-    });
+    fetch("/api/member/ai-tools/activity-summary")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => setSummary(d))
+      .catch(() => setSummary(null))
+      .finally(() => setLoading(false));
   }, []);
 
-  const avatarStatus = loading
-    ? "Loading..."
-    : avatar?.avatarName
-    ? `Using avatar: ${avatar.avatarName}`
-    : "No avatar — build one first for best results";
+  // Build activity label per tool — hide when count is 0 / no data.
+  const avatarActivity =
+    summary?.avatar.lastEditedLabel != null
+      ? `Last edited ${summary.avatar.lastEditedLabel}`
+      : null;
+  const ideasActivity =
+    summary && summary.contentEngine.ideasThisWeek > 0
+      ? `${summary.contentEngine.ideasThisWeek} ideas generated this week`
+      : null;
+  const draftsActivity =
+    summary && summary.arcScript.draftsInProgress > 0
+      ? `${summary.arcScript.draftsInProgress} draft${summary.arcScript.draftsInProgress === 1 ? "" : "s"} in progress`
+      : null;
+  const pendingActivity =
+    summary && summary.titleAnalyzer.pendingReports > 0
+      ? `${summary.titleAnalyzer.pendingReports} score report${summary.titleAnalyzer.pendingReports === 1 ? "" : "s"} pending review`
+      : null;
+  const reviewActivity =
+    summary?.scriptReview.lastReviewLabel != null
+      ? `Last review: ${summary.scriptReview.lastReviewLabel}`
+      : null;
 
-  const allTools = [
+  const tools: ToolCard[] = [
     {
       href: `${basePath}/avatar-architect`,
-      id: "tool-avatar",
+      name: "Avatar Architect",
+      tag: "Define who you talk to.",
+      icon: IconTarget,
       featureKey: "tool_avatar_architect",
-      icon: "🎯",
-      title: "Avatar Architect",
-      description: "Build your ideal client avatar through a guided coaching conversation",
-      extra: avatar?.avatarName
-        ? `Avatar: ${avatar.avatarName} — Last updated ${avatar.updatedAt ? new Date(avatar.updatedAt).toLocaleDateString() : "—"}`
-        : "No avatar yet — start here",
-      badge: avatar?.avatarName ? "green" : "amber",
+      activity: avatarActivity,
     },
     {
       href: `${basePath}/content-engine`,
-      id: "tool-content-engine",
+      name: "Content Engine",
+      tag: "Generate ideas at scale.",
+      icon: IconSparkles,
       featureKey: "tool_content_engine",
-      icon: "🚀",
-      title: "Content Engine",
-      description: "Generate video ideas with titles, talking points, and strategy — organized by your content themes",
-      extra: loading
-        ? "Loading..."
-        : avatar?.avatarName
-        ? `Using avatar: ${avatar.avatarName}${savedIdeasCount ? ` · ${savedIdeasCount} saved ideas` : ""}`
-        : "No avatar — build one first for best results",
-      badge: avatar?.avatarName ? "green" : "amber",
+      activity: ideasActivity,
     },
     {
       href: `${basePath}/arc-script-builder`,
-      id: "tool-script-builder",
+      name: "ARC Script Builder",
+      tag: "Write scripts that hold attention.",
+      icon: IconDocPencil,
       featureKey: "tool_arc_script_builder",
-      icon: "🎬",
-      title: "ARC Script Builder",
-      description: "Build a complete video script outline using the ARC Method",
-      extra: lastScript
-        ? `Last script: ${new Date(lastScript.createdAt).toLocaleDateString()}`
-        : avatarStatus,
-      badge: avatar?.avatarName ? "green" : "amber",
-    },
-    {
-      href: `${basePath}/listing-video-builder`,
-      id: "tool-listing-video",
-      featureKey: "tool_listing_video_builder",
-      icon: "🏠",
-      title: "Listing Video Builder",
-      description: "Turn any listing into an avatar-driven video — not a home tour, a content strategy",
-      extra: avatarStatus,
-      badge: avatar?.avatarName ? "green" : "amber",
+      activity: draftsActivity,
     },
     {
       href: `${basePath}/title-thumbnail-analyzer`,
-      id: "tool-title",
+      name: "Title & Thumbnail Analyzer",
+      tag: "Score before you publish.",
+      icon: IconChart,
       featureKey: "tool_title_analyzer",
-      icon: "🔍",
-      title: "Title & Thumbnail Analyzer",
-      description: "Score your title and thumbnail combination before you publish",
-      extra: avatarStatus,
-      badge: avatar?.avatarName ? "green" : "amber",
+      activity: pendingActivity,
     },
     {
-      href: scriptReviewHref,
-      id: "tool-review",
+      href: `${basePath}/script-review`,
+      name: "Script Review",
+      tag: "Get a second pair of eyes.",
+      icon: IconCheckCircle,
       featureKey: "tool_script_review",
-      icon: "📋",
-      title: "Script Review",
-      description: "Paste a script or transcript — get scored on 14 Attraction principles with visual suggestions",
-      extra: loading
-        ? "Loading..."
-        : reviewsCount
-        ? `${reviewsCount} saved review${reviewsCount === 1 ? "" : "s"} — last 30 days`
-        : "No reviews yet — paste any script to get started",
-      badge: "blue",
+      activity: reviewActivity,
+    },
+  ].filter((t) => !featureFlags || featureFlags[t.featureKey] !== false);
+
+  const workflow = [
+    {
+      bold: "Avatar Architect",
+      rest: " to define exactly who you’re talking to.",
+      lead: "Start with ",
+      tag: "Once per quarter",
     },
     {
-      href: `${basePath}/repurpose-content`,
-      id: "tool-repurpose",
-      featureKey: "tool_repurpose_content",
-      icon: "♻️",
-      title: "Repurpose Content",
-      description: "Turn your video transcript into a newsletter, LinkedIn article, Facebook post, blog post, or neighbourhood postcard",
-      extra: "Generate both in one click",
-      badge: "blue" as const,
+      bold: "Content Engine",
+      rest: " weekly to generate validated ideas from your data.",
+      lead: "Run ",
+      tag: "Weekly",
     },
     {
-      href: `${basePath}/description-generator`,
-      id: "tool-description",
-      featureKey: "tool_description_generator",
-      icon: "📝",
-      title: "Description Generator",
-      description: "Generate SEO-optimised YouTube descriptions from your video transcript",
-      extra: avatarStatus,
-      badge: avatar?.avatarName ? "green" : "amber",
+      bold: "ARC Script Builder",
+      rest: " to write the script, with cited facts auto-anchored.",
+      lead: "Use ",
+      tag: "Per video",
     },
     {
-      href: `${basePath}/saved-ideas`,
-      id: "tool-saved-ideas",
-      featureKey: "saved_ideas_page",
-      icon: "💡",
-      title: "My Saved Ideas",
-      description: "Every idea you've starred. Push to your planner or build a script when you're ready.",
-      extra: savedIdeasCount != null ? `${savedIdeasCount} saved idea${savedIdeasCount === 1 ? "" : "s"}` : "Star ideas in Content Engine to save them",
-      badge: "blue" as const,
+      bold: "Title & Thumbnail Analyzer",
+      rest: " before you publish.",
+      lead: "Score with ",
+      tag: "Per video",
+    },
+    {
+      bold: "Script Review",
+      rest: " for a second-pass quality check.",
+      lead: "Run ",
+      tag: "Per video",
     },
   ];
 
-  const hasAvatar = !loading && !!avatar?.avatarName;
-
-  const toolMap: Record<string, typeof allTools[number]> = {};
-  allTools.forEach((t) => {
-    const key = t.featureKey.replace("tool_", "");
-    toolMap[key] = t;
-  });
-
-  let stepNum = 0;
-
   return (
-    <div className="space-y-8">
-
-      {/* Usage warning banner */}
-      {!loading && usage && usage.percentUsed >= 50 && (
-        <div className={`flex items-start gap-3 border rounded-lg p-4 ${
-          usage.percentUsed >= 90
-            ? "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800"
-            : usage.percentUsed >= 75
-            ? "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800"
-            : "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800"
-        }`}>
-          <span className="text-lg">{usage.percentUsed >= 90 ? "🚫" : usage.percentUsed >= 75 ? "⚠️" : "ℹ️"}</span>
-          <p className={`text-sm ${
-            usage.percentUsed >= 90 ? "text-red-700 dark:text-red-300" : usage.percentUsed >= 75 ? "text-amber-700 dark:text-amber-300" : "text-blue-700 dark:text-blue-300"
-          }`}>
-            {usage.percentUsed >= 100
-              ? `You've reached your monthly AI usage limit. Resets ${usage.resetsAt}.`
-              : `You've used ${Math.round(usage.percentUsed)}% of your monthly AI budget. Resets ${usage.resetsAt}.`}
-          </p>
-        </div>
-      )}
-
-      {/* Sections */}
-      {SECTIONS.map((section) => {
-        const sectionTools = section.tools
-          .map((key) => toolMap[key])
-          .filter(Boolean)
-          .filter((t) => !featureFlags || featureFlags[t.featureKey] !== false);
-
-        if (sectionTools.length === 0) return null;
-
-        return (
-          <div key={section.id}>
-            {/* Section header */}
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-base">{section.icon}</span>
-              <div>
-                <h2 className="text-sm font-semibold text-[var(--abv-text)] dark:text-[#e2e8f0] uppercase tracking-wider">
-                  {section.label}
-                </h2>
-                <p className="text-xs text-[var(--abv-text)]/40 dark:text-white/30">
-                  {section.description}
-                </p>
+    <div className="font-sans text-[var(--abv-text)]">
+      {/* Tools grid — 2 cols; 5th centers below */}
+      <section className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mb-12">
+        {tools.map((tool, i) => (
+          <Link
+            key={tool.href}
+            href={tool.href}
+            className={[
+              "bg-white border border-[var(--abv-border)] rounded-[14px] p-[22px] flex gap-[18px] items-start shadow-[0_1px_3px_rgba(0,0,0,0.04)]",
+              "hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] hover:border-[var(--abv-border-strong)] hover:-translate-y-px transition-all",
+              tools.length === 5 && i === 4
+                ? "sm:col-span-2 sm:max-w-[calc(50%-7px)] sm:justify-self-center w-full"
+                : "",
+            ].join(" ")}
+          >
+            <span className="w-16 h-16 flex-shrink-0 rounded-[14px] bg-[var(--abv-ai-tools-tint)] text-[var(--abv-ai-tools)] inline-flex items-center justify-center">
+              {tool.icon}
+            </span>
+            <div className="flex-1 min-w-0 flex flex-col gap-1.5">
+              <div className="font-display text-[20px] font-extrabold tracking-[-0.02em] text-[var(--abv-text)] leading-[1.2]">
+                {tool.name}
+              </div>
+              <div className="text-sm text-[var(--abv-text-muted)] leading-[1.45]">
+                {tool.tag}
+              </div>
+              <div className="flex items-center justify-between gap-3 mt-2.5 pt-3 border-t border-[var(--abv-border)]">
+                {tool.activity ? (
+                  <span className="font-mono text-[10.5px] text-[var(--abv-text-dim)] tracking-[0.04em] inline-flex items-center gap-1.5">
+                    <span className="w-[5px] h-[5px] rounded-full bg-[var(--abv-academy)]" />
+                    {tool.activity}
+                  </span>
+                ) : (
+                  <span className="font-mono text-[10.5px] text-[var(--abv-text-dim)] tracking-[0.04em] opacity-0">
+                    {loading ? "Loading…" : "·"}
+                  </span>
+                )}
+                <span className="inline-flex items-center gap-1.5 px-4 py-[7px] bg-transparent text-[var(--abv-text)] border-[1.5px] border-[var(--abv-ink)] rounded-full text-[11px] font-semibold uppercase tracking-[0.04em] hover:bg-[var(--abv-ink)] hover:text-white transition-colors">
+                  Open →
+                </span>
               </div>
             </div>
+          </Link>
+        ))}
+      </section>
 
-            {/* Tool cards */}
-            <div className={`grid gap-3 ${
-              section.columns === 1 ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-2"
-            }`}>
-              {sectionTools.map((tool) => {
-                stepNum++;
-                const isAvatarTool = tool.featureKey === "tool_avatar_architect";
-                const isLocked = !isAvatarTool && !hasAvatar && !loading;
-                const currentStep = stepNum;
-
-                if (isLocked) {
-                  return (
-                    <div
-                      key={tool.href}
-                      className="relative bg-white dark:bg-[#1a1a1a] rounded-xl border border-[var(--abv-text)]/10 dark:border-white/10 p-5 opacity-50 cursor-not-allowed select-none"
-                    >
-                      <div className="flex items-start gap-4">
-                        <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-white/10 flex items-center justify-center shrink-0">
-                          <span className="text-xs font-bold text-[var(--abv-text)]/30 dark:text-white/20">{currentStep}</span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xl grayscale">{tool.icon}</span>
-                            <h3 className="font-semibold text-[var(--abv-text)]/40 dark:text-white/30 text-sm">
-                              {tool.title}
-                            </h3>
-                          </div>
-                          <p className="text-xs text-[var(--abv-text)]/30 dark:text-white/20 mt-1">{tool.description}</p>
-                        </div>
-                      </div>
-                      <div className="mt-3 flex items-center gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-lg px-3 py-2">
-                        <svg className="w-3.5 h-3.5 text-amber-500 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
-                        </svg>
-                        <span className="text-[11px] font-medium text-amber-700 dark:text-amber-300">
-                          Complete your avatar in Step 1 to unlock this tool
-                        </span>
-                      </div>
-                    </div>
-                  );
-                }
-
-                const interceptTrigger: UpgradeTrigger | null =
-                  tool.featureKey === "tool_arc_script_builder" && upgradeGate.shouldShow("build_script")
-                    ? "build_script"
-                    : null;
-
-                return (
-                  <Link
-                    key={tool.href}
-                    href={tool.href}
-                    onClick={(e) => {
-                      if (interceptTrigger) {
-                        e.preventDefault();
-                        setUpgradeTrigger(interceptTrigger);
-                      }
-                    }}
-                    className={`group bg-white dark:bg-[#1a1a1a] rounded-xl border hover:shadow-lg transition-all duration-200 ${
-                      isAvatarTool && !hasAvatar
-                        ? "border-[var(--abv-ai-tools)] shadow-md shadow-[var(--abv-ai-tools)]/10 ring-1 ring-[var(--abv-ai-tools)]/20"
-                        : "border-[var(--abv-text)]/10 dark:border-white/10 hover:border-[var(--abv-ai-tools)]/50"
-                    } ${section.columns === 1 ? "p-6" : "p-5"}`}
-                  >
-                    <div className="flex items-start gap-4">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-                        isAvatarTool && !hasAvatar
-                          ? "bg-[var(--abv-ai-tools)] text-white"
-                          : "bg-[var(--abv-ai-tools)]/10 text-[var(--abv-ai-tools)]"
-                      }`}>
-                        <span className="text-xs font-bold">{currentStep}</span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-xl">{tool.icon}</span>
-                          <h3 className="font-semibold text-[var(--abv-text)] dark:text-white group-hover:text-[var(--abv-ai-tools)] transition-colors text-sm">
-                            {tool.title}
-                          </h3>
-                          {isAvatarTool && !hasAvatar && (
-                            <span className="text-[10px] font-bold uppercase tracking-wider bg-[var(--abv-ai-tools)] text-white px-2 py-0.5 rounded-full">
-                              Start Here
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-[var(--abv-text)]/60 dark:text-white/60 mt-1 leading-relaxed">{tool.description}</p>
-                        <p className={`text-xs mt-2 font-medium ${
-                          tool.badge === "green"
-                            ? "text-[var(--abv-ai-tools)]"
-                            : tool.badge === "blue"
-                            ? "text-[var(--abv-text)]/50 dark:text-white/50"
-                            : "text-amber-600 dark:text-amber-400"
-                        }`}>
-                          {tool.extra}
-                        </p>
-                      </div>
-                      <span className="text-[var(--abv-text)]/20 dark:text-white/20 group-hover:text-[var(--abv-ai-tools)]/50 transition-colors text-lg mt-1">→</span>
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
-        );
-      })}
-
-      {/* Usage card */}
-      {!loading && usage && (
-        <div>
-          <UsageCard usage={usage} />
+      {/* Workflow block */}
+      <section className="bg-white border border-[var(--abv-border)] rounded-[14px] px-9 py-8 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+        <div className="mb-[22px] max-w-[620px]">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--abv-azure-tint)] text-[var(--abv-azure)] text-[11px] font-bold uppercase tracking-[0.12em]">
+            <span className="w-[5px] h-[5px] rounded-full bg-[var(--abv-azure)]" />
+            Workflow
+          </span>
+          <h3 className="font-display text-[30px] font-extrabold tracking-[-0.025em] leading-[1.1] mt-3 mb-1.5">
+            The order <span className="text-[var(--abv-azure)]">matters</span>.
+          </h3>
+          <p className="text-sm text-[var(--abv-text-muted)] leading-[1.55] m-0">
+            Five tools, used in sequence, become muscle memory for shipping a channel that converts.
+            Follow the order until you can run it from memory.
+          </p>
         </div>
-      )}
-
-      <UpgradeModal
-        trigger={upgradeTrigger ?? "build_script"}
-        open={!!upgradeTrigger}
-        onClose={() => {
-          if (upgradeTrigger) upgradeGate.markDismissed(upgradeTrigger);
-          setUpgradeTrigger(null);
-        }}
-        onContinue={() => {
-          const target = upgradeTrigger;
-          if (target) upgradeGate.markDismissed(target);
-          setUpgradeTrigger(null);
-          if (target === "build_script") {
-            window.location.href = "/member/ai-tools/script-builder";
-          }
-        }}
-        continueLabel="Continue to tool"
-      />
+        <ol className="flex flex-col gap-3.5 list-none p-0 m-0">
+          {workflow.map((s, i) => (
+            <li
+              key={i}
+              className={[
+                "flex gap-[18px] items-start py-3.5",
+                i === workflow.length - 1 ? "border-b-0 pb-0" : "border-b border-[var(--abv-border)]",
+              ].join(" ")}
+            >
+              <span className="flex-shrink-0 w-9 h-9 rounded-full bg-[var(--abv-bg-warm)] inline-flex items-center justify-center font-display font-extrabold text-[15px] text-[var(--abv-ink)] tracking-[-0.01em]">
+                {String(i + 1).padStart(2, "0")}
+              </span>
+              <span className="text-[14.5px] text-[var(--abv-text)] leading-[1.5] pt-1.5">
+                {s.lead}
+                <strong className="text-[var(--abv-text)] font-bold">{s.bold}</strong>
+                {s.rest}
+                <span className="inline-block ml-1.5 px-[7px] py-[2px] rounded-full bg-[var(--abv-bg-warm)] font-mono text-[9.5px] text-[var(--abv-text-dim)] tracking-[0.06em] uppercase font-semibold">
+                  {s.tag}
+                </span>
+              </span>
+            </li>
+          ))}
+        </ol>
+      </section>
     </div>
   );
 }

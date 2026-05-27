@@ -2,7 +2,6 @@ import { auth } from "@/lib/auth";
 import { getFeatureFlags, DEFAULT_FLAGS } from "@/lib/feature-flags";
 import { isListingVideoBuilderTester } from "@/lib/listing-video-builder-access";
 import AIToolsHub from "@/components/ai-tools/AIToolsHub";
-import PageHeader from "@/components/PageHeader";
 import AIToolsUsageLink from "@/components/ai-tools/AIToolsUsageLink";
 
 export default async function AIToolsHubPage() {
@@ -16,24 +15,29 @@ export default async function AIToolsHubPage() {
     ? { ...DEFAULT_FLAGS }
     : await getFeatureFlags();
 
-  // Admins/editors always see the Listing Video Builder (DEFAULT_FLAGS has it
-  // off by default; force it on for privileged roles).
-  // Testing override: also force it ON for allowlisted member emails so they
-  // can test the member experience. Remove allowlist once tool is rolled out.
   const featureFlags =
     isPrivileged || isListingVideoBuilderTester(email)
       ? { ...baseFlags, tool_listing_video_builder: true }
       : baseFlags;
 
   return (
-    <>
-      <PageHeader
-        emoji="✨"
-        title="AI Tools"
-        description="Your content team that never sleeps."
-        action={<AIToolsUsageLink basePath="/member/ai-tools" />}
-      />
+    <div className="font-sans text-[var(--abv-text)]">
+      <header className="mb-9 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--abv-azure-tint)] text-[var(--abv-azure)] text-[11px] font-bold uppercase tracking-[0.12em]">
+            <span className="w-[5px] h-[5px] rounded-full bg-[var(--abv-azure)]" />
+            Members tools
+          </span>
+          <h1 className="font-display text-[48px] font-black tracking-[-0.03em] leading-[1.05] mt-3.5 mb-3 max-w-[720px]">
+            Build, write, <span className="text-[var(--abv-azure)]">review</span>.
+          </h1>
+          <p className="text-[15.5px] text-[var(--abv-text-muted)] m-0 max-w-[620px] leading-[1.55]">
+            Five tools that turn your channel into a system. Use them in this order until they become muscle memory.
+          </p>
+        </div>
+        <AIToolsUsageLink basePath="/member/ai-tools" />
+      </header>
       <AIToolsHub basePath="/member/ai-tools" featureFlags={featureFlags} />
-    </>
+    </div>
   );
 }
