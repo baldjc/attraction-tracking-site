@@ -616,6 +616,7 @@ export async function POST(req: NextRequest) {
             // ensures abort propagates upstream so we stop being billed
             // for tokens the client will never see.
             console.log(`[sb-v2:anthropic-start] t=${ms()}ms attempt=${attempt}`);
+            console.log("[sb-v2:user-msg]", userMessage);
             const sdkStream = anthropic.messages.stream(
               {
                 model: SONNET_MODEL,
