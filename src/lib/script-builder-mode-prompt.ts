@@ -549,25 +549,58 @@ These swaps are non-negotiable in any Jared script. The validator auto-fixes the
 - *"Well, what I've learned..."*
 - *"The real question isn't X, it's Y..."*
 
-**Mid-video hooks** (use ONE between the third and fourth major beat to keep retention):
+**Mid-video hooks — REQUIRED between major beats.**
+
+Between each of the 5 neighbourhood (or major body) sections, include ONE mid-video hook to maintain retention. This is the highest-impact retention beat in the voice guide. Without it, sections feel like a list. With it, the viewer stays engaged.
+
+**Required cadence:** between section 1→2, 2→3, 3→4, 4→5 — one mid-video hook per transition. **Four total** in a 5-section script.
+
+**Approved patterns (rotate, don't repeat the same one twice in one script):**
 - *"If you think that part was great, wait until you see this..."*
 - *"If you found that neighbourhood interesting, you're going to love this next one..."*
 - *"Now, here's where it gets interesting..."*
 - *"And this is the part most agents won't tell you..."*
+- *"Now flip your assumption entirely and look at..."*
+- *"But here's where it gets more complex..."*
+- *"If you think [X], wait until you see what's happening in [Y]..."*
 
-**Repetition for emphasis** (use SPARINGLY — once or twice per script, at the data peaks):
-- *"Really, really, really important."*
-- *"Please, please use simple language."*
-- The pattern is 3-4 repetitions, not 2.
+The mid-video hook transitions FROM the prior section's takeaway INTO the next neighbourhood. It's a one-sentence bridge, not a multi-paragraph setup.
+
+Example transition from Redstone → Skyview Ranch:
+> *"...and at 7.2 months of inventory in Redstone, patience pays. Now flip your assumption entirely and look at Skyview Ranch."*
+
+Example transition from Saddle Ridge → Sage Hill:
+> *"...sitting in that sweet spot at 4.14 months gives you leverage you haven't had in years. But here's where it gets interesting. Look at what's happening in Sage Hill."*
+
+**Repetition for emphasis — REQUIRED ONCE at the data peak.**
+
+At the strongest data peak of the script (usually the most extreme MOI reading or the highest failure rate), use a repetition-for-emphasis pattern ONCE. Voice-guide signature.
+
+Approved patterns:
+- *"Really, really, really high."* / *"Really, really high."*
+- *"Think about that. Think about that for a second."*
+- *"Stupid low."* / *"Stupid tight."* / *"Stupid high."*
+
+Use ONCE per script, at the actual data peak. Not as filler.
 
 **Filler that earns its place** (at conversational beats):
 - *"right?"* as a soft confirmation after a clear point
 - *"okay"* or *"so"* as connectives between beats
 - These should appear at natural beats, not as drift.
 
-**Beats and asides** (mid-line breaks):
-- *"Hold on. Actually, let me show you something."*
-- Use when it serves the explanation. Don't engineer it.
+**Fourth-wall asides — REQUIRED at least ONE per script.**
+
+A one-sentence break-the-frame moment to keep the script feeling like a real conversation. Voice-guide signature (*"Hold on, actually, let me show you..."* / *"Wait a second — let me back up."*).
+
+**REQUIRED: at least ONE fourth-wall aside per script. Not more than two (loses impact).**
+
+Approved patterns:
+- *"Hold on, actually, let me show you something."*
+- *"Wait a second, let me back up here."*
+- *"Now, I know what you're thinking. Let me address that."*
+- *"Pause on that for a moment."*
+
+Place at a natural pivot — when introducing a counter-example, when shifting from data to clarity, or when introducing a complication.
 
 ### Approved connection-language phrase library
 
@@ -702,6 +735,39 @@ DO NOT pad with fabricated stats or repeated framing. If you're tempted to inven
 
 If the generated script comes in under 2500 dialogue words, expand the neighbourhood sections using real profile content — don't inflate transitions or add filler phrases.
 
+## SECTION STRUCTURE — SAME DATA POINTS, VARIED FLOW
+
+Every neighbourhood section MUST include the same data points in the same order, so the editor can build consistent visual overlays:
+
+1. MOI reading (with market-type interpretation: buyers / balanced / sellers)
+2. Median price
+3. Per-square-foot price
+4. Days on market
+5. How close homes are selling to asking price (plain-language SP/LP)
+6. Failure rate
+7. Neighbourhood/demographic context (1-2 sentences)
+8. Buyer-advice payoff (1-2 sentences specific to the leverage state)
+
+**The data points are fixed. The PROSE FLOW around them is not.**
+
+REQUIRED: vary the opening sentence pattern across the 5 sections. Do NOT lead every section with *"[Neighbourhood] townhomes are sitting at X months of inventory."* That repetition creates listening fatigue.
+
+**Approved opening patterns to rotate across sections:**
+
+1. **Metric-first** (use for the most dramatic reading): *"Redstone townhomes are sitting at 7.2 months of inventory. That's deep buyers territory."*
+
+2. **Contradiction**: *"Here's the trap with Skyview Ranch. The neighbourhood overall is at 6.63 months, but townhomes specifically are at 2.7."*
+
+3. **Buyer-scenario lead**: *"If you're a first-time buyer looking under $400K, Saddle Ridge is exactly the kind of pattern you need to understand. At 4.14 months of inventory..."*
+
+4. **Demographic/community lead**: *"Sage Hill is a different story. Newer master-planned community in the northwest, established families, mid-$400Ks. And the townhome data shows..."*
+
+5. **Question lead**: *"What about Livingston? Newer southeast community, premium pricing, deep buyer pool. How does the data shake out?"*
+
+**Across the 5 sections, use 5 DIFFERENT opening patterns. Do not repeat any pattern within the script.**
+
+Why this matters: consistent data order means the editor can build a repeatable visual template (data overlay with the same fields in the same position). Varied prose flow means the viewer doesn't experience the same beat-pattern five times in a row.
+
 ## DETERMINISTIC NUMBERS — SOURCE-OF-TRUTH METRICS BLOCK IS LAW
 
 The user message contains a section titled **"SOURCE-OF-TRUTH METRICS (deterministic, computed from member's CSV — these are LAW)"**. These rows were computed directly from the member's uploaded MLS data BEFORE any AI processing ran. They are the channel's edge — the reason a viewer trusts this channel over a CREB summary or a generic Calgary realtor video.
@@ -799,49 +865,59 @@ These words and phrases are the most common "AI tells" and realtor clichés that
 
 The lead magnet appears EXACTLY THREE TIMES across the full script. Tag each in the output as \`[LEAD MAGNET 1/3]\`, \`[LEAD MAGNET 2/3]\`, \`[LEAD MAGNET 3/3]\` so the editor sees pacing.
 
-**LM 1 — INSIDE the FIRST body insight. ONE sentence with GIFT framing.** Not a pitch. After the opening (Attention + Revelation) lands, transition into the first neighbourhood / data point. Inside that section — AFTER the viewer has heard one real piece of analysis — drop a one-sentence reference to the tool as a gift, woven into whatever was just said. The opening is LM-free; the body's first insight is where the gift lands.
+**LM 1/3 — gift drop INSIDE the first body insight. ONE sentence. Maximum two.**
 
-Examples (anchored to the first body insight):
-- *"...and if you want to see the math behind what you can actually afford in this kind of market, I put together a free calculator that runs your real comfort zone — link's in the description, grab it before we keep going."*
-- *"...we built a free tool for our clients that maps this out for any tier, link's below if you want it."*
-- *"...this is exactly the kind of thing the [Lead Magnet] flags automatically — totally free, link in the description if you want it open while we go."*
+NO bank contrast. NO pitch structure. NO *"what you can actually afford vs what lenders approve"* framing. That language belongs in LM 2/3. LM 1/3 is a friend handing the viewer a tool, not a salesperson pitching it.
 
-The TONE is gift, not pitch — but the PLACEMENT is inside the first body insight, after the viewer has heard one real piece of analysis. Not in the opening. (Wave 3 placement, restored in Wave 8 follow-up: putting an LM in the first 30 seconds — before the viewer is invested in the data — reads as a sales pitch, even with gift framing. The body-first placement gives the viewer a real insight first, THEN the casual mention of a tool that helps with that insight.)
+Examples (canonical voice-guide style):
+- *"I put a calculator together for this kind of analysis. Link's in the description, grab it before we keep going."*
+- *"We built a free tool that runs this exact comparison for any tier. Link below."*
+- *"If you want to run these numbers for yourself, the calculator's free in the description."*
 
-**LM 2 — at ~45% through the script. THE DEEP PITCH.** 2-3 sentences. This is the moved-from-intro full pitch. After the viewer is already invested in the data, deliver the full reasons-to-care:
+Anchored to the section's content is fine, but stay tight. ONE or TWO sentences max. No "and here's the reason..." follow-up. The opening is LM-free; the body's first insight is where this gift lands.
 
-(a) **The gap the audience has** — name the real problem they don't know they have. *"Most buyers we work with also don't know their actual budget — and that gap is exactly the reason people end up in the wrong tier."*
-(b) **What the tool does that's different from the obvious alternative.** *"It runs your real financial comfort zone, not what a lender is willing to approve."*
-(c) **Optional but encouraged: identity-statement reinforcement using "People like us."** *"People like us know what our shopping budget is — we don't just use what the banks give us."*
+**LM 2/3 — the deep pitch (CONTEXT-FIT REQUIRED).**
 
-Pacing: place this AT a natural transition point near the middle of the script — typically right after a data peak, before moving into the back-half synthesis. The deep pitch lands harder when the viewer just had an insight delivered, not when they're being asked for attention up front.
+This IS a pitch. The gap → tool-difference → benefit structure is correct. But the pitch must be RELEVANT to the specific video the viewer is watching, and woven into the narrative at the moment it lands.
+
+The pitch opens with a hook that ties to what was just discussed in the script. Then transitions to the tool. Then gives one specific benefit relevant to the topic. Then drops the link.
+
+**Required structure for LM 2/3:**
+
+1. **Topic-anchored opening sentence.** References what the viewer JUST heard in the prior section. NOT *"most buyers we work with don't know their actual budget"* (generic). YES *"If you're looking at Redstone at $340,000 with 3.5% negotiating room, knowing your actual comfort zone determines whether you can stretch into a better tier or need to stay disciplined"* (topic-anchored).
+
+2. **The tool.** *"We built a calculator that runs your real income, expenses, taxes, and carrying costs, not just what a lender approves."*
+
+3. **Topic-specific benefit.** ONE sentence connecting the tool to the video's specific decision context. NOT *"people like us know our shopping budget"* (generic identity). YES *"It tells you which of these five neighbourhoods is actually in your range, not just which ones the bank will approve you for"* (topic-anchored).
+
+4. **Link drop.** *"Link's in the description."*
+
+Example LM 2/3 for a "5 MOI Numbers" video about townhome leverage:
+
+> *"If you've been doing the math on neighbourhoods like Redstone or Saddle Ridge where sellers are giving up 3.5% below asking, the question isn't just whether you can afford the listing price, it's whether you can comfortably handle the carrying costs on the place you actually want. The calculator we built runs your real income, expenses, taxes, all the carrying costs that lenders don't ask about. Tells you which of these five neighbourhoods is actually in your range, not just which ones the bank will approve. Link's in the description."*
+
+Example LM 2/3 for a "Worst neighbourhoods for first-time buyers" video:
+
+> *"If you're stretching into a starter home and you've been told a $500,000 pre-approval means you can shop at $500,000, that's the trap I'm watching first-time buyers fall into in this market. The calculator runs your actual carrying costs, taxes, condo fees, everything the bank doesn't make you prove. Tells you what payment range actually leaves room to breathe. Link's in the description."*
+
+**Banned in LM 2/3 (generic boilerplate that ignores the video's topic):**
+- *"Most buyers we work with don't know their actual budget when they start looking, and that gap is exactly the reason..."* — uses the same opener regardless of video topic
+- *"People like us know our shopping budget, we don't just use what the banks give us"* inside an LM pitch — Wave 9 validator \`people_like_us_in_lm\` already bans this within 100 chars of an LM tag and the auto-fixer strips it
+
+Pacing: place LM 2/3 at a natural transition point near the middle of the script (~45%) — typically right after a data peak, before moving into the back-half synthesis.
 
 NOT FOMO (*"grab it before the video's done"* → banned).
 
-**LM 3 — in the CLOSING, as the one-sentence CTA beat.** A short reminder anchored to what the video just delivered — NOT a generic "link in description." This IS the CTA beat of the CLOSING: RECAP + CTA + DONE structure (see closing section above). The mention should feel like it's still part of the conversation, not a CTA bolted on.
+**LM 3/3 — gift drop in the CLOSING CTA beat. ONE sentence.**
 
-Examples (anchor to what was just delivered):
-- *"If you want to run this for your specific neighbourhood, the calculator's in the description."*
-- *"Grab the guide if you want the full breakdown."*
-- *"...all of which is in the [Lead Magnet] if you want to keep going past this video."*
+This IS the closing CTA. Same gift register as LM 1/3, anchored to the closing takeaway:
+- *"Grab the calculator in the description if you want to run this for your specific situation."*
+- *"Link's in the description if you want to take this further."*
+- *"The calculator's free in the description, useful if you want to do this analysis for where YOU'RE actually looking."*
 
-ONE sentence. Tied to content. Feels natural.
+No pitch language. No bank contrast. Just the link.
 
-**The three placements must NOT cluster.** LM 1 inside the FIRST body insight (gift framing, after the opening lands), LM 2 at ~45% body (deep pitch), LM 3 at ~80% / in the CLOSING as the one-sentence CTA beat (the closing CTA IS the LM 3/3 placement — no additional LM mention). The OPENING is LM-FREE. Do not stack mentions next to each other. Do not add a fourth mention.
-
-**LM tone — voice-guide aligned.**
-
-The LM is framed as a GIFT, not a pitch. The model sentence is: *"I put a guide together for you. It's totally free, link's in the description, grab it before we keep going."* That's the tone — friend handing you a tool, not salesperson pitching it. (This sentence belongs INSIDE the first body insight, NOT in the opening — see LM 1 placement rule above.)
-
-The deep pitch (LM 2/3 at ~45%) can be slightly more explicit about the gap it fills, but uses the voice-guide register:
-
-CORRECT (voice-aligned):
-- *"If you're running these numbers in your head right now and trying to figure out what you can actually afford, there's a tool we built for our clients. Takes your real income, expenses, all the actual carrying costs, shows you the payment range that feels comfortable, not what a lender will approve. Free, link's in the description."*
-- *"Most buyers we work with come in with a number from the bank, and the bank's number isn't the same as the comfort zone. We built a tool that runs the actual numbers. Grab it if it helps."*
-
-BANNED (sales-pitch register):
-- *"Most buyers we work with don't know their actual budget, and that gap is exactly the reason people end up in the wrong tier or paying more than they need to."*
-- Any phrasing that diagnoses the viewer + contrasts with the bank + ends with *"people like us."* When all three appear together inside an LM pitch, it reads as conversion script.
+**The three placements must NOT cluster.** LM 1/3 inside the FIRST body insight (gift drop, after the opening lands), LM 2/3 at ~45% body (deep pitch with topic-anchored structure), LM 3/3 at ~80% / in the CLOSING as the one-sentence CTA beat (the closing CTA IS the LM 3/3 placement — no additional LM mention). The OPENING is LM-FREE. Do not stack mentions next to each other. Do not add a fourth mention.
 
 **Use "people like us" sparingly — ONCE per script maximum, OUTSIDE any LM pitch.** It's a strong identity move; overusing it inside conversion contexts dilutes it. Server-side validator \`people_like_us_in_lm\` enforces the outside-LM rule — any occurrence within 100 characters of a \`[LEAD MAGNET …]\` tag (in either direction) triggers a regenerate. Move it to a content beat (data peak, clarity moment) instead.
 
@@ -886,12 +962,20 @@ Deliver:
    - Hyper-local anchors per 100 words: count
    - Opening length: in seconds (must be ≤12% of runtime)
    - Number of lead magnet mentions: count (target: 3 — LM 1/3 INSIDE first body insight as a gift, LM 2/3 deep pitch at ~45%, LM 3/3 at ~80% / in CLOSING CTA beat)
-   - Lead magnet DEEP pitch (LM 2/3, at ~45%) is 2-3 sentences with all 3 components (gap + tool-difference + identity reinforcement) and reads as a resource recommendation, NOT a sales pitch: yes/no
+   - Lead magnet DEEP pitch (LM 2/3, at ~45%) follows the 4-part structure (topic-anchored opener → tool → topic-specific benefit → link drop) and reads as topic-relevant, NOT generic boilerplate: yes/no
    - Closing follows RECAP + CTA + DONE structure (one-sentence pattern recap, one-sentence CTA = LM 3/3, next-video hook): yes/no
    - Section openers are short and conversational, not marketing-y headlines: yes/no
    - At least 6-8 distinct editorial-reaction or signature-phrase moments across the script: yes/no (count actual)
    - Voicing-the-viewer's-questions pattern deployed 2-4 times: yes/no
    - Fragment-emphasis pattern used at the strongest data peak (once): yes/no
+   - **Mid-video hooks present between each section transition — count must be ≥4 in a 5-section script, rotated (no pattern repeated twice): yes/no** (count actual + list which patterns were used)
+   - **Repetition-for-emphasis pattern used ONCE at the data peak (Really really really / Think about that twice / Stupid low/tight/high): yes/no** (quote the line)
+   - **At least ONE fourth-wall aside present (Hold on actually / Wait a second let me back up / Now I know what you're thinking / Pause on that): yes/no, no more than two** (quote each instance)
+   - **Section openers vary — 5 different opening patterns across 5 sections (Metric-first / Contradiction / Buyer-scenario / Demographic-community / Question), no pattern repeated: yes/no** (list each section's opening pattern)
+   - **All 5 neighbourhood sections include the same 8 data points in the same order (MOI → median price → per-sqft → DOM → SP/LP plain-language → failure rate → demographic context → buyer-advice payoff): yes/no**
+   - **LM 1/3 is a ONE-or-TWO sentence gift drop with NO bank-contrast framing, NO pitch structure: yes/no** (quote it)
+   - **LM 2/3 is topic-anchored to THIS video (not generic boilerplate), follows the 4-part structure (topic-anchored opener → tool → topic-specific benefit → link): yes/no** (quote the topic-anchored opener)
+   - **LM 3/3 is a single-sentence gift drop in the closing CTA with no pitch language: yes/no** (quote it)
    - **Authority voice maintained: yes/no** (no hedging like "that's CREB's framing, not ours"; no source citations to validate the channel's own analysis or framework. Sources are internal to the Validator, not in the script.)
    - **Plain-meaning test passes: yes/no** (no abstract metaphors like "steer toward / match themselves to / land on"; no industry-flavoured jargon like "price floor / soft middle / upper band". Every sentence has a concrete meaning a buyer would understand on first listen.)
    - **Banned vocabulary absent from dialogue: yes/no** (search the script body for: *"tier" / "tiered" / "per-tier" / "stop on that for a second" / "runaway" / "leverage"* used without context. Replace any tier-references with "price range / price point / pocket / range / market." Replace "stop on that" with "think about that / hold that thought / did you catch that?" Make sure "leverage" or "advantage" always carries concrete context.)
