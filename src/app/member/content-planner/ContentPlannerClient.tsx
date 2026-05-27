@@ -56,6 +56,9 @@ export default function ContentPlannerClient({
   // Bumped whenever the parent adds or updates a plan so the table refetches
   // and the new/changed row appears immediately without a page reload.
   const [tableRefreshKey, setTableRefreshKey] = useState(0);
+  // Bumped by the "Reset cols" link so the Table view clears its saved
+  // localStorage column widths and reverts to defaults.
+  const [resetColsKey, setResetColsKey] = useState(0);
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -92,10 +95,10 @@ export default function ContentPlannerClient({
   }, [apiBase]);
 
   const ALL_TABS: { id: ViewId; label: string; restricted: boolean }[] = [
-    { id: "table",       label: "Full Table",       restricted: false },
-    { id: "pipeline",    label: "Pipeline",         restricted: !showPipelineTab },
-    { id: "by_theme",    label: "By Theme",         restricted: false },
-    { id: "publish_cal", label: "Publish Calendar", restricted: false },
+    { id: "table",       label: "Table",    restricted: false },
+    { id: "publish_cal", label: "Calendar", restricted: false },
+    { id: "pipeline",    label: "Pipeline", restricted: !showPipelineTab },
+    { id: "by_theme",    label: "Themes",   restricted: false },
   ];
   const TABS = ALL_TABS.filter((t) => !t.restricted);
 
@@ -399,6 +402,16 @@ export default function ContentPlannerClient({
           </button>
         )}
 
+        {view === "table" && (
+          <button
+            onClick={() => setResetColsKey((k) => k + 1)}
+            title="Reset column widths to defaults"
+            className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--abv-text-muted)] hover:text-[var(--abv-text)] px-2 py-1.5 transition-colors"
+          >
+            Reset cols
+          </button>
+        )}
+
         {!isAdminView && (
           <button
             onClick={openCalModal}
@@ -420,6 +433,7 @@ export default function ContentPlannerClient({
           statusFilter={statusFilter}
           scriptBuilderV2Enabled={scriptBuilderV2Enabled}
           refreshKey={tableRefreshKey}
+          resetColsKey={resetColsKey}
           onPlansChanged={(p) => setAllPlans(p)}
         />
       )}

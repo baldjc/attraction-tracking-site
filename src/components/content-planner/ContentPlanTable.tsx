@@ -45,6 +45,8 @@ interface Props {
   scriptBuilderV2Enabled?: boolean;
   /** Bumped by the parent to force a refetch (e.g. after parent-initiated Add Video). */
   refreshKey?: number;
+  /** Bumped by the parent ("Reset cols" link) to clear saved column widths. */
+  resetColsKey?: number;
   /** Mirror plan-list changes back to the parent so header counts + status
    *  pill counts stay in sync with row edits/deletes that happen inside
    *  this table's modal. */
@@ -101,6 +103,7 @@ export default function ContentPlanTable({
   statusFilter = [],
   scriptBuilderV2Enabled = false,
   refreshKey = 0,
+  resetColsKey = 0,
   onPlansChanged,
 }: Props) {
   const [plans, setPlans] = useState<ContentPlan[]>([]);
@@ -115,6 +118,102 @@ export default function ContentPlanTable({
 
   const showEditDue = isAdmin || hasEditDueDate(serviceTier);
   const showDriveFolder = isAdmin || hasDriveFolder(serviceTier);
+
+  // ---------- Resizable + persisted column widths ----------
+  type ColKey = "title" | "status" | "theme" | "binge" | "shootDate" | "location" | "editDate";
+  const DEFAULT_WIDTHS: Record<ColKey, number> = {
+    title: 380, status: 150, theme: 185, binge: 150,
+    shootDate: 95, location: 130, editDate: 95,
+  };
+  const COL_MIN: Record<ColKey, number> = {
+    title: 180, status: 80, theme: 80, binge: 80,
+    shootDate: 80, location: 80, editDate: 80,
+  };
+  const COL_MAX = 600;
+
+  const [userId, setUserId] = useState<string | null>(null);
+  const [widths, setWidths] = useState<Record<ColKey, number>>(DEFAULT_WIDTHS);
+  // Set to true for `title` once the user has dragged its handle. Until then
+  // we render the title column as `minmax(180px, 1fr)` so it fills available
+  // horizontal space; once the user resizes it, we honour the px value.
+  const [titleResized, setTitleResized] = useState(false);
+
+  const lsKey = userId ? `content-planner-cols:${userId}` : null;
+
+  useEffect(() => {
+    fetch("/api/auth/session")
+      .then((r) => r.json())
+      .then((d) => setUserId(d?.user?.id ?? "anon"))
+      .catch(() => setUserId("anon"));
+  }, []);
+
+  useEffect(() => {
+    if (!lsKey) return;
+    try {
+      const raw = localStorage.getItem(lsKey);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as Partial<Record<ColKey, number>> & { _titleResized?: boolean };
+      const next = { ...DEFAULT_WIDTHS };
+      (Object.keys(DEFAULT_WIDTHS) as ColKey[]).forEach((k) => {
+        const v = parsed[k];
+        if (typeof v === "number" && Number.isFinite(v)) {
+          next[k] = Math.min(COL_MAX, Math.max(COL_MIN[k], v));
+        }
+      });
+      setWidths(next);
+      setTitleResized(parsed._titleResized === true);
+    } catch {}
+  }, [lsKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Parent "Reset cols" link → clear LS + revert to defaults.
+  useEffect(() => {
+    if (resetColsKey === 0) return;
+    if (lsKey) {
+      try { localStorage.removeItem(lsKey); } catch {}
+    }
+    setWidths(DEFAULT_WIDTHS);
+    setTitleResized(false);
+  }, [resetColsKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function persistWidths(next: Record<ColKey, number>, nextTitleResized: boolean) {
+    if (!lsKey) return;
+    try {
+      localStorage.setItem(lsKey, JSON.stringify({ ...next, _titleResized: nextTitleResized }));
+    } catch {}
+  }
+
+  function startResize(col: ColKey, e: React.PointerEvent<HTMLDivElement>) {
+    e.preventDefault();
+    e.stopPropagation();
+    const startX = e.clientX;
+    const startW = widths[col];
+    const min = COL_MIN[col];
+    const target = e.currentTarget;
+    try { target.setPointerCapture(e.pointerId); } catch {}
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+
+    const onMove = (ev: PointerEvent) => {
+      const dx = ev.clientX - startX;
+      const w = Math.min(COL_MAX, Math.max(min, startW + dx));
+      setWidths((prev) => (prev[col] === w ? prev : { ...prev, [col]: w }));
+      if (col === "title") setTitleResized(true);
+    };
+    const onUp = () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      try { target.releasePointerCapture(e.pointerId); } catch {}
+      // Persist using the *latest* width snapshot.
+      setWidths((prev) => {
+        persistWidths(prev, col === "title" ? true : titleResized);
+        return prev;
+      });
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+  }
 
   useEffect(() => {
     fetchPlans();
@@ -242,21 +341,59 @@ export default function ContentPlanTable({
   }
 
   // Mockup grid: Title | Status | Theme | Binge | Shoot date | Location | Edit date
-  // Members on tiers without an edit-due field drop the trailing column.
-  // Drive folder lives only on production tiers (and admin) and gets a slim
-  // trailing icon-only column when present.
-  const colTemplate = `minmax(0, 1fr) 150px 185px 150px 95px 130px ${showEditDue ? "95px " : ""}${showDriveFolder ? "44px" : ""}`.trim();
+  // Title is `minmax(180px, 1fr)` until the user resizes it (then a clamped
+  // px width). All other columns are fixed px (resizable). Drive folder, when
+  // shown, is a fixed 44px icon column at the trailing edge — not resizable.
+  const titleCol = titleResized ? `${widths.title}px` : `minmax(180px, 1fr)`;
+  const colTemplate = [
+    titleCol,
+    `${widths.status}px`,
+    `${widths.theme}px`,
+    `${widths.binge}px`,
+    `${widths.shootDate}px`,
+    `${widths.location}px`,
+    showEditDue ? `${widths.editDate}px` : null,
+    showDriveFolder ? "44px" : null,
+  ].filter(Boolean).join(" ");
+
+  // Sum of fixed col widths drives min-width on the grid so the table
+  // horizontally scrolls (rather than collapsing the Title col) when the
+  // viewport gets narrow.
+  const minTableWidth =
+    COL_MIN.title +
+    widths.status + widths.theme + widths.binge +
+    widths.shootDate + widths.location +
+    (showEditDue ? widths.editDate : 0) +
+    (showDriveFolder ? 44 : 0) +
+    // 7 gaps of 14px + horizontal padding (22px * 2)
+    7 * 14 + 44;
+
+  function ResizeHandle({ col }: { col: ColKey }) {
+    return (
+      <div
+        role="separator"
+        aria-orientation="vertical"
+        aria-label={`Resize ${col} column`}
+        onPointerDown={(e) => startResize(col, e)}
+        onClick={(e) => e.stopPropagation()}
+        className="absolute top-0 right-0 h-full w-[6px] cursor-col-resize select-none hover:bg-[var(--abv-azure)]/40 active:bg-[var(--abv-azure)]"
+        style={{ touchAction: "none" }}
+      />
+    );
+  }
 
   return (
     <section
-      className="overflow-hidden"
       style={{
         background: "var(--abv-card)",
         border: "1px solid var(--abv-border)",
         borderRadius: "14px",
         boxShadow: "var(--abv-shadow-sm, 0 1px 3px rgba(0,0,0,0.04))",
+        overflowX: "auto",
+        overflowY: "hidden",
       }}
     >
+      <div style={{ minWidth: `${minTableWidth}px` }}>
       {/* Header row */}
       <div
         className="grid gap-[14px] px-[22px] py-3 font-mono uppercase tracking-[0.10em] text-[var(--abv-text-muted)]"
@@ -268,26 +405,47 @@ export default function ContentPlanTable({
           fontWeight: 700,
         }}
       >
-        <button onClick={() => handleSort("title")} className="text-left hover:text-[var(--abv-text)] transition-colors">
-          Title <SortIcon col="title" />
-        </button>
-        <button onClick={() => handleSort("status")} className="text-left hover:text-[var(--abv-text)] transition-colors">
-          Status <SortIcon col="status" />
-        </button>
-        <button onClick={() => handleSort("theme")} className="text-left hover:text-[var(--abv-text)] transition-colors">
-          Theme <SortIcon col="theme" />
-        </button>
-        <button onClick={() => handleSort("bingeVideoId")} className="text-left hover:text-[var(--abv-text)] transition-colors">
-          Binge <SortIcon col="bingeVideoId" />
-        </button>
-        <button onClick={() => handleSort("shootDate")} className="text-left hover:text-[var(--abv-text)] transition-colors">
-          Shoot date <SortIcon col="shootDate" />
-        </button>
-        <span className="text-left">Location</span>
-        {showEditDue && (
-          <button onClick={() => handleSort("editDueDate")} className="text-left hover:text-[var(--abv-text)] transition-colors">
-            Edit date <SortIcon col="editDueDate" />
+        <div className="relative pr-2">
+          <button onClick={() => handleSort("title")} className="text-left hover:text-[var(--abv-text)] transition-colors">
+            Title <SortIcon col="title" />
           </button>
+          <ResizeHandle col="title" />
+        </div>
+        <div className="relative pr-2">
+          <button onClick={() => handleSort("status")} className="text-left hover:text-[var(--abv-text)] transition-colors">
+            Status <SortIcon col="status" />
+          </button>
+          <ResizeHandle col="status" />
+        </div>
+        <div className="relative pr-2">
+          <button onClick={() => handleSort("theme")} className="text-left hover:text-[var(--abv-text)] transition-colors">
+            Theme <SortIcon col="theme" />
+          </button>
+          <ResizeHandle col="theme" />
+        </div>
+        <div className="relative pr-2">
+          <button onClick={() => handleSort("bingeVideoId")} className="text-left hover:text-[var(--abv-text)] transition-colors">
+            Binge <SortIcon col="bingeVideoId" />
+          </button>
+          <ResizeHandle col="binge" />
+        </div>
+        <div className="relative pr-2">
+          <button onClick={() => handleSort("shootDate")} className="text-left hover:text-[var(--abv-text)] transition-colors">
+            Shoot date <SortIcon col="shootDate" />
+          </button>
+          <ResizeHandle col="shootDate" />
+        </div>
+        <div className="relative pr-2">
+          <span className="text-left">Location</span>
+          <ResizeHandle col="location" />
+        </div>
+        {showEditDue && (
+          <div className="relative pr-2">
+            <button onClick={() => handleSort("editDueDate")} className="text-left hover:text-[var(--abv-text)] transition-colors">
+              Edit date <SortIcon col="editDueDate" />
+            </button>
+            <ResizeHandle col="editDate" />
+          </div>
         )}
         {showDriveFolder && <span />}
       </div>
@@ -434,6 +592,7 @@ export default function ContentPlanTable({
           }}
         />
       )}
+      </div>
     </section>
   );
 }

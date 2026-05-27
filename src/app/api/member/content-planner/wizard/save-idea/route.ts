@@ -27,6 +27,7 @@ import {
   validateIdeaCard,
   type RotationSlotKey,
 } from "@/lib/content-engine-validation";
+import { getStatusOptions } from "@/lib/content-plan-utils";
 
 export const runtime = "nodejs";
 
@@ -207,11 +208,20 @@ export async function POST(req: NextRequest) {
     sourceUploadId: body.sourceUploadId,
   });
 
+  // Use the leftmost status from the user's service-tier vocabulary so the
+  // saved idea lands as "Future Idea" on growth/DWY tiers (and "Idea" on
+  // foundations) — i.e. the first pill in the planner's status filter bar.
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { serviceTier: true },
+  });
+  const startingStatus = getStatusOptions(user?.serviceTier ?? "foundations")[0];
+
   const plan = await prisma.contentPlan.create({
     data: {
       userId,
       title: body.title!,
-      status: "Idea",
+      status: startingStatus,
       // Wave 2.5 — also write the human-readable theme string so this plan
       // shows up in v1 planner views that filter by theme. `rotationSlot`
       // (machine-readable enum) remains the source of truth for the wizard.
