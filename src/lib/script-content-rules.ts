@@ -1463,8 +1463,27 @@ function softenRulesForToken(
   // mirror the seller-vs-buyer market thresholds the master prompt
   // teaches, so a fabricated stat collapses to the directional phrase
   // a real one would have surfaced.
-  const numMatch = raw.match(/(\d+(?:\.\d+)?)/);
-  const value = numMatch ? parseFloat(numMatch[1]) : NaN;
+  // Wave 12.5 — currency-aware numeric parse. The naive
+  // `/(\d+(?:\.\d+)?)/` capture truncates "$649,000" to 649 and
+  // strips K/M suffixes, so the dollar buckets all collapsed to
+  // "around a meaningful amount". Mirror extractStatTokens here:
+  // strip thousands commas, then scale by K/M suffix.
+  let value: number;
+  if (unit === "currency") {
+    const m = raw.match(/\$?\s*([\d,]+(?:\.\d+)?)\s*([KM]?)/i);
+    if (m) {
+      let n = parseFloat(m[1].replace(/,/g, ""));
+      const suffix = (m[2] || "").toUpperCase();
+      if (suffix === "K") n *= 1_000;
+      else if (suffix === "M") n *= 1_000_000;
+      value = n;
+    } else {
+      value = NaN;
+    }
+  } else {
+    const numMatch = raw.match(/(\d+(?:\.\d+)?)/);
+    value = numMatch ? parseFloat(numMatch[1]) : NaN;
+  }
   const directionalForMonths = (v: number): string => {
     if (v < 1.5) return "deep seller territory";       // 0-1.5
     if (v < 3) return "tight seller territory";        // 1.5-3
@@ -1476,6 +1495,74 @@ function softenRulesForToken(
     if (v <= 30) return "a two-to-four week window";   // 14-30 days
     return "sitting";                                   // >30 days
   };
+  // Wave 12.5 — bucket-based directional language for dollar amounts.
+  // Mirrors the months/days buckets above. Rounds the fabricated value
+  // to the nearest readable band so the rewrite still SOUNDS like a
+  // stat (members hate vague "a meaningful price") while no longer
+  // claiming a specific, unverifiable dollar figure. Bands:
+  //   <$1M  → nearest $50K, written "the 650K range"
+  //   ≥$1M  → nearest $0.1M, written "the 1.2-million range"
+  // CRITICAL — the output deliberately omits the "$" prefix so the
+  // softened phrase no longer matches the currency regex in
+  // extractStatTokens (which requires `\$`). Without that, the
+  // bare-token fallback rule below would re-extract "around $650K"
+  // as a new unanchored token on the next softenSpan iteration and
+  // loop forever ("around around around …").
+  const directionalForDollars = (v: number): string => {
+    if (v >= 1_000_000) {
+      const m = Math.round(v / 100_000) / 10;
+      return `the ${m}-million range`;
+    }
+    if (v >= 1_000) {
+      const band = Math.round(v / 50_000) * 50;
+      return `the ${band}K range`;
+    }
+    return "a meaningful amount";
+  };
+  // Wave 12.5 — bucket-based directional language for percentages,
+  // tuned for the SP/LP "over list" / "under list" framing that's by
+  // far the most common percent stat the LLM fabricates. Used only as
+  // a last-resort after the more specific directional / threshold
+  // patterns below fail to match. Bands per spec:
+  //   <2%   → "in line with list"
+  //   2-5%  → "slightly over list"
+  //   5-10% → "meaningfully over list"
+  //   >10%  → "deep over list"
+  //   <0    → "under list"
+  const directionalForPercent = (v: number): string => {
+    if (v < 0) return "under list";
+    if (v < 2) return "in line with list";
+    if (v < 5) return "slightly over list";
+    if (v <= 10) return "meaningfully over list";
+    return "deep over list";
+  };
+  // Wave 12.5 — SP/LP "X% of list" mapping. "98% of list" reads as
+  // 2-points-under-list which the audience hears as "in line with
+  // list", not the literal "under list" that the raw signed-delta
+  // would produce. So we band on |delta| first, then sign. Symmetric
+  // bucket cutoffs match directionalForPercent for over-list values.
+  const directionalForOfList = (pct: number): string => {
+    const delta = pct - 100;
+    const abs = Math.abs(delta);
+    // Wave 12.5 — inclusive 2-point band so the boundary cases the
+    // LLM most often fabricates (98% / 102% of list) read as "in
+    // line with list" rather than the harsher "slightly under/over".
+    if (abs <= 2) return "in line with list";
+    if (delta > 0) {
+      if (delta <= 5) return "slightly over list";
+      if (delta <= 10) return "meaningfully over list";
+      return "deep over list";
+    }
+    if (abs <= 5) return "slightly under list";
+    if (abs <= 10) return "meaningfully under list";
+    return "deep under list";
+  };
+  // Wave 12.5 — single tolerance source of truth. All bucket-based
+  // soften rules below (duration, dollar, percent) share the same
+  // withinTolerance() helper at the autoSoftenUnanchoredStats call
+  // site upstream — by the time control reaches here the token has
+  // already been confirmed unanchored by that helper, so the rewrite
+  // is safe to apply.
   if (unit === "percent") {
     return [
       // Directional movement
@@ -1517,6 +1604,31 @@ function softenRulesForToken(
         ),
         "most $1",
       ],
+      // Wave 12.5 — SP/LP-context bucket rewrites. MUST run BEFORE
+      // the generic bare "at X%" / "around X%" / "near X%" rules
+      // below — otherwise "at 98% of list" would be consumed by
+      // `\bat\s+98%` first and produce "at a meaningful level of
+      // list". By matching the longer "X% of list" / "X% over list"
+      // phrase first, we collapse the whole SP/LP framing to a
+      // single directional band. directionalForOfList bands on
+      // |delta from 100|, so "98% of list" → "in line with list"
+      // (not the literal "under list" a raw signed delta would
+      // produce).
+      [
+        new RegExp(`(?:\\bat\\s+)?${esc}\\s+(?:over|above)\\s+list`, "gi"),
+        directionalForPercent(value),
+      ],
+      [
+        new RegExp(`(?:\\bat\\s+)?${esc}\\s+(?:under|below)\\s+list`, "gi"),
+        directionalForPercent(-Math.abs(value)),
+      ],
+      [
+        new RegExp(
+          `(?:\\bat\\s+)?${esc}\\s+of\\s+(?:the\\s+)?list(?:\\s+price)?`,
+          "gi",
+        ),
+        directionalForOfList(value),
+      ],
       // Bare "at X%" / "around X%" / "near X%"
       [new RegExp(`\\bat\\s+${esc}`, "gi"), "at a meaningful level"],
       [new RegExp(`\\baround\\s+${esc}`, "gi"), "around a meaningful level"],
@@ -1526,18 +1638,29 @@ function softenRulesForToken(
     ];
   }
   if (unit === "currency") {
+    // Wave 12.5 — bucket-based dollar directional, used as last-resort
+    // after the targeted phrase rewrites below. The validator was
+    // hard-blocking on fabricated dollar amounts like "$649,000" that
+    // didn't appear in cited facts within 2% tolerance; the soften
+    // pass now rewrites the surrounding phrase to a $50K-band band
+    // ("around $650K") rather than the generic "a meaningful price",
+    // preserving the directional read members rely on without
+    // claiming a specific unverified figure.
+    const directional = directionalForDollars(value);
     return [
       [
         new RegExp(`${esc}\\s+homes?`, "gi"),
         "meaningfully-priced homes",
       ],
-      [new RegExp(`\\bover\\s+${esc}`, "gi"), "over a meaningful amount"],
-      [new RegExp(`\\bunder\\s+${esc}`, "gi"), "under a meaningful amount"],
-      [new RegExp(`\\babove\\s+${esc}`, "gi"), "above a meaningful amount"],
-      [new RegExp(`\\bbelow\\s+${esc}`, "gi"), "below a meaningful amount"],
-      [new RegExp(`\\baround\\s+${esc}`, "gi"), "around a meaningful price"],
-      [new RegExp(`\\bnear\\s+${esc}`, "gi"), "near a meaningful price"],
-      [new RegExp(`\\bat\\s+${esc}`, "gi"), "at a meaningful price"],
+      [new RegExp(`\\bover\\s+${esc}`, "gi"), `over ${directional}`],
+      [new RegExp(`\\bunder\\s+${esc}`, "gi"), `under ${directional}`],
+      [new RegExp(`\\babove\\s+${esc}`, "gi"), `above ${directional}`],
+      [new RegExp(`\\bbelow\\s+${esc}`, "gi"), `below ${directional}`],
+      [new RegExp(`\\baround\\s+${esc}`, "gi"), directional],
+      [new RegExp(`\\bnear\\s+${esc}`, "gi"), directional],
+      [new RegExp(`\\bat\\s+${esc}`, "gi"), `at ${directional}`],
+      // Last-resort bare dollar token → directional band.
+      [new RegExp(esc, "g"), directional],
     ];
   }
   if (unit === "months" || unit === "days") {
@@ -1695,7 +1818,16 @@ export function autoSoftenUnanchoredStats(
     // Re-extract tokens after each successful softening pass — offsets
     // shift and a phrase we already rewrote shouldn't be revisited.
     let changed = true;
-    while (changed) {
+    // Wave 12.5 — hard iteration cap. If a future soften rule ever
+    // reintroduces a tokenizable phrase (e.g. a directional phrase
+    // that still parses as currency/percent/duration), this guard
+    // prevents an infinite rewrite loop from hanging script
+    // generation. 64 iterations is far above any plausible script's
+    // unique-token count; hitting it indicates a soften-rule bug
+    // upstream, not normal traffic.
+    const MAX_ITERS = 64;
+    let iters = 0;
+    while (changed && iters++ < MAX_ITERS) {
       changed = false;
       const tokens = extractStatTokens(dialogue);
       for (const tok of tokens) {
