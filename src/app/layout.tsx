@@ -4,12 +4,13 @@ import "./globals.css";
 import SessionProvider from "@/components/SessionProvider";
 import ThemeProvider from "@/components/ThemeProvider";
 
-// Brand fonts: Cabinet Grotesk (display) + Satoshi (body) ship via Fontshare CDN
-// via an `@import` in globals.css (loading them through manual <link> tags in
-// <head> caused Next.js hydration mismatches when the framework reordered head
-// children). Local-font wiring through `next/font/local` is a future improvement
-// once the woff2 files are uploaded to public/fonts/. Geist Mono stays via
-// next/font/google for tabular numerics.
+// Brand fonts: Cabinet Grotesk (display) + Satoshi (body) ship via Fontshare CDN.
+// The stylesheet <link> renders with React 19's `precedence` attribute so
+// Next.js hoists it deterministically into <head> (and dedupes between SSR and
+// client), avoiding the hydration mismatches we hit when the framework
+// reordered manually-placed head children. Local-font wiring through
+// `next/font/local` is a future improvement once the woff2 files are uploaded
+// to public/fonts/. Geist Mono stays via next/font/google for tabular numerics.
 const geistMono = Geist_Mono({
   variable: "--font-mono",
   subsets: ["latin"],
@@ -41,6 +42,11 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://api.fontshare.com" crossOrigin="" />
+        <link
+          rel="stylesheet"
+          precedence="default"
+          href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@700,800,900&f[]=satoshi@400,500,600,700&display=swap"
+        />
         <script
           suppressHydrationWarning
           dangerouslySetInnerHTML={{
