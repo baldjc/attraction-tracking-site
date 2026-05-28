@@ -11,6 +11,7 @@ import {
   type ColumnMapping,
   type AnyMappedField,
 } from "@/lib/market-config";
+import { Button } from "@/components/ui/Button";
 
 interface Props {
   existingMapping: ColumnMapping | null;
@@ -492,7 +493,7 @@ export default function UploadPanel({
               accept=".csv,text/csv"
               multiple
               onChange={onPickFiles}
-              className="block w-full text-sm text-gray-700 dark:text-gray-300 file:mr-3 file:rounded-md file:border-0 file:bg-blue-600 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-blue-700"
+              className="block w-full text-sm text-gray-700 dark:text-gray-300 file:mr-3 file:rounded-full file:border-0 file:bg-[var(--abv-ink)] file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-[#2a2a2a]"
             />
           </label>
 
@@ -615,18 +616,13 @@ export default function UploadPanel({
                 ))}
               </ul>
               <div className="flex justify-end pt-2">
-                <button
-                  type="button"
-                  onClick={onContinue}
-                  disabled={missingMonth}
-                  className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-400 disabled:hover:bg-gray-400 dark:disabled:bg-gray-700"
-                >
+                <Button onClick={onContinue} disabled={missingMonth}>
                   {missingMonth
                     ? "Pick a month for every file"
                     : hasColumnMapping
                       ? `Upload ${selected.length} file${selected.length === 1 ? "" : "s"}`
                       : "Continue"}
-                </button>
+                </Button>
               </div>
             </div>
           )}
@@ -686,14 +682,10 @@ export default function UploadPanel({
                 >
                   ← Back to files
                 </button>
-                <button
-                  type="button"
-                  onClick={onConfirmMapping}
-                  className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700"
-                >
+                <Button onClick={onConfirmMapping}>
                   Save mapping & upload {selected.length} file
                   {selected.length === 1 ? "" : "s"}
-                </button>
+                </Button>
               </div>
             </>
           )}

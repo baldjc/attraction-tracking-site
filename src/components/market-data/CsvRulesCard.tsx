@@ -44,7 +44,8 @@ export default function CsvRulesCard() {
       >
         <span
           aria-hidden="true"
-          className="flex h-7 w-7 flex-none items-center justify-center rounded-full bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-300"
+          className="flex h-7 w-7 flex-none items-center justify-center rounded-full"
+          style={{ background: "var(--abv-azure-tint)", color: "var(--abv-ink)" }}
         >
           <svg
             className="h-4 w-4"

@@ -11,6 +11,7 @@ import {
   type PrimaryAvatar,
   type SubPersona,
 } from "@/lib/market-config";
+import { Button } from "@/components/ui/Button";
 
 interface VoiceGuideInfo {
   charCount: number;
@@ -695,14 +696,14 @@ export default function SetupForm({
               {avatarSource.name ? ` (${avatarSource.name})` : ""} — snapshot it
               into your market config so the upload pipelines can read it.
             </p>
-            <button
-              type="button"
+            <Button
+              size="sm"
+              className="mt-3"
               onClick={pullAvatarFromArchitect}
               disabled={pullingAvatar}
-              className="mt-3 rounded-md bg-blue-600 px-4 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:opacity-50"
             >
               {pullingAvatar ? "Pulling…" : "Pull avatar from Avatar Architect"}
-            </button>
+            </Button>
           </div>
         ) : (
           <div className="rounded-md border border-dashed border-gray-300 p-4 text-sm dark:border-gray-700">
@@ -904,7 +905,7 @@ export default function SetupForm({
                 key={p.id}
                 className={`flex items-center gap-2 rounded-md border px-3 py-2 text-sm ${
                   p.enabled
-                    ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                    ? "border-[var(--abv-azure)] bg-[var(--abv-azure-tint)]"
                     : isCustom
                       ? "border-dashed border-gray-400 dark:border-gray-600"
                       : "border-gray-300 dark:border-gray-700"
@@ -972,13 +973,9 @@ export default function SetupForm({
       )}
 
       <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-800">
-        <button
-          type="submit"
-          disabled={saving || !readyToUpload}
-          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-        >
+        <Button type="submit" disabled={saving || !readyToUpload}>
           {saving ? "Saving…" : isEdit ? "Save changes" : "Save & continue"}
-        </button>
+        </Button>
       </div>
     </form>
   );

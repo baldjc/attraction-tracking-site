@@ -22,14 +22,20 @@ export default function LinkedPlanBanner({ planId }: Props) {
   if (loading) return null;
 
   return (
-    <div className="mb-5 flex items-center gap-3 bg-blue-50 border border-blue-100 rounded-lg px-4 py-3">
-      <span className="text-blue-500">📋</span>
-      <p className="text-sm text-blue-700 flex-1">
+    <div
+      className="mb-5 flex items-center gap-3 rounded-lg border px-4 py-3"
+      style={{
+        borderColor: "var(--abv-azure)",
+        background: "var(--abv-azure-tint)",
+      }}
+    >
+      <span aria-hidden="true">📋</span>
+      <p className="text-sm flex-1 text-[var(--abv-ink)] dark:text-white">
         Linked to: <strong>{planTitle || "your content plan"}</strong>
       </p>
       <Link
         href={`/member/content-planner?plan=${planId}`}
-        className="shrink-0 text-xs font-semibold text-blue-600 underline hover:no-underline"
+        className="shrink-0 text-xs font-semibold underline hover:no-underline text-[var(--abv-ink)] dark:text-white"
       >
         View plan →
       </Link>

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useToast } from "@/components/ToastProvider";
 import { MemberCard, type MemberTierKey } from "@/components/cards";
 import { IMPERSONATE_LS_KEY } from "@/lib/impersonate-constants";
+import { Button } from "@/components/ui/Button";
 
 function initialsFrom(name: string | null, email: string): string {
   const src = (name && name.trim()) || email;
@@ -289,24 +290,16 @@ function ConfirmModal({
           )}
         </p>
         <div className="mt-6 flex items-center justify-end gap-2">
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={working}
-            className="rounded-full px-4 py-2 text-sm font-medium text-[var(--abv-text)]/70 dark:text-white/70 hover:text-[var(--abv-text)] dark:hover:text-white disabled:opacity-50"
-          >
+          <Button variant="ghost" onClick={onCancel} disabled={working}>
             Cancel
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
+            variant={isAdd ? "primary" : "danger"}
             onClick={onConfirm}
             disabled={working}
-            className={`rounded-full px-5 py-2 text-sm font-semibold text-white disabled:opacity-50 ${
-              isAdd ? "bg-[var(--abv-text)] hover:opacity-90" : "bg-red-600 hover:bg-red-700"
-            }`}
           >
             {working ? "Working…" : isAdd ? "Add to beta" : "Remove from beta"}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

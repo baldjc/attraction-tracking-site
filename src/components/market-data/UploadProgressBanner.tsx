@@ -190,7 +190,7 @@ function BannerShell({
       ? "border-green-300 bg-green-50 text-green-900 dark:border-green-800 dark:bg-green-900/20 dark:text-green-200"
       : tone === "warning"
         ? "border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200"
-        : "border-blue-300 bg-blue-50 text-blue-900 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-200";
+        : "border-[var(--abv-azure)] text-[var(--abv-ink)] dark:text-white";
 
   return (
     <div

@@ -168,12 +168,12 @@ const TOOL_COLORS: Record<string, { base: string; active: string }> = {
     active: "bg-amber-500 text-white dark:bg-amber-500",
   },
   linkedin: {
-    base: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/50",
-    active: "bg-blue-500 text-white dark:bg-blue-500",
+    base: "bg-[var(--abv-azure-tint)] text-[var(--abv-ink)] dark:text-white hover:bg-[var(--abv-azure-tint-strong)]",
+    active: "bg-[var(--abv-azure)] text-[var(--abv-ink)]",
   },
   facebook: {
-    base: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-900/50",
-    active: "bg-indigo-500 text-white dark:bg-indigo-500",
+    base: "bg-[var(--abv-azure-tint-strong)] text-[var(--abv-ink)] dark:text-white hover:bg-[var(--abv-azure-tint)]",
+    active: "bg-[var(--abv-ink)] text-white",
   },
   blog: {
     base: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-900/50",

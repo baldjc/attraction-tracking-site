@@ -75,7 +75,10 @@ export function Step4ShootType({
           <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
             {plan.title}
           </h2>
-          <span className="shrink-0 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+          <span
+            className="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium"
+            style={{ background: "var(--abv-azure-tint)", color: "var(--abv-ink)" }}
+          >
             {rotationLabel}
           </span>
         </div>
@@ -161,7 +164,7 @@ export function Step4ShootType({
           type="button"
           onClick={() => onConfirm(selected)}
           disabled={submitting}
-          className="rounded-md bg-blue-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-full bg-[var(--abv-ink)] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-transform duration-150 active:scale-[0.98] hover:bg-[#2a2a2a] disabled:cursor-not-allowed disabled:opacity-50"
         >
           {submitting ? "Starting…" : "Continue → write the script"}
         </button>
@@ -211,8 +214,8 @@ function ShootTypeCard({
   const base =
     "group flex flex-col rounded-lg border p-5 text-left transition";
   const enabledStyles = selected
-    ? "border-blue-500 bg-blue-50 shadow-sm dark:border-blue-400 dark:bg-blue-950/30"
-    : "border-gray-200 bg-white hover:border-blue-400 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-blue-500";
+    ? "border-[var(--abv-azure)] bg-[var(--abv-azure-tint)] shadow-sm"
+    : "border-gray-200 bg-white hover:border-[var(--abv-azure)] dark:border-gray-700 dark:bg-gray-800";
   const disabledStyles =
     "border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed dark:border-gray-700 dark:bg-gray-900/40";
 
@@ -232,7 +235,7 @@ function ShootTypeCard({
           </span>
         )}
         {!badge && selected && (
-          <span className="rounded-full bg-blue-600 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
+          <span className="rounded-full bg-[var(--abv-ink)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
             Selected
           </span>
         )}

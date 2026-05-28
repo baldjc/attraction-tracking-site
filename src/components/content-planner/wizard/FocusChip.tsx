@@ -19,13 +19,21 @@ interface Props {
 
 export function FocusChip({ focus, changeHref }: Props) {
   return (
-    <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-900 dark:border-blue-700 dark:bg-blue-950/40 dark:text-blue-100">
+    <div
+      className="mb-4 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium"
+      style={{
+        borderColor: "var(--abv-azure)",
+        background: "var(--abv-azure-tint)",
+        color: "var(--abv-ink)",
+      }}
+    >
       <span aria-hidden="true">🔒</span>
       <span>Focus: {PROPERTY_TYPE_FOCUS_LABEL[focus]}</span>
-      <span aria-hidden="true" className="text-blue-400">·</span>
+      <span aria-hidden="true" className="opacity-50">·</span>
       <Link
         href={changeHref}
-        className="text-blue-700 underline-offset-2 hover:underline dark:text-blue-200"
+        className="underline-offset-2 hover:underline"
+        style={{ color: "var(--abv-ink)" }}
       >
         change
       </Link>

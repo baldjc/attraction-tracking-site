@@ -12,6 +12,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { inferFocusFromStoryLeadText } from "@/lib/property-type-focus";
+import { LinkButton } from "@/components/ui/Button";
 
 interface StoryLead {
   id: string;
@@ -159,7 +160,10 @@ function LeadCard({ lead }: { lead: StoryLead }) {
       )}
       <div className="mt-4 flex flex-wrap gap-2 text-xs">
         {lead.suggestedRotationSlot && (
-          <span className="rounded-full bg-blue-100 px-2 py-0.5 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+          <span
+            className="rounded-full px-2 py-0.5"
+            style={{ background: "var(--abv-azure-tint)", color: "var(--abv-ink)" }}
+          >
             {lead.suggestedRotationSlot}
           </span>
         )}
@@ -182,18 +186,22 @@ function LeadCard({ lead }: { lead: StoryLead }) {
           </span>
         ))}
         {inferredFocus !== "Any" && (
-          <span className="rounded-full border border-blue-300 bg-blue-50 px-2 py-0.5 text-blue-700 dark:border-blue-700 dark:bg-blue-900/40 dark:text-blue-200">
+          <span
+            className="rounded-full border px-2 py-0.5"
+            style={{
+              borderColor: "var(--abv-azure)",
+              background: "var(--abv-azure-tint)",
+              color: "var(--abv-ink)",
+            }}
+          >
             🔒 {inferredFocus}
           </span>
         )}
       </div>
       <div className="mt-5">
-        <Link
-          href={`/member/content-planner/wizard?${params.toString()}`}
-          className="inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-        >
+        <LinkButton href={`/member/content-planner/wizard?${params.toString()}`}>
           Use this Lead →
-        </Link>
+        </LinkButton>
       </div>
     </div>
   );

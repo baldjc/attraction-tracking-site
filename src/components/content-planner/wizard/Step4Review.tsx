@@ -16,6 +16,7 @@ import {
   propertyTypeFocusToContentPlanValue,
   type PropertyTypeFocus,
 } from "@/lib/property-type-focus";
+import { Button } from "@/components/ui/Button";
 
 interface IdeaCard {
   title: string;
@@ -151,7 +152,10 @@ export function Step4Review({ pickedKey, propertyTypeFocus }: Props) {
           <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
             {c.title}
           </h2>
-          <span className="shrink-0 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+          <span
+            className="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium"
+            style={{ background: "var(--abv-azure-tint)", color: "var(--abv-ink)" }}
+          >
             {c.rotationSlot}
           </span>
         </div>
@@ -207,14 +211,9 @@ export function Step4Review({ pickedKey, propertyTypeFocus }: Props) {
         >
           ← Start over
         </Link>
-        <button
-          type="button"
-          onClick={save}
-          disabled={saving}
-          className="rounded-md bg-blue-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-        >
+        <Button onClick={save} disabled={saving}>
           {saving ? "Saving…" : "Save as Content Plan →"}
-        </button>
+        </Button>
       </div>
     </div>
   );

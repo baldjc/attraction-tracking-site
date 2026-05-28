@@ -352,7 +352,7 @@ export default function KnowledgeBaseClient({
                   (discovered.status === "ready" &&
                     discovered.discovered.length === 0)
                 }
-                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-full bg-[var(--abv-ink)] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-transform duration-150 active:scale-[0.98] hover:bg-[#2a2a2a] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {discovered.status === "saving"
                   ? "Saving…"
@@ -395,7 +395,7 @@ export default function KnowledgeBaseClient({
             type="button"
             onClick={onCopyBrief}
             disabled={neighbourhoods.length === 0}
-            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-full bg-[var(--abv-ink)] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-transform duration-150 active:scale-[0.98] hover:bg-[#2a2a2a] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {briefCopied ? "Copied!" : "Copy Research Brief"}
           </button>
@@ -442,7 +442,7 @@ export default function KnowledgeBaseClient({
           .pdf file. We'll split it into per-neighbourhood profiles.
         </p>
 
-        <div className="mt-3 rounded-md border border-blue-200 bg-blue-50 p-3 text-xs text-blue-900 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-200">
+        <div className="mt-3 rounded-md border border-[var(--abv-azure)] bg-[var(--abv-azure-tint)] p-3 text-xs text-[var(--abv-ink)] dark:text-white">
           <strong>Tip:</strong> File upload is more reliable than paste. Chat
           interfaces sometimes strip the <code>###</code> heading characters
           from copied text — uploading the source <code>.md</code> file
@@ -481,7 +481,7 @@ export default function KnowledgeBaseClient({
                   type="file"
                   accept=".md,.txt,.docx,.pdf,text/markdown,text/plain,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                   onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-                  className="mt-1 block w-full text-sm text-gray-700 dark:text-gray-300 file:mr-3 file:rounded-md file:border-0 file:bg-blue-600 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white hover:file:bg-blue-700"
+                  className="mt-1 block w-full text-sm text-gray-700 dark:text-gray-300 file:mr-3 file:rounded-full file:border-0 file:bg-[var(--abv-ink)] file:px-4 file:py-1.5 file:text-sm file:font-semibold file:text-white hover:file:bg-[#2a2a2a]"
                 />
               </label>
               <label className="block text-sm">
@@ -503,7 +503,7 @@ export default function KnowledgeBaseClient({
                 type="button"
                 onClick={onUpload}
                 disabled={!pastedText.trim() && !file}
-                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-full bg-[var(--abv-ink)] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-transform duration-150 active:scale-[0.98] hover:bg-[#2a2a2a] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Process upload
               </button>

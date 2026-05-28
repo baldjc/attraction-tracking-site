@@ -17,6 +17,7 @@ import { useState } from "react";
 import { AiThinking } from "@/components/ai/AiThinking";
 import { useAiThinking } from "@/lib/use-ai-thinking";
 import { PropertyTypePicker } from "./PropertyTypePicker";
+import { Button } from "@/components/ui/Button";
 import type { PropertyTypeFocus } from "@/lib/property-type-focus";
 import { WIZARD_DRAFT_DIRTY_EVENT } from "./Step3IdeaCards";
 
@@ -170,13 +171,12 @@ export function Step2BIdeaValidation({ initialFocus = "Any" }: Props) {
           </div>
         )}
         <div className="mt-4 flex items-center gap-4">
-          <button
+          <Button
             type="submit"
             disabled={thinking.isThinking || idea.trim().length < MIN_LEN}
-            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Validate idea
-          </button>
+          </Button>
           {thinking.isThinking && (
             <AiThinking
               mode="phase"
@@ -240,13 +240,9 @@ function VerdictPanel({
 
       {(result.mode === "supports" || result.mode === "partial") && (
         <div className="mt-5">
-          <button
-            type="button"
-            onClick={() => onDevelop(result.sharperFraming ?? "")}
-            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-          >
+          <Button onClick={() => onDevelop(result.sharperFraming ?? "")}>
             Develop this into ideas →
-          </button>
+          </Button>
         </div>
       )}
 

@@ -18,6 +18,7 @@ import {
   type RotationSlotKey,
 } from "@/lib/content-engine-validation";
 import { PropertyTypePicker } from "./PropertyTypePicker";
+import { Button } from "@/components/ui/Button";
 import type { PropertyTypeFocus } from "@/lib/property-type-focus";
 
 interface SlotMeta {
@@ -118,13 +119,7 @@ export function Step2CRotationSlot({ initialFocus = "Any", preselectedSlot }: Pr
         />
 
         <div className="flex justify-end">
-          <button
-            type="button"
-            onClick={continueToIdeas}
-            className="rounded-md bg-blue-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-blue-700"
-          >
-            Generate ideas →
-          </button>
+          <Button onClick={continueToIdeas}>Generate ideas →</Button>
         </div>
       </div>
     );

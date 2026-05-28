@@ -58,7 +58,7 @@ function statusBadge(status: string) {
     case "pending":
       return <span className={`${base} bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300`}>Pending</span>;
     case "validating":
-      return <span className={`${base} bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300`}>Validating</span>;
+      return <span className={`${base}`} style={{ background: "var(--abv-azure-tint)", color: "var(--abv-ink)" }}>Validating</span>;
     case "validated":
       return <span className={`${base} bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300`}>Validated</span>;
     case "failed":
@@ -352,7 +352,7 @@ export default function UploadHistoryTable({ initial }: Props) {
               const isRemoving = removingIds.has(r.id);
               const rowClasses = [
                 "group transition-opacity duration-200",
-                shimmerIds.has(r.id) ? "animate-pulse bg-blue-50/50 dark:bg-blue-900/10" : "",
+                shimmerIds.has(r.id) ? "animate-pulse bg-[var(--abv-azure-tint)]" : "",
                 isRemoving || isDeleting ? "opacity-40" : "",
                 "hover:bg-amber-50/40 dark:hover:bg-amber-900/10",
               ]
@@ -496,7 +496,7 @@ export default function UploadHistoryTable({ initial }: Props) {
           className={`fixed bottom-4 right-4 z-50 max-w-sm rounded-md border px-4 py-3 text-sm shadow-lg ${
             toast.kind === "error"
               ? "border-red-300 bg-red-50 text-red-900 dark:border-red-800 dark:bg-red-900/20 dark:text-red-200"
-              : "border-blue-300 bg-blue-50 text-blue-900 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-200"
+              : "border-[var(--abv-azure)] bg-[var(--abv-azure-tint)] text-[var(--abv-ink)] dark:text-white"
           }`}
         >
           {toast.msg}
@@ -538,7 +538,7 @@ function FailedCell({
           type="button"
           onClick={onRetry}
           disabled={isRetrying}
-          className="rounded bg-blue-600 px-2 py-0.5 text-[11px] font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-400"
+          className="rounded-full bg-[var(--abv-ink)] px-2.5 py-0.5 text-[11px] font-semibold text-white transition-transform duration-150 active:scale-[0.98] hover:bg-[#2a2a2a] disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isRetrying ? "Queuing…" : "Retry"}
         </button>
@@ -706,7 +706,7 @@ function ErrorModal({
               type="button"
               onClick={onRetry}
               disabled={isRetrying}
-              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-400"
+              className="rounded-full bg-[var(--abv-ink)] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-transform duration-150 active:scale-[0.98] hover:bg-[#2a2a2a] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isRetrying ? "Queuing…" : "Retry"}
             </button>

@@ -21,6 +21,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAutoSave } from "@/hooks/useAutoSave";
+import { Button } from "@/components/ui/Button";
 import {
   WIZARD_BATCH_SESSION_KEY,
   WIZARD_DRAFT_DIRTY_EVENT,
@@ -240,13 +241,19 @@ function ResumeBanner({
 }) {
   const label = STEP_LABEL[draft.currentStep] ?? `Step ${draft.currentStep}`;
   return (
-    <div className="mt-4 rounded-lg border border-blue-300 bg-blue-50 p-4 dark:border-blue-700 dark:bg-blue-950/40">
+    <div
+      className="mt-4 rounded-lg border p-4"
+      style={{
+        borderColor: "var(--abv-azure)",
+        background: "var(--abv-azure-tint)",
+      }}
+    >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+          <p className="text-sm font-semibold text-[var(--abv-ink)] dark:text-white">
             Resume your last wizard run?
           </p>
-          <p className="mt-1 text-xs text-blue-800 dark:text-blue-200">
+          <p className="mt-1 text-xs text-[var(--abv-text)]/80 dark:text-white/80">
             You were on {label}
             {draft.propertyTypeFocus
               ? ` · focus: ${draft.propertyTypeFocus}`
@@ -255,20 +262,12 @@ function ResumeBanner({
           </p>
         </div>
         <div className="flex shrink-0 gap-2">
-          <button
-            type="button"
-            onClick={onResume}
-            className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
-          >
+          <Button size="sm" variant="primary" onClick={onResume}>
             Resume
-          </button>
-          <button
-            type="button"
-            onClick={onDiscard}
-            className="rounded-md border border-blue-300 bg-white px-3 py-1.5 text-sm font-medium text-blue-900 hover:bg-blue-100 dark:border-blue-700 dark:bg-transparent dark:text-blue-100 dark:hover:bg-blue-900/40"
-          >
+          </Button>
+          <Button size="sm" variant="outline" onClick={onDiscard}>
             Start fresh
-          </button>
+          </Button>
         </div>
       </div>
     </div>

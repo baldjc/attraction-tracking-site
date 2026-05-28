@@ -76,11 +76,11 @@ export default function Step6KnowledgeBase({ onContinue, onSkip }: StepProps) {
       </div>
 
       {/* 6b — Manus / Perplexity callout */}
-      <div className="mt-4 rounded-xl border border-blue-200 dark:border-blue-900/40 bg-blue-50 dark:bg-blue-950/20 p-5">
-        <p className="text-sm font-semibold text-blue-900 dark:text-blue-200">
+      <div className="mt-4 rounded-xl border border-[var(--abv-azure)] bg-[var(--abv-azure-tint)] p-5">
+        <p className="text-sm font-semibold text-[var(--abv-ink)] dark:text-white">
           Strongly recommend Manus AI or Perplexity
         </p>
-        <p className="mt-2 text-sm text-blue-900 dark:text-blue-300">
+        <p className="mt-2 text-sm text-[var(--abv-ink)] dark:text-white">
           Both can pull real-time web sources, cite their data, and produce the
           long-form structured output we need. Claude or ChatGPT can do this
           too, but their answers tend to be thinner without the web-search

@@ -23,8 +23,8 @@ export const PRINCIPLES = [
 
 export const PRINCIPLE_COLORS: Record<string, string> = {
   "Avatar Clarity": "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300",
-  "Themes Over Topics": "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
-  "Binge Architecture": "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300",
+  "Themes Over Topics": "bg-[var(--abv-azure-tint)] text-[var(--abv-ink)] dark:text-white",
+  "Binge Architecture": "bg-[var(--abv-azure-tint-strong)] text-[var(--abv-ink)] dark:text-white",
   "Lead Magnet System": "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
   "Values Peppering": "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300",
   "Connection Language": "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300",
@@ -213,7 +213,7 @@ export function EntryCard({
   const headerClass = isFoundations
     ? "bg-teal-50 dark:bg-teal-900/10 border-teal-100 dark:border-teal-900/20"
     : isLesson
-      ? "bg-blue-50 dark:bg-blue-900/10 border-blue-100 dark:border-blue-900/20"
+      ? "bg-[var(--abv-azure-tint)] border-[var(--abv-azure)]/30"
       : "bg-violet-50 dark:bg-violet-900/10 border-violet-100 dark:border-violet-900/20";
 
   // Build academy lesson URL for foundations entries
@@ -393,7 +393,7 @@ export function TranscriptMatchCard({
       <div className={`flex items-center justify-between px-4 py-2 border-b ${
         isCall
           ? "bg-violet-50 dark:bg-violet-900/10 border-violet-100 dark:border-violet-900/20"
-          : "bg-blue-50 dark:bg-blue-900/10 border-blue-100 dark:border-blue-900/20"
+          : "bg-[var(--abv-azure-tint)] border-[var(--abv-azure)]/30"
       }`}>
         <div className="flex items-center gap-2 min-w-0">
           {isCall

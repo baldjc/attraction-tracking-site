@@ -127,7 +127,7 @@ export default function NeighbourhoodDetailClient({
             <button
               type="button"
               onClick={onCopyReResearch}
-              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700"
+              className="rounded-full bg-[var(--abv-ink)] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-transform duration-150 active:scale-[0.98] hover:bg-[#2a2a2a]"
             >
               {reResearchCopied ? "Copied!" : "Copy focused brief"}
             </button>
@@ -251,7 +251,7 @@ export default function NeighbourhoodDetailClient({
               type="button"
               onClick={onSave}
               disabled={busy}
-              className="rounded-md bg-blue-600 px-4 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:opacity-50"
+              className="rounded-full bg-[var(--abv-ink)] px-4 py-1.5 text-sm font-semibold text-white shadow-sm transition-transform duration-150 active:scale-[0.98] hover:bg-[#2a2a2a] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {busy ? "Saving…" : "Save"}
             </button>

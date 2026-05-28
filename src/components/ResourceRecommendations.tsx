@@ -25,8 +25,8 @@ export interface Recommendation {
 
 const PRINCIPLE_COLORS: Record<string, string> = {
   "Avatar Clarity": "bg-purple-100 text-purple-700",
-  "Themes Over Topics": "bg-blue-100 text-blue-700",
-  "Binge Architecture": "bg-indigo-100 text-indigo-700",
+  "Themes Over Topics": "bg-[var(--abv-azure-tint)] text-[var(--abv-ink)]",
+  "Binge Architecture": "bg-[var(--abv-azure-tint-strong)] text-[var(--abv-ink)]",
   "Lead Magnet System": "bg-green-100 text-green-700",
   "Values Peppering": "bg-pink-100 text-pink-700",
   "Connection Language": "bg-yellow-100 text-yellow-700",
@@ -64,7 +64,7 @@ function RecommendationCard({ rec }: { rec: Recommendation }) {
     }`}>
       {/* Source bar */}
       <div className={`flex items-center gap-1.5 px-3 py-1.5 ${
-        isLesson ? "bg-blue-50 dark:bg-blue-900/15" : "bg-violet-50 dark:bg-violet-900/15"
+        isLesson ? "bg-[var(--abv-azure-tint)]" : "bg-violet-50 dark:bg-violet-900/15"
       }`}>
         {isLesson
           ? <AcademicCapIcon className="w-3 h-3 text-blue-500 flex-shrink-0" />
@@ -235,7 +235,7 @@ function InlineRecommendationRow({ rec }: { rec: Recommendation }) {
   return (
     <div className="flex items-start gap-3 bg-white rounded-lg border border-[var(--abv-text)]/8 px-4 py-3">
       <div className={`flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center mt-0.5 ${
-        isLesson ? "bg-blue-100" : "bg-violet-100"
+        isLesson ? "bg-[var(--abv-azure-tint-strong)]" : "bg-violet-100"
       }`}>
         {isLesson
           ? <AcademicCapIcon className="w-3.5 h-3.5 text-blue-600" />

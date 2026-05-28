@@ -35,7 +35,7 @@ function daysUntil(dateStr: string): number {
 
 function badgeColor(type: string): string {
   switch (type) {
-    case "script":    return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300";
+    case "script":    return "bg-[var(--abv-azure-tint)] text-[var(--abv-ink)] dark:text-white";
     case "draft":     return "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200";
     case "idea":      return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300";
     case "review":    return "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300";

@@ -375,11 +375,25 @@ export default function ArcScriptBuilderTool({ basePath, isAdmin, defaultPlanId 
       />
 
       {usage && pct >= 50 && (
-        <div className={`mb-5 flex items-start gap-3 border rounded-lg p-4 ${
-          pct >= 90 ? "bg-red-50 border-red-200" : pct >= 75 ? "bg-amber-50 border-amber-200" : "bg-blue-50 border-blue-200"
-        }`}>
+        <div
+          className={`mb-5 flex items-start gap-3 border rounded-lg p-4 ${
+            pct >= 90
+              ? "bg-red-50 border-red-200"
+              : pct >= 75
+                ? "bg-amber-50 border-amber-200"
+                : "border-[var(--abv-azure)] bg-[var(--abv-azure-tint)]"
+          }`}
+        >
           <span className="text-lg">{pct >= 90 ? "🚫" : pct >= 75 ? "⚠️" : "ℹ️"}</span>
-          <p className={`text-sm ${pct >= 90 ? "text-red-700" : pct >= 75 ? "text-amber-700" : "text-blue-700"}`}>
+          <p
+            className={`text-sm ${
+              pct >= 90
+                ? "text-red-700"
+                : pct >= 75
+                  ? "text-amber-700"
+                  : "text-[var(--abv-ink)] dark:text-white"
+            }`}
+          >
             {pct >= 100
               ? `You've reached your monthly AI usage limit. Resets ${usage.resetsAt}.`
               : `You've used ${Math.round(pct)}% of your monthly AI budget. Resets ${usage.resetsAt}.`}

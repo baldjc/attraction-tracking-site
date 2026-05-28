@@ -158,7 +158,7 @@ function DraftRow({
             </span>
           )}
           {draft.propertyTypeFocus && (
-            <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+            <span className="rounded-full px-2 py-0.5 text-[10px] font-medium bg-[var(--abv-azure-tint)] text-[var(--abv-ink)] dark:text-white">
               🔒 {draft.propertyTypeFocus}
             </span>
           )}
