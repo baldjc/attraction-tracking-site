@@ -168,12 +168,10 @@ function GoDeeperSection({
   title,
   result,
   introTranscript,
-  dramaMode,
 }: {
   title: string;
   result: AnalysisResult;
   introTranscript: string;
-  dramaMode: boolean;
 }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -213,7 +211,6 @@ function GoDeeperSection({
           analysisResult: result,
           introTranscript,
           messages: next.map((m) => ({ role: m.role, content: m.content })),
-          dramaMode,
         }),
       });
       const data = await res.json();
@@ -370,7 +367,6 @@ function TitleThumbnailAnalyzerPageInner() {
   const [error, setError] = useState("");
   const [refreshCounter, setRefreshCounter] = useState(0);
   const [linkedPlanId, setLinkedPlanId] = useState<string | null>(urlPlanId);
-  const [dramaMode, setDramaMode] = useState<boolean>(false);
   const [plannerSaving, setPlannerSaving] = useState(false);
   const [plannerSaved, setPlannerSaved] = useState(false);
   const [plannerSaveError, setPlannerSaveError] = useState(false);
@@ -395,7 +391,6 @@ function TitleThumbnailAnalyzerPageInner() {
         if (data.planId) setLinkedPlanId(data.planId);
         if (data.transcript) setIntroTranscript(data.transcript);
         if (data.thumbnailWords) setThumbnailWords(data.thumbnailWords);
-        if (typeof data.dramaMode === "boolean") setDramaMode(data.dramaMode);
       }
     } catch {}
   }, []);
@@ -512,7 +507,7 @@ function TitleThumbnailAnalyzerPageInner() {
     const res = await fetch("/api/ai-tools/title-thumbnail-analyzer", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, thumbnailBase64, thumbnailMimeType, introTranscript: introTranscript.trim(), thumbnailWords: thumbnailWords.trim(), dramaMode }),
+      body: JSON.stringify({ title, thumbnailBase64, thumbnailMimeType, introTranscript: introTranscript.trim(), thumbnailWords: thumbnailWords.trim() }),
     });
 
     const data = await res.json();
@@ -1063,7 +1058,7 @@ function TitleThumbnailAnalyzerPageInner() {
           })()}
 
           {/* Go Deeper section */}
-          <GoDeeperSection title={title} result={result} introTranscript={introTranscript} dramaMode={dramaMode} />
+          <GoDeeperSection title={title} result={result} introTranscript={introTranscript} />
 
           {linkedPlanId && (
             plannerSaved ? (

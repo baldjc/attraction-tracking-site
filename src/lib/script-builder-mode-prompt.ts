@@ -259,13 +259,13 @@ Months of Inventory thresholds. Use the Validator's \`market_type\` and \`trajec
 - **Above 4.0 MOI = buyers market.** Buyer has leverage. Take your time, low-ball, walk away if needed.
 - **High-end exception → balanced.** At the top of the price tier for the property type ($1.5M+ detached, $800K+ condo), 5-6 MOI is functionally balanced because the buyer pool is structurally smaller — fewer buyers always means longer absorption, even in healthy conditions. Don't call this a buyers market.
 
-**Trajectory is a separate story from market type.** A tier going from 0.68 MOI to 1.66 MOI in twelve months is dramatic loosening — that's a real shift worth reporting. But the resulting state (1.66) is still a sellers market. The script must say BOTH things accurately:
+**Trajectory is a separate story from market type.** A tier going from 0.68 MOI to 1.66 MOI in twelve months is pronounced loosening — that's a real shift worth reporting. But the resulting state (1.66) is still a sellers market. The script must say BOTH things accurately:
 
 > CORRECT: *"Twelve months ago this tier was 0.68 MOI — stupid tight. Today it's 1.66. The market shifted hard toward buyers in twelve months — but at 1.66, this is still a sellers market. Bidding intensity is down. Selection is up. Patience is rewarded. But anyone telling you 'leverage has flipped' is reading the trend, not the state."*
 
 > WRONG: *"At 1.66 MOI, take your time, no urgency in this tier."* (Conflates trajectory with state. At 1.66, sellers still have leverage.)
 
-This is the most common failure mode for data-heavy scripts: treating dramatic loosening as if it's the same as being in a buyers market. They are different signals. Report both. Don't merge them.
+This is the most common failure mode for data-heavy scripts: treating pronounced loosening as if it's the same as being in a buyers market. They are different signals. Report both. Don't merge them.
 
 **When in doubt, use the Validator's labels.** If a fact comes in with \`market_type: sellers, trajectory: loosening-fast\`, the script writes "still a sellers market, but loosening fast." Not "buyers have leverage now."
 
@@ -777,7 +777,7 @@ REQUIRED: vary the opening sentence pattern across the 5 sections. Do NOT lead e
 
 **Approved opening patterns to rotate across sections:**
 
-1. **Metric-first** (use for the most dramatic reading): *"Redstone townhomes are sitting at 7.2 months of inventory. That's deep buyers territory."*
+1. **Metric-first** (use for the most striking reading): *"Redstone townhomes are sitting at 7.2 months of inventory. That's deep buyers territory."*
 
 2. **Contradiction**: *"Here's the trap with Skyview Ranch. The neighbourhood overall is at 6.63 months, but townhomes specifically are at 2.7."*
 
@@ -813,7 +813,7 @@ This is the most important rule in the prompt. A script that violates rules 1 or
 
 The \`## SOURCE-OF-TRUTH METRICS\` block now marks specific property types per neighbourhood as either available data or "EXCLUDED — this video covers [neighbourhood] [type] only."
 
-If a neighbourhood's SoT block shows \`**[OtherType]:** EXCLUDED ...\`, you MUST NOT write about that property type for that neighbourhood — even if you have data for it from another source. The wizard chose the property type focus for this video; pivoting to a different type because it's "more dramatic" is a HARD FAIL.
+If a neighbourhood's SoT block shows \`**[OtherType]:** EXCLUDED ...\`, you MUST NOT write about that property type for that neighbourhood — even if you have data for it from another source. The wizard chose the property type focus for this video; pivoting to a different type because it's "more striking" is a HARD FAIL.
 
 Example of what's banned:
 - SoT shows "Saddle Ridge | Row/Townhouse" with full data, and a separate "Saddle Ridge | EXCLUDED property types" header listing "Detached, Apartment, Semi-Detached: EXCLUDED — this video covers Saddle Ridge Row/Townhouse only"

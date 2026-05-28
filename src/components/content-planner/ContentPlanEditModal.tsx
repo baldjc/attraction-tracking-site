@@ -117,7 +117,6 @@ export interface ContentPlan {
   publishDate: string | null;
   editDueDate: string | null;
   priority: string | null;
-  dramaMode?: boolean;
   notes: string | null;
   script: string | null;
   researchNotes: string | null;
@@ -423,7 +422,6 @@ export default function ContentPlanEditModal({ plan, serviceTier, apiBase, isAdm
     shootLocation: plan.shootLocation ?? "",
     editDueDate: toDateInput(plan.editDueDate),
     priority: plan.priority ?? "",
-    dramaMode: Boolean(plan.dramaMode ?? false),
     notes: plan.notes ?? "",
     script: plan.script ?? "",
     youtubeDescription: (plan as any).youtubeDescription ?? "",
@@ -883,7 +881,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
       const talkingPoints = form.notes.split("\n").map((l) => l.trim()).filter(Boolean);
       sessionStorage.setItem(
         "arc_prefill",
-        JSON.stringify({ planId: plan.id, title: form.title, talkingPoints, dramaMode: form.dramaMode })
+        JSON.stringify({ planId: plan.id, title: form.title, talkingPoints })
       );
     } else if (key === "title") {
       sessionStorage.setItem(
@@ -896,23 +894,22 @@ Produce a research brief I can hand to a script writer. For **each talking point
           // both fields instead of starting from blank.
           transcript: form.script,
           thumbnailWords: form.thumbnailWords,
-          dramaMode: form.dramaMode,
         })
       );
     } else if (key === "review") {
       sessionStorage.setItem(
         "script_review_prefill",
-        JSON.stringify({ planId: plan.id, title: form.title, script: form.script, dramaMode: form.dramaMode })
+        JSON.stringify({ planId: plan.id, title: form.title, script: form.script })
       );
     } else if (key === "description") {
       sessionStorage.setItem(
         "description_prefill",
-        JSON.stringify({ title: form.title, transcript: form.script, contentPlanId: plan.id, dramaMode: form.dramaMode })
+        JSON.stringify({ title: form.title, transcript: form.script, contentPlanId: plan.id })
       );
     } else if (key === "repurpose") {
       sessionStorage.setItem(
         "repurpose_prefill",
-        JSON.stringify({ planId: plan.id, title: form.title, transcript: form.script, dramaMode: form.dramaMode })
+        JSON.stringify({ planId: plan.id, title: form.title, transcript: form.script })
       );
     }
   }
@@ -1018,7 +1015,6 @@ Produce a research brief I can hand to a script writer. For **each talking point
           shootLocation: s.shootLocation || null,
           editDueDate: s.editDueDate || null,
           priority: s.priority || null,
-          dramaMode: Boolean(s.dramaMode),
           notes: s.notes || null,
           script: s.script || null,
           youtubeDescription: s.youtubeDescription || null,
@@ -1271,7 +1267,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
               )}
             </div>
 
-            {/* Zone 2c — Chip strip. Status / Theme / Drama Mode / Publish date /
+            {/* Zone 2c — Chip strip. Status / Theme / Publish date /
                 Shoot location each render as a clickable pill that opens an
                 inline popover. Replaces the old full-width fields for these
                 properties. */}
@@ -1359,20 +1355,6 @@ Produce a research brief I can hand to a script writer. For **each talking point
                   </div>
                 )}
               </ChipPopover>
-
-              {/* Drama Mode is binary, so it's a self-toggling chip rather than
-                  a popover. Click toggles On/Off. */}
-              <button
-                type="button"
-                onClick={() => setForm((f) => ({ ...f, dramaMode: !f.dramaMode }))}
-                className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[12px] transition-colors ${form.dramaMode ? "bg-[#185FA5]/10 text-[#185FA5] font-medium" : "bg-gray-100 text-[var(--abv-text)]/80 hover:bg-gray-200"}`}
-                role="switch"
-                aria-checked={form.dramaMode}
-                title="Drama Mode — flag as the monthly wide-net video"
-              >
-                <span className="text-[var(--abv-text)]/55">Drama:</span>
-                <span>{form.dramaMode ? "On" : "Off"}</span>
-              </button>
 
               <ChipPopover
                 label="Publish"

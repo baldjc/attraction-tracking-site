@@ -28,7 +28,6 @@ interface StartBuildingData {
   nextVideoPush: string;
   themeName?: string;
   themeContext?: string;
-  dramaMode?: boolean;
 }
 
 interface PrefillData {
@@ -36,7 +35,6 @@ interface PrefillData {
   talkingPoints: string[];
   themeName?: string;
   dataToFind?: string;
-  dramaMode?: boolean;
 }
 
 interface YouTubeVideoOption {
@@ -349,7 +347,6 @@ Format each talking point as its own section with all 7 categories. Preserve spe
         nextVideoPush: nextVideoPush.trim(),
         themeName: activeThemeName || undefined,
         themeContext: activeThemeContext || undefined,
-        dramaMode: prefillData?.dramaMode ?? false,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");

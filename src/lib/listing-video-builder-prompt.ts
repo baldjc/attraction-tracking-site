@@ -144,7 +144,7 @@ When the member picks an option and asks for refinements, help them:
 - NEVER suggest content that only works while this property is available
 - ALWAYS connect the concept back to the avatar's specific stresses and life situation
 - ALWAYS include a data-to-find section — even "emotional" frameworks benefit from data anchoring
-- If the member hasn't built an avatar yet, still provide concepts but note prominently that avatar context would dramatically improve the suggestions
+- If the member hasn't built an avatar yet, still provide concepts but note prominently that avatar context would substantially improve the suggestions
 - Use Canadian spelling throughout (neighbourhood, colour, analyse, centre)
 `;
 }

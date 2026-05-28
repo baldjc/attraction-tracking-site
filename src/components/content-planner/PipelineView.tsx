@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { VideoCameraIcon, CalendarDaysIcon, FolderIcon } from "@heroicons/react/24/outline";
-import DramaMagnet from "@/components/icons/DramaMagnet";
 import { type ContentPlan } from "./ContentPlanEditModal";
 import { useRouter } from "next/navigation";
 import ProgressTrack from "./ProgressTrack";
@@ -181,14 +180,6 @@ export default function PipelineView({
             >
               <FolderIcon className="w-3.5 h-3.5" />
             </a>
-          )}
-          {plan.dramaMode && (
-            <span
-              className="text-orange-600 shrink-0 mt-0.5"
-              title="Drama Mode — monthly wide-net video"
-            >
-              <DramaMagnet size={14} />
-            </span>
           )}
         </div>
         <div className="mb-2">

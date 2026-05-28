@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import DramaMagnet from "@/components/icons/DramaMagnet";
 
 type Verdict =
   | "overperforming"
@@ -21,7 +20,6 @@ interface Pulse {
   ctr: number;
   performanceRatio: number;
   verdict: Verdict;
-  dramaMode: boolean;
 }
 
 const VERDICT_STYLE: Record<Verdict, { bg: string; fg: string; label: string }> = {
@@ -140,12 +138,6 @@ export default function FortyEightHourPulse({
                   <h3 className="line-clamp-2 text-sm font-medium text-[var(--abv-text)]">
                     {p.title}
                   </h3>
-                  {p.dramaMode && (
-                    <DramaMagnet
-                      size={16}
-                      className="flex-shrink-0 text-[var(--abv-hire)]"
-                    />
-                  )}
                 </div>
                 <div className="mt-1 flex items-center gap-3 text-xs text-[var(--abv-text-secondary)]">
                   <span>{p.hoursSincePublish}h ago</span>

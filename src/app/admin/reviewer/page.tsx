@@ -20,7 +20,6 @@ interface ChannelCard {
   cohorts: { newV: number; casual: number; regular: number };
   activePulses: number;
   hasUnderperformingPulse: boolean;
-  missingDramaThisMonth: boolean;
   avgGlanceScore: number | null;
 }
 
@@ -134,25 +133,6 @@ async function buildCard(
       take: 10,
       select: { overallScore: true },
     }),
-    (async () => {
-      const { resolveUsersForChannel } = await import(
-        "@/lib/reviewer-channel-resolver"
-      );
-      const userIds = await resolveUsersForChannel(channelRef);
-      if (userIds.length === 0) return { drama: 0 };
-      const plans = await prisma.contentPlan.findMany({
-        where: {
-          userId: { in: userIds },
-          publishDate: { gte: monthStart, lt: monthEnd },
-        },
-        select: { theme: true, dramaMode: true },
-      });
-      let drama = 0;
-      for (const p of plans) {
-        if (p.dramaMode && p.theme !== MARKET_UPDATE_THEME) drama += 1;
-      }
-      return { drama };
-    })(),
   ]);
 
   const newV = latestSnap?.newViewers28d ?? 0;
@@ -185,7 +165,6 @@ async function buildCard(
     cohorts: { newV, casual, regular },
     activePulses: pulses.length,
     hasUnderperformingPulse: hasUnderperforming,
-    missingDramaThisMonth: planCount.drama === 0,
     avgGlanceScore: avgGlance,
   };
 }
@@ -232,7 +211,6 @@ export default async function ReviewerOverviewPage() {
 
   const cards = await gatherChannels();
 
-  const missingDrama = cards.filter((c) => c.missingDramaThisMonth);
   const underperforming = cards.filter((c) => c.hasUnderperformingPulse);
   const lowGlance = cards.filter(
     (c) => c.avgGlanceScore !== null && c.avgGlanceScore < 60,
@@ -353,8 +331,7 @@ export default async function ReviewerOverviewPage() {
         </div>
       )}
 
-      {(missingDrama.length > 0 ||
-        underperforming.length > 0 ||
+      {(underperforming.length > 0 ||
         lowGlance.length > 0) && (
         <section
           className="mt-8 rounded-xl border border-[var(--abv-border-strong)] bg-white p-6 dark:border-[#2a2a2a] dark:bg-[#1a1a1a]"
@@ -366,12 +343,7 @@ export default async function ReviewerOverviewPage() {
           <h2 className="text-lg font-semibold text-[var(--abv-text)] dark:text-white">
             Issues across all channels
           </h2>
-          <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
-            <IssueGroup
-              label="Missing Drama this month"
-              channels={missingDrama}
-              colourVar="--atbv-danger"
-            />
+          <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
             <IssueGroup
               label="Underperforming pulses"
               channels={underperforming}

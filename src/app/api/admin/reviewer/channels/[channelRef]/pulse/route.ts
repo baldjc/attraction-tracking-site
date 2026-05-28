@@ -53,12 +53,6 @@ export async function GET(
   });
   const vMap = new Map(videos.map((v) => [v.videoId, v]));
 
-  const plans = await prisma.contentPlan.findMany({
-    where: { youtubeVideoId: { in: videoIds } },
-    select: { youtubeVideoId: true, dramaMode: true },
-  });
-  const dramaMap = new Map(plans.map((p) => [p.youtubeVideoId!, p.dramaMode]));
-
   const now = Date.now();
   const active = pulses.map((p) => {
     const v = vMap.get(p.videoId);
@@ -75,7 +69,6 @@ export async function GET(
       ctr: p.ctr,
       performanceRatio: p.performanceRatio,
       verdict: verdict(p.performanceRatio, p.baseline),
-      dramaMode: dramaMap.get(p.videoId) ?? false,
     };
   });
 

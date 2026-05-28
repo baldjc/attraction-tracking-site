@@ -140,7 +140,6 @@ export default function MobileCardFeed({
             else if (p.shootDate) { nextDateStr = formatShortDate(p.shootDate); nextDateLabel = "Shoot"; }
             else if (p.editDueDate) { nextDateStr = formatShortDate(p.editDueDate); nextDateLabel = "Edit"; }
             const isHigh = p.priority === "High";
-            const isDrama = Boolean((p as any).dramaMode);
 
             return (
               <button
@@ -157,11 +156,6 @@ export default function MobileCardFeed({
                     {p.status}
                   </span>
                   <div className="flex items-center gap-1.5 shrink-0">
-                    {isDrama && (
-                      <span className="inline-flex items-center text-[10px] font-bold uppercase tracking-wider text-green-700 bg-green-50 px-2 py-0.5 rounded">
-                        Drama
-                      </span>
-                    )}
                     {isHigh && (
                       <span className="inline-flex items-center text-[10px] font-bold uppercase tracking-wider text-red-600 bg-red-50 px-2 py-0.5 rounded">
                         <ExclamationCircleIcon className="w-3 h-3 mr-0.5" />

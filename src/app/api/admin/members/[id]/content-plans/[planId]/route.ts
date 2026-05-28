@@ -28,7 +28,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const body = await req.json();
-  const { title, status, theme, shootDate, publishDate, editDueDate, priority, dramaMode, notes, script, researchNotes, thoughts, thumbnailWords, footageLink, driveFolderLink, thumbnailFileId, thumbnailFileName, manualSteps } = body;
+  const { title, status, theme, shootDate, publishDate, editDueDate, priority, notes, script, researchNotes, thoughts, thumbnailWords, footageLink, driveFolderLink, thumbnailFileId, thumbnailFileName, manualSteps } = body;
   // Whitelist manual step keys (mirror member route).
   const VALID_STEP_KEYS = new Set(["idea","script","review","title","description","repurpose","ready"]);
   let manualStepsClean: string[] | undefined;
@@ -83,7 +83,6 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       ...(publishDate !== undefined && { publishDate: publishDate ? new Date(publishDate) : null }),
       ...(editDueDate !== undefined && { editDueDate: editDueDate ? new Date(editDueDate) : null }),
       ...(priority !== undefined && { priority: priority ?? null }),
-      ...(dramaMode !== undefined && { dramaMode: Boolean(dramaMode) }),
       ...(notes !== undefined && { notes: notes ?? null }),
       ...(script !== undefined && { script: script ?? null }),
       ...(researchNotes !== undefined && { researchNotes: researchNotes ?? null }),

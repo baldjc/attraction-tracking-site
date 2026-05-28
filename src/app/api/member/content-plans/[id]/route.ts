@@ -56,7 +56,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const serviceTier = dbUser?.serviceTier ?? "foundations";
 
   const body = await req.json();
-  const { title, status, theme, shootDate, shootLocation, publishDate, editDueDate, priority, dramaMode, notes, script, researchNotes, thoughts, thumbnailWords, footageLink, driveFolderLink, youtubeDescription, linkedCampaignId, linkedScriptId, thumbnailFileId, thumbnailFileName, manualSteps, propertyTypeFocus } = body;
+  const { title, status, theme, shootDate, shootLocation, publishDate, editDueDate, priority, notes, script, researchNotes, thoughts, thumbnailWords, footageLink, driveFolderLink, youtubeDescription, linkedCampaignId, linkedScriptId, thumbnailFileId, thumbnailFileName, manualSteps, propertyTypeFocus } = body;
   // Wave 4 — same whitelist as POST. Treat undefined as "field omitted"
   // (partial PATCH semantics, no write), empty string as "clear", and any
   // other off-list string as "clear" (safer than persisting garbage).
@@ -168,7 +168,6 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       ...(publishDate !== undefined && { publishDate: publishDate ? new Date(publishDate) : null }),
       ...(editDueDate !== undefined && { editDueDate: editDueDate ? new Date(editDueDate) : null }),
       ...(priority !== undefined && { priority: priority ?? null }),
-      ...(dramaMode !== undefined && { dramaMode: Boolean(dramaMode) }),
       ...(notes !== undefined && { notes: notes ?? null }),
       ...(script !== undefined && { script: script ?? null }),
       ...(researchNotes !== undefined && { researchNotes: researchNotes ?? null }),

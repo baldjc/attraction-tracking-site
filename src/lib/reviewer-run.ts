@@ -30,28 +30,24 @@ async function buildPortfolioBalance(channelRef: string) {
     select: {
       title: true,
       theme: true,
-      dramaMode: true,
       publishDate: true,
     },
   });
 
   let marketUpdates = 0;
-  let drama = 0;
   let directStress = 0;
   let other = 0;
   for (const p of plans) {
     if (p.theme === MARKET_UPDATE_THEME) marketUpdates += 1;
-    else if (p.dramaMode) drama += 1;
     else if (p.theme && p.theme.length > 0) directStress += 1;
     else other += 1;
   }
   return {
-    counts: { marketUpdates, drama, directStress, other },
-    target: { marketUpdates: 1, drama: 1, directStress: 2 },
+    counts: { marketUpdates, directStress, other },
+    target: { marketUpdates: 1, directStress: 2 },
     plans: plans.map((p) => ({
       title: p.title,
       theme: p.theme,
-      dramaMode: p.dramaMode,
     })),
   };
 }

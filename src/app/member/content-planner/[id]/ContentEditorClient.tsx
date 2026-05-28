@@ -28,6 +28,14 @@ type Lineage = {
 };
 
 type Theme = { value: string; label: string };
+type Campaign = { id: string; name: string; pitchOneLiner: string | null };
+type BingeOption = { id: string; title: string; theme: string | null };
+type AvatarData = {
+  avatarName?: string | null;
+  avatarSummary?: string | null;
+  full_document?: string | null;
+  city?: string | null;
+} | null;
 
 const FOUNDATIONS_TIERS = ["foundations"];
 const PROPERTY_OPTIONS = [
@@ -441,6 +449,11 @@ type Form = {
   script: string;
   notes: string;
   thumbnailWords: string;
+  researchNotes: string;
+  thoughts: string;
+  youtubeDescription: string;
+  bingeVideoId: string;
+  linkedCampaignId: string;
 };
 
 export default function ContentEditorClient({
@@ -469,11 +482,23 @@ export default function ContentEditorClient({
     script: initialPlan.script ?? "",
     notes: initialPlan.notes ?? "",
     thumbnailWords: initialPlan.thumbnailWords ?? "",
+    researchNotes: initialPlan.researchNotes ?? "",
+    thoughts: initialPlan.thoughts ?? "",
+    youtubeDescription: (initialPlan as unknown as { youtubeDescription?: string | null }).youtubeDescription ?? "",
+    bingeVideoId: initialPlan.bingeVideoId ?? "",
+    linkedCampaignId: initialPlan.linkedCampaignId ?? "",
   }));
   const [activeTab, setActiveTab] = useState<"planning" | "connecting" | "tools" | "publish">("planning");
   const [lineage, setLineage] = useState<Lineage | null>(null);
   const [lineageOpen, setLineageOpen] = useState(true);
   const [themes, setThemes] = useState<Theme[]>([]);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [bingeOptions, setBingeOptions] = useState<BingeOption[]>([]);
+  const [bingeLoaded, setBingeLoaded] = useState(false);
+  const [avatarData, setAvatarData] = useState<AvatarData>(null);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [researchPromptCopied, setResearchPromptCopied] = useState(false);
+  const [researchPromptError, setResearchPromptError] = useState("");
   const [now, setNow] = useState(Date.now());
 
   const statusOptions = useMemo(() => getStatusOptions(serviceTier), [serviceTier]);
@@ -492,7 +517,31 @@ export default function ContentEditorClient({
         if (Array.isArray(d?.themes)) setThemes(d.themes);
       })
       .catch(() => {});
+    fetch("/api/campaigns")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (Array.isArray(d)) setCampaigns(d as Campaign[]);
+        else if (Array.isArray(d?.campaigns)) setCampaigns(d.campaigns as Campaign[]);
+      })
+      .catch(() => {});
+    fetch("/api/member/avatar")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (d) setAvatarData(d as AvatarData); })
+      .catch(() => {});
   }, [planId]);
+
+  const loadBingeOptions = useCallback(() => {
+    if (bingeLoaded) return;
+    fetch(`${apiBase}/list-for-binge-selector?excludeId=${encodeURIComponent(planId)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (Array.isArray(d?.plans)) {
+          setBingeOptions(d.plans as BingeOption[]);
+          setBingeLoaded(true);
+        }
+      })
+      .catch(() => {});
+  }, [planId, bingeLoaded]);
 
   // Tab-title mirrors current title.
   useEffect(() => {
@@ -519,6 +568,11 @@ export default function ContentEditorClient({
       script: v.script,
       notes: v.notes,
       thumbnailWords: v.thumbnailWords,
+      researchNotes: v.researchNotes,
+      thoughts: v.thoughts,
+      youtubeDescription: v.youtubeDescription,
+      bingeVideoId: v.bingeVideoId || null,
+      linkedCampaignId: v.linkedCampaignId || null,
     };
     const res = await fetch(`${apiBase}/${planId}`, {
       method: "PUT",
@@ -574,6 +628,57 @@ export default function ContentEditorClient({
   };
   const handleDuplicate = () => {
     alert("Duplicate is coming soon. For now use Add Video on the planner.");
+  };
+  const handleDelete = async () => {
+    if (!confirm("Delete this video permanently? This can't be undone.")) return;
+    try {
+      const res = await fetch(`${apiBase}/${planId}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("delete failed");
+      router.push("/member/content-planner");
+    } catch {
+      alert("Could not delete. Please try again.");
+    }
+  };
+
+  const generateResearchPrompt = async () => {
+    setResearchPromptError("");
+    const t = form.title.trim();
+    if (!t) {
+      setResearchPromptError("Add a title first");
+      setTimeout(() => setResearchPromptError(""), 2500);
+      return;
+    }
+    const tp = form.notes.trim();
+    const avatarSection = avatarData?.avatarName
+      ? `Name: ${avatarData.avatarName}\n${avatarData.full_document || avatarData.avatarSummary || JSON.stringify(avatarData, null, 2)}`
+      : "(No avatar saved — write for a general real estate audience.)";
+    const themeLine = form.theme ? `Theme / Series: ${form.theme}` : "";
+    const publishLine = form.publishDate ? `Planned publish date: ${form.publishDate}` : "";
+    const todayLine = `Today's date (for recency of stats): ${new Date().toISOString().slice(0, 10)}`;
+    const prompt = `You are a senior real-estate research analyst preparing a deep research brief for a YouTube video. Your job is to gather **specific, verifiable, recent, sourced data** that I can confidently say on camera.
+
+=== VIDEO CONTEXT ===
+Title: "${t}"
+${themeLine}
+${publishLine}
+${todayLine}
+
+${tp ? `=== TALKING POINTS / OUTLINE ===\n${tp}\n` : "=== TALKING POINTS ===\n(None provided — infer from the title and avatar.)\n"}
+=== TARGET AVATAR ===
+${avatarSection}
+
+=== WHAT I NEED ===
+For each talking point, deliver: (1) hard stats with sources + dates + URLs, (2) recent market context (last 6–12 months), (3) main argument & unique angle, (4) avatar pain points tied to stats, (5) myths to bust, (6) conventional wisdom to position against, (7) concrete examples with numbers, (8) visual / b-roll suggestions, (9) quotable lines with attribution, (10) open questions to verify locally.
+
+Output as markdown with ## per talking point, ### per section. Every stat: \`figure — context — Source Name, Date — URL\`. Do not fabricate sources or numbers.`;
+    try {
+      await navigator.clipboard.writeText(prompt);
+      setResearchPromptCopied(true);
+      setTimeout(() => setResearchPromptCopied(false), 2500);
+    } catch {
+      setResearchPromptError("Could not copy");
+      setTimeout(() => setResearchPromptError(""), 2500);
+    }
   };
 
   // ── v2 builder navigation ─────────────────────────────────────────────────
@@ -686,10 +791,31 @@ export default function ContentEditorClient({
               {savedLabel}
             </span>
           )}
-          <button
-            aria-label="More actions"
-            className="w-8 h-8 rounded-full hover:bg-[var(--abv-bg-warm)] text-[var(--abv-text-muted)]"
-          >⋯</button>
+          <div style={{ position: "relative" }}>
+            <button
+              aria-label="More actions"
+              onClick={() => setMoreOpen((v) => !v)}
+              className="w-8 h-8 rounded-full hover:bg-[var(--abv-bg-warm)] text-[var(--abv-text-muted)]"
+            >⋯</button>
+            {moreOpen && (
+              <>
+                <div
+                  onClick={() => setMoreOpen(false)}
+                  style={{ position: "fixed", inset: 0, zIndex: 40 }}
+                />
+                <div style={{
+                  position: "absolute", right: 0, top: "calc(100% + 4px)", zIndex: 41,
+                  background: "white", border: "1px solid var(--abv-border)",
+                  borderRadius: 8, minWidth: 160, padding: 4,
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+                }}>
+                  <MoreItem onClick={() => { setMoreOpen(false); handleDuplicate(); }}>Duplicate</MoreItem>
+                  <MoreItem onClick={() => { setMoreOpen(false); void handleArchive(); }}>Archive</MoreItem>
+                  <MoreItem danger onClick={() => { setMoreOpen(false); void handleDelete(); }}>Delete</MoreItem>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
@@ -704,19 +830,6 @@ export default function ContentEditorClient({
         }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 24 }}>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <span style={{
-                display: "inline-flex", alignItems: "center", gap: 6,
-                padding: "4px 10px", borderRadius: 999,
-                background: "rgba(255,255,255,0.08)",
-                fontSize: 10, fontWeight: 700, letterSpacing: "0.12em",
-                textTransform: "uppercase",
-              }}>
-                <span style={{
-                  display: "inline-block", width: 5, height: 5, borderRadius: "50%",
-                  background: STATUS_DOT[form.status] ?? "#9CA3AF",
-                }} />
-                {form.status || "Idea"}
-              </span>
               <TitleEditor
                 value={form.title}
                 placeholder="Untitled video"
@@ -863,6 +976,7 @@ export default function ContentEditorClient({
             planId={planId}
             title={form.title}
             textareaRef={scriptTextareaRef}
+            onExport={handleExport}
           />
 
           {/* RIGHT: sidebar */}
@@ -886,11 +1000,13 @@ export default function ContentEditorClient({
                 themes={themes}
                 showEditDue={showEditDue}
                 plan={plan}
-                onArchive={handleArchive}
+                bingeOptions={bingeOptions}
+                loadBingeOptions={loadBingeOptions}
                 onSnooze={handleSnooze}
-                onExport={handleExport}
-                onDuplicate={handleDuplicate}
                 onBlur={() => void flush()}
+                onGenerateResearchPrompt={generateResearchPrompt}
+                researchPromptCopied={researchPromptCopied}
+                researchPromptError={researchPromptError}
               />
             )}
 
@@ -899,6 +1015,10 @@ export default function ContentEditorClient({
                 isFoundations={isFoundations}
                 planId={planId}
                 plan={plan}
+                form={form}
+                update={update}
+                campaigns={campaigns}
+                onBlur={() => void flush()}
               />
             )}
 
@@ -938,7 +1058,7 @@ function Fact({ label, value }: { label: string; value: string }) {
 }
 
 function ScriptPane({
-  value, onChange, onBlur, onBuildV2, planId, title, textareaRef,
+  value, onChange, onBlur, onBuildV2, planId, title, textareaRef, onExport,
 }: {
   value: string;
   onChange: (v: string) => void;
@@ -947,6 +1067,7 @@ function ScriptPane({
   planId: string;
   title: string;
   textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
+  onExport: () => void;
 }) {
   const words = wordCount(value);
   const minutes = Math.max(1, Math.round(words / 175));
@@ -1000,15 +1121,14 @@ function ScriptPane({
             fontWeight: 600, color: "var(--abv-azure)",
           }}
         >Self-Review</Link>
-        <ToolbarBtn label="Auto-Soften" />
         <ToolbarBtn label="Copy" onClick={handleCopy} />
-        <ToolbarBtn label="Export" />
+        <ToolbarBtn label="Export" onClick={onExport} />
       </div>
 
       {/* editor */}
       <div style={{
         background: "white", border: "1px solid var(--abv-border)",
-        borderRadius: 14, padding: 24,
+        borderRadius: 14, padding: 24, overflow: "hidden", minWidth: 0,
       }}>
         <textarea
           ref={textareaRef}
@@ -1019,11 +1139,11 @@ function ScriptPane({
           style={{
             width: "100%", minHeight: 480,
             border: "none", outline: "none", resize: "vertical",
-            fontFamily: "var(--font-body, ui-sans-serif)",
+            fontFamily: "var(--font-sans, ui-sans-serif)",
             fontSize: 14, lineHeight: 1.7,
             color: "var(--abv-text)",
             background: "transparent",
-            maxWidth: "56ch",
+            boxSizing: "border-box",
           }}
         />
         <div style={{
@@ -1147,7 +1267,9 @@ function Row({ k, v }: { k: string; v: React.ReactNode }) {
 
 function PlanningTab({
   form, update, statusOptions, themes, showEditDue, plan,
-  onArchive, onSnooze, onExport, onDuplicate, onBlur,
+  bingeOptions, loadBingeOptions,
+  onSnooze, onBlur,
+  onGenerateResearchPrompt, researchPromptCopied, researchPromptError,
 }: {
   form: Form;
   update: <K extends keyof Form>(k: K, v: Form[K]) => void;
@@ -1155,12 +1277,19 @@ function PlanningTab({
   themes: Theme[];
   showEditDue: boolean;
   plan: ContentPlan;
-  onArchive: () => void;
+  bingeOptions: BingeOption[];
+  loadBingeOptions: () => void;
   onSnooze: () => void;
-  onExport: () => void;
-  onDuplicate: () => void;
   onBlur: () => void;
+  onGenerateResearchPrompt: () => void;
+  researchPromptCopied: boolean;
+  researchPromptError: string;
 }) {
+  const selectedBinge = (() => {
+    const id = form.bingeVideoId;
+    if (!id) return null;
+    return bingeOptions.find((o) => o.id === id) ?? plan.bingeVideo ?? null;
+  })();
   return (
     <>
       <Panel title="Status & dates">
@@ -1224,15 +1353,93 @@ function PlanningTab({
             <option value="Out of Studio">Out of Studio</option>
           </select>
         } />
-        {plan.bingeVideo && <Row k="Binge" v={plan.bingeVideo.title} />}
+        <div style={{ padding: "10px 14px", borderTop: "1px solid var(--abv-border)" }}>
+          <div style={{
+            fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
+            textTransform: "uppercase", color: "var(--abv-text-muted)", marginBottom: 6,
+          }}>Binge target</div>
+          <select
+            value={form.bingeVideoId}
+            onChange={(e) => update("bingeVideoId", e.target.value)}
+            onFocus={loadBingeOptions}
+            onBlur={onBlur}
+            style={{ width: "100%", fontSize: 12, padding: "6px 8px", border: "1px solid var(--abv-border)", borderRadius: 6 }}
+          >
+            <option value="">— Select a video to binge to —</option>
+            {selectedBinge && !bingeOptions.find((o) => o.id === selectedBinge.id) && (
+              <option value={selectedBinge.id}>{selectedBinge.title}</option>
+            )}
+            {bingeOptions.map((o) => (
+              <option key={o.id} value={o.id}>{o.title}</option>
+            ))}
+          </select>
+        </div>
+      </Panel>
+
+      <Panel title="Research notes" headerRight={
+        <button
+          onClick={onGenerateResearchPrompt}
+          style={{
+            fontSize: 10, fontWeight: 700, letterSpacing: "0.04em",
+            textTransform: "uppercase", color: "var(--abv-azure)",
+          }}
+        >
+          {researchPromptCopied ? "✓ Copied" : researchPromptError ? researchPromptError : "Copy prompt"}
+        </button>
+      }>
+        <div style={{ padding: 12 }}>
+          <textarea
+            value={form.researchNotes}
+            onChange={(e) => update("researchNotes", e.target.value)}
+            onBlur={onBlur}
+            placeholder="Paste deep research, stats, sources…"
+            style={{
+              width: "100%", minHeight: 90, padding: 10,
+              border: "1px solid var(--abv-border)", borderRadius: 6,
+              fontSize: 12, lineHeight: 1.5, resize: "vertical",
+              fontFamily: "var(--font-sans, ui-sans-serif)", boxSizing: "border-box",
+            }}
+          />
+        </div>
+      </Panel>
+
+      <Panel title="Thoughts & talking points">
+        <div style={{ padding: 12 }}>
+          <textarea
+            value={form.thoughts}
+            onChange={(e) => update("thoughts", e.target.value)}
+            onBlur={onBlur}
+            placeholder="Your raw thoughts, hooks, angles…"
+            style={{
+              width: "100%", minHeight: 90, padding: 10,
+              border: "1px solid var(--abv-border)", borderRadius: 6,
+              fontSize: 12, lineHeight: 1.5, resize: "vertical",
+              fontFamily: "var(--font-sans, ui-sans-serif)", boxSizing: "border-box",
+            }}
+          />
+        </div>
+      </Panel>
+
+      <Panel title="YouTube description">
+        <div style={{ padding: 12 }}>
+          <textarea
+            value={form.youtubeDescription}
+            onChange={(e) => update("youtubeDescription", e.target.value)}
+            onBlur={onBlur}
+            placeholder="Description text for YouTube…"
+            style={{
+              width: "100%", minHeight: 90, padding: 10,
+              border: "1px solid var(--abv-border)", borderRadius: 6,
+              fontSize: 12, lineHeight: 1.5, resize: "vertical",
+              fontFamily: "var(--font-sans, ui-sans-serif)", boxSizing: "border-box",
+            }}
+          />
+        </div>
       </Panel>
 
       <Panel title="Quick actions">
         <div style={{ padding: 12, display: "flex", flexWrap: "wrap", gap: 5 }}>
-          <QuickBtn onClick={onDuplicate}>⎘ Duplicate</QuickBtn>
-          <QuickBtn onClick={onSnooze}>⏱ Snooze</QuickBtn>
-          <QuickBtn onClick={onExport}>⤓ Export</QuickBtn>
-          <QuickBtn onClick={onArchive} danger>⌫ Archive</QuickBtn>
+          <QuickBtn onClick={onSnooze}>⏱ Snooze 1 week</QuickBtn>
         </div>
       </Panel>
     </>
@@ -1284,10 +1491,17 @@ function QuickBtn({ children, onClick, danger }: { children: React.ReactNode; on
 }
 
 function ConnectingTab({
-  isFoundations, planId, plan,
+  isFoundations, planId, plan, form, update, campaigns, onBlur,
 }: {
-  isFoundations: boolean; planId: string; plan: ContentPlan;
+  isFoundations: boolean;
+  planId: string;
+  plan: ContentPlan;
+  form: Form;
+  update: <K extends keyof Form>(k: K, v: Form[K]) => void;
+  campaigns: Campaign[];
+  onBlur: () => void;
 }) {
+  const selectedCampaign = campaigns.find((c) => c.id === form.linkedCampaignId) ?? null;
   return (
     <>
       <Panel
@@ -1351,12 +1565,49 @@ function ConnectingTab({
         </div>
       </Panel>
 
-      <Panel title="Lead magnet">
-        <div style={{ padding: 14, fontSize: 12, color: "var(--abv-text-muted)" }}>
-          Connect a lead magnet from your AI tools to track CTA placements.
+      <Panel title="Lead magnet campaign">
+        <div style={{ padding: 12 }}>
+          <select
+            value={form.linkedCampaignId}
+            onChange={(e) => update("linkedCampaignId", e.target.value)}
+            onBlur={onBlur}
+            style={{ width: "100%", fontSize: 12, padding: "6px 8px", border: "1px solid var(--abv-border)", borderRadius: 6 }}
+          >
+            <option value="">— None —</option>
+            {campaigns.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+          {campaigns.length === 0 && (
+            <p style={{ marginTop: 6, fontSize: 11, fontStyle: "italic", color: "var(--abv-text-muted)" }}>
+              No campaigns yet — create one on the{" "}
+              <a href="/member/campaigns" style={{ color: "var(--abv-azure)", textDecoration: "underline" }}>Campaigns page</a>.
+            </p>
+          )}
+          {selectedCampaign && !selectedCampaign.pitchOneLiner && (
+            <p style={{ marginTop: 6, fontSize: 11, fontStyle: "italic", color: "#B45309" }}>
+              No calibrated pitch defined.{" "}
+              <a href={`/member/campaigns/${selectedCampaign.id}`} style={{ textDecoration: "underline" }}>Edit detail</a>.
+            </p>
+          )}
         </div>
       </Panel>
     </>
+  );
+}
+
+function MoreItem({ children, onClick, danger }: { children: React.ReactNode; onClick: () => void; danger?: boolean }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        display: "block", width: "100%", textAlign: "left",
+        padding: "8px 12px", borderRadius: 6,
+        fontSize: 12, fontWeight: 500,
+        color: danger ? "var(--abv-leads, #DC2626)" : "var(--abv-text)",
+      }}
+      className="hover:bg-[var(--abv-bg-warm)]"
+    >{children}</button>
   );
 }
 
@@ -1366,7 +1617,7 @@ function ToolsTab({ planId, lineage }: { planId: string; lineage: Lineage | null
     { icon: "📝", name: "ARC Builder", desc: "Rebuild from outline", href: `/member/ai-tools/arc-script-builder?planId=${planId}` },
     { icon: "🔬", name: "Title & Thumb", desc: "A/B test the hook visually", href: `/member/ai-tools/title-thumbnail-analyzer?planId=${planId}` },
     { icon: "⚙️", name: "Content Engine", desc: "Spin variations", href: `/member/ai-tools/content-engine?planId=${planId}` },
-    { icon: "🎯", name: "Avatar Architect", desc: "Recheck against your avatar", href: `/member/ai-tools/avatar-architect?planId=${planId}` },
+    { icon: "🎯", name: "Avatar Architect", desc: "Recheck against your avatar", href: `/member/ai-tools/avatar-architect` },
     { icon: "🔁", name: "Repurpose", desc: "One video into shorts, threads, emails", href: `/member/ai-tools/repurpose-content?planId=${planId}` },
     { icon: "📄", name: "Description Generator", desc: "YouTube descriptions, ready to paste", href: `/member/ai-tools/description-generator?planId=${planId}` },
   ];
@@ -1412,11 +1663,6 @@ function ToolsTab({ planId, lineage }: { planId: string; lineage: Lineage | null
                 {f.monthYear && <span style={{ color: "var(--abv-text-muted)" }}> · {f.monthYear}</span>}
               </div>
             ))}
-            {lineage.totalCited > 3 && (
-              <div style={{ fontSize: 11, color: "var(--abv-azure)", padding: "4px 10px" }}>
-                View all {lineage.totalCited} →
-              </div>
-            )}
           </div>
         </Panel>
       )}
@@ -1472,18 +1718,8 @@ function PublishTab({
       </Panel>
 
       <Panel title="Pinned first comment">
-        <div style={{ padding: 12 }}>
-          <textarea
-            value={form.thumbnailWords}
-            onChange={(e) => update("thumbnailWords", e.target.value)}
-            onBlur={onBlur}
-            placeholder="The first comment posts automatically when this video goes live."
-            style={{
-              width: "100%", minHeight: 70, padding: 10,
-              border: "1px solid var(--abv-border)", borderRadius: 6,
-              fontSize: 12, lineHeight: 1.5, resize: "vertical",
-            }}
-          />
+        <div style={{ padding: 14, fontSize: 12, color: "var(--abv-text-muted)", lineHeight: 1.5 }}>
+          Pinned-comment editor coming soon.
         </div>
       </Panel>
 

@@ -94,7 +94,6 @@ interface UploadData {
   nextVideoPush: string;
   themeName?: string;
   themeContext?: string;
-  dramaMode?: boolean;
 }
 
 interface UsageData {
@@ -109,7 +108,6 @@ interface PrefillData {
   talkingPoints: string[];
   themeName?: string;
   dataToFind?: string;
-  dramaMode?: boolean;
 }
 
 interface AvatarData {
@@ -228,7 +226,6 @@ export default function ArcScriptBuilderTool({ basePath, isAdmin, defaultPlanId 
             talkingPoints: Array.isArray(data.talkingPoints) ? data.talkingPoints : [],
             themeName: typeof data.theme === "string" ? data.theme : undefined,
             dataToFind: typeof data.dataToFind === "string" ? data.dataToFind : undefined,
-            dramaMode: typeof data.dramaMode === "boolean" ? data.dramaMode : undefined,
           });
           if (typeof data.planId === "string") setLinkedPlanId(data.planId);
         }
@@ -302,7 +299,6 @@ export default function ArcScriptBuilderTool({ basePath, isAdmin, defaultPlanId 
             status: plannerStatus,
             script: finalScript || null,
             ...(uploadData.themeName ? { theme: uploadData.themeName } : {}),
-            ...(uploadData.dramaMode ? { dramaMode: true } : {}),
           }),
         });
         if (!res.ok) throw new Error("save failed");

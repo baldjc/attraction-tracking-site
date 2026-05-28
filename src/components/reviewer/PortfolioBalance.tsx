@@ -12,18 +12,17 @@ interface BalanceData {
   month: string;
   counts: {
     marketUpdates: number;
-    drama: number;
     directStress: number;
     other: number;
   };
-  target: { marketUpdates: number; drama: number; directStress: number };
+  target: { marketUpdates: number; directStress: number };
   gaps: string[];
   themeBreakdown: Record<string, number>;
   pastMidMonth: boolean;
   total: number;
 }
 
-const SLICE_COLORS = ["var(--abv-scores)", "var(--abv-hire)", "var(--abv-azure)", "var(--abv-text-secondary)"];
+const SLICE_COLORS = ["var(--abv-scores)", "var(--abv-azure)", "var(--abv-text-secondary)"];
 
 function targetState(
   count: number,
@@ -101,7 +100,6 @@ export default function PortfolioBalance({
 
   const slices = [
     { name: "Market Update", value: data.counts.marketUpdates },
-    { name: "Drama", value: data.counts.drama },
     { name: "Direct", value: data.counts.directStress },
     { name: "Other", value: data.counts.other },
   ];
@@ -115,11 +113,6 @@ export default function PortfolioBalance({
       label: "Market Update",
       count: data.counts.marketUpdates,
       target: data.target.marketUpdates,
-    },
-    {
-      label: "Drama",
-      count: data.counts.drama,
-      target: data.target.drama,
     },
     {
       label: "Direct",
@@ -147,7 +140,7 @@ export default function PortfolioBalance({
 
       <DonutChart data={slices} colors={SLICE_COLORS} />
 
-      <div className="mt-4 grid grid-cols-3 gap-2">
+      <div className="mt-4 grid grid-cols-2 gap-2">
         {targets.map((t) => {
           const state = targetState(t.count, t.target, data.pastMidMonth);
           return (

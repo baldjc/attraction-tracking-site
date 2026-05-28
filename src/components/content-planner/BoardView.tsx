@@ -15,7 +15,6 @@ import {
 } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { ArrowTopRightOnSquareIcon, FolderIcon, PlusIcon, XMarkIcon, VideoCameraIcon, CalendarDaysIcon } from "@heroicons/react/24/outline";
-import DramaMagnet from "@/components/icons/DramaMagnet";
 import { STATUS_STYLES, getStatusOptions, PRIORITY_OPTIONS, hasEditDueDate, filterPlans, sortPlansByDate, type PlanSortKey } from "@/lib/content-plan-utils";
 import { resolveProgressSteps, type PlanArtifactsByType } from "@/lib/plan-state";
 import ProgressTrack from "./ProgressTrack";
@@ -107,14 +106,6 @@ function DraggableCard({
           >
             <FolderIcon className="w-3.5 h-3.5" />
           </a>
-        )}
-        {plan.dramaMode && (
-          <span
-            className="text-orange-600 shrink-0 mt-0.5"
-            title="Drama Mode — monthly wide-net video"
-          >
-            <DramaMagnet size={14} />
-          </span>
         )}
       </div>
       <div className="mb-2">

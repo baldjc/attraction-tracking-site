@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { ChevronUpIcon, ChevronDownIcon, ArrowTopRightOnSquareIcon } from "@heroicons/react/24/outline";
-import DramaMagnet from "@/components/icons/DramaMagnet";
 import { useRouter } from "next/navigation";
 import {
   getStatusOptions,
@@ -31,7 +30,6 @@ interface ContentPlan {
   thumbnailFileId: string | null;
   thumbnailFileName: string | null;
   updatedAt?: string | null;
-  dramaMode?: boolean;
   bingeVideoId: string | null;
   bingeVideo: { id: string; title: string; theme: string | null; status: string } | null;
 }
@@ -473,7 +471,7 @@ export default function ContentPlanTable({
                 borderBottom: "1px solid var(--abv-border)",
               }}
             >
-              {/* Title cell — thumbnail (if any) + title + drama icon */}
+              {/* Title cell — thumbnail (if any) + title */}
               <div className="flex items-start gap-2 min-w-0">
                 {plan.thumbnailFileId ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -487,9 +485,6 @@ export default function ContentPlanTable({
                 ) : null}
                 <div className="flex flex-col gap-0.5 min-w-0">
                   <div className="flex items-center gap-1.5">
-                    {plan.dramaMode && (
-                      <DramaMagnet className="w-3.5 h-3.5 text-orange-600 shrink-0" />
-                    )}
                     <span className="font-semibold text-[14px] leading-[1.4] text-[var(--abv-text)] line-clamp-2 break-words">
                       {plan.title}
                     </span>

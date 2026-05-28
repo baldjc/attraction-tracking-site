@@ -2081,7 +2081,7 @@ Juxtapose collective wisdom against contradicting evidence.
 
 ### 5. Stakes Escalation
 Make the consequences feel significant and unresolved.
-- Thumbnail: Dramatic genuine facial expression; Visual representation of loss or gain
+- Thumbnail: Striking genuine facial expression; Visual representation of loss or gain
 - Title: "This Mistake Cost Me [Specific Amount]"; "You're Losing [Benefit] Every Day"
 
 ### 6. Identity Challenge
@@ -2121,7 +2121,7 @@ When suggesting thumbnail concepts, reference these proven visual patterns by na
 2. **The Reaction + Mystery** — Strong genuine facial expression + partial reveal of the cause + arrow or indicator.
 3. **The Contradiction Visual** — Professional person + unprofessional situation; success symbol + failure indicator.
 4. **The Pattern Interrupt** — Break typical thumbnail conventions in the niche: unexpected colours, composition, subject.
-5. **The Stakes Visual** — Dollar amounts with clear direction; before/after with dramatic contrast; visual loss or gain.
+5. **The Stakes Visual** — Dollar amounts with clear direction; before/after with sharp contrast; visual loss or gain.
 
 ## SCORING CALIBRATION GUIDE
 

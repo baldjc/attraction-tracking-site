@@ -68,8 +68,8 @@ export function SuggestedWinners({ channelRef }: { channelRef: string }) {
         <p className="eyebrow text-[var(--abv-text-secondary)]">Watch-time magnets · trailing 90d</p>
       </div>
       <p className="mb-5 text-sm text-[var(--abv-text-secondary)]">
-        These are your watch-time magnets. When you end-card a Drama video,
-        point to one of these — high AVD signals to YouTube that the Drama is a
+        These are your watch-time magnets. When you end-card a wide-net video,
+        point to one of these — high AVD signals to YouTube that the wide-net video is a
         valuable traffic source.
       </p>
 

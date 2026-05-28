@@ -4,7 +4,6 @@ import { resolveUserFromSession } from "@/lib/session-utils";
 import { checkCostCap, logUsage, getMonthlyUsage } from "@/lib/ai-tool-cost";
 import prisma from "@/lib/prisma";
 import { getAvatarData } from "@/lib/avatar-utils";
-import { getDramaContext } from "@/lib/drama-video-definition";
 import { emitPhase } from "@/lib/ai-thinking-sse";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -492,11 +491,10 @@ export async function POST(req: NextRequest) {
   }
 
   if (step === "chat") {
-    const { messages, leadMagnet, nextVideoPush, dramaMode } = body as {
+    const { messages, leadMagnet, nextVideoPush } = body as {
       messages: Array<{ role: string; content: string; researchSummary?: string }>;
       leadMagnet?: string;
       nextVideoPush?: string;
-      dramaMode?: boolean;
     };
 
     const researchSummary = messages.find((m) => m.researchSummary)?.researchSummary ?? "";
@@ -559,8 +557,7 @@ export async function POST(req: NextRequest) {
       .replace("{{CONTENT_THEMES}}", themesText)
       .replace("{{BASELINE_SCORES}}", baselineScores)
       .replace("{{RESEARCH_SUMMARY}}", researchSummary || "(no research summary provided)")
-      .replace("{{MEMBER_CITY}}", avatarData.city ?? "your market")
-      + (dramaMode ? getDramaContext("script") : "");
+      .replace("{{MEMBER_CITY}}", avatarData.city ?? "your market");
 
     const encoder = new TextEncoder();
 

@@ -103,7 +103,7 @@ Months of Inventory (MOI) thresholds. Use these literal interpretations — do n
 - Condo / apartment: typically $800K+
 - Acreage / luxury: case-by-case, flag with note
 
-**Trajectory is a SEPARATE signal from market_type.** Going from 0.68 MOI to 1.66 MOI in twelve months is dramatic loosening — that's worth flagging as \`trajectory: loosening fast\`. But the resulting state is still \`market_type: sellers\`. Do NOT conflate "the trend is buyer-friendly" with "this IS a buyers market." Output both fields independently:
+**Trajectory is a SEPARATE signal from market_type.** Going from 0.68 MOI to 1.66 MOI in twelve months is pronounced loosening — that's worth flagging as \`trajectory: loosening fast\`. But the resulting state is still \`market_type: sellers\`. Do NOT conflate "the trend is buyer-friendly" with "this IS a buyers market." Output both fields independently:
 - \`market_type\`: where the market is RIGHT NOW (sellers / balanced / buyers / balanced-high-end)
 - \`trajectory\`: how it's MOVING (tightening / stable / loosening / loosening-fast)
 

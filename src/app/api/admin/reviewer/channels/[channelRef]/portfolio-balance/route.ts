@@ -42,10 +42,10 @@ export async function GET(
             userId: { in: userIds },
             publishDate: { gte: start, lt: end },
           },
-          select: { theme: true, dramaMode: true, title: true },
+          select: { theme: true, title: true },
         });
 
-  const counts = { marketUpdates: 0, drama: 0, directStress: 0, other: 0 };
+  const counts = { marketUpdates: 0, directStress: 0, other: 0 };
   const themeBreakdown: Record<string, number> = {};
 
   for (const p of plans) {
@@ -57,8 +57,6 @@ export async function GET(
       counts.marketUpdates += 1;
     } else if (!theme) {
       counts.other += 1;
-    } else if (p.dramaMode) {
-      counts.drama += 1;
     } else {
       counts.directStress += 1;
     }
@@ -71,8 +69,6 @@ export async function GET(
   const gaps: string[] = [];
   if (counts.marketUpdates === 0)
     gaps.push("Going dark on in-market buyers — no Market Update this month");
-  if (counts.drama === 0)
-    gaps.push("No wide net — new viewer growth will stall without Drama");
   if (counts.directStress < 2)
     gaps.push(
       `Trust-building middle is thin — only ${counts.directStress}/2 Direct video${counts.directStress === 1 ? "" : "s"}`,
@@ -82,7 +78,7 @@ export async function GET(
   return NextResponse.json({
     month: label,
     counts,
-    target: { marketUpdates: 1, drama: 1, directStress: 2 },
+    target: { marketUpdates: 1, directStress: 2 },
     gaps,
     themeBreakdown,
     pastMidMonth,

@@ -260,7 +260,6 @@ export default function ArcScriptChatPhase({
             messages: historyWithNew,
             leadMagnet: initialData.leadMagnet,
             nextVideoPush: initialData.nextVideoPush,
-            dramaMode: (initialData as { dramaMode?: boolean }).dramaMode ?? false,
           }),
         });
 
