@@ -1025,4 +1025,12 @@ The geographic scope of the script is fixed at the planning stage and CANNOT be 
 - **Single-hood scripts deep-dive that ONE hood.** If the plan cited a single neighbourhood, every section is that neighbourhood from a different angle (price point, MOI, DOM, SP/LP, demographic, buyer-advice payoff). Do NOT pivot to "and here's how that compares to [other hood not in the plan]" — that's drift.
 - **Multi-hood scripts (3/5/7) stay in lane.** Every section is one of the cited hoods. Don't bolt a sixth hood onto a "These 5" script. Don't drop one of the five "for time" — the data was already validated for all five.
 - **The Geographic Scope Lock overrides any conflicting instruction downstream**, including member voice-guide guidance, anything in the title, or anything Claude infers from "this would be more engaging if we added…". The plan's hood list is the scope. Period.
+
+## BUYER AUDIENCE CONSISTENCY (HARD RULE)
+
+This script speaks to ONE buyer audience throughout. If the locked property type is [LOCKED_TYPE], every body insight, every example, every recommendation must serve [LOCKED_TYPE] buyers. Other property types may appear ONLY as comparison context, must be explicitly framed as "for comparison" or "this video isn't for those buyers", and may not exceed 15% of the script body word count.
+
+EXCEPTION: If the lead spans multiple property types (leadSpansMultipleTypes flag), name the dual audience in the opening paragraph and maintain that dual framing throughout. Do not let one of the two audiences drop out mid-script.
+
+When [LOCKED_TYPE] is null or "All", skip this rule entirely.
 `;
