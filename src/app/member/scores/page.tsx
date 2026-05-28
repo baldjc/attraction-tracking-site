@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { LessonCard, AuditCard } from "@/components/cards";
 
 const PRINCIPLE_LABELS: Record<string, string> = {
   avatar_clarity: "Avatar Clarity",
@@ -34,12 +35,6 @@ function tier(score: number | null | undefined): Tier {
   if (score >= 5) return "amber";
   return "crimson";
 }
-const tierText: Record<Tier, string> = {
-  academy: "text-[var(--abv-academy)]",
-  amber: "text-[var(--abv-scores)]",
-  crimson: "text-[var(--abv-crimson)]",
-  dim: "text-[var(--abv-text-dim)]",
-};
 const tierStroke: Record<Tier, string> = {
   academy: "var(--abv-academy)",
   amber: "var(--abv-scores)",
@@ -366,28 +361,16 @@ export default function MemberScoresPage() {
               const href = hasLesson
                 ? `/member/academy?tab=browse&tag=${academySlug}`
                 : `/member/academy`;
+              const label = PRINCIPLE_LABELS[p.key] ?? p.key;
               return (
-                <Link
+                <LessonCard
                   key={p.key}
                   href={href}
-                  className="bg-white border border-[var(--abv-border)] rounded-[10px] p-3.5 flex flex-col gap-2.5 hover:-translate-y-px hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] transition-all"
-                >
-                  <div
-                    className="aspect-[16/9] rounded-md relative overflow-hidden"
-                    style={{ background: LP_THUMB_BG[i] }}
-                  >
-                    <span className="absolute top-1.5 left-2 font-mono text-[9px] font-bold text-white px-[7px] py-[2px] rounded-full bg-black/45 uppercase tracking-[0.06em]">
-                      {(PRINCIPLE_LABELS[p.key] ?? p.key)} · {p.score?.toFixed(1)}
-                    </span>
-                    <span className="absolute bottom-1.5 right-2 text-white text-[11px] opacity-85">▶</span>
-                  </div>
-                  <div className="text-[13.5px] font-semibold text-[var(--abv-text)] leading-[1.35]">
-                    {PRINCIPLE_LABELS[p.key] ?? p.key}
-                  </div>
-                  <div className="font-mono text-[10.5px] text-[var(--abv-text-dim)] tracking-[0.04em] flex gap-1.5 items-center mt-auto">
-                    <span>⏱ ~12 min</span>
-                  </div>
-                </Link>
+                  title={label}
+                  coverEyebrow={`${label} · ${p.score?.toFixed(1)}`}
+                  coverBackground={LP_THUMB_BG[i]}
+                  meta="⏱ ~12 min"
+                />
               );
             })}
           </div>
@@ -428,43 +411,16 @@ export default function MemberScoresPage() {
                 : null;
               const title = v?.title ?? "Untitled video";
               const score = a.overallScore != null ? Number(a.overallScore) : null;
-              const t = tier(score);
               return (
-                <Link
+                <AuditCard
                   key={a.id}
                   href={`/member/audits/${a.id}`}
-                  className="flex-shrink-0 w-[280px] bg-white border border-[var(--abv-border)] rounded-[12px] p-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] hover:-translate-y-px transition-all cursor-pointer"
-                >
-                  <div
-                    className="aspect-[16/9] rounded-md flex items-end justify-end p-1.5 mb-3 relative overflow-hidden"
-                    style={{
-                      background: thumbUrl
-                        ? undefined
-                        : "linear-gradient(135deg, #1A1A1A 0%, rgba(61,195,255,0.25) 100%)",
-                    }}
-                  >
-                    {thumbUrl && (
-                      <img
-                        src={thumbUrl}
-                        alt={title}
-                        className="absolute inset-0 w-full h-full object-cover rounded-md"
-                      />
-                    )}
-                  </div>
-                  <div className="text-[13.5px] font-semibold text-[var(--abv-text)] leading-[1.35] mb-2 min-h-[36px] line-clamp-2">
-                    {title}
-                  </div>
-                  <div className="flex items-baseline justify-between pt-2 border-t border-[var(--abv-border)]">
-                    <span
-                      className={`font-display font-extrabold text-[22px] tracking-[-0.02em] leading-none tabular-nums ${tierText[t]}`}
-                    >
-                      {score != null ? score.toFixed(1) : "—"}
-                    </span>
-                    <span className="font-mono text-[10px] text-[var(--abv-text-dim)] tracking-[0.04em]">
-                      Audited {fmtShort(a.createdAt)}
-                    </span>
-                  </div>
-                </Link>
+                  title={title}
+                  score={score}
+                  tier={tier(score)}
+                  dateLabel={`Audited ${fmtShort(a.createdAt)}`}
+                  thumbUrl={thumbUrl}
+                />
               );
             })}
           </div>

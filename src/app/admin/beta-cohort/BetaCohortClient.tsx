@@ -1,7 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useToast } from "@/components/ToastProvider";
+import { MemberCard, type MemberTierKey } from "@/components/cards";
+
+function initialsFrom(name: string | null, email: string): string {
+  const src = (name && name.trim()) || email;
+  const parts = src.split(/\s+|@/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[1][0]).toUpperCase();
+}
 
 interface Member {
   id: string;
@@ -156,16 +165,37 @@ export default function BetaCohortClient() {
           </div>
         )}
         {!loading && memberCount > 0 && (
-          <ul className="divide-y divide-gray-100 dark:divide-gray-800">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-3">
             {data!.members.map((m) => (
-              <MemberRow
+              <MemberCard
                 key={m.id}
-                member={m}
-                onAdd={() => setPending({ type: "add", member: m })}
-                onRemove={() => setPending({ type: "remove", member: m })}
+                name={m.name || "(no name)"}
+                email={m.email}
+                initials={initialsFrom(m.name, m.email)}
+                tier={m.cohort as MemberTierKey}
+                statusRows={[
+                  { label: "In v2 beta", on: m.inBeta },
+                  { label: "Onboarding complete", on: !m.onboardingPending },
+                ]}
+                actions={
+                  m.inBeta
+                    ? [
+                        {
+                          label: "Remove from beta",
+                          danger: true,
+                          onClick: () => setPending({ type: "remove", member: m }),
+                        },
+                      ]
+                    : [
+                        {
+                          label: "Add to beta",
+                          onClick: () => setPending({ type: "add", member: m }),
+                        },
+                      ]
+                }
               />
             ))}
-          </ul>
+          </div>
         )}
         {!loading && memberCount === 50 && (
           <p className="px-4 py-2 text-xs text-[var(--abv-text)]/50 dark:text-white/50 bg-gray-50 dark:bg-[#0f1825] border-t border-gray-100 dark:border-gray-800">
@@ -184,84 +214,6 @@ export default function BetaCohortClient() {
         />
       )}
     </div>
-  );
-}
-
-function MemberRow({
-  member,
-  onAdd,
-  onRemove,
-}: {
-  member: Member;
-  onAdd: () => void;
-  onRemove: () => void;
-}) {
-  return (
-    <li className="flex items-center justify-between gap-4 px-5 py-4">
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold text-[var(--abv-text)] dark:text-white truncate">
-          {member.name || "(no name)"}
-        </p>
-        <p className="text-xs text-[var(--abv-text)]/60 dark:text-white/60 truncate">
-          {member.email}
-        </p>
-        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-          <TierBadge cohort={member.cohort} />
-          {member.inBeta ? (
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300">
-              In beta
-            </span>
-          ) : (
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
-              Not in beta
-            </span>
-          )}
-          {member.onboardingPending && (
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
-              Onboarding pending
-            </span>
-          )}
-        </div>
-      </div>
-      <div className="shrink-0">
-        {member.inBeta ? (
-          <button
-            type="button"
-            onClick={onRemove}
-            className="rounded-full border border-red-300 dark:border-red-700 px-4 py-1.5 text-xs font-semibold text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
-          >
-            Remove from beta
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={onAdd}
-            className="rounded-full bg-[var(--abv-text)] dark:bg-white px-4 py-1.5 text-xs font-semibold text-white dark:text-[var(--abv-text)] hover:opacity-90"
-          >
-            Add to beta
-          </button>
-        )}
-      </div>
-    </li>
-  );
-}
-
-function TierBadge({ cohort }: { cohort: Member["cohort"] }) {
-  const styles = useMemo<Record<Member["cohort"], string>>(
-    () => ({
-      Foundations: "bg-stone-100 text-stone-700 dark:bg-stone-800 dark:text-stone-300",
-      Production: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300",
-      Growth: "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300",
-      DWY: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300",
-    }),
-    [],
-  );
-  return (
-    <span
-      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${styles[cohort]}`}
-    >
-      {cohort}
-    </span>
   );
 }
 

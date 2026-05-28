@@ -1,13 +1,30 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { VideoCameraIcon, CalendarDaysIcon, FolderIcon } from "@heroicons/react/24/outline";
+import { FolderIcon } from "@heroicons/react/24/outline";
 import { type ContentPlan } from "./ContentPlanEditModal";
 import { useRouter } from "next/navigation";
 import ProgressTrack from "./ProgressTrack";
 import { resolveProgressSteps, type PlanArtifactsByType } from "@/lib/plan-state";
 import { STATUS_STYLES, filterPlans, getStatusOptions, sortPlansByDate, type PlanSortKey } from "@/lib/content-plan-utils";
 import { getScoreBadgeClasses } from "@/lib/score-badge";
+import { PipelineCard, type PipelineStatusKey } from "@/components/cards";
+
+/** Heuristic mapping from the free-text tier-specific status labels (which
+ *  vary by service tier — see getStatusOptions) onto the mockup's three
+ *  canonical pipeline status keys. Anything not matched falls through to
+ *  the neutral pill so the card still renders. */
+function statusTextToKey(status: string): PipelineStatusKey | null {
+  const s = status.toLowerCase();
+  if (s.includes("shoot") && !s.includes("ready")) return "shooting";
+  if (s.includes("ready") || s.includes("planned") || s.includes("script")) {
+    return "ready";
+  }
+  if (s.includes("edit") || s.includes("publish") || s.includes("done") || s.includes("live")) {
+    return "edited";
+  }
+  return null;
+}
 
 // Backwards-compatible alias — callers (ContentPlannerClient) imported this
 // name before sort logic was lifted to a shared util.
@@ -146,67 +163,61 @@ export default function PipelineView({
     const review = artifacts?.script_review?.[0];
     const score = (review?.metadata as { score?: number } | undefined)?.score;
 
+    // Compact meta line — shoot date wins when both present (kanban is
+    // shoot-day-driven), otherwise publish. Keeps the mockup's single-
+    // line foot without dropping either bit of data.
+    const metaLine = shootDate
+      ? `Film ${shootDate}`
+      : publishDate
+        ? `Publish ${publishDate}`
+        : null;
+
     return (
-      <div
+      <PipelineCard
+        title={truncate(plan.title, 60)}
+        titleAttr={plan.title}
+        status={plan.status}
+        statusKey={statusTextToKey(plan.status)}
+        theme={plan.theme ?? null}
+        themeKey={null}
+        metaLine={metaLine}
+        dragging={dragId === plan.id}
         draggable
         onDragStart={(e) => {
           setDragId(plan.id);
           e.dataTransfer.setData("text/plain", plan.id);
           e.dataTransfer.effectAllowed = "move";
         }}
-        onDragEnd={() => { setDragId(null); setDragOverCol(null); }}
+        onDragEnd={() => {
+          setDragId(null);
+          setDragOverCol(null);
+        }}
         onClick={() => openPlan(plan)}
-        className={`bg-white border border-gray-200 rounded-lg p-3 cursor-pointer transition-shadow hover:border-[var(--abv-azure)] hover:shadow-sm ${
-          dragId === plan.id ? "opacity-40" : ""
-        }`}
-      >
-        <div className="flex items-start justify-between gap-2 mb-2">
-          <p className="text-xs font-medium text-[var(--abv-text)] leading-snug flex-1" title={plan.title}>
-            {truncate(plan.title, 60)}
-          </p>
-          {typeof score === "number" && (
-            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0 ${getScoreBadgeClasses(score)}`}>
-              {score}
-            </span>
-          )}
-          {plan.driveFolderLink && (
-            <a
-              href={plan.driveFolderLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className="text-[var(--abv-azure)] hover:text-[#5a8fb0] transition-colors shrink-0 mt-0.5"
-              title="Open Google Drive folder"
-            >
-              <FolderIcon className="w-3.5 h-3.5" />
-            </a>
-          )}
-        </div>
-        <div className="mb-2">
-          <ProgressTrack steps={steps} compact />
-        </div>
-        <div className="flex items-center justify-between gap-2 text-[10px]">
-          {plan.theme ? (
-            <span className="px-1.5 py-0.5 bg-[#E3E2E0] text-[#3F3D38] rounded truncate max-w-[55%]" title={plan.theme}>
-              {plan.theme}
-            </span>
-          ) : <span />}
-          <div className="flex items-center gap-2 text-[var(--abv-text)]/50 shrink-0">
-            {shootDate && (
-              <span className="inline-flex items-center gap-0.5" title={`Shoot date: ${shootDate}`}>
-                <VideoCameraIcon className="w-3 h-3" />
-                {shootDate}
+        topRightExtras={
+          <>
+            {typeof score === "number" && (
+              <span
+                className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${getScoreBadgeClasses(score)}`}
+              >
+                {score}
               </span>
             )}
-            {publishDate && (
-              <span className="inline-flex items-center gap-0.5" title={`Publish date: ${publishDate}`}>
-                <CalendarDaysIcon className="w-3 h-3" />
-                {publishDate}
-              </span>
+            {plan.driveFolderLink && (
+              <a
+                href={plan.driveFolderLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="text-[var(--abv-azure)] hover:text-[#5a8fb0] transition-colors"
+                title="Open Google Drive folder"
+              >
+                <FolderIcon className="w-3.5 h-3.5" />
+              </a>
             )}
-          </div>
-        </div>
-      </div>
+          </>
+        }
+        body={<ProgressTrack steps={steps} compact />}
+      />
     );
   }
 

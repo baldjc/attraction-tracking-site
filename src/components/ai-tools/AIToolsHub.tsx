@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
+import { ToolCard } from "@/components/cards";
 
 interface FeatureFlags {
   tool_avatar_architect?: boolean;
@@ -215,49 +215,18 @@ export default function AIToolsHub({ basePath, featureFlags }: Props) {
     <div className="font-sans text-[var(--abv-text)]">
       {/* Tools grid — 2 cols; 5th centers below */}
       <section className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mb-12">
-        {tools.map((tool, i) => {
-          const isOrphan = tools.length % 2 === 1 && i === tools.length - 1;
-          return (
-          <Link
+        {tools.map((tool, i) => (
+          <ToolCard
             key={tool.href}
             href={tool.href}
-            className={[
-              "bg-white border border-[var(--abv-border)] rounded-[14px] p-[22px] flex gap-[18px] items-start shadow-[0_1px_3px_rgba(0,0,0,0.04)]",
-              "hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] hover:border-[var(--abv-border-strong)] hover:-translate-y-px transition-all",
-              isOrphan
-                ? "sm:col-span-2 sm:max-w-[calc(50%-7px)] sm:justify-self-center w-full"
-                : "",
-            ].join(" ")}
-          >
-            <span className="w-16 h-16 flex-shrink-0 rounded-[14px] bg-[var(--abv-ai-tools-tint)] text-[var(--abv-ai-tools)] inline-flex items-center justify-center">
-              {tool.icon}
-            </span>
-            <div className="flex-1 min-w-0 flex flex-col gap-1.5">
-              <div className="font-display text-[20px] font-extrabold tracking-[-0.02em] text-[var(--abv-text)] leading-[1.2]">
-                {tool.name}
-              </div>
-              <div className="text-sm text-[var(--abv-text-muted)] leading-[1.45]">
-                {tool.tag}
-              </div>
-              <div className="flex items-center justify-between gap-3 mt-2.5 pt-3 border-t border-[var(--abv-border)]">
-                {tool.activity ? (
-                  <span className="font-mono text-[10.5px] text-[var(--abv-text-dim)] tracking-[0.04em] inline-flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-[var(--abv-academy)]" />
-                    {tool.activity}
-                  </span>
-                ) : (
-                  <span className="font-mono text-[10.5px] text-[var(--abv-text-dim)] tracking-[0.04em] opacity-0">
-                    {loading ? "Loading…" : "·"}
-                  </span>
-                )}
-                <span className="inline-flex items-center gap-1.5 px-4 py-[7px] bg-transparent text-[var(--abv-text)] border-[1.5px] border-[var(--abv-ink)] rounded-full text-[11px] font-semibold uppercase tracking-[0.04em] hover:bg-[var(--abv-ink)] hover:text-white transition-colors">
-                  Open →
-                </span>
-              </div>
-            </div>
-          </Link>
-          );
-        })}
+            name={tool.name}
+            tag={tool.tag}
+            icon={tool.icon}
+            activity={tool.activity}
+            loading={loading}
+            orphan={tools.length % 2 === 1 && i === tools.length - 1}
+          />
+        ))}
       </section>
 
       {/* Workflow block */}

@@ -21,6 +21,7 @@ import {
   type RotationSlotKey,
 } from "@/lib/content-engine-validation";
 import type { PropertyTypeFocus } from "@/lib/property-type-focus";
+import { IdeaCard, rotationSlotToThemeKey } from "@/components/cards";
 
 interface IdeaCard {
   title: string;
@@ -306,81 +307,33 @@ export function Step3IdeaCards({
 }
 
 function IdeaCardView({ idea, onPick }: { idea: IdeaCard; onPick: () => void }) {
+  // Map the wizard's idea shape onto the shared IdeaCard's mockup-aligned
+  // props. `rotationSlot` carries the theme; thumbnail callouts become hook
+  // chips (capped at 3 inside the component); framework/tactileType/runtime
+  // become the frame + intent chips; subPersonas become avatar chips.
+  const intentChips = [
+    { label: idea.tactileType, primary: true },
+    ...(idea.estimatedRuntime ? [{ label: idea.estimatedRuntime }] : []),
+  ];
+  const themeKey = rotationSlotToThemeKey(idea.rotationSlot);
+  const themeLabel = ROTATION_SLOTS.includes(idea.rotationSlot as RotationSlotKey)
+    ? rotationSlotToTheme(idea.rotationSlot as RotationSlotKey)
+    : idea.rotationSlot;
   return (
-    <div className="flex flex-col rounded-lg border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-      <div className="flex items-start justify-between gap-2">
-        <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">
-          {idea.title}
-        </h3>
-        <span className="shrink-0 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
-          {idea.rotationSlot}
-        </span>
-      </div>
-      <p className="mt-2 text-sm italic text-gray-600 dark:text-gray-400">
-        {idea.titlePromise}
-      </p>
-
-      <p className="mt-3 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
-        Clarity premise
-      </p>
-      <p className="text-sm text-gray-700 dark:text-gray-300">
-        {idea.clarityPremise}
-      </p>
-
-      <p className="mt-3 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
-        Visual peak
-      </p>
-      <p className="text-sm text-gray-700 dark:text-gray-300">
-        {idea.visualPeak}
-      </p>
-
-      <div className="mt-3 flex flex-wrap gap-1.5">
-        {idea.thumbnailCallouts.map((c, i) => (
-          <span
-            key={i}
-            className="rounded bg-yellow-100 px-2 py-0.5 text-xs font-semibold text-yellow-900 dark:bg-yellow-900/40 dark:text-yellow-200"
-          >
-            {c}
-          </span>
-        ))}
-      </div>
-
-      <div className="mt-3 flex flex-wrap gap-1.5 text-xs">
-        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
-          {idea.framework}
-        </span>
-        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
-          {idea.tactileType}
-        </span>
-        {idea.estimatedRuntime && (
-          <span className="rounded-full bg-gray-100 px-2 py-0.5 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
-            {idea.estimatedRuntime}
-          </span>
-        )}
-        {idea.subPersonas.slice(0, 3).map((p) => (
-          <span
-            key={p}
-            className="rounded-full bg-gray-100 px-2 py-0.5 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
-          >
-            {p}
-          </span>
-        ))}
-      </div>
-
-      <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
-        {idea.citedFactIds.length} cited fact(s)
-        {idea.whyItWorks && ` • ${idea.whyItWorks}`}
-      </p>
-
-      <div className="mt-4">
-        <button
-          type="button"
-          onClick={onPick}
-          className="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-        >
-          Pick this idea →
-        </button>
-      </div>
-    </div>
+    <IdeaCard
+      title={idea.title}
+      themeKey={themeKey}
+      themeLabel={themeLabel}
+      premise={idea.titlePromise}
+      clarityPremise={idea.clarityPremise}
+      visualPeak={idea.visualPeak}
+      hookChips={idea.thumbnailCallouts}
+      frameChip={idea.framework}
+      intentChips={intentChips}
+      avatarChips={idea.subPersonas.slice(0, 3)}
+      citedFactCount={idea.citedFactIds.length}
+      justification={idea.whyItWorks ?? null}
+      onPick={onPick}
+    />
   );
 }
