@@ -111,8 +111,8 @@ const memberLinks = [
   { href: "/member/dashboard",       label: "Dashboard",       icon: HomeIcon,                 featureKey: null,        colour: "var(--abv-azure)",   tierRequired: null },
 
   // CREATE
-  { href: "/member/ai-tools",        label: "AI Tools",        icon: SparklesIcon,             featureKey: "ai_tools",  colour: "var(--abv-ai-tools)", tierRequired: null,           section: "CREATE",    badgeKey: "unread_tools" },
-  { href: "/member/content-planner", label: "Content Planner", icon: CalendarDaysIcon,         featureKey: null,        colour: "var(--abv-azure)",   tierRequired: PRODUCTION_TIERS },
+  { href: "/member/content-planner", label: "Content Planner", icon: CalendarDaysIcon,         featureKey: null,        colour: "var(--abv-azure)",   tierRequired: PRODUCTION_TIERS, section: "CREATE" },
+  { href: "/member/ai-tools",        label: "AI Tools",        icon: SparklesIcon,             featureKey: "ai_tools",  colour: "var(--abv-ai-tools)", tierRequired: null,           badgeKey: "unread_tools" },
   { href: "/member/market-data",     label: "Market Data",     icon: ChartBarSquareIcon,       featureKey: null,        colour: "var(--abv-azure)",   tierRequired: null },
   { href: "/member/knowledge-base",  label: "Knowledge Base",  icon: BookOpenIcon,             featureKey: null,        colour: "var(--abv-azure)",   tierRequired: null },
 
