@@ -369,7 +369,7 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
           />
           {!collapsed && (
             <span
-              className="text-white text-[22px] leading-none whitespace-nowrap"
+              className="text-white text-[17px] leading-none whitespace-nowrap"
               style={{
                 fontFamily: '"Cabinet Grotesk", system-ui, sans-serif',
                 fontWeight: 900,
@@ -379,7 +379,6 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
               Attraction{" "}
               <span
                 style={{
-                  fontStyle: "italic",
                   fontWeight: 900,
                   color: "var(--abv-azure)",
                 }}
@@ -647,18 +646,17 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
           </span>
         ) : (
           <span
-            className="text-white text-[17px] leading-none whitespace-nowrap"
+            className="text-white text-[15px] leading-none whitespace-nowrap"
             style={{
-              fontFamily: "var(--abv-font-display)",
-              fontWeight: 800,
-              letterSpacing: "-0.01em",
+              fontFamily: '"Cabinet Grotesk", system-ui, sans-serif',
+              fontWeight: 900,
+              letterSpacing: "-0.02em",
             }}
           >
             Attraction{" "}
             <span
               style={{
-                fontStyle: "italic",
-                fontWeight: 800,
+                fontWeight: 900,
                 color: "var(--abv-azure)",
               }}
             >
