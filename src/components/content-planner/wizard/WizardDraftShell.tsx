@@ -25,6 +25,7 @@ import {
   WIZARD_BATCH_SESSION_KEY,
   WIZARD_DRAFT_DIRTY_EVENT,
 } from "./Step3IdeaCards";
+import { WIZARD_VALIDATION_SESSION_KEY } from "./Step2BIdeaValidation";
 
 interface DraftRow {
   currentStep: string;
@@ -35,6 +36,8 @@ interface DraftRow {
   pickedKey: string | null;
   expiresAt: string;
   updatedAt: string;
+  generatedIdeaCards?: unknown;
+  validationContext?: unknown;
 }
 
 interface Snapshot {
@@ -109,10 +112,17 @@ export function WizardDraftShell({ children }: { children: React.ReactNode }) {
     const otherKeys = Array.from(params.keys()).filter((k) => k !== "step");
     if (step === "1" && otherKeys.length === 0) return null;
     let lastBatch: unknown = null;
+    let lastValidation: unknown = null;
     if (typeof window !== "undefined") {
       try {
         const raw = sessionStorage.getItem(WIZARD_BATCH_SESSION_KEY);
         if (raw) lastBatch = JSON.parse(raw);
+      } catch {
+        /* corrupt — ignore */
+      }
+      try {
+        const raw = sessionStorage.getItem(WIZARD_VALIDATION_SESSION_KEY);
+        if (raw) lastValidation = JSON.parse(raw);
       } catch {
         /* corrupt — ignore */
       }
@@ -125,7 +135,7 @@ export function WizardDraftShell({ children }: { children: React.ReactNode }) {
       validatedIdea: params.get("validatedIdea"),
       pickedKey: params.get("picked"),
       generatedIdeaCards: lastBatch,
-      validationContext: null,
+      validationContext: lastValidation,
       storyLeadFactIds: null,
     };
   }, [params, dirtyTick]);
@@ -139,10 +149,38 @@ export function WizardDraftShell({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  useAutoSave({ value: snapshot, delay: 800, onSave });
+  const { status, lastSavedAt } = useAutoSave({ value: snapshot, delay: 800, onSave });
 
   function resume() {
     if (!resumeDraft) return;
+    // Hydrate the rich state back into sessionStorage BEFORE the
+    // navigation so Step 3 / Step 2B mount with their caches warm and
+    // can short-circuit the regeneration / re-validation calls.
+    if (typeof window !== "undefined") {
+      try {
+        // Always overwrite — including removing the key when the draft
+        // carries no value — so stale session data from a prior wizard
+        // run can't leak into the resumed flow's caches.
+        if (resumeDraft.generatedIdeaCards) {
+          sessionStorage.setItem(
+            WIZARD_BATCH_SESSION_KEY,
+            JSON.stringify(resumeDraft.generatedIdeaCards),
+          );
+        } else {
+          sessionStorage.removeItem(WIZARD_BATCH_SESSION_KEY);
+        }
+        if (resumeDraft.validationContext) {
+          sessionStorage.setItem(
+            WIZARD_VALIDATION_SESSION_KEY,
+            JSON.stringify(resumeDraft.validationContext),
+          );
+        } else {
+          sessionStorage.removeItem(WIZARD_VALIDATION_SESSION_KEY);
+        }
+      } catch {
+        /* quota — non-fatal */
+      }
+    }
     const next = new URLSearchParams({ step: resumeDraft.currentStep });
     if (resumeDraft.propertyTypeFocus) {
       next.set("propertyTypeFocus", resumeDraft.propertyTypeFocus);
@@ -157,6 +195,18 @@ export function WizardDraftShell({ children }: { children: React.ReactNode }) {
 
   async function discard() {
     setResumeDraft(null);
+    // True "start fresh": also wipe the local rich-state caches so the
+    // next wizard run can't replay batches/verdicts from the previous
+    // one. (resume() does this on the success path; discard() needs
+    // the same cleanup on the abandon path.)
+    if (typeof window !== "undefined") {
+      try {
+        sessionStorage.removeItem(WIZARD_BATCH_SESSION_KEY);
+        sessionStorage.removeItem(WIZARD_VALIDATION_SESSION_KEY);
+      } catch {
+        /* non-fatal */
+      }
+    }
     try {
       await fetch("/api/member/content-planner/wizard/draft", { method: "DELETE" });
     } catch {
@@ -173,6 +223,7 @@ export function WizardDraftShell({ children }: { children: React.ReactNode }) {
           onDiscard={discard}
         />
       )}
+      {snapshot && <SavedIndicator status={status} lastSavedAt={lastSavedAt} />}
       {children}
     </>
   );
@@ -221,6 +272,44 @@ function ResumeBanner({
         </div>
       </div>
     </div>
+  );
+}
+
+function SavedIndicator({
+  status,
+  lastSavedAt,
+}: {
+  status: string;
+  lastSavedAt: Date | null;
+}) {
+  // Re-render every ~10s so the "Saved Ns ago" label stays fresh.
+  const [, force] = useState(0);
+  useEffect(() => {
+    const id = window.setInterval(() => force((n) => n + 1), 10_000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  let label: string;
+  if (status === "saving") label = "Saving…";
+  else if (status === "error") label = "Couldn’t save draft";
+  else if (lastSavedAt) {
+    const seconds = Math.max(0, Math.round((Date.now() - lastSavedAt.getTime()) / 1000));
+    if (seconds < 5) label = "Saved just now";
+    else if (seconds < 60) label = `Saved ${seconds}s ago`;
+    else if (seconds < 3600) label = `Saved ${Math.round(seconds / 60)}m ago`;
+    else label = `Saved ${Math.round(seconds / 3600)}h ago`;
+  } else {
+    label = "Draft auto-saves as you work";
+  }
+
+  const tone =
+    status === "error"
+      ? "text-red-600 dark:text-red-400"
+      : "text-gray-500 dark:text-gray-400";
+  return (
+    <p className={`mt-2 text-[11px] ${tone}`} aria-live="polite">
+      {label}
+    </p>
   );
 }
 

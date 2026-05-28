@@ -18,6 +18,12 @@ import { AiThinking } from "@/components/ai/AiThinking";
 import { useAiThinking } from "@/lib/use-ai-thinking";
 import { PropertyTypePicker } from "./PropertyTypePicker";
 import type { PropertyTypeFocus } from "@/lib/property-type-focus";
+import { WIZARD_DRAFT_DIRTY_EVENT } from "./Step3IdeaCards";
+
+/** Stable sessionStorage key for the last idea-validation verdict — read
+ *  by WizardDraftShell so the draft row carries the validation context
+ *  alongside the URL state. */
+export const WIZARD_VALIDATION_SESSION_KEY = "wizard:lastValidation";
 
 interface CitedFact {
   id: string;
@@ -87,6 +93,23 @@ export function Step2BIdeaValidation({ initialFocus = "Any" }: Props) {
         setError(j.message ?? j.error ?? `Validation failed (${r.status})`);
       } else {
         setResult(j);
+        // Stash for the draft snapshot so resume gets the verdict back,
+        // and poke WizardDraftShell to autosave even though the URL
+        // didn't change.
+        try {
+          sessionStorage.setItem(
+            WIZARD_VALIDATION_SESSION_KEY,
+            JSON.stringify({
+              idea: idea.trim(),
+              propertyTypeFocus: focus,
+              result: j,
+              savedAt: Date.now(),
+            }),
+          );
+          window.dispatchEvent(new CustomEvent(WIZARD_DRAFT_DIRTY_EVENT));
+        } catch {
+          /* quota — best effort */
+        }
       }
     } catch (err) {
       setError((err as Error).message);

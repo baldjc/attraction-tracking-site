@@ -136,6 +136,7 @@ function DraftRow({
   const stepLabel = STEP_LABEL[draft.currentStep] ?? `Step ${draft.currentStep}`;
   const expiresInMs = new Date(draft.expiresAt).getTime() - Date.now();
   const expiresSoon = expiresInMs > 0 && expiresInMs < FORTY_EIGHT_HOURS_MS;
+  const expiresInHours = Math.max(1, Math.round(expiresInMs / (60 * 60 * 1000)));
   const updatedLabel = new Date(draft.updatedAt).toLocaleDateString("en-CA", {
     month: "short",
     day: "numeric",
@@ -153,7 +154,7 @@ function DraftRow({
           {expiresSoon && (
             <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
               <ClockIcon className="h-3 w-3" />
-              Expires soon
+              Expires in {expiresInHours}h
             </span>
           )}
           {draft.propertyTypeFocus && (

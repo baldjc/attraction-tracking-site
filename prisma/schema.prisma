@@ -191,6 +191,7 @@ model User {
   quickLinks           ClientQuickLink[]
   scriptDrafts         ScriptDraft[]
   contentEngineDrafts  ContentEngineDraft[]
+  contentEngineChatDrafts ContentEngineChatDraft[]
   changelogViews       ChangelogEntryView[]
   upgradeModalDismissals UpgradeModalDismissal[]
   planTeamNotes          PlanTeamNote[]      @relation("PlanTeamNoteAuthor")
@@ -1041,6 +1042,27 @@ model ContentEngineDraft {
   @@index([userId])
   @@index([expiresAt])
   @@map("content_engine_drafts")
+}
+
+// Legacy v1 Content Engine chat draft persistence.
+// The v1 chat (src/components/ai-tools/content-engine/ContentEngineChat.tsx)
+// auto-saves the in-flight chat for a given theme so members can refresh
+// without losing it. This used to live on the same `content_engine_drafts`
+// table; Wave 4 reshaped that table for the wizard, so v1 got its own
+// table here to avoid regressing the dashboard members are still using.
+// Follow-up #30 will retire v1 entirely, at which point this model
+// (and `/api/ai-tools/content-engine/chat/draft`) can be deleted.
+model ContentEngineChatDraft {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  theme     String
+  messages  Json     @default("[]")
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  @@unique([userId, theme])
+  @@map("content_engine_chat_drafts")
 }
 
 // ═══════════════════════════════════════════════════

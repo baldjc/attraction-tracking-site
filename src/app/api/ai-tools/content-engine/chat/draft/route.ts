@@ -1,30 +1,63 @@
 /**
- * Wave 4 — DEPRECATED, no-op shim.
+ * v1 Content Engine chat draft persistence — restored on its own table
+ * (`content_engine_chat_drafts`, model `ContentEngineChatDraft`) after
+ * Wave 4 reshaped the shared `content_engine_drafts` table for the new
+ * wizard. The v1 chat auto-saves the in-flight conversation per theme
+ * so a tab refresh doesn't lose it.
  *
- * The `ContentEngineDraft` table was reshaped in `add_content_engine_draft`
- * (Wave 4) for the new wizard, dropping the (userId, theme) unique
- * constraint and the `messages` column this v1 chat used to read/write.
- *
- * The v1 Content Engine chat (ContentEngineChat.tsx → ThemeDashboard.tsx)
- * still hits these endpoints to auto-save its in-flight conversation, but
- * we're intentionally not persisting v1 drafts anymore — members should be
- * using the new wizard, which has its own draft persistence at
- * `/api/member/content-planner/wizard/draft`.
- *
- * Returning success here keeps the v1 chat working (it just won't restore
- * a partial conversation after refresh) until the v1 surface is removed
- * entirely.
+ * Schema lives in `prisma/schema.prisma`; the dashboard surface this
+ * endpoint serves will be retired by follow-up #30, at which point this
+ * file and its model can be deleted together.
  */
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { resolveUserFromSession } from "@/lib/session-utils";
+import prisma from "@/lib/prisma";
 
-export async function GET() {
-  return NextResponse.json({ draft: null });
+export async function GET(req: NextRequest) {
+  const user = await resolveUserFromSession();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { searchParams } = new URL(req.url);
+  const theme = searchParams.get("theme");
+  if (!theme) return NextResponse.json({ error: "theme required" }, { status: 400 });
+
+  const draft = await prisma.contentEngineChatDraft.findUnique({
+    where: { userId_theme: { userId: user.id, theme } },
+  });
+
+  return NextResponse.json({ draft: draft ?? null });
 }
 
-export async function POST() {
-  return NextResponse.json({ draft: null });
+export async function POST(req: NextRequest) {
+  const user = await resolveUserFromSession();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  let body: { theme?: string; messages?: unknown };
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+  const { theme, messages } = body;
+  if (!theme) return NextResponse.json({ error: "theme required" }, { status: 400 });
+
+  const draft = await prisma.contentEngineChatDraft.upsert({
+    where: { userId_theme: { userId: user.id, theme } },
+    create: { userId: user.id, theme, messages: messages ?? [] },
+    update: { messages: messages ?? [] },
+  });
+
+  return NextResponse.json({ draft });
 }
 
-export async function DELETE() {
+export async function DELETE(req: NextRequest) {
+  const user = await resolveUserFromSession();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { searchParams } = new URL(req.url);
+  const theme = searchParams.get("theme");
+  if (!theme) return NextResponse.json({ error: "theme required" }, { status: 400 });
+
+  await prisma.contentEngineChatDraft.deleteMany({ where: { userId: user.id, theme } });
   return NextResponse.json({ ok: true });
 }

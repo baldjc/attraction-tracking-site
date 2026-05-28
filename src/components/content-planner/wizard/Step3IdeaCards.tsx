@@ -54,6 +54,7 @@ interface Props {
   rotationSlot?: RotationSlotKey;
   validatedIdea?: string;
   propertyTypeFocus: PropertyTypeFocus;
+  uploadId: string;
   uploadLabel: string;
   uploadMonthYear: string;
 }
@@ -83,6 +84,7 @@ export function Step3IdeaCards({
   rotationSlot,
   validatedIdea,
   propertyTypeFocus,
+  uploadId,
   uploadLabel,
   uploadMonthYear,
 }: Props) {
@@ -95,6 +97,56 @@ export function Step3IdeaCards({
     fallbackIntervalMs: 5000,
   });
   useEffect(() => {
+    // Resume short-circuit: if a draft restored a previously-generated
+    // batch into sessionStorage AND the context (storyLead/rotationSlot/
+    // validatedIdea/focus) still matches what the URL is asking for,
+    // skip the Anthropic call and just rehydrate the cards. Saves
+    // members from paying for a regenerated batch after a tab reload.
+    try {
+      const raw = sessionStorage.getItem(WIZARD_BATCH_SESSION_KEY);
+      if (raw) {
+        const cached = JSON.parse(raw) as {
+          ideas?: IdeaCard[];
+          upload?: { id: string; monthYear: string; label: string };
+          storyLeadId?: string | null;
+          propertyTypeFocus?: PropertyTypeFocus;
+          context?: { rotationSlot?: string; validatedIdea?: string };
+          savedAt?: number;
+        };
+        const sameLead = (cached.storyLeadId ?? null) === (storyLeadId ?? null);
+        const sameFocus = (cached.propertyTypeFocus ?? "Any") === propertyTypeFocus;
+        const sameSlot = (cached.context?.rotationSlot ?? "") === (rotationSlot ?? "");
+        const sameIdea = (cached.context?.validatedIdea ?? "") === (validatedIdea ?? "");
+        // Hard upload-identity gate: only short-circuit if the cached
+        // batch was generated against the same market upload the server
+        // would resolve right now. If the member uploaded fresh market
+        // data after the draft was saved, `uploadId` will differ and we
+        // fall through to regeneration.
+        const sameUpload = cached.upload?.id === uploadId;
+        if (
+          cached.ideas &&
+          cached.upload &&
+          sameLead &&
+          sameFocus &&
+          sameSlot &&
+          sameIdea &&
+          sameUpload
+        ) {
+          setResult({
+            ideas: cached.ideas,
+            upload: cached.upload,
+            storyLeadId: cached.storyLeadId ?? null,
+            factsConsidered: 0,
+            requestedCount: cached.ideas.length,
+            returnedCount: cached.ideas.length,
+            partial: false,
+          });
+          return;
+        }
+      }
+    } catch {
+      /* corrupt cache — fall through to fresh generation */
+    }
     thinking.start();
     const ctrl = new AbortController();
     (async () => {
@@ -130,6 +182,10 @@ export function Step3IdeaCards({
                 upload: j.upload,
                 storyLeadId: j.storyLeadId,
                 propertyTypeFocus,
+                context: {
+                  rotationSlot: rotationSlot ?? "",
+                  validatedIdea: validatedIdea ?? "",
+                },
                 savedAt: Date.now(),
               }),
             );

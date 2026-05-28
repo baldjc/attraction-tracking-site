@@ -103,6 +103,7 @@ export default async function WizardPage({
                 rotationSlot={parseRotationSlot(params.rotationSlot)}
                 validatedIdea={params.validatedIdea}
                 propertyTypeFocus={focus}
+                uploadId={upload.id}
                 uploadLabel={upload.label}
                 uploadMonthYear={upload.monthYear}
               />
