@@ -93,8 +93,26 @@ export default function ArcScriptUploadPhase({ onStartBuilding, prefillData, onS
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [loadingStep, setLoadingStep] = useState("");
-  const ANALYSIS_STEPS = ["Reading files…", "Analysing research…"];
+  type AnalysisStageKey = "read" | "analyse";
+  const [activeStage, setActiveStage] = useState<AnalysisStageKey | null>(null);
+  const [completedStages, setCompletedStages] = useState<AnalysisStageKey[]>([]);
+  const hasFiles = files.length > 0;
+  const analysisStages = (
+    [
+      { key: "read" as const, label: "Read research files" },
+      { key: "analyse" as const, label: "Summarise research" },
+    ] as const
+  )
+    .filter((s) => (s.key === "read" ? hasFiles : true))
+    .map((s) => ({
+      key: s.key,
+      label: s.label,
+      status: completedStages.includes(s.key)
+        ? ("complete" as const)
+        : activeStage === s.key
+        ? ("active" as const)
+        : ("pending" as const),
+    }));
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [avatarData, setAvatarData] = useState<any>(null);
   const [researchPrompt, setResearchPrompt] = useState("");
@@ -281,11 +299,12 @@ Format each talking point as its own section with all 7 categories. Preserve spe
     if (!canStart || loading) return;
     setError("");
     setLoading(true);
+    setCompletedStages([]);
+    setActiveStage(hasFiles ? "read" : "analyse");
 
     let researchText = pastedNotes.trim();
 
     if (files.length > 0) {
-      setLoadingStep("Reading files…");
       const formData = new FormData();
       files.forEach((f) => formData.append("files", f.file));
       try {
@@ -303,11 +322,13 @@ Format each talking point as its own section with all 7 categories. Preserve spe
       } catch {
         setError("Failed to read files. Try pasting the text directly instead.");
         setLoading(false);
+        setActiveStage(null);
         return;
       }
+      setCompletedStages((prev) => (prev.includes("read") ? prev : [...prev, "read"]));
     }
 
-    setLoadingStep("Analysing research…");
+    setActiveStage("analyse");
     try {
       const summaryRes = await fetch("/api/ai-tools/arc-script-builder", {
         method: "POST",
@@ -328,16 +349,20 @@ Format each talking point as its own section with all 7 categories. Preserve spe
             : "Monthly limit reached."
         );
         setLoading(false);
+        setActiveStage(null);
         return;
       }
 
       if (!summaryRes.ok) {
         setError("Failed to summarise research. Please try again.");
         setLoading(false);
+        setActiveStage(null);
         return;
       }
 
       const summaryData = await summaryRes.json();
+      setCompletedStages((prev) => (prev.includes("analyse") ? prev : [...prev, "analyse"]));
+      setActiveStage(null);
       onStartBuilding({
         title: effectiveTitle.trim(),
         talkingPoints: effectiveTalkingPoints.trim(),
@@ -351,18 +376,37 @@ Format each talking point as its own section with all 7 categories. Preserve spe
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
       setLoading(false);
+      setActiveStage(null);
     }
   }
+
+  // Warn before leaving the tab while the analysis is in flight — the request
+  // is cancelled on unload and the work is lost. Mirrors the guard the old
+  // AnalysisProgress component installed before the AiThinking rollout.
+  useEffect(() => {
+    if (!loading) return;
+    function handler(e: BeforeUnloadEvent) {
+      e.preventDefault();
+      e.returnValue = "";
+    }
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [loading]);
 
   return (
     <div className="max-w-2xl mx-auto space-y-5">
       {loading && (
         <AiThinking
-          mode="phase"
-          toolName="ARC Script Builder"
-          currentPhase={loadingStep || "Preparing your script…"}
-          noteText="This usually takes 20–60 seconds. Please keep this tab open — leaving now will cancel the analysis."
+          mode="pipeline"
+          stages={analysisStages}
+          detailLine="ARC Script Builder"
+          timeRemaining="20–60 sec"
         />
+      )}
+      {loading && (
+        <p className="text-xs text-[var(--abv-text)]/50 dark:text-white/45 -mt-2">
+          Please keep this tab open — leaving now will cancel the analysis.
+        </p>
       )}
       {isPrefilled && (
         <div className="bg-[var(--abv-ai-tools)]/8 border border-[var(--abv-ai-tools)]/25 rounded-lg px-4 py-3 space-y-2">
@@ -762,7 +806,11 @@ Format each talking point as its own section with all 7 categories. Preserve spe
                       style={{ animationDelay: `${i * 0.15}s` }} />
                   ))}
                 </span>
-                {loadingStep || "Working…"}
+                {activeStage === "read"
+                  ? "Reading files…"
+                  : activeStage === "analyse"
+                  ? "Analysing research…"
+                  : "Working…"}
               </>
             ) : (
               <>Continue with research →</>
@@ -784,7 +832,11 @@ Format each talking point as its own section with all 7 categories. Preserve spe
                       style={{ animationDelay: `${i * 0.15}s` }} />
                   ))}
                 </span>
-                {loadingStep || "Working…"}
+                {activeStage === "read"
+                  ? "Reading files…"
+                  : activeStage === "analyse"
+                  ? "Analysing research…"
+                  : "Working…"}
               </>
             ) : (
               <>Start Building →</>

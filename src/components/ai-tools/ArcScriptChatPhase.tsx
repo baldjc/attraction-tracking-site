@@ -100,10 +100,34 @@ export default function ArcScriptChatPhase({
   const [messages, setMessages] = useState<Message[]>(resumeMessages ?? []);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  // Per-turn pipeline: 3 stages keyed to the server's two `phase` events
+  // ("Reviewing your inputs..." → "Calling Claude...") plus a final
+  // "Streaming response" stage that activates once tokens start arriving.
+  // The current ARC section is surfaced in the pipeline footer so members
+  // see which section is being drafted on this turn.
+  type ChatStageKey = "review" | "call" | "stream";
+  const CHAT_STAGE_DEFS: { key: ChatStageKey; label: string }[] = [
+    { key: "review", label: "Review your inputs" },
+    { key: "call", label: "Call Claude" },
+    { key: "stream", label: "Stream response" },
+  ];
+  function stagesFor(active: ChatStageKey | null, completed: ChatStageKey[]) {
+    return CHAT_STAGE_DEFS.map((s) => ({
+      key: s.key,
+      label: s.label,
+      status: completed.includes(s.key)
+        ? ("complete" as const)
+        : active === s.key
+        ? ("active" as const)
+        : ("pending" as const),
+    }));
+  }
   const aiThinking = useAiThinking({
     mode: "phase",
     fallbackPhases: ["Reviewing your inputs..."],
   });
+  const [chatActiveStage, setChatActiveStage] = useState<ChatStageKey | null>(null);
+  const [chatCompletedStages, setChatCompletedStages] = useState<ChatStageKey[]>([]);
   const [currentSection, setCurrentSection] = useState(resumeCurrentSection ?? "research_strategy");
   const [completedSections, setCompletedSections] = useState<string[]>(resumeCompletedSections ?? []);
   const [sectionApprovals, setSectionApprovals] = useState<SectionApproval[]>(resumeSectionApprovals ?? []);
@@ -233,6 +257,8 @@ export default function ArcScriptChatPhase({
     async (userContent: string, researchSummary?: string) => {
       if (loading) return;
       setLoading(true);
+      setChatCompletedStages([]);
+      setChatActiveStage("review");
       aiThinking.start();
 
       const newUserMsg: Message = {
@@ -302,11 +328,25 @@ export default function ArcScriptChatPhase({
             const sse = parseSseEvent(part);
             if (!sse) continue;
 
-            // Wave 0.5 phase event — update the AiThinking indicator.
+            // Wave 0.5 phase event — update the AiThinking indicator + advance
+            // the per-turn pipeline. Server currently emits two labels for
+            // chat: "Reviewing your inputs..." (review) → "Calling Claude..."
+            // (call). The "stream" stage flips active on the first text chunk.
             if (sse.event === "phase") {
               try {
                 const phasePayload = JSON.parse(sse.data) as { label?: string };
-                if (phasePayload.label) aiThinking.updatePhase(phasePayload.label);
+                if (phasePayload.label) {
+                  aiThinking.updatePhase(phasePayload.label);
+                  const lower = phasePayload.label.toLowerCase();
+                  if (lower.includes("review")) {
+                    setChatActiveStage("review");
+                  } else if (lower.includes("call")) {
+                    setChatCompletedStages((prev) =>
+                      prev.includes("review") ? prev : [...prev, "review"],
+                    );
+                    setChatActiveStage("call");
+                  }
+                }
               } catch {}
               continue;
             }
@@ -316,8 +356,19 @@ export default function ArcScriptChatPhase({
 
               if (payload.type === "text") {
                 // First content chunk — dismiss the thinking indicator; the
-                // streaming text itself becomes the activity signal.
-                if (fullText.length === 0) aiThinking.stop();
+                // streaming text itself becomes the activity signal. Also
+                // mark the prior pipeline stages complete so any final paint
+                // before dismissal shows the full progression.
+                if (fullText.length === 0) {
+                  setChatCompletedStages((prev) => {
+                    const next = [...prev];
+                    if (!next.includes("review")) next.push("review");
+                    if (!next.includes("call")) next.push("call");
+                    return next;
+                  });
+                  setChatActiveStage("stream");
+                  aiThinking.stop();
+                }
                 fullText += payload.text;
                 setMessages((prev) => {
                   const updated = [...prev];
@@ -398,10 +449,27 @@ export default function ArcScriptChatPhase({
       } finally {
         setLoading(false);
         aiThinking.stop();
+        setChatActiveStage(null);
+        setChatCompletedStages([]);
       }
     },
     [loading, messages, aiThinking]
   );
+
+  // Preserve the old AnalysisProgress beforeunload guard — leaving the tab
+  // mid-stream cancels the request and discards the partial response.
+  useEffect(() => {
+    if (!loading) return;
+    function handler(e: BeforeUnloadEvent) {
+      e.preventDefault();
+      e.returnValue = "";
+    }
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [loading]);
+
+  const currentSectionLabel =
+    SECTIONS.find((s) => s.key === currentSection)?.label ?? currentSection;
 
   useEffect(() => {
     if (initialized.current) return;
@@ -605,15 +673,16 @@ export default function ArcScriptChatPhase({
           );
         })}
 
-        {aiThinking.isThinking && messages[messages.length - 1]?.role !== "assistant" && (
-          <div className="flex justify-start">
-            <AiThinking
-              mode="phase"
-              toolName="ARC Script Builder"
-              currentPhase={aiThinking.phaseLabel}
-            />
-          </div>
-        )}
+        {aiThinking.isThinking &&
+          !messages[messages.length - 1]?.content && (
+            <div className="flex justify-start w-full">
+              <AiThinking
+                mode="pipeline"
+                stages={stagesFor(chatActiveStage, chatCompletedStages)}
+                detailLine={`Drafting ${currentSectionLabel}`}
+              />
+            </div>
+          )}
         <div ref={bottomRef} />
       </div>
 
