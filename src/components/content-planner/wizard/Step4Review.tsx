@@ -3,16 +3,19 @@
 /**
  * Wave 2 wizard — Step 4: Review picked idea, then save as ContentPlan.
  *
- * Reads the picked card from sessionStorage (keyed by ?picked=). If the key
- * is missing or stale, redirects to Step 1 rather than blowing up.
- *
- * On save: POST /api/member/content-planner/wizard/save-idea, then follow
- * the redirectUrl (which lands on the planner with ?plan=<id> so the
- * existing edit modal pops open).
+ * Wave 4 — propertyTypeFocus is no longer an editable dropdown here. The
+ * value is locked upstream (Steps 2a/2b/2c) and flows through the URL +
+ * picked-card session payload. Step 4 just displays it via the FocusChip
+ * (which is rendered by the wizard page shell) and sends it on save.
  */
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import {
+  PROPERTY_TYPE_FOCUS_LABEL,
+  propertyTypeFocusToContentPlanValue,
+  type PropertyTypeFocus,
+} from "@/lib/property-type-focus";
 
 interface IdeaCard {
   title: string;
@@ -33,16 +36,8 @@ interface Picked {
   idea: IdeaCard;
   sourceUploadId: string;
   storyLeadId: string | null;
+  propertyTypeFocus?: PropertyTypeFocus;
 }
-
-const PROPERTY_TYPE_OPTIONS = [
-  { value: "", label: "Auto (infer from cited facts)" },
-  { value: "Detached", label: "Detached" },
-  { value: "Row/Townhouse", label: "Row/Townhouse" },
-  { value: "Semi-Detached", label: "Semi-Detached" },
-  { value: "Apartment", label: "Apartment" },
-  { value: "All", label: "All property types" },
-];
 
 interface SaveResponse {
   id?: string;
@@ -52,13 +47,17 @@ interface SaveResponse {
   errors?: string[];
 }
 
-export function Step4Review({ pickedKey }: { pickedKey?: string }) {
+interface Props {
+  pickedKey?: string;
+  propertyTypeFocus: PropertyTypeFocus;
+}
+
+export function Step4Review({ pickedKey, propertyTypeFocus }: Props) {
   const router = useRouter();
   const [picked, setPicked] = useState<Picked | null>(null);
   const [missing, setMissing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [propertyTypeFocus, setPropertyTypeFocus] = useState<string>("");
 
   useEffect(() => {
     if (!pickedKey) {
@@ -88,6 +87,11 @@ export function Step4Review({ pickedKey }: { pickedKey?: string }) {
     setSaving(true);
     setError(null);
     try {
+      // The picked-card payload carries the focus that was actually
+      // enforced during generation. Trust that over the URL-derived prop
+      // so a member who hand-edits ?propertyTypeFocus= in the address bar
+      // before clicking Save can't downgrade the lock on the saved plan.
+      const lockedFocus = picked.propertyTypeFocus ?? propertyTypeFocus;
       const r = await fetch("/api/member/content-planner/wizard/save-idea", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -95,7 +99,7 @@ export function Step4Review({ pickedKey }: { pickedKey?: string }) {
           ...picked.idea,
           storyLeadId: picked.storyLeadId,
           sourceUploadId: picked.sourceUploadId,
-          propertyTypeFocus: propertyTypeFocus || null,
+          propertyTypeFocus: propertyTypeFocusToContentPlanValue(lockedFocus),
         }),
       });
       const j = (await r.json()) as SaveResponse;
@@ -106,8 +110,16 @@ export function Step4Review({ pickedKey }: { pickedKey?: string }) {
         setSaving(false);
         return;
       }
-      // Clean up the sessionStorage entry on success — it's a one-shot key.
+      // Best-effort cleanup of the one-shot session key + the wizard draft
+      // (the picked idea has graduated to a real ContentPlan row).
       if (pickedKey) sessionStorage.removeItem(pickedKey);
+      try {
+        await fetch("/api/member/content-planner/wizard/draft", {
+          method: "DELETE",
+        });
+      } catch {
+        /* non-fatal */
+      }
       router.push(j.redirectUrl);
     } catch (e) {
       setError((e as Error).message);
@@ -154,6 +166,14 @@ export function Step4Review({ pickedKey }: { pickedKey?: string }) {
         {c.estimatedRuntime && <Field label="Estimated runtime">{c.estimatedRuntime}</Field>}
         {c.whyItWorks && <Field label="Why it works">{c.whyItWorks}</Field>}
         <Field label="Sub-personas">{c.subPersonas.join(", ") || "—"}</Field>
+        <Field label="Property type focus">
+          {PROPERTY_TYPE_FOCUS_LABEL[propertyTypeFocus]}
+          {propertyTypeFocus !== "Any" && (
+            <span className="ml-2 text-[11px] text-gray-500 dark:text-gray-400">
+              (locks Script Builder to this property type)
+            </span>
+          )}
+        </Field>
 
         <p className="mt-4 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
           Thumbnail callouts
@@ -172,33 +192,6 @@ export function Step4Review({ pickedKey }: { pickedKey?: string }) {
         <p className="mt-4 text-xs text-gray-500 dark:text-gray-400">
           {c.citedFactIds.length} cited fact(s) will be linked to this content plan.
         </p>
-
-        {/* Wave 4 — propertyType lock. Member picks one type to anchor
-            Script Builder v2 on; "Auto" defers to the citedFacts' caveat
-            (if any) and otherwise falls through to no-lock. */}
-        <div className="mt-5 border-t border-gray-200 pt-4 dark:border-gray-700">
-          <label
-            htmlFor="propertyTypeFocus"
-            className="block text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400"
-          >
-            Property type focus
-          </label>
-          <select
-            id="propertyTypeFocus"
-            value={propertyTypeFocus}
-            onChange={(e) => setPropertyTypeFocus(e.target.value)}
-            className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-800 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-          >
-            {PROPERTY_TYPE_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-          <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
-            Locks Script Builder to this property type per neighbourhood so the script can&apos;t pivot to a different type. Leave on Auto if the cited facts already name one.
-          </p>
-        </div>
       </div>
 
       {error && (

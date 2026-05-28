@@ -34,6 +34,11 @@ import {
   type RotationSlotKey,
 } from "@/lib/content-engine-validation";
 import { CONTENT_ENGINE_MODE_PROMPT } from "@/lib/content-engine-mode-prompt";
+import {
+  buildFocusConstraintBlock,
+  parsePropertyTypeFocus,
+  type PropertyTypeFocus,
+} from "@/lib/property-type-focus";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -50,6 +55,8 @@ interface RequestBody {
   storyLeadId?: string;
   validatedIdea?: string;
   count?: number;
+  /** Wave 4 — property-type lock from the wizard (Any|Detached|…). */
+  propertyTypeFocus?: PropertyTypeFocus | string | null;
 }
 
 interface BatchResponse {
@@ -100,6 +107,7 @@ export async function POST(req: NextRequest) {
     );
   }
   const count = Math.min(Math.max(body.count ?? DEFAULT_IDEA_COUNT, 1), 10);
+  const propertyTypeFocus = parsePropertyTypeFocus(body.propertyTypeFocus ?? null);
 
   // Load the per-member context. All three are required-or-empty: no upload
   // → 409, no config → 409, no headline-safe facts → 409. Each error tells
@@ -178,11 +186,13 @@ export async function POST(req: NextRequest) {
             storyLead,
             validatedIdea: body.validatedIdea,
             monthYear: upload.monthYear,
+            propertyTypeFocus,
           })
         : buildRetryUserMessage({
             previousIdeas: lastRawIdeas,
             perCardErrors,
             count,
+            propertyTypeFocus,
           });
 
     let resp: Anthropic.Messages.Message;
@@ -313,6 +323,7 @@ function buildInitialUserMessage(args: {
   storyLead: StoryLeadDetail | null;
   validatedIdea?: string;
   monthYear: string;
+  propertyTypeFocus: PropertyTypeFocus;
 }): string {
   const lines: string[] = [];
   lines.push(`Market: ${args.config.marketName}`);
@@ -377,6 +388,9 @@ function buildInitialUserMessage(args: {
   lines.push("```json");
   lines.push(JSON.stringify(args.facts, null, 2));
   lines.push("```");
+  lines.push("");
+
+  lines.push(buildFocusConstraintBlock(args.propertyTypeFocus));
   lines.push("");
 
   lines.push("## TITLE RULES — INVIOLABLE");
@@ -457,11 +471,14 @@ function buildRetryUserMessage(args: {
   previousIdeas: unknown[];
   perCardErrors: Array<{ index: number; errors: string[] }>;
   count: number;
+  propertyTypeFocus: PropertyTypeFocus;
 }): string {
   const lines: string[] = [];
   lines.push(
     `Your previous batch had ${args.perCardErrors.length} card(s) that failed the validation gate. Re-emit the FULL batch of ${args.count} cards with the failures fixed. Keep the cards that passed unchanged where you can.`,
   );
+  lines.push("");
+  lines.push(buildFocusConstraintBlock(args.propertyTypeFocus));
   lines.push("");
   lines.push("Per-card failures:");
   for (const f of args.perCardErrors) {

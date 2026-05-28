@@ -24,6 +24,11 @@ import {
 } from "@/lib/content-engine-context";
 import { parseJsonResponse } from "@/lib/content-engine-validation";
 import { IDEA_VALIDATION_SYSTEM_PROMPT } from "@/lib/idea-validation-prompt";
+import {
+  buildFocusConstraintBlock,
+  parsePropertyTypeFocus,
+  type PropertyTypeFocus,
+} from "@/lib/property-type-focus";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -65,13 +70,14 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  let body: { idea?: string };
+  let body: { idea?: string; propertyTypeFocus?: PropertyTypeFocus | string | null };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "invalid_json" }, { status: 400 });
   }
   const idea = body.idea?.trim();
+  const propertyTypeFocus = parsePropertyTypeFocus(body.propertyTypeFocus ?? null);
   if (!idea || idea.length < 10) {
     return NextResponse.json(
       { error: "idea_too_short", message: "Tell me your idea in a sentence or two." },
@@ -131,6 +137,7 @@ export async function POST(req: NextRequest) {
     idea,
     facts,
     marketName: config?.marketName ?? "your market",
+    propertyTypeFocus,
   });
 
   let resp: Anthropic.Messages.Message;
@@ -282,14 +289,17 @@ export async function POST(req: NextRequest) {
 
 function buildUserMessage(args: {
   idea: string;
-  facts: Array<Record<string, unknown>>;
+  facts: ReadonlyArray<unknown>;
   marketName: string;
+  propertyTypeFocus: PropertyTypeFocus;
 }): string {
   return [
     `Market: ${args.marketName}`,
     "",
     "Member's video idea:",
     args.idea,
+    "",
+    buildFocusConstraintBlock(args.propertyTypeFocus),
     "",
     `Validated facts library (${args.facts.length} headline-safe facts). Cite by \`id\`:`,
     "```json",

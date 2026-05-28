@@ -1,22 +1,24 @@
 /**
- * Wave 2 — Content Engine v2 wizard shell.
+ * Wave 2 — Content Engine v2 wizard shell. Wave 4 — property type focus +
+ * draft persistence wrapper.
  *
- * URL contract (per spec §2):
+ * URL contract:
  *   ?step=1            Mode picker (default)
  *   ?step=2a           Story Lead browser
  *   ?step=2b           Idea Validation Mode
  *   ?step=2c           Theme picker
- *   ?step=3            Generate idea cards (params: storyLeadId | rotationSlot | validatedIdea)
- *   ?step=4            Review picked idea (param: picked=<sessionStorage key>)
+ *   ?step=3            Generate idea cards
+ *      (params: storyLeadId | rotationSlot | validatedIdea, +propertyTypeFocus)
+ *   ?step=4            Review picked idea (param: picked=<sessionStorage key>,
+ *                                          +propertyTypeFocus)
+ *
+ * `propertyTypeFocus` is set on Steps 2a/2b/2c and pinned through every
+ * downstream URL via the FocusChip. Once locked it cannot be relaxed
+ * without going back through the picker (the chip's "change" link).
  *
  * Refresh and back-button must not lose state. Step 1-3 are URL-driven;
  * Step 4 reads from sessionStorage keyed by a UUID in the URL so the
  * picked card survives refresh within the tab.
- *
- * Gates:
- *   - tool_content_engine_v2 OFF  → 404
- *   - no validated upload         → "Upload market data first" CTA (NOT 404)
- *   - tool_idea_validation OFF    → Step 1 hides the "Validate an idea" card
  */
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
@@ -29,7 +31,10 @@ import { Step2BIdeaValidation } from "@/components/content-planner/wizard/Step2B
 import { Step2CRotationSlot } from "@/components/content-planner/wizard/Step2CRotationSlot";
 import { Step3IdeaCards } from "@/components/content-planner/wizard/Step3IdeaCards";
 import { Step4Review } from "@/components/content-planner/wizard/Step4Review";
+import { WizardDraftShell } from "@/components/content-planner/wizard/WizardDraftShell";
+import { FocusChip } from "@/components/content-planner/wizard/FocusChip";
 import { ROTATION_SLOTS, type RotationSlotKey } from "@/lib/content-engine-validation";
+import { parsePropertyTypeFocus } from "@/lib/property-type-focus";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +44,7 @@ interface SearchParams {
   rotationSlot?: string;
   validatedIdea?: string;
   picked?: string;
+  propertyTypeFocus?: string;
 }
 
 export default async function WizardPage({
@@ -60,39 +66,53 @@ export default async function WizardPage({
 
   const params = await searchParams;
   const step = params.step ?? "1";
+  const focus = parsePropertyTypeFocus(params.propertyTypeFocus ?? null);
 
-  // Pre-req: validated upload. Surface a friendly CTA panel rather than
-  // 404-ing — the wizard is the discovery surface for "you need to upload
-  // first" for many members.
   const upload = await loadLatestValidatedUpload(userId);
   if (!upload) {
     return <NoUploadPanel />;
   }
 
+  const showChip = focus !== "Any" && step !== "1";
+  const changeHref = buildChangeHref(step, params);
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
         <WizardHeader step={step} />
-        <div className="mt-6">
-          {step === "1" && (
-            <Step1ModePicker showIdeaValidation={flags.tool_idea_validation} />
-          )}
-          {step === "2a" && <Step2AStoryLeads />}
-          {step === "2b" && flags.tool_idea_validation && <Step2BIdeaValidation />}
-          {step === "2b" && !flags.tool_idea_validation && <NotAvailableForYou />}
-          {step === "2c" && <Step2CRotationSlot />}
-          {step === "3" && (
-            <Step3IdeaCards
-              storyLeadId={params.storyLeadId}
-              rotationSlot={parseRotationSlot(params.rotationSlot)}
-              validatedIdea={params.validatedIdea}
-              uploadLabel={upload.label}
-              uploadMonthYear={upload.monthYear}
-            />
-          )}
-          {step === "4" && <Step4Review pickedKey={params.picked} />}
-          {!KNOWN_STEPS.has(step) && <UnknownStep />}
-        </div>
+        <WizardDraftShell>
+          <div className="mt-6">
+            {showChip && <FocusChip focus={focus} changeHref={changeHref} />}
+            {step === "1" && (
+              <Step1ModePicker showIdeaValidation={flags.tool_idea_validation} />
+            )}
+            {step === "2a" && <Step2AStoryLeads />}
+            {step === "2b" && flags.tool_idea_validation && (
+              <Step2BIdeaValidation initialFocus={focus} />
+            )}
+            {step === "2b" && !flags.tool_idea_validation && <NotAvailableForYou />}
+            {step === "2c" && (
+              <Step2CRotationSlot
+                initialFocus={focus}
+                preselectedSlot={parseRotationSlot(params.rotationSlot)}
+              />
+            )}
+            {step === "3" && (
+              <Step3IdeaCards
+                storyLeadId={params.storyLeadId}
+                rotationSlot={parseRotationSlot(params.rotationSlot)}
+                validatedIdea={params.validatedIdea}
+                propertyTypeFocus={focus}
+                uploadLabel={upload.label}
+                uploadMonthYear={upload.monthYear}
+              />
+            )}
+            {step === "4" && (
+              <Step4Review pickedKey={params.picked} propertyTypeFocus={focus} />
+            )}
+            {!KNOWN_STEPS.has(step) && <UnknownStep />}
+          </div>
+        </WizardDraftShell>
       </div>
     </div>
   );
@@ -105,6 +125,24 @@ function parseRotationSlot(v: string | undefined): RotationSlotKey | undefined {
     return v as RotationSlotKey;
   }
   return undefined;
+}
+
+/** Send "change" clicks on the chip back to the picker that owns the
+ *  current branch (Story Lead → 2a, Idea Validation → 2b, Theme → 2c). */
+function buildChangeHref(step: string, params: SearchParams): string {
+  if (params.storyLeadId || step === "2a") {
+    return "/member/content-planner/wizard?step=2a";
+  }
+  if (params.validatedIdea || step === "2b") {
+    return "/member/content-planner/wizard?step=2b";
+  }
+  if (params.rotationSlot || step === "2c") {
+    const q = params.rotationSlot
+      ? `&rotationSlot=${encodeURIComponent(params.rotationSlot)}`
+      : "";
+    return `/member/content-planner/wizard?step=2c${q}`;
+  }
+  return "/member/content-planner/wizard?step=1";
 }
 
 function WizardHeader({ step }: { step: string }) {

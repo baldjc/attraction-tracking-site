@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { FolderIcon, ClockIcon } from "@heroicons/react/24/outline";
 import PageHeader from "@/components/PageHeader";
+import { DraftsInProgressSection } from "@/components/my-work/DraftsInProgressSection";
 
 interface WorkItem {
   id: string;
@@ -70,6 +71,8 @@ export default function MyWorkPage() {
         title="My Work"
         description="Everything you've created, all in one place."
       />
+
+      <DraftsInProgressSection />
 
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
         <div className="flex gap-1 bg-[#111]/5 dark:bg-white/5 rounded-lg p-1 overflow-x-auto scrollbar-hide">

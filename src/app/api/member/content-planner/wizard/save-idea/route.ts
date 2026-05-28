@@ -49,12 +49,16 @@ interface SaveIdeaBody {
   propertyTypeFocus?: string | null;
 }
 
+// Wave 4 — vocabulary aligned with `src/lib/property-type-focus.ts`.
+// "Any" is the wizard-level sentinel for "no lock" and collapses to a null
+// `propertyTypeFocus` on ContentPlan. Multi-Family is intentionally absent
+// (Calgary CREB data has no Multi-Family rows). "All" is no longer accepted
+// from new clients but downstream readers still treat null as "All".
 const ALLOWED_PROPERTY_TYPE_FOCUS = new Set([
   "Detached",
   "Row/Townhouse",
   "Semi-Detached",
   "Apartment",
-  "All",
 ]);
 
 export async function POST(req: NextRequest) {
@@ -234,10 +238,11 @@ export async function POST(req: NextRequest) {
       linkedStoryLeadId: body.storyLeadId ?? null,
       researchNotes,
       // Wave 4 — per-plan propertyType focus (Script Builder v2 lock).
-      // Whitelisted to known values; anything else collapses to null
-      // (which Script Builder v2 interprets as "All" / no lock).
+      // Whitelisted to known values; "Any" and anything else collapses to
+      // null (Script Builder v2 interprets null as "All" / no lock).
       propertyTypeFocus:
         body.propertyTypeFocus &&
+        body.propertyTypeFocus !== "Any" &&
         ALLOWED_PROPERTY_TYPE_FOCUS.has(body.propertyTypeFocus)
           ? body.propertyTypeFocus
           : null,

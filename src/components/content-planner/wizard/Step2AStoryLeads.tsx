@@ -3,12 +3,15 @@
 /**
  * Wave 2 wizard — Step 2A: Story Lead browser.
  *
- * Fetches the user's latest validated upload's MarketStoryLead rows from
- * /api/member/content-planner/wizard/story-leads and renders them as
- * cards. "Use this Lead" → Step 3 with ?storyLeadId=<id> pinned.
+ * Wave 4 — on "Use this Lead", we infer the propertyTypeFocus from the
+ * lead's pattern + dataThreads text via `inferFocusFromStoryLeadText`. If
+ * exactly one of Detached / Semi-Detached / Row/Townhouse / Apartment is
+ * mentioned, the focus auto-locks; otherwise the URL carries no focus
+ * (= Any) and the member sees the unlocked chip downstream.
  */
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { inferFocusFromStoryLeadText } from "@/lib/property-type-focus";
 
 interface StoryLead {
   id: string;
@@ -111,6 +114,16 @@ export function Step2AStoryLeads() {
 function LeadCard({ lead }: { lead: StoryLead }) {
   const threads = parseStringList(lead.dataThreads);
   const personas = parseStringList(lead.suggestedSubPersonas);
+  const inferredFocus = inferFocusFromStoryLeadText(
+    [lead.pattern, lead.whyItMatters, ...threads].join(" "),
+  );
+  const params = new URLSearchParams({
+    step: "3",
+    storyLeadId: lead.id,
+  });
+  if (inferredFocus !== "Any") {
+    params.set("propertyTypeFocus", inferredFocus);
+  }
   return (
     <div className="flex flex-col rounded-lg border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
       <div className="flex items-start justify-between gap-2">
@@ -168,10 +181,15 @@ function LeadCard({ lead }: { lead: StoryLead }) {
             {p}
           </span>
         ))}
+        {inferredFocus !== "Any" && (
+          <span className="rounded-full border border-blue-300 bg-blue-50 px-2 py-0.5 text-blue-700 dark:border-blue-700 dark:bg-blue-900/40 dark:text-blue-200">
+            🔒 {inferredFocus}
+          </span>
+        )}
       </div>
       <div className="mt-5">
         <Link
-          href={`/member/content-planner/wizard?step=3&storyLeadId=${lead.id}`}
+          href={`/member/content-planner/wizard?${params.toString()}`}
           className="inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
         >
           Use this Lead →

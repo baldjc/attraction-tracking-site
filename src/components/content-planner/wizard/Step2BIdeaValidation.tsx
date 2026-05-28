@@ -2,18 +2,22 @@
 
 /**
  * Wave 2 wizard — Step 2B: Idea Validation Mode.
+ * Wave 4 — property-type focus picker (default Any) gates the request.
  *
  * Textarea → POST /api/ai-tools/idea-validation → render verdict.
  *  - supports / partial: "Develop this into ideas" → Step 3 with validatedIdea
  *  - contradicts:        list relatedAngles, each with "Try this instead"
  *                        which loads that angle back into the textarea
  *
- * <AiThinking mode="phase" /> driven by useAiThinking with fallback phases.
+ * The chosen focus is sent in the POST body so the validator can refuse to
+ * support drift off the lock, AND is forwarded in the Step 3 URL.
  */
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { AiThinking } from "@/components/ai/AiThinking";
 import { useAiThinking } from "@/lib/use-ai-thinking";
+import { PropertyTypePicker } from "./PropertyTypePicker";
+import type { PropertyTypeFocus } from "@/lib/property-type-focus";
 
 interface CitedFact {
   id: string;
@@ -47,9 +51,14 @@ const PHASES = [
   "Finding sharper angles…",
 ];
 
-export function Step2BIdeaValidation() {
+interface Props {
+  initialFocus?: PropertyTypeFocus;
+}
+
+export function Step2BIdeaValidation({ initialFocus = "Any" }: Props) {
   const router = useRouter();
   const [idea, setIdea] = useState("");
+  const [focus, setFocus] = useState<PropertyTypeFocus>(initialFocus);
   const [result, setResult] = useState<ValidationResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const thinking = useAiThinking({ mode: "phase", fallbackPhases: PHASES });
@@ -71,7 +80,7 @@ export function Step2BIdeaValidation() {
       const r = await fetch("/api/ai-tools/idea-validation", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ idea: idea.trim() }),
+        body: JSON.stringify({ idea: idea.trim(), propertyTypeFocus: focus }),
       });
       const j = (await r.json()) as ValidationResponse;
       if (!r.ok) {
@@ -87,9 +96,12 @@ export function Step2BIdeaValidation() {
   }
 
   function develop(text: string) {
-    router.push(
-      `/member/content-planner/wizard?step=3&validatedIdea=${encodeURIComponent(text)}`,
-    );
+    const params = new URLSearchParams({
+      step: "3",
+      validatedIdea: text,
+    });
+    if (focus !== "Any") params.set("propertyTypeFocus", focus);
+    router.push(`/member/content-planner/wizard?${params.toString()}`);
   }
 
   return (
@@ -118,6 +130,17 @@ export function Step2BIdeaValidation() {
         <div className="mt-2 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
           <span>{idea.length} / {MAX_LEN}</span>
         </div>
+
+        <div className="mt-4">
+          <PropertyTypePicker
+            value={focus}
+            onChange={setFocus}
+            disabled={thinking.isThinking}
+            label="Property type focus"
+            helper="If you pick a specific type, the validator will refuse to support angles that pivot off it — and downstream ideas + scripts will stay locked to it."
+          />
+        </div>
+
         {error && (
           <div className="mt-3 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-800 dark:border-red-700 dark:bg-red-950/40 dark:text-red-200">
             {error}

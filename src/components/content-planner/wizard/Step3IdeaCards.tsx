@@ -2,11 +2,10 @@
 
 /**
  * Wave 2 wizard — Step 3: Generate idea cards.
- *
- * Reads pinned context from URL (?storyLeadId | ?rotationSlot | ?validatedIdea),
- * POSTs to /api/ai-tools/content-engine-v2 with count=5, renders the resulting
- * cards. Picking a card stashes it in sessionStorage and advances to Step 4
- * with the storage key in the URL (so refresh-in-tab is safe).
+ * Wave 4 — forwards `propertyTypeFocus` to the generator so the validator
+ * gate refuses any card that drifts off the lock, AND stashes the focus
+ * inside the picked-card session payload so Step 4 → save-idea pins it on
+ * the resulting ContentPlan row.
  *
  * <AiThinking mode="phase" /> driven by useAiThinking with fallback phases
  * sized for the typical 30-60s wall time we observed in sanity runs.
@@ -21,6 +20,7 @@ import {
   rotationSlotToTheme,
   type RotationSlotKey,
 } from "@/lib/content-engine-validation";
+import type { PropertyTypeFocus } from "@/lib/property-type-focus";
 
 interface IdeaCard {
   title: string;
@@ -53,6 +53,7 @@ interface Props {
   storyLeadId?: string;
   rotationSlot?: RotationSlotKey;
   validatedIdea?: string;
+  propertyTypeFocus: PropertyTypeFocus;
   uploadLabel: string;
   uploadMonthYear: string;
 }
@@ -66,10 +67,22 @@ const PHASES = [
   "Finalizing the batch…",
 ];
 
+/** Stable sessionStorage key for the wizard's last generated batch — read
+ *  by WizardDraftShell so a refreshed/restored draft can rehydrate the
+ *  cards without re-paying for Claude. */
+export const WIZARD_BATCH_SESSION_KEY = "wizard:lastBatch";
+
+/** Window event name. Steps fire this after writing rich state into
+ *  sessionStorage (batch arrived, validation context updated, etc.) so
+ *  WizardDraftShell knows to recompute its snapshot and autosave even
+ *  though the URL didn't change. */
+export const WIZARD_DRAFT_DIRTY_EVENT = "wizard:draft-dirty";
+
 export function Step3IdeaCards({
   storyLeadId,
   rotationSlot,
   validatedIdea,
+  propertyTypeFocus,
   uploadLabel,
   uploadMonthYear,
 }: Props) {
@@ -82,16 +95,6 @@ export function Step3IdeaCards({
     fallbackIntervalMs: 5000,
   });
   useEffect(() => {
-    // StrictMode-safe pairing of thinking.start/stop with terminal states.
-    //
-    // Under React 18 StrictMode the effect runs mount → cleanup → mount.
-    // Calling thinking.start() synchronously on mount makes the spinner
-    // appear immediately (no blank dead period). thinking.stop() is placed
-    // on each TERMINAL branch (got response / got network error) — never in
-    // a finally block — because the abort path means "I'm being replaced by
-    // a remount that already called start() and owns the indicator now".
-    // Stopping in finally on the abort path would race with mount #2's
-    // start() and hide the spinner entirely (the bug we just had).
     thinking.start();
     const ctrl = new AbortController();
     (async () => {
@@ -104,6 +107,7 @@ export function Step3IdeaCards({
             storyLeadId: storyLeadId ?? undefined,
             rotationSlot: rotationSlot ?? undefined,
             validatedIdea: validatedIdea ?? undefined,
+            propertyTypeFocus,
           }),
           signal: ctrl.signal,
         });
@@ -114,6 +118,25 @@ export function Step3IdeaCards({
           setError(j.message ?? j.error ?? `Generation failed (${r.status})`);
         } else {
           setResult(j);
+          // Stash for draft rehydration / My Work draft preview, then
+          // poke WizardDraftShell so the new batch gets autosaved into
+          // the draft row (URL didn't change, so the shell wouldn't
+          // otherwise notice). Listener is set up in WizardDraftShell.
+          try {
+            sessionStorage.setItem(
+              WIZARD_BATCH_SESSION_KEY,
+              JSON.stringify({
+                ideas: j.ideas,
+                upload: j.upload,
+                storyLeadId: j.storyLeadId,
+                propertyTypeFocus,
+                savedAt: Date.now(),
+              }),
+            );
+            window.dispatchEvent(new CustomEvent(WIZARD_DRAFT_DIRTY_EVENT));
+          } catch {
+            /* quota — best effort */
+          }
         }
         thinking.stop();
       } catch (e) {
@@ -137,9 +160,17 @@ export function Step3IdeaCards({
         idea,
         sourceUploadId: result.upload.id,
         storyLeadId: result.storyLeadId,
+        propertyTypeFocus,
       }),
     );
-    router.push(`/member/content-planner/wizard?step=4&picked=${encodeURIComponent(key)}`);
+    const params = new URLSearchParams({
+      step: "4",
+      picked: key,
+    });
+    if (propertyTypeFocus !== "Any") {
+      params.set("propertyTypeFocus", propertyTypeFocus);
+    }
+    router.push(`/member/content-planner/wizard?${params.toString()}`);
   }
 
   if (thinking.isThinking) {
