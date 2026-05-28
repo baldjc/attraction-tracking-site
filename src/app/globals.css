@@ -259,8 +259,13 @@ html.dark textarea {
   --ai-thinking-azure: #6ba3c7;
   --ai-thinking-azure-soft: rgba(107, 163, 199, 0.18);
   --ai-thinking-emerald: #10b981;
-  --ai-thinking-ink: #0f1a26;
-  --ai-thinking-ink-2: #1a2738;
+  /* Surface colors for Mode B / Mode C cards. Aligned to --abv-ink (#1A1A1A)
+     so the dark thinking surface matches the sidebar and Content Editor hero
+     instead of drifting into a navy/blue tint. ink-2 is a neutral elevated
+     shade used by Mode A in dark mode — kept slightly lighter for hierarchy
+     but stays in the neutral-gray family (no blue cast). */
+  --ai-thinking-ink: var(--abv-ink);
+  --ai-thinking-ink-2: #262626;
   --ai-thinking-ink-border: rgba(255, 255, 255, 0.08);
   --ai-thinking-ink-text: #e2e8f0;
   --ai-thinking-ink-muted: rgba(226, 232, 240, 0.55);
