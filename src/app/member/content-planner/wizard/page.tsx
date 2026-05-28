@@ -22,7 +22,7 @@
  */
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import { auth } from "@/lib/auth";
+import { resolveUserFromSession } from "@/lib/session-utils";
 import { getFeatureFlags } from "@/lib/feature-flags";
 import { loadLatestValidatedUpload } from "@/lib/content-engine-context";
 import { Step1ModePicker } from "@/components/content-planner/wizard/Step1ModePicker";
@@ -52,12 +52,18 @@ export default async function WizardPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
-  const session = await auth();
-  const userId = session?.user?.id;
-  const userRole = session?.user?.role ?? null;
-  if (!userId) {
+  // Impersonation-aware resolution. The wizard's "Upload your market data
+  // first" gate keys on the resolved member's latest validated upload, so we
+  // MUST honour the admin/editor impersonation cookie here — otherwise an
+  // admin viewing a member's wizard reads the admin account (which has no
+  // uploads) and wrongly hits the gate. `role` is the actual signed-in
+  // account's role, which keeps the feature-flag admin/editor bypass intact.
+  const resolved = await resolveUserFromSession();
+  if (!resolved) {
     redirect("/login?callbackUrl=/member/content-planner/wizard");
   }
+  const userId = resolved.id;
+  const userRole = resolved.role;
 
   const flags = await getFeatureFlags({ userId, userRole });
   if (!flags.tool_content_engine_v2) {

@@ -19,7 +19,7 @@
  */
 import { NextResponse, type NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { resolveUserFromSession } from "@/lib/session-utils";
 import { getFeatureFlags } from "@/lib/feature-flags";
 import { parsePropertyTypeFocus } from "@/lib/property-type-focus";
 import { deriveLeadPropertyTypeLock } from "@/lib/content-engine-context";
@@ -43,12 +43,14 @@ interface DraftBody {
 const KNOWN_STEPS = new Set(["1", "2a", "2b", "2c", "3", "4"]);
 
 async function gateOrError() {
-  const session = await auth();
-  const userId = session?.user?.id;
-  const userRole = session?.user?.role ?? null;
-  if (!userId) {
+  // Impersonation-aware so wizard drafts are owned by the impersonated
+  // member, not the admin account, during admin/editor impersonation.
+  const resolved = await resolveUserFromSession();
+  if (!resolved) {
     return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
   }
+  const userId = resolved.id;
+  const userRole = resolved.role;
   const flags = await getFeatureFlags({ userId, userRole });
   if (!flags.tool_content_engine_v2) {
     return { error: NextResponse.json({ error: "Not enabled" }, { status: 404 }) };

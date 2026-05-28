@@ -17,7 +17,7 @@
  */
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import { auth } from "@/lib/auth";
+import { resolveUserFromSession } from "@/lib/session-utils";
 import prisma from "@/lib/prisma";
 import { getFeatureFlags } from "@/lib/feature-flags";
 import { ScriptWizardClient } from "@/components/ai-tools/script-builder-v2/ScriptWizardClient";
@@ -36,12 +36,14 @@ export default async function ScriptWizardPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
-  const session = await auth();
-  const userId = session?.user?.id;
-  const userRole = session?.user?.role ?? null;
-  if (!userId) {
+  // Impersonation-aware so the Script Builder loads the impersonated
+  // member's content plan, not the admin account's (which wouldn't own it).
+  const resolved = await resolveUserFromSession();
+  if (!resolved) {
     redirect("/login?callbackUrl=/member/content-planner");
   }
+  const userId = resolved.id;
+  const userRole = resolved.role;
 
   const flags = await getFeatureFlags({ userId, userRole });
   if (!flags.tool_script_builder_v2) {

@@ -14,7 +14,7 @@
  */
 import { NextResponse, type NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { resolveUserFromSession } from "@/lib/session-utils";
 import { getFeatureFlags } from "@/lib/feature-flags";
 import { getCostCapStatus, logUsage } from "@/lib/ai-tool-cost";
 import {
@@ -62,12 +62,14 @@ const ALLOWED_PROPERTY_TYPE_FOCUS = new Set([
 ]);
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  const userId = session?.user?.id;
-  const userRole = session?.user?.role ?? null;
-  if (!userId) {
+  // Impersonation-aware so Step 4 save verifies upload ownership and
+  // writes the content plan under the impersonated member, not the admin.
+  const resolved = await resolveUserFromSession();
+  if (!resolved) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const userId = resolved.id;
+  const userRole = resolved.role;
 
   const flags = await getFeatureFlags({ userId, userRole });
   if (!flags.tool_content_engine_v2) {

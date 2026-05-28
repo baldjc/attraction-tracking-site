@@ -9,19 +9,22 @@
  */
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { resolveUserFromSession } from "@/lib/session-utils";
 import { getFeatureFlags } from "@/lib/feature-flags";
 import { loadLatestValidatedUpload } from "@/lib/content-engine-context";
 
 export const runtime = "nodejs";
 
 export async function GET() {
-  const session = await auth();
-  const userId = session?.user?.id;
-  const userRole = session?.user?.role ?? null;
-  if (!userId) {
+  // Impersonation-aware — must resolve to the impersonated member so the
+  // wizard's Step 2A story leads load from the member's upload, not the
+  // admin account (which has none). Mirrors the wizard page gate fix.
+  const resolved = await resolveUserFromSession();
+  if (!resolved) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const userId = resolved.id;
+  const userRole = resolved.role;
 
   const flags = await getFeatureFlags({ userId, userRole });
   if (!flags.tool_content_engine_v2) {

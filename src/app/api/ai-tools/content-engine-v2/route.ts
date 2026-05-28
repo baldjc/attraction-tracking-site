@@ -14,7 +14,7 @@
  */
 import { NextResponse, type NextRequest } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
-import { auth } from "@/lib/auth";
+import { resolveUserFromSession } from "@/lib/session-utils";
 import { getFeatureFlags } from "@/lib/feature-flags";
 import { getCostCapStatus, logUsage } from "@/lib/ai-tool-cost";
 import {
@@ -65,12 +65,15 @@ interface BatchResponse {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  const userId = session?.user?.id;
-  const userRole = session?.user?.role ?? null;
-  if (!userId) {
+  // Impersonation-aware — resolve to the impersonated member so idea
+  // generation reads the member's validated upload/facts and attributes
+  // cost-cap usage to the member, not the admin account.
+  const resolved = await resolveUserFromSession();
+  if (!resolved) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const userId = resolved.id;
+  const userRole = resolved.role;
 
   const flags = await getFeatureFlags({ userId, userRole });
   if (!flags.tool_content_engine_v2) {
