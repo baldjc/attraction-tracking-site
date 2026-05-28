@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import { prisma } from "@/lib/prisma";
+import { withRouteErrorHandling } from "@/lib/api-error-wrapper";
 
-export async function GET() {
+export const GET = withRouteErrorHandling("member/announcements", GET_impl);
+
+async function GET_impl() {
   const user = await resolveUserFromSession();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -24,7 +27,9 @@ export async function GET() {
   return NextResponse.json({ announcements: unseen });
 }
 
-export async function POST(req: Request) {
+export const POST = withRouteErrorHandling("member/announcements", POST_impl);
+
+async function POST_impl(req: Request) {
   const user = await resolveUserFromSession();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import prisma from "@/lib/prisma";
+import { withRouteErrorHandling } from "@/lib/api-error-wrapper";
 import { getChannelInfo, getTopVideosByViewCount } from "@/lib/youtube";
 
 function resolveIdentifier(member: {
@@ -21,7 +22,9 @@ function resolveIdentifier(member: {
   return null;
 }
 
-export async function GET() {
+export const GET = withRouteErrorHandling("member/top-videos", GET_impl);
+
+async function GET_impl() {
   const user = await resolveUserFromSession();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 

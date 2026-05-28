@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import prisma from "@/lib/prisma";
+import { withRouteErrorHandling } from "@/lib/api-error-wrapper";
 
 // Human-readable label for each principle key. Matches snake_case keys
 // produced by the audit engine (src/lib/audit-engine.ts).
@@ -25,7 +26,9 @@ const PRINCIPLE_LABELS: Record<string, string> = {
 
 type ScoreEntry = { score: number | null; evidence?: string };
 
-export async function GET() {
+export const GET = withRouteErrorHandling("member/dashboard/next-step", GET_impl);
+
+async function GET_impl() {
   // Impersonation-aware so the next-step suggestion resolves to the member.
   const user = await resolveUserFromSession();
   if (!user) {

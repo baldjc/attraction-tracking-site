@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import prisma from "@/lib/prisma";
+import { withRouteErrorHandling } from "@/lib/api-error-wrapper";
 import {
   fetchContactByEmail,
   fetchLocationCustomFields,
@@ -67,7 +68,9 @@ function pct(leads: number, clicks: number) {
   return clicks === 0 ? 0 : Math.round((leads / clicks) * 100);
 }
 
-export async function GET() {
+export const GET = withRouteErrorHandling("member/dashboard", GET_impl);
+
+async function GET_impl() {
   const user = await resolveUserFromSession();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 

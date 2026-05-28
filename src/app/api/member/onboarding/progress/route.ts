@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { resolveUserFromSession } from "@/lib/session-utils";
+import { withRouteErrorHandling } from "@/lib/api-error-wrapper";
 
 /**
  * PATCH /api/member/onboarding/progress
@@ -14,7 +15,9 @@ import { resolveUserFromSession } from "@/lib/session-utils";
  *
  * Either field on its own is valid; passing neither is a 400.
  */
-export async function PATCH(req: NextRequest) {
+export const PATCH = withRouteErrorHandling("member/onboarding/progress", PATCH_impl);
+
+async function PATCH_impl(req: NextRequest) {
   const user = await resolveUserFromSession();
   if (!user) {
     return Response.json({ error: "unauthorized" }, { status: 401 });

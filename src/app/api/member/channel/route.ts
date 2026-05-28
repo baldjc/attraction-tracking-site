@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import prisma from "@/lib/prisma";
+import { withRouteErrorHandling } from "@/lib/api-error-wrapper";
 import { fetchContactByEmail, updateContactCustomField, GHL_FIELDS } from "@/lib/ghl";
 import { getChannelInfo } from "@/lib/youtube";
 
-export async function GET() {
+export const GET = withRouteErrorHandling("member/channel", GET_impl);
+
+async function GET_impl() {
   const user = await resolveUserFromSession();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -43,7 +46,9 @@ export async function GET() {
   });
 }
 
-export async function PUT(req: NextRequest) {
+export const PUT = withRouteErrorHandling("member/channel", PUT_impl);
+
+async function PUT_impl(req: NextRequest) {
   const user = await resolveUserFromSession();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 

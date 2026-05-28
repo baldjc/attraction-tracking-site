@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import prisma from "@/lib/prisma";
+import { withRouteErrorHandling } from "@/lib/api-error-wrapper";
 import { getChannelInfo } from "@/lib/youtube";
 
-export async function GET() {
+export const GET = withRouteErrorHandling("member/scores", GET_impl);
+
+async function GET_impl() {
   // Impersonation-aware so scores resolve to the impersonated member.
   const user = await resolveUserFromSession();
   if (!user) {
