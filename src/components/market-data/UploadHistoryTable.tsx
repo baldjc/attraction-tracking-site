@@ -79,6 +79,9 @@ export default function UploadHistoryTable({ initial }: Props) {
   const [errorModal, setErrorModal] = useState<ErrorModalState | null>(null);
   const [retrying, setRetrying] = useState<Set<string>>(new Set());
   const [toast, setToast] = useState<{ kind: "error" | "info"; msg: string } | null>(null);
+  const [deleteModal, setDeleteModal] = useState<Row | null>(null);
+  const [deleting, setDeleting] = useState<Set<string>>(new Set());
+  const [removingIds, setRemovingIds] = useState<Set<string>>(new Set());
 
   // One-shot "row appeared" shimmer for just-uploaded rows.
   useEffect(() => {
@@ -207,6 +210,61 @@ export default function UploadHistoryTable({ initial }: Props) {
     pollOnce,
   ]);
 
+  const onDelete = useCallback(
+    async (row: Row) => {
+      if (deleting.has(row.id)) return;
+      setDeleting((prev) => new Set(prev).add(row.id));
+      try {
+        const res = await fetch(`/api/member/market-data/upload/${row.id}`, {
+          method: "DELETE",
+        });
+        if (!res.ok) {
+          const j = (await res.json().catch(() => ({}))) as {
+            message?: string;
+            error?: string;
+          };
+          setToast({
+            kind: "error",
+            msg:
+              j.message ??
+              j.error ??
+              (res.status === 403
+                ? "You don't have permission to delete this upload."
+                : res.status === 404
+                  ? "This upload no longer exists."
+                  : "Couldn't delete the upload. Try again."),
+          });
+          return;
+        }
+        setDeleteModal(null);
+        // Fade out, then remove from the table.
+        setRemovingIds((prev) => new Set(prev).add(row.id));
+        setTimeout(() => {
+          setRows((prev) => prev.filter((r) => r.id !== row.id));
+          setRemovingIds((prev) => {
+            const next = new Set(prev);
+            next.delete(row.id);
+            return next;
+          });
+        }, 250);
+        // Notify other listeners (e.g. server-rendered banners) so they refetch.
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("market-data:deleted", { detail: { id: row.id } }));
+        }
+        setToast({ kind: "info", msg: "Upload deleted." });
+      } catch (e) {
+        setToast({ kind: "error", msg: (e as Error).message || "Network error." });
+      } finally {
+        setDeleting((prev) => {
+          const next = new Set(prev);
+          next.delete(row.id);
+          return next;
+        });
+      }
+    },
+    [deleting],
+  );
+
   const onRetry = useCallback(
     async (row: Row) => {
       if (retrying.has(row.id)) return;
@@ -281,17 +339,27 @@ export default function UploadHistoryTable({ initial }: Props) {
               <th className="px-3 py-2 font-medium text-right">Rows</th>
               <th className="px-3 py-2 font-medium">Status</th>
               <th className="px-3 py-2 font-medium">Result</th>
+              <th className="px-3 py-2 font-medium text-right">
+                <span className="sr-only">Actions</span>
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
             {rows.map((r) => {
               const retryCount = r.retryCount ?? 0;
               const isRetrying = retrying.has(r.id);
+              const isDeleting = deleting.has(r.id);
+              const isRemoving = removingIds.has(r.id);
+              const rowClasses = [
+                "group transition-opacity duration-200",
+                shimmerIds.has(r.id) ? "animate-pulse bg-blue-50/50 dark:bg-blue-900/10" : "",
+                isRemoving || isDeleting ? "opacity-40" : "",
+                "hover:bg-amber-50/40 dark:hover:bg-amber-900/10",
+              ]
+                .filter(Boolean)
+                .join(" ");
               return (
-                <tr
-                  key={r.id}
-                  className={shimmerIds.has(r.id) ? "animate-pulse bg-blue-50/50 dark:bg-blue-900/10" : ""}
-                >
+                <tr key={r.id} className={rowClasses}>
                   <td className="px-3 py-2 text-gray-900 dark:text-gray-100">{r.label}</td>
                   <td className="px-3 py-2 text-gray-600 dark:text-gray-400 truncate max-w-xs">
                     {r.csvFileName}
@@ -345,6 +413,56 @@ export default function UploadHistoryTable({ initial }: Props) {
                       <span className="text-gray-400 dark:text-gray-500">—</span>
                     )}
                   </td>
+                  <td className="px-3 py-2 text-right">
+                    <button
+                      type="button"
+                      onClick={() => setDeleteModal(r)}
+                      disabled={isDeleting || isRemoving}
+                      aria-label={`Delete upload ${r.csvFileName}`}
+                      title="Delete upload"
+                      className="inline-flex h-7 w-7 items-center justify-center rounded-md text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50 dark:text-gray-500 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+                    >
+                      {isDeleting ? (
+                        <svg
+                          className="h-4 w-4 animate-spin"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          aria-hidden="true"
+                        >
+                          <circle
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="3"
+                            className="opacity-25"
+                          />
+                          <path
+                            d="M4 12a8 8 0 018-8"
+                            stroke="currentColor"
+                            strokeWidth="3"
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                      ) : (
+                        <svg
+                          className="h-4 w-4"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          aria-hidden="true"
+                        >
+                          <path d="M3 6h18" />
+                          <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                          <path d="M10 11v6M14 11v6" />
+                        </svg>
+                      )}
+                    </button>
+                  </td>
                 </tr>
               );
             })}
@@ -358,6 +476,17 @@ export default function UploadHistoryTable({ initial }: Props) {
           isRetrying={retrying.has(errorModal.row.id)}
           onClose={() => setErrorModal(null)}
           onRetry={() => onRetry(errorModal.row)}
+        />
+      )}
+
+      {deleteModal && (
+        <DeleteModal
+          row={deleteModal}
+          isDeleting={deleting.has(deleteModal.id)}
+          onClose={() => {
+            if (!deleting.has(deleteModal.id)) setDeleteModal(null);
+          }}
+          onConfirm={() => onDelete(deleteModal)}
         />
       )}
 
@@ -422,6 +551,85 @@ function FailedCell({
           Contact support
         </a>
       )}
+    </div>
+  );
+}
+
+function DeleteModal({
+  row,
+  isDeleting,
+  onClose,
+  onConfirm,
+}: {
+  row: Row;
+  isDeleting: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
+  const factCount = row.factCount ?? 0;
+  const leadCount = row.storyLeadCount ?? 0;
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl dark:bg-gray-900"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+          Delete this upload?
+        </h3>
+        <p className="mt-2 text-sm text-gray-700 dark:text-gray-300">
+          <span className="font-medium">{row.csvFileName}</span> will be removed
+          along with its {factCount.toLocaleString()} extracted{" "}
+          {factCount === 1 ? "fact" : "facts"} and {leadCount.toLocaleString()}{" "}
+          {leadCount === 1 ? "lead" : "leads"}. This cannot be undone.
+        </p>
+        <div className="mt-5 flex flex-wrap items-center justify-end gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isDeleting}
+            className="rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={isDeleting}
+            className="inline-flex items-center gap-2 rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-red-400"
+          >
+            {isDeleting && (
+              <svg
+                className="h-3.5 w-3.5 animate-spin"
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden="true"
+              >
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  className="opacity-30"
+                />
+                <path
+                  d="M4 12a8 8 0 018-8"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                />
+              </svg>
+            )}
+            {isDeleting ? "Deleting…" : "Delete"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
