@@ -14,6 +14,7 @@ import {
   parseCsvPreview,
   detectMonthYearFromFilename,
   writeUploadFile,
+  runPreflight,
 } from "@/lib/market-csv";
 import { validateUploadAsync } from "@/lib/fact-validator";
 import {
@@ -129,11 +130,51 @@ export async function POST(req: NextRequest) {
     storagePath: string;
   }> = [];
 
+  // Phase A — parse, preflight, and resolve month/year for EVERY file before
+  // any storage write happens. This way a preflight failure on file N never
+  // leaves files 1..N-1 as orphan blobs in Object Storage. We intentionally
+  // do NOT retain the parsed Buffer here — at tier-cap batch sizes (up to 25
+  // files of 25K rows each) that would balloon peak memory. The File ref is
+  // still backed by the multipart payload, so Phase B re-reads it cheaply.
+  const validated: Array<{
+    file: File;
+    rowCount: number;
+    monthYear: string;
+    label: string;
+    id: string;
+  }> = [];
+
   for (let i = 0; i < files.length; i++) {
     const file = files[i];
     const buf = Buffer.from(await file.arrayBuffer());
     const preview = parseCsvPreview(buf);
-    const id = randomUUID();
+
+    // Deterministic preflight — block missing-column / empty / all-unknown-status
+    // CSVs BEFORE we write to storage or burn ~$2 on Claude validator time.
+    const pf = runPreflight(preview);
+    console.log(
+      `[mdv preflight] result=${pf.ok ? "ok" : pf.code} userId=${userId} ` +
+        `filename=${JSON.stringify(file.name)} rowCount=${pf.rowCount} ` +
+        `headersCount=${pf.headersCount} statusRecognizedRatio=${
+          pf.statusRecognizedRatio === null
+            ? "null"
+            : pf.statusRecognizedRatio.toFixed(2)
+        }`,
+    );
+    if (!pf.ok) {
+      return Response.json(
+        {
+          error: "preflight_failed",
+          code: pf.code,
+          filename: file.name,
+          message: pf.message,
+          detail: pf.detail,
+          suggestion: pf.suggestion,
+        },
+        { status: 400 },
+      );
+    }
+
     const detected = detectMonthYearFromFilename(file.name);
     const monthYear =
       (monthYears[i] && monthYears[i].trim()) || detected || null;
@@ -152,17 +193,32 @@ export async function POST(req: NextRequest) {
         { status: 400 },
       );
     }
-    const storagePath = await writeUploadFile(userId, id, buf);
+
     const label =
       (labels[i] && labels[i].trim()) ||
       monthYear ||
       file.name.replace(/\.[^.]+$/, "");
-    prepared.push({
-      id,
+    validated.push({
       file,
       rowCount: preview.rowCount,
       monthYear,
       label,
+      id: randomUUID(),
+    });
+  }
+
+  // Phase B — every file passed preflight + month resolution, safe to persist.
+  // Re-read each file's bytes just-in-time so we never hold more than one
+  // buffer in memory at once, even on max-tier 25-file backfills.
+  for (const v of validated) {
+    const writeBuf = Buffer.from(await v.file.arrayBuffer());
+    const storagePath = await writeUploadFile(userId, v.id, writeBuf);
+    prepared.push({
+      id: v.id,
+      file: v.file,
+      rowCount: v.rowCount,
+      monthYear: v.monthYear,
+      label: v.label,
       storagePath,
     });
   }

@@ -169,6 +169,146 @@ export function parseCsvPreview(buf: Buffer): ParsedCsvPreview {
   };
 }
 
+/**
+ * Deterministic preflight check on a parsed CSV. Catches the three failure
+ * modes that otherwise burn $1–2.50 of Claude validator time:
+ *   - MISSING_COLUMNS: header row doesn't contain the required fields
+ *   - STATUS_VALUES_UNRECOGNIZED: status column is all codes (S/C/A) etc.
+ *   - EMPTY_FILE: no data rows at all
+ * Column matching is intentionally flexible (lowercased `includes`) so we
+ * don't false-positive on regional MLS naming.
+ */
+export interface PreflightOk {
+  ok: true;
+  rowCount: number;
+  headersCount: number;
+  statusRecognizedRatio: number | null;
+}
+export interface PreflightFail {
+  ok: false;
+  code: "MISSING_COLUMNS" | "STATUS_VALUES_UNRECOGNIZED" | "EMPTY_FILE";
+  message: string;
+  detail: string;
+  suggestion?: string;
+  rowCount: number;
+  headersCount: number;
+  statusRecognizedRatio: number | null;
+}
+export type PreflightResult = PreflightOk | PreflightFail;
+
+const REQUIRED_COLUMN_CANDIDATES: Record<string, string[]> = {
+  status: ["status"],
+  propertyType: ["property type", "prop type", "type", "style"],
+  salePrice: ["sold price", "sale price", "sold $", "closed price", "close price"],
+  listPrice: ["list price", "original list price", "asking price"],
+  dom: ["dom", "days on market", "days"],
+  neighbourhood: ["community", "neighbourhood", "neighborhood", "area", "subdivision"],
+  saleDate: ["sold date", "sale date", "close date", "closed date"],
+};
+const REQUIRED_LABELS: Record<string, string> = {
+  status: "Status",
+  propertyType: "Property Type",
+  salePrice: "Sale Price",
+  listPrice: "List Price",
+  dom: "Days on Market",
+  neighbourhood: "Neighbourhood",
+  saleDate: "Sale Date",
+};
+const KNOWN_STATUS_WORDS = [
+  "sold",
+  "closed",
+  "active",
+  "pending",
+  "expired",
+  "withdrawn",
+  "terminated",
+];
+
+export function runPreflight(preview: ParsedCsvPreview): PreflightResult {
+  const headersLower = preview.headers.map((h) => h.toLowerCase().trim());
+  const headersCount = preview.headers.length;
+
+  // 1. Required columns (flexible matching)
+  const missing: string[] = [];
+  for (const [field, candidates] of Object.entries(REQUIRED_COLUMN_CANDIDATES)) {
+    const hit = candidates.some((c) => headersLower.some((h) => h.includes(c)));
+    if (!hit) missing.push(field);
+  }
+  if (missing.length > 0) {
+    return {
+      ok: false,
+      code: "MISSING_COLUMNS",
+      message: `Missing required columns: ${missing
+        .map((m) => REQUIRED_LABELS[m])
+        .join(", ")}.`,
+      detail:
+        headersCount === 0
+          ? "We couldn't read any header row from this file."
+          : `Columns we did find: ${preview.headers.join(", ")}.`,
+      suggestion:
+        headersCount === 0
+          ? "Make sure row 1 of your CSV is a header row (column names), not data."
+          : "Re-export from your MLS with the missing columns included, or contact support if your export uses different names.",
+      rowCount: preview.rowCount,
+      headersCount,
+      statusRecognizedRatio: null,
+    };
+  }
+
+  // 2. Empty file (no data rows after headers)
+  if (preview.rowCount === 0) {
+    return {
+      ok: false,
+      code: "EMPTY_FILE",
+      message: "No data rows found.",
+      detail: "This file has a header row but no listing rows beneath it.",
+      suggestion:
+        "Re-export the month from your MLS and check that filters didn't exclude every row.",
+      rowCount: 0,
+      headersCount,
+      statusRecognizedRatio: null,
+    };
+  }
+
+  // 3. Status values look recognizable
+  const statusIdx = headersLower.findIndex((h) =>
+    REQUIRED_COLUMN_CANDIDATES.status.some((c) => h.includes(c)),
+  );
+  let statusRecognizedRatio: number | null = null;
+  if (statusIdx >= 0 && preview.sampleRows.length > 0) {
+    const values = preview.sampleRows
+      .map((r) => (r[statusIdx] ?? "").toString().toLowerCase().trim())
+      .filter((v) => v.length > 0);
+    if (values.length > 0) {
+      const recognized = values.filter((v) =>
+        KNOWN_STATUS_WORDS.some((k) => v.includes(k)),
+      );
+      statusRecognizedRatio = recognized.length / values.length;
+      if (statusRecognizedRatio < 0.5) {
+        const sample = Array.from(new Set(values)).slice(0, 5);
+        return {
+          ok: false,
+          code: "STATUS_VALUES_UNRECOGNIZED",
+          message: "Status column values aren't recognized.",
+          detail: `Found values like: ${sample.join(", ")}. Expected words like Sold, Closed, Active, Pending.`,
+          suggestion:
+            "Check that your Status column uses full words, not codes like S/C/A. Re-export with text values if your MLS allows.",
+          rowCount: preview.rowCount,
+          headersCount,
+          statusRecognizedRatio,
+        };
+      }
+    }
+  }
+
+  return {
+    ok: true,
+    rowCount: preview.rowCount,
+    headersCount,
+    statusRecognizedRatio,
+  };
+}
+
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 export interface ColumnMappingSuggestion {

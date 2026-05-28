@@ -9,6 +9,7 @@ import {
 import UploadPanel from "@/components/market-data/UploadPanel";
 import UploadHistoryTable from "@/components/market-data/UploadHistoryTable";
 import UploadProgressBanner from "@/components/market-data/UploadProgressBanner";
+import CsvRulesCard from "@/components/market-data/CsvRulesCard";
 
 export const dynamic = "force-dynamic";
 
@@ -79,6 +80,8 @@ export default async function MarketDataPage() {
       <UploadProgressBanner
         uploads={uploads.map((u) => ({ id: u.id, status: u.status }))}
       />
+
+      <CsvRulesCard />
 
       <UploadPanel
         existingMapping={config.columnMapping}

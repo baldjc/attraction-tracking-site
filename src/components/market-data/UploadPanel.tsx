@@ -147,6 +147,13 @@ export default function UploadPanel({
   const [proposedHeaders, setProposedHeaders] = useState<string[]>([]);
   const [proposedMapping, setProposedMapping] = useState<ColumnMapping>({});
   const [conflicts, setConflicts] = useState<ConflictRow[]>([]);
+  const [preflightError, setPreflightError] = useState<{
+    code: string;
+    filename: string;
+    message: string;
+    detail: string;
+    suggestion?: string;
+  } | null>(null);
   const [replacingId, setReplacingId] = useState<string | null>(null);
   /** Member's recent per-month validator cost, captured from the 409 payload
    *  on a duplicate-month conflict. Drives the dialog's $ estimate. */
@@ -319,6 +326,7 @@ export default function UploadPanel({
     setStage("uploading");
     setError(null);
     setConflicts([]);
+    setPreflightError(null);
     setLastMapping(mapping);
     uploadThinking.start();
     try {
@@ -334,6 +342,21 @@ export default function UploadPanel({
         method: "POST",
         body: fd,
       });
+      if (res.status === 400) {
+        const j = await res.json().catch(() => ({}));
+        if (j?.error === "preflight_failed" && j.code && j.message) {
+          setPreflightError({
+            code: j.code,
+            filename: j.filename || "your CSV",
+            message: j.message,
+            detail: j.detail || "",
+            suggestion: j.suggestion,
+          });
+          setStage(hasColumnMapping ? "picking" : "mapping");
+          return;
+        }
+        throw new Error(j.message || j.error || "Upload failed.");
+      }
       if (res.status === 409) {
         const j = await res.json().catch(() => ({}));
         if (j?.error === "duplicate_month" && Array.isArray(j.conflicts)) {
@@ -472,6 +495,57 @@ export default function UploadPanel({
               className="block w-full text-sm text-gray-700 dark:text-gray-300 file:mr-3 file:rounded-md file:border-0 file:bg-blue-600 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-blue-700"
             />
           </label>
+
+          {preflightError && (
+            <div
+              role="alert"
+              className="rounded-md border-2 border-red-500 bg-white px-4 py-3 dark:bg-gray-900"
+            >
+              <div className="flex items-start gap-3">
+                <span
+                  aria-hidden="true"
+                  className="flex h-7 w-7 flex-none items-center justify-center rounded-full bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-300"
+                >
+                  <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                    <path
+                      fillRule="evenodd"
+                      clipRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z"
+                    />
+                  </svg>
+                </span>
+                <div className="flex-1 text-sm">
+                  <div className="font-semibold text-red-800 dark:text-red-200">
+                    {preflightError.message}
+                  </div>
+                  <div className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                    {preflightError.filename}
+                  </div>
+                  {preflightError.detail && (
+                    <p className="mt-2 text-gray-700 dark:text-gray-300">
+                      {preflightError.detail}
+                    </p>
+                  )}
+                  {preflightError.suggestion && (
+                    <p className="mt-2 text-gray-700 dark:text-gray-300">
+                      <span className="font-medium">Tip:</span>{" "}
+                      {preflightError.suggestion}
+                    </p>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPreflightError(null);
+                      setSelected([]);
+                    }}
+                    className="mt-3 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800"
+                  >
+                    Try a different file
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {oversizedFiles.length > 0 && (
             <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
