@@ -152,19 +152,25 @@ interface Props {
 }
 
 const PIPELINE_LABELS = {
-  load: "Stacking the facts",
-  draft: "Writing your script",
-  validate: "Final polish",
+  load: "Load context",
+  intro: "Draft intro",
+  body: "Build body",
+  hook: "Sharpen hook",
+  validate: "Validate",
 } as const;
 
 function buildPipeline(
   load: PipelineStep["status"],
-  draft: PipelineStep["status"],
+  intro: PipelineStep["status"],
+  body: PipelineStep["status"],
+  hook: PipelineStep["status"],
   validate: PipelineStep["status"],
 ): PipelineStep[] {
   return [
     { key: "load", label: PIPELINE_LABELS.load, status: load },
-    { key: "draft", label: PIPELINE_LABELS.draft, status: draft },
+    { key: "intro", label: PIPELINE_LABELS.intro, status: intro },
+    { key: "body", label: PIPELINE_LABELS.body, status: body },
+    { key: "hook", label: PIPELINE_LABELS.hook, status: hook },
     { key: "validate", label: PIPELINE_LABELS.validate, status: validate },
   ];
 }
@@ -178,6 +184,8 @@ function buildPipeline(
  */
 const INITIAL_PIPELINE: PipelineStep[] = buildPipeline(
   "active",
+  "pending",
+  "pending",
   "pending",
   "pending",
 );
@@ -212,21 +220,27 @@ function rotationLabelAt(elapsedMs: number): string {
  * a typical generation so the pipeline circles stop lying when no server
  * `phase` events arrive (Replit proxy / Turbopack sometimes buffers SSE):
  *
- *   0–16s   load=active   draft=pending   validate=pending
- *   16–80s  load=complete draft=active    validate=pending
- *   80s+    load=complete draft=complete  validate=active
+ *   0–16s    load=active
+ *   16–40s   intro=active   (load complete)
+ *   40–70s   body=active    (load,intro complete)
+ *   70–90s   hook=active    (load,intro,body complete)
+ *   90s+     validate=active (load,intro,body,hook complete)
  *
  * When a real server `phase` event lands, `phaseKeyToPipeline()` REPLACES
  * this client-timed state (server is authoritative).
  */
 function rotationPipelineAt(elapsedMs: number): PipelineStep[] {
   if (elapsedMs < 16_000) return phaseKeyToPipeline("load")!;
-  if (elapsedMs < 80_000) return phaseKeyToPipeline("intro")!;
+  if (elapsedMs < 40_000) return phaseKeyToPipeline("intro")!;
+  if (elapsedMs < 70_000) return phaseKeyToPipeline("body")!;
+  if (elapsedMs < 90_000) return phaseKeyToPipeline("hook")!;
   return phaseKeyToPipeline("validate")!;
 }
 
-/** All three circles complete — used on the terminal `complete` event. */
+/** All five circles complete — used on the terminal `complete` event. */
 const ALL_COMPLETE_PIPELINE: PipelineStep[] = buildPipeline(
+  "complete",
+  "complete",
   "complete",
   "complete",
   "complete",
@@ -246,14 +260,19 @@ const SERVER_STALL_RESCUE_MS = 12_000;
 function phaseKeyToPipeline(key: string): PipelineStep[] | null {
   switch (key) {
     case "load":
-      return buildPipeline("active", "pending", "pending");
+      return buildPipeline("active", "pending", "pending", "pending", "pending");
     case "intro":
+      return buildPipeline("complete", "active", "pending", "pending", "pending");
     case "body":
+      return buildPipeline("complete", "complete", "active", "pending", "pending");
     case "hook":
+      return buildPipeline("complete", "complete", "complete", "active", "pending");
     case "reprompt":
-      return buildPipeline("complete", "active", "pending");
+      // Re-prompt restarts the drafting phase from intro. Full REPLACE so
+      // a previously-active "validate" doesn't stick across the retry.
+      return buildPipeline("complete", "active", "pending", "pending", "pending");
     case "validate":
-      return buildPipeline("complete", "complete", "active");
+      return buildPipeline("complete", "complete", "complete", "complete", "active");
     default:
       return null;
   }
@@ -337,12 +356,19 @@ export function Step5GenerateStream({
     let stallRescueTimer: ReturnType<typeof setTimeout> | null = null;
 
     // Track which rotation window we last applied so we only call
-    // resetSteps on actual window changes (0-16s / 16-80s / 80s+).
+    // resetSteps on actual window changes. Mirrors the 5-stage shape in
+    // `rotationPipelineAt` (load / intro / body / hook / validate).
     // useAiThinking.resetSteps is an unconditional setSteps, so without
     // this guard we'd cause a fresh re-render every 1s tick.
-    let lastWindowKey: "load" | "draft" | "validate" | null = null;
-    const windowKeyAt = (elapsedMs: number): "load" | "draft" | "validate" =>
-      elapsedMs < 16_000 ? "load" : elapsedMs < 80_000 ? "draft" : "validate";
+    type WindowKey = "load" | "intro" | "body" | "hook" | "validate";
+    let lastWindowKey: WindowKey | null = null;
+    const windowKeyAt = (elapsedMs: number): WindowKey => {
+      if (elapsedMs < 16_000) return "load";
+      if (elapsedMs < 40_000) return "intro";
+      if (elapsedMs < 70_000) return "body";
+      if (elapsedMs < 90_000) return "hook";
+      return "validate";
+    };
     const startRotation = () => {
       if (rotationTimer !== null) return;
       rotationTimer = setInterval(() => {
@@ -676,43 +702,21 @@ export function Step5GenerateStream({
   // no separate guard needed here.
   return (
     <div className="space-y-5">
-      {/* Keyframe for the indeterminate slider — declared inline so we
-          don't need to touch tailwind.config.ts. The 1.8s ease-in-out
-          loop is subtle enough to read as "working" without distraction.
-          Honour prefers-reduced-motion: hide the slider gradient (the
-          static track stays) and let Tailwind's motion-reduce: variant
-          disable the pulse on the label. */}
-      <style>{`
-        @keyframes sb-v2-slide {
-          0%   { transform: translateX(-100%); }
-          100% { transform: translateX(400%); }
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .sb-v2-slider { animation: none !important; opacity: 0; }
-        }
-      `}</style>
-      <div className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
-        <AiThinking mode="pipeline" steps={thinking.steps} />
-        <div className="mt-3 h-0.5 w-full overflow-hidden rounded bg-gray-100 dark:bg-gray-800">
-          <div
-            className="sb-v2-slider h-full w-1/3 rounded bg-blue-500 dark:bg-blue-400"
-            style={{ animation: "sb-v2-slide 1.8s ease-in-out infinite" }}
-          />
-        </div>
-        <p className="mt-3 animate-pulse text-sm text-gray-700 motion-reduce:animate-none dark:text-gray-300">
-          {phaseLabel}
+      <AiThinking
+        mode="pipeline"
+        stages={thinking.steps}
+        detailLine={phaseLabel}
+      />
+      {repromptCount > 0 && (
+        <p className="text-xs text-amber-700 dark:text-amber-300">
+          Re-prompt {repromptCount}/2 in flight — earlier draft hit a
+          content-rule check; the model is rewriting from scratch.
         </p>
-        {repromptCount > 0 && (
-          <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
-            Re-prompt {repromptCount}/2 in flight — earlier draft hit a
-            content-rule check; the model is rewriting from scratch.
-          </p>
-        )}
-        <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
-          A full 12–16 min script takes ~60–120 seconds to stream. Don&apos;t
-          navigate away.
-        </p>
-      </div>
+      )}
+      <p className="text-xs text-gray-500 dark:text-gray-400">
+        A full 12–16 min script takes ~60–120 seconds to stream. Don&apos;t
+        navigate away.
+      </p>
 
       {livePreview.length > 0 && (
         <div className="rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900/40">

@@ -232,7 +232,11 @@ export default function ThemeCard({ theme, index, onGoDeeper, initialIdeas }: Pr
           )}
           {generating && ideas.length === 0 && (
             <div className="p-4 flex justify-center">
-              <AiThinking mode="phase" phaseLabel={aiThinking.phaseLabel} />
+              <AiThinking
+                mode="phase"
+                toolName="Content Engine"
+                currentPhase={aiThinking.phaseLabel}
+              />
             </div>
           )}
           {ideas.length > 0 && (
@@ -250,7 +254,11 @@ export default function ThemeCard({ theme, index, onGoDeeper, initialIdeas }: Pr
               <div className="space-y-3">
                 {generating ? (
                   <div className="flex justify-center py-3">
-                    <AiThinking mode="phase" phaseLabel={aiThinking.phaseLabel} />
+                    <AiThinking
+                      mode="phase"
+                      toolName="Content Engine"
+                      currentPhase={aiThinking.phaseLabel}
+                    />
                   </div>
                 ) : (
                   ideas.map((idea, i) => (

@@ -123,7 +123,11 @@ export default function IdeasPage({ params }: { params: Promise<{ clientId: stri
 
       {generating && (
         <div className="mb-4">
-          <AiThinking mode="phase" phaseLabel={aiThinking.phaseLabel} />
+          <AiThinking
+            mode="phase"
+            toolName="Idea Generation"
+            currentPhase={aiThinking.phaseLabel}
+          />
         </div>
       )}
 

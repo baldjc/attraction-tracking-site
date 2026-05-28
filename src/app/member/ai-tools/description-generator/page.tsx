@@ -402,7 +402,11 @@ function DescriptionGeneratorPageInner() {
         </button>
         {generating && (
           <div className="mt-3">
-            <AiThinking mode="phase" phaseLabel={aiThinking.phaseLabel} />
+            <AiThinking
+              mode="phase"
+              toolName="Description Generator"
+              currentPhase={aiThinking.phaseLabel}
+            />
           </div>
         )}
         {error && <p className="text-sm text-red-500">{error}</p>}

@@ -323,7 +323,7 @@ function GoDeeperSection({
 
           {loading && (
             <div className="flex justify-start">
-              <AiThinking mode="quick" />
+              <AiThinking mode="quick" label="Analyzing your title and thumbnail" />
             </div>
           )}
           <div ref={chatEndRef} />
@@ -689,7 +689,7 @@ function TitleThumbnailAnalyzerPageInner() {
             </button>
             {loading && (
               <div className="mt-3">
-                <AiThinking mode="phase" phaseLabel={aiThinking.phaseLabel} />
+                <AiThinking mode="quick" label="Analyzing your title and thumbnail" />
               </div>
             )}
         </div>

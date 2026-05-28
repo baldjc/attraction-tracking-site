@@ -245,34 +245,61 @@ html.dark textarea {
 }
 
 /* ============================================================
-   PRESERVED — AI Thinking Indicator (Wave 0.5)
-   Uses its own --ai-thinking-primary variable; non-conflicting
-   with brand tokens. Kept verbatim.
+   AI Thinking Indicator — unified Quick / Phase / Pipeline
+   Ported from the cards-and-thinking mockup (brand sprint Part 2).
+   Three visual treatments behind one <AiThinking /> component:
+     - Quick    : warm cream card with 3-dot pulse
+     - Phase    : dark ink card with mono caps eyebrow + azure scan bar
+     - Pipeline : dark ink card with 5-stage ladder, emerald check
+                  dots, azure current pulse ring, cascading detail dots
+   Named keyframes: dot-pulse, scan-bar, phase-pulse, cascade.
    ============================================================ */
 
 :root {
-  --ai-thinking-primary: #6ba3c7;
-  --ai-thinking-primary-dim: rgba(107, 163, 199, 0.15);
+  --ai-thinking-azure: #6ba3c7;
+  --ai-thinking-azure-soft: rgba(107, 163, 199, 0.18);
+  --ai-thinking-emerald: #10b981;
+  --ai-thinking-ink: #0f1a26;
+  --ai-thinking-ink-2: #1a2738;
+  --ai-thinking-ink-border: rgba(255, 255, 255, 0.08);
+  --ai-thinking-ink-text: #e2e8f0;
+  --ai-thinking-ink-muted: rgba(226, 232, 240, 0.55);
+  --ai-thinking-warm: #faf7f2;
+  --ai-thinking-warm-border: rgba(30, 42, 56, 0.08);
+  --ai-thinking-warm-text: #1e2a38;
 }
 
-/* Mode A — Dots (quick) */
+/* ── Mode A — Quick (warm cream card, 3-dot pulse) ─────────── */
 .ai-thinking-dots {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 6px 10px;
-  border-radius: 8px;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  background: var(--ai-thinking-warm);
+  border: 1px solid var(--ai-thinking-warm-border);
+  color: var(--ai-thinking-warm-text);
+}
+html.dark .ai-thinking-dots {
+  background: var(--ai-thinking-ink-2);
+  border-color: var(--ai-thinking-ink-border);
+  color: var(--ai-thinking-ink-text);
+}
+.ai-thinking-dots-label {
+  font-size: 13px;
+  font-weight: 500;
+  margin-right: 4px;
 }
 .ai-thinking-sparkle {
-  color: var(--ai-thinking-primary);
+  color: var(--ai-thinking-azure);
   font-size: 14px;
   margin-right: 4px;
   line-height: 1;
 }
 .ai-thinking-sparkle-pulse {
-  animation: ai-sparkle-pulse 1.2s ease-in-out infinite;
+  animation: phase-pulse 1.2s ease-in-out infinite;
 }
-@keyframes ai-sparkle-pulse {
+@keyframes phase-pulse {
   0%, 100% { opacity: 0.5; transform: scale(1); }
   50%      { opacity: 1;   transform: scale(1.15); }
 }
@@ -280,42 +307,60 @@ html.dark textarea {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--ai-thinking-primary);
-  animation: ai-dot-pulse 1.2s ease-in-out infinite;
+  background: var(--ai-thinking-azure);
+  animation: dot-pulse 1.2s ease-in-out infinite;
 }
 .ai-thinking-dot:nth-child(3) { animation-delay: 0.2s; }
 .ai-thinking-dot:nth-child(4) { animation-delay: 0.4s; }
-@keyframes ai-dot-pulse {
-  0%, 100% { opacity: 0.5; transform: scale(1); }
-  50%      { opacity: 1;   transform: scale(1.3); }
+@keyframes dot-pulse {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50%      { opacity: 1;   transform: scale(1.35); }
 }
 
-/* Mode B — Phase (long generation) */
+/* ── Mode B — Phase (dark ink card, mono caps eyebrow + scan) ── */
 .ai-thinking-phase {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 10px 12px;
-  border-radius: 8px;
-  background: var(--ai-thinking-primary-dim);
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--ai-thinking-ink);
+  border: 1px solid var(--ai-thinking-ink-border);
+  color: var(--ai-thinking-ink-text);
   min-width: 280px;
+}
+.ai-thinking-phase-eyebrow {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ai-thinking-azure);
+  margin: 0;
 }
 .ai-thinking-phase-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 .ai-thinking-phase-label {
   font-size: 14px;
-  color: #1e2a38;
+  font-weight: 500;
+  color: var(--ai-thinking-ink-text);
+  line-height: 1.35;
 }
-html.dark .ai-thinking-phase-label { color: #e2e8f0; }
+.ai-thinking-phase-note {
+  font-size: 12px;
+  color: var(--ai-thinking-ink-muted);
+  margin-top: 2px;
+}
 .ai-thinking-bar {
   position: relative;
   height: 2px;
-  background: rgba(107, 163, 199, 0.2);
+  background: var(--ai-thinking-ink-border);
   border-radius: 2px;
   overflow: hidden;
+  margin-top: 2px;
 }
 .ai-thinking-bar::after {
   content: "";
@@ -325,79 +370,150 @@ html.dark .ai-thinking-phase-label { color: #e2e8f0; }
   background: linear-gradient(
     90deg,
     transparent,
-    var(--ai-thinking-primary),
+    var(--ai-thinking-azure),
     transparent
   );
-  animation: ai-bar-sweep 1.8s ease-in-out infinite;
+  animation: scan-bar 1.8s ease-in-out infinite;
 }
-@keyframes ai-bar-sweep {
+@keyframes scan-bar {
   0%   { transform: translateX(-100%); }
   100% { transform: translateX(350%); }
 }
 
-/* Mode C — Pipeline (multi-step) */
+/* ── Mode C — Pipeline (dark ink card, 5-stage ladder) ──────── */
 .ai-thinking-pipeline {
   display: flex;
-  align-items: center;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 0;
-  padding: 8px 12px;
+  padding: 16px 18px;
+  border-radius: 12px;
+  background: var(--ai-thinking-ink);
+  border: 1px solid var(--ai-thinking-ink-border);
+  color: var(--ai-thinking-ink-text);
+  min-width: 280px;
 }
 .ai-thinking-step {
+  position: relative;
   display: flex;
-  align-items: center;
-  gap: 6px;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 4px 0;
 }
 .ai-thinking-step-dot {
-  width: 14px;
-  height: 14px;
+  position: relative;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
-  border: 2px solid var(--ai-thinking-primary);
+  border: 2px solid var(--ai-thinking-ink-border);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-size: 10px;
-  color: var(--ai-thinking-primary);
+  color: var(--ai-thinking-ink-muted);
   background: transparent;
   transition: all 0.3s;
   flex-shrink: 0;
+  margin-top: 2px;
+  z-index: 1;
 }
 .ai-thinking-step-active .ai-thinking-step-dot {
-  background: var(--ai-thinking-primary);
-  animation: ai-dot-pulse 1.2s ease-in-out infinite;
+  border-color: var(--ai-thinking-azure);
+  background: var(--ai-thinking-azure);
+}
+.ai-thinking-step-active .ai-thinking-step-dot::before {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border-radius: 50%;
+  border: 2px solid var(--ai-thinking-azure);
+  opacity: 0;
+  animation: phase-pulse 1.4s ease-in-out infinite;
 }
 .ai-thinking-step-complete .ai-thinking-step-dot {
-  background: var(--ai-thinking-primary);
+  border-color: var(--ai-thinking-emerald);
+  background: var(--ai-thinking-emerald);
   color: #fff;
 }
-.ai-thinking-step-label {
-  font-size: 12px;
-  color: #1e2a38;
-  margin-right: 8px;
-}
-html.dark .ai-thinking-step-label { color: #e2e8f0; }
 .ai-thinking-step-connector {
-  width: 32px;
-  height: 2px;
-  background: rgba(107, 163, 199, 0.3);
-  margin-right: 8px;
+  position: absolute;
+  left: 7px;
+  top: 22px;
+  bottom: -4px;
+  width: 2px;
+  background: var(--ai-thinking-ink-border);
 }
 .ai-thinking-step-connector-complete {
-  background: var(--ai-thinking-primary);
+  background: var(--ai-thinking-emerald);
 }
 .ai-thinking-step-connector-active {
   background: linear-gradient(
-    90deg,
-    var(--ai-thinking-primary),
-    rgba(107, 163, 199, 0.3)
+    180deg,
+    var(--ai-thinking-emerald),
+    var(--ai-thinking-azure)
   );
+}
+.ai-thinking-step-body {
+  flex: 1;
+  min-width: 0;
+  padding-bottom: 6px;
+}
+.ai-thinking-step-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ai-thinking-ink-text);
+  line-height: 1.3;
+}
+.ai-thinking-step-pending .ai-thinking-step-label {
+  color: var(--ai-thinking-ink-muted);
+}
+.ai-thinking-step-cascade {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+}
+.ai-thinking-step-cascade-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--ai-thinking-azure);
+  opacity: 0;
+  animation: cascade 1.4s ease-in-out infinite;
+}
+.ai-thinking-step-cascade-dot:nth-child(2) { animation-delay: 0.15s; }
+.ai-thinking-step-cascade-dot:nth-child(3) { animation-delay: 0.3s; }
+@keyframes cascade {
+  0%, 100% { opacity: 0; transform: translateY(2px); }
+  50%      { opacity: 1; transform: translateY(0); }
+}
+.ai-thinking-pipeline-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--ai-thinking-ink-border);
+  font-size: 11px;
+  color: var(--ai-thinking-ink-muted);
+}
+.ai-thinking-pipeline-footer-detail {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  letter-spacing: 0.04em;
+}
+.ai-thinking-pipeline-footer-time {
+  font-variant-numeric: tabular-nums;
+  color: var(--ai-thinking-azure);
 }
 
 /* Respect users who prefer reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .ai-thinking-sparkle-pulse,
   .ai-thinking-dot,
-  .ai-thinking-bar::after {
+  .ai-thinking-bar::after,
+  .ai-thinking-step-active .ai-thinking-step-dot::before,
+  .ai-thinking-step-cascade-dot {
     animation: none;
   }
+  .ai-thinking-step-cascade-dot { opacity: 0.7; }
 }

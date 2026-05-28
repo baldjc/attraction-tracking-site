@@ -14,17 +14,61 @@ export interface PipelineStep {
 
 export interface AiThinkingProps {
   mode: AiThinkingMode;
-  /** For mode='phase': current phase label. Updates as backend emits phase events. */
+  /** Quick mode: short label rendered next to the dots. */
+  label?: string;
+  /** Phase mode: mono-caps eyebrow (e.g. "Content Engine"). */
+  toolName?: string;
+  /** Phase mode: main current-phase label. Preferred over phaseLabel. */
+  currentPhase?: string;
+  /** Phase mode: optional secondary note line under the phase label. */
+  noteText?: string;
+  /** Legacy alias for currentPhase. */
   phaseLabel?: string;
-  /** For mode='pipeline': the steps with status. */
+  /** Pipeline mode: 5-stage ladder with statuses. Preferred over steps. */
+  stages?: PipelineStep[];
+  /** Legacy alias for stages. */
   steps?: PipelineStep[];
+  /** Pipeline mode: optional mono detail line in the footer. */
+  detailLine?: string;
+  /** Pipeline mode: optional time-remaining string in the footer. */
+  timeRemaining?: string;
   /** Optional className for layout positioning. */
   className?: string;
 }
 
-export function AiThinking({ mode, phaseLabel, steps, className }: AiThinkingProps) {
-  if (mode === "quick") return <AiThinkingDots className={className} />;
-  if (mode === "phase") return <AiThinkingPhase label={phaseLabel} className={className} />;
-  if (mode === "pipeline") return <AiThinkingPipeline steps={steps ?? []} className={className} />;
+export function AiThinking(props: AiThinkingProps) {
+  const {
+    mode,
+    label,
+    toolName,
+    currentPhase,
+    phaseLabel,
+    noteText,
+    stages,
+    steps,
+    detailLine,
+    timeRemaining,
+    className,
+  } = props;
+
+  if (mode === "quick") return <AiThinkingDots label={label} className={className} />;
+  if (mode === "phase")
+    return (
+      <AiThinkingPhase
+        toolName={toolName}
+        currentPhase={currentPhase ?? phaseLabel}
+        noteText={noteText}
+        className={className}
+      />
+    );
+  if (mode === "pipeline")
+    return (
+      <AiThinkingPipeline
+        stages={stages ?? steps ?? []}
+        detailLine={detailLine}
+        timeRemaining={timeRemaining}
+        className={className}
+      />
+    );
   return null;
 }

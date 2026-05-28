@@ -4,7 +4,7 @@ import { useState, useRef, useCallback, useEffect, DragEvent, ChangeEvent } from
 import { ChevronDownIcon, FilmIcon } from "@heroicons/react/24/outline";
 import { DocumentArrowUpIcon, XMarkIcon, ClipboardDocumentIcon, CheckIcon } from "@heroicons/react/24/outline";
 import MarkdownTextarea from "@/components/MarkdownTextarea";
-import AnalysisProgress from "@/components/ai-tools/AnalysisProgress";
+import { AiThinking } from "@/components/ai/AiThinking";
 
 interface UploadedFile {
   file: File;
@@ -356,14 +356,14 @@ Format each talking point as its own section with all 7 categories. Preserve spe
 
   return (
     <div className="max-w-2xl mx-auto space-y-5">
-      <AnalysisProgress
-        active={loading}
-        step={loadingStep}
-        steps={ANALYSIS_STEPS}
-        estimatedSeconds={45}
-        title="Preparing your script…"
-        hint="This usually takes 20–60 seconds. Please keep this tab open — leaving now will cancel the analysis."
-      />
+      {loading && (
+        <AiThinking
+          mode="phase"
+          toolName="ARC Script Builder"
+          currentPhase={loadingStep || "Preparing your script…"}
+          noteText="This usually takes 20–60 seconds. Please keep this tab open — leaving now will cancel the analysis."
+        />
+      )}
       {isPrefilled && (
         <div className="bg-[var(--abv-ai-tools)]/8 border border-[var(--abv-ai-tools)]/25 rounded-lg px-4 py-3 space-y-2">
           <div className="flex items-center justify-between gap-2 flex-wrap">

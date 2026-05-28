@@ -1503,7 +1503,11 @@ function RepurposeContentPageInner() {
               New content
             </button>
             {loading && (
-              <AiThinking mode="phase" phaseLabel={aiThinking.phaseLabel} />
+              <AiThinking
+                mode="phase"
+                toolName="Repurpose Content"
+                currentPhase={aiThinking.phaseLabel}
+              />
             )}
           </div>
 
@@ -1521,7 +1525,11 @@ function RepurposeContentPageInner() {
 
           {loading && !newsletterResult && !linkedInResult && !facebookResult && !blogResult && !postcardResult && (
             <div className="flex justify-center py-4">
-              <AiThinking mode="phase" phaseLabel={aiThinking.phaseLabel} />
+              <AiThinking
+                mode="phase"
+                toolName="Repurpose Content"
+                currentPhase={aiThinking.phaseLabel}
+              />
             </div>
           )}
 

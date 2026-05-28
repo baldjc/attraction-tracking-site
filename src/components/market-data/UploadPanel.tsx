@@ -636,7 +636,11 @@ export default function UploadPanel({
       {stage === "mapping" && (
         <div className="mt-4 space-y-3">
           {thinking.isThinking ? (
-            <AiThinking mode="phase" phaseLabel={thinking.phaseLabel} />
+            <AiThinking
+              mode="phase"
+              toolName="Market Data"
+              currentPhase={thinking.phaseLabel}
+            />
           ) : (
             <>
               <div className="text-sm text-gray-700 dark:text-gray-300">
@@ -701,7 +705,11 @@ export default function UploadPanel({
           <div className="text-xs text-gray-500 dark:text-gray-400">
             {selected.length} file{selected.length === 1 ? "" : "s"} in flight
           </div>
-          <AiThinking mode="phase" phaseLabel={uploadThinking.phaseLabel} />
+          <AiThinking
+            mode="phase"
+            toolName="Market Data"
+            currentPhase={uploadThinking.phaseLabel}
+          />
         </div>
       )}
 

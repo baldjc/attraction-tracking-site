@@ -221,7 +221,7 @@ export default function ContentEngineChat({ theme, onBack }: Props) {
 
         {loading && (
           <div className="flex justify-start">
-            <AiThinking mode="quick" />
+            <AiThinking mode="quick" label="Thinking with Content Engine" />
           </div>
         )}
         <div ref={bottomRef} />

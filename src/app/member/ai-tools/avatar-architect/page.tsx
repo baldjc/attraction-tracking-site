@@ -1631,7 +1631,11 @@ function AvatarArchitectInner() {
         )}
         {aiThinking.isThinking && (streamingContent === null || streamingContent.length === 0) && (
           <div className="flex justify-start">
-            <AiThinking mode="phase" phaseLabel={aiThinking.phaseLabel} />
+            <AiThinking
+              mode="phase"
+              toolName="Avatar Architect"
+              currentPhase={aiThinking.phaseLabel}
+            />
           </div>
         )}
         {chatError && (

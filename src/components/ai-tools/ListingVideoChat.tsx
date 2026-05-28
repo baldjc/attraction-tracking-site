@@ -461,7 +461,7 @@ export default function ListingVideoChat({ initialResponse, propertyData, onRese
               </div>
             ))}
             {chatLoading && (
-              <AiThinking mode="quick" />
+              <AiThinking mode="quick" label="Refining your video concept" />
             )}
           </div>
 

@@ -287,7 +287,11 @@ export default function ListingInputPhase({ onSubmit, loading }: Props) {
       </button>
       {loading && (
         <div className="mt-3">
-          <AiThinking mode="phase" phaseLabel="Building your video concepts…" />
+          <AiThinking
+            mode="phase"
+            toolName="Listing Video Builder"
+            currentPhase="Building your video concepts…"
+          />
         </div>
       )}
     </div>

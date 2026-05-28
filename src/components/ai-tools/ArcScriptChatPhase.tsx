@@ -11,10 +11,9 @@ import {
 } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import ArcProgressBar, { SECTIONS } from "@/components/ai-tools/ArcProgressBar";
-import AnalysisProgress from "@/components/ai-tools/AnalysisProgress";
+import { AiThinking } from "@/components/ai/AiThinking";
 import MarkdownMessage from "@/components/MarkdownMessage";
 import NextStepCard from "@/components/ai-tools/NextStepCard";
-import { AiThinking } from "@/components/ai/AiThinking";
 import { useAiThinking } from "@/lib/use-ai-thinking";
 import { parseSseEvent } from "@/lib/ai-thinking-sse";
 
@@ -608,7 +607,11 @@ export default function ArcScriptChatPhase({
 
         {aiThinking.isThinking && messages[messages.length - 1]?.role !== "assistant" && (
           <div className="flex justify-start">
-            <AiThinking mode="phase" phaseLabel={aiThinking.phaseLabel} />
+            <AiThinking
+              mode="phase"
+              toolName="ARC Script Builder"
+              currentPhase={aiThinking.phaseLabel}
+            />
           </div>
         )}
         <div ref={bottomRef} />
@@ -838,12 +841,16 @@ export default function ArcScriptChatPhase({
 
       {!atTurnLimit && (
         <div className="flex-shrink-0 border-t border-[var(--abv-text)]/10 dark:border-white/10 pt-4">
-          <AnalysisProgress
-            active={loading}
-            title="Generating script…"
-            estimatedSeconds={30}
-            hint="The AI is writing this section. Please keep this tab open — leaving now will lose the response."
-          />
+          {loading && (
+            <div className="mb-5">
+              <AiThinking
+                mode="phase"
+                toolName="ARC Script Builder"
+                currentPhase="Generating script…"
+                noteText="The AI is writing this section. Please keep this tab open — leaving now will lose the response."
+              />
+            </div>
+          )}
           <div className="flex gap-3 items-end">
             <textarea
               value={input}

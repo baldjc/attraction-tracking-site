@@ -451,7 +451,11 @@ export default function KnowledgeBaseClient({
 
         {thinking.isThinking ? (
           <div className="mt-4">
-            <AiThinking mode="phase" phaseLabel={thinking.phaseLabel} />
+            <AiThinking
+              mode="phase"
+              toolName="Knowledge Base"
+              currentPhase={thinking.phaseLabel}
+            />
           </div>
         ) : (
           <div className="mt-4 space-y-3">

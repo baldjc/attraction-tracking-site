@@ -17,7 +17,7 @@ interface Props {
 function TypingIndicator() {
   return (
     <div className="flex justify-start">
-      <AiThinking mode="quick" />
+      <AiThinking mode="quick" label="Looking up an answer" />
     </div>
   );
 }

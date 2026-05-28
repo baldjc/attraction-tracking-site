@@ -312,7 +312,11 @@ export default function ScriptReviewChatUI({ basePath, noAvatar, defaultPlanId }
           </button>
           {loading && (
             <div className="mt-3">
-              <AiThinking mode="phase" phaseLabel={initialThinking.phaseLabel} />
+              <AiThinking
+                mode="phase"
+                toolName="Script Review"
+                currentPhase={initialThinking.phaseLabel}
+              />
             </div>
           )}
         </div>
@@ -370,7 +374,11 @@ export default function ScriptReviewChatUI({ basePath, noAvatar, defaultPlanId }
 
             {loading && (
               <div className="flex justify-start">
-                <AiThinking mode="quick" />
+                <AiThinking
+                  mode="phase"
+                  toolName="Script Review"
+                  currentPhase={initialThinking.phaseLabel}
+                />
               </div>
             )}
             <div ref={messagesEndRef} />

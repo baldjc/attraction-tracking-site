@@ -178,7 +178,11 @@ export function Step2BIdeaValidation({ initialFocus = "Any" }: Props) {
             Validate idea
           </button>
           {thinking.isThinking && (
-            <AiThinking mode="phase" phaseLabel={thinking.phaseLabel} />
+            <AiThinking
+              mode="phase"
+              toolName="Content Engine"
+              currentPhase={thinking.phaseLabel}
+            />
           )}
         </div>
       </form>

@@ -236,7 +236,11 @@ export function Step3IdeaCards({
         <p className="mb-3 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
           Anchored on {uploadLabel} ({uploadMonthYear})
         </p>
-        <AiThinking mode="phase" phaseLabel={thinking.phaseLabel} />
+        <AiThinking
+          mode="phase"
+          toolName="Content Engine"
+          currentPhase={thinking.phaseLabel}
+        />
         <p className="mt-4 text-xs text-gray-500 dark:text-gray-400">
           This usually takes 30-60 seconds. Don&apos;t navigate away.
         </p>

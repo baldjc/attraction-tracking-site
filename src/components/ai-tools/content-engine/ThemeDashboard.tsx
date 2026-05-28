@@ -192,7 +192,11 @@ export default function ThemeDashboard({ themes, niche, city }: Props) {
 
       {generatingAll && (
         <div className="mb-4 flex justify-center">
-          <AiThinking mode="phase" phaseLabel={aiThinking.phaseLabel} />
+          <AiThinking
+            mode="phase"
+            toolName="Content Engine"
+            currentPhase={aiThinking.phaseLabel}
+          />
         </div>
       )}
 
