@@ -18,7 +18,7 @@ interface IntelRun {
 
 const STATUS = {
   PENDING: { label: "Pending", cls: "bg-yellow-100 text-yellow-700" },
-  RUNNING: { label: "Running…", cls: "bg-blue-100 text-blue-700 animate-pulse" },
+  RUNNING: { label: "Running…", cls: "bg-[var(--abv-azure-tint)] text-[#1E8FCC] animate-pulse" },
   COMPLETED: { label: "Completed", cls: "bg-green-100 text-green-700" },
   FAILED: { label: "Failed", cls: "bg-red-100 text-red-700" },
 };

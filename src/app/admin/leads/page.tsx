@@ -26,7 +26,7 @@ function fmt(d: string) {
 
 function statusCls(s: string) {
   switch (s) {
-    case "New": return "bg-blue-100 text-blue-700";
+    case "New": return "bg-[var(--abv-azure-tint)] text-[#1E8FCC]";
     case "Audited": return "bg-amber-100 text-amber-800";
     case "Pitched": return "bg-purple-100 text-purple-700";
     case "Converted": return "bg-green-100 text-green-700";

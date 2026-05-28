@@ -654,7 +654,7 @@ export default function EditLessonPage({ params }: { params: Promise<{ id: strin
               ) : (
                 <div className="flex items-center gap-3 bg-white rounded-lg border border-gray-200 px-4 py-3">
                   <span className={`text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 ${
-                    field.fieldType === "short_text" ? "bg-blue-100 text-blue-700" :
+                    field.fieldType === "short_text" ? "bg-[var(--abv-azure-tint)] text-[#1E8FCC]" :
                     field.fieldType === "long_text" ? "bg-purple-100 text-purple-700" :
                     field.fieldType === "table" ? "bg-orange-100 text-orange-700" :
                     "bg-green-100 text-green-700"

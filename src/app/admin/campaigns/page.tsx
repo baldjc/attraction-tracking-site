@@ -23,10 +23,10 @@ interface Campaign {
 
 const SOURCE_LABELS: Record<string, { label: string; color: string }> = {
   YOUTUBE:          { label: "YouTube",          color: "bg-red-100 text-red-700" },
-  GOOGLE_ADS:       { label: "Google Ads",       color: "bg-blue-100 text-blue-700" },
+  GOOGLE_ADS:       { label: "Google Ads",       color: "bg-[var(--abv-azure-tint)] text-[#1E8FCC]" },
   EMAIL:            { label: "Email",            color: "bg-green-100 text-green-700" },
   EMAIL_NEWSLETTER: { label: "Email Newsletter", color: "bg-amber-100 text-amber-700" },
-  META_ADS:         { label: "Meta Ads",         color: "bg-indigo-100 text-indigo-700" },
+  META_ADS:         { label: "Meta Ads",         color: "bg-[var(--abv-azure-tint-strong)] text-[#1E8FCC]" },
   DIRECT_MAIL:      { label: "Direct Mail",      color: "bg-purple-100 text-purple-700" },
   BLOG_POSTS:       { label: "Blog Posts",       color: "bg-emerald-100 text-emerald-700" },
   OTHER:            { label: "Other",            color: "bg-gray-100 text-gray-600" },

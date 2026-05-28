@@ -202,7 +202,7 @@ function SubCard({ href, icon, label }: { href: string; icon: string; label: str
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; cls: string }> = {
     PENDING:   { label: "Pending",   cls: "bg-yellow-100 text-yellow-700" },
-    RUNNING:   { label: "Running",   cls: "bg-blue-100 text-blue-700" },
+    RUNNING:   { label: "Running",   cls: "bg-[var(--abv-azure-tint)] text-[#1E8FCC]" },
     COMPLETED: { label: "Done",      cls: "bg-green-100 text-green-700" },
     FAILED:    { label: "Failed",    cls: "bg-red-100 text-red-700" },
   };

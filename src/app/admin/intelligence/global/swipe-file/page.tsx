@@ -135,7 +135,7 @@ export default function SwipeFilePage() {
                   {e.tags.map((tag) => (
                     <span key={tag} className="px-2 py-0.5 bg-[var(--abv-bg)] text-xs text-[var(--abv-text)]/60 rounded-full border border-[var(--abv-text)]/8">{tag}</span>
                   ))}
-                  {e.audience && <span className="px-2 py-0.5 bg-blue-50 text-xs text-blue-700 rounded-full">{e.audience}</span>}
+                  {e.audience && <span className="px-2 py-0.5 bg-[var(--abv-azure-tint)] text-xs text-[#1E8FCC] rounded-full">{e.audience}</span>}
                   {e.theme && <span className="px-2 py-0.5 bg-amber-50 text-xs text-amber-700 rounded-full">{e.theme}</span>}
                   <span className="text-xs text-[var(--abv-text)]/30">{new Date(e.createdAt).toLocaleDateString("en-CA")}</span>
                 </div>

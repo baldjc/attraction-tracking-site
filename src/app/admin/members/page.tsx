@@ -107,7 +107,7 @@ function subStatusBadge(status: string | null) {
   if (!status) return null;
   const cfg: Record<string, { dot: string; label: string; cls: string }> = {
     active:    { dot: "bg-green-500",  label: "Active",    cls: "text-green-700 bg-green-50 border-green-200" },
-    trialing:  { dot: "bg-blue-400",   label: "Trial",     cls: "text-blue-700 bg-blue-50 border-blue-200" },
+    trialing:  { dot: "bg-[var(--abv-azure)]", label: "Trial",     cls: "text-[#1E8FCC] bg-[var(--abv-azure-tint)] border-[var(--abv-azure)]/30" },
     past_due:  { dot: "bg-amber-400",  label: "Past Due",  cls: "text-amber-700 bg-amber-50 border-amber-200" },
     cancelled: { dot: "bg-red-500",    label: "Cancelled", cls: "text-red-700 bg-red-50 border-red-200" },
   };

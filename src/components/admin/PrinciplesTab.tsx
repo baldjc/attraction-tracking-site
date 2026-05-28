@@ -11,6 +11,7 @@ import {
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { useToast } from "@/components/ToastProvider";
+import { Button } from "@/components/ui/Button";
 
 interface Principle {
   id: string;
@@ -23,20 +24,20 @@ interface Principle {
 }
 
 const COLOR_PRESETS = [
-  { label: "Blue",    value: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
+  { label: "Azure",   value: "bg-[var(--abv-azure-tint)] text-[#1E8FCC] dark:text-[var(--abv-azure)]" },
+  { label: "Azure Strong", value: "bg-[var(--abv-azure-tint-strong)] text-[#1E8FCC] dark:text-[var(--abv-azure)]" },
+  { label: "Ink",     value: "bg-[var(--abv-bg-warm)] text-[var(--abv-ink)] dark:bg-white/10 dark:text-white" },
   { label: "Purple",  value: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300" },
   { label: "Orange",  value: "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300" },
-  { label: "Red",     value: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
+  { label: "Crimson", value: "bg-[var(--abv-crimson)]/10 text-[var(--abv-crimson)] dark:bg-[var(--abv-crimson)]/20" },
   { label: "Rose",    value: "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300" },
   { label: "Pink",    value: "bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300" },
   { label: "Teal",    value: "bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300" },
   { label: "Amber",   value: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" },
   { label: "Yellow",  value: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300" },
   { label: "Cyan",    value: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300" },
-  { label: "Indigo",  value: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300" },
   { label: "Green",   value: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" },
   { label: "Lime",    value: "bg-lime-100 text-lime-700 dark:bg-lime-900/40 dark:text-lime-300" },
-  { label: "Sky",     value: "bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300" },
   { label: "Violet",  value: "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300" },
   { label: "Fuchsia", value: "bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-900/40 dark:text-fuchsia-300" },
   { label: "Stone",   value: "bg-stone-100 text-stone-700 dark:bg-stone-900/40 dark:text-stone-300" },
@@ -242,13 +243,10 @@ export default function PrinciplesTab() {
         <p className="text-sm text-[var(--abv-text)]/50">
           Manage the principles used to tag lessons, knowledge base entries, and live calls.
         </p>
-        <button
-          onClick={openAdd}
-          className="flex items-center gap-1.5 bg-[var(--abv-dark)] text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-[#5a8fb3] transition-colors shrink-0"
-        >
+        <Button onClick={openAdd} variant="primary" size="sm" className="shrink-0">
           <PlusIcon className="w-4 h-4" />
           Add Principle
-        </button>
+        </Button>
       </div>
 
       {/* Table */}
@@ -423,19 +421,18 @@ export default function PrinciplesTab() {
             </div>
 
             <div className="flex gap-2 pt-1">
-              <button
-                onClick={() => setShowModal(null)}
-                className="flex-1 text-sm text-[var(--abv-text)]/50 border border-gray-200 rounded-lg py-2 hover:bg-gray-50"
-              >
+              <Button onClick={() => setShowModal(null)} variant="outline" size="sm" fullWidth>
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleSave}
                 disabled={saving || !form.name.trim() || !form.slug.trim()}
-                className="flex-1 text-sm font-semibold text-white bg-[var(--abv-dark)] rounded-lg py-2 hover:bg-[#5a8fb3] disabled:opacity-50"
+                variant="primary"
+                size="sm"
+                fullWidth
               >
                 {saving ? "Saving…" : showModal === "add" ? "Create" : "Save Changes"}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -457,22 +454,26 @@ export default function PrinciplesTab() {
 
             {deleteError ? (
               <div className="space-y-3">
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                  <p className="text-sm text-red-700">{deleteError}</p>
+                <div className="bg-[var(--abv-crimson)]/5 border border-[var(--abv-crimson)]/20 rounded-lg p-3">
+                  <p className="text-sm text-[var(--abv-crimson)]">{deleteError}</p>
                 </div>
                 <div className="flex gap-2">
-                  <button
+                  <Button
                     onClick={() => { setDeleteConfirm(null); setDeleteError(null); }}
-                    className="flex-1 text-sm text-[var(--abv-text)]/50 border border-gray-200 rounded-lg py-2 hover:bg-gray-50"
+                    variant="outline"
+                    size="sm"
+                    fullWidth
                   >
                     Cancel
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     onClick={() => deactivateAndClose(deleteConfirm)}
-                    className="flex-1 text-sm font-semibold text-white bg-amber-500 rounded-lg py-2 hover:bg-amber-600"
+                    variant="accent"
+                    size="sm"
+                    fullWidth
                   >
                     Deactivate Instead
-                  </button>
+                  </Button>
                 </div>
               </div>
             ) : (
@@ -481,19 +482,23 @@ export default function PrinciplesTab() {
                   Are you sure you want to delete <strong>"{deleteConfirm.name}"</strong>? This cannot be undone.
                 </p>
                 <div className="flex gap-2">
-                  <button
+                  <Button
                     onClick={() => { setDeleteConfirm(null); setDeleteError(null); }}
-                    className="flex-1 text-sm text-[var(--abv-text)]/50 border border-gray-200 rounded-lg py-2 hover:bg-gray-50"
+                    variant="outline"
+                    size="sm"
+                    fullWidth
                   >
                     Cancel
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     onClick={() => handleDelete(deleteConfirm)}
                     disabled={deleting}
-                    className="flex-1 text-sm font-semibold text-white bg-red-500 rounded-lg py-2 hover:bg-red-600 disabled:opacity-50"
+                    variant="danger"
+                    size="sm"
+                    fullWidth
                   >
                     {deleting ? "Deleting…" : "Delete"}
-                  </button>
+                  </Button>
                 </div>
               </>
             )}

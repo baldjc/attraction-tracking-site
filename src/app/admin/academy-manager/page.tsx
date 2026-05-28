@@ -582,8 +582,8 @@ function FoundationsLibraryTab({ moduleType = "foundations" }: { moduleType?: st
 
 const QA_PRINCIPLE_COLORS: Record<string, string> = {
   "Avatar Clarity": "bg-purple-100 text-purple-700",
-  "Themes Over Topics": "bg-blue-100 text-blue-700",
-  "Binge Architecture": "bg-indigo-100 text-indigo-700",
+  "Themes Over Topics": "bg-[var(--abv-azure-tint)] text-[#1E8FCC]",
+  "Binge Architecture": "bg-[var(--abv-azure-tint-strong)] text-[#1E8FCC]",
   "Lead Magnet System": "bg-green-100 text-green-700",
   "Values Peppering": "bg-pink-100 text-pink-700",
   "Connection Language": "bg-yellow-100 text-yellow-700",

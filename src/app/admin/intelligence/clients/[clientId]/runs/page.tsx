@@ -16,7 +16,7 @@ interface IntelRun {
 
 const STATUS_STYLE: Record<string, { bg: string; text: string; label: string }> = {
   PENDING: { bg: "bg-gray-100", text: "text-gray-600", label: "Pending" },
-  RUNNING: { bg: "bg-blue-100", text: "text-blue-700", label: "Running…" },
+  RUNNING: { bg: "bg-[var(--abv-azure-tint)]", text: "text-[#1E8FCC]", label: "Running…" },
   COMPLETED: { bg: "bg-green-100", text: "text-green-700", label: "Completed" },
   FAILED: { bg: "bg-red-100", text: "text-red-700", label: "Failed" },
 };

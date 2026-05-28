@@ -17,7 +17,7 @@ interface ContentIdea {
 
 const STATUS_COLOURS: Record<string, string> = {
   idea: "bg-gray-100 text-gray-600",
-  scripting: "bg-blue-100 text-blue-700",
+  scripting: "bg-[var(--abv-azure-tint)] text-[#1E8FCC]",
   filming: "bg-amber-100 text-amber-700",
   editing: "bg-purple-100 text-purple-700",
   published: "bg-green-100 text-green-700",

@@ -10,6 +10,7 @@ import {
   XMarkIcon,
   CheckCircleIcon,
 } from "@heroicons/react/24/outline";
+import { Button } from "@/components/ui/Button";
 
 interface Entry {
   id: string;
@@ -37,7 +38,7 @@ const TYPE_OPTS = [
 function typeBadge(type: string) {
   return type === "announcement"
     ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
-    : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300";
+    : "bg-[var(--abv-azure-tint)] text-[#1E8FCC] dark:bg-[var(--abv-azure-tint-strong)] dark:text-[var(--abv-azure)]";
 }
 
 export default function AnnouncementsSection() {
@@ -136,13 +137,14 @@ export default function AnnouncementsSection() {
             <h2 className="text-lg font-bold text-[var(--abv-text)] dark:text-white">Announcements & What's New</h2>
           </div>
         </div>
-        <button
+        <Button
           onClick={() => { setShowForm((v) => !v); setSaveErr(""); }}
-          className="flex items-center gap-2 $1var(--abv-dark)$2 hover:bg-black/85 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+          variant="primary"
+          size="sm"
         >
           <PlusIcon className="w-4 h-4" />
           New Message
-        </button>
+        </Button>
       </div>
 
       <p className="text-sm text-[var(--abv-text)]/60 dark:text-white/40">
@@ -217,16 +219,12 @@ export default function AnnouncementsSection() {
             {saveErr && <p className="text-sm text-red-600 dark:text-red-400">{saveErr}</p>}
 
             <div className="flex gap-2 justify-end">
-              <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 text-sm text-[var(--abv-text)]/60 dark:text-white/40 hover:text-[var(--abv-text)] dark:hover:text-white transition-colors">
+              <Button type="button" onClick={() => setShowForm(false)} variant="ghost" size="sm">
                 Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={saving}
-                className="flex items-center gap-2 $1var(--abv-dark)$2 hover:bg-black/85 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
-              >
+              </Button>
+              <Button type="submit" disabled={saving} variant="primary" size="sm">
                 {saving ? "Publishing…" : "Publish Now"}
-              </button>
+              </Button>
             </div>
           </form>
         </div>
