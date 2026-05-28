@@ -900,7 +900,7 @@ export default function MemberDetailPage() {
           onChange={(e) => setActiveTab(e.target.value as TabId)}
           className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2.5 text-sm font-medium text-[var(--abv-text)] focus:outline-none focus:ring-2 focus:ring-[var(--abv-azure)]/40"
         >
-          {TABS.filter((t) => !t.tierRequired || t.tierRequired.includes(member.serviceTier)).map((t) => (
+          {TABS.filter((t) => !t.tierRequired || (t.tierRequired as string[]).includes(member.serviceTier)).map((t) => (
             <option key={t.id} value={t.id}>
               {t.label}
               {t.id === "progress" && (member.audits?.length ?? 0) > 0 ? ` (${member.audits.length})` : ""}
@@ -909,7 +909,7 @@ export default function MemberDetailPage() {
         </select>
       </div>
       <div className="hidden sm:flex gap-1 bg-white border border-gray-200 rounded-lg p-1 w-fit overflow-x-auto">
-        {TABS.filter((t) => !t.tierRequired || t.tierRequired.includes(member.serviceTier)).map((t) => (
+        {TABS.filter((t) => !t.tierRequired || (t.tierRequired as string[]).includes(member.serviceTier)).map((t) => (
           <button
             key={t.id}
             onClick={() => setActiveTab(t.id)}

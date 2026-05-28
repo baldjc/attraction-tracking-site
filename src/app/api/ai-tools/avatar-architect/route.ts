@@ -126,7 +126,7 @@ export async function POST(req: NextRequest) {
 
         // Persist conversation turn for analytics (best-effort)
         try {
-          await prisma.aiToolUsage.create({
+          await prisma.aIToolUsage.create({
             data: {
               userId: user.id,
               toolType: "avatar_architect",

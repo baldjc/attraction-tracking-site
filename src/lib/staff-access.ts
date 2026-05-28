@@ -2,6 +2,7 @@ import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import type { Session } from "next-auth";
 import { IMPERSONATE_COOKIE, parseImpersonateCookie } from "@/lib/impersonate-constants";
 import { isMainOwnerEmail } from "@/lib/auth-utils";
 
@@ -136,13 +137,12 @@ export async function staffMemberIdFilter(
  *   const session = access.session;
  */
 export async function requireStaffMemberAccess(memberId: string): Promise<
-  | { ok: true; session: Awaited<ReturnType<typeof auth>> }
+  | { ok: true; session: Session }
   | { ok: false; response: NextResponse }
 > {
-  const session = await auth();
-  const sessionUser = session?.user as { id?: string; role?: string } | undefined;
-  const role = sessionUser?.role;
-  const userId = sessionUser?.id;
+  const session = (await auth()) as Session | null;
+  const role = session?.user?.role;
+  const userId = session?.user?.id;
   if (!session?.user || (role !== "admin" && role !== "editor") || !userId) {
     return { ok: false, response: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
   }

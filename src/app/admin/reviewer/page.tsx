@@ -112,7 +112,7 @@ async function buildCard(
   );
   const pulseCutoff = new Date(Date.now() - 24 * 3600000);
 
-  const [latestSnap, pulses, latestGlance, planCount] = await Promise.all([
+  const [latestSnap, pulses, latestGlance] = await Promise.all([
     prisma.channelAnalyticsSnapshot.findFirst({
       where: { channelRef },
       orderBy: { date: "desc" },

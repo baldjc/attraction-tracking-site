@@ -929,7 +929,7 @@ function AvatarArchitectInner() {
     // In test-avatar mode: skip confirm-replace and save to the test-avatars API
     if (isTestAvatarMode) {
       setSaving(true);
-      const shellThemes = (detectedAvatar.content_themes ?? []).map((t: Record<string, unknown>) => {
+      const shellThemes = (detectedAvatar.content_themes ?? []).map((t) => {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { content_engine_prompt: _strip, state: _s, builtAt: _b, ...rest } = t as Record<string, unknown>;
         return { ...rest, content_engine_prompt: null, state: "empty" as const };
@@ -966,7 +966,7 @@ function AvatarArchitectInner() {
     setSaving(true);
     // Strip content_engine_prompt and force state: "empty" — only the Theme Builder can flip themes to "built".
     // This is a belt-and-suspenders guard in case an older prompt row in app_settings still emits the field.
-    const shellThemes = (detectedAvatar.content_themes ?? []).map((t: Record<string, unknown>) => {
+    const shellThemes = (detectedAvatar.content_themes ?? []).map((t) => {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { content_engine_prompt: _strip, state: _s, builtAt: _b, ...rest } = t as Record<string, unknown>;
       return { ...rest, content_engine_prompt: null, state: "empty" as const };

@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { stripe, extractSubscriptionSummary } from "@/lib/stripe";
 import { isAdminOrEditor } from "@/lib/auth-utils";
+import { Prisma } from "@/generated/prisma/client";
 
 export const runtime = "nodejs";
 
@@ -20,7 +21,7 @@ export async function POST() {
       OR: [
         { stripePriceAmount: null },
         { stripeCurrency: null },
-        { stripeLineItems: { equals: null } },
+        { stripeLineItems: { equals: Prisma.DbNull } },
       ],
     },
     select: { id: true, email: true, stripeSubscriptionId: true },

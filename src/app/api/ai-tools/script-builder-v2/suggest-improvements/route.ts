@@ -295,8 +295,8 @@ export async function POST(req: NextRequest) {
 
   // Parse JSON out of the response (Haiku sometimes wraps in a fence)
   const rawText = resp.content
-    .filter((b): b is { type: "text"; text: string } => b.type === "text")
-    .map((b) => b.text)
+    .filter((b) => b.type === "text")
+    .map((b) => (b as { type: "text"; text: string }).text)
     .join("\n");
   const suggestions = parseSuggestions(rawText);
   if (!suggestions) {

@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
+import { Prisma } from "@/generated/prisma/client";
 import {
   emptyMarketConfig,
   toShape,
@@ -49,16 +50,20 @@ export async function PUT(req: NextRequest) {
     );
   }
 
+  const jn = (v: unknown) =>
+    v === null || v === undefined
+      ? Prisma.JsonNull
+      : (v as Prisma.InputJsonValue);
   const data = {
     marketName: body.marketName.trim(),
     mlsSource: body.mlsSource.trim(),
-    priceTiers: (body.priceTiers ?? null) as object | null,
-    moiThresholds: (body.moiThresholds ?? null) as object | null,
-    highEndException: (body.highEndException ?? null) as object | null,
-    neighbourhoodVocab: (body.neighbourhoodVocab ?? null) as object | null,
-    keywordKit: (body.keywordKit ?? null) as object | null,
-    primaryAvatar: (body.primaryAvatar ?? null) as object | null,
-    subPersonas: (body.subPersonas ?? null) as object | null,
+    priceTiers: jn(body.priceTiers),
+    moiThresholds: jn(body.moiThresholds),
+    highEndException: jn(body.highEndException),
+    neighbourhoodVocab: jn(body.neighbourhoodVocab),
+    keywordKit: jn(body.keywordKit),
+    primaryAvatar: jn(body.primaryAvatar),
+    subPersonas: jn(body.subPersonas),
   };
 
   const saved = await prisma.marketConfig.upsert({

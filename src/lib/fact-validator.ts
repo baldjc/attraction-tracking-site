@@ -25,6 +25,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import Decimal from "decimal.js-light";
 import prisma from "@/lib/prisma";
+import { Prisma } from "@/generated/prisma/client";
 import { FACT_VALIDATOR_SYSTEM_PROMPT } from "@/lib/fact-validator-prompt";
 import {
   aggregateUploadFromDb,
@@ -784,7 +785,7 @@ function mapFactToPrisma(
   uploadId: string,
   userId: string,
   propertyTypeColumn: string | null = null,
-): Parameters<typeof prisma.marketFact.create>[0]["data"] {
+): Prisma.MarketFactCreateManyInput {
   // Aggregate `notes` from extraNotes + any prompt-emitted text we didn't pull
   // into a column. Keeps every raw scrap accessible for audit.
   const notes = fact.extraNotes ?? null;
