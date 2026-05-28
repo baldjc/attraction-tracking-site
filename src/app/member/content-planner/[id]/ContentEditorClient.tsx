@@ -715,6 +715,91 @@ Output as markdown with ## per talking point, ### per section. Every stat: \`fig
 
   const titleH1Ref = useRef<HTMLHeadingElement | null>(null);
   const scriptTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const lineageRef = useRef<HTMLDivElement | null>(null);
+  const publishDateRef = useRef<HTMLInputElement | null>(null);
+  const editDueDateRef = useRef<HTMLInputElement | null>(null);
+  const shootDateRef = useRef<HTMLInputElement | null>(null);
+  const statusSelectRef = useRef<HTMLSelectElement | null>(null);
+  const researchNotesRef = useRef<HTMLTextAreaElement | null>(null);
+
+  const scrollAndFocus = useCallback((el: HTMLElement | null) => {
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    window.setTimeout(() => {
+      try { (el as HTMLInputElement).focus({ preventScroll: true }); } catch { /* noop */ }
+    }, 350);
+  }, []);
+
+  const focusPlanningPanel = useCallback((target: HTMLElement | null) => {
+    setActiveTab("planning");
+    window.setTimeout(() => scrollAndFocus(target), 50);
+  }, [scrollAndFocus]);
+
+  const handleStepClick = useCallback((stepKey: string, state: "done" | "current" | "todo") => {
+    if (state === "todo") return;
+    switch (stepKey) {
+      case "idea":
+        scrollAndFocus(titleH1Ref.current);
+        break;
+      case "research":
+        if (lineageRef.current) scrollAndFocus(lineageRef.current);
+        else scrollAndFocus(researchNotesRef.current);
+        break;
+      case "script":
+        scrollAndFocus(scriptTextareaRef.current);
+        break;
+      case "shoot":
+        focusPlanningPanel(shootDateRef.current);
+        break;
+      case "post":
+        focusPlanningPanel(editDueDateRef.current ?? publishDateRef.current);
+        break;
+      case "publish":
+        focusPlanningPanel(publishDateRef.current);
+        break;
+      case "review":
+        focusPlanningPanel(statusSelectRef.current);
+        break;
+    }
+  }, [scrollAndFocus, focusPlanningPanel]);
+
+  const handleRegenerate = useCallback(async () => {
+    if (!scriptBuilderV2Enabled) {
+      alert("Script Builder v2 isn't enabled for your tier yet.");
+      return;
+    }
+    const msg = form.script.trim()
+      ? "Regenerate this script? Current content will be replaced. (You can undo from autosave history within 60s.)"
+      : "Build a new script with the v2 pipeline?";
+    if (!confirm(msg)) return;
+    await handleBuildV2();
+  }, [scriptBuilderV2Enabled, form.script, handleBuildV2]);
+
+  // ── tab counts ────────────────────────────────────────────────────────────
+  const tabCounts = useMemo(() => {
+    const planning =
+      (!form.status || form.status === "Idea" ? 1 : 0) +
+      (!form.theme ? 1 : 0) +
+      (!form.propertyTypeFocus || form.propertyTypeFocus === "Auto" ? 1 : 0) +
+      (!form.shootDate ? 1 : 0) +
+      (!form.editDueDate && showEditDue ? 1 : 0) +
+      (!form.publishDate ? 1 : 0);
+    const connecting =
+      (plan.driveFolderLink ? 1 : 0) +
+      (form.bingeVideoId || (plan.bingedFromList && plan.bingedFromList.length > 0) ? 1 : 0) +
+      (form.linkedCampaignId ? 1 : 0);
+    const tools = 7;
+    const publish =
+      (form.youtubeDescription ? 1 : 0) +
+      (form.thumbnailWords ? 1 : 0);
+    return { planning, connecting, tools, publish };
+  }, [
+    form.status, form.theme, form.propertyTypeFocus,
+    form.shootDate, form.editDueDate, form.publishDate, showEditDue,
+    plan.driveFolderLink, plan.bingedFromList,
+    form.bingeVideoId, form.linkedCampaignId,
+    form.youtubeDescription, form.thumbnailWords,
+  ]);
 
   // Click handler for the hero CTA. Each step routes the cursor to the
   // most-likely next input, or advances `status` when the leftover work
@@ -884,11 +969,21 @@ Output as markdown with ## per talking point, ### per section. Every stat: \`fig
               : st === "current"
                 ? { bg: "white", fg: "var(--abv-azure)", ring: "var(--abv-azure)" }
                 : { bg: "var(--abv-bg-warm)", fg: "var(--abv-text-muted)", ring: "transparent" };
+            const clickable = st !== "todo";
             return (
               <div key={s.key} style={{ display: "flex", alignItems: "center", gap: 12, flex: 1 }}>
-                <div style={{
-                  display: "flex", alignItems: "center", gap: 8,
-                }}>
+                <button
+                  type="button"
+                  onClick={() => handleStepClick(s.key, st)}
+                  disabled={!clickable}
+                  aria-label={`Jump to ${s.label}`}
+                  title={clickable ? `Jump to ${s.label}` : `${s.label} — not yet available`}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 8,
+                    background: "transparent", padding: 0, border: 0,
+                    cursor: clickable ? "pointer" : "not-allowed",
+                  }}
+                >
                   <span style={{
                     width: 22, height: 22, borderRadius: "50%",
                     background: dot.bg, color: dot.fg,
@@ -902,7 +997,7 @@ Output as markdown with ## per talking point, ### per section. Every stat: \`fig
                     textTransform: "uppercase",
                     color: st === "todo" ? "var(--abv-text-muted)" : "var(--abv-text)",
                   }}>{s.label}</span>
-                </div>
+                </button>
                 {idx < STEPS.length - 1 && (
                   <span style={{
                     flex: 1, height: 1,
@@ -917,7 +1012,7 @@ Output as markdown with ## per talking point, ### per section. Every stat: \`fig
 
         {/* ── lineage accordion ────────────────────────────────────────── */}
         {lineage && (
-          <section style={{
+          <section ref={lineageRef} style={{
             background: "var(--abv-azure-tint, #E0F2FE)",
             border: "1px solid rgba(59,130,246,0.2)",
             borderRadius: 12, marginBottom: 18, overflow: "hidden",
@@ -977,6 +1072,7 @@ Output as markdown with ## per talking point, ### per section. Every stat: \`fig
             title={form.title}
             textareaRef={scriptTextareaRef}
             onExport={handleExport}
+            onRegenerate={handleRegenerate}
           />
 
           {/* RIGHT: sidebar */}
@@ -984,12 +1080,7 @@ Output as markdown with ## per talking point, ### per section. Every stat: \`fig
             <TabStrip
               active={activeTab}
               onChange={setActiveTab}
-              counts={{
-                planning: 3,
-                connecting: isFoundations ? 2 : 3,
-                tools: 2,
-                publish: 4,
-              }}
+              counts={tabCounts}
             />
 
             {activeTab === "planning" && (
@@ -1007,6 +1098,11 @@ Output as markdown with ## per talking point, ### per section. Every stat: \`fig
                 onGenerateResearchPrompt={generateResearchPrompt}
                 researchPromptCopied={researchPromptCopied}
                 researchPromptError={researchPromptError}
+                statusSelectRef={statusSelectRef}
+                shootDateRef={shootDateRef}
+                editDueDateRef={editDueDateRef}
+                publishDateRef={publishDateRef}
+                researchNotesRef={researchNotesRef}
               />
             )}
 
@@ -1058,7 +1154,7 @@ function Fact({ label, value }: { label: string; value: string }) {
 }
 
 function ScriptPane({
-  value, onChange, onBlur, onBuildV2, planId, title, textareaRef, onExport,
+  value, onChange, onBlur, onBuildV2, planId, title, textareaRef, onExport, onRegenerate,
 }: {
   value: string;
   onChange: (v: string) => void;
@@ -1068,6 +1164,7 @@ function ScriptPane({
   title: string;
   textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
   onExport: () => void;
+  onRegenerate: () => void;
 }) {
   const words = wordCount(value);
   const minutes = Math.max(1, Math.round(words / 175));
@@ -1113,7 +1210,7 @@ function ScriptPane({
         borderRadius: 999, padding: "6px 8px",
         display: "flex", gap: 4, alignSelf: "flex-start",
       }}>
-        <ToolbarBtn label="Regenerate" />
+        <ToolbarBtn label="↻ Regenerate" onClick={onRegenerate} />
         <Link
           href={`/member/ai-tools/script-review?planId=${planId}`}
           style={{
@@ -1270,6 +1367,7 @@ function PlanningTab({
   bingeOptions, loadBingeOptions,
   onSnooze, onBlur,
   onGenerateResearchPrompt, researchPromptCopied, researchPromptError,
+  statusSelectRef, shootDateRef, editDueDateRef, publishDateRef, researchNotesRef,
 }: {
   form: Form;
   update: <K extends keyof Form>(k: K, v: Form[K]) => void;
@@ -1284,6 +1382,11 @@ function PlanningTab({
   onGenerateResearchPrompt: () => void;
   researchPromptCopied: boolean;
   researchPromptError: string;
+  statusSelectRef?: React.RefObject<HTMLSelectElement | null>;
+  shootDateRef?: React.RefObject<HTMLInputElement | null>;
+  editDueDateRef?: React.RefObject<HTMLInputElement | null>;
+  publishDateRef?: React.RefObject<HTMLInputElement | null>;
+  researchNotesRef?: React.RefObject<HTMLTextAreaElement | null>;
 }) {
   const selectedBinge = (() => {
     const id = form.bingeVideoId;
@@ -1295,6 +1398,7 @@ function PlanningTab({
       <Panel title="Status & dates">
         <div style={{ padding: "12px 14px 6px" }}>
           <select
+            ref={statusSelectRef}
             value={form.status}
             onChange={(e) => update("status", e.target.value)}
             onBlur={onBlur}
@@ -1309,11 +1413,11 @@ function PlanningTab({
             {statusOptions.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
-        <DateRow label="Film" value={form.shootDate} onChange={(v) => update("shootDate", v)} onBlur={onBlur} />
+        <DateRow label="Film" value={form.shootDate} onChange={(v) => update("shootDate", v)} onBlur={onBlur} inputRef={shootDateRef} />
         {showEditDue && (
-          <DateRow label="Edit due" value={form.editDueDate} onChange={(v) => update("editDueDate", v)} onBlur={onBlur} />
+          <DateRow label="Edit due" value={form.editDueDate} onChange={(v) => update("editDueDate", v)} onBlur={onBlur} inputRef={editDueDateRef} />
         )}
-        <DateRow label="Publish" value={form.publishDate} onChange={(v) => update("publishDate", v)} onBlur={onBlur} />
+        <DateRow label="Publish" value={form.publishDate} onChange={(v) => update("publishDate", v)} onBlur={onBlur} inputRef={publishDateRef} />
       </Panel>
 
       <Panel title="Theme & anchor">
@@ -1389,6 +1493,7 @@ function PlanningTab({
       }>
         <div style={{ padding: 12 }}>
           <textarea
+            ref={researchNotesRef}
             value={form.researchNotes}
             onChange={(e) => update("researchNotes", e.target.value)}
             onBlur={onBlur}
@@ -1447,10 +1552,11 @@ function PlanningTab({
 }
 
 function DateRow({
-  label, value, onChange, onBlur,
+  label, value, onChange, onBlur, inputRef,
 }: {
   label: string; value: string;
   onChange: (v: string) => void; onBlur: () => void;
+  inputRef?: React.RefObject<HTMLInputElement | null>;
 }) {
   return (
     <div style={{
@@ -1460,6 +1566,7 @@ function DateRow({
     }}>
       <span style={{ color: "var(--abv-text-muted)" }}>{label}</span>
       <input
+        ref={inputRef}
         type="date"
         value={value}
         onChange={(e) => onChange(e.target.value)}
