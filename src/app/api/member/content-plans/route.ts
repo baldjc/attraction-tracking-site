@@ -13,31 +13,59 @@ export async function GET(req: NextRequest) {
   const statusFilter = searchParams.get("status");
   const themeFilter = searchParams.get("theme");
 
-  const dbUser = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: { serviceTier: true },
-  });
+  // Wrap both prisma calls so a transient DB error (Neon serverless
+  // cold-start ETIMEDOUT was the production symptom — paid members
+  // bounced to the upgrade wall because the client wrapper's `.catch`
+  // silently downgraded them to "foundations" when the route returned
+  // a bodyless HTML 500). The route now ALWAYS returns JSON; on
+  // failure the client gets `{error, code, serviceTier: null}` and
+  // shows a retry state instead of misclassifying the tier.
+  try {
+    const dbUser = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { serviceTier: true },
+    });
 
-  const plans = await prisma.contentPlan.findMany({
-    where: {
-      userId: user.id,
-      ...(statusFilter ? { status: statusFilter } : {}),
-      ...(themeFilter ? { theme: themeFilter } : {}),
-    },
-    orderBy: { publishDate: "desc" },
-    include: {
-      // Include the binge chain summaries so the planner table + edit modal
-      // can render the chip and the "Binged FROM" list without an extra
-      // roundtrip per plan.
-      bingeVideo: { select: { id: true, title: true, theme: true, status: true } },
-      bingedFromList: {
-        select: { id: true, title: true, theme: true, status: true },
-        orderBy: { updatedAt: "desc" },
+    const plans = await prisma.contentPlan.findMany({
+      where: {
+        userId: user.id,
+        ...(statusFilter ? { status: statusFilter } : {}),
+        ...(themeFilter ? { theme: themeFilter } : {}),
       },
-    },
-  });
+      orderBy: { publishDate: "desc" },
+      include: {
+        // Include the binge chain summaries so the planner table + edit modal
+        // can render the chip and the "Binged FROM" list without an extra
+        // roundtrip per plan.
+        bingeVideo: { select: { id: true, title: true, theme: true, status: true } },
+        bingedFromList: {
+          select: { id: true, title: true, theme: true, status: true },
+          orderBy: { updatedAt: "desc" },
+        },
+      },
+    });
 
-  return NextResponse.json({ plans, serviceTier: dbUser?.serviceTier ?? "foundations" });
+    return NextResponse.json({
+      plans,
+      serviceTier: dbUser?.serviceTier ?? "foundations",
+    });
+  } catch (err) {
+    const code = (err as { code?: string })?.code ?? "UNKNOWN";
+    console.error(
+      "[content-plans GET] failed for user",
+      user.id,
+      "code=",
+      code,
+      err,
+    );
+    // 503 (not 500) — semantically "transient backend trouble, try
+    // again". Body carries `serviceTier: null` as an explicit signal
+    // the client must not assume foundations on failure.
+    return NextResponse.json(
+      { error: "content-plans temporarily unavailable", code, serviceTier: null },
+      { status: 503 },
+    );
+  }
 }
 
 export async function POST(req: NextRequest) {
