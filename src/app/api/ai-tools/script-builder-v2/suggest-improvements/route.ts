@@ -35,7 +35,7 @@
 import { type NextRequest } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import prisma from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { resolveUserFromSession } from "@/lib/session-utils";
 import { getFeatureFlags } from "@/lib/feature-flags";
 import { getCostCapStatus } from "@/lib/ai-tool-cost";
 import { loadMarketConfigSummary } from "@/lib/content-engine-context";
@@ -93,10 +93,11 @@ interface MetricsOut {
 
 export async function POST(req: NextRequest) {
   // ── Auth + flag ──────────────────────────────────────────────────────
-  const session = await auth();
-  const userId = session?.user?.id;
-  const userRole = session?.user?.role ?? null;
-  if (!userId) return jsonError(401, "unauthorized");
+  // Impersonation-aware so plan ownership + cost cap resolve to the member.
+  const resolved = await resolveUserFromSession();
+  if (!resolved) return jsonError(401, "unauthorized");
+  const userId = resolved.id;
+  const userRole = resolved.role;
 
   const flags = await getFeatureFlags({ userId, userRole });
   if (!flags.tool_script_builder_v2) return jsonError(404, "not_enabled");

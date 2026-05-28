@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { resolveUserFromSession } from "@/lib/session-utils";
 import prisma from "@/lib/prisma";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const session = await auth();
-  const userId = (session?.user as { id?: string } | undefined)?.id;
-  if (!session?.user || !userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // Impersonation-aware so an admin/editor viewing a member's plan sees the
+  // member's team notes, not a 404 from comparing against the admin id.
+  const resolved = await resolveUserFromSession();
+  if (!resolved) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const userId = resolved.id;
   const { id } = await params;
 
   const plan = await prisma.contentPlan.findUnique({ where: { id }, select: { userId: true } });

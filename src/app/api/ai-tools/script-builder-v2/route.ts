@@ -55,7 +55,7 @@
  */
 import { type NextRequest } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
-import { auth } from "@/lib/auth";
+import { resolveUserFromSession } from "@/lib/session-utils";
 import { getFeatureFlags } from "@/lib/feature-flags";
 import { getCostCapStatus, logUsage } from "@/lib/ai-tool-cost";
 import prisma from "@/lib/prisma";
@@ -168,10 +168,12 @@ const PUBLISHED_PLAN_STATUSES = new Set([
 
 export async function POST(req: NextRequest) {
   // ── Auth + feature flag (HTTP errors before opening the stream) ──────
-  const session = await auth();
-  const userId = session?.user?.id;
-  const userRole = session?.user?.role ?? null;
-  if (!userId) return jsonError(401, "Unauthorized");
+  // Impersonation-aware: an admin/editor impersonating a member must read and
+  // bill against the MEMBER's id (plan ownership + cost cap), not their own.
+  const resolved = await resolveUserFromSession();
+  if (!resolved) return jsonError(401, "Unauthorized");
+  const userId = resolved.id;
+  const userRole = resolved.role;
 
   const flags = await getFeatureFlags({ userId, userRole });
   if (!flags.tool_script_builder_v2) return jsonError(404, "Not enabled");

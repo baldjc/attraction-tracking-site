@@ -35,7 +35,7 @@
  */
 import { NextResponse, type NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { resolveUserFromSession } from "@/lib/session-utils";
 import { getFeatureFlags } from "@/lib/feature-flags";
 import { logUsage } from "@/lib/ai-tool-cost";
 import { validateScript } from "@/lib/script-content-rules";
@@ -52,12 +52,14 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const session = await auth();
-  const userId = session?.user?.id;
-  const userRole = session?.user?.role ?? null;
-  if (!userId) {
+  // Impersonation-aware so the script saves against the impersonated member's
+  // plan (and usage bills to them), not the admin account.
+  const resolved = await resolveUserFromSession();
+  if (!resolved) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const userId = resolved.id;
+  const userRole = resolved.role;
 
   const flags = await getFeatureFlags({ userId, userRole });
   if (!flags.tool_script_builder_v2) {
