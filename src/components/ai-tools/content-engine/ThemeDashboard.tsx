@@ -10,6 +10,7 @@ import NicheSetup from "./NicheSetup";
 import type { Idea } from "./IdeaCard";
 import { AiThinking } from "@/components/ai/AiThinking";
 import { useAiThinking } from "@/lib/use-ai-thinking";
+import { Button } from "@/components/ui/Button";
 
 interface Props {
   themes: Array<ContentTheme | string>;
@@ -136,29 +137,16 @@ export default function ThemeDashboard({ themes, niche, city }: Props) {
         <div className="flex items-center gap-2">
           {reordering ? (
             <>
-              <button
-                onClick={saveOrder}
-                disabled={savingOrder}
-                className="text-sm bg-[var(--abv-ai-tools)] hover:bg-[#2bb0ec] text-white font-semibold px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
-              >
+              <Button variant="aiTools" size="sm" onClick={saveOrder} disabled={savingOrder}>
                 {savingOrder ? "Saving..." : "Save Order"}
-              </button>
-              <button
-                onClick={cancelReorder}
-                className="text-sm border border-[var(--abv-text)]/20 dark:border-white/20 text-[var(--abv-text)]/60 dark:text-white/60 hover:text-[var(--abv-text)] dark:hover:text-white px-4 py-2 rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
+              </Button>
+              <Button variant="outline" size="sm" onClick={cancelReorder}>Cancel</Button>
             </>
           ) : (
             <>
-              <button
-                onClick={handleGenerateAll}
-                disabled={generatingAll}
-                className="text-sm bg-[var(--abv-ai-tools)] hover:bg-[#2bb0ec] text-white font-semibold px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
-              >
+              <Button variant="aiTools" size="sm" onClick={handleGenerateAll} disabled={generatingAll}>
                 {generatingAll ? "Generating..." : "Generate All"}
-              </button>
+              </Button>
               <button
                 onClick={() => setReordering(true)}
                 className="w-9 h-9 rounded-lg border border-[var(--abv-text)]/20 dark:border-white/20 flex items-center justify-center text-[var(--abv-text)]/50 dark:text-white/50 hover:text-[var(--abv-text)] dark:hover:text-white hover:border-[var(--abv-text)]/40 dark:hover:border-white/40 transition-colors"

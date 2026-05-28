@@ -7,6 +7,7 @@ import Link from "next/link";
 import CampaignsPage from "@/app/member/campaigns/page";
 import AnalyticsPage from "@/app/member/analytics/page";
 import { CheckCircleIcon } from "@heroicons/react/24/outline";
+import { Button } from "@/components/ui/Button";
 
 interface TrainingSection {
   id: string;
@@ -116,12 +117,7 @@ function TrainingTab({ sections, loading, pct, onSwitchTab }: {
           <p className="text-sm text-[var(--abv-text)]/60 dark:text-[#94a3b8] mb-4">
             Now put it into practice — set up your first campaign to start tracking results.
           </p>
-          <button
-            onClick={() => onSwitchTab("campaigns")}
-            className="inline-flex items-center gap-2 bg-[var(--abv-dark)] text-white rounded-lg px-5 py-2.5 text-sm font-semibold hover:bg-black/85 transition-colors"
-          >
-            Set Up Your First Campaign →
-          </button>
+          <Button onClick={() => onSwitchTab("campaigns")}>Set Up Your First Campaign →</Button>
         </div>
       )}
     </div>
@@ -181,18 +177,8 @@ function GenerateLeadsPageInner() {
               This is where your content starts converting into real business. We recommend starting with the training to understand how lead generation works, but you can jump into campaigns anytime.
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
-              <button
-                onClick={() => switchTab("training")}
-                className="inline-flex items-center justify-center gap-2 bg-[var(--abv-dark)] text-white rounded-lg px-4 py-2.5 text-sm font-semibold hover:bg-black/85 transition-colors"
-              >
-                📚 Start with Training
-              </button>
-              <button
-                onClick={() => switchTab("campaigns")}
-                className="inline-flex items-center justify-center gap-2 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#2a2a2a] text-[var(--abv-text)] dark:text-[#e2e8f0] rounded-lg px-4 py-2.5 text-sm font-semibold hover:bg-gray-50 dark:hover:bg-[#222] transition-colors"
-              >
-                🚀 Jump into Campaigns
-              </button>
+              <Button onClick={() => switchTab("training")}>📚 Start with Training</Button>
+              <Button variant="outline" onClick={() => switchTab("campaigns")}>🚀 Jump into Campaigns</Button>
             </div>
           </div>
         ) : pct === 100 ? (
@@ -202,12 +188,7 @@ function GenerateLeadsPageInner() {
             <p className="text-sm text-[var(--abv-text)]/60 dark:text-[#94a3b8] mb-4">
               You&apos;ve learned how lead generation works. Now put it into practice.
             </p>
-            <button
-              onClick={() => switchTab("campaigns")}
-              className="inline-flex items-center gap-2 bg-[var(--abv-dark)] text-white rounded-lg px-5 py-2.5 text-sm font-semibold hover:bg-black/85 transition-colors"
-            >
-              Set Up Your First Campaign →
-            </button>
+            <Button onClick={() => switchTab("campaigns")}>Set Up Your First Campaign →</Button>
           </div>
         ) : (
           <div className="bg-[var(--abv-dark)]/5 dark:bg-[var(--abv-dark)]/10 border border-[var(--abv-azure)]/20 rounded-lg px-5 py-3 mb-6 flex items-center gap-4">

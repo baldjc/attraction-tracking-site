@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { ArrowPathIcon, CheckIcon, BookmarkSquareIcon, TrashIcon, UserCircleIcon } from "@heroicons/react/24/outline";
 import NextStepCard from "@/components/ai-tools/NextStepCard";
+import { Button } from "@/components/ui/Button";
 
 const PRINCIPLE_LABELS: Record<string, string> = {
   avatar_clarity: "Avatar Clarity",
@@ -538,11 +539,7 @@ export default function ScriptReviewUI({ fetchBaseline = false, isAdmin = false 
         {error && (
           <p className="text-sm text-[var(--abv-crimson)] bg-[#ffe5ea] px-3 py-2 rounded-lg">{error}</p>
         )}
-        <button
-          type="submit"
-          disabled={loading || !videoTitle.trim() || !scriptText.trim()}
-          className="w-full bg-[var(--abv-dark)] hover:bg-[#2ab0ec] text-white font-semibold text-sm py-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-        >
+        <Button type="submit" disabled={loading || !videoTitle.trim() || !scriptText.trim()} fullWidth>
           {loading ? (
             <>
               <ArrowPathIcon className="w-4 h-4 animate-spin" />
@@ -551,7 +548,7 @@ export default function ScriptReviewUI({ fetchBaseline = false, isAdmin = false 
           ) : (
             "Review This Script"
           )}
-        </button>
+        </Button>
         {loading && (
           <p className="text-xs text-center text-[var(--abv-text)]/40">Usually takes 20–40 seconds…</p>
         )}

@@ -20,6 +20,7 @@ import MarkdownMessage from "@/components/MarkdownMessage";
 import NextStepCard from "@/components/ai-tools/NextStepCard";
 import { CANONICAL_THEMES, MAX_THEMES } from "@/lib/canonical-themes";
 import MarkdownTextarea from "@/components/MarkdownTextarea";
+import { Button } from "@/components/ui/Button";
 import { AiThinking } from "@/components/ai/AiThinking";
 import { useAiThinking } from "@/lib/use-ai-thinking";
 import { parseSseEvent } from "@/lib/ai-thinking-sse";
@@ -265,9 +266,9 @@ function AvatarProfileCard({
           <div className="flex items-center gap-2">
             {toast && <span className="text-xs text-green-600 font-medium">{toast}</span>}
             <button onClick={cancelEdit} disabled={saving} className="text-xs text-[var(--abv-text)]/50 hover:text-[var(--abv-text)] transition-colors">Cancel</button>
-            <button onClick={save} disabled={saving} className="px-3 py-1.5 bg-[var(--abv-ai-tools)] text-white text-xs font-semibold rounded-lg hover:bg-[var(--abv-ai-tools)]/90 disabled:opacity-50 transition-colors">
+            <Button variant="aiTools" size="sm" onClick={save} disabled={saving}>
               {saving ? "Saving…" : "Save Changes"}
-            </button>
+            </Button>
           </div>
         </div>
         <div className="p-4 space-y-4">
@@ -427,9 +428,9 @@ function AvatarProfileCard({
             </div>
             <div className="flex items-center justify-end gap-3 px-5 py-4 border-t border-[var(--abv-text)]/10">
               <button onClick={() => setShowRemapModal(false)} className="text-sm text-[var(--abv-text)]/50 hover:text-[var(--abv-text)]">Cancel</button>
-              <button onClick={saveRemap} disabled={remapSaving} className="px-4 py-2 bg-[var(--abv-ai-tools)] text-white text-sm font-semibold rounded-lg hover:bg-[var(--abv-ai-tools)]/90 disabled:opacity-50 transition-colors">
+              <Button variant="aiTools" onClick={saveRemap} disabled={remapSaving}>
                 {remapSaving ? "Saving…" : "Confirm Mapping"}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

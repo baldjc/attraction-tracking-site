@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Button } from "@/components/ui/Button";
 
 interface Props {
   initialNiche?: string | string[] | null;
@@ -82,13 +83,9 @@ export default function NicheSetup({ initialNiche, initialCity, onSaved, isModal
 
         {error && <p className="text-sm text-red-500">{error}</p>}
 
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="w-full bg-[var(--abv-ai-tools)] hover:bg-[#2bb0ec] text-white font-semibold text-sm py-2.5 rounded-lg transition-colors disabled:opacity-50"
-        >
+        <Button variant="aiTools" onClick={handleSave} disabled={saving} fullWidth>
           {saving ? "Saving..." : "Save and continue"}
-        </button>
+        </Button>
       </div>
     </div>
   );

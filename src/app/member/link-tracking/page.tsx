@@ -11,6 +11,7 @@ import {
   QuestionMarkCircleIcon,
   DocumentDuplicateIcon,
 } from "@heroicons/react/24/outline";
+import { Button } from "@/components/ui/Button";
 
 interface ProfileData {
   id: string;
@@ -356,13 +357,9 @@ That's it — one snippet, site-wide. Let me know when it's done.`;
                       : "border-[var(--abv-text)]/20 dark:border-white/20 focus:border-[var(--abv-azure)]"
                   }`}
                 />
-                <button
-                  onClick={savePath}
-                  disabled={saving}
-                  className="shrink-0 bg-[var(--abv-dark)] text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-[var(--abv-dark)]/90 disabled:opacity-50 transition-colors"
-                >
+                <Button onClick={savePath} disabled={saving} className="shrink-0">
                   {saving ? "Saving…" : "Save"}
-                </button>
+                </Button>
               </div>
               {tyPathError && (
                 <p className="mt-2 text-xs text-red-600 font-medium">{tyPathError}</p>

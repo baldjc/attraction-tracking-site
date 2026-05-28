@@ -5,6 +5,7 @@ import { ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
 import { DocumentArrowUpIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import MarkdownTextarea from "@/components/MarkdownTextarea";
 import { AiThinking } from "@/components/ai/AiThinking";
+import { Button } from "@/components/ui/Button";
 
 interface Props {
   onSubmit: (data: {
@@ -278,13 +279,9 @@ export default function ListingInputPhase({ onSubmit, loading }: Props) {
         )}
       </div>
 
-      <button
-        onClick={handleSubmit}
-        disabled={!canSubmit}
-        className="w-full py-3 px-4 bg-[var(--abv-ai-tools)] hover:bg-[#5a8fb3] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors text-sm"
-      >
+      <Button variant="aiTools" onClick={handleSubmit} disabled={!canSubmit} fullWidth>
         {uploading ? "Reading files…" : loading ? "Building your video concepts…" : "Build My Video Concept"}
-      </button>
+      </Button>
       {loading && (
         <div className="mt-3">
           <AiThinking

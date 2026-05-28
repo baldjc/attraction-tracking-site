@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import NicheSetup from "@/components/ai-tools/content-engine/NicheSetup";
 import ThemeDashboard from "@/components/ai-tools/content-engine/ThemeDashboard";
+import { LinkButton } from "@/components/ui/Button";
 
 interface AvatarData {
   avatarName?: string | null;
@@ -51,12 +52,9 @@ export default function ContentEnginePage() {
           <p className="text-sm text-[var(--abv-text)]/60 mb-6">
             Your Content Engine needs an avatar to work. Build yours now — it only takes a few minutes and powers every AI tool.
           </p>
-          <Link
-            href="/member/ai-tools/avatar-architect"
-            className="inline-block bg-[var(--abv-ai-tools)] hover:bg-[#2bb0ec] text-white font-semibold text-sm px-6 py-2.5 rounded-lg transition-colors"
-          >
+          <LinkButton href="/member/ai-tools/avatar-architect" variant="aiTools">
             Build your avatar →
-          </Link>
+          </LinkButton>
         </div>
       </div>
     );

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { FolderIcon, ClockIcon } from "@heroicons/react/24/outline";
 import PageHeader from "@/components/PageHeader";
 import { DraftsInProgressSection } from "@/components/my-work/DraftsInProgressSection";
+import { LinkButton } from "@/components/ui/Button";
 
 interface WorkItem {
   id: string;
@@ -114,12 +115,7 @@ export default function MyWorkPage() {
           <p className="text-sm text-[var(--abv-text)]/50 dark:text-white/50 mb-4">
             Head to AI Tools to start creating scripts, ideas, and more. Everything you save will show up here.
           </p>
-          <Link
-            href="/member/ai-tools"
-            className="inline-flex items-center gap-2 bg-[var(--abv-dark)] text-white rounded-lg px-4 py-2.5 text-sm font-semibold hover:bg-black/85 transition-colors"
-          >
-            Open AI Tools →
-          </Link>
+          <LinkButton href="/member/ai-tools">Open AI Tools →</LinkButton>
         </div>
       )}
 

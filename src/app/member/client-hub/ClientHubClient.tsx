@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowTopRightOnSquareIcon, FolderIcon, ArrowRightIcon } from "@heroicons/react/24/outline";
 import { STATUS_STYLES } from "@/lib/content-plan-utils";
+import { LinkButton } from "@/components/ui/Button";
 
 interface ContentPlan {
   id: string;
@@ -77,16 +78,11 @@ export default function ClientHubClient() {
         </div>
         {data.assetsDriveLink ? (
           <div>
-            <a
-              href={data.assetsDriveLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 bg-[var(--abv-dark)] hover:bg-[#5a8fb0] text-white font-medium px-5 py-2.5 rounded-lg transition-colors"
-            >
+            <LinkButton href={data.assetsDriveLink} target="_blank">
               <FolderIcon className="w-4 h-4" />
               Open Assets Folder
               <ArrowTopRightOnSquareIcon className="w-4 h-4" />
-            </a>
+            </LinkButton>
             <p className="text-xs text-[var(--abv-text)]/40 mt-3">
               All video-specific folders are created automatically when videos are added to your Content Planner. If your assets folder hasn't been set up yet, contact your admin.
             </p>

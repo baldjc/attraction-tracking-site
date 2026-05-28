@@ -7,6 +7,7 @@ import {
   VideoCameraIcon,
 } from "@heroicons/react/24/outline";
 import OnboardingBanner from "@/components/onboarding/OnboardingBanner";
+import { Button, LinkButton } from "@/components/ui/Button";
 
 // ── Helpers ───────────────────────────────────────────────────
 
@@ -56,14 +57,13 @@ function PaymentBanner() {
         <p className="font-semibold text-[var(--abv-text)] text-sm">Your subscription payment is past due.</p>
         <p className="text-[var(--abv-text-secondary)] text-sm mt-0.5">Update your payment details to keep your access.</p>
       </div>
-      <a
+      <LinkButton
         href={retryUrl ?? "mailto:support@attractionbyvideo.com"}
         target={retryUrl ? "_blank" : undefined}
-        rel={retryUrl ? "noopener noreferrer" : undefined}
-        className="inline-flex items-center justify-center px-6 py-2.5 rounded-full bg-[var(--abv-dark)] text-white font-semibold text-sm hover:bg-black/90 transition-colors shrink-0"
+        className="shrink-0"
       >
         {retryUrl ? "Update payment" : "Contact support"}
-      </a>
+      </LinkButton>
     </div>
   );
 }
@@ -121,9 +121,12 @@ function NextStepCard() {
         </p>
       </div>
       <div className="flex items-center gap-3 shrink-0">
-        <Link href={nextStep.lessonHref} className="inline-flex items-center px-6 py-2.5 rounded-full bg-white text-[var(--abv-dark)] font-semibold text-sm hover:bg-[var(--abv-bg)] transition-colors">
+        <LinkButton
+          href={nextStep.lessonHref}
+          className="!bg-white !text-[var(--abv-dark)] hover:!bg-[var(--abv-bg)]"
+        >
           Watch lesson →
-        </Link>
+        </LinkButton>
         <button onClick={dismissNextStep} className="text-white/50 hover:text-white text-xs font-semibold uppercase tracking-wide">
           Dismiss
         </button>

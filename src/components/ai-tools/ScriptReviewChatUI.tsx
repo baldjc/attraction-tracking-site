@@ -13,6 +13,7 @@ import MarkdownMessage from "@/components/MarkdownMessage";
 import MarkdownTextarea from "@/components/MarkdownTextarea";
 import { AiThinking } from "@/components/ai/AiThinking";
 import { useAiThinking } from "@/lib/use-ai-thinking";
+import { Button } from "@/components/ui/Button";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -303,13 +304,9 @@ export default function ScriptReviewChatUI({ basePath, noAvatar, defaultPlanId }
             />
           </div>
 
-          <button
-            onClick={handleAnalyze}
-            disabled={loading || !videoTitle.trim() || !scriptText.trim()}
-            className="w-full py-3.5 bg-[var(--abv-ai-tools)] text-white font-semibold rounded-lg hover:bg-[var(--abv-ai-tools)]/90 disabled:opacity-50 transition-colors"
-          >
+          <Button variant="aiTools" size="lg" onClick={handleAnalyze} disabled={loading || !videoTitle.trim() || !scriptText.trim()} fullWidth>
             {loading ? "Analysing script…" : "Analyse My Script"}
-          </button>
+          </Button>
           {loading && (
             <div className="mt-3">
               <AiThinking

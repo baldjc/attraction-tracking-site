@@ -8,6 +8,7 @@ import { DailyLineChart, ChartEmpty } from "@/components/charts/DailyLineChart";
 import { LinkBarChart } from "@/components/charts/LinkBarChart";
 import ClickMap from "@/components/campaigns/ClickMap";
 import LocationTable from "@/components/campaigns/LocationTable";
+import { Button } from "@/components/ui/Button";
 
 interface TrackingLinkData {
   id: string;
@@ -421,12 +422,9 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
               {campaign.destinationUrl}
             </a>
           </div>
-          <button
-            onClick={() => setShowNewLink(true)}
-            className="flex-shrink-0 bg-[var(--abv-dark)] text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-[var(--abv-dark)]/90 transition-colors"
-          >
+          <Button onClick={() => setShowNewLink(true)} className="flex-shrink-0">
             + New Link
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -799,13 +797,9 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                 })()}
               </div>
 
-              <button
-                onClick={createLink}
-                disabled={creating || !linkForm.name}
-                className="w-full bg-[var(--abv-dark)] text-white py-2.5 rounded-lg font-semibold text-sm hover:bg-[var(--abv-dark)]/90 disabled:opacity-50 transition-colors"
-              >
+              <Button onClick={createLink} disabled={creating || !linkForm.name} fullWidth>
                 {creating ? "Creating..." : "Create Link"}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -885,12 +879,12 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                 </div>
               )}
               <div className="flex gap-3">
-                <button onClick={saveEdit} disabled={saving || !editForm.name} className="flex-1 bg-[var(--abv-dark)] text-white py-2.5 rounded-lg font-semibold text-sm hover:bg-[var(--abv-dark)]/90 disabled:opacity-50 transition-colors">
+                <Button onClick={saveEdit} disabled={saving || !editForm.name} className="flex-1">
                   {saving ? "Saving..." : "Save Changes"}
-                </button>
-                <button onClick={() => setEditingLink(null)} className="px-5 py-2.5 border border-[var(--abv-text)]/20 rounded-lg text-sm text-[var(--abv-text)]/60 hover:bg-gray-50 transition-colors">
+                </Button>
+                <Button variant="outline" onClick={() => setEditingLink(null)}>
                   Cancel
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -984,12 +978,12 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                 <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{campaignEditError}</p>
               )}
               <div className="flex gap-3">
-                <button onClick={saveCampaign} disabled={savingCampaign || !campaignEditForm.name || !campaignEditForm.destinationUrl} className="flex-1 bg-[var(--abv-dark)] text-white py-2.5 rounded-lg font-semibold text-sm hover:bg-[var(--abv-dark)]/90 disabled:opacity-50 transition-colors">
+                <Button onClick={saveCampaign} disabled={savingCampaign || !campaignEditForm.name || !campaignEditForm.destinationUrl} className="flex-1">
                   {savingCampaign ? "Saving..." : "Save Changes"}
-                </button>
-                <button onClick={() => setShowEditCampaign(false)} className="px-5 py-2.5 border border-[var(--abv-text)]/20 rounded-lg text-sm text-[var(--abv-text)]/60 hover:bg-gray-50 transition-colors">
+                </Button>
+                <Button variant="outline" onClick={() => setShowEditCampaign(false)}>
                   Cancel
-                </button>
+                </Button>
               </div>
             </div>
           </div>

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import IdeaCard, { Idea } from "./IdeaCard";
 import MarkdownMessage from "@/components/MarkdownMessage";
 import { AiThinking } from "@/components/ai/AiThinking";
+import { Button } from "@/components/ui/Button";
 
 interface ContentTheme {
   name: string;
@@ -238,13 +239,9 @@ export default function ContentEngineChat({ theme, onBack }: Props) {
             disabled={loading}
             className="flex-1 bg-white dark:bg-[#0f1419] border border-[var(--abv-text)]/20 dark:border-white/20 rounded-lg px-4 py-2.5 text-sm text-[var(--abv-text)] dark:text-white placeholder-[var(--abv-text)]/30 dark:placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[var(--abv-ai-tools)]/40"
           />
-          <button
-            onClick={handleSend}
-            disabled={loading || !input.trim()}
-            className="bg-[var(--abv-ai-tools)] hover:bg-[#2bb0ec] text-white text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors disabled:opacity-40"
-          >
+          <Button variant="aiTools" onClick={handleSend} disabled={loading || !input.trim()}>
             Send
-          </button>
+          </Button>
         </div>
       </div>
     </div>

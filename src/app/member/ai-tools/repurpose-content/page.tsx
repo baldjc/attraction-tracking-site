@@ -7,6 +7,7 @@ import NextStepCard from "@/components/ai-tools/NextStepCard";
 import LinkedPlanBanner from "@/components/ai-tools/LinkedPlanBanner";
 import InlineUpgradeBanner from "@/components/upgrade/InlineUpgradeBanner";
 import MarkdownTextarea from "@/components/MarkdownTextarea";
+import { Button } from "@/components/ui/Button";
 import { AiThinking } from "@/components/ai/AiThinking";
 import { useAiThinking } from "@/lib/use-ai-thinking";
 
@@ -1105,9 +1106,9 @@ function RepurposeContentPageInner() {
                 <option value="authoritative">Authoritative & Educational</option>
               </select>
             </div>
-            <button onClick={saveProfile} disabled={savingProfile || !profile.name || !profile.business || !profile.voice} className="w-full bg-[var(--abv-ai-tools)] text-white py-3 rounded-lg font-semibold hover:bg-[var(--abv-ai-tools)]/90 disabled:opacity-50 transition-colors">
+            <Button variant="aiTools" size="lg" onClick={saveProfile} disabled={savingProfile || !profile.name || !profile.business || !profile.voice} fullWidth>
               {savingProfile ? "Saving..." : "Save & Continue"}
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -1220,9 +1221,9 @@ function RepurposeContentPageInner() {
                                 <p className="text-xs text-[var(--abv-text)]/60 dark:text-white/60">Name this link (tracks clicks from this specific content)</p>
                                 <input type="text" value={newLinkName} onChange={(e) => setNewLinkName(e.target.value)} placeholder={`e.g. ${title || "Video Title"} — ${pickerForOutput ? OUTPUT_CONFIG[pickerForOutput].labelSuffix : ""}`} className="w-full border border-[var(--abv-text)]/20 dark:border-white/20 bg-white dark:bg-[#1a1a1a] text-[var(--abv-text)] dark:text-white rounded-lg px-3 py-2 text-sm" />
                                 <div className="flex gap-2">
-                                  <button onClick={createCampaignLink} disabled={creatingLink || !newLinkName.trim()} className="bg-[var(--abv-ai-tools)] text-white text-xs font-semibold px-4 py-2 rounded-lg hover:bg-[var(--abv-ai-tools)]/90 disabled:opacity-50 transition-colors">
+                                  <Button variant="aiTools" size="sm" onClick={createCampaignLink} disabled={creatingLink || !newLinkName.trim()}>
                                     {creatingLink ? "Creating…" : "Create & Add Link"}
-                                  </button>
+                                  </Button>
                                   <button onClick={() => setNewLinkMode(false)} className="text-xs text-[var(--abv-text)]/40 dark:text-white/40 hover:text-[var(--abv-text)] dark:hover:text-white px-2">Back</button>
                                 </div>
                               </div>
@@ -1910,9 +1911,9 @@ function RepurposeContentPageInner() {
             buttonLabel="Open Content Planner"
           />
 
-          <button onClick={reset} className="w-full border border-[var(--abv-text)]/20 dark:border-white/20 text-[var(--abv-text)] dark:text-white py-3 rounded-lg font-semibold hover:bg-[#111]/5 dark:hover:bg-white/5 transition-colors">
+          <Button variant="outline" size="lg" onClick={reset} fullWidth>
             Generate Another
-          </button>
+          </Button>
         </div>
       )}
     </div>

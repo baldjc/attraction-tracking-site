@@ -3,7 +3,7 @@
 import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
 import Link from "next/link";
 
-export type ButtonVariant = "primary" | "accent" | "outline" | "ghost" | "danger";
+export type ButtonVariant = "primary" | "accent" | "outline" | "ghost" | "danger" | "aiTools";
 export type ButtonSize = "sm" | "md" | "lg";
 
 interface BaseProps {
@@ -34,6 +34,8 @@ const VARIANTS: Record<ButtonVariant, string> = {
     "bg-transparent text-[var(--abv-text)]/70 hover:bg-[var(--abv-bg-warm)] hover:text-[var(--abv-ink)]",
   danger:
     "bg-[var(--abv-crimson)] text-white hover:opacity-90 shadow-sm",
+  aiTools:
+    "bg-[var(--abv-ai-tools)] text-white hover:bg-[var(--abv-ai-tools)]/90 shadow-sm",
 };
 
 function classes(

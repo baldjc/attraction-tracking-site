@@ -6,6 +6,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { CheckIcon, LinkIcon } from "@heroicons/react/24/outline";
 import LinkTrackingPage from "@/app/member/link-tracking/page";
 import MarkdownTextarea from "@/components/MarkdownTextarea";
+import { Button } from "@/components/ui/Button";
 
 interface AvatarData {
   avatarProfile?: Record<string, unknown> | null;
@@ -319,9 +320,9 @@ function MemberSettingsPageInner() {
                     <div className="flex items-center justify-between mt-3">
                       {saved && <span className="flex items-center gap-1.5 text-sm text-green-600"><CheckIcon className="w-4 h-4" /> Saved</span>}
                       <div className="ml-auto">
-                        <button onClick={saveAvatar} disabled={saving || !avatarText.trim()} className="bg-[var(--abv-dark)] text-white px-5 py-2 rounded-lg text-sm font-semibold hover:bg-[var(--abv-dark)]/90 disabled:opacity-50 transition-colors">
+                        <Button onClick={saveAvatar} disabled={saving || !avatarText.trim()}>
                           {saving ? "Saving..." : "Save Avatar"}
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   </div>
@@ -353,9 +354,9 @@ function MemberSettingsPageInner() {
                 <div className="flex items-center justify-between mt-3">
                   {saved && <span className="flex items-center gap-1.5 text-sm text-green-600"><CheckIcon className="w-4 h-4" /> Saved</span>}
                   <div className="ml-auto">
-                    <button onClick={saveAvatar} disabled={saving || !avatarText.trim()} className="bg-[var(--abv-dark)] text-white px-5 py-2 rounded-lg text-sm font-semibold hover:bg-[var(--abv-dark)]/90 disabled:opacity-50 transition-colors">
+                    <Button onClick={saveAvatar} disabled={saving || !avatarText.trim()}>
                       {saving ? "Saving..." : "Save Avatar"}
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -442,13 +443,9 @@ function MemberSettingsPageInner() {
                   </span>
                 )}
                 <div className="ml-auto">
-                  <button
-                    onClick={saveChannel}
-                    disabled={savingChannel || !channelUrl.trim()}
-                    className="bg-[var(--abv-dark)] text-white px-5 py-2 rounded-lg text-sm font-semibold hover:bg-[var(--abv-dark)]/90 disabled:opacity-50 transition-colors"
-                  >
+                  <Button onClick={saveChannel} disabled={savingChannel || !channelUrl.trim()}>
                     {savingChannel ? "Saving..." : "Save Channel"}
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -479,9 +476,9 @@ function MemberSettingsPageInner() {
               <div className="flex items-center justify-between mt-3">
                 {savedCredentials && <span className="flex items-center gap-1.5 text-sm text-green-600"><CheckIcon className="w-4 h-4" /> Saved</span>}
                 <div className="ml-auto">
-                  <button onClick={saveCredentials} disabled={savingCredentials} className="bg-[var(--abv-dark)] text-white px-5 py-2 rounded-lg text-sm font-semibold hover:bg-[var(--abv-dark)]/90 disabled:opacity-50 transition-colors">
+                  <Button onClick={saveCredentials} disabled={savingCredentials}>
                     {savingCredentials ? "Saving..." : "Save Credentials"}
-                  </button>
+                  </Button>
                 </div>
               </div>
             </>

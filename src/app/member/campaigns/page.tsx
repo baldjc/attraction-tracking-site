@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { TrashIcon, ArrowTrendingUpIcon, ArrowTrendingDownIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import { MiniSparkline } from "@/components/charts/MiniSparkline";
+import { Button } from "@/components/ui/Button";
 
 interface Campaign {
   id: string;
@@ -115,9 +116,7 @@ export default function CampaignsPage() {
           <h1 className="text-2xl font-bold text-[var(--abv-text)]">Campaigns</h1>
           <p className="text-sm text-[var(--abv-text)]/50 mt-0.5">Track clicks and leads from your content</p>
         </div>
-        <button onClick={() => setShowModal(true)} className="bg-[var(--abv-dark)] text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-[var(--abv-dark)]/90 transition-colors">
-          + New Campaign
-        </button>
+        <Button onClick={() => setShowModal(true)}>+ New Campaign</Button>
       </div>
 
       {/* Thank You Page Warning */}
@@ -182,9 +181,7 @@ export default function CampaignsPage() {
           <div className="text-4xl mb-3">🔗</div>
           <h2 className="font-semibold text-[var(--abv-text)] dark:text-white mb-2">No campaigns yet</h2>
           <p className="text-sm text-[var(--abv-text)]/50 dark:text-white/50 mb-5">Create a campaign for each lead magnet you want to track.</p>
-          <button onClick={() => setShowModal(true)} className="bg-[var(--abv-dark)] text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-[var(--abv-dark)]/90 transition-colors">
-            Create your first campaign
-          </button>
+          <Button onClick={() => setShowModal(true)}>Create your first campaign</Button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -275,9 +272,9 @@ export default function CampaignsPage() {
               {createError && (
                 <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{createError}</p>
               )}
-              <button onClick={createCampaign} disabled={creating || !form.name || !form.destinationUrl} className="w-full bg-[var(--abv-dark)] text-white py-2.5 rounded-lg font-semibold text-sm hover:bg-[var(--abv-dark)]/90 disabled:opacity-50 transition-colors">
+              <Button onClick={createCampaign} disabled={creating || !form.name || !form.destinationUrl} fullWidth>
                 {creating ? "Creating..." : "Create Campaign"}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -291,12 +288,12 @@ export default function CampaignsPage() {
             <p className="text-sm text-[var(--abv-text)]/60 mb-1">Delete <span className="font-semibold text-[var(--abv-text)]">{confirmingName}</span>?</p>
             <p className="text-xs text-[var(--abv-text)]/40 mb-5">Historical click and lead data will be preserved.</p>
             <div className="flex gap-3">
-              <button onClick={() => deleteCampaign(confirmDeleteId)} disabled={!!deletingId} className="flex-1 bg-[var(--abv-crimson)] text-white py-2.5 rounded-lg font-semibold text-sm hover:bg-[var(--abv-crimson)]/80 disabled:opacity-50 transition-colors">
+              <Button variant="danger" onClick={() => deleteCampaign(confirmDeleteId)} disabled={!!deletingId} className="flex-1">
                 {deletingId ? "Deleting..." : "Delete"}
-              </button>
-              <button onClick={() => setConfirmDeleteId(null)} className="flex-1 border border-[var(--abv-text)]/20 text-[var(--abv-text)]/60 py-2.5 rounded-lg text-sm hover:bg-gray-50 transition-colors">
+              </Button>
+              <Button variant="outline" onClick={() => setConfirmDeleteId(null)} className="flex-1">
                 Cancel
-              </button>
+              </Button>
             </div>
           </div>
         </div>
