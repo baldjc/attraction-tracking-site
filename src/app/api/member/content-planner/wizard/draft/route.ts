@@ -22,6 +22,7 @@ import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { getFeatureFlags } from "@/lib/feature-flags";
 import { parsePropertyTypeFocus } from "@/lib/property-type-focus";
+import { deriveLeadPropertyTypeLock } from "@/lib/content-engine-context";
 
 export const runtime = "nodejs";
 
@@ -100,7 +101,26 @@ export async function POST(req: NextRequest) {
 
   // Whitelist propertyTypeFocus (null/"Any" both collapse to null in DB).
   const focus = parsePropertyTypeFocus(body.propertyTypeFocus ?? null);
-  const focusForDb = focus === "Any" ? null : focus;
+  let focusForDb = focus === "Any" ? null : focus;
+
+  // Wave 12 Fix 2 — Story Lead → property-type auto-lock. When the
+  // member picks a Story Lead and hasn't already explicitly locked a
+  // property type, derive the lock from the lead's hood-anchored
+  // facts. Sets leadSpansMultipleTypes when no single type owns ≥80%
+  // of those facts so the BUYER AUDIENCE CONSISTENCY hard rule can
+  // honour the dual-audience exception downstream.
+  const storyLeadId =
+    typeof body.storyLeadId === "string" ? body.storyLeadId : null;
+  let leadSpansMultipleTypes = false;
+  if (storyLeadId) {
+    const derived = await deriveLeadPropertyTypeLock(userId, storyLeadId);
+    if (derived) {
+      if (focusForDb == null && derived.propertyTypeFocus) {
+        focusForDb = derived.propertyTypeFocus;
+      }
+      leadSpansMultipleTypes = derived.leadSpansMultipleTypes;
+    }
+  }
 
   const expiresAt = new Date(Date.now() + DRAFT_TTL_MS);
 
@@ -113,7 +133,8 @@ export async function POST(req: NextRequest) {
       userId,
       currentStep: body.currentStep,
       propertyTypeFocus: focusForDb,
-      storyLeadId: typeof body.storyLeadId === "string" ? body.storyLeadId : null,
+      storyLeadId,
+      leadSpansMultipleTypes,
       rotationSlot: typeof body.rotationSlot === "string" ? body.rotationSlot : null,
       validatedIdea:
         typeof body.validatedIdea === "string"

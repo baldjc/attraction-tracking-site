@@ -20,6 +20,7 @@ import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { getFeatureFlags } from "@/lib/feature-flags";
 import { parsePropertyTypeFocus } from "@/lib/property-type-focus";
+import { deriveLeadPropertyTypeLock } from "@/lib/content-engine-context";
 
 export const runtime = "nodejs";
 
@@ -76,7 +77,35 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
   }
 
   const focus = parsePropertyTypeFocus(body.propertyTypeFocus ?? null);
-  const focusForDb = focus === "Any" ? null : focus;
+  let focusForDb = focus === "Any" ? null : focus;
+
+  // Wave 12 Fix 2 — Story Lead → property-type auto-lock. Mirrors the
+  // POST handler in ../route.ts: when the autosaved draft now points
+  // to a Story Lead and the member hasn't explicitly locked a
+  // property type, derive the lock from the lead's hood-anchored
+  // facts. The leadSpansMultipleTypes flag rides alongside so the
+  // BUYER AUDIENCE CONSISTENCY hard rule downstream knows when to
+  // honour the dual-audience exception.
+  const storyLeadId =
+    typeof body.storyLeadId === "string" ? body.storyLeadId : null;
+  // When derived === null (transient missing-context path: lead/config/
+  // upload temporarily unavailable), we leave the existing
+  // leadSpansMultipleTypes value alone rather than clobbering it back to
+  // false. When storyLeadId is null we reset the flag to false — the
+  // member has detached the draft from a lead.
+  let leadSpansMultipleTypesUpdate: boolean | undefined;
+  if (storyLeadId) {
+    const derived = await deriveLeadPropertyTypeLock(userId, storyLeadId);
+    if (derived) {
+      if (focusForDb == null && derived.propertyTypeFocus) {
+        focusForDb = derived.propertyTypeFocus;
+      }
+      leadSpansMultipleTypesUpdate = derived.leadSpansMultipleTypes;
+    }
+  } else {
+    leadSpansMultipleTypesUpdate = false;
+  }
+
   const expiresAt = new Date(Date.now() + DRAFT_TTL_MS);
 
   // User-scoped — never widen without auth review. updateMany with
@@ -91,7 +120,10 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
     data: {
       currentStep: body.currentStep,
       propertyTypeFocus: focusForDb,
-      storyLeadId: typeof body.storyLeadId === "string" ? body.storyLeadId : null,
+      storyLeadId,
+      ...(leadSpansMultipleTypesUpdate !== undefined
+        ? { leadSpansMultipleTypes: leadSpansMultipleTypesUpdate }
+        : {}),
       rotationSlot: typeof body.rotationSlot === "string" ? body.rotationSlot : null,
       validatedIdea:
         typeof body.validatedIdea === "string"

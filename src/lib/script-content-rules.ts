@@ -677,6 +677,11 @@ function extractStatTokens(dialogue: string): ExtractedStatToken[] {
     { re: /\b(\d+(?:\.\d+)?)\s*%/g, unit: "percent" },
     { re: /\b(\d+(?:\.\d+)?)\s*months?\b/gi, unit: "months" },
     { re: /\b(\d+(?:\.\d+)?)\s*days?\b/gi, unit: "days" },
+    // Wave 12 Fix 1 — MOI values like "0.55 MOI" / "2.42 MOI" are
+    // semantically months-of-inventory; extract them so the soften
+    // pass can rewrite unanchored MOI fabrications to directional
+    // language alongside bare "X months" tokens.
+    { re: /\b(\d+(?:\.\d+)?)\s*MOI\b/g, unit: "months" },
   ];
   for (const { re, unit } of patterns) {
     let m: RegExpExecArray | null;
@@ -1450,6 +1455,27 @@ function softenRulesForToken(
   unit: StatUnit,
 ): Array<[RegExp, string]> {
   const esc = escRe(raw);
+  // Wave 12 Fix 1 — bucket-based directional language for duration
+  // tokens. Parse the numeric magnitude out of `raw` (matches both
+  // decimal months like "0.55 months" / "2.42 months", whole days like
+  // "10 days" / "18 days", and decimal MOI like "0.55 MOI" — the
+  // extractStatTokens MOI pattern emits unit="months"). The buckets
+  // mirror the seller-vs-buyer market thresholds the master prompt
+  // teaches, so a fabricated stat collapses to the directional phrase
+  // a real one would have surfaced.
+  const numMatch = raw.match(/(\d+(?:\.\d+)?)/);
+  const value = numMatch ? parseFloat(numMatch[1]) : NaN;
+  const directionalForMonths = (v: number): string => {
+    if (v < 1.5) return "deep seller territory";       // 0-1.5
+    if (v < 3) return "tight seller territory";        // 1.5-3
+    if (v <= 5) return "approaching balanced";         // 3-5
+    return "buyer territory";                           // >5
+  };
+  const directionalForDays = (v: number): string => {
+    if (v < 14) return "moving fast";                  // <14 days
+    if (v <= 30) return "a two-to-four week window";   // 14-30 days
+    return "sitting";                                   // >30 days
+  };
   if (unit === "percent") {
     return [
       // Directional movement
@@ -1516,6 +1542,10 @@ function softenRulesForToken(
   }
   if (unit === "months" || unit === "days") {
     const span = unit === "months" ? "months" : "days";
+    const directional =
+      unit === "months"
+        ? directionalForMonths(value)
+        : directionalForDays(value);
     return [
       [
         new RegExp(`\\bin\\s+the\\s+last\\s+${esc}`, "gi"),
@@ -1533,6 +1563,36 @@ function softenRulesForToken(
         new RegExp(`\\bwithin\\s+${esc}`, "gi"),
         `within a meaningful number of ${span}`,
       ],
+      // Wave 12 Fix 1 — bucket-based directional rewrites for bare
+      // duration tokens (e.g. "0.55 months", "10 days", "0.55 MOI").
+      // These run AFTER the narrow-phrase rewrites above so that
+      // anchored framings like "in the last 12 months" are caught
+      // first and not blown away by the catch-all. The mapping:
+      //   months 0-1.5 → "deep seller territory" / well under two months
+      //   months 1.5-3 → "tight seller territory"
+      //   months 3-5   → "approaching balanced"
+      //   months >5    → "buyer territory"
+      //   days <14     → "moving fast" / off the market in under two weeks
+      //   days 14-30   → "two-to-four week window"
+      //   days >30     → "sitting" / moving slowly
+      [
+        new RegExp(`\\bat\\s+${esc}`, "gi"),
+        `at ${directional}`,
+      ],
+      [
+        new RegExp(`\\baround\\s+${esc}`, "gi"),
+        directional,
+      ],
+      [
+        new RegExp(`\\bsitting\\s+at\\s+${esc}`, "gi"),
+        `sitting in ${directional}`,
+      ],
+      [
+        new RegExp(`\\bcurrently\\s+(?:at\\s+)?${esc}`, "gi"),
+        `currently in ${directional}`,
+      ],
+      // Last-resort bare token → directional bucket.
+      [new RegExp(`\\b${esc}`, "g"), directional],
     ];
   }
   return [];

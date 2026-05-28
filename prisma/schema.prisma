@@ -1029,9 +1029,10 @@ model ContentEngineDraft {
   // Multi-draft surfaces (My Work, WizardDraftShell) order by updatedAt desc.
   userId             String
   user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  currentStep        String
-  propertyTypeFocus  String?
-  storyLeadId        String?
+  currentStep             String
+  propertyTypeFocus       String?
+  storyLeadId             String?
+  leadSpansMultipleTypes  Boolean  @default(false)
   rotationSlot       String?
   validatedIdea      String?  @db.Text
   storyLeadFactIds   Json?

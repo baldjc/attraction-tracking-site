@@ -432,6 +432,90 @@ export function hasNamedAnchor(title: string, neighbourhoods: string[]): boolean
   return false;
 }
 
+/* ────────────────────────────────────────────────────────────────────── */
+/*  Wave 12 — buyer audience consistency (HARD rule).                     */
+/* ────────────────────────────────────────────────────────────────────── */
+
+/**
+ * A single buyer-audience consistency violation. Distinct shape from
+ * `ValidationResult` above (which is the per-card title validator) so
+ * the script-level rule can be wired into the script-builder route's
+ * structured-violations response without colliding with the idea-card
+ * validator's contract.
+ */
+export interface BuyerAudienceConsistencyViolation {
+  rule: "buyer_audience_consistency";
+  severity: "error";
+  message: string;
+}
+
+/**
+ * Mirrors the BUYER AUDIENCE CONSISTENCY hard rule in
+ * `script-builder-mode-prompt.ts`. The script must speak to a single
+ * buyer audience throughout: when a property-type lock is in force,
+ * non-locked property types may appear only as explicitly-framed
+ * comparison context, and may not exceed 15% of the body word count.
+ *
+ *  - `null` return → rule passed (or doesn't apply).
+ *  - violation object → script pivots to non-locked property types
+ *    without comparison framing.
+ *
+ * Skipped entirely when:
+ *   - the lead intentionally spans multiple property types
+ *     (`leadSpansMultipleTypes` flag from the Story Lead auto-lock), or
+ *   - no property-type lock is in force (`null` / "All").
+ */
+export function checkBuyerAudienceConsistency(
+  script: string,
+  lockedPropertyType: string | null,
+  leadSpansMultipleTypes: boolean,
+): BuyerAudienceConsistencyViolation | null {
+  // Skip if lead intentionally multi-type.
+  if (leadSpansMultipleTypes) return null;
+  // Skip if no lock.
+  if (!lockedPropertyType || lockedPropertyType === "All") return null;
+
+  const propertyTypes = ["Detached", "Semi-Detached", "Row/Townhouse", "Apartment"];
+  const otherTypes = propertyTypes.filter((t) => t !== lockedPropertyType);
+
+  // Count word frequency for each non-locked property type in the script.
+  const totalWords = script.split(/\s+/).filter(Boolean).length;
+  if (totalWords === 0) return null;
+  let otherTypeWordCount = 0;
+
+  for (const otherType of otherTypes) {
+    // Escape "/" / "-" so "Row/Townhouse" matches both "Row/Townhouse"
+    // and "Row-Townhouse" surface forms in dialogue.
+    const escaped = otherType.replace("/", "[/-]");
+    const regex = new RegExp(
+      `\\b${escaped}\\b[\\s\\S]{0,200}?(\\bbuyers?\\b|\\bmarket\\b|\\bvalue\\b|\\bMOI\\b|\\bDOM\\b)`,
+      "gi",
+    );
+    const matches = script.match(regex) ?? [];
+    otherTypeWordCount += matches.join(" ").split(/\s+/).filter(Boolean).length;
+  }
+
+  const ratio = otherTypeWordCount / totalWords;
+
+  if (ratio > 0.15) {
+    const hasComparisonFraming =
+      /for comparison|by contrast|this video isn't for|other buyers might|if you're (in|looking at)/i.test(
+        script,
+      );
+    if (!hasComparisonFraming) {
+      return {
+        rule: "buyer_audience_consistency",
+        severity: "error",
+        message:
+          `Script pivots to non-locked property types (${(ratio * 100).toFixed(1)}% of body) ` +
+          `without explicit comparison framing. Locked audience: ${lockedPropertyType}.`,
+      };
+    }
+  }
+
+  return null;
+}
+
 /**
  * Parse Claude's response text into JSON. Tolerates a single ```json fence
  * (the model sometimes adds one even when told not to). Throws on parse

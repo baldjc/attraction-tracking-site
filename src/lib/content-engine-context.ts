@@ -212,3 +212,125 @@ export async function loadStoryLead(
     },
   });
 }
+
+/* ────────────────────────────────────────────────────────────────────── */
+/*  Wave 12 Fix 2 — Story Lead → property-type auto-lock.                 */
+/* ────────────────────────────────────────────────────────────────────── */
+
+/**
+ * Lead-named neighbourhoods (lowercased) parsed out of the lead's
+ * pattern + whyItMatters + dataThreads narrative against the member's
+ * MarketConfig vocab. Mirrors the in-route helper in content-engine-v2
+ * so the wizard draft route can derive the same hood scope without
+ * importing from a route file.
+ */
+function extractLeadHoodsLower(
+  lead: StoryLeadDetail,
+  vocab: string[],
+): string[] {
+  const parts: string[] = [];
+  if (typeof lead.pattern === "string") parts.push(lead.pattern);
+  if (typeof lead.whyItMatters === "string") parts.push(lead.whyItMatters);
+  const dt = lead.dataThreads;
+  if (Array.isArray(dt)) {
+    for (const t of dt) if (typeof t === "string") parts.push(t);
+  } else if (dt && typeof dt === "object") {
+    for (const v of Object.values(dt as Record<string, unknown>)) {
+      if (typeof v === "string") parts.push(v);
+      else if (Array.isArray(v)) {
+        for (const x of v) if (typeof x === "string") parts.push(x);
+      }
+    }
+  }
+  const blob = parts.join(" \n ").toLowerCase();
+  if (!blob) return [];
+  const matched = new Set<string>();
+  for (const hood of vocab) {
+    const t = hood?.trim().toLowerCase();
+    if (!t || t.length < 3) continue;
+    const escaped = t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const re = new RegExp(
+      `(?<![A-Za-z0-9-])${escaped}(?![A-Za-z0-9-])`,
+      "i",
+    );
+    if (re.test(blob)) matched.add(t);
+  }
+  return Array.from(matched);
+}
+
+export interface LeadPropertyTypeLock {
+  /** The single property type the lead's facts cluster on (≥80%),
+   *  or `null` when the lead spans multiple types or has no
+   *  property-typed facts. */
+  propertyTypeFocus: string | null;
+  /** `true` when no single property type owns ≥80% of the lead's
+   *  hood-anchored property-typed facts. Surfaces the dual-audience
+   *  exception to the BUYER AUDIENCE CONSISTENCY hard rule. */
+  leadSpansMultipleTypes: boolean;
+}
+
+/**
+ * Wave 12 Fix 2 — derive the property-type lock implied by picking a
+ * Story Lead. Counts propertyType across the lead's hood-anchored
+ * facts (city/All rollups excluded — they have null propertyType and
+ * would dilute the count):
+ *
+ *   - ≥80% of facts share one type → lock to that type.
+ *   - facts span multiple types → leadSpansMultipleTypes = true,
+ *     focus stays null so the wizard prompts the member to keep
+ *     dual-audience framing throughout the script.
+ *   - no property-typed hood facts (only city rollups) → both null /
+ *     false, caller leaves any prior focus untouched.
+ *
+ * Returns `null` when the lead, market config, or upload can't be
+ * loaded — caller should not change the draft's lock state.
+ */
+export async function deriveLeadPropertyTypeLock(
+  userId: string,
+  storyLeadId: string,
+): Promise<LeadPropertyTypeLock | null> {
+  const [lead, config, upload] = await Promise.all([
+    loadStoryLead(userId, storyLeadId),
+    loadMarketConfigSummary(userId),
+    loadLatestValidatedUpload(userId),
+  ]);
+  if (!lead || !config || !upload) return null;
+
+  const facts = await loadHeadlineSafeFacts(upload.id, upload.monthYear, {
+    limit: 500,
+  });
+  const leadHoods = extractLeadHoodsLower(lead, config.neighbourhoods);
+  if (leadHoods.length === 0) {
+    return { propertyTypeFocus: null, leadSpansMultipleTypes: false };
+  }
+
+  const marketLower = config.marketName.toLowerCase();
+  const typeCounts = new Map<string, number>();
+  let total = 0;
+  for (const f of facts) {
+    const hood = (f.neighbourhood ?? "").trim().toLowerCase();
+    if (!hood || hood === "all" || hood === "city" || hood === marketLower) {
+      continue;
+    }
+    if (!leadHoods.includes(hood)) continue;
+    const pt = f.propertyType;
+    if (!pt || pt === "All") continue;
+    typeCounts.set(pt, (typeCounts.get(pt) ?? 0) + 1);
+    total++;
+  }
+  if (total === 0) {
+    return { propertyTypeFocus: null, leadSpansMultipleTypes: false };
+  }
+  let topType: string | null = null;
+  let topCount = 0;
+  for (const [pt, n] of typeCounts) {
+    if (n > topCount) {
+      topType = pt;
+      topCount = n;
+    }
+  }
+  if (topType && topCount / total >= 0.8) {
+    return { propertyTypeFocus: topType, leadSpansMultipleTypes: false };
+  }
+  return { propertyTypeFocus: null, leadSpansMultipleTypes: true };
+}
