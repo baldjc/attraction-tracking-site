@@ -369,20 +369,24 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
           />
           {!collapsed && (
             <span
-              className="text-white text-[17px] leading-none tracking-tight whitespace-nowrap"
-              style={{ fontFamily: "var(--abv-font-display)", fontWeight: 700 }}
+              className="text-white text-[19px] leading-none whitespace-nowrap"
+              style={{
+                fontFamily: "var(--abv-font-display)",
+                fontWeight: 800,
+                letterSpacing: "-0.01em",
+              }}
             >
               Attraction{" "}
               <span
                 style={{
                   fontStyle: "italic",
-                  fontWeight: 700,
+                  fontWeight: 800,
                   color: "var(--abv-azure)",
                 }}
               >
                 by
               </span>{" "}
-              Video
+              video
             </span>
           )}
         </Link>
@@ -643,20 +647,24 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
           </span>
         ) : (
           <span
-            className="text-white text-[15px] leading-none tracking-tight whitespace-nowrap"
-            style={{ fontFamily: "var(--abv-font-display)", fontWeight: 700 }}
+            className="text-white text-[17px] leading-none whitespace-nowrap"
+            style={{
+              fontFamily: "var(--abv-font-display)",
+              fontWeight: 800,
+              letterSpacing: "-0.01em",
+            }}
           >
             Attraction{" "}
             <span
               style={{
                 fontStyle: "italic",
-                fontWeight: 700,
+                fontWeight: 800,
                 color: "var(--abv-azure)",
               }}
             >
               by
             </span>{" "}
-            Video
+            video
           </span>
         )}
         {isStaff && isImpersonating && (
