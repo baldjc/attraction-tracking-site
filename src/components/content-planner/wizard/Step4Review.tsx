@@ -17,6 +17,7 @@ import {
   type PropertyTypeFocus,
 } from "@/lib/property-type-focus";
 import { Button } from "@/components/ui/Button";
+import { WIZARD_DRAFT_ID_SESSION_KEY } from "./WizardDraftShell";
 
 interface IdeaCard {
   title: string;
@@ -114,10 +115,20 @@ export function Step4Review({ pickedKey, propertyTypeFocus }: Props) {
       // Best-effort cleanup of the one-shot session key + the wizard draft
       // (the picked idea has graduated to a real ContentPlan row).
       if (pickedKey) sessionStorage.removeItem(pickedKey);
+      // Wave 4 beta (Finding 13) — delete ONLY the draft this wizard
+      // session was editing, not all of the member's drafts. If a draft
+      // id wasn't tracked (e.g. deep-link without an autosave history)
+      // we skip the DELETE — the daily 14-day TTL sweep will reclaim
+      // any orphan row.
       try {
-        await fetch("/api/member/content-planner/wizard/draft", {
-          method: "DELETE",
-        });
+        const draftId = sessionStorage.getItem(WIZARD_DRAFT_ID_SESSION_KEY);
+        if (draftId) {
+          await fetch(
+            `/api/member/content-planner/wizard/draft/${encodeURIComponent(draftId)}`,
+            { method: "DELETE" },
+          );
+          sessionStorage.removeItem(WIZARD_DRAFT_ID_SESSION_KEY);
+        }
       } catch {
         /* non-fatal */
       }

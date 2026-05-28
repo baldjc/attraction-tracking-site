@@ -1,21 +1,19 @@
 /**
- * Wave 4 — Content Engine wizard draft persistence.
+ * Wave 4 beta (Finding 11) — Per-draft persistence endpoint.
  *
- *   GET     /api/member/content-planner/wizard/draft
- *     → { draft: {...} | null }. Returns the caller's MOST RECENT in-progress
- *       draft (multi-draft, Wave 4 beta — Finding 12). Sweeps expired drafts.
+ *   PATCH  /api/member/content-planner/wizard/draft/[id]
+ *     → updates the named draft. Verifies ownership (draft.userId ===
+ *       session.user.id) before any write. Resets expiresAt to now+14d
+ *       on every successful update so an actively-saved draft never
+ *       expires out from under the member.
  *
- *   POST    /api/member/content-planner/wizard/draft
- *     → creates a NEW draft for the caller and returns it (with id). The
- *       client (WizardDraftShell) is expected to hold onto the id and use
- *       PATCH /draft/[id] for subsequent autosaves so it doesn't spam the
- *       drafts table with one row per URL change.
+ *   DELETE /api/member/content-planner/wizard/draft/[id]
+ *     → deletes the named draft. Same ownership check. Idempotent — a
+ *       404 from a re-issued DELETE is acceptable to the client.
  *
- *   DELETE  /api/member/content-planner/wizard/draft
- *     → discards ALL of the caller's drafts (idempotent). Per-draft delete
- *       lives at /draft/[id] (Finding 11).
- *
- * Flag-gated on tool_content_engine_v2.
+ * The plural-singleton GET/POST/DELETE live in ../route.ts. POST creates
+ * a brand new draft and returns its id; subsequent autosaves PATCH this
+ * route. Two browser tabs → two independent drafts (Finding 12).
  */
 import { NextResponse, type NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
@@ -55,34 +53,13 @@ async function gateOrError() {
   return { userId };
 }
 
-export async function GET() {
+type Ctx = { params: Promise<{ id: string }> };
+
+export async function PATCH(req: NextRequest, ctx: Ctx) {
   const gate = await gateOrError();
   if ("error" in gate) return gate.error;
   const { userId } = gate;
-
-  // Delete-on-read cleanup for ALL users' expired drafts (cheap, indexed
-  // on expiresAt) — lets us skip a separate cron sweep job.
-  const now = new Date();
-  // User-scoped — never widen without auth review. (The `expiresAt < now`
-  // filter is intentionally global: anyone's expired row can be reaped.
-  // Member-owned data deletions live in the per-id route + the
-  // user-scoped DELETE below.)
-  await prisma.contentEngineDraft.deleteMany({
-    where: { expiresAt: { lt: now } },
-  });
-
-  // Multi-draft (Finding 12): return the caller's most recent active draft.
-  const draft = await prisma.contentEngineDraft.findFirst({
-    where: { userId },
-    orderBy: { updatedAt: "desc" },
-  });
-  return NextResponse.json({ draft });
-}
-
-export async function POST(req: NextRequest) {
-  const gate = await gateOrError();
-  if ("error" in gate) return gate.error;
-  const { userId } = gate;
+  const { id } = await ctx.params;
 
   let body: DraftBody;
   try {
@@ -98,19 +75,20 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Whitelist propertyTypeFocus (null/"Any" both collapse to null in DB).
   const focus = parsePropertyTypeFocus(body.propertyTypeFocus ?? null);
   const focusForDb = focus === "Any" ? null : focus;
-
   const expiresAt = new Date(Date.now() + DRAFT_TTL_MS);
 
-  // Wave 4 beta — Finding 11: POST always creates a NEW draft. The client
-  // is responsible for holding the returned id and PATCH-ing subsequent
-  // updates against /draft/[id]. Two browser tabs → two POSTs → two
-  // independent drafts in My Work, exactly as members expect.
-  const draft = await prisma.contentEngineDraft.create({
+  // User-scoped — never widen without auth review. updateMany with
+  // BOTH {id, userId} in the WHERE is atomically race-safe: it both
+  // enforces ownership AND cleanly returns count=0 (→ 404) if the
+  // draft was deleted between the autosave being queued and reaching
+  // the DB, instead of throwing P2025. The client's PATCH wrapper
+  // catches 404 and falls back to POSTing a fresh draft so the
+  // member doesn't lose work.
+  const result = await prisma.contentEngineDraft.updateMany({
+    where: { id, userId },
     data: {
-      userId,
       currentStep: body.currentStep,
       propertyTypeFocus: focusForDb,
       storyLeadId: typeof body.storyLeadId === "string" ? body.storyLeadId : null,
@@ -126,16 +104,31 @@ export async function POST(req: NextRequest) {
       expiresAt,
     },
   });
+  if (result.count === 0) {
+    // Either the id never belonged to the caller, or it was deleted
+    // under us. 404 (not 403) keeps other members' draft ids opaque.
+    return NextResponse.json({ error: "not_found" }, { status: 404 });
+  }
 
+  const draft = await prisma.contentEngineDraft.findUnique({ where: { id } });
   return NextResponse.json({ draft });
 }
 
-export async function DELETE() {
+export async function DELETE(_req: NextRequest, ctx: Ctx) {
   const gate = await gateOrError();
   if ("error" in gate) return gate.error;
   const { userId } = gate;
+  const { id } = await ctx.params;
 
-  // User-scoped — never widen without auth review.
-  await prisma.contentEngineDraft.deleteMany({ where: { userId } });
+  // User-scoped — never widen without auth review. deleteMany with both
+  // {id, userId} in the WHERE means a member can never delete another
+  // member's draft even by guessing/leaking an id. Idempotent: returns
+  // count=0 when the id has already been deleted.
+  const result = await prisma.contentEngineDraft.deleteMany({
+    where: { id, userId },
+  });
+  if (result.count === 0) {
+    return NextResponse.json({ error: "not_found" }, { status: 404 });
+  }
   return NextResponse.json({ ok: true });
 }

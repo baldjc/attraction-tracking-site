@@ -1024,7 +1024,10 @@ model ScriptDraft {
 // sessionStorage key for the picked idea card (Step 4 only).
 model ContentEngineDraft {
   id                 String   @id @default(uuid())
-  userId             String   @unique
+  // Wave 4 beta — userId is NOT unique. A member can have several in-flight
+  // wizard drafts at once (different tabs, different ideas in parallel).
+  // Multi-draft surfaces (My Work, WizardDraftShell) order by updatedAt desc.
+  userId             String
   user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   currentStep        String
   propertyTypeFocus  String?
@@ -1039,7 +1042,10 @@ model ContentEngineDraft {
   updatedAt          DateTime @updatedAt
   createdAt          DateTime @default(now())
 
-  @@index([userId])
+  // Compound index covers both "most recent draft for user" (singleton GET)
+  // and "list user's drafts, newest first" (My Work) without a separate
+  // userId-only index.
+  @@index([userId, updatedAt])
   @@index([expiresAt])
   @@map("content_engine_drafts")
 }

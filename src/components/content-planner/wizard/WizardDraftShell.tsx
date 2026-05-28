@@ -18,7 +18,7 @@
  * (the draft is a convenience, not the source of truth — the wizard
  * survives without it via URL + sessionStorage).
  */
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import { Button } from "@/components/ui/Button";
@@ -28,7 +28,15 @@ import {
 } from "./Step3IdeaCards";
 import { WIZARD_VALIDATION_SESSION_KEY } from "./Step2BIdeaValidation";
 
+/**
+ * Wave 4 beta (Finding 11+12) — the in-flight draft's id, written by the
+ * shell's first POST and consumed by Step 4 / discard so the right draft
+ * gets deleted instead of nuking ALL of the member's drafts.
+ */
+export const WIZARD_DRAFT_ID_SESSION_KEY = "ce-wizard-draft-id";
+
 interface DraftRow {
+  id: string;
   currentStep: string;
   propertyTypeFocus: string | null;
   storyLeadId: string | null;
@@ -64,6 +72,35 @@ export function WizardDraftShell({ children }: { children: React.ReactNode }) {
   // fires WIZARD_DRAFT_DIRTY_EVENT. Forces the snapshot useMemo to
   // re-read sessionStorage even though the URL hasn't changed.
   const [dirtyTick, setDirtyTick] = useState(0);
+  // Wave 4 beta (Finding 11) — the id of the draft this shell is
+  // currently editing. Null until the first successful POST returns
+  // one; thereafter every autosave is a PATCH against /draft/[id] so
+  // we don't accumulate one row per URL change.
+  //
+  // Sources, in priority order:
+  //   1. ?draftId=… in the URL (set by My Work's "Resume" links so a
+  //      member resuming a specific draft updates THAT draft).
+  //   2. The id returned by the first POST in this session.
+  // Resume-banner clicks also seed this from the loaded draft's id.
+  const draftIdRef = useRef<string | null>(
+    (() => {
+      if (typeof window === "undefined") return null;
+      const fromUrl = params.get("draftId");
+      if (fromUrl) {
+        try {
+          sessionStorage.setItem(WIZARD_DRAFT_ID_SESSION_KEY, fromUrl);
+        } catch {
+          /* quota — non-fatal */
+        }
+        return fromUrl;
+      }
+      try {
+        return sessionStorage.getItem(WIZARD_DRAFT_ID_SESSION_KEY);
+      } catch {
+        return null;
+      }
+    })(),
+  );
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -77,6 +114,13 @@ export function WizardDraftShell({ children }: { children: React.ReactNode }) {
     const step = params.get("step") ?? "1";
     const otherKeys = Array.from(params.keys()).filter((k) => k !== "step");
     if (step !== "1" || otherKeys.length > 0) {
+      setResumeChecked(true);
+      return;
+    }
+    // When the URL already carries a draftId (e.g. resumed from My Work)
+    // we've already adopted that draft — don't pop a banner offering to
+    // resume something else.
+    if (draftIdRef.current) {
       setResumeChecked(true);
       return;
     }
@@ -143,11 +187,53 @@ export function WizardDraftShell({ children }: { children: React.ReactNode }) {
 
   const onSave = useCallback(async (snap: Snapshot | null) => {
     if (!snap) return;
-    await fetch("/api/member/content-planner/wizard/draft", {
+    // Wave 4 beta (Finding 11) — first save POSTs to create the draft;
+    // subsequent saves PATCH /draft/[id]. useAutoSave serialises us
+    // single-flight, so the second autosave can't race the first POST
+    // — by the time the second runs, draftIdRef is populated.
+    const id = draftIdRef.current;
+    if (id) {
+      const r = await fetch(
+        `/api/member/content-planner/wizard/draft/${encodeURIComponent(id)}`,
+        {
+          method: "PATCH",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(snap),
+        },
+      );
+      // If the draft was deleted under us (e.g. discarded from another
+      // tab) the PATCH 404s — fall through to creating a fresh one so
+      // the user doesn't lose their work.
+      if (r.status === 404) {
+        draftIdRef.current = null;
+        try {
+          sessionStorage.removeItem(WIZARD_DRAFT_ID_SESSION_KEY);
+        } catch {
+          /* non-fatal */
+        }
+      } else {
+        return;
+      }
+    }
+    const r = await fetch("/api/member/content-planner/wizard/draft", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(snap),
     });
+    if (!r.ok) return;
+    try {
+      const j = (await r.json()) as { draft?: { id?: string } };
+      if (j.draft?.id) {
+        draftIdRef.current = j.draft.id;
+        try {
+          sessionStorage.setItem(WIZARD_DRAFT_ID_SESSION_KEY, j.draft.id);
+        } catch {
+          /* quota — non-fatal */
+        }
+      }
+    } catch {
+      /* non-JSON response — non-fatal */
+    }
   }, []);
 
   const { status, lastSavedAt } = useAutoSave({ value: snapshot, delay: 800, onSave });
@@ -182,6 +268,15 @@ export function WizardDraftShell({ children }: { children: React.ReactNode }) {
         /* quota — non-fatal */
       }
     }
+    // Adopt the resumed draft's id so subsequent autosaves PATCH it
+    // instead of creating a brand new row (which would orphan the one
+    // we just told the user we were resuming).
+    draftIdRef.current = resumeDraft.id;
+    try {
+      sessionStorage.setItem(WIZARD_DRAFT_ID_SESSION_KEY, resumeDraft.id);
+    } catch {
+      /* quota — non-fatal */
+    }
     const next = new URLSearchParams({ step: resumeDraft.currentStep });
     if (resumeDraft.propertyTypeFocus) {
       next.set("propertyTypeFocus", resumeDraft.propertyTypeFocus);
@@ -190,12 +285,20 @@ export function WizardDraftShell({ children }: { children: React.ReactNode }) {
     if (resumeDraft.rotationSlot) next.set("rotationSlot", resumeDraft.rotationSlot);
     if (resumeDraft.validatedIdea) next.set("validatedIdea", resumeDraft.validatedIdea);
     if (resumeDraft.pickedKey) next.set("picked", resumeDraft.pickedKey);
+    next.set("draftId", resumeDraft.id);
     setResumeDraft(null);
     router.push(`/member/content-planner/wizard?${next.toString()}`);
   }
 
   async function discard() {
+    const idToDelete = resumeDraft?.id ?? draftIdRef.current;
     setResumeDraft(null);
+    draftIdRef.current = null;
+    try {
+      sessionStorage.removeItem(WIZARD_DRAFT_ID_SESSION_KEY);
+    } catch {
+      /* non-fatal */
+    }
     // True "start fresh": also wipe the local rich-state caches so the
     // next wizard run can't replay batches/verdicts from the previous
     // one. (resume() does this on the success path; discard() needs
@@ -209,7 +312,12 @@ export function WizardDraftShell({ children }: { children: React.ReactNode }) {
       }
     }
     try {
-      await fetch("/api/member/content-planner/wizard/draft", { method: "DELETE" });
+      if (idToDelete) {
+        await fetch(
+          `/api/member/content-planner/wizard/draft/${encodeURIComponent(idToDelete)}`,
+          { method: "DELETE" },
+        );
+      }
     } catch {
       /* non-fatal */
     }

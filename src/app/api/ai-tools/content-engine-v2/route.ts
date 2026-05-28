@@ -28,6 +28,7 @@ import {
 } from "@/lib/content-engine-context";
 import {
   ROTATION_SLOTS,
+  matchesHood,
   parseJsonResponse,
   validateIdeaCard,
   type IdeaCard,
@@ -132,14 +133,37 @@ export async function POST(req: NextRequest) {
       { status: 409 },
     );
   }
-  const facts = await loadHeadlineSafeFacts(upload.id, upload.monthYear, {
+  const allFacts = await loadHeadlineSafeFacts(upload.id, upload.monthYear, {
     limit: FACTS_LIMIT,
   });
+  // Wave 4 beta — Finding 10: server-side property-type data filter.
+  // When the wizard locked a non-Any focus, prune facts whose
+  // propertyType is a different SPECIFIC type BEFORE the LLM call so
+  // Claude can't drift into Detached numbers on a Row/Townhouse video.
+  // We keep:
+  //   - facts whose propertyType matches the lock (e.g. "Row/Townhouse")
+  //   - city/neighbourhood rollups (propertyType === null)
+  //   - "All" rollups (propertyType === "All")
+  // The prompt-side HARD CONSTRAINT block (buildFocusConstraintBlock)
+  // backstops this — but pre-filtering means the LLM never even sees
+  // the wrong-type rows, removing a class of failure modes.
+  const facts =
+    propertyTypeFocus === "Any"
+      ? allFacts
+      : allFacts.filter(
+          (f) =>
+            f.propertyType === null ||
+            f.propertyType === "All" ||
+            f.propertyType === propertyTypeFocus,
+        );
   if (facts.length < 3) {
     return NextResponse.json(
       {
         error: "no_headline_safe_facts",
-        message: "Your latest upload doesn't have enough headline-safe facts (need ≥3). Re-run validation or upload a fresher month.",
+        message:
+          propertyTypeFocus === "Any"
+            ? "Your latest upload doesn't have enough headline-safe facts (need ≥3). Re-run validation or upload a fresher month."
+            : `Your latest upload doesn't have enough headline-safe facts for ${propertyTypeFocus} (need ≥3 after the property-type filter). Try a different focus or upload a fresher month.`,
       },
       { status: 409 },
     );
@@ -156,7 +180,51 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const headlineSafeIds = new Set(facts.map((f) => f.id));
+  // Wave 4 beta — Finding 8 HARD ANCHOR. When a Story Lead is selected
+  // we derive the set of fact IDs that the lead actually anchors (its
+  // named neighbourhood(s), parsed out of pattern + dataThreads with
+  // word-boundary matching so e.g. "Bridgeland" doesn't pull in
+  // "Bridgeland-Riverside" rows and vice-versa) and trim the LLM's
+  // fact pool to ONLY those facts (plus city-wide rollups whose
+  // neighbourhood is empty/All). The validator (below) backstops this
+  // server-side so even prompt-drift can't slip an off-scope cite past
+  // the gate.
+  let storyLeadFactIds: Set<string> | null = null;
+  let storyLeadHoodFactIds: Set<string> | null = null;
+  let factsForLlm: CompactFact[] = facts;
+  if (storyLead) {
+    const leadHoods = extractLeadNeighbourhoods(storyLead, config.neighbourhoods);
+    if (leadHoods.length > 0) {
+      const marketLower = config.marketName.toLowerCase();
+      // Partition facts into:
+      //   - hoodScoped: facts whose neighbourhood EXACTLY matches one of
+      //     the lead-named hoods (after lowercasing) — these anchor the
+      //     story.
+      //   - cityRollup: city/All rows — kept as supplemental context.
+      // Anything else (other hoods) is excluded entirely.
+      const hoodScoped: CompactFact[] = [];
+      const cityRollup: CompactFact[] = [];
+      for (const f of facts) {
+        const hood = (f.neighbourhood ?? "").trim().toLowerCase();
+        if (!hood || hood === "all" || hood === "city" || hood === marketLower) {
+          cityRollup.push(f);
+        } else if (leadHoods.includes(hood)) {
+          hoodScoped.push(f);
+        }
+      }
+      // Only enforce the lock if there's at least one hood-scoped fact
+      // — otherwise the validator's "cite ≥1 hood fact" rule would
+      // 422-storm every batch on a thin upload for that hood. Fall
+      // back to prompt-only enforcement in that edge case.
+      if (hoodScoped.length >= 1 && hoodScoped.length + cityRollup.length >= 3) {
+        factsForLlm = [...hoodScoped, ...cityRollup];
+        storyLeadFactIds = new Set(factsForLlm.map((f) => f.id));
+        storyLeadHoodFactIds = new Set(hoodScoped.map((f) => f.id));
+      }
+    }
+  }
+
+  const headlineSafeIds = new Set(factsForLlm.map((f) => f.id));
 
   // ── Generate + validate + (up to 2) re-prompts ──────────────────────
   const systemBlocks = [
@@ -182,7 +250,7 @@ export async function POST(req: NextRequest) {
             rotationSlot: body.rotationSlot,
             count,
             config,
-            facts,
+            facts: factsForLlm,
             storyLead,
             validatedIdea: body.validatedIdea,
             monthYear: upload.monthYear,
@@ -259,7 +327,13 @@ export async function POST(req: NextRequest) {
     validIdeas = [];
     perCardErrors = [];
     for (let i = 0; i < rawIdeas.length; i++) {
-      const result = validateIdeaCard(rawIdeas[i], headlineSafeIds, config.neighbourhoods);
+      const result = validateIdeaCard(
+        rawIdeas[i],
+        headlineSafeIds,
+        config.neighbourhoods,
+        storyLeadFactIds,
+        storyLeadHoodFactIds,
+      );
       if (result.ok) {
         validIdeas.push(rawIdeas[i] as IdeaCard);
       } else {
@@ -355,7 +429,26 @@ function buildInitialUserMessage(args: {
   lines.push("");
 
   if (args.storyLead) {
-    lines.push("Selected Story Lead to anchor on (build at least one idea on this cluster):");
+    lines.push("## STORY LEAD — HARD ANCHOR (Wave 4 beta Finding 8)");
+    lines.push(
+      `EVERY idea card in this batch MUST anchor on the Story Lead below — not "at least one", not "most", **every single card**. The lead's \`pattern\` is the spine of the entire batch; each card is one angle on it (different rotation slots, different sub-personas, different framing, but always the same underlying data thread).`,
+    );
+    lines.push("");
+    lines.push("Rules:");
+    lines.push(
+      "  - Every title must reference the lead's geographic scope (the neighbourhood(s) named in `pattern` / `dataThreads`).",
+    );
+    lines.push(
+      "  - Every `clarityPremise` must restate the lead's `pattern` (paraphrased — don't copy verbatim).",
+    );
+    lines.push(
+      "  - Every `citedFactIds` array must include at least one fact whose `neighbourhood` matches a hood named in the lead.",
+    );
+    lines.push(
+      "  - If a rotation slot doesn't fit this lead, SKIP it — return fewer cards rather than drifting off-anchor.",
+    );
+    lines.push("");
+    lines.push("Selected Story Lead:");
     lines.push("```json");
     lines.push(
       JSON.stringify(
@@ -391,6 +484,24 @@ function buildInitialUserMessage(args: {
   lines.push("");
 
   lines.push(buildFocusConstraintBlock(args.propertyTypeFocus));
+  lines.push("");
+
+  lines.push("## GEOGRAPHIC SCOPE LOCK (Wave 4 beta Finding 9)");
+  lines.push(
+    "Every title MUST satisfy ONE of the following geographic patterns. Single-neighbourhood deep-dives (e.g. \"Saddle Ridge Just Got Interesting\") are REJECTED by the validator — they belong in dedicated Listing Teardown / Story videos, not the standard rotation slots.",
+  );
+  lines.push("");
+  lines.push("Allowed patterns:");
+  lines.push("  1. **Multi-hood list** — names 2+ neighbourhoods, OR uses a list-count (3/5/7/10) of neighbourhoods.");
+  lines.push("     e.g. \"Bridgeland vs Beltline: 2.13 MOI Gap\", \"These 5 Calgary Neighbourhoods Hit 0.5 MOI\"");
+  lines.push("  2. **City-wide with data anchor** — names the city + a $/%/MOI/year-month anchor.");
+  lines.push("     e.g. \"Calgary's April 2026 Sale-to-List Hit 98.4%\", \"Calgary Crossed 4.0 MOI in March 2026\"");
+  lines.push("  3. **Single hood + data anchor** — names ONE neighbourhood AND a $/%/MOI/year-month anchor.");
+  lines.push("     e.g. \"Mahogany Apartments Just Hit 4.33 MOI\", \"Do Not Buy In Saddle Ridge — 3.91 MOI Warning\"");
+  lines.push("");
+  lines.push(
+    "FORBIDDEN: a title that names exactly ONE neighbourhood with NO data anchor and NO second hood. The validator rejects these even if they technically have a \"named anchor\" — single-hood scope locks the video to too narrow an audience for the rotation slots.",
+  );
   lines.push("");
 
   lines.push("## TITLE RULES — INVIOLABLE");
@@ -496,4 +607,44 @@ function buildRetryUserMessage(args: {
   lines.push("");
   lines.push("Return ONLY the corrected JSON batch — no markdown fence, no prose. Same schema as before.");
   return lines.join("\n");
+}
+
+/**
+ * Wave 4 beta (Finding 8) — derive the set of neighbourhoods a Story
+ * Lead actually anchors. We scan the lead's pattern + dataThreads
+ * narrative text for word-boundary matches against the member's
+ * MarketConfig vocab. Returns the matched hood names lowercased; an
+ * empty array means "couldn't narrow scope — fall back to prompt-only
+ * enforcement" (the caller handles that).
+ */
+function extractLeadNeighbourhoods(
+  lead: StoryLeadDetail,
+  vocab: string[],
+): string[] {
+  const parts: string[] = [];
+  if (typeof lead.pattern === "string") parts.push(lead.pattern);
+  if (typeof lead.whyItMatters === "string") parts.push(lead.whyItMatters);
+  const dt = lead.dataThreads;
+  if (Array.isArray(dt)) {
+    for (const t of dt) if (typeof t === "string") parts.push(t);
+  } else if (dt && typeof dt === "object") {
+    for (const v of Object.values(dt as Record<string, unknown>)) {
+      if (typeof v === "string") parts.push(v);
+      else if (Array.isArray(v)) {
+        for (const x of v) if (typeof x === "string") parts.push(x);
+      }
+    }
+  }
+  const blob = parts.join(" \n ").toLowerCase();
+  if (!blob) return [];
+  const matched = new Set<string>();
+  for (const hood of vocab) {
+    const t = hood?.trim().toLowerCase();
+    if (!t) continue;
+    // Use the shared hyphen-aware boundary matcher so "Bridgeland"
+    // doesn't false-match inside "Bridgeland-Riverside" (and vice
+    // versa). Same logic the title validator uses.
+    if (matchesHood(blob, hood)) matched.add(t);
+  }
+  return Array.from(matched);
 }

@@ -167,10 +167,42 @@ export interface ValidationResult {
   errors: string[];
 }
 
+/**
+ * Hood-name matcher with hyphen-aware boundaries (Wave 4 beta —
+ * Finding 9). `\b` alone treats "-" as a word boundary, so a naive
+ * /\bbridgeland\b/ still matches "Bridgeland-Riverside". We reject
+ * any adjacent letter/digit OR hyphen on either side so a shorter
+ * name can't piggy-back into a hyphenated composite hood.
+ */
+export function matchesHood(haystackLower: string, hood: string): boolean {
+  const t = hood?.trim().toLowerCase();
+  if (!t || t.length < 3) return false;
+  const escaped = t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  // (?<![A-Za-z0-9-])hood(?![A-Za-z0-9-]) — pure JS-supported lookarounds.
+  const re = new RegExp(`(?<![A-Za-z0-9-])${escaped}(?![A-Za-z0-9-])`, "i");
+  return re.test(haystackLower);
+}
+
 export function validateIdeaCard(
   card: unknown,
   headlineSafeFactIds: Set<string>,
   neighbourhoods: string[],
+  /**
+   * Optional Story Lead fact allowlist (Wave 4 beta — Finding 8). When
+   * non-null, every cited fact id MUST be in this set in addition to
+   * being headline-safe — i.e. the card may only cite facts whose
+   * neighbourhood the chosen Story Lead actually anchors. Pass null
+   * (default) when the wizard isn't anchored to a Story Lead.
+   */
+  storyLeadFactIds: Set<string> | null = null,
+  /**
+   * Optional subset of `storyLeadFactIds` covering ONLY the facts that
+   * are anchored to a specific lead-named neighbourhood (i.e. exclude
+   * city-wide / "All" rollups). When non-null, each card must cite at
+   * least one id from this set — city-wide stats are allowed as
+   * supplemental context but cannot be the sole anchor of a card.
+   */
+  storyLeadHoodFactIds: Set<string> | null = null,
 ): ValidationResult {
   const errors: string[] = [];
   const c = (card ?? {}) as Partial<IdeaCard> & Record<string, unknown>;
@@ -217,6 +249,19 @@ export function validateIdeaCard(
     );
   }
 
+  // ── Geographic scope lock (Wave 4 beta — Finding 9) ─────────────────
+  // Reject titles whose ONLY anchor is a single neighbourhood name with
+  // no comparative/data anchor (no second neighbourhood, no list-count,
+  // no $/%/MOI/year-month). Single-hood deep dives belong in dedicated
+  // Listing Teardown / Story videos, not the standard rotation slots —
+  // the wizard's current 5 slots all expect multi-hood or data-anchored
+  // framing. Catches cases like "Saddle Ridge Just Got Interesting"
+  // that pass hasNamedAnchor but lock the entire video to one community.
+  if (title) {
+    const scopeErr = checkSingleNeighbourhoodScope(title, neighbourhoods);
+    if (scopeErr) errors.push(scopeErr);
+  }
+
   // ── Rotation slot is a known enum value ─────────────────────────────
   if (
     typeof c.rotationSlot === "string" &&
@@ -239,6 +284,34 @@ export function validateIdeaCard(
     errors.push(
       `citedFactIds reference ${unknownIds.length} fact id(s) not in the headline-safe library (first: ${unknownIds[0]})`,
     );
+  }
+  // ── Story Lead fact allowlist (Wave 4 beta — Finding 8) ────────────
+  // When a Story Lead is selected, EVERY cited fact must come from the
+  // lead's allowlist (facts whose neighbourhood the lead actually
+  // anchors). Backs up the LLM prompt's HARD ANCHOR block — Claude
+  // sometimes drifts to a "more interesting" neighbouring stat; we
+  // catch that here and force a re-prompt.
+  if (storyLeadFactIds !== null) {
+    const outOfScope = cited.filter(
+      (id) => headlineSafeFactIds.has(id) && !storyLeadFactIds.has(id),
+    );
+    if (outOfScope.length > 0) {
+      errors.push(
+        `citedFactIds include ${outOfScope.length} fact(s) outside the selected Story Lead's scope (first: ${outOfScope[0]}) — only cite facts whose neighbourhood the lead names`,
+      );
+    }
+    // Require at least one cited fact anchored to a lead-named
+    // neighbourhood (not just city-wide rollups). Without this a card
+    // could cite only "Calgary, MOI 3.1" rows and pass the allowlist
+    // while completely missing the lead's actual hood story.
+    if (storyLeadHoodFactIds !== null && cited.length > 0) {
+      const hoodAnchored = cited.some((id) => storyLeadHoodFactIds.has(id));
+      if (!hoodAnchored) {
+        errors.push(
+          "citedFactIds rely entirely on city-wide rollups — cite at least one fact from a neighbourhood the Story Lead actually names",
+        );
+      }
+    }
   }
 
   // ── Sub-personas: non-empty array ───────────────────────────────────
@@ -284,6 +357,48 @@ function checkTitleNumbers(title: string): string | null {
 }
 
 /**
+ * Geographic-scope check (Wave 4 beta — Finding 9). Fires when the title's
+ * ONLY anchor is a single neighbourhood name with no comparative anchor
+ * (no second hood, no list-count, no $/%/MOI/year-month). Returns null
+ * when the title is fine, or a human-readable error string otherwise.
+ *
+ *   PASS: "Mahogany Apartments Just Hit 4.33 MOI"          — hood + MOI
+ *   PASS: "Bridgeland vs Beltline: 2.13 MOI Gap"           — two hoods
+ *   PASS: "These 5 Calgary Neighbourhoods Hit 0.5 MOI"     — list-count
+ *   FAIL: "Saddle Ridge Just Got Interesting"              — single hood only
+ *   FAIL: "What's Going On In Crescent Heights"            — single hood only
+ */
+function checkSingleNeighbourhoodScope(
+  title: string,
+  neighbourhoods: string[],
+): string | null {
+  // Hood-boundary matching (Wave 4 beta — Finding 9). \b alone treats
+  // "-" as a word boundary, so /\bbridgeland\b/ still false-matches
+  // "Bridgeland-Riverside" and inflates matched.length past 1 — the
+  // exact bug we're trying to lock out. We use a stricter lookaround
+  // that rejects ANY adjacent letter/digit OR hyphen so hyphenated
+  // composite names are only matched by their full form.
+  const lower = title.toLowerCase();
+  const matched = neighbourhoods.filter((n) => matchesHood(lower, n));
+  if (matched.length !== 1) return null;
+  // Any other numeric/temporal anchor lifts the lock.
+  if (/\$[\d,]+(?:\.\d+)?[KMB]?/i.test(title)) return null;
+  if (/\d+(?:\.\d+)?\s*%/.test(title)) return null;
+  if (/\d+(?:\.\d+)?\s*MOI\b/i.test(title)) return null;
+  if (
+    /\b(?:January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sept?|Oct|Nov|Dec)\s+\d{4}\b/i.test(
+      title,
+    )
+  ) {
+    return null;
+  }
+  if (/\b\d{4}-\d{2}\b/.test(title)) return null;
+  // List-count anchor (3/5/7/10) — implies multi-hood / comparative framing.
+  if (/\b(?:3|5|7|10)\b/.test(title)) return null;
+  return `title is locked to a single neighbourhood "${matched[0]}" with no comparative or data anchor — single-hood deep dives belong in dedicated Listing Teardown / Story videos. Add a second hood, a list-count, or a $/%/MOI/year-month anchor.`;
+}
+
+/**
  * Named-anchor check. Title needs at least one of:
  *   - dollar amount        ($750K, $1.2M, $750,000)
  *   - percent              (9.8%, 49.4 %)
@@ -309,8 +424,10 @@ export function hasNamedAnchor(title: string, neighbourhoods: string[]): boolean
   if (/\b\d{4}-\d{2}\b/.test(title)) return true;
   const lower = title.toLowerCase();
   for (const n of neighbourhoods) {
-    const t = n?.trim().toLowerCase();
-    if (t && t.length >= 3 && lower.includes(t)) return true;
+    // Hyphen-aware boundary matching (Wave 4 beta — Finding 9). Plain
+    // substring `includes` false-positived shorter hood names inside
+    // longer hyphenated composites; matchesHood blocks that.
+    if (matchesHood(lower, n)) return true;
   }
   return false;
 }

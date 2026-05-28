@@ -2,10 +2,10 @@
  * Wave 4 — GET /api/member/my-work/drafts
  *
  * Returns the caller's in-progress Content Engine wizard drafts for the
- * "Drafts in progress" section on My Work. There's only ever one row per
- * user (unique constraint on userId), so the list will be 0 or 1 — we
- * still return an array so the UI is forward-compatible if we ever allow
- * named drafts.
+ * "Drafts in progress" section on My Work. Multi-draft (Wave 4 beta —
+ * Finding 12): a member may have several concurrent drafts (two tabs,
+ * parallel idea explorations). We return up to 3, newest-first, plus
+ * the per-id route handles delete/PATCH for each.
  *
  * Same TTL/expired-sweep policy as the wizard's draft endpoint.
  */
