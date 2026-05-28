@@ -95,6 +95,50 @@ export default function UploadHistoryTable({ initial }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Auto-refresh on new uploads. UploadPanel dispatches `market-data:uploaded`
+  // after a successful POST. We refetch /uploads, prepend any rows we didn't
+  // already have, and flash them blue. router.refresh() on the page (also
+  // fired by UploadPanel) reloads RSC for the progress banner, but won't
+  // re-mount this client component since its `initial` prop is captured
+  // once — so this listener is the source of truth for "new row appeared".
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    let cancelled = false;
+    const onUploaded = async () => {
+      try {
+        const res = await fetch("/api/member/market-data/uploads", {
+          cache: "no-store",
+        });
+        if (!res.ok) return;
+        const j = (await res.json()) as { uploads: Row[] };
+        if (cancelled || !Array.isArray(j.uploads)) return;
+        setRows((prev) => {
+          const prevIds = new Set(prev.map((r) => r.id));
+          const newIds = j.uploads
+            .filter((u) => !prevIds.has(u.id))
+            .map((u) => u.id);
+          if (newIds.length > 0) {
+            setShimmerIds(new Set(newIds));
+            setTimeout(() => {
+              if (!cancelled) setShimmerIds(new Set());
+            }, 1_500);
+          }
+          // Replace wholesale — the server is the source of truth for status,
+          // factCount, etc. Preserve nothing local; the polling effect will
+          // re-arm for any non-terminal rows.
+          return j.uploads;
+        });
+      } catch {
+        // Network blip — next router.refresh will catch us up.
+      }
+    };
+    window.addEventListener("market-data:uploaded", onUploaded);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("market-data:uploaded", onUploaded);
+    };
+  }, []);
+
   // Auto-dismiss toasts.
   useEffect(() => {
     if (!toast) return;

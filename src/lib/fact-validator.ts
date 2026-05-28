@@ -55,6 +55,31 @@ const SONNET_CACHE_READ_PER_TOKEN = 0.0000003; // 0.1x base for cache reads
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Telemetry — structured per-phase logs with elapsed-ms markers.
+//
+// Added 2026-05-28 to diagnose a regression where the May 2026 upload returned
+// 12 facts vs ~430 for Feb/Mar. The format `[mdv telemetry] phase=… ms=… …`
+// is grep-friendly and stable across phases so a single re-run produces a
+// timeline-shaped log block we can diff against a known-good month.
+// ─────────────────────────────────────────────────────────────────────────────
+
+function mdv(
+  phase: string,
+  uploadId: string,
+  startedAt: number,
+  fields: Record<string, string | number | boolean | null | undefined> = {},
+): void {
+  const ms = Date.now() - startedAt;
+  const tail = Object.entries(fields)
+    .filter(([, v]) => v !== undefined)
+    .map(([k, v]) => `${k}=${v == null ? "null" : v}`)
+    .join(" ");
+  console.log(
+    `[mdv telemetry] phase=${phase} ms=${ms} uploadId=${uploadId}${tail ? " " + tail : ""}`,
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Fire-and-forget entry point
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -124,10 +149,22 @@ export function validateUploadAsync(uploadId: string, userId: string): void {
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Anthropic Sonnet 4 hard cap is 200K input tokens. The system prompt (cached)
-// is ~35K chars ≈ 8K tokens. We budget ~150K tokens for the user message to
-// leave headroom for config + prior facts + the trailing TASK block. At ~4
-// chars/token that's ~600K chars for the GROUPS block alone.
-const GROUPS_CHAR_BUDGET = 600_000;
+// is ~35K chars ≈ 8K tokens. We budget ~120K tokens for the user message to
+// leave headroom for (a) config + prior facts + the trailing TASK block AND
+// (b) a ≥16K output budget after dynamic max_tokens clamping in callValidator
+// (see MIN_USEFUL_OUTPUT). Dense tabular data tokenises at ~2 chars/token in
+// practice, so the GROUPS block must stay under ~240K chars to keep input
+// below ~120K tokens. We give it 480K with the explicit understanding that
+// real-world char-to-token ratios drift; the dynamic max_tokens floor in
+// callValidator is the hard backstop that throws if we still overrun.
+//
+// 2026-05-28: lowered from 600_000 → 480_000 after the May 2026 regression.
+// At 600K chars the May upload's facts chunks pushed input to ~185K tokens,
+// collapsing the output budget below the ~24K typically needed to emit a
+// full neighbourhood × metric-family JSON array — chunks truncated and the
+// parser salvaged only fragments (12 facts vs ~430 in Mar). Don't raise this
+// back without also raising MIN_USEFUL_OUTPUT in callValidator.
+const GROUPS_CHAR_BUDGET = 480_000;
 
 /**
  * Sample-size thresholds for low-signal group filtering, scaled to market
@@ -621,7 +658,16 @@ async function callValidator(
   const CONTEXT_WINDOW = 200_000;
   const SAFETY_BUFFER = 4_000;
   const MODEL_OUTPUT_CAP = 64_000;
-  const MIN_USEFUL_OUTPUT = 4_000; // below this, summary/facts parsers can't get a coherent response.
+  // 2026-05-28: raised from 4_000 → 16_000 after the May 2026 regression.
+  // A 4K floor is far below the ~24K output a full per-property-type facts
+  // chunk needs for a mid-size market (Calgary: ~150 neighbourhoods × 3-5
+  // metric families = ~600 JSON objects ≈ 28K tokens). At 4K, runs silently
+  // truncated and the parser salvaged only the first dozen facts. 16K is
+  // chosen so a single H2 section can land coherently for either FACTS or
+  // SUMMARY+LEADS; if we can't get 16K, the GROUPS block must shrink
+  // upstream (lower GROUPS_CHAR_BUDGET, or split chunks finer in
+  // buildChunks()).
+  const MIN_USEFUL_OUTPUT = 16_000;
   let inputTokenEstimate: number;
   try {
     const ct = await anthropic.messages.countTokens({
@@ -691,12 +737,16 @@ async function callValidator(
   if (!resp) throw lastErr ?? new Error("callValidator failed with no response");
 
   // Surface max_tokens ceiling hits — they cause truncated output and dropped
-  // facts. Operator-visible signal that we need to chunk further or raise the cap.
-  if ((resp as { stop_reason?: string }).stop_reason === "max_tokens") {
-    console.warn(
-      `[callValidator] WARNING: hit max_tokens ceiling — output truncated. outputTokens=${
+  // facts. The parser has salvage logic for truncated JSON arrays, but the
+  // 2026-05-28 May regression showed truncation silently degraded fact counts
+  // from ~430 to 12. Log at ERROR level so it shows up in the deployment-log
+  // ERROR filter, not just warnings.
+  const stopReason = (resp as { stop_reason?: string }).stop_reason;
+  if (stopReason === "max_tokens") {
+    console.error(
+      `[mdv telemetry] phase=callValidator.truncated max_tokens=${dynamicMaxTokens} outputTokens=${
         (resp.usage as { output_tokens?: number })?.output_tokens ?? "?"
-      }`,
+      } inputTokens=${inputTokenEstimate} msgChars=${userMessage.length} — output truncated mid-emit; downstream parser will salvage what it can`,
     );
   }
 
@@ -885,6 +935,7 @@ async function markUploadValidating(uploadId: string): Promise<void> {
 
 export async function runValidation(uploadId: string): Promise<void> {
   const t0 = Date.now();
+  mdv("validation.start", uploadId, t0);
   console.log('[runValidation] start', uploadId);
   // Resolve userId first (cheap) so we can run cost-cap BEFORE any heavy work.
   const upload = await prisma.marketDataUpload.findUnique({
@@ -912,10 +963,17 @@ export async function runValidation(uploadId: string): Promise<void> {
     }
 
     await markUploadValidating(uploadId);
+    mdv("validation.marked_validating", uploadId, t0);
     console.log('[runValidation] step: marked validating', uploadId);
 
     // Aggregate (pure compute, no Claude).
     const { table, userId, configSnapshot } = await aggregateUploadFromDb(uploadId);
+    mdv("aggregate.complete", uploadId, t0, {
+      groups: table.groups.length,
+      rowsParsed: table.meta.totalRowsParsed,
+      totalSold: table.meta.totalSold,
+      monthYear: table.meta.monthYear,
+    });
     console.log('[runValidation] step: aggregated, groups=' + table.groups.length, uploadId);
 
     // Wave 1: persist deterministic source-of-truth metrics BEFORE the
@@ -944,16 +1002,31 @@ export async function runValidation(uploadId: string): Promise<void> {
     // is shared (first call writes, subsequent reads).
     const chunks = buildChunks(table.groups);
     const chunkLogStr = chunks.map((c) => `${c.name}=${c.groups.length}`).join(' ');
+    mdv("chunks.built", uploadId, t0, {
+      detached: chunks.find((c) => c.name === "detached")?.groups.length ?? 0,
+      attached: chunks.find((c) => c.name === "attached")?.groups.length ?? 0,
+      apartment: chunks.find((c) => c.name === "apartment")?.groups.length ?? 0,
+      rollups: chunks.find((c) => c.name === "rollups")?.groups.length ?? 0,
+    });
     console.log('[runValidation] step: chunks built —', chunkLogStr, uploadId);
 
     // 5 parallel calls.
     const factCallPromises = chunks.map((chunk) => {
       const msg = buildFactsChunkMessage(table, configSnapshot, priorFactsBlock, chunk);
+      mdv("validate.chunk.start", uploadId, t0, {
+        chunk: chunk.name,
+        groups: chunk.groups.length,
+        msgChars: msg.length,
+      });
       console.log(`[runValidation] firing facts chunk=${chunk.name} msgLen=${msg.length} groups=${chunk.groups.length}`, uploadId);
       return callValidatorWithStreamCutRetry(msg).then((c) => ({ chunk, call: c }));
     });
     const summaryCallPromise = (async () => {
       const msg = buildSummaryAndLeadsMessage(table, configSnapshot, priorFactsBlock);
+      mdv("validate.chunk.start", uploadId, t0, {
+        chunk: "summary+leads",
+        msgChars: msg.length,
+      });
       console.log(`[runValidation] firing summary+leads msgLen=${msg.length}`, uploadId);
       return callValidatorWithStreamCutRetry(msg);
     })();
@@ -963,11 +1036,21 @@ export async function runValidation(uploadId: string): Promise<void> {
       summaryCallPromise,
     ]);
     const wallMs = Date.now() - t0;
+    mdv("validate.all_calls_returned", uploadId, t0, { wallMs });
     console.log(`[runValidation] step: all 5 calls returned in ${wallMs}ms`, uploadId);
 
     // Parse each chunk + merge.
     const factsBundles: FactsBundle[] = factResults.map(({ chunk, call }) => {
       const facts = parseFactsChunk(call.text);
+      mdv("validate.chunk.complete", uploadId, t0, {
+        chunk: chunk.name,
+        facts: facts.length,
+        inputTokens: call.inputTokens,
+        outputTokens: call.outputTokens,
+        cacheRead: call.cacheReadTokens,
+        textLen: call.text.length,
+        costUsd: call.costUsd.toFixed(4),
+      });
       console.log(
         `[runValidation] chunk=${chunk.name} facts=${facts.length} cost=$${call.costUsd.toFixed(4)} in=${call.inputTokens} out=${call.outputTokens} cacheRead=${call.cacheReadTokens} textLen=${call.text.length}`,
         uploadId,
@@ -975,6 +1058,16 @@ export async function runValidation(uploadId: string): Promise<void> {
       return { facts, propertyTypeColumn: chunk.propertyTypeColumn };
     });
     const { summary, storyLeads } = parseSummaryAndLeadsChunk(summaryCall.text);
+    mdv("validate.chunk.complete", uploadId, t0, {
+      chunk: "summary+leads",
+      leads: storyLeads.length,
+      summaryLen: summary.length,
+      inputTokens: summaryCall.inputTokens,
+      outputTokens: summaryCall.outputTokens,
+      cacheRead: summaryCall.cacheReadTokens,
+      textLen: summaryCall.text.length,
+      costUsd: summaryCall.costUsd.toFixed(4),
+    });
     console.log(
       `[runValidation] summary+leads leads=${storyLeads.length} summaryLen=${summary.length} cost=$${summaryCall.costUsd.toFixed(4)} in=${summaryCall.inputTokens} out=${summaryCall.outputTokens} cacheRead=${summaryCall.cacheReadTokens} textLen=${summaryCall.text.length}`,
       uploadId,
@@ -998,6 +1091,13 @@ export async function runValidation(uploadId: string): Promise<void> {
     const totalOutputTokens =
       factResults.reduce((a, { call }) => a + call.outputTokens, 0) + summaryCall.outputTokens;
     const totalFacts = factsBundles.reduce((a, b) => a + b.facts.length, 0);
+    mdv("parse.complete", uploadId, t0, {
+      totalFacts,
+      leads: storyLeads.length,
+      totalCostUsd: totalCost.toFixed(4),
+      totalInputTokens,
+      totalOutputTokens,
+    });
     console.log(
       `[runValidation] step: parsed all chunks — totalFacts=${totalFacts} leads=${storyLeads.length} totalCost=$${totalCost.toFixed(4)} wallMs=${wallMs}`,
       uploadId,
@@ -1012,6 +1112,11 @@ export async function runValidation(uploadId: string): Promise<void> {
 
     // Final failure check: nothing parseable from any of the 5 calls.
     if (totalFacts === 0 && storyLeads.length === 0) {
+      mdv("validation.failed_no_output", uploadId, t0, {
+        totalInputTokens,
+        totalOutputTokens,
+        totalCostUsd: totalCost.toFixed(4),
+      });
       await prisma.marketDataUpload.update({
         where: { id: uploadId },
         data: {
@@ -1040,6 +1145,10 @@ export async function runValidation(uploadId: string): Promise<void> {
       return;
     }
 
+    mdv("db.write.start", uploadId, t0, {
+      facts: totalFacts,
+      leads: storyLeads.length,
+    });
     await persistResults(
       uploadId,
       userId,
@@ -1049,6 +1158,13 @@ export async function runValidation(uploadId: string): Promise<void> {
       totalInputTokens,
       totalOutputTokens,
     );
+    mdv("db.write.complete", uploadId, t0);
+    mdv("validation.complete", uploadId, t0, {
+      totalFacts,
+      leads: storyLeads.length,
+      totalCostUsd: totalCost.toFixed(4),
+      wallMs,
+    });
     console.log(
       `[runValidation] step: persisted — facts=${totalFacts} leads=${storyLeads.length} cost=$${totalCost.toFixed(4)} wallMs=${wallMs}`,
       uploadId,

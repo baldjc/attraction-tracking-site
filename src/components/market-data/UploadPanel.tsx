@@ -171,6 +171,22 @@ export default function UploadPanel({
     ],
   });
 
+  // Separate thinking instance for the upload stage so the rotating phase
+  // labels stay distinct from the mapping stage's labels. Both surface via
+  // AiThinking mode="phase" but with different content. The fallback rotation
+  // is the entire signal here — the POST is a single round-trip, so we don't
+  // have streaming phase events to drive it from the server.
+  const uploadThinking = useAiThinking({
+    mode: "phase",
+    fallbackPhases: [
+      "Reading your CSV files…",
+      "Uploading to the server…",
+      "Queueing for AI validation…",
+      "Almost there — finishing up…",
+    ],
+    fallbackIntervalMs: 2_500,
+  });
+
   function onPickFiles(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
     if (files.length === 0) return;
@@ -304,6 +320,7 @@ export default function UploadPanel({
     setError(null);
     setConflicts([]);
     setLastMapping(mapping);
+    uploadThinking.start();
     try {
       const fd = new FormData();
       for (const s of selected) fd.append("files", s.file);
@@ -349,10 +366,22 @@ export default function UploadPanel({
       setProposedHeaders([]);
       setProposedMapping({});
       setLastMapping(null);
+      // Notify UploadHistoryTable so it refetches without a full RSC reload.
+      // We don't know the new upload IDs from the POST response (it returns
+      // 202 with no body for the async path), so the listener does a GET of
+      // /api/member/market-data/uploads and diffs against its current rows
+      // — any IDs it didn't have get the azure-flash shimmer treatment.
+      // router.refresh() stays as a safety net for any other server-rendered
+      // bits on the page (e.g. the progress banner).
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("market-data:uploaded"));
+      }
       router.refresh();
     } catch (e) {
       setError((e as Error).message);
       setStage(hasColumnMapping ? "picking" : "mapping");
+    } finally {
+      uploadThinking.stop();
     }
   }
 
@@ -594,8 +623,11 @@ export default function UploadPanel({
       )}
 
       {stage === "uploading" && (
-        <div className="mt-4 text-sm text-gray-600 dark:text-gray-400">
-          Uploading {selected.length} file{selected.length === 1 ? "" : "s"}…
+        <div className="mt-4 space-y-2">
+          <div className="text-xs text-gray-500 dark:text-gray-400">
+            {selected.length} file{selected.length === 1 ? "" : "s"} in flight
+          </div>
+          <AiThinking mode="phase" phaseLabel={uploadThinking.phaseLabel} />
         </div>
       )}
 
