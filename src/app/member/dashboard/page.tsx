@@ -1,12 +1,12 @@
-import { cookies } from "next/headers";
-import { auth } from "@/lib/auth";
-import { IMPERSONATE_COOKIE } from "@/lib/impersonate-constants";
+import { resolveUserFromSession } from "@/lib/session-utils";
 import EditorDashboard from "./EditorDashboard";
 import MemberDashboard from "./MemberDashboard";
 
 export default async function DashboardPage() {
-  const session = await auth();
-  const role = (session?.user as any)?.role;
+  // Impersonation-aware: role is the real account role; isImpersonating is true
+  // only for a valid impersonation cookie owned by the current account.
+  const resolved = await resolveUserFromSession();
+  const role = resolved?.role;
 
   // If a member, always show personal dashboard
   if (role === "foundations_member") {
@@ -14,9 +14,7 @@ export default async function DashboardPage() {
   }
 
   // If an admin/editor is actively impersonating a member, show that member's personal dashboard
-  const cookieStore = await cookies();
-  const isImpersonating = !!cookieStore.get(IMPERSONATE_COOKIE)?.value;
-  if (isImpersonating) {
+  if (resolved?.isImpersonating) {
     return <MemberDashboard />;
   }
 

@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth";
+import { resolveUserFromSession } from "@/lib/session-utils";
 import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import ScriptReviewChatUI from "@/components/ai-tools/ScriptReviewChatUI";
@@ -14,14 +14,15 @@ export default async function MemberScriptReviewPage({
 }: {
   searchParams: Promise<{ planId?: string }>;
 }) {
-  const session = await auth();
-  if (!session?.user) redirect("/login");
+  // Impersonation-aware so the avatar context loads for the impersonated member.
+  const resolved = await resolveUserFromSession();
+  if (!resolved) redirect("/login");
 
   const params = await searchParams;
   const planId = params.planId;
 
   const user = await prisma.user.findUnique({
-    where: { email: session.user.email! },
+    where: { id: resolved.id },
     select: { avatarSummary: true, avatarName: true },
   });
 

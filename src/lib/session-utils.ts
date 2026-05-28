@@ -20,6 +20,7 @@ export type ResolvedUser = {
 };
 
 export async function resolveUserFromSession(): Promise<ResolvedUser | null> {
+  // This IS the impersonation resolver — the one place auth() is the raw source.
   const session = await auth();
   if (!session?.user) return null;
 

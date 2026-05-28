@@ -63,6 +63,8 @@ export async function getEffectiveStaffUserId(actorId: string): Promise<string> 
 /** True if the actor is currently impersonating a Staff Admin (editor). */
 export async function isImpersonatingStaff(): Promise<boolean> {
   try {
+    // Intentionally NOT impersonation-aware: needs the actual actor id to
+    // evaluate whether THEY are impersonating an editor.
     const session = await auth();
     const actorId = (session?.user as { id?: string } | undefined)?.id;
     if (!actorId) return false;
@@ -140,6 +142,9 @@ export async function requireStaffMemberAccess(memberId: string): Promise<
   | { ok: true; session: Session }
   | { ok: false; response: NextResponse }
 > {
+  // Intentionally NOT impersonation-aware: this gate authorizes the actual
+  // staff actor (admin/editor) against a target member. Must use the real
+  // session id/role, never the impersonated member.
   const session = (await auth()) as Session | null;
   const role = session?.user?.role;
   const userId = session?.user?.id;

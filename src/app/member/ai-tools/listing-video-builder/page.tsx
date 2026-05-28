@@ -1,13 +1,15 @@
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
+import { resolveUserFromSession } from "@/lib/session-utils";
 import { getFeatureFlags } from "@/lib/feature-flags";
 import { isListingVideoBuilderTester } from "@/lib/listing-video-builder-access";
 import ListingVideoBuilderTool from "@/components/ai-tools/ListingVideoBuilderTool";
 
 export default async function ListingVideoBuilderPage() {
-  const session = await auth();
-  const role = (session?.user as any)?.role as string;
-  const email = session?.user?.email ?? null;
+  // role = real account role (privilege check); email = resolved member email so
+  // the tester allowlist reflects the member being impersonated.
+  const resolved = await resolveUserFromSession();
+  const role = resolved?.role as string;
+  const email = resolved?.email ?? null;
 
   // Admins and editors always pass. Everyone else must either be on the
   // tester allowlist OR have the global flag enabled.

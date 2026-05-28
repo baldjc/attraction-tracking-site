@@ -1,17 +1,17 @@
-import { cookies } from "next/headers";
-import { auth } from "@/lib/auth";
+import { resolveUserFromSession } from "@/lib/session-utils";
 import WorkingForBanner from "@/components/ai-tools/WorkingForBanner";
 import AvatarTestPanel from "@/components/admin/AvatarTestPanel";
-import { IMPERSONATE_COOKIE } from "@/lib/impersonate-constants";
 
 export default async function AIToolsLayout({ children }: { children: React.ReactNode }) {
-  const session = await auth();
-  const role = (session?.user as any)?.role ?? "";
+  // role is the real signed-in account's role (admin chrome must key off the
+  // actual account, not the impersonated member); isImpersonating reflects a
+  // valid impersonation cookie owned by this account.
+  const resolved = await resolveUserFromSession();
+  const role = resolved?.role ?? "";
   const isAdmin = role === "admin";
   const isEditor = role === "editor";
 
-  const cookieStore = await cookies();
-  const isImpersonating = !!cookieStore.get(IMPERSONATE_COOKIE)?.value;
+  const isImpersonating = !!resolved?.isImpersonating;
 
   return (
     <>

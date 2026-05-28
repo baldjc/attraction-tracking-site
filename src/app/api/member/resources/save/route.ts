@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { resolveUserFromSession } from "@/lib/session-utils";
 import prisma from "@/lib/prisma";
 
 async function requireMember() {
-  const session = await auth();
-  if (!session?.user) return null;
-  return prisma.user.findUnique({ where: { email: (session.user as any).email! } });
+  // Impersonation-aware so saves attribute to the impersonated member.
+  const resolved = await resolveUserFromSession();
+  if (!resolved) return null;
+  return prisma.user.findUnique({ where: { id: resolved.id } });
 }
 
 export async function POST(req: NextRequest) {

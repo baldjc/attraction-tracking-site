@@ -9,6 +9,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const user = await resolveUserFromSession();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  // auth() here is intentional and complements resolveUserFromSession above:
+  // we need the ACTUAL signed-in account's role for the staff-bypass check,
+  // not the impersonated member's.
   const session = await auth();
   const role = (session?.user as { role?: string } | undefined)?.role;
   const isStaff = role === "admin" || role === "editor";

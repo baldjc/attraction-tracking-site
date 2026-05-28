@@ -11,13 +11,14 @@
  */
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { resolveUserFromSession } from "@/lib/session-utils";
 
 export const runtime = "nodejs";
 
 export async function GET() {
-  const session = await auth();
-  const userId = session?.user?.id;
+  // Impersonation-aware so drafts resolve to the impersonated member.
+  const resolved = await resolveUserFromSession();
+  const userId = resolved?.id;
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

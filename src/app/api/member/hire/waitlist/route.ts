@@ -1,16 +1,17 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { resolveUserFromSession } from "@/lib/session-utils";
 import prisma from "@/lib/prisma";
 import { sendWaitlistNotification } from "@/lib/email";
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user?.id) {
+  // Impersonation-aware so the waitlist reflects the impersonated member.
+  const resolved = await resolveUserFromSession();
+  if (!resolved) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const entries = await prisma.serviceWaitlistEntry.findMany({
-    where: { userId: session.user.id },
+    where: { userId: resolved.id },
     select: { packageId: true },
   });
 
@@ -35,10 +36,12 @@ async function sendSlackNotification(memberName: string, memberEmail: string, pa
 }
 
 export async function POST(req: Request) {
-  const session = await auth();
-  if (!session?.user?.id) {
+  // Impersonation-aware so waitlist joins attribute to the impersonated member.
+  const resolved = await resolveUserFromSession();
+  if (!resolved) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const memberId = resolved.id;
 
   const { packageId } = await req.json();
   if (!packageId) {
@@ -57,23 +60,23 @@ export async function POST(req: Request) {
   let alreadyOnWaitlist = false;
 
   const existing = await prisma.serviceWaitlistEntry.findUnique({
-    where: { packageId_userId: { packageId, userId: session.user.id } },
+    where: { packageId_userId: { packageId, userId: memberId } },
   });
 
   if (existing) {
     alreadyOnWaitlist = true;
   } else {
     await prisma.serviceWaitlistEntry.create({
-      data: { packageId, userId: session.user.id },
+      data: { packageId, userId: memberId },
     });
 
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: memberId },
       select: { fullName: true, email: true },
     });
 
     const memberName = user?.fullName ?? "A member";
-    const memberEmail = user?.email ?? (session.user as { email?: string }).email ?? "unknown";
+    const memberEmail = user?.email ?? resolved.email ?? "unknown";
 
     await Promise.allSettled([
       sendWaitlistNotification(memberName, memberEmail, pkg.name, pkg.category.name).catch((e) =>

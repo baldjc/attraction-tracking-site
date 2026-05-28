@@ -1,13 +1,15 @@
-import { auth } from "@/lib/auth";
+import { resolveUserFromSession } from "@/lib/session-utils";
 import { getFeatureFlags, DEFAULT_FLAGS } from "@/lib/feature-flags";
 import { isListingVideoBuilderTester } from "@/lib/listing-video-builder-access";
 import AIToolsHub from "@/components/ai-tools/AIToolsHub";
 import AIToolsUsageLink from "@/components/ai-tools/AIToolsUsageLink";
 
 export default async function AIToolsHubPage() {
-  const session = await auth();
-  const role = (session?.user as any)?.role as string;
-  const email = session?.user?.email ?? null;
+  // role = real account role (privilege check); email = resolved member email so
+  // the tester allowlist reflects the member being impersonated.
+  const resolved = await resolveUserFromSession();
+  const role = resolved?.role as string;
+  const email = resolved?.email ?? null;
 
   const isPrivileged = role === "admin" || role === "editor";
 

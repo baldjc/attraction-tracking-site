@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { resolveUserFromSession } from "@/lib/session-utils";
 import prisma from "@/lib/prisma";
 
 // ── Constants ─────────────────────────────────────────────────
@@ -139,9 +139,10 @@ function redactForMember(snippet: string, otherNames: string[]): string {
 
 // ── DB auth helper ────────────────────────────────────────────
 async function requireMember() {
-  const session = await auth();
-  if (!session?.user) return null;
-  const user = await prisma.user.findUnique({ where: { email: (session.user as any).email! } });
+  // Impersonation-aware so saved-state resolves to the impersonated member.
+  const resolved = await resolveUserFromSession();
+  if (!resolved) return null;
+  const user = await prisma.user.findUnique({ where: { id: resolved.id } });
   return user;
 }
 

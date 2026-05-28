@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import prisma from "@/lib/prisma";
 
@@ -27,10 +26,7 @@ const PRINCIPLE_LABELS: Record<string, string> = {
 type ScoreEntry = { score: number | null; evidence?: string };
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  // Impersonation-aware so the next-step suggestion resolves to the member.
   const user = await resolveUserFromSession();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

@@ -25,6 +25,8 @@ export function isMainOwnerEmail(email: string | null | undefined): boolean {
 }
 
 export async function getSessionRole(): Promise<{ id: string; role: string } | null> {
+  // Intentionally NOT impersonation-aware: returns the actual signed-in
+  // account's id + role for privilege checks. Never the impersonated member.
   const session = await auth();
   if (!session?.user) return null;
   return {
