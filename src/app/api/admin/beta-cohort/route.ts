@@ -108,6 +108,8 @@ export async function GET(req: NextRequest) {
       fullName: true,
       serviceTier: true,
       onboardingCompletedAt: true,
+      marketConfig: { select: { voiceGuideUploadedAt: true } },
+      _count: { select: { contentPlans: true } },
     },
     take: 50,
     orderBy: { fullName: "asc" },
@@ -134,6 +136,8 @@ export async function GET(req: NextRequest) {
       cohort,
       inBeta,
       onboardingPending: m.onboardingCompletedAt === null,
+      voiceGuideUploaded: m.marketConfig?.voiceGuideUploadedAt != null,
+      firstPlanDrafted: m._count.contentPlans > 0,
     };
   });
 

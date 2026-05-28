@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useToast } from "@/components/ToastProvider";
 import { MemberCard, type MemberTierKey } from "@/components/cards";
+import { IMPERSONATE_LS_KEY } from "@/lib/impersonate-constants";
 
 function initialsFrom(name: string | null, email: string): string {
   const src = (name && name.trim()) || email;
@@ -20,6 +21,8 @@ interface Member {
   cohort: "Foundations" | "Production" | "Growth" | "DWY";
   inBeta: boolean;
   onboardingPending: boolean;
+  voiceGuideUploaded: boolean;
+  firstPlanDrafted: boolean;
 }
 
 interface BetaSummary {
@@ -95,6 +98,31 @@ export default function BetaCohortClient() {
       toast.error((err as Error).message);
     } finally {
       setWorking(false);
+    }
+  }
+
+  async function handleImpersonate(member: Member) {
+    try {
+      const res = await fetch("/api/admin/impersonate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ memberId: member.id }),
+      });
+      if (!res.ok) {
+        toast.error("Failed to switch view");
+        return;
+      }
+      const displayName = member.name ?? member.email;
+      try {
+        localStorage.setItem(
+          IMPERSONATE_LS_KEY,
+          JSON.stringify({ memberId: member.id, memberName: displayName, targetRole: "member" }),
+        );
+      } catch {}
+      document.cookie = `impersonate_member=${member.id}; path=/; max-age=${60 * 60 * 8}; SameSite=Lax`;
+      window.location.href = "/member/dashboard";
+    } catch {
+      toast.error("Failed to switch view");
     }
   }
 
@@ -176,23 +204,25 @@ export default function BetaCohortClient() {
                 statusRows={[
                   { label: "In v2 beta", on: m.inBeta },
                   { label: "Onboarding complete", on: !m.onboardingPending },
+                  { label: "Voice guide uploaded", on: m.voiceGuideUploaded },
+                  { label: "First plan drafted", on: m.firstPlanDrafted },
                 ]}
-                actions={
+                actions={[
+                  {
+                    label: "Impersonate",
+                    onClick: () => void handleImpersonate(m),
+                  },
                   m.inBeta
-                    ? [
-                        {
-                          label: "Remove from beta",
-                          danger: true,
-                          onClick: () => setPending({ type: "remove", member: m }),
-                        },
-                      ]
-                    : [
-                        {
-                          label: "Add to beta",
-                          onClick: () => setPending({ type: "add", member: m }),
-                        },
-                      ]
-                }
+                    ? {
+                        label: "Remove from beta",
+                        danger: true,
+                        onClick: () => setPending({ type: "remove", member: m }),
+                      }
+                    : {
+                        label: "Add to beta",
+                        onClick: () => setPending({ type: "add", member: m }),
+                      },
+                ]}
               />
             ))}
           </div>
