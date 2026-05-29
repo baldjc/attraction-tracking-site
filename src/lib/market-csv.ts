@@ -6,6 +6,7 @@ import {
   OPTIONAL_FIELDS,
   FIELD_LABELS,
   type ColumnMapping,
+  type AnyMappedField,
 } from "@/lib/market-config";
 
 // ─── Persistent CSV storage (Replit Object Storage) ──────────────────────────
@@ -142,6 +143,12 @@ export interface ParsedCsvPreview {
   headers: string[];
   sampleRows: string[][];
   rowCount: number;
+  // Every parsed data row, used only for deterministic full-column statistics
+  // in runPreflight (e.g. the status-actionability gate). Kept separate from
+  // `sampleRows` (which feeds the AI preview prompt) so a file sorted with all
+  // non-actionable rows first can't be falsely blocked from a 20-row sample.
+  // Never serialized to the client.
+  allRows?: string[][];
 }
 
 /**
@@ -166,6 +173,7 @@ export function parseCsvPreview(buf: Buffer): ParsedCsvPreview {
     headers: headers.map((h) => (h ?? "").toString()),
     sampleRows: rows.slice(0, 20),
     rowCount: rows.length,
+    allRows: rows,
   };
 }
 
@@ -186,7 +194,11 @@ export interface PreflightOk {
 }
 export interface PreflightFail {
   ok: false;
-  code: "MISSING_COLUMNS" | "STATUS_VALUES_UNRECOGNIZED" | "EMPTY_FILE";
+  code:
+    | "MISSING_COLUMNS"
+    | "STATUS_VALUES_UNRECOGNIZED"
+    | "STATUS_ONLY_NON_ACTIONABLE"
+    | "EMPTY_FILE";
   message: string;
   detail: string;
   suggestion?: string;
@@ -214,27 +226,113 @@ const REQUIRED_LABELS: Record<string, string> = {
   neighbourhood: "Neighbourhood",
   saleDate: "Sale Date",
 };
-const KNOWN_STATUS_WORDS = [
+// Maps each preflight field key to its ColumnMapping canonical field so a
+// member's saved mapping can satisfy the required-column check even when the
+// raw CSV header is a regional/short name (e.g. NTREIS "St" for status).
+const PREFLIGHT_FIELD_TO_MAPPING: Record<string, AnyMappedField> = {
+  status: "status",
+  propertyType: "propertyType",
+  salePrice: "salePrice",
+  listPrice: "listPrice",
+  dom: "daysOnMarket",
+  neighbourhood: "neighbourhood",
+  saleDate: "date",
+};
+
+// Recognized status words (substring match). Includes both actionable
+// (Sold/Active/Pending/Closed…) and non-actionable (Cancelled/Withdrawn/
+// Expired/Terminated…) lifecycle states so the recognition gate doesn't
+// false-negative on a file that legitimately contains those states.
+const ACTIONABLE_STATUS_WORDS = [
   "sold",
   "closed",
   "active",
   "pending",
-  "expired",
+  "contingent",
+  "leased",
+  "rented",
+  "under contract",
+];
+const NON_ACTIONABLE_STATUS_WORDS = [
+  "cancelled",
+  "canceled",
   "withdrawn",
+  "expired",
   "terminated",
+  "off market",
+  "off-market",
+  "offmarket",
+  "hold",
+  "coming soon",
+];
+const KNOWN_STATUS_WORDS = [
+  ...ACTIONABLE_STATUS_WORDS,
+  ...NON_ACTIONABLE_STATUS_WORDS,
 ];
 
-export function runPreflight(preview: ParsedCsvPreview): PreflightResult {
+// Single-letter MLS status codes (EXACT match — a substring match would treat
+// any value containing the letter as a status). NTREIS-style:
+//   A=Active, P=Pending, S=Sold, C=Closed, L=Leased  → actionable
+//   W=Withdrawn, E=Expired, T=Terminated, X=Cancelled/Off-market → non-actionable
+const ACTIONABLE_STATUS_CODES = ["s", "a", "p", "c", "l"];
+const NON_ACTIONABLE_STATUS_CODES = ["w", "e", "t", "x"];
+const KNOWN_STATUS_CODES = [
+  ...ACTIONABLE_STATUS_CODES,
+  ...NON_ACTIONABLE_STATUS_CODES,
+];
+
+function isRecognizedStatus(v: string): boolean {
+  return (
+    KNOWN_STATUS_WORDS.some((k) => v.includes(k)) ||
+    KNOWN_STATUS_CODES.includes(v)
+  );
+}
+function isActionableStatus(v: string): boolean {
+  return (
+    ACTIONABLE_STATUS_WORDS.some((k) => v.includes(k)) ||
+    ACTIONABLE_STATUS_CODES.includes(v)
+  );
+}
+
+export function runPreflight(
+  preview: ParsedCsvPreview,
+  columnMapping?: ColumnMapping | null,
+): PreflightResult {
   const headersLower = preview.headers.map((h) => h.toLowerCase().trim());
   const headersCount = preview.headers.length;
 
-  // 1. Required columns (flexible matching)
+  const mappedHeaderFor = (field: string): string | undefined => {
+    const key = PREFLIGHT_FIELD_TO_MAPPING[field];
+    const raw = key ? columnMapping?.[key] : undefined;
+    const norm = raw?.toLowerCase().trim();
+    return norm && norm.length > 0 ? norm : undefined;
+  };
+
+  // 1. Required columns. A field is satisfied when the member's saved mapping
+  // points at a header present in THIS file; otherwise we fall back to flexible
+  // keyword matching so unmapped uploads still work.
   const missing: string[] = [];
+  let statusMappedButAbsent = false;
   for (const [field, candidates] of Object.entries(REQUIRED_COLUMN_CANDIDATES)) {
+    const mapped = mappedHeaderFor(field);
+    if (mapped) {
+      if (headersLower.includes(mapped)) continue; // satisfied by explicit mapping
+      if (field === "status") statusMappedButAbsent = true;
+    }
     const hit = candidates.some((c) => headersLower.some((h) => h.includes(c)));
     if (!hit) missing.push(field);
   }
   if (missing.length > 0) {
+    const statusMissingUnmapped =
+      missing.includes("status") && !mappedHeaderFor("status");
+    const suggestion =
+      headersCount === 0
+        ? "Make sure row 1 of your CSV is a header row (column names), not data."
+        : statusMissingUnmapped
+          ? "We couldn't find a listing-status column. If your MLS uses a short or coded column name (e.g. \"St\"), set up your column mapping so we know which column holds the status."
+          : statusMappedButAbsent
+            ? "Your saved column mapping points at a status column that isn't in this file. Re-check the mapping or re-export with the mapped columns included."
+            : "Re-export from your MLS with the missing columns included, or contact support if your export uses different names.";
     return {
       ok: false,
       code: "MISSING_COLUMNS",
@@ -245,10 +343,7 @@ export function runPreflight(preview: ParsedCsvPreview): PreflightResult {
         headersCount === 0
           ? "We couldn't read any header row from this file."
           : `Columns we did find: ${preview.headers.join(", ")}.`,
-      suggestion:
-        headersCount === 0
-          ? "Make sure row 1 of your CSV is a header row (column names), not data."
-          : "Re-export from your MLS with the missing columns included, or contact support if your export uses different names.",
+      suggestion,
       rowCount: preview.rowCount,
       headersCount,
       statusRecognizedRatio: null,
@@ -270,19 +365,27 @@ export function runPreflight(preview: ParsedCsvPreview): PreflightResult {
     };
   }
 
-  // 3. Status values look recognizable
-  const statusIdx = headersLower.findIndex((h) =>
-    REQUIRED_COLUMN_CANDIDATES.status.some((c) => h.includes(c)),
-  );
+  // 3. Status values look recognizable. Locate the status column via the saved
+  // mapping first (handles short/coded NTREIS-style headers), then keyword.
+  const mappedStatusHeader = mappedHeaderFor("status");
+  let statusIdx = mappedStatusHeader
+    ? headersLower.indexOf(mappedStatusHeader)
+    : -1;
+  if (statusIdx < 0) {
+    statusIdx = headersLower.findIndex((h) =>
+      REQUIRED_COLUMN_CANDIDATES.status.some((c) => h.includes(c)),
+    );
+  }
+  // Scan the FULL status column (not just the 20-row AI sample) so a file
+  // sorted with all non-actionable rows first can't be falsely classified.
+  const statusRows = preview.allRows ?? preview.sampleRows;
   let statusRecognizedRatio: number | null = null;
-  if (statusIdx >= 0 && preview.sampleRows.length > 0) {
-    const values = preview.sampleRows
+  if (statusIdx >= 0 && statusRows.length > 0) {
+    const values = statusRows
       .map((r) => (r[statusIdx] ?? "").toString().toLowerCase().trim())
       .filter((v) => v.length > 0);
     if (values.length > 0) {
-      const recognized = values.filter((v) =>
-        KNOWN_STATUS_WORDS.some((k) => v.includes(k)),
-      );
+      const recognized = values.filter(isRecognizedStatus);
       statusRecognizedRatio = recognized.length / values.length;
       if (statusRecognizedRatio < 0.5) {
         const sample = Array.from(new Set(values)).slice(0, 5);
@@ -290,9 +393,31 @@ export function runPreflight(preview: ParsedCsvPreview): PreflightResult {
           ok: false,
           code: "STATUS_VALUES_UNRECOGNIZED",
           message: "Status column values aren't recognized.",
-          detail: `Found values like: ${sample.join(", ")}. Expected words like Sold, Closed, Active, Pending.`,
+          detail: `Found values like: ${sample.join(", ")}. Expected words like Sold, Closed, Active, Pending (or codes like S/A/P).`,
           suggestion:
-            "Check that your Status column uses full words, not codes like S/C/A. Re-export with text values if your MLS allows.",
+            "Check that the mapped Status column holds listing states. If your MLS uses codes, make sure you mapped the right column.",
+          rowCount: preview.rowCount,
+          headersCount,
+          statusRecognizedRatio,
+        };
+      }
+
+      // Recognized, but is there anything actionable? A file that is 100%
+      // Cancelled/Withdrawn/Expired/Terminated/Off-market has no Sold/Active/
+      // Pending listings and can't produce inventory, pricing, or absorption
+      // metrics — fail it deterministically instead of burning validator cost.
+      const actionableValues = recognized.filter(isActionableStatus);
+      if (recognized.length > 0 && actionableValues.length === 0) {
+        const sample = Array.from(new Set(values)).slice(0, 5);
+        return {
+          ok: false,
+          code: "STATUS_ONLY_NON_ACTIONABLE",
+          message: "This file has no active, pending, or sold listings.",
+          detail: `Every listing has a non-actionable status (e.g. ${sample.join(
+            ", ",
+          )}). Market analysis needs Sold, Active, or Pending listings to compute inventory, pricing, and absorption.`,
+          suggestion:
+            "Re-export the month including Sold/Closed, Active, and Pending listings — not just Cancelled/Withdrawn/Expired records.",
           rowCount: preview.rowCount,
           headersCount,
           statusRecognizedRatio,

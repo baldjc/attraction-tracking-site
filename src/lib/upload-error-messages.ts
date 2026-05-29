@@ -40,6 +40,27 @@ export function classifyUploadError(
   const err = (rawError ?? "").toString();
   const rowCount = upload.rowCount ?? 0;
 
+  // Internal token-overflow backstop. callValidator throws
+  // "Input too large for 200K context: inputTokens=... remaining=-... < min ..."
+  // when a single chunk still overruns the model context even after chunking.
+  // This is NOT something the member can fix by clicking Retry (it's
+  // deterministic — the same payload will overflow every time), so mark it
+  // non-retryable and route to support rather than burning the retry budget.
+  if (
+    /input too large for \d+k context|remaining=-?\d+\s*<\s*min/i.test(err)
+  ) {
+    return {
+      category: "file_too_large",
+      title: "This month's data was too large to process",
+      body:
+        "This upload exceeded what we can analyze in a single pass. We've " +
+        "been notified — please contact support with this upload ID and we'll " +
+        "reprocess it for you. You don't need to keep retrying.",
+      canRetry: false,
+      nextAction: "contact_support",
+    };
+  }
+
   // Big-file branch takes priority: a context-overflow message PLUS a large
   // upload is almost always a real "this market is too big for one pass"
   // problem, not a one-off the member can retry their way out of.

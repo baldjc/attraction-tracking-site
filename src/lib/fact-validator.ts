@@ -167,6 +167,20 @@ export function validateUploadAsync(uploadId: string, userId: string): void {
 // back without also raising MIN_USEFUL_OUTPUT in callValidator.
 const GROUPS_CHAR_BUDGET = 480_000;
 
+// Per-call GROUPS char budget. The 480K selection budget above governs how
+// aggressively low-signal groups are dropped; this tighter budget governs how
+// much serialized GROUPS data we allow into a SINGLE validator call. Dense
+// numeric tabular data tokenises closer to ~1 char/token than the ~2 the
+// selection budget assumes, so a 480K-char chunk can blow past the 200K-token
+// context window (this is exactly the May 2026 NTREIS failure: inputTokens
+// ≈486K). At ~100K chars a single call's GROUPS block stays well under ~120K
+// tokens, leaving ample room for the ~12K-token system prompt, config, prior
+// facts, the 4K safety buffer, and the 16K minimum output budget enforced in
+// callValidator. Chunks larger than this are split into multiple parallel
+// calls (see splitChunkByBudget); the SUMMARY+LEADS call serializes with this
+// budget directly so it self-limits to one call.
+const PER_CALL_GROUPS_CHAR_BUDGET = 100_000;
+
 /**
  * Sample-size thresholds for low-signal group filtering, scaled to market
  * size. Big-metro uploads (Dallas, Toronto, etc.) blow past 12-15K rows and
@@ -227,6 +241,7 @@ function formatGroupLine(g: AggregatedGroup): string {
 function selectGroupsForSerialization(
   groups: AggregatedGroup[],
   rowCount: number,
+  charBudget: number = GROUPS_CHAR_BUDGET,
 ): { kept: AggregatedGroup[]; threshold: number; droppedCount: number } {
   // Always keep rollups. Among non-rollups, drop low-signal groups using an
   // iteratively-escalating sample-size threshold until total serialized chars
@@ -243,7 +258,7 @@ function selectGroupsForSerialization(
       (a, g) => a + formatGroupLine(g).length + 1,
       rollupChars,
     );
-    if (chars <= GROUPS_CHAR_BUDGET) {
+    if (chars <= charBudget) {
       const kept = [...rollups, ...survivors];
       return {
         kept,
@@ -264,6 +279,7 @@ function serializeTable(
   table: AggregatedTable,
   groupSubset?: AggregatedGroup[],
   chunkLabel?: string,
+  charBudget: number = GROUPS_CHAR_BUDGET,
 ): string {
   // When `groupSubset` is provided we serialize only that slice (chunked-mode).
   // Otherwise we use the whole table (legacy single-call path / SUMMARY+LEADS).
@@ -271,6 +287,7 @@ function serializeTable(
   const { kept, threshold, droppedCount } = selectGroupsForSerialization(
     sourceGroups,
     table.meta.totalRowsParsed,
+    charBudget,
   );
 
   const meta = table.meta;
@@ -436,6 +453,55 @@ function buildChunks(groups: AggregatedGroup[]): FactsChunk[] {
   ];
 }
 
+/**
+ * Split a single facts chunk into one or more sub-chunks, each whose serialized
+ * GROUPS block fits within `charBudget`. We first drop low-signal groups via
+ * the same selection the serializer uses (so we don't waste calls on groups
+ * that would be filtered out anyway), then greedily pack the survivors into
+ * batches. Each sub-chunk keeps the parent's name + propertyTypeColumn so the
+ * merge step concatenates their facts exactly as before — the only change is
+ * that a chunk that used to overflow the context window now lands as N parallel
+ * calls instead of one doomed call.
+ */
+function splitChunkByBudget(
+  chunk: FactsChunk,
+  table: AggregatedTable,
+  charBudget: number,
+): FactsChunk[] {
+  const { kept } = selectGroupsForSerialization(
+    chunk.groups,
+    table.meta.totalRowsParsed,
+    charBudget,
+  );
+  if (kept.length === 0) return [chunk];
+
+  const batches: AggregatedGroup[][] = [];
+  let current: AggregatedGroup[] = [];
+  let currentChars = 0;
+  for (const g of kept) {
+    const len = formatGroupLine(g).length + 1;
+    if (current.length > 0 && currentChars + len > charBudget) {
+      batches.push(current);
+      current = [];
+      currentChars = 0;
+    }
+    current.push(g);
+    currentChars += len;
+  }
+  if (current.length > 0) batches.push(current);
+
+  if (batches.length <= 1) {
+    // Fits in one call — hand back the pre-selected groups so we don't re-run
+    // selection (and risk dropping more) at serialize time.
+    return [{ ...chunk, groups: kept }];
+  }
+  return batches.map((groups, i) => ({
+    ...chunk,
+    label: `${chunk.label} — part ${i + 1} of ${batches.length}`,
+    groups,
+  }));
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // User-message builders (one per call mode)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -486,7 +552,7 @@ function buildSummaryAndLeadsMessage(
   return [
     modeMarker,
     "",
-    serializeTable(table),
+    summarySerializeTable(table),
     "",
     serializeConfig(config),
     "",
@@ -498,6 +564,14 @@ function buildSummaryAndLeadsMessage(
     "  ## STORY LEADS",
     "Do NOT include `## VALIDATED FACTS LIBRARY`. Use the pre-computed numbers in the GROUPS block — do not recompute them.",
   ].join("\n");
+}
+
+// The SUMMARY+LEADS call needs a holistic view of the whole table, so it can't
+// be split across calls the way facts chunks can. Instead we serialize it with
+// the tighter per-call budget so selection drops enough low-signal groups to
+// keep this single call under the context window.
+function summarySerializeTable(table: AggregatedTable): string {
+  return serializeTable(table, undefined, undefined, PER_CALL_GROUPS_CHAR_BUDGET);
 }
 
 /** Legacy single-call builder kept for backward-compat / debug paths. */
@@ -998,10 +1072,20 @@ export async function runValidation(uploadId: string): Promise<void> {
 
     const priorFactsBlock = await serializePriorFacts(userId, uploadId);
 
-    // Build the 4 facts chunks + 1 summary/leads chunk. Each is an independent
-    // Claude call. The system prompt is identical across all 5 → prompt cache
-    // is shared (first call writes, subsequent reads).
-    const chunks = buildChunks(table.groups);
+    // Build the facts chunks + 1 summary/leads chunk. Each is an independent
+    // Claude call sharing an identical system prompt → prompt cache is shared
+    // (first call writes, subsequent reads). The base layout is one chunk per
+    // property-type slice + rollups, but very wide markets may split a slice
+    // into several sub-chunks below, so the total call count is dynamic.
+    const baseChunks = buildChunks(table.groups);
+    // Token-aware split: a single property-type slice for a very wide market
+    // (e.g. NTREIS Dallas) can serialize past the 200K-token context window.
+    // Expand any oversized base chunk into multiple parallel sub-chunks that
+    // each fit PER_CALL_GROUPS_CHAR_BUDGET. Same name/propertyTypeColumn → the
+    // merge step downstream is unchanged.
+    const chunks = baseChunks.flatMap((c) =>
+      splitChunkByBudget(c, table, PER_CALL_GROUPS_CHAR_BUDGET),
+    );
     const chunkLogStr = chunks.map((c) => `${c.name}=${c.groups.length}`).join(' ');
     mdv("chunks.built", uploadId, t0, {
       detached: chunks.find((c) => c.name === "detached")?.groups.length ?? 0,
@@ -1038,7 +1122,7 @@ export async function runValidation(uploadId: string): Promise<void> {
     ]);
     const wallMs = Date.now() - t0;
     mdv("validate.all_calls_returned", uploadId, t0, { wallMs });
-    console.log(`[runValidation] step: all 5 calls returned in ${wallMs}ms`, uploadId);
+    console.log(`[runValidation] step: all ${chunks.length + 1} calls returned in ${wallMs}ms`, uploadId);
 
     // Parse each chunk + merge.
     const factsBundles: FactsBundle[] = factResults.map(({ chunk, call }) => {

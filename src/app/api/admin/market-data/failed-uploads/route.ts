@@ -72,7 +72,11 @@ export async function GET(req: NextRequest) {
       rowCount: r.rowCount,
       uploadedAt: r.uploadedAt.toISOString(),
       retryCount: r.retryCount,
-      rawError: (r.validationError ?? "").slice(0, 300),
+      // Full stored error (already capped at ~4-8K chars when written) so the
+      // admin "Show raw error" toggle reveals the actionable tail — e.g. the
+      // token-overflow backstop's "inputTokens=… remaining=…" detail — not just
+      // the first line.
+      rawError: r.validationError ?? "",
       category: friendly.category,
       categoryLabel: ERROR_CATEGORY_LABELS[friendly.category],
       friendlyTitle: friendly.title,

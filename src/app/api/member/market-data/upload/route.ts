@@ -151,7 +151,12 @@ export async function POST(req: NextRequest) {
 
     // Deterministic preflight — block missing-column / empty / all-unknown-status
     // CSVs BEFORE we write to storage or burn ~$2 on Claude validator time.
-    const pf = runPreflight(preview);
+    // Pass the effective column mapping (this request's, else the member's saved
+    // one) so short/coded MLS headers a member has already mapped don't trip the
+    // required-column check.
+    const effectiveMapping =
+      columnMapping ?? (config.columnMapping as ColumnMapping | null);
+    const pf = runPreflight(preview, effectiveMapping);
     console.log(
       `[mdv preflight] result=${pf.ok ? "ok" : pf.code} userId=${userId} ` +
         `filename=${JSON.stringify(file.name)} rowCount=${pf.rowCount} ` +
