@@ -5,6 +5,7 @@ import { resolveUserFromSession } from "@/lib/session-utils";
 import { canStaffAccessMember } from "@/lib/staff-access";
 import { listFilesInFolder } from "@/lib/google-drive";
 import { getFeatureFlags } from "@/lib/feature-flags";
+import { PRODUCTION_TIERS } from "@/lib/content-plan-utils";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await resolveUserFromSession();
@@ -35,6 +36,17 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     if (!staffId || !(await canStaffAccessMember(staffId, plan.userId))) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
+  }
+
+  // Drive is a Production-tier feature; gate on the plan OWNER's tier (mirrors
+  // drive-folder/thumbnails routes) so direct API hits can't leak Drive data for
+  // Foundations members even when staff or the owner are signed in.
+  const owner = await prisma.user.findUnique({
+    where: { id: plan.userId },
+    select: { serviceTier: true },
+  });
+  if (!owner?.serviceTier || !PRODUCTION_TIERS.includes(owner.serviceTier)) {
+    return NextResponse.json({ files: [], folderUrl: null });
   }
 
   const flags = await getFeatureFlags();

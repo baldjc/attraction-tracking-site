@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { ContentPlan } from "@/components/content-planner/ContentPlanEditModal";
-import { getStatusOptions, hasEditDueDate } from "@/lib/content-plan-utils";
+import { getStatusOptions, hasEditDueDate, PRODUCTION_TIERS } from "@/lib/content-plan-utils";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -548,6 +548,7 @@ export default function ContentEditorClient({
 
   const statusOptions = useMemo(() => getStatusOptions(serviceTier), [serviceTier]);
   const isFoundations = FOUNDATIONS_TIERS.includes(serviceTier);
+  const isProduction = PRODUCTION_TIERS.includes(serviceTier);
   const showEditDue = hasEditDueDate(serviceTier);
 
   // ── data hydration ────────────────────────────────────────────────────────
@@ -641,7 +642,17 @@ export default function ContentEditorClient({
     });
     if (!res.ok) throw new Error(`Save failed: ${res.status}`);
     const data = await res.json();
-    if (data?.plan) setPlan(data.plan);
+    // Thumbnail variants / winner are mutated through their own routes and kept
+    // fresh in `plan` via patchPlan. This PUT never touches them, so preserve the
+    // locally-held values instead of letting a possibly-stale autosave response
+    // body overwrite them (which would make PublishTab re-hydrate stale on remount).
+    if (data?.plan) {
+      setPlan((prev) => ({
+        ...(data.plan as ContentPlan),
+        thumbnailVariants: (prev as unknown as { thumbnailVariants?: unknown }).thumbnailVariants,
+        thumbnailWinnerId: (prev as unknown as { thumbnailWinnerId?: unknown }).thumbnailWinnerId,
+      } as ContentPlan));
+    }
   }, [planId]);
 
   const { state: saveState, lastSavedAt, flush, retry } = useAutoSave({
@@ -651,6 +662,15 @@ export default function ContentEditorClient({
   // Helper to update form fields and trigger debounce automatically.
   const update = <K extends keyof Form>(k: K, v: Form[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
+
+  // Merge server-confirmed fields back into the held plan so they survive a
+  // tab switch (each tab unmounts/remounts and re-reads from `plan`). Thumbnail
+  // uploads/scores/winner picks write straight to the DB via their own routes,
+  // so without this the parent `plan` would go stale and the PublishTab would
+  // re-hydrate empty after leaving and returning to the tab.
+  const patchPlan = useCallback((partial: Record<string, unknown>) => {
+    setPlan((p) => ({ ...p, ...partial } as ContentPlan));
+  }, []);
 
   // ── archive / quick actions ───────────────────────────────────────────────
   const handleArchive = async () => {
@@ -1111,6 +1131,8 @@ Output as markdown with ## per talking point, ### per section. Every stat: \`fig
 
             {activeTab === "planning" && (
               <PlanningTab
+                planId={planId}
+                isProduction={isProduction}
                 form={form}
                 update={update}
                 statusOptions={statusOptions}
@@ -1152,6 +1174,7 @@ Output as markdown with ## per talking point, ### per section. Every stat: \`fig
                 form={form}
                 update={update}
                 onBlur={() => void flush()}
+                onPersist={patchPlan}
               />
             )}
           </aside>
@@ -1429,11 +1452,13 @@ function Row({ k, v }: { k: string; v: React.ReactNode }) {
 }
 
 function PlanningTab({
-  form, update, statusOptions, themes, showEditDue,
+  planId, isProduction, form, update, statusOptions, themes, showEditDue,
   onArchive, onBlur,
   onGenerateResearchPrompt, researchPromptCopied, researchPromptError,
   statusSelectRef, shootDateRef, editDueDateRef, publishDateRef, researchNotesRef,
 }: {
+  planId: string;
+  isProduction: boolean;
   form: Form;
   update: <K extends keyof Form>(k: K, v: Form[K]) => void;
   statusOptions: string[];
@@ -1476,6 +1501,8 @@ function PlanningTab({
         )}
         <DateRow label="Publish" value={form.publishDate} onChange={(v) => update("publishDate", v)} onBlur={onBlur} inputRef={publishDateRef} />
       </Panel>
+
+      {isProduction && <DriveFolderSection planId={planId} />}
 
       <Panel title="Theme & anchor">
         <div style={{ padding: "8px 14px" }}>
@@ -1573,6 +1600,106 @@ function PlanningTab({
         </div>
       </Panel>
     </>
+  );
+}
+
+type DriveFile = { id: string; name: string; webViewLink: string | null; modifiedTime: string | null; mimeType: string | null };
+
+// Drive folder card — Production-tier only. Surfaces the plan's Google Drive
+// project folder and its contents (including thumbnails pushed there on upload)
+// right inside the editor, and lets the member spin one up on demand if it
+// hasn't been created yet.
+function DriveFolderSection({ planId }: { planId: string }) {
+  const [folderUrl, setFolderUrl] = useState<string | null>(null);
+  const [files, setFiles] = useState<DriveFile[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(() => {
+    setLoading(true);
+    setError(null);
+    fetch(`/api/member/content-plans/${planId}/drive-files`)
+      .then(async (r) => {
+        if (!r.ok) throw new Error("Couldn't load the Drive folder.");
+        return r.json();
+      })
+      .then((d) => {
+        setFolderUrl(d?.folderUrl ?? null);
+        setFiles(Array.isArray(d?.files) ? (d.files as DriveFile[]) : []);
+      })
+      .catch(() => setError("Couldn't load the Drive folder."))
+      .finally(() => setLoading(false));
+  }, [planId]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const handleCreate = async () => {
+    setCreating(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/member/content-plans/${planId}/drive-folder`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Failed to create folder");
+      setFolderUrl(data.driveFolderLink ?? null);
+      load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to create folder");
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  return (
+    <Panel title="Drive folder" headerRight={
+      folderUrl ? (
+        <a href={folderUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: "var(--abv-azure)", fontWeight: 600 }}>
+          Open ↗
+        </a>
+      ) : null
+    }>
+      <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+        {error && <div style={{ fontSize: 11, color: "var(--abv-leads, #DC2626)" }}>{error}</div>}
+        {loading ? (
+          <div style={{ fontSize: 12, color: "var(--abv-text-muted)" }}>Loading…</div>
+        ) : !folderUrl ? (
+          <>
+            <div style={{ fontSize: 12, color: "var(--abv-text-muted)", lineHeight: 1.5 }}>
+              No Drive folder yet. Create one to store footage, thumbnails, and assets for this video.
+            </div>
+            <div>
+              <QuickBtn onClick={() => void handleCreate()}>
+                {creating ? "Creating…" : "+ Create Drive folder"}
+              </QuickBtn>
+            </div>
+          </>
+        ) : files.length === 0 ? (
+          <div style={{ fontSize: 12, color: "var(--abv-text-muted)", lineHeight: 1.5 }}>
+            Folder is empty. Uploaded thumbnails and assets will appear here.
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {files.map((f) => (
+              <a
+                key={f.id}
+                href={f.webViewLink ?? folderUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8,
+                  padding: "6px 8px", border: "1px solid var(--abv-border)", borderRadius: 6,
+                  fontSize: 12, color: "var(--abv-text)",
+                }}
+                className="hover:bg-[var(--abv-bg-warm)]"
+              >
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.name}</span>
+                <span style={{ color: "var(--abv-azure)", flexShrink: 0 }}>↗</span>
+              </a>
+            ))}
+          </div>
+        )}
+      </div>
+    </Panel>
   );
 }
 
@@ -1811,13 +1938,14 @@ const PINNED_MAX = 1000;
 const MAX_THUMBS = 4;
 
 function PublishTab({
-  planId, plan, form, update, onBlur,
+  planId, plan, form, update, onBlur, onPersist,
 }: {
   planId: string;
   plan: ContentPlan;
   form: Form;
   update: <K extends keyof Form>(k: K, v: Form[K]) => void;
   onBlur: () => void;
+  onPersist: (partial: Record<string, unknown>) => void;
 }) {
   const apiBase = "/api/member/content-plans";
   const [variants, setVariants] = useState<ClientThumbnailVariant[]>(() =>
@@ -1830,6 +1958,8 @@ function PublishTab({
   const [scoringId, setScoringId] = useState<string | null>(null);
   const [thumbError, setThumbError] = useState<string | null>(null);
   const [drafting, setDrafting] = useState(false);
+  const [comparing, setComparing] = useState(false);
+  const [comparison, setComparison] = useState<{ verdict: string; winnerVariantId: string | null } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleUpload = async (file: File) => {
@@ -1842,6 +1972,8 @@ function PublishTab({
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Upload failed");
       setVariants(parseClientVariants(data.variants));
+      setComparison(null);
+      onPersist({ thumbnailVariants: data.variants });
     } catch (e) {
       setThumbError(e instanceof Error ? e.message : "Upload failed");
     } finally {
@@ -1858,6 +1990,7 @@ function PublishTab({
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Scoring failed");
       setVariants(parseClientVariants(data.variants));
+      onPersist({ thumbnailVariants: data.variants });
     } catch (e) {
       setThumbError(e instanceof Error ? e.message : "Scoring failed");
     } finally {
@@ -1873,6 +2006,8 @@ function PublishTab({
       if (!res.ok) throw new Error(data?.error || "Delete failed");
       setVariants(parseClientVariants(data.variants));
       setWinnerId(data.thumbnailWinnerId ?? null);
+      setComparison(null);
+      onPersist({ thumbnailVariants: data.variants, thumbnailWinnerId: data.thumbnailWinnerId ?? null });
     } catch (e) {
       setThumbError(e instanceof Error ? e.message : "Delete failed");
     }
@@ -1888,9 +2023,25 @@ function PublishTab({
         body: JSON.stringify({ thumbnailWinnerId: next }),
       });
       if (!res.ok) throw new Error("Could not set winner");
+      onPersist({ thumbnailWinnerId: next });
     } catch {
       setWinnerId(winnerId);
       setThumbError("Could not set winner. Please try again.");
+    }
+  };
+
+  const handleCompare = async () => {
+    setThumbError(null);
+    setComparing(true);
+    try {
+      const res = await fetch(`${apiBase}/${planId}/thumbnails/compare`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Comparison failed");
+      setComparison({ verdict: String(data.verdict ?? ""), winnerVariantId: data.winnerVariantId ?? null });
+    } catch (e) {
+      setThumbError(e instanceof Error ? e.message : "Comparison failed");
+    } finally {
+      setComparing(false);
     }
   };
 
@@ -1958,8 +2109,9 @@ function PublishTab({
           )}
           {variants.length > 0 && (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10 }}>
-              {variants.map((v) => {
+              {variants.map((v, idx) => {
                 const isWinner = winnerId === v.id;
+                const isRecommended = comparison?.winnerVariantId === v.id;
                 return (
                   <div key={v.id} style={{
                     border: `1px solid ${isWinner ? "var(--abv-azure)" : "var(--abv-border)"}`,
@@ -1973,6 +2125,19 @@ function PublishTab({
                         alt={v.fileName}
                         style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
                       />
+                      <span style={{
+                        position: "absolute", bottom: 6, left: 6,
+                        background: "rgba(0,0,0,0.7)", color: "white",
+                        fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4,
+                      }}>#{idx + 1}</span>
+                      {isRecommended && (
+                        <span style={{
+                          position: "absolute", bottom: 6, right: 6,
+                          background: "var(--abv-success, #16A34A)", color: "white",
+                          fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4,
+                          letterSpacing: "0.04em",
+                        }}>AI PICK</span>
+                      )}
                       {isWinner && (
                         <span style={{
                           position: "absolute", top: 6, left: 6,
@@ -2006,6 +2171,29 @@ function PublishTab({
                   </div>
                 );
               })}
+            </div>
+          )}
+          {variants.length >= 2 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <div>
+                <QuickBtn onClick={() => void handleCompare()}>
+                  {comparing ? "Comparing…" : "⚔ Compare head-to-head"}
+                </QuickBtn>
+              </div>
+              {comparison?.verdict && (
+                <div style={{
+                  padding: 10, borderRadius: 8,
+                  border: "1px solid var(--abv-border)",
+                  background: "var(--abv-bg-warm, #FAF7F2)",
+                  fontSize: 12, lineHeight: 1.5, color: "var(--abv-text)",
+                }}>
+                  <div style={{
+                    fontSize: 9, fontWeight: 700, letterSpacing: "0.06em",
+                    textTransform: "uppercase", color: "var(--abv-text-muted)", marginBottom: 4,
+                  }}>Head-to-head verdict</div>
+                  {comparison.verdict}
+                </div>
+              )}
             </div>
           )}
           {variants.length < MAX_THUMBS && (
