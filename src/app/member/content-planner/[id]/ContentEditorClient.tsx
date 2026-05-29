@@ -2028,23 +2028,6 @@ function PublishTab({
     a.remove();
   };
 
-  const handlePickWinner = async (id: string) => {
-    const next = winnerId === id ? null : id;
-    setWinnerId(next);
-    try {
-      const res = await fetch(`${apiBase}/${planId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ thumbnailWinnerId: next }),
-      });
-      if (!res.ok) throw new Error("Could not set winner");
-      onPersist({ thumbnailWinnerId: next });
-    } catch {
-      setWinnerId(winnerId);
-      setThumbError("Could not set winner. Please try again.");
-    }
-  };
-
   const handleDraftComment = async () => {
     setDrafting(true);
     try {
@@ -2187,9 +2170,6 @@ function PublishTab({
                     <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                       <QuickBtn onClick={() => void handleScore(v.id)}>
                         {scoringId === v.id ? "Scoring…" : typeof v.score === "number" ? "Re-score" : "Score"}
-                      </QuickBtn>
-                      <QuickBtn onClick={() => void handlePickWinner(v.id)}>
-                        {isWinner ? "Unpick" : "Pick winner"}
                       </QuickBtn>
                       <QuickBtn onClick={() => handleDownload(v.id)}>Download</QuickBtn>
                       <QuickBtn danger onClick={() => void handleDelete(v.id)}>Delete</QuickBtn>
