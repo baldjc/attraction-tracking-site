@@ -61,6 +61,7 @@ interface SidebarProps {
   role: string;
   userName: string;
   featureFlags?: FeatureFlags | null;
+  adminViewOverride?: boolean;
 }
 
 const adminLinks = [
@@ -139,7 +140,7 @@ interface ImpersonateState {
   targetRole?: string;
 }
 
-export default function Sidebar({ role, userName, featureFlags }: SidebarProps) {
+export default function Sidebar({ role, userName, featureFlags, adminViewOverride }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { theme, toggle: toggleTheme } = useTheme();
@@ -272,6 +273,19 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
     router.push("/admin");
   }
 
+  async function toggleAdminView() {
+    try {
+      await fetch("/api/admin/impersonate/admin-view", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled: !adminViewOverride }),
+      });
+    } catch { }
+    // Feature flags are resolved server-side from the cookie, so a full reload
+    // re-renders the sidebar nav with the new visibility.
+    window.location.reload();
+  }
+
   const homeHref = isImpersonatingStaff
     ? "/admin"
     : isStaffOnMemberView
@@ -320,6 +334,28 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
             </span>
             <ChevronDownIcon className={`w-3 h-3 shrink-0 transition-transform ${showSwitch ? "rotate-180" : ""} ${isImpersonating ? "text-white/80" : "text-white/50"}`} />
           </button>
+          {isImpersonating && !isImpersonatingStaff && (
+            <button
+              onClick={toggleAdminView}
+              title={
+                adminViewOverride
+                  ? "Admin view — seeing all features. Click for Member view."
+                  : "Member view — seeing what the member sees. Click for Admin view."
+              }
+              className={`flex items-center gap-1 text-[11px] font-semibold px-1.5 py-1 rounded-md transition-colors whitespace-nowrap shrink-0 ${
+                adminViewOverride
+                  ? "bg-white/20 text-white hover:bg-white/30"
+                  : "bg-black/20 text-white/80 hover:bg-black/30"
+              }`}
+            >
+              {adminViewOverride ? (
+                <Cog6ToothIcon className="w-3 h-3" />
+              ) : (
+                <EyeIcon className="w-3 h-3" />
+              )}
+              {adminViewOverride ? "Admin view" : "Member view"}
+            </button>
+          )}
           {isImpersonating && (
             <button
               onClick={exitImpersonation}

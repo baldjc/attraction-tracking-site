@@ -12,6 +12,7 @@ interface Props {
   role: string;
   userName: string;
   featureFlags: Record<string, boolean>;
+  adminViewOverride?: boolean;
   actingAsTeamMember?: boolean;
   teamPrimaryName?: string | null;
 }
@@ -21,6 +22,7 @@ function MemberShellInner({
   role,
   userName,
   featureFlags,
+  adminViewOverride,
   actingAsTeamMember,
   teamPrimaryName,
 }: Props) {
@@ -34,7 +36,7 @@ function MemberShellInner({
 
   return (
     <div className="min-h-screen bg-[var(--abv-bg)] dark:bg-[#0f1419]">
-      <Sidebar role={role} userName={userName} featureFlags={featureFlags} />
+      <Sidebar role={role} userName={userName} featureFlags={featureFlags} adminViewOverride={adminViewOverride} />
       <main className={`transition-all duration-300 ease-in-out ${collapsed ? "lg:pl-16" : "lg:pl-[260px]"}`}>
         {actingAsTeamMember && <TeamAccessBanner primaryName={teamPrimaryName} />}
         <div className="pt-14 lg:pt-0">

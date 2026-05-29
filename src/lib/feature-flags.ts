@@ -144,9 +144,18 @@ export async function getFeatureFlags(opts?: {
     if (isStaff) {
       try {
         const { cookies } = await import("next/headers");
-        const { IMPERSONATE_COOKIE } = await import("@/lib/impersonate-constants");
+        const { IMPERSONATE_COOKIE, IMPERSONATE_ADMIN_VIEW_COOKIE } = await import(
+          "@/lib/impersonate-constants"
+        );
         const cookieStore = await cookies();
-        if (cookieStore.get(IMPERSONATE_COOKIE)?.value) isStaff = false;
+        const impersonating = !!cookieStore.get(IMPERSONATE_COOKIE)?.value;
+        // Admin-view override: while impersonating, the admin can flip back to
+        // the staff bypass (see all v2 features) to debug/support, still scoped
+        // to the member's data. Without it, impersonation shows exactly what the
+        // member sees.
+        const adminViewOverride =
+          cookieStore.get(IMPERSONATE_ADMIN_VIEW_COOKIE)?.value === "true";
+        if (impersonating && !adminViewOverride) isStaff = false;
       } catch {
         // Outside a request scope (e.g. cron) — no impersonation possible.
       }
