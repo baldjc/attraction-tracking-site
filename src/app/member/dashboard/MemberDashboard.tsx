@@ -7,7 +7,7 @@ import {
   VideoCameraIcon,
 } from "@heroicons/react/24/outline";
 import OnboardingBanner from "@/components/onboarding/OnboardingBanner";
-import { Button, LinkButton } from "@/components/ui/Button";
+import { LinkButton } from "@/components/ui/Button";
 
 // ── Helpers ───────────────────────────────────────────────────
 
@@ -244,7 +244,25 @@ const NAV_CARDS = [
   { title: "Content Planner", tagline: "Plan next week.",               href: "/member/content-planner", emoji: "📅", colour: "var(--abv-azure)" },
   { title: "Generate Leads",  tagline: "Run a campaign.",               href: "/member/generate-leads",  emoji: "🚀", colour: "var(--abv-leads)" },
   { title: "My Calls",        tagline: "Watch your recordings.",        href: "/member/my-calls",        emoji: "📹", colour: "var(--abv-azure)" },
-  { title: "Hire a Human",    tagline: "Get help when you're stuck.",   href: "/member/hire",            emoji: "🤝", colour: "var(--abv-hire)" },
+];
+
+// Done-for-you service tiers teased on the full-width Hire a Human card.
+const HIRE_TIERS = [
+  {
+    title: "Production",
+    headline: "We edit. You publish.",
+    description: "Professional editing, graphics, titles, b-roll, and music licensing — done for you.",
+  },
+  {
+    title: "Growth",
+    headline: "Editing + strategy + funnels.",
+    description: "Everything in Production, plus lead-magnet funnels, content planning, and monthly strategy.",
+  },
+  {
+    title: "Done With You",
+    headline: "Your full YouTube engine.",
+    description: "Full channel management, SEO, thumbnails, A/B testing, and scripts researched for you.",
+  },
 ];
 
 // ── Component ─────────────────────────────────────────────────
@@ -324,7 +342,7 @@ export default function MemberDashboard() {
       {/* ── This week's focus ── */}
       <WeeklyFocusCard />
 
-      {/* ── 7-Card Nav Grid (tinted icon block on the left) ── */}
+      {/* ── Nav Grid (tinted icon block on the left) ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {NAV_CARDS.map(({ title, tagline, href, emoji, colour }) => (
           <Link
@@ -347,6 +365,47 @@ export default function MemberDashboard() {
           </Link>
         ))}
       </div>
+
+      {/* ── Hire a Human (full-width done-for-you card) ── */}
+      <Link
+        href="/member/hire"
+        className="group block rounded-2xl border border-[var(--abv-border)] bg-[var(--abv-card)] p-6 sm:p-8 hover:shadow-[var(--shadow-abv-md)] hover:border-[var(--abv-border-strong)] transition-all"
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center gap-5">
+          <div className="flex items-start gap-4 flex-1 min-w-0">
+            <span
+              className="inline-flex items-center justify-center w-16 h-16 rounded-xl text-2xl shrink-0"
+              style={{ backgroundColor: "color-mix(in srgb, var(--abv-hire) 10%, transparent)" }}
+            >
+              🤝
+            </span>
+            <div className="min-w-0">
+              <h3 className="font-display text-xl text-[var(--abv-text)]">Hire a Human</h3>
+              <p className="text-sm text-[var(--abv-text-secondary)] mt-1">
+                You didn&apos;t get to where you are to spend your evenings editing videos. Let our team run your channel for you.
+              </p>
+            </div>
+          </div>
+          <span className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[var(--abv-dark)] text-white font-semibold text-sm shrink-0 self-start sm:self-auto group-hover:bg-black/90 transition-colors">
+            Explore services →
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
+          {HIRE_TIERS.map((tier) => (
+            <div
+              key={tier.title}
+              className="rounded-xl border border-[var(--abv-border)] bg-[var(--abv-bg)] p-4"
+            >
+              <span className="inline-block text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--abv-hire)] mb-2">
+                {tier.title}
+              </span>
+              <p className="font-display text-base text-[var(--abv-text)] mb-1">{tier.headline}</p>
+              <p className="text-sm text-[var(--abv-text-secondary)]">{tier.description}</p>
+            </div>
+          ))}
+        </div>
+      </Link>
 
       {/* ── Bottom Info Row ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
