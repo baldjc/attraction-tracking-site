@@ -238,73 +238,6 @@ function WeeklyBlock({
   );
 }
 
-// ── Next Step Card ────────────────────────────────────────────
-
-interface NextStep {
-  principleLabel: string;
-  score: number;
-  lessonHref: string;
-  lessonDuration: string;
-  lessonTopic: string;
-}
-
-const NEXT_STEP_DISMISS_KEY = "abv:nextStepDismissedAt";
-const NEXT_STEP_DISMISS_MS = 7 * 24 * 60 * 60 * 1000;
-
-function NextStepCard() {
-  const [nextStep, setNextStep] = useState<NextStep | null>(null);
-
-  useEffect(() => {
-    // Honor 7-day localStorage dismiss
-    try {
-      const raw = localStorage.getItem(NEXT_STEP_DISMISS_KEY);
-      if (raw && Date.now() - Number(raw) < NEXT_STEP_DISMISS_MS) return;
-    } catch {}
-
-    fetch("/api/member/dashboard/next-step")
-      .then((r) => r.ok ? r.json() : null)
-      .then((d) => {
-        if (d && d.principleLabel) setNextStep(d);
-      })
-      .catch(() => {});
-  }, []);
-
-  function dismissNextStep() {
-    try { localStorage.setItem(NEXT_STEP_DISMISS_KEY, String(Date.now())); } catch {}
-    setNextStep(null);
-  }
-
-  if (!nextStep) return null;
-
-  return (
-    <div className="rounded-2xl bg-[var(--abv-dark)] text-white p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
-      <div className="flex-1">
-        <span className="inline-flex items-center gap-1.5 mb-3 px-2.5 py-1 rounded-full bg-white/10 text-[var(--abv-azure)] text-[11px] font-bold uppercase tracking-[0.12em]">
-          <span className="w-1.5 h-1.5 rounded-full bg-[var(--abv-azure)]" />
-          Your next step
-        </span>
-        <h2 className="font-display text-2xl sm:text-3xl text-white mb-2">
-          Your <span className="text-[var(--abv-azure)]">{nextStep.principleLabel}</span> score is <span className="font-mono tabular-nums">{nextStep.score.toFixed(1)}</span>. Lowest on your channel.
-        </h2>
-        <p className="text-white/70 text-sm sm:text-base">
-          Watch the {nextStep.lessonDuration}-minute lesson on {nextStep.lessonTopic}. Then run your next script through Script Review to test it.
-        </p>
-      </div>
-      <div className="flex items-center gap-3 shrink-0">
-        <LinkButton
-          href={nextStep.lessonHref}
-          className="!bg-white !text-[var(--abv-dark)] hover:!bg-[var(--abv-bg)]"
-        >
-          Watch lesson →
-        </LinkButton>
-        <button onClick={dismissNextStep} className="text-white/50 hover:text-white text-xs font-semibold uppercase tracking-wide">
-          Dismiss
-        </button>
-      </div>
-    </div>
-  );
-}
-
 // ── Types ─────────────────────────────────────────────────────
 
 interface DashboardData {
@@ -412,9 +345,6 @@ export default function MemberDashboard() {
 
       {/* ── This week's focus ── */}
       <WeeklyFocusCard />
-
-      {/* ── Your next step (secondary) ── */}
-      <NextStepCard />
 
       {/* ── 7-Card Nav Grid (tinted icon block on the left) ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
