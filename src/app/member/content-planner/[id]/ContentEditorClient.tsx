@@ -1937,12 +1937,13 @@ function PublishTab({
   const [variants, setVariants] = useState<ClientThumbnailVariant[]>(() =>
     parseClientVariants((plan as unknown as { thumbnailVariants?: unknown }).thumbnailVariants),
   );
+  const [winnerId, setWinnerId] = useState<string | null>(
+    (plan as unknown as { thumbnailWinnerId?: string | null }).thumbnailWinnerId ?? null,
+  );
   const [uploading, setUploading] = useState(false);
   const [scoringId, setScoringId] = useState<string | null>(null);
   const [thumbError, setThumbError] = useState<string | null>(null);
   const [drafting, setDrafting] = useState(false);
-  const [comparing, setComparing] = useState(false);
-  const [comparison, setComparison] = useState<{ verdict: string; winnerVariantId: string | null } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleUpload = async (file: File) => {
@@ -1955,7 +1956,6 @@ function PublishTab({
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Upload failed");
       setVariants(parseClientVariants(data.variants));
-      setComparison(null);
       onPersist({ thumbnailVariants: data.variants });
     } catch (e) {
       setThumbError(e instanceof Error ? e.message : "Upload failed");
@@ -1988,25 +1988,27 @@ function PublishTab({
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Delete failed");
       setVariants(parseClientVariants(data.variants));
-      setComparison(null);
-      onPersist({ thumbnailVariants: data.variants });
+      setWinnerId(data.thumbnailWinnerId ?? null);
+      onPersist({ thumbnailVariants: data.variants, thumbnailWinnerId: data.thumbnailWinnerId ?? null });
     } catch (e) {
       setThumbError(e instanceof Error ? e.message : "Delete failed");
     }
   };
 
-  const handleCompare = async () => {
-    setThumbError(null);
-    setComparing(true);
+  const handlePickWinner = async (id: string) => {
+    const next = winnerId === id ? null : id;
+    setWinnerId(next);
     try {
-      const res = await fetch(`${apiBase}/${planId}/thumbnails/compare`, { method: "POST" });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || "Comparison failed");
-      setComparison({ verdict: String(data.verdict ?? ""), winnerVariantId: data.winnerVariantId ?? null });
-    } catch (e) {
-      setThumbError(e instanceof Error ? e.message : "Comparison failed");
-    } finally {
-      setComparing(false);
+      const res = await fetch(`${apiBase}/${planId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ thumbnailWinnerId: next }),
+      });
+      if (!res.ok) throw new Error("Could not set winner");
+      onPersist({ thumbnailWinnerId: next });
+    } catch {
+      setWinnerId(winnerId);
+      setThumbError("Could not set winner. Please try again.");
     }
   };
 
@@ -2024,6 +2026,17 @@ function PublishTab({
       setDrafting(false);
     }
   };
+
+  // The variant with the single highest individual score gets the AI PICK badge.
+  // Purely score-based — no AI comparison pass. Null when nothing is scored yet
+  // or when there is a tie for the top score.
+  const topScoreId = (() => {
+    const scored = variants.filter((v) => typeof v.score === "number");
+    if (scored.length === 0) return null;
+    const max = Math.max(...scored.map((v) => v.score as number));
+    const top = scored.filter((v) => v.score === max);
+    return top.length === 1 ? top[0].id : null;
+  })();
 
   const ytLen = form.youtubeDescription.length;
   const pinnedLen = form.pinnedComment.length;
@@ -2075,11 +2088,13 @@ function PublishTab({
           {variants.length > 0 && (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10 }}>
               {variants.map((v, idx) => {
-                const isRecommended = comparison?.winnerVariantId === v.id;
+                const isWinner = winnerId === v.id;
+                const isRecommended = topScoreId === v.id;
                 return (
                   <div key={v.id} style={{
-                    border: "1px solid var(--abv-border)",
+                    border: `1px solid ${isWinner ? "var(--abv-azure)" : "var(--abv-border)"}`,
                     borderRadius: 8, overflow: "hidden",
+                    boxShadow: isWinner ? "0 0 0 1px var(--abv-azure)" : "none",
                   }}>
                     <div style={{ position: "relative", aspectRatio: "16/9", background: "var(--abv-bg-warm, #FAF7F2)" }}>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -2101,6 +2116,14 @@ function PublishTab({
                           letterSpacing: "0.04em",
                         }}>AI PICK</span>
                       )}
+                      {isWinner && (
+                        <span style={{
+                          position: "absolute", top: 6, left: 6,
+                          background: "var(--abv-azure)", color: "white",
+                          fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4,
+                          letterSpacing: "0.04em",
+                        }}>WINNER</span>
+                      )}
                       {typeof v.score === "number" && (
                         <span style={{
                           position: "absolute", top: 6, right: 6,
@@ -2118,34 +2141,14 @@ function PublishTab({
                       <QuickBtn onClick={() => void handleScore(v.id)}>
                         {scoringId === v.id ? "Scoring…" : typeof v.score === "number" ? "Re-score" : "Score"}
                       </QuickBtn>
+                      <QuickBtn onClick={() => void handlePickWinner(v.id)}>
+                        {isWinner ? "Unpick" : "Pick winner"}
+                      </QuickBtn>
                       <QuickBtn danger onClick={() => void handleDelete(v.id)}>Delete</QuickBtn>
                     </div>
                   </div>
                 );
               })}
-            </div>
-          )}
-          {variants.length >= 2 && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <div>
-                <QuickBtn onClick={() => void handleCompare()}>
-                  {comparing ? "Comparing…" : "⚔ Compare head-to-head"}
-                </QuickBtn>
-              </div>
-              {comparison?.verdict && (
-                <div style={{
-                  padding: 10, borderRadius: 8,
-                  border: "1px solid var(--abv-border)",
-                  background: "var(--abv-bg-warm, #FAF7F2)",
-                  fontSize: 12, lineHeight: 1.5, color: "var(--abv-text)",
-                }}>
-                  <div style={{
-                    fontSize: 9, fontWeight: 700, letterSpacing: "0.06em",
-                    textTransform: "uppercase", color: "var(--abv-text-muted)", marginBottom: 4,
-                  }}>Head-to-head verdict</div>
-                  {comparison.verdict}
-                </div>
-              )}
             </div>
           )}
           {variants.length < MAX_THUMBS && (
