@@ -17,6 +17,14 @@ export type ResolvedUser = {
   isImpersonating: boolean;
   /** Role of the impersonated user, when applicable. */
   impersonatedRole?: string | null;
+  /** True when the resolved user is a primary account being operated by a team member. */
+  actingAsTeamMember?: boolean;
+  /** The team member's own user id (set only when actingAsTeamMember). */
+  teamActorUserId?: string | null;
+  /** The team member's own email (set only when actingAsTeamMember). */
+  teamActorEmail?: string | null;
+  /** Display name of the primary account being operated (set only when actingAsTeamMember). */
+  teamPrimaryName?: string | null;
 };
 
 export async function resolveUserFromSession(): Promise<ResolvedUser | null> {
@@ -64,13 +72,46 @@ export async function resolveUserFromSession(): Promise<ResolvedUser | null> {
   const sessionEmail = session.user.email as string | undefined;
 
   let dbUser = sessionId
-    ? await prisma.user.findUnique({ where: { id: sessionId }, select: { id: true, email: true } })
+    ? await prisma.user.findUnique({ where: { id: sessionId }, select: { id: true, email: true, activeAsTeamMemberOf: true } })
     : null;
 
   if (!dbUser && sessionEmail) {
-    dbUser = await prisma.user.findUnique({ where: { email: sessionEmail }, select: { id: true, email: true } });
+    dbUser = await prisma.user.findUnique({ where: { email: sessionEmail }, select: { id: true, email: true, activeAsTeamMemberOf: true } });
   }
 
   if (!dbUser) return null;
-  return { ...dbUser, role, isAdmin, isImpersonating: false };
+
+  // Team access: if this member has switched into a primary's account, re-verify
+  // the grant is still ACTIVE on every request. This makes revocation immediate
+  // even under JWT sessions — once the row is revoked/deleted the team member
+  // resolves back to their own account on the very next request.
+  if (dbUser.activeAsTeamMemberOf) {
+    const membership = await prisma.teamMember.findFirst({
+      where: {
+        primaryUserId: dbUser.activeAsTeamMemberOf,
+        teamUserId: dbUser.id,
+        status: "active",
+      },
+      select: {
+        primaryUser: { select: { id: true, email: true, role: true, fullName: true } },
+      },
+    });
+    if (membership?.primaryUser) {
+      return {
+        id: membership.primaryUser.id,
+        email: membership.primaryUser.email,
+        role: membership.primaryUser.role,
+        // Team members never inherit admin powers, even if the primary is staff.
+        isAdmin: false,
+        isImpersonating: false,
+        actingAsTeamMember: true,
+        teamActorUserId: dbUser.id,
+        teamActorEmail: dbUser.email,
+        teamPrimaryName: membership.primaryUser.fullName ?? membership.primaryUser.email,
+      };
+    }
+    // Grant gone/revoked — ignore the stale field and resolve to the own account.
+  }
+
+  return { id: dbUser.id, email: dbUser.email, role, isAdmin, isImpersonating: false, actingAsTeamMember: false };
 }

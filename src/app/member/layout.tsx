@@ -34,6 +34,8 @@ export default async function MemberLayout({
       role={role}
       userName={resolved.email || "Member"}
       featureFlags={featureFlags}
+      actingAsTeamMember={resolved.actingAsTeamMember ?? false}
+      teamPrimaryName={resolved.teamPrimaryName ?? null}
     >
       {children}
     </MemberLayoutShell>

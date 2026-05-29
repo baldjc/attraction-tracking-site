@@ -135,6 +135,82 @@ export async function sendWaitlistNotification(
   }
 }
 
+export async function sendTeamInviteEmail(params: {
+  to: string;
+  inviteUrl: string;
+  primaryName: string;
+  expiresAt: Date;
+}): Promise<void> {
+  const { to, inviteUrl, primaryName, expiresAt } = params;
+
+  const expiryLabel = expiresAt.toLocaleDateString(undefined, {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+
+  const { error } = await resend.emails.send({
+    from: FROM_EMAIL,
+    to,
+    subject: `${primaryName} invited you to their Attraction by Video account`,
+    html: `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /></head>
+<body style="margin:0;padding:0;background:#f1f1ef;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f1ef;padding:40px 16px;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;">
+          <tr>
+            <td align="center" style="padding-bottom:32px;">
+              <div style="display:inline-block;background:var(--abv-dark);border-radius:16px;padding:12px;">
+                <span style="font-size:28px;">📹</span>
+              </div>
+              <div style="margin-top:12px;font-size:18px;font-weight:700;color:var(--abv-dark);">Attraction by Video</div>
+            </td>
+          </tr>
+          <tr>
+            <td style="background:#ffffff;border-radius:16px;padding:40px 36px;border:1px solid #e5e7eb;">
+              <p style="margin:0 0 16px;font-size:15px;color:var(--abv-dark);"><strong>${primaryName}</strong> has invited you to access their Attraction by Video account as a team member.</p>
+              <p style="margin:0 0 28px;font-size:15px;color:#374151;">Accept the invite to start working inside their account. You'll be able to switch back to your own account at any time.</p>
+
+              <div style="text-align:center;margin:0 0 28px;">
+                <a href="${inviteUrl}" style="display:inline-block;background:var(--abv-dark);color:#ffffff;border-radius:100px;padding:14px 28px;font-weight:700;text-decoration:none;font-size:15px;">Accept invite →</a>
+              </div>
+
+              <p style="margin:0 0 8px;font-size:13px;color:#6b7280;">This invite expires on <strong>${expiryLabel}</strong>. You'll need to sign in with <strong>${to}</strong> to accept it.</p>
+              <p style="margin:0;font-size:13px;color:#6b7280;">If you weren't expecting this, you can safely ignore this email.</p>
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding-top:24px;">
+              <p style="margin:0;font-size:12px;color:#9ca3af;">© ${new Date().getFullYear()} Attraction by Video</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+    `.trim(),
+  });
+
+  if (error) {
+    console.error("[email] Failed to send team invite:", error);
+
+    if (process.env.NODE_ENV !== "production") {
+      console.warn(
+        `\n${"=".repeat(60)}\n[DEV TEAM INVITE] Email failed — use this link to accept:\n\n  To:   ${to}\n  Link: ${inviteUrl}\n${"=".repeat(60)}\n`,
+      );
+      return;
+    }
+
+    throw new Error("Failed to send team invite email");
+  }
+}
+
 export async function sendAuditReadyEmail(params: {
   to: string;
   memberName: string | null;

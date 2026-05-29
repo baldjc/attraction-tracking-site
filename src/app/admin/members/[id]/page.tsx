@@ -34,6 +34,7 @@ import ContentPlanTable from "@/components/content-planner/ContentPlanTable";
 import AdminCallsTab from "@/components/admin/AdminCallsTab";
 import MarkdownTextarea from "@/components/MarkdownTextarea";
 import AdminClientHubTab from "@/components/admin/AdminClientHubTab";
+import AdminTeamAccessTab from "@/components/admin/AdminTeamAccessTab";
 
 const GHL_LOCATION_ID = process.env.NEXT_PUBLIC_GHL_LOCATION_ID ?? "";
 
@@ -95,6 +96,7 @@ const TABS = [
   { id: "content_planner",  label: "Content Planner",  tierRequired: null },
   { id: "calls",            label: "Calls",            tierRequired: null },
   { id: "client_hub",       label: "Client Hub",       tierRequired: null },
+  { id: "team_access",      label: "Team Access",      tierRequired: null },
 ] as const;
 type TabId = typeof TABS[number]["id"];
 
@@ -2172,6 +2174,10 @@ export default function MemberDetailPage() {
           <h2 className="text-sm font-semibold text-[var(--abv-text)] mb-4">Client Hub Settings</h2>
           <AdminClientHubTab memberId={member.id} serviceTier={member.serviceTier} />
         </div>
+      )}
+
+      {activeTab === "team_access" && member && (
+        <AdminTeamAccessTab memberId={member.id} />
       )}
 
       {/* Convert Lead → Member modal */}

@@ -48,6 +48,7 @@ import { IMPERSONATE_LS_KEY } from "@/lib/impersonate-constants";
 import { useTheme } from "@/components/ThemeProvider";
 import { useSidebar } from "@/components/SidebarContext";
 import HelpChat from "@/components/help/HelpChat";
+import TeamAccountSwitcher from "@/components/team/TeamAccountSwitcher";
 
 interface FeatureFlags {
   campaigns?: boolean;
@@ -553,6 +554,7 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
                   <BellIcon className="w-5 h-5 shrink-0" />
                   <span>Notifications</span>
                 </button>
+                <TeamAccountSwitcher />
                 <button
                   onClick={() => { toggleTheme(); }}
                   className="flex items-center gap-3 py-2.5 px-3 text-sm font-medium text-white/60 hover:text-white hover:bg-white/5 transition-colors duration-200 w-full rounded-md"

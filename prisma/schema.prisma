@@ -158,6 +158,11 @@ model User {
   clientHubEnabled Boolean  @default(true)
   calendarToken    String?  @unique
 
+  // Team access (delegated account access). When a team member switches into a
+  // primary's account, this holds that primaryUserId (null = own account). The
+  // membership is re-verified live on every request, so revocation is immediate.
+  activeAsTeamMemberOf  String?
+
   // Admin test avatar state (mutually exclusive — only one set at a time)
   activeTestAvatarId    String?   // Points to an AdminTestAvatar.id (custom avatar mode)
   activeTestMemberId    String?   // Points to a User.id whose avatar to borrow (member avatar mode)
@@ -210,6 +215,12 @@ model User {
   // Wave 1.5 (data-first rebuild) — additive relations only
   neighbourhoodProfiles        NeighbourhoodProfile[]
   neighbourhoodResearchUploads NeighbourhoodResearchUpload[]
+
+  // Team access (delegated account access)
+  teamMembershipsOwned   TeamMember[]      @relation("TeamMemberPrimary")
+  teamMembershipsGranted TeamMember[]      @relation("TeamMemberTeamUser")
+  teamInvitesSent        TeamInvite[]      @relation("TeamInvitePrimary")
+  teamActivityLogs       TeamActivityLog[] @relation("TeamActivityLogPrimary")
 
   @@map("users")
 }
@@ -2024,4 +2035,89 @@ model NeighbourhoodResearchUpload {
 
   @@index([userId])
   @@map("neighbourhood_research_uploads")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Team Access (delegated account access)
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum TeamActorType {
+  primary
+  team
+  admin
+}
+
+enum TeamMemberStatus {
+  active
+  revoked
+}
+
+enum TeamInviteStatus {
+  pending
+  accepted
+  expired
+  revoked
+}
+
+// An accepted delegated-access grant: `teamUser` may operate inside
+// `primaryUser`'s account. Re-verified live on every request.
+model TeamMember {
+  id            String           @id @default(uuid())
+  primaryUserId String
+  teamUserId    String
+  email         String
+  name          String?
+  status        TeamMemberStatus @default(active)
+  acceptedAt    DateTime         @default(now())
+  revokedAt     DateTime?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  primaryUser User @relation("TeamMemberPrimary", fields: [primaryUserId], references: [id], onDelete: Cascade)
+  teamUser    User @relation("TeamMemberTeamUser", fields: [teamUserId], references: [id], onDelete: Cascade)
+
+  @@unique([primaryUserId, teamUserId])
+  @@index([primaryUserId])
+  @@index([teamUserId])
+  @@map("team_members")
+}
+
+// A pending invitation for an email address to gain team access to a primary's
+// account. The raw token is emailed; only its hash is stored.
+model TeamInvite {
+  id            String           @id @default(uuid())
+  primaryUserId String
+  email         String
+  tokenHash     String           @unique
+  status        TeamInviteStatus @default(pending)
+  sentAt        DateTime         @default(now())
+  expiresAt     DateTime
+  acceptedAt    DateTime?
+  revokedAt     DateTime?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  primaryUser User @relation("TeamInvitePrimary", fields: [primaryUserId], references: [id], onDelete: Cascade)
+
+  @@index([primaryUserId])
+  @@index([email])
+  @@map("team_invites")
+}
+
+// Append-only audit trail of every team-access state change, scoped to the
+// primary account it concerns.
+model TeamActivityLog {
+  id            String        @id @default(uuid())
+  primaryUserId String
+  actorType     TeamActorType
+  actorUserId   String?
+  actorName     String?
+  action        String
+  metadata      Json?
+  createdAt     DateTime      @default(now())
+
+  primaryUser User @relation("TeamActivityLogPrimary", fields: [primaryUserId], references: [id], onDelete: Cascade)
+
+  @@index([primaryUserId, createdAt])
+  @@map("team_activity_logs")
 }

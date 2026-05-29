@@ -7,6 +7,7 @@ import { CheckIcon, LinkIcon } from "@heroicons/react/24/outline";
 import LinkTrackingPage from "@/app/member/link-tracking/page";
 import MarkdownTextarea from "@/components/MarkdownTextarea";
 import { Button } from "@/components/ui/Button";
+import TeamAccessSettings from "@/components/team/TeamAccessSettings";
 
 interface AvatarData {
   avatarProfile?: Record<string, unknown> | null;
@@ -91,13 +92,16 @@ function MarkdownPreview({ text }: { text: string }) {
 const SETTINGS_TABS = [
   { id: "general", label: "General Settings" },
   { id: "link-tracking", label: "Link Tracking Setup" },
+  { id: "team", label: "Team Access" },
 ] as const;
 type SettingsTab = (typeof SETTINGS_TABS)[number]["id"];
 
 function MemberSettingsPageInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const activeTab: SettingsTab = searchParams.get("tab") === "link-tracking" ? "link-tracking" : "general";
+  const tabParam = searchParams.get("tab");
+  const activeTab: SettingsTab =
+    tabParam === "link-tracking" ? "link-tracking" : tabParam === "team" ? "team" : "general";
 
   function switchTab(id: SettingsTab) {
     const url = new URL(window.location.href);
@@ -234,6 +238,9 @@ function MemberSettingsPageInner() {
 
       {/* Link Tracking tab */}
       {activeTab === "link-tracking" && <LinkTrackingPage />}
+
+      {/* Team Access tab */}
+      {activeTab === "team" && <TeamAccessSettings />}
 
       {/* General Settings tab */}
       {activeTab === "general" && <>
