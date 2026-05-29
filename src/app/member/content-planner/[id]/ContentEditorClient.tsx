@@ -2060,17 +2060,6 @@ function PublishTab({
     }
   };
 
-  // The variant with the single highest individual score gets the AI PICK badge.
-  // Purely score-based — no AI comparison pass. Null when nothing is scored yet
-  // or when there is a tie for the top score.
-  const topScoreId = (() => {
-    const scored = variants.filter((v) => typeof v.score === "number");
-    if (scored.length === 0) return null;
-    const max = Math.max(...scored.map((v) => v.score as number));
-    const top = scored.filter((v) => v.score === max);
-    return top.length === 1 ? top[0].id : null;
-  })();
-
   const ytLen = form.youtubeDescription.length;
   const pinnedLen = form.pinnedComment.length;
 
@@ -2122,7 +2111,6 @@ function PublishTab({
             <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
               {variants.map((v, idx) => {
                 const isWinner = winnerId === v.id;
-                const isRecommended = topScoreId === v.id;
                 return (
                   <div key={v.id} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -2135,12 +2123,6 @@ function PublishTab({
                           background: "var(--abv-azure)", color: "white",
                           fontSize: 9, fontWeight: 700, padding: "1px 6px", borderRadius: 4, letterSpacing: "0.04em",
                         }}>WINNER</span>
-                      )}
-                      {isRecommended && (
-                        <span style={{
-                          background: "var(--abv-success, #16A34A)", color: "white",
-                          fontSize: 9, fontWeight: 700, padding: "1px 6px", borderRadius: 4, letterSpacing: "0.04em",
-                        }}>AI PICK</span>
                       )}
                       {typeof v.score === "number" && (
                         <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 700, color: "var(--abv-text-muted)" }}>
