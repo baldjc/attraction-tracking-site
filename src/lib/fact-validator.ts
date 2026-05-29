@@ -267,11 +267,44 @@ function selectGroupsForSerialization(
       };
     }
   }
-  // Last resort: rollups only.
+  // Last resort: rollups only. For very wide markets (many neighbourhoods) the
+  // rollups alone can still exceed charBudget, which would push the SUMMARY+
+  // LEADS call past the 200K context window — the callValidator invariant would
+  // then throw "Input too large for 200K context" and the whole upload fails.
+  // Enforce the budget deterministically here so the GROUPS block is *always*
+  // within charBudget: keep citywide anchors first, then per-neighbourhood
+  // overall rollups by descending sampleSize until the budget is hit.
+  if (rollupChars <= charBudget) {
+    return {
+      kept: rollups,
+      threshold: Infinity,
+      droppedCount: groups.length - rollups.length,
+    };
+  }
+  const rollupPriority = (g: AggregatedGroup): number => {
+    if (g.neighbourhood === "All Neighbourhoods" && g.propertyType === null) return 0;
+    if (g.neighbourhood === "All Neighbourhoods") return 1;
+    return 2;
+  };
+  const orderedRollups = [...rollups].sort((a, b) => {
+    const pa = rollupPriority(a);
+    const pb = rollupPriority(b);
+    if (pa !== pb) return pa - pb;
+    if (b.sampleSize !== a.sampleSize) return b.sampleSize - a.sampleSize;
+    return a.neighbourhood.localeCompare(b.neighbourhood);
+  });
+  const bounded: AggregatedGroup[] = [];
+  let used = 0;
+  for (const g of orderedRollups) {
+    const cost = formatGroupLine(g).length + 1;
+    if (used + cost > charBudget) continue;
+    bounded.push(g);
+    used += cost;
+  }
   return {
-    kept: rollups,
+    kept: bounded,
     threshold: Infinity,
-    droppedCount: groups.length - rollups.length,
+    droppedCount: groups.length - bounded.length,
   };
 }
 
