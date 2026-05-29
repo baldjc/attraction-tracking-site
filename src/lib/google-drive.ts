@@ -9,9 +9,18 @@ function getDriveClient() {
 
   const credentials = JSON.parse(keyRaw);
 
+  // A service account has no Drive storage quota of its own, so it cannot own
+  // files inside a regular "My Drive" folder — Drive rejects the write with
+  // 403 "Service Accounts do not have storage quota". When
+  // GOOGLE_DRIVE_IMPERSONATE_EMAIL is set, we use Google Workspace domain-wide
+  // delegation to act as that real Workspace user instead, so every file and
+  // folder we create is owned by them (and counts against their quota).
+  const impersonate = process.env.GOOGLE_DRIVE_IMPERSONATE_EMAIL?.trim() || undefined;
+
   const auth = new google.auth.GoogleAuth({
     credentials,
     scopes: ["https://www.googleapis.com/auth/drive"],
+    ...(impersonate ? { clientOptions: { subject: impersonate } } : {}),
   });
 
   return google.drive({ version: "v3", auth });
