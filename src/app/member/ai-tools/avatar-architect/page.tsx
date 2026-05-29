@@ -296,7 +296,7 @@ function AvatarProfileCard({
                     <button onClick={() => removeTheme(i)} className="p-1 text-[var(--abv-text)]/30 hover:text-red-400 transition-colors"><XMarkIcon className="w-4 h-4" /></button>
                   </div>
                   <div className="px-3 py-2">
-                    <label className="block text-xs text-[var(--abv-text)]/40 mb-1">AI Context &amp; Prompting</label>
+                    <label className="block text-xs text-[var(--abv-text)]/40 mb-1">Context &amp; Prompting</label>
                     <MarkdownTextarea value={t.context} onChange={(v: string) => { setThemes((prev) => prev.map((x, j) => j === i ? { ...x, context: v } : x)); }}
                       rows={3}
                       placeholder="Describe the stresses, angles, tone, and content engine prompting for this theme…"
@@ -478,7 +478,7 @@ function AvatarProfileCard({
           <div className="bg-amber-50 px-4 py-4">
             <p className="text-sm font-semibold text-amber-700 mb-1">⚠ No content themes set</p>
             <p className="text-xs text-amber-600 leading-relaxed">
-              Themes are what the Content Engine uses to generate personalised video ideas for your avatar. Start or import an avatar session below — the AI will extract them automatically.
+              Themes are what the Content Engine uses to generate personalised video ideas for your avatar. Start or import an avatar session below — we'll extract them automatically.
             </p>
           </div>
         ) : (
@@ -1152,10 +1152,10 @@ function AvatarArchitectInner() {
         <div className="mb-6">
           <Link href="/member/ai-tools" className="flex items-center gap-1.5 text-xs text-[var(--abv-text)]/50 hover:text-[var(--abv-ai-tools)] transition-colors mb-3">
             <ArrowLeftIcon className="w-3.5 h-3.5" />
-            Back to AI Tools
+            Back to Content Tools
           </Link>
           <h1 className="text-2xl font-bold text-[var(--abv-text)]">🎯 Avatar Architect</h1>
-          <p className="text-sm text-[var(--abv-text)]/60 mt-1">Build your ideal client avatar — it powers every AI tool on this platform</p>
+          <p className="text-sm text-[var(--abv-text)]/60 mt-1">Build your ideal client avatar — it powers every tool on this platform</p>
         </div>
 
         {/* How it works — 2-step instructions */}
@@ -1166,7 +1166,7 @@ function AvatarArchitectInner() {
               <span className="w-7 h-7 rounded-full bg-[var(--abv-ai-tools)] text-white text-sm font-bold flex items-center justify-center shrink-0">1</span>
               <div>
                 <p className="text-sm font-semibold text-[var(--abv-text)]">Build Your Avatar</p>
-                <p className="text-xs text-[var(--abv-text)]/55 leading-relaxed mt-0.5">Use the AI coach to create a deeply detailed profile of your ideal client — who they are, what stresses them, and how they think.</p>
+                <p className="text-xs text-[var(--abv-text)]/55 leading-relaxed mt-0.5">Use the coach to create a deeply detailed profile of your ideal client — who they are, what stresses them, and how they think.</p>
               </div>
             </div>
             <div className="flex gap-3">
@@ -1212,7 +1212,7 @@ function AvatarArchitectInner() {
                     <p className="font-bold text-[var(--abv-text)] text-sm mb-1 group-hover:text-[var(--abv-ai-tools)] transition-colors">
                       {savedAvatar?.avatarName ? "Rebuild from Scratch" : "Start from Scratch"}
                     </p>
-                    <p className="text-xs text-[var(--abv-text)]/50 leading-relaxed">Guided coaching conversation — the AI will ask you questions and extract your avatar automatically</p>
+                    <p className="text-xs text-[var(--abv-text)]/50 leading-relaxed">Guided coaching conversation — we'll ask you questions and extract your avatar automatically</p>
                   </div>
                 </div>
               </button>
@@ -1225,7 +1225,7 @@ function AvatarArchitectInner() {
                   <span className="text-2xl shrink-0">📋</span>
                   <div>
                     <p className="font-bold text-[var(--abv-text)] text-sm mb-1 group-hover:text-[var(--abv-ai-tools)] transition-colors">I Have an Existing Avatar</p>
-                    <p className="text-xs text-[var(--abv-text)]/50 leading-relaxed">Paste in notes, docs, or bullet points — the AI will structure it and fill in the gaps</p>
+                    <p className="text-xs text-[var(--abv-text)]/50 leading-relaxed">Paste in notes, docs, or bullet points — we'll structure it and fill in the gaps</p>
                   </div>
                 </div>
               </button>
@@ -1249,7 +1249,7 @@ function AvatarArchitectInner() {
               <span className="w-7 h-7 rounded-full bg-[var(--abv-ai-tools)] text-white text-sm font-bold flex items-center justify-center shrink-0">2</span>
               <div>
                 <h2 className="text-lg font-bold text-[var(--abv-text)]">Theme Builder</h2>
-                <p className="text-xs text-[var(--abv-text)]/55">Select a theme below to build out its depth with the AI coach — stresses, angles, tone, and Content Engine prompts.</p>
+                <p className="text-xs text-[var(--abv-text)]/55">Select a theme below to build out its depth with the coach — stresses, angles, tone, and Content Engine prompts.</p>
               </div>
             </div>
 
@@ -1458,7 +1458,7 @@ function AvatarArchitectInner() {
             className="flex items-center gap-1.5 text-xs text-[var(--abv-text)]/50 hover:text-[var(--abv-ai-tools)] transition-colors mb-3"
           >
             <ArrowLeftIcon className="w-3.5 h-3.5" />
-            Back to AI Tools
+            Back to Content Tools
           </Link>
           <h1 className="text-2xl font-bold text-[var(--abv-text)]">🎯 Avatar Architect</h1>
           <p className="text-sm text-[var(--abv-text)]/60 mt-1">Import your existing avatar notes</p>
@@ -1504,7 +1504,7 @@ function AvatarArchitectInner() {
           className="flex items-center gap-1.5 text-xs text-[var(--abv-text)]/50 hover:text-[var(--abv-ai-tools)] transition-colors"
         >
           <ArrowLeftIcon className="w-3.5 h-3.5" />
-          {isTestAvatarMode ? "Back to Admin AI Tools" : "Back to AI Tools"}
+          {isTestAvatarMode ? "Back to Admin AI Tools" : "Back to Content Tools"}
         </Link>
       </div>
 
@@ -1523,7 +1523,7 @@ function AvatarArchitectInner() {
       <div className="flex items-center justify-between mb-4 flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-[var(--abv-text)]">🎯 Avatar Architect</h1>
-          <p className="text-sm text-[var(--abv-text)]/50">Chat with your AI coach</p>
+          <p className="text-sm text-[var(--abv-text)]/50">Chat with your coach</p>
         </div>
         <button
           onClick={() => { setScreen("landing"); setMessages([]); setDetectedAvatar(null); setSaved(false); setConfirmReplace(false); setImportText(""); setChatError(null); setStreamingContent(null); convIdRef.current = null; setConversationId(null); }}
@@ -1547,7 +1547,7 @@ function AvatarArchitectInner() {
                   Save as <strong>{testAvatarLabel || `Slot ${testAvatarSlot}`}</strong> in test avatar slot {testAvatarSlot}.
                 </p>
               ) : (
-                <p className="text-xs text-[var(--abv-text)]/60 mt-0.5">Save it to your profile so all AI tools can use it.</p>
+                <p className="text-xs text-[var(--abv-text)]/60 mt-0.5">Save it to your profile so all your tools can use it.</p>
               )}
               {!isTestAvatarMode && confirmReplace && (
                 <p className="text-xs text-amber-700 mt-1">
@@ -1586,7 +1586,7 @@ function AvatarArchitectInner() {
             <p className="text-sm font-medium text-green-800">
               {isTestAvatarMode
                 ? `Test avatar saved as "${testAvatarLabel || `Slot ${testAvatarSlot}`}"! Returning to admin tools…`
-                : `Avatar saved! All your AI tools will now use ${detectedAvatar?.avatar_name}.`}
+                : `Avatar saved! All your tools will now use ${detectedAvatar?.avatar_name}.`}
             </p>
           </div>
           {!isTestAvatarMode && (
