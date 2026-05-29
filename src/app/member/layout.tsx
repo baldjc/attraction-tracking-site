@@ -9,8 +9,9 @@ export default async function MemberLayout({
   children: React.ReactNode;
 }) {
   // Impersonation-aware: userId resolves to the impersonated member so per-user
-  // allowlist flags resolve for them, while role stays the real account's role
-  // so the admin/editor feature bypass below still applies.
+  // allowlist flags resolve for them. role stays the real account's role, but
+  // while impersonating the staff feature bypass is intentionally dropped (see
+  // featureFlags below) so the sidebar shows exactly what the member sees.
   const resolved = await resolveUserFromSession();
 
   if (!resolved) {
@@ -19,13 +20,16 @@ export default async function MemberLayout({
 
   const role = resolved.role as string;
   const userId = resolved.id;
+  const isStaff = role === "admin" || role === "editor";
 
-  // Admins and editors always see every feature — feature visibility
-  // toggles only apply to regular members. We still pass userId/userRole so
-  // per-user allowlist v2 flags resolve for the Jared Chamberlain member
-  // account (a regular member with explicit allowlist entries).
+  // Staff browsing /member directly (not impersonating) see every feature —
+  // visibility toggles only apply to regular members. While impersonating, we
+  // resolve the IMPERSONATED member's actual access instead: getFeatureFlags
+  // drops the staff bypass when the impersonation cookie is present and
+  // evaluates the member's allowlist (via userId), so the sidebar shows exactly
+  // what that member sees — including v2/beta features they're allowlisted for.
   const featureFlags =
-    role === "admin" || role === "editor"
+    isStaff && !resolved.isImpersonating
       ? { ...DEFAULT_FLAGS }
       : await getFeatureFlags({ userId, userRole: role });
 
