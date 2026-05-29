@@ -1937,9 +1937,6 @@ function PublishTab({
   const [variants, setVariants] = useState<ClientThumbnailVariant[]>(() =>
     parseClientVariants((plan as unknown as { thumbnailVariants?: unknown }).thumbnailVariants),
   );
-  const [winnerId, setWinnerId] = useState<string | null>(
-    (plan as unknown as { thumbnailWinnerId?: string | null }).thumbnailWinnerId ?? null,
-  );
   const [uploading, setUploading] = useState(false);
   const [scoringId, setScoringId] = useState<string | null>(null);
   const [thumbError, setThumbError] = useState<string | null>(null);
@@ -1991,28 +1988,10 @@ function PublishTab({
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Delete failed");
       setVariants(parseClientVariants(data.variants));
-      setWinnerId(data.thumbnailWinnerId ?? null);
       setComparison(null);
-      onPersist({ thumbnailVariants: data.variants, thumbnailWinnerId: data.thumbnailWinnerId ?? null });
+      onPersist({ thumbnailVariants: data.variants });
     } catch (e) {
       setThumbError(e instanceof Error ? e.message : "Delete failed");
-    }
-  };
-
-  const handlePickWinner = async (id: string) => {
-    const next = winnerId === id ? null : id;
-    setWinnerId(next);
-    try {
-      const res = await fetch(`${apiBase}/${planId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ thumbnailWinnerId: next }),
-      });
-      if (!res.ok) throw new Error("Could not set winner");
-      onPersist({ thumbnailWinnerId: next });
-    } catch {
-      setWinnerId(winnerId);
-      setThumbError("Could not set winner. Please try again.");
     }
   };
 
@@ -2096,13 +2075,11 @@ function PublishTab({
           {variants.length > 0 && (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10 }}>
               {variants.map((v, idx) => {
-                const isWinner = winnerId === v.id;
                 const isRecommended = comparison?.winnerVariantId === v.id;
                 return (
                   <div key={v.id} style={{
-                    border: `1px solid ${isWinner ? "var(--abv-azure)" : "var(--abv-border)"}`,
+                    border: "1px solid var(--abv-border)",
                     borderRadius: 8, overflow: "hidden",
-                    boxShadow: isWinner ? "0 0 0 1px var(--abv-azure)" : "none",
                   }}>
                     <div style={{ position: "relative", aspectRatio: "16/9", background: "var(--abv-bg-warm, #FAF7F2)" }}>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -2124,14 +2101,6 @@ function PublishTab({
                           letterSpacing: "0.04em",
                         }}>AI PICK</span>
                       )}
-                      {isWinner && (
-                        <span style={{
-                          position: "absolute", top: 6, left: 6,
-                          background: "var(--abv-azure)", color: "white",
-                          fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4,
-                          letterSpacing: "0.04em",
-                        }}>WINNER</span>
-                      )}
                       {typeof v.score === "number" && (
                         <span style={{
                           position: "absolute", top: 6, right: 6,
@@ -2148,9 +2117,6 @@ function PublishTab({
                     <div style={{ display: "flex", gap: 6, padding: 8, borderTop: "1px solid var(--abv-border)", flexWrap: "wrap" }}>
                       <QuickBtn onClick={() => void handleScore(v.id)}>
                         {scoringId === v.id ? "Scoring…" : typeof v.score === "number" ? "Re-score" : "Score"}
-                      </QuickBtn>
-                      <QuickBtn onClick={() => void handlePickWinner(v.id)}>
-                        {isWinner ? "Unpick" : "Pick winner"}
                       </QuickBtn>
                       <QuickBtn danger onClick={() => void handleDelete(v.id)}>Delete</QuickBtn>
                     </div>
