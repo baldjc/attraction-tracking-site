@@ -27,6 +27,8 @@ async function findOrCreateFolder(
     q: `name='${safeName}' and mimeType='application/vnd.google-apps.folder' and '${parentId}' in parents and trashed=false`,
     fields: "files(id, name)",
     spaces: "drive",
+    includeItemsFromAllDrives: true,
+    supportsAllDrives: true,
   });
 
   if (res.data.files && res.data.files.length > 0) {
@@ -40,6 +42,7 @@ async function findOrCreateFolder(
       parents: [parentId],
     },
     fields: "id",
+    supportsAllDrives: true,
   });
 
   return folder.data.id!;
@@ -64,6 +67,7 @@ export async function createMemberFolder(memberName: string): Promise<string> {
         role: "reader",
         type: "anyone",
       },
+      supportsAllDrives: true,
     });
   } catch {
     // Permission may already exist — safe to ignore
@@ -95,6 +99,8 @@ async function findOrCreateDocInFolder(
       q: `name='${safeName}' and mimeType='application/vnd.google-apps.document' and '${folderId}' in parents and trashed=false`,
       fields: "files(id, name)",
       spaces: "drive",
+      includeItemsFromAllDrives: true,
+      supportsAllDrives: true,
     });
     if (existing.data.files && existing.data.files.length > 0) {
       return `https://docs.google.com/document/d/${existing.data.files[0].id}/edit`;
@@ -106,6 +112,7 @@ async function findOrCreateDocInFolder(
         mimeType: "application/vnd.google-apps.document",
       },
       fields: "id",
+      supportsAllDrives: true,
     });
     return `https://docs.google.com/document/d/${created.data.id}/edit`;
   } catch (err) {
@@ -173,6 +180,8 @@ export async function uploadTextFileToFolder(
       q: `name='${safeName}' and '${folderId}' in parents and trashed=false`,
       fields: "files(id, name)",
       spaces: "drive",
+      includeItemsFromAllDrives: true,
+      supportsAllDrives: true,
     });
 
     const media = {
@@ -183,12 +192,13 @@ export async function uploadTextFileToFolder(
     let fileId: string;
     if (existing.data.files && existing.data.files.length > 0) {
       fileId = existing.data.files[0].id!;
-      await drive.files.update({ fileId, media });
+      await drive.files.update({ fileId, media, supportsAllDrives: true });
     } else {
       const created = await drive.files.create({
         requestBody: { name: safeName, parents: [folderId], mimeType },
         media,
         fields: "id",
+        supportsAllDrives: true,
       });
       fileId = created.data.id!;
     }
@@ -218,6 +228,8 @@ export async function uploadBinaryToFolder(
       q: `name='${safeName}' and '${folderId}' in parents and trashed=false`,
       fields: "files(id, name)",
       spaces: "drive",
+      includeItemsFromAllDrives: true,
+      supportsAllDrives: true,
     });
 
     const media = { mimeType, body: Readable.from([buffer]) };
@@ -225,12 +237,13 @@ export async function uploadBinaryToFolder(
     let fileId: string;
     if (existing.data.files && existing.data.files.length > 0) {
       fileId = existing.data.files[0].id!;
-      await drive.files.update({ fileId, media });
+      await drive.files.update({ fileId, media, supportsAllDrives: true });
     } else {
       const created = await drive.files.create({
         requestBody: { name: safeName, parents: [folderId], mimeType },
         media,
         fields: "id",
+        supportsAllDrives: true,
       });
       fileId = created.data.id!;
     }
@@ -249,7 +262,7 @@ export async function uploadBinaryToFolder(
 export async function deleteDriveFile(fileId: string): Promise<void> {
   try {
     const drive = getDriveClient();
-    await drive.files.delete({ fileId });
+    await drive.files.delete({ fileId, supportsAllDrives: true });
   } catch (err) {
     console.error("[google-drive] deleteDriveFile failed:", err);
   }
@@ -316,6 +329,8 @@ export async function listFilesInFolder(folderUrl: string): Promise<Array<{ id: 
       spaces: "drive",
       orderBy: "name",
       pageSize: 100,
+      includeItemsFromAllDrives: true,
+      supportsAllDrives: true,
     });
     return (res.data.files ?? []).map((f) => ({
       id: f.id ?? "",
@@ -340,10 +355,10 @@ export async function fetchDriveFileBytes(
 ): Promise<{ buffer: Buffer; mimeType: string } | null> {
   try {
     const drive = getDriveClient();
-    const meta = await drive.files.get({ fileId, fields: "id, mimeType, parents" });
+    const meta = await drive.files.get({ fileId, fields: "id, mimeType, parents", supportsAllDrives: true });
     const mimeType = meta.data.mimeType ?? "application/octet-stream";
     const res = await drive.files.get(
-      { fileId, alt: "media" },
+      { fileId, alt: "media", supportsAllDrives: true },
       { responseType: "arraybuffer" }
     );
     const buffer = Buffer.from(res.data as ArrayBuffer);
@@ -363,7 +378,7 @@ export async function isFileInFolder(fileId: string, folderUrl: string): Promise
     const folderId = folderIdFromUrl(folderUrl);
     if (!folderId) return false;
     const drive = getDriveClient();
-    const meta = await drive.files.get({ fileId, fields: "parents" });
+    const meta = await drive.files.get({ fileId, fields: "parents", supportsAllDrives: true });
     return (meta.data.parents ?? []).includes(folderId);
   } catch (err) {
     console.error("[google-drive] isFileInFolder failed:", err);
