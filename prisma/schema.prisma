@@ -907,6 +907,14 @@ model ContentPlan {
   thumbnailFileId   String?
   thumbnailFileName String?
 
+  // A/B thumbnail variants — array of { id, url, fileName, uploadedAt, score?, scoredAt? }
+  // up to 3 entries. `thumbnailWinnerId` points at the chosen variant's id.
+  thumbnailVariants Json?
+  thumbnailWinnerId String?
+
+  // Pinned first comment drafted for this video — posts ~60s after publish.
+  pinnedComment   String?   @db.Text
+
   linkedIdeaId    String?
   linkedScriptId  String?
   youtubeVideoId  String?

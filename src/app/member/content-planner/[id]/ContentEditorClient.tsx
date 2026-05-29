@@ -1,8 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import type { ContentPlan } from "@/components/content-planner/ContentPlanEditModal";
 import { getStatusOptions, hasEditDueDate } from "@/lib/content-plan-utils";
 
@@ -27,7 +29,7 @@ type Lineage = {
   totalCited: number;
 };
 
-type Theme = { value: string; label: string };
+type Theme = { value: string; label: string; emoji?: string | null; colour?: string | null };
 type Campaign = { id: string; name: string; pitchOneLiner: string | null };
 type BingeOption = { id: string; title: string; theme: string | null };
 type AvatarData = {
@@ -322,31 +324,10 @@ function renderAutoAzureTitle(title: string): React.ReactNode {
   );
 }
 
-/** Inline-tag-aware script renderer for the preview block above the editor. */
-function renderScriptWithTags(text: string): React.ReactNode {
-  // Heading lines (#### ...) → h4; paragraphs with [TAG] inline → spans.
-  const blocks = text.split(/\n{2,}/);
-  return blocks.map((blk, i) => {
-    const trimmed = blk.trim();
-    if (!trimmed) return null;
-    if (trimmed.startsWith("#### ")) {
-      return (
-        <h4 key={i} style={{
-          fontFamily: "var(--font-display, inherit)",
-          fontWeight: 800, fontSize: 18, letterSpacing: "-0.015em",
-          margin: "18px 0 10px",
-        }}>{trimmed.slice(5)}</h4>
-      );
-    }
-    return (
-      <p key={i} style={{ margin: "0 0 12px", lineHeight: 1.7 }}>
-        {renderInlineTags(trimmed)}
-      </p>
-    );
-  });
-}
-
-function renderInlineTags(s: string): React.ReactNode {
+// Turn a plain string into a mix of text + styled tag pills. STAT pills gain a
+// leading ✓ when the text immediately after the tag references a cited fact
+// (i.e. contains a number within the next ~80 chars).
+function splitTags(s: string): React.ReactNode[] {
   const re = /\[(LEAD MAGNET[^\]]*|SIDEWAYS CREDIBILITY|MID-VIDEO HOOK|STAT)\]/g;
   const parts: React.ReactNode[] = [];
   let lastIdx = 0;
@@ -356,6 +337,11 @@ function renderInlineTags(s: string): React.ReactNode {
     if (m.index > lastIdx) parts.push(s.slice(lastIdx, m.index));
     const tagText = m[1];
     const styles = inlineTagStyle(tagText);
+    let label = tagText;
+    if (tagText === "STAT") {
+      const after = s.slice(m.index + m[0].length, m.index + m[0].length + 80);
+      if (/\d/.test(after)) label = `✓ ${tagText}`;
+    }
     parts.push(
       <span key={`t-${key++}`} style={{
         display: "inline-block",
@@ -368,13 +354,70 @@ function renderInlineTags(s: string): React.ReactNode {
         textTransform: "uppercase",
         marginRight: 4,
         ...styles,
-      }}>{`[${tagText}]`}</span>
+      }}>{`[${label}]`}</span>
     );
     lastIdx = m.index + m[0].length;
   }
   if (lastIdx < s.length) parts.push(s.slice(lastIdx));
   return parts;
 }
+
+// Recursively walk rendered markdown children and replace bracket tags inside
+// any string node with styled pills (handles tags nested inside bold/links/etc).
+function injectTags(children: React.ReactNode): React.ReactNode {
+  return React.Children.map(children, (child) => {
+    if (typeof child === "string") return splitTags(child);
+    if (React.isValidElement(child)) {
+      const el = child as React.ReactElement<{ children?: React.ReactNode }>;
+      if (el.props?.children) {
+        return React.cloneElement(el, { ...el.props, children: injectTags(el.props.children) });
+      }
+    }
+    return child;
+  });
+}
+
+// react-markdown component overrides: apply the .script-body look via inline
+// styles and run tag injection on text-bearing elements.
+const MARKDOWN_COMPONENTS = {
+  h1: ({ children }: { children?: React.ReactNode }) => (
+    <h1 style={{ fontFamily: "var(--font-display, inherit)", fontWeight: 800, fontSize: 24, letterSpacing: "-0.02em", margin: "20px 0 12px" }}>{injectTags(children)}</h1>
+  ),
+  h2: ({ children }: { children?: React.ReactNode }) => (
+    <h2 style={{ fontFamily: "var(--font-display, inherit)", fontWeight: 800, fontSize: 20, letterSpacing: "-0.018em", margin: "18px 0 10px" }}>{injectTags(children)}</h2>
+  ),
+  h3: ({ children }: { children?: React.ReactNode }) => (
+    <h3 style={{ fontFamily: "var(--font-display, inherit)", fontWeight: 800, fontSize: 18, letterSpacing: "-0.015em", margin: "16px 0 10px" }}>{injectTags(children)}</h3>
+  ),
+  h4: ({ children }: { children?: React.ReactNode }) => (
+    <h4 style={{ fontFamily: "var(--font-display, inherit)", fontWeight: 800, fontSize: 16, letterSpacing: "-0.015em", margin: "16px 0 8px" }}>{injectTags(children)}</h4>
+  ),
+  p: ({ children }: { children?: React.ReactNode }) => (
+    <p style={{ margin: "0 0 12px", lineHeight: 1.7 }}>{injectTags(children)}</p>
+  ),
+  ul: ({ children }: { children?: React.ReactNode }) => (
+    <ul style={{ margin: "0 0 12px", paddingLeft: 22, lineHeight: 1.7, listStyle: "disc" }}>{children}</ul>
+  ),
+  ol: ({ children }: { children?: React.ReactNode }) => (
+    <ol style={{ margin: "0 0 12px", paddingLeft: 22, lineHeight: 1.7, listStyle: "decimal" }}>{children}</ol>
+  ),
+  li: ({ children }: { children?: React.ReactNode }) => (
+    <li style={{ margin: "0 0 4px" }}>{injectTags(children)}</li>
+  ),
+  strong: ({ children }: { children?: React.ReactNode }) => (
+    <strong style={{ fontWeight: 700 }}>{injectTags(children)}</strong>
+  ),
+  em: ({ children }: { children?: React.ReactNode }) => (
+    <em style={{ fontStyle: "italic" }}>{injectTags(children)}</em>
+  ),
+  blockquote: ({ children }: { children?: React.ReactNode }) => (
+    <blockquote style={{ margin: "0 0 12px", paddingLeft: 14, borderLeft: "3px solid var(--abv-border)", color: "var(--abv-text-muted)" }}>{children}</blockquote>
+  ),
+  a: ({ children, href }: { children?: React.ReactNode; href?: string }) => (
+    <a href={href} target="_blank" rel="noreferrer" style={{ color: "var(--abv-azure)", textDecoration: "underline" }}>{injectTags(children)}</a>
+  ),
+  hr: () => <hr style={{ border: "none", borderTop: "1px solid var(--abv-border)", margin: "18px 0" }} />,
+};
 
 function inlineTagStyle(tag: string): React.CSSProperties {
   if (tag.startsWith("LEAD MAGNET")) {
@@ -452,6 +495,7 @@ type Form = {
   researchNotes: string;
   thoughts: string;
   youtubeDescription: string;
+  pinnedComment: string;
   bingeVideoId: string;
   linkedCampaignId: string;
 };
@@ -485,6 +529,7 @@ export default function ContentEditorClient({
     researchNotes: initialPlan.researchNotes ?? "",
     thoughts: initialPlan.thoughts ?? "",
     youtubeDescription: (initialPlan as unknown as { youtubeDescription?: string | null }).youtubeDescription ?? "",
+    pinnedComment: (initialPlan as unknown as { pinnedComment?: string | null }).pinnedComment ?? "",
     bingeVideoId: initialPlan.bingeVideoId ?? "",
     linkedCampaignId: initialPlan.linkedCampaignId ?? "",
   }));
@@ -514,7 +559,20 @@ export default function ContentEditorClient({
     fetch(`${apiBase}/themes`)
       .then((r) => r.json())
       .then((d) => {
-        if (Array.isArray(d?.themes)) setThemes(d.themes);
+        // The themes API returns { name, emoji, colour }. The dropdown reads
+        // { value, label } — map name→value/label so options render text
+        // (previously blank because value/label were undefined).
+        if (Array.isArray(d?.themes)) {
+          setThemes(
+            d.themes
+              .map((t: { name?: string; emoji?: string | null; colour?: string | null }) => {
+                const name = typeof t?.name === "string" ? t.name.trim() : "";
+                if (!name) return null;
+                return { value: name, label: name, emoji: t?.emoji ?? null, colour: t?.colour ?? null };
+              })
+              .filter((t: Theme | null): t is Theme => t !== null),
+          );
+        }
       })
       .catch(() => {});
     fetch("/api/campaigns")
@@ -571,6 +629,7 @@ export default function ContentEditorClient({
       researchNotes: v.researchNotes,
       thoughts: v.thoughts,
       youtubeDescription: v.youtubeDescription,
+      pinnedComment: v.pinnedComment,
       bingeVideoId: v.bingeVideoId || null,
       linkedCampaignId: v.linkedCampaignId || null,
     };
@@ -595,24 +654,18 @@ export default function ContentEditorClient({
 
   // ── archive / quick actions ───────────────────────────────────────────────
   const handleArchive = async () => {
-    if (!confirm("Archive this video? It will move to the archived list.")) return;
-    await flush();
-    update("status", "Archived");
-  };
-  const handleSnooze = () => {
-    const bump = (s: string): string => {
-      if (!s) return s;
-      const d = new Date(s);
-      if (!Number.isFinite(d.getTime())) return s;
-      d.setDate(d.getDate() + 7);
-      return toDateInput(d.toISOString());
-    };
-    setForm((f) => ({
-      ...f,
-      shootDate: bump(f.shootDate),
-      editDueDate: bump(f.editDueDate),
-      publishDate: bump(f.publishDate),
-    }));
+    if (!confirm("Archive this plan? It moves to Archived status — you can restore it anytime by changing status back. The script, research, and AI-generated content stay saved.")) return;
+    try {
+      const res = await fetch(`${apiBase}/${planId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "Archived" }),
+      });
+      if (!res.ok) throw new Error("archive failed");
+      router.push("/member/content-planner");
+    } catch {
+      alert("Could not archive. Please try again.");
+    }
   };
   const handleExport = () => {
     const blob = new Blob(
@@ -774,32 +827,6 @@ Output as markdown with ## per talking point, ### per section. Every stat: \`fig
     if (!confirm(msg)) return;
     await handleBuildV2();
   }, [scriptBuilderV2Enabled, form.script, handleBuildV2]);
-
-  // ── tab counts ────────────────────────────────────────────────────────────
-  const tabCounts = useMemo(() => {
-    const planning =
-      (!form.status || form.status === "Idea" ? 1 : 0) +
-      (!form.theme ? 1 : 0) +
-      (!form.propertyTypeFocus || form.propertyTypeFocus === "Auto" ? 1 : 0) +
-      (!form.shootDate ? 1 : 0) +
-      (!form.editDueDate && showEditDue ? 1 : 0) +
-      (!form.publishDate ? 1 : 0);
-    const connecting =
-      (plan.driveFolderLink ? 1 : 0) +
-      (form.bingeVideoId || (plan.bingedFromList && plan.bingedFromList.length > 0) ? 1 : 0) +
-      (form.linkedCampaignId ? 1 : 0);
-    const tools = 7;
-    const publish =
-      (form.youtubeDescription ? 1 : 0) +
-      (form.thumbnailWords ? 1 : 0);
-    return { planning, connecting, tools, publish };
-  }, [
-    form.status, form.theme, form.propertyTypeFocus,
-    form.shootDate, form.editDueDate, form.publishDate, showEditDue,
-    plan.driveFolderLink, plan.bingedFromList,
-    form.bingeVideoId, form.linkedCampaignId,
-    form.youtubeDescription, form.thumbnailWords,
-  ]);
 
   // Click handler for the hero CTA. Each step routes the cursor to the
   // most-likely next input, or advances `status` when the leftover work
@@ -1080,7 +1107,6 @@ Output as markdown with ## per talking point, ### per section. Every stat: \`fig
             <TabStrip
               active={activeTab}
               onChange={setActiveTab}
-              counts={tabCounts}
             />
 
             {activeTab === "planning" && (
@@ -1090,10 +1116,7 @@ Output as markdown with ## per talking point, ### per section. Every stat: \`fig
                 statusOptions={statusOptions}
                 themes={themes}
                 showEditDue={showEditDue}
-                plan={plan}
-                bingeOptions={bingeOptions}
-                loadBingeOptions={loadBingeOptions}
-                onSnooze={handleSnooze}
+                onArchive={handleArchive}
                 onBlur={() => void flush()}
                 onGenerateResearchPrompt={generateResearchPrompt}
                 researchPromptCopied={researchPromptCopied}
@@ -1108,12 +1131,12 @@ Output as markdown with ## per talking point, ### per section. Every stat: \`fig
 
             {activeTab === "connecting" && (
               <ConnectingTab
-                isFoundations={isFoundations}
-                planId={planId}
                 plan={plan}
                 form={form}
                 update={update}
                 campaigns={campaigns}
+                bingeOptions={bingeOptions}
+                loadBingeOptions={loadBingeOptions}
                 onBlur={() => void flush()}
               />
             )}
@@ -1125,6 +1148,7 @@ Output as markdown with ## per talking point, ### per section. Every stat: \`fig
             {activeTab === "publish" && (
               <PublishTab
                 planId={planId}
+                plan={plan}
                 form={form}
                 update={update}
                 onBlur={() => void flush()}
@@ -1172,8 +1196,25 @@ function ScriptPane({
   const cm = Math.floor(cameraSec / 60);
   const cs = String(cameraSec % 60).padStart(2, "0");
 
+  // Two-state script body: rendered markdown (view) ↔ raw textarea (edit).
+  const [mode, setMode] = useState<"view" | "edit">("view");
+
   const handleCopy = () => {
+    // Copy raw markdown — that's what members paste into a teleprompter.
     navigator.clipboard.writeText(value);
+  };
+
+  const enterEdit = () => {
+    setMode("edit");
+    // Focus the textarea once it has mounted.
+    requestAnimationFrame(() => {
+      const el = textareaRef?.current;
+      if (el) {
+        el.focus();
+        const len = el.value.length;
+        el.setSelectionRange(len, len);
+      }
+    });
   };
 
   return (
@@ -1220,6 +1261,9 @@ function ScriptPane({
         >Self-Review</Link>
         <ToolbarBtn label="Copy" onClick={handleCopy} />
         <ToolbarBtn label="Export" onClick={onExport} />
+        {mode === "edit"
+          ? <ToolbarBtn label="✓ Done" onClick={() => setMode("view")} />
+          : <ToolbarBtn label="✎ Edit" onClick={enterEdit} />}
       </div>
 
       {/* editor */}
@@ -1227,22 +1271,49 @@ function ScriptPane({
         background: "white", border: "1px solid var(--abv-border)",
         borderRadius: 14, padding: 24, overflow: "hidden", minWidth: 0,
       }}>
-        <textarea
-          ref={textareaRef}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onBlur={onBlur}
-          placeholder={`Start writing your script for "${title || "this video"}"…`}
-          style={{
-            width: "100%", minHeight: 480,
-            border: "none", outline: "none", resize: "vertical",
-            fontFamily: "var(--font-sans, ui-sans-serif)",
-            fontSize: 14, lineHeight: 1.7,
-            color: "var(--abv-text)",
-            background: "transparent",
-            boxSizing: "border-box",
-          }}
-        />
+        {mode === "edit" ? (
+          <textarea
+            ref={textareaRef}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            onBlur={() => { onBlur(); setMode("view"); }}
+            placeholder={`Start writing your script for "${title || "this video"}"…`}
+            style={{
+              width: "100%", minHeight: 480,
+              border: "none", outline: "none", resize: "vertical",
+              fontFamily: "var(--font-sans, ui-sans-serif)",
+              fontSize: 14, lineHeight: 1.7,
+              color: "var(--abv-text)",
+              background: "transparent",
+              boxSizing: "border-box",
+            }}
+          />
+        ) : value.trim() ? (
+          <div
+            onClick={enterEdit}
+            title="Click to edit"
+            style={{
+              minHeight: 480, cursor: "text",
+              fontFamily: "var(--font-sans, ui-sans-serif)",
+              fontSize: 14, color: "var(--abv-text)",
+            }}
+          >
+            <ReactMarkdown remarkPlugins={[remarkGfm]} components={MARKDOWN_COMPONENTS}>
+              {value}
+            </ReactMarkdown>
+          </div>
+        ) : (
+          <div
+            onClick={enterEdit}
+            style={{
+              minHeight: 480, cursor: "text",
+              fontFamily: "var(--font-sans, ui-sans-serif)",
+              fontSize: 14, lineHeight: 1.7, color: "var(--abv-text-muted)",
+            }}
+          >
+            {`Start writing your script for "${title || "this video"}"…`}
+          </div>
+        )}
         <div style={{
           display: "flex", gap: 18, marginTop: 16,
           fontSize: 11, fontFamily: "var(--font-mono, ui-monospace)",
@@ -1273,15 +1344,14 @@ function ToolbarBtn({ label, onClick }: { label: string; onClick?: () => void })
 }
 
 function TabStrip({
-  active, onChange, counts,
+  active, onChange,
 }: {
   active: string;
   onChange: (t: "planning" | "connecting" | "tools" | "publish") => void;
-  counts: Record<string, number>;
 }) {
   const tabs: Array<{ id: "planning" | "connecting" | "tools" | "publish"; label: string }> = [
     { id: "planning", label: "Planning" },
-    { id: "connecting", label: "Connecting" },
+    { id: "connecting", label: "Binging" },
     { id: "tools", label: "Tools" },
     { id: "publish", label: "Publish" },
   ];
@@ -1310,10 +1380,6 @@ function TabStrip({
             }}
           >
             <span>{t.label}</span>
-            <span style={{
-              fontSize: 9, fontFamily: "var(--font-mono, ui-monospace)",
-              opacity: 0.7,
-            }}>{counts[t.id]}</span>
           </button>
         );
       })}
@@ -1363,9 +1429,8 @@ function Row({ k, v }: { k: string; v: React.ReactNode }) {
 }
 
 function PlanningTab({
-  form, update, statusOptions, themes, showEditDue, plan,
-  bingeOptions, loadBingeOptions,
-  onSnooze, onBlur,
+  form, update, statusOptions, themes, showEditDue,
+  onArchive, onBlur,
   onGenerateResearchPrompt, researchPromptCopied, researchPromptError,
   statusSelectRef, shootDateRef, editDueDateRef, publishDateRef, researchNotesRef,
 }: {
@@ -1374,10 +1439,7 @@ function PlanningTab({
   statusOptions: string[];
   themes: Theme[];
   showEditDue: boolean;
-  plan: ContentPlan;
-  bingeOptions: BingeOption[];
-  loadBingeOptions: () => void;
-  onSnooze: () => void;
+  onArchive: () => void;
   onBlur: () => void;
   onGenerateResearchPrompt: () => void;
   researchPromptCopied: boolean;
@@ -1388,11 +1450,6 @@ function PlanningTab({
   publishDateRef?: React.RefObject<HTMLInputElement | null>;
   researchNotesRef?: React.RefObject<HTMLTextAreaElement | null>;
 }) {
-  const selectedBinge = (() => {
-    const id = form.bingeVideoId;
-    if (!id) return null;
-    return bingeOptions.find((o) => o.id === id) ?? plan.bingeVideo ?? null;
-  })();
   return (
     <>
       <Panel title="Status & dates">
@@ -1429,7 +1486,9 @@ function PlanningTab({
             style={{ width: "100%", fontSize: 12, padding: "6px 8px", border: "1px solid var(--abv-border)", borderRadius: 6 }}
           >
             <option value="">— Theme —</option>
-            {themes.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+            {themes.map((t) => (
+              <option key={t.value} value={t.value}>{t.emoji ? `${t.emoji} ${t.label}` : t.label}</option>
+            ))}
             {form.theme && !themes.find((t) => t.value === form.theme) && (
               <option value={form.theme}>{form.theme}</option>
             )}
@@ -1457,27 +1516,6 @@ function PlanningTab({
             <option value="Out of Studio">Out of Studio</option>
           </select>
         } />
-        <div style={{ padding: "10px 14px", borderTop: "1px solid var(--abv-border)" }}>
-          <div style={{
-            fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
-            textTransform: "uppercase", color: "var(--abv-text-muted)", marginBottom: 6,
-          }}>Binge target</div>
-          <select
-            value={form.bingeVideoId}
-            onChange={(e) => update("bingeVideoId", e.target.value)}
-            onFocus={loadBingeOptions}
-            onBlur={onBlur}
-            style={{ width: "100%", fontSize: 12, padding: "6px 8px", border: "1px solid var(--abv-border)", borderRadius: 6 }}
-          >
-            <option value="">— Select a video to binge to —</option>
-            {selectedBinge && !bingeOptions.find((o) => o.id === selectedBinge.id) && (
-              <option value={selectedBinge.id}>{selectedBinge.title}</option>
-            )}
-            {bingeOptions.map((o) => (
-              <option key={o.id} value={o.id}>{o.title}</option>
-            ))}
-          </select>
-        </div>
       </Panel>
 
       <Panel title="Research notes" headerRight={
@@ -1525,26 +1563,13 @@ function PlanningTab({
         </div>
       </Panel>
 
-      <Panel title="YouTube description">
-        <div style={{ padding: 12 }}>
-          <textarea
-            value={form.youtubeDescription}
-            onChange={(e) => update("youtubeDescription", e.target.value)}
-            onBlur={onBlur}
-            placeholder="Description text for YouTube…"
-            style={{
-              width: "100%", minHeight: 90, padding: 10,
-              border: "1px solid var(--abv-border)", borderRadius: 6,
-              fontSize: 12, lineHeight: 1.5, resize: "vertical",
-              fontFamily: "var(--font-sans, ui-sans-serif)", boxSizing: "border-box",
-            }}
-          />
-        </div>
-      </Panel>
-
-      <Panel title="Quick actions">
-        <div style={{ padding: 12, display: "flex", flexWrap: "wrap", gap: 5 }}>
-          <QuickBtn onClick={onSnooze}>⏱ Snooze 1 week</QuickBtn>
+      <Panel title="Danger zone">
+        <div style={{ padding: 14 }}>
+          <p style={{ fontSize: 11, color: "var(--abv-text-muted)", lineHeight: 1.5, marginBottom: 10 }}>
+            Archiving moves this plan to Archived status. You can restore it anytime by changing the
+            status back — the script, research, and AI-generated content stay saved.
+          </p>
+          <QuickBtn onClick={onArchive} danger>Archive this plan</QuickBtn>
         </div>
       </Panel>
     </>
@@ -1598,56 +1623,42 @@ function QuickBtn({ children, onClick, danger }: { children: React.ReactNode; on
 }
 
 function ConnectingTab({
-  isFoundations, planId, plan, form, update, campaigns, onBlur,
+  plan, form, update, campaigns, bingeOptions, loadBingeOptions, onBlur,
 }: {
-  isFoundations: boolean;
-  planId: string;
   plan: ContentPlan;
   form: Form;
   update: <K extends keyof Form>(k: K, v: Form[K]) => void;
   campaigns: Campaign[];
+  bingeOptions: BingeOption[];
+  loadBingeOptions: () => void;
   onBlur: () => void;
 }) {
   const selectedCampaign = campaigns.find((c) => c.id === form.linkedCampaignId) ?? null;
+  const selectedBinge = (() => {
+    const id = form.bingeVideoId;
+    if (!id) return null;
+    return bingeOptions.find((o) => o.id === id) ?? plan.bingeVideo ?? null;
+  })();
   return (
     <>
-      <Panel
-        title="Thumbnail & assets"
-        headerRight={!isFoundations && plan.driveFolderLink ? (
-          <a href={plan.driveFolderLink} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: "var(--abv-azure)" }}>
-            Drive ↗
-          </a>
-        ) : null}
-      >
-        <div style={{
-          margin: 14, padding: 32, borderRadius: 10,
-          border: "1.5px dashed var(--abv-border)",
-          display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
-          color: "var(--abv-text-muted)", fontSize: 12,
-          background: "var(--abv-bg-warm)",
-        }}>
-          <span style={{ fontSize: 20 }}>↑</span>
-          <span style={{ fontWeight: 600, color: "var(--abv-text)" }}>Upload thumbnail</span>
-          <span style={{ fontSize: 10 }}>1280 × 720 · PNG / JPG</span>
-        </div>
-        {!isFoundations && plan.driveFolderLink && (
-          <a
-            href={plan.driveFolderLink} target="_blank" rel="noreferrer"
-            style={{
-              display: "flex", alignItems: "center", gap: 10,
-              padding: "10px 14px", borderTop: "1px solid var(--abv-border)",
-              fontSize: 12,
-            }}
+      <Panel title="Binge target">
+        <div style={{ padding: 12 }}>
+          <select
+            value={form.bingeVideoId}
+            onChange={(e) => update("bingeVideoId", e.target.value)}
+            onFocus={loadBingeOptions}
+            onBlur={onBlur}
+            style={{ width: "100%", fontSize: 12, padding: "6px 8px", border: "1px solid var(--abv-border)", borderRadius: 6 }}
           >
-            <span style={{ flex: 1 }}>
-              <div style={{ fontWeight: 600 }}>Open Drive folder</div>
-              <div style={{ fontSize: 11, color: "var(--abv-text-muted)" }}>
-                Raw footage · thumbnails · b-roll
-              </div>
-            </span>
-            <span style={{ color: "var(--abv-azure)" }}>↗</span>
-          </a>
-        )}
+            <option value="">— Select a video to binge to —</option>
+            {selectedBinge && !bingeOptions.find((o) => o.id === selectedBinge.id) && (
+              <option value={selectedBinge.id}>{selectedBinge.title}</option>
+            )}
+            {bingeOptions.map((o) => (
+              <option key={o.id} value={o.id}>{o.title}</option>
+            ))}
+          </select>
+        </div>
       </Panel>
 
       <Panel title="Binge connections">
@@ -1777,21 +1788,148 @@ function ToolsTab({ planId, lineage }: { planId: string; lineage: Lineage | null
   );
 }
 
+type ClientThumbnailVariant = {
+  id: string;
+  fileName: string;
+  mimeType: string;
+  storage: "object" | "drive";
+  score?: number | null;
+  scoreNotes?: string | null;
+  createdAt: string;
+};
+
+function parseClientVariants(raw: unknown): ClientThumbnailVariant[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter(
+    (v): v is ClientThumbnailVariant =>
+      !!v && typeof v === "object" && typeof (v as ClientThumbnailVariant).id === "string",
+  );
+}
+
+const YT_DESC_MAX = 5000;
+const PINNED_MAX = 1000;
+const MAX_THUMBS = 4;
+
 function PublishTab({
-  planId, form, update, onBlur,
+  planId, plan, form, update, onBlur,
 }: {
   planId: string;
+  plan: ContentPlan;
   form: Form;
   update: <K extends keyof Form>(k: K, v: Form[K]) => void;
   onBlur: () => void;
 }) {
+  const apiBase = "/api/member/content-plans";
+  const [variants, setVariants] = useState<ClientThumbnailVariant[]>(() =>
+    parseClientVariants((plan as unknown as { thumbnailVariants?: unknown }).thumbnailVariants),
+  );
+  const [winnerId, setWinnerId] = useState<string | null>(
+    (plan as unknown as { thumbnailWinnerId?: string | null }).thumbnailWinnerId ?? null,
+  );
+  const [uploading, setUploading] = useState(false);
+  const [scoringId, setScoringId] = useState<string | null>(null);
+  const [thumbError, setThumbError] = useState<string | null>(null);
+  const [drafting, setDrafting] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleUpload = async (file: File) => {
+    setThumbError(null);
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch(`${apiBase}/${planId}/thumbnails`, { method: "POST", body: fd });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Upload failed");
+      setVariants(parseClientVariants(data.variants));
+    } catch (e) {
+      setThumbError(e instanceof Error ? e.message : "Upload failed");
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
+  const handleScore = async (id: string) => {
+    setThumbError(null);
+    setScoringId(id);
+    try {
+      const res = await fetch(`${apiBase}/${planId}/thumbnails/${id}/score`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Scoring failed");
+      setVariants(parseClientVariants(data.variants));
+    } catch (e) {
+      setThumbError(e instanceof Error ? e.message : "Scoring failed");
+    } finally {
+      setScoringId(null);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    setThumbError(null);
+    try {
+      const res = await fetch(`${apiBase}/${planId}/thumbnails/${id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Delete failed");
+      setVariants(parseClientVariants(data.variants));
+      setWinnerId(data.thumbnailWinnerId ?? null);
+    } catch (e) {
+      setThumbError(e instanceof Error ? e.message : "Delete failed");
+    }
+  };
+
+  const handlePickWinner = async (id: string) => {
+    const next = winnerId === id ? null : id;
+    setWinnerId(next);
+    try {
+      const res = await fetch(`${apiBase}/${planId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ thumbnailWinnerId: next }),
+      });
+      if (!res.ok) throw new Error("Could not set winner");
+    } catch {
+      setWinnerId(winnerId);
+      setThumbError("Could not set winner. Please try again.");
+    }
+  };
+
+  const handleDraftComment = async () => {
+    setDrafting(true);
+    try {
+      const res = await fetch(`${apiBase}/${planId}/pinned-comment`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Generation failed");
+      update("pinnedComment", String(data.comment ?? "").slice(0, PINNED_MAX));
+      onBlur();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Generation failed");
+    } finally {
+      setDrafting(false);
+    }
+  };
+
+  const ytLen = form.youtubeDescription.length;
+  const pinnedLen = form.pinnedComment.length;
+
   return (
     <>
       <Panel title="YouTube description" headerRight={
-        <span style={{ fontFamily: "var(--font-mono, ui-monospace)", fontSize: 9, color: "var(--abv-text-muted)" }}>0 / 5000</span>
+        <span style={{ fontFamily: "var(--font-mono, ui-monospace)", fontSize: 9, color: ytLen > YT_DESC_MAX ? "var(--abv-leads, #DC2626)" : "var(--abv-text-muted)" }}>{ytLen} / {YT_DESC_MAX}</span>
       }>
-        <div style={{ padding: 14, fontSize: 12, color: "var(--abv-text-muted)", lineHeight: 1.5 }}>
-          Generate a YouTube description from your script.
+        <div style={{ padding: 12 }}>
+          <textarea
+            value={form.youtubeDescription}
+            onChange={(e) => update("youtubeDescription", e.target.value)}
+            onBlur={onBlur}
+            placeholder="Write or paste the YouTube description for this video…"
+            rows={6}
+            style={{
+              width: "100%", resize: "vertical", padding: 10, fontSize: 12,
+              lineHeight: 1.5, border: "1px solid var(--abv-border)", borderRadius: 6,
+              color: "var(--abv-text)", background: "white", fontFamily: "inherit",
+            }}
+          />
         </div>
         <div style={{
           padding: "8px 14px", borderTop: "1px solid var(--abv-border)",
@@ -1801,40 +1939,119 @@ function PublishTab({
             href={`/member/ai-tools/description-generator?planId=${planId}`}
             style={{ fontSize: 11, color: "var(--abv-azure)", fontWeight: 600 }}
           >
-            ✍ Generate
+            ✍ Generate with AI
           </Link>
         </div>
       </Panel>
 
-      <Panel title="Thumbnail variants" headerRight={
-        <span style={{ fontFamily: "var(--font-mono, ui-monospace)", fontSize: 9, color: "var(--abv-leads-warning, #B45309)" }}>A/B pending</span>
+      <Panel title="Thumbnail A/B" headerRight={
+        <span style={{ fontFamily: "var(--font-mono, ui-monospace)", fontSize: 9, color: "var(--abv-text-muted)" }}>{variants.length} / {MAX_THUMBS}</span>
       }>
+        <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+          {thumbError && (
+            <div style={{ fontSize: 11, color: "var(--abv-leads, #DC2626)" }}>{thumbError}</div>
+          )}
+          {variants.length === 0 && (
+            <div style={{ fontSize: 12, color: "var(--abv-text-muted)", lineHeight: 1.5 }}>
+              Upload up to {MAX_THUMBS} thumbnail options (PNG or JPG, max 5MB), score each one, then pick a winner.
+            </div>
+          )}
+          {variants.length > 0 && (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10 }}>
+              {variants.map((v) => {
+                const isWinner = winnerId === v.id;
+                return (
+                  <div key={v.id} style={{
+                    border: `1px solid ${isWinner ? "var(--abv-azure)" : "var(--abv-border)"}`,
+                    borderRadius: 8, overflow: "hidden",
+                    boxShadow: isWinner ? "0 0 0 1px var(--abv-azure)" : "none",
+                  }}>
+                    <div style={{ position: "relative", aspectRatio: "16/9", background: "var(--abv-bg-warm, #FAF7F2)" }}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={`${apiBase}/${planId}/thumbnails/${v.id}`}
+                        alt={v.fileName}
+                        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                      />
+                      {isWinner && (
+                        <span style={{
+                          position: "absolute", top: 6, left: 6,
+                          background: "var(--abv-azure)", color: "white",
+                          fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4,
+                          letterSpacing: "0.04em",
+                        }}>WINNER</span>
+                      )}
+                      {typeof v.score === "number" && (
+                        <span style={{
+                          position: "absolute", top: 6, right: 6,
+                          background: "rgba(0,0,0,0.7)", color: "white",
+                          fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 4,
+                        }}>{v.score}</span>
+                      )}
+                    </div>
+                    {v.scoreNotes && (
+                      <div style={{ padding: "6px 8px", fontSize: 10, color: "var(--abv-text-muted)", lineHeight: 1.4, borderTop: "1px solid var(--abv-border)" }}>
+                        {v.scoreNotes}
+                      </div>
+                    )}
+                    <div style={{ display: "flex", gap: 6, padding: 8, borderTop: "1px solid var(--abv-border)", flexWrap: "wrap" }}>
+                      <QuickBtn onClick={() => void handleScore(v.id)}>
+                        {scoringId === v.id ? "Scoring…" : typeof v.score === "number" ? "Re-score" : "Score"}
+                      </QuickBtn>
+                      <QuickBtn onClick={() => void handlePickWinner(v.id)}>
+                        {isWinner ? "Unpick" : "Pick winner"}
+                      </QuickBtn>
+                      <QuickBtn danger onClick={() => void handleDelete(v.id)}>Delete</QuickBtn>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          {variants.length < MAX_THUMBS && (
+            <div>
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/png,image/jpeg"
+                style={{ display: "none" }}
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) void handleUpload(f);
+                }}
+              />
+              <QuickBtn onClick={() => fileRef.current?.click()}>
+                {uploading ? "Uploading…" : "+ Upload thumbnail"}
+              </QuickBtn>
+            </div>
+          )}
+        </div>
+      </Panel>
+
+      <Panel title="Pinned first comment" headerRight={
+        <span style={{ fontFamily: "var(--font-mono, ui-monospace)", fontSize: 9, color: pinnedLen > PINNED_MAX ? "var(--abv-leads, #DC2626)" : "var(--abv-text-muted)" }}>{pinnedLen} / {PINNED_MAX}</span>
+      }>
+        <div style={{ padding: 12 }}>
+          <textarea
+            value={form.pinnedComment}
+            onChange={(e) => update("pinnedComment", e.target.value.slice(0, PINNED_MAX))}
+            onBlur={onBlur}
+            placeholder="The first comment you'll pin under the video to spark replies…"
+            rows={4}
+            style={{
+              width: "100%", resize: "vertical", padding: 10, fontSize: 12,
+              lineHeight: 1.5, border: "1px solid var(--abv-border)", borderRadius: 6,
+              color: "var(--abv-text)", background: "white", fontFamily: "inherit",
+            }}
+          />
+        </div>
         <div style={{
-          padding: 12, display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8,
+          padding: "8px 14px", borderTop: "1px solid var(--abv-border)",
+          display: "flex", justifyContent: "flex-end",
         }}>
-          {[0, 1, 2, 3].map((i) => (
-            <div key={i} style={{
-              aspectRatio: "16/9",
-              border: "1px dashed var(--abv-border)",
-              borderRadius: 6,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              color: "var(--abv-text-muted)", fontSize: 14,
-            }}>+</div>
-          ))}
-        </div>
-      </Panel>
-
-      <Panel title="Pinned first comment">
-        <div style={{ padding: 14, fontSize: 12, color: "var(--abv-text-muted)", lineHeight: 1.5 }}>
-          Pinned-comment editor coming soon.
-        </div>
-      </Panel>
-
-      <Panel title="Tags & end screen" headerRight={
-        <span style={{ fontFamily: "var(--font-mono, ui-monospace)", fontSize: 9, color: "var(--abv-text-muted)" }}>0 tags</span>
-      }>
-        <div style={{ padding: 12, fontSize: 12, color: "var(--abv-text-muted)" }}>
-          Tags + end-screen picker coming soon.
+          <QuickBtn onClick={() => void handleDraftComment()}>
+            {drafting ? "Drafting…" : "✦ Draft with AI"}
+          </QuickBtn>
         </div>
       </Panel>
     </>

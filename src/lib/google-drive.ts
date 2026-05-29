@@ -201,6 +201,61 @@ export async function uploadTextFileToFolder(
 }
 
 /**
+ * Upload a binary file (e.g. a thumbnail image) into a Drive folder. Overwrites
+ * an existing file with the same name. Returns null on any failure.
+ */
+export async function uploadBinaryToFolder(
+  folderId: string,
+  filename: string,
+  buffer: Buffer,
+  mimeType: string,
+): Promise<{ fileId: string; fileUrl: string } | null> {
+  try {
+    const drive = getDriveClient();
+    const safeName = filename.replace(/['"\\]/g, "");
+
+    const existing = await drive.files.list({
+      q: `name='${safeName}' and '${folderId}' in parents and trashed=false`,
+      fields: "files(id, name)",
+      spaces: "drive",
+    });
+
+    const media = { mimeType, body: Readable.from([buffer]) };
+
+    let fileId: string;
+    if (existing.data.files && existing.data.files.length > 0) {
+      fileId = existing.data.files[0].id!;
+      await drive.files.update({ fileId, media });
+    } else {
+      const created = await drive.files.create({
+        requestBody: { name: safeName, parents: [folderId], mimeType },
+        media,
+        fields: "id",
+      });
+      fileId = created.data.id!;
+    }
+    return { fileId, fileUrl: `https://drive.google.com/file/d/${fileId}/view` };
+  } catch (err) {
+    console.error("[google-drive] uploadBinaryToFolder failed:", err);
+    return null;
+  }
+}
+
+/**
+ * Best-effort delete of a Drive file by id. Used to clean up thumbnail uploads
+ * when a variant is removed or a DB write is rolled back. Never throws — a
+ * dangling Drive file is harmless and we don't want cleanup to fail the request.
+ */
+export async function deleteDriveFile(fileId: string): Promise<void> {
+  try {
+    const drive = getDriveClient();
+    await drive.files.delete({ fileId });
+  } catch (err) {
+    console.error("[google-drive] deleteDriveFile failed:", err);
+  }
+}
+
+/**
  * Idempotently ensures a video folder exists for the given plan. Returns the
  * folder URL (existing or newly created). Returns `null` on any failure —
  * callers must tolerate a missing folder silently.

@@ -8,6 +8,15 @@ import {
 } from "@/lib/content-plan-utils";
 import { createVideoFolder, isFileInFolder } from "@/lib/google-drive";
 import { getFeatureFlags } from "@/lib/feature-flags";
+import { parseVariants } from "@/lib/content-thumbnails";
+
+// Carries an HTTP status out of the PUT transaction so winner validation and
+// the field update commit (or roll back) together — see PUT below.
+class PutError extends Error {
+  constructor(public status: number, message: string) {
+    super(message);
+  }
+}
 
 // "Needs Research" is the earliest production status — kicking off the Drive
 // folder + Video Research doc here gives the member a place to drop research
@@ -56,7 +65,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const serviceTier = dbUser?.serviceTier ?? "foundations";
 
   const body = await req.json();
-  const { title, status, theme, shootDate, shootLocation, publishDate, editDueDate, priority, notes, script, researchNotes, thoughts, thumbnailWords, footageLink, driveFolderLink, youtubeDescription, linkedCampaignId, linkedScriptId, thumbnailFileId, thumbnailFileName, manualSteps, propertyTypeFocus } = body;
+  const { title, status, theme, shootDate, shootLocation, publishDate, editDueDate, priority, notes, script, researchNotes, thoughts, thumbnailWords, footageLink, driveFolderLink, youtubeDescription, pinnedComment, linkedCampaignId, linkedScriptId, thumbnailFileId, thumbnailFileName, thumbnailWinnerId, manualSteps, propertyTypeFocus } = body;
   // Wave 4 — same whitelist as POST. Treat undefined as "field omitted"
   // (partial PATCH semantics, no write), empty string as "clear", and any
   // other off-list string as "clear" (safer than persisting garbage).
@@ -157,41 +166,72 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     }
   }
 
-  let plan = await prisma.contentPlan.update({
-    where: { id },
-    data: {
-      ...(title !== undefined && { title: title.trim() }),
-      ...(status !== undefined && { status }),
-      ...(theme !== undefined && { theme: theme ?? null }),
-      ...(shootDate !== undefined && { shootDate: shootDate ? new Date(shootDate) : null }),
-      ...(shootLocation !== undefined && { shootLocation: shootLocation || null }),
-      ...(publishDate !== undefined && { publishDate: publishDate ? new Date(publishDate) : null }),
-      ...(editDueDate !== undefined && { editDueDate: editDueDate ? new Date(editDueDate) : null }),
-      ...(priority !== undefined && { priority: priority ?? null }),
-      ...(notes !== undefined && { notes: notes ?? null }),
-      ...(script !== undefined && { script: script ?? null }),
-      ...(researchNotes !== undefined && { researchNotes: researchNotes ?? null }),
-      ...(thoughts !== undefined && { thoughts: thoughts ?? null }),
-      ...(thumbnailWords !== undefined && { thumbnailWords: thumbnailWords ?? null }),
-      ...(footageLink !== undefined && { footageLink: footageLink ?? null }),
-      ...(driveFolderLink !== undefined && { driveFolderLink: driveFolderLink ?? null }),
-      ...(youtubeDescription !== undefined && { youtubeDescription: youtubeDescription ?? null }),
-      ...(linkedCampaignId !== undefined && { linkedCampaignId: linkedCampaignId ?? null }),
-      ...(linkedScriptId !== undefined && { linkedScriptId: linkedScriptId ?? null }),
-      ...(bingeVideoId !== undefined && { bingeVideoId: bingeVideoId ?? null }),
-      ...(cleanPropertyTypeFocus !== undefined && { propertyTypeFocus: cleanPropertyTypeFocus }),
-      ...(thumbnailFileId !== undefined && { thumbnailFileId: thumbnailFileId ?? null }),
-      ...(thumbnailFileName !== undefined && { thumbnailFileName: thumbnailFileName ?? null }),
-      ...(manualStepsClean !== undefined && { manualSteps: manualStepsClean }),
-    },
-    include: {
-      bingeVideo: { select: BINGE_RELATION_SELECT },
-      bingedFromList: {
-        select: BINGE_RELATION_SELECT,
-        orderBy: { updatedAt: "desc" },
-      },
-    },
-  });
+  // The A/B winner and the rest of the fields are written in a single
+  // transaction. When a winner is supplied we lock the row (`SELECT … FOR
+  // UPDATE`) and validate it against the freshly-locked variant list, so a
+  // concurrent delete can't slip a dangling winner past validation (TOCTOU) and
+  // the winner can never commit while the field update rolls back (split-commit).
+  // Clearing the winner ("") skips validation and just nulls it.
+  let plan;
+  try {
+    plan = await prisma.$transaction(async (tx) => {
+      let winnerData: { thumbnailWinnerId: string | null } | undefined;
+      if (thumbnailWinnerId !== undefined) {
+        const rows = await tx.$queryRaw<Array<{ thumbnailVariants: unknown }>>`
+          SELECT "thumbnailVariants" FROM "content_plans"
+          WHERE "id" = ${id} AND "userId" = ${user.id} FOR UPDATE`;
+        if (rows.length === 0) throw new PutError(404, "Not found");
+        const desired: string | null = thumbnailWinnerId || null;
+        if (desired && !parseVariants(rows[0].thumbnailVariants).some((v) => v.id === desired)) {
+          throw new PutError(400, "Winner must be one of this plan's thumbnails.");
+        }
+        winnerData = { thumbnailWinnerId: desired };
+      }
+
+      return tx.contentPlan.update({
+        where: { id },
+        data: {
+          ...(title !== undefined && { title: title.trim() }),
+          ...(status !== undefined && { status }),
+          ...(theme !== undefined && { theme: theme ?? null }),
+          ...(shootDate !== undefined && { shootDate: shootDate ? new Date(shootDate) : null }),
+          ...(shootLocation !== undefined && { shootLocation: shootLocation || null }),
+          ...(publishDate !== undefined && { publishDate: publishDate ? new Date(publishDate) : null }),
+          ...(editDueDate !== undefined && { editDueDate: editDueDate ? new Date(editDueDate) : null }),
+          ...(priority !== undefined && { priority: priority ?? null }),
+          ...(notes !== undefined && { notes: notes ?? null }),
+          ...(script !== undefined && { script: script ?? null }),
+          ...(researchNotes !== undefined && { researchNotes: researchNotes ?? null }),
+          ...(thoughts !== undefined && { thoughts: thoughts ?? null }),
+          ...(thumbnailWords !== undefined && { thumbnailWords: thumbnailWords ?? null }),
+          ...(footageLink !== undefined && { footageLink: footageLink ?? null }),
+          ...(driveFolderLink !== undefined && { driveFolderLink: driveFolderLink ?? null }),
+          ...(youtubeDescription !== undefined && { youtubeDescription: youtubeDescription ?? null }),
+          ...(pinnedComment !== undefined && { pinnedComment: pinnedComment ?? null }),
+          ...(linkedCampaignId !== undefined && { linkedCampaignId: linkedCampaignId ?? null }),
+          ...(linkedScriptId !== undefined && { linkedScriptId: linkedScriptId ?? null }),
+          ...(bingeVideoId !== undefined && { bingeVideoId: bingeVideoId ?? null }),
+          ...(cleanPropertyTypeFocus !== undefined && { propertyTypeFocus: cleanPropertyTypeFocus }),
+          ...(thumbnailFileId !== undefined && { thumbnailFileId: thumbnailFileId ?? null }),
+          ...(thumbnailFileName !== undefined && { thumbnailFileName: thumbnailFileName ?? null }),
+          ...(manualStepsClean !== undefined && { manualSteps: manualStepsClean }),
+          ...(winnerData ?? {}),
+        },
+        include: {
+          bingeVideo: { select: BINGE_RELATION_SELECT },
+          bingedFromList: {
+            select: BINGE_RELATION_SELECT,
+            orderBy: { updatedAt: "desc" },
+          },
+        },
+      });
+    });
+  } catch (err) {
+    if (err instanceof PutError) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
+    }
+    throw err;
+  }
 
   const driveFlags = await getFeatureFlags();
   const triggerStatuses = driveFlags.drive_auto_upload

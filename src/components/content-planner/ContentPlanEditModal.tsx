@@ -141,6 +141,11 @@ export interface ContentPlan {
   // loaded yet). Resolved to a real image via /api/.../thumbnail.
   thumbnailFileId?: string | null;
   thumbnailFileName?: string | null;
+  // Thumbnail A/B (Publish tab): uploaded variants + the picked winner, plus
+  // the pinned first comment. thumbnailVariants is a loosely-typed Json column.
+  thumbnailVariants?: unknown;
+  thumbnailWinnerId?: string | null;
+  pinnedComment?: string | null;
   // Used as the cache-buster on the proxied thumbnail URL so list views
   // re-fetch the image immediately after a save.
   updatedAt?: string | null;

@@ -68,6 +68,176 @@ function PaymentBanner() {
   );
 }
 
+// ── Weekly Focus Card ─────────────────────────────────────────
+
+interface WeeklyFocusData {
+  weekStart: string;
+  weekEnd: string;
+  shoots: Array<{ id: string; title: string }>;
+  edits: Array<{ id: string; title: string }>;
+  leads: { total: number; sources: Array<{ name: string; count: number }> };
+}
+
+const WEEKLY_FOCUS_DISMISS_KEY = "abv:weeklyFocusDismissedWeek";
+
+function WeeklyFocusCard() {
+  const [data, setData] = useState<WeeklyFocusData | null>(null);
+  const [dismissed, setDismissed] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/member/dashboard/weekly-focus")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: WeeklyFocusData | null) => {
+        if (!d || !d.weekStart) return;
+        // Per-ISO-week dismiss: hidden only while the stored week matches the
+        // current one. Naturally expires next Monday when weekStart changes.
+        try {
+          const raw = localStorage.getItem(WEEKLY_FOCUS_DISMISS_KEY);
+          if (raw && raw === d.weekStart) setDismissed(true);
+        } catch {}
+        setData(d);
+      })
+      .catch(() => {});
+  }, []);
+
+  function dismiss() {
+    if (data) {
+      try { localStorage.setItem(WEEKLY_FOCUS_DISMISS_KEY, data.weekStart); } catch {}
+    }
+    setDismissed(true);
+  }
+
+  if (!data || dismissed) return null;
+
+  const shootCount = data.shoots.length;
+  const editCount = data.edits.length;
+  const leadCount = data.leads.total;
+  const allEmpty = shootCount === 0 && editCount === 0 && leadCount === 0;
+
+  const eyebrow = (
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 text-[var(--abv-azure)] text-[11px] font-bold uppercase tracking-[0.12em]">
+      <span className="w-1.5 h-1.5 rounded-full bg-[var(--abv-azure)]" />
+      This week&apos;s focus
+    </span>
+  );
+
+  if (allEmpty) {
+    return (
+      <div className="rounded-2xl bg-[var(--abv-dark)] text-white p-6 sm:p-8">
+        <div className="flex items-start justify-between gap-4">
+          {eyebrow}
+          <button onClick={dismiss} className="text-white/40 hover:text-white text-xs font-semibold uppercase tracking-wide">
+            Dismiss
+          </button>
+        </div>
+        <h2 className="font-display text-2xl sm:text-3xl text-white mt-3 mb-2">You&apos;re caught up.</h2>
+        <p className="text-white/70 text-sm sm:text-base mb-4">Nothing booked to shoot, edit, or track this week.</p>
+        <LinkButton href="/member/content-planner/wizard" className="!bg-white !text-[var(--abv-dark)] hover:!bg-[var(--abv-bg)]">
+          Start something new →
+        </LinkButton>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-2xl bg-[var(--abv-dark)] text-white p-6 sm:p-8">
+      <div className="flex items-start justify-between gap-4 mb-1">
+        {eyebrow}
+        <button onClick={dismiss} className="text-white/40 hover:text-white text-xs font-semibold uppercase tracking-wide shrink-0">
+          Dismiss
+        </button>
+      </div>
+      <h2 className="font-display text-2xl sm:text-3xl text-white mb-5">Where to spend your hour today.</h2>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {/* Shoot */}
+        <WeeklyBlock
+          emoji="🎬"
+          title="Shoot this week"
+          count={shootCount}
+          headerHref="/member/content-planner?status=Ready+to+Shoot"
+          empty={shootCount === 0}
+          emptyText="Nothing scheduled to shoot."
+          emptyCta={{ label: "Plan a video →", href: "/member/content-planner/wizard" }}
+        >
+          {data.shoots.slice(0, 3).map((p) => (
+            <Link key={p.id} href={`/member/content-planner/${p.id}`} className="block text-sm text-white/80 hover:text-[var(--abv-azure)] truncate">
+              {p.title}
+            </Link>
+          ))}
+        </WeeklyBlock>
+
+        {/* Edit */}
+        <WeeklyBlock
+          emoji="✂️"
+          title="Edit this week"
+          count={editCount}
+          headerHref="/member/content-planner?status=Editing"
+          empty={editCount === 0}
+          emptyText="Nothing in post this week."
+          emptyCta={{ label: "See your pipeline →", href: "/member/content-planner" }}
+        >
+          {data.edits.slice(0, 3).map((p) => (
+            <Link key={p.id} href={`/member/content-planner/${p.id}`} className="block text-sm text-white/80 hover:text-[var(--abv-azure)] truncate">
+              {p.title}
+            </Link>
+          ))}
+        </WeeklyBlock>
+
+        {/* Leads */}
+        <WeeklyBlock
+          emoji="📈"
+          title="Leads this week"
+          count={leadCount}
+          headerHref="/member/analytics"
+          empty={leadCount === 0}
+          emptyText="No leads tracked this week."
+          emptyCta={{ label: "Check your campaigns →", href: "/member/campaigns" }}
+        >
+          {data.leads.sources.slice(0, 3).map((s) => (
+            <div key={s.name} className="text-sm text-white/80 truncate">
+              <span className="font-mono tabular-nums text-white">{s.count}</span> from {s.name}
+            </div>
+          ))}
+        </WeeklyBlock>
+      </div>
+    </div>
+  );
+}
+
+function WeeklyBlock({
+  emoji, title, count, headerHref, children, empty, emptyText, emptyCta,
+}: {
+  emoji: string;
+  title: string;
+  count: number;
+  headerHref: string;
+  children: React.ReactNode;
+  empty: boolean;
+  emptyText: string;
+  emptyCta: { label: string; href: string };
+}) {
+  return (
+    <div className="rounded-xl bg-white/5 p-4 flex flex-col">
+      <Link href={headerHref} className="flex items-center gap-2 mb-3 group">
+        <span className="text-base">{emoji}</span>
+        <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-white/60 group-hover:text-white transition-colors">{title}</span>
+        {!empty && <span className="ml-auto font-mono tabular-nums text-lg text-[var(--abv-azure)]">{count}</span>}
+      </Link>
+      {empty ? (
+        <div className="text-sm text-white/50">
+          <p className="mb-2">{emptyText}</p>
+          <Link href={emptyCta.href} className="text-[var(--abv-azure)] hover:underline text-xs font-semibold">
+            {emptyCta.label}
+          </Link>
+        </div>
+      ) : (
+        <div className="space-y-1.5">{children}</div>
+      )}
+    </div>
+  );
+}
+
 // ── Next Step Card ────────────────────────────────────────────
 
 interface NextStep {
@@ -240,7 +410,10 @@ export default function MemberDashboard() {
         )}
       </div>
 
-      {/* ── Your next step ── */}
+      {/* ── This week's focus ── */}
+      <WeeklyFocusCard />
+
+      {/* ── Your next step (secondary) ── */}
       <NextStepCard />
 
       {/* ── 7-Card Nav Grid (tinted icon block on the left) ── */}
