@@ -8,15 +8,17 @@ import {
   getThumbnailBytes,
   deleteThumbnailBytes,
   updateVariantsLocked,
+  extForMime,
 } from "@/lib/content-thumbnails";
 
 export const runtime = "nodejs";
 
 // GET — stream a single thumbnail variant's bytes through our own origin
 // (Object Storage or Drive). Owner-only; impersonating staff resolve to the
-// member via resolveUserFromSession so they inherit access.
+// member via resolveUserFromSession so they inherit access. Pass ?download=1 to
+// force a file download (Content-Disposition: attachment) instead of inline.
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string; variantId: string }> },
 ) {
   const user = await resolveUserFromSession();
@@ -46,13 +48,24 @@ export async function GET(
   }
   if (!bytes) return NextResponse.json({ error: "Fetch failed" }, { status: 502 });
 
-  return new NextResponse(new Uint8Array(bytes), {
-    status: 200,
-    headers: {
-      "Content-Type": variant.mimeType || "image/jpeg",
-      "Cache-Control": "private, max-age=300",
-    },
-  });
+  const headers: Record<string, string> = {
+    "Content-Type": variant.mimeType || "image/jpeg",
+    "Cache-Control": "private, max-age=300",
+  };
+  if (req.nextUrl.searchParams.get("download") === "1") {
+    // Strip control chars, quotes, backslashes and path separators so a crafted
+    // filename can never break the header or escape the download name.
+    const cleaned = (variant.fileName || "")
+      // eslint-disable-next-line no-control-regex
+      .replace(/[\x00-\x1F\x7F"\\/]+/g, "")
+      .trim();
+    const safeName = cleaned || `thumbnail-${variantId}.${extForMime(variant.mimeType)}`;
+    const utf8Name = encodeURIComponent(safeName);
+    headers["Content-Disposition"] =
+      `attachment; filename="${safeName}"; filename*=UTF-8''${utf8Name}`;
+  }
+
+  return new NextResponse(new Uint8Array(bytes), { status: 200, headers });
 }
 
 // DELETE — remove a variant (and its stored bytes for Object Storage). Clears

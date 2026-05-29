@@ -1995,6 +1995,15 @@ function PublishTab({
     }
   };
 
+  const handleDownload = (id: string) => {
+    const a = document.createElement("a");
+    a.href = `${apiBase}/${planId}/thumbnails/${id}?download=1`;
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  };
+
   const handlePickWinner = async (id: string) => {
     const next = winnerId === id ? null : id;
     setWinnerId(next);
@@ -2144,6 +2153,7 @@ function PublishTab({
                       <QuickBtn onClick={() => void handlePickWinner(v.id)}>
                         {isWinner ? "Unpick" : "Pick winner"}
                       </QuickBtn>
+                      <QuickBtn onClick={() => handleDownload(v.id)}>Download</QuickBtn>
                       <QuickBtn danger onClick={() => void handleDelete(v.id)}>Delete</QuickBtn>
                     </div>
                   </div>

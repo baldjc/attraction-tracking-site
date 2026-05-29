@@ -2,9 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import prisma from "@/lib/prisma";
 import { resolveUserFromSession } from "@/lib/session-utils";
-import { PRODUCTION_TIERS } from "@/lib/content-plan-utils";
 import {
-  ensureVideoFolderForPlan,
   folderIdFromUrl,
   uploadBinaryToFolder,
   deleteDriveFile,
@@ -25,10 +23,10 @@ export const runtime = "nodejs";
 
 const MAX_VARIANTS = 4;
 
-// POST — upload a new thumbnail A/B variant. Production-tier members store the
-// image in the plan's Google Drive folder; everyone else uses Object Storage.
-// Falls back to Object Storage if Drive is unavailable so an upload never fails
-// silently. Returns the full updated variant list.
+// POST — upload a new thumbnail A/B variant. When the plan has a Google Drive
+// folder attached, the image is uploaded straight into it. If there is no Drive
+// folder (or the Drive upload fails), it is stored in Replit Object Storage so
+// the member can still preview and download it. Returns the full variant list.
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await resolveUserFromSession();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -68,12 +66,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const ext = extForMime(file.type);
   const now = new Date().toISOString();
 
-  const dbUser = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: { serviceTier: true },
-  });
-  const isProduction = !!dbUser?.serviceTier && PRODUCTION_TIERS.includes(dbUser.serviceTier);
-
   const storeInObjectStorage = async (): Promise<ThumbnailVariant> => {
     const key = thumbnailStorageKey(user.id, id, variantId, ext);
     await putThumbnailBytes(key, buf);
@@ -88,32 +80,28 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     };
   };
 
+  // Upload into the video's attached Drive folder when one exists. No folder (or
+  // a failed Drive upload) falls back to Object Storage — we never auto-create a
+  // folder here.
   let variant: ThumbnailVariant | null = null;
-  if (isProduction) {
-    let folderUrl: string | null = plan.driveFolderLink;
-    if (!folderUrl) {
-      const ensured = await ensureVideoFolderForPlan(id, user.id);
-      folderUrl = ensured?.folderUrl ?? null;
-    }
-    const folderId = folderIdFromUrl(folderUrl);
-    if (folderId) {
-      const uploaded = await uploadBinaryToFolder(
-        folderId,
-        `thumbnail-${variantId}.${ext}`,
-        buf,
-        file.type,
-      );
-      if (uploaded) {
-        variant = {
-          id: variantId,
-          fileName: file.name || `thumbnail.${ext}`,
-          mimeType: file.type,
-          storage: "drive",
-          driveFileId: uploaded.fileId,
-          score: null,
-          createdAt: now,
-        };
-      }
+  const folderId = folderIdFromUrl(plan.driveFolderLink);
+  if (folderId) {
+    const uploaded = await uploadBinaryToFolder(
+      folderId,
+      `thumbnail-${variantId}.${ext}`,
+      buf,
+      file.type,
+    );
+    if (uploaded) {
+      variant = {
+        id: variantId,
+        fileName: file.name || `thumbnail.${ext}`,
+        mimeType: file.type,
+        storage: "drive",
+        driveFileId: uploaded.fileId,
+        score: null,
+        createdAt: now,
+      };
     }
   }
   if (!variant) {
