@@ -1921,7 +1921,7 @@ function parseClientVariants(raw: unknown): ClientThumbnailVariant[] {
 
 const YT_DESC_MAX = 5000;
 const PINNED_MAX = 1000;
-const MAX_THUMBS = 4;
+const MAX_THUMBS = 3;
 
 function PublishTab({
   planId, plan, form, update, onBlur, onPersist,
@@ -1944,7 +1944,31 @@ function PublishTab({
   const [scoringId, setScoringId] = useState<string | null>(null);
   const [thumbError, setThumbError] = useState<string | null>(null);
   const [drafting, setDrafting] = useState(false);
+  const [channel, setChannel] = useState<{ name: string | null; avatar: string | null }>({
+    name: null,
+    avatar: null,
+  });
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Load the member's own YouTube channel name + avatar so the A/B previews can
+  // be rendered as realistic YouTube cards.
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/member/channel")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!cancelled && d) {
+          setChannel({
+            name: d.youtubeChannelName ?? null,
+            avatar: d.youtubeChannelThumbnail ?? null,
+          });
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleUpload = async (file: File) => {
     setThumbError(null);
@@ -2095,58 +2119,90 @@ function PublishTab({
             </div>
           )}
           {variants.length > 0 && (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
               {variants.map((v, idx) => {
                 const isWinner = winnerId === v.id;
                 const isRecommended = topScoreId === v.id;
                 return (
-                  <div key={v.id} style={{
-                    border: `1px solid ${isWinner ? "var(--abv-azure)" : "var(--abv-border)"}`,
-                    borderRadius: 8, overflow: "hidden",
-                    boxShadow: isWinner ? "0 0 0 1px var(--abv-azure)" : "none",
-                  }}>
-                    <div style={{ position: "relative", aspectRatio: "16/9", background: "var(--abv-bg-warm, #FAF7F2)" }}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={`${apiBase}/${planId}/thumbnails/${v.id}`}
-                        alt={v.fileName}
-                        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-                      />
+                  <div key={v.id} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                       <span style={{
-                        position: "absolute", bottom: 6, left: 6,
-                        background: "rgba(0,0,0,0.7)", color: "white",
-                        fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4,
-                      }}>#{idx + 1}</span>
-                      {isRecommended && (
-                        <span style={{
-                          position: "absolute", bottom: 6, right: 6,
-                          background: "var(--abv-success, #16A34A)", color: "white",
-                          fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4,
-                          letterSpacing: "0.04em",
-                        }}>AI PICK</span>
-                      )}
+                        fontSize: 10, fontWeight: 700, letterSpacing: "0.05em",
+                        textTransform: "uppercase", color: "var(--abv-text-muted)",
+                      }}>Option {idx + 1}</span>
                       {isWinner && (
                         <span style={{
-                          position: "absolute", top: 6, left: 6,
                           background: "var(--abv-azure)", color: "white",
-                          fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4,
-                          letterSpacing: "0.04em",
+                          fontSize: 9, fontWeight: 700, padding: "1px 6px", borderRadius: 4, letterSpacing: "0.04em",
                         }}>WINNER</span>
                       )}
-                      {typeof v.score === "number" && (
+                      {isRecommended && (
                         <span style={{
-                          position: "absolute", top: 6, right: 6,
-                          background: "rgba(0,0,0,0.7)", color: "white",
-                          fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 4,
-                        }}>{v.score}</span>
+                          background: "var(--abv-success, #16A34A)", color: "white",
+                          fontSize: 9, fontWeight: 700, padding: "1px 6px", borderRadius: 4, letterSpacing: "0.04em",
+                        }}>AI PICK</span>
+                      )}
+                      {typeof v.score === "number" && (
+                        <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 700, color: "var(--abv-text-muted)" }}>
+                          Score {v.score}
+                        </span>
                       )}
                     </div>
+                    {/* Realistic YouTube preview card */}
+                    <div style={{
+                      borderRadius: 12, overflow: "hidden", background: "white",
+                      border: `1px solid ${isWinner ? "var(--abv-azure)" : "var(--abv-border)"}`,
+                      boxShadow: isWinner ? "0 0 0 1px var(--abv-azure)" : "none",
+                    }}>
+                      <div style={{ position: "relative", aspectRatio: "16/9", background: "#000" }}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={`${apiBase}/${planId}/thumbnails/${v.id}`}
+                          alt={v.fileName}
+                          style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                        />
+                        <span style={{
+                          position: "absolute", bottom: 8, right: 8,
+                          background: "rgba(0,0,0,0.8)", color: "white",
+                          fontSize: 11, fontWeight: 600, padding: "1px 5px", borderRadius: 4, lineHeight: 1.4,
+                        }}>10:24</span>
+                      </div>
+                      <div style={{ display: "flex", gap: 10, padding: 12 }}>
+                        {channel.avatar ? (
+                          /* eslint-disable-next-line @next/next/no-img-element */
+                          <img
+                            src={channel.avatar}
+                            alt={channel.name ?? "Channel"}
+                            style={{ width: 36, height: 36, borderRadius: "50%", flexShrink: 0, objectFit: "cover" }}
+                          />
+                        ) : (
+                          <div style={{
+                            width: 36, height: 36, borderRadius: "50%", flexShrink: 0,
+                            background: "var(--abv-azure)", color: "white",
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            fontSize: 15, fontWeight: 700,
+                          }}>{(channel.name ?? "Y").charAt(0).toUpperCase()}</div>
+                        )}
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                          <div style={{
+                            fontSize: 14, fontWeight: 600, lineHeight: 1.3, color: "var(--abv-text)",
+                            display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
+                          }}>{form.title?.trim() || "Your video title appears here"}</div>
+                          <div style={{ fontSize: 12, color: "var(--abv-text-muted)", marginTop: 4 }}>
+                            {channel.name ?? "Your channel"}
+                          </div>
+                          <div style={{ fontSize: 12, color: "var(--abv-text-muted)" }}>
+                            12K views · 2 days ago
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                     {v.scoreNotes && (
-                      <div style={{ padding: "6px 8px", fontSize: 10, color: "var(--abv-text-muted)", lineHeight: 1.4, borderTop: "1px solid var(--abv-border)" }}>
+                      <div style={{ fontSize: 10, color: "var(--abv-text-muted)", lineHeight: 1.4 }}>
                         {v.scoreNotes}
                       </div>
                     )}
-                    <div style={{ display: "flex", gap: 6, padding: 8, borderTop: "1px solid var(--abv-border)", flexWrap: "wrap" }}>
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                       <QuickBtn onClick={() => void handleScore(v.id)}>
                         {scoringId === v.id ? "Scoring…" : typeof v.score === "number" ? "Re-score" : "Score"}
                       </QuickBtn>

@@ -21,7 +21,7 @@ import {
 
 export const runtime = "nodejs";
 
-const MAX_VARIANTS = 4;
+const MAX_VARIANTS = 3;
 
 // POST — upload a new thumbnail A/B variant. When the plan has a Google Drive
 // folder attached, the image is uploaded straight into it. If there is no Drive
