@@ -78,36 +78,20 @@ interface WeeklyFocusData {
   leads: { total: number; sources: Array<{ name: string; count: number }> };
 }
 
-const WEEKLY_FOCUS_DISMISS_KEY = "abv:weeklyFocusDismissedWeek";
-
 function WeeklyFocusCard() {
   const [data, setData] = useState<WeeklyFocusData | null>(null);
-  const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
     fetch("/api/member/dashboard/weekly-focus")
       .then((r) => (r.ok ? r.json() : null))
       .then((d: WeeklyFocusData | null) => {
         if (!d || !d.weekStart) return;
-        // Per-ISO-week dismiss: hidden only while the stored week matches the
-        // current one. Naturally expires next Monday when weekStart changes.
-        try {
-          const raw = localStorage.getItem(WEEKLY_FOCUS_DISMISS_KEY);
-          if (raw && raw === d.weekStart) setDismissed(true);
-        } catch {}
         setData(d);
       })
       .catch(() => {});
   }, []);
 
-  function dismiss() {
-    if (data) {
-      try { localStorage.setItem(WEEKLY_FOCUS_DISMISS_KEY, data.weekStart); } catch {}
-    }
-    setDismissed(true);
-  }
-
-  if (!data || dismissed) return null;
+  if (!data) return null;
 
   const shootCount = data.shoots.length;
   const editCount = data.edits.length;
@@ -126,9 +110,6 @@ function WeeklyFocusCard() {
       <div className="rounded-2xl bg-[var(--abv-dark)] text-white p-6 sm:p-8">
         <div className="flex items-start justify-between gap-4">
           {eyebrow}
-          <button onClick={dismiss} className="text-white/40 hover:text-white text-xs font-semibold uppercase tracking-wide">
-            Dismiss
-          </button>
         </div>
         <h2 className="font-display text-2xl sm:text-3xl text-white mt-3 mb-2">You&apos;re caught up.</h2>
         <p className="text-white/70 text-sm sm:text-base mb-4">Nothing booked to shoot, edit, or track this week.</p>
@@ -143,9 +124,6 @@ function WeeklyFocusCard() {
     <div className="rounded-2xl bg-[var(--abv-dark)] text-white p-6 sm:p-8">
       <div className="flex items-start justify-between gap-4 mb-1">
         {eyebrow}
-        <button onClick={dismiss} className="text-white/40 hover:text-white text-xs font-semibold uppercase tracking-wide shrink-0">
-          Dismiss
-        </button>
       </div>
       <h2 className="font-display text-2xl sm:text-3xl text-white mb-5">Where to spend your hour today.</h2>
 
