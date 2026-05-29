@@ -136,8 +136,21 @@ export async function getFeatureFlags(opts?: {
 
     // Admin / editor bypass: every flag evaluates to true regardless of
     // the stored value. This matches the pre-Wave-0 behavior where admin
-    // saw everything.
-    const isStaff = userRole === "admin" || userRole === "editor";
+    // saw everything — EXCEPT while impersonating a member. The whole point
+    // of impersonation is to see exactly what the member sees, so when an
+    // impersonation cookie is present we drop the bypass and evaluate the
+    // member's actual access (allowlist + tier + enabled flag).
+    let isStaff = userRole === "admin" || userRole === "editor";
+    if (isStaff) {
+      try {
+        const { cookies } = await import("next/headers");
+        const { IMPERSONATE_COOKIE } = await import("@/lib/impersonate-constants");
+        const cookieStore = await cookies();
+        if (cookieStore.get(IMPERSONATE_COOKIE)?.value) isStaff = false;
+      } catch {
+        // Outside a request scope (e.g. cron) — no impersonation possible.
+      }
+    }
 
     const result: Record<string, boolean> = { ...DEFAULT_FLAGS };
     for (const [key, value] of Object.entries(parsed)) {

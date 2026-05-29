@@ -114,8 +114,8 @@ const memberLinks = [
   // CREATE
   { href: "/member/content-planner", label: "Content Planner", icon: CalendarDaysIcon,         featureKey: null,        colour: "var(--abv-azure)",   tierRequired: PRODUCTION_TIERS, section: "CREATE" },
   { href: "/member/ai-tools",        label: "AI Tools",        icon: SparklesIcon,             featureKey: "ai_tools",  colour: "var(--abv-ai-tools)", tierRequired: null,           badgeKey: "unread_tools" },
-  { href: "/member/market-data",     label: "Market Data",     icon: ChartBarSquareIcon,       featureKey: null,        colour: "var(--abv-azure)",   tierRequired: null },
-  { href: "/member/knowledge-base",  label: "Knowledge Base",  icon: BookOpenIcon,             featureKey: null,        colour: "var(--abv-azure)",   tierRequired: null },
+  { href: "/member/market-data",     label: "Market Data",     icon: ChartBarSquareIcon,       featureKey: "tool_market_data",            colour: "var(--abv-azure)",   tierRequired: null },
+  { href: "/member/knowledge-base",  label: "Knowledge Base",  icon: BookOpenIcon,             featureKey: "tool_neighbourhood_knowledge", colour: "var(--abv-azure)",   tierRequired: null },
 
   // IMPROVE
   { href: "/member/scores",          label: "My Scores",       icon: StarIcon,                 featureKey: null,        colour: "var(--abv-scores)",  tierRequired: null,           section: "IMPROVE",   featureColour: "var(--abv-scores)" },
