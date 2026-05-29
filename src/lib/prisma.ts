@@ -11,11 +11,14 @@ function cleanUrl(url: string | undefined): string | undefined {
   return url?.replace(/\s+/g, "") || undefined;
 }
 
-const NEON_URL =
-  "postgresql://neondb_owner:npg_A0Xneoz5xFhd@ep-odd-dream-amrl8l3f-pooler.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require";
-
 function createPool(): Pool {
-  const connectionString = cleanUrl(process.env.NEON_DATABASE_URL) ?? NEON_URL;
+  const connectionString =
+    cleanUrl(process.env.NEON_DATABASE_URL) ?? cleanUrl(process.env.DATABASE_URL);
+  if (!connectionString) {
+    throw new Error(
+      "Database connection string is not configured. Set NEON_DATABASE_URL or DATABASE_URL.",
+    );
+  }
   const pool = new Pool({
     connectionString,
     // Recycle idle connections well before Neon's pooler drops them, which is

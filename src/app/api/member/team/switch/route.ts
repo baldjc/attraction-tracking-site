@@ -30,10 +30,26 @@ export async function POST(req: NextRequest) {
 
   // Switch back to own account.
   if (primaryUserId === null) {
+    // Capture the account being left before clearing it, so the audit trail
+    // records the switch-out against the correct primary account.
+    const leaving = resolved.actingAsTeamMember ? resolved.id : null;
     await prisma.user.update({
       where: { id: actorId },
       data: { activeAsTeamMemberOf: null },
     });
+    if (leaving) {
+      const actor = await prisma.user.findUnique({
+        where: { id: actorId },
+        select: { fullName: true },
+      });
+      await logTeamActivity({
+        primaryUserId: leaving,
+        actorType: "team",
+        actorUserId: actorId,
+        actorName: actor?.fullName?.trim() || actorEmail,
+        action: "Switched out of the account",
+      });
+    }
     return NextResponse.json({ ok: true, actingAs: null });
   }
 
