@@ -1,22 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
 import prisma from "@/lib/prisma";
 import { resolveUserFromSession } from "@/lib/session-utils";
-import { getCostCapStatus, logUsage } from "@/lib/ai-tool-cost";
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
 
-const HAIKU_MODEL = "claude-haiku-4-5";
-const MAX_OUTPUT_TOKENS = 600;
 const MAX_COMMENT_CHARS = 1000;
-const MAX_SCRIPT_CHARS = 12000;
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-
-// POST — draft a pinned first comment for a video using Haiku. Pulls the plan's
-// title + script for context. Returns the suggestion; the client binds it into
-// the editable pinnedComment field (the member can edit before saving).
+// POST — draft the pinned first comment for a video. The pinned comment always
+// points the viewer to this plan's "binge to" target as a single sentence:
+//   👉 Watch this next: <Binge Video Title> <Binge Video URL>
+// The URL is pulled in when the binge target has been published to YouTube
+// (its raw youtubeVideoId is stored on the plan); otherwise we point to it by
+// title alone. The output is deterministic so it always matches the format.
 export async function POST(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -24,66 +19,29 @@ export async function POST(
   const user = await resolveUserFromSession();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const cap = await getCostCapStatus(user.id);
-  if (cap.hardBlocked) {
-    return NextResponse.json(
-      { error: "Monthly AI usage limit reached. Try again next month." },
-      { status: 402 },
-    );
-  }
-
   const { id } = await params;
   const plan = await prisma.contentPlan.findFirst({
     where: { id, userId: user.id },
-    select: { title: true, script: true, titlePromise: true },
+    select: {
+      bingeVideoId: true,
+      bingeVideo: { select: { title: true, youtubeVideoId: true } },
+    },
   });
   if (!plan) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const script = (plan.script ?? "").slice(0, MAX_SCRIPT_CHARS);
-  const systemPrompt = `You write the pinned first comment a YouTube creator posts on their own video. The pinned comment should:
-- Open a friendly loop that invites replies (a question or prompt to the audience).
-- Reinforce the video's core promise without repeating the title verbatim.
-- Optionally point to a next step or resource if one is provided.
-- Be warm and conversational, 2-4 short sentences, no hashtags, no emojis unless natural.
-- Stay under ${MAX_COMMENT_CHARS} characters.
-Return ONLY the comment text — no preamble, no quotes, no markdown.`;
-
-  const userPrompt = `VIDEO TITLE: ${plan.title ?? "(untitled)"}
-${plan.titlePromise ? `CORE PROMISE: ${plan.titlePromise}\n` : ""}${
-    script ? `SCRIPT (for context):\n${script}` : "(no script provided)"
-  }
-
-Write the pinned first comment now.`;
-
-  let response: Anthropic.Message;
-  try {
-    response = await anthropic.messages.create({
-      model: HAIKU_MODEL,
-      max_tokens: MAX_OUTPUT_TOKENS,
-      system: systemPrompt,
-      messages: [{ role: "user", content: userPrompt }],
-    });
-  } catch (err) {
-    console.error("[pinned-comment] anthropic failed:", err);
-    return NextResponse.json({ error: "Generation failed. Please try again." }, { status: 502 });
-  }
-
-  // Best-effort: a usage-logging failure must not discard a paid model result.
-  try {
-    await logUsage(
-      user.id,
-      "content_pinned_comment",
-      response.usage.input_tokens,
-      response.usage.output_tokens,
+  if (!plan.bingeVideoId || !plan.bingeVideo) {
+    return NextResponse.json(
+      { error: "Set a binge target first — the pinned comment points viewers to that next video." },
+      { status: 400 },
     );
-  } catch (err) {
-    console.error("[pinned-comment] logUsage failed:", err);
   }
 
-  const text = response.content[0]?.type === "text" ? response.content[0].text.trim() : "";
-  if (!text) {
-    return NextResponse.json({ error: "Empty response. Please try again." }, { status: 500 });
-  }
+  const title = (plan.bingeVideo.title ?? "").trim() || "the next video";
+  const url = plan.bingeVideo.youtubeVideoId
+    ? `https://youtube.com/watch?v=${plan.bingeVideo.youtubeVideoId}`
+    : "";
 
-  return NextResponse.json({ comment: text.slice(0, MAX_COMMENT_CHARS) });
+  const comment = `👉 Watch this next: ${title}${url ? ` ${url}` : ""}`.slice(0, MAX_COMMENT_CHARS);
+
+  return NextResponse.json({ comment });
 }
