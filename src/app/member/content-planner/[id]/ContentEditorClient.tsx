@@ -2090,7 +2090,7 @@ function PublishTab({
           )}
           {variants.length === 0 && (
             <div style={{ fontSize: 12, color: "var(--abv-text-muted)", lineHeight: 1.5 }}>
-              Upload up to {MAX_THUMBS} thumbnail options (PNG or JPG, max 5MB), score each one, then pick a winner.
+              Upload up to {MAX_THUMBS} thumbnail options as a JPG as YouTube prefers JPG files. Score each one and choose what to upload.
             </div>
           )}
           {variants.length > 0 && (
