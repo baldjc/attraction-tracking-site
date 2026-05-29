@@ -40,14 +40,6 @@ type AvatarData = {
 } | null;
 
 const FOUNDATIONS_TIERS = ["foundations"];
-const PROPERTY_OPTIONS = [
-  "Auto",
-  "Detached",
-  "Row/Townhouse",
-  "Apartment Condo",
-  "Half-Duplex",
-  "Acreage",
-];
 const STATUS_DOT: Record<string, string> = {
   Idea: "#9CA3AF",
   Scripted: "#06B6D4",
@@ -1504,8 +1496,12 @@ function PlanningTab({
 
       {isProduction && <DriveFolderSection planId={planId} />}
 
-      <Panel title="Theme & anchor">
+      <Panel title="Theme & location">
         <div style={{ padding: "8px 14px" }}>
+          <label style={{
+            display: "block", fontSize: 10, fontWeight: 700, letterSpacing: "0.04em",
+            textTransform: "uppercase", color: "var(--abv-text-muted)", marginBottom: 4,
+          }}>Video Theme</label>
           <select
             value={form.theme}
             onChange={(e) => update("theme", e.target.value)}
@@ -1521,16 +1517,6 @@ function PlanningTab({
             )}
           </select>
         </div>
-        <Row k="Property" v={
-          <select
-            value={form.propertyTypeFocus}
-            onChange={(e) => update("propertyTypeFocus", e.target.value)}
-            onBlur={onBlur}
-            style={{ fontSize: 12, border: "1px solid var(--abv-border)", borderRadius: 6, padding: "3px 6px" }}
-          >
-            {PROPERTY_OPTIONS.map((p) => <option key={p} value={p === "Auto" ? "" : p}>{p}</option>)}
-          </select>
-        } />
         <Row k="Location" v={
           <select
             value={form.shootLocation}
