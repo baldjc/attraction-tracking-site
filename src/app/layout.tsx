@@ -20,10 +20,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Attraction by Video",
   description: "YouTube channel audit platform and link tracker",
-  icons: {
-    icon: "/logo-icon.png",
-    apple: "/logo-icon.png",
-  },
+  // Favicon / app icons are provided via the App Router file conventions:
+  // src/app/favicon.ico, src/app/icon.png, src/app/apple-icon.png
+  // (white sign mark on the brand dark background).
 };
 
 export const viewport: Viewport = {
