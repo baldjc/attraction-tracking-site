@@ -1,0 +1,2 @@
+- [Market-data validator overflow](market-validator-overflow.md) — the SUMMARY+LEADS validator call can't be chunked; any whole-table serialization must budget-bound rollups or wide markets blow the 200K context.
+- [Dev vs prod database](dev-vs-prod-database.md) — this repl's dev DATABASE_URL points to a dev neondb; production market-data lives in a separate prod DB, reachable only from the deployment.
