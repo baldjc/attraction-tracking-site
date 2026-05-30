@@ -418,6 +418,40 @@ export async function POST(req: NextRequest) {
       { status: 409 },
     );
   }
+
+  // ── B1 — presenter identity (strict, resolved-member-only) ───────────
+  // Read the member's OWN name; never fall back to a hardcoded presenter.
+  // `resolveUserFromSession` already returns the impersonated member's id, so
+  // an admin impersonating a member correctly scripts as that member.
+  const memberRecord = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { fullName: true },
+  });
+  const memberFullName = memberRecord?.fullName?.trim() || null;
+  // Other members' full names — input to the validator's cross-member leak
+  // guard. Only multi-token names are kept (the validator also requires this)
+  // to avoid flagging common first names that appear in ordinary dialogue.
+  const otherMembers = await prisma.user.findMany({
+    where: { id: { not: userId }, fullName: { not: null } },
+    select: { fullName: true },
+  });
+  const forbiddenIdentities = otherMembers
+    .map((u) => (u.fullName ?? "").trim())
+    .filter((n) => n.length > 0 && n.split(/\s+/).length >= 2);
+  // Onboarding nudge — surfaced alongside the script when creds are unset.
+  const teamCred = marketConfig.teamCredibility;
+  const hasTeamCredibility = !!(
+    teamCred &&
+    (teamCred.yearsInBusiness != null ||
+      teamCred.familiesHelped != null ||
+      teamCred.annualTransactionCount != null ||
+      (teamCred.notes != null && teamCred.notes.trim().length > 0))
+  );
+  if (!hasTeamCredibility) {
+    planWarnings.push(
+      "Add your team credibility numbers in onboarding (Step 5: years in business, families helped, annual transactions) so scripts can include a credibility moment. Until then, scripts won't state any credentials — and never borrow another presenter's.",
+    );
+  }
   if (
     !marketConfig.primaryAvatar ||
     (typeof marketConfig.primaryAvatar === "object" &&
@@ -646,6 +680,7 @@ export async function POST(req: NextRequest) {
                   plan: planContext,
                   facts: citedFacts,
                   marketConfig,
+                  memberFullName,
                   neighbourhoodContext,
                   sourceOfTruthMetrics,
                   propertyTypeByHood,
@@ -858,6 +893,8 @@ export async function POST(req: NextRequest) {
           });
           const validation = validateScript(draft, {
             neighbourhoods: marketConfig.neighbourhoods,
+            currentMemberName: memberFullName ?? undefined,
+            forbiddenIdentities,
             sourceOfTruth: sourceOfTruthMetrics,
             citedFacts: citedFacts.map((f) => ({ raw: f.metricValueString })),
             // Wave 5 follow-up — feed the FULL neighbourhood profile
@@ -1169,11 +1206,13 @@ function buildInitialUserMessage(args: {
   assignedCampaign: AssignedCampaign | null;
   assignedBingeVideo: AssignedBingeVideo | null;
   regenerationBrief: RegenerationBrief | null;
+  memberFullName: string | null;
 }): string {
   const {
     plan,
     facts,
     marketConfig,
+    memberFullName,
     neighbourhoodContext,
     sourceOfTruthMetrics,
     propertyTypeByHood,
@@ -1254,6 +1293,49 @@ function buildInitialUserMessage(args: {
   lines.push(`Shoot type: ${shootType}`);
   lines.push(`Market: ${marketConfig.marketName}`);
   lines.push("");
+
+  // ── PRESENTER IDENTITY — the ONLY source of who is on camera (B1) ────
+  // Strict read from the resolved member. Never a hardcoded fallback: if a
+  // figure is unset, it is simply omitted (no other presenter's numbers).
+  {
+    const cred = marketConfig.teamCredibility;
+    const hasCred = !!(
+      cred &&
+      (cred.yearsInBusiness != null ||
+        cred.familiesHelped != null ||
+        cred.annualTransactionCount != null ||
+        (cred.notes != null && cred.notes.trim().length > 0))
+    );
+    lines.push(
+      "## PRESENTER IDENTITY (the ONLY source for who is on camera — never invent or borrow)",
+    );
+    lines.push("");
+    lines.push(
+      `- Presenter name: ${memberFullName ?? "[SET YOUR NAME IN ONBOARDING]"}`,
+    );
+    lines.push(`- Market: ${marketConfig.marketName}`);
+    if (hasCred && cred) {
+      if (cred.yearsInBusiness != null)
+        lines.push(`- Years in business: ${cred.yearsInBusiness}`);
+      if (cred.familiesHelped != null)
+        lines.push(`- Families helped: ${cred.familiesHelped}`);
+      if (cred.annualTransactionCount != null)
+        lines.push(`- Homes sold per year: ${cred.annualTransactionCount}`);
+      if (cred.teamSize != null) lines.push(`- Team size: ${cred.teamSize}`);
+      if (cred.notes != null && cred.notes.trim().length > 0)
+        lines.push(`- Credibility notes: ${cred.notes.trim()}`);
+      lines.push("");
+      lines.push(
+        "Use ONLY this name and these figures for any self-identification or credibility moment. Do NOT invent or substitute any other name, city, tenure, or numbers.",
+      );
+    } else {
+      lines.push("");
+      lines.push(
+        "This presenter has NOT set credibility figures yet. Do NOT state any years-in-business, transaction counts, or families-helped numbers, and do NOT borrow them from anyone else. Omit credentials entirely. Only if a credibility reference is structurally unavoidable, write the literal token [SET YOUR CREDIBILITY IN ONBOARDING] verbatim — never fill it with a guess.",
+      );
+    }
+    lines.push("");
+  }
 
   lines.push("## Idea card (what to script)");
   lines.push("");
@@ -1636,6 +1718,23 @@ function suggestRetryFix(v: ScriptViolation): string {
       '"the reason", "what\'s causing this", "here\'s what\'s happening", ' +
       '"what\'s driving this", "what\'s actually going on".'
     );
+  }
+  if (v.rule === "no_other_member_identity") {
+    return [
+      `this names a different member. Use ONLY the presenter named in the`,
+      `"## PRESENTER IDENTITY" block — replace this name and remove any`,
+      `years-in-business, transaction counts, or families-helped figures`,
+      `attached to it. Never carry over a name or credential from the`,
+      `prompt's style examples.`,
+    ].join(" ");
+  }
+  if (v.rule === "unfilled_credibility_placeholder") {
+    return [
+      `this presenter hasn't set credibility numbers yet. Remove the`,
+      `placeholder AND the credibility sentence entirely — open without`,
+      `credentials (the ARC opening forbids front-loaded credibility`,
+      `anyway). Do NOT invent numbers or borrow anyone else's.`,
+    ].join(" ");
   }
   if (v.rule === "no_avatar_pander") {
     return (

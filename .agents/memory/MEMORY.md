@@ -1,2 +1,4 @@
 - [Market-data validator overflow](market-validator-overflow.md) — the SUMMARY+LEADS validator call can't be chunked; any whole-table serialization must budget-bound rollups or wide markets blow the 200K context.
 - [Dev vs prod database](dev-vs-prod-database.md) — this repl's dev DATABASE_URL points to a dev neondb; production market-data lives in a separate prod DB, reachable only from the deployment.
+- [Script Builder identity guard](script-builder-identity-guard.md) — founder name is the prompt's style exemplar; on-camera identity comes only from the injected PRESENTER IDENTITY block, and every validateScript() caller must pass currentMemberName+forbiddenIdentities or the leak guard silently no-ops.
+- [Fact validator market lock-in](fact-validator-market-lockin.md) — fact-validator prompt + serialization are Calgary/CREB/Pillar-9 hardcoded; wide non-Calgary markets extract 5-10x fewer facts (domain mismatch + small-neighbourhood long-tail pruning).

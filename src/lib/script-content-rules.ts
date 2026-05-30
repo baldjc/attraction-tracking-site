@@ -50,7 +50,11 @@ export type ScriptViolationRule =
   /** Wave 8 Fix 3 — opening announced credibility instead of sideways drop. */
   | "no_announced_credibility"
   /** Wave 8 Fix 4 — "people like us" appeared inside a [LEAD MAGNET …] window. */
-  | "people_like_us_in_lm";
+  | "people_like_us_in_lm"
+  /** B1 — script named a different member's identity (cross-member leak). */
+  | "no_other_member_identity"
+  /** B1 — an unfilled credibility/identity placeholder survived to output. */
+  | "unfilled_credibility_placeholder";
 
 export interface ScriptViolation {
   rule: ScriptViolationRule;
@@ -1125,6 +1129,133 @@ export function checkPeopleLikeUsInLm(script: string): ScriptViolation[] {
 }
 
 /* ────────────────────────────────────────────────────────────────────── */
+/*  B1 — presenter-identity guardrails.                                   */
+/* ────────────────────────────────────────────────────────────────────── */
+
+/** Literal placeholders the prompt emits when identity/credibility is unset. */
+const IDENTITY_PLACEHOLDERS = [
+  "[SET YOUR CREDIBILITY IN ONBOARDING]",
+  "[SET YOUR NAME IN ONBOARDING]",
+];
+
+/**
+ * B1 — an unfilled identity/credibility placeholder must never ship. The
+ * Script Builder injects these tokens (instead of borrowing another member's
+ * numbers) when the resolved member hasn't completed onboarding Step 5; the
+ * validator blocks them at ERROR so the member fills in real data first.
+ */
+function checkUnfilledCredibilityPlaceholder(
+  script: string,
+): ScriptViolation[] {
+  const violations: ScriptViolation[] = [];
+  for (const token of IDENTITY_PLACEHOLDERS) {
+    if (script.includes(token)) {
+      violations.push({
+        rule: "unfilled_credibility_placeholder",
+        severity: "error",
+        message:
+          `The script still contains the placeholder "${token}". The presenter ` +
+          `must set their identity/credibility in onboarding before this script ` +
+          `can ship — never fabricate or borrow credentials to fill it.`,
+        snippet: token,
+      });
+    }
+  }
+  return violations;
+}
+
+/**
+ * B1 — cross-member identity leak guard. If the script names ANY other
+ * member's full name (e.g. the legacy hardcoded presenter), reject at ERROR.
+ * Only multi-token names are checked, matched as a whole phrase, to avoid
+ * flagging common first names that legitimately appear in dialogue.
+ */
+function checkNoOtherMemberIdentity(
+  script: string,
+  opts: ValidateScriptOptions,
+): ScriptViolation[] {
+  const forbidden = opts.forbiddenIdentities ?? [];
+  if (forbidden.length === 0) return [];
+  const current = (opts.currentMemberName ?? "").trim().toLowerCase();
+  // Tokens of the current presenter's own name — never flag these, even if
+  // another member happens to share a first/last name with them.
+  const currentTokens = new Set(
+    current.split(/\s+/).filter((t) => t.length > 0),
+  );
+  const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const matchWhole = (needle: string): RegExpExecArray | null =>
+    new RegExp(`\\b${escape(needle)}\\b`, "i").exec(script);
+  const pushViolation = (
+    label: string,
+    m: RegExpExecArray,
+    message: string,
+  ): void => {
+    violations.push({
+      rule: "no_other_member_identity",
+      severity: "error",
+      message,
+      snippet: script
+        .slice(Math.max(0, m.index - 30), m.index + label.length + 30)
+        .replace(/\s+/g, " ")
+        .trim(),
+    });
+  };
+
+  const violations: ScriptViolation[] = [];
+  const seenFull = new Set<string>();
+  // Distinctive single tokens (first / last names) drawn from forbidden full
+  // names. The founder's name in particular saturates the prompt as a STYLE
+  // exemplar, so a bare first name ("Jared") can leak without the surname.
+  // We block tokens >= 5 alphabetic chars (skips short common words) that are
+  // NOT part of the current presenter's own name.
+  const seenToken = new Set<string>();
+
+  for (const raw of forbidden) {
+    const name = raw.trim();
+    if (!name) continue;
+    const lower = name.toLowerCase();
+    if (lower === current) continue;
+    if (name.split(/\s+/).length < 2) continue; // full (multi-token) names only
+
+    // 1) Whole-phrase full-name match.
+    if (!seenFull.has(lower)) {
+      const m = matchWhole(lower);
+      if (m) {
+        seenFull.add(lower);
+        pushViolation(
+          name,
+          m,
+          `The script names "${name}", which belongs to a different member. A ` +
+            `script must use ONLY the current presenter from the "## PRESENTER ` +
+            `IDENTITY" block. Remove this name and any credentials attached to it.`,
+        );
+      }
+    }
+
+    // 2) Distinctive individual tokens (first/last name) leaking on their own.
+    for (const tok of lower.split(/\s+/)) {
+      if (tok.length < 5) continue;
+      if (!/^[a-z]+$/.test(tok)) continue;
+      if (currentTokens.has(tok)) continue;
+      if (seenToken.has(tok)) continue;
+      const m = matchWhole(tok);
+      if (m) {
+        seenToken.add(tok);
+        pushViolation(
+          tok,
+          m,
+          `The script uses the name "${m[0]}", which is part of another ` +
+            `member's identity (and appears in this prompt only as a STYLE ` +
+            `example). Use ONLY the presenter from the "## PRESENTER IDENTITY" ` +
+            `block — replace this name.`,
+        );
+      }
+    }
+  }
+  return violations;
+}
+
+/* ────────────────────────────────────────────────────────────────────── */
 /*  Umbrella validator.                                                   */
 /* ────────────────────────────────────────────────────────────────────── */
 
@@ -1155,6 +1286,18 @@ export interface ValidateScriptOptions extends HyperLocalOptions {
    * pre-follow-up behaviour (SoT + cited facts only).
    */
   profileText?: string[];
+  /**
+   * B1 — the resolved member's own full name (presenter identity). Used by
+   * `no_other_member_identity` to know which name is legitimately allowed.
+   */
+  currentMemberName?: string;
+  /**
+   * B1 — full names of OTHER members in the system. If any appears in the
+   * generated script, `no_other_member_identity` fires at ERROR severity so a
+   * cross-member identity leak (e.g. the legacy hardcoded presenter) can never
+   * ship. Only multi-token names are checked to avoid common-word collisions.
+   */
+  forbiddenIdentities?: string[];
 }
 
 /**
@@ -1197,6 +1340,9 @@ export function validateScript(
   violations.push(...checkMinDialogueLength(script));
   violations.push(...checkNoAnnouncedCredibility(script));
   violations.push(...checkPeopleLikeUsInLm(script));
+  // B1 — presenter-identity guardrails (cross-member leak + unfilled placeholder).
+  violations.push(...checkNoOtherMemberIdentity(script, opts));
+  violations.push(...checkUnfilledCredibilityPlaceholder(script));
 
   const ok = !violations.some((v) => v.severity === "error");
   return { ok, violations, metrics: hyperLocal.metrics };

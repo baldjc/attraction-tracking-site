@@ -40,4 +40,4 @@ after the facts-chunking fix is in place. The facts fix does NOT cover it.
 **How to apply:** when debugging "still overflows after chunking," check the
 SUMMARY+LEADS call, not the facts chunks. Telemetry: `[runValidation] firing
 summary+leads msgLen=...` and the `inputTokens=...` in the thrown error. Diagnose
-from the deployment logs (Phil/NTREIS run on the deployed app, not dev).
+from the deployment logs (wide NTREIS markets run on the deployed app, not dev).

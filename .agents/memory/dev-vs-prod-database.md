@@ -10,13 +10,14 @@ This repl's dev `DATABASE_URL` resolves to a managed dev `neondb`
 dev uploads and does NOT contain real members' production data.
 
 Production (the deployed app) uses a **separate** database with the real
-member data (e.g. Phil Martin's NTREIS market-data uploads). Querying the dev
-DB by a production userId / uploadId returns 0 rows even though the record
-clearly exists in production (visible in deployment logs).
+member data (e.g. a wide-market member's NTREIS market-data uploads). Querying
+the dev DB by a production userId / uploadId returns 0 rows even though the
+record clearly exists in production (visible in deployment logs).
 
-**Why:** several times a "reset Phil's locked row" style task assumed the local
-DATABASE_URL pointed at production. It does not (at least currently). A write run
-from the dev environment lands in the dev DB and does nothing to production.
+**Why:** several times a "reset a member's locked row" style task assumed the
+local DATABASE_URL pointed at production. It does not (at least currently). A
+write run from the dev environment lands in the dev DB and does nothing to
+production.
 
 **How to apply:**
 - For production runtime evidence use `fetch_deployment_logs` (authoritative —

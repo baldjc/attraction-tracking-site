@@ -154,9 +154,26 @@ export async function POST(
 
   // Server-side validation re-run. Identical options to the streaming
   // route (neighbourhood vocabulary from the user's market config).
+  // B1 — the identity guard MUST be fed the same inputs here as in the
+  // streaming route, otherwise a direct POST could persist a script that
+  // names another member's identity (the gate would silently no-op).
   const marketConfig = await loadMarketConfigSummary(userId);
+  const memberRecord = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { fullName: true },
+  });
+  const memberFullName = memberRecord?.fullName?.trim() || null;
+  const otherMembers = await prisma.user.findMany({
+    where: { id: { not: userId }, fullName: { not: null } },
+    select: { fullName: true },
+  });
+  const forbiddenIdentities = otherMembers
+    .map((u) => (u.fullName ?? "").trim())
+    .filter((n) => n.length > 0 && n.split(/\s+/).length >= 2);
   const validation = validateScript(script, {
     neighbourhoods: marketConfig?.neighbourhoods ?? [],
+    currentMemberName: memberFullName ?? undefined,
+    forbiddenIdentities,
   });
   if (!validation.ok) {
     return NextResponse.json(

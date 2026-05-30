@@ -109,6 +109,17 @@ export interface MarketConfigSummary {
   // Ship B — member-uploaded voice guide markdown. Null when the member is on
   // Foundations tier (no upload UI), or DWY but hasn't uploaded yet.
   voiceGuide: string | null;
+  // B1 — onboarding Step 5 team-credibility numbers, read STRICTLY from this
+  // member's own MarketConfig. The Script Builder uses these for credibility
+  // moments and NEVER falls back to a hardcoded presenter. All null until the
+  // member fills Step 5.
+  teamCredibility: {
+    yearsInBusiness: number | null;
+    familiesHelped: number | null;
+    annualTransactionCount: number | null;
+    teamSize: number | null;
+    notes: string | null;
+  };
 }
 
 /**
@@ -129,6 +140,11 @@ export async function loadMarketConfigSummary(
       subPersonas: true,
       moiThresholds: true,
       voiceGuide: true,
+      teamYearsInBusiness: true,
+      teamFamiliesHelped: true,
+      teamAnnualTransactionCount: true,
+      teamSize: true,
+      teamCredibilityNotes: true,
     },
   });
   if (!cfg) return null;
@@ -140,6 +156,13 @@ export async function loadMarketConfigSummary(
     subPersonas: cfg.subPersonas,
     moiThresholds: cfg.moiThresholds,
     voiceGuide: cfg.voiceGuide,
+    teamCredibility: {
+      yearsInBusiness: cfg.teamYearsInBusiness,
+      familiesHelped: cfg.teamFamiliesHelped,
+      annualTransactionCount: cfg.teamAnnualTransactionCount,
+      teamSize: cfg.teamSize,
+      notes: cfg.teamCredibilityNotes,
+    },
   };
 }
 

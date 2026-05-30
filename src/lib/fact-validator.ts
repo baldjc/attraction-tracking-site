@@ -1006,6 +1006,75 @@ async function persistResults(
   });
 }
 
+/**
+ * WS2B — auto-seed the member's neighbourhood vocabulary from their uploaded
+ * MLS data. After a market-data upload validates, every distinct subdivision /
+ * neighbourhood that appeared in the CSV is merged into
+ * `MarketConfig.neighbourhoodVocab`, so members outside the originally
+ * Calgary-tuned default vocab build an adaptive, market-specific list from
+ * their own uploads instead of starting with a too-narrow list. Case /
+ * whitespace / punctuation variants collapse to a single entry. Non-fatal: a
+ * failure here never blocks validation (the caller wraps it in try/catch).
+ */
+async function seedNeighbourhoodVocabFromUpload(
+  userId: string,
+  neighbourhoods: string[],
+): Promise<void> {
+  const normKey = (s: string) =>
+    s
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim()
+      .replace(/\s+/g, " ");
+  const cleaned = neighbourhoods
+    .map((n) => n.trim().replace(/\s+/g, " "))
+    .filter((n) => {
+      const key = normKey(n);
+      return key.length > 0 && key !== "unknown" && key !== "all neighbourhoods";
+    });
+  if (cleaned.length === 0) return;
+
+  const cfg = await prisma.marketConfig.findUnique({
+    where: { userId },
+    select: { neighbourhoodVocab: true },
+  });
+  if (!cfg) return;
+  const existing = Array.isArray(cfg.neighbourhoodVocab)
+    ? (cfg.neighbourhoodVocab as unknown[]).filter(
+        (v): v is string => typeof v === "string",
+      )
+    : [];
+
+  // Dedupe by normalized key; keep the first-seen display form (existing
+  // entries win over new ones so a member's curated casing is preserved).
+  const seen = new Map<string, string>();
+  for (const name of [...existing, ...cleaned]) {
+    const key = normKey(name);
+    if (!key) continue;
+    if (!seen.has(key)) seen.set(key, name.trim());
+  }
+  const merged = Array.from(seen.values()).sort((a, b) =>
+    a.localeCompare(b, undefined, { sensitivity: "base" }),
+  );
+
+  // Skip the write when nothing new appeared.
+  const existingKeys = new Set(existing.map(normKey));
+  const changed =
+    merged.length !== existing.length ||
+    merged.some((m) => !existingKeys.has(normKey(m)));
+  if (!changed) return;
+
+  await prisma.marketConfig.update({
+    where: { userId },
+    data: { neighbourhoodVocab: merged },
+  });
+  console.log(
+    `[neighbourhood-vocab-seed] userId=${userId} added=${
+      merged.length - existing.length
+    } total=${merged.length}`,
+  );
+}
+
 async function markUploadFailed(uploadId: string, err: unknown): Promise<void> {
   const message =
     err instanceof Error ? err.message : typeof err === "string" ? err : "Unknown error";
@@ -1098,6 +1167,23 @@ export async function runValidation(uploadId: string): Promise<void> {
     } catch (err) {
       console.error(
         '[runValidation] persistAggregatedMetrics failed (non-fatal)',
+        uploadId,
+        err,
+      );
+    }
+
+    // WS2B — grow the member's neighbourhood vocab from this upload's distinct
+    // subdivisions. Sourced from the aggregation (every neighbourhood that
+    // appeared in the CSV), not from extracted facts, so the vocab captures the
+    // full market even when fact extraction is sparse. Non-fatal.
+    try {
+      const distinctHoods = Array.from(
+        new Set(table.groups.map((g) => g.neighbourhood)),
+      );
+      await seedNeighbourhoodVocabFromUpload(userId, distinctHoods);
+    } catch (err) {
+      console.error(
+        '[runValidation] seedNeighbourhoodVocabFromUpload failed (non-fatal)',
         uploadId,
         err,
       );
