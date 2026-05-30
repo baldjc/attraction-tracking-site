@@ -35,6 +35,7 @@ import AdminCallsTab from "@/components/admin/AdminCallsTab";
 import MarkdownTextarea from "@/components/MarkdownTextarea";
 import AdminClientHubTab from "@/components/admin/AdminClientHubTab";
 import AdminTeamAccessTab from "@/components/admin/AdminTeamAccessTab";
+import MarketUploadsAdminSection from "@/components/admin/MarketUploadsAdminSection";
 
 const GHL_LOCATION_ID = process.env.NEXT_PUBLIC_GHL_LOCATION_ID ?? "";
 
@@ -2012,6 +2013,14 @@ export default function MemberDetailPage() {
               </>
             )}
           </div>
+
+          {/* Market data uploads — admin re-validation */}
+          {member && (
+            <MarketUploadsAdminSection
+              memberId={member.id}
+              memberName={member.fullName}
+            />
+          )}
         </div>
       )}
 

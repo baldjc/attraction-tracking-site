@@ -1,0 +1,22 @@
+import { prisma } from "./src/lib/prisma.ts";
+import { runValidation } from "./src/lib/fact-validator.ts";
+const id = "3db8c75e-0735-4323-afe8-261320f52123";
+const before = await prisma.marketFact.count({ where: { uploadId: id } });
+console.log("BEFORE facts=", before);
+await prisma.$transaction(async (tx) => {
+  await tx.marketFact.deleteMany({ where: { uploadId: id } });
+  await tx.aggregatedMetric.deleteMany({ where: { uploadId: id } });
+  await tx.marketStoryLead.deleteMany({ where: { uploadId: id } });
+  await tx.marketDataUpload.update({ where: { id }, data: { status: "validating", validatedAt: null, validationError: null, validationCostUsd: null, rawValidatorOutput: null } });
+});
+console.log("deleted + reset; running validation...");
+const t0 = Date.now();
+await runValidation(id);
+console.log("runValidation done in", ((Date.now()-t0)/1000).toFixed(1), "s");
+const after = await prisma.marketFact.count({ where: { uploadId: id } });
+const leads = await prisma.marketStoryLead.count({ where: { uploadId: id } });
+const agg = await prisma.aggregatedMetric.count({ where: { uploadId: id } });
+const up = await prisma.marketDataUpload.findUnique({ where: { id }, select: { status: true, validationError: true, validationCostUsd: true } });
+console.log("AFTER facts=", after, "leads=", leads, "agg=", agg);
+console.log("upload=", JSON.stringify(up));
+await prisma.$disconnect();

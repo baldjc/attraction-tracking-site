@@ -5,7 +5,9 @@
 // spot a brewing system-wide problem at a glance.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { ArrowPathIcon } from "@heroicons/react/24/outline";
 import { ERROR_CATEGORY_LABELS, type UploadErrorCategory } from "@/lib/upload-error-messages";
+import { useToast } from "@/components/ToastProvider";
 
 interface FailedRow {
   id: string;
@@ -47,6 +49,8 @@ export default function FailedUploadsPage() {
   const [error, setError] = useState<string | null>(null);
   const [category, setCategory] = useState<UploadErrorCategory | "">("");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const toast = useToast();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -77,6 +81,37 @@ export default function FailedUploadsPage() {
       else next.add(id);
       return next;
     });
+
+  const revalidate = async (row: FailedRow) => {
+    const who = row.memberName?.trim() || row.memberEmail || "this member";
+    const ok = window.confirm(
+      `Re-validate this upload using the current validator code? Existing facts will be cleared and rebuilt. AI cost (~$1-2) attributes to ${who}.`,
+    );
+    if (!ok) return;
+    setBusyId(row.id);
+    try {
+      const res = await fetch(
+        `/api/admin/market-data/upload/${row.id}/revalidate`,
+        { method: "POST" },
+      );
+      const j = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        message?: string;
+        factsBefore?: number;
+      };
+      if (!res.ok) {
+        throw new Error(j.message ?? j.error ?? `Failed (${res.status})`);
+      }
+      toast.success(
+        `Re-validation queued (had ${j.factsBefore ?? 0} facts). It will drop off this list once it succeeds — refresh in a minute.`,
+      );
+      await load();
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setBusyId(null);
+    }
+  };
 
   const categoryOptions = useMemo(() => {
     const counts = data?.categoryCounts ?? {};
@@ -148,12 +183,13 @@ export default function FailedUploadsPage() {
               <th className="px-3 py-2 font-medium">Error</th>
               <th className="px-3 py-2 font-medium text-right">Retries</th>
               <th className="px-3 py-2 font-medium">Uploaded</th>
+              <th className="px-3 py-2 font-medium text-right">Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
             {data?.rows.length === 0 && !loading && (
               <tr>
-                <td colSpan={7} className="px-3 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                <td colSpan={8} className="px-3 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
                   No failed uploads match this filter.
                 </td>
               </tr>
@@ -193,6 +229,19 @@ export default function FailedUploadsPage() {
                 </td>
                 <td className="px-3 py-2 text-xs text-gray-600 dark:text-gray-400" suppressHydrationWarning>
                   {new Date(r.uploadedAt).toLocaleString()}
+                </td>
+                <td className="px-3 py-2 text-right">
+                  <button
+                    type="button"
+                    onClick={() => void revalidate(r)}
+                    disabled={busyId === r.id}
+                    className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800"
+                  >
+                    <ArrowPathIcon
+                      className={`w-3.5 h-3.5 ${busyId === r.id ? "animate-spin" : ""}`}
+                    />
+                    {busyId === r.id ? "Queuing…" : "Re-validate"}
+                  </button>
                 </td>
               </tr>
             ))}
