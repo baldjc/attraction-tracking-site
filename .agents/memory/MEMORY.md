@@ -1,2 +1,4 @@
-- [Dev DB has real member data](dev-db-contents.md) — dev DB contains real members (e.g. Phil) with full market-data uploads; member features can be tested locally, not just in prod.
-- [Market validator fact-rate is low](market-validator-fact-rate.md) — re-running the current validator yields far fewer facts (per-category facts chunks return near-empty); a re-validation "losing" facts is expected, not a button bug.
+- [Dev vs prod database](dev-vs-prod-database.md) — the dev DATABASE_URL is a separate dev DB, not production; confirm which DB you're on before trusting reads/writes of real user data.
+- [Fact validator market lock-in](fact-validator-market-lockin.md) — the validator prompt hardcodes one market's schema, so wide off-market uploads extract far fewer facts.
+- [Validator 200K-context overflow](market-validator-overflow.md) — the unsplittable SUMMARY+LEADS call is where ultra-wide markets overflow the 200K context; its rollups must be hard-bounded to the char budget.
+- [Script Builder identity guard](script-builder-identity-guard.md) — generated scripts can leak the house-style exemplar's identity; the no_other_member_identity validator rule must be fed identity inputs at every validateScript() caller or it's silently inert.
