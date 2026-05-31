@@ -62,12 +62,21 @@ export interface CompactFact {
 export async function loadHeadlineSafeFacts(
   uploadId: string,
   monthYear: string,
-  opts: { limit?: number } = {},
+  opts: { limit?: number; orderByNeighbourhoodFirst?: boolean } = {},
 ): Promise<CompactFact[]> {
   const limit = opts.limit ?? 200;
+  // Default ordering is metricFamily-first (stable for Content Engine callers).
+  // Callers that then re-balance across families (Idea Validation) should ask
+  // for neighbourhood-first ordering so that when the `take` cap bites in wide
+  // markets, every metric family — including ones that sort late in the enum
+  // like SP_LP / FAILURE_RATE — is still represented in the candidate window
+  // rather than being truncated wholesale.
+  const orderBy = opts.orderByNeighbourhoodFirst
+    ? [{ neighbourhood: "asc" as const }, { metricFamily: "asc" as const }]
+    : [{ metricFamily: "asc" as const }, { neighbourhood: "asc" as const }];
   const rows = await prisma.marketFact.findMany({
     where: { uploadId, usageClass: "headline_safe" },
-    orderBy: [{ metricFamily: "asc" }, { neighbourhood: "asc" }],
+    orderBy,
     take: limit,
     select: {
       id: true,

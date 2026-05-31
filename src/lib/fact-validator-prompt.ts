@@ -476,7 +476,7 @@ For EVERY neighbourhood that appears in your aggregated input, you MUST emit ONE
 - MEDIAN (emit; classify as headline-safe / supporting-texture / rejected per hygiene rules)
 - median_sqft (companion to MEDIAN for mix-shift check)
 - DOM (emit if DOM data exists)
-- SP_LP (emit if list price data exists)
+- SP_LP (emit if sale-to-list ratio data exists — i.e. list price data is present OR a sale-to-list ratio column was mapped)
 - FAILURE_RATE (emit if expired/terminated/withdrawn data exists for the group)
 
 Picking the "most important" family per neighbourhood and dropping the others is NOT allowed. Each metric family adds independent signal — DOM tells a different story than MEDIAN even for the same neighbourhood. The downstream Script Builder cannot reconstruct what you didn't emit.

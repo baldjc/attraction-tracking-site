@@ -108,15 +108,22 @@ export async function POST(req: NextRequest) {
   }
   const config = await loadMarketConfigSummary(userId);
 
-  // Cap facts at 50 to stay inside the $0.05 budget. Validator typically
-  // produces 80-200 headline-safe facts per upload; the relevance heuristic
-  // here (slice top-N by canonical ordering) is intentionally simple — the
-  // member's idea is short and Claude does the matching, so we'd be guessing
-  // at relevance anyway. If we see the cap bite in practice we can swap in
-  // a neighbourhood-match heuristic.
-  const facts = await loadHeadlineSafeFacts(upload.id, upload.monthYear, {
-    limit: 50,
-  });
+  // Cap the facts SENT to Claude at 50 to stay inside the $0.05 budget.
+  // Validator typically produces 80-200 headline-safe facts per upload. We load
+  // a wide candidate set ordered NEIGHBOURHOOD-first (so every metric family is
+  // represented even if the take cap bites in a wide market), then round-robin
+  // across families down to 50 so families that sort LATE in the canonical enum
+  // order (SP_LP / sale-to-list, FAILURE_RATE) aren't starved. Without both the
+  // neighbourhood-first ordering AND the round-robin, a market with many
+  // neighbourhoods would fill every slot with MOI/PSF/MEDIAN/DOM facts and the
+  // model would never see a sale-to-list ratio — wrongly reporting "no SP/LP
+  // data" for ideas about bidding intensity.
+  const candidateFacts = await loadHeadlineSafeFacts(
+    upload.id,
+    upload.monthYear,
+    { limit: 500, orderByNeighbourhoodFirst: true },
+  );
+  const facts = balanceFactsByFamily(candidateFacts, 50);
   if (facts.length === 0) {
     return NextResponse.json(
       {
@@ -288,6 +295,38 @@ export async function POST(req: NextRequest) {
     factsConsidered: facts.length,
     verdictRecomputed,
   });
+}
+
+/**
+ * Round-robin facts across metric families so a hard cap doesn't starve
+ * families that sort late in the canonical enum order (SP_LP, FAILURE_RATE).
+ * Each family keeps its incoming order (the query sorts by neighbourhood).
+ */
+function balanceFactsByFamily<T extends { metricFamily: string }>(
+  facts: T[],
+  cap: number,
+): T[] {
+  if (facts.length <= cap) return facts;
+  const byFamily = new Map<string, T[]>();
+  for (const f of facts) {
+    const arr = byFamily.get(f.metricFamily);
+    if (arr) arr.push(f);
+    else byFamily.set(f.metricFamily, [f]);
+  }
+  const groups = [...byFamily.values()];
+  const picked: T[] = [];
+  for (let i = 0; picked.length < cap; i++) {
+    let progressed = false;
+    for (const g of groups) {
+      if (i < g.length) {
+        picked.push(g[i]);
+        progressed = true;
+        if (picked.length >= cap) break;
+      }
+    }
+    if (!progressed) break;
+  }
+  return picked;
 }
 
 function buildUserMessage(args: {

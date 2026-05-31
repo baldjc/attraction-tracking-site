@@ -185,6 +185,16 @@ export default function ColumnMapper({
         <div className="mt-1 divide-y divide-gray-100 dark:divide-gray-800">
           {MAPPER_OPTIONAL_FIELDS.map((f) => renderRow(f, false))}
         </div>
+        {!mapping.saleToListRatio && (
+          <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">
+            No sale-to-list ratio column mapped. If your MLS export includes one
+            (e.g. &ldquo;Close-List Price Ratio&rdquo;, &ldquo;SoldVsList%&rdquo;,
+            &ldquo;SP/LP&rdquo;), map it above to unlock bidding-intensity videos
+            (where buyers are competing / homes selling over asking). If your
+            export doesn&rsquo;t include one, those videos won&rsquo;t be
+            available.
+          </p>
+        )}
       </div>
 
       <div className="mt-5 flex items-center justify-between gap-3">

@@ -128,6 +128,7 @@ interface NormalizedRow {
   listPrice: number | null;
   daysOnMarket: number | null;
   sqft: number | null;
+  spLpRatio: number | null;
   priceTier: string | null;
 }
 
@@ -140,6 +141,20 @@ function parseNumber(raw: string | undefined | null): number | null {
   if (!cleaned || cleaned === "-" || cleaned === ".") return null;
   const n = Number(cleaned);
   return Number.isFinite(n) ? n : null;
+}
+
+/**
+ * Parse a precomputed sale-to-list (SP/LP) ratio cell. MLS exports express
+ * this either as a fraction (e.g. 0.98, Pillar 9 `RATIO_ClosePrice_By_ListPrice`)
+ * or as a percent (e.g. 98 / "98%", BRIGHT `SoldVsList%`). Normalize everything
+ * to a fraction so it lines up with the salePrice/listPrice-derived ratio.
+ * Anything above 3 is treated as a percent (no real SP/LP fraction exceeds ~2);
+ * non-positive values are dropped.
+ */
+function parseRatio(raw: string | undefined | null): number | null {
+  const n = parseNumber(raw);
+  if (n == null || n <= 0) return null;
+  return n > 3 ? n / 100 : n;
 }
 
 function parseDate(raw: string | undefined | null): Date | null {
@@ -346,7 +361,16 @@ function tallyRow(acc: RowAccumulator, row: NormalizedRow, isDuplexMerge: boolea
       if (row.daysOnMarket != null && row.daysOnMarket >= 0) {
         acc.soldDoms.push(row.daysOnMarket);
       }
-      if (row.salePrice != null && row.listPrice != null && row.listPrice > 0) {
+      // Prefer a precomputed sale-to-list ratio column when the member mapped
+      // one (many MLS exports ship it directly); otherwise derive it from the
+      // per-row sale/list prices.
+      if (row.spLpRatio != null && row.spLpRatio > 0) {
+        acc.soldSpLpRatios.push(row.spLpRatio);
+      } else if (
+        row.salePrice != null &&
+        row.listPrice != null &&
+        row.listPrice > 0
+      ) {
         acc.soldSpLpRatios.push(row.salePrice / row.listPrice);
       }
       return;
@@ -497,6 +521,9 @@ export async function aggregateUpload(
       readMappedCell(raw, headerLookup, mapping.daysOnMarket),
     );
     const sqft = parseNumber(readMappedCell(raw, headerLookup, mapping.sqft));
+    const spLpRatio = parseRatio(
+      readMappedCell(raw, headerLookup, mapping.saleToListRatio),
+    );
     const date = parseDate(readMappedCell(raw, headerLookup, mapping.date));
     if (date) {
       if (!dateMin || date < dateMin) dateMin = date;
@@ -517,6 +544,7 @@ export async function aggregateUpload(
         listPrice,
         daysOnMarket: dom,
         sqft,
+        spLpRatio,
         priceTier,
       },
       isDuplexMerge,

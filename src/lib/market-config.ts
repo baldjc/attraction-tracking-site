@@ -20,6 +20,7 @@ export const OPTIONAL_FIELDS = [
   "status",
   "city",
   "zip",
+  "saleToListRatio",
 ] as const;
 
 export type CanonicalField = (typeof CANONICAL_FIELDS)[number];
@@ -43,6 +44,7 @@ export const FIELD_LABELS: Record<AnyMappedField, string> = {
   status: "Status",
   city: "City",
   zip: "ZIP / Postal code",
+  saleToListRatio: "Sale-to-list ratio (SP/LP)",
 };
 
 /**
@@ -67,6 +69,7 @@ export const REQUIRED_MAPPING_FIELDS: AnyMappedField[] = [
  * None of these block a save; they enrich the validator when present.
  */
 export const MAPPER_OPTIONAL_FIELDS: AnyMappedField[] = [
+  "saleToListRatio",
   "sqft",
   "yearBuilt",
   "city",
@@ -212,6 +215,26 @@ export const MAPPING_FIELD_CANDIDATES: Partial<Record<AnyMappedField, string[]>>
     bedrooms: ["bedrooms", "bedroomstotal", "beds", "br"],
     bathrooms: ["bathrooms", "bathroomstotalinteger", "baths", "ba"],
     mlsNumber: ["mls number", "mlsnumber", "listing id", "listingid", "mls #", "mls"],
+    // Precomputed sale-to-list (SP/LP) ratio column, as exported by various
+    // MLS systems: Pillar 9 (RATIO_ClosePrice_By_ListPrice), NTREIS
+    // (Close-List Price Ratio), BRIGHT (SoldVsList%). Normalized to a fraction
+    // by the aggregator regardless of percent/fraction formatting.
+    saleToListRatio: [
+      "ratio_closeprice_by_listprice",
+      "close-list price ratio",
+      "close list price ratio",
+      "list-close price ratio",
+      "sale to list ratio",
+      "sale-to-list ratio",
+      "list to sale ratio",
+      "sold to list ratio",
+      "sold to list %",
+      "soldvslist%",
+      "sold vs list",
+      "sp/lp",
+      "sp lp",
+      "splp",
+    ],
   };
 
 export type MappingConfidence = "high" | "low";
