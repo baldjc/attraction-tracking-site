@@ -370,3 +370,141 @@ export async function deriveLeadPropertyTypeLock(
   }
   return { propertyTypeFocus: null, leadSpansMultipleTypes: true };
 }
+
+/* ────────────────────────────────────────────────────────────────────── */
+/*  "Use as Video" — turn a Story Lead straight into a ContentPlan with    */
+/*  no idea-generation step (no LLM call).                                 */
+/* ────────────────────────────────────────────────────────────────────── */
+
+export interface LeadVideoSeed {
+  lead: {
+    id: string;
+    pattern: string;
+    whyItMatters: string;
+    suggestedRotationSlot: string | null;
+    subPersonas: string[];
+  };
+  uploadId: string;
+  /** Fact ids underlying the lead — its hood-anchored headline-safe facts
+   *  (or the city/all rollups when the lead is city-wide). Story Leads don't
+   *  store fact ids (dataThreads are display strings), so we resolve them by
+   *  matching the lead's named neighbourhoods back to the upload's facts. */
+  factIds: string[];
+  /** Property-type lock implied by the lead's facts, identical logic to the
+   *  wizard auto-lock (`deriveLeadPropertyTypeLock`): ≥80% one type → lock. */
+  propertyTypeFocus: Exclude<PropertyTypeFocus, "Any"> | null;
+  leadSpansMultipleTypes: boolean;
+}
+
+/**
+ * Load everything needed to mint a ContentPlan directly from a Story Lead,
+ * skipping idea generation. Scoped to the user; returns null when the lead or
+ * its (validated) upload can't be loaded for this user.
+ */
+export async function loadLeadVideoSeed(
+  userId: string,
+  storyLeadId: string,
+): Promise<LeadVideoSeed | null> {
+  const lead = await prisma.marketStoryLead.findFirst({
+    where: { id: storyLeadId, userId },
+    select: {
+      id: true,
+      uploadId: true,
+      pattern: true,
+      whyItMatters: true,
+      dataThreads: true,
+      suggestedRotationSlot: true,
+      suggestedSubPersonas: true,
+    },
+  });
+  if (!lead) return null;
+
+  // Confirm the lead's upload still belongs to the user and is validated.
+  const upload = await prisma.marketDataUpload.findFirst({
+    where: { id: lead.uploadId, userId, status: "validated" },
+    select: { id: true, monthYear: true },
+  });
+  if (!upload) return null;
+
+  const config = await loadMarketConfigSummary(userId);
+  const vocab = config?.neighbourhoods ?? [];
+  const marketLower = (config?.marketName ?? "").toLowerCase();
+
+  const facts = await loadHeadlineSafeFacts(upload.id, upload.monthYear, {
+    limit: 500,
+  });
+
+  const leadDetail: StoryLeadDetail = {
+    id: lead.id,
+    scanType: 0,
+    pattern: lead.pattern,
+    whyItMatters: lead.whyItMatters,
+    dataThreads: lead.dataThreads,
+    suggestedRotationSlot: lead.suggestedRotationSlot,
+    suggestedSubPersonas: lead.suggestedSubPersonas,
+    suggestedFramework: null,
+    tactileType: null,
+    label: null,
+  };
+  const leadHoods = extractLeadHoodsLower(leadDetail, vocab);
+
+  const factIds: string[] = [];
+  const typeCounts = new Map<string, number>();
+  let typedTotal = 0;
+  for (const f of facts) {
+    const hood = (f.neighbourhood ?? "").trim().toLowerCase();
+    const isCityRollup =
+      !hood || hood === "all" || hood === "city" || hood === marketLower;
+    // Lead names neighbourhoods → link those hoods' facts. Lead is city-wide
+    // (no hood matched the vocab) → link the city/all rollup facts instead.
+    const include =
+      leadHoods.length > 0 ? !isCityRollup && leadHoods.includes(hood) : isCityRollup;
+    if (!include) continue;
+    factIds.push(f.id);
+    // Property-type lock counts only hood-anchored, property-typed facts —
+    // city rollups (null/All) would dilute the ratio.
+    if (!isCityRollup) {
+      const pt = f.propertyType;
+      if (pt && pt !== "All") {
+        typeCounts.set(pt, (typeCounts.get(pt) ?? 0) + 1);
+        typedTotal++;
+      }
+    }
+  }
+
+  let propertyTypeFocus: Exclude<PropertyTypeFocus, "Any"> | null = null;
+  let leadSpansMultipleTypes = false;
+  if (typedTotal > 0) {
+    let topType: string | null = null;
+    let topCount = 0;
+    for (const [pt, n] of typeCounts) {
+      if (n > topCount) {
+        topType = pt;
+        topCount = n;
+      }
+    }
+    if (topType && topCount / typedTotal >= 0.8) {
+      propertyTypeFocus = topType as Exclude<PropertyTypeFocus, "Any">;
+    } else {
+      leadSpansMultipleTypes = true;
+    }
+  }
+
+  return {
+    lead: {
+      id: lead.id,
+      pattern: lead.pattern,
+      whyItMatters: lead.whyItMatters,
+      suggestedRotationSlot: lead.suggestedRotationSlot,
+      subPersonas: Array.isArray(lead.suggestedSubPersonas)
+        ? lead.suggestedSubPersonas.filter(
+            (x): x is string => typeof x === "string",
+          )
+        : [],
+    },
+    uploadId: upload.id,
+    factIds,
+    propertyTypeFocus,
+    leadSpansMultipleTypes,
+  };
+}

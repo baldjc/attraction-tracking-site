@@ -11,8 +11,9 @@
  */
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { inferFocusFromStoryLeadText } from "@/lib/property-type-focus";
-import { LinkButton } from "@/components/ui/Button";
+import { Button, LinkButton } from "@/components/ui/Button";
 
 interface StoryLead {
   id: string;
@@ -113,6 +114,9 @@ export function Step2AStoryLeads() {
 }
 
 function LeadCard({ lead }: { lead: StoryLead }) {
+  const router = useRouter();
+  const [creating, setCreating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const threads = parseStringList(lead.dataThreads);
   const personas = parseStringList(lead.suggestedSubPersonas);
   const inferredFocus = inferFocusFromStoryLeadText(
@@ -125,6 +129,39 @@ function LeadCard({ lead }: { lead: StoryLead }) {
   if (inferredFocus !== "Any") {
     params.set("propertyTypeFocus", inferredFocus);
   }
+
+  // The direct path needs the same fields the plan is built from. Disabled when
+  // a legacy/malformed lead is missing any of them (validator always fills these).
+  const canUseAsVideo = Boolean(
+    lead.pattern && lead.whyItMatters && lead.suggestedRotationSlot,
+  );
+
+  async function handleUseAsVideo() {
+    if (creating || !canUseAsVideo) return;
+    setCreating(true);
+    setError(null);
+    try {
+      const res = await fetch(
+        "/api/member/content-planner/wizard/use-as-video",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ storyLeadId: lead.id }),
+        },
+      );
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json?.redirectUrl) {
+        setError(json?.message || "Couldn't create the plan. Please try again.");
+        setCreating(false);
+        return;
+      }
+      router.push(json.redirectUrl);
+    } catch {
+      setError("Couldn't create the plan. Please try again.");
+      setCreating(false);
+    }
+  }
+
   return (
     <div className="flex flex-col rounded-lg border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
       <div className="flex items-start justify-between gap-2">
@@ -198,10 +235,26 @@ function LeadCard({ lead }: { lead: StoryLead }) {
           </span>
         )}
       </div>
-      <div className="mt-5">
-        <LinkButton href={`/member/content-planner/wizard?${params.toString()}`}>
-          Use this Lead →
+      <div className="mt-5 flex flex-col gap-2">
+        <LinkButton
+          href={`/member/content-planner/wizard?${params.toString()}`}
+          fullWidth
+        >
+          Get Video Ideas →
         </LinkButton>
+        <Button
+          variant="outline"
+          size="sm"
+          fullWidth
+          onClick={handleUseAsVideo}
+          disabled={!canUseAsVideo || creating}
+          title="Skip variants and create a plan directly from this lead"
+        >
+          {creating ? "Creating…" : "Use as Video"}
+        </Button>
+        {error && (
+          <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
+        )}
       </div>
     </div>
   );
