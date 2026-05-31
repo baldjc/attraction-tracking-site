@@ -1,3 +1,12 @@
+import {
+  resolveMarketDefaults,
+  type StatusCode,
+  type PropertyTypeVocab,
+  type PriceTier,
+  type MoiThresholds,
+  type MoiHighEndExceptionFloor,
+} from "@/lib/market-config";
+
 // Market-agnostic Fact Validator system prompt.
   //
   // The base instructions below were originally authored verbatim for the
@@ -108,13 +117,11 @@ MOI INTERPRETATION FRAMEWORK (LOCKED — apply to every MOI fact)
 
 Months of Inventory (MOI) thresholds. Use these literal interpretations — do not invent your own. Every MOI fact you output MUST carry a \`market_type\` label per this framework.
 
-- **Below 2.5 MOI → "sellers"** — Seller has leverage. Bidding wars plausible. Prices firm or rising. Buyer should expect competition.
-- **2.5 to 4.0 MOI → "balanced"** — Neither side has clear leverage. Prices stable. Negotiation possible but not extreme.
-- **Above 4.0 MOI → "buyers"** — Buyer has leverage. Inventory soft. Prices flat or falling. Seller should price aggressively.
+{{MOI_THRESHOLDS}}
 
 **High-end exception → "balanced (high-end)":** at price tiers where the buyer pool is structurally smaller, 5-6 MOI is functionally balanced, not a buyers market. The market mechanic — fewer buyers means longer absorption even in healthy conditions — shifts the threshold up. Apply this exception only at the genuine top of the market for the property type:
-- Detached: typically $1.5M+
-- Condo / apartment: typically $800K+
+- Detached: typically {{HIGH_END_DETACHED}}+
+- Condo / apartment: typically {{HIGH_END_CONDO}}+
 - Acreage / luxury: case-by-case, flag with note
 
 **Trajectory is a SEPARATE signal from market_type.** Going from 0.68 MOI to 1.66 MOI in twelve months is pronounced loosening — that's worth flagging as \`trajectory: loosening fast\`. But the resulting state is still \`market_type: sellers\`. Do NOT conflate "the trend is buyer-friendly" with "this IS a buyers market." Output both fields independently:
@@ -135,20 +142,13 @@ These rules govern HOW you compute each metric from the underlying CSV. They exi
 
 ### CSV STATUS CODES
 
-Pillar 9 CSV exports use exactly these status codes. Treat them as follows:
+Pillar 9 CSV exports use these status codes. Treat them as follows:
 
-- **Active** — listing live, no accepted offer. Counts as available inventory.
-- **Pending** — listing live, accepted offer, conditions not yet removed (or pending firm). CREB counts these as inventory; we report both with and without them.
-- **Sold** — closed firm sale. Numerator for MoI, DOM, SP/LP, median price, PSF.
-- **Expired** — listing reached end-date without selling. Counts as a failure.
-- **Terminated** — listing cancelled by seller before end-date. Counts as a failure.
-- **Withdrawn** — listing pulled by agent. Counts as a failure (rare — typically <0.1% of records).
+{{STATUS_CODES}}
 
 ### PROPERTY-TYPE NORMALIZATION
 
-Pillar 9 strings present in the data: \`Detached\`, \`Apartment\`, \`Row/Townhouse\`, \`Semi Detached (Half Duplex)\`, \`Full Duplex\`.
-
-- Roll **Full Duplex** records into **Semi-Detached** for all aggregations. CREB lumps them. Note the merge in \`usage_notes\` when surfacing semi-detached facts that include duplex records.
+{{PROPERTY_TYPE_VOCAB}}
 
 ### EMPTY-ZONE RECORDS
 
@@ -206,7 +206,7 @@ For NEIGHBOURHOOD-LEVEL MoI facts where the gap to CREB exceeds 0.5 MoS (typical
 
 If a Story Lead is going to claim a price tier is "the tightest tier in the city" / "the loosest" / "the most resilient" — any superlative — the Validator MUST verify the claim against ALL price tiers in the data, NOT just the tier in question.
 
-CREB publishes a 9-tier breakdown ($300K bands from <$300K through $1.5M+). Use those brackets when checking superlative claims, even if the FL aggregates differently for headline use.
+{{PRICE_TIER_BANDS}}
 
 If the claim doesn't hold under tier-by-tier comparison, drop the superlative and keep only the trajectory framing. *"Tightening every month"* is fine if true. *"The tightest tier in the city"* is only fine if the data actually proves it. (Real example: $1.4M-$2M detached MoI 1.96 was previously labeled "the tightest tier" — but under-$500K MoI is 1.66, tighter on the FL's own data, and CREB's under-$300K tier is ~1.0, tighter still. The "tightest tier" claim fails on both sources. Drop the superlative; keep "tightening every month" as the directional framing.)
 
@@ -614,39 +614,131 @@ That's the bar. Catch the mirage, label it plainly, expose both views where view
 export interface FactValidatorPromptOpts {
   /** MarketConfig.marketName, e.g. "Calgary", "Dallas–Fort Worth". */
   marketName: string;
-  /** MarketConfig.mlsSource, e.g. "CREB", "Pillar 9", "NTREIS". */
+  /** MarketConfig.mlsSource — the DATA SYSTEM, e.g. "Pillar 9", "NTREIS". */
   mlsSource: string;
+  /** Published-board authority, e.g. "CREB", "NTREIS". Defaults from seed. */
+  sourceAuthority?: string;
+  /** Board status-code vocab + canonical mapping. Defaults from seed. */
+  statusCodes?: StatusCode[];
+  /** Board property-type vocab + merge rule. Defaults from seed. */
+  propertyTypeVocab?: PropertyTypeVocab;
+  /** Price tiers for the tier-superlative check. Defaults from seed. */
+  priceTiers?: PriceTier[];
+  /** MOI sellers/buyers thresholds. Defaults from seed. */
+  moiThresholds?: MoiThresholds;
+  /** Per-class high-end MOI-exception floors. Defaults from seed. */
+  moiHighEndExceptionFloor?: MoiHighEndExceptionFloor;
+}
+
+/** "$1.5M", "$800K", "$300K" — compact currency for prompt prose. */
+function fmtMoney(n: number): string {
+  if (n >= 1_000_000) {
+    const m = n / 1_000_000;
+    return `$${Number.isInteger(m) ? m : Number(m.toFixed(2))}M`;
+  }
+  if (n >= 1_000) {
+    const k = n / 1_000;
+    return `$${Number.isInteger(k) ? k : Number(k.toFixed(1))}K`;
+  }
+  return `$${n}`;
+}
+
+function buildStatusCodesBlock(codes: StatusCode[]): string {
+  return codes
+    .map((c) => `- **${c.label}** — ${c.note ?? ""}`.trimEnd())
+    .join("\n");
+}
+
+function buildPropertyTypeBlock(
+  vocab: PropertyTypeVocab,
+  dataSystem: string,
+): string {
+  const types = vocab.types.map((t) => `\`${t}\``).join(", ");
+  const head = `${dataSystem} strings present in the data: ${types}.`;
+  return vocab.mergeRule ? `${head}\n\n- ${vocab.mergeRule}` : head;
+}
+
+function buildMoiThresholdsBlock(moi: MoiThresholds): string {
+  const { sellers, buyers } = moi;
+  return [
+    `- **Below ${sellers} MOI → "sellers"** — Seller has leverage. Bidding wars plausible. Prices firm or rising. Buyer should expect competition.`,
+    `- **${sellers} to ${buyers} MOI → "balanced"** — Neither side has clear leverage. Prices stable. Negotiation possible but not extreme.`,
+    `- **Above ${buyers} MOI → "buyers"** — Buyer has leverage. Inventory soft. Prices flat or falling. Seller should price aggressively.`,
+  ].join("\n");
+}
+
+function buildPriceTierBandsBlock(
+  tiers: PriceTier[],
+  authority: string,
+): string {
+  let prev: number | null = null;
+  const parts = tiers.map((t) => {
+    let range: string;
+    if (prev == null) range = t.maxPrice == null ? "all prices" : `<${fmtMoney(t.maxPrice)}`;
+    else if (t.maxPrice == null) range = `${fmtMoney(prev)}+`;
+    else range = `${fmtMoney(prev)}–${fmtMoney(t.maxPrice)}`;
+    prev = t.maxPrice;
+    return `${t.name} (${range})`;
+  });
+  return `${authority}'s published market splits across these price tiers: ${parts.join(
+    ", ",
+  )}. Use these brackets when checking superlative claims, even if the FL aggregates differently for headline use.`;
 }
 
 /**
  * Resolve the market-agnostic Fact Validator system prompt for a given member's
- * market. Substitutes the Calgary-specific identity / data-system / published-
- * stats-authority tokens in the template with the member's MarketConfig values.
+ * market. Two layers of substitution:
  *
- * Order matters:
- *   1. the full identity sentence (it contains "Calgary", so it must be swapped
- *      before the bare "Calgary" replacement runs),
- *   2. "Pillar 9" → mlsSource (data-system references),
- *   3. "creb.com" → "<source>'s published stats" (lowercase; done before the
- *      uppercase "CREB" pass so the URL is fully neutralised),
- *   4. "CREB" → mlsSource (uppercase prose only — lowercase `creb_*` JSON keys
- *      are untouched),
- *   5. "Calgary" → marketName (worked-example + framing prose).
+ *   A. STRING TOKENS — the Calgary-specific identity / data-system / published-
+ *      stats-authority literals are replaced in order:
+ *        1. the full identity sentence (contains "Calgary", swapped first),
+ *        2. "Pillar 9" → mlsSource (DATA-SYSTEM references),
+ *        3. "creb.com" → "<authority>'s published stats" (lowercase, before the
+ *           uppercase "CREB" pass so the URL is fully neutralised),
+ *        4. "CREB" → sourceAuthority (uppercase prose only — lowercase `creb_*`
+ *           JSON keys are deliberately left intact for the parser),
+ *        5. "Calgary" → marketName (worked-example + framing prose).
  *
- * For a Calgary member with mlsSource "CREB" the CREB→CREB and Calgary→Calgary
- * passes are no-ops, so the resolved prompt is byte-identical to the original
- * (aside from the identity line) → no Calgary regression.
+ *   B. {{BLOCK}} TOKENS — status codes, property-type vocab, MOI thresholds,
+ *      high-end floors, and price-tier bands are generated from the member's
+ *      MarketConfig (falling back to per-source seed defaults).
+ *
+ * For a Calgary member the seed resolves to CREB defaults so the generated
+ * blocks reproduce the original Calgary semantics (2.5/4.0 MOI, $1.5M/$800K
+ * floors, Full-Duplex→Semi-Detached merge) → no Calgary regression. An NTREIS
+ * member instead sees Dallas/NTREIS identity and NTREIS status/property/tier
+ * vocab.
  */
 export function buildFactValidatorSystemPrompt(opts: FactValidatorPromptOpts): string {
+  const seed = resolveMarketDefaults(opts.mlsSource);
   const market = opts.marketName?.trim() || "your market";
-  const source = opts.mlsSource?.trim() || "your local MLS / real-estate board";
+  const dataSystem = opts.mlsSource?.trim() || "your local MLS data export";
+  const authority = opts.sourceAuthority?.trim() || seed.sourceAuthority;
+  const statusCodes = opts.statusCodes ?? seed.statusCodes;
+  const propertyTypeVocab = opts.propertyTypeVocab ?? seed.propertyTypeVocab;
+  const priceTiers = opts.priceTiers ?? seed.priceTiers;
+  const moiThresholds = opts.moiThresholds ?? seed.moiThresholds;
+  const floor = opts.moiHighEndExceptionFloor ?? seed.moiHighEndExceptionFloor;
+
   return FACT_VALIDATOR_TEMPLATE.replaceAll(
     "Chamberlain Real Estate Group, a Calgary real estate team led by Jared Chamberlain",
     `a ${market} real estate content team`,
   )
-    .replaceAll("Pillar 9", source)
-    .replaceAll("creb.com", `${source}'s published stats`)
-    .replaceAll("CREB", source)
-    .replaceAll("Calgary", market);
+    .replaceAll("Pillar 9", dataSystem)
+    .replaceAll("creb.com", `${authority}'s published stats`)
+    .replaceAll("CREB", authority)
+    .replaceAll("Calgary", market)
+    .replaceAll("{{MOI_THRESHOLDS}}", buildMoiThresholdsBlock(moiThresholds))
+    .replaceAll("{{HIGH_END_DETACHED}}", fmtMoney(floor.detached))
+    .replaceAll("{{HIGH_END_CONDO}}", fmtMoney(floor.condo))
+    .replaceAll("{{STATUS_CODES}}", buildStatusCodesBlock(statusCodes))
+    .replaceAll(
+      "{{PROPERTY_TYPE_VOCAB}}",
+      buildPropertyTypeBlock(propertyTypeVocab, dataSystem),
+    )
+    .replaceAll(
+      "{{PRICE_TIER_BANDS}}",
+      buildPriceTierBandsBlock(priceTiers, authority),
+    );
 }
   

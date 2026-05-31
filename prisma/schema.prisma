@@ -1825,6 +1825,17 @@ model MarketConfig {
   moiThresholds      Json?
   neighbourhoodVocab Json?
   highEndException   Json?
+  // Market-agnostic parameterization (replaces hardcoded Calgary/CREB knowledge
+  // in the Fact Validator prompt). Null = fall back to per-source seed defaults
+  // resolved from mlsSource (see MARKET_SOURCE_DEFAULTS in market-config.ts).
+  //   statusCodes:              StatusCode[]  — board MLS status-code vocab + canonical mapping
+  //   propertyTypeVocab:        { types: string[]; mergeRule?: string }
+  //   sourceAuthority:          published-board display name (e.g. "CREB", "NTREIS")
+  //   moiHighEndExceptionFloor: { detached: number; condo: number }
+  statusCodes              Json?
+  propertyTypeVocab        Json?
+  sourceAuthority          String?
+  moiHighEndExceptionFloor Json?
   keywordKit         Json?
   primaryAvatar      Json?
   subPersonas        Json?

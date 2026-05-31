@@ -181,14 +181,14 @@ const GROUPS_CHAR_BUDGET = 480_000;
 // budget directly so it self-limits to one call.
 const PER_CALL_GROUPS_CHAR_BUDGET = 100_000;
 
-// Max FACTS calls in flight at once. Removing the long-tail prune (T003) means
-// a wide market whose groups nearly all funnel into one chunk (e.g. NTREIS,
-// where most rows carry no propertyType so everything lands in `rollups`) now
-// fans out into many budget-sized sub-chunks instead of 1-2. Firing them all
+// Max FACTS calls in flight at once. Even after the smart coverage cap consolidates
+// the long tail, a wide market whose kept-head groups nearly all funnel into one
+// chunk (e.g. NTREIS, where most rows carry no propertyType so everything lands in
+// `rollups`) still fans out into several budget-sized sub-chunks. Firing them all
 // via an unbounded Promise.all storms Anthropic with 529 `overloaded_error`s
 // (the backoff comment in callValidator notes even 5 concurrent calls hit this)
 // and balloons peak memory from many simultaneous 64K-token streams. We cap the
-// fan-out here: full coverage is preserved (every sub-chunk still runs), we just
+// fan-out here: head coverage is preserved (every sub-chunk still runs), we just
 // run them in waves of this size. With the 1 SUMMARY+LEADS call running
 // alongside, total in-flight stays ~= the 5 the rest of the pipeline is tuned
 // for.
@@ -271,6 +271,9 @@ function formatGroupLine(g: AggregatedGroup): string {
   ];
   if (g.rollupNotes.length > 0) {
     parts.push(`  rollup_notes: ${g.rollupNotes.join(" | ")}`);
+  }
+  if (g.usageHint) {
+    parts.push(`  usage_hint: ${g.usageHint}`);
   }
   return parts.join("\n");
 }
@@ -562,7 +565,7 @@ function splitChunkByBudget(
   // core fix for the low fact-yield on wide markets: previously we pre-pruned
   // the small-sample long tail here (and again at serialize time), so most
   // neighbourhoods in a wide market (e.g. NTREIS Dallas) never reached the
-  // model and produced zero facts. Covering the whole long tail across N
+  // model and produced zero facts. Covering the kept head across N
   // parallel calls trades a few extra calls for the floor on facts/sold yield.
   const groups = chunk.groups;
   if (groups.length === 0) return [chunk];
@@ -597,6 +600,251 @@ function splitChunkByBudget(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Smart coverage cap (cost control)
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Full neighbourhood coverage is prohibitively expensive on wide markets: a
+// 25-month NTREIS backfill at one validator call per micro-neighbourhood ran
+// $325–500. Instead of validating every neighbourhood individually we keep the
+// HIGH-VOLUME head (the neighbourhoods that make up ~COVERAGE_TARGET of all sold
+// volume) at full per-neighbourhood granularity, and roll the LONG TAIL — many
+// tiny-volume neighbourhoods that together account for the remaining ~15% — into
+// a handful of synthetic (propertyType × priceTier) "All other neighbourhoods"
+// buckets. The tail still reaches the model (≈full sold coverage), but as a few
+// supporting-texture rollup rows instead of hundreds of individual calls.
+//
+// Two markets stress this differently. SPARSE markets (e.g. NTREIS/Dallas) have
+// thousands of micro-neighbourhoods, each with only a row or two — the head is
+// bounded by neighbourhood count. DENSE markets (e.g. CREB/Calgary) have few
+// neighbourhoods but pack many (propertyType × priceTier) groups into each, so
+// the real cost driver is the GROUP count fed to the validator, not the
+// neighbourhood count. We therefore cap on BOTH: neighbourhood count (for sparse
+// markets) AND total head detail-group count (for dense markets). Sparse markets
+// stay well under the detail-group ceiling and keep their full head unchanged.
+
+/** Fraction of total sold volume the kept (head) neighbourhoods must cover. */
+const COVERAGE_TARGET = 0.85;
+/** Never cap below this many individual neighbourhoods (protects small markets). */
+const MIN_KEPT_NEIGHBOURHOODS = 40;
+/** Never keep more than this many individual neighbourhoods (hard cost ceiling). */
+const MAX_KEPT_NEIGHBOURHOODS = 150;
+/**
+ * Hard ceiling on the number of granular (propertyType × priceTier) head groups
+ * fed to the validator. This is the dominant cost driver on dense markets: each
+ * detail group costs ~output tokens for one or more facts. Calgary at full head
+ * fed ~1,170 detail groups → $5.33; capping to this keeps it ≤$3 while sparse
+ * markets (≈380–410 detail groups) never reach the ceiling and are untouched.
+ */
+const MAX_HEAD_DETAIL_GROUPS = 550;
+
+/**
+ * Aggregate several AggregatedGroups into one synthetic group. Counts, MOI and
+ * failure rate are EXACT (sums; MOI uses sold-per-month = sold count, identical
+ * to the aggregator). Medians/ratios are SAMPLE-WEIGHTED APPROXIMATIONS (we no
+ * longer have the raw per-listing values to pool a true median), so the result
+ * is flagged usageHint = "supporting-texture-only". YoY / rolling / composition
+ * are dropped (null/false) because they can't be derived from sums.
+ */
+function aggregateGroups(
+  groups: AggregatedGroup[],
+  identity: { neighbourhood: string; propertyType: string | null; priceTier: string | null },
+): AggregatedGroup {
+  let active = 0, pending = 0, sold = 0, expired = 0, terminated = 0, withdrawn = 0;
+  for (const g of groups) {
+    active += g.activeCount;
+    pending += g.pendingCount;
+    sold += g.soldCount;
+    expired += g.expiredCount;
+    terminated += g.terminatedCount;
+    withdrawn += g.withdrawnCount;
+  }
+  // Sample-weighted mean of a per-group metric, weighting by that group's sold
+  // count (its sample size). Groups with a null metric contribute nothing.
+  const weighted = (pick: (g: AggregatedGroup) => number | null): number | null => {
+    let num = 0, den = 0;
+    for (const g of groups) {
+      const v = pick(g);
+      if (v == null) continue;
+      const w = Math.max(g.soldCount, 1);
+      num += v * w;
+      den += w;
+    }
+    return den > 0 ? num / den : null;
+  };
+  const failureDen = sold + expired + terminated + withdrawn;
+  const distinctHoods = new Set(groups.map((g) => g.neighbourhood)).size;
+  return {
+    neighbourhood: identity.neighbourhood,
+    propertyType: identity.propertyType,
+    priceTier: identity.priceTier,
+    sampleSize: sold,
+    activeCount: active,
+    pendingCount: pending,
+    soldCount: sold,
+    expiredCount: expired,
+    terminatedCount: terminated,
+    withdrawnCount: withdrawn,
+    moiStrict: sold > 0 ? active / sold : null,
+    moiInclusive: sold > 0 ? (active + pending) / sold : null,
+    medianPrice: weighted((g) => g.medianPrice),
+    medianSqft: weighted((g) => g.medianSqft),
+    psf: weighted((g) => g.psf),
+    domMedian: weighted((g) => g.domMedian),
+    domAverage: weighted((g) => g.domAverage),
+    spLpRatio: weighted((g) => g.spLpRatio),
+    failureRate:
+      failureDen > 0
+        ? ((expired + terminated + withdrawn) / failureDen) * 100
+        : null,
+    yoy: {
+      medianPriceDelta: null,
+      medianSqftDelta: null,
+      psfDelta: null,
+      moiStrictDelta: null,
+    },
+    rolling90d: { medianPrice: null, psf: null, moiStrict: null },
+    compositionShiftFlag: false,
+    rollupNotes: [
+      `Synthetic long-tail rollup of ${distinctHoods} low-volume neighbourhood(s) below the coverage cap. Counts/MOI/failure-rate are exact sums; medians are sample-weighted approximations; no YoY.`,
+    ],
+    usageHint: "supporting-texture-only",
+  };
+}
+
+/**
+ * Apply the smart coverage cap to the base chunks. Ranks neighbourhoods by sold
+ * volume (from the neighbourhood-overall cut), keeps the head that covers
+ * COVERAGE_TARGET of sold volume (bounded by MIN/MAX), keeps every "All
+ * Neighbourhoods" citywide anchor, and rolls the tail into synthetic buckets:
+ *   - in each property-type chunk: one bucket per priceTier present in the tail
+ *     (plus a null-tier overall bucket), all stamped "All other neighbourhoods";
+ *   - in the rollups chunk: one "All other neighbourhoods" overall bucket.
+ * Returns chunks unchanged when the market is small enough that the head would
+ * already include (almost) every neighbourhood.
+ */
+function applyCoverageCap(
+  baseChunks: FactsChunk[],
+  table: AggregatedTable,
+): { chunks: FactsChunk[]; keptCount: number; tailCount: number } {
+  // Rank neighbourhoods by sold volume using the neighbourhood-overall cut.
+  const nbhdSold = new Map<string, number>();
+  for (const g of table.groups) {
+    if (
+      g.neighbourhood !== "All Neighbourhoods" &&
+      g.propertyType === null &&
+      g.priceTier === null
+    ) {
+      nbhdSold.set(g.neighbourhood, g.soldCount);
+    }
+  }
+  const ranked = Array.from(nbhdSold.entries()).sort((a, b) => b[1] - a[1]);
+  const totalNbhds = ranked.length;
+  const totalSold = ranked.reduce((a, [, s]) => a + s, 0);
+
+  // Per-neighbourhood granular (propertyType × priceTier) group count. This —
+  // not raw neighbourhood count — is the dominant validator cost on dense
+  // markets, so we also cap the cumulative head detail-group count below.
+  const detailByNbhd = new Map<string, number>();
+  for (const g of table.groups) {
+    if (g.neighbourhood === "All Neighbourhoods") continue;
+    if (g.propertyType === null && g.priceTier === null) continue; // overall cut
+    detailByNbhd.set(g.neighbourhood, (detailByNbhd.get(g.neighbourhood) ?? 0) + 1);
+  }
+
+  // No cap needed when the market is small: keeping the head would already
+  // cover (nearly) all neighbourhoods, so leave chunks untouched.
+  if (totalNbhds <= MIN_KEPT_NEIGHBOURHOODS || totalSold <= 0) {
+    return { chunks: baseChunks, keptCount: totalNbhds, tailCount: 0 };
+  }
+
+  // Walk the ranking until cumulative sold reaches COVERAGE_TARGET, clamped to
+  // [MIN_KEPT, MAX_KEPT] neighbourhoods AND to MAX_HEAD_DETAIL_GROUPS granular
+  // groups (the dense-market cost ceiling). Both ceilings only bind once the
+  // MIN_KEPT floor is met.
+  let cum = 0;
+  let detail = 0;
+  let keptCount = 0;
+  for (const [n, s] of ranked) {
+    const d = detailByNbhd.get(n) ?? 0;
+    // Stop before exceeding the detail-group budget (dense markets).
+    if (keptCount >= MIN_KEPT_NEIGHBOURHOODS && detail + d > MAX_HEAD_DETAIL_GROUPS) {
+      break;
+    }
+    keptCount += 1;
+    cum += s;
+    detail += d;
+    if (cum / totalSold >= COVERAGE_TARGET && keptCount >= MIN_KEPT_NEIGHBOURHOODS) {
+      break;
+    }
+    if (keptCount >= MAX_KEPT_NEIGHBOURHOODS) break;
+  }
+  keptCount = Math.max(MIN_KEPT_NEIGHBOURHOODS, Math.min(keptCount, MAX_KEPT_NEIGHBOURHOODS));
+
+  // If the head ends up covering essentially everything, skip the cap.
+  if (keptCount >= totalNbhds) {
+    return { chunks: baseChunks, keptCount: totalNbhds, tailCount: 0 };
+  }
+
+  const keptSet = new Set(ranked.slice(0, keptCount).map(([n]) => n));
+  const tailCount = totalNbhds - keptCount;
+
+  const cappedChunks = baseChunks.map((chunk): FactsChunk => {
+    if (chunk.name === "rollups") {
+      // Keep all citywide anchors + kept-neighbourhood overalls. Roll the
+      // neighbourhood-overall tail (propertyType null) into one synthetic bucket.
+      const kept: AggregatedGroup[] = [];
+      const tail: AggregatedGroup[] = [];
+      for (const g of chunk.groups) {
+        if (g.neighbourhood === "All Neighbourhoods" || keptSet.has(g.neighbourhood)) {
+          kept.push(g);
+        } else if (g.propertyType === null && g.priceTier === null) {
+          tail.push(g);
+        }
+        // Other tail groups (rare safety-net types) are represented by the
+        // property-chunk rollups below; dropping them here avoids double count.
+      }
+      if (tail.length > 0) {
+        kept.push(
+          aggregateGroups(tail, {
+            neighbourhood: "All other neighbourhoods",
+            propertyType: null,
+            priceTier: null,
+          }),
+        );
+      }
+      return { ...chunk, groups: kept };
+    }
+
+    // Property-type chunk: keep the head neighbourhoods, bucket the tail by
+    // priceTier (string | null) into synthetic rollups.
+    const kept: AggregatedGroup[] = [];
+    const tailByTier = new Map<string | null, AggregatedGroup[]>();
+    for (const g of chunk.groups) {
+      if (keptSet.has(g.neighbourhood)) {
+        kept.push(g);
+        continue;
+      }
+      const tier = g.priceTier;
+      const arr = tailByTier.get(tier);
+      if (arr) arr.push(g);
+      else tailByTier.set(tier, [g]);
+    }
+    for (const [tier, tailGroups] of tailByTier.entries()) {
+      kept.push(
+        aggregateGroups(tailGroups, {
+          neighbourhood: "All other neighbourhoods",
+          propertyType: chunk.propertyTypeColumn,
+          priceTier: tier,
+        }),
+      );
+    }
+    return { ...chunk, groups: kept };
+  });
+
+  return { chunks: cappedChunks, keptCount, tailCount };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // User-message builders (one per call mode)
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -606,12 +854,18 @@ function buildFactsChunkMessage(
   priorFactsBlock: string,
   chunk: FactsChunk,
 ): string {
+  const hasRollupTail = chunk.groups.some((g) => g.usageHint);
   const modeMarker = [
     "=== MODE: FACTS_LIBRARY_ONLY ===",
     `Scope for this call: ${chunk.label}.`,
     "Emit ONLY the `## VALIDATED FACTS LIBRARY` section — a single ```json``` fenced code block containing a JSON array of fact objects.",
     "Do NOT emit `## SUMMARY` or `## STORY LEADS` in this call. Those are produced by a separate parallel call over the full dataset.",
     "Cover EVERY neighbourhood that appears in the GROUPS block below — do not curate which neighbourhoods to include. Apply the per-neighbourhood × metric-family classification rules from the system prompt to each one. Small-sample neighbourhoods are NOT to be skipped: emit a fact for them and classify it as supporting-texture-only (per the sample-size hygiene rules) rather than omitting it.",
+    ...(hasRollupTail
+      ? [
+          'Some GROUPS below carry `usage_hint: supporting-texture-only`. Each such group is the "All other neighbourhoods" bucket — a synthetic rollup of many low-volume neighbourhoods below the coverage cap. Its counts / MOI / failure-rate are exact sums, but its medians (price, sqft, psf, DOM, SP/LP) are SAMPLE-WEIGHTED APPROXIMATIONS, not true pooled medians, and it has no YoY. Emit facts for these buckets, but you MUST set `usageClass` to "supporting-texture-only" (never "headline-safe") and state in `usage_notes` that the value is a multi-neighbourhood rollup with approximate medians.',
+        ]
+      : []),
   ].join("\n");
   return [
     modeMarker,
@@ -1267,6 +1521,12 @@ export async function runValidation(uploadId: string): Promise<void> {
     const systemPrompt = buildFactValidatorSystemPrompt({
       marketName: configSnapshot.marketName,
       mlsSource: configSnapshot.mlsSource,
+      sourceAuthority: configSnapshot.sourceAuthority,
+      statusCodes: configSnapshot.statusCodes,
+      propertyTypeVocab: configSnapshot.propertyTypeVocab,
+      priceTiers: configSnapshot.priceTiers,
+      moiThresholds: configSnapshot.moiThresholds,
+      moiHighEndExceptionFloor: configSnapshot.moiHighEndExceptionFloor,
     });
 
     // Build the facts chunks + 1 summary/leads chunk. Each is an independent
@@ -1275,12 +1535,27 @@ export async function runValidation(uploadId: string): Promise<void> {
     // property-type slice + rollups, but very wide markets may split a slice
     // into several sub-chunks below, so the total call count is dynamic.
     const baseChunks = buildChunks(table.groups);
+    // Smart coverage cap (cost control): keep the high-volume head at full
+    // per-neighbourhood granularity and roll the long tail into a few synthetic
+    // supporting-texture buckets. This is what keeps a 25-month wide-market
+    // backfill affordable without dropping the tail entirely. Small markets
+    // (incl. Calgary's head) pass through largely unchanged → no fact-yield
+    // regression.
+    const capped = applyCoverageCap(baseChunks, table);
+    mdv("coverage.cap", uploadId, t0, {
+      keptNeighbourhoods: capped.keptCount,
+      tailNeighbourhoods: capped.tailCount,
+    });
+    console.log(
+      `[runValidation] coverage cap: kept=${capped.keptCount} tailRolled=${capped.tailCount}`,
+      uploadId,
+    );
     // Token-aware split: a single property-type slice for a very wide market
     // (e.g. NTREIS Dallas) can serialize past the 200K-token context window.
     // Expand any oversized base chunk into multiple parallel sub-chunks that
     // each fit PER_CALL_GROUPS_CHAR_BUDGET. Same name/propertyTypeColumn → the
     // merge step downstream is unchanged.
-    const chunks = baseChunks.flatMap((c) =>
+    const chunks = capped.chunks.flatMap((c) =>
       splitChunkByBudget(c, table, PER_CALL_GROUPS_CHAR_BUDGET),
     );
     const chunkLogStr = chunks.map((c) => `${c.name}=${c.groups.length}`).join(' ');

@@ -81,6 +81,17 @@ export interface AggregatedGroup {
 
   /** Roll-up note: "includes Full Duplex records merged into Semi-Detached". */
   rollupNotes: string[];
+
+  /**
+   * Set on SYNTHETIC long-tail rollup groups produced by the fact-validator's
+   * coverage cap (applyCoverageCap). These aggregate many low-volume
+   * neighbourhoods into a (propertyType × priceTier) bucket so the long tail is
+   * still represented without one validator call per micro-neighbourhood. When
+   * present the validator must classify the resulting facts as
+   * "supporting-texture-only" (never headline) — their medians are
+   * sample-weighted approximations, not true pooled medians.
+   */
+  usageHint?: "supporting-texture-only";
 }
 
 export interface AggregatedTable {
