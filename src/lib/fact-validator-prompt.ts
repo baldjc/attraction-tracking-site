@@ -1,14 +1,28 @@
-// Auto-generated wrapper around the verbatim contents of
-  // attached_assets/4_FACT_VALIDATOR_MODE_1779410592199.md (Wave 1 Phase 2A).
-  // Edit the source markdown, then re-run the regen step in this file's header
-  // to refresh — do NOT hand-edit the embedded string.
+// Market-agnostic Fact Validator system prompt.
   //
-  // This is shipped as a single template literal so it can be passed to the
-  // Anthropic SDK's system-prompt slot with cache_control: { type: "ephemeral" }
-  // enabled. Caching this constant is the cost-saving lever for the validator
-  // (~$1-2/call uncached vs ~$0.30/call cached steady-state).
+  // The base instructions below were originally authored verbatim for the
+  // Calgary / CREB / Pillar 9 market. They are now a TEMPLATE: the literal
+  // market identity ("Chamberlain Real Estate Group", "Jared Chamberlain",
+  // "Calgary"), the data system ("Pillar 9"), and the published-stats
+  // authority ("CREB" / "creb.com") are tokenised at build time from the
+  // member's MarketConfig (marketName + mlsSource) via
+  // buildFactValidatorSystemPrompt(). For the Calgary member whose mlsSource
+  // is "CREB"/"Pillar 9" the substitutions are effectively no-ops, so Calgary
+  // behaviour does not regress; other markets (e.g. NTREIS/Dallas) no longer
+  // inherit Calgary-specific framing that suppressed fact yield.
+  //
+  // Still shipped as a single template literal so the *resolved* string can be
+  // passed to the Anthropic SDK's system-prompt slot with
+  // cache_control: { type: "ephemeral" }. The cache key is the resolved text,
+  // so each market gets its own cache entry; within a single upload all 5
+  // calls share the same resolved string → cache write once, read 4×.
+  //
+  // IMPORTANT: lowercase `creb_*` substrings (creb_aligned, creb_delta_estimate,
+  // inventory_gap_with_creb) are JSON FIELD NAMES consumed by the parser / DB
+  // and MUST NOT change — token substitution only touches the uppercase prose
+  // token "CREB" and the literal "creb.com", never the lowercase keys.
 
-  export const FACT_VALIDATOR_SYSTEM_PROMPT = `# Fact Validator Mode — Full Instructions
+  const FACT_VALIDATOR_TEMPLATE = `# Fact Validator Mode — Full Instructions
 
 You are the Fact Validator for Chamberlain Real Estate Group, a Calgary real estate team led by Jared Chamberlain. You are STAGE 1 of a three-stage content pipeline:
 
@@ -422,6 +436,7 @@ JSON FORMATTING RULES (NON-NEGOTIABLE):
 RULES
 ================================================================
 
+- This validator is MARKET-AGNOSTIC. Apply every rule to the market named in the MARKET CONFIG block, not to any one city. Where the named data source / board does NOT publish a comparable metric (e.g. some boards don't publish failure rate, a tiered breakdown, or an average-DOM figure), fill the affected \`creb_aligned\` / \`creb_delta_estimate\` / \`viewer_caveat\` / \`inventory_gap_with_creb\` fields best-effort or "n/a" — NEVER drop, reject, or downgrade an otherwise-valid fact just because a cross-reference against the published authority is unavailable.
 - Process AND EMIT every fact. Output completeness is non-negotiable — see the OUTPUT COMPLETENESS section.
 - If a fact is missing fields, fill in what you can and write "MISSING" for the rest. Then classify based on what's there.
 - Do NOT invent metric values. If a number is ambiguous, mark "MISSING" and flag it in the summary.
@@ -595,4 +610,43 @@ And the SUMMARY section calls it out under MIX SHIFTS DETECTED so the user sees 
 
 That's the bar. Catch the mirage, label it plainly, expose both views where viewers will cross-check, send the cleaner facts forward.
 `;
+
+export interface FactValidatorPromptOpts {
+  /** MarketConfig.marketName, e.g. "Calgary", "Dallas–Fort Worth". */
+  marketName: string;
+  /** MarketConfig.mlsSource, e.g. "CREB", "Pillar 9", "NTREIS". */
+  mlsSource: string;
+}
+
+/**
+ * Resolve the market-agnostic Fact Validator system prompt for a given member's
+ * market. Substitutes the Calgary-specific identity / data-system / published-
+ * stats-authority tokens in the template with the member's MarketConfig values.
+ *
+ * Order matters:
+ *   1. the full identity sentence (it contains "Calgary", so it must be swapped
+ *      before the bare "Calgary" replacement runs),
+ *   2. "Pillar 9" → mlsSource (data-system references),
+ *   3. "creb.com" → "<source>'s published stats" (lowercase; done before the
+ *      uppercase "CREB" pass so the URL is fully neutralised),
+ *   4. "CREB" → mlsSource (uppercase prose only — lowercase `creb_*` JSON keys
+ *      are untouched),
+ *   5. "Calgary" → marketName (worked-example + framing prose).
+ *
+ * For a Calgary member with mlsSource "CREB" the CREB→CREB and Calgary→Calgary
+ * passes are no-ops, so the resolved prompt is byte-identical to the original
+ * (aside from the identity line) → no Calgary regression.
+ */
+export function buildFactValidatorSystemPrompt(opts: FactValidatorPromptOpts): string {
+  const market = opts.marketName?.trim() || "your market";
+  const source = opts.mlsSource?.trim() || "your local MLS / real-estate board";
+  return FACT_VALIDATOR_TEMPLATE.replaceAll(
+    "Chamberlain Real Estate Group, a Calgary real estate team led by Jared Chamberlain",
+    `a ${market} real estate content team`,
+  )
+    .replaceAll("Pillar 9", source)
+    .replaceAll("creb.com", `${source}'s published stats`)
+    .replaceAll("CREB", source)
+    .replaceAll("Calgary", market);
+}
   

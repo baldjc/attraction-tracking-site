@@ -1864,6 +1864,7 @@ model MarketDataUpload {
   uploadedAt        DateTime         @default(now())
   validatedAt       DateTime?
   validationCostUsd Float?
+  factYieldPct      Float?
   validationError   String?          @db.Text
   rawValidatorOutput String?         @db.Text
   retryCount        Int              @default(0)

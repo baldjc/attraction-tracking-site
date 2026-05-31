@@ -26,7 +26,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import Decimal from "decimal.js-light";
 import prisma from "@/lib/prisma";
 import { Prisma } from "@/generated/prisma/client";
-import { FACT_VALIDATOR_SYSTEM_PROMPT } from "@/lib/fact-validator-prompt";
+import { buildFactValidatorSystemPrompt } from "@/lib/fact-validator-prompt";
 import {
   aggregateUploadFromDb,
   type AggregatedTable,
@@ -181,6 +181,43 @@ const GROUPS_CHAR_BUDGET = 480_000;
 // budget directly so it self-limits to one call.
 const PER_CALL_GROUPS_CHAR_BUDGET = 100_000;
 
+// Max FACTS calls in flight at once. Removing the long-tail prune (T003) means
+// a wide market whose groups nearly all funnel into one chunk (e.g. NTREIS,
+// where most rows carry no propertyType so everything lands in `rollups`) now
+// fans out into many budget-sized sub-chunks instead of 1-2. Firing them all
+// via an unbounded Promise.all storms Anthropic with 529 `overloaded_error`s
+// (the backoff comment in callValidator notes even 5 concurrent calls hit this)
+// and balloons peak memory from many simultaneous 64K-token streams. We cap the
+// fan-out here: full coverage is preserved (every sub-chunk still runs), we just
+// run them in waves of this size. With the 1 SUMMARY+LEADS call running
+// alongside, total in-flight stays ~= the 5 the rest of the pipeline is tuned
+// for.
+const FACT_CALL_CONCURRENCY = 4;
+
+/**
+ * Map over `items` running at most `limit` async tasks concurrently, preserving
+ * input order in the results array. Used to bound the FACTS-call fan-out so a
+ * wide market doesn't fire dozens of Anthropic calls simultaneously.
+ */
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T, index: number) => Promise<R>,
+): Promise<R[]> {
+  const results = new Array<R>(items.length);
+  let next = 0;
+  const workerCount = Math.max(1, Math.min(limit, items.length));
+  const worker = async (): Promise<void> => {
+    while (true) {
+      const i = next++;
+      if (i >= items.length) return;
+      results[i] = await fn(items[i], i);
+    }
+  };
+  await Promise.all(Array.from({ length: workerCount }, () => worker()));
+  return results;
+}
+
 /**
  * Sample-size thresholds for low-signal group filtering, scaled to market
  * size. Big-metro uploads (Dallas, Toronto, etc.) blow past 12-15K rows and
@@ -242,13 +279,30 @@ function selectGroupsForSerialization(
   groups: AggregatedGroup[],
   rowCount: number,
   charBudget: number = GROUPS_CHAR_BUDGET,
+  prune: boolean = true,
 ): { kept: AggregatedGroup[]; threshold: number; droppedCount: number } {
+  // FACTS path (prune=false): the caller has already packed these groups to fit
+  // `charBudget` (see splitChunkByBudget), so we must NOT drop the small-sample
+  // long tail — that pruning is exactly what starved wide markets (e.g. NTREIS)
+  // of facts. Keep every group when it fits; only fall through to the bounded
+  // last-resort below if a batch somehow overruns (defensive — shouldn't happen
+  // because batches are pre-sized).
+  if (!prune) {
+    const allChars = groups.reduce((a, g) => a + formatGroupLine(g).length + 1, 0);
+    if (allChars <= charBudget) {
+      return { kept: groups, threshold: 0, droppedCount: 0 };
+    }
+    // else: fall through to the deterministic budget-bounded last resort.
+  }
+
   // Always keep rollups. Among non-rollups, drop low-signal groups using an
   // iteratively-escalating sample-size threshold until total serialized chars
   // fit within budget. Calgary uploads commonly produce ~2000 raw groups; the
   // n≥5 cut typically gets it down to ~200-400 groups (<300K chars).
   // Big-market rowCount auto-raises the starting floor (see
   // getMinSampleThresholds) so Dallas/Toronto don't waste a pass at n=5.
+  // (prune=true is the SUMMARY+LEADS path, which is a single call and cannot be
+  // split, so it must self-limit by dropping low-signal groups.)
   const rollups = groups.filter(isRollupGroup);
   const segmented = groups.filter((g) => !isRollupGroup(g));
   const rollupChars = rollups.reduce((a, g) => a + formatGroupLine(g).length + 1, 0);
@@ -313,6 +367,7 @@ function serializeTable(
   groupSubset?: AggregatedGroup[],
   chunkLabel?: string,
   charBudget: number = GROUPS_CHAR_BUDGET,
+  prune: boolean = true,
 ): string {
   // When `groupSubset` is provided we serialize only that slice (chunked-mode).
   // Otherwise we use the whole table (legacy single-call path / SUMMARY+LEADS).
@@ -321,6 +376,7 @@ function serializeTable(
     sourceGroups,
     table.meta.totalRowsParsed,
     charBudget,
+    prune,
   );
 
   const meta = table.meta;
@@ -501,18 +557,24 @@ function splitChunkByBudget(
   table: AggregatedTable,
   charBudget: number,
 ): FactsChunk[] {
-  const { kept } = selectGroupsForSerialization(
-    chunk.groups,
-    table.meta.totalRowsParsed,
-    charBudget,
-  );
-  if (kept.length === 0) return [chunk];
+  // Pack ALL groups in this chunk (NO sample-size pruning) into budget-bounded
+  // batches, each of which becomes its own parallel validator call. This is the
+  // core fix for the low fact-yield on wide markets: previously we pre-pruned
+  // the small-sample long tail here (and again at serialize time), so most
+  // neighbourhoods in a wide market (e.g. NTREIS Dallas) never reached the
+  // model and produced zero facts. Covering the whole long tail across N
+  // parallel calls trades a few extra calls for the floor on facts/sold yield.
+  const groups = chunk.groups;
+  if (groups.length === 0) return [chunk];
 
   const batches: AggregatedGroup[][] = [];
   let current: AggregatedGroup[] = [];
   let currentChars = 0;
-  for (const g of kept) {
+  for (const g of groups) {
     const len = formatGroupLine(g).length + 1;
+    // Start a new batch when adding this group would overflow the budget — but
+    // never emit an empty batch (a single group larger than the budget still
+    // gets its own batch rather than being dropped).
     if (current.length > 0 && currentChars + len > charBudget) {
       batches.push(current);
       current = [];
@@ -524,14 +586,13 @@ function splitChunkByBudget(
   if (current.length > 0) batches.push(current);
 
   if (batches.length <= 1) {
-    // Fits in one call — hand back the pre-selected groups so we don't re-run
-    // selection (and risk dropping more) at serialize time.
-    return [{ ...chunk, groups: kept }];
+    // Fits in one call — hand back all groups unpruned.
+    return [{ ...chunk, groups }];
   }
-  return batches.map((groups, i) => ({
+  return batches.map((batchGroups, i) => ({
     ...chunk,
     label: `${chunk.label} — part ${i + 1} of ${batches.length}`,
-    groups,
+    groups: batchGroups,
   }));
 }
 
@@ -550,12 +611,14 @@ function buildFactsChunkMessage(
     `Scope for this call: ${chunk.label}.`,
     "Emit ONLY the `## VALIDATED FACTS LIBRARY` section — a single ```json``` fenced code block containing a JSON array of fact objects.",
     "Do NOT emit `## SUMMARY` or `## STORY LEADS` in this call. Those are produced by a separate parallel call over the full dataset.",
-    "Cover EVERY neighbourhood that appears in the GROUPS block below — do not curate which neighbourhoods to include. Apply the per-neighbourhood × metric-family classification rules from the system prompt to each one.",
+    "Cover EVERY neighbourhood that appears in the GROUPS block below — do not curate which neighbourhoods to include. Apply the per-neighbourhood × metric-family classification rules from the system prompt to each one. Small-sample neighbourhoods are NOT to be skipped: emit a fact for them and classify it as supporting-texture-only (per the sample-size hygiene rules) rather than omitting it.",
   ].join("\n");
   return [
     modeMarker,
     "",
-    serializeTable(table, chunk.groups, chunk.label),
+    // prune=false: every group in this (already budget-sized) chunk is
+    // serialized — the long tail is covered, never silently dropped.
+    serializeTable(table, chunk.groups, chunk.label, GROUPS_CHAR_BUDGET, false),
     "",
     serializeConfig(config),
     "",
@@ -656,11 +719,12 @@ interface AnthropicCall {
  * retried — those need a real fix, not a re-fire.
  */
 async function callValidatorWithStreamCutRetry(
+  systemPrompt: string,
   userMessage: string,
   retryNote?: string,
 ): Promise<AnthropicCall> {
   try {
-    return await callValidator(userMessage, retryNote);
+    return await callValidator(systemPrompt, userMessage, retryNote);
   } catch (err) {
     const e = err as { status?: number; name?: string; message?: string };
     const msg = e?.message ?? String(err);
@@ -681,21 +745,24 @@ async function callValidatorWithStreamCutRetry(
       `[callValidator] one-shot retry after stream cut: ${msg.slice(0, 200)}`,
     );
     await new Promise((r) => setTimeout(r, 2_000));
-    return await callValidator(userMessage, retryNote);
+    return await callValidator(systemPrompt, userMessage, retryNote);
   }
 }
 
 async function callValidator(
+  systemPrompt: string,
   userMessage: string,
   retryNote?: string,
 ): Promise<AnthropicCall> {
   // Anthropic SDK types: cache_control isn't typed on all message variants,
   // so we cast the system block to `any` to attach it. The HTTP wire format
-  // accepts it identically.
+  // accepts it identically. `systemPrompt` is the market-resolved Fact Validator
+  // prompt, built once per upload in runValidation so all calls share the same
+  // string → the ephemeral prompt cache is written once and read by the rest.
   const systemBlocks = [
     {
       type: "text",
-      text: FACT_VALIDATOR_SYSTEM_PROMPT,
+      text: systemPrompt,
       cache_control: { type: "ephemeral" as const },
     },
   ];
@@ -789,7 +856,7 @@ async function callValidator(
     // explicit system-prompt estimate from its actual length (not a flat
     // constant), plus 2K for retryNote / wire overhead. Used only when
     // count_tokens itself fails — rare, but the estimate must not undershoot.
-    const systemPromptEst = Math.ceil(FACT_VALIDATOR_SYSTEM_PROMPT.length / 3);
+    const systemPromptEst = Math.ceil(systemPrompt.length / 3);
     inputTokenEstimate =
       Math.ceil(userMessage.length / 2) + systemPromptEst + 2_000;
     console.warn(
@@ -970,6 +1037,7 @@ async function persistResults(
   costUsd: Decimal,
   inputTokens: number,
   outputTokens: number,
+  factYieldPct: number,
 ): Promise<void> {
   const allFactRows = factsBundles.flatMap((b) =>
     b.facts.map((f) => mapFactToPrisma(f, uploadId, userId, b.propertyTypeColumn)),
@@ -991,6 +1059,7 @@ async function persistResults(
         status: "validated",
         validatedAt: new Date(),
         validationCostUsd: costUsd.toNumber(),
+        factYieldPct,
         validationError: null,
       },
     });
@@ -1191,6 +1260,15 @@ export async function runValidation(uploadId: string): Promise<void> {
 
     const priorFactsBlock = await serializePriorFacts(userId, uploadId);
 
+    // Build the market-resolved system prompt ONCE so every call below shares
+    // an identical string → the ephemeral prompt cache is written by the first
+    // call and read by the other parallel calls. Calgary (mlsSource "CREB") is
+    // a near no-op; other markets get their name/board substituted in.
+    const systemPrompt = buildFactValidatorSystemPrompt({
+      marketName: configSnapshot.marketName,
+      mlsSource: configSnapshot.mlsSource,
+    });
+
     // Build the facts chunks + 1 summary/leads chunk. Each is an independent
     // Claude call sharing an identical system prompt → prompt cache is shared
     // (first call writes, subsequent reads). The base layout is one chunk per
@@ -1214,17 +1292,25 @@ export async function runValidation(uploadId: string): Promise<void> {
     });
     console.log('[runValidation] step: chunks built —', chunkLogStr, uploadId);
 
-    // 5 parallel calls.
-    const factCallPromises = chunks.map((chunk) => {
-      const msg = buildFactsChunkMessage(table, configSnapshot, priorFactsBlock, chunk);
-      mdv("validate.chunk.start", uploadId, t0, {
-        chunk: chunk.name,
-        groups: chunk.groups.length,
-        msgChars: msg.length,
-      });
-      console.log(`[runValidation] firing facts chunk=${chunk.name} msgLen=${msg.length} groups=${chunk.groups.length}`, uploadId);
-      return callValidatorWithStreamCutRetry(msg).then((c) => ({ chunk, call: c }));
-    });
+    // Fan out the FACTS calls with bounded concurrency (see
+    // FACT_CALL_CONCURRENCY). Each chunk still runs — coverage is unchanged —
+    // but we cap simultaneous in-flight calls so wide markets don't storm
+    // Anthropic with 529s or OOM on many concurrent 64K-token streams.
+    const factCallPromise = mapWithConcurrency(
+      chunks,
+      FACT_CALL_CONCURRENCY,
+      async (chunk) => {
+        const msg = buildFactsChunkMessage(table, configSnapshot, priorFactsBlock, chunk);
+        mdv("validate.chunk.start", uploadId, t0, {
+          chunk: chunk.name,
+          groups: chunk.groups.length,
+          msgChars: msg.length,
+        });
+        console.log(`[runValidation] firing facts chunk=${chunk.name} msgLen=${msg.length} groups=${chunk.groups.length}`, uploadId);
+        const call = await callValidatorWithStreamCutRetry(systemPrompt, msg);
+        return { chunk, call };
+      },
+    );
     const summaryCallPromise = (async () => {
       const msg = buildSummaryAndLeadsMessage(table, configSnapshot, priorFactsBlock);
       mdv("validate.chunk.start", uploadId, t0, {
@@ -1232,11 +1318,11 @@ export async function runValidation(uploadId: string): Promise<void> {
         msgChars: msg.length,
       });
       console.log(`[runValidation] firing summary+leads msgLen=${msg.length}`, uploadId);
-      return callValidatorWithStreamCutRetry(msg);
+      return callValidatorWithStreamCutRetry(systemPrompt, msg);
     })();
 
     const [factResults, summaryCall] = await Promise.all([
-      Promise.all(factCallPromises),
+      factCallPromise,
       summaryCallPromise,
     ]);
     const wallMs = Date.now() - t0;
@@ -1307,6 +1393,28 @@ export async function runValidation(uploadId: string): Promise<void> {
       uploadId,
     );
 
+    // Fact-yield floor: facts extracted per SOLD row. The contract is ≥10% of
+    // sold rows should yield a fact; below that the validator is starving the
+    // long tail and the upload's market data is effectively un-mined. We always
+    // log the yield as telemetry and persist it on the upload; below the floor
+    // we additionally emit an ERROR line so the deployment ERROR filter surfaces
+    // it. totalSold can be 0 for degenerate uploads — guard the division.
+    const FACT_YIELD_FLOOR = 0.1;
+    const totalSold = table.meta.totalSold;
+    const factYieldPct = totalSold > 0 ? totalFacts / totalSold : 0;
+    mdv("validation.fact_yield", uploadId, t0, {
+      totalFacts,
+      totalSold,
+      factYieldPct: Number(factYieldPct.toFixed(4)),
+    });
+    if (totalSold > 0 && factYieldPct < FACT_YIELD_FLOOR) {
+      console.error(
+        `[mdv telemetry] phase=validation.low_fact_yield uploadId=${uploadId} totalFacts=${totalFacts} totalSold=${totalSold} factYieldPct=${(
+          factYieldPct * 100
+        ).toFixed(2)}% floor=${FACT_YIELD_FLOOR * 100}% — validator under-extracted; long-tail coverage or prompt may need review.`,
+      );
+    }
+
     // Cost guard (warn-only): log if we're materially over the ~$2.60 estimate.
     if (totalCost.toNumber() > 4) {
       console.warn(
@@ -1361,6 +1469,7 @@ export async function runValidation(uploadId: string): Promise<void> {
       totalCost,
       totalInputTokens,
       totalOutputTokens,
+      Number(factYieldPct.toFixed(4)),
     );
     mdv("db.write.complete", uploadId, t0);
     mdv("validation.complete", uploadId, t0, {

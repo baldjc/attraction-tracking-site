@@ -36,6 +36,7 @@ export async function GET(req: NextRequest) {
       validatedAt: true,
       validationError: true,
       validationCostUsd: true,
+      factYieldPct: true,
       retryCount: true,
     },
   });
@@ -59,6 +60,7 @@ export async function GET(req: NextRequest) {
     validatedAt: u.validatedAt ? u.validatedAt.toISOString() : null,
     validationError: u.validationError ?? null,
     validationCostUsd: u.validationCostUsd ?? null,
+    factYieldPct: u.factYieldPct ?? null,
     retryCount: u.retryCount,
     factsCount: countMap.get(u.id) ?? 0,
   }));
