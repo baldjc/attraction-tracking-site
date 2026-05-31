@@ -8,3 +8,4 @@
 - [Impersonation auth dual-behavior](impersonation-auth-dual-behavior.md) — admin API routes authorize while impersonating, but /member pages apply the member's own flags and can redirect the admin away.
 - [Column mapping validation](column-mapping-validation.md) — persisted CSV column mappings must be validated to known-keys/string-values at EVERY entry point, or preflight throws on mapped values.
 - [Member tree has no ToastProvider](member-tree-no-toastprovider.md) — useToast() throws in /member components (only admin layout mounts a provider); wrap the subtree locally or add it to the member shell.
+- [Deploy image size vs Turbopack cache](deploy-image-size-turbopack-cache.md) — autoscale publish fails ">8 GiB image" when the multi-GB `.next/dev` Turbopack cache ships; build script must `rm -rf .next/dev .next/cache` first.

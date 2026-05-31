@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "fuser -k 5000/tcp 2>/dev/null || true; sleep 0.5; next dev -p 5000 -H 0.0.0.0",
-    "build": "prisma generate && NODE_OPTIONS=--max-old-space-size=4096 next build",
+    "build": "rm -rf .next/dev .next/cache && prisma generate && NODE_OPTIONS=--max-old-space-size=4096 next build",
     "start": "next start -p 5000 -H 0.0.0.0",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
