@@ -15,6 +15,7 @@ export type UploadErrorCategory =
   | "file_too_large"
   | "context_overflow"
   | "cost_cap"
+  | "save_timeout"
   | "stream_interrupted"
   | "provider_overloaded"
   | "parse_error"
@@ -101,6 +102,31 @@ export function classifyUploadError(
     };
   }
 
+  // DB save timed out. The AI step already succeeded (and was already paid for);
+  // the failure is purely the database write blowing past Prisma's interactive
+  // transaction budget (P2028 "expired transaction" / "Transaction ... 5000 ms
+  // ... passed"). Re-validating reuses the stored AI output and re-tries only
+  // the save — at no additional AI cost — so this is NOT something the member
+  // should keep mashing Retry on; route to support, who can re-run persistence.
+  if (
+    /\bP2028\b|expired transaction|transaction.*\b\d{3,}\s*ms\b.*passed|transaction (?:was|already) (?:closed|expired)|transaction was 5000\s*ms/i.test(
+      err,
+    )
+  ) {
+    return {
+      category: "save_timeout",
+      title: "Your data was analyzed, but saving it timed out",
+      body:
+        "Your data is large enough that the save took longer than expected and " +
+        "timed out. The good news: the analysis already completed, so re-trying " +
+        "this upload will just re-save the results — at no additional cost. " +
+        "We've been notified; please contact support with this upload ID if it " +
+        "doesn't resolve shortly.",
+      canRetry: false,
+      nextAction: "contact_support",
+    };
+  }
+
   if (/cost cap reached|monthly AI|monthly cost cap|cost_cap/i.test(err)) {
     return {
       category: "cost_cap",
@@ -164,6 +190,7 @@ export const ERROR_CATEGORY_LABELS: Record<UploadErrorCategory, string> = {
   file_too_large: "File too large",
   context_overflow: "Context overflow",
   cost_cap: "Cost cap reached",
+  save_timeout: "Save timed out",
   stream_interrupted: "Stream interrupted",
   provider_overloaded: "Provider overloaded",
   parse_error: "Parse error",

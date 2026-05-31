@@ -4,4 +4,5 @@
 - [Script Builder identity guard](script-builder-identity-guard.md) — generated scripts can leak the house-style exemplar's identity; the no_other_member_identity validator rule must be fed identity inputs at every validateScript() caller or it's silently inert.
 - [Binge-title quote false positives](script-binge-quote-fp.md) — the binge_target_match "wrong quoted title" check must anchor on an explicit next-video cue; scripts quote viewer-thought dialogue heavily, so any-quote-near-next-video FPs on real scripts.
 - [Market fact validator](market-fact-validator.md) — validator cost is driven by detail-group count not neighbourhood count; parameterized prompt leakage rules + benchmark harness gotchas.
+- [Fact-validator persistence & tx budget](fact-validator-persistence-tx.md) — keep bulk fact/lead writes out of interactive tx (P2028), make persist an idempotent replace, never double-charge persistence-only retries.
 - [Impersonation auth dual-behavior](impersonation-auth-dual-behavior.md) — admin-only API routes authorize while impersonating (session role stays admin), but /member pages apply the member's own feature flags and can redirect the admin away.

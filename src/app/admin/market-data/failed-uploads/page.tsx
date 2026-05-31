@@ -37,6 +37,7 @@ const CATEGORY_ORDER: UploadErrorCategory[] = [
   "file_too_large",
   "context_overflow",
   "cost_cap",
+  "save_timeout",
   "stream_interrupted",
   "provider_overloaded",
   "parse_error",

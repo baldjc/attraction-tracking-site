@@ -48,10 +48,21 @@ export default async function MarketDataPage() {
     },
   });
 
+  // Lightweight companion query: which uploads have stored validator output.
+  // We deliberately DON'T select rawValidatorOutput in the main query above —
+  // it's a large blob — so we fetch just the ids of rows that have it and build
+  // a Set. Drives the "re-trying persistence only (no cost)" Regenerate copy.
+  const withRawRows = await prisma.marketDataUpload.findMany({
+    where: { userId: user.id, NOT: { rawValidatorOutput: null } },
+    select: { id: true },
+  });
+  const withRawSet = new Set(withRawRows.map((r) => r.id));
+
   const uploads = uploadsRaw.map(({ _count, ...rest }) => ({
     ...rest,
     factCount: _count.facts,
     storyLeadCount: _count.storyLeads,
+    hasValidatorOutput: withRawSet.has(rest.id),
   }));
 
   const hasColumnMapping =

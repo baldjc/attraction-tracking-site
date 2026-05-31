@@ -130,6 +130,14 @@ export async function POST(
       where: { uploadId: id },
     });
 
+    // Whether to wipe the stored AI output. A previously-FAILED upload may have
+    // succeeded at the AI step but died on the save (the P2028 timeout bug); in
+    // that case keep rawValidatorOutput so runValidation reuses it and re-tries
+    // only persistence — no second ~$2 AI charge. A previously-VALIDATED upload
+    // being re-validated is a deliberate full re-run (e.g. against an improved
+    // engine), so clear it and pay for a fresh AI pass.
+    const clearRawOutput = upload.status === "validated";
+
     await prisma.$transaction(async (tx) => {
       await tx.marketFact.deleteMany({ where: { uploadId: id } });
       await tx.aggregatedMetric.deleteMany({ where: { uploadId: id } });
@@ -141,7 +149,7 @@ export async function POST(
           validatedAt: null,
           validationError: null,
           validationCostUsd: null,
-          rawValidatorOutput: null,
+          ...(clearRawOutput ? { rawValidatorOutput: null } : {}),
         },
       });
     });

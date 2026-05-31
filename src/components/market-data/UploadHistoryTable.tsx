@@ -32,6 +32,10 @@ interface Row {
   retryCount?: number;
   factCount?: number;
   storyLeadCount?: number;
+  /** True when a prior AI pass already stored validator output on this upload.
+   *  When the upload also `failed`, a re-validate reuses that output and re-tries
+   *  only the DB save — no new AI cost. Drives the Regenerate modal copy. */
+  hasValidatorOutput?: boolean;
 }
 
 interface Props {
@@ -786,6 +790,10 @@ function RegenerateModal({
   onConfirm: () => void;
 }) {
   const factCount = row.factCount ?? 0;
+  // A failed upload that already has stored AI output succeeded at the (paid-for)
+  // AI step but died on the save. Re-validating reuses that output and re-tries
+  // only the DB write → no new AI cost. Any other case is a fresh full re-run.
+  const persistenceOnly = row.status === "failed" && !!row.hasValidatorOutput;
   return (
     <div
       role="dialog"
@@ -800,13 +808,21 @@ function RegenerateModal({
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
           Regenerate this upload?
         </h3>
-        <p className="mt-2 text-sm text-gray-700 dark:text-gray-300">
-          <span className="font-medium">{row.csvFileName}</span> will be
-          re-validated with the latest engine. Its current{" "}
-          {factCount.toLocaleString()} extracted{" "}
-          {factCount === 1 ? "fact" : "facts"} will be replaced, and this incurs
-          a new validation cost.
-        </p>
+        {persistenceOnly ? (
+          <p className="mt-2 text-sm text-gray-700 dark:text-gray-300">
+            The AI step already succeeded for{" "}
+            <span className="font-medium">{row.csvFileName}</span> — re-trying
+            persistence only (no additional cost). The previously analyzed
+            results will be saved without re-running the AI.
+          </p>
+        ) : (
+          <p className="mt-2 text-sm text-gray-700 dark:text-gray-300">
+            <span className="font-medium">{row.csvFileName}</span> will be
+            re-validated with the latest engine (re-running full validation,
+            ~$2–5 cost). Its current {factCount.toLocaleString()} extracted{" "}
+            {factCount === 1 ? "fact" : "facts"} will be replaced.
+          </p>
+        )}
         <div className="mt-5 flex flex-wrap items-center justify-end gap-2">
           <button
             type="button"

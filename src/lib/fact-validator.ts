@@ -504,6 +504,28 @@ function isDetachedType(pt: string): boolean {
 }
 
 /**
+ * Property-type label stamped onto every MarketFact row produced by a given
+ * chunk name. Single source of truth shared by buildChunks() (live validation)
+ * and reconstructFromRawValidatorOutput() (persistence-only retry, which
+ * rebuilds FactsBundles from a prior attempt's stored rawValidatorOutput
+ * WITHOUT re-running the AI). Keep these two in lockstep — if a chunk's
+ * property-type label changes here it must change for the reuse path too.
+ */
+function propertyTypeColumnForChunkName(name: string): string | null {
+  switch (name) {
+    case "detached":
+      return "Detached";
+    case "attached":
+      return "Semi-Detached";
+    case "apartment":
+      return "Apartment";
+    default:
+      // rollups + any unrecognized/safety-net chunk carry no property type.
+      return null;
+  }
+}
+
+/**
  * Partition the aggregator output into 4 disjoint chunks. Every group lands in
  * exactly one chunk:
  *   - rollups: neighbourhood === "All Neighbourhoods" OR propertyType === null
@@ -528,18 +550,18 @@ function buildChunks(groups: AggregatedGroup[]): FactsChunk[] {
     else rollups.push(g); // safety net for unrecognized types
   }
   return [
-    { name: "detached", label: "Detached (neighbourhood-level)", propertyTypeColumn: "Detached", groups: detached },
+    { name: "detached", label: "Detached (neighbourhood-level)", propertyTypeColumn: propertyTypeColumnForChunkName("detached"), groups: detached },
     {
       name: "attached",
       label: "Attached: Semi-Detached + Row/Townhouse + Full Duplex (neighbourhood-level)",
-      propertyTypeColumn: "Semi-Detached",
+      propertyTypeColumn: propertyTypeColumnForChunkName("attached"),
       groups: attached,
     },
-    { name: "apartment", label: "Apartment / Condo (neighbourhood-level)", propertyTypeColumn: "Apartment", groups: apartment },
+    { name: "apartment", label: "Apartment / Condo (neighbourhood-level)", propertyTypeColumn: propertyTypeColumnForChunkName("apartment"), groups: apartment },
     {
       name: "rollups",
       label: "Citywide rollups + per-neighbourhood overalls (across all property types)",
-      propertyTypeColumn: null,
+      propertyTypeColumn: propertyTypeColumnForChunkName("rollups"),
       groups: rollups,
     },
   ];
@@ -1283,6 +1305,48 @@ interface FactsBundle {
   propertyTypeColumn: string | null;
 }
 
+/**
+ * Persistence-only retry support. Rebuild the parsed FactsBundles + story leads
+ * from a prior attempt's stored `rawValidatorOutput`, WITHOUT calling the AI.
+ *
+ * runValidation persists the concatenated raw chunk texts BEFORE the DB write,
+ * in this exact shape (see the `concatenatedRaw` builder):
+ *   --- CHUNK DETACHED ---\n<text>\n\n--- CHUNK ATTACHED ---\n<text> ...
+ *   \n\n--- SUMMARY+LEADS ---\n<text>
+ * So when the AI step succeeded but the save failed (the P2028 bug), the blob is
+ * already on the row. We split on those headers, re-parse each segment with the
+ * same chunk parsers used live, and recover each chunk's property-type via
+ * propertyTypeColumnForChunkName — yielding identical FactsBundles to the
+ * original run at $0 AI cost.
+ */
+function reconstructFromRawValidatorOutput(raw: string): {
+  factsBundles: FactsBundle[];
+  storyLeads: ParsedStoryLead[];
+} {
+  const factsBundles: FactsBundle[] = [];
+  let storyLeads: ParsedStoryLead[] = [];
+  // Group 1 = chunk name (CHUNK <NAME>); undefined for the SUMMARY+LEADS header.
+  const headerRe = /^--- (?:CHUNK (\w+)|SUMMARY\+LEADS) ---$/gm;
+  const matches = [...raw.matchAll(headerRe)];
+  for (let i = 0; i < matches.length; i++) {
+    const m = matches[i];
+    const bodyStart = (m.index ?? 0) + m[0].length;
+    const bodyEnd =
+      i + 1 < matches.length ? (matches[i + 1].index ?? raw.length) : raw.length;
+    const body = raw.slice(bodyStart, bodyEnd).trim();
+    const chunkName = m[1];
+    if (chunkName === undefined) {
+      storyLeads = parseSummaryAndLeadsChunk(body).storyLeads;
+    } else {
+      factsBundles.push({
+        facts: parseFactsChunk(body),
+        propertyTypeColumn: propertyTypeColumnForChunkName(chunkName.toLowerCase()),
+      });
+    }
+  }
+  return { factsBundles, storyLeads };
+}
+
 async function persistResults(
   uploadId: string,
   userId: string,
@@ -1296,17 +1360,46 @@ async function persistResults(
   const allFactRows = factsBundles.flatMap((b) =>
     b.facts.map((f) => mapFactToPrisma(f, uploadId, userId, b.propertyTypeColumn)),
   );
+
+  // Idempotent replace. Because the bulk inserts below run OUTSIDE a transaction
+  // (see why immediately after), a persist that dies mid-way can leave facts/
+  // leads on the row while the upload stays "failed". Retries (member retry +
+  // admin re-validate, incl. the $0 reuse path) re-enter here — and MarketFact/
+  // MarketStoryLead carry no upload-scoped uniqueness — so without this clear a
+  // retry would APPEND a second copy and validate the upload with doubled
+  // counts. Deleting first makes every run a clean replace regardless of caller
+  // or how the prior attempt failed. (Admin re-validate also deletes up front;
+  // a second delete here is harmless.)
+  await prisma.marketFact.deleteMany({ where: { uploadId } });
+  await prisma.marketStoryLead.deleteMany({ where: { uploadId } });
+
+  // Bulk inserts run OUTSIDE any interactive transaction. For large markets
+  // (Phil's metros routinely yield 300-400+ facts) wrapping these in a single
+  // interactive transaction blew past Prisma's default 5s timeout and threw
+  // P2028 ("expired transaction") AFTER the ~$2 of AI work had already been
+  // spent — so every retry re-burned the cost and failed at the same wall.
+  // These bulk writes don't need to be atomic with the status flip: if a fact
+  // insert fails mid-batch the upload stays pre-"validated" and a re-validate
+  // simply re-writes them (cheap, and — when rawValidatorOutput is reused —
+  // with no new AI cost). createMany is a single statement, so it is not
+  // subject to the interactive-transaction budget.
+  if (allFactRows.length > 0) {
+    await prisma.marketFact.createMany({ data: allFactRows });
+  }
+  if (leads.length > 0) {
+    // createMany doesn't take Json fields cleanly on all providers — do
+    // individual creates for the small N (3-8 leads per validation).
+    for (const lead of leads) {
+      await prisma.marketStoryLead.create({ data: mapLeadToPrisma(lead, uploadId, userId) });
+    }
+  }
+
+  // Only the small, fast, must-be-atomic pair stays in a transaction: flip the
+  // upload to "validated" and record AI usage together so we never mark an
+  // upload validated without billing it (or vice-versa). On a persistence-only
+  // retry costUsd is 0 (no AI call was made) — skip the usage row so we don't
+  // double-charge for an upload whose AI step already succeeded earlier.
   await prisma.$transaction(async (tx) => {
-    if (allFactRows.length > 0) {
-      await tx.marketFact.createMany({ data: allFactRows });
-    }
-    if (leads.length > 0) {
-      // createMany doesn't take Json fields cleanly on all providers — do
-      // individual creates for the small N (3-8 leads per validation).
-      for (const lead of leads) {
-        await tx.marketStoryLead.create({ data: mapLeadToPrisma(lead, uploadId, userId) });
-      }
-    }
     await tx.marketDataUpload.update({
       where: { id: uploadId },
       data: {
@@ -1317,15 +1410,17 @@ async function persistResults(
         validationError: null,
       },
     });
-    await tx.aIToolUsage.create({
-      data: {
-        userId,
-        toolType: "fact_validator",
-        inputTokens,
-        outputTokens,
-        costUsd: costUsd.toString(),
-      },
-    });
+    if (costUsd.greaterThan(0)) {
+      await tx.aIToolUsage.create({
+        data: {
+          userId,
+          toolType: "fact_validator",
+          inputTokens,
+          outputTokens,
+          costUsd: costUsd.toString(),
+        },
+      });
+    }
   });
 }
 
@@ -1440,26 +1535,41 @@ export async function runValidation(uploadId: string): Promise<void> {
   // Resolve userId first (cheap) so we can run cost-cap BEFORE any heavy work.
   const upload = await prisma.marketDataUpload.findUnique({
     where: { id: uploadId },
-    select: { id: true, userId: true, status: true },
+    select: { id: true, userId: true, status: true, rawValidatorOutput: true },
   });
   if (!upload) throw new Error(`Upload ${uploadId} not found`);
 
   // Idempotency: a validated upload should not be re-run by accident.
   if (upload.status === "validated") return;
 
+  // Persistence-only retry: if a prior attempt already produced validator
+  // output (the AI step succeeded but the save died — the P2028 bug), reuse
+  // that stored output and skip the AI calls entirely. This is what keeps Phil
+  // from being charged ~$2 again on every retry of an upload that already paid
+  // for its AI pass. The admin re-validate route clears rawValidatorOutput when
+  // it wants a genuine full re-run (e.g. re-validating an already-`validated`
+  // upload against an improved engine), so a populated blob here unambiguously
+  // means "reuse it".
+  const priorRaw = upload.rawValidatorOutput?.trim() ?? "";
+  const reuseAiOutput = priorRaw.length > 0;
+
   try {
-    // Cost cap FIRST. Don't even aggregate if we're hard-blocked.
-    const cap = await getCostCapStatus(upload.userId);
-    if (cap.hardBlocked) {
-      await prisma.marketDataUpload.update({
-        where: { id: uploadId },
-        data: {
-          status: "failed",
-          validationError:
-            "Monthly AI cost cap reached. Validation paused — try again next month, or contact admin if you need a higher cap.",
-        },
-      });
-      return;
+    // Cost cap FIRST. Don't even aggregate if we're hard-blocked. Skipped on a
+    // persistence-only retry — there is no AI spend to cap, and a member at
+    // their cap must still be able to recover an upload that already paid.
+    if (!reuseAiOutput) {
+      const cap = await getCostCapStatus(upload.userId);
+      if (cap.hardBlocked) {
+        await prisma.marketDataUpload.update({
+          where: { id: uploadId },
+          data: {
+            status: "failed",
+            validationError:
+              "Monthly AI cost cap reached. Validation paused — try again next month, or contact admin if you need a higher cap.",
+          },
+        });
+        return;
+      }
     }
 
     await markUploadValidating(uploadId);
@@ -1512,6 +1622,42 @@ export async function runValidation(uploadId: string): Promise<void> {
       );
     }
 
+    // Two paths converge on the same persist tail below. Both populate these
+    // accumulators: the full-AI path from live Claude calls, the reuse path
+    // from a prior attempt's stored output (no AI cost).
+    let factsBundles: FactsBundle[];
+    let storyLeads: ParsedStoryLead[];
+    let totalCost: Decimal;
+    let totalInputTokens: number;
+    let totalOutputTokens: number;
+    let wallMs: number;
+    // Raw validator text used only for the "no parseable output" failure detail.
+    let rawForDebug: string;
+
+    if (reuseAiOutput) {
+      // Persistence-only retry: rebuild facts + leads from the already-paid-for
+      // AI output stored on the upload. Skips every Claude call → $0 cost. This
+      // is the path that stops re-charging Phil for an upload whose AI step
+      // already succeeded but whose save died on the old P2028 transaction bug.
+      const reconstructed = reconstructFromRawValidatorOutput(priorRaw);
+      factsBundles = reconstructed.factsBundles;
+      storyLeads = reconstructed.storyLeads;
+      totalCost = new Decimal(0);
+      totalInputTokens = 0;
+      totalOutputTokens = 0;
+      wallMs = Date.now() - t0;
+      rawForDebug = priorRaw;
+      const reusedFacts = factsBundles.reduce((a, b) => a + b.facts.length, 0);
+      mdv("validate.reuse_prior_output", uploadId, t0, {
+        facts: reusedFacts,
+        leads: storyLeads.length,
+        rawChars: priorRaw.length,
+      });
+      console.log(
+        `[runValidation] step: REUSED prior validator output — facts=${reusedFacts} leads=${storyLeads.length} rawChars=${priorRaw.length} (no AI cost)`,
+        uploadId,
+      );
+    } else {
     const priorFactsBlock = await serializePriorFacts(userId, uploadId);
 
     // Build the market-resolved system prompt ONCE so every call below shares
@@ -1600,12 +1746,12 @@ export async function runValidation(uploadId: string): Promise<void> {
       factCallPromise,
       summaryCallPromise,
     ]);
-    const wallMs = Date.now() - t0;
+    wallMs = Date.now() - t0;
     mdv("validate.all_calls_returned", uploadId, t0, { wallMs });
     console.log(`[runValidation] step: all ${chunks.length + 1} calls returned in ${wallMs}ms`, uploadId);
 
     // Parse each chunk + merge.
-    const factsBundles: FactsBundle[] = factResults.map(({ chunk, call }) => {
+    factsBundles = factResults.map(({ chunk, call }) => {
       const facts = parseFactsChunk(call.text);
       mdv("validate.chunk.complete", uploadId, t0, {
         chunk: chunk.name,
@@ -1622,7 +1768,9 @@ export async function runValidation(uploadId: string): Promise<void> {
       );
       return { facts, propertyTypeColumn: chunk.propertyTypeColumn };
     });
-    const { summary, storyLeads } = parseSummaryAndLeadsChunk(summaryCall.text);
+    const parsedSummary = parseSummaryAndLeadsChunk(summaryCall.text);
+    const summary = parsedSummary.summary;
+    storyLeads = parsedSummary.storyLeads;
     mdv("validate.chunk.complete", uploadId, t0, {
       chunk: "summary+leads",
       leads: storyLeads.length,
@@ -1645,16 +1793,19 @@ export async function runValidation(uploadId: string): Promise<void> {
       ),
       `--- SUMMARY+LEADS ---\n${summaryCall.text}`,
     ].join('\n\n');
+    rawForDebug = concatenatedRaw;
     await persistRawValidatorOutput(uploadId, concatenatedRaw);
 
     // Roll up cost + token counters across all 5 calls.
-    const totalCost = factResults
+    totalCost = factResults
       .reduce((acc, { call }) => acc.add(call.costUsd), new Decimal(0))
       .add(summaryCall.costUsd);
-    const totalInputTokens =
+    totalInputTokens =
       factResults.reduce((a, { call }) => a + call.inputTokens, 0) + summaryCall.inputTokens;
-    const totalOutputTokens =
+    totalOutputTokens =
       factResults.reduce((a, { call }) => a + call.outputTokens, 0) + summaryCall.outputTokens;
+    } // end full-AI validation branch
+
     const totalFacts = factsBundles.reduce((a, b) => a + b.facts.length, 0);
     mdv("parse.complete", uploadId, t0, {
       totalFacts,
@@ -1710,25 +1861,23 @@ export async function runValidation(uploadId: string): Promise<void> {
           status: "failed",
           validationCostUsd: totalCost.toNumber(),
           validationError:
-            `All 5 chunked validator calls returned no parseable facts or story leads.\n\n` +
-            factResults
-              .map(
-                ({ chunk, call }) =>
-                  `--- CHUNK ${chunk.name.toUpperCase()} (first 1500 chars) ---\n${call.text.slice(0, 1500)}`,
-              )
-              .join('\n\n')
-              .slice(0, 8000),
+            `The validator returned no parseable facts or story leads.\n\n` +
+            `--- RAW VALIDATOR OUTPUT (first 8000 chars) ---\n${rawForDebug.slice(0, 8000)}`,
         },
       });
-      await prisma.aIToolUsage.create({
-        data: {
-          userId,
-          toolType: "fact_validator",
-          inputTokens: totalInputTokens,
-          outputTokens: totalOutputTokens,
-          costUsd: totalCost.toString(),
-        },
-      });
+      // Only bill when this attempt actually made AI calls. A persistence-only
+      // reuse run has totalCost 0 and must not write a usage row.
+      if (totalCost.greaterThan(0)) {
+        await prisma.aIToolUsage.create({
+          data: {
+            userId,
+            toolType: "fact_validator",
+            inputTokens: totalInputTokens,
+            outputTokens: totalOutputTokens,
+            costUsd: totalCost.toString(),
+          },
+        });
+      }
       return;
     }
 

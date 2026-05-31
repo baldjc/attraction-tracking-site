@@ -55,6 +55,18 @@ export async function GET(
     storyLeadCount = l;
   }
 
+  // Whether a prior AI pass left validator output on the row. Only relevant for
+  // failed uploads (drives the persistence-only Regenerate copy), so we only pay
+  // for the check then. `count` with a NOT-null filter returns 0/1 WITHOUT
+  // loading the large rawValidatorOutput blob.
+  let hasValidatorOutput = false;
+  if (upload.status === "failed") {
+    const n = await prisma.marketDataUpload.count({
+      where: { id, NOT: { rawValidatorOutput: null } },
+    });
+    hasValidatorOutput = n > 0;
+  }
+
   return Response.json({
     id: upload.id,
     label: upload.label,
@@ -68,6 +80,7 @@ export async function GET(
     retryCount: upload.retryCount,
     factCount,
     storyLeadCount,
+    hasValidatorOutput,
   });
 }
 
