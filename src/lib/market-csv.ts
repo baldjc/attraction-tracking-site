@@ -304,8 +304,11 @@ export function runPreflight(
   const mappedHeaderFor = (field: string): string | undefined => {
     const key = PREFLIGHT_FIELD_TO_MAPPING[field];
     const raw = key ? columnMapping?.[key] : undefined;
-    const norm = raw?.toLowerCase().trim();
-    return norm && norm.length > 0 ? norm : undefined;
+    // Defensive: legacy/bad DB JSON may hold non-string values; ignore them
+    // rather than throwing on .toLowerCase().
+    if (typeof raw !== "string") return undefined;
+    const norm = raw.toLowerCase().trim();
+    return norm.length > 0 ? norm : undefined;
   };
 
   // 1. Required columns. A field is satisfied when the member's saved mapping

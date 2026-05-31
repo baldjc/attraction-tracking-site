@@ -4,6 +4,7 @@ import { Prisma } from "@/generated/prisma/client";
 import {
   emptyMarketConfig,
   toShape,
+  validateColumnMapping,
   type MarketConfigShape,
 } from "@/lib/market-config";
 import { requireMarketAccess } from "@/lib/market-config-server";
@@ -101,6 +102,17 @@ export async function PATCH(req: NextRequest) {
   if ("priceTiers" in body) data.priceTiers = body.priceTiers ?? null;
   if ("moiThresholds" in body) data.moiThresholds = body.moiThresholds ?? null;
   if ("highEndException" in body) data.highEndException = body.highEndException ?? null;
+  if ("columnMapping" in body) {
+    // Strictly validate: only known field keys with string header values may be
+    // persisted. This prevents malformed JSON from breaking later preflight runs
+    // (which read mapped values as strings). The interactive mapper enforces
+    // required fields client-side; the upload route re-checks at submit time.
+    const result = validateColumnMapping(body.columnMapping);
+    if (!result.ok) {
+      return Response.json({ error: result.error }, { status: 400 });
+    }
+    data.columnMapping = result.mapping;
+  }
   if ("teamYearsInBusiness" in body)
     data.teamYearsInBusiness = coerceInt(body.teamYearsInBusiness);
   if ("teamFamiliesHelped" in body)

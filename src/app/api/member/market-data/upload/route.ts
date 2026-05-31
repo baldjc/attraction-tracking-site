@@ -6,8 +6,9 @@ import {
   getMaxUploadBatchForUser,
 } from "@/lib/market-config-server";
 import {
-  CANONICAL_FIELDS,
+  REQUIRED_MAPPING_FIELDS,
   FIELD_LABELS,
+  validateColumnMapping,
   type ColumnMapping,
 } from "@/lib/market-config";
 import {
@@ -92,18 +93,27 @@ export async function POST(req: NextRequest) {
   let columnMapping: ColumnMapping | null = null;
   const mappingRaw = form.get("columnMapping");
   if (typeof mappingRaw === "string" && mappingRaw.trim().length > 0) {
+    let parsed: unknown;
     try {
-      columnMapping = JSON.parse(mappingRaw) as ColumnMapping;
+      parsed = JSON.parse(mappingRaw);
     } catch {
       return Response.json(
         { error: "Invalid columnMapping JSON" },
         { status: 400 },
       );
     }
-    // Server-side check: required canonical fields must all be mapped. This
-    // mirrors the UI guard so a tampered request can't save a partial mapping
-    // that would silently break Phase 2 aggregation.
-    const missing = CANONICAL_FIELDS.filter(
+    // Validate shape: only known field keys with string header values. This
+    // prevents a tampered request from persisting malformed JSON that would
+    // break later preflight / Phase 2 aggregation.
+    const validated = validateColumnMapping(parsed);
+    if (!validated.ok) {
+      return Response.json({ error: validated.error }, { status: 400 });
+    }
+    columnMapping = validated.mapping;
+    // Server-side check: every preflight-required field must be mapped. This
+    // mirrors the column-mapper UI guard so a tampered request can't save a
+    // partial mapping that would silently break preflight / Phase 2 aggregation.
+    const missing = REQUIRED_MAPPING_FIELDS.filter(
       (f) =>
         typeof columnMapping?.[f] !== "string" ||
         (columnMapping[f] as string).trim().length === 0,
@@ -175,6 +185,9 @@ export async function POST(req: NextRequest) {
           message: pf.message,
           detail: pf.detail,
           suggestion: pf.suggestion,
+          // Headers power the interactive column mapper on the client so the
+          // member can re-route columns instead of being dead-ended.
+          headers: preview.headers,
         },
         { status: 400 },
       );

@@ -18,6 +18,8 @@ export const OPTIONAL_FIELDS = [
   "yearBuilt",
   "mlsNumber",
   "status",
+  "city",
+  "zip",
 ] as const;
 
 export type CanonicalField = (typeof CANONICAL_FIELDS)[number];
@@ -27,19 +29,273 @@ export type AnyMappedField = CanonicalField | OptionalField;
 export type ColumnMapping = Partial<Record<AnyMappedField, string>>;
 
 export const FIELD_LABELS: Record<AnyMappedField, string> = {
-  date: "Date sold",
-  neighbourhood: "Neighbourhood / Community",
+  date: "Sale date",
+  neighbourhood: "Neighbourhood",
   salePrice: "Sale price",
   listPrice: "List price",
   daysOnMarket: "Days on market",
-  sqft: "Square footage",
+  sqft: "Living area / Sq ft",
   propertyType: "Property type",
   bedrooms: "Bedrooms",
   bathrooms: "Bathrooms",
   yearBuilt: "Year built",
   mlsNumber: "MLS #",
   status: "Status",
+  city: "City",
+  zip: "ZIP / Postal code",
 };
+
+/**
+ * The fields the deterministic preflight blocks on (mirrors
+ * REQUIRED_COLUMN_CANDIDATES in market-csv.ts). The interactive column mapper
+ * and the upload route's mapping validation both gate on THESE — not on
+ * CANONICAL_FIELDS, which historically required `sqft` (preflight never has)
+ * and omitted `status` (preflight always requires it).
+ */
+export const REQUIRED_MAPPING_FIELDS: AnyMappedField[] = [
+  "salePrice",
+  "listPrice",
+  "date",
+  "status",
+  "propertyType",
+  "neighbourhood",
+  "daysOnMarket",
+];
+
+/**
+ * Optional-but-recommended fields surfaced in the mapper, in display order.
+ * None of these block a save; they enrich the validator when present.
+ */
+export const MAPPER_OPTIONAL_FIELDS: AnyMappedField[] = [
+  "sqft",
+  "yearBuilt",
+  "city",
+  "zip",
+  "bedrooms",
+  "bathrooms",
+  "mlsNumber",
+];
+
+/** Every field a column mapping may legitimately key on. */
+export const ALL_MAPPING_FIELDS: AnyMappedField[] = [
+  ...REQUIRED_MAPPING_FIELDS,
+  ...MAPPER_OPTIONAL_FIELDS,
+];
+
+/**
+ * Validate + normalize an untrusted column-mapping payload (e.g. from a PATCH
+ * body). Returns a clean `ColumnMapping` containing only known field keys with
+ * non-empty string header values, or an error string. `null`/`undefined` is a
+ * valid "clear the mapping" signal (returns an empty mapping intent via `null`).
+ */
+export function validateColumnMapping(
+  input: unknown,
+):
+  | { ok: true; mapping: ColumnMapping | null }
+  | { ok: false; error: string } {
+  if (input === null || input === undefined) {
+    return { ok: true, mapping: null };
+  }
+  if (typeof input !== "object" || Array.isArray(input)) {
+    return { ok: false, error: "columnMapping must be an object." };
+  }
+  const allowed = new Set<string>(ALL_MAPPING_FIELDS);
+  const out: ColumnMapping = {};
+  for (const [key, value] of Object.entries(input as Record<string, unknown>)) {
+    if (!allowed.has(key)) {
+      return { ok: false, error: `Unknown mapping field: ${key}` };
+    }
+    if (value === null || value === undefined || value === "") continue;
+    if (typeof value !== "string") {
+      return {
+        ok: false,
+        error: `Mapping for "${key}" must be a column-name string.`,
+      };
+    }
+    out[key as AnyMappedField] = value;
+  }
+  return { ok: true, mapping: Object.keys(out).length > 0 ? out : null };
+}
+
+/**
+ * Flexible header keywords per field, used CLIENT-SIDE to auto-suggest a
+ * mapping from a CSV's real headers. This is intentionally a separate list
+ * from the server preflight's REQUIRED_COLUMN_CANDIDATES (which can't be
+ * imported into client components — market-csv.ts pulls in the Anthropic SDK).
+ * Suggestion parity with preflight is not required: once a member SAVES an
+ * explicit mapping, preflight is satisfied by that mapping regardless of
+ * keyword overlap.
+ */
+export const MAPPING_FIELD_CANDIDATES: Partial<Record<AnyMappedField, string[]>> =
+  {
+    salePrice: [
+      "sold price",
+      "sale price",
+      "sold $",
+      "closed price",
+      "close price",
+      "closeprice",
+      "saleprice",
+      "soldprice",
+      "selling price",
+    ],
+    listPrice: [
+      "list price",
+      "original list price",
+      "asking price",
+      "listprice",
+      "origlistprice",
+      "current price",
+    ],
+    date: [
+      "sold date",
+      "sale date",
+      "close date",
+      "closed date",
+      "closing date",
+      "settlement date",
+      "closedate",
+      "saledate",
+    ],
+    status: [
+      "status",
+      "mls status",
+      "mlsstatus",
+      "sale status",
+      "listing status",
+      "standardstatus",
+      "st",
+    ],
+    propertyType: [
+      "property type",
+      "prop type",
+      "property sub type",
+      "propertysubtype",
+      "property class",
+      "structure type",
+      "proptype",
+      "type",
+      "style",
+    ],
+    neighbourhood: [
+      "community",
+      "neighbourhood",
+      "neighborhood",
+      "subdivision name",
+      "subdivisionname",
+      "subdivision",
+      "area",
+      "district",
+    ],
+    daysOnMarket: [
+      "days on market",
+      "daysonmarket",
+      "cumulativedaysonmarket",
+      "cdom",
+      "dom",
+    ],
+    sqft: [
+      "square feet",
+      "living area",
+      "sq ft",
+      "sqft",
+      "finished sqft",
+      "gla",
+      "total finished area",
+      "squarefeet",
+    ],
+    yearBuilt: ["year built", "yearbuilt", "yr built", "built"],
+    city: ["city", "municipality"],
+    zip: ["zip", "postal code", "postalcode", "zip code", "zipcode", "postal"],
+    bedrooms: ["bedrooms", "bedroomstotal", "beds", "br"],
+    bathrooms: ["bathrooms", "bathroomstotalinteger", "baths", "ba"],
+    mlsNumber: ["mls number", "mlsnumber", "listing id", "listingid", "mls #", "mls"],
+  };
+
+export type MappingConfidence = "high" | "low";
+
+export interface FieldSuggestion {
+  header: string;
+  confidence: MappingConfidence;
+}
+
+function normHeader(s: string): string {
+  return s.toLowerCase().trim();
+}
+
+function collapse(s: string): string {
+  return normHeader(s).replace(/[^a-z0-9]+/g, "");
+}
+
+function headerTokens(s: string): string[] {
+  return normHeader(s)
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean);
+}
+
+/**
+ * Score how well a header matches a candidate keyword.
+ *   3 = exact (case/whitespace-insensitive, incl. collapsed punctuation)
+ *   2 = candidate appears as a whole word, or collapsed-substring match
+ *   1 = loose substring match
+ *   0 = no match
+ * Short codes (<= 2 chars, e.g. "st", "br") only match as an exact token so
+ * "Street"/"State" never get suggested as Status.
+ */
+function scoreHeader(header: string, candidate: string): number {
+  const h = normHeader(header);
+  const c = normHeader(candidate);
+  if (!h || !c) return 0;
+  const hCollapsed = collapse(header);
+  const cCollapsed = collapse(candidate);
+  if (h === c || hCollapsed === cCollapsed) return 3;
+  const tokens = headerTokens(header);
+  if (cCollapsed.length <= 2) {
+    return tokens.includes(cCollapsed) ? 3 : 0;
+  }
+  if (tokens.includes(c)) return 2;
+  if (cCollapsed.length >= 4 && hCollapsed.includes(cCollapsed)) return 2;
+  if (h.includes(c)) return 1;
+  return 0;
+}
+
+/**
+ * Deterministically suggest a header for each mappable field from a CSV's real
+ * headers. Returns the best-scoring header per field (or null). confidence
+ * "high" (score >= 2) drives the mapper's default selection; "low" (score 1)
+ * is surfaced as a "not sure — verify" hint without auto-selecting.
+ */
+export function suggestMappingFromHeaders(
+  headers: string[],
+): Partial<Record<AnyMappedField, FieldSuggestion>> {
+  const out: Partial<Record<AnyMappedField, FieldSuggestion>> = {};
+  const fields: AnyMappedField[] = [
+    ...REQUIRED_MAPPING_FIELDS,
+    ...MAPPER_OPTIONAL_FIELDS,
+  ];
+  for (const field of fields) {
+    const candidates = MAPPING_FIELD_CANDIDATES[field];
+    if (!candidates) continue;
+    let best: { header: string; score: number } | null = null;
+    for (const header of headers) {
+      let score = 0;
+      for (const cand of candidates) {
+        score = Math.max(score, scoreHeader(header, cand));
+        if (score === 3) break;
+      }
+      if (score > 0 && (!best || score > best.score)) {
+        best = { header, score };
+      }
+    }
+    if (best) {
+      out[field] = {
+        header: best.header,
+        confidence: best.score >= 2 ? "high" : "low",
+      };
+    }
+  }
+  return out;
+}
 
 export interface PriceTier {
   name: string;

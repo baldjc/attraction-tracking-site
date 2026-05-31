@@ -1,17 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AiThinking } from "@/components/ai/AiThinking";
 import { useAiThinking } from "@/lib/use-ai-thinking";
-import {
-  CANONICAL_FIELDS,
-  OPTIONAL_FIELDS,
-  FIELD_LABELS,
-  type ColumnMapping,
-  type AnyMappedField,
-} from "@/lib/market-config";
+import { type ColumnMapping } from "@/lib/market-config";
 import { Button } from "@/components/ui/Button";
+import ColumnMapper from "@/components/market-data/ColumnMapper";
 
 interface Props {
   existingMapping: ColumnMapping | null;
@@ -86,6 +81,20 @@ interface ReplaceDialogState {
   isBulk: boolean;
 }
 
+/** Drives the interactive column-mapper. `context` distinguishes the three
+ *  entry points so the mapper can word its copy + Save action appropriately:
+ *   - "initial":   first upload, no saved mapping yet (seeded by AI suggestion)
+ *   - "preflight": an upload failed because columns couldn't be matched
+ *   - "proactive": member is editing the saved mapping from the panel, no upload
+ */
+interface MapperState {
+  headers: string[];
+  initialMapping: ColumnMapping | null;
+  context: "initial" | "preflight" | "proactive";
+  filename?: string;
+  banner?: { message: string; detail?: string; suggestion?: string };
+}
+
 function detectMonthYear(name: string): {
   monthYear: string;
   confidence: "filename" | "guessed";
@@ -141,12 +150,11 @@ export default function UploadPanel({
 }: Props) {
   const router = useRouter();
   const [selected, setSelected] = useState<SelectedFile[]>([]);
-  const [stage, setStage] = useState<"picking" | "mapping" | "uploading">(
-    "picking",
-  );
+  const [stage, setStage] = useState<"picking" | "uploading">("picking");
   const [error, setError] = useState<string | null>(null);
-  const [proposedHeaders, setProposedHeaders] = useState<string[]>([]);
-  const [proposedMapping, setProposedMapping] = useState<ColumnMapping>({});
+  const [mapper, setMapper] = useState<MapperState | null>(null);
+  const [mapperSaving, setMapperSaving] = useState(false);
+  const proactiveInputRef = useRef<HTMLInputElement>(null);
   const [conflicts, setConflicts] = useState<ConflictRow[]>([]);
   const [preflightError, setPreflightError] = useState<{
     code: string;
@@ -287,10 +295,10 @@ export default function UploadPanel({
       return;
     }
 
-    // Need a mapping. Send the oldest file to suggest-mapping.
+    // Need a mapping. Send the oldest file to suggest-mapping for a head start,
+    // then open the interactive mapper so the member can confirm/adjust.
     if (!oldestFile) return;
     thinking.start();
-    setStage("mapping");
     try {
       const fd = new FormData();
       fd.append("file", oldestFile.file);
@@ -306,21 +314,17 @@ export default function UploadPanel({
         headers: string[];
         suggestedMapping: ColumnMapping;
       };
-      setProposedHeaders(data.headers);
-      setProposedMapping(data.suggestedMapping);
+      setMapper({
+        headers: data.headers,
+        initialMapping: data.suggestedMapping ?? existingMapping ?? {},
+        context: "initial",
+        filename: oldestFile.file.name,
+      });
     } catch (e) {
       setError((e as Error).message);
-      setStage("picking");
     } finally {
       thinking.stop();
     }
-  }
-
-  function setMappingField(field: AnyMappedField, header: string) {
-    setProposedMapping({
-      ...proposedMapping,
-      [field]: header === "" ? undefined : header,
-    });
   }
 
   async function doFinalUpload(mapping: ColumnMapping | null) {
@@ -329,6 +333,7 @@ export default function UploadPanel({
     setConflicts([]);
     setPreflightError(null);
     setLastMapping(mapping);
+    setMapperSaving(true);
     uploadThinking.start();
     try {
       const fd = new FormData();
@@ -346,6 +351,30 @@ export default function UploadPanel({
       if (res.status === 400) {
         const j = await res.json().catch(() => ({}));
         if (j?.error === "preflight_failed" && j.code && j.message) {
+          // Column-identity failures are recoverable through the mapper — open
+          // it (seeded with the effective mapping) instead of dead-ending. Data
+          // problems (empty file / all-unknown statuses) can't be fixed by
+          // remapping, so those keep the red error card.
+          const mappable =
+            j.code === "MISSING_COLUMNS" ||
+            j.code === "STATUS_VALUES_UNRECOGNIZED";
+          if (mappable && Array.isArray(j.headers) && j.headers.length > 0) {
+            setPreflightError(null);
+            setMapper({
+              headers: j.headers as string[],
+              initialMapping: mapping ?? existingMapping ?? {},
+              context: "preflight",
+              filename: j.filename || oldestFile?.file.name,
+              banner: {
+                message: j.message,
+                detail: j.detail || undefined,
+                suggestion: j.suggestion,
+              },
+            });
+            setStage("picking");
+            return;
+          }
+          setMapper(null);
           setPreflightError({
             code: j.code,
             filename: j.filename || "your CSV",
@@ -353,7 +382,7 @@ export default function UploadPanel({
             detail: j.detail || "",
             suggestion: j.suggestion,
           });
-          setStage(hasColumnMapping ? "picking" : "mapping");
+          setStage("picking");
           return;
         }
         throw new Error(j.message || j.error || "Upload failed.");
@@ -361,11 +390,15 @@ export default function UploadPanel({
       if (res.status === 409) {
         const j = await res.json().catch(() => ({}));
         if (j?.error === "duplicate_month" && Array.isArray(j.conflicts)) {
+          // Mapping was fine (preflight passed) — close the mapper so the
+          // conflict/replace banner is visible; the Replace flow re-sends the
+          // same files + mapping via lastMapping.
+          setMapper(null);
           setConflicts(j.conflicts as ConflictRow[]);
           if (typeof j.recentAvgCostUsd === "number" && j.recentAvgCostUsd > 0) {
             setRecentAvgCostUsd(j.recentAvgCostUsd);
           }
-          setStage(hasColumnMapping ? "picking" : "mapping");
+          setStage("picking");
           return;
         }
         throw new Error(j.message || j.error || "Upload failed.");
@@ -387,8 +420,7 @@ export default function UploadPanel({
       // Reset + refresh history
       setSelected([]);
       setStage("picking");
-      setProposedHeaders([]);
-      setProposedMapping({});
+      setMapper(null);
       setLastMapping(null);
       // Notify UploadHistoryTable so it refetches without a full RSC reload.
       // We don't know the new upload IDs from the POST response (it returns
@@ -403,9 +435,10 @@ export default function UploadPanel({
       router.refresh();
     } catch (e) {
       setError((e as Error).message);
-      setStage(hasColumnMapping ? "picking" : "mapping");
+      setStage("picking");
     } finally {
       uploadThinking.stop();
+      setMapperSaving(false);
     }
   }
 
@@ -462,17 +495,110 @@ export default function UploadPanel({
     }
   }
 
-  async function onConfirmMapping() {
-    setError(null);
-    const missing = CANONICAL_FIELDS.filter((f) => !proposedMapping[f]);
-    if (missing.length > 0) {
-      setError(
-        `Map all required fields: ${missing.map((f) => FIELD_LABELS[f]).join(", ")}`,
-      );
+  /** Mapper "Save" — uploads (initial/preflight) or persists only (proactive). */
+  async function onMapperSave(mapping: ColumnMapping) {
+    if (mapper?.context === "proactive") {
+      await saveProactiveMapping(mapping);
       return;
     }
-    await doFinalUpload(proposedMapping);
+    await doFinalUpload(mapping);
   }
+
+  function onMapperCancel() {
+    setMapper(null);
+    setError(null);
+  }
+
+  /** Proactive entry: member picks a recent export so we can read its real
+   *  column names (no AI cost), then edits the saved mapping. */
+  async function onPickMappingSampleFile(
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-picking the same file
+    if (!file) return;
+    setError(null);
+    thinking.start();
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/member/market-data/preview-headers", {
+        method: "POST",
+        body: fd,
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j.error || "Could not read columns from that file.");
+      }
+      const data = (await res.json()) as { headers: string[] };
+      setMapper({
+        headers: data.headers,
+        initialMapping: existingMapping ?? {},
+        context: "proactive",
+        filename: file.name,
+      });
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      thinking.stop();
+    }
+  }
+
+  async function saveProactiveMapping(mapping: ColumnMapping) {
+    setMapperSaving(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/member/market-data/config", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ columnMapping: mapping }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j.error || "Could not save the mapping.");
+      }
+      setMapper(null);
+      router.refresh();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setMapperSaving(false);
+    }
+  }
+
+  const mapperIntro =
+    mapper?.context === "proactive"
+      ? "Update which of your CSV columns maps to each field. Changes are saved to your market and reused on every upload."
+      : mapper?.context === "preflight"
+        ? "We couldn't match some required columns in your file. Route each required field to the matching column from your CSV, then we'll re-check it."
+        : "Confirm how your CSV columns map to our required fields. We'll save this so you don't have to do it again.";
+
+  const mapperBanner = mapper?.banner ? (
+    <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 dark:border-amber-800 dark:bg-amber-900/20">
+      <div className="text-sm font-medium text-amber-900 dark:text-amber-200">
+        {mapper.banner.message}
+      </div>
+      {mapper.banner.detail && (
+        <p className="mt-1 text-xs text-amber-800 dark:text-amber-300">
+          {mapper.banner.detail}
+        </p>
+      )}
+      {mapper.banner.suggestion && (
+        <p className="mt-1 text-xs text-amber-800 dark:text-amber-300">
+          <span className="font-medium">Tip:</span> {mapper.banner.suggestion}
+        </p>
+      )}
+      {mapper.filename && (
+        <p className="mt-1 text-[11px] text-amber-700 dark:text-amber-400">
+          File: {mapper.filename}
+        </p>
+      )}
+    </div>
+  ) : mapper?.filename ? (
+    <p className="text-xs text-gray-500 dark:text-gray-400">
+      Columns read from <span className="font-medium">{mapper.filename}</span>
+    </p>
+  ) : undefined;
 
   return (
     <section className="rounded-lg border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
@@ -484,7 +610,68 @@ export default function UploadPanel({
         at once for a historical backfill.
       </p>
 
-      {stage === "picking" && (
+      {/* Proactive column-mapping control — lets members review/fix the saved
+          mapping without having to trigger a failed upload first. */}
+      {!mapper && !thinking.isThinking && stage === "picking" && (
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+          <span className="text-gray-500 dark:text-gray-400">
+            {hasColumnMapping
+              ? "✓ Column mapping saved"
+              : "No column mapping saved yet"}
+          </span>
+          <span className="text-gray-300 dark:text-gray-600">·</span>
+          <button
+            type="button"
+            onClick={() => proactiveInputRef.current?.click()}
+            className="font-medium text-blue-600 hover:underline dark:text-blue-400"
+          >
+            Edit column mapping
+          </button>
+          <input
+            ref={proactiveInputRef}
+            type="file"
+            accept=".csv,text/csv"
+            onChange={onPickMappingSampleFile}
+            className="hidden"
+          />
+        </div>
+      )}
+
+      {thinking.isThinking && (
+        <div className="mt-4">
+          <AiThinking
+            mode="phase"
+            toolName="Market Data"
+            currentPhase={thinking.phaseLabel}
+          />
+        </div>
+      )}
+
+      {mapper && !thinking.isThinking && (
+        <div className="mt-4">
+          <ColumnMapper
+            headers={mapper.headers}
+            initialMapping={mapper.initialMapping}
+            saving={mapperSaving}
+            onSave={onMapperSave}
+            onCancel={onMapperCancel}
+            title={
+              mapper.context === "proactive"
+                ? "Edit column mapping"
+                : "Map your columns"
+            }
+            intro={mapperIntro}
+            saveLabel={
+              mapper.context === "proactive"
+                ? "Save mapping"
+                : `Save mapping & upload ${selected.length} file${selected.length === 1 ? "" : "s"}`
+            }
+            banner={mapperBanner}
+          />
+        </div>
+      )}
+
+      {!mapper && !thinking.isThinking && stage === "picking" && (
         <div className="mt-4 space-y-4">
           <label className="block">
             <span className="sr-only">Choose CSV files</span>
@@ -629,70 +816,7 @@ export default function UploadPanel({
         </div>
       )}
 
-      {stage === "mapping" && (
-        <div className="mt-4 space-y-3">
-          {thinking.isThinking ? (
-            <AiThinking
-              mode="phase"
-              toolName="Market Data"
-              currentPhase={thinking.phaseLabel}
-            />
-          ) : (
-            <>
-              <div className="text-sm text-gray-700 dark:text-gray-300">
-                Confirm how your CSV columns map to our canonical fields. We'll
-                save this so you don't see this step again.
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {[...CANONICAL_FIELDS, ...OPTIONAL_FIELDS].map((f) => {
-                  const required = (CANONICAL_FIELDS as readonly string[]).includes(
-                    f,
-                  );
-                  return (
-                    <label key={f} className="block text-sm">
-                      <span className="text-gray-700 dark:text-gray-300">
-                        {FIELD_LABELS[f]}
-                        {required && (
-                          <span className="text-red-500"> *</span>
-                        )}
-                      </span>
-                      <select
-                        value={proposedMapping[f] ?? ""}
-                        onChange={(e) =>
-                          setMappingField(f, e.target.value)
-                        }
-                        className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
-                      >
-                        <option value="">— not in this CSV —</option>
-                        {proposedHeaders.map((h) => (
-                          <option key={h} value={h}>
-                            {h}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  );
-                })}
-              </div>
-              <div className="flex items-center justify-between pt-2">
-                <button
-                  type="button"
-                  onClick={() => setStage("picking")}
-                  className="text-sm text-gray-500 hover:underline"
-                >
-                  ← Back to files
-                </button>
-                <Button onClick={onConfirmMapping}>
-                  Save mapping & upload {selected.length} file
-                  {selected.length === 1 ? "" : "s"}
-                </Button>
-              </div>
-            </>
-          )}
-        </div>
-      )}
-
-      {stage === "uploading" && (
+      {!mapper && stage === "uploading" && (
         <div className="mt-4 space-y-2">
           <div className="text-xs text-gray-500 dark:text-gray-400">
             {selected.length} file{selected.length === 1 ? "" : "s"} in flight

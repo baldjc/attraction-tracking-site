@@ -1,8 +1,9 @@
 - [Dev vs prod database](dev-vs-prod-database.md) — the dev DATABASE_URL is a separate dev DB, not production; confirm which DB you're on before trusting reads/writes of real user data.
 - [Fact validator market lock-in](fact-validator-market-lockin.md) — the validator prompt hardcodes one market's schema, so wide off-market uploads extract far fewer facts.
-- [Validator 200K-context overflow](market-validator-overflow.md) — the unsplittable SUMMARY+LEADS call is where ultra-wide markets overflow the 200K context; its rollups must be hard-bounded to the char budget.
-- [Script Builder identity guard](script-builder-identity-guard.md) — generated scripts can leak the house-style exemplar's identity; the no_other_member_identity validator rule must be fed identity inputs at every validateScript() caller or it's silently inert.
-- [Binge-title quote false positives](script-binge-quote-fp.md) — the binge_target_match "wrong quoted title" check must anchor on an explicit next-video cue; scripts quote viewer-thought dialogue heavily, so any-quote-near-next-video FPs on real scripts.
+- [Validator 200K-context overflow](market-validator-overflow.md) — the unsplittable SUMMARY+LEADS call overflows on ultra-wide markets; its rollups must be hard-bounded to the char budget.
+- [Script Builder identity guard](script-builder-identity-guard.md) — scripts can leak the exemplar's identity; the no_other_member_identity rule must get identity inputs at every validateScript() caller.
+- [Binge-title quote false positives](script-binge-quote-fp.md) — the binge_target_match "wrong quoted title" check must anchor on an explicit next-video cue or it false-positives on viewer-thought dialogue.
 - [Market fact validator](market-fact-validator.md) — validator cost is driven by detail-group count not neighbourhood count; parameterized prompt leakage rules + benchmark harness gotchas.
-- [Fact-validator persistence & tx budget](fact-validator-persistence-tx.md) — keep bulk fact/lead writes out of interactive tx (P2028), make persist an idempotent replace, never double-charge persistence-only retries.
-- [Impersonation auth dual-behavior](impersonation-auth-dual-behavior.md) — admin-only API routes authorize while impersonating (session role stays admin), but /member pages apply the member's own feature flags and can redirect the admin away.
+- [Fact-validator persistence & tx budget](fact-validator-persistence-tx.md) — keep bulk fact/lead writes out of interactive tx (P2028); make persist idempotent; never double-charge persistence-only retries.
+- [Impersonation auth dual-behavior](impersonation-auth-dual-behavior.md) — admin API routes authorize while impersonating, but /member pages apply the member's own flags and can redirect the admin away.
+- [Column mapping validation](column-mapping-validation.md) — persisted CSV column mappings must be validated to known-keys/string-values at EVERY entry point, or preflight throws on mapped values.
