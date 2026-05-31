@@ -93,10 +93,13 @@ export default async function MarketDataPage() {
         <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-3">
           Upload history
         </h2>
-        <UploadHistoryTable initial={uploads.map((u) => ({
-          ...u,
-          uploadedAt: u.uploadedAt.toISOString(),
-        }))} />
+        <UploadHistoryTable
+          isAdmin={user.isAdmin}
+          initial={uploads.map((u) => ({
+            ...u,
+            uploadedAt: u.uploadedAt.toISOString(),
+          }))}
+        />
       </section>
     </div>
   );

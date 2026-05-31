@@ -36,6 +36,9 @@ interface Row {
 
 interface Props {
   initial: Row[];
+  /** True when an admin (incl. while impersonating a member) is viewing — gates
+   *  the "Regenerate" action that re-runs validation on an existing upload. */
+  isAdmin?: boolean;
 }
 
 const TERMINAL = new Set(["validated", "failed"]);
@@ -73,7 +76,7 @@ interface ErrorModalState {
   friendly: FriendlyError;
 }
 
-export default function UploadHistoryTable({ initial }: Props) {
+export default function UploadHistoryTable({ initial, isAdmin = false }: Props) {
   const [rows, setRows] = useState<Row[]>(initial);
   const [shimmerIds, setShimmerIds] = useState<Set<string>>(new Set());
   const [errorModal, setErrorModal] = useState<ErrorModalState | null>(null);
@@ -82,6 +85,8 @@ export default function UploadHistoryTable({ initial }: Props) {
   const [deleteModal, setDeleteModal] = useState<Row | null>(null);
   const [deleting, setDeleting] = useState<Set<string>>(new Set());
   const [removingIds, setRemovingIds] = useState<Set<string>>(new Set());
+  const [regenModal, setRegenModal] = useState<Row | null>(null);
+  const [regenerating, setRegenerating] = useState<Set<string>>(new Set());
 
   // One-shot "row appeared" shimmer for just-uploaded rows.
   useEffect(() => {
@@ -318,6 +323,73 @@ export default function UploadHistoryTable({ initial }: Props) {
     [retrying],
   );
 
+  const onRegenerate = useCallback(
+    async (row: Row) => {
+      if (regenerating.has(row.id)) return;
+      setRegenerating((prev) => new Set(prev).add(row.id));
+      // Optimistic — flip to validating so the polling effect re-arms and the
+      // result cell clears while the re-validation runs.
+      const prevRow = row;
+      setRows((prev) =>
+        prev.map((r) =>
+          r.id === row.id
+            ? {
+                ...r,
+                status: "validating",
+                validationError: null,
+                validationCostUsd: null,
+                factCount: 0,
+                storyLeadCount: 0,
+              }
+            : r,
+        ),
+      );
+      try {
+        const res = await fetch(
+          `/api/admin/market-data/upload/${row.id}/revalidate`,
+          { method: "POST" },
+        );
+        if (!res.ok) {
+          const j = (await res.json().catch(() => ({}))) as {
+            message?: string;
+            error?: string;
+          };
+          // Roll the optimistic update back to whatever the row was before.
+          setRows((prev) =>
+            prev.map((r) => (r.id === row.id ? prevRow : r)),
+          );
+          setToast({
+            kind: "error",
+            msg:
+              j.message ??
+              j.error ??
+              (res.status === 401 || res.status === 403
+                ? "You don't have permission to regenerate this upload."
+                : res.status === 409
+                  ? "This upload is already validating. Wait for it to finish."
+                  : "Couldn't start regeneration. Try again."),
+          });
+        } else {
+          setRegenModal(null);
+          setToast({
+            kind: "info",
+            msg: "Regeneration queued — watch the status column.",
+          });
+        }
+      } catch (e) {
+        setRows((prev) => prev.map((r) => (r.id === row.id ? prevRow : r)));
+        setToast({ kind: "error", msg: (e as Error).message || "Network error." });
+      } finally {
+        setRegenerating((prev) => {
+          const next = new Set(prev);
+          next.delete(row.id);
+          return next;
+        });
+      }
+    },
+    [regenerating],
+  );
+
   if (rows.length === 0) {
     return (
       <div className="rounded-lg border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400">
@@ -350,6 +422,7 @@ export default function UploadHistoryTable({ initial }: Props) {
               const isRetrying = retrying.has(r.id);
               const isDeleting = deleting.has(r.id);
               const isRemoving = removingIds.has(r.id);
+              const isRegenerating = regenerating.has(r.id);
               const rowClasses = [
                 "group transition-opacity duration-200",
                 shimmerIds.has(r.id) ? "animate-pulse bg-[var(--abv-azure-tint)]" : "",
@@ -414,6 +487,61 @@ export default function UploadHistoryTable({ initial }: Props) {
                     )}
                   </td>
                   <td className="px-3 py-2 text-right">
+                    <div className="inline-flex items-center gap-1">
+                    {isAdmin && (
+                      <button
+                        type="button"
+                        onClick={() => setRegenModal(r)}
+                        disabled={
+                          isRegenerating ||
+                          isDeleting ||
+                          isRemoving ||
+                          r.status === "validating" ||
+                          r.status === "pending"
+                        }
+                        aria-label={`Regenerate upload ${r.csvFileName}`}
+                        title="Regenerate (re-run validation with the latest engine)"
+                        className="inline-flex h-7 w-7 items-center justify-center rounded-md text-gray-400 transition-colors hover:bg-[var(--abv-azure-tint)] hover:text-[var(--abv-ink)] disabled:cursor-not-allowed disabled:opacity-50 dark:text-gray-500 dark:hover:text-white"
+                      >
+                        {isRegenerating ? (
+                          <svg
+                            className="h-4 w-4 animate-spin"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            aria-hidden="true"
+                          >
+                            <circle
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="3"
+                              className="opacity-25"
+                            />
+                            <path
+                              d="M4 12a8 8 0 018-8"
+                              stroke="currentColor"
+                              strokeWidth="3"
+                              strokeLinecap="round"
+                            />
+                          </svg>
+                        ) : (
+                          <svg
+                            className="h-4 w-4"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            aria-hidden="true"
+                          >
+                            <path d="M21 12a9 9 0 1 1-3-6.7L21 8" />
+                            <path d="M21 3v5h-5" />
+                          </svg>
+                        )}
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => setDeleteModal(r)}
@@ -462,6 +590,7 @@ export default function UploadHistoryTable({ initial }: Props) {
                         </svg>
                       )}
                     </button>
+                    </div>
                   </td>
                 </tr>
               );
@@ -487,6 +616,17 @@ export default function UploadHistoryTable({ initial }: Props) {
             if (!deleting.has(deleteModal.id)) setDeleteModal(null);
           }}
           onConfirm={() => onDelete(deleteModal)}
+        />
+      )}
+
+      {regenModal && (
+        <RegenerateModal
+          row={regenModal}
+          isRegenerating={regenerating.has(regenModal.id)}
+          onClose={() => {
+            if (!regenerating.has(regenModal.id)) setRegenModal(null);
+          }}
+          onConfirm={() => onRegenerate(regenModal)}
         />
       )}
 
@@ -627,6 +767,85 @@ function DeleteModal({
               </svg>
             )}
             {isDeleting ? "Deleting…" : "Delete"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RegenerateModal({
+  row,
+  isRegenerating,
+  onClose,
+  onConfirm,
+}: {
+  row: Row;
+  isRegenerating: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
+  const factCount = row.factCount ?? 0;
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl dark:bg-gray-900"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+          Regenerate this upload?
+        </h3>
+        <p className="mt-2 text-sm text-gray-700 dark:text-gray-300">
+          <span className="font-medium">{row.csvFileName}</span> will be
+          re-validated with the latest engine. Its current{" "}
+          {factCount.toLocaleString()} extracted{" "}
+          {factCount === 1 ? "fact" : "facts"} will be replaced, and this incurs
+          a new validation cost.
+        </p>
+        <div className="mt-5 flex flex-wrap items-center justify-end gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isRegenerating}
+            className="rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={isRegenerating}
+            className="inline-flex items-center gap-2 rounded-md bg-[var(--abv-ink)] px-4 py-2 text-sm font-medium text-white hover:bg-[#2a2a2a] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isRegenerating && (
+              <svg
+                className="h-3.5 w-3.5 animate-spin"
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden="true"
+              >
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  className="opacity-30"
+                />
+                <path
+                  d="M4 12a8 8 0 018-8"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                />
+              </svg>
+            )}
+            {isRegenerating ? "Starting…" : "Regenerate"}
           </button>
         </div>
       </div>
