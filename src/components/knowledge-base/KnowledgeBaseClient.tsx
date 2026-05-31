@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AiThinking } from "@/components/ai/AiThinking";
 import { useAiThinking } from "@/lib/use-ai-thinking";
+import { ToastProvider, useToast } from "@/components/ToastProvider";
 import {
   renderResearchBrief,
   estimatedResearchMinutes,
@@ -36,7 +37,18 @@ interface Props {
   recentUploads: RecentUpload[];
 }
 
-export default function KnowledgeBaseClient({
+export default function KnowledgeBaseClient(props: Props) {
+  // The member layout has no ToastProvider ancestor (only the admin tree does),
+  // so wrap our subtree in a local one. It renders its own fixed toast
+  // container, so this doesn't affect surrounding layout.
+  return (
+    <ToastProvider>
+      <KnowledgeBaseInner {...props} />
+    </ToastProvider>
+  );
+}
+
+function KnowledgeBaseInner({
   marketName,
   mlsSource,
   neighbourhoods,
@@ -44,8 +56,10 @@ export default function KnowledgeBaseClient({
   recentUploads,
 }: Props) {
   const router = useRouter();
+  const toast = useToast();
   const [briefOpen, setBriefOpen] = useState(false);
   const [briefCopied, setBriefCopied] = useState(false);
+  const [missingBriefOpen, setMissingBriefOpen] = useState(false);
   const [search, setSearch] = useState("");
 
   const existingVocabLower = useMemo(
@@ -167,6 +181,32 @@ export default function KnowledgeBaseClient({
     [brief],
   );
 
+  // Neighbourhoods (from the vocab) that don't yet have a profile. `cards` is
+  // built server-side in vocab order, so this preserves that order.
+  const missingNeighbourhoods = useMemo(
+    () => cards.filter((c) => !c.hasProfile).map((c) => c.neighbourhood),
+    [cards],
+  );
+  // Every configured neighbourhood already has a profile — nothing to research.
+  const allHaveProfiles =
+    neighbourhoods.length > 0 && missingNeighbourhoods.length === 0;
+
+  const missingBrief = useMemo(
+    () =>
+      renderResearchBrief({
+        marketName,
+        mlsSource,
+        neighbourhoods: missingNeighbourhoods,
+        spelling: "Canadian",
+      }),
+    [marketName, mlsSource, missingNeighbourhoods],
+  );
+
+  const missingWordCount = useMemo(
+    () => missingBrief.trim().split(/\s+/).length.toLocaleString(),
+    [missingBrief],
+  );
+
   const filteredCards = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return cards;
@@ -180,6 +220,21 @@ export default function KnowledgeBaseClient({
       setTimeout(() => setBriefCopied(false), 2500);
     } catch {
       setBriefCopied(false);
+    }
+  }
+
+  async function onCopyMissingBrief() {
+    const n = missingNeighbourhoods.length;
+    if (n === 0) return;
+    try {
+      await navigator.clipboard.writeText(missingBrief);
+      toast.success(
+        `Copied brief for ${n} missing neighbourhood${n === 1 ? "" : "s"} (~${missingWordCount} words)`,
+      );
+    } catch {
+      toast.error(
+        "Couldn't copy to clipboard. Open the preview to copy it manually.",
+      );
     }
   }
 
@@ -411,6 +466,59 @@ export default function KnowledgeBaseClient({
             {estimatedResearchMinutes(neighbourhoods.length)}
           </span>
         </div>
+
+        <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-gray-100 pt-3 dark:border-gray-800">
+          {/* Tooltip sits on a non-disabled wrapper so it stays hoverable even
+              when the button itself is disabled (disabled controls don't fire
+              hover/focus reliably). The visible status text below is also wired
+              up via aria-describedby for assistive tech. */}
+          <span
+            title={
+              allHaveProfiles ? "All neighbourhoods have profiles" : undefined
+            }
+            className="inline-flex"
+          >
+            <button
+              type="button"
+              onClick={onCopyMissingBrief}
+              disabled={neighbourhoods.length === 0 || allHaveProfiles}
+              aria-describedby={
+                allHaveProfiles ? "missing-brief-status" : undefined
+              }
+              className="rounded-full border border-gray-300 bg-white px-5 py-2.5 text-sm font-semibold text-gray-800 shadow-sm transition-transform duration-150 active:scale-[0.98] hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:hover:bg-gray-800"
+            >
+              Copy Research Brief for Missing Areas (
+              {missingNeighbourhoods.length})
+            </button>
+          </span>
+          <button
+            type="button"
+            onClick={() => setMissingBriefOpen((v) => !v)}
+            disabled={missingNeighbourhoods.length === 0}
+            className="text-sm text-gray-600 hover:underline disabled:cursor-not-allowed disabled:opacity-50 dark:text-gray-400"
+          >
+            {missingBriefOpen ? "Hide preview" : "Show preview"}
+          </button>
+          <span
+            id="missing-brief-status"
+            className="text-xs text-gray-500 dark:text-gray-400"
+          >
+            {allHaveProfiles ? (
+              "All neighbourhoods have profiles"
+            ) : (
+              <>
+                ~{missingWordCount} words · est. research time{" "}
+                {estimatedResearchMinutes(missingNeighbourhoods.length)}
+              </>
+            )}
+          </span>
+        </div>
+
+        {missingBriefOpen && missingNeighbourhoods.length > 0 && (
+          <pre className="mt-4 max-h-96 overflow-auto whitespace-pre-wrap rounded-md border border-gray-200 bg-gray-50 p-3 text-xs leading-relaxed text-gray-800 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-200">
+            {missingBrief}
+          </pre>
+        )}
 
         {neighbourhoods.length === 0 && (
           <div className="mt-3 rounded-md border border-amber-300 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-300">

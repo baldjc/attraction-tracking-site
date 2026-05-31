@@ -7,3 +7,4 @@
 - [Fact-validator persistence & tx budget](fact-validator-persistence-tx.md) — keep bulk fact/lead writes out of interactive tx (P2028); make persist idempotent; never double-charge persistence-only retries.
 - [Impersonation auth dual-behavior](impersonation-auth-dual-behavior.md) — admin API routes authorize while impersonating, but /member pages apply the member's own flags and can redirect the admin away.
 - [Column mapping validation](column-mapping-validation.md) — persisted CSV column mappings must be validated to known-keys/string-values at EVERY entry point, or preflight throws on mapped values.
+- [Member tree has no ToastProvider](member-tree-no-toastprovider.md) — useToast() throws in /member components (only admin layout mounts a provider); wrap the subtree locally or add it to the member shell.
