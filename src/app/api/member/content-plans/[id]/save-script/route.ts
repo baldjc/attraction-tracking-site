@@ -39,6 +39,7 @@ import { resolveUserFromSession } from "@/lib/session-utils";
 import { getFeatureFlags } from "@/lib/feature-flags";
 import { logUsage } from "@/lib/ai-tool-cost";
 import { validateScript } from "@/lib/script-content-rules";
+import { isBingeTargetUsable } from "@/lib/binge-target";
 import { loadMarketConfigSummary } from "@/lib/content-engine-context";
 
 export const runtime = "nodejs";
@@ -92,6 +93,7 @@ export async function POST(
       titlePromise: true,
       linkedFactIds: true,
       shootType: true,
+      bingeVideoId: true,
     },
   });
   if (!plan) {
@@ -170,10 +172,30 @@ export async function POST(
   const forbiddenIdentities = otherMembers
     .map((u) => (u.fullName ?? "").trim())
     .filter((n) => n.length > 0 && n.split(/\s+/).length >= 2);
+
+  // Binge guard — mirror the streaming route so a direct POST can't persist a
+  // script that fabricates a next-video tease. `configured` is true ONLY when
+  // a usable (existing, non-idea-stage) target resolves; null/deleted/idea →
+  // false → `binge_target_match` rejects any next-video reference.
+  let bingeTargetConfigured = false;
+  let bingeTargetTitle: string | null = null;
+  if (plan.bingeVideoId) {
+    const binge = await prisma.contentPlan.findFirst({
+      where: { id: plan.bingeVideoId, userId },
+      select: { title: true, status: true },
+    });
+    if (binge && isBingeTargetUsable(binge.status)) {
+      bingeTargetConfigured = true;
+      bingeTargetTitle = binge.title;
+    }
+  }
+
   const validation = validateScript(script, {
     neighbourhoods: marketConfig?.neighbourhoods ?? [],
     currentMemberName: memberFullName ?? undefined,
     forbiddenIdentities,
+    bingeTargetConfigured,
+    bingeTargetTitle: bingeTargetTitle ?? undefined,
   });
   if (!validation.ok) {
     return NextResponse.json(

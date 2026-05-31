@@ -54,7 +54,10 @@ export type ScriptViolationRule =
   /** B1 — script named a different member's identity (cross-member leak). */
   | "no_other_member_identity"
   /** B1 — an unfilled credibility/identity placeholder survived to output. */
-  | "unfilled_credibility_placeholder";
+  | "unfilled_credibility_placeholder"
+  /** Script fabricated a next-video tease with no usable BINGE TARGET, or
+   *  quoted a next-video title that doesn't match the configured target. */
+  | "binge_target_match";
 
 export interface ScriptViolation {
   rule: ScriptViolationRule;
@@ -1256,6 +1259,157 @@ function checkNoOtherMemberIdentity(
 }
 
 /* ────────────────────────────────────────────────────────────────────── */
+/*  Rule — binge_target_match (ERROR severity).                           */
+/* ────────────────────────────────────────────────────────────────────── */
+
+/**
+ * Phrases that tease a SPECIFIC upcoming video. Kept deliberately tight to
+ * keep the false-positive rate low — every form here unambiguously points
+ * the viewer at a "next video", which is only legitimate when a real binge
+ * target is configured. Stateless (no `/g`), so `.test()`/`.exec()` are safe
+ * to reuse across calls.
+ */
+export const NEXT_VIDEO_PATTERNS: readonly RegExp[] = [
+  /\bnext video\b/i, // covers "my/the/this next video"
+  /\bwatch this next\b/i,
+  /\bthis next one\b/i,
+  /\bnext one for you\b/i,
+];
+
+// Common words stripped before comparing a quoted title to the real binge
+// title — they carry no distinctive signal and would mask a genuine mismatch.
+const BINGE_TITLE_STOPWORDS = new Set([
+  "this",
+  "that",
+  "your",
+  "with",
+  "from",
+  "what",
+  "when",
+  "video",
+  "watch",
+  "next",
+  "here",
+  "they",
+  "them",
+  "were",
+  "will",
+  "about",
+  "into",
+  "over",
+  "the",
+  "and",
+  "for",
+  "you",
+]);
+
+/** Distinctive (≥4-char, non-stopword) lowercase tokens of a title string. */
+function bingeDistinctiveTokens(s: string): Set<string> {
+  const out = new Set<string>();
+  for (const tok of s.toLowerCase().match(/[a-z]{4,}/g) ?? []) {
+    if (!BINGE_TITLE_STOPWORDS.has(tok)) out.add(tok);
+  }
+  return out;
+}
+
+// A quoted phrase that DIRECTLY follows an explicit next-video cue — the shape
+// a fabricated next-video TITLE takes (e.g. `next video "The Airdrie Flip"`,
+// `video titled "..."`, `video called "..."`). The cue MUST be next-video
+// anchored: bare `called "..."` / `titled "..."` are excluded because scripts
+// say "a strategy called …" in normal dialogue, and double quotes are used
+// heavily for viewer-thought / emphasis (e.g. `they think "okay, the zone
+// matters more"`) — none of which are preceded by a next-video cue. Straight +
+// curly double quotes; single quotes excluded (contractions / possessives).
+const TITLE_CUE_QUOTE_RE =
+  /(?:next video|next one|video (?:titled|called|named))\b[\s:,()–—-]*[“"]([^“”"\n]{3,80})[”"]/gi;
+
+/**
+ * binge_target_match — prevents the script from fabricating a "next video"
+ * tease.
+ *
+ *   bingeTargetConfigured === undefined → INERT (caller didn't resolve binge
+ *     context; don't guess).
+ *   bingeTargetConfigured === false → ANY next-video reference is a
+ *     fabrication (no target exists) → ERROR.
+ *   bingeTargetConfigured === true → a clearly-quoted title appearing on a
+ *     line that also teases the next video must share at least one distinctive
+ *     token with the real `bingeTargetTitle`; otherwise it's pointing at a
+ *     different/invented video → ERROR. (Untitled teases are allowed — "(if
+ *     any)".)
+ */
+function checkBingeTargetMatch(
+  script: string,
+  opts: ValidateScriptOptions,
+): ScriptViolation[] {
+  if (opts.bingeTargetConfigured === undefined) return [];
+  const { dialogue, dialogueLineMap } = stripToDialogue(script);
+  const lines = dialogue.split("\n");
+  const violations: ScriptViolation[] = [];
+
+  if (opts.bingeTargetConfigured === false) {
+    for (let li = 0; li < lines.length; li++) {
+      const line = lines[li];
+      for (const p of NEXT_VIDEO_PATTERNS) {
+        const m = p.exec(line);
+        if (m) {
+          violations.push({
+            rule: "binge_target_match",
+            severity: "error",
+            message:
+              "This plan has no binge target configured, so the script must " +
+              'NOT reference a "next video" / "watch this next". Remove the ' +
+              "next-video tease and close on the recap + a generic CTA " +
+              "(e.g. message me on Instagram, or grab the guide in the " +
+              "description).",
+            snippet: snippetAround(line, m),
+            line: dialogueLineMap[li],
+          });
+          break; // one violation per line is enough
+        }
+      }
+    }
+    return violations;
+  }
+
+  // configured === true → flag only a quoted title that directly follows a
+  // next-video / title cue and shares no distinctive token with the real
+  // target. "(if any)" — untitled teases are allowed.
+  const real = (opts.bingeTargetTitle ?? "").trim();
+  const realTokens = bingeDistinctiveTokens(real);
+  if (realTokens.size === 0) return violations; // nothing to compare against
+  for (let li = 0; li < lines.length; li++) {
+    const line = lines[li];
+    TITLE_CUE_QUOTE_RE.lastIndex = 0;
+    let q: RegExpExecArray | null;
+    while ((q = TITLE_CUE_QUOTE_RE.exec(line)) !== null) {
+      const quoted = q[1].trim();
+      const quotedTokens = bingeDistinctiveTokens(quoted);
+      if (quotedTokens.size === 0) continue; // generic quote, not a title
+      let overlaps = false;
+      for (const t of quotedTokens) {
+        if (realTokens.has(t)) {
+          overlaps = true;
+          break;
+        }
+      }
+      if (!overlaps) {
+        violations.push({
+          rule: "binge_target_match",
+          severity: "error",
+          message:
+            `The script teases a next video titled "${quoted}", but the ` +
+            `configured binge target is "${real}". Reference the EXACT ` +
+            "configured title — do not invent a different one.",
+          snippet: snippetAround(line, q),
+          line: dialogueLineMap[li],
+        });
+      }
+    }
+  }
+  return violations;
+}
+
+/* ────────────────────────────────────────────────────────────────────── */
 /*  Umbrella validator.                                                   */
 /* ────────────────────────────────────────────────────────────────────── */
 
@@ -1298,6 +1452,26 @@ export interface ValidateScriptOptions extends HyperLocalOptions {
    * ship. Only multi-token names are checked to avoid common-word collisions.
    */
   forbiddenIdentities?: string[];
+  /**
+   * Binge guard — whether this plan has a USABLE binge target (a committed,
+   * non-idea-stage next video). Drives `binge_target_match`:
+   *   - `true`  → the script MAY tease the next video, but a clearly-quoted
+   *               title near a next-video reference must match `bingeTargetTitle`.
+   *   - `false` → the script must NOT reference any "next video" at all
+   *               (no target exists → any tease is fabricated).
+   *   - `undefined` → the rule is INERT (back-compat for callers that don't
+   *               resolve binge context). Both the streaming route AND the
+   *               save-script route MUST set this, or a direct POST could
+   *               persist a script that fabricates a next-video tease.
+   */
+  bingeTargetConfigured?: boolean;
+  /**
+   * Binge guard — the real binge target's title (only meaningful when
+   * `bingeTargetConfigured === true`). A quoted title in the script that
+   * shares no distinctive token with this is treated as a fabricated/wrong
+   * target.
+   */
+  bingeTargetTitle?: string;
 }
 
 /**
@@ -1343,6 +1517,8 @@ export function validateScript(
   // B1 — presenter-identity guardrails (cross-member leak + unfilled placeholder).
   violations.push(...checkNoOtherMemberIdentity(script, opts));
   violations.push(...checkUnfilledCredibilityPlaceholder(script));
+  // Binge guard — no fabricated next-video tease.
+  violations.push(...checkBingeTargetMatch(script, opts));
 
   const ok = !violations.some((v) => v.severity === "error");
   return { ok, violations, metrics: hyperLocal.metrics };
@@ -2125,4 +2301,80 @@ export function autoSoftenUnanchoredStats(
     softenedCount,
     softenedTokens,
   };
+}
+
+/* ────────────────────────────────────────────────────────────────────── */
+/*  autoSoftenFabricatedBinge (pre-validation pass).                       */
+/* ────────────────────────────────────────────────────────────────────── */
+
+export interface BingeSoftenResult {
+  script: string;
+  /** Count of next-video sentences removed. */
+  softenedCount: number;
+  /** Trimmed previews of the removed sentences (for logging). */
+  removed: string[];
+}
+
+/**
+ * Mechanical recovery for the NULL binge case. Runs BEFORE validation in the
+ * generation route: when no usable binge target is configured, any "next
+ * video" tease is fabricated, so we drop the offending sentence(s) rather
+ * than burning a re-prompt. The recap + lead-magnet CTA carry the close.
+ *
+ * Only the no-target case is auto-softened — when a real target IS configured
+ * but the script quotes the WRONG title, we can't safely rewrite the dialogue,
+ * so that falls through to `binge_target_match` → the re-prompt loop.
+ *
+ * Sentence-granular: a dialogue line teasing the next video has just that
+ * sentence removed; the rest of the line (and all annotations/headings) is
+ * preserved. Idempotent — a softened script has no next-video patterns left.
+ */
+export function autoSoftenFabricatedBinge(
+  script: string,
+  opts: { bingeTargetConfigured?: boolean },
+): BingeSoftenResult {
+  if (opts.bingeTargetConfigured !== false) {
+    return { script, softenedCount: 0, removed: [] };
+  }
+  const lines = script.split(/\r?\n/);
+  const out: string[] = [];
+  let softenedCount = 0;
+  const removed: string[] = [];
+
+  for (const raw of lines) {
+    // Validator strips these surfaces; leave them untouched.
+    if (
+      HEADING_OR_TITLE_LINE_RE.test(raw) ||
+      ANNOTATION_ONLY_LINE_RE.test(raw)
+    ) {
+      out.push(raw);
+      continue;
+    }
+    const dialoguePortion = raw
+      .replace(SQUARE_BRACKET_ANNOTATION_RE, "")
+      .replace(BOLD_LAYER_LABEL_RE, "");
+    if (!NEXT_VIDEO_PATTERNS.some((p) => p.test(dialoguePortion))) {
+      out.push(raw);
+      continue;
+    }
+    // Drop only the sentence(s) that carry a next-video tease.
+    const sentences = raw.split(/(?<=[.!?])\s+/);
+    const kept: string[] = [];
+    for (const s of sentences) {
+      const sd = s
+        .replace(SQUARE_BRACKET_ANNOTATION_RE, "")
+        .replace(BOLD_LAYER_LABEL_RE, "");
+      if (NEXT_VIDEO_PATTERNS.some((p) => p.test(sd))) {
+        softenedCount++;
+        removed.push(s.replace(/\s+/g, " ").trim().slice(0, 120));
+        continue;
+      }
+      kept.push(s);
+    }
+    const rebuilt = kept.join(" ").replace(/[ \t]+/g, " ").trimEnd();
+    if (rebuilt.length > 0) out.push(rebuilt);
+    // If the whole line was next-video tease, drop the now-empty line.
+  }
+
+  return { script: out.join("\n"), softenedCount, removed };
 }

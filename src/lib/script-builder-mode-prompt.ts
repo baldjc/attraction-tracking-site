@@ -866,7 +866,11 @@ Three beats. Total ~30 seconds. No trailing off.
 
 The viewer should feel the conversation continuing into the next video, not the video ending.
 
-**The video pointed to MUST exist NOW.** Pull from the idea card's binge_anchor field. If the binge anchor is unknown, ASK THE USER before generating. Generic binge hooks are a hard fail.
+**The video pointed to MUST exist NOW.** The closing next-video hook is governed entirely by the BINGE TARGET GATE below — never invent a target, and never tease a "next video" when no BINGE TARGET title is configured. Generic binge phrases ("stay tuned" / "watch my next video" without a real configured target) are a hard fail.
+
+**BINGE TARGET GATE — the \`## ASSIGNED ASSETS\` block's \`BINGE TARGET:\` line is the single source of truth for beat 3, and overrides everything above about the next-video hook:**
+- If \`BINGE TARGET: "<title>"\` is provided → beat 3 is REQUIRED and must point to THAT EXACT title (one of the four intro patterns). Never invent a different title or topic.
+- If \`BINGE TARGET: none configured\` → there is NO video to point to. OMIT beat 3 entirely. Do NOT write any "next video" / "watch this next" / "my next video" / "this next one" reference anywhere in the script. Close on beat 1 (recap) + beat 2 (CTA = LM 3/3) only, ending the CTA with a generic ask (e.g. message me on Instagram, grab the guide in the description). A fabricated next-video tease here is a hard server-side failure.
 
 ## BANNED VOCABULARY (do not use in dialogue)
 
@@ -952,7 +956,7 @@ No pitch language. No bank contrast. Just the link.
 
 The self-check now includes:
 
-13. **Binge architecture present** — closing's next-video hook points to a SPECIFIC existing video with a clear reason to watch — yes/no
+13. **Binge architecture matches BINGE TARGET** — IF a BINGE TARGET title is configured, the closing next-video hook points to THAT exact title with a clear reason to watch; IF BINGE TARGET is "none configured", there is NO next-video reference anywhere in the script — yes/no
 14. **Lead magnet mentioned 3 times** — inside FIRST body insight (gift framing), ~45% body (deep pitch), CLOSING CTA beat at ~80% (= LM 3/3) — yes/no
 15. **Opening is LM-FREE** — no \`[LEAD MAGNET …]\` tag and no lead-magnet language in Attention or Revelation beats — yes/no
 16. **Script body ≥ 2,200 dialogue words** — yes/no (state actual)
@@ -988,7 +992,7 @@ Deliver:
    - Opening length: in seconds (must be ≤12% of runtime)
    - Number of lead magnet mentions: count (target: 3 — LM 1/3 INSIDE first body insight as a gift, LM 2/3 deep pitch at ~45%, LM 3/3 at ~80% / in CLOSING CTA beat)
    - Lead magnet DEEP pitch (LM 2/3, at ~45%) follows the 4-part structure (topic-anchored opener → tool → topic-specific benefit → link drop) and reads as topic-relevant, NOT generic boilerplate: yes/no
-   - Closing follows RECAP + CTA + DONE structure (one-sentence pattern recap, one-sentence CTA = LM 3/3, next-video hook): yes/no
+   - Closing follows RECAP + CTA + DONE structure (one-sentence pattern recap, one-sentence CTA = LM 3/3, and a next-video hook ONLY if a BINGE TARGET title is configured — omitted entirely when BINGE TARGET is "none configured"): yes/no
    - Section openers are short and conversational, not marketing-y headlines: yes/no
    - At least 6-8 distinct editorial-reaction or signature-phrase moments across the script: yes/no (count actual)
    - Voicing-the-viewer's-questions pattern deployed 2-4 times: yes/no

@@ -63,10 +63,15 @@ import { SCRIPT_BUILDER_MODE_PROMPT } from "@/lib/script-builder-mode-prompt";
 import {
   autoFixMechanicalRules,
   autoSoftenUnanchoredStats,
+  autoSoftenFabricatedBinge,
   validateScript,
   type ScriptViolation,
   type ScriptValidationResult,
 } from "@/lib/script-content-rules";
+import {
+  EARLY_PLAN_STATUSES,
+  PUBLISHED_PLAN_STATUSES,
+} from "@/lib/binge-target";
 import {
   getSourceOfTruthMetrics,
   renderSourceOfTruthBlockWithLock,
@@ -150,17 +155,9 @@ interface AssignedBingeVideo {
   youtubeVideoId: string | null;
 }
 
-// ContentPlan statuses for which the binge target is not yet usable —
-// we don't want the script to tease a video the member hasn't committed
-// to make yet. Match by case-insensitive trim against ContentPlan.status.
-const EARLY_PLAN_STATUSES = new Set(["idea", "future idea"]);
-
-// Statuses at which the YouTube video id can be embedded as a card URL.
-const PUBLISHED_PLAN_STATUSES = new Set([
-  "live on yt",
-  "live",
-  "published",
-]);
+// Binge-target status sets (EARLY_PLAN_STATUSES / PUBLISHED_PLAN_STATUSES)
+// now live in @/lib/binge-target so the save-script route shares the exact
+// same "usable?" definition.
 
 // ───────────────────────────────────────────────────────────────────────
 // POST handler
@@ -396,9 +393,16 @@ export async function POST(req: NextRequest) {
     }
   } else {
     planWarnings.push(
-      "Plan has no binge target assigned — script uses a generic next-video tease. Assign a binge target in the planner for specific references.",
+      "Plan has no binge target assigned — the script will close with a generic CTA (no next-video tease). Assign a binge target in the planner to reference a specific next video.",
     );
   }
+
+  // Binge guard inputs (fed to the prompt's BINGE TARGET block + the
+  // `binge_target_match` validator). `configured` is true ONLY when a usable
+  // (existing, non-idea-stage) target resolved above; otherwise the script
+  // must NOT reference any "next video" (fabrication guard).
+  const bingeTargetConfigured = assignedBingeVideo !== null;
+  const bingeTargetTitle = assignedBingeVideo?.title ?? null;
 
   // ── Load MarketConfig (avatar, sub-personas, MOI thresholds, ...) ────
   const marketConfig = await loadMarketConfigSummary(userId);
@@ -885,6 +889,19 @@ export async function POST(req: NextRequest) {
             );
           }
 
+          // Binge fabrication soften — when no usable target is configured,
+          // strip any fabricated "next video" tease before validation rather
+          // than burning a re-prompt. No-op when a target IS configured.
+          const bingeSoften = autoSoftenFabricatedBinge(draft, {
+            bingeTargetConfigured,
+          });
+          draft = bingeSoften.script;
+          if (bingeSoften.softenedCount > 0) {
+            console.log(
+              `[sb-v2:auto-soften] removed ${bingeSoften.softenedCount} fabricated next-video tease(s): ${bingeSoften.removed.join(" | ")}`,
+            );
+          }
+
           // ─ Server-side validation gate ──────────────────────────────
           trace("phase", "Validating content rules...");
           emit("phase", {
@@ -915,6 +932,8 @@ export async function POST(req: NextRequest) {
               ...Object.values(neighbourhoodContext ?? {}),
               ...extractAvatarNarrativeText(marketConfig.primaryAvatar),
             ],
+            bingeTargetConfigured,
+            bingeTargetTitle: bingeTargetTitle ?? undefined,
           });
 
           if (validation.ok) {
@@ -1612,10 +1631,7 @@ function buildInitialUserMessage(args: {
   }
 
   if (assignedBingeVideo) {
-    lines.push(
-      "**Next-video binge target** (use this in the closing `[CALLBACK]` hook — match the title and theme so the tease is specific):",
-    );
-    lines.push(`- Title: ${assignedBingeVideo.title}`);
+    lines.push(`**BINGE TARGET: "${assignedBingeVideo.title}"**`);
     if (assignedBingeVideo.theme)
       lines.push(`- Theme: ${assignedBingeVideo.theme}`);
     if (assignedBingeVideo.youtubeVideoId) {
@@ -1624,9 +1640,15 @@ function buildInitialUserMessage(args: {
       );
     }
     lines.push("");
-  } else {
     lines.push(
-      "**Next-video binge target:** _none assigned_ — write the closing `[CALLBACK]` as a short tease tied to the body's theme. Do NOT invent a specific title, and do NOT write a generic \"check out the next video right here / over there\" close — name the *topic* you're teasing even if you don't have a title.",
+      "HARD RULE — BINGE TARGET: Reference this EXACT title in your closing next-video hook (the `[CALLBACK]` beat, alongside the LM 3/3 CTA). Do NOT invent a different title or topic, and do NOT tease any other \"next video\". This is the ONLY video your close may point to, and it exists now.",
+    );
+    lines.push("");
+  } else {
+    lines.push("**BINGE TARGET: none configured**");
+    lines.push("");
+    lines.push(
+      "HARD RULE — BINGE TARGET: There is NO next video to point to. Do NOT reference a \"next video\", \"watch this next\", \"my next video\", \"this next one\", or any specific upcoming video ANYWHERE in the script — inventing one is a hard server-side failure. OMIT the closing next-video hook entirely: close on the one-sentence recap + the LM 3/3 CTA only. For that final CTA use a generic call to action instead — e.g. invite the viewer to message you on Instagram, or grab the guide in the description.",
     );
     lines.push("");
   }
