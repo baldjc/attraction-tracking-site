@@ -112,7 +112,9 @@ export function validateColumnMapping(
         error: `Mapping for "${key}" must be a column-name string.`,
       };
     }
-    out[key as AnyMappedField] = value;
+    const trimmed = value.trim();
+    if (trimmed.length === 0) continue;
+    out[key as AnyMappedField] = trimmed;
   }
   return { ok: true, mapping: Object.keys(out).length > 0 ? out : null };
 }

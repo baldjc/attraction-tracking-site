@@ -21,7 +21,15 @@ export async function POST(req: NextRequest) {
   }
 
   const buf = Buffer.from(await file.arrayBuffer());
-  const preview = parseCsvPreview(buf);
+  let preview;
+  try {
+    preview = parseCsvPreview(buf);
+  } catch {
+    return Response.json(
+      { error: "Could not parse this file as a CSV." },
+      { status: 400 },
+    );
+  }
   if (preview.headers.length === 0) {
     return Response.json(
       { error: "Could not read any column headers from this file." },
