@@ -8,6 +8,7 @@
  */
 import prisma from "@/lib/prisma";
 import type { Prisma } from "@/generated/prisma/client";
+import type { PropertyTypeFocus } from "@/lib/property-type-focus";
 
 export interface LatestUpload {
   id: string;
@@ -285,7 +286,7 @@ export interface LeadPropertyTypeLock {
   /** The single property type the lead's facts cluster on (≥80%),
    *  or `null` when the lead spans multiple types or has no
    *  property-typed facts. */
-  propertyTypeFocus: string | null;
+  propertyTypeFocus: Exclude<PropertyTypeFocus, "Any"> | null;
   /** `true` when no single property type owns ≥80% of the lead's
    *  hood-anchored property-typed facts. Surfaces the dual-audience
    *  exception to the BUYER AUDIENCE CONSISTENCY hard rule. */
@@ -353,7 +354,10 @@ export async function deriveLeadPropertyTypeLock(
     }
   }
   if (topType && topCount / total >= 0.8) {
-    return { propertyTypeFocus: topType, leadSpansMultipleTypes: false };
+    return {
+      propertyTypeFocus: topType as Exclude<PropertyTypeFocus, "Any">,
+      leadSpansMultipleTypes: false,
+    };
   }
   return { propertyTypeFocus: null, leadSpansMultipleTypes: true };
 }
