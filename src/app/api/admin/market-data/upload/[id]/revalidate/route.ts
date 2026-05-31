@@ -96,74 +96,112 @@ export async function POST(
     );
   }
 
-  // Cost-cap check uses the row OWNER, not the admin — an admin re-validating
-  // shouldn't get past the member's own monthly cap, and we must not delete
-  // the member's existing facts if we can't rebuild them. Checked AFTER the
-  // claim but BEFORE any delete: on a hard block we restore the prior status
-  // and return without touching the member's facts.
-  const cap = await getCostCapStatus(upload.userId);
-  if (cap.hardBlocked) {
-    await prisma.marketDataUpload.update({
-      where: { id },
-      data: { status: upload.status },
+  // From here on we OWN the claimed row. Every failure path BEFORE the
+  // background job is dispatched must restore the prior status, or the row is
+  // stranded in 'validating' forever (and this endpoint returns 409 on every
+  // retry). A `queued` flag draws the line: once validateUploadAsync has fired,
+  // the background job owns the row and a later failure must NOT roll it back.
+  let queued = false;
+  try {
+    // Cost-cap check uses the row OWNER, not the admin — an admin re-validating
+    // shouldn't get past the member's own monthly cap, and we must not delete
+    // the member's existing facts if we can't rebuild them. Checked AFTER the
+    // claim but BEFORE any delete: on a hard block we restore the prior status
+    // and return without touching the member's facts.
+    const cap = await getCostCapStatus(upload.userId);
+    if (cap.hardBlocked) {
+      await prisma.marketDataUpload.update({
+        where: { id },
+        data: { status: upload.status },
+      });
+      return NextResponse.json(
+        {
+          error: "cost_cap_reached",
+          message:
+            "This member has reached the monthly AI processing cap. Existing facts were left untouched. Wait for the 1st or raise the cap.",
+          monthSpendUsd: cap.monthSpendUsd,
+          capUsd: cap.capUsd,
+        },
+        { status: 402 },
+      );
+    }
+
+    const factsBefore = await prisma.marketFact.count({
+      where: { uploadId: id },
     });
+
+    await prisma.$transaction(async (tx) => {
+      await tx.marketFact.deleteMany({ where: { uploadId: id } });
+      await tx.aggregatedMetric.deleteMany({ where: { uploadId: id } });
+      await tx.marketStoryLead.deleteMany({ where: { uploadId: id } });
+      await tx.marketDataUpload.update({
+        where: { id },
+        data: {
+          status: "validating",
+          validatedAt: null,
+          validationError: null,
+          validationCostUsd: null,
+          rawValidatorOutput: null,
+        },
+      });
+    });
+
+    // Cost attributes to the upload owner: validateUploadAsync passes
+    // upload.userId into runValidation, and persistResults records AIToolUsage
+    // under that userId. The admin clicking the button is never billed.
+    validateUploadAsync(id, upload.userId);
+    queued = true;
+
+    // Admin-action logging is best-effort: the re-validation has already been
+    // queued and owns the row, so a logging failure must not 500 the request
+    // (which would mislead the admin into thinking it didn't run).
+    const memberLabel = upload.user?.fullName ?? upload.user?.email ?? "member";
+    try {
+      await logAdminAction({
+        actorId: actor.id ?? "unknown",
+        actorEmail: actor.email ?? "unknown",
+        action: "market_upload_revalidate",
+        targetType: "market_data_upload",
+        targetId: id,
+        details: {
+          summary: `Re-validated ${memberLabel}'s ${upload.label}`,
+          memberId: upload.userId,
+          memberEmail: upload.user?.email ?? null,
+          memberName: upload.user?.fullName ?? null,
+          uploadLabel: upload.label,
+          monthYear: upload.monthYear,
+          factsBefore,
+        },
+      });
+    } catch (logErr) {
+      console.error("[revalidate] admin-action logging failed:", logErr);
+    }
+
+    return NextResponse.json(
+      { ok: true, id, status: "validating", factsBefore },
+      { status: 202 },
+    );
+  } catch (err) {
+    // Roll the claim back unless the background job already took ownership, so
+    // the upload is re-runnable rather than stuck in 'validating'.
+    if (!queued) {
+      await prisma.marketDataUpload
+        .update({ where: { id }, data: { status: upload.status } })
+        .catch((restoreErr) =>
+          console.error(
+            "[revalidate] failed to restore upload status after error:",
+            restoreErr,
+          ),
+        );
+    }
+    console.error("[revalidate] re-validation failed:", err);
     return NextResponse.json(
       {
-        error: "cost_cap_reached",
+        error: "revalidate_failed",
         message:
-          "This member has reached the monthly AI processing cap. Existing facts were left untouched. Wait for the 1st or raise the cap.",
-        monthSpendUsd: cap.monthSpendUsd,
-        capUsd: cap.capUsd,
+          "Re-validation could not be started. The upload was left in its prior state — please try again.",
       },
-      { status: 402 },
+      { status: 500 },
     );
   }
-
-  const factsBefore = await prisma.marketFact.count({
-    where: { uploadId: id },
-  });
-
-  await prisma.$transaction(async (tx) => {
-    await tx.marketFact.deleteMany({ where: { uploadId: id } });
-    await tx.aggregatedMetric.deleteMany({ where: { uploadId: id } });
-    await tx.marketStoryLead.deleteMany({ where: { uploadId: id } });
-    await tx.marketDataUpload.update({
-      where: { id },
-      data: {
-        status: "validating",
-        validatedAt: null,
-        validationError: null,
-        validationCostUsd: null,
-        rawValidatorOutput: null,
-      },
-    });
-  });
-
-  // Cost attributes to the upload owner: validateUploadAsync passes
-  // upload.userId into runValidation, and persistResults records AIToolUsage
-  // under that userId. The admin clicking the button is never billed.
-  validateUploadAsync(id, upload.userId);
-
-  const memberLabel = upload.user?.fullName ?? upload.user?.email ?? "member";
-  await logAdminAction({
-    actorId: actor.id ?? "unknown",
-    actorEmail: actor.email ?? "unknown",
-    action: "market_upload_revalidate",
-    targetType: "market_data_upload",
-    targetId: id,
-    details: {
-      summary: `Re-validated ${memberLabel}'s ${upload.label}`,
-      memberId: upload.userId,
-      memberEmail: upload.user?.email ?? null,
-      memberName: upload.user?.fullName ?? null,
-      uploadLabel: upload.label,
-      monthYear: upload.monthYear,
-      factsBefore,
-    },
-  });
-
-  return NextResponse.json(
-    { ok: true, id, status: "validating", factsBefore },
-    { status: 202 },
-  );
 }
