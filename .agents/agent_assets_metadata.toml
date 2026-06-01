@@ -48,3 +48,9 @@ id = "Vx6CyOTDlU-ukuTzZaXeP"
 uri = "file://screenshots/aitools-mockup.jpg"
 type = "image"
 title = "AI Tools — mockup (target)"
+
+[[outputs]]
+id = "7THAky0Vd0ELVMqeOSqYc"
+uri = "file://docs/METRICS_SPEC.md"
+type = "text"
+title = "METRICS_SPEC.md — Canonical Derived-Metric Specification"
