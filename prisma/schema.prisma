@@ -962,6 +962,19 @@ model ContentPlan {
   // "Apartment" | "Semi-Detached" | "All".
   propertyTypeFocus String?
 
+  // Story Lead → Video fact provenance. How this plan's `linkedFactIds` were
+  // resolved when it was minted from a Story Lead:
+  //   "from_ids"              — the lead carried real MarketFact PKs
+  //   "from_textual_resolver" — matched from the lead's display dataThreads
+  //   "unresolved"            — no facts resolved; auto-enrichment will retry
+  // Null for plans not originating from a Story Lead. Drives the wizard's
+  // unresolved-facts banner vs. the auto-link review panel.
+  factsResolutionState String?
+  // Aggregate (weakest) confidence of the textual resolver's matches:
+  // "exact" | "close" | "fuzzy". Only set when factsResolutionState is
+  // "from_textual_resolver"; null otherwise.
+  factsResolutionConfidence String?
+
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
@@ -2004,6 +2017,14 @@ model MarketStoryLead {
 
   claimedByIdeaId       String?
   createdAt             DateTime         @default(now())
+
+  // Story Lead → Video fact carry-over. Persisted at generation time so a lead
+  // minted into a ContentPlan can hand over real MarketFact PKs instead of
+  // re-deriving them from the display `dataThreads` strings. Old leads created
+  // before this shipped leave these null/empty and route through the textual
+  // resolver (`src/lib/story-lead-fact-resolver.ts`) at "Use as Video" time.
+  anchorFactId          String?
+  supportingFactIds     String[]         @default([])
 
   @@index([userId])
   @@index([uploadId])

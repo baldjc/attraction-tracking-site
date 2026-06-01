@@ -23,6 +23,17 @@ import {
   type RotationSlotKey,
 } from "@/lib/content-engine-validation";
 import { getStatusOptions } from "@/lib/content-plan-utils";
+import {
+  parseDataThreadStrings,
+  resolveStoryLeadDataThreadsToFactIds,
+  type MatchConfidence,
+} from "@/lib/story-lead-fact-resolver";
+
+type FactsResolutionState =
+  | "from_ids"
+  | "from_textual_resolver"
+  | "from_legacy_seed"
+  | "unresolved";
 
 export const runtime = "nodejs";
 
@@ -90,23 +101,86 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Fact carry-over guard. `loadLeadVideoSeed` resolves the lead's facts by
-  // matching its named neighbourhoods back to the upload — a lead whose hoods
-  // no longer match any headline-safe fact (e.g. the upload was re-validated
-  // and those rows got reclassified) resolves to zero facts. Minting a plan
-  // with zero linked facts only to dead-end at the Script Builder gate is a
-  // worse experience than failing here with guidance, so block at the source.
-  // De-dupe defensively so a fact can never be double-counted toward the gate.
-  const factIds = [...new Set(seed.factIds)];
-  if (factIds.length === 0) {
-    return NextResponse.json(
-      {
-        error: "lead_resolved_zero_facts",
-        message:
-          "This Story Lead didn't resolve to any linked facts — its neighbourhoods don't match any current market data. Link facts to a plan manually, or run a fresh data search before turning it into a video.",
-      },
-      { status: 422 },
-    );
+  // Fact carry-over (softened — never blocks). Story Leads persist their
+  // supporting data as DISPLAY STRINGS in `dataThreads`, not as MarketFact PKs,
+  // so a lead card can show real numbers while carrying zero fact ids. We
+  // resolve facts in three steps and ALWAYS create the plan — auto-enrichment
+  // (on Build Script) gets a second chance, so the member is never trapped:
+  //   1. read PKs stored on the lead (new leads carry them) → "from_ids"
+  //   2. else bridge the display dataThreads back to facts via the textual
+  //      resolver → "from_textual_resolver"
+  //   3. else fall back to the seed's neighbourhood-matched facts (legacy path)
+  //   4. else create with zero facts → "unresolved" (banner + auto-enrichment)
+  const leadRow = await prisma.marketStoryLead.findFirst({
+    where: { id: seed.lead.id, userId },
+    select: { anchorFactId: true, supportingFactIds: true, dataThreads: true },
+  });
+
+  let factIds: string[] = [];
+  let factsResolutionState: FactsResolutionState = "unresolved";
+  let resolutionConfidence: MatchConfidence | null = null;
+
+  // Step 1 — fact PKs stored on the lead (validate they still exist & are ours).
+  const storedPks = [
+    ...(leadRow?.anchorFactId ? [leadRow.anchorFactId] : []),
+    ...(Array.isArray(leadRow?.supportingFactIds)
+      ? leadRow!.supportingFactIds
+      : []),
+  ];
+  if (storedPks.length > 0) {
+    // Scope-safety: validate against the LEAD'S OWN upload, not just the member.
+    // A stale/miswritten PK that points at a different upload's fact must never
+    // be linked — that would silently widen scope across uploads.
+    const live = await prisma.marketFact.findMany({
+      where: { id: { in: storedPks }, userId, uploadId: seed.uploadId },
+      select: { id: true },
+    });
+    const liveIds = new Set(live.map((f) => f.id));
+    const valid = storedPks.filter((id) => liveIds.has(id));
+    if (valid.length > 0) {
+      factIds = [...new Set(valid)];
+      factsResolutionState = "from_ids";
+    }
+  }
+
+  // Step 2 — textual resolver over the lead's display dataThreads. Anchor the
+  // neighbourhood names against the member's ACTUAL fact neighbourhoods (not the
+  // MarketConfig vocab) so it works even when the vocab is missing the hood —
+  // that vocab gap is the original "resolves to zero" bug.
+  if (factsResolutionState === "unresolved") {
+    const threadStrings = Array.isArray(leadRow?.dataThreads)
+      ? (leadRow!.dataThreads as unknown[]).filter(
+          (x): x is string => typeof x === "string",
+        )
+      : [];
+    if (threadStrings.length > 0) {
+      const hoodRows = await prisma.marketFact.findMany({
+        where: { userId, uploadId: seed.uploadId },
+        select: { neighbourhood: true },
+        distinct: ["neighbourhood"],
+      });
+      const knownHoods = hoodRows
+        .map((r) => r.neighbourhood)
+        .filter((h): h is string => !!h && h.trim().length > 0);
+      const threads = parseDataThreadStrings(threadStrings, knownHoods);
+      const matches = await resolveStoryLeadDataThreadsToFactIds({
+        memberId: userId,
+        uploadId: seed.uploadId,
+        dataThreads: threads,
+      });
+      if (matches.length > 0) {
+        factIds = [...new Set(matches.map((m) => m.factId))];
+        factsResolutionState = "from_textual_resolver";
+        resolutionConfidence = weakestConfidence(matches.map((m) => m.confidence));
+      }
+    }
+  }
+
+  // Step 3 — legacy neighbourhood-broad fallback (what loadLeadVideoSeed already
+  // resolved). Keeps leads whose hoods DO match the vocab working unchanged.
+  if (factsResolutionState === "unresolved" && seed.factIds.length > 0) {
+    factIds = [...new Set(seed.factIds)];
+    factsResolutionState = "from_legacy_seed";
   }
 
   // Land on the leftmost status of the member's tier vocabulary ("Future Idea"
@@ -138,6 +212,8 @@ export async function POST(req: NextRequest) {
         linkedFactIds: factIds,
         linkedStoryLeadId: seed.lead.id,
         researchNotes,
+        factsResolutionState,
+        factsResolutionConfidence: resolutionConfidence,
         // From the lead's facts: ≥80% one type locks it; else null (Script
         // Builder v2 reads null as "All"), with the dual-audience flag noted
         // in researchNotes.
@@ -163,6 +239,18 @@ export async function POST(req: NextRequest) {
     id: plan.id,
     redirectUrl: `/member/content-planner/${plan.id}`,
   });
+}
+
+/** Most conservative (weakest) confidence across the resolver's matches. */
+function weakestConfidence(
+  confidences: MatchConfidence[],
+): MatchConfidence | null {
+  if (confidences.length === 0) return null;
+  const rank = (c: MatchConfidence) =>
+    c === "exact" ? 0 : c === "close" ? 1 : 2;
+  return confidences.reduce((worst, c) =>
+    rank(c) > rank(worst) ? c : worst,
+  );
 }
 
 function buildResearchNotes(args: {

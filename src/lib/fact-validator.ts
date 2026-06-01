@@ -42,6 +42,11 @@ import {
 } from "@/lib/fact-validator-parser";
 import { getCostCapStatus } from "@/lib/ai-tool-cost";
 import { scheduleBackfillCompletionEmail } from "@/lib/backfill-email";
+import {
+  parseDataThreadStrings,
+  matchThreadToFacts,
+  type ResolverFact,
+} from "@/lib/story-lead-fact-resolver";
 import { persistAggregatedMetrics } from "@/lib/aggregated-metrics";
 import type { MarketConfigShape } from "@/lib/market-config";
 
@@ -1387,10 +1392,55 @@ async function persistResults(
     await prisma.marketFact.createMany({ data: allFactRows });
   }
   if (leads.length > 0) {
+    // Story Lead → Video carry-over: persist the source MarketFact PKs on each
+    // lead at generation time so "Use as Video" can hand over real fact ids
+    // instead of re-deriving them from the display dataThreads strings later.
+    // createMany doesn't return ids, so requery the just-inserted facts and run
+    // the SAME pure resolver the route uses. Best-effort: a parse miss just
+    // leaves the lead textual (it still routes through the runtime resolver).
+    const insertedFacts = await prisma.marketFact.findMany({
+      where: { uploadId },
+      select: {
+        id: true,
+        neighbourhood: true,
+        metricFamily: true,
+        metricValue: true,
+        dateContext: true,
+        createdAt: true,
+      },
+    });
+    const resolverFacts: ResolverFact[] = insertedFacts.map((f) => ({
+      id: f.id,
+      neighbourhood: f.neighbourhood,
+      metricFamily: String(f.metricFamily),
+      value: f.metricValue,
+      date: f.dateContext ?? f.createdAt,
+    }));
+    const knownHoods = [
+      ...new Set(
+        insertedFacts
+          .map((f) => f.neighbourhood)
+          .filter((h): h is string => !!h && h.trim().length > 0),
+      ),
+    ];
+
     // createMany doesn't take Json fields cleanly on all providers — do
     // individual creates for the small N (3-8 leads per validation).
     for (const lead of leads) {
-      await prisma.marketStoryLead.create({ data: mapLeadToPrisma(lead, uploadId, userId) });
+      const threads = parseDataThreadStrings(lead.dataThreads, knownHoods);
+      const matchedIds: string[] = [];
+      const seen = new Set<string>();
+      for (const thread of threads) {
+        const m = matchThreadToFacts(thread, resolverFacts);
+        if (m && !seen.has(m.factId)) {
+          seen.add(m.factId);
+          matchedIds.push(m.factId);
+        }
+      }
+      const data = mapLeadToPrisma(lead, uploadId, userId);
+      data.anchorFactId = matchedIds[0] ?? null;
+      data.supportingFactIds = matchedIds.slice(1);
+      await prisma.marketStoryLead.create({ data });
     }
   }
 

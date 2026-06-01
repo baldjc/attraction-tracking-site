@@ -29,6 +29,7 @@ import {
 import {
   FactBlockGate,
   AutoLinkedPanel,
+  UnresolvedFactsBanner,
   type AutoLinkedFact,
 } from "@/components/content-planner/ScriptFactGate";
 import {
@@ -98,6 +99,8 @@ export default async function ScriptWizardPage({
       thumbnailWords: true,
       linkedFactIds: true,
       shootType: true,
+      factsResolutionState: true,
+      factsResolutionConfidence: true,
     },
   });
   if (!plan) {
@@ -139,9 +142,17 @@ export default async function ScriptWizardPage({
 
   const gate = evaluateFactGate(linkedFactIds.length);
   if (gate === "block") {
+    // A Story Lead whose dataThreads couldn't be bridged to facts lands here
+    // with zero links. Show the Story-Lead-aware unresolved banner (with
+    // auto-enrichment / manual-link / data-search escape hatches) instead of
+    // the generic 0-fact block.
     return (
       <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
-        <FactBlockGate planId={plan.id} />
+        {plan.factsResolutionState === "unresolved" ? (
+          <UnresolvedFactsBanner planId={plan.id} />
+        ) : (
+          <FactBlockGate planId={plan.id} />
+        )}
       </div>
     );
   }
@@ -213,6 +224,14 @@ export default async function ScriptWizardPage({
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
+      {plan.factsResolutionState === "from_textual_resolver" && (
+        <div className="mb-4 rounded-md border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800 dark:border-blue-800/60 dark:bg-blue-900/15 dark:text-blue-200">
+          Matched from lead data — confidence:{" "}
+          <span className="font-semibold capitalize">
+            {plan.factsResolutionConfidence ?? "fuzzy"}
+          </span>
+        </div>
+      )}
       <AutoLinkedPanel
         planId={plan.id}
         added={autoLinked}
