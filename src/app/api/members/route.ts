@@ -217,8 +217,8 @@ export async function GET() {
   const payingMembers = payingRows.length;
 
   // Program breakdown of MRR + paying member counts.
-  // foundations -> Foundations · mastery_* -> Growth · done_with_you -> Done With You
-  // Anything outside those buckets (e.g. editing_2/4) lands in "other".
+  // foundations -> Foundations · growth -> Growth · done_with_you -> Done With You
+  // Anything outside those buckets (e.g. production) lands in "other".
   const mrrByTier = { foundations: 0, growth: 0, doneWithYou: 0, other: 0 };
   const countByTier = { foundations: 0, growth: 0, doneWithYou: 0, other: 0 };
   for (const m of payingRows) {
@@ -226,7 +226,7 @@ export async function GET() {
     const t = m.serviceTier ?? "foundations";
     let bucket: keyof typeof mrrByTier;
     if (t === "foundations") bucket = "foundations";
-    else if (t === "mastery_2" || t === "mastery_4") bucket = "growth";
+    else if (t === "growth") bucket = "growth";
     else if (t === "done_with_you") bucket = "doneWithYou";
     else bucket = "other";
     mrrByTier[bucket] += cents;

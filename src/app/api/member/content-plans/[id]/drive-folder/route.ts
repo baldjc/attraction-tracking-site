@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { resolveUserFromSession } from "@/lib/session-utils";
-import { PRODUCTION_TIERS } from "@/lib/content-plan-utils";
 import { ensureVideoFolderForPlan } from "@/lib/google-drive";
+import { hasDriveFolderAccess } from "@/lib/service-tier";
 
 export const runtime = "nodejs";
 
@@ -24,11 +24,8 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     where: { id: user.id },
     select: { serviceTier: true },
   });
-  if (!dbUser?.serviceTier || !PRODUCTION_TIERS.includes(dbUser.serviceTier)) {
-    return NextResponse.json(
-      { error: "Drive folders require a Production plan." },
-      { status: 403 },
-    );
+  if (!hasDriveFolderAccess(dbUser?.serviceTier)) {
+    return NextResponse.json({ error: "tier_restricted" }, { status: 403 });
   }
 
   const ensured = await ensureVideoFolderForPlan(id, user.id);

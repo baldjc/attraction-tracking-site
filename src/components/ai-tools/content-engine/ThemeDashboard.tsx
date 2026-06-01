@@ -113,16 +113,16 @@ export default function ThemeDashboard({ themes, niche, city }: Props) {
       <div className="flex items-center justify-between mb-6">
         <div>
           <Link
-            href="/member/ai-tools"
+            href="/member/content-tools"
             className="flex items-center gap-1.5 text-xs text-[var(--abv-text)]/50 dark:text-white/50 hover:text-[var(--abv-ai-tools)] transition-colors mb-3"
           >
             <ArrowLeftIcon className="w-3.5 h-3.5" />
-            Back to AI Tools
+            Back to Content Tools
           </Link>
           <div className="flex items-center gap-3 flex-wrap">
             <h1 className="text-2xl font-bold text-[var(--abv-text)] dark:text-white">🚀 Content Engine</h1>
             <Link
-              href="/member/ai-tools/saved-ideas"
+              href="/member/content-tools/saved-ideas"
               className="text-xs font-medium text-[var(--abv-ai-tools)] hover:text-[var(--abv-ai-tools)] transition-colors"
             >
               💡 My saved ideas →

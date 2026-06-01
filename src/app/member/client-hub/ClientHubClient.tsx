@@ -28,7 +28,7 @@ interface HubData {
   serviceTier: string;
 }
 
-const GROWTH_DWY = ["mastery_2", "mastery_4", "done_with_you"];
+const GROWTH_DWY = ["growth", "done_with_you"];
 
 export default function ClientHubClient() {
   const [data, setData] = useState<HubData | null>(null);
@@ -61,8 +61,20 @@ export default function ClientHubClient() {
 
   if (forbidden || !data) {
     return (
-      <div className="bg-white border border-gray-200 rounded-xl p-12 text-center text-[var(--abv-text)]/40 text-sm">
-        This page is available for Production, Growth, and Done-With-You members.
+      <div className="bg-white border border-gray-200 rounded-xl p-10 text-center">
+        <FolderIcon className="w-10 h-10 mx-auto mb-4 text-[var(--abv-azure)] opacity-60" />
+        <h2 className="text-lg font-semibold text-[var(--abv-text)] mb-2">
+          Client Hub is a done-with-you feature
+        </h2>
+        <p className="text-sm text-[var(--abv-text)]/60 max-w-md mx-auto mb-6">
+          Your assets folder, production pipeline, and quick links live here once
+          you have a Production, Growth, or Done-With-You plan. Want a team to
+          handle the production work for you?
+        </p>
+        <LinkButton href="/member/hire">
+          Explore Hire a Human
+          <ArrowRightIcon className="w-4 h-4" />
+        </LinkButton>
       </div>
     );
   }

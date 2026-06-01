@@ -83,7 +83,7 @@ export default function OnboardingBanner() {
             Finish building your avatar to unlock all AI tools
           </p>
           <Link
-            href="/member/ai-tools/avatar-architect"
+            href="/member/content-tools/avatar-architect"
             className="text-xs text-amber-700 dark:text-amber-400 underline underline-offset-2 mt-0.5 inline-block"
           >
             Build your avatar →

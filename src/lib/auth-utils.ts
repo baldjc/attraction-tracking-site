@@ -2,10 +2,8 @@ import { auth } from "@/lib/auth";
 import { ServiceTier } from "@/generated/prisma/enums";
 
 const EDITOR_VISIBLE_TIERS: ServiceTier[] = [
-  ServiceTier.editing_2,
-  ServiceTier.editing_4,
-  ServiceTier.mastery_2,
-  ServiceTier.mastery_4,
+  ServiceTier.production,
+  ServiceTier.growth,
 ];
 
 const DEFAULT_OWNER_EMAIL = "jared@attractionbyvideo.com";

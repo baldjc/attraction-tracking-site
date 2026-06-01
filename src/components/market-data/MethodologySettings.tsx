@@ -20,6 +20,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { Button } from "@/components/ui/Button";
 import { ToastProvider, useToast } from "@/components/ToastProvider";
+import { formatActionImpactPercent } from "@/lib/cost-display";
 import {
   DEFAULT_METHODOLOGY,
   PRESETS,
@@ -163,6 +164,8 @@ interface RevalidateEstimate {
   factCount: number;
   estimateUsd: number;
   remainingUsd: number;
+  capUsd: number;
+  monthSpendUsd: number;
   overBudget: boolean;
 }
 
@@ -283,8 +286,8 @@ function MethodologySettingsInner() {
     : !estimate.hasUploads
       ? "You have no validated uploads to re-validate yet."
       : estimate.overBudget
-        ? `Re-validating ~${estimate.factCount} facts (est. $${estimate.estimateUsd.toFixed(2)}) would exceed your remaining $${estimate.remainingUsd.toFixed(2)} monthly budget.`
-        : `Re-runs your last ${estimate.uploadCount} upload${estimate.uploadCount === 1 ? "" : "s"} (~${estimate.factCount} facts, est. $${estimate.estimateUsd.toFixed(2)}).`;
+        ? `Re-validating ~${estimate.factCount} facts (${formatActionImpactPercent(estimate.estimateUsd, estimate.capUsd)} of your monthly allowance) would exceed what's left this month.`
+        : `Re-runs your last ${estimate.uploadCount} upload${estimate.uploadCount === 1 ? "" : "s"} (~${estimate.factCount} facts, ${formatActionImpactPercent(estimate.estimateUsd, estimate.capUsd)} of your monthly allowance).`;
 
   return (
     <section className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#0f1722] overflow-hidden">
@@ -528,7 +531,8 @@ function MethodologySettingsInner() {
                   </span>
                   {estimate?.hasUploads && (
                     <span className="text-xs text-gray-500 dark:text-gray-400">
-                      ~{estimate.factCount} facts · est. ${estimate.estimateUsd.toFixed(2)}
+                      ~{estimate.factCount} facts ·{" "}
+                      {formatActionImpactPercent(estimate.estimateUsd, estimate.capUsd)} of allowance
                     </span>
                   )}
                 </div>

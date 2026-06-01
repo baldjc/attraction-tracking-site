@@ -44,6 +44,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AiThinking, type PipelineStep } from "@/components/ai/AiThinking";
 import { useAiThinking } from "@/lib/use-ai-thinking";
+import { formatUsagePercent } from "@/lib/cost-display";
 import type { ShootType } from "./Step4ShootType";
 import type { ScriptViolation } from "@/lib/script-content-rules";
 
@@ -769,8 +770,9 @@ function DoneView({
           {done.metrics.dialogueWordCount.toLocaleString()} dialogue words ·{" "}
           {done.metrics.anchoredDetailCount} anchored details (
           {done.metrics.anchoredDetailsPer120Words.toFixed(2)} per 120 words)
-          {" · "}${done.monthSpendUsd.toFixed(2)} of ${done.capUsd.toFixed(2)}
-          {" "}month-to-date.
+          {" · "}
+          {formatUsagePercent(done.monthSpendUsd, done.capUsd)} of your monthly
+          {" "}Content Tools allowance used.
         </p>
         {done.softWarning && (
           <p className="mt-1 text-xs text-amber-800 dark:text-amber-200">
@@ -1081,7 +1083,8 @@ export function SmartRegeneratePanel({
       </div>
 
       <p className="mt-2 text-right text-[11px] text-gray-500 dark:text-gray-400">
-        Each regeneration ≈ $0.30–0.50 in AI cost. Suggestions ≈ $0.05.
+        Each regeneration uses a small slice of your monthly Content Tools
+        allowance; suggestions use even less.
       </p>
     </div>
   );

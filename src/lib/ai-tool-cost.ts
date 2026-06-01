@@ -1,5 +1,6 @@
 import prisma from "@/lib/prisma";
 import Decimal from "decimal.js-light";
+import { TIER_CONFIG, isServiceTier } from "@/lib/service-tier";
 
 // Sonnet pricing: $3 / 1M input tokens, $12 / 1M output tokens
 const INPUT_COST_PER_TOKEN = new Decimal("0.000003");
@@ -105,9 +106,11 @@ export async function checkCostCap(userId: string): Promise<{
 // the legacy AI-tool routes are removed.
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Fallback caps for users whose serviceTier can't be resolved to a canonical
+// tier. Mirror the Foundations tier (the most restrictive paid-or-free floor).
 export const COST_CAPS = {
-  MEMBER_MONTHLY_HARD_CAP_USD: 20,
-  MEMBER_MONTHLY_SOFT_WARNING_USD: 15,
+  MEMBER_MONTHLY_HARD_CAP_USD: TIER_CONFIG.foundations.monthlyCapUsd,
+  MEMBER_MONTHLY_SOFT_WARNING_USD: TIER_CONFIG.foundations.softWarningUsd,
 } as const;
 
 export interface CostCapStatus {
@@ -115,25 +118,34 @@ export interface CostCapStatus {
   softWarning: boolean;
   monthSpendUsd: number;
   capUsd: number;
+  softWarningUsd: number;
 }
 
 /**
  * v2 cost-cap status for the data-first pipeline. Admins are never blocked.
- * Member per-user overrides on `aiToolsMonthlyCapOverride` are respected as
- * the effective hard cap (matches v1 behavior).
+ *
+ * Hard cap + soft-warning threshold are driven by the member's canonical
+ * service tier (see `TIER_CONFIG`): Foundations/Production cap at $25 (warn
+ * $20), Growth/Done-With-You cap at $100 (warn $80). A per-user
+ * `aiToolsMonthlyCapOverride` still wins over the tier default as the hard cap.
  */
 export async function getCostCapStatus(userId: string): Promise<CostCapStatus> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { role: true, aiToolsMonthlyCapOverride: true },
+    select: { role: true, aiToolsMonthlyCapOverride: true, serviceTier: true },
   });
+
+  const tierConfig = isServiceTier(user?.serviceTier)
+    ? TIER_CONFIG[user.serviceTier]
+    : TIER_CONFIG.foundations;
 
   if (user?.role === "admin") {
     return {
       hardBlocked: false,
       softWarning: false,
       monthSpendUsd: 0,
-      capUsd: COST_CAPS.MEMBER_MONTHLY_HARD_CAP_USD,
+      capUsd: tierConfig.monthlyCapUsd,
+      softWarningUsd: tierConfig.softWarningUsd,
     };
   }
 
@@ -149,13 +161,18 @@ export async function getCostCapStatus(userId: string): Promise<CostCapStatus> {
   const capUsd =
     user?.aiToolsMonthlyCapOverride != null
       ? new Decimal(user.aiToolsMonthlyCapOverride.toString()).toNumber()
-      : COST_CAPS.MEMBER_MONTHLY_HARD_CAP_USD;
+      : tierConfig.monthlyCapUsd;
+
+  // Soft warning fires at the tier's threshold, but never above the effective
+  // hard cap (an override could lower the cap below the tier soft threshold).
+  const softWarningUsd = Math.min(tierConfig.softWarningUsd, capUsd);
 
   return {
     hardBlocked: monthSpendUsd >= capUsd,
-    softWarning: monthSpendUsd >= COST_CAPS.MEMBER_MONTHLY_SOFT_WARNING_USD,
+    softWarning: monthSpendUsd >= softWarningUsd,
     monthSpendUsd,
     capUsd,
+    softWarningUsd,
   };
 }
 

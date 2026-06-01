@@ -52,7 +52,7 @@ export default function ContentEnginePage() {
           <p className="text-sm text-[var(--abv-text)]/60 mb-6">
             Your Content Engine needs an avatar to work. Build yours now — it only takes a few minutes and powers every AI tool.
           </p>
-          <LinkButton href="/member/ai-tools/avatar-architect" variant="aiTools">
+          <LinkButton href="/member/content-tools/avatar-architect" variant="aiTools">
             Build your avatar →
           </LinkButton>
         </div>

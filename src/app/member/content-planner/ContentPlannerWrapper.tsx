@@ -5,7 +5,7 @@ import ContentPlannerClient from "./ContentPlannerClient";
 import ContentPlannerUpgrade from "@/components/ContentPlannerUpgrade";
 import OrphanScriptsBanner from "@/components/content-planner/OrphanScriptsBanner";
 
-const PRODUCTION_TIERS = ["editing_2", "editing_4", "mastery_2", "mastery_4", "done_with_you"];
+const PRODUCTION_TIERS = ["production", "growth", "done_with_you"];
 
 type LoadState =
   | { kind: "loading" }

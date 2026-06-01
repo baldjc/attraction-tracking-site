@@ -220,11 +220,11 @@ function toDateInput(val: string | null) {
 }
 
 const TOOL_ROUTES: Partial<Record<string, string>> = {
-  script: "/member/ai-tools/arc-script-builder",
-  review: "/member/ai-tools/script-review",
-  title: "/member/ai-tools/title-thumbnail-analyzer",
-  description: "/member/ai-tools/description-generator",
-  repurpose: "/member/ai-tools/repurpose-content",
+  script: "/member/content-tools/arc-script-builder",
+  review: "/member/content-tools/script-review",
+  title: "/member/content-tools/title-thumbnail-analyzer",
+  description: "/member/content-tools/description-generator",
+  repurpose: "/member/content-tools/repurpose-content",
 };
 
 const ALL_TOOLS = [
@@ -1892,7 +1892,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
                           transcript: form.script || "",
                           contentPlanId: plan.id,
                         }));
-                        window.location.href = "/member/ai-tools/description-generator";
+                        window.location.href = "/member/content-tools/description-generator";
                       }}
                       className="text-xs text-[#185FA5] hover:underline"
                     >

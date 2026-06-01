@@ -4,10 +4,8 @@ import prisma from "@/lib/prisma";
 import { ServiceTier } from "@/generated/prisma/client";
 
 const PRODUCTION_TIERS: ServiceTier[] = [
-  ServiceTier.editing_2,
-  ServiceTier.editing_4,
-  ServiceTier.mastery_2,
-  ServiceTier.mastery_4,
+  ServiceTier.production,
+  ServiceTier.growth,
   ServiceTier.done_with_you,
 ];
 

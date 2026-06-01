@@ -250,7 +250,7 @@ function MemberSettingsPageInner() {
         <div className="px-6 py-5 border-b border-[var(--abv-text)]/10 dark:border-[#2a2a2a]">
           <h2 className="font-semibold text-[var(--abv-text)] dark:text-[#e2e8f0]">Avatar Profile</h2>
           <p className="text-sm text-[var(--abv-text)]/50 dark:text-[#718096] mt-0.5">
-            Your ideal client avatar. All AI Tools pull from this automatically.
+            Your ideal client avatar. All Content Tools pull from this automatically.
           </p>
         </div>
         <div className="p-6">
@@ -266,7 +266,7 @@ function MemberSettingsPageInner() {
                     <p className="text-xs text-[var(--abv-text)]/40 dark:text-[#718096] mt-0.5">Last updated {new Date(avatar.updatedAt).toLocaleDateString()}</p>
                   )}
                 </div>
-                <Link href="/member/ai-tools/avatar-architect" className="text-xs text-[var(--abv-azure)] border border-[var(--abv-azure)]/30 px-3 py-1.5 rounded-lg hover:bg-[var(--abv-dark)]/10 transition-colors whitespace-nowrap">
+                <Link href="/member/content-tools/avatar-architect" className="text-xs text-[var(--abv-azure)] border border-[var(--abv-azure)]/30 px-3 py-1.5 rounded-lg hover:bg-[var(--abv-dark)]/10 transition-colors whitespace-nowrap">
                   Rebuild Avatar
                 </Link>
               </div>
@@ -344,7 +344,7 @@ function MemberSettingsPageInner() {
                   <p className="font-semibold text-amber-800 dark:text-amber-400 text-sm">No avatar profile yet</p>
                   <p className="text-amber-700 dark:text-amber-500 text-sm mt-0.5">
                     Use the{" "}
-                    <Link href="/member/ai-tools/avatar-architect" className="underline font-medium">Avatar Architect tool</Link>{" "}
+                    <Link href="/member/content-tools/avatar-architect" className="underline font-medium">Avatar Architect tool</Link>{" "}
                     to build one through a guided coaching conversation, or paste your existing avatar document below.
                   </p>
                 </div>

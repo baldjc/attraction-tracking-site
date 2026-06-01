@@ -262,7 +262,7 @@ export default function ListingVideoChat({ initialResponse, propertyData, onRese
     } catch {}
     window.location.href = window.location.pathname.includes("/admin/") 
       ? "/admin/ai-tools/arc-script-builder" 
-      : "/member/ai-tools/arc-script-builder";
+      : "/member/content-tools/arc-script-builder";
   }
 
   async function handleSaveToPlanner(opt: ListingOption) {

@@ -100,7 +100,7 @@ const editorLinks = [
   { href: "/admin/activity-log", label: "Activity Log", icon: ClockIcon, section: "System" },
 ];
 
-const PRODUCTION_TIERS = ["editing_2", "editing_4", "mastery_2", "mastery_4", "done_with_you"];
+const PRODUCTION_TIERS = ["production", "growth", "done_with_you"];
 
 // Sprint 9 + partial revert: Dashboard sits above four semantic groups
 // (CREATE / IMPROVE / GROW / WORKSPACE). Help + Notifications stay in the
@@ -113,7 +113,7 @@ const memberLinks = [
 
   // CREATE
   { href: "/member/content-planner", label: "Content Planner", icon: CalendarDaysIcon,         featureKey: null,        colour: "var(--abv-azure)",   tierRequired: PRODUCTION_TIERS, section: "CREATE" },
-  { href: "/member/ai-tools",        label: "AI Tools",        icon: SparklesIcon,             featureKey: "ai_tools",  colour: "var(--abv-ai-tools)", tierRequired: null,           badgeKey: "unread_tools" },
+  { href: "/member/content-tools",        label: "Content Tools",        icon: SparklesIcon,             featureKey: "ai_tools",  colour: "var(--abv-ai-tools)", tierRequired: null,           badgeKey: "unread_tools" },
   { href: "/member/market-data",     label: "Market Data",     icon: ChartBarSquareIcon,       featureKey: "tool_market_data",            colour: "var(--abv-azure)",   tierRequired: null },
   { href: "/member/knowledge-base",  label: "Knowledge Base",  icon: BookOpenIcon,             featureKey: "tool_neighbourhood_knowledge", colour: "var(--abv-azure)",   tierRequired: null },
 

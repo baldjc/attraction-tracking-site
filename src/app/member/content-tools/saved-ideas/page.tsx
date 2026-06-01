@@ -75,7 +75,7 @@ export default function SavedIdeasPage() {
             Star ideas in the Content Engine to save them here for later.
           </p>
           <Link
-            href="/member/ai-tools/content-engine"
+            href="/member/content-tools/content-engine"
             className="inline-flex items-center gap-2 $1var(--abv-ai-tools)$2 hover:bg-[var(--abv-ai-tools)]/85 text-white font-semibold px-5 py-2.5 rounded-lg text-sm transition-colors"
           >
             Go to Content Engine →

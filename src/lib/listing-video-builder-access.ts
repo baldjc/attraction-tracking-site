@@ -7,7 +7,7 @@
  * everyone else.
  *
  * Admins and editors always see the tool via the existing role check
- * in src/app/member/ai-tools/page.tsx — this allowlist is only for
+ * in src/app/member/content-tools/page.tsx — this allowlist is only for
  * members who need to see the tool in the normal member experience.
  *
  * Remove this allowlist (and its call sites) once the tool goes live

@@ -37,9 +37,9 @@ export default async function AIToolsHubPage() {
             Five tools that turn your channel into a system. Use them in this order until they become muscle memory.
           </p>
         </div>
-        <AIToolsUsageLink basePath="/member/ai-tools" />
+        <AIToolsUsageLink basePath="/member/content-tools" />
       </header>
-      <AIToolsHub basePath="/member/ai-tools" featureFlags={featureFlags} />
+      <AIToolsHub basePath="/member/content-tools" featureFlags={featureFlags} />
     </div>
   );
 }

@@ -3,7 +3,7 @@
 import { auth } from "@/lib/auth";
 import Link from "next/link";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
-import RepurposeContentPage from "@/app/member/ai-tools/repurpose-content/page";
+import RepurposeContentPage from "@/app/member/content-tools/repurpose-content/page";
 
 export default function AdminRepurposeContentPage() {
   return (

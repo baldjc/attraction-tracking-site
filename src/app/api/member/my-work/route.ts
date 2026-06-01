@@ -51,7 +51,7 @@ export async function GET() {
       title: s.videoTitle || "Untitled Script",
       createdAt: s.createdAt.toISOString(),
       expiresAt: null,
-      toolUrl: `/member/ai-tools/arc-script-builder?load=${s.id}`,
+      toolUrl: `/member/content-tools/arc-script-builder?load=${s.id}`,
       badge: "Script",
     })),
     ...scriptDrafts.map((d) => ({
@@ -60,7 +60,7 @@ export async function GET() {
       title: d.videoTitle || "Untitled Draft",
       createdAt: d.updatedAt.toISOString(),
       expiresAt: null,
-      toolUrl: `/member/ai-tools/arc-script-builder?resume=${d.id}`,
+      toolUrl: `/member/content-tools/arc-script-builder?resume=${d.id}`,
       badge: "Script In Progress",
     })),
     ...ideas.map((i) => ({
@@ -69,7 +69,7 @@ export async function GET() {
       title: i.title || "Untitled Idea",
       createdAt: i.createdAt.toISOString(),
       expiresAt: null,
-      toolUrl: `/member/ai-tools/content-engine?idea=${i.id}`,
+      toolUrl: `/member/content-tools/content-engine?idea=${i.id}`,
       badge: "Idea",
     })),
     ...conversations.map((c) => {
@@ -83,8 +83,8 @@ export async function GET() {
         createdAt: c.createdAt.toISOString(),
         expiresAt: expiry.toISOString(),
         toolUrl: isReview
-          ? `/member/ai-tools/script-review?load=${c.id}`
-          : `/member/ai-tools/title-thumbnail-analyzer?load=${c.id}`,
+          ? `/member/content-tools/script-review?load=${c.id}`
+          : `/member/content-tools/title-thumbnail-analyzer?load=${c.id}`,
         badge: isReview ? "Review" : "Analysis",
       };
     }),
@@ -97,7 +97,7 @@ export async function GET() {
         title: r.videoTitle || `Repurposed (${r.toolType})`,
         createdAt: r.createdAt.toISOString(),
         expiresAt: expiry.toISOString(),
-        toolUrl: `/member/ai-tools/repurpose-content?load=${r.id}`,
+        toolUrl: `/member/content-tools/repurpose-content?load=${r.id}`,
         badge: "Repurposed",
       };
     }),

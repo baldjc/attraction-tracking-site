@@ -20,6 +20,7 @@ import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import { Button } from "@/components/ui/Button";
 import { AiThinking } from "@/components/ai/AiThinking";
 import { FactPickerModal } from "./FactPickerModal";
+import { formatActionImpactPercent } from "@/lib/cost-display";
 import type { ScriptDataNeed } from "@/lib/script-data-resolver";
 
 const BACK_HREF = "/member/content-planner";
@@ -28,10 +29,9 @@ const BACK_HREF = "/member/content-planner";
 export interface DataSearchProps {
   need: ScriptDataNeed | null;
   estimatedCostUsd: number;
-}
-
-function formatUsd(n: number): string {
-  return `$${(Math.round(n * 100) / 100).toFixed(2)}`;
+  /** Member's monthly Content Tools allowance cap (USD) — used to render the
+   *  estimate as a percentage; the raw dollar figure is never shown to members. */
+  capUsd: number;
 }
 
 // ── Shared Layer-3 controls ─────────────────────────────────────────────────
@@ -50,6 +50,7 @@ function RunDataSearchButton({
   planId,
   need,
   estimatedCostUsd,
+  capUsd,
 }: {
   planId: string;
 } & DataSearchProps) {
@@ -123,7 +124,8 @@ function RunDataSearchButton({
         <AiThinking mode="quick" label="Searching your data" />
       ) : (
         <Button variant="outline" onClick={run}>
-          Run data search (~{formatUsd(estimatedCostUsd)})
+          Run data search ({formatActionImpactPercent(estimatedCostUsd, capUsd)}{" "}
+          of monthly allowance)
         </Button>
       )}
       {state.kind === "done" && (
@@ -335,6 +337,7 @@ export function FactBlockGate({
           planId={planId}
           need={dataSearch?.need ?? null}
           estimatedCostUsd={dataSearch?.estimatedCostUsd ?? 0}
+          capUsd={dataSearch?.capUsd ?? 0}
         />
         <Button variant="outline" onClick={() => setManualOpen(true)}>
           Tell me what&apos;s missing
@@ -447,6 +450,7 @@ export function UnresolvedFactsBanner({
           planId={planId}
           need={dataSearch?.need ?? null}
           estimatedCostUsd={dataSearch?.estimatedCostUsd ?? 0}
+          capUsd={dataSearch?.capUsd ?? 0}
         />
         <Button variant="outline" onClick={() => setManualOpen(true)}>
           Tell me what&apos;s missing

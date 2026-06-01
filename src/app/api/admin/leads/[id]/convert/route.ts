@@ -7,10 +7,8 @@ import { processAuditJob } from "@/lib/process-audit-job";
 // Must match the Prisma ServiceTier enum exactly.
 const ALLOWED_TIERS = [
   "foundations",
-  "editing_2",
-  "editing_4",
-  "mastery_2",
-  "mastery_4",
+  "production",
+  "growth",
   "done_with_you",
 ] as const;
 type Tier = (typeof ALLOWED_TIERS)[number];

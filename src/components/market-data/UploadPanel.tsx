@@ -7,6 +7,7 @@ import { useAiThinking } from "@/lib/use-ai-thinking";
 import { type ColumnMapping } from "@/lib/market-config";
 import { Button } from "@/components/ui/Button";
 import ColumnMapper from "@/components/market-data/ColumnMapper";
+import { formatActionImpactPercent } from "@/lib/cost-display";
 
 interface Props {
   existingMapping: ColumnMapping | null;
@@ -78,6 +79,7 @@ interface ReplaceDialogState {
   totalFacts: number;
   totalLeads: number;
   estimatedCost: number;
+  capUsd: number;
   isBulk: boolean;
 }
 
@@ -168,6 +170,7 @@ export default function UploadPanel({
    *  on a duplicate-month conflict. Drives the dialog's $ estimate. */
   const [recentAvgCostUsd, setRecentAvgCostUsd] =
     useState<number>(DEFAULT_AVG_COST_USD);
+  const [costCapUsd, setCostCapUsd] = useState<number>(0);
   const [replaceDialog, setReplaceDialog] = useState<ReplaceDialogState | null>(
     null,
   );
@@ -398,6 +401,9 @@ export default function UploadPanel({
           if (typeof j.recentAvgCostUsd === "number" && j.recentAvgCostUsd > 0) {
             setRecentAvgCostUsd(j.recentAvgCostUsd);
           }
+          if (typeof j.capUsd === "number" && j.capUsd > 0) {
+            setCostCapUsd(j.capUsd);
+          }
           setStage("picking");
           return;
         }
@@ -455,6 +461,7 @@ export default function UploadPanel({
       totalFacts,
       totalLeads,
       estimatedCost,
+      capUsd: costCapUsd,
       isBulk: targets.length >= BULK_REPLACE_THRESHOLD,
     });
   }
@@ -911,7 +918,8 @@ function ReplaceConfirmDialog({
   onCancel: () => void;
   onConfirm: () => void;
 }) {
-  const { targets, totalFacts, totalLeads, estimatedCost, isBulk } = state;
+  const { targets, totalFacts, totalLeads, estimatedCost, capUsd, isBulk } =
+    state;
   const single = targets[0];
 
   // Esc-to-cancel — keeps the dialog reachable by keyboard users without
@@ -925,13 +933,16 @@ function ReplaceConfirmDialog({
     return () => window.removeEventListener("keydown", onKey);
   }, [onCancel]);
 
-  const costStr = `~$${estimatedCost.toFixed(2)}`;
+  const costStr =
+    capUsd > 0
+      ? `~${formatActionImpactPercent(estimatedCost, capUsd)} of your monthly Content Tools allowance`
+      : "a portion of your monthly Content Tools allowance";
   const title = isBulk
     ? `Replace ${targets.length} months?`
     : `Replace ${single.label}?`;
   const body = isBulk
-    ? `This will delete ${totalFacts.toLocaleString()} facts and ${totalLeads.toLocaleString()} story leads across ${targets.length} months, then re-validate. Estimated cost: ${costStr} of your monthly AI budget. This is unrecoverable.`
-    : `This will delete the existing ${single.factCount.toLocaleString()} facts and ${single.storyLeadCount.toLocaleString()} story leads for ${single.label}, then re-validate the new file. Estimated cost: ${costStr}. This counts toward your monthly AI budget.`;
+    ? `This will delete ${totalFacts.toLocaleString()} facts and ${totalLeads.toLocaleString()} story leads across ${targets.length} months, then re-validate. Estimated cost: ${costStr}. This is unrecoverable.`
+    : `This will delete the existing ${single.factCount.toLocaleString()} facts and ${single.storyLeadCount.toLocaleString()} story leads for ${single.label}, then re-validate the new file. Estimated cost: ${costStr}.`;
   const confirmLabel = isBulk
     ? `Yes, replace ${targets.length} months`
     : "Yes, replace";

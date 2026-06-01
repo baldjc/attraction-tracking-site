@@ -852,7 +852,7 @@ export default function ArcScriptChatPhase({
               emoji="📋"
               title="Review Your Script"
               description="Score your finished script against the 14 Attraction principles and get a coaching breakdown."
-              href="/member/ai-tools/script-review"
+              href="/member/content-tools/script-review"
               buttonLabel="Open Script Review"
             />
           )}

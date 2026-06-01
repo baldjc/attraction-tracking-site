@@ -73,10 +73,8 @@ const PAGE_SIZE = 50;
 
 const tierLabels: Record<string, string> = {
   foundations: "Foundations",
-  editing_2: "Production (2)",
-  editing_4: "Production (4)",
-  mastery_2: "Growth (2)",
-  mastery_4: "Growth (4)",
+  production: "Production",
+  growth: "Growth",
   done_with_you: "Done-With-You",
 };
 
@@ -91,9 +89,9 @@ function tierBadge(tier: string) {
   const cls =
     tier === "foundations"
       ? "bg-[var(--abv-dark)] text-white"
-      : tier === "editing_2" || tier === "editing_4"
+      : tier === "production"
       ? "bg-[var(--abv-scores)] text-white"
-      : tier === "mastery_2" || tier === "mastery_4"
+      : tier === "growth"
       ? "bg-[var(--abv-hire)] text-white"
       : tier === "done_with_you"
       ? "bg-[#78350f] text-[#fef3c7]"
@@ -176,8 +174,8 @@ function fmtDate(iso: string | null) {
 function matchesTierFilter(tier: string, filter: TierFilter) {
   if (filter === "all") return true;
   if (filter === "foundations") return tier === "foundations";
-  if (filter === "production") return tier === "editing_2" || tier === "editing_4";
-  if (filter === "growth") return tier === "mastery_2" || tier === "mastery_4";
+  if (filter === "production") return tier === "production";
+  if (filter === "growth") return tier === "growth";
   if (filter === "done_with_you") return tier === "done_with_you";
   return true;
 }

@@ -603,7 +603,7 @@ export default function ScriptReviewUI({ fetchBaseline = false, isAdmin = false 
           emoji="♻️"
           title="Repurpose Your Content"
           description="Turn your video transcript into a newsletter, LinkedIn article, Facebook post, or blog post in one click."
-          href="/member/ai-tools/repurpose-content"
+          href="/member/content-tools/repurpose-content"
           buttonLabel="Open Repurpose Content"
         />
       )}

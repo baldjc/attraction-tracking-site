@@ -18,17 +18,17 @@ import MarkdownTextarea from "@/components/MarkdownTextarea";
 
 const AI_TOOLS = [
   { value: "", label: "None" },
-  { value: "/member/ai-tools/avatar-architect", label: "Avatar Architect" },
-  { value: "/member/ai-tools/title-creator", label: "Title Creator" },
-  { value: "/member/ai-tools/title-analyzer", label: "Title & Thumbnail Analyzer" },
-  { value: "/member/ai-tools/arc-script-builder", label: "ARC Script Builder" },
+  { value: "/member/content-tools/avatar-architect", label: "Avatar Architect" },
+  { value: "/member/content-tools/title-creator", label: "Title Creator" },
+  { value: "/member/content-tools/title-thumbnail-analyzer", label: "Title & Thumbnail Analyzer" },
+  { value: "/member/content-tools/arc-script-builder", label: "ARC Script Builder" },
 ];
 
 const AI_TOOL_LABELS: Record<string, string> = {
-  "/member/ai-tools/avatar-architect": "Build Your Avatar",
-  "/member/ai-tools/title-creator": "Create Titles",
-  "/member/ai-tools/title-analyzer": "Analyze Title & Thumbnail",
-  "/member/ai-tools/arc-script-builder": "Build ARC Script",
+  "/member/content-tools/avatar-architect": "Build Your Avatar",
+  "/member/content-tools/title-creator": "Create Titles",
+  "/member/content-tools/title-thumbnail-analyzer": "Analyze Title & Thumbnail",
+  "/member/content-tools/arc-script-builder": "Build ARC Script",
 };
 
 const FIELD_TYPES = [

@@ -161,7 +161,7 @@ export default function AcademyHome() {
               href="/member/academy/ai-tools"
               className="inline-flex items-center gap-1.5 text-sm font-medium text-green-700 dark:text-green-400 hover:underline"
             >
-              Explore AI Tools <ArrowRightIcon className="w-4 h-4" />
+              Explore Content Tools <ArrowRightIcon className="w-4 h-4" />
             </Link>
             <Link
               href="/member/academy/foundations"

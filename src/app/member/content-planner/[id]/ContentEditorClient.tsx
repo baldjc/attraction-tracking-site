@@ -7,6 +7,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { ContentPlan } from "@/components/content-planner/ContentPlanEditModal";
 import { getStatusOptions, hasEditDueDate, PRODUCTION_TIERS } from "@/lib/content-plan-utils";
+import { hasDriveFolderAccess } from "@/lib/service-tier";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -541,6 +542,7 @@ export default function ContentEditorClient({
   const statusOptions = useMemo(() => getStatusOptions(serviceTier), [serviceTier]);
   const isFoundations = FOUNDATIONS_TIERS.includes(serviceTier);
   const isProduction = PRODUCTION_TIERS.includes(serviceTier);
+  const canUseDrive = hasDriveFolderAccess(serviceTier);
   const showEditDue = hasEditDueDate(serviceTier);
 
   // ── data hydration ────────────────────────────────────────────────────────
@@ -1124,7 +1126,7 @@ Output as markdown with ## per talking point, ### per section. Every stat: \`fig
             {activeTab === "planning" && (
               <PlanningTab
                 planId={planId}
-                isProduction={isProduction}
+                canUseDrive={canUseDrive}
                 form={form}
                 update={update}
                 statusOptions={statusOptions}
@@ -1268,7 +1270,7 @@ function ScriptPane({
       }}>
         <ToolbarBtn label="↻ Regenerate" onClick={onRegenerate} />
         <Link
-          href={`/member/ai-tools/script-review?planId=${planId}`}
+          href={`/member/content-tools/script-review?planId=${planId}`}
           style={{
             padding: "6px 12px", borderRadius: 999, fontSize: 11,
             fontWeight: 600, color: "var(--abv-azure)",
@@ -1444,13 +1446,13 @@ function Row({ k, v }: { k: string; v: React.ReactNode }) {
 }
 
 function PlanningTab({
-  planId, isProduction, form, update, statusOptions, themes, showEditDue,
+  planId, canUseDrive, form, update, statusOptions, themes, showEditDue,
   onArchive, onBlur,
   onGenerateResearchPrompt, researchPromptCopied, researchPromptError,
   statusSelectRef, shootDateRef, editDueDateRef, publishDateRef, researchNotesRef,
 }: {
   planId: string;
-  isProduction: boolean;
+  canUseDrive: boolean;
   form: Form;
   update: <K extends keyof Form>(k: K, v: Form[K]) => void;
   statusOptions: string[];
@@ -1494,7 +1496,7 @@ function PlanningTab({
         <DateRow label="Publish" value={form.publishDate} onChange={(v) => update("publishDate", v)} onBlur={onBlur} inputRef={publishDateRef} />
       </Panel>
 
-      {isProduction && <DriveFolderSection planId={planId} />}
+      {canUseDrive && <DriveFolderSection planId={planId} />}
 
       <Panel title="Theme & location">
         <div style={{ padding: "8px 14px" }}>
@@ -1844,13 +1846,13 @@ function MoreItem({ children, onClick, danger }: { children: React.ReactNode; on
 
 function ToolsTab({ planId, lineage }: { planId: string; lineage: Lineage | null }) {
   const tools: Array<{ icon: string; name: string; desc: string; href: string; primary?: boolean }> = [
-    { icon: "✅", name: "Script Review", desc: "Score this script before you film", href: `/member/ai-tools/script-review?planId=${planId}`, primary: true },
-    { icon: "📝", name: "ARC Builder", desc: "Rebuild from outline", href: `/member/ai-tools/arc-script-builder?planId=${planId}` },
-    { icon: "🔬", name: "Title & Thumb", desc: "A/B test the hook visually", href: `/member/ai-tools/title-thumbnail-analyzer?planId=${planId}` },
-    { icon: "⚙️", name: "Content Engine", desc: "Spin variations", href: `/member/ai-tools/content-engine?planId=${planId}` },
-    { icon: "🎯", name: "Avatar Architect", desc: "Recheck against your avatar", href: `/member/ai-tools/avatar-architect` },
-    { icon: "🔁", name: "Repurpose", desc: "One video into shorts, threads, emails", href: `/member/ai-tools/repurpose-content?planId=${planId}` },
-    { icon: "📄", name: "Description Generator", desc: "YouTube descriptions, ready to paste", href: `/member/ai-tools/description-generator?planId=${planId}` },
+    { icon: "✅", name: "Script Review", desc: "Score this script before you film", href: `/member/content-tools/script-review?planId=${planId}`, primary: true },
+    { icon: "📝", name: "ARC Builder", desc: "Rebuild from outline", href: `/member/content-tools/arc-script-builder?planId=${planId}` },
+    { icon: "🔬", name: "Title & Thumb", desc: "A/B test the hook visually", href: `/member/content-tools/title-thumbnail-analyzer?planId=${planId}` },
+    { icon: "⚙️", name: "Content Engine", desc: "Spin variations", href: `/member/content-tools/content-engine?planId=${planId}` },
+    { icon: "🎯", name: "Avatar Architect", desc: "Recheck against your avatar", href: `/member/content-tools/avatar-architect` },
+    { icon: "🔁", name: "Repurpose", desc: "One video into shorts, threads, emails", href: `/member/content-tools/repurpose-content?planId=${planId}` },
+    { icon: "📄", name: "Description Generator", desc: "YouTube descriptions, ready to paste", href: `/member/content-tools/description-generator?planId=${planId}` },
   ];
   return (
     <>
@@ -2070,7 +2072,7 @@ function PublishTab({
           display: "flex", justifyContent: "flex-end",
         }}>
           <Link
-            href={`/member/ai-tools/description-generator?planId=${planId}`}
+            href={`/member/content-tools/description-generator?planId=${planId}`}
             style={{ fontSize: 11, color: "var(--abv-azure)", fontWeight: 600 }}
           >
             ✍ Generate with AI

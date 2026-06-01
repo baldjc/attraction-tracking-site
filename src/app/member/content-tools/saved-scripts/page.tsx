@@ -123,11 +123,11 @@ export default function SavedScriptsPage() {
     <div className="max-w-3xl mx-auto px-4 py-6">
       <div className="mb-6">
         <Link
-          href="/member/ai-tools"
+          href="/member/content-tools"
           className="inline-flex items-center gap-1.5 text-sm text-[var(--abv-text)]/50 hover:text-[var(--abv-ai-tools)] transition-colors mb-4"
         >
           <ArrowLeftIcon className="w-4 h-4" />
-          AI Tools
+          Content Tools
         </Link>
         <h1 className="text-2xl font-bold text-[var(--abv-text)]">Saved Scripts</h1>
         <p className="text-sm text-[var(--abv-text)]/60 mt-1">Your last 30 ARC scripts — saved after completing the builder.</p>
@@ -155,7 +155,7 @@ export default function SavedScriptsPage() {
             Complete an ARC Script Builder session and save your script to see it here.
           </p>
           <Link
-            href="/member/ai-tools/arc-script-builder"
+            href="/member/content-tools/arc-script-builder"
             className="inline-flex items-center gap-2 $1var(--abv-ai-tools)$2 hover:bg-[var(--abv-ai-tools)]/85 text-white font-semibold px-5 py-2.5 rounded-lg text-sm transition-colors"
           >
             Start building

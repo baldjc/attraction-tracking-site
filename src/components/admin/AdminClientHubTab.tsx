@@ -15,7 +15,7 @@ interface Props {
   serviceTier: string;
 }
 
-const GROWTH_DWY = ["mastery_2", "mastery_4", "done_with_you"];
+const GROWTH_DWY = ["growth", "done_with_you"];
 
 export default function AdminClientHubTab({ memberId, serviceTier }: Props) {
   const [assetsDriveLink, setAssetsDriveLink] = useState("");

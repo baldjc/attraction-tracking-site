@@ -5,6 +5,7 @@ import {
   toShape,
   type MarketConfigShape,
 } from "@/lib/market-config";
+import { tierBackfillMonths, isServiceTier } from "@/lib/service-tier";
 
 export interface MarketAccessOk {
   ok: true;
@@ -61,19 +62,21 @@ export async function getMarketConfigForUser(
 }
 
 /**
- * Tier-based cap on CSV files per upload batch.
+ * Tier-based cap on CSV files per upload batch (the market-data backfill
+ * window). Sourced from the canonical per-tier config:
  *
- *   Foundations              → 13  (1-year YoY backfill: current + 12 prior)
- *   Growth (editing/mastery) → 25  (2-year YoY backfill: current + 24 prior)
- *   Done-With-You            → 25
+ *   Foundations   → 13  (1-year YoY backfill: current + 12 prior)
+ *   Production    → 25  (2-year YoY backfill: current + 24 prior)
+ *   Growth        → 25
+ *   Done-With-You → 25
  *
  * Reads `User.serviceTier` directly; admins inherit whatever tier the
  * impersonated/effective user has (caller is expected to pass the effective
  * user id, e.g. from `requireMarketAccess().user.id`).
  *
- * Defaults to the foundations limit (13) if the user row can't be loaded —
- * the safer choice for an unauthenticated/missing user; legitimate callers
- * always have a row because requireMarketAccess resolved them first.
+ * Defaults to the foundations limit if the user row can't be loaded — the
+ * safer choice for an unauthenticated/missing user; legitimate callers always
+ * have a row because requireMarketAccess resolved them first.
  */
 export async function getMaxUploadBatchForUser(
   userId: string,
@@ -83,6 +86,8 @@ export async function getMaxUploadBatchForUser(
     select: { serviceTier: true },
   });
   const tier = user?.serviceTier ?? "foundations";
-  const limit = tier === "foundations" ? 13 : 25;
+  const limit = tierBackfillMonths(
+    isServiceTier(tier) ? tier : "foundations",
+  );
   return { limit, tier };
 }

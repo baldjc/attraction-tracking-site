@@ -1,3 +1,3 @@
 "use client";
 
-export { default } from "@/app/member/ai-tools/avatar-architect/page";
+export { default } from "@/app/member/content-tools/avatar-architect/page";

@@ -1,11 +1,9 @@
 /**
  * Onboarding Wizard — tier cohort helpers.
  *
- * The spec talks in "tier" terms (Foundations / Production / Growth / DWY)
- * but the underlying `User.serviceTier` enum is more granular (foundations,
- * editing_2, editing_4, mastery_2, mastery_4, done_with_you). This module
- * collapses the enum into the four cohorts the wizard cares about so each
- * step can do plain string comparisons.
+ * The wizard talks in display-cohort terms (Foundations / Production / Growth /
+ * DWY). Since the canonical `User.serviceTier` enum is now exactly these four
+ * tiers, this is a 1:1 mapping kept for the wizard's existing comparisons.
  */
 export type TierCohort = "Foundations" | "Production" | "Growth" | "DWY";
 
@@ -15,11 +13,9 @@ export function mapServiceTierToCohort(
   switch (serviceTier) {
     case "done_with_you":
       return "DWY";
-    case "mastery_2":
-    case "mastery_4":
+    case "growth":
       return "Growth";
-    case "editing_2":
-    case "editing_4":
+    case "production":
       return "Production";
     case "foundations":
     default:

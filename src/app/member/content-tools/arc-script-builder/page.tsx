@@ -14,7 +14,7 @@ function ArcScriptBuilderPageContent() {
     <div className="max-w-2xl mx-auto">
       <ScriptHistoryPanel />
       {planId && <LinkedPlanBanner planId={planId} />}
-      <ArcScriptBuilderTool basePath="/member/ai-tools" defaultPlanId={planId} />
+      <ArcScriptBuilderTool basePath="/member/content-tools" defaultPlanId={planId} />
     </div>
   );
 }

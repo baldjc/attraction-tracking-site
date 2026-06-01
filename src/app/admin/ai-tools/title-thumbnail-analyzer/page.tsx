@@ -1,3 +1,3 @@
 "use client";
 
-export { default } from "@/app/member/ai-tools/title-thumbnail-analyzer/page";
+export { default } from "@/app/member/content-tools/title-thumbnail-analyzer/page";

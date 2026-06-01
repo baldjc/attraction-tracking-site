@@ -21,10 +21,8 @@ enum AuditRequestStatus {
 
 enum ServiceTier {
   foundations
-  editing_2
-  editing_4
-  mastery_2
-  mastery_4
+  production
+  growth
   done_with_you
 }
 
@@ -94,6 +92,10 @@ model User {
   youtubeChannelName      String?
   youtubeChannelThumbnail String?
   serviceTier         ServiceTier @default(foundations)
+  // Edited videos/month the member is contracted for (2 or 4 on legacy
+  // Production/Growth tiers; null for Foundations/Done-With-You). Internal —
+  // tier-gating NEVER reads this; the canonical 4-value `serviceTier` does.
+  editedVideosPerMonth Int?
   stripeCustomerId        String?   @unique
   stripeSubscriptionId    String?
   subscriptionStatus      String?

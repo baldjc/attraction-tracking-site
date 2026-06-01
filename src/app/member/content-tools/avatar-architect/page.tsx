@@ -951,7 +951,7 @@ function AvatarArchitectInner() {
       if (res.ok) {
         setSaved(true);
         const isAdminRoute = window.location.pathname.startsWith("/admin");
-        setTimeout(() => router.push(isAdminRoute ? "/admin/ai-tools" : "/member/ai-tools"), 1500);
+        setTimeout(() => router.push(isAdminRoute ? "/admin/ai-tools" : "/member/content-tools"), 1500);
       } else {
         const errData = await res.json().catch(() => ({}));
         console.error("[AvatarArchitect] Failed to save test avatar:", errData);
@@ -1150,7 +1150,7 @@ function AvatarArchitectInner() {
       <div className="max-w-5xl mx-auto">
         {/* Header */}
         <div className="mb-6">
-          <Link href="/member/ai-tools" className="flex items-center gap-1.5 text-xs text-[var(--abv-text)]/50 hover:text-[var(--abv-ai-tools)] transition-colors mb-3">
+          <Link href="/member/content-tools" className="flex items-center gap-1.5 text-xs text-[var(--abv-text)]/50 hover:text-[var(--abv-ai-tools)] transition-colors mb-3">
             <ArrowLeftIcon className="w-3.5 h-3.5" />
             Back to Content Tools
           </Link>
@@ -1454,7 +1454,7 @@ function AvatarArchitectInner() {
       <div className="max-w-2xl mx-auto">
         <div className="mb-5">
           <Link
-            href="/member/ai-tools"
+            href="/member/content-tools"
             className="flex items-center gap-1.5 text-xs text-[var(--abv-text)]/50 hover:text-[var(--abv-ai-tools)] transition-colors mb-3"
           >
             <ArrowLeftIcon className="w-3.5 h-3.5" />
@@ -1500,7 +1500,7 @@ function AvatarArchitectInner() {
     <div className="flex flex-col h-[calc(100vh-120px)]">
       <div className="flex-shrink-0 mb-1">
         <Link
-          href={isTestAvatarMode ? "/admin/ai-tools" : "/member/ai-tools"}
+          href={isTestAvatarMode ? "/admin/ai-tools" : "/member/content-tools"}
           className="flex items-center gap-1.5 text-xs text-[var(--abv-text)]/50 hover:text-[var(--abv-ai-tools)] transition-colors"
         >
           <ArrowLeftIcon className="w-3.5 h-3.5" />
@@ -1595,7 +1595,7 @@ function AvatarArchitectInner() {
                 emoji="🚀"
                 title="Generate Content Ideas"
                 description="Your avatar is ready. Head to the Content Engine to generate video ideas organised by your content themes."
-                href="/member/ai-tools/content-engine"
+                href="/member/content-tools/content-engine"
                 buttonLabel="Open Content Engine"
               />
             </div>

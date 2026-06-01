@@ -12,7 +12,7 @@ function escapeICS(text: string): string {
   return text.replace(/[\\;,]/g, (c) => `\\${c}`).replace(/\n/g, "\\n");
 }
 
-const GROWTH_DWY_TIERS = ["mastery_2", "mastery_4", "done_with_you"];
+const GROWTH_DWY_TIERS = ["growth", "done_with_you"];
 
 export async function GET(
   _req: NextRequest,

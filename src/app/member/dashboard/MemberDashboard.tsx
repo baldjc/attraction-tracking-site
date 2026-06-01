@@ -238,7 +238,7 @@ interface TopVideo {
 // LEFT replaces the previous emoji-only header. Background is the feature
 // colour at ~10% opacity (`${colour}1A` suffix when colour is a hex).
 const NAV_CARDS = [
-  { title: "AI Tools",        tagline: "Build, write, review.",         href: "/member/ai-tools",        emoji: "✨", colour: "var(--abv-ai-tools)" },
+  { title: "Content Tools",        tagline: "Build, write, review.",         href: "/member/content-tools",        emoji: "✨", colour: "var(--abv-ai-tools)" },
   { title: "My Scores",       tagline: "See where you stand.",          href: "/member/scores",          emoji: "🏆", colour: "var(--abv-scores)" },
   { title: "Academy",         tagline: "Watch a lesson.",               href: "/member/academy",         emoji: "🎓", colour: "var(--abv-academy)" },
   { title: "Content Planner", tagline: "Plan next week.",               href: "/member/content-planner", emoji: "📅", colour: "var(--abv-azure)" },

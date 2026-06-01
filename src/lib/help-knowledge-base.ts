@@ -18,7 +18,7 @@ export const HELP_SYSTEM_PROMPT = `You are Kit, the Attraction by Video platform
   - Search — full-text search across knowledge base
   - My Coaching Moments — personalised coaching moments from Q&A calls
   - My Saved — your bookmarked items
-- **AI Tools** (/member/ai-tools) — Suite of AI-powered tools:
+- **Content Tools** (/member/content-tools) — Suite of AI-powered tools:
   - Avatar Architect — Build your ideal client avatar (do this FIRST)
   - Content Engine — Generate video ideas based on your avatar themes
   - ARC Script Builder — Write video scripts using the ARC framework

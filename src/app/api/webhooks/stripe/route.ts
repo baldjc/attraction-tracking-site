@@ -8,16 +8,29 @@ export const runtime = "nodejs";
 // Disable Next.js body parsing — Stripe requires the raw body for signature verification
 export const dynamic = "force-dynamic";
 
-// ── Product name → ServiceTier mapping ───────────────────────
+// ── Product name → canonical ServiceTier + edited-videos/month ───────────────
+//
+// The canonical enum is just the 4 tiers; the "2 vs 4" volume now lives in the
+// separate `editedVideosPerMonth` column. We parse both out of the Stripe
+// product name. DWY is intentionally not auto-assigned here (set by admin).
 
-type ServiceTierValue = "foundations" | "editing_2" | "editing_4" | "mastery_2" | "mastery_4";
+import type { ServiceTier } from "@/lib/service-tier";
 
-function productNameToTier(name: string): ServiceTierValue | null {
+function productNameToTier(
+  name: string,
+): { tier: ServiceTier; videosPerMonth: number | null } | null {
   const n = name.toLowerCase();
-  if ((n.includes("growth") || n.includes("mastery")) && (n.includes("4") || n.includes("four"))) return "mastery_4";
-  if ((n.includes("growth") || n.includes("mastery")) && (n.includes("2") || n.includes("two"))) return "mastery_2";
-  if ((n.includes("production") || n.includes("editing")) && (n.includes("4") || n.includes("four"))) return "editing_4";
-  if ((n.includes("production") || n.includes("editing")) && (n.includes("2") || n.includes("two"))) return "editing_2";
+  const count = n.includes("4") || n.includes("four")
+    ? 4
+    : n.includes("2") || n.includes("two")
+      ? 2
+      : null;
+  if (n.includes("growth") || n.includes("mastery")) {
+    return { tier: "growth", videosPerMonth: count };
+  }
+  if (n.includes("production") || n.includes("editing")) {
+    return { tier: "production", videosPerMonth: count };
+  }
   return null;
 }
 
@@ -74,7 +87,7 @@ export async function POST(req: Request) {
 
     const user = await findUser(customerId);
     if (user) {
-      const tier = summary?.primaryPlanName ? productNameToTier(summary.primaryPlanName) : null;
+      const mapped = summary?.primaryPlanName ? productNameToTier(summary.primaryPlanName) : null;
       await prisma.user.update({
         where: { id: user.id },
         data: {
@@ -91,7 +104,12 @@ export async function POST(req: Request) {
                 ...(summary.currency !== null ? { stripeCurrency: summary.currency } : {}),
               }
             : {}),
-          ...(status === "active" && tier ? { serviceTier: tier } : {}),
+          ...(status === "active" && mapped
+            ? {
+                serviceTier: mapped.tier,
+                editedVideosPerMonth: mapped.videosPerMonth,
+              }
+            : {}),
         },
       });
       console.log(
@@ -114,6 +132,7 @@ export async function POST(req: Request) {
           subscriptionStatus: "cancelled",
           stripeSubscriptionId: null,
           serviceTier: "foundations",
+          editedVideosPerMonth: null,
         },
       });
       console.log(`[stripe-webhook] Cancelled subscription for user ${user.email}`);

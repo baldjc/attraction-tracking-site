@@ -1,15 +1,10 @@
-export const FOUNDATIONS_PRODUCTION_TIERS = ["foundations", "editing_2", "editing_4"];
-export const GROWTH_DWY_TIERS = ["mastery_2", "mastery_4", "done_with_you"];
-export const PRODUCTION_TIERS = ["editing_2", "editing_4", "mastery_2", "mastery_4", "done_with_you"];
+import { TIER_LABELS as CANONICAL_TIER_LABELS } from "@/lib/service-tier";
 
-export const TIER_LABELS: Record<string, string> = {
-  foundations:   "Foundations",
-  editing_2:     "Production (2)",
-  editing_4:     "Production (4)",
-  mastery_2:     "Growth (2)",
-  mastery_4:     "Growth (4)",
-  done_with_you: "Done-With-You",
-};
+export const FOUNDATIONS_PRODUCTION_TIERS = ["foundations", "production"];
+export const GROWTH_DWY_TIERS = ["growth", "done_with_you"];
+export const PRODUCTION_TIERS = ["production", "growth", "done_with_you"];
+
+export const TIER_LABELS: Record<string, string> = { ...CANONICAL_TIER_LABELS };
 
 export function formatTierLabel(tier: string): string {
   return TIER_LABELS[tier] ?? tier;
@@ -61,8 +56,8 @@ export function sortPlansByDate<T extends { shootDate?: string | Date | null; pu
  */
 export function tierBadgeClasses(tier: string | null | undefined): string {
   if (tier === "foundations") return "bg-[#D3E5EF] text-[#183347]";
-  if (tier === "editing_2" || tier === "editing_4") return "bg-[#FDECC8] text-[#7A5A1F]";
-  if (tier === "mastery_2" || tier === "mastery_4") return "bg-[#E8DEEE] text-[#4F326C]";
+  if (tier === "production") return "bg-[#FDECC8] text-[#7A5A1F]";
+  if (tier === "growth") return "bg-[#E8DEEE] text-[#4F326C]";
   if (tier === "done_with_you") return "bg-[#FADEC9] text-[#854C1D]";
   return "bg-[#E3E2E0] text-[#3F3D38]";
 }

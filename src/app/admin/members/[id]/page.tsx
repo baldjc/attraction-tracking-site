@@ -41,10 +41,8 @@ const GHL_LOCATION_ID = process.env.NEXT_PUBLIC_GHL_LOCATION_ID ?? "";
 
 const SERVICE_TIERS = [
   { value: "foundations", label: "Foundations" },
-  { value: "editing_2", label: "Production (2)" },
-  { value: "editing_4", label: "Production (4)" },
-  { value: "mastery_2", label: "Growth (2)" },
-  { value: "mastery_4", label: "Growth (4)" },
+  { value: "production", label: "Production" },
+  { value: "growth", label: "Growth" },
   { value: "done_with_you", label: "Done-With-You" },
 ];
 
@@ -86,7 +84,7 @@ const DIMENSIONS = [
   },
 ];
 
-const PRODUCTION_TIERS = ["editing_2", "editing_4", "mastery_2", "mastery_4", "done_with_you"];
+const PRODUCTION_TIERS = ["production", "growth", "done_with_you"];
 
 const TABS = [
   { id: "profile",          label: "Profile",          tierRequired: null },
@@ -103,8 +101,8 @@ type TabId = typeof TABS[number]["id"];
 
 function tierColors(tier: string) {
   if (tier === "foundations") return { badge: "bg-[var(--abv-dark)]/20 text-[var(--abv-azure)]", dot: "var(--abv-azure)" };
-  if (tier === "editing_2" || tier === "editing_4") return { badge: "bg-amber-100 text-amber-700", dot: "var(--abv-scores)" };
-  if (tier === "mastery_2" || tier === "mastery_4") return { badge: "bg-purple-100 text-purple-700", dot: "#7c3aed" };
+  if (tier === "production") return { badge: "bg-amber-100 text-amber-700", dot: "var(--abv-scores)" };
+  if (tier === "growth") return { badge: "bg-purple-100 text-purple-700", dot: "#7c3aed" };
   if (tier === "done_with_you") return { badge: "bg-[#d97706]/20 text-[#d97706]", dot: "#d97706" };
   return { badge: "bg-gray-100 text-gray-500", dot: "#9ca3af" };
 }
@@ -2214,8 +2212,8 @@ export default function MemberDetailPage() {
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-4"
             >
               <option value="foundations">Foundations</option>
-              <option value="editing_2">Production</option>
-              <option value="mastery_2">Growth</option>
+              <option value="production">Production</option>
+              <option value="growth">Growth</option>
               <option value="done_with_you">Done-With-You</option>
             </select>
 

@@ -357,7 +357,7 @@ export default function ArcScriptBuilderTool({ basePath, isAdmin, defaultPlanId 
           className="inline-flex items-center gap-1.5 text-sm text-[var(--abv-text)]/50 hover:text-[var(--abv-ai-tools)] transition-colors mb-4"
         >
           <ArrowLeftIcon className="w-4 h-4" />
-          AI Tools
+          Content Tools
         </Link>
         <div>
           <h1 className="text-2xl font-bold text-[var(--abv-text)]">ARC Script Builder</h1>

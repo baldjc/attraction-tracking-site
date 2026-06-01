@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import prisma from "@/lib/prisma";
 import { withRouteErrorHandling } from "@/lib/api-error-wrapper";
+import { hasClientHubAccess, normalizeLegacyTier } from "@/lib/service-tier";
 
 export const GET = withRouteErrorHandling("member/client-hub", GET_impl);
 
@@ -15,15 +16,13 @@ async function GET_impl() {
   });
   if (!dbUser) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const tier = dbUser.serviceTier ?? "foundations";
+  const tier = normalizeLegacyTier(dbUser.serviceTier) ?? "foundations";
 
-  const productionOnlyTiers = ["editing_2", "editing_4"];
-  const growthDwyTiers = ["mastery_2", "mastery_4", "done_with_you"];
-  const allProductionTiers = [...productionOnlyTiers, ...growthDwyTiers];
-
-  if (!allProductionTiers.includes(tier) || !dbUser.clientHubEnabled) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!hasClientHubAccess(tier) || !dbUser.clientHubEnabled) {
+    return NextResponse.json({ error: "tier_restricted" }, { status: 403 });
   }
+
+  const growthDwyTiers = ["growth", "done_with_you"];
 
   const [productionPlans, quickLinks] = await Promise.all([
     prisma.contentPlan.findMany({

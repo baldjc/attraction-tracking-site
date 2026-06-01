@@ -22,6 +22,7 @@ import { resolveUserFromSession } from "@/lib/session-utils";
 import { EXCLUDE_LEGACY_FAILURE_RATE } from "@/lib/market-status-buckets";
 import prisma from "@/lib/prisma";
 import { getFeatureFlags } from "@/lib/feature-flags";
+import { getCostCapStatus } from "@/lib/ai-tool-cost";
 import { ScriptWizardClient } from "@/components/ai-tools/script-builder-v2/ScriptWizardClient";
 import type { Step4PlanSummary } from "@/components/ai-tools/script-builder-v2/Step4ShootType";
 import {
@@ -189,9 +190,13 @@ export default async function ScriptWizardPage({
         };
         // Coarse estimate from the most-recent upload (the only one the
         // extractor reads); the route recomputes precisely and enforces caps.
+        // capUsd lets the member-facing UI show a % of monthly allowance
+        // instead of a raw dollar figure.
+        const { capUsd } = await getCostCapStatus(userId);
         dataSearch = {
           need,
           estimatedCostUsd: estimateExtractionCostUsd(uploads[0].rowCount),
+          capUsd,
         };
       }
     }

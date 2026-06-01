@@ -22,6 +22,7 @@ import {
   getCostCapStatus,
   averageRecentValidationCostUsd,
 } from "@/lib/ai-tool-cost";
+import { formatActionImpactPercent } from "@/lib/cost-display";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -304,6 +305,7 @@ export async function POST(req: NextRequest) {
     // surface a realistic "this will cost ~$X" estimate in the replace
     // confirmation dialog. Falls back to $2.75 on no history.
     const recentAvgCostUsd = await averageRecentValidationCostUsd(userId);
+    const conflictCap = await getCostCapStatus(userId);
     return Response.json(
       {
         error: "duplicate_month",
@@ -311,6 +313,7 @@ export async function POST(req: NextRequest) {
           "One or more months already exist. Delete the existing upload(s) or choose a different month.",
         conflicts,
         recentAvgCostUsd,
+        capUsd: conflictCap.capUsd,
       },
       { status: 409 },
     );
@@ -329,9 +332,9 @@ export async function POST(req: NextRequest) {
       {
         error: "estimated_cost_exceeds_cap",
         message:
-          `This batch would cost about $${estimatedBatchCost.toFixed(2)} ` +
-          `but you have $${remainingBudget.toFixed(2)} of your monthly ` +
-          `AI budget left. Upload fewer months or wait until your cap resets.`,
+          `This batch would use about ${formatActionImpactPercent(estimatedBatchCost, cap.capUsd)} ` +
+          `of your monthly Content Tools allowance, which is more than you have ` +
+          `left this month. Upload fewer months or wait until your allowance resets.`,
         estimatedCost: estimatedBatchCost,
         remainingBudget,
         avgCostPerMonth: avgCost,

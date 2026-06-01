@@ -20,12 +20,12 @@ export default async function ListingVideoBuilderPage() {
     const allowed =
       flags.tool_listing_video_builder === true ||
       isListingVideoBuilderTester(email);
-    if (!allowed) redirect("/member/ai-tools");
+    if (!allowed) redirect("/member/content-tools");
   }
 
   return (
     <div className="max-w-2xl mx-auto">
-      <ListingVideoBuilderTool basePath="/member/ai-tools" calendarEnabled={calendarEnabled} />
+      <ListingVideoBuilderTool basePath="/member/content-tools" calendarEnabled={calendarEnabled} />
     </div>
   );
 }

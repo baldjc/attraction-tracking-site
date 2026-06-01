@@ -7,7 +7,7 @@ import { getMaxUploadBatchForUser } from "@/lib/market-config-server";
 async function main() {
   const samples = await prisma.user.findMany({
     where: {
-      serviceTier: { in: ["foundations", "editing_4", "mastery_4", "done_with_you"] },
+      serviceTier: { in: ["foundations", "production", "growth", "done_with_you"] },
     },
     select: { id: true, email: true, serviceTier: true },
     distinct: ["serviceTier"],

@@ -571,11 +571,11 @@ function TitleThumbnailAnalyzerPageInner() {
     <div className="max-w-2xl mx-auto">
       <div className="mb-5">
         <Link
-          href="/member/ai-tools"
+          href="/member/content-tools"
           className="flex items-center gap-1.5 text-xs text-[var(--abv-text)]/50 hover:text-[var(--abv-ai-tools)] transition-colors mb-3"
         >
           <ArrowLeftIcon className="w-3.5 h-3.5" />
-          Back to AI Tools
+          Back to Content Tools
         </Link>
         <h1 className="text-2xl font-bold text-[var(--abv-text)]">🔍 Title &amp; Thumbnail Analyzer</h1>
         <p className="text-sm text-[var(--abv-text)]/60 mt-1">
@@ -1132,7 +1132,7 @@ function TitleThumbnailAnalyzerPageInner() {
             emoji="🎬"
             title="Write Your Script"
             description="Take your optimised title into the ARC Script Builder and structure your video around it."
-            href="/member/ai-tools/arc-script-builder"
+            href="/member/content-tools/arc-script-builder"
             buttonLabel="Open ARC Script Builder"
           />
 

@@ -32,11 +32,11 @@ export default async function MemberScriptReviewPage({
     <div className="max-w-2xl mx-auto">
       <div className="mb-5">
         <Link
-          href="/member/ai-tools"
+          href="/member/content-tools"
           className="flex items-center gap-1.5 text-xs text-[var(--abv-text)]/50 hover:text-[var(--abv-ai-tools)] transition-colors mb-3"
         >
           <ArrowLeftIcon className="w-3.5 h-3.5" />
-          Back to AI Tools
+          Back to Content Tools
         </Link>
         <h1 className="text-2xl font-bold text-[var(--abv-text)]">📋 Script Review</h1>
         <p className="text-sm text-[var(--abv-text)]/60 mt-1">
@@ -47,7 +47,7 @@ export default async function MemberScriptReviewPage({
       {planId && <LinkedPlanBanner planId={planId} />}
       <InlineUpgradeBanner message="Want scripts to save back to a planner with their score? That's a Production feature." />
 
-      <ScriptReviewChatUI basePath="/member/ai-tools" noAvatar={noAvatar} defaultPlanId={planId} />
+      <ScriptReviewChatUI basePath="/member/content-tools" noAvatar={noAvatar} defaultPlanId={planId} />
     </div>
   );
 }

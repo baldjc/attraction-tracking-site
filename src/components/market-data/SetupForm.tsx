@@ -682,7 +682,7 @@ export default function SetupForm({
             </div>
             <div className="mt-2">
               <a
-                href="/member/ai-tools/avatar-architect"
+                href="/member/content-tools/avatar-architect"
                 className="text-xs text-blue-600 hover:underline dark:text-blue-400"
               >
                 Edit avatar in Avatar Architect →
@@ -711,7 +711,7 @@ export default function SetupForm({
               You haven't built an avatar yet.
             </p>
             <a
-              href="/member/ai-tools/avatar-architect"
+              href="/member/content-tools/avatar-architect"
               className="mt-2 inline-block text-sm font-medium text-blue-600 hover:underline dark:text-blue-400"
             >
               Run Avatar Architect →

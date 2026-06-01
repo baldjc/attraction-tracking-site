@@ -5,7 +5,7 @@ import Link from "next/link";
 import ContentEditorClient from "./ContentEditorClient";
 import type { ContentPlan } from "@/components/content-planner/ContentPlanEditModal";
 
-const PRODUCTION_TIERS = ["editing_2", "editing_4", "mastery_2", "mastery_4", "done_with_you"];
+const PRODUCTION_TIERS = ["production", "growth", "done_with_you"];
 
 /** Client-side bootstrap for the full-page Content Editor. Mirrors the same
  *  bootstrap pattern as ContentPlannerWrapper so the editor and list view

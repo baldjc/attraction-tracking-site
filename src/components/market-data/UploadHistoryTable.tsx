@@ -466,9 +466,6 @@ export default function UploadHistoryTable({ initial, isAdmin = false }: Props) 
                       <span>
                         {(r.factCount ?? 0).toLocaleString()} facts ·{" "}
                         {(r.storyLeadCount ?? 0).toLocaleString()} leads
-                        {typeof r.validationCostUsd === "number"
-                          ? ` · $${r.validationCostUsd.toFixed(2)}`
-                          : ""}
                       </span>
                     ) : r.status === "failed" ? (
                       <FailedCell

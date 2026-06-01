@@ -113,9 +113,9 @@ export default function MyWorkPage() {
           <FolderIcon className="w-10 h-10 text-[var(--abv-text)]/20 dark:text-white/20 mx-auto mb-3" />
           <h2 className="font-semibold text-[var(--abv-text)] dark:text-white mb-2">No saved work yet</h2>
           <p className="text-sm text-[var(--abv-text)]/50 dark:text-white/50 mb-4">
-            Head to AI Tools to start creating scripts, ideas, and more. Everything you save will show up here.
+            Head to Content Tools to start creating scripts, ideas, and more. Everything you save will show up here.
           </p>
-          <LinkButton href="/member/ai-tools">Open AI Tools →</LinkButton>
+          <LinkButton href="/member/content-tools">Open Content Tools →</LinkButton>
         </div>
       )}
 
