@@ -37,28 +37,41 @@ interface Props {
    * a banner so they know the script will be thinly anchored.
    */
   lowSupport?: boolean;
+  /**
+   * Mode-aware Low Support wording. Data-heavy slots (Market Update,
+   * Neighbourhood Fact) lean on cited numbers, so a thin fact set hurts them
+   * more and gets firmer copy than story-driven slots.
+   */
+  lowSupportTone?: "data-heavy" | "story-driven";
 }
 
 function LowSupportBanner({
   planId,
   count,
+  tone,
 }: {
   planId: string;
   count: number;
+  tone: "data-heavy" | "story-driven";
 }) {
+  const body =
+    tone === "data-heavy"
+      ? "This is a data-driven slot, but it's below the recommended 3 facts — the script will have thin numbers to anchor on and may feel light. Strongly consider linking more facts before you build."
+      : "This is a story-driven slot, so it can carry a lighter fact set — but it's below the recommended 3. You can build now, or link a couple more facts for a stronger payoff.";
   return (
     <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-700/60 dark:bg-amber-900/15 dark:text-amber-200">
-      <p className="font-semibold">Low Support — {count} linked fact{count === 1 ? "" : "s"}</p>
+      <p className="font-semibold">
+        Low Support — {count} linked fact{count === 1 ? "" : "s"}
+      </p>
       <p className="mt-1">
-        This plan is below the recommended 3 facts, so the script will be thinly
-        anchored. You can still build it now, or{" "}
+        {body} You can still build it now, or{" "}
         <a
           href={`/member/content-planner/${planId}`}
           className="font-medium underline hover:no-underline"
         >
           link more facts first
-        </a>{" "}
-        for a stronger script.
+        </a>
+        .
       </p>
     </div>
   );
@@ -73,6 +86,7 @@ export function ScriptWizardClient({
   planSummary,
   backHref,
   lowSupport = false,
+  lowSupportTone = "data-heavy",
 }: Props) {
   const router = useRouter();
   const [stage, setStage] = useState<Stage>("pick_shoot_type");
@@ -99,6 +113,7 @@ export function ScriptWizardClient({
           <LowSupportBanner
             planId={planSummary.id}
             count={planSummary.linkedFactCount}
+            tone={lowSupportTone}
           />
         )}
         <Step4ShootType

@@ -26,6 +26,29 @@ import {
   enrichPlanWithRelatedFacts,
   evaluateFactGate,
 } from "@/lib/script-plan-enrichment";
+import {
+  FactBlockGate,
+  AutoLinkedPanel,
+  type AutoLinkedFact,
+} from "@/components/content-planner/ScriptFactGate";
+import {
+  metricNameToLabel,
+  formatMetricValue,
+} from "@/lib/content-engine-validation";
+
+/**
+ * Mode-aware Low Support tone. Mode is derived from the rotation slot (there is
+ * no ContentPlan.mode column): data-heavy slots lean on cited numbers, so a thin
+ * fact set hurts them more and gets firmer wording than story-driven slots.
+ */
+function lowSupportToneForSlot(
+  rotationSlot: string | null,
+): "data-heavy" | "story-driven" {
+  return rotationSlot === "market_update" ||
+    rotationSlot === "neighbourhood_fact"
+    ? "data-heavy"
+    : "story-driven";
+}
 
 export const dynamic = "force-dynamic";
 
@@ -99,6 +122,7 @@ export default async function ScriptWizardPage({
   // Layer-1 auto-enrichment runs on Build-Script entry, BEFORE the gate, so a
   // plan that landed with 1–2 facts (narrow Story Lead) is lifted over the
   // threshold with in-scope facts automatically. No-op for ≥3 or 0.
+  let autoLinkedIds: string[] = [];
   try {
     const enriched = await enrichPlanWithRelatedFacts({
       userId,
@@ -106,7 +130,8 @@ export default async function ScriptWizardPage({
       persist: true,
     });
     if (enriched.added.length > 0) {
-      linkedFactIds = [...linkedFactIds, ...enriched.added.map((a) => a.id)];
+      autoLinkedIds = enriched.added.map((a) => a.id);
+      linkedFactIds = [...linkedFactIds, ...autoLinkedIds];
     }
   } catch {
     // Enrichment is best-effort — never block entry on it.
@@ -115,8 +140,49 @@ export default async function ScriptWizardPage({
   const gate = evaluateFactGate(linkedFactIds.length);
   if (gate === "block") {
     return (
-      <FactBlockGate planId={plan.id} />
+      <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
+        <FactBlockGate planId={plan.id} />
+      </div>
     );
+  }
+
+  // Resolve the auto-linked facts for the review panel (labels + values).
+  let autoLinked: AutoLinkedFact[] = [];
+  if (autoLinkedIds.length > 0) {
+    const rows = await prisma.marketFact.findMany({
+      where: { id: { in: autoLinkedIds }, userId },
+      select: {
+        id: true,
+        neighbourhood: true,
+        metricName: true,
+        metricValue: true,
+        metricValueString: true,
+        dateContext: true,
+        upload: { select: { monthYear: true } },
+      },
+    });
+    const order = new Map(autoLinkedIds.map((id, i) => [id, i]));
+    rows.sort(
+      (a, b) =>
+        (order.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
+        (order.get(b.id) ?? Number.MAX_SAFE_INTEGER),
+    );
+    autoLinked = rows.map((f) => {
+      const hasNumeric = f.metricValue !== null && f.metricValue !== undefined;
+      const d = f.dateContext;
+      const monthYear = d
+        ? `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`
+        : (f.upload?.monthYear ?? "");
+      return {
+        id: f.id,
+        neighbourhood: f.neighbourhood,
+        metricLabel: metricNameToLabel(f.metricName),
+        metricValueString: hasNumeric
+          ? formatMetricValue(f.metricName, f.metricValue as number)
+          : (f.metricValueString ?? ""),
+        monthYear,
+      };
+    });
   }
 
   if (plan.shootType && plan.shootType !== "talking_head") {
@@ -147,51 +213,17 @@ export default async function ScriptWizardPage({
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
+      <AutoLinkedPanel
+        planId={plan.id}
+        added={autoLinked}
+        currentLinkedIds={linkedFactIds}
+      />
       <ScriptWizardClient
         planSummary={summary}
         backHref={BACK_HREF}
         lowSupport={gate === "low"}
+        lowSupportTone={lowSupportToneForSlot(plan.rotationSlot)}
       />
-    </div>
-  );
-}
-
-/**
- * Zero-fact block state. Unlike the generic GateMessage this offers the two
- * recovery CTAs the spec calls for: link facts to this plan, or run a fresh
- * data search to generate facts to link.
- */
-function FactBlockGate({ planId }: { planId: string }) {
-  return (
-    <div className="mx-auto mt-10 max-w-xl rounded-lg border border-amber-300 bg-amber-50 p-6 shadow-sm dark:border-amber-700/60 dark:bg-amber-900/15">
-      <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-        This plan has no linked facts yet
-      </h1>
-      <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
-        Script Builder v2 anchors every script on cited market facts, and this
-        plan doesn&apos;t have any linked yet. Link facts to it, or run a data
-        search to generate facts you can link.
-      </p>
-      <div className="mt-4 flex flex-wrap gap-3">
-        <Link
-          href={`/member/content-planner/${planId}`}
-          className="inline-flex items-center rounded-md bg-[#185FA5] px-3.5 py-2 text-sm font-medium text-white hover:bg-[#134d87]"
-        >
-          Link facts now
-        </Link>
-        <Link
-          href="/member/market-data"
-          className="inline-flex items-center rounded-md border border-gray-300 bg-white px-3.5 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
-        >
-          Run data search
-        </Link>
-      </div>
-      <Link
-        href={BACK_HREF}
-        className="mt-4 inline-block text-sm font-medium text-blue-600 hover:underline"
-      >
-        ← Back to Content Planner
-      </Link>
     </div>
   );
 }
