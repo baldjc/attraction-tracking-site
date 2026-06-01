@@ -275,3 +275,140 @@ export function absorptionRate(sold: number, active: number): number | null {
   if (sold < MIN_SOLD_SAMPLE) return null;
   return sold / active;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Off-market SUB-bucketing.
+//
+// Splits the collapsed `offMarket` bucket back into its canonical expired /
+// terminated / withdrawn parts so the failure-rate methodology VARIANTS
+// (expired-only, expired+withdrawn) can be computed. Driven by the SAME
+// statusCodes taxonomy as the four-bucket model — never hardcoded status
+// strings. When the granularity isn't resolvable (e.g. a four-bucket
+// statusMapping override that doesn't distinguish sub-types), classification
+// returns null and only the "all off-market" variant stays exact.
+
+export type OffMarketSubBucket = "expired" | "terminated" | "withdrawn";
+
+const OFF_MARKET_SUBS = ["expired", "terminated", "withdrawn"] as const;
+
+export interface OffMarketSubMapping {
+  expired: string[];
+  terminated: string[];
+  withdrawn: string[];
+}
+
+function canonicalToSub(
+  canonical: StatusCode["canonical"],
+): OffMarketSubBucket | null {
+  switch (canonical) {
+    case "expired":
+      return "expired";
+    case "terminated":
+      return "terminated";
+    case "withdrawn":
+      return "withdrawn";
+    default:
+      return null;
+  }
+}
+
+function subMappingFromStatusCodes(
+  codes: StatusCode[] | null | undefined,
+): OffMarketSubMapping | null {
+  if (!Array.isArray(codes) || codes.length === 0) return null;
+  const out: OffMarketSubMapping = { expired: [], terminated: [], withdrawn: [] };
+  let any = false;
+  for (const code of codes) {
+    if (!code || typeof code.label !== "string") continue;
+    const label = code.label.trim();
+    if (!label) continue;
+    const sub = canonicalToSub(code.canonical);
+    if (sub) {
+      out[sub].push(label);
+      any = true;
+    }
+  }
+  return any ? out : null;
+}
+
+/**
+ * Resolve the off-market sub-mapping for a market. Mirrors resolveStatusMapping
+ * but only branches 2 (statusCodes) and 3 (seed defaults) — a four-bucket
+ * statusMapping override carries no sub-type granularity, so when one is in
+ * force the sub-mapping still derives from statusCodes/seed for classification.
+ * Always returns a usable (possibly empty) mapping.
+ */
+export function resolveOffMarketSubMapping(
+  config: StatusMappingConfigInput,
+): OffMarketSubMapping {
+  const fromCodes = subMappingFromStatusCodes(config.statusCodes);
+  if (fromCodes) return fromCodes;
+  const seed = resolveMarketDefaults(config.mlsSource);
+  const fromDefaults = subMappingFromStatusCodes(seed.statusCodes);
+  return fromDefaults ?? { expired: [], terminated: [], withdrawn: [] };
+}
+
+const SUB_INDEX_CACHE = new WeakMap<
+  OffMarketSubMapping,
+  Map<string, OffMarketSubBucket>
+>();
+
+function subIndexFor(
+  mapping: OffMarketSubMapping,
+): Map<string, OffMarketSubBucket> {
+  const cached = SUB_INDEX_CACHE.get(mapping);
+  if (cached) return cached;
+  const idx = new Map<string, OffMarketSubBucket>();
+  for (const sub of OFF_MARKET_SUBS) {
+    for (const label of mapping[sub]) {
+      const key = normalizeLabel(label);
+      if (key && !idx.has(key)) idx.set(key, sub);
+    }
+  }
+  SUB_INDEX_CACHE.set(mapping, idx);
+  return idx;
+}
+
+/** Classify a raw off-market status into its sub-bucket, or null if unmapped. */
+export function classifyOffMarketSub(
+  rawStatus: string | null | undefined,
+  mapping: OffMarketSubMapping,
+): OffMarketSubBucket | null {
+  if (rawStatus == null) return null;
+  const key = normalizeLabel(String(rawStatus));
+  if (!key) return null;
+  return subIndexFor(mapping).get(key) ?? null;
+}
+
+export interface OffMarketSubCounts {
+  expired: number;
+  terminated: number;
+  withdrawn: number;
+}
+
+export type FailureDenominatorVariant =
+  | "all"
+  | "expired_only"
+  | "expired_plus_withdrawn";
+
+/**
+ * Off-market denominator for a failure-rate variant. `total` is the FULL
+ * offMarket count (== expired+terminated+withdrawn when fully classified) and
+ * is used for the "all" variant so it EXACTLY reproduces the shipping failure
+ * rate even when sub-classification is incomplete (e.g. override path).
+ */
+export function failureDenominator(
+  total: number,
+  sub: OffMarketSubCounts,
+  variant: FailureDenominatorVariant,
+): number {
+  switch (variant) {
+    case "expired_only":
+      return sub.expired;
+    case "expired_plus_withdrawn":
+      return sub.expired + sub.withdrawn;
+    case "all":
+    default:
+      return total;
+  }
+}

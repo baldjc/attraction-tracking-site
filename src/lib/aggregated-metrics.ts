@@ -135,6 +135,10 @@ export function rowsFromGroup(
   // (Known Issue #5) so the CREB-canonical number has a durable ground truth.
   // No dedicated YoY/rolling fields exist for inclusive on AggregatedGroup.
   push("MOI", "moiInclusive", group.moiInclusive, soldN);
+  // moi_active_plus_pending_rolling3 — smoothed trailing-3-month MOI variant.
+  // Sample size is this month's sold count (the gating month); the rolling
+  // average is computed across available prior months in csv-aggregate.
+  push("MOI", "moiInclusiveRolling3", group.moiInclusiveRolling3, soldN);
   push("DOM", "domMedian", group.domMedian, soldN);
   // dom_average — CREB-aligned view (Known Issue #4). Its own row so the
   // market-canonical DOM number is persisted, not just dom_median.
@@ -158,6 +162,28 @@ export function rowsFromGroup(
   // (Known Issue #2). Reuses the FAILURE_RATE family (same two counts), stored
   // ×100 so the shared formatter renders "%". metricKey disambiguates the row.
   push("FAILURE_RATE", "saleShare", group.saleShare, failN);
+  // failure_rate VARIANTS over narrower off-market denominators. Sample size is
+  // sold + the SUBSET of off-market that fed each ratio, so confidence gating
+  // sees the real N for the variant a member may select at citation time.
+  push(
+    "FAILURE_RATE",
+    "failureRateExpiredOnly",
+    group.failureRateExpiredOnly,
+    group.soldCount + group.expiredCount,
+  );
+  push(
+    "FAILURE_RATE",
+    "failureRateExpiredPlusWithdrawn",
+    group.failureRateExpiredPlusWithdrawn,
+    group.soldCount + group.expiredCount + group.withdrawnCount,
+  );
+
+  // average sale price — mean closing price (AVG family) for the average
+  // sale-price methodology variant. benchmark_price (BENCHMARK family) has no
+  // source column yet, so group.benchmarkPrice is null and push() skips it;
+  // the benchmark variant falls back to median at citation time.
+  push("AVG", "avgSalePrice", group.avgSalePrice, soldN);
+  push("BENCHMARK", "benchmarkPrice", group.benchmarkPrice, soldN);
 
   // absorption_rate = Sold / Active — share of standing inventory that cleared
   // (Known Issue #1). Own ABSORPTION family + floor; sample size is the sold

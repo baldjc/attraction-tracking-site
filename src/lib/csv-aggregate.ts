@@ -29,12 +29,16 @@ import {
 } from "@/lib/market-config";
 import {
   resolveStatusMapping,
+  resolveOffMarketSubMapping,
+  classifyOffMarketSub,
   bucketStatus,
   failureRate as failureRateRatio,
   saleShare as saleShareRatio,
   absorptionRate as absorptionRateRatio,
   type StatusBucket,
   type StatusMapping,
+  type OffMarketSubBucket,
+  type OffMarketSubMapping,
 } from "@/lib/market-status-buckets";
 
 export interface AggregatedGroup {
@@ -55,6 +59,13 @@ export interface AggregatedGroup {
 
   moiStrict: number | null; // Active ÷ Sold-per-month
   moiInclusive: number | null; // (Active + Pending) ÷ Sold-per-month
+  /**
+   * (Active + Pending) ÷ trailing-3-month average Sold-per-month. Cross-upload:
+   * needs the two prior months' sold counts, so it is filled in the cross-period
+   * pass (null from metricsFromAccumulator, populated below). Falls back to the
+   * single-month inclusive value when no prior months are available.
+   */
+  moiInclusiveRolling3: number | null;
   medianPrice: number | null;
   medianSqft: number | null;
   psf: number | null;
@@ -62,10 +73,28 @@ export interface AggregatedGroup {
   domAverage: number | null;
   spLpRatio: number | null;
   failureRate: number | null;
+  /** offMarket(expired only) ÷ Sold, stored ×100. null below floor. */
+  failureRateExpiredOnly: number | null;
+  /** offMarket(expired + withdrawn) ÷ Sold, stored ×100. null below floor. */
+  failureRateExpiredPlusWithdrawn: number | null;
   /** Sold ÷ (Sold + offMarket), stored ×100 (percentage). null below floor. */
   saleShare: number | null;
   /** Sold ÷ Active, stored ×100 (percentage). null below floor / no inventory. */
   absorptionRate: number | null;
+  /** Mean closing price (companion to medianPrice for the average sale-price variant). */
+  avgSalePrice: number | null;
+  /**
+   * Published HPI/benchmark price when a benchmark column is available. No
+   * canonical benchmark column exists in ColumnMapping yet, so this is null
+   * today; the benchmark sale-price variant falls back to median at citation
+   * time. Kept on the type so a future benchmark column lights this up without
+   * a schema change.
+   */
+  benchmarkPrice: number | null;
+  /** expired / terminated / withdrawn split of offMarketCount (for failure variants). */
+  expiredCount: number;
+  terminatedCount: number;
+  withdrawnCount: number;
 
   // Cross-period
   yoy: {
@@ -128,6 +157,8 @@ interface NormalizedRow {
   propertyType: string | null;
   zone: string | null; // empty-zone tracking
   status: StatusBucket;
+  /** Sub-classification of an off-market row (null unless status === "offMarket"). */
+  offMarketSub: OffMarketSubBucket | null;
   salePrice: number | null;
   listPrice: number | null;
   daysOnMarket: number | null;
@@ -297,6 +328,11 @@ interface RowAccumulator {
   pending: number;
   sold: number;
   offMarket: number;
+  // Off-market sub-splits (subset of offMarket; may not sum to it when a row's
+  // raw status can't be sub-classified — see classifyOffMarketSub).
+  expired: number;
+  terminated: number;
+  withdrawn: number;
   rollupNotes: Set<string>;
 }
 
@@ -311,6 +347,9 @@ function emptyAccumulator(): RowAccumulator {
     pending: 0,
     sold: 0,
     offMarket: 0,
+    expired: 0,
+    terminated: 0,
+    withdrawn: 0,
     rollupNotes: new Set(),
   };
 }
@@ -330,6 +369,19 @@ function tallyRow(acc: RowAccumulator, row: NormalizedRow, isDuplexMerge: boolea
       return;
     case "offMarket":
       acc.offMarket += 1;
+      switch (row.offMarketSub) {
+        case "expired":
+          acc.expired += 1;
+          break;
+        case "terminated":
+          acc.terminated += 1;
+          break;
+        case "withdrawn":
+          acc.withdrawn += 1;
+          break;
+        default:
+          break; // unclassifiable off-market row: counted in offMarket total only
+      }
       return;
     case "unknown":
       // Unknown rows are counted at the table level (meta.unknownStatusCount)
@@ -372,6 +424,7 @@ function metricsFromAccumulator(
   | "rolling90d"
   | "compositionShiftFlag"
   | "rollupNotes"
+  | "moiInclusiveRolling3"
 > {
   const medianPrice = median(acc.soldPrices);
   const medianSqft = median(acc.soldSqfts);
@@ -385,11 +438,28 @@ function metricsFromAccumulator(
   // storage convention (downstream formatters expect a percentage-style number).
   const failureRatio = failureRateRatio(acc.sold, acc.offMarket);
   const failureRate = failureRatio == null ? null : failureRatio * 100;
+  // failure_rate VARIANTS — same offMarket/sold ratio over narrower off-market
+  // denominators (expired-only, expired+withdrawn). Each clears the off-market
+  // sample floor against its OWN (smaller) denominator. Stored ×100 like the
+  // all-off-market value so the shared FAILURE_RATE formatter renders "%".
+  const failExpiredOnlyR = failureRateRatio(acc.sold, acc.expired);
+  const failureRateExpiredOnly =
+    failExpiredOnlyR == null ? null : failExpiredOnlyR * 100;
+  const failExpiredPlusWithdrawnR = failureRateRatio(
+    acc.sold,
+    acc.expired + acc.withdrawn,
+  );
+  const failureRateExpiredPlusWithdrawn =
+    failExpiredPlusWithdrawnR == null ? null : failExpiredPlusWithdrawnR * 100;
   // sale_share = Sold / (Sold + offMarket) — bounded 0..1 companion to
   // failure_rate. Stored ×100 (percentage) to match the failure_rate storage
   // convention so the shared FAILURE_RATE formatter renders it as "%".
   const saleShareR = saleShareRatio(acc.sold, acc.offMarket);
   const saleShare = saleShareR == null ? null : saleShareR * 100;
+  // average sale price — mean of closing prices (companion to medianPrice for
+  // the average sale-price methodology variant). benchmarkPrice has no source
+  // column yet, so it is null today (citation falls back to median).
+  const avgSalePrice = average(acc.soldPrices);
   // absorption_rate = Sold / Active — how much standing inventory cleared.
   // Stored ×100 (percentage) so the ABSORPTION formatter renders it as "%".
   const absorptionR = absorptionRateRatio(acc.sold, acc.active);
@@ -419,8 +489,15 @@ function metricsFromAccumulator(
     domAverage,
     spLpRatio,
     failureRate,
+    failureRateExpiredOnly,
+    failureRateExpiredPlusWithdrawn,
     saleShare,
     absorptionRate,
+    avgSalePrice,
+    benchmarkPrice: null,
+    expiredCount: acc.expired,
+    terminatedCount: acc.terminated,
+    withdrawnCount: acc.withdrawn,
   };
 }
 
@@ -479,6 +556,8 @@ export async function aggregateUpload(
   // MARKET_SOURCE_DEFAULTS). This is the single interpretation point for
   // "which raw MLS label is sold / off-market / active / pending".
   const statusMapping: StatusMapping = resolveStatusMapping(config);
+  const offMarketSubMapping: OffMarketSubMapping =
+    resolveOffMarketSubMapping(config);
 
   let unknownStatusCount = 0;
   let emptyZoneCount = 0;
@@ -499,6 +578,10 @@ export async function aggregateUpload(
     const effectiveStatus: StatusBucket = mapping.status
       ? bucketStatus(statusStr, statusMapping)
       : "sold";
+    const offMarketSub =
+      effectiveStatus === "offMarket"
+        ? classifyOffMarketSub(statusStr, offMarketSubMapping)
+        : null;
     if (effectiveStatus === "unknown") {
       unknownStatusCount += 1;
       const label = (statusStr ?? "").toString().trim() || "(blank)";
@@ -545,6 +628,7 @@ export async function aggregateUpload(
         propertyType,
         zone,
         status: effectiveStatus,
+        offMarketSub,
         salePrice,
         listPrice,
         daysOnMarket: dom,
@@ -763,11 +847,32 @@ export async function aggregateUpload(
       "MOI",
     );
 
+    // moi_active_plus_pending_rolling3 = (Active + Pending) ÷ trailing-3-month
+    // average Sold-per-month. The prior months' sold counts are read from each
+    // prior upload's MOI fact sampleSize (== that month's sold sample). Months
+    // without a MOI fact (sold below floor) are simply absent, so the average is
+    // taken over the months we actually have. With no priors this collapses to
+    // the single-month inclusive value (identical to moiInclusive).
+    const inclusiveNumerator = metrics.activeCount + metrics.pendingCount;
+    const monthlySolds: number[] = [metrics.soldCount];
+    for (const u of rolling90dUploads) {
+      const m = lookupFact(u, neighbourhood, propertyType, priceTier, "MOI");
+      const n = m?.sampleSize ?? null;
+      if (n != null && n > 0) monthlySolds.push(n);
+    }
+    const avgMonthlySold =
+      monthlySolds.length > 0
+        ? monthlySolds.reduce((a, b) => a + b, 0) / monthlySolds.length
+        : 0;
+    const moiInclusiveRolling3 =
+      avgMonthlySold > 0 ? inclusiveNumerator / avgMonthlySold : null;
+
     groups.push({
       neighbourhood,
       propertyType,
       priceTier,
       ...metrics,
+      moiInclusiveRolling3,
       yoy: { medianPriceDelta, medianSqftDelta, psfDelta, moiStrictDelta },
       rolling90d: {
         medianPrice: rollingMedianPrice,

@@ -36,6 +36,7 @@ function group(over: Partial<AggregatedGroup> = {}): AggregatedGroup {
     offMarketCount: 9,
     moiStrict: 4.0, // active/sold = 40/10
     moiInclusive: 4.8, // (active+pending)/sold = 48/10
+    moiInclusiveRolling3: 4.8, // single-month: collapses to moiInclusive
     medianPrice: 742000,
     medianSqft: 1800,
     psf: 412,
@@ -43,8 +44,15 @@ function group(over: Partial<AggregatedGroup> = {}): AggregatedGroup {
     domAverage: 30,
     spLpRatio: 0.99,
     failureRate: 90.0, // offMarket/sold * 100 = 9/10 * 100
+    failureRateExpiredOnly: 50.0, // expired/sold * 100 = 5/10 * 100
+    failureRateExpiredPlusWithdrawn: 70.0, // (expired+withdrawn)/sold * 100 = 7/10 * 100
     saleShare: 52.6, // sold/(sold+offMarket) * 100 = 10/19 * 100
     absorptionRate: 25.0, // sold/active * 100 = 10/40 * 100
+    avgSalePrice: 760000,
+    benchmarkPrice: null,
+    expiredCount: 5,
+    terminatedCount: 2,
+    withdrawnCount: 2,
     yoy: {
       medianPriceDelta: null,
       medianSqftDelta: null,

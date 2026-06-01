@@ -10,6 +10,7 @@ import UploadPanel from "@/components/market-data/UploadPanel";
 import UploadHistoryTable from "@/components/market-data/UploadHistoryTable";
 import UploadProgressBanner from "@/components/market-data/UploadProgressBanner";
 import CsvRulesCard from "@/components/market-data/CsvRulesCard";
+import MethodologySettings from "@/components/market-data/MethodologySettings";
 
 export const dynamic = "force-dynamic";
 
@@ -112,6 +113,8 @@ export default async function MarketDataPage() {
           }))}
         />
       </section>
+
+      <MethodologySettings />
     </div>
   );
 }

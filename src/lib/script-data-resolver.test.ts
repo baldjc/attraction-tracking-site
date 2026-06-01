@@ -176,6 +176,71 @@ test("conceptual count families collapse onto INVENTORY", () => {
   assert.equal(toMetricFamily("median_sale_price"), MetricFamily.MEDIAN);
 });
 
+// ── FAILURE_RATE variant selection (default-unchanged invariant) ─────────────
+// AggregatedMetric now persists multiple FAILURE_RATE variant keys for EVERY
+// upload (failureRate / failureRateExpiredOnly / failureRateExpiredPlusWithdrawn).
+// A default/untouched member (no member_metric_settings row) must still resolve
+// to the canonical `failureRate` key, never drift to a coexisting variant.
+
+const failureRateAggregates = (): ResolverAggregatedMetric[] => [
+  am({ id: "fr-canonical", metricKey: "failureRate", metricValue: 12, monthYear: "2026-04" }),
+  // Newer month + larger sample => would win the tiebreak WITHOUT key narrowing.
+  am({
+    id: "fr-expired-only",
+    metricKey: "failureRateExpiredOnly",
+    metricValue: 99,
+    monthYear: "2026-06",
+    sampleSize: 50,
+  }),
+];
+
+test("FAILURE_RATE: untouched member resolves the canonical failureRate aggregate, not a coexisting variant", async () => {
+  // No marketConfig / memberMetricSettings methods on prisma => optional-chained
+  // lookups return undefined => memberSettings is null (the default member).
+  const res = await findDataForScriptNeed(
+    need({ metricFamily: MetricFamily.FAILURE_RATE }),
+    fakePrisma({ facts: [], metrics: failureRateAggregates() }),
+  );
+  assert.equal(res.source, "aggregated_metric");
+  if (res.source === "aggregated_metric") {
+    assert.equal(
+      res.metricId,
+      "fr-canonical",
+      "default member must pick the canonical failureRate key even though a newer expired-only variant coexists",
+    );
+    assert.equal(res.value, 12);
+  }
+});
+
+test("FAILURE_RATE: member who selected expired_only resolves the expired-only aggregate", async () => {
+  const deps = {
+    prisma: {
+      marketFact: { findMany: async () => [] },
+      aggregatedMetric: { findMany: async () => failureRateAggregates() },
+      memberMetricSettings: {
+        findUnique: async () => ({
+          userId: "m1",
+          moiVariant: "active_plus_pending_single",
+          domVariant: "average",
+          failureRateVariant: "expired_only",
+          salePriceVariant: "median",
+          sampleSizeVariant: "conservative",
+        }),
+      },
+    },
+  } as unknown as Parameters<typeof findDataForScriptNeed>[1];
+
+  const res = await findDataForScriptNeed(
+    need({ metricFamily: MetricFamily.FAILURE_RATE }),
+    deps,
+  );
+  assert.equal(res.source, "aggregated_metric");
+  if (res.source === "aggregated_metric") {
+    assert.equal(res.metricId, "fr-expired-only");
+    assert.equal(res.value, 99);
+  }
+});
+
 test("findDataForScriptNeed excludes legacy_v1 failure_rate facts in the query", async () => {
   let capturedWhere: Record<string, unknown> | undefined;
   const capturingDeps = {

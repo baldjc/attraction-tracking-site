@@ -55,6 +55,13 @@ import {
 } from "@/lib/story-lead-fact-resolver";
 import { persistAggregatedMetrics } from "@/lib/aggregated-metrics";
 import type { MarketConfigShape } from "@/lib/market-config";
+import { loadMemberMetricSettings } from "@/lib/member-metric-settings-server";
+import {
+  DEFAULT_METHODOLOGY,
+  settingsEqual,
+  sampleFloorFor,
+  type MemberMethodologySettings,
+} from "@/lib/member-metric-settings";
 
 const SONNET_MODEL = "claude-sonnet-4-20250514";
 // Sonnet pricing: $3 / 1M input, $12 / 1M output.
@@ -710,6 +717,18 @@ function aggregateGroups(
   const rollupFailureRatio = failureRateRatio(sold, offMarket);
   const rollupSaleShareRatio = saleShareRatio(sold, offMarket);
   const rollupAbsorptionRatio = absorptionRateRatio(sold, active);
+  // Off-market sub-splits aren't carried on the per-group inputs to this rollup
+  // (the cap pools many neighbourhoods), so the failure-rate VARIANTS can't be
+  // reconstructed exactly here — leave them null (this is supporting-texture
+  // only and never headline). The "all off-market" failureRate stays exact.
+  const expired = groups.reduce((s, g) => s + g.expiredCount, 0);
+  const terminated = groups.reduce((s, g) => s + g.terminatedCount, 0);
+  const withdrawn = groups.reduce((s, g) => s + g.withdrawnCount, 0);
+  const rollupExpiredOnlyRatio = failureRateRatio(sold, expired);
+  const rollupExpiredPlusWithdrawnRatio = failureRateRatio(
+    sold,
+    expired + withdrawn,
+  );
   return {
     neighbourhood: identity.neighbourhood,
     propertyType: identity.propertyType,
@@ -721,6 +740,7 @@ function aggregateGroups(
     offMarketCount: offMarket,
     moiStrict: sold > 0 ? active / sold : null,
     moiInclusive: sold > 0 ? (active + pending) / sold : null,
+    moiInclusiveRolling3: sold > 0 ? (active + pending) / sold : null,
     medianPrice: weighted((g) => g.medianPrice),
     medianSqft: weighted((g) => g.medianSqft),
     psf: weighted((g) => g.psf),
@@ -728,9 +748,20 @@ function aggregateGroups(
     domAverage: weighted((g) => g.domAverage),
     spLpRatio: weighted((g) => g.spLpRatio),
     failureRate: rollupFailureRatio == null ? null : rollupFailureRatio * 100,
+    failureRateExpiredOnly:
+      rollupExpiredOnlyRatio == null ? null : rollupExpiredOnlyRatio * 100,
+    failureRateExpiredPlusWithdrawn:
+      rollupExpiredPlusWithdrawnRatio == null
+        ? null
+        : rollupExpiredPlusWithdrawnRatio * 100,
     saleShare: rollupSaleShareRatio == null ? null : rollupSaleShareRatio * 100,
     absorptionRate:
       rollupAbsorptionRatio == null ? null : rollupAbsorptionRatio * 100,
+    avgSalePrice: weighted((g) => g.avgSalePrice),
+    benchmarkPrice: null,
+    expiredCount: expired,
+    terminatedCount: terminated,
+    withdrawnCount: withdrawn,
     yoy: {
       medianPriceDelta: null,
       medianSqftDelta: null,
@@ -883,11 +914,116 @@ function applyCoverageCap(
 // User-message builders (one per call mode)
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Member-selected methodology guidance, injected into every validator call so
+ * the LLM frames its prose under the member's chosen variants. Returns "" when
+ * the member is on the Default preset — that keeps an untouched member's prompt
+ * (and therefore prose + prompt-cache key) byte-identical to today's behaviour.
+ *
+ * The block surfaces the chosen variants as PRIMARY METRICS (headline-safe) and
+ * labels every alternate as SUPPORTING TEXTURE ONLY, disables the failure-rate
+ * family entirely when the member opted out, and states the neighbourhood
+ * sample floor that gates fact emission.
+ */
+function buildMethodologyBlock(settings: MemberMethodologySettings): string {
+  if (settingsEqual(settings, DEFAULT_METHODOLOGY)) return "";
+
+  const lines: string[] = [
+    "=== METHODOLOGY (member-selected — OVERRIDES default framing) ===",
+    "The member has chosen how their derived stats should be framed. Treat the",
+    "variants named PRIMARY below as the only headline-safe framing; every other",
+    'variant of the same family is "supporting texture only" — never headline it.',
+    "",
+  ];
+
+  // Months of Inventory
+  const moiPrimary =
+    settings.moiVariant === "active_only_single"
+      ? "moi_strict (Active ÷ Sold, single month)"
+      : settings.moiVariant === "active_plus_pending_rolling3"
+        ? "moi_inclusive_rolling3 ((Active+Pending) ÷ trailing-3-month avg Sold)"
+        : "moi_inclusive ((Active+Pending) ÷ Sold, single month)";
+  lines.push(`MONTHS OF INVENTORY — PRIMARY: ${moiPrimary}.`);
+  lines.push(
+    "  All other MOI variants: supporting texture only — do NOT headline.",
+  );
+
+  // Days on Market
+  if (settings.domVariant === "both") {
+    lines.push(
+      "DAYS ON MARKET — PRIMARY: report BOTH median and average DOM together in one fact (state which is which).",
+    );
+  } else {
+    const domPrimary =
+      settings.domVariant === "median" ? "dom_median" : "dom_average";
+    lines.push(`DAYS ON MARKET — PRIMARY: ${domPrimary}.`);
+    lines.push(
+      "  The other DOM variant: supporting texture only — do NOT headline.",
+    );
+  }
+
+  // Failure rate
+  if (settings.failureRateVariant === "disabled") {
+    lines.push(
+      "FAILURE RATE — DISABLED: emit ZERO failure_rate facts. Skip the failure_rate family entirely; do not mention listing-failure or sale-share statistics.",
+    );
+  } else {
+    const frPrimary =
+      settings.failureRateVariant === "expired_only"
+        ? "failure_rate over EXPIRED listings only"
+        : settings.failureRateVariant === "expired_plus_withdrawn"
+          ? "failure_rate over EXPIRED + WITHDRAWN listings"
+          : "failure_rate over ALL off-market listings";
+    lines.push(`FAILURE RATE — PRIMARY: ${frPrimary}.`);
+    lines.push(
+      "  Use the matching pre-computed failure_rate value from the GROUPS block; other failure-rate denominators are supporting texture only.",
+    );
+  }
+
+  // Sale price
+  const spPrimary =
+    settings.salePriceVariant === "average"
+      ? "average sale price (mean closing price)"
+      : settings.salePriceVariant === "benchmark"
+        ? "benchmark/HPI price when present, else fall back to median sale price"
+        : "median sale price";
+  lines.push(`SALE PRICE — PRIMARY: ${spPrimary}.`);
+  lines.push(
+    "  Other price measures: supporting texture only — do NOT headline.",
+  );
+
+  // Sample size floor
+  const floor = sampleFloorFor(settings.sampleSizeVariant);
+  lines.push(
+    `SAMPLE SIZE — A neighbourhood needs at least ${floor.sold} closed sales (and ${floor.offMarket} off-market listings for failure/sale-share) before any of its facts may be headline-safe. Below the floor, emit the fact as supporting-texture-only or skip it.`,
+  );
+
+  return lines.join("\n");
+}
+
+/**
+ * The methodology snapshot stamped onto every persisted MarketFact row so the
+ * re-validate endpoint can detect rows framed under a now-stale methodology and
+ * admin tooling has an audit trail. Stored as plain JSON (the five variants).
+ */
+function methodologyVariantJson(
+  settings: MemberMethodologySettings,
+): Prisma.InputJsonValue {
+  return {
+    moiVariant: settings.moiVariant,
+    domVariant: settings.domVariant,
+    failureRateVariant: settings.failureRateVariant,
+    salePriceVariant: settings.salePriceVariant,
+    sampleSizeVariant: settings.sampleSizeVariant,
+  };
+}
+
 function buildFactsChunkMessage(
   table: AggregatedTable,
   config: MarketConfigShape,
   priorFactsBlock: string,
   chunk: FactsChunk,
+  methodologyBlock: string,
 ): string {
   const hasRollupTail = chunk.groups.some((g) => g.usageHint);
   const modeMarker = [
@@ -910,6 +1046,7 @@ function buildFactsChunkMessage(
     serializeTable(table, chunk.groups, chunk.label, GROUPS_CHAR_BUDGET, false),
     "",
     serializeConfig(config),
+    ...(methodologyBlock ? ["", methodologyBlock] : []),
     "",
     priorFactsBlock,
     "",
@@ -927,6 +1064,7 @@ function buildSummaryAndLeadsMessage(
   table: AggregatedTable,
   config: MarketConfigShape,
   priorFactsBlock: string,
+  methodologyBlock: string,
 ): string {
   const modeMarker = [
     "=== MODE: SUMMARY_AND_LEADS_ONLY ===",
@@ -940,6 +1078,7 @@ function buildSummaryAndLeadsMessage(
     summarySerializeTable(table),
     "",
     serializeConfig(config),
+    ...(methodologyBlock ? ["", methodologyBlock] : []),
     "",
     priorFactsBlock,
     "",
@@ -1248,6 +1387,7 @@ function mapFactToPrisma(
   uploadId: string,
   userId: string,
   propertyTypeColumn: string | null = null,
+  methodologyVariant: Prisma.InputJsonValue = Prisma.JsonNull as unknown as Prisma.InputJsonValue,
 ): Prisma.MarketFactCreateManyInput {
   // Aggregate `notes` from extraNotes + any prompt-emitted text we didn't pull
   // into a column. Keeps every raw scrap accessible for audit.
@@ -1255,6 +1395,7 @@ function mapFactToPrisma(
   return {
     userId,
     uploadId,
+    methodologyVariant,
     neighbourhood: fact.neighbourhood,
     // In chunked mode we know which property-type slice the fact came from, so
     // we stamp the column. Rollup chunk + legacy single-call path pass null.
@@ -1373,9 +1514,12 @@ async function persistResults(
   inputTokens: number,
   outputTokens: number,
   factYieldPct: number,
+  methodologyVariant: Prisma.InputJsonValue,
 ): Promise<void> {
   const allFactRows = factsBundles.flatMap((b) =>
-    b.facts.map((f) => mapFactToPrisma(f, uploadId, userId, b.propertyTypeColumn)),
+    b.facts.map((f) =>
+      mapFactToPrisma(f, uploadId, userId, b.propertyTypeColumn, methodologyVariant),
+    ),
   );
 
   // Idempotent replace. Because the bulk inserts below run OUTSIDE a transaction
@@ -1615,6 +1759,15 @@ export async function runValidation(uploadId: string): Promise<void> {
   const priorRaw = upload.rawValidatorOutput?.trim() ?? "";
   const reuseAiOutput = priorRaw.length > 0;
 
+  // Snapshot the member's chosen methodology ONCE at the start of the run, so
+  // every parallel call and every persisted fact row sees a consistent view
+  // even if the member edits settings mid-validation. Defaults to the Default
+  // preset when the member has never touched their settings — in that case
+  // buildMethodologyBlock() returns "" and the prompts are byte-identical to
+  // today's, so an untouched member sees no change in output.
+  const methodologySnapshot = await loadMemberMetricSettings(upload.userId);
+  const methodologyBlock = buildMethodologyBlock(methodologySnapshot);
+
   try {
     // Cost cap FIRST. Don't even aggregate if we're hard-blocked. Skipped on a
     // persistence-only retry — there is no AI spend to cap, and a member at
@@ -1783,7 +1936,7 @@ export async function runValidation(uploadId: string): Promise<void> {
       chunks,
       FACT_CALL_CONCURRENCY,
       async (chunk) => {
-        const msg = buildFactsChunkMessage(table, configSnapshot, priorFactsBlock, chunk);
+        const msg = buildFactsChunkMessage(table, configSnapshot, priorFactsBlock, chunk, methodologyBlock);
         mdv("validate.chunk.start", uploadId, t0, {
           chunk: chunk.name,
           groups: chunk.groups.length,
@@ -1795,7 +1948,7 @@ export async function runValidation(uploadId: string): Promise<void> {
       },
     );
     const summaryCallPromise = (async () => {
-      const msg = buildSummaryAndLeadsMessage(table, configSnapshot, priorFactsBlock);
+      const msg = buildSummaryAndLeadsMessage(table, configSnapshot, priorFactsBlock, methodologyBlock);
       mdv("validate.chunk.start", uploadId, t0, {
         chunk: "summary+leads",
         msgChars: msg.length,
@@ -1956,6 +2109,7 @@ export async function runValidation(uploadId: string): Promise<void> {
       totalInputTokens,
       totalOutputTokens,
       Number(factYieldPct.toFixed(4)),
+      methodologyVariantJson(methodologySnapshot),
     );
     mdv("db.write.complete", uploadId, t0);
     mdv("validation.complete", uploadId, t0, {

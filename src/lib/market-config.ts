@@ -2,6 +2,13 @@
 // that needs prisma, next/headers, or session resolution lives in
 // `market-config-server.ts` to keep the client bundle clean.
 
+import {
+  DEFAULT_METHODOLOGY,
+  sampleFloorFor,
+  type MemberMethodologySettings,
+  type SampleFloor,
+} from "@/lib/member-metric-settings";
+
 export const CANONICAL_FIELDS = [
   "date",
   "neighbourhood",
@@ -822,20 +829,143 @@ export function resolveMarketDefaults(
  *   metricName — matches the validator MarketFact `metricName` token convention
  *                ("dom_average" | "dom_median" | "moi_inclusive" | "moi_strict").
  */
-export function canonicalVariantKeys(mlsSource?: string | null): {
+export function canonicalVariantKeys(
+  mlsSource?: string | null,
+  memberSettings?: MemberMethodologySettings | null,
+): {
   domMetricKey: "domAverage" | "domMedian";
   domMetricName: "dom_average" | "dom_median";
-  moiMetricKey: "moiInclusive" | "moiStrict";
-  moiMetricName: "moi_inclusive" | "moi_strict";
+  /** True when the member chose the DOM "both" variant — cite median AND average. */
+  domShowBoth: boolean;
+  moiMetricKey: "moiInclusive" | "moiStrict" | "moiInclusiveRolling3";
+  moiMetricName: "moi_inclusive" | "moi_strict" | "moi_inclusive_rolling3";
+  /** null when the member disabled failure rate. */
+  failureRateMetricKey:
+    | "failureRate"
+    | "failureRateExpiredOnly"
+    | "failureRateExpiredPlusWithdrawn"
+    | null;
+  failureRateMetricName:
+    | "failure_rate"
+    | "failure_rate_expired_only"
+    | "failure_rate_expired_plus_withdrawn"
+    | null;
+  salePriceMetricKey: "medianPrice" | "avgSalePrice" | "benchmarkPrice";
+  salePriceMetricName:
+    | "median_sale_price"
+    | "average_sale_price"
+    | "benchmark_price";
+  sampleFloor: SampleFloor;
 } {
   const d = resolveMarketDefaults(mlsSource);
+  // Board-canonical DOM/MOI — today's behaviour. The Default methodology
+  // sentinels (dom "average", moi "active_plus_pending_single") DEFER to these,
+  // so an untouched member (or one who explicitly picks the Default preset) sees
+  // the exact pre-feature numbers regardless of board. Only an explicit non-
+  // default variant overrides the board choice.
+  const boardDomMedian = d.canonicalDomVariant === "median";
+  const boardMoiStrict = d.canonicalMoiVariant === "strict";
+
+  const m = memberSettings ?? DEFAULT_METHODOLOGY;
+
+  // DOM
+  let domMetricKey: "domAverage" | "domMedian";
+  let domMetricName: "dom_average" | "dom_median";
+  let domShowBoth = false;
+  if (m.domVariant === "median") {
+    domMetricKey = "domMedian";
+    domMetricName = "dom_median";
+  } else if (m.domVariant === "both") {
+    // Headline defaults to median; domShowBoth tells the validator/preview to
+    // surface both. (The deterministic resolver picks a single headline row.)
+    domMetricKey = "domMedian";
+    domMetricName = "dom_median";
+    domShowBoth = true;
+  } else {
+    // "average" == Default sentinel -> board-canonical DOM.
+    domMetricKey = boardDomMedian ? "domMedian" : "domAverage";
+    domMetricName = boardDomMedian ? "dom_median" : "dom_average";
+  }
+
+  // MOI
+  let moiMetricKey: "moiInclusive" | "moiStrict" | "moiInclusiveRolling3";
+  let moiMetricName: "moi_inclusive" | "moi_strict" | "moi_inclusive_rolling3";
+  if (m.moiVariant === "active_only_single") {
+    moiMetricKey = "moiStrict";
+    moiMetricName = "moi_strict";
+  } else if (m.moiVariant === "active_plus_pending_rolling3") {
+    moiMetricKey = "moiInclusiveRolling3";
+    moiMetricName = "moi_inclusive_rolling3";
+  } else {
+    // "active_plus_pending_single" == Default sentinel -> board-canonical MOI.
+    moiMetricKey = boardMoiStrict ? "moiStrict" : "moiInclusive";
+    moiMetricName = boardMoiStrict ? "moi_strict" : "moi_inclusive";
+  }
+
+  // Failure rate (no board dimension; Default == all off-market == today).
+  let failureRateMetricKey:
+    | "failureRate"
+    | "failureRateExpiredOnly"
+    | "failureRateExpiredPlusWithdrawn"
+    | null;
+  let failureRateMetricName:
+    | "failure_rate"
+    | "failure_rate_expired_only"
+    | "failure_rate_expired_plus_withdrawn"
+    | null;
+  switch (m.failureRateVariant) {
+    case "expired_only":
+      failureRateMetricKey = "failureRateExpiredOnly";
+      failureRateMetricName = "failure_rate_expired_only";
+      break;
+    case "expired_plus_withdrawn":
+      failureRateMetricKey = "failureRateExpiredPlusWithdrawn";
+      failureRateMetricName = "failure_rate_expired_plus_withdrawn";
+      break;
+    case "disabled":
+      failureRateMetricKey = null;
+      failureRateMetricName = null;
+      break;
+    case "all_off_market":
+    default:
+      failureRateMetricKey = "failureRate";
+      failureRateMetricName = "failure_rate";
+      break;
+  }
+
+  // Sale price (Default == median == today).
+  let salePriceMetricKey: "medianPrice" | "avgSalePrice" | "benchmarkPrice";
+  let salePriceMetricName:
+    | "median_sale_price"
+    | "average_sale_price"
+    | "benchmark_price";
+  switch (m.salePriceVariant) {
+    case "average":
+      salePriceMetricKey = "avgSalePrice";
+      salePriceMetricName = "average_sale_price";
+      break;
+    case "benchmark":
+      salePriceMetricKey = "benchmarkPrice";
+      salePriceMetricName = "benchmark_price";
+      break;
+    case "median":
+    default:
+      salePriceMetricKey = "medianPrice";
+      salePriceMetricName = "median_sale_price";
+      break;
+  }
+
   return {
-    domMetricKey: d.canonicalDomVariant === "median" ? "domMedian" : "domAverage",
-    domMetricName:
-      d.canonicalDomVariant === "median" ? "dom_median" : "dom_average",
-    moiMetricKey: d.canonicalMoiVariant === "strict" ? "moiStrict" : "moiInclusive",
-    moiMetricName:
-      d.canonicalMoiVariant === "strict" ? "moi_strict" : "moi_inclusive",
+    domMetricKey,
+    domMetricName,
+    domShowBoth,
+    moiMetricKey,
+    moiMetricName,
+    failureRateMetricKey,
+    failureRateMetricName,
+    salePriceMetricKey,
+    salePriceMetricName,
+    sampleFloor: sampleFloorFor(m.sampleSizeVariant),
   };
 }
 

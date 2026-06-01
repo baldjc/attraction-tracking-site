@@ -211,6 +211,7 @@ model User {
   marketFacts       MarketFact[]
   aggregatedMetrics AggregatedMetric[]
   marketStoryLeads  MarketStoryLead[]
+  memberMetricSettings MemberMetricSettings?
   onDemandExtractionLogs OnDemandExtractionLog[]
 
   // Wave 1.5 (data-first rebuild) — additive relations only
@@ -2035,6 +2036,14 @@ model MarketFact {
   // wrong methodology can't be surfaced until the upload is re-validated.
   methodologyVersion   String?          @default("v2")
 
+  // Snapshot of the member's chosen metric methodology variants active at the
+  // moment this prose fact was validated. Lets the re-validate endpoint detect
+  // rows that are stale under updated settings, and gives admin tooling an audit
+  // trail. Shape mirrors MemberMetricSettings:
+  //   { moi, dom, failureRate, salePrice, sampleSize }
+  // Null on rows written before this shipped (treat as the Default preset).
+  methodologyVariant   Json?
+
   createdAt            DateTime         @default(now())
 
   @@index([userId, neighbourhood])
@@ -2042,6 +2051,25 @@ model MarketFact {
   @@index([metricFamily, usageClass])
   @@index([userId, sourceType])
   @@map("market_facts")
+}
+
+// Per-member metric methodology settings — "How we calculate your stats".
+// One row per member; absent row == the Default preset (see DEFAULT_METHODOLOGY
+// in src/lib/member-metric-settings.ts). Deterministic metrics switch instantly
+// on save (all variants are persisted per upload); prose facts only change on a
+// new upload or an explicit re-validate.
+model MemberMetricSettings {
+  userId             String   @id
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  moiVariant         String   @default("active_plus_pending_single")
+  domVariant         String   @default("average")
+  failureRateVariant String   @default("all_off_market")
+  salePriceVariant   String   @default("median")
+  sampleSizeVariant  String   @default("conservative")
+  updatedAt          DateTime @updatedAt
+  createdAt          DateTime @default(now())
+
+  @@map("member_metric_settings")
 }
 
 model MarketStoryLead {

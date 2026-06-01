@@ -23,6 +23,10 @@ import { MetricFamily, FactUsageClass } from "@/generated/prisma/enums";
 import { calculateCost } from "@/lib/ai-tool-cost";
 import { EXCLUDE_LEGACY_FAILURE_RATE } from "@/lib/market-status-buckets";
 import { canonicalVariantKeys } from "@/lib/market-config";
+import {
+  normalizeMethodologySettings,
+  type MemberMethodologySettings,
+} from "@/lib/member-metric-settings";
 
 export { MetricFamily };
 
@@ -330,6 +334,14 @@ export interface ResolverDeps {
     marketConfig?: {
       findUnique: (args: unknown) => Promise<{ mlsSource: string | null } | null>;
     };
+    /**
+     * Optional: used to load the member's metric methodology settings so the
+     * citation surface honours their DOM/MOI/failure-rate variant choices. When
+     * absent (unit-test fakes) the member is treated as Default == today.
+     */
+    memberMetricSettings?: {
+      findUnique: (args: unknown) => Promise<Record<string, unknown> | null>;
+    };
   };
 }
 
@@ -351,19 +363,41 @@ export async function findDataForScriptNeed(
   let preferMetricName: string | undefined;
   if (
     need.metricFamily === MetricFamily.DOM ||
-    need.metricFamily === MetricFamily.MOI
+    need.metricFamily === MetricFamily.MOI ||
+    need.metricFamily === MetricFamily.FAILURE_RATE
   ) {
     const mc = await prisma.marketConfig?.findUnique?.({
       where: { id: need.marketConfigId },
       select: { mlsSource: true },
     });
-    const v = canonicalVariantKeys(mc?.mlsSource ?? null);
+    // Member methodology settings (null == Default == today's behaviour).
+    const settingsRow = await prisma.memberMetricSettings?.findUnique?.({
+      where: { userId: need.memberId },
+    });
+    const memberSettings: MemberMethodologySettings | null = settingsRow
+      ? normalizeMethodologySettings(settingsRow)
+      : null;
+    const v = canonicalVariantKeys(mc?.mlsSource ?? null, memberSettings);
     if (need.metricFamily === MetricFamily.DOM) {
       preferMetricKey = v.domMetricKey;
       preferMetricName = v.domMetricName;
-    } else {
+    } else if (need.metricFamily === MetricFamily.MOI) {
       preferMetricKey = v.moiMetricKey;
       preferMetricName = v.moiMetricName;
+    } else if (v.failureRateMetricKey) {
+      // Narrow FAILURE_RATE to the canonical key for EVERY member, including the
+      // untouched/default one. For a default member canonicalVariantKeys resolves
+      // to "failureRate"/"failure_rate" — exactly today's selection — which is
+      // load-bearing here: AggregatedMetric now persists multiple FAILURE_RATE
+      // variant keys deterministically (failureRate / failureRateExpiredOnly /
+      // failureRateExpiredPlusWithdrawn) for every upload, so without narrowing a
+      // default member's aggregated-metric fallback could drift to a non-default
+      // variant. (The MarketFact path was already safe because a default member's
+      // validator output is byte-identical, but the deterministic aggregate path
+      // is not.) A null key (member disabled failure rate) leaves selection
+      // untouched — the validator stamps zero rows for that case.
+      preferMetricKey = v.failureRateMetricKey;
+      preferMetricName = v.failureRateMetricName ?? undefined;
     }
   }
 
