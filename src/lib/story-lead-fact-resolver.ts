@@ -20,6 +20,7 @@
  */
 import prisma from "@/lib/prisma";
 import { matchesHood } from "@/lib/content-engine-validation";
+import { EXCLUDE_LEGACY_FAILURE_RATE } from "@/lib/market-status-buckets";
 
 /** Canonical MarketFact.metricFamily enum values we resolve against. */
 export type ResolverMetricFamily =
@@ -320,6 +321,7 @@ export async function resolveStoryLeadDataThreadsToFactIds(params: {
     where: {
       userId: memberId,
       ...(uploadId ? { uploadId } : {}),
+      ...EXCLUDE_LEGACY_FAILURE_RATE,
     },
     select: {
       id: true,

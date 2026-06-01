@@ -56,6 +56,7 @@
 import { type NextRequest } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { resolveUserFromSession } from "@/lib/session-utils";
+import { EXCLUDE_LEGACY_FAILURE_RATE } from "@/lib/market-status-buckets";
 import { getFeatureFlags } from "@/lib/feature-flags";
 import { getCostCapStatus, logUsage } from "@/lib/ai-tool-cost";
 import prisma from "@/lib/prisma";
@@ -292,7 +293,7 @@ export async function POST(req: NextRequest) {
 
   // ── Load cited facts (ownership-filtered on the JOIN) ────────────────
   const factRows = await prisma.marketFact.findMany({
-    where: { id: { in: linkedFactIds }, userId },
+    where: { ...EXCLUDE_LEGACY_FAILURE_RATE, id: { in: linkedFactIds }, userId },
     select: {
       id: true,
       neighbourhood: true,

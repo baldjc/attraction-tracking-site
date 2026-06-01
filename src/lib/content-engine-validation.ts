@@ -183,6 +183,38 @@ export function matchesHood(haystackLower: string, hood: string): boolean {
   return re.test(haystackLower);
 }
 
+// ── Failure-rate honesty rule ─────────────────────────────────────────────
+// failure_rate is offMarket / sold (a RATIO that can exceed 100%), NOT a share
+// of all listings. Stating "47% failed to sell" reads the ratio as a share and
+// is mathematically wrong (9 off / 10 sold = 90% failure_rate but only ~47% of
+// resolved listings actually failed). Honest framing uses either sale_share
+// ("X% of listings sold") or explicit counts ("for every 10 that sold, 9 failed
+// to sell"). This rule flags any percentage tied to failure-to-sell language.
+const FAILURE_VERB =
+  "(?:failed?\\s+to\\s+sell|did(?:n['’]?t| not)\\s+sell|never\\s+sold|don['’]?t\\s+sell|won['’]?t\\s+sell|fail(?:ed|ing)?\\s+to\\s+find\\s+a\\s+buyer)";
+const PERCENT_TOKEN = "\\d{1,3}(?:\\.\\d+)?\\s*(?:%|percent)";
+const PCT_THEN_FAIL = new RegExp(
+  `${PERCENT_TOKEN}[^.?!\\n]{0,40}${FAILURE_VERB}`,
+  "i",
+);
+const FAIL_THEN_PCT = new RegExp(
+  `${FAILURE_VERB}[^.?!\\n]{0,40}${PERCENT_TOKEN}`,
+  "i",
+);
+
+/**
+ * Returns an error string when `text` expresses a failure-to-sell figure as a
+ * percentage (which misreads the offMarket/sold ratio as a share of listings),
+ * or null when the prose is clean. Exported for direct unit testing.
+ */
+export function checkFailureRateFraming(text: string): string | null {
+  if (!text) return null;
+  if (PCT_THEN_FAIL.test(text) || FAIL_THEN_PCT.test(text)) {
+    return 'states a "%-failed-to-sell" figure — failure_rate is offMarket/sold (a ratio that can exceed 100%, not a share of listings). Reframe as sale_share ("X% of listings sold") or as counts ("for every 10 that sold, 9 failed to sell")';
+  }
+  return null;
+}
+
 export function validateIdeaCard(
   card: unknown,
   headlineSafeFactIds: Set<string>,
@@ -336,6 +368,15 @@ export function validateIdeaCard(
         );
       }
     }
+  }
+
+  // ── Failure-rate framing honesty (prose fields) ─────────────────────
+  // Scan every member-facing prose field for a "%-failed-to-sell" claim that
+  // misreads the offMarket/sold ratio as a share of listings.
+  for (const f of ["title", "titlePromise", "clarityPremise", "visualPeak"] as const) {
+    const v = typeof c[f] === "string" ? (c[f] as string) : "";
+    const framingErr = checkFailureRateFraming(v);
+    if (framingErr) errors.push(`${f} ${framingErr}`);
   }
 
   // ── Sub-personas: non-empty array ───────────────────────────────────

@@ -27,14 +27,13 @@ import {
   type MarketConfigShape,
   type PriceTier,
 } from "@/lib/market-config";
-
-export type CsvStatus =
-  | "Active"
-  | "Pending"
-  | "Sold"
-  | "Expired"
-  | "Terminated"
-  | "Withdrawn";
+import {
+  resolveStatusMapping,
+  bucketStatus,
+  failureRate as failureRateRatio,
+  type StatusBucket,
+  type StatusMapping,
+} from "@/lib/market-status-buckets";
 
 export interface AggregatedGroup {
   /** "All Neighbourhoods" for city-wide rollups. */
@@ -49,9 +48,8 @@ export interface AggregatedGroup {
   activeCount: number;
   pendingCount: number;
   soldCount: number;
-  expiredCount: number;
-  terminatedCount: number;
-  withdrawnCount: number;
+  /** expired + terminated + withdrawn (canonical), collapsed to one bucket. */
+  offMarketCount: number;
 
   moiStrict: number | null; // Active ÷ Sold-per-month
   moiInclusive: number | null; // (Active + Pending) ÷ Sold-per-month
@@ -123,7 +121,7 @@ interface NormalizedRow {
   neighbourhood: string;
   propertyType: string | null;
   zone: string | null; // empty-zone tracking
-  status: CsvStatus | null;
+  status: StatusBucket;
   salePrice: number | null;
   listPrice: number | null;
   daysOnMarket: number | null;
@@ -198,20 +196,6 @@ export function normalizePropertyType(raw: string | null | undefined): {
     return { type: "Apartment", isDuplexMerge: false };
   if (lower.includes("detached")) return { type: "Detached", isDuplexMerge: false };
   return { type: s, isDuplexMerge: false };
-}
-
-function normalizeStatus(raw: string | null | undefined): CsvStatus | null {
-  if (!raw) return null;
-  const s = raw.toString().trim().toLowerCase();
-  if (!s) return null;
-  if (s === "active" || s.startsWith("a")) return "Active";
-  if (s === "pending" || s === "pending firm" || s.startsWith("pend"))
-    return "Pending";
-  if (s === "sold" || s === "closed" || s.startsWith("sold")) return "Sold";
-  if (s === "expired" || s.startsWith("exp")) return "Expired";
-  if (s === "terminated" || s.startsWith("term")) return "Terminated";
-  if (s === "withdrawn" || s.startsWith("with")) return "Withdrawn";
-  return null;
 }
 
 function classifyPriceTier(
@@ -302,13 +286,11 @@ interface RowAccumulator {
   soldPsfs: number[];
   soldDoms: number[];
   soldSpLpRatios: number[];
-  // Counts by status:
+  // Counts by four-bucket status (offMarket = expired+terminated+withdrawn):
   active: number;
   pending: number;
   sold: number;
-  expired: number;
-  terminated: number;
-  withdrawn: number;
+  offMarket: number;
   rollupNotes: Set<string>;
 }
 
@@ -322,9 +304,7 @@ function emptyAccumulator(): RowAccumulator {
     active: 0,
     pending: 0,
     sold: 0,
-    expired: 0,
-    terminated: 0,
-    withdrawn: 0,
+    offMarket: 0,
     rollupNotes: new Set(),
   };
 }
@@ -336,22 +316,20 @@ function tallyRow(acc: RowAccumulator, row: NormalizedRow, isDuplexMerge: boolea
     );
   }
   switch (row.status) {
-    case "Active":
+    case "active":
       acc.active += 1;
       return;
-    case "Pending":
+    case "pending":
       acc.pending += 1;
       return;
-    case "Expired":
-      acc.expired += 1;
+    case "offMarket":
+      acc.offMarket += 1;
       return;
-    case "Terminated":
-      acc.terminated += 1;
+    case "unknown":
+      // Unknown rows are counted at the table level (meta.unknownStatusCount)
+      // and surfaced via a structured warning; they contribute to no metric.
       return;
-    case "Withdrawn":
-      acc.withdrawn += 1;
-      return;
-    case "Sold":
+    case "sold":
       acc.sold += 1;
       if (row.salePrice != null) acc.soldPrices.push(row.salePrice);
       if (row.sqft != null && row.sqft > 0) acc.soldSqfts.push(row.sqft);
@@ -395,12 +373,12 @@ function metricsFromAccumulator(
   const domMedian = median(acc.soldDoms);
   const domAverage = average(acc.soldDoms);
   const spLpRatio = average(acc.soldSpLpRatios); // mean SP/LP ratio
-  const failureDen =
-    acc.sold + acc.expired + acc.terminated + acc.withdrawn;
-  const failureRate =
-    failureDen > 0
-      ? ((acc.expired + acc.terminated + acc.withdrawn) / failureDen) * 100
-      : null;
+  // failure_rate (v2) = offMarket / sold — a broker-honest ratio that can exceed
+  // 1.0. The helper returns a 0..n ratio (null below the sample floor); we store
+  // it ×100 to preserve the existing AggregatedGroup/AggregatedMetric percentage
+  // storage convention (downstream formatters expect a percentage-style number).
+  const failureRatio = failureRateRatio(acc.sold, acc.offMarket);
+  const failureRate = failureRatio == null ? null : failureRatio * 100;
 
   // MoI uses sold-per-month rate. The upload window is a single calendar
   // month, so sold-per-month = sold count. (Validator can re-frame for
@@ -416,9 +394,7 @@ function metricsFromAccumulator(
     activeCount: acc.active,
     pendingCount: acc.pending,
     soldCount: acc.sold,
-    expiredCount: acc.expired,
-    terminatedCount: acc.terminated,
-    withdrawnCount: acc.withdrawn,
+    offMarketCount: acc.offMarket,
     moiStrict,
     moiInclusive,
     medianPrice,
@@ -482,23 +458,35 @@ export async function aggregateUpload(
   const { headers, rows } = parseAllRows(csvBuffer);
   const headerLookup = buildHeaderLookup(headers);
 
+  // Resolve the market's status mapping ONCE (override -> statusCodes ->
+  // MARKET_SOURCE_DEFAULTS). This is the single interpretation point for
+  // "which raw MLS label is sold / off-market / active / pending".
+  const statusMapping: StatusMapping = resolveStatusMapping(config);
+
   let unknownStatusCount = 0;
   let emptyZoneCount = 0;
   let totalSold = 0;
   let dateMin: Date | null = null;
   let dateMax: Date | null = null;
+  // Distinct raw labels that bucketed to "unknown" (for the admin warning).
+  const unknownStatusLabels = new Map<string, number>();
 
   // Build normalized rows once.
   const normalized: { row: NormalizedRow; isDuplexMerge: boolean }[] = [];
   for (const raw of rows) {
     const statusStr = readMappedCell(raw, headerLookup, mapping.status);
-    const status = normalizeStatus(statusStr);
-    // If no status column is mapped, treat every row as Sold (matches the
+    // If no status column is mapped, treat every row as sold (matches the
     // legacy CREB-style "sold-only" exports). This keeps the aggregator
-    // useful for members who haven't mapped a Status column yet.
-    const effectiveStatus =
-      status ?? (mapping.status ? null : ("Sold" as CsvStatus));
-    if (effectiveStatus == null) unknownStatusCount += 1;
+    // useful for members who haven't mapped a Status column yet. When a status
+    // column IS mapped, every label flows through the resolved mapping.
+    const effectiveStatus: StatusBucket = mapping.status
+      ? bucketStatus(statusStr, statusMapping)
+      : "sold";
+    if (effectiveStatus === "unknown") {
+      unknownStatusCount += 1;
+      const label = (statusStr ?? "").toString().trim() || "(blank)";
+      unknownStatusLabels.set(label, (unknownStatusLabels.get(label) ?? 0) + 1);
+    }
 
     const neighbourhoodRaw =
       readMappedCell(raw, headerLookup, mapping.neighbourhood) ?? "";
@@ -529,7 +517,7 @@ export async function aggregateUpload(
       if (!dateMin || date < dateMin) dateMin = date;
       if (!dateMax || date > dateMax) dateMax = date;
     }
-    if (effectiveStatus === "Sold") totalSold += 1;
+    if (effectiveStatus === "sold") totalSold += 1;
 
     const priceTier = classifyPriceTier(salePrice ?? listPrice, tiers);
 
@@ -549,6 +537,31 @@ export async function aggregateUpload(
       },
       isDuplexMerge,
     });
+  }
+
+  // Surface unmapped statuses LOUDLY. A status column was mapped but some labels
+  // bucketed to "unknown" — those rows silently drop out of every metric, so an
+  // admin needs to extend statusCodes (or the statusMapping override). Structured
+  // (not silent) so it's greppable in workflow/deployment logs.
+  if (mapping.status && unknownStatusCount > 0) {
+    const topLabels = [...unknownStatusLabels.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([label, count]) => ({ label, count }));
+    console.warn(
+      "[market-status][UNKNOWN_STATUS] CSV rows fell through status bucketing",
+      JSON.stringify({
+        uploadId,
+        userId,
+        marketName: config.marketName,
+        mlsSource: config.mlsSource || null,
+        monthYear,
+        unknownStatusCount,
+        totalRowsParsed: normalized.length,
+        topUnknownLabels: topLabels,
+        hint: "Add these labels to MarketConfig.statusCodes (preferred) or the statusMapping override so they bucket into sold/offMarket/active/pending.",
+      }),
+    );
   }
 
   // Tally per group. We emit four bucket dimensions in parallel so the

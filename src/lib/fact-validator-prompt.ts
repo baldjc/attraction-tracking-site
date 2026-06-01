@@ -186,11 +186,21 @@ DOM uses **column 3** of the CSV (current-listing DOM). CDOM (column 4 — days 
 
 Failure rate has no CREB equivalent. CREB does not publish it. Every failure-rate fact must use this exact formula:
 
-\`failure_rate = (Expired + Terminated + Withdrawn) ÷ (Sold + Expired + Terminated + Withdrawn)\`
+\`failure_rate = Off-Market ÷ Sold\`
 
-over the calendar month being analysed.
+where **Off-Market = Expired + Terminated + Withdrawn (every listing that left the market without selling)** over the calendar month being analysed.
 
-Every failure-rate fact's \`usage_notes\` must include the line: *"Internal metric — CREB does not publish failure rate. Cannot be cross-referenced against creb.com. Formula: (Expired+Terminated+Withdrawn) / (Sold+Expired+Terminated+Withdrawn) for the calendar month."*
+This is a RATIO, not a share of all listings: it answers *"for every home that sold, how many failed to sell?"* It CAN exceed 1.0 (100%) — e.g. 9 off-market against 10 sold is a failure_rate of 0.9 (90%), and 12 off-market against 10 sold is 1.2 (120%). Never cap it at 100%.
+
+Do NOT use the old \`(Expired+Terminated+Withdrawn) / (Sold+Expired+Terminated+Withdrawn)\` denominator — that under-states the true ratio and is being retired.
+
+When you want to express the same data as a *share of all resolved listings* (a 0–100% figure), emit a separate **\`sale_share\`** fact:
+
+\`sale_share = Sold ÷ (Sold + Off-Market)\`
+
+For the worked example above (10 sold, 9 off-market): \`sale_share = 10 / 19 = 0.526\` (52.6% of resolved listings actually sold). \`sale_share\` and \`failure_rate\` are complementary views of the same two counts — never present one as if it were the other.
+
+Every failure-rate fact's \`usage_notes\` must include the line: *"Internal metric — CREB does not publish failure rate. Cannot be cross-referenced against creb.com. Formula: Off-Market (Expired+Terminated+Withdrawn) / Sold for the calendar month; a ratio that can exceed 100%."*
 
 ### CREB-ALIGNMENT METADATA — REQUIRED ON EVERY MOI AND DOM FACT
 
@@ -329,7 +339,7 @@ DATA SOURCE: [name and date of source CSV, e.g., "Pillar 9 export — Calgary Ma
 LAST CREB RECONCILIATION DATE: [YYYY-MM-DD — last time the CSV's published values were spot-checked against the CREB Monthly Stats Package. If never, write "NEVER — schedule reconciliation."]
 DOM CALCULATION METHOD: average (CREB-aligned). dom_median also reported per fact.
 INVENTORY CALCULATION METHOD: moi_strict (Active only) is the headline default. moi_inclusive (Active + Pending, CREB-aligned) also reported per fact.
-FAILURE-RATE FORMULA: (Expired + Terminated + Withdrawn) / (Sold + Expired + Terminated + Withdrawn) for the calendar month. CREB does not publish this metric.
+FAILURE-RATE FORMULA: Off-Market (Expired + Terminated + Withdrawn) / Sold for the calendar month — a RATIO that can exceed 100%. CREB does not publish this metric. Do NOT use the old (Expired+Terminated+Withdrawn) / (Sold+Expired+Terminated+Withdrawn) denominator — it is retired.
 
 TOTAL FACTS PROCESSED: [N]
 HEADLINE-SAFE: [count]
@@ -587,8 +597,8 @@ And the SUMMARY section calls it out under MIX SHIFTS DETECTED so the user sees 
 - neighbourhood: CAL Zone NE detached
   metricName: failure_rate
   metricFamily: FAILURE_RATE
-  metricValue: 51.4
-  sampleSize: 213
+  metricValue: 90.0
+  sampleSize: 210
   timeWindow: calendar_month
   dateContext: April 2026
   sourceUrl: internal:Calgary_Market_Sales_April_2026.csv
@@ -604,8 +614,8 @@ And the SUMMARY section calls it out under MIX SHIFTS DETECTED so the user sees 
   creb_delta_estimate: n/a
   viewer_caveat: n/a
   inventory_gap_with_creb: n/a
-  failure_rate_formula: "(Expired + Terminated + Withdrawn) / (Sold + Expired + Terminated + Withdrawn) for the calendar month"
-  usage_notes: Internal metric — CREB does not publish failure rate. Cannot be cross-referenced against creb.com. Formula: (Expired+Terminated+Withdrawn) / (Sold+Expired+Terminated+Withdrawn) for the calendar month. Trajectory: 43.8% → 48.1% → 51.4%, accelerating downhill three months in a row. Sample-size-robust (213 listings in denominator). The cleanest sustained deterioration in the city.
+  failure_rate_formula: "Off-Market (Expired + Terminated + Withdrawn) / Sold for the calendar month — a ratio that can exceed 100%"
+  usage_notes: Internal metric — CREB does not publish failure rate. Cannot be cross-referenced against creb.com. Formula: Off-Market (Expired+Terminated+Withdrawn) / Sold for the calendar month; a ratio that can exceed 100%. Trajectory: 78.0% → 84.2% → 90.0%, accelerating downhill three months in a row. Sample-size-robust (210 sold in the denominator). The cleanest sustained deterioration in the city.
 \`\`\`
 
 That's the bar. Catch the mirage, label it plainly, expose both views where viewers will cross-check, send the cleaner facts forward.

@@ -136,12 +136,10 @@ function rowsFromGroup(
   // is the active count itself (it IS the measurement).
   push("INVENTORY", "activeCount", group.activeCount, group.activeCount);
 
-  // Failure rate denominator is sold + removed; that's the meaningful N.
-  const failN =
-    group.soldCount +
-    group.expiredCount +
-    group.terminatedCount +
-    group.withdrawnCount;
+  // failure_rate = offMarket / sold (a ratio that can exceed 1.0). The sample
+  // size we attach is sold + offMarket — the listings that actually fed the
+  // ratio — so downstream confidence gating sees the real N.
+  const failN = group.soldCount + group.offMarketCount;
   push("FAILURE_RATE", "failureRate", group.failureRate, failN);
 
   return out;
@@ -295,9 +293,8 @@ function formatValue(family: MetricFamily, value: number): string {
         ? `${(value * 100).toFixed(1)}%`
         : `${value.toFixed(1)}%`;
     case "FAILURE_RATE":
-      return value <= 1
-        ? `${(value * 100).toFixed(1)}%`
-        : `${value.toFixed(1)}%`;
+      // Stored as a percentage (offMarket/sold * 100); can exceed 100%.
+      return `${value.toFixed(1)}%`;
     case "INVENTORY":
       return `${Math.round(value)} active`;
     default:

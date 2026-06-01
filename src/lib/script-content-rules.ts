@@ -57,7 +57,10 @@ export type ScriptViolationRule =
   | "unfilled_credibility_placeholder"
   /** Script fabricated a next-video tease with no usable BINGE TARGET, or
    *  quoted a next-video title that doesn't match the configured target. */
-  | "binge_target_match";
+  | "binge_target_match"
+  /** Script states a "%-failed-to-sell" figure, misreading the offMarket/sold
+   *  failure_rate ratio as a share of all listings. */
+  | "failure_rate_framing";
 
 export interface ScriptViolation {
   rule: ScriptViolationRule;
@@ -1081,6 +1084,61 @@ export function checkNoAnnouncedCredibility(script: string): ScriptViolation[] {
 }
 
 /* ────────────────────────────────────────────────────────────────────── */
+/*  failure_rate_framing (ERROR).                                          */
+/*                                                                        */
+/*  failure_rate is offMarket / sold — a RATIO that can exceed 100%, NOT  */
+/*  a share of all listings. Saying "47% of homes failed to sell" reads   */
+/*  the ratio as a share and is mathematically wrong. Honest framing uses */
+/*  sale_share ("X% of listings sold") or explicit counts ("for every 10 */
+/*  that sold, 9 failed to sell"). Flag any percentage tied to a failure- */
+/*  to-sell phrase in spoken dialogue.                                    */
+/* ────────────────────────────────────────────────────────────────────── */
+
+const FR_FAILURE_VERB =
+  "(?:failed?\\s+to\\s+sell|did(?:n['’]?t| not)\\s+sell|never\\s+sold|don['’]?t\\s+sell|won['’]?t\\s+sell|fail(?:ed|ing)?\\s+to\\s+find\\s+a\\s+buyer)";
+const FR_PERCENT = "\\d{1,3}(?:\\.\\d+)?\\s*(?:%|percent)";
+const FR_PCT_THEN_FAIL = new RegExp(
+  `${FR_PERCENT}[^.?!\\n]{0,40}${FR_FAILURE_VERB}`,
+  "gi",
+);
+const FR_FAIL_THEN_PCT = new RegExp(
+  `${FR_FAILURE_VERB}[^.?!\\n]{0,40}${FR_PERCENT}`,
+  "gi",
+);
+
+export function checkFailureRateFraming(script: string): ScriptViolation[] {
+  const { dialogue, dialogueLineMap } = stripToDialogue(script);
+  const violations: ScriptViolation[] = [];
+  const seen = new Set<number>();
+  for (const re of [FR_PCT_THEN_FAIL, FR_FAIL_THEN_PCT]) {
+    for (const m of dialogue.matchAll(re)) {
+      if (m.index === undefined) continue;
+      if (seen.has(m.index)) continue;
+      seen.add(m.index);
+      const before = dialogue.slice(0, m.index);
+      const dialogueLi = before.split("\n").length - 1;
+      const originalLine = dialogueLineMap[dialogueLi];
+      violations.push({
+        rule: "failure_rate_framing",
+        severity: "error",
+        message:
+          `Failure-rate framing error: "${m[0].trim()}". failure_rate is ` +
+          `offMarket / sold — a RATIO that can exceed 100%, NOT a share of all ` +
+          `listings. Stating a "%-failed-to-sell" figure misreads it. Reframe ` +
+          `as sale_share ("X% of listings actually sold") or as plain counts ` +
+          `("for every 10 homes that sold, 9 failed to sell").`,
+        snippet: dialogue
+          .slice(Math.max(0, m.index - 30), m.index + m[0].length + 30)
+          .replace(/\s+/g, " ")
+          .trim(),
+        line: originalLine,
+      });
+    }
+  }
+  return violations;
+}
+
+/* ────────────────────────────────────────────────────────────────────── */
 /*  Wave 8 Fix 4 — people_like_us_in_lm (ERROR).                          */
 /*                                                                        */
 /*  The phrase "people like us" is a high-impact identity move and must   */
@@ -1582,6 +1640,8 @@ export function validateScript(
   violations.push(...checkUnfilledCredibilityPlaceholder(script));
   // Binge guard — no fabricated next-video tease.
   violations.push(...checkBingeTargetMatch(script, opts));
+  // failure_rate honesty — no "%-failed-to-sell" misreading of the ratio.
+  violations.push(...checkFailureRateFraming(script));
 
   const ok = !violations.some((v) => v.severity === "error");
   return { ok, violations, metrics: hyperLocal.metrics };

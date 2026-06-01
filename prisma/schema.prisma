@@ -1873,6 +1873,14 @@ model MarketConfig {
   propertyTypeVocab        Json?
   sourceAuthority          String?
   moiHighEndExceptionFloor Json?
+  // OPTIONAL explicit override for status-bucketing. Source of truth is
+  // `statusCodes` (+ MARKET_SOURCE_DEFAULTS resolved from mlsSource); this field
+  // only exists to let an admin force the sold/offMarket/active/pending buckets
+  // for a market whose raw labels don't fit the canonical statusCodes mapping.
+  // Shape: { sold: string[]; offMarket: string[]; active: string[]; pending: string[] }
+  // Resolution precedence (see resolveStatusMapping in market-status-buckets.ts):
+  //   statusMapping (this field) -> derived from statusCodes -> MARKET_SOURCE_DEFAULTS.
+  statusMapping            Json?
   keywordKit         Json?
   primaryAvatar      Json?
   subPersonas        Json?
@@ -2016,6 +2024,13 @@ model MarketFact {
   sourceType           String?          @default("validator")
   extractedAtCost      Decimal?         @db.Decimal(10, 4)
   extractedAtRequest   String?
+
+  // Methodology version for derived-metric facts (primarily FAILURE_RATE).
+  //   "legacy_v1" — failure_rate computed as offMarket/(sold+offMarket) (WRONG denominator).
+  //   "v2"        — failure_rate computed as offMarket/sold (broker-honest ratio, can exceed 1).
+  // Card/script citation queries filter out legacy_v1 failure_rate rows so the
+  // wrong methodology can't be surfaced until the upload is re-validated.
+  methodologyVersion   String?          @default("v2")
 
   createdAt            DateTime         @default(now())
 

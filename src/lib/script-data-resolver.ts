@@ -21,6 +21,7 @@
 import prismaDefault from "@/lib/prisma";
 import { MetricFamily, FactUsageClass } from "@/generated/prisma/enums";
 import { calculateCost } from "@/lib/ai-tool-cost";
+import { EXCLUDE_LEGACY_FAILURE_RATE } from "@/lib/market-status-buckets";
 
 export { MetricFamily };
 
@@ -309,6 +310,7 @@ export async function findDataForScriptNeed(
       usageClass: {
         in: [FactUsageClass.headline_safe, FactUsageClass.supporting_texture_only],
       },
+      ...EXCLUDE_LEGACY_FAILURE_RATE,
     },
     select: {
       id: true,

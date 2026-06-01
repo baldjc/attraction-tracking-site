@@ -14,6 +14,7 @@
  */
 import { NextResponse, type NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
+import { EXCLUDE_LEGACY_FAILURE_RATE } from "@/lib/market-status-buckets";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import { getFeatureFlags } from "@/lib/feature-flags";
 import { getCostCapStatus, logUsage } from "@/lib/ai-tool-cost";
@@ -123,6 +124,7 @@ export async function POST(req: NextRequest) {
   const ownedFacts = citedIds.length
     ? await prisma.marketFact.findMany({
         where: {
+          ...EXCLUDE_LEGACY_FAILURE_RATE,
           id: { in: citedIds },
           userId,
           uploadId: body.sourceUploadId,

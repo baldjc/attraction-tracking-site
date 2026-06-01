@@ -17,6 +17,7 @@
  */
 import { NextResponse, type NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
+import { EXCLUDE_LEGACY_FAILURE_RATE } from "@/lib/market-status-buckets";
 import { resolveUserFromSession } from "@/lib/session-utils";
 
 export const runtime = "nodejs";
@@ -63,7 +64,7 @@ export async function PATCH(
   let validatedAdd: string[] = [];
   if (add.length > 0) {
     const owned = await prisma.marketFact.findMany({
-      where: { id: { in: add }, userId: user.id, usageClass: "headline_safe" },
+      where: { ...EXCLUDE_LEGACY_FAILURE_RATE, id: { in: add }, userId: user.id, usageClass: "headline_safe" },
       select: { id: true },
     });
     validatedAdd = owned.map((f) => f.id);

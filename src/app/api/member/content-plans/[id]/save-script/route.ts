@@ -35,6 +35,7 @@
  */
 import { NextResponse, type NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
+import { EXCLUDE_LEGACY_FAILURE_RATE } from "@/lib/market-status-buckets";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import { getFeatureFlags } from "@/lib/feature-flags";
 import { logUsage } from "@/lib/ai-tool-cost";
@@ -141,7 +142,7 @@ export async function POST(
   }
 
   const ownedFacts = await prisma.marketFact.findMany({
-    where: { id: { in: linkedFactIds }, userId },
+    where: { ...EXCLUDE_LEGACY_FAILURE_RATE, id: { in: linkedFactIds }, userId },
     select: { id: true },
   });
   if (ownedFacts.length < 1) {

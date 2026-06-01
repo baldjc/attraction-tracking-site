@@ -33,6 +33,10 @@ import {
   type AggregatedGroup,
 } from "@/lib/csv-aggregate";
 import {
+  failureRate as failureRateRatio,
+  EXCLUDE_LEGACY_FAILURE_RATE,
+} from "@/lib/market-status-buckets";
+import {
   parseValidatorOutput,
   parseFactsChunk,
   parseSummaryAndLeadsChunk,
@@ -255,7 +259,7 @@ function formatGroupLine(g: AggregatedGroup): string {
     `  propertyType: ${g.propertyType ?? "n/a"}`,
     `  priceTier: ${g.priceTier ?? "n/a"}`,
     `  sampleSize: ${g.sampleSize}`,
-    `  active=${g.activeCount} pending=${g.pendingCount} sold=${g.soldCount} expired=${g.expiredCount} terminated=${g.terminatedCount} withdrawn=${g.withdrawnCount}`,
+    `  active=${g.activeCount} pending=${g.pendingCount} sold=${g.soldCount} offMarket=${g.offMarketCount}`,
     `  moi_strict: ${round(g.moiStrict)}`,
     `  moi_inclusive: ${round(g.moiInclusive)}`,
     `  medianPrice: ${round(g.medianPrice, 0)}`,
@@ -455,6 +459,7 @@ async function serializePriorFacts(userId: string, uploadId: string): Promise<st
     where: {
       uploadId: { in: priorUploads.map((u) => u.id) },
       usageClass: "headline_safe",
+      ...EXCLUDE_LEGACY_FAILURE_RATE,
     },
     take: 120,
     orderBy: { createdAt: "desc" },
@@ -676,14 +681,12 @@ function aggregateGroups(
   groups: AggregatedGroup[],
   identity: { neighbourhood: string; propertyType: string | null; priceTier: string | null },
 ): AggregatedGroup {
-  let active = 0, pending = 0, sold = 0, expired = 0, terminated = 0, withdrawn = 0;
+  let active = 0, pending = 0, sold = 0, offMarket = 0;
   for (const g of groups) {
     active += g.activeCount;
     pending += g.pendingCount;
     sold += g.soldCount;
-    expired += g.expiredCount;
-    terminated += g.terminatedCount;
-    withdrawn += g.withdrawnCount;
+    offMarket += g.offMarketCount;
   }
   // Sample-weighted mean of a per-group metric, weighting by that group's sold
   // count (its sample size). Groups with a null metric contribute nothing.
@@ -698,8 +701,11 @@ function aggregateGroups(
     }
     return den > 0 ? num / den : null;
   };
-  const failureDen = sold + expired + terminated + withdrawn;
   const distinctHoods = new Set(groups.map((g) => g.neighbourhood)).size;
+  // failure_rate = offMarket / sold (a ratio that can exceed 1.0), guarded by
+  // sample-size floors. Stored as a percentage (ratio * 100) like the per-group
+  // rows. failureRateRatio() returns null when under the sold/offMarket floors.
+  const rollupFailureRatio = failureRateRatio(sold, offMarket);
   return {
     neighbourhood: identity.neighbourhood,
     propertyType: identity.propertyType,
@@ -708,9 +714,7 @@ function aggregateGroups(
     activeCount: active,
     pendingCount: pending,
     soldCount: sold,
-    expiredCount: expired,
-    terminatedCount: terminated,
-    withdrawnCount: withdrawn,
+    offMarketCount: offMarket,
     moiStrict: sold > 0 ? active / sold : null,
     moiInclusive: sold > 0 ? (active + pending) / sold : null,
     medianPrice: weighted((g) => g.medianPrice),
@@ -719,10 +723,7 @@ function aggregateGroups(
     domMedian: weighted((g) => g.domMedian),
     domAverage: weighted((g) => g.domAverage),
     spLpRatio: weighted((g) => g.spLpRatio),
-    failureRate:
-      failureDen > 0
-        ? ((expired + terminated + withdrawn) / failureDen) * 100
-        : null,
+    failureRate: rollupFailureRatio == null ? null : rollupFailureRatio * 100,
     yoy: {
       medianPriceDelta: null,
       medianSqftDelta: null,
@@ -1275,6 +1276,10 @@ function mapFactToPrisma(
     inventoryGapWithCreb: fact.inventoryGapWithCreb,
     failureRateFormula: fact.failureRateFormula,
     usageNotes: fact.usageNotes,
+    // v2 = offMarket/sold methodology. Legacy rows (offMarket/(offMarket+sold))
+    // were backfilled to "legacy_v1" and are excluded from failure_rate
+    // citation queries. Stamp every new fact v2; the filter keys on the family.
+    methodologyVersion: "v2",
   };
 }
 

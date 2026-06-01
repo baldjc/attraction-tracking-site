@@ -12,6 +12,7 @@
  */
 import { NextResponse, type NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
+import { EXCLUDE_LEGACY_FAILURE_RATE } from "@/lib/market-status-buckets";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import {
   ROTATION_SLOTS,
@@ -102,7 +103,7 @@ export async function GET(
 
   const facts = factIds.length
     ? await prisma.marketFact.findMany({
-        where: { id: { in: factIds }, userId: user.id },
+        where: { ...EXCLUDE_LEGACY_FAILURE_RATE, id: { in: factIds }, userId: user.id },
         select: {
           id: true,
           neighbourhood: true,

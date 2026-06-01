@@ -594,13 +594,21 @@ export const MARKET_SOURCE_DEFAULTS: Record<string, MarketSourceDefaults> = {
     sourceAuthority: "NTREIS",
     statusCodes: [
       sc("Active", "active"),
+      sc("Active Kick Out", "active"),
       sc("Active Option Contract", "pending"),
       sc("Active Contingent", "pending"),
       sc("Pending", "pending"),
+      sc("Pending Continue to Show", "pending"),
+      sc("Sold", "sold"),
       sc("Closed", "sold"),
       sc("Expired", "expired"),
+      // NTREIS exports the single-l "Canceled" spelling; keep both for safety.
+      sc("Canceled", "terminated"),
       sc("Cancelled", "terminated"),
       sc("Withdrawn", "withdrawn"),
+      sc("Withdrawn-Unconditional", "withdrawn"),
+      sc("Withdrawn-Conditional", "withdrawn"),
+      sc("Temporarily Off Market", "withdrawn"),
     ],
     propertyTypeVocab: {
       types: [
@@ -851,6 +859,12 @@ export interface MarketConfigShape {
   statusCodes: StatusCode[];
   propertyTypeVocab: PropertyTypeVocab;
   moiHighEndExceptionFloor: MoiHighEndExceptionFloor;
+  /**
+   * OPTIONAL explicit status-bucketing override (raw JSON; validated at use via
+   * validateStatusMapping). Source of truth stays statusCodes; this only fires
+   * when an admin sets it. See resolveStatusMapping in market-status-buckets.ts.
+   */
+  statusMapping?: unknown;
 }
 
 export function emptyMarketConfig(): MarketConfigShape {
@@ -870,6 +884,7 @@ export function emptyMarketConfig(): MarketConfigShape {
     statusCodes: seed.statusCodes,
     propertyTypeVocab: seed.propertyTypeVocab,
     moiHighEndExceptionFloor: seed.moiHighEndExceptionFloor,
+    statusMapping: null,
   };
 }
 
@@ -889,6 +904,7 @@ export function toShape(
     statusCodes?: unknown;
     propertyTypeVocab?: unknown;
     moiHighEndExceptionFloor?: unknown;
+    statusMapping?: unknown;
     configuredAt?: Date;
   } | null,
 ): MarketConfigShape {
@@ -928,6 +944,7 @@ export function toShape(
     moiHighEndExceptionFloor:
       (row.moiHighEndExceptionFloor as MoiHighEndExceptionFloor | null) ??
       seed.moiHighEndExceptionFloor,
+    statusMapping: row.statusMapping ?? null,
   };
 }
 

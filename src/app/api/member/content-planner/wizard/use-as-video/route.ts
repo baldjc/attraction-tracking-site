@@ -13,6 +13,7 @@
  */
 import { NextResponse, type NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
+import { EXCLUDE_LEGACY_FAILURE_RATE } from "@/lib/market-status-buckets";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import { getFeatureFlags } from "@/lib/feature-flags";
 import { getCostCapStatus, logUsage } from "@/lib/ai-tool-cost";
@@ -132,7 +133,7 @@ export async function POST(req: NextRequest) {
     // A stale/miswritten PK that points at a different upload's fact must never
     // be linked — that would silently widen scope across uploads.
     const live = await prisma.marketFact.findMany({
-      where: { id: { in: storedPks }, userId, uploadId: seed.uploadId },
+      where: { ...EXCLUDE_LEGACY_FAILURE_RATE, id: { in: storedPks }, userId, uploadId: seed.uploadId },
       select: { id: true },
     });
     const liveIds = new Set(live.map((f) => f.id));

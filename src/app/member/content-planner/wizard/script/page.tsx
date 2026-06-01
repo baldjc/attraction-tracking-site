@@ -19,6 +19,7 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import { resolveUserFromSession } from "@/lib/session-utils";
+import { EXCLUDE_LEGACY_FAILURE_RATE } from "@/lib/market-status-buckets";
 import prisma from "@/lib/prisma";
 import { getFeatureFlags } from "@/lib/feature-flags";
 import { ScriptWizardClient } from "@/components/ai-tools/script-builder-v2/ScriptWizardClient";
@@ -233,7 +234,7 @@ export default async function ScriptWizardPage({
   const reviewIds = [...new Set([...autoLinkedIds, ...linkedFactIds])];
   if (reviewIds.length > 0) {
     const rows = await prisma.marketFact.findMany({
-      where: { id: { in: reviewIds }, userId },
+      where: { ...EXCLUDE_LEGACY_FAILURE_RATE, id: { in: reviewIds }, userId },
       select: {
         id: true,
         neighbourhood: true,

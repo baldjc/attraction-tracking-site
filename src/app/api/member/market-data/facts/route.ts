@@ -10,11 +10,13 @@
  */
 import { NextResponse, type NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
+import type { Prisma } from "@/generated/prisma/client";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import {
   metricNameToLabel,
   formatMetricValue,
 } from "@/lib/content-engine-validation";
+import { EXCLUDE_LEGACY_FAILURE_RATE } from "@/lib/market-status-buckets";
 
 export const runtime = "nodejs";
 
@@ -30,11 +32,11 @@ export async function GET(req: NextRequest) {
     500,
   );
 
-  const where: {
-    userId: string;
-    usageClass: "headline_safe";
-    OR?: Array<Record<string, { contains: string; mode: "insensitive" }>>;
-  } = { userId: user.id, usageClass: "headline_safe" };
+  const where: Prisma.MarketFactWhereInput = {
+    userId: user.id,
+    usageClass: "headline_safe",
+    ...EXCLUDE_LEGACY_FAILURE_RATE,
+  };
   if (q) {
     where.OR = [
       { neighbourhood: { contains: q, mode: "insensitive" } },

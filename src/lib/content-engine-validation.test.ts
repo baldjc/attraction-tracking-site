@@ -85,3 +85,36 @@ test("uncited card is rejected so it can never ship", () => {
     `expected cited-facts rejection, got: ${r.errors.join("; ")}`,
   );
 });
+
+test("failure-rate framing — '%-failed-to-sell' prose is rejected", () => {
+  const r = validate(
+    baseCard({ clarityPremise: "Last month 47% of homes failed to sell." }),
+  );
+  assert.equal(r.ok, false);
+  assert.ok(
+    r.errors.some((e) => e.includes("%-failed-to-sell")),
+    `expected failure-rate framing error, got: ${r.errors.join("; ")}`,
+  );
+});
+
+test("failure-rate framing — reversed order (verb then percent) is rejected", () => {
+  const r = validate(
+    baseCard({ visualPeak: "Homes that failed to sell were 90 percent of solds." }),
+  );
+  assert.equal(r.ok, false);
+  assert.ok(
+    r.errors.some((e) => e.includes("%-failed-to-sell")),
+    `expected failure-rate framing error, got: ${r.errors.join("; ")}`,
+  );
+});
+
+test("failure-rate framing — honest sale_share / count framing passes", () => {
+  const ok1 = validate(
+    baseCard({ clarityPremise: "Only 53% of listings actually sold last month." }),
+  );
+  assert.equal(ok1.ok, true, `sale_share framing should pass — ${ok1.errors.join("; ")}`);
+  const ok2 = validate(
+    baseCard({ clarityPremise: "For every 10 homes that sold, 9 failed to sell." }),
+  );
+  assert.equal(ok2.ok, true, `count framing should pass — ${ok2.errors.join("; ")}`);
+});

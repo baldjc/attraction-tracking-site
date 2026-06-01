@@ -35,6 +35,7 @@
 import { type NextRequest } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import prisma from "@/lib/prisma";
+import { EXCLUDE_LEGACY_FAILURE_RATE } from "@/lib/market-status-buckets";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import { getFeatureFlags } from "@/lib/feature-flags";
 import { getCostCapStatus } from "@/lib/ai-tool-cost";
@@ -148,7 +149,7 @@ export async function POST(req: NextRequest) {
   const [linkedFacts, allHeadlineSafeFacts] = await Promise.all([
     linkedFactIds.length
       ? prisma.marketFact.findMany({
-          where: { id: { in: linkedFactIds }, userId },
+          where: { ...EXCLUDE_LEGACY_FAILURE_RATE, id: { in: linkedFactIds }, userId },
           select: {
             id: true,
             neighbourhood: true,
@@ -159,7 +160,7 @@ export async function POST(req: NextRequest) {
         })
       : Promise.resolve([] as Awaited<ReturnType<typeof prisma.marketFact.findMany>>),
     prisma.marketFact.findMany({
-      where: { userId, usageClass: "headline_safe" },
+      where: { ...EXCLUDE_LEGACY_FAILURE_RATE, userId, usageClass: "headline_safe" },
       select: {
         id: true,
         neighbourhood: true,

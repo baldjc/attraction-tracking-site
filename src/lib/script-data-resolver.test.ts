@@ -175,3 +175,28 @@ test("conceptual count families collapse onto INVENTORY", () => {
   assert.equal(toMetricFamily("new_listing_count"), MetricFamily.INVENTORY);
   assert.equal(toMetricFamily("median_sale_price"), MetricFamily.MEDIAN);
 });
+
+test("findDataForScriptNeed excludes legacy_v1 failure_rate facts in the query", async () => {
+  let capturedWhere: Record<string, unknown> | undefined;
+  const capturingDeps = {
+    prisma: {
+      marketFact: {
+        findMany: async (args: { where: Record<string, unknown> }) => {
+          capturedWhere = args.where;
+          return [];
+        },
+      },
+      aggregatedMetric: { findMany: async () => [] },
+    },
+  } as unknown as Parameters<typeof findDataForScriptNeed>[1];
+
+  await findDataForScriptNeed(need(), capturingDeps);
+
+  assert.ok(capturedWhere, "findMany should have been called with a where clause");
+  const not = (capturedWhere as { NOT?: Record<string, unknown> }).NOT;
+  assert.deepEqual(
+    not,
+    { metricFamily: "FAILURE_RATE", methodologyVersion: "legacy_v1" },
+    "the query must exclude FAILURE_RATE rows stamped legacy_v1 while leaving v2 (and every other family) untouched",
+  );
+});

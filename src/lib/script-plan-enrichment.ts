@@ -19,6 +19,7 @@
  * the member a paid Layer-2 "Run data search" on a concrete need.
  */
 import prisma from "@/lib/prisma";
+import { EXCLUDE_LEGACY_FAILURE_RATE } from "@/lib/market-status-buckets";
 import { loadHeadlineSafeFacts } from "@/lib/content-engine-context";
 import {
   type ScriptDataNeed,
@@ -324,7 +325,7 @@ export async function enrichPlanWithRelatedFacts(args: {
 
   // Load the linked facts to derive scope (which uploads + neighbourhoods).
   const linkedFacts = await prisma.marketFact.findMany({
-    where: { id: { in: linkedIds }, userId: args.userId },
+    where: { ...EXCLUDE_LEGACY_FAILURE_RATE, id: { in: linkedIds }, userId: args.userId },
     select: {
       id: true,
       neighbourhood: true,

@@ -9,6 +9,7 @@
 import prisma from "@/lib/prisma";
 import type { Prisma } from "@/generated/prisma/client";
 import type { PropertyTypeFocus } from "@/lib/property-type-focus";
+import { EXCLUDE_LEGACY_FAILURE_RATE } from "@/lib/market-status-buckets";
 
 export interface LatestUpload {
   id: string;
@@ -75,7 +76,7 @@ export async function loadHeadlineSafeFacts(
     ? [{ neighbourhood: "asc" as const }, { metricFamily: "asc" as const }]
     : [{ metricFamily: "asc" as const }, { neighbourhood: "asc" as const }];
   const rows = await prisma.marketFact.findMany({
-    where: { uploadId, usageClass: "headline_safe" },
+    where: { uploadId, usageClass: "headline_safe", ...EXCLUDE_LEGACY_FAILURE_RATE },
     orderBy,
     take: limit,
     select: {

@@ -101,3 +101,33 @@ test("inert — no forbidden identities means the rule never fires", () => {
   const n = identityHits("I'm Jared Chamberlain and this is the channel.", []);
   assert.equal(n, 0, "rule is inert with an empty forbidden list");
 });
+
+function failureFramingHits(script: string): number {
+  const { violations } = validateScript(script);
+  return violations.filter((v) => v.rule === "failure_rate_framing").length;
+}
+
+test("failure_rate_framing — '47% failed to sell' in dialogue trips", () => {
+  const n = failureFramingHits(
+    "This is the part nobody talks about. Last month, 47% of homes failed to sell in this pocket.",
+  );
+  assert.ok(n >= 1, "a %-failed-to-sell claim must trip the rule");
+});
+
+test("failure_rate_framing — reversed 'failed to sell ... 90 percent' trips", () => {
+  const n = failureFramingHits(
+    "Here's the reality: homes that failed to sell were 90 percent of what sold.",
+  );
+  assert.ok(n >= 1, "verb-then-percent ordering must also trip");
+});
+
+test("failure_rate_framing — honest sale_share / count framing passes", () => {
+  const a = failureFramingHits(
+    "Here's the truth: only 53% of listings actually sold last month.",
+  );
+  assert.equal(a, 0, "sale_share framing must not trip");
+  const b = failureFramingHits(
+    "Think about it this way. For every 10 homes that sold, 9 failed to sell.",
+  );
+  assert.equal(b, 0, "count framing must not trip");
+});
