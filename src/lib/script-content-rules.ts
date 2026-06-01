@@ -1168,17 +1168,51 @@ function checkUnfilledCredibilityPlaceholder(
 }
 
 /**
- * B1 — cross-member identity leak guard. If the script names ANY other
- * member's full name (e.g. the legacy hardcoded presenter), reject at ERROR.
- * Only multi-token names are checked, matched as a whole phrase, to avoid
- * flagging common first names that legitimately appear in dialogue.
+ * Common English words that are ALSO frequent surnames. A bare match of one of
+ * these ("close to the LRT", "a brown brick bungalow", "the deal will close")
+ * must never be read as a cross-member identity leak — only a full first+last
+ * name or a clearly name-positioned proper noun counts. Lowercased.
+ */
+const COMMON_SURNAME_WORDS = new Set([
+  "close", "brown", "gray", "grey", "white", "black", "smith", "baker",
+  "miller", "hunt", "hall", "young", "king", "bishop", "page", "wood",
+  "ford", "fox", "wolf", "lane", "park", "hill", "stone", "rose", "may",
+  "march", "june", "august", "summer", "winter", "north", "south", "east",
+  "west",
+]);
+
+/**
+ * Intro / self-introduction cues that mark the IMMEDIATELY FOLLOWING word as a
+ * personal name ("I'm Jared", "with Chamberlain", "this is Jared"). Tested
+ * against the text right before a candidate token. Case-insensitive.
+ */
+const NAME_INTRO_CUE =
+  /(?:^|[^A-Za-z])(?:i['’]m|i am|with|by|meet|from|at|name['’]?s?(?:\s+is)?|this is|presenter|agent|realtor)\s*$/i;
+
+/**
+ * B1 — cross-member identity leak guard. Rejects (ERROR) when a script names
+ * ANOTHER member's identity. `forbiddenIdentities` is built from real member
+ * records (`User.fullName` of every other member) — NOT from prompt or
+ * style-example content — so a hit means a genuine cross-member leak.
+ *
+ * Matching is deliberately conservative to avoid flagging common English words
+ * that happen to be surnames ("close", "brown", "smith", ...):
+ *   - Full first+last names match as ONE unit (distinctive → case-insensitive).
+ *   - A single token only trips when it (a) is a proper noun matched
+ *     CASE-SENSITIVELY on word boundaries (so lowercase "close" can never hit a
+ *     surname), (b) is NOT a common-English word, (c) is NOT part of the current
+ *     presenter's own name, and (d) sits in a NAME-LIKE context: preceded by an
+ *     intro cue ("I'm"/"with"/...) for any token, or — for a surname (last
+ *     token) — followed by a capitalized brand continuation ("Chamberlain Real
+ *     Estate", "Chamberlain Group").
  */
 function checkNoOtherMemberIdentity(
   script: string,
   opts: ValidateScriptOptions,
 ): ScriptViolation[] {
+  const violations: ScriptViolation[] = [];
   const forbidden = opts.forbiddenIdentities ?? [];
-  if (forbidden.length === 0) return [];
+  if (forbidden.length === 0) return violations;
   const current = (opts.currentMemberName ?? "").trim().toLowerCase();
   // Tokens of the current presenter's own name — never flag these, even if
   // another member happens to share a first/last name with them.
@@ -1186,74 +1220,103 @@ function checkNoOtherMemberIdentity(
     current.split(/\s+/).filter((t) => t.length > 0),
   );
   const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const matchWhole = (needle: string): RegExpExecArray | null =>
-    new RegExp(`\\b${escape(needle)}\\b`, "i").exec(script);
-  const pushViolation = (
-    label: string,
-    m: RegExpExecArray,
-    message: string,
-  ): void => {
+
+  const pushViolation = (label: string, index: number, message: string): void => {
     violations.push({
       rule: "no_other_member_identity",
       severity: "error",
       message,
       snippet: script
-        .slice(Math.max(0, m.index - 30), m.index + label.length + 30)
+        .slice(Math.max(0, index - 30), index + label.length + 30)
         .replace(/\s+/g, " ")
         .trim(),
     });
   };
 
-  const violations: ScriptViolation[] = [];
+  // Full multi-token name appearing verbatim — distinctive enough to match
+  // case-insensitively as a whole phrase (e.g. "Jared Chamberlain").
+  const matchWholePhrase = (needle: string): RegExpExecArray | null =>
+    new RegExp(`\\b${escape(needle)}\\b`, "i").exec(script);
+
+  // A single capitalized proper-noun token in a name-like position. CASE
+  // SENSITIVE, so a lowercase common word ("close to the LRT") never matches.
+  const matchContextualToken = (
+    properToken: string,
+    allowBrandAfter: boolean,
+  ): RegExpExecArray | null => {
+    const re = new RegExp(`\\b${escape(properToken)}\\b`, "g");
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(script)) !== null) {
+      const before = script.slice(Math.max(0, m.index - 24), m.index);
+      const after = script.slice(
+        m.index + properToken.length,
+        m.index + properToken.length + 24,
+      );
+      const introBefore = NAME_INTRO_CUE.test(before);
+      // Brand / full-name continuation: followed by another capitalized word
+      // ("Chamberlain Real Estate", "Chamberlain Group", "Chamberlain & Co").
+      const brandAfter =
+        allowBrandAfter && /^\s+(?:&\s+)?[A-Z][A-Za-z]/.test(after);
+      if (introBefore || brandAfter) return m;
+    }
+    return null;
+  };
+
   const seenFull = new Set<string>();
-  // Distinctive single tokens (first / last names) drawn from forbidden full
-  // names. The founder's name in particular saturates the prompt as a STYLE
-  // exemplar, so a bare first name ("Jared") can leak without the surname.
-  // We block tokens >= 5 alphabetic chars (skips short common words) that are
-  // NOT part of the current presenter's own name.
   const seenToken = new Set<string>();
 
   for (const raw of forbidden) {
     const name = raw.trim();
     if (!name) continue;
     const lower = name.toLowerCase();
-    if (lower === current) continue;
-    if (name.split(/\s+/).length < 2) continue; // full (multi-token) names only
+    if (lower === current) continue; // the current presenter's OWN name is fine
+    const tokens = name.split(/\s+/);
+    if (tokens.length < 2) continue; // full (multi-token) names only
 
-    // 1) Whole-phrase full-name match.
+    // 1) Whole-phrase full-name match — catches "Jared Chamberlain" outright.
     if (!seenFull.has(lower)) {
-      const m = matchWhole(lower);
+      const m = matchWholePhrase(lower);
       if (m) {
         seenFull.add(lower);
         pushViolation(
           name,
-          m,
+          m.index,
           `The script names "${name}", which belongs to a different member. A ` +
             `script must use ONLY the current presenter from the "## PRESENTER ` +
             `IDENTITY" block. Remove this name and any credentials attached to it.`,
         );
+        continue; // full name caught — don't also flag its individual tokens
       }
     }
 
-    // 2) Distinctive individual tokens (first/last name) leaking on their own.
-    for (const tok of lower.split(/\s+/)) {
-      if (tok.length < 5) continue;
-      if (!/^[a-z]+$/.test(tok)) continue;
-      if (currentTokens.has(tok)) continue;
-      if (seenToken.has(tok)) continue;
-      const m = matchWhole(tok);
+    // 2) Distinctive individual tokens (first/last name) leaking on their own,
+    //    only in a name-like context and never a common English word.
+    tokens.forEach((tok, ti) => {
+      if (tok.length < 4) return;
+      if (!/^[a-zA-Z]+$/.test(tok)) return;
+      const lowerTok = tok.toLowerCase();
+      if (COMMON_SURNAME_WORDS.has(lowerTok)) return;
+      if (currentTokens.has(lowerTok)) return;
+      if (seenToken.has(lowerTok)) return;
+      // Search for the proper-noun form. Preserve the original internal casing
+      // when it's already capitalized (so "McDonald"/"DeVries" match exactly);
+      // only synthesize a leading cap when the record stored it all-lowercase.
+      const proper = /^[A-Z]/.test(tok)
+        ? tok
+        : lowerTok.charAt(0).toUpperCase() + lowerTok.slice(1);
+      const isSurname = ti === tokens.length - 1;
+      const m = matchContextualToken(proper, isSurname);
       if (m) {
-        seenToken.add(tok);
+        seenToken.add(lowerTok);
         pushViolation(
-          tok,
-          m,
+          proper,
+          m.index,
           `The script uses the name "${m[0]}", which is part of another ` +
-            `member's identity (and appears in this prompt only as a STYLE ` +
-            `example). Use ONLY the presenter from the "## PRESENTER IDENTITY" ` +
-            `block — replace this name.`,
+            `member's identity. Use ONLY the presenter from the "## PRESENTER ` +
+            `IDENTITY" block — replace this name.`,
         );
       }
-    }
+    });
   }
   return violations;
 }
