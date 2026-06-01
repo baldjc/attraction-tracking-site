@@ -130,11 +130,11 @@ export async function POST(
         (x): x is string => typeof x === "string",
       )
     : [];
-  if (linkedFactIds.length < 3) {
+  if (linkedFactIds.length < 1) {
     return NextResponse.json(
       {
         error: "insufficient_linked_facts",
-        message: `Need ≥3 linked facts to save a Script Builder v2 script — this plan has ${linkedFactIds.length}. Re-run the wizard to relink.`,
+        message: `Need at least 1 linked fact to save a Script Builder v2 script — this plan has none. Re-run the wizard to relink, or run a data search to add facts.`,
       },
       { status: 422 },
     );
@@ -144,11 +144,11 @@ export async function POST(
     where: { id: { in: linkedFactIds }, userId },
     select: { id: true },
   });
-  if (ownedFacts.length < 3) {
+  if (ownedFacts.length < 1) {
     return NextResponse.json(
       {
         error: "cited_facts_not_found",
-        message: `Only ${ownedFacts.length} of the plan's ${linkedFactIds.length} linked facts are still in your facts library — need ≥3. Re-run the wizard to relink.`,
+        message: `None of the plan's ${linkedFactIds.length} linked facts are still in your facts library — they may have been deleted. Re-run the wizard to relink, or run a data search to add facts.`,
       },
       { status: 422 },
     );

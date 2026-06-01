@@ -90,6 +90,25 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Fact carry-over guard. `loadLeadVideoSeed` resolves the lead's facts by
+  // matching its named neighbourhoods back to the upload — a lead whose hoods
+  // no longer match any headline-safe fact (e.g. the upload was re-validated
+  // and those rows got reclassified) resolves to zero facts. Minting a plan
+  // with zero linked facts only to dead-end at the Script Builder gate is a
+  // worse experience than failing here with guidance, so block at the source.
+  // De-dupe defensively so a fact can never be double-counted toward the gate.
+  const factIds = [...new Set(seed.factIds)];
+  if (factIds.length === 0) {
+    return NextResponse.json(
+      {
+        error: "lead_resolved_zero_facts",
+        message:
+          "This Story Lead didn't resolve to any linked facts — its neighbourhoods don't match any current market data. Link facts to a plan manually, or run a fresh data search before turning it into a video.",
+      },
+      { status: 422 },
+    );
+  }
+
   // Land on the leftmost status of the member's tier vocabulary ("Future Idea"
   // on growth/DWY, "Idea" on foundations) — same convention as save-idea.
   const user = await prisma.user.findUnique({
@@ -116,7 +135,7 @@ export async function POST(req: NextRequest) {
         theme: rotationSlotToTheme(rotationSlot),
         rotationSlot,
         titlePromise: seed.lead.whyItMatters,
-        linkedFactIds: seed.factIds,
+        linkedFactIds: factIds,
         linkedStoryLeadId: seed.lead.id,
         researchNotes,
         // From the lead's facts: ≥80% one type locks it; else null (Script

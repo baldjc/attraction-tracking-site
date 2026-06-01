@@ -31,6 +31,37 @@ type Stage = "pick_shoot_type" | "streaming" | "approve";
 interface Props {
   planSummary: Step4PlanSummary;
   backHref: string;
+  /**
+   * Low Support state — the plan cleared the gate (≥1 fact) but is below the
+   * recommended 3. Non-blocking: we still let the member generate, but surface
+   * a banner so they know the script will be thinly anchored.
+   */
+  lowSupport?: boolean;
+}
+
+function LowSupportBanner({
+  planId,
+  count,
+}: {
+  planId: string;
+  count: number;
+}) {
+  return (
+    <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-700/60 dark:bg-amber-900/15 dark:text-amber-200">
+      <p className="font-semibold">Low Support — {count} linked fact{count === 1 ? "" : "s"}</p>
+      <p className="mt-1">
+        This plan is below the recommended 3 facts, so the script will be thinly
+        anchored. You can still build it now, or{" "}
+        <a
+          href={`/member/content-planner/${planId}`}
+          className="font-medium underline hover:no-underline"
+        >
+          link more facts first
+        </a>{" "}
+        for a stronger script.
+      </p>
+    </div>
+  );
 }
 
 interface SaveError {
@@ -38,7 +69,11 @@ interface SaveError {
   code?: string;
 }
 
-export function ScriptWizardClient({ planSummary, backHref }: Props) {
+export function ScriptWizardClient({
+  planSummary,
+  backHref,
+  lowSupport = false,
+}: Props) {
   const router = useRouter();
   const [stage, setStage] = useState<Stage>("pick_shoot_type");
   const [shootType, setShootType] = useState<ShootType>("talking_head");
@@ -59,14 +94,22 @@ export function ScriptWizardClient({ planSummary, backHref }: Props) {
 
   if (stage === "pick_shoot_type") {
     return (
-      <Step4ShootType
-        plan={planSummary}
-        backHref={backHref}
-        onConfirm={(st) => {
-          setShootType(st);
-          setStage("streaming");
-        }}
-      />
+      <>
+        {lowSupport && (
+          <LowSupportBanner
+            planId={planSummary.id}
+            count={planSummary.linkedFactCount}
+          />
+        )}
+        <Step4ShootType
+          plan={planSummary}
+          backHref={backHref}
+          onConfirm={(st) => {
+            setShootType(st);
+            setStage("streaming");
+          }}
+        />
+      </>
     );
   }
 

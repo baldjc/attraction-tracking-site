@@ -1,0 +1,362 @@
+/**
+ * Layer-1 auto-enrichment for Script Builder v2.
+ *
+ * Problem: a ContentPlan minted from a Story Lead ("Use as Video") carries
+ * only the facts that resolved from the lead's named neighbourhoods. Narrow
+ * leads (one hood, one metric family) can land with 1–2 linked facts, which
+ * trips the ≥3 "not enough linked facts" gate and dead-ends the member at the
+ * Build Script step.
+ *
+ * Layer 1 fixes the common case WITHOUT any paid work: it pulls additional
+ * headline-safe facts that are already in the SAME scope as the plan's
+ * existing linked facts (same neighbourhoods, same upload, same property-type
+ * lock) and links them before the gate runs. It never widens scope — it only
+ * deepens coverage inside the scope the lead already established.
+ *
+ * Layers 2 (cross-upload) and 3 (paid on-demand extraction) do not exist yet;
+ * `skippedNeedingPaid` is the forward-looking hook for the Layer-3 resolver
+ * and is always empty today (see `ScriptDataNeed`).
+ */
+import prisma from "@/lib/prisma";
+import { loadHeadlineSafeFacts } from "@/lib/content-engine-context";
+
+/** The gate threshold Script Builder v2 enforces everywhere. */
+export const FACT_GATE_TARGET = 3;
+
+export type FactGateStatus = "ok" | "low" | "block";
+
+/**
+ * Count-based gate verdict shared by the streaming route, the wizard page and
+ * the planner modal so they never drift:
+ *   - 0 facts  → "block" (cannot anchor a script at all)
+ *   - 1–2      → "low"   (allowed, but surface a non-blocking Low Support banner)
+ *   - ≥ target → "ok"    (silent)
+ */
+export function evaluateFactGate(
+  count: number,
+  target: number = FACT_GATE_TARGET,
+): FactGateStatus {
+  if (count <= 0) return "block";
+  if (count < target) return "low";
+  return "ok";
+}
+
+/** Minimal fact shape the scope/ranking logic needs (DB-agnostic, testable). */
+export interface EnrichInputFact {
+  id: string;
+  neighbourhood: string | null;
+  propertyType: string | null;
+  metricFamily: string;
+}
+
+/**
+ * Forward-looking Layer-3 hook. When Layers 1–2 can't reach the target, the
+ * (not-yet-built) three-layer resolver would describe what data is still
+ * missing here so the UI can offer a paid "Run data search". Until that
+ * resolver exists, `enrichPlanWithRelatedFacts` always returns an empty
+ * `skippedNeedingPaid`, but the type is exported so callers can render the
+ * Layer-3 affordance the moment it lands.
+ */
+export interface ScriptDataNeed {
+  neighbourhood: string;
+  metricFamily: string | null;
+  reason: string;
+}
+
+export interface EnrichmentScope {
+  neighbourhoods: string[];
+  lockedPropertyType: string | null;
+  leadSpansMultipleTypes: boolean;
+  uploadIds: string[];
+}
+
+export interface EnrichmentResult {
+  before: number;
+  added: EnrichInputFact[];
+  after: number;
+  targetReached: boolean;
+  scope: EnrichmentScope;
+  /** Always `[]` today — reserved for the Layer-3 paid resolver. */
+  skippedNeedingPaid: Array<{ need: ScriptDataNeed; estimatedCostUsd: number }>;
+  persisted: boolean;
+}
+
+const CITY_ROLLUP_HOODS = new Set(["", "all", "city"]);
+
+function hoodKey(neighbourhood: string | null): string {
+  return (neighbourhood ?? "").trim().toLowerCase();
+}
+
+/**
+ * Pure scope-derivation + ranking. Exported for unit testing — it must NEVER
+ * select a fact outside the scope established by the already-linked facts.
+ *
+ * Scope rules (in-scope candidates only):
+ *   - neighbourhood (case-insensitive) must be one the linked facts already
+ *     cover;
+ *   - property type:
+ *       · locked (plan.propertyTypeFocus set, not "All") → a non-rollup
+ *         candidate's propertyType must equal the lock EXACTLY. A null/"All"
+ *         (hood-level aggregate across every type) is broader than the lock and
+ *         is rejected — enriching with it would widen scope;
+ *       · unlocked (city-wide / dual-audience lead) → any property type is
+ *         allowed, constrained only by the neighbourhood scope.
+ *   `leadSpansMultipleTypes` is informational (carried into the scope report);
+ *   it cannot coexist with a lock, so it does not loosen the gate.
+ *
+ * Ranking: breadth before depth.
+ *   - Tier 1: a metric family NOT yet represented among the linked facts.
+ *   - Tier 2: a metric family already represented (deeper coverage).
+ * Within a tier, ties break deterministically by metricFamily then id.
+ */
+export function selectEnrichmentFacts(
+  linked: EnrichInputFact[],
+  candidates: EnrichInputFact[],
+  opts: {
+    target?: number;
+    maxAdds?: number;
+    lockedPropertyType: string | null;
+    leadSpansMultipleTypes: boolean;
+    marketNameLower?: string;
+  },
+): { added: EnrichInputFact[]; scopeHoods: string[]; rejectedOutOfScope: number } {
+  const target = opts.target ?? FACT_GATE_TARGET;
+  const maxAdds = opts.maxAdds ?? 8;
+  const marketLower = (opts.marketNameLower ?? "").trim().toLowerCase();
+  const lockedType =
+    opts.lockedPropertyType && opts.lockedPropertyType !== "All"
+      ? opts.lockedPropertyType
+      : null;
+
+  const scopeHoodSet = new Set<string>();
+  const representedFamilies = new Set<string>();
+  for (const f of linked) {
+    scopeHoodSet.add(hoodKey(f.neighbourhood));
+    if (f.metricFamily) representedFamilies.add(f.metricFamily);
+  }
+
+  const isCityRollup = (h: string) =>
+    CITY_ROLLUP_HOODS.has(h) || (marketLower !== "" && h === marketLower);
+
+  const linkedIds = new Set(linked.map((f) => f.id));
+  const need = Math.max(0, target - linked.length);
+  if (need === 0) {
+    return { added: [], scopeHoods: [...scopeHoodSet], rejectedOutOfScope: 0 };
+  }
+
+  let rejectedOutOfScope = 0;
+  const inScope: EnrichInputFact[] = [];
+  for (const c of candidates) {
+    if (linkedIds.has(c.id)) continue;
+    const h = hoodKey(c.neighbourhood);
+    if (!scopeHoodSet.has(h)) {
+      rejectedOutOfScope++;
+      continue;
+    }
+    // Property-type gate (only for hood-anchored, non-rollup candidates).
+    // Strict: a lock means the candidate's type must match EXACTLY. null/"All"
+    // is a hood-level aggregate across every type — broader than the lock — so
+    // it is rejected to honour the never-widen-scope guarantee.
+    if (lockedType && !isCityRollup(h)) {
+      if (c.propertyType !== lockedType) {
+        rejectedOutOfScope++;
+        continue;
+      }
+    }
+    inScope.push(c);
+  }
+
+  const tier1: EnrichInputFact[] = [];
+  const tier2: EnrichInputFact[] = [];
+  for (const c of inScope) {
+    if (representedFamilies.has(c.metricFamily)) tier2.push(c);
+    else tier1.push(c);
+  }
+  const byFamilyThenId = (a: EnrichInputFact, b: EnrichInputFact) =>
+    a.metricFamily === b.metricFamily
+      ? a.id.localeCompare(b.id)
+      : a.metricFamily.localeCompare(b.metricFamily);
+  tier1.sort(byFamilyThenId);
+  tier2.sort(byFamilyThenId);
+
+  const added: EnrichInputFact[] = [];
+  const cap = Math.min(need, maxAdds);
+  // Tier 1 also dedupes by family so breadth additions don't all pile onto the
+  // same newly-introduced family before we've widened coverage.
+  const usedFamilies = new Set(representedFamilies);
+  for (const c of tier1) {
+    if (added.length >= cap) break;
+    if (usedFamilies.has(c.metricFamily)) continue;
+    usedFamilies.add(c.metricFamily);
+    added.push(c);
+  }
+  for (const c of tier2) {
+    if (added.length >= cap) break;
+    added.push(c);
+  }
+
+  return { added, scopeHoods: [...scopeHoodSet], rejectedOutOfScope };
+}
+
+/**
+ * Load the plan's linked facts, derive their scope, and link additional
+ * in-scope headline-safe facts until the gate target is reached (Layer 1).
+ *
+ * Safe to call on every Build-Script entry: it no-ops when the plan already
+ * has ≥ target facts or has zero (nothing to derive scope from), and it never
+ * removes or reorders existing links — it only appends.
+ */
+export async function enrichPlanWithRelatedFacts(args: {
+  userId: string;
+  planId: string;
+  target?: number;
+  maxAdds?: number;
+  persist?: boolean;
+}): Promise<EnrichmentResult> {
+  const target = args.target ?? FACT_GATE_TARGET;
+  const persist = args.persist ?? true;
+
+  const plan = await prisma.contentPlan.findFirst({
+    where: { id: args.planId, userId: args.userId },
+    select: { id: true, linkedFactIds: true, propertyTypeFocus: true },
+  });
+
+  const emptyScope: EnrichmentScope = {
+    neighbourhoods: [],
+    lockedPropertyType: null,
+    leadSpansMultipleTypes: false,
+    uploadIds: [],
+  };
+  if (!plan) {
+    return {
+      before: 0,
+      added: [],
+      after: 0,
+      targetReached: false,
+      scope: emptyScope,
+      skippedNeedingPaid: [],
+      persisted: false,
+    };
+  }
+
+  const linkedIds: string[] = Array.isArray(plan.linkedFactIds)
+    ? (plan.linkedFactIds as unknown[]).filter(
+        (x): x is string => typeof x === "string",
+      )
+    : [];
+
+  const lockedPropertyType =
+    plan.propertyTypeFocus && plan.propertyTypeFocus !== "All"
+      ? plan.propertyTypeFocus
+      : null;
+
+  // Already healthy, or nothing to anchor scope on → no-op (gate decides).
+  if (linkedIds.length >= target || linkedIds.length === 0) {
+    return {
+      before: linkedIds.length,
+      added: [],
+      after: linkedIds.length,
+      targetReached: linkedIds.length >= target,
+      scope: {
+        ...emptyScope,
+        lockedPropertyType,
+      },
+      skippedNeedingPaid: [],
+      persisted: false,
+    };
+  }
+
+  // Load the linked facts to derive scope (which uploads + neighbourhoods).
+  const linkedFacts = await prisma.marketFact.findMany({
+    where: { id: { in: linkedIds }, userId: args.userId },
+    select: {
+      id: true,
+      neighbourhood: true,
+      propertyType: true,
+      metricFamily: true,
+      uploadId: true,
+    },
+  });
+
+  const uploadIds = [...new Set(linkedFacts.map((f) => f.uploadId))];
+  const uploads = uploadIds.length
+    ? await prisma.marketDataUpload.findMany({
+        where: { id: { in: uploadIds }, userId: args.userId },
+        select: { id: true, monthYear: true },
+      })
+    : [];
+
+  // Candidate pool: every headline-safe fact in the same upload(s).
+  const candidates: EnrichInputFact[] = [];
+  for (const up of uploads) {
+    const facts = await loadHeadlineSafeFacts(up.id, up.monthYear, {
+      limit: 500,
+      orderByNeighbourhoodFirst: true,
+    });
+    for (const f of facts) {
+      candidates.push({
+        id: f.id,
+        neighbourhood: f.neighbourhood,
+        propertyType: f.propertyType,
+        metricFamily: String(f.metricFamily),
+      });
+    }
+  }
+
+  const linkedInput: EnrichInputFact[] = linkedFacts.map((f) => ({
+    id: f.id,
+    neighbourhood: f.neighbourhood,
+    propertyType: f.propertyType,
+    metricFamily: String(f.metricFamily),
+  }));
+
+  // Derive "dual-audience" from the data itself rather than parsing a marker
+  // string out of researchNotes (which is fragile to copy edits). With no lock,
+  // ≥2 distinct named property types among the linked facts means the lead
+  // genuinely spans types. Informational only — it never loosens the gate.
+  const distinctNamedTypes = new Set(
+    linkedInput
+      .map((f) => f.propertyType)
+      .filter((t): t is string => !!t && t !== "All"),
+  );
+  const leadSpansMultipleTypes =
+    lockedPropertyType === null && distinctNamedTypes.size >= 2;
+
+  const { added, scopeHoods } = selectEnrichmentFacts(linkedInput, candidates, {
+    target,
+    maxAdds: args.maxAdds,
+    lockedPropertyType,
+    leadSpansMultipleTypes,
+  });
+
+  const scope: EnrichmentScope = {
+    neighbourhoods: scopeHoods,
+    lockedPropertyType,
+    leadSpansMultipleTypes,
+    uploadIds,
+  };
+
+  let persisted = false;
+  if (added.length > 0 && persist) {
+    // De-dupe defensively: deterministic selection means a concurrent enrich
+    // would compute the same additions, but a Set guarantees count-based gates
+    // are never skewed by a duplicated id slipping into linkedFactIds.
+    const next = [...new Set([...linkedIds, ...added.map((a) => a.id)])];
+    await prisma.contentPlan.updateMany({
+      where: { id: plan.id, userId: args.userId },
+      data: { linkedFactIds: next },
+    });
+    persisted = true;
+  }
+
+  const after = linkedIds.length + added.length;
+  return {
+    before: linkedIds.length,
+    added,
+    after,
+    targetReached: after >= target,
+    scope,
+    skippedNeedingPaid: [],
+    persisted,
+  };
+}

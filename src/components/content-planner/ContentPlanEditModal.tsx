@@ -1552,15 +1552,17 @@ Produce a research brief I can hand to a script writer. For **each talking point
             )}
 
             {/* Wave 3 — Script Builder v2 (Talking Head) entry point.
-                Gated on the feature flag PLUS the same lineage preconditions
-                the streaming route and save endpoint enforce server-side:
-                rotationSlot set, linkedFactIds.length >= 3, and shootType
-                null or 'talking_head'. Hidden entirely when any gate fails
-                — Wave 4 will ship a sibling Home Tour entry. */}
+                Gated on the feature flag PLUS the lineage preconditions:
+                rotationSlot set, at least ONE linked fact, and shootType
+                null or 'talking_head'. The >=1 (not >=3) threshold lets
+                1–2-fact plans through to the wizard, where Layer-1 auto-
+                enrichment lifts them over the gate and a Low Support banner
+                covers anything still below 3. Hidden entirely when any gate
+                fails — Wave 4 will ship a sibling Home Tour entry. */}
             {scriptBuilderV2Enabled &&
               plan.rotationSlot &&
               Array.isArray(plan.linkedFactIds) &&
-              plan.linkedFactIds.filter((x) => typeof x === "string").length >= 3 &&
+              plan.linkedFactIds.filter((x) => typeof x === "string").length >= 1 &&
               (plan.shootType == null || plan.shootType === "talking_head") && (
                 <div className="-mx-6 px-6 py-3 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-white dark:from-blue-900/10 dark:to-transparent">
                   <div className="flex items-center justify-between gap-3">

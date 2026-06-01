@@ -82,6 +82,7 @@ import {
   type MarketConfigSummary,
 } from "@/lib/content-engine-context";
 import { getNeighbourhoodContext } from "@/lib/get-neighbourhood-context";
+import { enrichPlanWithRelatedFacts } from "@/lib/script-plan-enrichment";
 import {
   ROTATION_SLOT_LABELS,
   METRIC_NAME_LABELS,
@@ -235,16 +236,38 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const linkedFactIds: string[] = Array.isArray(plan.linkedFactIds)
+  let linkedFactIds: string[] = Array.isArray(plan.linkedFactIds)
     ? (plan.linkedFactIds as unknown[]).filter(
         (x): x is string => typeof x === "string",
       )
     : [];
-  if (linkedFactIds.length < 3) {
+
+  // Layer-1 auto-enrichment (defensive — the wizard page runs this first, but
+  // direct API callers and stale navigations must get the same treatment).
+  // Pulls in-scope headline-safe facts to lift 1–2-fact plans over the gate
+  // without widening scope. Best-effort: a failure here must not block a plan
+  // that already has facts, so we fall back to the existing links.
+  try {
+    const enriched = await enrichPlanWithRelatedFacts({
+      userId,
+      planId: plan.id,
+      persist: true,
+    });
+    if (enriched.added.length > 0) {
+      linkedFactIds = [...linkedFactIds, ...enriched.added.map((a) => a.id)];
+    }
+  } catch (err) {
+    console.error("[script-builder-v2] enrichment failed", err);
+  }
+
+  // Gate behaviour change: only a TRUE zero-fact plan is blocked here (it has
+  // no anchor at all). 1–2-fact plans are allowed through with a Low Support
+  // banner surfaced in the wizard — the script is still anchorable, just thin.
+  if (linkedFactIds.length < 1) {
     return jsonError(
       409,
       "insufficient_linked_facts",
-      `Need ≥3 linked facts to write a script — this plan has ${linkedFactIds.length}.`,
+      "This plan has no linked facts — link facts to it or run a data search before building a script.",
     );
   }
 
@@ -284,11 +307,11 @@ export async function POST(req: NextRequest) {
       upload: { select: { monthYear: true } },
     },
   });
-  if (factRows.length < 3) {
+  if (factRows.length < 1) {
     return jsonError(
       409,
       "cited_facts_not_found",
-      `Only ${factRows.length} of the plan's ${linkedFactIds.length} linked facts are still in your facts library — Script Builder v2 needs ≥3. Some may have been deleted; re-run the wizard to relink.`,
+      `None of the plan's ${linkedFactIds.length} linked facts are still in your facts library — they may have been deleted. Re-run the wizard to relink, or run a data search to add facts.`,
     );
   }
   // Preserve linkedFactIds order so the script cites them in the order

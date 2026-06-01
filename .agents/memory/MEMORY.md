@@ -11,3 +11,4 @@
 - [Deploy image size vs Turbopack cache](deploy-image-size-turbopack-cache.md) — autoscale publish fails ">8 GiB image" when the multi-GB `.next/dev` Turbopack cache ships; build script must `rm -rf .next/dev .next/cache` first.
 - [Idea Validation fact selection](idea-validation-fact-selection.md) — capped LLM fact sets must load neighbourhood-first AND round-robin across families, or late-enum families (SP_LP, FAILURE_RATE) silently vanish in wide markets.
 - [Sale-to-list ratio sourcing](sale-to-list-ratio-sourcing.md) — SP/LP can come from a precomputed MLS column (optional mapped field), not just sale/list prices; normalize percent-or-fraction to a fraction.
+- [Script fact-gate enforcement points](script-fact-gate-enforcement-points.md) — the "min linked facts" gate is duplicated across wizard page, generate route (2 checks), save route (2 checks), planner modal; change the policy in all or members dead-end.
