@@ -737,7 +737,7 @@ export default function SetupForm({
             </h2>
             <p className="mt-2 text-xs leading-relaxed text-gray-700 dark:text-gray-300">
               By default your scripts use the channel&apos;s standard voice
-              register — coach-style, plain-language, Calgary real-estate
+              register — coach-style, plain-language, quality real-estate
               context. If you&apos;ve developed your own voice register and
               want scripts to use it instead, upload a voice guide here. It
               will override the channel default on tone, opener patterns,

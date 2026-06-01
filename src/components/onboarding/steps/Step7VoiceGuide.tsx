@@ -108,7 +108,7 @@ export default function Step7VoiceGuide({ onContinue, onSkip }: StepProps) {
       />
       <WhyBlock>
         By default, your scripts use the channel&rsquo;s voice register —
-        coach-style, plain-language, Calgary real estate context. Most members
+        coach-style, plain-language, quality real estate context. Most members
         want this. But if you&rsquo;ve been on camera for years and
         you&rsquo;ve developed your own voice, we can capture it so your
         scripts sound like you instead.
