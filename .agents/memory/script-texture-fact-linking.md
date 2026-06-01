@@ -26,3 +26,10 @@ clamped to a server constant (`Math.min(client, SERVER_MAX)`) — a client may
 request a tighter budget but never a looser one, or it could neuter the
 extractor's per-request gate. The monthly hard cap (getCostCapStatus) is the
 independent server-authoritative bound.
+
+**Context-window vs cost cap:** the per-request COST cap ($1) is looser than
+Claude's 200K-token INPUT window. Market-wide needs (null neighbourhood) match
+the ENTIRE CSV (~10K rows), which clears the cost gate but 400s with "prompt is
+too long". The extractor must bound serialized rows to a safe token budget
+(SAFE_PROMPT_INPUT_TOKENS, well under 200K) and evenly-sample down when the
+in-scope slice is larger — a cost gate passing does NOT imply the prompt fits.

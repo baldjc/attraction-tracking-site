@@ -35,6 +35,8 @@ import {
   estimateExtractionTokens,
   unitForFamily,
   monthInWindow,
+  EXTRACTION_PROMPT_OVERHEAD_TOKENS,
+  EXTRACTION_TOKENS_PER_ROW,
   type ScriptDataNeed,
   type ScriptDataResult,
 } from "@/lib/script-data-resolver";
@@ -42,6 +44,15 @@ import {
 const SONNET_MODEL = "claude-sonnet-4-20250514";
 const SAMPLE_FLOOR = 10;
 const DEFAULT_MAX_COST_USD = 1.0;
+/**
+ * Hard context-window guard. Claude's input window is 200K tokens; market-wide
+ * needs match the ENTIRE CSV (tens of thousands of rows), and the per-request
+ * COST cap ($1) is looser than the model's token limit — a slice can clear the
+ * cost gate yet still overflow the context window (observed 203K-token 400s).
+ * Bound the serialized rows to a safe budget (well under 200K to leave room for
+ * the system prompt, output, and any per-row underestimate).
+ */
+const SAFE_PROMPT_INPUT_TOKENS = 150_000;
 /** Tool-ledger tag — getCostCapStatus aggregates ALL tool types, so the label
  *  is informational only, but keep it stable for per-tool cost reporting. */
 export const EXTRACTION_TOOL_TYPE = "script_data_extraction";
@@ -299,12 +310,35 @@ export async function extractOnDemand(
   }
 
   // All gates passed — build the focused prompt and spend a token.
+  // Context-window guard: bound rows to a safe input-token budget. When the
+  // in-scope slice is larger (market-wide needs match the whole CSV), take an
+  // evenly-spaced sample so the median/average stays representative instead of
+  // 400ing on "prompt is too long".
+  const maxPromptRows = Math.max(
+    SAMPLE_FLOOR,
+    Math.floor(
+      (SAFE_PROMPT_INPUT_TOKENS - EXTRACTION_PROMPT_OVERHEAD_TOKENS) /
+        EXTRACTION_TOKENS_PER_ROW,
+    ),
+  );
+  let promptRows = filtered;
+  let sampledFromTotal = 0;
+  if (filtered.length > maxPromptRows) {
+    const stride = filtered.length / maxPromptRows;
+    const sampled: typeof filtered = [];
+    for (let i = 0; i < maxPromptRows; i++) {
+      sampled.push(filtered[Math.floor(i * stride)]);
+    }
+    promptRows = sampled;
+    sampledFromTotal = filtered.length;
+  }
+
   const projected = PROJECTED_FIELDS.map((f) => ({
     field: f,
     idx: headerIndex(headers, mapping[f]),
   })).filter((c) => c.idx >= 0);
   const projectedHeader = projected.map((c) => c.field).join("\t");
-  const projectedRows = filtered
+  const projectedRows = promptRows
     .map((r) => projected.map((c) => (r[c.idx] ?? "").toString()).join("\t"))
     .join("\n");
 
@@ -317,11 +351,16 @@ SAMPLE FLOOR: If fewer than ${SAMPLE_FLOOR} rows are actually usable for this me
 Respond with ONLY a JSON object, no prose and no markdown fences:
 {"value": <number|null>, "sampleSize": <integer>, "unit": "<unit>", "note": "<short>"}`;
 
+  const samplingNote =
+    sampledFromTotal > 0
+      ? `\nNOTE: The rows below are an evenly-spaced representative sample of ${sampledFromTotal} total in-scope rows (the full slice is too large to send). Compute the metric from this sample and set "sampleSize" to the number of rows you actually used.`
+      : "";
+
   const user = `Metric to compute: ${METRIC_INSTRUCTION[need.metricFamily]}.
 Expected unit: ${unit || "(none)"}.
 Neighbourhood: ${need.neighbourhood ?? "(market-wide)"}.
 Property type: ${need.propertyType ?? "(all types)"}.
-Month: ${upload.monthYear}.
+Month: ${upload.monthYear}.${samplingNote}
 
 Rows (tab-separated, header first):
 ${projectedHeader}

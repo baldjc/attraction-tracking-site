@@ -64,6 +64,7 @@ function makeDeps(over: {
   claudeResp?: { text: string; inputTokens: number; outputTokens: number };
   upload?: unknown;
   mapping?: Record<string, string>;
+  onClaude?: (args: { system: string; user: string }) => void;
 } = {}): { deps: ExtractDeps; calls: Calls } {
   const calls: Calls = { claude: 0, factCreate: 0, logUsage: 0, logCreate: 0 };
   const deps = {
@@ -96,8 +97,9 @@ function makeDeps(over: {
       },
     },
     readCsv: async () => csvBuffer(over.csvRows ?? 12),
-    callClaude: async () => {
+    callClaude: async (args: { system: string; user: string }) => {
       calls.claude++;
+      over.onClaude?.(args);
       return (
         over.claudeResp ?? {
           text: '{"value":750000,"sampleSize":12,"unit":"USD","note":"ok"}',
@@ -199,6 +201,28 @@ test("upload outside the time window -> no_data, Claude NOT called", async () =>
   const out = await extractOnDemand({ need: need() }, deps);
   assert.deepEqual(out.result, { source: "none", reason: "no_data" });
   assert.equal(calls.claude, 0);
+});
+
+test("large in-scope slice -> prompt rows capped to a representative sample (no context overflow)", async () => {
+  // Market-wide slice bigger than the safe context budget. The cost estimate
+  // would clear a generous cap, but the full slice would overflow Claude's 200K
+  // window — the extractor must sample down before sending.
+  let captured = "";
+  const { deps, calls } = makeDeps({
+    csvRows: 8000,
+    onClaude: ({ user }) => {
+      captured = user;
+    },
+  });
+  const out = await extractOnDemand({ need: need(), maxCostUsd: 1000 }, deps);
+  assert.equal(calls.claude, 1);
+  assert.equal(out.result.source, "on_demand_extraction");
+  // It told Claude the rows are a sample of the true population.
+  assert.match(captured, /representative sample of 8000/);
+  // The serialized row lines are bounded well under the full 8000.
+  const rowLines = captured.split("\n").filter((l) => l.startsWith("Bridgeland\t"));
+  assert.ok(rowLines.length <= 6000, `expected <=6000 row lines, got ${rowLines.length}`);
+  assert.ok(rowLines.length >= 10, "still sends a usable sample above the floor");
 });
 
 test("parseExtractionJson tolerates markdown fences and bad JSON", () => {
