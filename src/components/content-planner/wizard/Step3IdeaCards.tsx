@@ -269,24 +269,48 @@ export function Step3IdeaCards({
 
   if (!result) return null;
 
+  // Defensive: never render an uncited idea card. The server validator
+  // already guarantees ≥3 real cited facts per card, but if anything ever
+  // slips through we drop it rather than show a card whose footer reads
+  // "0 cited facts" — an uncited idea card isn't useful.
+  const ideas = result.ideas.filter((c) => (c.citedFactIds?.length ?? 0) > 0);
+
+  // Single source of truth for the header fact count: the union of fact
+  // IDs actually cited across the shown cards. Deriving it from the cards
+  // (rather than a separate server counter) means the header can never
+  // contradict the per-card "N cited facts" footers, and it survives the
+  // sessionStorage resume path — which previously hardcoded 0 here and
+  // produced "3 idea(s) from 0 facts" while every card cited 4.
+  const citedFactUnion = new Set<string>();
+  for (const c of ideas) {
+    for (const id of c.citedFactIds ?? []) citedFactUnion.add(id);
+  }
+  const factCount = citedFactUnion.size;
+  const shownCount = ideas.length;
+  const missing = Math.max(result.requestedCount - shownCount, 0);
+  const isPartial = missing > 0;
+  const pinnedThemeLabel = rotationSlot
+    ? ROTATION_SLOTS.includes(rotationSlot as RotationSlotKey)
+      ? rotationSlotToTheme(rotationSlot as RotationSlotKey)
+      : rotationSlot
+    : null;
+
   return (
     <div>
       <div className="mb-4 flex items-start justify-between gap-4">
         <p className="text-xs text-gray-500 dark:text-gray-400">
-          {result.returnedCount} idea(s) from {result.factsConsidered} facts in your {uploadLabel} upload.
+          {shownCount} idea(s) from {factCount} cited fact{factCount === 1 ? "" : "s"} in your {uploadLabel} upload.
           {storyLeadId && " Anchored on a Story Lead."}
-          {rotationSlot && ` Theme pinned to ${
-            ROTATION_SLOTS.includes(rotationSlot as RotationSlotKey)
-              ? rotationSlotToTheme(rotationSlot as RotationSlotKey)
-              : rotationSlot
-          }.`}
+          {pinnedThemeLabel && ` Theme pinned to ${pinnedThemeLabel}.`}
         </p>
       </div>
 
-      {result.partial && (
+      {isPartial && (
         <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-100">
-          Generated {result.returnedCount} of {result.requestedCount} — the
-          validation gate trimmed some. You can pick from these or{" "}
+          {pinnedThemeLabel
+            ? `Couldn't produce ${missing} more on-theme idea${missing === 1 ? "" : "s"} from this upload — try unpinning the theme or generating from a different upload. `
+            : `Generated ${shownCount} of ${result.requestedCount} — the validation gate trimmed some. `}
+          You can pick from these or{" "}
           <Link
             href={typeof window !== "undefined" ? window.location.pathname + window.location.search : "#"}
             className="underline"
@@ -302,7 +326,7 @@ export function Step3IdeaCards({
       )}
 
       <div className="grid gap-4 md:grid-cols-2">
-        {result.ideas.map((idea, i) => (
+        {ideas.map((idea, i) => (
           <IdeaCardView key={i} idea={idea} onPick={() => pick(idea)} />
         ))}
       </div>

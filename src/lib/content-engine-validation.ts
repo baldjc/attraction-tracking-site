@@ -203,6 +203,14 @@ export function validateIdeaCard(
    * supplemental context but cannot be the sole anchor of a card.
    */
   storyLeadHoodFactIds: Set<string> | null = null,
+  /**
+   * Optional pinned rotation slot (the wizard's "theme pin"). When
+   * non-null, the card's `rotationSlot` MUST equal this value — this is
+   * what enforces "Theme pinned to X" so a pinned batch can never ship an
+   * off-theme card. Pass null (default) for an unpinned, mixed-theme
+   * batch, where any valid rotation slot is accepted.
+   */
+  requiredRotationSlot: RotationSlotKey | null = null,
 ): ValidationResult {
   const errors: string[] = [];
   const c = (card ?? {}) as Partial<IdeaCard> & Record<string, unknown>;
@@ -269,6 +277,22 @@ export function validateIdeaCard(
   ) {
     errors.push(
       `rotationSlot "${c.rotationSlot}" is not one of: ${ROTATION_SLOTS.join(", ")}`,
+    );
+  }
+
+  // ── Pinned theme enforcement ────────────────────────────────────────
+  // When the wizard pinned a theme, every card must carry exactly that
+  // rotation slot. Off-theme cards are rejected here so the re-prompt
+  // loop regenerates them (and, failing that, they're dropped rather
+  // than shipped) — this is what makes "Theme pinned to X" a hard
+  // contract instead of a soft prompt hint the LLM can ignore.
+  if (
+    requiredRotationSlot !== null &&
+    typeof c.rotationSlot === "string" &&
+    c.rotationSlot !== requiredRotationSlot
+  ) {
+    errors.push(
+      `rotationSlot "${c.rotationSlot}" must equal the pinned theme "${requiredRotationSlot}" — this batch is pinned to a single theme`,
     );
   }
 

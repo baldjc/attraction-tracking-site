@@ -336,6 +336,7 @@ export async function POST(req: NextRequest) {
         config.neighbourhoods,
         storyLeadFactIds,
         storyLeadHoodFactIds,
+        body.rotationSlot ?? null,
       );
       if (result.ok) {
         validIdeas.push(rawIdeas[i] as IdeaCard);
@@ -408,6 +409,11 @@ function buildInitialUserMessage(args: {
   lines.push(`Idea count requested: ${args.count}`);
   if (args.rotationSlot) {
     lines.push(`Rotation slot: ${args.rotationSlot}`);
+    lines.push("");
+    lines.push("## THEME PIN — HARD CONSTRAINT");
+    lines.push(
+      `The member pinned this batch to a single theme. EVERY idea card's \`rotationSlot\` MUST be exactly \`${args.rotationSlot}\` — not "most", not "a mix", **every single card**. Do NOT rotate through any other slot (${ROTATION_SLOTS.filter((s) => s !== args.rotationSlot).join(", ")} are all FORBIDDEN for this batch). Vary the angle, framework, sub-personas, and neighbourhoods across cards, but keep \`rotationSlot\` fixed to \`${args.rotationSlot}\`. The server-side validation gate rejects any card whose rotationSlot differs and you will be re-prompted.`,
+    );
   } else {
     lines.push("Rotation slot: choose appropriately per the rotation order in the system prompt.");
   }
