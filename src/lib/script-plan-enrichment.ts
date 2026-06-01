@@ -13,12 +13,18 @@
  * lock) and links them before the gate runs. It never widens scope — it only
  * deepens coverage inside the scope the lead already established.
  *
- * Layers 2 (cross-upload) and 3 (paid on-demand extraction) do not exist yet;
- * `skippedNeedingPaid` is the forward-looking hook for the Layer-3 resolver
- * and is always empty today (see `ScriptDataNeed`).
+ * When Layer 1 cannot reach the gate target, `enrichPlanWithRelatedFacts`
+ * now describes the remaining gaps in `skippedNeedingPaid` (rich
+ * `ScriptDataNeed`s + a USD estimate) so the Unresolved Facts banner can offer
+ * the member a paid Layer-2 "Run data search" on a concrete need.
  */
 import prisma from "@/lib/prisma";
 import { loadHeadlineSafeFacts } from "@/lib/content-engine-context";
+import {
+  type ScriptDataNeed,
+  MetricFamily,
+  estimateExtractionCostUsd,
+} from "@/lib/script-data-resolver";
 
 /** The gate threshold Script Builder v2 enforces everywhere. */
 export const FACT_GATE_TARGET = 3;
@@ -49,18 +55,11 @@ export interface EnrichInputFact {
   metricFamily: string;
 }
 
-/**
- * Forward-looking Layer-3 hook. When Layers 1–2 can't reach the target, the
- * (not-yet-built) three-layer resolver would describe what data is still
- * missing here so the UI can offer a paid "Run data search". Until that
- * resolver exists, `enrichPlanWithRelatedFacts` always returns an empty
- * `skippedNeedingPaid`, but the type is exported so callers can render the
- * Layer-3 affordance the moment it lands.
- */
-export interface ScriptDataNeed {
-  neighbourhood: string;
-  metricFamily: string | null;
+/** A remaining gap the member can pay to fill, with what the search will cost. */
+export interface SkippedNeed {
+  need: ScriptDataNeed;
   reason: string;
+  estimatedCostUsd: number;
 }
 
 export interface EnrichmentScope {
@@ -76,8 +75,8 @@ export interface EnrichmentResult {
   after: number;
   targetReached: boolean;
   scope: EnrichmentScope;
-  /** Always `[]` today — reserved for the Layer-3 paid resolver. */
-  skippedNeedingPaid: Array<{ need: ScriptDataNeed; estimatedCostUsd: number }>;
+  /** Gaps Layer 1 couldn't close — the banner offers a paid search per need. */
+  skippedNeedingPaid: SkippedNeed[];
   persisted: boolean;
 }
 
@@ -198,6 +197,63 @@ export function selectEnrichmentFacts(
   return { added, scopeHoods: [...scopeHoodSet], rejectedOutOfScope };
 }
 
+// Families we'll offer a paid search for, in priority order. Count concepts
+// (sold/active/new-listing) all live under INVENTORY (see script-data-resolver).
+const PAID_SEARCH_FAMILY_PRIORITY: MetricFamily[] = [
+  MetricFamily.MEDIAN,
+  MetricFamily.DOM,
+  MetricFamily.SP_LP,
+  MetricFamily.MOI,
+  MetricFamily.INVENTORY,
+];
+
+/**
+ * Describe the gaps Layer 1 couldn't close as concrete, payable needs. Pure so
+ * the wiring stays testable. Emits up to `missing` needs for families NOT yet
+ * represented, anchored on the lead's own scope (first named neighbourhood, or
+ * market-wide when the scope is a city rollup). `estimatedCostUsd` is a coarse
+ * ceiling from total row count — the banner recomputes precisely from the
+ * actually-filtered rows before charging.
+ */
+export function buildSkippedNeeds(args: {
+  memberId: string;
+  marketConfigId: string;
+  representedFamilies: Set<string>;
+  scopeHoods: string[];
+  lockedPropertyType: string | null;
+  timeWindow: { startMonth: string; endMonth: string };
+  estimateRowCount: number;
+  missing: number;
+}): SkippedNeed[] {
+  if (args.missing <= 0) return [];
+
+  // Anchor on the first named (non-rollup) neighbourhood; null = market-wide.
+  const namedHood =
+    args.scopeHoods.find((h) => h && !CITY_ROLLUP_HOODS.has(h)) ?? null;
+
+  const estimatedCostUsd = estimateExtractionCostUsd(args.estimateRowCount);
+  const needs: SkippedNeed[] = [];
+  for (const family of PAID_SEARCH_FAMILY_PRIORITY) {
+    if (needs.length >= args.missing) break;
+    if (args.representedFamilies.has(family)) continue;
+    needs.push({
+      need: {
+        memberId: args.memberId,
+        marketConfigId: args.marketConfigId,
+        neighbourhood: namedHood,
+        propertyType: args.lockedPropertyType,
+        metricFamily: family,
+        timeWindow: args.timeWindow,
+      },
+      reason: namedHood
+        ? `No ${family} data found for ${namedHood} in scope`
+        : `No ${family} data found in scope`,
+      estimatedCostUsd,
+    });
+  }
+  return needs;
+}
+
 /**
  * Load the plan's linked facts, derive their scope, and link additional
  * in-scope headline-safe facts until the gate target is reached (Layer 1).
@@ -282,7 +338,7 @@ export async function enrichPlanWithRelatedFacts(args: {
   const uploads = uploadIds.length
     ? await prisma.marketDataUpload.findMany({
         where: { id: { in: uploadIds }, userId: args.userId },
-        select: { id: true, monthYear: true },
+        select: { id: true, monthYear: true, rowCount: true },
       })
     : [];
 
@@ -350,13 +406,47 @@ export async function enrichPlanWithRelatedFacts(args: {
   }
 
   const after = linkedIds.length + added.length;
+
+  // Gaps Layer 1 couldn't close → describe them as payable needs for the banner.
+  let skippedNeedingPaid: SkippedNeed[] = [];
+  if (after < target) {
+    const marketConfig = await prisma.marketConfig.findUnique({
+      where: { userId: args.userId },
+      select: { id: true },
+    });
+    if (marketConfig) {
+      const months = uploads
+        .map((u) => u.monthYear.slice(0, 7))
+        .filter((m) => m.length === 7)
+        .sort();
+      const timeWindow =
+        months.length > 0
+          ? { startMonth: months[0], endMonth: months[months.length - 1] }
+          : { startMonth: "0000-00", endMonth: "9999-99" };
+      const representedFamilies = new Set(
+        [...linkedInput, ...added].map((f) => f.metricFamily),
+      );
+      const estimateRowCount = uploads.reduce((s, u) => s + u.rowCount, 0);
+      skippedNeedingPaid = buildSkippedNeeds({
+        memberId: args.userId,
+        marketConfigId: marketConfig.id,
+        representedFamilies,
+        scopeHoods,
+        lockedPropertyType,
+        timeWindow,
+        estimateRowCount,
+        missing: target - after,
+      });
+    }
+  }
+
   return {
     before: linkedIds.length,
     added,
     after,
     targetReached: after >= target,
     scope,
-    skippedNeedingPaid: [],
+    skippedNeedingPaid,
     persisted,
   };
 }

@@ -211,6 +211,7 @@ model User {
   marketFacts       MarketFact[]
   aggregatedMetrics AggregatedMetric[]
   marketStoryLeads  MarketStoryLead[]
+  onDemandExtractionLogs OnDemandExtractionLog[]
 
   // Wave 1.5 (data-first rebuild) — additive relations only
   neighbourhoodProfiles        NeighbourhoodProfile[]
@@ -580,6 +581,29 @@ model AIToolConversation {
   @@index([toolType])
   @@index([createdAt])
   @@map("ai_tool_conversations")
+}
+
+// Audit trail for Layer 2 on-demand CSV→Claude extractions. AIToolUsage stays
+// the single accounting ledger for the $20/$15 monthly cap; this table is a
+// write-once debug/cost-review record (it captures the need spec + the result
+// classification, which AIToolUsage does not). One row per extractOnDemand()
+// call regardless of outcome (success / cost_cap_hit / sample_too_small /
+// no_data / error).
+model OnDemandExtractionLog {
+  id                   String   @id @default(cuid())
+  userId               String
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  uploadId             String
+  needSpec             Json
+  estimatedCostUsd     Decimal  @db.Decimal(10, 4)
+  actualCostUsd        Decimal? @db.Decimal(10, 4)
+  resultClassification String
+  factId               String?
+  createdAt            DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([uploadId])
+  @@map("on_demand_extraction_logs")
 }
 
 model RepurposedContent {
@@ -1985,11 +2009,20 @@ model MarketFact {
   failureRateFormula   String?          @db.Text
   usageNotes           String?          @db.Text
 
+  // Three-layer data fallback — provenance of the fact row.
+  //   "validator"            — produced by the market-data validator (default for all pre-existing rows)
+  //   "on_demand_extraction" — Layer 2 paid CSV→Claude extraction (carries extractedAtCost)
+  //   "member_provided"      — manually entered by the member via "Tell me what's missing" (texture-only, NOT validator-verified)
+  sourceType           String?          @default("validator")
+  extractedAtCost      Decimal?         @db.Decimal(10, 4)
+  extractedAtRequest   String?
+
   createdAt            DateTime         @default(now())
 
   @@index([userId, neighbourhood])
   @@index([uploadId])
   @@index([metricFamily, usageClass])
+  @@index([userId, sourceType])
   @@map("market_facts")
 }
 

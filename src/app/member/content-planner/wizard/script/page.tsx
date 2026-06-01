@@ -32,7 +32,13 @@ import {
   AutoLinkedPanel,
   UnresolvedFactsBanner,
   type AutoLinkedFact,
+  type DataSearchProps,
 } from "@/components/content-planner/ScriptFactGate";
+import {
+  MetricFamily,
+  estimateExtractionCostUsd,
+  type ScriptDataNeed,
+} from "@/lib/script-data-resolver";
 import {
   metricNameToLabel,
   formatMetricValue,
@@ -102,6 +108,7 @@ export default async function ScriptWizardPage({
       shootType: true,
       factsResolutionState: true,
       factsResolutionConfidence: true,
+      propertyTypeFocus: true,
     },
   });
   if (!plan) {
@@ -141,6 +148,54 @@ export default async function ScriptWizardPage({
     // Enrichment is best-effort — never block entry on it.
   }
 
+  // Best-effort data-search need for the block-case banners. The block case
+  // (0 facts) returns early from enrichment with no skippedNeedingPaid, so we
+  // derive a market-wide need here: the extractor reads the most-recent
+  // validated upload itself, filters to the (optional) property-type focus, and
+  // recomputes the real cost cap server-side. The estimate is coarse on purpose.
+  let dataSearch: DataSearchProps | undefined;
+  {
+    const marketConfig = await prisma.marketConfig.findUnique({
+      where: { userId },
+      select: { id: true },
+    });
+    if (marketConfig) {
+      const uploads = await prisma.marketDataUpload.findMany({
+        where: { userId, status: "validated" },
+        select: { monthYear: true, rowCount: true },
+        orderBy: { monthYear: "desc" },
+        take: 12,
+      });
+      if (uploads.length > 0) {
+        const months = uploads
+          .map((u) => u.monthYear.slice(0, 7))
+          .filter((m) => m.length === 7)
+          .sort();
+        const propertyType =
+          plan.propertyTypeFocus && plan.propertyTypeFocus !== "All"
+            ? plan.propertyTypeFocus
+            : null;
+        const need: ScriptDataNeed = {
+          memberId: userId,
+          marketConfigId: marketConfig.id,
+          neighbourhood: null,
+          propertyType,
+          metricFamily: MetricFamily.MEDIAN,
+          timeWindow: {
+            startMonth: months[0],
+            endMonth: months[months.length - 1],
+          },
+        };
+        // Coarse estimate from the most-recent upload (the only one the
+        // extractor reads); the route recomputes precisely and enforces caps.
+        dataSearch = {
+          need,
+          estimatedCostUsd: estimateExtractionCostUsd(uploads[0].rowCount),
+        };
+      }
+    }
+  }
+
   const gate = evaluateFactGate(linkedFactIds.length);
   if (gate === "block") {
     // A Story Lead whose dataThreads couldn't be bridged to facts lands here
@@ -161,9 +216,9 @@ export default async function ScriptWizardPage({
           </Link>
         )}
         {isUnresolved ? (
-          <UnresolvedFactsBanner planId={plan.id} />
+          <UnresolvedFactsBanner planId={plan.id} dataSearch={dataSearch} />
         ) : (
-          <FactBlockGate planId={plan.id} />
+          <FactBlockGate planId={plan.id} dataSearch={dataSearch} />
         )}
       </div>
     );
@@ -171,9 +226,14 @@ export default async function ScriptWizardPage({
 
   // Resolve the auto-linked facts for the review panel (labels + values).
   let autoLinked: AutoLinkedFact[] = [];
-  if (autoLinkedIds.length > 0) {
+  // The review panel surfaces both enrichment auto-links AND any non-validator
+  // provenance facts (member-provided / on-demand) the member added via the gate
+  // banners — those get a "not validator-verified" badge so they're never
+  // mistaken for vetted facts.
+  const reviewIds = [...new Set([...autoLinkedIds, ...linkedFactIds])];
+  if (reviewIds.length > 0) {
     const rows = await prisma.marketFact.findMany({
-      where: { id: { in: autoLinkedIds }, userId },
+      where: { id: { in: reviewIds }, userId },
       select: {
         id: true,
         neighbourhood: true,
@@ -181,16 +241,25 @@ export default async function ScriptWizardPage({
         metricValue: true,
         metricValueString: true,
         dateContext: true,
+        sourceType: true,
         upload: { select: { monthYear: true } },
       },
     });
+    const autoSet = new Set(autoLinkedIds);
+    const keep = rows.filter(
+      (f) =>
+        autoSet.has(f.id) ||
+        f.sourceType === "member_provided" ||
+        f.sourceType === "on_demand_extraction",
+    );
+    // Auto-linked first (in enrichment order), then the member-added facts.
     const order = new Map(autoLinkedIds.map((id, i) => [id, i]));
-    rows.sort(
+    keep.sort(
       (a, b) =>
         (order.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
         (order.get(b.id) ?? Number.MAX_SAFE_INTEGER),
     );
-    autoLinked = rows.map((f) => {
+    autoLinked = keep.map((f) => {
       const hasNumeric = f.metricValue !== null && f.metricValue !== undefined;
       const d = f.dateContext;
       const monthYear = d
@@ -204,6 +273,7 @@ export default async function ScriptWizardPage({
           ? formatMetricValue(f.metricName, f.metricValue as number)
           : (f.metricValueString ?? ""),
         monthYear,
+        sourceType: f.sourceType,
       };
     });
   }
