@@ -22,6 +22,7 @@ import prismaDefault from "@/lib/prisma";
 import { MetricFamily, FactUsageClass } from "@/generated/prisma/enums";
 import { calculateCost } from "@/lib/ai-tool-cost";
 import { EXCLUDE_LEGACY_FAILURE_RATE } from "@/lib/market-status-buckets";
+import { canonicalVariantKeys } from "@/lib/market-config";
 
 export { MetricFamily };
 
@@ -127,6 +128,7 @@ export function unitForFamily(family: MetricFamily): string {
     case MetricFamily.INVENTORY:
       return "count";
     case MetricFamily.FAILURE_RATE:
+    case MetricFamily.ABSORPTION:
       return "percent";
     default:
       return "";
@@ -185,16 +187,25 @@ export interface ResolverMarketFact {
   usageClass: string;
   dateContext?: Date | null;
   createdAt?: Date | null;
+  /** Validator metricName token (e.g. "dom_average"); used for variant preference. */
+  metricName?: string | null;
 }
 
 /**
  * Pick the best usable MarketFact for a need. Honours scope (neighbourhood +
  * property type), excludes `rejected`/null-value rows, and prefers headline-safe
  * over texture, then most-recent. Returns null when nothing qualifies.
+ *
+ * `preferMetricName` (Known Issues #4/#5): when a family has two persisted
+ * variants (DOM → dom_average/dom_median, MOI → moi_inclusive/moi_strict), the
+ * caller passes the market-canonical metricName. If any usable rows carry it,
+ * selection is restricted to those so the headline number is the canonical one.
+ * If none carry it, the preference is ignored (graceful fallback).
  */
 export function pickMarketFact(
   rows: ResolverMarketFact[],
   need: Pick<ScriptDataNeed, "neighbourhood" | "propertyType">,
+  preferMetricName?: string,
 ): { factId: string; value: number; confidence: "headline" | "texture" } | null {
   const wantHood = need.neighbourhood ? norm(need.neighbourhood) : null;
   const wantType = need.propertyType ?? null;
@@ -212,13 +223,20 @@ export function pickMarketFact(
   });
   if (usable.length === 0) return null;
 
+  // Variant preference: restrict to the canonical metricName when present.
+  let pool = usable;
+  if (preferMetricName) {
+    const narrowed = usable.filter((r) => r.metricName === preferMetricName);
+    if (narrowed.length > 0) pool = narrowed;
+  }
+
   const rank = (r: ResolverMarketFact) =>
     r.usageClass === "headline_safe" ? 0 : 1;
   const ts = (r: ResolverMarketFact) =>
     (r.dateContext ? r.dateContext.getTime() : 0) ||
     (r.createdAt ? r.createdAt.getTime() : 0);
 
-  usable.sort((a, b) => {
+  pool.sort((a, b) => {
     const ra = rank(a);
     const rb = rank(b);
     if (ra !== rb) return ra - rb;
@@ -227,7 +245,7 @@ export function pickMarketFact(
     return a.id.localeCompare(b.id);
   });
 
-  const best = usable[0];
+  const best = pool[0];
   return {
     factId: best.id,
     value: best.metricValue as number,
@@ -242,16 +260,25 @@ export interface ResolverAggregatedMetric {
   metricValue: number;
   sampleSize: number;
   monthYear: string;
+  /** AggregatedMetric.metricKey (e.g. "moiInclusive"); used for variant preference. */
+  metricKey?: string;
 }
 
 /**
  * Pick the best usable AggregatedMetric for a need. Rejects sampleSize < 10 and
  * rows whose month falls outside the requested window. Prefers most-recent
  * month, then largest sample. Returns null when nothing qualifies.
+ *
+ * `preferMetricKey` (Known Issues #4/#5): when a family has two persisted
+ * variants in the same family (DOM → domAverage/domMedian, MOI →
+ * moiInclusive/moiStrict), the caller passes the market-canonical metricKey. If
+ * any usable rows carry it, selection is restricted to those so the deterministic
+ * headline is the canonical variant. If none carry it, the preference is ignored.
  */
 export function pickAggregatedMetric(
   rows: ResolverAggregatedMetric[],
   need: Pick<ScriptDataNeed, "neighbourhood" | "propertyType" | "timeWindow">,
+  preferMetricKey?: string,
 ): { metricId: string; value: number; sampleSize: number } | null {
   const wantHood = need.neighbourhood ? norm(need.neighbourhood) : null;
   const wantType = need.propertyType ?? null;
@@ -269,14 +296,21 @@ export function pickAggregatedMetric(
   });
   if (usable.length === 0) return null;
 
-  usable.sort((a, b) => {
+  // Variant preference: restrict to the canonical metricKey when present.
+  let pool = usable;
+  if (preferMetricKey) {
+    const narrowed = usable.filter((r) => r.metricKey === preferMetricKey);
+    if (narrowed.length > 0) pool = narrowed;
+  }
+
+  pool.sort((a, b) => {
     const m = b.monthYear.localeCompare(a.monthYear);
     if (m !== 0) return m;
     if (b.sampleSize !== a.sampleSize) return b.sampleSize - a.sampleSize;
     return a.id.localeCompare(b.id);
   });
 
-  const best = usable[0];
+  const best = pool[0];
   return { metricId: best.id, value: best.metricValue, sampleSize: best.sampleSize };
 }
 
@@ -287,6 +321,14 @@ export interface ResolverDeps {
     marketFact: { findMany: (args: unknown) => Promise<ResolverMarketFact[]> };
     aggregatedMetric: {
       findMany: (args: unknown) => Promise<ResolverAggregatedMetric[]>;
+    };
+    /**
+     * Optional: used only to resolve the market's canonical DOM/MOI variant
+     * (Known Issues #4/#5). When absent (e.g. unit-test fakes), variant
+     * preference is skipped and selection falls back to recency/sample ranking.
+     */
+    marketConfig?: {
+      findUnique: (args: unknown) => Promise<{ mlsSource: string | null } | null>;
     };
   };
 }
@@ -301,6 +343,29 @@ export async function findDataForScriptNeed(
 ): Promise<ScriptDataResult> {
   const { prisma } = deps;
   const unit = unitForFamily(need.metricFamily);
+
+  // Market-canonical variant preference for the two-variant families (Known
+  // Issues #4/#5). Only DOM/MOI have two persisted variants; for every other
+  // family these stay undefined and selection is unaffected.
+  let preferMetricKey: string | undefined;
+  let preferMetricName: string | undefined;
+  if (
+    need.metricFamily === MetricFamily.DOM ||
+    need.metricFamily === MetricFamily.MOI
+  ) {
+    const mc = await prisma.marketConfig?.findUnique?.({
+      where: { id: need.marketConfigId },
+      select: { mlsSource: true },
+    });
+    const v = canonicalVariantKeys(mc?.mlsSource ?? null);
+    if (need.metricFamily === MetricFamily.DOM) {
+      preferMetricKey = v.domMetricKey;
+      preferMetricName = v.domMetricName;
+    } else {
+      preferMetricKey = v.moiMetricKey;
+      preferMetricName = v.moiMetricName;
+    }
+  }
 
   // 1. MarketFact (headline-safe or texture; never rejected).
   const facts = await prisma.marketFact.findMany({
@@ -320,9 +385,10 @@ export async function findDataForScriptNeed(
       usageClass: true,
       dateContext: true,
       createdAt: true,
+      metricName: true,
     },
   });
-  const fact = pickMarketFact(facts, need);
+  const fact = pickMarketFact(facts, need, preferMetricName);
   if (fact) {
     return {
       source: "market_fact",
@@ -343,9 +409,10 @@ export async function findDataForScriptNeed(
       metricValue: true,
       sampleSize: true,
       monthYear: true,
+      metricKey: true,
     },
   });
-  const metric = pickAggregatedMetric(metrics, need);
+  const metric = pickAggregatedMetric(metrics, need, preferMetricKey);
   if (metric) {
     return {
       source: "aggregated_metric",

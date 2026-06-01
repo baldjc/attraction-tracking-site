@@ -21,7 +21,6 @@ import {
   failureRate,
   saleShare,
   absorptionRate,
-  monthsOfInventory,
   type StatusMapping,
 } from "./market-status-buckets";
 import type { StatusCode } from "./market-config";
@@ -158,11 +157,8 @@ test("sample-size guards return null below floors", () => {
   assert.equal(failureRate(0, 0), null);
 });
 
-test("absorption + months-of-inventory guards + math", () => {
+test("absorption-rate guards + math", () => {
   assert.equal(absorptionRate(10, 40), 0.25);
   assert.equal(absorptionRate(4, 40), null); // sold < 5
   assert.equal(absorptionRate(10, 0), null); // no inventory
-  assert.equal(monthsOfInventory(40, 10), 4);
-  assert.equal(monthsOfInventory(40, 4), null); // sold < 5
-  assert.equal(monthsOfInventory(40, 0), null);
 });

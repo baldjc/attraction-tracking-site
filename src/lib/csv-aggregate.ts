@@ -31,6 +31,8 @@ import {
   resolveStatusMapping,
   bucketStatus,
   failureRate as failureRateRatio,
+  saleShare as saleShareRatio,
+  absorptionRate as absorptionRateRatio,
   type StatusBucket,
   type StatusMapping,
 } from "@/lib/market-status-buckets";
@@ -60,6 +62,10 @@ export interface AggregatedGroup {
   domAverage: number | null;
   spLpRatio: number | null;
   failureRate: number | null;
+  /** Sold ÷ (Sold + offMarket), stored ×100 (percentage). null below floor. */
+  saleShare: number | null;
+  /** Sold ÷ Active, stored ×100 (percentage). null below floor / no inventory. */
+  absorptionRate: number | null;
 
   // Cross-period
   yoy: {
@@ -379,6 +385,15 @@ function metricsFromAccumulator(
   // storage convention (downstream formatters expect a percentage-style number).
   const failureRatio = failureRateRatio(acc.sold, acc.offMarket);
   const failureRate = failureRatio == null ? null : failureRatio * 100;
+  // sale_share = Sold / (Sold + offMarket) — bounded 0..1 companion to
+  // failure_rate. Stored ×100 (percentage) to match the failure_rate storage
+  // convention so the shared FAILURE_RATE formatter renders it as "%".
+  const saleShareR = saleShareRatio(acc.sold, acc.offMarket);
+  const saleShare = saleShareR == null ? null : saleShareR * 100;
+  // absorption_rate = Sold / Active — how much standing inventory cleared.
+  // Stored ×100 (percentage) so the ABSORPTION formatter renders it as "%".
+  const absorptionR = absorptionRateRatio(acc.sold, acc.active);
+  const absorptionRate = absorptionR == null ? null : absorptionR * 100;
 
   // MoI uses sold-per-month rate. The upload window is a single calendar
   // month, so sold-per-month = sold count. (Validator can re-frame for
@@ -404,6 +419,8 @@ function metricsFromAccumulator(
     domAverage,
     spLpRatio,
     failureRate,
+    saleShare,
+    absorptionRate,
   };
 }
 

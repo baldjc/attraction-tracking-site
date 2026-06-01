@@ -57,8 +57,8 @@ The data may be messy. Some rows will be missing sample sizes, sources, or dates
 
 EXPECTED FIELDS PER ROW (any subset):
 - neighbourhood (e.g., "Aspen Woods" or "Calgary detached overall")
-- metricName (e.g., median_sale_price, median_psf, median_sqft, MOI, DOM, SP_LP, active_listings)
-- metricFamily (MOI, PSF, MEDIAN, AVG, DOM, SP_LP, INVENTORY, OTHER)
+- metricName (e.g., median_sale_price, median_psf, median_sqft, SP_LP, active_listings, failure_rate, sale_share; for MOI use the variant token \`moi_inclusive\` or \`moi_strict\`; for DOM use \`dom_average\` or \`dom_median\` — see the MOI/DOM rules below)
+- metricFamily (MOI, PSF, MEDIAN, AVG, DOM, SP_LP, INVENTORY, FAILURE_RATE, OTHER)
 - metricValue (the actual number)
 - sampleSize (integer count of transactions; null only acceptable for MOI)
 - timeWindow (calendar_month / 30_day / 90_day / 180_day / ytd / trailing_12mo)
@@ -167,7 +167,7 @@ CREB's published "Inventory" = Active + Pending. The Validator's historical "act
 - **\`moi_strict\`** = Active ÷ Sold (excludes Pending) — the "what a buyer can actually compete for right now" view.
 - **\`moi_inclusive\`** = (Active + Pending) ÷ Sold — the CREB-aligned view. What viewers will find on creb.com.
 
-Default \`metricValue\` for MoI facts = \`moi_strict\` (preserves the FL's historical reading and is the more honest read of buyer competition). The \`moi_inclusive\` value lives in its own field for the Script Builder to surface when needed.
+**Headline (\`metricValue\`) = the MARKET-CANONICAL variant** — the one this market's board publishes, so the number reconciles against what viewers find online. For CREB that is \`moi_inclusive\` (CREB inventory = Active + Pending). Set the fact's \`metricName\` to the canonical variant token — \`moi_inclusive\` for CREB — so the Script Builder cites the board-aligned number deterministically. The other variant always rides along in its own \`moi_strict\` / \`moi_inclusive\` field for the Script Builder to surface as supporting texture. (For a US active-only "months supply" board, the canonical variant is \`moi_strict\`.)
 
 ### DOM CALCULATION — REPORT BOTH MEDIAN AND AVERAGE
 
@@ -178,7 +178,7 @@ Every DOM fact must carry BOTH:
 - **\`dom_median\`** = median DOM across Sold records in the period — the typical-buyer-experience view.
 - **\`dom_average\`** = average DOM across Sold records — the CREB-aligned view.
 
-Default \`metricValue\` for DOM facts = \`dom_average\` (eliminates the credibility gap with creb.com). \`dom_median\` sits in its own field. The Script Builder picks framing per situation.
+**Headline (\`metricValue\`) = the MARKET-CANONICAL variant.** For CREB that is \`dom_average\` (eliminates the credibility gap with creb.com). Set the fact's \`metricName\` to the canonical variant token — \`dom_average\` for CREB — so the Script Builder cites the board-aligned number deterministically. \`dom_median\` always rides along in its own field as supporting texture; the Script Builder picks framing per situation. (For a board that publishes median DOM, the canonical variant is \`dom_median\`.)
 
 DOM uses **column 3** of the CSV (current-listing DOM). CDOM (column 4 — days across re-listings) is captured in the CSV but is NOT used as a default metric. Only ~7% of sold records have CDOM ≠ DOM in a typical month, and switching to CDOM would diverge from CREB in the opposite direction.
 
@@ -194,11 +194,13 @@ This is a RATIO, not a share of all listings: it answers *"for every home that s
 
 Do NOT use the old \`(Expired+Terminated+Withdrawn) / (Sold+Expired+Terminated+Withdrawn)\` denominator — that under-states the true ratio and is being retired.
 
-When you want to express the same data as a *share of all resolved listings* (a 0–100% figure), emit a separate **\`sale_share\`** fact:
+When you want to express the same data as a *share of all resolved listings* (a 0–100% figure), emit a separate fact with \`metricName: sale_share\` and \`metricFamily: FAILURE_RATE\`:
 
 \`sale_share = Sold ÷ (Sold + Off-Market)\`
 
 For the worked example above (10 sold, 9 off-market): \`sale_share = 10 / 19 = 0.526\` (52.6% of resolved listings actually sold). \`sale_share\` and \`failure_rate\` are complementary views of the same two counts — never present one as if it were the other.
+
+The deterministic pipeline now also persists \`sale_share\` as its own ground-truth AggregatedMetric row (the FAILURE_RATE family, metricKey \`saleShare\`), so your \`sale_share\` fact has a computed number to reconcile against — match it (within rounding). This is the **v2** sale_share convention (the same broker-honest counts as failure_rate v2: Off-Market = Expired + Terminated + Withdrawn). Note "sale_share v2" in the fact's \`usage_notes\`.
 
 Every failure-rate fact's \`usage_notes\` must include the line: *"Internal metric — CREB does not publish failure rate. Cannot be cross-referenced against creb.com. Formula: Off-Market (Expired+Terminated+Withdrawn) / Sold for the calendar month; a ratio that can exceed 100%."*
 
@@ -337,8 +339,8 @@ A short top-level summary so the user sees at a glance what the data does and do
 \`\`\`
 DATA SOURCE: [name and date of source CSV, e.g., "Pillar 9 export — Calgary Market Update (April 2026 Data).csv"]
 LAST CREB RECONCILIATION DATE: [YYYY-MM-DD — last time the CSV's published values were spot-checked against the CREB Monthly Stats Package. If never, write "NEVER — schedule reconciliation."]
-DOM CALCULATION METHOD: average (CREB-aligned). dom_median also reported per fact.
-INVENTORY CALCULATION METHOD: moi_strict (Active only) is the headline default. moi_inclusive (Active + Pending, CREB-aligned) also reported per fact.
+DOM CALCULATION METHOD: average (CREB-aligned) is the canonical headline (metricName dom_average). dom_median also reported per fact as supporting texture.
+INVENTORY CALCULATION METHOD: moi_inclusive (Active + Pending, CREB-aligned) is the canonical headline (metricName moi_inclusive). moi_strict (Active only) also reported per fact as supporting texture.
 FAILURE-RATE FORMULA: Off-Market (Expired + Terminated + Withdrawn) / Sold for the calendar month — a RATIO that can exceed 100%. CREB does not publish this metric. Do NOT use the old (Expired+Terminated+Withdrawn) / (Sold+Expired+Terminated+Withdrawn) denominator — it is retired.
 
 TOTAL FACTS PROCESSED: [N]
@@ -541,9 +543,9 @@ And the SUMMARY section calls it out under MIX SHIFTS DETECTED so the user sees 
 
 \`\`\`
 - neighbourhood: Calgary detached overall
-  metricName: MOI
+  metricName: moi_inclusive
   metricFamily: MOI
-  metricValue: 1.95
+  metricValue: 2.30
   sampleSize: null
   timeWindow: calendar_month
   dateContext: April 2026
@@ -556,19 +558,19 @@ And the SUMMARY section calls it out under MIX SHIFTS DETECTED so the user sees 
   moi_inclusive: 2.30
   dom_median: n/a
   dom_average: n/a
-  creb_aligned: false
-  creb_delta_estimate: "+0.30 MoS (CREB published 2.25; CREB includes pending listings, we don't)"
-  viewer_caveat: "CREB's published months-of-supply for Calgary detached April 2026 is 2.25 — higher than our 1.95 because CREB counts pending listings as inventory; we count only truly active. Both views are honest; ours reflects what a buyer can actually compete for right now."
+  creb_aligned: true
+  creb_delta_estimate: "−0.05 MoS vs CREB's published 2.25 (rounding/timing); both count Active + Pending"
+  viewer_caveat: "Headline is the CREB-aligned inclusive months-of-supply (Active + Pending) so it reconciles with creb.com (2.25). The stricter Active-only read is 1.95 — what a buyer can actually compete for right now; surface it as supporting texture when the script wants the tighter number."
   inventory_gap_with_creb: n/a
   failure_rate_formula: n/a
-  usage_notes: Sample-size-robust city-wide MOI. Headline-safe for sellers-market claims. Trajectory: 1.93 → 1.89 → 1.95. Pair with viewer_caveat any time the script names an absolute MoS number a viewer might cross-check.
+  usage_notes: Sample-size-robust city-wide MOI. Headline is moi_inclusive (canonical/CREB-aligned); moi_strict 1.95 rides along as supporting texture. Trajectory: 2.28 → 2.24 → 2.30. Pair with viewer_caveat any time the script names an absolute MoS number a viewer might cross-check.
 \`\`\`
 
 ### Example 3 — A DOM fact with average as default and median exposed
 
 \`\`\`
 - neighbourhood: Calgary detached overall
-  metricName: DOM
+  metricName: dom_average
   metricFamily: DOM
   metricValue: 30
   sampleSize: 1078

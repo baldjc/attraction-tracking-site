@@ -390,17 +390,17 @@ The Fact Validator (Claude) reads the upload + deterministic context and emits p
 
 ## Known Issues
 
-> Logged, **not fixed** (Phase 1 is documentation-only). Severity: `blocker` | `high` | `medium` | `low`.
+> Severity: `blocker` | `high` | `medium` | `low`. Issues **#1–#5 are RESOLVED (2026-06-01)** — see resolution notes inline. Issues #6–#12 remain logged for a later phase.
 
-1. **[high] Orphan metric: `absorptionRate()` is dead code.** Defined + unit-tested at `market-status-buckets.ts:273–277` but has no runtime callers (only `market-status-buckets.test.ts`); `absorption_rate` string count across src = 0. Either wire it into the aggregation pipeline or remove it — currently it can drift untested-against-reality. (Inverse of MOI; if shipped it needs a published-source decision — no board publishes it.)
+1. **[high] [RESOLVED 2026-06-01] Orphan metric: `absorptionRate()` is dead code.** Defined + unit-tested at `market-status-buckets.ts:273–277` but had no runtime callers; `absorption_rate` string count across src = 0. **Resolution (Option A — wired):** `absorptionRate` is now computed in `metricsFromAccumulator` (stored ×100), carried on `AggregatedGroup`, and persisted by `rowsFromGroup` as its own `MetricFamily.ABSORPTION` AggregatedMetric row (new enum value + migration `20260601030000_add_absorption_metric_family`) at sample floor 5. No board publishes it → flagged ⚠ internal-consistency-only in the Phase 2 checklist.
 
-2. **[high] Orphan metric: deterministic `saleShare()` is never called.** `market-status-buckets.ts:262–267`. `sale_share` reaches members only via LLM prose (validator prompt), with no deterministic ground-truth row to validate the LLM against — exactly the failure mode that produced the failure_rate bug. The narrative rules *recommend* sale_share as the honest reframe, but there is no computed sale_share fact to cite.
+2. **[high] [RESOLVED 2026-06-01] Orphan metric: deterministic `saleShare()` is never called.** `market-status-buckets.ts:262–267`. **Resolution:** `saleShare` is now computed in `metricsFromAccumulator` (stored ×100) and persisted by `rowsFromGroup` as a deterministic ground-truth row under `MetricFamily.FAILURE_RATE` with metricKey `saleShare` (no AggregatedMetric version column; the validator-emitted MarketFact equivalent is tagged v2). The LLM now has a computed sale_share row to cite instead of free prose.
 
-3. **[high] Two MOI implementations with three different sample floors.** `csv-aggregate.ts:388` computes `moi_strict` with **no floor** (any `sold > 0`); `aggregated-metrics.ts:49` persists MOI only at `n ≥ 3`; the unused `monthsOfInventory()` helper (`market-status-buckets.ts:283–287`) gates at `n ≥ 5`. Same metric, inconsistent guards → a thin neighbourhood can surface an MOI that the helper would have suppressed.
+3. **[high] [RESOLVED 2026-06-01] Two MOI implementations with three different sample floors.** **Resolution:** the floor is consolidated to **n ≥ 5** in `SAMPLE_THRESHOLDS` (`aggregated-metrics.ts`), and the orphan `monthsOfInventory()` helper (which carried its own baked-in floor) is **deleted**. Persistence is the single gate; `csv-aggregate` continues to compute the raw value but `rowsFromGroup` is the one place the floor is applied.
 
-4. **[high] `dom_average` is the declared default but `dom_median` is what gets persisted.** The validator prompt declares `dom_average` the default DOM `metricValue` for CREB alignment (`fact-validator-prompt.ts:181`), yet `rowsFromGroup` persists `domMedian` as the deterministic DOM AggregatedMetric (`aggregated-metrics.ts:128`). The deterministic "source of truth" diverges from the stated CREB-aligned default by ~10 days.
+4. **[high] [RESOLVED 2026-06-01] `dom_average` is the declared default but `dom_median` is what gets persisted.** **Resolution:** `rowsFromGroup` now persists **both** `domMedian` and `domAverage` as DOM-family AggregatedMetric rows. Citation is market-canonical: `canonicalVariantKeys(mlsSource)` + `pickAggregatedMetric(..., preferMetricKey)` select the board's canonical DOM variant (CREB → `dom_average`), so the persisted source of truth and the cited value agree.
 
-5. **[medium] `moi_inclusive` is computed but never persisted as its own AggregatedMetric row.** `csv-aggregate.ts:390` computes it (CREB-aligned view), but `rowsFromGroup` persists only `moiStrict`. The inclusive value survives only on the in-memory `AggregatedGroup` + whatever the LLM echoes — so the CREB-aligned number has no durable ground-truth row.
+5. **[medium] [RESOLVED 2026-06-01] `moi_inclusive` is computed but never persisted as its own AggregatedMetric row.** **Resolution:** `rowsFromGroup` now persists **both** `moiStrict` and `moiInclusive` as MOI-family rows. `canonicalVariantKeys` makes CREB canonical MOI = `moi_inclusive` (Active + Pending), and `pickAggregatedMetric(..., preferMetricKey)` cites the canonical variant — the CREB-aligned number now has a durable ground-truth row.
 
 6. **[medium] `median_sqft` computed but not persisted as a standalone metric.** `csv-aggregate.ts:371`; used for mix-shift detection and YoY but never `push()`ed in `rowsFromGroup`. The mix-shift narrative guard depends on a value that has no persisted ground-truth row to audit.
 
@@ -447,7 +447,7 @@ Worklist of (metric × market) pairs to verify against the authoritative publish
 ### Cross-market structural verification (any market with real data)
 - [ ] Confirm `offMarket` = expired + terminated + withdrawn matches each board's definition of "off-market / failed".
 - [ ] Confirm `pending` exclusions (NTREIS `Active Option Contract` / `Active Contingent` → pending; CREB has no contingent split).
-- [ ] Resolve Known Issues #1–#4 (orphans + DOM default/persist mismatch) before trusting any verification — a verified-against-source value is meaningless if the persisted row uses a different formula.
+- [x] Resolve Known Issues #1–#4 (orphans + DOM default/persist mismatch) before trusting any verification — **done 2026-06-01** (absorption_rate + sale_share wired, MOI floor consolidated to 5, DOM/MOI persist both variants with market-canonical citation).
 
 ### Internal-consistency checks (no external source)
 - [ ] failure_rate (offMarket/sold) and sale_share (sold/(sold+offMarket)) reconcile to the same two counts.

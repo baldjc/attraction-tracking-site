@@ -30,6 +30,7 @@ export type MetricFamily =
   | "AVG"
   | "INVENTORY"
   | "FAILURE_RATE"
+  | "ABSORPTION"
   | "OTHER";
 
 /**
@@ -38,15 +39,17 @@ export type MetricFamily =
  * number is too noisy to publish as "the number" and we skip it — the
  * validator's prose facts will still carry caveats for low-N callouts.
  *
- * Per direction:  INVENTORY=1  FAILURE_RATE=5  AVG=5  MOI=3  OTHER=10.
- * MOI is intentionally permissive (n≥3) so thin neighbourhoods still
- * get a deterministic inventory-pressure read — the script's prose
- * caveats handle the low-volume note.
- * Conventional minimums (MEDIAN/DOM/SP_LP/PSF/BENCHMARK) stay at 5.
+ * Per direction:  INVENTORY=1  FAILURE_RATE=5  AVG=5  MOI=5  ABSORPTION=5  OTHER=10.
+ * MOI floor is consolidated to n≥5 (Known Issue #3): below 5, a deterministic
+ * MOI row is too noisy to publish as headline ground truth, so we persist NO
+ * MOI row — the value still rides on the in-memory `AggregatedGroup` for the
+ * validator's supporting-texture prose. This matches the helper floors in
+ * `market-status-buckets.ts` (MIN_SOLD_SAMPLE = 5), so there is one MOI floor.
+ * Conventional minimums (MEDIAN/DOM/SP_LP/PSF/BENCHMARK/ABSORPTION) stay at 5.
  */
 const SAMPLE_THRESHOLDS: Record<MetricFamily, number> = {
   MEDIAN: 5,
-  MOI: 3,
+  MOI: 5,
   DOM: 5,
   SP_LP: 5,
   PSF: 5,
@@ -54,10 +57,11 @@ const SAMPLE_THRESHOLDS: Record<MetricFamily, number> = {
   AVG: 5,
   INVENTORY: 1,
   FAILURE_RATE: 5,
+  ABSORPTION: 5,
   OTHER: 10,
 };
 
-interface MetricRow {
+export interface MetricRow {
   neighbourhood: string;
   propertyType: string;
   priceTier: string | null;
@@ -75,8 +79,10 @@ interface MetricRow {
  * Walk an AggregatedGroup and yield one MetricRow per supported family
  * where the value is finite and the sampleSize meets the family-specific
  * floor. Skips tiered subgroups (priceTier !== null).
+ *
+ * Exported for unit testing (the persistence path is otherwise DB-bound).
  */
-function rowsFromGroup(
+export function rowsFromGroup(
   group: AggregatedGroup,
   monthYear: string,
 ): MetricRow[] {
@@ -125,7 +131,14 @@ function rowsFromGroup(
     yoyDelta: group.yoy.moiStrictDelta,
     rolling90dValue: group.rolling90d.moiStrict,
   });
+  // moi_inclusive ((Active + Pending) ÷ Sold) — CREB-aligned view. Its own row
+  // (Known Issue #5) so the CREB-canonical number has a durable ground truth.
+  // No dedicated YoY/rolling fields exist for inclusive on AggregatedGroup.
+  push("MOI", "moiInclusive", group.moiInclusive, soldN);
   push("DOM", "domMedian", group.domMedian, soldN);
+  // dom_average — CREB-aligned view (Known Issue #4). Its own row so the
+  // market-canonical DOM number is persisted, not just dom_median.
+  push("DOM", "domAverage", group.domAverage, soldN);
   push("SP_LP", "spLpRatio", group.spLpRatio, soldN);
   push("PSF", "psf", group.psf, soldN, {
     yoyDelta: group.yoy.psfDelta,
@@ -141,6 +154,15 @@ function rowsFromGroup(
   // ratio — so downstream confidence gating sees the real N.
   const failN = group.soldCount + group.offMarketCount;
   push("FAILURE_RATE", "failureRate", group.failureRate, failN);
+  // sale_share = Sold / (Sold + offMarket) — bounded companion to failure_rate
+  // (Known Issue #2). Reuses the FAILURE_RATE family (same two counts), stored
+  // ×100 so the shared formatter renders "%". metricKey disambiguates the row.
+  push("FAILURE_RATE", "saleShare", group.saleShare, failN);
+
+  // absorption_rate = Sold / Active — share of standing inventory that cleared
+  // (Known Issue #1). Own ABSORPTION family + floor; sample size is the sold
+  // count (the numerator's measurement). Stored ×100 (percentage).
+  push("ABSORPTION", "absorptionRate", group.absorptionRate, soldN);
 
   return out;
 }
@@ -293,7 +315,12 @@ function formatValue(family: MetricFamily, value: number): string {
         ? `${(value * 100).toFixed(1)}%`
         : `${value.toFixed(1)}%`;
     case "FAILURE_RATE":
-      // Stored as a percentage (offMarket/sold * 100); can exceed 100%.
+      // Stored as a percentage. failure_rate (offMarket/sold * 100) can exceed
+      // 100%; sale_share (sold/(sold+offMarket) * 100) is bounded 0–100%.
+      return `${value.toFixed(1)}%`;
+    case "ABSORPTION":
+      // Stored as a percentage (sold/active * 100) — share of standing
+      // inventory that cleared in the period.
       return `${value.toFixed(1)}%`;
     case "INVENTORY":
       return `${Math.round(value)} active`;

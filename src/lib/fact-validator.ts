@@ -34,6 +34,8 @@ import {
 } from "@/lib/csv-aggregate";
 import {
   failureRate as failureRateRatio,
+  saleShare as saleShareRatio,
+  absorptionRate as absorptionRateRatio,
   EXCLUDE_LEGACY_FAILURE_RATE,
 } from "@/lib/market-status-buckets";
 import {
@@ -706,6 +708,8 @@ function aggregateGroups(
   // sample-size floors. Stored as a percentage (ratio * 100) like the per-group
   // rows. failureRateRatio() returns null when under the sold/offMarket floors.
   const rollupFailureRatio = failureRateRatio(sold, offMarket);
+  const rollupSaleShareRatio = saleShareRatio(sold, offMarket);
+  const rollupAbsorptionRatio = absorptionRateRatio(sold, active);
   return {
     neighbourhood: identity.neighbourhood,
     propertyType: identity.propertyType,
@@ -724,6 +728,9 @@ function aggregateGroups(
     domAverage: weighted((g) => g.domAverage),
     spLpRatio: weighted((g) => g.spLpRatio),
     failureRate: rollupFailureRatio == null ? null : rollupFailureRatio * 100,
+    saleShare: rollupSaleShareRatio == null ? null : rollupSaleShareRatio * 100,
+    absorptionRate:
+      rollupAbsorptionRatio == null ? null : rollupAbsorptionRatio * 100,
     yoy: {
       medianPriceDelta: null,
       medianSqftDelta: null,

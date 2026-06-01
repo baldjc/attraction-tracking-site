@@ -275,13 +275,3 @@ export function absorptionRate(sold: number, active: number): number | null {
   if (sold < MIN_SOLD_SAMPLE) return null;
   return sold / active;
 }
-
-/**
- * Months of inventory (strict) = active / sold. Returns null without sales or
- * with too few sales to be meaningful.
- */
-export function monthsOfInventory(active: number, sold: number): number | null {
-  if (sold <= 0) return null;
-  if (sold < MIN_SOLD_SAMPLE) return null;
-  return active / sold;
-}

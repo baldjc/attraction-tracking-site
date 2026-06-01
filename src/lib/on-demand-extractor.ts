@@ -151,6 +151,8 @@ const METRIC_INSTRUCTION: Record<MetricFamily, string> = {
   [MetricFamily.INVENTORY]: "the COUNT of listings in scope",
   [MetricFamily.FAILURE_RATE]:
     "the share of listings that failed to sell (expired/withdrawn/cancelled ÷ total), as a percent 0–100",
+  [MetricFamily.ABSORPTION]:
+    "the absorption rate (sold ÷ active listings) for the period, as a percent 0–100",
   [MetricFamily.OTHER]:
     "the single most representative numeric value for the requested metric across the rows",
 };

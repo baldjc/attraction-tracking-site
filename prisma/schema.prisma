@@ -1842,6 +1842,9 @@ enum MetricFamily {
   INVENTORY
   FAILURE_RATE
   OTHER
+  // Phase 1 fix (Known Issue #1) — absorption rate (Sold ÷ Active), its own
+  // family so it gets a dedicated sample floor + formatter. Appended last.
+  ABSORPTION
 }
 
 enum UploadStatus {

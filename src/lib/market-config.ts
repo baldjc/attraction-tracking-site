@@ -528,10 +528,28 @@ export interface MarketSourceDefaults {
   moiThresholds: MoiThresholds;
   highEndException: HighEndException;
   moiHighEndExceptionFloor: MoiHighEndExceptionFloor;
+  /**
+   * Market-canonical HEADLINE DOM variant (Phase 1 fix, Known Issue #4). The
+   * deterministic citation surface (Script Builder / resolver) cites this
+   * variant by default; the other rides as supporting texture. CREB publishes
+   * AVERAGE DOM.
+   */
+  canonicalDomVariant: "average" | "median";
+  /**
+   * Market-canonical HEADLINE MOI variant (Phase 1 fix, Known Issue #5). CREB's
+   * published inventory = Active + Pending, so CREB aligns with INCLUSIVE. US
+   * boards' "months of supply" is typically active-only (STRICT) — TODO Phase 2
+   * to confirm each board's methodology.
+   */
+  canonicalMoiVariant: "inclusive" | "strict";
 }
 
 export const GENERIC_MARKET_DEFAULTS: MarketSourceDefaults = {
   sourceAuthority: "the local MLS / real-estate board",
+  // TODO(Phase 2): no board methodology known for a generic source — default to
+  // average DOM + strict MOI (NAR-style active-only months-supply).
+  canonicalDomVariant: "average",
+  canonicalMoiVariant: "strict",
   statusCodes: [
     sc("Active", "active"),
     sc("Pending", "pending"),
@@ -556,6 +574,9 @@ export const MARKET_SOURCE_DEFAULTS: Record<string, MarketSourceDefaults> = {
   // hardcoded prompt knowledge so Calgary uploads see no regression.
   CREB: {
     sourceAuthority: "CREB",
+    // CREB publishes AVERAGE DOM and inventory = Active + Pending (INCLUSIVE).
+    canonicalDomVariant: "average",
+    canonicalMoiVariant: "inclusive",
     statusCodes: [
       sc("Active", "active"),
       sc("Pending", "pending"),
@@ -592,6 +613,10 @@ export const MARKET_SOURCE_DEFAULTS: Record<string, MarketSourceDefaults> = {
   // North Texas Real Estate Information Systems (Dallas–Fort Worth).
   NTREIS: {
     sourceAuthority: "NTREIS",
+    // TODO(Phase 2): confirm NTREIS DOM/inventory methodology. Defaulting to
+    // average DOM + strict (active-only) months-supply pending research.
+    canonicalDomVariant: "average",
+    canonicalMoiVariant: "strict",
     statusCodes: [
       sc("Active", "active"),
       sc("Active Kick Out", "active"),
@@ -638,6 +663,9 @@ export const MARKET_SOURCE_DEFAULTS: Record<string, MarketSourceDefaults> = {
   // Bright MLS (Mid-Atlantic: DC, MD, VA, PA, NJ, DE, WV).
   BRIGHT: {
     sourceAuthority: "Bright MLS",
+    // TODO(Phase 2): confirm Bright MLS DOM/inventory methodology.
+    canonicalDomVariant: "average",
+    canonicalMoiVariant: "strict",
     statusCodes: [
       sc("Active", "active"),
       sc("Active Under Contract", "pending"),
@@ -674,6 +702,9 @@ export const MARKET_SOURCE_DEFAULTS: Record<string, MarketSourceDefaults> = {
   // Arizona Regional MLS (Phoenix metro).
   ARMLS: {
     sourceAuthority: "ARMLS",
+    // TODO(Phase 2): confirm ARMLS DOM/inventory methodology.
+    canonicalDomVariant: "average",
+    canonicalMoiVariant: "strict",
     statusCodes: [
       sc("Active", "active"),
       sc("Active With Contingent", "pending"),
@@ -711,6 +742,9 @@ export const MARKET_SOURCE_DEFAULTS: Record<string, MarketSourceDefaults> = {
   // Stellar MLS (formerly My Florida Regional MLS) — Central/West Florida.
   MFRMLS: {
     sourceAuthority: "Stellar MLS",
+    // TODO(Phase 2): confirm Stellar MLS DOM/inventory methodology.
+    canonicalDomVariant: "average",
+    canonicalMoiVariant: "strict",
     statusCodes: [
       sc("Active", "active"),
       sc("Pending", "pending"),
@@ -776,6 +810,33 @@ export function resolveMarketDefaults(
     return MARKET_SOURCE_DEFAULTS[aliased];
   }
   return GENERIC_MARKET_DEFAULTS;
+}
+
+/**
+ * Resolve the canonical (headline) DOM/MOI variant metricKeys + metricNames for
+ * a market (Phase 1 fix, Known Issues #4 / #5). The deterministic citation
+ * surface uses these to pick which of the two persisted DOM/MOI AggregatedMetric
+ * rows (and which validator MarketFact metricName) is the headline number.
+ *
+ *   metricKey  — matches `AggregatedMetric.metricKey` ("domAverage" | ...).
+ *   metricName — matches the validator MarketFact `metricName` token convention
+ *                ("dom_average" | "dom_median" | "moi_inclusive" | "moi_strict").
+ */
+export function canonicalVariantKeys(mlsSource?: string | null): {
+  domMetricKey: "domAverage" | "domMedian";
+  domMetricName: "dom_average" | "dom_median";
+  moiMetricKey: "moiInclusive" | "moiStrict";
+  moiMetricName: "moi_inclusive" | "moi_strict";
+} {
+  const d = resolveMarketDefaults(mlsSource);
+  return {
+    domMetricKey: d.canonicalDomVariant === "median" ? "domMedian" : "domAverage",
+    domMetricName:
+      d.canonicalDomVariant === "median" ? "dom_median" : "dom_average",
+    moiMetricKey: d.canonicalMoiVariant === "strict" ? "moiStrict" : "moiInclusive",
+    moiMetricName:
+      d.canonicalMoiVariant === "strict" ? "moi_strict" : "moi_inclusive",
+  };
 }
 
 /**
