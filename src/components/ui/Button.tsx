@@ -29,7 +29,7 @@ const VARIANTS: Record<ButtonVariant, string> = {
   accent:
     "bg-[var(--abv-azure)] text-[var(--abv-ink)] hover:bg-[#5BCEFF] shadow-sm",
   outline:
-    "bg-white text-[var(--abv-ink)] border-[1.5px] border-[var(--abv-ink)] hover:bg-[var(--abv-ink)] hover:text-white",
+    "bg-white text-[var(--abv-text)] border-[1.5px] border-[var(--abv-text)] hover:bg-[var(--abv-ink)] hover:text-white",
   ghost:
     "bg-transparent text-[var(--abv-text)]/70 hover:bg-[var(--abv-bg-warm)] hover:text-[var(--abv-ink)]",
   danger:

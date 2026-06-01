@@ -17,6 +17,7 @@
  */
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
+import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import prisma from "@/lib/prisma";
 import { getFeatureFlags } from "@/lib/feature-flags";
@@ -146,9 +147,20 @@ export default async function ScriptWizardPage({
     // with zero links. Show the Story-Lead-aware unresolved banner (with
     // auto-enrichment / manual-link / data-search escape hatches) instead of
     // the generic 0-fact block.
+    const isUnresolved = plan.factsResolutionState === "unresolved";
     return (
       <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
-        {plan.factsResolutionState === "unresolved" ? (
+        {/* Page-level back nav (the banner no longer carries its own). */}
+        {isUnresolved && (
+          <Link
+            href={BACK_HREF}
+            className="mb-6 inline-flex items-center gap-1 text-sm font-medium text-[var(--abv-text)]/70 transition-colors hover:text-[var(--abv-ink)]"
+          >
+            <ArrowLeftIcon className="h-4 w-4" aria-hidden="true" />
+            Back to Content Planner
+          </Link>
+        )}
+        {isUnresolved ? (
           <UnresolvedFactsBanner planId={plan.id} />
         ) : (
           <FactBlockGate planId={plan.id} />
