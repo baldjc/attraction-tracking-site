@@ -24,7 +24,7 @@ export async function maybeSavePlanArtifact(args: SaveArtifactArgs): Promise<{ s
     const flags = await getFeatureFlags();
     if (!flags.tool_planner_linkage) return { saved: false };
 
-    const plan = await prisma.contentPlan.findFirst({ where: { id: contentPlanId, userId } });
+    const plan = await prisma.contentPlan.findFirst({ where: { id: contentPlanId, userId, deletedAt: null } });
     if (!plan) return { saved: false };
 
     const existing = await prisma.planArtifact.findFirst({

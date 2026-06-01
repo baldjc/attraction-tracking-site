@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
   }
 
   const plan = await prisma.contentPlan.findFirst({
-    where: { id: planId, userId: user.id },
+    where: { id: planId, userId: user.id, deletedAt: null },
     select: { id: true, linkedFactIds: true },
   });
   if (!plan) {

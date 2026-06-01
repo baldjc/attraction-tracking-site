@@ -55,6 +55,8 @@ export async function GET(req: NextRequest) {
       ],
     });
   }
+  // Soft-deleted plans never appear in the staff production pipeline.
+  where.deletedAt = null;
   if (andClauses.length) where.AND = andClauses;
 
   const [plans, total] = await Promise.all([

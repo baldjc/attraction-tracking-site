@@ -10,7 +10,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const userId = resolved.id;
   const { id } = await params;
 
-  const plan = await prisma.contentPlan.findUnique({ where: { id }, select: { userId: true } });
+  const plan = await prisma.contentPlan.findFirst({ where: { id, deletedAt: null }, select: { userId: true } });
   if (!plan || plan.userId !== userId) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const notes = await prisma.planTeamNote.findMany({

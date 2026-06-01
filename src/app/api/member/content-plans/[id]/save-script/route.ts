@@ -87,7 +87,7 @@ export async function POST(
 
   // Ownership-filtered load.
   const plan = await prisma.contentPlan.findFirst({
-    where: { id: planId, userId },
+    where: { id: planId, userId, deletedAt: null },
     select: {
       id: true,
       rotationSlot: true,
@@ -182,7 +182,7 @@ export async function POST(
   let bingeTargetTitle: string | null = null;
   if (plan.bingeVideoId) {
     const binge = await prisma.contentPlan.findFirst({
-      where: { id: plan.bingeVideoId, userId },
+      where: { id: plan.bingeVideoId, userId, deletedAt: null },
       select: { title: true, status: true },
     });
     if (binge && isBingeTargetUsable(binge.status)) {

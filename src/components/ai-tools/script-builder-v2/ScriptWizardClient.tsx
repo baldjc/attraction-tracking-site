@@ -14,6 +14,12 @@
  */
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/Button";
+import { FactPickerModal } from "@/components/content-planner/FactPickerModal";
+import {
+  RunDataSearchButton,
+  type DataSearchProps,
+} from "@/components/content-planner/ScriptFactGate";
 import {
   Step4ShootType,
   type Step4PlanSummary,
@@ -43,36 +49,87 @@ interface Props {
    * more and gets firmer copy than story-driven slots.
    */
   lowSupportTone?: "data-heavy" | "story-driven";
+  /**
+   * Coarse on-demand data-search need + cost estimate for the Low Support
+   * banner's "Run data search" CTA. Omitted when the member has no market data
+   * to search — the CTA is then hidden rather than shown in a disabled state.
+   */
+  dataSearch?: DataSearchProps;
+  /**
+   * The plan's currently-linked fact ids, used to seed the in-place fact picker
+   * so it opens reflecting the existing selection (and adds, not replaces).
+   */
+  currentLinkedIds?: string[];
 }
 
+/**
+ * Low Support banner — the plan cleared the gate (1–2 facts) but is below the
+ * recommended 3. Non-blocking: it mirrors the Unresolved Facts banner's escape
+ * hatches (link more facts in place, run a paid data search) plus a "Build
+ * script anyway" proceed. Linking facts re-runs the server gate via
+ * router.refresh(): ≥3 hides this banner, 1–2 updates the count, 0 switches the
+ * page to the unresolved/block variant — no client-side recomputation needed.
+ */
 function LowSupportBanner({
   planId,
   count,
   tone,
+  dataSearch,
+  currentLinkedIds,
+  onProceed,
 }: {
   planId: string;
   count: number;
   tone: "data-heavy" | "story-driven";
+  dataSearch?: DataSearchProps;
+  currentLinkedIds: string[];
+  onProceed: () => void;
 }) {
+  const router = useRouter();
+  const [pickerOpen, setPickerOpen] = useState(false);
   const body =
     tone === "data-heavy"
-      ? "This is a data-driven slot, but it's below the recommended 3 facts — the script will have thin numbers to anchor on and may feel light. Strongly consider linking more facts before you build."
+      ? "This is a data-driven slot, so it usually carries 3+ supporting facts. It's below the recommended 3 right now — the script will have thin numbers to anchor on. Consider adding more before you publish."
       : "This is a story-driven slot, so it can carry a lighter fact set — but it's below the recommended 3. You can build now, or link a couple more facts for a stronger payoff.";
   return (
     <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-700/60 dark:bg-amber-900/15 dark:text-amber-200">
       <p className="font-semibold">
         Low Support — {count} linked fact{count === 1 ? "" : "s"}
       </p>
-      <p className="mt-1">
-        {body} You can still build it now, or{" "}
-        <a
-          href={`/member/content-planner/${planId}`}
-          className="font-medium underline hover:no-underline"
-        >
-          link more facts first
-        </a>
-        .
-      </p>
+      <p className="mt-1">{body}</p>
+      <div className="mt-3 flex flex-wrap items-center gap-3">
+        <Button variant="primary" onClick={onProceed}>
+          Build script anyway
+        </Button>
+        <Button variant="outline" onClick={() => setPickerOpen(true)}>
+          Link more facts
+        </Button>
+        {/* Hidden gracefully when there's no market data to search, rather than
+            rendering the disabled "no market data" state. */}
+        {dataSearch?.need && (
+          <RunDataSearchButton
+            planId={planId}
+            need={dataSearch.need}
+            estimatedCostUsd={dataSearch.estimatedCostUsd}
+            capUsd={dataSearch.capUsd}
+          />
+        )}
+      </div>
+
+      {pickerOpen && (
+        <FactPickerModal
+          planId={planId}
+          initialLinkedIds={currentLinkedIds}
+          onClose={() => setPickerOpen(false)}
+          onSaved={() => {
+            setPickerOpen(false);
+            // Re-run the server fact gate. Wizard client state (stage, shoot
+            // type) is preserved across a soft refresh because this component
+            // stays mounted.
+            router.refresh();
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -87,9 +144,14 @@ export function ScriptWizardClient({
   backHref,
   lowSupport = false,
   lowSupportTone = "data-heavy",
+  dataSearch,
+  currentLinkedIds = [],
 }: Props) {
   const router = useRouter();
   const [stage, setStage] = useState<Stage>("pick_shoot_type");
+  // "Build script anyway" acknowledges the Low Support banner and hides it; the
+  // shoot-type picker below stays visible so the member proceeds normally.
+  const [lowSupportDismissed, setLowSupportDismissed] = useState(false);
   const [shootType, setShootType] = useState<ShootType>("talking_head");
   const [result, setResult] = useState<Step5CompletePayload | null>(null);
   const [saving, setSaving] = useState(false);
@@ -109,11 +171,14 @@ export function ScriptWizardClient({
   if (stage === "pick_shoot_type") {
     return (
       <>
-        {lowSupport && (
+        {lowSupport && !lowSupportDismissed && (
           <LowSupportBanner
             planId={planSummary.id}
             count={planSummary.linkedFactCount}
             tone={lowSupportTone}
+            dataSearch={dataSearch}
+            currentLinkedIds={currentLinkedIds}
+            onProceed={() => setLowSupportDismissed(true)}
           />
         )}
         <Step4ShootType

@@ -145,7 +145,7 @@ export async function POST(req: NextRequest) {
         const flags = await getFeatureFlags();
         if (flags.tool_planner_linkage) {
           const plan = await prisma.contentPlan.findFirst({
-            where: { id: contentPlanId, userId: user.id },
+            where: { id: contentPlanId, userId: user.id, deletedAt: null },
           });
           if (plan) {
             overallScore = parseOverallScore(markdownReport);

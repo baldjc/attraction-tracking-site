@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { canStaffAccessMember } from "@/lib/staff-access";
-import { PRODUCTION_TIERS, PRE_PRODUCTION_STATUSES } from "@/lib/content-plan-utils";
-import { createVideoFolder } from "@/lib/google-drive";
+import { PRODUCTION_TIERS, PRE_PRODUCTION_STATUSES, hideDeletedBingeTargets } from "@/lib/content-plan-utils";
+import { createVideoFolder, classifyDriveError } from "@/lib/google-drive";
 
 async function checkAdmin() {
   const session = await auth();
@@ -11,7 +11,7 @@ async function checkAdmin() {
   return session?.user && (role === "admin" || role === "editor") ? session : null;
 }
 
-export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await checkAdmin();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -20,17 +20,22 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  // `?deleted=1` returns ONLY soft-deleted plans (for the admin restore panel);
+  // the default list excludes them so the live planner table stays clean.
+  const deletedOnly = new URL(req.url).searchParams.get("deleted") === "1";
+
   const [plans, member] = await Promise.all([
     prisma.contentPlan.findMany({
-      where: { userId: id },
+      where: { userId: id, deletedAt: deletedOnly ? { not: null } : null },
       orderBy: { publishDate: "desc" },
       include: {
         // Surface the binge chain summaries so the admin planner table + edit
         // modal can render the chip and "Binged FROM" list without an extra
         // roundtrip per plan.
-        bingeVideo: { select: { id: true, title: true, theme: true, status: true } },
+        bingeVideo: { select: { id: true, title: true, theme: true, status: true, deletedAt: true } },
         bingedFromList: {
-          select: { id: true, title: true, theme: true, status: true },
+          where: { deletedAt: null },
+          select: { id: true, title: true, theme: true, status: true, deletedAt: true },
           orderBy: { updatedAt: "desc" },
         },
       },
@@ -58,7 +63,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     if (extracted.length > 0) themes = extracted;
   }
 
-  return NextResponse.json({ plans, serviceTier: member?.serviceTier ?? "foundations", themes });
+  return NextResponse.json({ plans: hideDeletedBingeTargets(plans), serviceTier: member?.serviceTier ?? "foundations", themes });
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -104,6 +109,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   // links into the seeded "Video Research" doc from day one.
   const shouldCreateFolder =
     plan.status === "Needs Research" || !PRE_PRODUCTION_STATUSES.includes(plan.status);
+  let driveError: { category: string; message: string } | null = null;
   if (member && PRODUCTION_TIERS.includes(member.serviceTier ?? "") && member.fullName && shouldCreateFolder) {
     try {
       const { videoFolderUrl, memberFolderUrl } = await createVideoFolder(member.fullName, plan.title);
@@ -116,9 +122,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       await Promise.all(updates);
       (plan as any).driveFolderLink = videoFolderUrl;
     } catch (err) {
-      console.error("[admin content-plans] Drive folder creation failed:", err);
+      const de = classifyDriveError(err);
+      console.error("[admin content-plans] Drive folder creation failed:", de.category, err);
+      driveError = { category: de.category, message: de.userMessage };
     }
   }
 
-  return NextResponse.json({ plan }, { status: 201 });
+  return NextResponse.json({ plan, ...(driveError ? { driveError } : {}) }, { status: 201 });
 }

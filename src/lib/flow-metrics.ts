@@ -101,6 +101,7 @@ export async function computeFlowMetrics(
 
   const plans = await prisma.contentPlan.findMany({
     where: {
+      deletedAt: null,
       createdAt: { gte: startDate, lte: endDate },
       user: { serviceTier: { in: PRODUCTION_TIERS as any } },
     },

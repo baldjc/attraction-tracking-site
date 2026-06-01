@@ -90,6 +90,7 @@ async function GET_impl() {
     prisma.contentPlan.findMany({
       where: {
         userId: user.id,
+        deletedAt: null,
         status: "Ready to Shoot",
         shootDate: { gte: start, lt: end },
       },
@@ -99,6 +100,7 @@ async function GET_impl() {
     prisma.contentPlan.findMany({
       where: {
         userId: user.id,
+        deletedAt: null,
         status: { in: ["Shot - In Post", "Editing"] },
         editDueDate: { gte: start, lt: end },
       },

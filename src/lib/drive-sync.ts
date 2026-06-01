@@ -42,8 +42,8 @@ export async function syncArtifactToDrive(
     const flags = await getFeatureFlags();
     if (!flags.drive_auto_upload) return;
 
-    const plan = await prisma.contentPlan.findUnique({
-      where: { id: planId },
+    const plan = await prisma.contentPlan.findFirst({
+      where: { id: planId, deletedAt: null },
       select: { driveFolderLink: true },
     });
     if (!plan?.driveFolderLink) return;

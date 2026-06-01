@@ -30,7 +30,7 @@ export async function GET(
   }
 
   const plans = await prisma.contentPlan.findMany({
-    where: { userId: user.id },
+    where: { userId: user.id, deletedAt: null },
     orderBy: { publishDate: "asc" },
   });
 

@@ -90,7 +90,7 @@ export async function syncMemberChannel(userId: string): Promise<SyncResult> {
         // 1) Already linked by videoId? Just refresh title + publishDate +
         // status (in case the sync ran before the plan got its publish date).
         const linkedPlan = await prisma.contentPlan.findFirst({
-          where: { userId: user.id, youtubeVideoId: video.videoId },
+          where: { userId: user.id, youtubeVideoId: video.videoId, deletedAt: null },
           select: { id: true },
         });
 
@@ -125,6 +125,7 @@ export async function syncMemberChannel(userId: string): Promise<SyncResult> {
 
           let titleMatch = await prisma.contentPlan.findFirst({
             where: {
+              deletedAt: null,
               userId: user.id,
               youtubeVideoId: null,
               status: { notIn: PUBLISHED_STATUSES },
@@ -141,6 +142,7 @@ export async function syncMemberChannel(userId: string): Promise<SyncResult> {
             // set is small.
             const candidates = await prisma.contentPlan.findMany({
               where: {
+                deletedAt: null,
                 userId: user.id,
                 youtubeVideoId: null,
                 status: { notIn: PUBLISHED_STATUSES },

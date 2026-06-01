@@ -21,6 +21,7 @@ export async function GET(req: NextRequest) {
   const plans = await prisma.contentPlan.findMany({
     where: {
       id: { in: planIds },
+      deletedAt: null,
       ...(isAdmin ? {} : { userId: user.id }),
     },
     select: { id: true },

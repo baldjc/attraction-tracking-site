@@ -98,7 +98,7 @@ export default async function ScriptWizardPage({
   }
 
   const plan = await prisma.contentPlan.findFirst({
-    where: { id: planId, userId },
+    where: { id: planId, userId, deletedAt: null },
     select: {
       id: true,
       title: true,
@@ -330,6 +330,8 @@ export default async function ScriptWizardPage({
         backHref={BACK_HREF}
         lowSupport={gate === "low"}
         lowSupportTone={lowSupportToneForSlot(plan.rotationSlot)}
+        dataSearch={dataSearch}
+        currentLinkedIds={linkedFactIds}
       />
     </div>
   );

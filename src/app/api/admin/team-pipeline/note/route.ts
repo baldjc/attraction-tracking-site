@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
   if (!planId || !note?.trim()) return NextResponse.json({ error: "planId and note required" }, { status: 400 });
   const vis = visibility === "member_visible" ? "member_visible" : "team";
 
-  const plan = await prisma.contentPlan.findUnique({ where: { id: planId }, select: { id: true } });
+  const plan = await prisma.contentPlan.findFirst({ where: { id: planId, deletedAt: null }, select: { id: true } });
   if (!plan) return NextResponse.json({ error: "Plan not found" }, { status: 404 });
 
   const created = await prisma.planTeamNote.create({

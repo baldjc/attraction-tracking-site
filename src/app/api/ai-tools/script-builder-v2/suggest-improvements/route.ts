@@ -128,7 +128,7 @@ export async function POST(req: NextRequest) {
 
   // ── Plan (ownership-filtered) ────────────────────────────────────────
   const plan = await prisma.contentPlan.findFirst({
-    where: { id: body.planId, userId },
+    where: { id: body.planId, userId, deletedAt: null },
     select: {
       id: true,
       title: true,
@@ -222,7 +222,7 @@ export async function POST(req: NextRequest) {
   let assignedBinge: { title: string; theme: string | null } | null = null;
   if (plan.bingeVideoId) {
     const b = await prisma.contentPlan.findFirst({
-      where: { id: plan.bingeVideoId, userId },
+      where: { id: plan.bingeVideoId, userId, deletedAt: null },
       select: { title: true, theme: true },
     });
     if (b) assignedBinge = b;

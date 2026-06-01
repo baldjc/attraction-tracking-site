@@ -50,7 +50,7 @@ export async function PATCH(
   const remove = new Set(toStringArray(body.remove));
 
   const plan = await prisma.contentPlan.findFirst({
-    where: { id, userId: user.id },
+    where: { id, userId: user.id, deletedAt: null },
     select: { id: true, linkedFactIds: true },
   });
   if (!plan) {

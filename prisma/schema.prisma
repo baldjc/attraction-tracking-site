@@ -1002,12 +1002,19 @@ model ContentPlan {
   // "from_textual_resolver"; null otherwise.
   factsResolutionConfidence String?
 
+  // Soft-delete timestamp. Null = live plan; non-null = deleted (hidden from
+  // every member-facing read, retained for admin restore). Replaced the old
+  // "Archived" status string, which only hid plans from a few views and left
+  // them leaking into dashboards, the calendar feed, binge selectors, etc.
+  deletedAt       DateTime?
+
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
   @@index([userId])
   @@index([userId, status])
   @@index([userId, publishDate])
+  @@index([userId, deletedAt])
   @@index([status])
   @@index([assignedUserId])
   @@index([bingeVideoId])

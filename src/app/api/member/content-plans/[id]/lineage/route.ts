@@ -35,7 +35,7 @@ export async function GET(
 
   const { id } = await params;
   const plan = await prisma.contentPlan.findFirst({
-    where: { id, userId: user.id },
+    where: { id, userId: user.id, deletedAt: null },
     select: {
       id: true,
       rotationSlot: true,

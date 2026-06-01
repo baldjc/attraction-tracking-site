@@ -274,7 +274,7 @@ export async function enrichPlanWithRelatedFacts(args: {
   const persist = args.persist ?? true;
 
   const plan = await prisma.contentPlan.findFirst({
-    where: { id: args.planId, userId: args.userId },
+    where: { id: args.planId, userId: args.userId, deletedAt: null },
     select: { id: true, linkedFactIds: true, propertyTypeFocus: true },
   });
 

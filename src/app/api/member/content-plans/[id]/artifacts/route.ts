@@ -5,7 +5,7 @@ import { getFeatureFlags } from "@/lib/feature-flags";
 import { syncArtifactToDrive } from "@/lib/drive-sync";
 
 async function checkOwnership(planId: string, userId: string, isAdmin: boolean) {
-  const plan = await prisma.contentPlan.findUnique({ where: { id: planId } });
+  const plan = await prisma.contentPlan.findFirst({ where: { id: planId, deletedAt: null } });
   if (!plan) return null;
   if (!isAdmin && plan.userId !== userId) return null;
   return plan;

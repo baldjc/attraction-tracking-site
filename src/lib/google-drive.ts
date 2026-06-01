@@ -3,11 +3,113 @@ import { Readable } from "stream";
 import prisma from "@/lib/prisma";
 import { PRODUCTION_TIERS } from "@/lib/content-plan-utils";
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Structured Drive errors
+// ─────────────────────────────────────────────────────────────────────────────
+// Drive folder creation can fail for several distinct reasons, and the member-
+// facing copy + HTTP status differ per reason. Every Drive write path classifies
+// raw googleapis errors into one of these categories so the UI can map them.
+export type DriveErrorCategory =
+  | "not_configured"
+  | "auth_failed"
+  | "permission_denied"
+  | "quota_exceeded"
+  | "rate_limited"
+  | "not_found"
+  | "unknown";
+
+export const DRIVE_ERROR_MESSAGES: Record<DriveErrorCategory, string> = {
+  not_configured: "Google Drive isn't fully set up yet — your coaching team needs to finish connecting it.",
+  auth_failed: "We couldn't sign in to Google Drive. The connection may need to be re-authorized.",
+  permission_denied: "We don't have permission to manage the Drive folder. Your team may need to re-share it.",
+  quota_exceeded: "The connected Google Drive account is out of storage. Your team needs to free up space.",
+  rate_limited: "Google Drive is busy right now. Wait a moment and try again.",
+  not_found: "The Drive parent folder couldn't be found. Your team may need to reset the Drive setup.",
+  unknown: "Something went wrong creating the Drive folder. Please try again.",
+};
+
+export const DRIVE_ERROR_STATUS: Record<DriveErrorCategory, number> = {
+  not_configured: 503,
+  auth_failed: 502,
+  permission_denied: 502,
+  quota_exceeded: 507,
+  rate_limited: 429,
+  not_found: 502,
+  unknown: 502,
+};
+
+export class DriveError extends Error {
+  category: DriveErrorCategory;
+  userMessage: string;
+  constructor(category: DriveErrorCategory, message?: string) {
+    super(message ?? category);
+    this.name = "DriveError";
+    this.category = category;
+    this.userMessage = DRIVE_ERROR_MESSAGES[category];
+  }
+}
+
+/** Maps a raw googleapis / fetch error onto a DriveError category. */
+export function classifyDriveError(err: unknown): DriveError {
+  if (err instanceof DriveError) return err;
+  const e = err as {
+    code?: number | string;
+    status?: number;
+    message?: string;
+    errors?: Array<{ reason?: string }>;
+    // googleapis throws Gaxios errors that nest the real status + reason under
+    // `response` rather than on the top-level object. Parse both shapes so
+    // native API failures classify correctly instead of degrading to `unknown`.
+    response?: {
+      status?: number;
+      data?: { error?: { code?: number; message?: string; errors?: Array<{ reason?: string }> } };
+    };
+  };
+  const respError = e?.response?.data?.error;
+  const status =
+    typeof e?.code === "number"
+      ? e.code
+      : typeof e?.status === "number"
+        ? e.status
+        : typeof e?.response?.status === "number"
+          ? e.response.status
+          : typeof respError?.code === "number"
+            ? respError.code
+            : undefined;
+  const reason = e?.errors?.[0]?.reason ?? respError?.errors?.[0]?.reason ?? "";
+  const msg = (e?.message ?? respError?.message ?? "").toLowerCase();
+
+  if (status === 401 || reason === "authError" || msg.includes("invalid_grant") || msg.includes("invalid credentials")) {
+    return new DriveError("auth_failed", e?.message);
+  }
+  if (status === 429 || reason === "userRateLimitExceeded" || reason === "rateLimitExceeded") {
+    return new DriveError("rate_limited", e?.message);
+  }
+  if (status === 404 || reason === "notFound") {
+    return new DriveError("not_found", e?.message);
+  }
+  if (status === 403) {
+    if (reason === "storageQuotaExceeded" || msg.includes("storage quota") || msg.includes("quota")) {
+      return new DriveError("quota_exceeded", e?.message);
+    }
+    return new DriveError("permission_denied", e?.message);
+  }
+  if (status === 507) {
+    return new DriveError("quota_exceeded", e?.message);
+  }
+  return new DriveError("unknown", e?.message);
+}
+
 function getDriveClient() {
   const keyRaw = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
-  if (!keyRaw) throw new Error("GOOGLE_SERVICE_ACCOUNT_KEY is not set");
+  if (!keyRaw) throw new DriveError("not_configured", "GOOGLE_SERVICE_ACCOUNT_KEY is not set");
 
-  const credentials = JSON.parse(keyRaw);
+  let credentials: Record<string, unknown>;
+  try {
+    credentials = JSON.parse(keyRaw);
+  } catch {
+    throw new DriveError("not_configured", "GOOGLE_SERVICE_ACCOUNT_KEY is not valid JSON");
+  }
 
   // A service account has no Drive storage quota of its own, so it cannot own
   // files inside a regular "My Drive" folder — Drive rejects the write with
@@ -63,26 +165,30 @@ async function findOrCreateFolder(
  */
 export async function createMemberFolder(memberName: string): Promise<string> {
   const rootFolderId = process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID;
-  if (!rootFolderId) throw new Error("GOOGLE_DRIVE_ROOT_FOLDER_ID is not set");
+  if (!rootFolderId) throw new DriveError("not_configured", "GOOGLE_DRIVE_ROOT_FOLDER_ID is not set");
 
-  const drive = getDriveClient();
-  const memberFolderId = await findOrCreateFolder(drive, memberName, rootFolderId);
-
-  // Make the folder accessible via link (viewer access for the member)
   try {
-    await drive.permissions.create({
-      fileId: memberFolderId,
-      requestBody: {
-        role: "reader",
-        type: "anyone",
-      },
-      supportsAllDrives: true,
-    });
-  } catch {
-    // Permission may already exist — safe to ignore
-  }
+    const drive = getDriveClient();
+    const memberFolderId = await findOrCreateFolder(drive, memberName, rootFolderId);
 
-  return `https://drive.google.com/drive/folders/${memberFolderId}`;
+    // Make the folder accessible via link (viewer access for the member)
+    try {
+      await drive.permissions.create({
+        fileId: memberFolderId,
+        requestBody: {
+          role: "reader",
+          type: "anyone",
+        },
+        supportsAllDrives: true,
+      });
+    } catch {
+      // Permission may already exist — safe to ignore
+    }
+
+    return `https://drive.google.com/drive/folders/${memberFolderId}`;
+  } catch (err) {
+    throw classifyDriveError(err);
+  }
 }
 
 export interface VideoFolderResult {
@@ -135,23 +241,27 @@ export async function createVideoFolder(
   videoTitle: string
 ): Promise<VideoFolderResult> {
   const rootFolderId = process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID;
-  if (!rootFolderId) throw new Error("GOOGLE_DRIVE_ROOT_FOLDER_ID is not set");
+  if (!rootFolderId) throw new DriveError("not_configured", "GOOGLE_DRIVE_ROOT_FOLDER_ID is not set");
 
-  const drive = getDriveClient();
+  try {
+    const drive = getDriveClient();
 
-  const memberFolderId = await findOrCreateFolder(drive, memberName, rootFolderId);
-  const videoFolderId = await findOrCreateFolder(drive, videoTitle, memberFolderId);
+    const memberFolderId = await findOrCreateFolder(drive, memberName, rootFolderId);
+    const videoFolderId = await findOrCreateFolder(drive, videoTitle, memberFolderId);
 
-  // Auto-seed each video folder with a "Video Research" Google Doc so members
-  // have a place to start as soon as the folder spins up. Idempotent — safe
-  // to re-run on existing folders.
-  const researchDocUrl = await findOrCreateDocInFolder(drive, videoFolderId, "Video Research");
+    // Auto-seed each video folder with a "Video Research" Google Doc so members
+    // have a place to start as soon as the folder spins up. Idempotent — safe
+    // to re-run on existing folders.
+    const researchDocUrl = await findOrCreateDocInFolder(drive, videoFolderId, "Video Research");
 
-  return {
-    memberFolderUrl: `https://drive.google.com/drive/folders/${memberFolderId}`,
-    videoFolderUrl: `https://drive.google.com/drive/folders/${videoFolderId}`,
-    researchDocUrl,
-  };
+    return {
+      memberFolderUrl: `https://drive.google.com/drive/folders/${memberFolderId}`,
+      videoFolderUrl: `https://drive.google.com/drive/folders/${videoFolderId}`,
+      researchDocUrl,
+    };
+  } catch (err) {
+    throw classifyDriveError(err);
+  }
 }
 
 /**
@@ -288,40 +398,38 @@ export async function ensureVideoFolderForPlan(
   planId: string,
   userId: string
 ): Promise<{ folderUrl: string } | null> {
-  try {
-    const plan = await prisma.contentPlan.findFirst({
-      where: { id: planId, userId },
-      select: { id: true, title: true, driveFolderLink: true },
-    });
-    if (!plan) return null;
+  const plan = await prisma.contentPlan.findFirst({
+    where: { id: planId, userId, deletedAt: null },
+    select: { id: true, title: true, driveFolderLink: true },
+  });
+  if (!plan) return null;
 
-    if (plan.driveFolderLink && plan.driveFolderLink.startsWith("http")) {
-      return { folderUrl: plan.driveFolderLink };
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { serviceTier: true, fullName: true, email: true, assetsDriveLink: true },
-    });
-    if (!user) return null;
-    if (!PRODUCTION_TIERS.includes(user.serviceTier ?? "foundations")) return null;
-
-    const memberName = user.fullName || user.email || userId;
-    const { videoFolderUrl, memberFolderUrl } = await createVideoFolder(memberName, plan.title);
-
-    const updates: Promise<unknown>[] = [
-      prisma.contentPlan.update({ where: { id: plan.id }, data: { driveFolderLink: videoFolderUrl } }),
-    ];
-    if (!user.assetsDriveLink) {
-      updates.push(prisma.user.update({ where: { id: userId }, data: { assetsDriveLink: memberFolderUrl } }));
-    }
-    await Promise.all(updates);
-
-    return { folderUrl: videoFolderUrl };
-  } catch (err) {
-    console.error("[google-drive] ensureVideoFolderForPlan failed:", err);
-    return null;
+  if (plan.driveFolderLink && plan.driveFolderLink.startsWith("http")) {
+    return { folderUrl: plan.driveFolderLink };
   }
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { serviceTier: true, fullName: true, email: true, assetsDriveLink: true },
+  });
+  if (!user) return null;
+  if (!PRODUCTION_TIERS.includes(user.serviceTier ?? "foundations")) return null;
+
+  const memberName = user.fullName || user.email || userId;
+  // createVideoFolder throws a structured DriveError on failure. We deliberately
+  // DO NOT swallow it here — the caller surfaces the category so the member sees
+  // a real reason instead of a silent no-op.
+  const { videoFolderUrl, memberFolderUrl } = await createVideoFolder(memberName, plan.title);
+
+  const updates: Promise<unknown>[] = [
+    prisma.contentPlan.update({ where: { id: plan.id }, data: { driveFolderLink: videoFolderUrl } }),
+  ];
+  if (!user.assetsDriveLink) {
+    updates.push(prisma.user.update({ where: { id: userId }, data: { assetsDriveLink: memberFolderUrl } }));
+  }
+  await Promise.all(updates);
+
+  return { folderUrl: videoFolderUrl };
 }
 
 /**

@@ -167,3 +167,25 @@ export const STATUS_STYLES: Record<string, { bg: string; text: string }> = {
 };
 
 export const PRIORITY_OPTIONS = ["High", "Medium", "Low"];
+
+// Soft-delete leak guard for the self-referential binge chain. `bingeVideo`
+// is a to-one relation (selected via bingeVideoId) and Prisma can't filter it
+// inside `include`/`select`, so a live plan pointing at a soft-deleted target
+// would still hydrate that deleted plan. Select `deletedAt` on the relation and
+// null it out here so deleted binge targets never reach the client. (The
+// to-many `bingedFromList` IS filterable, so that side uses `where:{deletedAt:null}`.)
+export function hideDeletedBingeTarget<T extends { bingeVideo?: { deletedAt?: Date | null } | null }>(
+  plan: T | null,
+): T | null {
+  if (plan?.bingeVideo && plan.bingeVideo.deletedAt) {
+    (plan as { bingeVideo: unknown }).bingeVideo = null;
+  }
+  return plan;
+}
+
+export function hideDeletedBingeTargets<T extends { bingeVideo?: { deletedAt?: Date | null } | null }>(
+  plans: T[],
+): T[] {
+  for (const plan of plans) hideDeletedBingeTarget(plan);
+  return plans;
+}

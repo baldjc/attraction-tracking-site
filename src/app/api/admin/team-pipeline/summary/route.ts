@@ -18,10 +18,10 @@ export async function GET() {
   }
 
   const [scripted, filmed, assignedToMe, unassigned] = await Promise.all([
-    prisma.contentPlan.count({ where: { status: "Scripted", user: { serviceTier: { in: PRODUCTION_TIERS } } } }),
-    prisma.contentPlan.count({ where: { status: "Filmed", user: { serviceTier: { in: PRODUCTION_TIERS } } } }),
-    prisma.contentPlan.count({ where: { assignedUserId: userId, user: { serviceTier: { in: PRODUCTION_TIERS } } } }),
-    prisma.contentPlan.count({ where: { assignedUserId: null, user: { serviceTier: { in: PRODUCTION_TIERS } } } }),
+    prisma.contentPlan.count({ where: { deletedAt: null, status: "Scripted", user: { serviceTier: { in: PRODUCTION_TIERS } } } }),
+    prisma.contentPlan.count({ where: { deletedAt: null, status: "Filmed", user: { serviceTier: { in: PRODUCTION_TIERS } } } }),
+    prisma.contentPlan.count({ where: { deletedAt: null, assignedUserId: userId, user: { serviceTier: { in: PRODUCTION_TIERS } } } }),
+    prisma.contentPlan.count({ where: { deletedAt: null, assignedUserId: null, user: { serviceTier: { in: PRODUCTION_TIERS } } } }),
   ]);
 
   return NextResponse.json({ scripted, filmed, assignedToMe, unassigned });

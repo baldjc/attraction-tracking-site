@@ -26,7 +26,7 @@ async function GET_impl() {
 
   const [productionPlans, quickLinks] = await Promise.all([
     prisma.contentPlan.findMany({
-      where: { userId: user.id },
+      where: { userId: user.id, deletedAt: null },
       orderBy: [{ publishDate: "asc" }, { createdAt: "desc" }],
     }),
     growthDwyTiers.includes(tier)

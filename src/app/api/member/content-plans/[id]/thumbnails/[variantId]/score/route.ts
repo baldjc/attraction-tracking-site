@@ -36,7 +36,7 @@ export async function POST(
 
   const { id, variantId } = await params;
   const plan = await prisma.contentPlan.findFirst({
-    where: { id, userId: user.id },
+    where: { id, userId: user.id, deletedAt: null },
     select: { thumbnailVariants: true, title: true, thumbnailWords: true },
   });
   if (!plan) return NextResponse.json({ error: "Not found" }, { status: 404 });

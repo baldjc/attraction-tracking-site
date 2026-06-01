@@ -21,7 +21,7 @@ function toStringArray(v: unknown): string[] {
 async function linkFactToPlan(userId: string, planId: string, factId: string) {
   try {
     const plan = await prisma.contentPlan.findFirst({
-      where: { id: planId, userId },
+      where: { id: planId, userId, deletedAt: null },
       select: { id: true, linkedFactIds: true },
     });
     if (!plan) return;

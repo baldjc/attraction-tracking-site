@@ -22,8 +22,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const isStaff = role === "admin" || role === "editor";
 
   const { id } = await params;
-  const plan = await prisma.contentPlan.findUnique({
-    where: { id },
+  const plan = await prisma.contentPlan.findFirst({
+    where: { id, deletedAt: null },
     select: { userId: true, thumbnailFileId: true },
   });
   if (!plan) return NextResponse.json({ error: "Not found" }, { status: 404 });

@@ -21,15 +21,17 @@ export async function POST(
 
   const { id } = await params;
   const plan = await prisma.contentPlan.findFirst({
-    where: { id, userId: user.id },
+    where: { id, userId: user.id, deletedAt: null },
     select: {
       bingeVideoId: true,
-      bingeVideo: { select: { title: true, youtubeVideoId: true } },
+      bingeVideo: { select: { title: true, youtubeVideoId: true, deletedAt: true } },
     },
   });
   if (!plan) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  if (!plan.bingeVideoId || !plan.bingeVideo) {
+  // A soft-deleted binge target is treated as no target — never point viewers
+  // at a video the member has deleted.
+  if (!plan.bingeVideoId || !plan.bingeVideo || plan.bingeVideo.deletedAt) {
     return NextResponse.json(
       { error: "Set a binge target first — the pinned comment points viewers to that next video." },
       { status: 400 },

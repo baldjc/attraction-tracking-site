@@ -18,6 +18,7 @@ export async function GET(req: NextRequest) {
   const plans = await prisma.contentPlan.findMany({
     where: {
       userId: user.id,
+      deletedAt: null,
       ...(excludeId ? { NOT: { id: excludeId } } : {}),
     },
     orderBy: { updatedAt: "desc" },

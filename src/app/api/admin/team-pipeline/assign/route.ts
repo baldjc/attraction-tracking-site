@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
   const { planId, assignedUserId } = body as { planId?: string; assignedUserId?: string | null };
   if (!planId) return NextResponse.json({ error: "planId required" }, { status: 400 });
 
-  const plan = await prisma.contentPlan.findUnique({ where: { id: planId }, select: { assignedUserId: true } });
+  const plan = await prisma.contentPlan.findFirst({ where: { id: planId, deletedAt: null }, select: { assignedUserId: true } });
   if (!plan) return NextResponse.json({ error: "Plan not found" }, { status: 404 });
 
   if (assignedUserId) {

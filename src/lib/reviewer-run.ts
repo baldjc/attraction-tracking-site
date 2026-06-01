@@ -24,6 +24,7 @@ async function buildPortfolioBalance(channelRef: string) {
 
   const plans = await prisma.contentPlan.findMany({
     where: {
+      deletedAt: null,
       userId: { in: userIds },
       publishDate: { gte: start, lt: end },
     },

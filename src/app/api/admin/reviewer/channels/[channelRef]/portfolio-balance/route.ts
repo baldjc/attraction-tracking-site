@@ -39,6 +39,7 @@ export async function GET(
       ? []
       : await prisma.contentPlan.findMany({
           where: {
+            deletedAt: null,
             userId: { in: userIds },
             publishDate: { gte: start, lt: end },
           },

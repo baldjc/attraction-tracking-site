@@ -14,7 +14,7 @@ export default function ContentEditorWrapper({ planId }: { planId: string }) {
   const [plan, setPlan] = useState<ContentPlan | null>(null);
   const [serviceTier, setServiceTier] = useState<string | null>(null);
   const [scriptBuilderV2Enabled, setScriptBuilderV2Enabled] = useState(false);
-  const [errorState, setErrorState] = useState<"none" | "not-found" | "load-failed">("none");
+  const [errorState, setErrorState] = useState<"none" | "not-found" | "deleted" | "load-failed">("none");
 
   useEffect(() => {
     let cancelled = false;
@@ -25,6 +25,9 @@ export default function ContentEditorWrapper({ planId }: { planId: string }) {
     Promise.allSettled([
       fetch(`/api/member/content-plans/${planId}`).then((r) => {
         if (r.status === 404) throw new Error("not-found");
+        // 410 Gone = soft-deleted plan. Surface a dedicated friendly page
+        // rather than the generic "not found" copy.
+        if (r.status === 410) throw new Error("deleted");
         if (!r.ok) throw new Error("load-failed");
         return r.json();
       }),
@@ -36,7 +39,9 @@ export default function ContentEditorWrapper({ planId }: { planId: string }) {
         setPlan(planRes.value.plan ?? null);
       } else {
         const msg = (planRes.reason as Error)?.message;
-        setErrorState(msg === "not-found" ? "not-found" : "load-failed");
+        setErrorState(
+          msg === "not-found" ? "not-found" : msg === "deleted" ? "deleted" : "load-failed",
+        );
         return;
       }
       if (listRes.status === "fulfilled") {
@@ -51,6 +56,25 @@ export default function ContentEditorWrapper({ planId }: { planId: string }) {
     return () => { cancelled = true; };
   }, [planId]);
 
+  if (errorState === "deleted") {
+    return (
+      <div className="max-w-[1280px] mx-auto px-9 py-16 text-center">
+        <h1 className="font-display font-extrabold text-3xl text-[var(--abv-text)] mb-3">
+          This video was deleted
+        </h1>
+        <p className="text-[var(--abv-text-muted)] mb-6">
+          It&apos;s no longer in your planner. Your coaching team can restore it if you need it
+          back — the script, research, and AI-generated content stay saved.
+        </p>
+        <Link
+          href="/member/content-planner"
+          className="inline-block px-5 py-2 rounded-full bg-[var(--abv-ink)] text-white text-sm font-semibold"
+        >
+          Back to Content Planner
+        </Link>
+      </div>
+    );
+  }
   if (errorState === "not-found") {
     return (
       <div className="max-w-[1280px] mx-auto px-9 py-16 text-center">

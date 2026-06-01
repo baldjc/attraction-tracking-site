@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import prisma from "@/lib/prisma";
-import { getStatusOptions, isValidStatus, PRODUCTION_TIERS, PRE_PRODUCTION_STATUSES } from "@/lib/content-plan-utils";
-import { createVideoFolder, ensureVideoFolderForPlan } from "@/lib/google-drive";
+import { getStatusOptions, isValidStatus, PRODUCTION_TIERS, PRE_PRODUCTION_STATUSES, hideDeletedBingeTargets } from "@/lib/content-plan-utils";
+import { createVideoFolder, ensureVideoFolderForPlan, classifyDriveError } from "@/lib/google-drive";
 import { getFeatureFlags } from "@/lib/feature-flags";
 
 export async function GET(req: NextRequest) {
@@ -29,6 +29,7 @@ export async function GET(req: NextRequest) {
     const plans = await prisma.contentPlan.findMany({
       where: {
         userId: user.id,
+        deletedAt: null,
         ...(statusFilter ? { status: statusFilter } : {}),
         ...(themeFilter ? { theme: themeFilter } : {}),
       },
@@ -37,16 +38,17 @@ export async function GET(req: NextRequest) {
         // Include the binge chain summaries so the planner table + edit modal
         // can render the chip and the "Binged FROM" list without an extra
         // roundtrip per plan.
-        bingeVideo: { select: { id: true, title: true, theme: true, status: true } },
+        bingeVideo: { select: { id: true, title: true, theme: true, status: true, deletedAt: true } },
         bingedFromList: {
-          select: { id: true, title: true, theme: true, status: true },
+          where: { deletedAt: null },
+          select: { id: true, title: true, theme: true, status: true, deletedAt: true },
           orderBy: { updatedAt: "desc" },
         },
       },
     });
 
     return NextResponse.json({
-      plans,
+      plans: hideDeletedBingeTargets(plans),
       serviceTier: dbUser?.serviceTier ?? "foundations",
     });
   } catch (err) {
@@ -98,7 +100,7 @@ export async function POST(req: NextRequest) {
   // yet), so we only need to verify the target exists and belongs to the user.
   if (bingeVideoId) {
     const target = await prisma.contentPlan.findFirst({
-      where: { id: bingeVideoId, userId: user.id },
+      where: { id: bingeVideoId, userId: user.id, deletedAt: null },
       select: { id: true },
     });
     if (!target) {
@@ -151,12 +153,13 @@ export async function POST(req: NextRequest) {
     )
   );
 
+  let driveError: { category: string; message: string } | null = null;
   if (shouldCreateFolder) {
-    if (flags.drive_auto_upload) {
-      const result = await ensureVideoFolderForPlan(plan.id, user.id);
-      if (result) (plan as any).driveFolderLink = result.folderUrl;
-    } else if (dbUser?.fullName) {
-      try {
+    try {
+      if (flags.drive_auto_upload) {
+        const result = await ensureVideoFolderForPlan(plan.id, user.id);
+        if (result) (plan as any).driveFolderLink = result.folderUrl;
+      } else if (dbUser?.fullName) {
         const { videoFolderUrl, memberFolderUrl } = await createVideoFolder(dbUser.fullName, plan.title);
         const updates: Promise<unknown>[] = [
           prisma.contentPlan.update({ where: { id: plan.id }, data: { driveFolderLink: videoFolderUrl } }),
@@ -166,11 +169,15 @@ export async function POST(req: NextRequest) {
         }
         await Promise.all(updates);
         (plan as any).driveFolderLink = videoFolderUrl;
-      } catch (err) {
-        console.error("[content-plans] Drive folder creation failed:", err);
       }
+    } catch (err) {
+      // Plan creation already succeeded — surface the Drive reason as a
+      // non-blocking warning instead of failing the create.
+      const de = classifyDriveError(err);
+      console.error("[content-plans] Drive folder creation failed:", de.category, err);
+      driveError = { category: de.category, message: de.userMessage };
     }
   }
 
-  return NextResponse.json({ plan, serviceTier }, { status: 201 });
+  return NextResponse.json({ plan, serviceTier, ...(driveError ? { driveError } : {}) }, { status: 201 });
 }

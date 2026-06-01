@@ -206,7 +206,7 @@ export async function POST(req: NextRequest) {
 
   // ── Load ContentPlan + lineage (ownership-filtered) ──────────────────
   const plan = await prisma.contentPlan.findFirst({
-    where: { id: body.planId, userId },
+    where: { id: body.planId, userId, deletedAt: null },
     select: {
       id: true,
       title: true,
@@ -386,7 +386,7 @@ export async function POST(req: NextRequest) {
 
   if (plan.bingeVideoId) {
     const binge = await prisma.contentPlan.findFirst({
-      where: { id: plan.bingeVideoId, userId },
+      where: { id: plan.bingeVideoId, userId, deletedAt: null },
       select: {
         title: true,
         theme: true,

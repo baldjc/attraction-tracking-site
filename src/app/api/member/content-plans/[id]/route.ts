@@ -5,8 +5,9 @@ import {
   PRODUCTION_TIERS,
   getStatusOptions,
   FOUNDATIONS_STATUSES,
+  hideDeletedBingeTarget,
 } from "@/lib/content-plan-utils";
-import { createVideoFolder, isFileInFolder } from "@/lib/google-drive";
+import { createVideoFolder, isFileInFolder, classifyDriveError } from "@/lib/google-drive";
 import { getFeatureFlags } from "@/lib/feature-flags";
 import { parseVariants } from "@/lib/content-thumbnails";
 
@@ -28,7 +29,7 @@ const DRIVE_TRIGGER_STATUSES_WITH_SCRIPTED = ["Needs Research", "Scripted", "Rea
 // Shape of the related-plan summaries surfaced via `bingeVideo` and
 // `bingedFromList`. Kept small (id/title/theme/status) so the planner UI can
 // render the chip + "Binged FROM" rows without a second roundtrip.
-const BINGE_RELATION_SELECT = { id: true, title: true, theme: true, status: true } as const;
+const BINGE_RELATION_SELECT = { id: true, title: true, theme: true, status: true, deletedAt: true } as const;
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await resolveUserFromSession();
@@ -40,14 +41,21 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     include: {
       bingeVideo: { select: BINGE_RELATION_SELECT },
       bingedFromList: {
+        where: { deletedAt: null },
         select: BINGE_RELATION_SELECT,
         orderBy: { updatedAt: "desc" },
       },
     },
   });
   if (!plan) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  // Soft-deleted plan hit via direct link: 410 Gone with a `deleted` flag lets
+  // the editor render a friendly "this plan was deleted" page instead of a
+  // generic not-found (or a 500 from downstream reads on a half-loaded plan).
+  if (plan.deletedAt) {
+    return NextResponse.json({ error: "Deleted", deleted: true }, { status: 410 });
+  }
 
-  return NextResponse.json({ plan });
+  return NextResponse.json({ plan: hideDeletedBingeTarget(plan) });
 }
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -55,7 +63,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
-  const existing = await prisma.contentPlan.findFirst({ where: { id, userId: user.id } });
+  const existing = await prisma.contentPlan.findFirst({ where: { id, userId: user.id, deletedAt: null } });
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const dbUser = await prisma.user.findUnique({
@@ -110,7 +118,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: "A video can't binge to itself." }, { status: 400 });
     }
     const target = await prisma.contentPlan.findFirst({
-      where: { id: bingeVideoId, userId: user.id },
+      where: { id: bingeVideoId, userId: user.id, deletedAt: null },
       select: { id: true },
     });
     if (!target) {
@@ -220,6 +228,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         include: {
           bingeVideo: { select: BINGE_RELATION_SELECT },
           bingedFromList: {
+            where: { deletedAt: null },
             select: BINGE_RELATION_SELECT,
             orderBy: { updatedAt: "desc" },
           },
@@ -238,6 +247,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     ? DRIVE_TRIGGER_STATUSES_WITH_SCRIPTED
     : DRIVE_TRIGGER_STATUSES_LEGACY;
 
+  let driveError: { category: string; message: string } | null = null;
   if (
     status !== undefined &&
     PRODUCTION_TIERS.includes(serviceTier) &&
@@ -256,11 +266,16 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       await Promise.all(driveUpdates);
       plan = { ...plan, driveFolderLink: videoFolderUrl };
     } catch (err) {
-      console.error("[content-plans/[id]] Drive folder creation failed:", err);
+      // The status update itself already succeeded — don't fail the whole save
+      // over a Drive hiccup. Surface the structured reason so the editor can
+      // show a non-blocking warning instead of silently dropping the folder.
+      const de = classifyDriveError(err);
+      console.error("[content-plans/[id]] Drive folder creation failed:", de.category, err);
+      driveError = { category: de.category, message: de.userMessage };
     }
   }
 
-  return NextResponse.json({ plan });
+  return NextResponse.json({ plan: hideDeletedBingeTarget(plan), ...(driveError ? { driveError } : {}) });
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -268,9 +283,12 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
-  const existing = await prisma.contentPlan.findFirst({ where: { id, userId: user.id } });
+  // Soft-delete: only act on a live plan (already-deleted → 404 no-op). The row
+  // is retained (deletedAt stamped) so an admin can restore it; it disappears
+  // from every member-facing read via the deletedAt:null filters.
+  const existing = await prisma.contentPlan.findFirst({ where: { id, userId: user.id, deletedAt: null } });
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  await prisma.contentPlan.delete({ where: { id } });
+  await prisma.contentPlan.update({ where: { id }, data: { deletedAt: new Date() } });
   return NextResponse.json({ success: true });
 }

@@ -31,6 +31,7 @@ import {
 import { useTheme } from "@/components/ThemeProvider";
 import { useToast } from "@/components/ToastProvider";
 import ContentPlanTable from "@/components/content-planner/ContentPlanTable";
+import DeletedPlansPanel from "@/components/content-planner/DeletedPlansPanel";
 import AdminCallsTab from "@/components/admin/AdminCallsTab";
 import MarkdownTextarea from "@/components/MarkdownTextarea";
 import AdminClientHubTab from "@/components/admin/AdminClientHubTab";
@@ -2166,6 +2167,9 @@ export default function MemberDetailPage() {
           <ContentPlanTable
             apiBase={`/api/admin/members/${member.id}/content-plans`}
             isAdmin
+          />
+          <DeletedPlansPanel
+            apiBase={`/api/admin/members/${member.id}/content-plans`}
           />
         </div>
       )}

@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { canStaffAccessMember } from "@/lib/staff-access";
-import { createVideoFolder, isFileInFolder } from "@/lib/google-drive";
+import { createVideoFolder, isFileInFolder, classifyDriveError } from "@/lib/google-drive";
+import { hideDeletedBingeTarget } from "@/lib/content-plan-utils";
 
 // "Needs Research" is the earliest production status — kicking off the Drive
 // folder + Video Research doc here gives the member a place to drop research
@@ -24,10 +25,32 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   if (!(await canStaffAccessMember((session.user as any).id, id))) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
+  // NOT filtered by deletedAt — admins must be able to load a soft-deleted plan
+  // here in order to restore it (see the `restore` branch below).
   const existing = await prisma.contentPlan.findFirst({ where: { id: planId, userId: id } });
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const body = await req.json();
+
+  // Restore a soft-deleted plan: clears deletedAt and returns it to the
+  // member's planner. Short-circuits before the field-update path so a restore
+  // can't accidentally re-trigger status/drive side-effects.
+  if (body.restore === true) {
+    const restored = await prisma.contentPlan.update({
+      where: { id: planId },
+      data: { deletedAt: null },
+      include: {
+        bingeVideo: { select: { id: true, title: true, theme: true, status: true, deletedAt: true } },
+        bingedFromList: {
+          where: { deletedAt: null },
+          select: { id: true, title: true, theme: true, status: true, deletedAt: true },
+          orderBy: { updatedAt: "desc" },
+        },
+      },
+    });
+    return NextResponse.json({ plan: hideDeletedBingeTarget(restored) });
+  }
+
   const { title, status, theme, shootDate, publishDate, editDueDate, priority, notes, script, researchNotes, thoughts, thumbnailWords, footageLink, driveFolderLink, thumbnailFileId, thumbnailFileName, manualSteps } = body;
   // Whitelist manual step keys (mirror member route).
   const VALID_STEP_KEYS = new Set(["idea","script","review","title","description","repurpose","ready"]);
@@ -51,7 +74,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: "A video can't binge to itself." }, { status: 400 });
     }
     const target = await prisma.contentPlan.findFirst({
-      where: { id: bingeVideoId, userId: id },
+      where: { id: bingeVideoId, userId: id, deletedAt: null },
       select: { id: true },
     });
     if (!target) {
@@ -96,14 +119,16 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       ...(manualStepsClean !== undefined && { manualSteps: manualStepsClean }),
     },
     include: {
-      bingeVideo: { select: { id: true, title: true, theme: true, status: true } },
+      bingeVideo: { select: { id: true, title: true, theme: true, status: true, deletedAt: true } },
       bingedFromList: {
-        select: { id: true, title: true, theme: true, status: true },
+        where: { deletedAt: null },
+        select: { id: true, title: true, theme: true, status: true, deletedAt: true },
         orderBy: { updatedAt: "desc" },
       },
     },
   });
 
+  let driveError: { category: string; message: string } | null = null;
   if (
     status !== undefined &&
     DRIVE_TRIGGER_STATUSES.includes(status) &&
@@ -126,11 +151,14 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         updates.push(prisma.user.update({ where: { id }, data: { assetsDriveLink: memberFolderUrl } }));
       }
       await Promise.all(updates);
-    } catch {
+    } catch (err) {
+      const de = classifyDriveError(err);
+      console.error("[admin content-plans/[planId]] Drive folder creation failed:", de.category, err);
+      driveError = { category: de.category, message: de.userMessage };
     }
   }
 
-  return NextResponse.json({ plan });
+  return NextResponse.json({ plan, ...(driveError ? { driveError } : {}) });
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string; planId: string }> }) {
@@ -141,9 +169,10 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   if (!(await canStaffAccessMember((session.user as any).id, id))) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-  const existing = await prisma.contentPlan.findFirst({ where: { id: planId, userId: id } });
+  const existing = await prisma.contentPlan.findFirst({ where: { id: planId, userId: id, deletedAt: null } });
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  await prisma.contentPlan.delete({ where: { id: planId } });
+  // Soft-delete (mirror the member route) so the plan can be restored.
+  await prisma.contentPlan.update({ where: { id: planId }, data: { deletedAt: new Date() } });
   return NextResponse.json({ success: true });
 }

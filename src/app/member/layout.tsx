@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import { getFeatureFlags, DEFAULT_FLAGS } from "@/lib/feature-flags";
 import MemberLayoutShell from "@/components/onboarding/MemberLayoutShell";
+import { ToastProvider } from "@/components/ToastProvider";
 
 export default async function MemberLayout({
   children,
@@ -41,7 +42,7 @@ export default async function MemberLayout({
       actingAsTeamMember={resolved.actingAsTeamMember ?? false}
       teamPrimaryName={resolved.teamPrimaryName ?? null}
     >
-      {children}
+      <ToastProvider>{children}</ToastProvider>
     </MemberLayoutShell>
   );
 }

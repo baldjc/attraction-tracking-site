@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
   let unlinkedScriptIds: Set<string> | null = null;
   if (unlinkedOnly) {
     const linkedPlans = await prisma.contentPlan.findMany({
-      where: { userId: targetUserId, linkedScriptId: { not: null } },
+      where: { userId: targetUserId, linkedScriptId: { not: null }, deletedAt: null },
       select: { linkedScriptId: true },
     });
     const linkedIds = new Set(linkedPlans.map((p) => p.linkedScriptId).filter((id): id is string => !!id));

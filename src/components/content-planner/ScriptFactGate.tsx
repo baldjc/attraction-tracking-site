@@ -46,7 +46,7 @@ type SearchState =
  * endpoint; on a successful extraction the new fact is linked server-side, so a
  * router.refresh() clears the gate. Every non-success outcome is shown inline.
  */
-function RunDataSearchButton({
+export function RunDataSearchButton({
   planId,
   need,
   estimatedCostUsd,

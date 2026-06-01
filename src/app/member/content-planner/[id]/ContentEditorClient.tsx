@@ -8,6 +8,7 @@ import remarkGfm from "remark-gfm";
 import type { ContentPlan } from "@/components/content-planner/ContentPlanEditModal";
 import { getStatusOptions, hasEditDueDate, PRODUCTION_TIERS } from "@/lib/content-plan-utils";
 import { hasDriveFolderAccess } from "@/lib/service-tier";
+import { useToast } from "@/components/ToastProvider";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -503,6 +504,7 @@ export default function ContentEditorClient({
   scriptBuilderV2Enabled: boolean;
 }) {
   const router = useRouter();
+  const toast = useToast();
   const apiBase = "/api/member/content-plans";
   const planId = initialPlan.id;
 
@@ -647,7 +649,12 @@ export default function ContentEditorClient({
         thumbnailWinnerId: (prev as unknown as { thumbnailWinnerId?: unknown }).thumbnailWinnerId,
       } as ContentPlan));
     }
-  }, [planId]);
+    // The status save succeeded but a background Drive auto-create may have
+    // failed — surface it as a non-blocking warning instead of dropping it.
+    if (data?.driveError) {
+      toast.error(driveErrorMessage(data.driveError));
+    }
+  }, [planId, toast]);
 
   const { state: saveState, lastSavedAt, flush, retry } = useAutoSave({
     value: form, save, debounceMs: 2000,
@@ -666,21 +673,7 @@ export default function ContentEditorClient({
     setPlan((p) => ({ ...p, ...partial } as ContentPlan));
   }, []);
 
-  // ── archive / quick actions ───────────────────────────────────────────────
-  const handleArchive = async () => {
-    if (!confirm("Archive this plan? It moves to Archived status — you can restore it anytime by changing status back. The script, research, and AI-generated content stay saved.")) return;
-    try {
-      const res = await fetch(`${apiBase}/${planId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "Archived" }),
-      });
-      if (!res.ok) throw new Error("archive failed");
-      router.push("/member/content-planner");
-    } catch {
-      alert("Could not archive. Please try again.");
-    }
-  };
+  // ── delete / quick actions ────────────────────────────────────────────────
   const handleExport = () => {
     const blob = new Blob(
       [`# ${form.title}\n\n${form.script || ""}`],
@@ -697,13 +690,14 @@ export default function ContentEditorClient({
     alert("Duplicate is coming soon. For now use Add Video on the planner.");
   };
   const handleDelete = async () => {
-    if (!confirm("Delete this video permanently? This can't be undone.")) return;
+    if (!confirm("Delete this video? It's removed from your planner. Your coaching team can restore it if you change your mind — the script, research, and AI-generated content stay saved.")) return;
     try {
       const res = await fetch(`${apiBase}/${planId}`, { method: "DELETE" });
       if (!res.ok) throw new Error("delete failed");
+      toast.success("Video deleted. Ask your team to restore it if you need it back.");
       router.push("/member/content-planner");
     } catch {
-      alert("Could not delete. Please try again.");
+      toast.error("Could not delete. Please try again.");
     }
   };
 
@@ -936,7 +930,6 @@ Output as markdown with ## per talking point, ### per section. Every stat: \`fig
                   boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
                 }}>
                   <MoreItem onClick={() => { setMoreOpen(false); handleDuplicate(); }}>Duplicate</MoreItem>
-                  <MoreItem onClick={() => { setMoreOpen(false); void handleArchive(); }}>Archive</MoreItem>
                   <MoreItem danger onClick={() => { setMoreOpen(false); void handleDelete(); }}>Delete</MoreItem>
                 </div>
               </>
@@ -1132,7 +1125,7 @@ Output as markdown with ## per talking point, ### per section. Every stat: \`fig
                 statusOptions={statusOptions}
                 themes={themes}
                 showEditDue={showEditDue}
-                onArchive={handleArchive}
+                onDelete={handleDelete}
                 onBlur={() => void flush()}
                 onGenerateResearchPrompt={generateResearchPrompt}
                 researchPromptCopied={researchPromptCopied}
@@ -1447,7 +1440,7 @@ function Row({ k, v }: { k: string; v: React.ReactNode }) {
 
 function PlanningTab({
   planId, canUseDrive, form, update, statusOptions, themes, showEditDue,
-  onArchive, onBlur,
+  onDelete, onBlur,
   onGenerateResearchPrompt, researchPromptCopied, researchPromptError,
   statusSelectRef, shootDateRef, editDueDateRef, publishDateRef, researchNotesRef,
 }: {
@@ -1458,7 +1451,7 @@ function PlanningTab({
   statusOptions: string[];
   themes: Theme[];
   showEditDue: boolean;
-  onArchive: () => void;
+  onDelete: () => void;
   onBlur: () => void;
   onGenerateResearchPrompt: () => void;
   researchPromptCopied: boolean;
@@ -1581,10 +1574,10 @@ function PlanningTab({
       <Panel title="Danger zone">
         <div style={{ padding: 14 }}>
           <p style={{ fontSize: 11, color: "var(--abv-text-muted)", lineHeight: 1.5, marginBottom: 10 }}>
-            Archiving moves this plan to Archived status. You can restore it anytime by changing the
-            status back — the script, research, and AI-generated content stay saved.
+            Deleting removes this plan from your planner. Your coaching team can restore it if you
+            change your mind — the script, research, and AI-generated content stay saved.
           </p>
-          <QuickBtn onClick={onArchive} danger>Archive this plan</QuickBtn>
+          <QuickBtn onClick={onDelete} danger>Delete this plan</QuickBtn>
         </div>
       </Panel>
     </>
@@ -1597,6 +1590,26 @@ type DriveFile = { id: string; name: string; webViewLink: string | null; modifie
 // project folder and its contents (including thumbnails pushed there on upload)
 // right inside the editor, and lets the member spin one up on demand if it
 // hasn't been created yet.
+// Member-facing copy for each structured Drive error category returned by the
+// API ({ error: <category>, message }). We key off the stable category and fall
+// back to the server message, then a generic line.
+const DRIVE_ERROR_UI: Record<string, string> = {
+  not_configured: "Google Drive isn't fully set up yet — your coaching team needs to finish connecting it.",
+  auth_failed: "We couldn't sign in to Google Drive. Your team may need to re-authorize the connection.",
+  permission_denied: "We don't have permission to manage the Drive folder. Your team may need to re-share it.",
+  quota_exceeded: "The connected Google Drive is out of storage. Your team needs to free up space.",
+  rate_limited: "Google Drive is busy right now. Wait a moment and try again.",
+  not_found: "The Drive parent folder couldn't be found. Your team may need to reset the Drive setup.",
+  unknown: "Something went wrong creating the Drive folder. Please try again.",
+  tier_restricted: "Drive folders are a Production-tier feature.",
+};
+
+function driveErrorMessage(data: { error?: string; message?: string } | null | undefined): string {
+  if (!data) return DRIVE_ERROR_UI.unknown;
+  if (data.error && DRIVE_ERROR_UI[data.error]) return DRIVE_ERROR_UI[data.error];
+  return data.message || DRIVE_ERROR_UI.unknown;
+}
+
 function DriveFolderSection({ planId }: { planId: string }) {
   const [folderUrl, setFolderUrl] = useState<string | null>(null);
   const [files, setFiles] = useState<DriveFile[]>([]);
@@ -1628,11 +1641,11 @@ function DriveFolderSection({ planId }: { planId: string }) {
     try {
       const res = await fetch(`/api/member/content-plans/${planId}/drive-folder`, { method: "POST" });
       const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || "Failed to create folder");
+      if (!res.ok) throw new Error(driveErrorMessage(data));
       setFolderUrl(data.driveFolderLink ?? null);
       load();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to create folder");
+      setError(e instanceof Error ? e.message : DRIVE_ERROR_UI.unknown);
     } finally {
       setCreating(false);
     }
