@@ -1510,23 +1510,6 @@ function PlanningTab({
         <DateRow label="Publish" value={form.publishDate} onChange={(v) => update("publishDate", v)} onBlur={onBlur} inputRef={publishDateRef} />
       </Panel>
 
-      <Panel title="Packaging Ideas">
-        <div style={{ padding: 12 }}>
-          <textarea
-            value={form.thoughts}
-            onChange={(e) => update("thoughts", e.target.value)}
-            onBlur={onBlur}
-            placeholder="Your raw thoughts, hooks, angles…"
-            style={{
-              width: "100%", minHeight: 90, padding: 10,
-              border: "1px solid var(--abv-border)", borderRadius: 6,
-              fontSize: 12, lineHeight: 1.5, resize: "vertical",
-              fontFamily: "var(--font-sans, ui-sans-serif)", boxSizing: "border-box",
-            }}
-          />
-        </div>
-      </Panel>
-
       {canUseDrive && <DriveFolderSection planId={planId} />}
 
       <Panel title="Theme & location">
@@ -1582,6 +1565,23 @@ function PlanningTab({
             onChange={(e) => update("researchNotes", e.target.value)}
             onBlur={onBlur}
             placeholder="Paste deep research, stats, sources…"
+            style={{
+              width: "100%", minHeight: 90, padding: 10,
+              border: "1px solid var(--abv-border)", borderRadius: 6,
+              fontSize: 12, lineHeight: 1.5, resize: "vertical",
+              fontFamily: "var(--font-sans, ui-sans-serif)", boxSizing: "border-box",
+            }}
+          />
+        </div>
+      </Panel>
+
+      <Panel title="Thoughts & talking points">
+        <div style={{ padding: 12 }}>
+          <textarea
+            value={form.thoughts}
+            onChange={(e) => update("thoughts", e.target.value)}
+            onBlur={onBlur}
+            placeholder="Your raw thoughts, hooks, angles…"
             style={{
               width: "100%", minHeight: 90, padding: 10,
               border: "1px solid var(--abv-border)", borderRadius: 6,
