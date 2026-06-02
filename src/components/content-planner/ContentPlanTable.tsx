@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { ChevronUpIcon, ChevronDownIcon, ArrowTopRightOnSquareIcon } from "@heroicons/react/24/outline";
+import { ChevronUpIcon, ChevronDownIcon, ArrowTopRightOnSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/navigation";
 import {
   getStatusOptions,
@@ -109,6 +109,7 @@ export default function ContentPlanTable({
   const [themes, setThemes] = useState<Array<{ name: string; emoji?: string | null; colour?: string | null }>>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const router = useRouter();
   const [sortKey, setSortKey] = useState<keyof ContentPlan | null>("publishDate");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
@@ -118,14 +119,14 @@ export default function ContentPlanTable({
   const showDriveFolder = isAdmin || hasDriveFolder(serviceTier);
 
   // ---------- Resizable + persisted column widths ----------
-  type ColKey = "title" | "status" | "theme" | "binge" | "shootDate" | "location" | "editDate";
+  type ColKey = "title" | "status" | "theme" | "binge" | "shootDate" | "publishDate" | "editDate";
   const DEFAULT_WIDTHS: Record<ColKey, number> = {
     title: 380, status: 150, theme: 185, binge: 150,
-    shootDate: 95, location: 130, editDate: 95,
+    shootDate: 95, publishDate: 95, editDate: 95,
   };
   const COL_MIN: Record<ColKey, number> = {
     title: 180, status: 80, theme: 80, binge: 80,
-    shootDate: 80, location: 80, editDate: 80,
+    shootDate: 80, publishDate: 80, editDate: 80,
   };
   const COL_MAX = 600;
 
@@ -265,6 +266,20 @@ export default function ContentPlanTable({
     } catch {}
   }
 
+  async function handleDelete(id: string) {
+    if (!confirm("Delete this video? It's removed from your planner. Your coaching team can restore it if you change your mind — the script, research, and AI-generated content stay saved.")) return;
+    setDeletingId(id);
+    try {
+      const res = await fetch(`${apiBase}/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete");
+      setPlans((prev) => prev.filter((p) => p.id !== id));
+    } catch {
+      alert("Failed to delete video. Please try again.");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
   const PRIORITY_ORDER: Record<string, number> = { High: 0, Medium: 1, Low: 2 };
 
   function handleSort(key: keyof ContentPlan) {
@@ -338,10 +353,11 @@ export default function ContentPlanTable({
     return <div className="text-red-500 text-sm text-center py-8">{error}</div>;
   }
 
-  // Mockup grid: Title | Status | Theme | Binge | Shoot date | Location | Edit date
+  // Grid: Title | Status | Theme | Binge | Shoot date | Publish date | Edit date
   // Title is `minmax(180px, 1fr)` until the user resizes it (then a clamped
-  // px width). All other columns are fixed px (resizable). Drive folder, when
-  // shown, is a fixed 44px icon column at the trailing edge — not resizable.
+  // px width). All other columns are fixed px (resizable). Drive folder (when
+  // shown) and Delete are fixed 44px icon columns at the trailing edge — not
+  // resizable.
   const titleCol = titleResized ? `${widths.title}px` : `minmax(180px, 1fr)`;
   const colTemplate = [
     titleCol,
@@ -349,22 +365,26 @@ export default function ContentPlanTable({
     `${widths.theme}px`,
     `${widths.binge}px`,
     `${widths.shootDate}px`,
-    `${widths.location}px`,
+    `${widths.publishDate}px`,
     showEditDue ? `${widths.editDate}px` : null,
     showDriveFolder ? "44px" : null,
+    "44px",
   ].filter(Boolean).join(" ");
 
   // Sum of fixed col widths drives min-width on the grid so the table
   // horizontally scrolls (rather than collapsing the Title col) when the
   // viewport gets narrow.
+  // Always-present columns: title, status, theme, binge, shootDate, publishDate, delete.
+  const colCount = 7 + (showEditDue ? 1 : 0) + (showDriveFolder ? 1 : 0);
   const minTableWidth =
     COL_MIN.title +
     widths.status + widths.theme + widths.binge +
-    widths.shootDate + widths.location +
+    widths.shootDate + widths.publishDate +
     (showEditDue ? widths.editDate : 0) +
     (showDriveFolder ? 44 : 0) +
-    // 7 gaps of 14px + horizontal padding (22px * 2)
-    7 * 14 + 44;
+    44 + // delete action column
+    // (colCount - 1) gaps of 14px + horizontal padding (22px * 2)
+    (colCount - 1) * 14 + 44;
 
   function ResizeHandle({ col }: { col: ColKey }) {
     return (
@@ -434,8 +454,10 @@ export default function ContentPlanTable({
           <ResizeHandle col="shootDate" />
         </div>
         <div className="relative pr-2">
-          <span className="text-left">Location</span>
-          <ResizeHandle col="location" />
+          <button onClick={() => handleSort("publishDate")} className="text-left hover:text-[var(--abv-text)] transition-colors">
+            Publish date <SortIcon col="publishDate" />
+          </button>
+          <ResizeHandle col="publishDate" />
         </div>
         {showEditDue && (
           <div className="relative pr-2">
@@ -446,6 +468,7 @@ export default function ContentPlanTable({
           </div>
         )}
         {showDriveFolder && <span />}
+        <span />
       </div>
 
       {/* Empty state */}
@@ -522,12 +545,15 @@ export default function ContentPlanTable({
                 {plan.shootDate ? formatDate(plan.shootDate) : "—"}
               </div>
 
-              {/* Location */}
+              {/* Publish date */}
               <div
-                className="text-[12.5px] truncate min-w-0"
-                style={{ color: plan.shootLocation ? "var(--abv-text-muted)" : "var(--abv-text-dim)" }}
+                className="font-mono tracking-[0.04em] tabular-nums"
+                style={{
+                  fontSize: "11.5px",
+                  color: plan.publishDate ? "var(--abv-text-muted)" : "var(--abv-text-dim)",
+                }}
               >
-                {plan.shootLocation || "—"}
+                {plan.publishDate ? formatDate(plan.publishDate) : "—"}
               </div>
 
               {/* Edit date */}
@@ -543,9 +569,9 @@ export default function ContentPlanTable({
                 </div>
               )}
 
-              {/* Drive folder — open in new tab; clicking should not also open the modal */}
+              {/* Drive folder — open in new tab; clicking should not also open the editor */}
               {showDriveFolder && (
-                <div className="flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+                <div className="flex items-center justify-center" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
                   {plan.driveFolderLink ? (
                     <a
                       href={plan.driveFolderLink}
@@ -561,6 +587,19 @@ export default function ContentPlanTable({
                   )}
                 </div>
               )}
+
+              {/* Delete — soft-delete the plan; clicking should not open the editor */}
+              <div className="flex items-center justify-center" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+                <button
+                  onClick={() => handleDelete(plan.id)}
+                  disabled={deletingId === plan.id}
+                  className="inline-flex items-center justify-center text-[var(--abv-text-dim)] hover:text-red-600 transition-colors disabled:opacity-50"
+                  title="Delete video"
+                  aria-label="Delete video"
+                >
+                  <TrashIcon className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           );
         })
