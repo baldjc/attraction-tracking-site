@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { ChevronUpIcon, ChevronDownIcon, ArrowTopRightOnSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/navigation";
 import {
@@ -199,51 +199,34 @@ function InlineBingeSelect({ value, current, options, onChange }: {
   );
 }
 
-// Shows the date as a clean "MMM D" label (no native calendar glyph). Clicking
-// opens the browser's date picker via showPicker(); the real <input type="date">
-// is kept in the DOM (size-0, transparent) only to host the picker + onChange.
+// Shows the date as a clean "MMM D" label with no native calendar glyph.
+// A real <input type="date"> fills the cell with its value text hidden and its
+// picker indicator stretched invisibly over the whole field (see .abv-date-cell
+// in globals.css), so a NATIVE click anywhere opens the date picker. This is
+// deliberately not scripted showPicker() — that throws a SecurityError inside
+// the cross-origin preview iframe. The formatted label sits on top, click-
+// through, so the user reads "Jun 2" but clicks land on the input below.
 function InlineDateInput({ value, onChange }: {
   value: string | null;
   onChange: (v: string | null) => void;
 }) {
-  const ref = useRef<HTMLInputElement>(null);
-  const openPicker = () => {
-    const el = ref.current;
-    if (!el) return;
-    // showPicker is the modern, reliable path. Fall back to focus()+click() for
-    // older engines that don't expose it (wrapped in try/catch — showPicker can
-    // throw if not user-activated).
-    if (typeof el.showPicker === "function") {
-      try {
-        el.showPicker();
-        return;
-      } catch {
-        /* fall through to focus/click */
-      }
-    }
-    el.focus();
-    el.click();
-  };
   return (
-    <span className="relative inline-flex w-full">
-      <button
-        type="button"
-        onClick={openPicker}
-        aria-label="Change date"
-        className="w-full text-left bg-transparent border border-transparent hover:border-[var(--abv-border)] rounded-md px-1.5 py-1 font-mono tabular-nums cursor-pointer truncate focus:outline-none focus:border-[var(--abv-azure)]"
-        style={{ fontSize: "11.5px", color: value ? "var(--abv-text-muted)" : "var(--abv-text-dim)" }}
-      >
-        {value ? formatDate(value) : "—"}
-      </button>
+    <span className="abv-date-cell inline-flex w-full">
       <input
-        ref={ref}
         type="date"
         value={toDateInputValue(value)}
         onChange={(e) => onChange(e.target.value || null)}
-        aria-hidden="true"
-        tabIndex={-1}
-        className="absolute bottom-0 left-1.5 w-0 h-0 opacity-0 pointer-events-none"
+        aria-label="Change date"
+        className="w-full bg-transparent border border-transparent hover:border-[var(--abv-border)] rounded-md px-1.5 py-1 font-mono tabular-nums cursor-pointer focus:outline-none focus:border-[var(--abv-azure)]"
+        style={{ fontSize: "11.5px" }}
       />
+      <span
+        aria-hidden="true"
+        className="absolute inset-0 flex items-center px-1.5 font-mono tabular-nums pointer-events-none truncate"
+        style={{ fontSize: "11.5px", color: value ? "var(--abv-text-muted)" : "var(--abv-text-dim)" }}
+      >
+        {value ? formatDate(value) : "—"}
+      </span>
     </span>
   );
 }
