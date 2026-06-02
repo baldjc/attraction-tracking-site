@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { ChevronUpIcon, ChevronDownIcon, ArrowTopRightOnSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/navigation";
 import {
@@ -199,19 +199,52 @@ function InlineBingeSelect({ value, current, options, onChange }: {
   );
 }
 
+// Shows the date as a clean "MMM D" label (no native calendar glyph). Clicking
+// opens the browser's date picker via showPicker(); the real <input type="date">
+// is kept in the DOM (size-0, transparent) only to host the picker + onChange.
 function InlineDateInput({ value, onChange }: {
   value: string | null;
   onChange: (v: string | null) => void;
 }) {
+  const ref = useRef<HTMLInputElement>(null);
+  const openPicker = () => {
+    const el = ref.current;
+    if (!el) return;
+    // showPicker is the modern, reliable path. Fall back to focus()+click() for
+    // older engines that don't expose it (wrapped in try/catch — showPicker can
+    // throw if not user-activated).
+    if (typeof el.showPicker === "function") {
+      try {
+        el.showPicker();
+        return;
+      } catch {
+        /* fall through to focus/click */
+      }
+    }
+    el.focus();
+    el.click();
+  };
   return (
-    <input
-      type="date"
-      value={toDateInputValue(value)}
-      onChange={(e) => onChange(e.target.value || null)}
-      aria-label="Date"
-      className="w-full bg-transparent border border-transparent hover:border-[var(--abv-border)] rounded-md px-1.5 py-1 font-mono tabular-nums cursor-pointer focus:outline-none focus:border-[var(--abv-azure)]"
-      style={{ fontSize: "11.5px", color: value ? "var(--abv-text-muted)" : "var(--abv-text-dim)" }}
-    />
+    <span className="relative inline-flex w-full">
+      <button
+        type="button"
+        onClick={openPicker}
+        aria-label="Change date"
+        className="w-full text-left bg-transparent border border-transparent hover:border-[var(--abv-border)] rounded-md px-1.5 py-1 font-mono tabular-nums cursor-pointer truncate focus:outline-none focus:border-[var(--abv-azure)]"
+        style={{ fontSize: "11.5px", color: value ? "var(--abv-text-muted)" : "var(--abv-text-dim)" }}
+      >
+        {value ? formatDate(value) : "—"}
+      </button>
+      <input
+        ref={ref}
+        type="date"
+        value={toDateInputValue(value)}
+        onChange={(e) => onChange(e.target.value || null)}
+        aria-hidden="true"
+        tabIndex={-1}
+        className="absolute bottom-0 left-1.5 w-0 h-0 opacity-0 pointer-events-none"
+      />
+    </span>
   );
 }
 
