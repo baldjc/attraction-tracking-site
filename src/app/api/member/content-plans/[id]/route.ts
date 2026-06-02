@@ -10,6 +10,7 @@ import {
 import { createVideoFolder, isFileInFolder, classifyDriveError } from "@/lib/google-drive";
 import { getFeatureFlags } from "@/lib/feature-flags";
 import { parseVariants } from "@/lib/content-thumbnails";
+import { resolvePlanAccess } from "@/lib/content-plan-access";
 
 // Carries an HTTP status out of the PUT transaction so winner validation and
 // the field update commit (or roll back) together — see PUT below.
@@ -47,15 +48,43 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       },
     },
   });
-  if (!plan) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  // Soft-deleted plan hit via direct link: 410 Gone with a `deleted` flag lets
-  // the editor render a friendly "this plan was deleted" page instead of a
-  // generic not-found (or a 500 from downstream reads on a half-loaded plan).
-  if (plan.deletedAt) {
-    return NextResponse.json({ error: "Deleted", deleted: true }, { status: 410 });
+  // When the owner-scoped lookup misses, run an UNSCOPED lookup for admins only
+  // so the editor can show an actionable reason (deleted / wrong owner / gone)
+  // instead of the generic "doesn't belong to your account". Members never get
+  // this diagnostic — they only ever see the generic not-found copy.
+  let unscoped: { userId: string; deletedAt: Date | null } | null = null;
+  if (!plan && user.isAdmin) {
+    unscoped = await prisma.contentPlan.findUnique({
+      where: { id },
+      select: { userId: true, deletedAt: true },
+    });
   }
 
-  return NextResponse.json({ plan: hideDeletedBingeTarget(plan) });
+  const access = resolvePlanAccess({
+    scopedPlan: plan ? { deletedAt: plan.deletedAt } : null,
+    unscopedPlan: unscoped,
+    resolvedUserId: user.id,
+    isAdmin: user.isAdmin,
+  });
+
+  if (access.reason === "ok" && plan) {
+    return NextResponse.json({ plan: hideDeletedBingeTarget(plan) });
+  }
+
+  // Structured error/diagnostic response. `reason` is always present; the
+  // admin-only fields (admin/deletedAt/ownerUserId) are included only when the
+  // resolver decided the viewer may see them.
+  const payload: Record<string, unknown> = {
+    error: access.reason,
+    reason: access.reason,
+  };
+  if (access.reason === "deleted") payload.deleted = true;
+  if (access.admin) {
+    payload.admin = true;
+    payload.deletedAt = access.deletedAt ?? null;
+    if (access.ownerUserId) payload.ownerUserId = access.ownerUserId;
+  }
+  return NextResponse.json(payload, { status: access.status });
 }
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
