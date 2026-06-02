@@ -106,6 +106,112 @@ function formatDate(d: string | null): string {
   });
 }
 
+// yyyy-MM-dd for <input type="date">, in UTC to match the read-only formatDate.
+function toDateInputValue(d: string | null): string {
+  if (!d) return "";
+  const t = new Date(d);
+  if (Number.isNaN(t.getTime())) return "";
+  return t.toISOString().slice(0, 10);
+}
+
+// ── Inline cell editors ─────────────────────────────────────────────────────
+// Each renders the value as an in-place control. The wrapping <span> hosts a
+// custom chevron because we use `appearance-none` to keep the pill styling.
+function InlineStatusSelect({ status, options, onChange }: {
+  status: string;
+  options: string[];
+  onChange: (v: string) => void;
+}) {
+  const s = getStatusPillStyle(status);
+  // Always keep the current value selectable, even if it pre-dates a tier change.
+  const opts = options.includes(status) ? options : [status, ...options];
+  return (
+    <span className="relative inline-flex max-w-full">
+      <select
+        value={status}
+        onChange={(e) => onChange(e.target.value)}
+        aria-label="Status"
+        className="appearance-none rounded-full pl-2.5 pr-6 py-1 font-bold tracking-[0.04em] uppercase cursor-pointer truncate focus:outline-none focus:ring-2 focus:ring-[var(--abv-azure)]/40"
+        style={{ background: s.bg, color: s.fg, fontSize: "10.5px" }}
+      >
+        {opts.map((o) => <option key={o} value={o}>{o}</option>)}
+      </select>
+      <ChevronDownIcon className="w-3 h-3 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: s.fg }} />
+    </span>
+  );
+}
+
+function InlineThemeSelect({ theme, themes, onChange }: {
+  theme: string | null;
+  themes: Array<{ name: string; emoji?: string | null; colour?: string | null }>;
+  onChange: (v: string | null) => void;
+}) {
+  const v = theme ? getThemeVisual(theme) : null;
+  const known = themes.map((t) => t.name);
+  return (
+    <span className="relative inline-flex max-w-full">
+      <select
+        value={theme ?? ""}
+        onChange={(e) => onChange(e.target.value || null)}
+        aria-label="Theme"
+        className="appearance-none rounded-full pl-2.5 pr-6 py-1 font-semibold cursor-pointer truncate focus:outline-none focus:ring-2 focus:ring-[var(--abv-azure)]/40"
+        style={
+          v
+            ? { background: v.bg, color: v.fg, fontSize: "11.5px" }
+            : { fontSize: "11.5px", color: "var(--abv-text-dim)", border: "1px solid var(--abv-border)" }
+        }
+      >
+        <option value="">— Theme —</option>
+        {themes.map((t) => (
+          <option key={t.name} value={t.name}>{t.emoji ? `${t.emoji} ${t.name}` : t.name}</option>
+        ))}
+        {theme && !known.includes(theme) && <option value={theme}>{theme}</option>}
+      </select>
+      <ChevronDownIcon className="w-3 h-3 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: v ? v.fg : "var(--abv-text-dim)" }} />
+    </span>
+  );
+}
+
+function InlineBingeSelect({ value, current, options, onChange }: {
+  value: string | null;
+  current: { title: string } | null;
+  options: Array<{ id: string; title: string }>;
+  onChange: (v: string | null) => void;
+}) {
+  const hasCurrent = !!value && options.some((o) => o.id === value);
+  return (
+    <span className="relative inline-flex w-full">
+      <select
+        value={value ?? ""}
+        onChange={(e) => onChange(e.target.value || null)}
+        aria-label="Binge target"
+        className="appearance-none w-full bg-transparent border border-transparent hover:border-[var(--abv-border)] rounded-md pl-1.5 pr-6 py-1 text-[12px] text-[var(--abv-text-muted)] cursor-pointer truncate focus:outline-none focus:border-[var(--abv-azure)]"
+      >
+        <option value="">— None —</option>
+        {!hasCurrent && value && current && <option value={value}>{current.title}</option>}
+        {options.map((o) => <option key={o.id} value={o.id}>{o.title}</option>)}
+      </select>
+      <ChevronDownIcon className="w-3 h-3 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--abv-text-dim)]" />
+    </span>
+  );
+}
+
+function InlineDateInput({ value, onChange }: {
+  value: string | null;
+  onChange: (v: string | null) => void;
+}) {
+  return (
+    <input
+      type="date"
+      value={toDateInputValue(value)}
+      onChange={(e) => onChange(e.target.value || null)}
+      aria-label="Date"
+      className="w-full bg-transparent border border-transparent hover:border-[var(--abv-border)] rounded-md px-1.5 py-1 font-mono tabular-nums cursor-pointer focus:outline-none focus:border-[var(--abv-azure)]"
+      style={{ fontSize: "11.5px", color: value ? "var(--abv-text-muted)" : "var(--abv-text-dim)" }}
+    />
+  );
+}
+
 export default function ContentPlanTable({
   apiBase,
   isAdmin = false,
@@ -292,6 +398,30 @@ export default function ContentPlanTable({
       setDeletingId(null);
     }
   }
+
+  // Inline cell edit — optimistic local update, then PUT the single changed
+  // field (partial-PATCH semantics). On failure we re-fetch to discard the
+  // optimistic value and surface the server's reason.
+  async function patchPlan(id: string, patch: Record<string, unknown>) {
+    setPlans((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
+    try {
+      const res = await fetch(`${apiBase}/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error ?? "Failed to save");
+      if (data?.plan) {
+        setPlans((prev) => prev.map((p) => (p.id === id ? data.plan : p)));
+      }
+    } catch (e: any) {
+      alert(e?.message ?? "Failed to save. Please try again.");
+      fetchPlans();
+    }
+  }
+
+  const statusOptions = useMemo(() => getStatusOptions(serviceTier), [serviceTier]);
 
   const PRIORITY_ORDER: Record<string, number> = { High: 0, Medium: 1, Low: 2 };
 
@@ -501,17 +631,13 @@ export default function ContentPlanTable({
           return (
             <div
               key={plan.id}
-              role="button"
-              tabIndex={0}
-              onClick={() => router.push(`/member/content-planner/${plan.id}`)}
-              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); router.push(`/member/content-planner/${plan.id}`); } }}
-              className="grid gap-[14px] px-[22px] py-3.5 items-center cursor-pointer hover:bg-[var(--abv-bg-warm)] transition-colors"
+              className="grid gap-[14px] px-[22px] py-3.5 items-center hover:bg-[var(--abv-bg-warm)] transition-colors"
               style={{
                 gridTemplateColumns: colTemplate,
                 borderBottom: "1px solid var(--abv-border)",
               }}
             >
-              {/* Title cell — thumbnail (if any) + title */}
+              {/* Title cell — thumbnail (if any) + title. Title opens the editor. */}
               <div className="flex items-start gap-2 min-w-0">
                 {plan.thumbnailFileId ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -525,70 +651,75 @@ export default function ContentPlanTable({
                 ) : null}
                 <div className="flex flex-col gap-0.5 min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <span className="font-semibold text-[14px] leading-[1.4] text-[var(--abv-text)] line-clamp-2 break-words">
+                    <button
+                      type="button"
+                      onClick={() => router.push(`/member/content-planner/${plan.id}`)}
+                      className="font-semibold text-[14px] leading-[1.4] text-[var(--abv-text)] line-clamp-2 break-words text-left cursor-pointer hover:text-[var(--abv-azure)] transition-colors"
+                      title="Open editor"
+                    >
                       {plan.title}
-                    </span>
+                    </button>
                   </div>
                 </div>
               </div>
 
-              {/* Status */}
+              {/* Status — inline editable */}
               <div className="min-w-0">
-                <StatusBadge status={plan.status} />
+                <InlineStatusSelect
+                  status={plan.status}
+                  options={statusOptions}
+                  onChange={(v) => patchPlan(plan.id, { status: v })}
+                />
               </div>
 
-              {/* Theme */}
+              {/* Theme — inline editable */}
               <div className="min-w-0">
-                <ThemePill theme={plan.theme} />
+                <InlineThemeSelect
+                  theme={plan.theme}
+                  themes={themes}
+                  onChange={(v) => patchPlan(plan.id, { theme: v })}
+                />
               </div>
 
-              {/* Binge */}
-              <div className="flex items-center gap-1.5 min-w-0 text-[12px] text-[var(--abv-text-muted)] whitespace-nowrap overflow-hidden">
-                {bingeTarget ? (
-                  <span className="truncate" title={bingeTarget.title}>↪ {bingeTarget.title}</span>
-                ) : (
-                  <span className="text-[var(--abv-text-dim)]">—</span>
-                )}
+              {/* Binge — inline editable */}
+              <div className="min-w-0">
+                <InlineBingeSelect
+                  value={plan.bingeVideoId}
+                  current={bingeTarget}
+                  options={plans.filter((p) => p.id !== plan.id)}
+                  onChange={(v) => patchPlan(plan.id, { bingeVideoId: v })}
+                />
               </div>
 
-              {/* Shoot date */}
-              <div
-                className="font-mono tracking-[0.04em] tabular-nums"
-                style={{
-                  fontSize: "11.5px",
-                  color: plan.shootDate ? "var(--abv-text-muted)" : "var(--abv-text-dim)",
-                }}
-              >
-                {plan.shootDate ? formatDate(plan.shootDate) : "—"}
+              {/* Shoot date — inline editable */}
+              <div className="min-w-0">
+                <InlineDateInput
+                  value={plan.shootDate}
+                  onChange={(v) => patchPlan(plan.id, { shootDate: v })}
+                />
               </div>
 
-              {/* Edit date */}
+              {/* Edit date — inline editable */}
               {showEditDue && (
-                <div
-                  className="font-mono tracking-[0.04em] tabular-nums"
-                  style={{
-                    fontSize: "11.5px",
-                    color: plan.editDueDate ? "var(--abv-text-muted)" : "var(--abv-text-dim)",
-                  }}
-                >
-                  {plan.editDueDate ? formatDate(plan.editDueDate) : "—"}
+                <div className="min-w-0">
+                  <InlineDateInput
+                    value={plan.editDueDate}
+                    onChange={(v) => patchPlan(plan.id, { editDueDate: v })}
+                  />
                 </div>
               )}
 
-              {/* Publish date */}
-              <div
-                className="font-mono tracking-[0.04em] tabular-nums"
-                style={{
-                  fontSize: "11.5px",
-                  color: plan.publishDate ? "var(--abv-text-muted)" : "var(--abv-text-dim)",
-                }}
-              >
-                {plan.publishDate ? formatDate(plan.publishDate) : "—"}
+              {/* Publish date — inline editable */}
+              <div className="min-w-0">
+                <InlineDateInput
+                  value={plan.publishDate}
+                  onChange={(v) => patchPlan(plan.id, { publishDate: v })}
+                />
               </div>
 
-              {/* Drive folder — open in new tab; clicking should not also open the editor */}
+              {/* Drive folder — open in new tab */}
               {showDriveFolder && (
-                <div className="flex items-center justify-center" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+                <div className="flex items-center justify-center">
                   {plan.driveFolderLink ? (
                     <a
                       href={plan.driveFolderLink}
@@ -605,8 +736,8 @@ export default function ContentPlanTable({
                 </div>
               )}
 
-              {/* Delete — soft-delete the plan; clicking should not open the editor */}
-              <div className="flex items-center justify-center" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+              {/* Delete — soft-delete the plan */}
+              <div className="flex items-center justify-center">
                 <button
                   onClick={() => handleDelete(plan.id)}
                   disabled={deletingId === plan.id}
