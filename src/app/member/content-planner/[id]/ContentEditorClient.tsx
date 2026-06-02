@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { ContentPlan } from "@/components/content-planner/ContentPlanEditModal";
-import { getStatusOptions, hasEditDueDate, PRODUCTION_TIERS } from "@/lib/content-plan-utils";
+import { getStatusOptions, hasEditDueDate, PRODUCTION_TIERS, getPlanThumbnailUrl } from "@/lib/content-plan-utils";
 import { hasDriveFolderAccess } from "@/lib/service-tier";
 import { useToast } from "@/components/ToastProvider";
 
@@ -774,6 +774,11 @@ Output as markdown with ## per talking point, ### per section. Every stat: \`fig
     review: "All done — review next batch →",
   } as Record<string, string>)[currentStepKey];
 
+  // The "the" thumbnail for the hero: a picked Drive thumbnail, else the A/B
+  // winner, else the first uploaded option. Reads from `plan` (kept fresh by
+  // patchPlan after uploads) so it updates live when a thumbnail is added.
+  const heroThumbnailUrl = useMemo(() => getPlanThumbnailUrl(plan), [plan]);
+
   const titleH1Ref = useRef<HTMLHeadingElement | null>(null);
   const scriptTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const lineageRef = useRef<HTMLDivElement | null>(null);
@@ -968,7 +973,7 @@ Output as markdown with ## per talking point, ### per section. Every stat: \`fig
                 <span>{wordCount(form.script).toLocaleString()} words</span>
               </div>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, alignItems: "flex-end" }}>
               <button
                 onClick={handleNextAction}
                 style={{
@@ -985,6 +990,22 @@ Output as markdown with ## per talking point, ### per section. Every stat: \`fig
               >
                 {nextActionLabel}
               </button>
+              {heroThumbnailUrl && (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  src={heroThumbnailUrl}
+                  alt="Video thumbnail"
+                  style={{
+                    width: 160,
+                    aspectRatio: "16 / 9",
+                    objectFit: "cover",
+                    borderRadius: 8,
+                    border: "1px solid rgba(255,255,255,0.18)",
+                    display: "block",
+                    background: "rgba(0,0,0,0.3)",
+                  }}
+                />
+              )}
             </div>
           </div>
         </section>

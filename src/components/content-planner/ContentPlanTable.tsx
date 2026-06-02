@@ -8,6 +8,7 @@ import {
   hasEditDueDate,
   hasDriveFolder,
   filterPlans,
+  getPlanThumbnailUrl,
 } from "@/lib/content-plan-utils";
 import { getStatusPillStyle, getThemeVisual } from "@/lib/content-plan-style";
 
@@ -29,6 +30,8 @@ interface ContentPlan {
   driveFolderLink: string | null;
   thumbnailFileId: string | null;
   thumbnailFileName: string | null;
+  thumbnailVariants?: unknown;
+  thumbnailWinnerId?: string | null;
   updatedAt?: string | null;
   bingeVideoId: string | null;
   bingeVideo: { id: string; title: string; theme: string | null; status: string } | null;
@@ -639,16 +642,19 @@ export default function ContentPlanTable({
             >
               {/* Title cell — thumbnail (if any) + title. Title opens the editor. */}
               <div className="flex items-start gap-2 min-w-0">
-                {plan.thumbnailFileId ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={`/api/member/content-plans/${plan.id}/thumbnail?v=${encodeURIComponent(plan.updatedAt ?? plan.thumbnailFileId ?? "")}`}
-                    alt=""
-                    loading="lazy"
-                    className="w-12 h-7 object-cover rounded shrink-0 mt-0.5 bg-gray-100 border border-gray-200"
-                    title={plan.thumbnailFileName ?? "Thumbnail"}
-                  />
-                ) : null}
+                {(() => {
+                  const thumbUrl = getPlanThumbnailUrl(plan);
+                  return thumbUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={thumbUrl}
+                      alt=""
+                      loading="lazy"
+                      className="w-12 h-7 object-cover rounded shrink-0 mt-0.5 bg-gray-100 border border-gray-200"
+                      title={plan.thumbnailFileName ?? "Thumbnail"}
+                    />
+                  ) : null;
+                })()}
                 <div className="flex flex-col gap-0.5 min-w-0">
                   <div className="flex items-center gap-1.5">
                     <button

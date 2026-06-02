@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 import { resolveUserFromSession } from "@/lib/session-utils";
+import { canStaffAccessMember } from "@/lib/staff-access";
 import { fetchDriveFileBytes, deleteDriveFile } from "@/lib/google-drive";
 import {
   type ThumbnailVariant,
@@ -24,12 +26,27 @@ export async function GET(
   const user = await resolveUserFromSession();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  // auth() here complements resolveUserFromSession above: we need the ACTUAL
+  // signed-in account's role for the staff-bypass check (canStaffAccessMember),
+  // not the impersonated member's. Mirrors the /thumbnail proxy route so staff
+  // viewing a member's plans (without impersonating) still see A/B thumbnails.
+  const session = await auth();
+  const role = (session?.user as { role?: string } | undefined)?.role;
+  const isStaff = role === "admin" || role === "editor";
+
   const { id, variantId } = await params;
   const plan = await prisma.contentPlan.findFirst({
-    where: { id, userId: user.id, deletedAt: null },
-    select: { thumbnailVariants: true },
+    where: { id, deletedAt: null },
+    select: { userId: true, thumbnailVariants: true },
   });
   if (!plan) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (plan.userId !== user.id) {
+    if (!isStaff) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    const staffId = (session?.user as { id?: string } | undefined)?.id;
+    if (!staffId || !(await canStaffAccessMember(staffId, plan.userId))) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+  }
 
   const variant = parseVariants(plan.thumbnailVariants).find((v) => v.id === variantId);
   if (!variant) return NextResponse.json({ error: "Not found" }, { status: 404 });

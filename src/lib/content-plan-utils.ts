@@ -168,6 +168,48 @@ export const STATUS_STYLES: Record<string, { bg: string; text: string }> = {
 
 export const PRIORITY_OPTIONS = ["High", "Medium", "Low"];
 
+/**
+ * Resolve the single image a plan should show as its "the" thumbnail across the
+ * planner (table title cell + editor hero). A plan has up to two thumbnail
+ * sources:
+ *   1. `thumbnailFileId` — a Drive file the production/drive member explicitly
+ *      picked, streamed through the `/thumbnail` proxy.
+ *   2. `thumbnailVariants` + `thumbnailWinnerId` — A/B options uploaded in the
+ *      Publish tab (to Drive for production members, to Object Storage for
+ *      foundations members), streamed through `/thumbnails/<variantId>`.
+ *
+ * Preference order: an explicitly-picked Drive thumbnail, then the A/B winner,
+ * then the first uploaded option. Returns the same-origin image URL (cache-
+ * busted by `updatedAt`) or `null` when the plan has no thumbnail at all. The
+ * routes always live under `/api/member/...` (they resolve impersonating staff
+ * to the member), matching how the table already builds its proxy URL.
+ */
+export function getPlanThumbnailUrl(plan: {
+  id: string;
+  thumbnailFileId?: string | null;
+  thumbnailVariants?: unknown;
+  thumbnailWinnerId?: string | null;
+  updatedAt?: string | null;
+}): string | null {
+  const base = `/api/member/content-plans/${plan.id}`;
+  const bust = encodeURIComponent(plan.updatedAt ?? "");
+  if (plan.thumbnailFileId) {
+    const v = encodeURIComponent(plan.updatedAt ?? plan.thumbnailFileId ?? "");
+    return `${base}/thumbnail?v=${v}`;
+  }
+  const variants = Array.isArray(plan.thumbnailVariants)
+    ? (plan.thumbnailVariants as Array<{ id?: unknown }>).filter(
+        (v): v is { id: string } => !!v && typeof v.id === "string",
+      )
+    : [];
+  if (variants.length === 0) return null;
+  const winner = plan.thumbnailWinnerId
+    ? variants.find((v) => v.id === plan.thumbnailWinnerId)
+    : undefined;
+  const chosen = winner ?? variants[0];
+  return `${base}/thumbnails/${chosen.id}?v=${bust || encodeURIComponent(chosen.id)}`;
+}
+
 // Soft-delete leak guard for the self-referential binge chain. `bingeVideo`
 // is a to-one relation (selected via bingeVideoId) and Prisma can't filter it
 // inside `include`/`select`, so a live plan pointing at a soft-deleted target
