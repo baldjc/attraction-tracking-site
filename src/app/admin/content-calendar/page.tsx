@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { CalendarDaysIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
 import ContentPlannerClient from "@/app/member/content-planner/ContentPlannerClient";
 import { formatTierLabel, tierBadgeClasses } from "@/lib/content-plan-utils";
+import { IMPERSONATE_LS_KEY } from "@/lib/impersonate-constants";
 
 interface Member {
   id: string;
@@ -26,6 +27,11 @@ export default function AdminContentCalendarPage() {
   const [memberSearch,   setMemberSearch]   = useState("");
   const [dropdownOpen,   setDropdownOpen]   = useState(false);
   const [mobileSearch,   setMobileSearch]   = useState("");
+  const [selectError,    setSelectError]    = useState<string | null>(null);
+
+  // Monotonic id so a slow earlier member-select can't overwrite a later one
+  // when the admin rapid-switches members.
+  const selectSeq = useRef(0);
 
   useEffect(() => {
     fetch("/api/admin/members")
@@ -37,24 +43,65 @@ export default function AdminContentCalendarPage() {
 
   async function handleSelectMember(member: Member) {
     if (selected?.id === member.id) return;
+    const seq = ++selectSeq.current;
     setSelected(null);
+    setSelectError(null);
     setTierLoading(true);
+
+    // Impersonate this member before loading their planner. The list below
+    // reads via the admin API and works without impersonation, but clicking a
+    // row navigates to the member-scoped editor (/member/content-planner/<id>),
+    // which resolves the viewer from the session. Without impersonation that
+    // resolves to the admin and the plan 404s as "belongs to a different
+    // member" — so set it here so every video click opens cleanly. Mirror the
+    // localStorage key the "Working for" banner / Sidebar read so the
+    // impersonation state is visible (and clearable) everywhere, not just
+    // server-side via the cookie.
+    let impersonated = false;
+    try {
+      const imp = await fetch("/api/admin/impersonate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ memberId: member.id }),
+      });
+      impersonated = imp.ok;
+    } catch {
+      impersonated = false;
+    }
+    if (seq !== selectSeq.current) return; // a newer selection superseded this one
+    if (impersonated) {
+      try {
+        localStorage.setItem(
+          IMPERSONATE_LS_KEY,
+          JSON.stringify({ memberId: member.id, memberName: member.fullName ?? member.email, targetRole: "member" }),
+        );
+      } catch {
+        // localStorage unavailable — the cookie still drives the editor.
+      }
+    } else {
+      setTierLoading(false);
+      setSelectError("Couldn't open this member's planner for editing. Refresh and try again.");
+      return;
+    }
+
     try {
       const res  = await fetch(`/api/admin/members/${member.id}/content-plans`);
       const data = await res.json();
+      if (seq !== selectSeq.current) return;
       setSelected({
         id:          member.id,
         name:        member.fullName ?? member.email,
         serviceTier: data.serviceTier ?? "foundations",
       });
     } catch {
+      if (seq !== selectSeq.current) return;
       setSelected({
         id:          member.id,
         name:        member.fullName ?? member.email,
         serviceTier: "foundations",
       });
     } finally {
-      setTierLoading(false);
+      if (seq === selectSeq.current) setTierLoading(false);
     }
   }
 
@@ -190,9 +237,13 @@ export default function AdminContentCalendarPage() {
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
                 <CalendarDaysIcon className="w-10 h-10 text-[var(--abv-text)]/15 dark:text-white/10 mx-auto mb-3" />
-                <p className="text-sm text-[var(--abv-text)]/40 dark:text-white/30">
-                  Select a member to view their content plan
-                </p>
+                {selectError ? (
+                  <p className="text-sm text-red-600 dark:text-red-400 max-w-xs">{selectError}</p>
+                ) : (
+                  <p className="text-sm text-[var(--abv-text)]/40 dark:text-white/30">
+                    Select a member to view their content plan
+                  </p>
+                )}
               </div>
             </div>
           )}

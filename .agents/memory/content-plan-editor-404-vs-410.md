@@ -33,3 +33,24 @@ always get the generic `not_found`. The admin Restore-from-404 action targets
 `PUT /api/admin/members/<ownerUserId>/content-plans/<planId>` `{restore:true}`,
 which is gated by raw `auth()` role (admin/editor) + `canStaffAccessMember`,
 independent of impersonation state — so it is the correct trust boundary.
+
+## Admin content-calendar list reads admin API but editor needs impersonation
+
+`/admin/content-calendar` shows a member's plans by passing an *admin* `apiBase`
+(`/api/admin/members/<id>/content-plans`) to the shared `ContentPlannerClient` —
+that list authorizes by raw session role and needs NO impersonation. But a row
+click navigates to the *member-scoped* editor `/member/content-planner/<id>`,
+which resolves the viewer via the impersonation cookie. So without impersonation
+the admin hits the `wrong_owner` page on every video. Fix: set impersonation
+(POST `/api/admin/impersonate {memberId}`) when the admin selects the member.
+
+**Two-channel impersonation gotcha:** the server cookie drives
+`resolveUserFromSession`, but the visible "Working for"/Sidebar indicators read
+**`localStorage[IMPERSONATE_LS_KEY]`** (`{memberId, memberName, targetRole}`)
+— a *separate* channel. Setting only the cookie creates hidden global state
+(admin silently acts as the member elsewhere with no banner). Always write BOTH,
+matching `WorkingForBanner.selectMember`. Do NOT clear impersonation on this
+page's unmount — navigating to the editor unmounts it and the editor needs the
+cookie. Gate the select flow on the impersonate `response.ok`, and guard rapid
+member switches with a monotonic ref so a slow earlier select can't overwrite a
+later one's state/localStorage.
