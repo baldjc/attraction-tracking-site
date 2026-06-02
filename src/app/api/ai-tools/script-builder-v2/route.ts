@@ -89,6 +89,12 @@ import {
   METRIC_NAME_LABELS,
   type RotationSlotKey,
 } from "@/lib/content-engine-validation";
+import {
+  classifyAnthropicError,
+  makeScriptError,
+  type ScriptError,
+} from "@/lib/script-builder-errors";
+import { evaluateScriptPreflight } from "@/lib/script-preflight";
 
 export const runtime = "nodejs";
 export const maxDuration = 300; // ~5 min for a 12-16 min script + re-prompts
@@ -96,6 +102,25 @@ export const maxDuration = 300; // ~5 min for a 12-16 min script + re-prompts
 const SONNET_MODEL = "claude-sonnet-4-20250514";
 const MAX_REPROMPTS = 2;
 const MAX_OUTPUT_TOKENS = 12000;
+
+// ── Time budgeting (Part C — root-cause fix) ──────────────────────────────
+// The prod failure was a retry loop running past the 300s function wall: the
+// platform killed the function mid-stream on attempt 2, so NO terminal SSE
+// frame was emitted and the client fell back to a generic "connection closed"
+// error. We now keep generation strictly inside a budget below the wall and
+// never START an attempt we can't finish, so a terminal (categorized) frame is
+// always sent.
+//
+// GENERATION_BUDGET_MS leaves headroom under maxDuration for the final
+// validation pass, billing, and the terminal emit. ATTEMPT_TIME_RESERVE_MS is a
+// conservative estimate of how long one full generate+validate attempt takes
+// (~60–120s observed); if less than that remains, we stop retrying and surface
+// the best-known violations instead of starting a doomed attempt.
+const GENERATION_BUDGET_MS = 255_000;
+const ATTEMPT_TIME_RESERVE_MS = 130_000;
+// Per-attempt Anthropic timeout so a single stalled call can't consume the
+// whole budget — it throws, gets classified as anthropic_timeout, and we stop.
+const PER_ATTEMPT_TIMEOUT_MS = 180_000;
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -184,6 +209,7 @@ export async function POST(req: NextRequest) {
       402,
       "monthly_cost_cap_reached",
       `You've hit your $${cap.capUsd.toFixed(2)} monthly AI budget. It resets on the 1st of next month.`,
+      { category: "cost_cap_hit" },
     );
   }
 
@@ -337,6 +363,28 @@ export async function POST(req: NextRequest) {
     trajectory: f.trajectory,
     caveat: f.viewerCaveat,
   }));
+
+  // ── Pre-flight fact-sufficiency (Part D — before ANY Anthropic call) ──
+  // Categorically-unsatisfiable plans (e.g. a Neighbourhood Fact video whose
+  // only linked facts are city-wide aggregates) fail here with an actionable
+  // `insufficient_facts` instead of burning ~5 min of generation + retries on
+  // a script that can't pass. Conservative by design — it never blocks the
+  // 1–2-fact "Low Support" population the wizard intentionally lets through.
+  const preflight = evaluateScriptPreflight({
+    rotationSlot: plan.rotationSlot as RotationSlotKey,
+    facts: citedFacts.map((f) => ({ neighbourhood: f.neighbourhood })),
+  });
+  if (!preflight.ok) {
+    return jsonError(422, "insufficient_facts", preflight.message, {
+      category: "insufficient_facts",
+      details: {
+        modeName: preflight.modeName,
+        needed: preflight.needed,
+        have: preflight.have,
+        uncovered: preflight.uncovered,
+      },
+    });
+  }
 
   // ── Load assigned lead-magnet campaign + binge-target plan ───────────
   // Both ownership-filtered. Each fetch is optional — if the plan has
@@ -655,6 +703,25 @@ export async function POST(req: NextRequest) {
         }
       };
 
+      // Terminal structured error frame. Every in-stream failure path routes
+      // through here so the client always receives a categorized `error` event
+      // (category + message + details) instead of a silent close.
+      const emitScriptError = (
+        scriptError: ScriptError,
+        extra?: Record<string, unknown>,
+      ) => {
+        console.log(
+          `[sb-v2 telemetry] +${ms()}ms TERMINAL event=error category=${scriptError.category}`,
+        );
+        emit("error", {
+          category: scriptError.category,
+          error: scriptError.category,
+          message: scriptError.message,
+          ...(scriptError.details ? { details: scriptError.details } : {}),
+          ...(extra ?? {}),
+        });
+      };
+
       try {
         trace("phase", "Loading your facts and neighbourhood context...");
         emit("phase", {
@@ -684,6 +751,30 @@ export async function POST(req: NextRequest) {
 
         for (let attempt = 0; attempt <= MAX_REPROMPTS; attempt++) {
           if (internalAbort.signal.aborted) break;
+
+          // ─ Time-budget guard (Part C) ─────────────────────────────────
+          // Never START a retry we can't finish before the function wall.
+          // If there isn't a full attempt's worth of budget left, stop and
+          // surface the best-known violations as a terminal `validator_max_retries`
+          // frame — this is what prevents the silent mid-stream kill that
+          // produced the original "connection closed" error.
+          if (
+            attempt > 0 &&
+            ms() + ATTEMPT_TIME_RESERVE_MS > GENERATION_BUDGET_MS
+          ) {
+            console.log(
+              `[sb-v2 telemetry] +${ms()}ms budget-guard: skipping attempt=${attempt} (no time for a full retry)`,
+            );
+            emitScriptError(
+              makeScriptError(
+                "validator_max_retries",
+                `We couldn't write a script that passes your content rules in the time available. ${lastErrors.length} content-rule issue(s) remained. Try linking more facts or adjusting your script mode.`,
+                { violations: lastErrors },
+              ),
+              { attempt, draft: lastDraft },
+            );
+            break;
+          }
 
           // Phase: first attempt walks intro→body→hook; retries jump
           // straight to "fixing rule violations".
@@ -771,7 +862,20 @@ export async function POST(req: NextRequest) {
             // Anthropic streaming API. `signal: internalAbort.signal`
             // ensures abort propagates upstream so we stop being billed
             // for tokens the client will never see.
-            console.log(`[sb-v2:anthropic-start] t=${ms()}ms attempt=${attempt}`);
+            // Hard-bound THIS attempt to whatever budget remains. The static
+            // PER_ATTEMPT_TIMEOUT_MS alone is not enough: a retry that passes
+            // the start guard at ~125s could still stream for a full 180s and
+            // overrun the 300s wall mid-stream — the exact failure we're fixing.
+            // Capping the Anthropic timeout to the remaining budget guarantees
+            // the stream throws (→ anthropic_timeout, a terminal frame) before
+            // the wall instead of being killed silently.
+            const attemptTimeoutMs = Math.min(
+              PER_ATTEMPT_TIMEOUT_MS,
+              Math.max(0, GENERATION_BUDGET_MS - ms()),
+            );
+            console.log(
+              `[sb-v2:anthropic-start] t=${ms()}ms attempt=${attempt} timeout=${attemptTimeoutMs}ms`,
+            );
             const sdkStream = anthropic.messages.stream(
               {
                 model: SONNET_MODEL,
@@ -779,7 +883,10 @@ export async function POST(req: NextRequest) {
                 system: systemBlocks,
                 messages: [{ role: "user", content: userMessage }],
               },
-              { signal: internalAbort.signal },
+              {
+                signal: internalAbort.signal,
+                timeout: attemptTimeoutMs,
+              },
             );
 
             for await (const event of sdkStream) {
@@ -857,15 +964,16 @@ export async function POST(req: NextRequest) {
               break;
             }
             const msg = (err as { message?: string })?.message ?? String(err);
-            console.error("[script-builder-v2] anthropic error:", msg);
-            console.log(
-              `[sb-v2 telemetry] +${ms()}ms TERMINAL event=error (claude_call_failed) attempt=${attempt}`,
+            const scriptError = classifyAnthropicError(err);
+            console.error(
+              `[script-builder-v2] anthropic error (category=${scriptError.category}${
+                scriptError.details?.ticketId
+                  ? ` ticket=${scriptError.details.ticketId}`
+                  : ""
+              }):`,
+              msg,
             );
-            emit("error", {
-              error: "claude_call_failed",
-              message:
-                "Script generation is unavailable right now. Try again in a moment.",
-            });
+            emitScriptError(scriptError, { attempt });
             break;
           }
           // Successful stream completion — fold into running totals.
@@ -975,17 +1083,19 @@ export async function POST(req: NextRequest) {
             (v) => v.severity === "error",
           );
           if (attempt === MAX_REPROMPTS) {
-            console.log(
-              `[sb-v2 telemetry] +${ms()}ms TERMINAL event=error (validation_gate_failed)`,
+            emitScriptError(
+              makeScriptError(
+                "validator_max_retries",
+                `We couldn't write a script that passes your content rules after ${MAX_REPROMPTS + 1} attempts. ${lastErrors.length} content-rule issue(s) remained — link more facts or adjust your script mode and try again.`,
+                { violations: lastErrors },
+              ),
+              {
+                violations: validation.violations,
+                metrics: validation.metrics,
+                attempt,
+                draft,
+              },
             );
-            emit("error", {
-              error: "validation_gate_failed",
-              message: `Couldn't produce a script that passes the locked content rules after ${MAX_REPROMPTS + 1} attempts. ${lastErrors.length} error-severity violation(s) remain — see "violations" for details.`,
-              violations: validation.violations,
-              metrics: validation.metrics,
-              attempt,
-              draft,
-            });
             break;
           }
           // Otherwise emit a "violation" event so the UI can show what's
@@ -1036,6 +1146,26 @@ export async function POST(req: NextRequest) {
             totalOutputTokens,
           );
         }
+      } catch (err) {
+        // Safety net: any exception outside the Anthropic-specific catch
+        // (e.g. validateScript, autoFix passes, logUsage, getCostCapStatus)
+        // would otherwise close the stream with no terminal frame, leaving
+        // the client to fall back to the generic "connection closed" error.
+        // Classify and emit one last categorized frame before the finally
+        // closes the controller.
+        if (!internalAbort.signal.aborted) {
+          const scriptError = classifyAnthropicError(err);
+          const msg = (err as { message?: string })?.message ?? String(err);
+          console.error(
+            `[script-builder-v2] uncaught stream error (category=${scriptError.category}${
+              scriptError.details?.ticketId
+                ? ` ticket=${scriptError.details.ticketId}`
+                : ""
+            }):`,
+            msg,
+          );
+          emitScriptError(scriptError);
+        }
       } finally {
         stopHeartbeat();
         clientSignal.removeEventListener("abort", onClientAbort);
@@ -1081,11 +1211,15 @@ function jsonError(
   status: number,
   error: string,
   message?: string,
+  extra?: Record<string, unknown>,
 ): Response {
-  return new Response(
-    JSON.stringify(message ? { error, message } : { error }),
-    { status, headers: { "content-type": "application/json" } },
-  );
+  const body: Record<string, unknown> = { error };
+  if (message) body.message = message;
+  if (extra) Object.assign(body, extra);
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "content-type": "application/json" },
+  });
 }
 
 function toMonthYearUtc(d: Date | null | undefined): string {

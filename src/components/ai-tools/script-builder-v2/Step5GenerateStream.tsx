@@ -47,6 +47,11 @@ import { useAiThinking } from "@/lib/use-ai-thinking";
 import { formatUsagePercent } from "@/lib/cost-display";
 import type { ShootType } from "./Step4ShootType";
 import type { ScriptViolation } from "@/lib/script-content-rules";
+import type {
+  ScriptErrorCategory,
+  ScriptErrorDetails,
+} from "@/lib/script-builder-errors";
+import { FactPickerModal } from "@/components/content-planner/FactPickerModal";
 
 interface ScriptMetrics {
   dialogueWordCount: number;
@@ -126,9 +131,12 @@ interface StreamError {
   kind: "http" | "stream" | "network";
   status?: number;
   error?: string;
+  /** Structured category from the route's classifier (Part B). */
+  category?: ScriptErrorCategory;
   message?: string;
   violations?: ScriptViolation[];
   metrics?: ScriptMetrics;
+  details?: ScriptErrorDetails;
 }
 
 interface Props {
@@ -297,6 +305,9 @@ export function Step5GenerateStream({
   const [done, setDone] = useState<Step5CompletePayload | null>(null);
   const [error, setError] = useState<StreamError | null>(null);
   const [userStopped, setUserStopped] = useState(false);
+  // Bumped by the failure UI's "Try again" action to re-run generation for
+  // transient errors (timeout / overloaded) without leaving the wizard.
+  const [retryNonce, setRetryNonce] = useState(0);
   /**
    * Live-region announcement counter. Re-prompts bump this so screen
    * readers hear that a retry kicked off; the visible UI shows the
@@ -436,7 +447,12 @@ export function Step5GenerateStream({
         // all bail out BEFORE the SSE stream opens. Surface them as
         // a clean error card — no partial pipeline state to unwind.
         if (!resp.ok || !resp.body) {
-          let payload: { error?: string; message?: string } = {};
+          let payload: {
+            error?: string;
+            message?: string;
+            category?: ScriptErrorCategory;
+            details?: ScriptErrorDetails;
+          } = {};
           try {
             payload = await resp.json();
           } catch {
@@ -448,7 +464,9 @@ export function Step5GenerateStream({
             kind: "http",
             status: resp.status,
             error: payload.error,
+            category: payload.category,
             message: payload.message,
+            details: payload.details,
           });
           thinking.stop();
           return;
@@ -548,17 +566,21 @@ export function Step5GenerateStream({
           } else if (evt === "error") {
             const d = data as {
               error?: string;
+              category?: ScriptErrorCategory;
               message?: string;
               violations?: ScriptViolation[];
               metrics?: ScriptMetrics;
+              details?: ScriptErrorDetails;
             };
             clearAll();
             setError({
               kind: "stream",
               error: d.error,
+              category: d.category,
               message: d.message,
               violations: d.violations,
               metrics: d.metrics,
+              details: d.details,
             });
             thinking.stop();
             return "done";
@@ -649,7 +671,7 @@ export function Step5GenerateStream({
       ctrl.abort();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [planId, shootType, regenerationBrief]);
+  }, [planId, shootType, regenerationBrief, retryNonce]);
 
   const handleStop = useCallback(() => {
     // User-initiated cancellation — distinct from the cleanup-path
@@ -666,7 +688,18 @@ export function Step5GenerateStream({
   }, [thinking]);
 
   // ── Render: error ─────────────────────────────────────────────
-  if (error) return <ErrorView error={error} onBack={onBack} />;
+  if (error)
+    return (
+      <ErrorView
+        error={error}
+        planId={planId}
+        onBack={onBack}
+        onRetry={() => {
+          setError(null);
+          setRetryNonce((n) => n + 1);
+        }}
+      />
+    );
 
   // ── Render: user stopped ──────────────────────────────────────
   if (userStopped && !done) {
@@ -1090,49 +1123,129 @@ export function SmartRegeneratePanel({
   );
 }
 
+/**
+ * Resolve a structured category from a StreamError. Prefers the explicit
+ * `category` field the route now sends; falls back to legacy `error` codes /
+ * HTTP status so an older server response (or a true mid-stream close) still
+ * renders a sensible card.
+ */
+function resolveCategory(error: StreamError): ScriptErrorCategory {
+  if (error.category) return error.category;
+  if (
+    error.status === 402 ||
+    error.error === "monthly_cost_cap_reached"
+  ) {
+    return "cost_cap_hit";
+  }
+  if (
+    error.error === "validation_gate_failed" ||
+    (error.violations && error.violations.length > 0)
+  ) {
+    return "validator_max_retries";
+  }
+  if (error.error === "insufficient_linked_facts") return "insufficient_facts";
+  // stream_closed_early / network / claude_call_failed / unknown → generic.
+  return "internal_error";
+}
+
+const ERROR_TITLES: Record<ScriptErrorCategory, string> = {
+  validator_max_retries: "Couldn't pass content rules",
+  cost_cap_hit: "Monthly AI budget reached",
+  anthropic_timeout: "Generation timed out",
+  anthropic_overloaded: "The model is busy",
+  insufficient_facts: "Not enough facts for this script mode",
+  internal_error: "Couldn't generate the script",
+};
+
 function ErrorView({
   error,
+  planId,
   onBack,
+  onRetry,
 }: {
   error: StreamError;
+  planId: string;
   onBack: () => void;
+  onRetry: () => void;
 }) {
-  const isCostCap =
-    error.kind === "http" &&
-    (error.status === 402 || error.error === "monthly_cost_cap_reached");
-  const isValidationGate =
-    error.kind === "stream" && error.error === "validation_gate_failed";
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const category = resolveCategory(error);
+  const canRetry =
+    category === "anthropic_timeout" ||
+    category === "anthropic_overloaded" ||
+    category === "internal_error";
+  const canLinkFacts =
+    category === "validator_max_retries" ||
+    category === "insufficient_facts";
+  const ticketId = error.details?.ticketId;
 
   return (
     <div className="rounded-lg border border-red-300 bg-red-50 p-6 dark:border-red-700 dark:bg-red-950/40">
       <p className="text-sm font-medium text-red-900 dark:text-red-100">
-        {isCostCap
-          ? "Monthly AI budget reached"
-          : isValidationGate
-            ? "Couldn't pass content rules"
-            : "Couldn't generate the script"}
+        {ERROR_TITLES[category]}
       </p>
       <p className="mt-2 text-sm text-red-800 dark:text-red-200">
         {error.message ?? error.error ?? "Unknown error."}
       </p>
 
-      {isValidationGate && error.violations && error.violations.length > 0 && (
-        <details className="mt-3 text-xs text-red-900 dark:text-red-100">
-          <summary className="cursor-pointer font-semibold">
-            {error.violations.length} rule violation(s)
-          </summary>
-          <ul className="mt-2 list-inside list-disc space-y-1">
-            {error.violations.map((v, i) => (
-              <li key={i}>
-                <span className="font-mono">{v.rule}</span> ({v.severity}) —{" "}
-                {v.message}
-              </li>
+      {/* insufficient_facts — list the uncovered dimensions. */}
+      {category === "insufficient_facts" &&
+        error.details?.uncovered &&
+        error.details.uncovered.length > 0 && (
+          <ul className="mt-3 list-inside list-disc space-y-1 text-xs text-red-900 dark:text-red-100">
+            {error.details.uncovered.map((u, i) => (
+              <li key={i}>{u}</li>
             ))}
           </ul>
-        </details>
+        )}
+
+      {/* validator_max_retries — show the unresolved rule violations. */}
+      {category === "validator_max_retries" &&
+        error.violations &&
+        error.violations.length > 0 && (
+          <details className="mt-3 text-xs text-red-900 dark:text-red-100">
+            <summary className="cursor-pointer font-semibold">
+              {error.violations.length} rule violation(s)
+            </summary>
+            <ul className="mt-2 list-inside list-disc space-y-1">
+              {error.violations.map((v, i) => (
+                <li key={i}>
+                  <span className="font-mono">{v.rule}</span> ({v.severity}) —{" "}
+                  {v.message}
+                </li>
+              ))}
+            </ul>
+          </details>
+        )}
+
+      {/* internal_error — surface the support ticket id. */}
+      {category === "internal_error" && ticketId && (
+        <p className="mt-3 text-xs text-red-700 dark:text-red-300">
+          Reference id:{" "}
+          <span className="font-mono">{ticketId}</span> — include this if you
+          contact support.
+        </p>
       )}
 
-      <div className="mt-4 flex items-center gap-3">
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        {canRetry && (
+          <button
+            type="button"
+            onClick={onRetry}
+            className="rounded-md bg-red-700 px-4 py-2 text-sm font-medium text-white hover:bg-red-800 dark:bg-red-600 dark:hover:bg-red-500"
+          >
+            Try again
+          </button>
+        )}
+        {canLinkFacts && (
+          <button
+            type="button"
+            onClick={() => setPickerOpen(true)}
+            className="rounded-md bg-red-700 px-4 py-2 text-sm font-medium text-white hover:bg-red-800 dark:bg-red-600 dark:hover:bg-red-500"
+          >
+            Link more facts
+          </button>
+        )}
         <button
           type="button"
           onClick={onBack}
@@ -1141,6 +1254,20 @@ function ErrorView({
           ← Back
         </button>
       </div>
+
+      {pickerOpen && (
+        <FactPickerModal
+          planId={planId}
+          initialLinkedIds={[]}
+          onClose={() => setPickerOpen(false)}
+          onSaved={() => {
+            // Facts linked — close the picker and re-run generation so the
+            // member doesn't have to navigate back through the wizard.
+            setPickerOpen(false);
+            onRetry();
+          }}
+        />
+      )}
     </div>
   );
 }
