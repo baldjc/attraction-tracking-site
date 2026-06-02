@@ -84,6 +84,19 @@ function ThemePill({ theme }: { theme: string | null }) {
   );
 }
 
+function GoogleDriveIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 87.3 78" className={className} aria-hidden="true">
+      <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da" />
+      <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#00ac47" />
+      <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335" />
+      <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d" />
+      <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc" />
+      <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00" />
+    </svg>
+  );
+}
+
 function formatDate(d: string | null): string {
   if (!d) return "";
   return new Date(d).toLocaleDateString("en-CA", {
@@ -365,8 +378,8 @@ export default function ContentPlanTable({
     `${widths.theme}px`,
     `${widths.binge}px`,
     `${widths.shootDate}px`,
-    `${widths.publishDate}px`,
     showEditDue ? `${widths.editDate}px` : null,
+    `${widths.publishDate}px`,
     showDriveFolder ? "44px" : null,
     "44px",
   ].filter(Boolean).join(" ");
@@ -449,25 +462,29 @@ export default function ContentPlanTable({
         </div>
         <div className="relative pr-2">
           <button onClick={() => handleSort("shootDate")} className="text-left hover:text-[var(--abv-text)] transition-colors">
-            Shoot date <SortIcon col="shootDate" />
+            Shoot <SortIcon col="shootDate" />
           </button>
           <ResizeHandle col="shootDate" />
-        </div>
-        <div className="relative pr-2">
-          <button onClick={() => handleSort("publishDate")} className="text-left hover:text-[var(--abv-text)] transition-colors">
-            Publish date <SortIcon col="publishDate" />
-          </button>
-          <ResizeHandle col="publishDate" />
         </div>
         {showEditDue && (
           <div className="relative pr-2">
             <button onClick={() => handleSort("editDueDate")} className="text-left hover:text-[var(--abv-text)] transition-colors">
-              Edit date <SortIcon col="editDueDate" />
+              Edit <SortIcon col="editDueDate" />
             </button>
             <ResizeHandle col="editDate" />
           </div>
         )}
-        {showDriveFolder && <span />}
+        <div className="relative pr-2">
+          <button onClick={() => handleSort("publishDate")} className="text-left hover:text-[var(--abv-text)] transition-colors">
+            Publish <SortIcon col="publishDate" />
+          </button>
+          <ResizeHandle col="publishDate" />
+        </div>
+        {showDriveFolder && (
+          <span className="flex items-center justify-center" title="Google Drive folder">
+            <GoogleDriveIcon className="w-4 h-4" />
+          </span>
+        )}
         <span />
       </div>
 
@@ -545,17 +562,6 @@ export default function ContentPlanTable({
                 {plan.shootDate ? formatDate(plan.shootDate) : "—"}
               </div>
 
-              {/* Publish date */}
-              <div
-                className="font-mono tracking-[0.04em] tabular-nums"
-                style={{
-                  fontSize: "11.5px",
-                  color: plan.publishDate ? "var(--abv-text-muted)" : "var(--abv-text-dim)",
-                }}
-              >
-                {plan.publishDate ? formatDate(plan.publishDate) : "—"}
-              </div>
-
               {/* Edit date */}
               {showEditDue && (
                 <div
@@ -568,6 +574,17 @@ export default function ContentPlanTable({
                   {plan.editDueDate ? formatDate(plan.editDueDate) : "—"}
                 </div>
               )}
+
+              {/* Publish date */}
+              <div
+                className="font-mono tracking-[0.04em] tabular-nums"
+                style={{
+                  fontSize: "11.5px",
+                  color: plan.publishDate ? "var(--abv-text-muted)" : "var(--abv-text-dim)",
+                }}
+              >
+                {plan.publishDate ? formatDate(plan.publishDate) : "—"}
+              </div>
 
               {/* Drive folder — open in new tab; clicking should not also open the editor */}
               {showDriveFolder && (
