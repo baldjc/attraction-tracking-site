@@ -1,4 +1,4 @@
-// Manual recovery for a market-data upload stuck in "validating".
+// Manual recovery for a market-data upload — runs the FULL idempotent pipeline.
 //
 // WHY THIS EXISTS
 // ----------------
@@ -12,19 +12,43 @@
 // It does NOT change the validator, the methodology, or the fire-and-forget
 // invocation path (that is being replaced separately by a queue+worker).
 //
-// runValidation is fully self-contained and idempotent:
+// THE FULL PIPELINE (one call to runValidation — there is NO separate
+// "story-lead generator" step to run on its own; lead generation is FUSED into
+// runValidation's single SUMMARY+LEADS Claude call):
 //   - loads the upload's raw CSV from Object Storage (via aggregateUploadFromDb)
+//   - aggregates rows into groups, bucketing each row's status via the member's
+//     CURRENT MarketConfig (columnMapping + statusCodes/statusMapping). If the
+//     market's status codes aren't configured, rows bucket to "unknown" → 0
+//     sold → 0 leads → near-empty metrics. Fix the MarketConfig.statusCodes
+//     FIRST, then re-run with --fresh (see below).
 //   - persists deterministic AggregatedMetric rows (deleteMany → createMany)
-//   - runs the full Claude fact/leads pipeline (or reuses stored AI output if a
-//     prior attempt already paid for it — rawValidatorOutput present)
+//   - runs the full Claude fact pipeline AND the fused SUMMARY+LEADS call that
+//     produces MarketStoryLead rows (or reuses stored AI output if a prior
+//     attempt already paid for it — rawValidatorOutput present)
 //   - persists MarketFact + MarketStoryLead rows (deleteMany → createMany)
 //   - flips status "validating" → "validated" (or "failed" with a reason)
 //   - loads the member's CURRENT methodology settings, which equal the Default
 //     preset for any member who never touched the settings panel
 //
+// Idempotent. Safe to re-run. Re-running a successful upload reproduces the same
+// rows; re-running after a config fix (with --fresh) recomputes them correctly.
+//
 // USAGE
 //   npx tsx scripts/recover-stuck-upload.ts <uploadId>
 //   npx tsx scripts/recover-stuck-upload.ts <uploadId> --force   # re-run even if already validated
+//   npx tsx scripts/recover-stuck-upload.ts <uploadId> --fresh   # implies --force; ALSO clears
+//                                                                 # rawValidatorOutput so the AI runs
+//                                                                 # again from scratch (costs AI $).
+//
+// --force vs --fresh:
+//   --force re-runs an already-"validated" upload but REUSES any stored AI
+//     output (rawValidatorOutput) — $0, reconstructs the same facts/leads. Use
+//     when a prior AI pass succeeded but the DB save died (persistence-only
+//     retry).
+//   --fresh clears rawValidatorOutput first, so runValidation calls Claude
+//     again. Use when the PRIOR OUTPUT IS WRONG because the inputs changed —
+//     e.g. you fixed MarketConfig.statusCodes/columnMapping and the old output
+//     was computed from an all-"unknown" (0-sold) aggregation. Costs AI spend.
 //
 // Find stuck uploads first:
 //   psql "$DATABASE_URL" -c "SELECT id, \"userId\", status FROM market_data_uploads WHERE status='validating';"
@@ -90,17 +114,20 @@ function printSnapshot(label: string, snap: NonNullable<Awaited<ReturnType<typeo
 
 async function main() {
   const args = process.argv.slice(2);
-  const force = args.includes("--force");
+  const fresh = args.includes("--fresh");
+  // --fresh implies --force (we always need to re-run, even if already validated).
+  const force = args.includes("--force") || fresh;
   const uploadId = args.find((a) => !a.startsWith("--"));
 
   if (!uploadId) {
-    console.error("Usage: npx tsx scripts/recover-stuck-upload.ts <uploadId> [--force]");
+    console.error("Usage: npx tsx scripts/recover-stuck-upload.ts <uploadId> [--force] [--fresh]");
     process.exit(1);
   }
 
   console.log(`\n===== recover-stuck-upload =====`);
   console.log(`uploadId: ${uploadId}`);
   console.log(`force:    ${force}`);
+  console.log(`fresh:    ${fresh}`);
 
   const before = await snapshot(uploadId);
   if (!before) {
@@ -118,14 +145,27 @@ async function main() {
     process.exit(1);
   }
 
-  // runValidation refuses to re-run a "validated" upload (idempotency guard).
-  // For an explicit --force re-run, drop it back to "validating" first.
-  if (before.upload.status === "validated" && force) {
+  // --fresh: clear the stored AI output so runValidation takes the full-AI path
+  // instead of reconstructing facts/leads from a now-stale blob. Also re-arm the
+  // status so the run proceeds. Do this regardless of current status (validated
+  // or already validating) — the whole point of --fresh is "ignore prior AI".
+  if (fresh) {
+    await prisma.marketDataUpload.update({
+      where: { id: uploadId },
+      data: { status: "validating", rawValidatorOutput: null, validationError: null },
+    });
+    console.log(
+      `\n[fresh] cleared rawValidatorOutput + reset status → validating. The AI pipeline will run from scratch (cost applies).`,
+    );
+  } else if (before.upload.status === "validated" && force) {
+    // runValidation refuses to re-run a "validated" upload (idempotency guard).
+    // For an explicit --force re-run, drop it back to "validating" first. Stored
+    // rawValidatorOutput is preserved → the reuse ($0) path.
     await prisma.marketDataUpload.update({
       where: { id: uploadId },
       data: { status: "validating", validationError: null },
     });
-    console.log(`\n[force] reset status validated → validating to allow re-run.`);
+    console.log(`\n[force] reset status validated → validating to allow re-run (reusing stored AI output).`);
   }
 
   console.log(`\n----- running full validator pipeline (runValidation) -----`);
