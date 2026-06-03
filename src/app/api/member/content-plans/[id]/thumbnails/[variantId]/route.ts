@@ -109,9 +109,13 @@ export async function DELETE(
   if (!removed) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   // Best-effort byte cleanup happens after the row write commits.
-  if (removed.storage === "object" && removed.key) {
+  // A variant can now carry BOTH an Object-Storage key and a Drive copy (the
+  // direct-upload flow stores to Object Storage, then mirrors into Drive), so
+  // clean up each independently rather than as mutually-exclusive branches.
+  if (removed.key) {
     await deleteThumbnailBytes(removed.key);
-  } else if (removed.storage === "drive" && removed.driveFileId) {
+  }
+  if (removed.driveFileId) {
     await deleteDriveFile(removed.driveFileId);
   }
 

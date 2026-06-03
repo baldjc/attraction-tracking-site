@@ -2008,27 +2008,81 @@ function PublishTab({
 
   const handleUpload = async (file: File) => {
     setThumbError(null);
+    // Direct-to-Object-Storage upload: the file bytes go straight to storage via
+    // a signed PUT URL and never pass through the app handler — that body-ingress
+    // hop is what stalled the old multipart POST in production. The app only does
+    // two tiny JSON calls (presign + finalize), then fires an optional Drive copy.
+    if (!["image/png", "image/jpeg"].includes(file.type)) {
+      setThumbError("Only PNG or JPG images are allowed.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setThumbError("Image must be 5MB or smaller.");
+      return;
+    }
     setUploading(true);
-    // Client-side guard: even if the network/proxy stalls (so the response never
-    // arrives), abort after 40s — longer than the server's worst-case bounded
-    // path — so the button can never hang on "Uploading…" indefinitely.
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 40_000);
     try {
-      const fd = new FormData();
-      fd.append("file", file);
-      const res = await fetch(`${apiBase}/${planId}/thumbnails`, {
+      // 1. Presign — validate + mint a short-lived signed PUT URL.
+      const presignRes = await fetch(`${apiBase}/${planId}/thumbnails/presign`, {
         method: "POST",
-        body: fd,
-        signal: controller.signal,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contentType: file.type, size: file.size, fileName: file.name }),
       });
-      const data = await res.json();
-      if (!res.ok) {
-        const msg = data?.error || "Upload failed";
-        throw new Error(data?.ticket ? `${msg} (ref: ${data.ticket})` : msg);
+      const presign = await presignRes.json();
+      if (!presignRes.ok) {
+        const msg = presign?.error || "Upload failed";
+        throw new Error(presign?.ticket ? `${msg} (ref: ${presign.ticket})` : msg);
       }
-      setVariants(parseClientVariants(data.variants));
-      onPersist({ thumbnailVariants: data.variants });
+      const { uploadUrl, variantId } = presign as { uploadUrl: string; variantId: string };
+
+      // 2. PUT the bytes directly to Object Storage. Abort after 60s so a stalled
+      // upload can never leave the button stuck on "Uploading…" forever.
+      const putCtrl = new AbortController();
+      const putTimeout = setTimeout(() => putCtrl.abort(), 60_000);
+      let putRes: Response;
+      try {
+        putRes = await fetch(uploadUrl, {
+          method: "PUT",
+          headers: { "Content-Type": file.type },
+          body: file,
+          signal: putCtrl.signal,
+        });
+      } finally {
+        clearTimeout(putTimeout);
+      }
+      if (!putRes.ok) throw new Error("Upload to storage failed — please try again.");
+
+      // 3. Finalize — server confirms + re-validates the object, then persists.
+      const finRes = await fetch(`${apiBase}/${planId}/thumbnails/finalize`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ variantId, contentType: file.type, fileName: file.name }),
+      });
+      const fin = await finRes.json();
+      if (!finRes.ok) {
+        const msg = fin?.error || "Upload failed";
+        throw new Error(fin?.ticket ? `${msg} (ref: ${fin.ticket})` : msg);
+      }
+      setVariants(parseClientVariants(fin.variants));
+      onPersist({ thumbnailVariants: fin.variants });
+
+      // 4. Off the critical path: mirror into Google Drive when the plan has a
+      // folder. Fire-and-forget — failures never block the member.
+      if (fin.drivePending) {
+        void fetch(`${apiBase}/${planId}/thumbnails/drive-copy`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ variantId }),
+        })
+          .then((r) => (r.ok ? r.json() : null))
+          .then((d) => {
+            if (d?.ok && Array.isArray(d.variants)) {
+              setVariants(parseClientVariants(d.variants));
+              onPersist({ thumbnailVariants: d.variants });
+            }
+          })
+          .catch(() => {});
+      }
     } catch (e) {
       if (e instanceof DOMException && e.name === "AbortError") {
         setThumbError("Upload timed out — please try again.");
@@ -2036,7 +2090,6 @@ function PublishTab({
         setThumbError(e instanceof Error ? e.message : "Upload failed");
       }
     } finally {
-      clearTimeout(timeoutId);
       setUploading(false);
       if (fileRef.current) fileRef.current.value = "";
     }

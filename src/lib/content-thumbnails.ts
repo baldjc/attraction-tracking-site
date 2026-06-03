@@ -21,6 +21,20 @@ export type ThumbnailVariant = {
 export const MAX_THUMBNAIL_BYTES = 5 * 1024 * 1024; // 5MB
 export const ALLOWED_THUMBNAIL_MIME = new Set(["image/png", "image/jpeg"]);
 
+// A/B cap shared by every thumbnail write path (presign, finalize, legacy
+// multipart POST). Keep all of them on this one constant so the cap can never
+// drift between the cheap pre-check and the row-locked authoritative check.
+export const MAX_THUMBNAIL_VARIANTS = 3;
+
+// Replit Object Storage signing runs through the local sidecar (the same one the
+// `@replit/object-storage` client talks to). v1.0.0 of that client exposes no
+// signing method, so we hit the sidecar's signed-URL endpoint directly to mint a
+// short-lived PUT URL the browser uploads to — keeping the file bytes off the
+// app handler entirely (which is what was stalling at the ingress in prod).
+const REPLIT_SIDECAR_ENDPOINT =
+  process.env.REPLIT_SIDECAR_ENDPOINT || "http://127.0.0.1:1106";
+export const SIGN_URL_TIMEOUT_MS = 10_000;
+
 // Object Storage has no client-side timeout of its own, so a stalled bucket
 // call would otherwise hang the request forever (member stuck on "Uploading…").
 // Bound every Object-Storage write so the route always settles and can surface
@@ -88,6 +102,82 @@ export async function deleteThumbnailBytes(key: string): Promise<void> {
   } finally {
     if (timer) clearTimeout(timer);
   }
+}
+
+/**
+ * Mint a short-lived signed PUT URL for `key` in the same bucket + key pattern
+ * the read/serve route already understands, so the browser can upload the bytes
+ * directly to Object Storage. The sidecar signs only method + resource + expiry
+ * (not the content-type), so the browser may send `Content-Type` on the PUT to
+ * stamp the stored object's type without affecting the signature. Bounded so a
+ * stalled sidecar can never hang the presign request.
+ */
+export async function signThumbnailUploadUrl(key: string, ttlSec = 300): Promise<string> {
+  const bucketName = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID;
+  if (!bucketName) {
+    throw new Error(
+      "DEFAULT_OBJECT_STORAGE_BUCKET_ID is not set — Object Storage bucket must be provisioned (run the App Storage blueprint).",
+    );
+  }
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), SIGN_URL_TIMEOUT_MS);
+  try {
+    const res = await fetch(`${REPLIT_SIDECAR_ENDPOINT}/object-storage/signed-object-url`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        bucket_name: bucketName,
+        object_name: key,
+        method: "PUT",
+        expires_at: new Date(Date.now() + ttlSec * 1000).toISOString(),
+      }),
+      signal: controller.signal,
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new Error(`Failed to sign upload URL (${res.status}): ${text.slice(0, 200)}`);
+    }
+    const data = (await res.json()) as { signed_url?: string };
+    if (!data.signed_url) throw new Error("Sidecar returned no signed_url");
+    return data.signed_url;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** Bounded existence check — used by finalize to confirm the browser's direct
+ * PUT actually landed before we persist a variant pointing at it. */
+export async function thumbnailObjectExists(key: string): Promise<boolean> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    const timeout = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error("object_exists_timeout")), OBJECT_STORAGE_TIMEOUT_MS);
+    });
+    const result = await Promise.race([objectStorage().exists(key), timeout]);
+    return result.ok ? result.value : false;
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
+/**
+ * Sniff the leading magic bytes to confirm the uploaded object really is the
+ * image type it claims. The direct-PUT path means bytes never pass through the
+ * app on the way in, so finalize MUST verify content here before trusting it.
+ * Returns the detected MIME or null when it is neither a PNG nor a JPEG.
+ */
+export function sniffImageMime(buf: Buffer): "image/png" | "image/jpeg" | null {
+  if (
+    buf.length >= 8 &&
+    buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47 &&
+    buf[4] === 0x0d && buf[5] === 0x0a && buf[6] === 0x1a && buf[7] === 0x0a
+  ) {
+    return "image/png";
+  }
+  if (buf.length >= 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) {
+    return "image/jpeg";
+  }
+  return null;
 }
 
 /** Coerce the persisted Json column into a typed, validated array. */
