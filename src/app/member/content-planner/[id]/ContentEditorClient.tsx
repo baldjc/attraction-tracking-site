@@ -2023,7 +2023,10 @@ function PublishTab({
         signal: controller.signal,
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || "Upload failed");
+      if (!res.ok) {
+        const msg = data?.error || "Upload failed";
+        throw new Error(data?.ticket ? `${msg} (ref: ${data.ticket})` : msg);
+      }
       setVariants(parseClientVariants(data.variants));
       onPersist({ thumbnailVariants: data.variants });
     } catch (e) {

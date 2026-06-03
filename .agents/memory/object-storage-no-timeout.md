@@ -14,6 +14,18 @@ is gated to production tiers), so they never benefit from the Drive path's exist
 12s cap. The Object-Storage fallback was the *only* backend for those members and it
 was unbounded.
 
+**Same applies to Prisma/Neon:** Prisma queries have **no default statement
+timeout**, so a degraded Neon connection hangs ANY `await prisma.*` (reads,
+`resolveUserFromSession`, and interactive `$transaction`s) indefinitely — not just
+Object Storage. Bounding only the storage call is not enough: an upload route that
+timed out at the client's 40s mark *after* a 15s storage bound proved the hang had
+moved to the unbounded DB awaits. Wrap every DB await in a request path too.
+
+**Reusable helper:** `src/lib/with-timeout.ts` — `withTimeout(work, {phase, subsystem,
+timeoutMs})` races against a timeout and throws a `PhaseTimeoutError` tagged with a
+`subsystem` (storage|database|upload|drive|other) so the route can return a precise
+member-facing message and log `result=timeout timeout_at=<phase>`.
+
 **How to apply:**
 - Wrap every Object-Storage call that runs inside a request path in a
   `Promise.race` against a timeout (the thumbnail helpers use a ~15s bound).
