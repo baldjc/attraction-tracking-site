@@ -76,12 +76,14 @@ function KnowledgeBaseInner({
         discovered: string[];
         monthsCovered: number;
         selected: Set<string>;
+        allNumeric: boolean;
       }
     | { status: "saving"; selected: Set<string> }
     | { status: "saved"; addedCount: number; totalCount: number };
   const [discovered, setDiscovered] = useState<DiscoveredState>({
     status: "idle",
   });
+  const [showCodeHelp, setShowCodeHelp] = useState(false);
 
   async function onLoadDiscovered() {
     setDiscovered({ status: "loading" });
@@ -102,6 +104,7 @@ function KnowledgeBaseInner({
         discovered: discoveredList,
         monthsCovered: Number(data.monthsCovered) || 0,
         selected: new Set(newOnes),
+        allNumeric: data.allNumeric === true,
       });
     } catch (e) {
       setDiscovered({ status: "error", message: (e as Error).message });
@@ -345,6 +348,42 @@ function KnowledgeBaseInner({
               )}
               . Deselect any you don't want in your vocab.
             </div>
+
+            {discovered.status === "ready" && discovered.allNumeric && (
+              <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-700/60 dark:bg-amber-900/20 dark:text-amber-200">
+                <p className="font-medium">
+                  Your data uses area codes, not neighbourhood names.
+                </p>
+                <p className="mt-1">
+                  Scripts using these will reference codes (e.g.{" "}
+                  <code className="rounded bg-amber-100 px-1 py-0.5 font-mono text-[12px] dark:bg-amber-900/40">
+                    {discovered.discovered.find((n) => /^\d+$/.test(n)) ??
+                      "100001"}
+                  </code>
+                  ) unless you add the real names. You can add the codes anyway
+                  using the button below, or learn how to get the real names.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowCodeHelp((v) => !v)}
+                  className="mt-2 text-xs font-medium underline hover:no-underline"
+                >
+                  {showCodeHelp ? "Hide" : "Learn how to get names"}
+                </button>
+                {showCodeHelp && (
+                  <div className="mt-2 rounded border border-amber-300/70 bg-white/60 p-2 text-xs leading-relaxed text-amber-900 dark:border-amber-700/40 dark:bg-amber-950/30 dark:text-amber-100">
+                    Your MLS export contains numeric area codes. Many MLSes can
+                    export the area <strong>name</strong> instead — check your
+                    export tool for a{" "}
+                    <strong>&ldquo;Subdivision Name&rdquo;</strong>,{" "}
+                    <strong>&ldquo;Area Name&rdquo;</strong>, or{" "}
+                    <strong>&ldquo;Community Name&rdquo;</strong> option and
+                    re-export with that column included. Then re-upload and map
+                    that column as your neighbourhood field.
+                  </div>
+                )}
+              </div>
+            )}
 
             {discovered.status === "ready" &&
             discovered.discovered.length === 0 ? (

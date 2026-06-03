@@ -56,10 +56,22 @@ export async function GET() {
       )
     : [];
 
+  // Detect the "area codes, not names" case (e.g. Edmonton / RAE exports a
+  // numeric Community column). When >90% of discovered values are purely
+  // numeric, the mapped neighbourhood column almost certainly holds MLS area
+  // codes rather than human-readable names — the client surfaces a warning so
+  // the member understands scripts will cite codes unless they re-export with a
+  // name column.
+  const numericCount = discovered.filter((n) => /^\d+$/.test(n)).length;
+  const allNumeric =
+    discovered.length > 0 && numericCount / discovered.length > 0.9;
+
   return Response.json({
     discovered,
     existingVocab,
     monthsCovered: monthRows.length,
+    numericCount,
+    allNumeric,
   });
 }
 
