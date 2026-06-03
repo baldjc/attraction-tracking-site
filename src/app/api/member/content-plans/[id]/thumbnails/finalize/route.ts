@@ -13,6 +13,7 @@ import {
   thumbnailObjectExists,
   sniffImageMime,
   updateVariantsLocked,
+  makeThumbTimer,
   MAX_THUMBNAIL_BYTES,
   MAX_THUMBNAIL_VARIANTS,
   ALLOWED_THUMBNAIL_MIME,
@@ -31,20 +32,29 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 // folder, we tell the client to fire /drive-copy (off the critical path).
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const ticket = randomUUID();
+  // Created with a placeholder planId so the catch can always log; reassigned
+  // with the real planId as soon as params resolves (inside the try, so a params
+  // rejection is still caught and returns our ticketed error).
+  let timer = makeThumbTimer("thumbnail-finalize", "unknown", ticket);
   try {
+    const { id } = await params;
+    timer = makeThumbTimer("thumbnail-finalize", id, ticket);
     const user = await withTimeout(() => resolveUserFromSession(), {
       phase: "auth",
       subsystem: "database",
       timeoutMs: 5_000,
     });
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-    const { id } = await params;
+    timer.mark("auth");
+    if (!user) {
+      timer.log("unauthorized");
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     let body: unknown;
     try {
       body = await req.json();
     } catch {
+      timer.log("bad_json");
       return NextResponse.json({ error: "Invalid request" }, { status: 400 });
     }
     const b = (body ?? {}) as { variantId?: unknown; contentType?: unknown; fileName?: unknown };
@@ -53,9 +63,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const fileNameRaw = typeof b.fileName === "string" ? b.fileName : "";
 
     if (!UUID_RE.test(variantId)) {
+      timer.log("bad_variant_id");
       return NextResponse.json({ error: "Invalid request" }, { status: 400 });
     }
     if (!ALLOWED_THUMBNAIL_MIME.has(contentType)) {
+      timer.log("reject_mime", { contentType });
       return NextResponse.json({ error: "Only PNG or JPG images are allowed." }, { status: 400 });
     }
 
@@ -67,7 +79,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         }),
       { phase: "plan_fetch", subsystem: "database", timeoutMs: 5_000 },
     );
-    if (!plan) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    timer.mark("plan_fetch");
+    if (!plan) {
+      timer.log("not_found");
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
 
     const ext = extForMime(contentType);
     // Reconstruct the key from the authenticated identity — never trust a
@@ -78,6 +94,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     // Idempotent: a retried finalize for an already-persisted variant must not
     // re-validate or double-append; just return current state.
     if (existingVariants.some((v) => v.id === variantId)) {
+      timer.log("idempotent_hit", { variantCount: existingVariants.length });
       return NextResponse.json({
         variants: existingVariants,
         drivePending: !!folderIdFromUrl(plan.driveFolderLink),
@@ -88,6 +105,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     // PUT already happened) is cleaned up so a rejected finalize leaves nothing.
     if (existingVariants.length >= MAX_THUMBNAIL_VARIANTS) {
       await deleteThumbnailBytes(key);
+      timer.log("max_variants", { variantCount: existingVariants.length });
       return NextResponse.json(
         { error: `Maximum of ${MAX_THUMBNAIL_VARIANTS} thumbnails.` },
         { status: 400 },
@@ -99,7 +117,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       subsystem: "storage",
       timeoutMs: 15_000,
     });
+    timer.mark("object_exists");
     if (!exists) {
+      timer.log("not_landed");
       return NextResponse.json(
         { error: "Upload did not complete — please try again." },
         { status: 400 },
@@ -111,14 +131,17 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       subsystem: "storage",
       timeoutMs: 15_000,
     });
+    timer.mark("object_read");
 
     if (bytes.length > MAX_THUMBNAIL_BYTES) {
       await deleteThumbnailBytes(key);
+      timer.log("too_big", { bytes: bytes.length });
       return NextResponse.json({ error: "Image must be 5MB or smaller." }, { status: 400 });
     }
     const sniffed = sniffImageMime(bytes);
     if (!sniffed) {
       await deleteThumbnailBytes(key);
+      timer.log("not_an_image");
       return NextResponse.json(
         { error: "That file is not a valid PNG or JPG image." },
         { status: 400 },
@@ -126,6 +149,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
     if (sniffed !== contentType) {
       await deleteThumbnailBytes(key);
+      timer.log("mime_mismatch", { sniffed, contentType });
       return NextResponse.json(
         { error: "File content does not match its type — re-export as PNG or JPG and try again." },
         { status: 400 },
@@ -160,11 +184,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           }),
         { phase: "db_update", subsystem: "database", timeoutMs: 5_000 },
       );
+      timer.mark("db_update");
     } catch (err) {
       if (err instanceof Error && err.message === "MAX_VARIANTS") {
         // mutate() threw before the UPDATE, so the transaction rolled back and
         // nothing references the object — safe to remove the orphaned bytes.
         await deleteThumbnailBytes(key);
+        timer.log("max_variants_locked");
         return NextResponse.json(
           { error: `Maximum of ${MAX_THUMBNAIL_VARIANTS} thumbnails.` },
           { status: 400 },
@@ -176,26 +202,32 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       // bytes in place. finalize is idempotent — a retry reconciles, and the
       // worst case is a harmless orphan object if the commit truly failed.
       if (err instanceof PhaseTimeoutError) throw err;
+      timer.log("db_write_error");
       console.error(`[thumbnail-finalize] write failed ticket=${ticket}:`, err);
       return NextResponse.json({ error: "Upload failed" }, { status: 500 });
     }
     if (!result) {
       await deleteThumbnailBytes(key);
+      timer.log("plan_gone");
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
+    const drivePending = !!folderIdFromUrl(plan.driveFolderLink);
+    timer.log("ok", { variantCount: result.variants.length, drivePending });
     return NextResponse.json({
       variants: result.variants,
-      drivePending: !!folderIdFromUrl(plan.driveFolderLink),
+      drivePending,
     });
   } catch (err) {
     if (err instanceof PhaseTimeoutError) {
+      timer.log("timeout", { phase: err.phase, subsystem: err.subsystem });
       const slow = err.subsystem === "database" ? "Database" : "Storage";
       return NextResponse.json(
         { error: `${slow} is slow right now — try again in a moment.`, ticket },
         { status: 503 },
       );
     }
+    timer.log("error");
     console.error(`[thumbnail-finalize] error ticket=${ticket}:`, err);
     return NextResponse.json(
       { error: "Something went wrong finishing the upload — please try again.", ticket },

@@ -180,6 +180,39 @@ export function sniffImageMime(buf: Buffer): "image/png" | "image/jpeg" | null {
   return null;
 }
 
+/**
+ * Lightweight per-step timer for the thumbnail upload routes. Records the
+ * elapsed ms of each named phase and emits ONE structured, greppable line so
+ * production logs show exactly which step ran (and how long) for a given plan +
+ * ticket when a member reports an upload "failing". Created once per request;
+ * call `mark()` after each awaited step and `log(outcome)` at every return.
+ */
+export function makeThumbTimer(tag: string, planId: string, ticket: string) {
+  const start = Date.now();
+  let last = start;
+  const steps: Array<[string, number]> = [];
+  return {
+    mark(name: string) {
+      const now = Date.now();
+      steps.push([name, now - last]);
+      last = now;
+    },
+    log(outcome: string, extra?: Record<string, unknown>) {
+      const stepStr = steps.map(([n, ms]) => `${n}=${ms}ms`).join(" ");
+      const extraStr = extra
+        ? " " +
+          Object.entries(extra)
+            .filter(([, v]) => v !== undefined)
+            .map(([k, v]) => `${k}=${v}`)
+            .join(" ")
+        : "";
+      console.log(
+        `[${tag}] plan=${planId} ticket=${ticket} outcome=${outcome} total=${Date.now() - start}ms${stepStr ? " " + stepStr : ""}${extraStr}`,
+      );
+    },
+  };
+}
+
 /** Coerce the persisted Json column into a typed, validated array. */
 export function parseVariants(raw: unknown): ThumbnailVariant[] {
   if (!Array.isArray(raw)) return [];
