@@ -31,7 +31,7 @@ export async function POST(
   let videoFolderUrl: string;
   let memberFolderUrl: string;
   try {
-    const result = await createVideoFolder(memberName, plan.title);
+    const result = await createVideoFolder(memberName, plan.title, id);
     videoFolderUrl = result.videoFolderUrl;
     memberFolderUrl = result.memberFolderUrl;
   } catch (err: unknown) {

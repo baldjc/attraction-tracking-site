@@ -96,6 +96,25 @@ binary upload all succeed. **Production** `GOOGLE_DRIVE_ROOT_FOLDER_ID` points a
 that Shared Drive; **development** still points at the old My-Drive root (so dev
 keeps the §2 quota behavior). Per-env, not shared.
 
+## 5. You CANNOT move a folder from My Drive into a Shared Drive (API or UI)
+`drive.files.update({addParents: sharedDriveId, removeParents: myDriveParent})`
+on a **folder** fails 403 **"Moving folders into shared drives is not
+supported."** (classifies as `permission_denied`). This is a hard Google
+platform limit — the web UI rejects it too (a single file can be moved into a
+Shared Drive, but not a folder/subtree). Verified live 2026-06-03 against the
+legacy My-Drive root.
+
+**Why it matters:** the obvious "relocate the legacy plan folders into the
+Shared Drive so IDs stay stable" plan is impossible. To get pre-cutover folders
+onto a Shared Drive you must **recreate** the folder there and move/copy the
+*files* (files can move into a shared drive) — which changes the folder id, so
+any stored `driveFolderLink` must be updated and re-shared afterward. There is
+no ID-preserving migration path. (Also note §4: existing files may be owned by a
+human, not the SA, which further constrains what the SA can move.)
+
+**How to apply:** don't build/run a folder-move migration; if asked, surface
+this limit first and propose the recreate-folder + move-files + relink path.
+
 ## Fast diagnosis
 Run a throwaway script with `GOOGLE_SERVICE_ACCOUNT_KEY` from env: try
 `drive.files.get` on the root both with and without `clientOptions.subject`. With

@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { logTeamActivity } from "@/lib/team";
+import { revokeTeamMemberFromAllFolders } from "@/lib/google-drive";
+
+export const runtime = "nodejs";
 
 async function requireAdmin() {
   const session = await auth();
@@ -54,6 +57,14 @@ export async function POST(req: NextRequest) {
     action: `Admin revoked access for ${membership.email}`,
     metadata: { email: membership.email },
   });
+
+  // Phase 3 — strip this team member's access from every Drive folder under the
+  // owner's content plans. Best-effort; never blocks the revoke.
+  try {
+    await revokeTeamMemberFromAllFolders(membership.primaryUserId, membership.email);
+  } catch (err) {
+    console.error("[admin/team/revoke] Drive permission cleanup failed:", err);
+  }
 
   return NextResponse.json({ ok: true });
 }

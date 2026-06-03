@@ -112,7 +112,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   let driveError: { category: string; message: string } | null = null;
   if (member && PRODUCTION_TIERS.includes(member.serviceTier ?? "") && member.fullName && shouldCreateFolder) {
     try {
-      const { videoFolderUrl, memberFolderUrl } = await createVideoFolder(member.fullName, plan.title);
+      const { videoFolderUrl, memberFolderUrl } = await createVideoFolder(member.fullName, plan.title, id);
       const updates: Promise<unknown>[] = [
         prisma.contentPlan.update({ where: { id: plan.id }, data: { driveFolderLink: videoFolderUrl } }),
       ];

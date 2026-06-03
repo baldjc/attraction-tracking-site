@@ -137,7 +137,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     try {
       const member = await prisma.user.findUnique({ where: { id }, select: { fullName: true, email: true, assetsDriveLink: true } });
       const memberName = member?.fullName || member?.email || id;
-      const { videoFolderUrl, memberFolderUrl } = await createVideoFolder(memberName, plan.title);
+      const { videoFolderUrl, memberFolderUrl } = await createVideoFolder(memberName, plan.title, id);
       const updates: Promise<unknown>[] = [
         // Persist the new Drive folder link, but spread it onto the existing
         // `plan` object instead of replacing it — otherwise we'd drop the

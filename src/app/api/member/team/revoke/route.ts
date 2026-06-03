@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requirePrimaryUser, logTeamActivity } from "@/lib/team";
+import { revokeTeamMemberFromAllFolders } from "@/lib/google-drive";
+
+export const runtime = "nodejs";
 
 // Revokes an active team grant. Owner-only. Clears the team member's active
 // switch so they lose access on their very next request.
@@ -50,6 +53,14 @@ export async function POST(req: NextRequest) {
     action: `Revoked access for ${membership.email}`,
     metadata: { email: membership.email },
   });
+
+  // Phase 3 — strip this team member's access from every Drive folder under the
+  // owner's content plans. Best-effort; never blocks the revoke.
+  try {
+    await revokeTeamMemberFromAllFolders(user.id, membership.email);
+  } catch (err) {
+    console.error("[team/revoke] Drive permission cleanup failed:", err);
+  }
 
   return NextResponse.json({ ok: true });
 }

@@ -195,6 +195,9 @@ export interface VideoFolderResult {
   memberFolderUrl: string;
   videoFolderUrl: string;
   researchDocUrl: string | null;
+  // Result of the best-effort permission grant applied after creation (Phase 3).
+  // Null when no owner was supplied to share with. Never causes creation to fail.
+  sharing?: DriveShareResult | null;
 }
 
 /**
@@ -238,7 +241,8 @@ async function findOrCreateDocInFolder(
 
 export async function createVideoFolder(
   memberName: string,
-  videoTitle: string
+  videoTitle: string,
+  ownerUserId?: string
 ): Promise<VideoFolderResult> {
   const rootFolderId = process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID;
   if (!rootFolderId) throw new DriveError("not_configured", "GOOGLE_DRIVE_ROOT_FOLDER_ID is not set");
@@ -254,10 +258,24 @@ export async function createVideoFolder(
     // to re-run on existing folders.
     const researchDocUrl = await findOrCreateDocInFolder(drive, videoFolderId, "Video Research");
 
+    // Phase 3 — explicitly share the new folder with the owning member, their
+    // active team members, and support. Best-effort: a sharing failure must
+    // never fail folder creation (the folder already exists; sharing can be
+    // retried via the admin backfill endpoint).
+    let sharing: DriveShareResult | null = null;
+    if (ownerUserId) {
+      try {
+        sharing = await shareVideoFolderWithMember(videoFolderId, ownerUserId);
+      } catch (err) {
+        console.error("[drive-share] post-creation sharing threw unexpectedly:", err);
+      }
+    }
+
     return {
       memberFolderUrl: `https://drive.google.com/drive/folders/${memberFolderId}`,
       videoFolderUrl: `https://drive.google.com/drive/folders/${videoFolderId}`,
       researchDocUrl,
+      sharing,
     };
   } catch (err) {
     throw classifyDriveError(err);
@@ -447,7 +465,7 @@ export async function ensureVideoFolderForPlan(
   // createVideoFolder throws a structured DriveError on failure. We deliberately
   // DO NOT swallow it here — the caller surfaces the category so the member sees
   // a real reason instead of a silent no-op.
-  const { videoFolderUrl, memberFolderUrl } = await createVideoFolder(memberName, plan.title);
+  const { videoFolderUrl, memberFolderUrl } = await createVideoFolder(memberName, plan.title, userId);
 
   const updates: Promise<unknown>[] = [
     prisma.contentPlan.update({ where: { id: plan.id }, data: { driveFolderLink: videoFolderUrl } }),
@@ -529,4 +547,548 @@ export async function isFileInFolder(fileId: string, folderUrl: string): Promise
     console.error("[google-drive] isFileInFolder failed:", err);
     return false;
   }
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// Phase 3 — explicit folder sharing
+// ───────────────────────────────────────────────────────────────────────────
+// Shared-Drive folders are only visible to the service account by default, so
+// the Client Hub link returns "You need access" for the member. After a folder
+// is created we explicitly grant "writer" (Contributor) access to the owning
+// member, their active team members, and the support address. Every helper here
+// is BEST-EFFORT: a permission failure is logged and surfaced in the structured
+// result, but never throws — folder creation and team-revoke must not break over
+// a Drive sharing hiccup. Sharing can always be retried via the admin backfill.
+
+// The support address that gets edit access to every plan folder for admin
+// support. Override via DRIVE_SUPPORT_EMAIL without a code change.
+export const DRIVE_SUPPORT_EMAIL =
+  process.env.DRIVE_SUPPORT_EMAIL?.trim() || "jared@chamberlaingroup.ca";
+
+export type DriveShareResult = {
+  // Emails that now have access (newly granted OR already had a permission).
+  granted: string[];
+  // Recipients we deliberately skipped, with a machine-readable reason
+  // (e.g. "member_email_missing", "team_member_email_missing").
+  skipped: Array<{ email: string | null; reason: string }>;
+  // Recipients whose permission grant failed, classified for observability.
+  failed: Array<{ email: string; category: DriveErrorCategory }>;
+};
+
+function driveSleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Lists a folder's user/group permissions (paged). Throws on API error — the
+ * caller decides how to degrade.
+ */
+async function listFolderPermissions(
+  drive: drive_v3.Drive,
+  folderId: string
+): Promise<Array<{ id: string; emailAddress: string; role: string; type: string }>> {
+  const out: Array<{ id: string; emailAddress: string; role: string; type: string }> = [];
+  let pageToken: string | undefined;
+  do {
+    const res = await drive.permissions.list({
+      fileId: folderId,
+      fields: "nextPageToken, permissions(id, emailAddress, role, type)",
+      supportsAllDrives: true,
+      pageSize: 100,
+      pageToken,
+    });
+    for (const p of res.data.permissions ?? []) {
+      out.push({
+        id: p.id ?? "",
+        emailAddress: (p.emailAddress ?? "").toLowerCase(),
+        role: p.role ?? "",
+        type: p.type ?? "",
+      });
+    }
+    pageToken = res.data.nextPageToken ?? undefined;
+  } while (pageToken);
+  return out;
+}
+
+/**
+ * Grants "writer" access to a plan's Drive folder to the owning member, their
+ * active team members, and the support address. Idempotent (skips emails that
+ * already hold a permission) and best-effort (never throws). `gapMs` inserts a
+ * pause before each Drive API call so bulk/backfill runs stay under rate limits.
+ */
+export async function shareVideoFolderWithMember(
+  folderId: string,
+  ownerUserId: string,
+  opts: { gapMs?: number } = {}
+): Promise<DriveShareResult> {
+  const gapMs = opts.gapMs ?? 0;
+  const result: DriveShareResult = { granted: [], skipped: [], failed: [] };
+
+  // Resolve the recipient list from the DB (owner email + active team emails).
+  let ownerEmail: string | null = null;
+  let teamEmails: string[] = [];
+  try {
+    const owner = await prisma.user.findUnique({
+      where: { id: ownerUserId },
+      select: { email: true },
+    });
+    ownerEmail = owner?.email ?? null;
+    const team = await prisma.teamMember.findMany({
+      where: { primaryUserId: ownerUserId, status: "active" },
+      select: { email: true },
+    });
+    teamEmails = team.map((t) => t.email);
+  } catch (err) {
+    console.error("[drive-share] failed to load recipients for owner", ownerUserId, err);
+  }
+
+  const recipients: string[] = [];
+  const seen = new Set<string>();
+  const addRecipient = (raw: string | null | undefined, label: string) => {
+    const email = raw?.trim();
+    if (!email) {
+      result.skipped.push({ email: null, reason: `${label}_email_missing` });
+      console.warn(`[drive-share] folder ${folderId}: ${label} has no email — skipping share`);
+      return;
+    }
+    const key = email.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    recipients.push(email);
+  };
+
+  addRecipient(ownerEmail, "member");
+  for (const e of teamEmails) addRecipient(e, "team_member");
+  addRecipient(DRIVE_SUPPORT_EMAIL, "support");
+
+  if (recipients.length === 0) return result;
+
+  let drive: drive_v3.Drive;
+  try {
+    drive = getDriveClient();
+  } catch (err) {
+    const de = classifyDriveError(err);
+    for (const email of recipients) result.failed.push({ email, category: de.category });
+    console.error("[drive-share] Drive client unavailable:", de.category);
+    return result;
+  }
+
+  // Idempotency: skip emails that already have a permission on the folder.
+  let existing = new Set<string>();
+  try {
+    if (gapMs) await driveSleep(gapMs);
+    const perms = await listFolderPermissions(drive, folderId);
+    existing = new Set(perms.filter((p) => p.emailAddress).map((p) => p.emailAddress));
+  } catch (err) {
+    // If we can't enumerate existing permissions, fall through and let
+    // permissions.create run — it is forgiving for already-shared users.
+    console.warn(
+      `[drive-share] folder ${folderId}: could not list permissions (${classifyDriveError(err).category}); creating anyway`
+    );
+  }
+
+  for (const email of recipients) {
+    if (existing.has(email.toLowerCase())) {
+      result.granted.push(email);
+      continue;
+    }
+    try {
+      if (gapMs) await driveSleep(gapMs);
+      await drive.permissions.create({
+        fileId: folderId,
+        requestBody: { role: "writer", type: "user", emailAddress: email },
+        sendNotificationEmail: false,
+        supportsAllDrives: true,
+      });
+      result.granted.push(email);
+    } catch (err) {
+      const de = classifyDriveError(err);
+      result.failed.push({ email, category: de.category });
+      console.error(`[drive-share] folder ${folderId}: failed to share with ${email}:`, de.category);
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Revokes a single email's permission on a Drive folder. Best-effort, never
+ * throws. Returns whether a permission was actually removed.
+ */
+export async function revokeFolderAccessForEmail(
+  folderId: string,
+  email: string,
+  opts: { gapMs?: number } = {}
+): Promise<{ revoked: boolean; reason?: string; category?: DriveErrorCategory }> {
+  const gapMs = opts.gapMs ?? 0;
+  const target = email.trim().toLowerCase();
+  if (!target) return { revoked: false, reason: "email_missing" };
+
+  let drive: drive_v3.Drive;
+  try {
+    drive = getDriveClient();
+  } catch (err) {
+    return { revoked: false, category: classifyDriveError(err).category };
+  }
+
+  let matches: Array<{ id: string; emailAddress: string; role: string; type: string }>;
+  try {
+    if (gapMs) await driveSleep(gapMs);
+    const perms = await listFolderPermissions(drive, folderId);
+    // An email can hold more than one permission (e.g. an inherited one plus a
+    // direct one). Inherited permissions can't be deleted at the child and
+    // return permission_denied, so try every match until a deletable (direct)
+    // one succeeds instead of giving up on the first failure.
+    matches = perms.filter((p) => p.emailAddress === target && p.id);
+  } catch (err) {
+    const de = classifyDriveError(err);
+    console.error(`[drive-share] folder ${folderId}: failed to list permissions for revoke:`, de.category);
+    return { revoked: false, category: de.category };
+  }
+
+  if (matches.length === 0) return { revoked: false, reason: "not_present" };
+
+  let lastCategory: DriveErrorCategory | undefined;
+  for (const m of matches) {
+    try {
+      if (gapMs) await driveSleep(gapMs);
+      await drive.permissions.delete({
+        fileId: folderId,
+        permissionId: m.id,
+        supportsAllDrives: true,
+      });
+      return { revoked: true };
+    } catch (err) {
+      const de = classifyDriveError(err);
+      lastCategory = de.category;
+      console.error(
+        `[drive-share] folder ${folderId}: failed to revoke ${email} (perm ${m.id}):`,
+        de.category
+      );
+    }
+  }
+  return { revoked: false, category: lastCategory };
+}
+
+/**
+ * When a team member is removed, revoke their access to every Drive folder under
+ * the primary's content plans. Rate-limited (~100ms between Drive calls) and
+ * best-effort.
+ */
+export async function revokeTeamMemberFromAllFolders(
+  primaryUserId: string,
+  email: string
+): Promise<{ scanned: number; revoked: number; notPresent: number; failed: number }> {
+  const summary = { scanned: 0, revoked: 0, notPresent: 0, failed: 0 };
+  let plans: Array<{ id: string; driveFolderLink: string | null }> = [];
+  try {
+    plans = await prisma.contentPlan.findMany({
+      where: { userId: primaryUserId, driveFolderLink: { not: null } },
+      select: { id: true, driveFolderLink: true },
+    });
+  } catch (err) {
+    console.error("[drive-share] revokeTeamMember: failed to load plans", err);
+    return summary;
+  }
+
+  for (const plan of plans) {
+    const folderId = folderIdFromUrl(plan.driveFolderLink);
+    if (!folderId) continue;
+    summary.scanned += 1;
+    const res = await revokeFolderAccessForEmail(folderId, email, { gapMs: 100 });
+    if (res.revoked) summary.revoked += 1;
+    else if (res.reason === "not_present") summary.notPresent += 1;
+    else summary.failed += 1;
+  }
+  console.log(`[drive-share] revoked ${email} from ${primaryUserId}'s folders:`, summary);
+  return summary;
+}
+
+/**
+ * Admin backfill — apply the Phase 3 sharing rules to every existing plan folder.
+ * Idempotent and rate-limited (~100ms between Drive calls). Safe to re-run.
+ */
+export async function backfillFolderSharing(): Promise<{
+  plansScanned: number;
+  plansShared: number;
+  totalGranted: number;
+  totalFailed: number;
+  results: Array<{ planId: string; granted: number; skipped: number; failed: number }>;
+}> {
+  const summary = {
+    plansScanned: 0,
+    plansShared: 0,
+    totalGranted: 0,
+    totalFailed: 0,
+    results: [] as Array<{ planId: string; granted: number; skipped: number; failed: number }>,
+  };
+
+  const plans = await prisma.contentPlan.findMany({
+    where: { driveFolderLink: { not: null }, deletedAt: null },
+    select: { id: true, userId: true, driveFolderLink: true },
+  });
+
+  for (const plan of plans) {
+    const folderId = folderIdFromUrl(plan.driveFolderLink);
+    if (!folderId) continue;
+    summary.plansScanned += 1;
+    const r = await shareVideoFolderWithMember(folderId, plan.userId, { gapMs: 100 });
+    summary.totalGranted += r.granted.length;
+    summary.totalFailed += r.failed.length;
+    if (r.granted.length > 0) summary.plansShared += 1;
+    summary.results.push({
+      planId: plan.id,
+      granted: r.granted.length,
+      skipped: r.skipped.length,
+      failed: r.failed.length,
+    });
+  }
+
+  console.log("[drive-share] backfill done:", {
+    plansScanned: summary.plansScanned,
+    plansShared: summary.plansShared,
+    totalGranted: summary.totalGranted,
+    totalFailed: summary.totalFailed,
+  });
+  return summary;
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// One-off migration — relocate legacy My-Drive plan folders into the Shared Drive
+// ───────────────────────────────────────────────────────────────────────────
+// Folders created before the Shared-Drive cutover live in the service account's
+// (quota-less) My Drive, so file uploads into them 403 (storageQuotaExceeded).
+// Google preserves folder IDs across a move, so relocating them into the Shared
+// Drive keeps every existing `driveFolderLink` valid while unblocking uploads.
+// Hierarchy-preserving: we move the top-level member folder that sits directly
+// under the old My-Drive root, and its video subfolders travel with it.
+
+// The legacy My-Drive root that pre-cutover member/video folders live under.
+export const OLD_MY_DRIVE_ROOT_ID = "1cHV_V8D2XjZL10AvXH1ipCW1eS2OM7un";
+
+export type FolderMigrationAction =
+  | "moved"
+  | "already-in-shared-drive"
+  | "skipped-permission"
+  | "skipped-unknown-parent"
+  | "folder-not-found-clearing-reference"
+  | "no-folder-link"
+  | "failed";
+
+export type FolderMigrationResult = {
+  planId: string;
+  folderId: string | null;
+  action: FolderMigrationAction;
+  movedFolderId?: string;
+  errorCategory?: DriveErrorCategory;
+  errorMessage?: string;
+};
+
+export type FolderMigrationSummary = {
+  sharedDriveId: string;
+  total: number;
+  moved: number;
+  alreadyInSharedDrive: number;
+  skippedPermission: number;
+  skippedUnknownParent: number;
+  notFoundCleared: number;
+  noFolderLink: number;
+  failed: number;
+  results: FolderMigrationResult[];
+};
+
+export async function migrateFoldersToSharedDrive(
+  opts: { sharedDriveId?: string; planIds?: string[]; limit?: number } = {}
+): Promise<FolderMigrationSummary> {
+  const sharedDriveId = (opts.sharedDriveId || process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID || "").trim();
+  const summary: FolderMigrationSummary = {
+    sharedDriveId,
+    total: 0,
+    moved: 0,
+    alreadyInSharedDrive: 0,
+    skippedPermission: 0,
+    skippedUnknownParent: 0,
+    notFoundCleared: 0,
+    noFolderLink: 0,
+    failed: 0,
+    results: [],
+  };
+  if (!sharedDriveId) {
+    throw new DriveError("not_configured", "No Shared Drive id (set GOOGLE_DRIVE_ROOT_FOLDER_ID).");
+  }
+
+  const drive = getDriveClient();
+
+  // Refuse to "migrate" into a My-Drive folder. A Shared Drive's root folder
+  // reports its own id as `driveId`; a plain My-Drive folder reports none. This
+  // guards against running the endpoint in an environment whose
+  // GOOGLE_DRIVE_ROOT_FOLDER_ID still points at the legacy My-Drive root.
+  const dest = await drive.files.get({
+    fileId: sharedDriveId,
+    fields: "id, driveId, name",
+    supportsAllDrives: true,
+  });
+  if (!dest.data.driveId) {
+    throw new DriveError(
+      "not_configured",
+      `Destination ${sharedDriveId} is not a Shared Drive — aborting migration.`
+    );
+  }
+
+  const plans = await prisma.contentPlan.findMany({
+    where: {
+      driveFolderLink: { not: null },
+      ...(opts.planIds ? { id: { in: opts.planIds } } : {}),
+    },
+    select: { id: true, driveFolderLink: true },
+    ...(opts.limit ? { take: opts.limit } : {}),
+  });
+
+  for (const plan of plans) {
+    summary.total += 1;
+    const folderId = folderIdFromUrl(plan.driveFolderLink);
+    const push = (r: Omit<FolderMigrationResult, "planId">) =>
+      summary.results.push({ planId: plan.id, ...r });
+
+    if (!folderId) {
+      summary.noFolderLink += 1;
+      push({ folderId: null, action: "no-folder-link" });
+      continue;
+    }
+
+    try {
+      await driveSleep(100);
+      let vf: drive_v3.Schema$File;
+      try {
+        const res = await drive.files.get({
+          fileId: folderId,
+          fields: "id, name, driveId, parents, trashed",
+          supportsAllDrives: true,
+        });
+        vf = res.data;
+      } catch (err) {
+        const de = classifyDriveError(err);
+        if (de.category === "not_found") {
+          // Confirm the folder is genuinely gone before dropping the reference —
+          // a single transient 404 must not permanently clear a valid link. The
+          // service account owns these folders, so a real 404 means deleted, not
+          // access-denied (that would classify as permission_denied instead).
+          await driveSleep(300);
+          let stillMissing = true;
+          try {
+            await drive.files.get({ fileId: folderId, fields: "id, trashed", supportsAllDrives: true });
+            stillMissing = false;
+          } catch (err2) {
+            stillMissing = classifyDriveError(err2).category === "not_found";
+          }
+          if (!stillMissing) {
+            summary.failed += 1;
+            push({ folderId, action: "failed", errorCategory: de.category, errorMessage: "transient 404; reference left intact" });
+            continue;
+          }
+          await prisma.contentPlan.update({
+            where: { id: plan.id },
+            data: { driveFolderLink: null },
+          });
+          summary.notFoundCleared += 1;
+          push({ folderId, action: "folder-not-found-clearing-reference", errorCategory: de.category });
+          continue;
+        }
+        throw err;
+      }
+
+      // Trashed in the Drive UI — treat like a missing folder and drop the ref.
+      if (vf.trashed) {
+        await prisma.contentPlan.update({
+          where: { id: plan.id },
+          data: { driveFolderLink: null },
+        });
+        summary.notFoundCleared += 1;
+        push({ folderId, action: "folder-not-found-clearing-reference" });
+        continue;
+      }
+
+      // Already in the target Shared Drive (its ancestor was moved already).
+      if (vf.driveId === sharedDriveId) {
+        summary.alreadyInSharedDrive += 1;
+        push({ folderId, action: "already-in-shared-drive" });
+        continue;
+      }
+      // Lives in a *different* Shared Drive — not ours to relocate.
+      if (vf.driveId && vf.driveId !== sharedDriveId) {
+        summary.skippedUnknownParent += 1;
+        push({ folderId, action: "skipped-unknown-parent" });
+        continue;
+      }
+
+      // driveId is null → My Drive. Find the top-level folder that sits directly
+      // under the legacy root and move *that* (so the member→video hierarchy is
+      // preserved). One level: video folder's parent is the member folder, whose
+      // parent is the old root. Zero level: the video folder is under the root.
+      const parent0 = (vf.parents ?? [])[0];
+      if (!parent0) {
+        summary.skippedUnknownParent += 1;
+        push({ folderId, action: "skipped-unknown-parent" });
+        continue;
+      }
+
+      let moveTarget: string;
+      if ((vf.parents ?? []).includes(OLD_MY_DRIVE_ROOT_ID)) {
+        moveTarget = folderId;
+      } else {
+        await driveSleep(100);
+        const pm = await drive.files.get({
+          fileId: parent0,
+          fields: "id, parents, driveId",
+          supportsAllDrives: true,
+        });
+        if ((pm.data.parents ?? []).includes(OLD_MY_DRIVE_ROOT_ID)) {
+          moveTarget = parent0;
+        } else {
+          summary.skippedUnknownParent += 1;
+          push({ folderId, action: "skipped-unknown-parent" });
+          continue;
+        }
+      }
+
+      try {
+        await driveSleep(100);
+        await drive.files.update({
+          fileId: moveTarget,
+          addParents: sharedDriveId,
+          removeParents: OLD_MY_DRIVE_ROOT_ID,
+          supportsAllDrives: true,
+          fields: "id, driveId, parents",
+        });
+        summary.moved += 1;
+        push({ folderId, action: "moved", movedFolderId: moveTarget });
+      } catch (err) {
+        const de = classifyDriveError(err);
+        if (de.category === "permission_denied") {
+          summary.skippedPermission += 1;
+          push({ folderId, action: "skipped-permission", errorCategory: de.category, errorMessage: de.message });
+        } else {
+          summary.failed += 1;
+          push({ folderId, action: "failed", errorCategory: de.category, errorMessage: de.message });
+        }
+      }
+    } catch (err) {
+      const de = classifyDriveError(err);
+      summary.failed += 1;
+      push({ folderId, action: "failed", errorCategory: de.category, errorMessage: de.message });
+    }
+  }
+
+  console.log("[drive-migrate] done:", {
+    sharedDriveId,
+    total: summary.total,
+    moved: summary.moved,
+    alreadyInSharedDrive: summary.alreadyInSharedDrive,
+    skippedPermission: summary.skippedPermission,
+    skippedUnknownParent: summary.skippedUnknownParent,
+    notFoundCleared: summary.notFoundCleared,
+    noFolderLink: summary.noFolderLink,
+    failed: summary.failed,
+  });
+  return summary;
 }

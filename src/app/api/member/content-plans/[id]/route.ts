@@ -285,7 +285,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   ) {
     try {
       const memberName = dbUser?.fullName || dbUser?.email || user.id;
-      const { videoFolderUrl, memberFolderUrl } = await createVideoFolder(memberName, plan.title);
+      const { videoFolderUrl, memberFolderUrl } = await createVideoFolder(memberName, plan.title, user.id);
       const driveUpdates: Promise<unknown>[] = [
         prisma.contentPlan.update({ where: { id }, data: { driveFolderLink: videoFolderUrl } }),
       ];

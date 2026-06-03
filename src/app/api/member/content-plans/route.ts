@@ -160,7 +160,7 @@ export async function POST(req: NextRequest) {
         const result = await ensureVideoFolderForPlan(plan.id, user.id);
         if (result) (plan as any).driveFolderLink = result.folderUrl;
       } else if (dbUser?.fullName) {
-        const { videoFolderUrl, memberFolderUrl } = await createVideoFolder(dbUser.fullName, plan.title);
+        const { videoFolderUrl, memberFolderUrl } = await createVideoFolder(dbUser.fullName, plan.title, user.id);
         const updates: Promise<unknown>[] = [
           prisma.contentPlan.update({ where: { id: plan.id }, data: { driveFolderLink: videoFolderUrl } }),
         ];
