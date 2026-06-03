@@ -3,7 +3,28 @@ name: Drive service-account quota & delegation
 description: Why Drive folder creation works but Docs/uploads don't, and what unblocks the full fix
 ---
 
-# Google Drive integration — quota & delegation realities
+## CURRENT (resolved): delegation is authorized — Drive uploads work in My Drive
+Domain-wide delegation is authorized in the Workspace, so the SA impersonates a real
+Workspace user (who has storage quota) via `GOOGLE_DRIVE_IMPERSONATE_EMAIL`. That makes
+folder/Doc/upload all succeed in plain My-Drive folders — the §2 quota wall is gone in
+practice. The root was unified back to a single My-Drive folder (no Shared Drive root).
+Concrete values (impersonation email, SA client id, root id, scope) live in `replit.md`;
+don't duplicate them here. Sections §1 (leave impersonation unset) and §2 (quota wall)
+describe the *pre-delegation* state — read them as history.
+
+**Why not a Shared Drive:** §5 — folders can't be moved into a Shared Drive and the
+legacy raw videos are human-owned/huge, so the SA could relocate neither folders nor
+files. Delegation was the only path that unblocks uploads without moving content.
+
+**Consequence — impersonation is global to every Drive call.** `getDriveClient()` sets
+the subject for *all* operations (reads included), not just uploads. So (a) any
+delegation breakage (revoked DWD, suspended user) now fails *all* Drive features
+app-wide; and (b) the impersonated user has broad Drive access, so any route that
+lists/reads a **caller-supplied** folder id is an IDOR into everything that user can
+see. **Rule:** never persist a client-supplied `driveFolderLink` / folder id — folder
+links must be server-created only, so stored ids are always app-owned.
+
+# Google Drive integration — quota & delegation realities (history below)
 
 The Drive automation (`src/lib/google-drive.ts`) uses a **service account** (its
 address lives in `replit.md`). Two independent failure modes have bitten this

@@ -102,7 +102,12 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const serviceTier = dbUser?.serviceTier ?? "foundations";
 
   const body = await req.json();
-  const { title, status, theme, shootDate, shootLocation, publishDate, editDueDate, priority, notes, script, researchNotes, thoughts, thumbnailWords, footageLink, driveFolderLink, youtubeDescription, pinnedComment, linkedCampaignId, linkedScriptId, thumbnailFileId, thumbnailFileName, thumbnailWinnerId, manualSteps, propertyTypeFocus } = body;
+  // NOTE: `driveFolderLink` is intentionally NOT accepted from the client. It is
+  // server-managed only (set by folder auto-creation). Honouring a member-supplied
+  // value would let a member repoint a plan at an arbitrary Drive folder and then
+  // enumerate its files via the impersonated (delegation) Drive client — an IDOR
+  // into anything the impersonated Workspace user can read.
+  const { title, status, theme, shootDate, shootLocation, publishDate, editDueDate, priority, notes, script, researchNotes, thoughts, thumbnailWords, footageLink, youtubeDescription, pinnedComment, linkedCampaignId, linkedScriptId, thumbnailFileId, thumbnailFileName, thumbnailWinnerId, manualSteps, propertyTypeFocus } = body;
   // Wave 4 — same whitelist as POST. Treat undefined as "field omitted"
   // (partial PATCH semantics, no write), empty string as "clear", and any
   // other off-list string as "clear" (safer than persisting garbage).
@@ -242,7 +247,6 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
           ...(thoughts !== undefined && { thoughts: thoughts ?? null }),
           ...(thumbnailWords !== undefined && { thumbnailWords: thumbnailWords ?? null }),
           ...(footageLink !== undefined && { footageLink: footageLink ?? null }),
-          ...(driveFolderLink !== undefined && { driveFolderLink: driveFolderLink ?? null }),
           ...(youtubeDescription !== undefined && { youtubeDescription: youtubeDescription ?? null }),
           ...(pinnedComment !== undefined && { pinnedComment: pinnedComment ?? null }),
           ...(linkedCampaignId !== undefined && { linkedCampaignId: linkedCampaignId ?? null }),
