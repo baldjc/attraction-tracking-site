@@ -77,6 +77,25 @@ cancel the Google request, so on timeout it also fires a best-effort
 `deleteDriveFile` if the upload later lands, to avoid an orphaned Drive file the
 DB never references. Keep this guard on any Drive write the request path awaits.
 
+## 4. A Content-manager SA can create but not PERMANENTLY delete on a Shared Drive
+On a Shared Drive the service account added as **Content manager** has
+`capabilities.canDelete = false` / `canTrash = true`. So `drive.files.delete`
+(permanent delete) returns **404 "File not found"** (not 403) even on a file it
+just created and can `files.list`. Only an **organizer/manager** can permanently
+delete shared-drive content; everyone else can only trash (`files.update {trashed:true}`).
+
+**Why:** confusing because the 404 looks like the file vanished, but it's a
+capability gate. The app's best-effort orphan-cleanup `deleteDriveFile` (timeout
+path in §3) will therefore 404 on a Shared Drive root — harmless because it's
+non-blocking, but it won't actually reclaim the orphan. To clean up shared-drive
+items programmatically, trash them instead of deleting.
+
+**Verified state (2026-06-03):** SA is Content manager on Shared Drive
+"Attraction By Video Client Videos" (`0A…`); smoke test confirmed folder + Doc +
+binary upload all succeed. **Production** `GOOGLE_DRIVE_ROOT_FOLDER_ID` points at
+that Shared Drive; **development** still points at the old My-Drive root (so dev
+keeps the §2 quota behavior). Per-env, not shared.
+
 ## Fast diagnosis
 Run a throwaway script with `GOOGLE_SERVICE_ACCOUNT_KEY` from env: try
 `drive.files.get` on the root both with and without `clientOptions.subject`. With
