@@ -26,6 +26,10 @@ import {
 
 export const runtime = "nodejs";
 
+// Bumped on every change to this route so production logs prove which artifact is
+// live (the deployed bundle, not git). Grep `build=` in the deployment logs.
+const ROUTE_BUILD_TAG = "thumb-route-2026-06-03-entrylog";
+
 const MAX_VARIANTS = 3;
 
 // Per-await timeout budget (ms). Each external call (DB / Object Storage / Drive
@@ -90,6 +94,27 @@ function timeoutResponse(err: PhaseTimeoutError, ticket: string): NextResponse {
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const ticket = randomUUID();
   const startedAt = Date.now();
+
+  // Earliest-possible entry log — emitted BEFORE any await, so it appears even if
+  // the very first phase stalls. This is the ground-truth marker that proves (a)
+  // the request reached THIS handler, (b) the live artifact (build tag), and (c)
+  // the body actually arrived (content-length). If a member reports a 40s hang
+  // but no `received` line exists for it, the stall is above the app (proxy/body
+  // ingress), not in this handler.
+  console.log(
+    `[thumbnail-upload] received ticket=${ticket} build=${ROUTE_BUILD_TAG} ` +
+      `content_length=${req.headers.get("content-length") ?? "?"} ` +
+      `content_type=${(req.headers.get("content-type") ?? "?").slice(0, 48)}`,
+  );
+
+  // Stamp the ticket on EVERY response (success + error) so a member's report
+  // maps straight to the matching `received`/`result` log lines. Build tag rides
+  // along so support can confirm the live artifact from the response alone.
+  const withTicket = (res: NextResponse): NextResponse => {
+    res.headers.set("x-thumbnail-ticket", ticket);
+    res.headers.set("x-thumbnail-build", ROUTE_BUILD_TAG);
+    return res;
+  };
 
   // Run one bounded, timed phase. Logs duration for EVERY call (success or not)
   // so slow-but-passing trends are visible before they become outages.
@@ -262,11 +287,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   try {
     // Overall SLA bound — guarantees a response under the client's 40s abort no
     // matter how the per-phase durations compose.
-    return await withTimeout(run, {
-      phase: "request_total",
-      subsystem: "other",
-      timeoutMs: OVERALL_TIMEOUT_MS,
-    });
+    return withTicket(
+      await withTimeout(run, {
+        phase: "request_total",
+        subsystem: "other",
+        timeoutMs: OVERALL_TIMEOUT_MS,
+      }),
+    );
   } catch (err) {
     const totalMs = Date.now() - startedAt;
     if (err instanceof PhaseTimeoutError) {
@@ -274,23 +301,27 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         console.error(
           `[thumbnail-upload] result=timeout timeout_at=request_total(overall) total_ms=${totalMs} ticket=${ticket}`,
         );
-        return NextResponse.json(
-          {
-            error: "The upload is taking too long right now — please try again in a moment.",
-            ticket,
-          },
-          { status: 504 },
+        return withTicket(
+          NextResponse.json(
+            {
+              error: "The upload is taking too long right now — please try again in a moment.",
+              ticket,
+            },
+            { status: 504 },
+          ),
         );
       }
       console.error(
         `[thumbnail-upload] result=timeout timeout_at=${err.phase} subsystem=${err.subsystem} total_ms=${totalMs} ticket=${ticket}`,
       );
-      return timeoutResponse(err, ticket);
+      return withTicket(timeoutResponse(err, ticket));
     }
     console.error(`[thumbnail-upload] result=error total_ms=${totalMs} ticket=${ticket}`, err);
-    return NextResponse.json(
-      { error: "Something else went wrong — we've logged it.", ticket },
-      { status: 500 },
+    return withTicket(
+      NextResponse.json(
+        { error: "Something else went wrong — we've logged it.", ticket },
+        { status: 500 },
+      ),
     );
   }
 }
