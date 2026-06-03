@@ -333,13 +333,19 @@ export async function uploadTextFileToFolder(
  * Upload a binary file (e.g. a thumbnail image) into a Drive folder. Overwrites
  * an existing file with the same name. Returns null on any failure.
  */
+// Hard upper bound on a single Drive binary upload attempt. The service account
+// can't own files in a My-Drive-rooted folder (403 storageQuotaExceeded), and a
+// stalled/retrying upload stream must never hang the caller's request — callers
+// (e.g. thumbnail upload) fall back to Object Storage when this returns null.
+const DRIVE_UPLOAD_TIMEOUT_MS = 12_000;
+
 export async function uploadBinaryToFolder(
   folderId: string,
   filename: string,
   buffer: Buffer,
   mimeType: string,
 ): Promise<{ fileId: string; fileUrl: string } | null> {
-  try {
+  const doUpload = async (): Promise<{ fileId: string; fileUrl: string }> => {
     const drive = getDriveClient();
     const safeName = filename.replace(/['"\\]/g, "");
 
@@ -351,25 +357,47 @@ export async function uploadBinaryToFolder(
       supportsAllDrives: true,
     });
 
-    const media = { mimeType, body: Readable.from([buffer]) };
-
     let fileId: string;
     if (existing.data.files && existing.data.files.length > 0) {
       fileId = existing.data.files[0].id!;
-      await drive.files.update({ fileId, media, supportsAllDrives: true });
+      await drive.files.update({
+        fileId,
+        media: { mimeType, body: Readable.from([buffer]) },
+        supportsAllDrives: true,
+      });
     } else {
       const created = await drive.files.create({
         requestBody: { name: safeName, parents: [folderId], mimeType },
-        media,
+        media: { mimeType, body: Readable.from([buffer]) },
         fields: "id",
         supportsAllDrives: true,
       });
       fileId = created.data.id!;
     }
     return { fileId, fileUrl: `https://drive.google.com/file/d/${fileId}/view` };
+  };
+
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const uploadPromise = doUpload();
+  try {
+    const timeout = new Promise<never>((_, reject) => {
+      timer = setTimeout(
+        () => reject(new Error("drive_upload_timeout")),
+        DRIVE_UPLOAD_TIMEOUT_MS,
+      );
+    });
+    return await Promise.race([uploadPromise, timeout]);
   } catch (err) {
     console.error("[google-drive] uploadBinaryToFolder failed:", err);
+    // Promise.race only stops *waiting* — it can't cancel the in-flight Google
+    // request. If the upload actually lands after we've already given up (and the
+    // caller has fallen back to Object Storage), delete the orphaned Drive file.
+    void uploadPromise
+      .then((res) => deleteDriveFile(res.fileId))
+      .catch(() => {});
     return null;
+  } finally {
+    if (timer) clearTimeout(timer);
   }
 }
 

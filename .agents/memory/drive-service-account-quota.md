@@ -63,6 +63,20 @@ as external). Workarounds: (a) create a Google Group that allows external
 members, add the SA to the group, then add the **group** to the Shared Drive; or
 (b) enable external sharing in Admin → Drive sharing settings.
 
+## 3. The failing upload must be time-bounded or it hangs the caller's request
+Because every binary upload into the My-Drive root 403s, callers depend on
+`uploadBinaryToFolder` returning `null` so they can fall back to Object Storage
+(e.g. the member thumbnail upload route). But `Promise.race`-less, an in-flight
+Drive upload (slow network / internal retries on a one-shot `Readable` stream)
+can stall indefinitely, leaving the member's UI stuck on "Uploading…" forever.
+
+**How to apply:** `uploadBinaryToFolder` caps each attempt with a timeout
+(`Promise.race` vs `DRIVE_UPLOAD_TIMEOUT_MS`) and returns `null` on timeout so
+the request always completes via the Object-Storage fallback. The race can't
+cancel the Google request, so on timeout it also fires a best-effort
+`deleteDriveFile` if the upload later lands, to avoid an orphaned Drive file the
+DB never references. Keep this guard on any Drive write the request path awaits.
+
 ## Fast diagnosis
 Run a throwaway script with `GOOGLE_SERVICE_ACCOUNT_KEY` from env: try
 `drive.files.get` on the root both with and without `clientOptions.subject`. With
