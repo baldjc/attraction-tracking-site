@@ -51,6 +51,8 @@ GOOGLE_DRIVE_ROOT_FOLDER_ID = "1cHV_V8D2XjZL10AvXH1ipCW1eS2OM7un"
 
 [userenv.production]
 
+[userenv.development]
+
 [nix]
 channel = "stable-25_05"
 
