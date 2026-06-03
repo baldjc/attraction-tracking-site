@@ -21,7 +21,7 @@
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireMarketAccess } from "@/lib/market-config-server";
-import { validateUploadAsync } from "@/lib/fact-validator";
+import { dispatchValidation } from "@/lib/job-dispatch";
 import { getCostCapStatus } from "@/lib/ai-tool-cost";
 
 export const runtime = "nodejs";
@@ -117,7 +117,7 @@ export async function POST(
     );
   }
 
-  validateUploadAsync(id, upload.userId);
+  await dispatchValidation(id, upload.userId);
 
   return Response.json(
     { ok: true, id, status: "validating", queuedAt: new Date().toISOString() },

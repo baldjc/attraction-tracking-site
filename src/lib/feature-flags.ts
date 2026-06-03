@@ -38,6 +38,10 @@ export interface FeatureFlags {
   // SetupForm while Foundations members never see the section at all.
   tool_member_voice_guide: boolean;
   nav_v2_hub: boolean;
+  // Task #52 — durable job queue rollout. Object form `{ enabled,
+  // allowedUserIds }` supported so the queue can be turned on per-member (or an
+  // admin's own account) before flipping it on globally.
+  durable_job_queue: boolean;
   [key: string]: boolean;
 }
 
@@ -81,6 +85,7 @@ export const DEFAULT_FLAGS: FeatureFlags = {
   tool_neighbourhood_knowledge: false,
   tool_member_voice_guide: false,
   nav_v2_hub: false,
+  durable_job_queue: false,
 };
 
 /**
@@ -164,4 +169,19 @@ export async function getFeatureFlags(opts?: {
   } catch {
     return { ...DEFAULT_FLAGS };
   }
+}
+
+/**
+ * Whether the durable job queue is enabled for a specific user.
+ *
+ * Resolved per OWNING user with NO staff bypass — we pass only `userId` (no
+ * role), so an admin triggering work on behalf of a member doesn't accidentally
+ * force the queue path for that member. During rollout, gate via the object form
+ * `{ enabled, allowedUserIds }`; flip `enabled: true` to turn it on globally.
+ */
+export async function isDurableQueueEnabledForUser(
+  userId: string | null | undefined,
+): Promise<boolean> {
+  const flags = await getFeatureFlags(userId ? { userId } : undefined);
+  return flags.durable_job_queue === true;
 }

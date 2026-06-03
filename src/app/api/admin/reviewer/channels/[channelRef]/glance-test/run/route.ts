@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { isAdmin } from "@/lib/auth-utils";
 import { isReviewerEnabled } from "@/lib/reviewer-flag";
-import { runGlanceTestForChannel } from "@/lib/glance-test-runner";
+import { dispatchGlanceTest } from "@/lib/job-dispatch";
 
 export const maxDuration = 60;
 
@@ -22,10 +22,9 @@ export async function POST(
   const { channelRef } = await params;
   const runBy = (session.user as { id?: string }).id ?? "system";
 
-  // Fire-and-forget — long-running job; client should poll the read API.
-  void runGlanceTestForChannel(channelRef, runBy).catch((err) =>
-    console.error(`[glance-test/run] channel ${channelRef}:`, err),
-  );
+  // Durable when the queue flag is on for the requesting admin; otherwise the
+  // legacy in-process fire-and-forget. Never throws.
+  await dispatchGlanceTest(channelRef, runBy);
 
   return NextResponse.json({ accepted: true }, { status: 202 });
 }

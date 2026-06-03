@@ -6,6 +6,8 @@ A full-stack Next.js platform for YouTube channel audits, member management, lin
 
 To run the application, use: `next dev -p 5000 -H 0.0.0.0`
 
+**Durable job queue (Task #52):** Background work (market-data validation, reviewer coach runs, glance tests) is enqueued to **pg-boss on the existing Postgres** and drained by an **always-on Reserved VM worker** (`npm run worker` → `scripts/worker.ts`). This replaces the old in-process fire-and-forget paths that died on autoscale teardown. Gated by the `durable_job_queue` feature flag (default OFF → legacy in-process path; supports `{ enabled, allowedUserIds }` for staged rollout). The worker writes a heartbeat to the `queue_health` AppSetting; admins read it at `GET /api/admin/queue-health`. **Operate:** create a second deployment of this repl with target **Reserved VM**, run command `npm run worker` (same env/secrets as the web app). The web app stays on autoscale (`npm run start`). With the flag OFF the worker can sit idle — no jobs are enqueued, so nothing is lost.
+
 Required environment variables:
 - `DATABASE_URL`: PostgreSQL connection string
 - `NEXTAUTH_SECRET`: Auth session signing
@@ -14,6 +16,8 @@ Required environment variables:
 - `YOUTUBE_API_KEY`: YouTube Data API v3 key
 - `GHL_API_KEY`: GoHighLevel CRM key
 - `ADMIN_EMAIL`: Admin account email
+- `QUEUE_DATABASE_URL` (optional): Direct, **non-pooled** Postgres URL for the durable job queue (pg-boss). pg-boss uses LISTEN/NOTIFY + advisory locks that Neon's transaction-mode `-pooler` host does not support. If unset, `src/lib/job-queue.ts` derives a direct URL from `DATABASE_URL` by stripping the `-pooler` host segment (and dropping `pgbouncer`/`channel_binding`). Set this explicitly if the derivation is wrong for your provider. `DIRECT_DATABASE_URL` is accepted as an alias.
+- `QUEUE_VALIDATE_CONCURRENCY` (optional, worker only, default `2`): max market-data validations the worker runs at once (each fans out to ~5 Anthropic calls). `QUEUE_WORKER_MAX_CONNECTIONS` (optional, default `5`): worker pg pool size.
 - `DEFAULT_OBJECT_STORAGE_BUCKET_ID`: Replit Object Storage bucket (auto-set when the App Storage blueprint is provisioned; required — `src/lib/market-csv.ts` fails fast at import if missing). Used to persist market-data CSV uploads under key `market-data/<userId>/<uploadId>.csv`.
 - `PRIVATE_OBJECT_DIR` / `PUBLIC_OBJECT_SEARCH_PATHS`: Auto-set by the App Storage blueprint alongside the bucket id.
 - `GOOGLE_SERVICE_ACCOUNT_KEY`: Service-account JSON for Google Drive folder/file automation (`src/lib/google-drive.ts`). Absent → Drive features report `not_configured`.

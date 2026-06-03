@@ -28,7 +28,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import { validateUploadAsync } from "@/lib/fact-validator";
+import { dispatchValidation } from "@/lib/job-dispatch";
 import { getCostCapStatus } from "@/lib/ai-tool-cost";
 import { logAdminAction } from "@/lib/admin-log";
 
@@ -157,7 +157,7 @@ export async function POST(
     // Cost attributes to the upload owner: validateUploadAsync passes
     // upload.userId into runValidation, and persistResults records AIToolUsage
     // under that userId. The admin clicking the button is never billed.
-    validateUploadAsync(id, upload.userId);
+    await dispatchValidation(id, upload.userId);
     queued = true;
 
     // Admin-action logging is best-effort: the re-validation has already been

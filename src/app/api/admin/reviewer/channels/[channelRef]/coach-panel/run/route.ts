@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { isAdmin } from "@/lib/auth-utils";
 import prisma from "@/lib/prisma";
 import { isReviewerEnabled } from "@/lib/reviewer-flag";
-import { executeCoachRun } from "@/lib/reviewer-run";
+import { dispatchCoachRun } from "@/lib/job-dispatch";
 
 export async function POST(
   _req: Request,
@@ -30,10 +30,9 @@ export async function POST(
     select: { id: true },
   });
 
-  // Fire-and-forget
-  void executeCoachRun(run.id).catch((err) => {
-    console.error(`[coach-panel/run] ${run.id} crashed:`, err);
-  });
+  // Durable when the queue flag is on for the requesting admin; otherwise the
+  // legacy in-process fire-and-forget. Never throws.
+  await dispatchCoachRun(run.id, userId);
 
   return NextResponse.json({ runId: run.id }, { status: 202 });
 }

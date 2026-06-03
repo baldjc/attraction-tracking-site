@@ -7,7 +7,7 @@
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireMarketAccess } from "@/lib/market-config-server";
-import { validateUploadAsync } from "@/lib/fact-validator";
+import { dispatchValidation } from "@/lib/job-dispatch";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -48,7 +48,7 @@ export async function POST(
     data: { status: "validating", validationError: null },
   });
 
-  validateUploadAsync(id, upload.userId);
+  await dispatchValidation(id, upload.userId);
 
   return Response.json(
     { id, status: "validating", queued: true },

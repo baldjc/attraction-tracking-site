@@ -1699,7 +1699,7 @@ async function seedNeighbourhoodVocabFromUpload(
   );
 }
 
-async function markUploadFailed(uploadId: string, err: unknown): Promise<void> {
+export async function markUploadFailed(uploadId: string, err: unknown): Promise<void> {
   const message =
     err instanceof Error ? err.message : typeof err === "string" ? err : "Unknown error";
   await prisma.marketDataUpload.update({

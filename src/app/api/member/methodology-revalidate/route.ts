@@ -31,7 +31,7 @@
 import { NextResponse } from "next/server";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import prisma from "@/lib/prisma";
-import { validateUploadAsync } from "@/lib/fact-validator";
+import { dispatchValidation } from "@/lib/job-dispatch";
 import { getCostCapStatus } from "@/lib/ai-tool-cost";
 
 export const runtime = "nodejs";
@@ -203,7 +203,7 @@ export async function POST() {
       continue;
     }
 
-    validateUploadAsync(u.id, user.id);
+    await dispatchValidation(u.id, user.id);
     queued.push(u.id);
   }
 

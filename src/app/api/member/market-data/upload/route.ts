@@ -17,7 +17,7 @@ import {
   writeUploadFile,
   runPreflight,
 } from "@/lib/market-csv";
-import { validateUploadAsync } from "@/lib/fact-validator";
+import { dispatchValidation } from "@/lib/job-dispatch";
 import {
   getCostCapStatus,
   averageRecentValidationCostUsd,
@@ -391,7 +391,7 @@ export async function POST(req: NextRequest) {
   // The route still returns 200 immediately; validation runs in the background
   // and the UI polls /api/member/market-data/upload/[id] for status.
   for (const u of uploads) {
-    validateUploadAsync(u.id, userId);
+    await dispatchValidation(u.id, userId);
   }
 
   return Response.json({ uploads });
