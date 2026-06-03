@@ -29,9 +29,9 @@ export const runtime = "nodejs";
 const MAX_VARIANTS = 3;
 
 // Per-await timeout budget (ms). Each external call (DB / Object Storage / Drive
-// / body read) gets an explicit bound so no single degraded subsystem can hang
-// the request. In any realistic single-subsystem failure the route returns a
-// structured error well under the client's 40s AbortController limit.
+// / body read) gets an explicit bound so a single degraded subsystem returns a
+// precise, member-friendly error instead of hanging — and the logs name the
+// exact phase that stalled.
 const PHASE_TIMEOUTS = {
   auth: 5_000, // DB-backed session/impersonation lookup
   plan_fetch: 5_000, // DB read (ownership check)
@@ -41,6 +41,13 @@ const PHASE_TIMEOUTS = {
   object_storage_write: 15_000, // Object Storage write (also internally bounded — do NOT relax)
   db_update: 5_000, // row-locked variant write
 } as const;
+
+// Overall request SLA. The per-phase bounds above can sum past the client's 40s
+// AbortController when several phases are each slow-but-not-timing-out, which the
+// client sees as a forever-hang. This single bound guarantees the route ALWAYS
+// responds under the client limit regardless of how the phases compose. It is
+// the binding constraint; per-phase bounds remain only for diagnostic precision.
+const OVERALL_TIMEOUT_MS = 35_000;
 
 function timeoutResponse(err: PhaseTimeoutError, ticket: string): NextResponse {
   switch (err.subsystem) {
@@ -76,9 +83,10 @@ function timeoutResponse(err: PhaseTimeoutError, ticket: string): NextResponse {
 // folder (or the Drive upload fails), it is stored in Replit Object Storage so
 // the member can still preview and download it. Returns the full variant list.
 //
-// Every external await is wrapped in `withTimeout` and timed; on a timeout the
-// member gets a subsystem-specific message and the logs say exactly which phase
-// stalled (`[thumbnail-upload] result=timeout timeout_at=<phase>`).
+// Bounding model: every external await is wrapped in a timed `phase()` (for
+// per-subsystem diagnostics) AND the whole handler is wrapped in a single
+// OVERALL_TIMEOUT_MS bound (the SLA guarantee). On any timeout the member gets a
+// specific message and the logs say exactly which phase stalled.
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const ticket = randomUUID();
   const startedAt = Date.now();
@@ -110,7 +118,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
   };
 
-  try {
+  // The full request flow. Returns a NextResponse for every outcome. Wrapped by
+  // the overall timeout below so it can never exceed the SLA.
+  const run = async (): Promise<NextResponse> => {
     const user = await phase("auth", "database", () => resolveUserFromSession());
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -247,9 +257,31 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       `[thumbnail-upload] result=success total_ms=${Date.now() - startedAt} storage=${newVariant.storage}`,
     );
     return NextResponse.json({ variants: result.variants });
+  };
+
+  try {
+    // Overall SLA bound — guarantees a response under the client's 40s abort no
+    // matter how the per-phase durations compose.
+    return await withTimeout(run, {
+      phase: "request_total",
+      subsystem: "other",
+      timeoutMs: OVERALL_TIMEOUT_MS,
+    });
   } catch (err) {
     const totalMs = Date.now() - startedAt;
     if (err instanceof PhaseTimeoutError) {
+      if (err.phase === "request_total") {
+        console.error(
+          `[thumbnail-upload] result=timeout timeout_at=request_total(overall) total_ms=${totalMs} ticket=${ticket}`,
+        );
+        return NextResponse.json(
+          {
+            error: "The upload is taking too long right now — please try again in a moment.",
+            ticket,
+          },
+          { status: 504 },
+        );
+      }
       console.error(
         `[thumbnail-upload] result=timeout timeout_at=${err.phase} subsystem=${err.subsystem} total_ms=${totalMs} ticket=${ticket}`,
       );

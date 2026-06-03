@@ -26,6 +26,16 @@ timeoutMs})` races against a timeout and throws a `PhaseTimeoutError` tagged wit
 `subsystem` (storage|database|upload|drive|other) so the route can return a precise
 member-facing message and log `result=timeout timeout_at=<phase>`.
 
+**Per-phase bounds are NOT enough — also need an OVERALL request bound.** Several
+phases each slow-but-under-their-own-bound can SUM past the client's abort timeout,
+which the client sees as a forever-hang (it shows its own abort message, e.g.
+"Upload timed out", NOT any server `*is slow*` message). Diagnostic tell: client
+abort message instead of a structured 503/408 = cumulative overrun, not a single
+hung phase. Fix: wrap the whole handler in one `withTimeout` (phase `request_total`,
+~35s, comfortably under the client's 40s) as the binding SLA; keep per-phase bounds
+only for diagnostic attribution. Accepted tradeoff: when the overall bound fires,
+in-flight background work may finish after the response and orphan a harmless object.
+
 **How to apply:**
 - Wrap every Object-Storage call that runs inside a request path in a
   `Promise.race` against a timeout (the thumbnail helpers use a ~15s bound).
