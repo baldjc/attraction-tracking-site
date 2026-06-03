@@ -2009,17 +2009,31 @@ function PublishTab({
   const handleUpload = async (file: File) => {
     setThumbError(null);
     setUploading(true);
+    // Client-side guard: even if the network/proxy stalls (so the response never
+    // arrives), abort after 40s — longer than the server's worst-case bounded
+    // path — so the button can never hang on "Uploading…" indefinitely.
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 40_000);
     try {
       const fd = new FormData();
       fd.append("file", file);
-      const res = await fetch(`${apiBase}/${planId}/thumbnails`, { method: "POST", body: fd });
+      const res = await fetch(`${apiBase}/${planId}/thumbnails`, {
+        method: "POST",
+        body: fd,
+        signal: controller.signal,
+      });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Upload failed");
       setVariants(parseClientVariants(data.variants));
       onPersist({ thumbnailVariants: data.variants });
     } catch (e) {
-      setThumbError(e instanceof Error ? e.message : "Upload failed");
+      if (e instanceof DOMException && e.name === "AbortError") {
+        setThumbError("Upload timed out — please try again.");
+      } else {
+        setThumbError(e instanceof Error ? e.message : "Upload failed");
+      }
     } finally {
+      clearTimeout(timeoutId);
       setUploading(false);
       if (fileRef.current) fileRef.current.value = "";
     }

@@ -425,11 +425,20 @@ export async function uploadBinaryToFolder(
  * dangling Drive file is harmless and we don't want cleanup to fail the request.
  */
 export async function deleteDriveFile(fileId: string): Promise<void> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
   try {
     const drive = getDriveClient();
-    await drive.files.delete({ fileId, supportsAllDrives: true });
+    // Best-effort cleanup must never block the caller's response: a slow/hung
+    // Drive delete (e.g. on the thumbnail cap / DB-rollback path) would
+    // otherwise stall the request. Bound it like the upload.
+    const timeout = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error("drive_delete_timeout")), DRIVE_UPLOAD_TIMEOUT_MS);
+    });
+    await Promise.race([drive.files.delete({ fileId, supportsAllDrives: true }), timeout]);
   } catch (err) {
     console.error("[google-drive] deleteDriveFile failed:", err);
+  } finally {
+    if (timer) clearTimeout(timer);
   }
 }
 

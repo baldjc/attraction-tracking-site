@@ -105,7 +105,20 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
   }
   if (!variant) {
-    variant = await storeInObjectStorage();
+    // Object Storage is the final fallback (and the only backend non-Production
+    // tiers ever use). It's bounded by OBJECT_STORAGE_TIMEOUT_MS, so this either
+    // succeeds or throws promptly — never hangs. Return a structured JSON error
+    // so the client clears "Uploading…" and shows a real message instead of
+    // tripping over an unhandled 500 (which would be non-JSON).
+    try {
+      variant = await storeInObjectStorage();
+    } catch (err) {
+      console.error("[thumbnails] object-storage upload failed:", err);
+      return NextResponse.json(
+        { error: "We couldn't save your thumbnail right now. Please try again in a moment." },
+        { status: 503 },
+      );
+    }
   }
   const newVariant = variant;
 

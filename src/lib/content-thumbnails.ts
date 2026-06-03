@@ -21,6 +21,12 @@ export type ThumbnailVariant = {
 export const MAX_THUMBNAIL_BYTES = 5 * 1024 * 1024; // 5MB
 export const ALLOWED_THUMBNAIL_MIME = new Set(["image/png", "image/jpeg"]);
 
+// Object Storage has no client-side timeout of its own, so a stalled bucket
+// call would otherwise hang the request forever (member stuck on "Uploading…").
+// Bound every Object-Storage write so the route always settles and can surface
+// a real error instead of hanging.
+export const OBJECT_STORAGE_TIMEOUT_MS = 15_000;
+
 let cachedClient: ObjectStorageClient | null = null;
 function objectStorage(): ObjectStorageClient {
   if (cachedClient) return cachedClient;
@@ -43,9 +49,20 @@ export function extForMime(mime: string): string {
 }
 
 export async function putThumbnailBytes(key: string, buf: Buffer): Promise<void> {
-  const result = await objectStorage().uploadFromBytes(key, buf);
-  if (!result.ok) {
-    throw new Error(`Object Storage upload failed for ${key}: ${String(result.error)}`);
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    const timeout = new Promise<never>((_, reject) => {
+      timer = setTimeout(
+        () => reject(new Error(`Object Storage upload timed out for ${key}`)),
+        OBJECT_STORAGE_TIMEOUT_MS,
+      );
+    });
+    const result = await Promise.race([objectStorage().uploadFromBytes(key, buf), timeout]);
+    if (!result.ok) {
+      throw new Error(`Object Storage upload failed for ${key}: ${String(result.error)}`);
+    }
+  } finally {
+    if (timer) clearTimeout(timer);
   }
 }
 
@@ -58,10 +75,18 @@ export async function getThumbnailBytes(key: string): Promise<Buffer> {
 }
 
 export async function deleteThumbnailBytes(key: string): Promise<void> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
   try {
-    await objectStorage().delete(key);
+    // Best-effort cleanup (used on the upload rollback path) must never block the
+    // response, so bound it like the write — a dangling object is harmless.
+    const timeout = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error("object_delete_timeout")), OBJECT_STORAGE_TIMEOUT_MS);
+    });
+    await Promise.race([objectStorage().delete(key), timeout]);
   } catch {
     // Best-effort cleanup; a dangling object is harmless.
+  } finally {
+    if (timer) clearTimeout(timer);
   }
 }
 
