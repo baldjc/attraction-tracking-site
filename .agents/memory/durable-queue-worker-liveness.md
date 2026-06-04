@@ -28,6 +28,14 @@ jobs sit forever (the exact stranding failure the durable queue was meant to pre
 - A heartbeat that shows `workerStartedAt ≈ lastHeartbeatAt` (one beat then frozen) with
   `jobsProcessed=0` means the worker started, wrote its first beat, then crashed/lost the DB
   connection — investigate the VM, don't flip.
-- Phil (first rollout user) = `philm@martinht.com`. The flip is a new object-form flag:
-  `durable_job_queue = { enabled: false, allowedUserIds: [<philId>] }` (enabled:false +
-  allowlist = on for Phil only). The admin PUT route validates every id against `users`.
+- **Pin the TS runner as a PROD dependency.** `npm run worker` is `npx tsx scripts/worker.ts`.
+  If `tsx` is not in `package.json` `dependencies`, `npx` tries to fetch it from the registry
+  at container start; in a deployment that fetch is flaky/blocked and the worker never boots
+  (or boots once then dies) — the classic "one beat then frozen" symptom. Keep `tsx` in
+  `dependencies` (not devDependencies, which can be pruned in prod). Same applies to any
+  runtime TS runner for a deployed process.
+- The first rollout (canary) user is gated via a new object-form flag entry:
+  `durable_job_queue = { enabled: false, allowedUserIds: [<canaryUserId>] }` (enabled:false +
+  allowlist = on for that user only). The admin PUT route validates every id against `users`.
+  Look up the actual id in the live `feature_visibility` AppSetting — do not hardcode user
+  identifiers (or emails) here.
