@@ -55,8 +55,8 @@ GOOGLE_DRIVE_ROOT_FOLDER_ID = "1cHV_V8D2XjZL10AvXH1ipCW1eS2OM7un"
 channel = "stable-25_05"
 
 [deployment]
-deploymentTarget = "autoscale"
-run = ["npm", "run", "start"]
+deploymentTarget = "vm"
+run = ["bash", "-c", "npm run worker & exec npm run start"]
 build = ["npm", "run", "build"]
 
 [postMerge]
