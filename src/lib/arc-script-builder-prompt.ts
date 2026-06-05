@@ -31,15 +31,13 @@ ARC stands for Attention, Revelation, Connection. Every video script follows thi
 **A — Attention (Opening, ~30 seconds):**
 The opening must accomplish these things:
 1. Approve the click (first words confirm they made the right choice clicking)
-2. Mention the lead magnet within the first 20 seconds (one line, not a pitch)
-3. Layer in credibility via an expertise bridge (for data-heavy videos, the data scope IS the bridge)
-4. Framework setup for data-heavy videos (1-2 sentences: "I've broken this into two lists...")
+2. Layer in credibility via an expertise bridge (for data-heavy videos, the data scope IS the bridge)
+3. Framework setup for data-heavy videos (1-2 sentences: "I've broken this into two lists...")
 
 The "Approve the Click" Principle: The first words out of the creator's mouth must confirm the viewer made the right choice clicking. The hook must directly mirror or reference the title/thumbnail promise. Break this connection and they leave.
 
 Opening structure:
 - Intro Pattern (~8-12 sec) — the primary hook that approves the click
-- Lead Magnet (~4-5 sec) — one line, not a pitch
 - Expertise Bridge (~3-5 sec) — layers credibility INTO the transition to the first point. For data-heavy videos, the data scope IS the bridge.
 - Framework Setup (~3-5 sec) — if data-heavy, 1-2 sentences telling the viewer how the video is structured
 - Transition (~2 sec) — "Here's what you..." / "Let's get into it..."
@@ -68,7 +66,7 @@ Talking points are ordered: second-best first, best last (save the strongest for
 Connection isn't a section — it's woven through the entire video:
 - 4-5 connection phrases distributed throughout (not clustered)
 - 2-3 values and personal interests peppered in at natural points
-- Lead magnet mentioned 3 times total (opening, ~2/3 through, closing)
+- Lead magnet mentioned 3 times total (first talking point, ~40% mark, half-sentence at the outro riding the binge hook)
 - Curiosity bridges between sections using And → But → Therefore transitions
 
 === INTRO PATTERNS ===
@@ -92,7 +90,7 @@ There are 4 main intro pattern types. The creator chooses ONE as their primary h
 
 === EXPERTISE BRIDGES ===
 
-These come AFTER the lead magnet mention and transition INTO the first insight. The expertise bridge isn't a standalone brag — it connects the creator's credibility to the specific insight they're about to deliver.
+These come right after the intro pattern and transition INTO the first insight. The expertise bridge isn't a standalone brag — it connects the creator's credibility to the specific insight they're about to deliver.
 
 **Authority Bridge:** "After helping [X families/clients] [do the thing], the first thing I always tell them is..."
 **Revelation Bridge:** "What most [experts] won't tell you — and I can say this after [credibility proof] — is..."
@@ -100,10 +98,10 @@ These come AFTER the lead magnet mention and transition INTO the first insight. 
 
 === LEAD MAGNET PLACEMENT ===
 
-Mentioned 3 times throughout the video:
-1. Within the first 20 seconds — right after the intro pattern. One line, NOT a pitch.
-2. At the natural midpoint — quick reminder tied to the content just delivered
-3. End of video — final mention as part of the close
+Mentioned exactly 3 times, in these fixed positions:
+1. Woven into the FIRST talking point of the video (the first Revelation point), as ONE sentence. NOT in the intro/opening.
+2. The full pitch at ~40% of the runtime, tied to an insight just delivered. Pitch shape: gap → tool → identity, in the creator's voice.
+3. A half-sentence reminder at the very end, riding the binge hook (not a standalone pitch).
 
 === CONNECTION LANGUAGE REFERENCE ===
 
@@ -116,10 +114,11 @@ Keep viewers watching between sections using And → But → Therefore transitio
 === FINAL SCRIPT CHECKLIST ===
 
 Every completed script must pass these checks:
-- Opening is ~30 seconds (Intro Pattern + Lead Magnet + Expertise Bridge + Framework Setup if data-heavy)
+- Opening is ~30 seconds (Intro Pattern + Expertise Bridge + Framework Setup if data-heavy)
 - Intro pattern comes FIRST (approves the click immediately — no preamble)
-- Expertise bridge comes AFTER lead magnet (for data-heavy videos, data scope IS the bridge)
-- Lead magnet mentioned 3 times (within first 20 sec, midpoint, end)
+- Expertise bridge comes right after the intro pattern (for data-heavy videos, data scope IS the bridge)
+- Lead magnet mentioned 3 times (one sentence in the first talking point, full pitch at ~40%, half-sentence at the outro riding the binge hook — never in the opening)
+- Close is a forward/binge hook to the next video — NOT a recap and NOT a sales pitch; contains no push-CTA language
 - Each talking point follows the right loop: Value Loop (What/Why/When/Proof Point/Meaning) or Data Tour Loop (Name/Number/Interpret/Connect/Opinion/Bridge)
 - For data-heavy videos: Throughline Lesson identified and Connect It beats distributed across every Data Tour Loop point (not clustered at the start or in a standalone section)
 - No "how to implement" (save that for consultation/lead magnet)
@@ -163,6 +162,7 @@ Generate 2-3 opening options using the 4 ARC patterns:
 3. EMPATHY — Show you've been there or you see them
 4. STAKES — Make clear what's at risk if they don't watch
 Write each option word-for-word as ~20-25 second scripts. Make them specific to this video's topic and avatar.
+Do NOT place the lead magnet in the opening — its first mention comes later, woven into the first insight (Section 4).
 
 **SECTION 3 — CREDIBILITY**
 Draft a credibility line using credentials from the avatar profile. Note what you pulled in (years in business, deals closed, client results, etc.). Write it as an actual script line that weaves in naturally — not boastful.
@@ -172,9 +172,10 @@ Generate the insights using the right loop type per talking point:
 - Value Loop points: What → Why → When → Story Proof → Connection
 - Data Tour Loop points: Name It → Number It → Interpret It → Connect It → Opinion It → Bridge It
 For data-heavy videos, ensure each Data Tour Loop point includes a Connect It beat (1-2 sentences) that ties the data back to the viewer's life or the Throughline Lesson identified in Section 1. These must be distributed throughout — not front-loaded in the first couple of minutes. Add And → But → Therefore curiosity bridges between sections. Each insight should feel like a revelation, not a how-to.
+Lead magnet: weave mention #1 into the FIRST insight as ONE sentence (not a pitch). Place the full pitch — mention #2 — at ~40% of the runtime, tied to an insight just delivered, using the shape gap → tool → identity in the creator's voice.
 
-**SECTION 5 — CLOSING**
-Draft a closing that includes lead magnet mentions (3 total across the full script). Include connection phrases and note where values are placed.
+**SECTION 5 — CLOSING (FORWARD / BINGE HOOK)**
+Draft the close as a counter-intuitive forward hook — a binge "Stakes" pattern that points to the next video in rotation. Never a recap, and never a closing sales pitch. No push/closing CTA language (ban: "make an offer," "this is the one," "let's pull the trigger," "book a call," and similar) — information without push. The only lead-magnet reference here is mention #3: a half-sentence reminder riding the binge hook, not a standalone pitch. Include connection phrases and note where values are placed.
 
 **SECTION 6 — LEAD MAGNET BRAINSTORM**
 Generate 2-3 lead magnet ideas using this principle: "Marketing is the continuation of the thought the client is having, and the lead magnet shows up as that continuation of thought." Must be specific to THIS video, not generic. The lead magnet should feel like a natural next step from the video content.
@@ -184,7 +185,8 @@ Assemble the complete script from approved sections. Then run the 11-item checkl
 1. Opening is ~20-25 seconds
 2. Opening approves the click
 3. Credibility woven in naturally
-4. Lead magnet mentioned 3 times
+4. Lead magnet mentioned 3 times (one sentence in the first insight, full pitch at ~40%, half-sentence at the outro riding the binge hook — never in the opening)
+4b. Close is a forward/binge hook to the next video — NOT a recap and NOT a sales pitch; contains no push-CTA language
 5. Each insight follows the correct loop (Value Loop or Data Tour Loop with Connect It)
 6. No "how to implement" (keep them wanting more)
 6b. For data-heavy videos: Throughline Lesson identified and Connect It beats distributed across every Data Tour Loop point
