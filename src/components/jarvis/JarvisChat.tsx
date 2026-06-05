@@ -1,8 +1,78 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { useToast } from "@/components/ToastProvider";
 import type { ProposalState, ToolCallRecord } from "@/lib/jarvis/types";
+
+// Markdown rendering for assistant turns + draft-script cards. react-markdown
+// does NOT render raw HTML by default (no rehype-raw), so embedded HTML is
+// escaped — safe for streamed model output. Re-renders incrementally as
+// tokens arrive, so SSE streaming stays intact.
+const MD_COMPONENTS = {
+  p: ({ children }: { children?: ReactNode }) => (
+    <p className="mb-2 leading-relaxed last:mb-0">{children}</p>
+  ),
+  strong: ({ children }: { children?: ReactNode }) => (
+    <strong className="font-semibold">{children}</strong>
+  ),
+  em: ({ children }: { children?: ReactNode }) => <em className="italic">{children}</em>,
+  ul: ({ children }: { children?: ReactNode }) => (
+    <ul className="mb-2 list-disc pl-5 leading-relaxed last:mb-0">{children}</ul>
+  ),
+  ol: ({ children }: { children?: ReactNode }) => (
+    <ol className="mb-2 list-decimal pl-5 leading-relaxed last:mb-0">{children}</ol>
+  ),
+  li: ({ children }: { children?: ReactNode }) => <li className="mb-0.5">{children}</li>,
+  h1: ({ children }: { children?: ReactNode }) => (
+    <h1 className="mb-2 mt-1 text-base font-bold">{children}</h1>
+  ),
+  h2: ({ children }: { children?: ReactNode }) => (
+    <h2 className="mb-2 mt-1 text-base font-bold">{children}</h2>
+  ),
+  h3: ({ children }: { children?: ReactNode }) => (
+    <h3 className="mb-1.5 mt-1 text-sm font-bold">{children}</h3>
+  ),
+  h4: ({ children }: { children?: ReactNode }) => (
+    <h4 className="mb-1.5 mt-1 text-sm font-semibold">{children}</h4>
+  ),
+  hr: () => <hr className="my-3 border-abv-border" />,
+  a: ({ children, href }: { children?: ReactNode; href?: string }) => (
+    <a href={href} target="_blank" rel="noreferrer" className="text-[var(--abv-azure)] underline">
+      {children}
+    </a>
+  ),
+  blockquote: ({ children }: { children?: ReactNode }) => (
+    <blockquote className="mb-2 border-l-2 border-abv-border pl-3 text-abv-text-secondary">
+      {children}
+    </blockquote>
+  ),
+  code: ({ children }: { children?: ReactNode }) => (
+    <code className="rounded bg-black/5 px-1 py-0.5 font-mono text-[0.85em] dark:bg-white/10">
+      {children}
+    </code>
+  ),
+  table: ({ children }: { children?: ReactNode }) => (
+    <div className="mb-2 overflow-x-auto">
+      <table className="w-full border-collapse text-xs">{children}</table>
+    </div>
+  ),
+  th: ({ children }: { children?: ReactNode }) => (
+    <th className="border border-abv-border px-2 py-1 text-left font-semibold">{children}</th>
+  ),
+  td: ({ children }: { children?: ReactNode }) => (
+    <td className="border border-abv-border px-2 py-1">{children}</td>
+  ),
+};
+
+function Markdown({ children }: { children: string }) {
+  return (
+    <ReactMarkdown remarkPlugins={[remarkGfm]} components={MD_COMPONENTS}>
+      {children}
+    </ReactMarkdown>
+  );
+}
 
 export interface InitialMessage {
   id: string;
@@ -387,8 +457,8 @@ function MessageBubble({
       ))}
 
       {message.text && (
-        <div className="max-w-[90%] whitespace-pre-wrap rounded-2xl border border-abv-border bg-abv-surface px-4 py-3 text-sm text-abv-text">
-          {message.text}
+        <div className="max-w-[90%] rounded-2xl border border-abv-border bg-abv-surface px-4 py-3 text-sm text-abv-text">
+          <Markdown>{message.text}</Markdown>
         </div>
       )}
 
@@ -420,9 +490,9 @@ function ScriptDraft({ draft, status }: { draft: string; status?: ChatMessage["d
         )}
         {status === "error" && <span className="text-xs text-red-500">couldn’t finish</span>}
       </div>
-      <pre className="max-h-96 overflow-y-auto whitespace-pre-wrap px-4 py-3 font-sans text-sm text-abv-text">
-        {draft}
-      </pre>
+      <div className="max-h-96 overflow-y-auto px-4 py-3 text-sm text-abv-text">
+        <Markdown>{draft}</Markdown>
+      </div>
     </div>
   );
 }

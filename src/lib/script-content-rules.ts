@@ -123,6 +123,23 @@ const ANNOTATION_ONLY_LINE_RE =
   /^\s*(?:\[[^\]\n]*\]\s*)+\s*$/;
 
 /**
+ * ARC fact-citation footnote. Everything from a "## Sources" (or
+ * "**Sources**") heading to the end of the script is editor-facing audit
+ * metadata mapping each market number to its fact id — it is never spoken.
+ * `stripToDialogue` stops collecting at this line so no dialogue rule scans
+ * the footnote's ids/labels. Singular "Source" (e.g. the prompt's
+ * "## SOURCE-OF-TRUTH METRICS") is intentionally NOT matched.
+ *
+ * Anchored to the WHOLE line (optional trailing colon / closing `**`) so it
+ * only matches the bare footnote heading the prompt emits ("## Sources",
+ * "**Sources:**"). A content heading like "## Sources of demand" must NOT
+ * terminate dialogue collection — otherwise everything after it (real spoken
+ * dialogue) would silently escape every grounding/refusal check.
+ */
+const SOURCES_FOOTNOTE_HEADING_RE =
+  /^\s*(?:#{1,6}\s+|\*\*\s*)sources\s*:?\s*\*{0,2}\s*$/i;
+
+/**
  * Return the script body with non-dialogue surfaces removed:
  *   - heading / title lines dropped
  *   - annotation-only lines dropped
@@ -143,6 +160,9 @@ export function stripToDialogue(script: string): {
   const lines = script.split(/\r?\n/);
   for (let i = 0; i < lines.length; i++) {
     const raw = lines[i];
+    // Stop at the Sources footnote — it and everything after it is audit
+    // metadata, never spoken dialogue.
+    if (SOURCES_FOOTNOTE_HEADING_RE.test(raw)) break;
     if (HEADING_OR_TITLE_LINE_RE.test(raw)) continue;
     if (ANNOTATION_ONLY_LINE_RE.test(raw)) continue;
     const stripped = raw
@@ -319,6 +339,47 @@ export function checkNoAvatarPander(script: string): ScriptViolation[] {
         line: dialogueLineMap[li],
       });
     }
+  }
+  return violations;
+}
+
+/* ────────────────────────────────────────────────────────────────────── */
+/*  Rule 2b — no "...for a second" filler tail.                           */
+/* ────────────────────────────────────────────────────────────────────── */
+
+/**
+ * ARC polish decision: the standalone signature "Think about that." stays
+ * approved, but the padded "...for a second" tail ("think about that for a
+ * second", "stop on that for a second", "sit with that for a second") is a
+ * filler tic that softens the beat. We catch the tail anywhere in spoken
+ * dialogue. Because the bare "Think about that." never contains "for a
+ * second", the approved signature is unaffected.
+ *
+ * The lookahead requires "for a second" to sit at a clause/sentence boundary
+ * (end-of-line or punctuation) — the adverbial filler form. This avoids
+ * false-positiving the literal "a second <noun>" sense ("for a second home",
+ * "for a second opinion", "for a second time"), where a noun (not punctuation)
+ * follows.
+ */
+const FOR_A_SECOND_RE = /\bfor a second\b(?=\s*(?:[.,!?;:]|$))/i;
+
+export function checkNoForASecondTail(script: string): ScriptViolation[] {
+  const { dialogue, dialogueLineMap } = stripToDialogue(script);
+  const violations: ScriptViolation[] = [];
+  const lines = dialogue.split("\n");
+  for (let li = 0; li < lines.length; li++) {
+    const m = FOR_A_SECOND_RE.exec(normalizeApostrophes(lines[li]));
+    if (!m) continue;
+    violations.push({
+      rule: "no_avatar_pander",
+      severity: "error",
+      message:
+        'Found the filler tail "for a second". Drop it — the standalone ' +
+        '"Think about that." lands harder than "Think about that for a ' +
+        'second." Remove the padded tail.',
+      snippet: snippetAround(lines[li], m),
+      line: dialogueLineMap[li],
+    });
   }
   return violations;
 }
@@ -1614,6 +1675,7 @@ export function validateScript(
   const violations: ScriptViolation[] = [];
   violations.push(...checkNoWhy(script));
   violations.push(...checkNoAvatarPander(script));
+  violations.push(...checkNoForASecondTail(script));
   violations.push(...checkNoAbbrevInDialogue(script));
   violations.push(...checkNumerals(script));
   const hyperLocal = checkHyperLocalFloor(script, opts);

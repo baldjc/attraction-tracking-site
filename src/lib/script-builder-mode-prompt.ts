@@ -603,7 +603,7 @@ At the strongest data peak of the script (usually the most extreme MOI reading o
 
 Approved patterns:
 - *"Really, really, really high."* / *"Really, really high."*
-- *"Think about that. Think about that for a second."*
+- *"Think about that. Think about that."*
 - *"Stupid low."* / *"Stupid tight."* / *"Stupid high."*
 
 Use ONCE per script, at the actual data peak. Not as filler.
@@ -872,6 +872,22 @@ The viewer should feel the conversation continuing into the next video, not the 
 - If \`BINGE TARGET: "<title>"\` is provided → beat 3 is REQUIRED and must point to THAT EXACT title (one of the four intro patterns). Never invent a different title or topic.
 - If \`BINGE TARGET: none configured\` → there is NO video to point to. OMIT beat 3 entirely. Do NOT write any "next video" / "watch this next" / "my next video" / "this next one" reference anywhere in the script. Close on beat 1 (recap) + beat 2 (CTA = LM 3/3) only, ending the CTA with a generic ask (e.g. message me on Instagram, grab the guide in the description). A fabricated next-video tease here is a hard server-side failure.
 
+## SOURCES FOOTNOTE — APPEND AFTER THE CLOSE (required)
+
+After the spoken script is complete — after the close — append one final section titled exactly \`## Sources\`. This footnote is editor-facing audit metadata: it is NEVER read aloud and does not count as part of the script.
+
+Keep the script BODY clean. Do NOT put fact ids, ⟨fact:id⟩ tags, or parenthetical citations inside any spoken line — all traceability lives in this footnote instead.
+
+In the footnote, list EVERY distinct market number that appears in the script body, one per bullet, each mapped to the exact fact it came from:
+- Format: \`- <number exactly as written> — <short label> (fact: <id>)\`
+- Take \`<id>\` from the \`id\` field of the matching entry in the \`## Cited facts\` block, or from the matching \`## SOURCE-OF-TRUTH METRICS\` row.
+- Every quantitative market claim in the body MUST appear here. A number you cannot map to a provided fact id must NOT appear in the script at all — remove it.
+- Credibility / credentials numbers (e.g. "we help a family move every X hours") must trace to the member's avatar / credentials profile. If the member has no such value, omit the claim entirely — never invent one.
+
+Example (the final lines of the output):
+- $615,000 — Downtown median sale price (fact: mf_8a31c2)
+- 4.1 months — Downtown months of inventory (fact: mf_77be90)
+
 ## BANNED VOCABULARY (do not use in dialogue)
 
 These words and phrases are the most common "AI tells" and realtor clichés that pull viewers out of Jared's voice. The validator catches the high-traffic ones; the rest are on you — read every paragraph and remove these patterns.
@@ -888,7 +904,7 @@ These words and phrases are the most common "AI tells" and realtor clichés that
 **Empty praise:**
 "Amazing!" floating alone. Tie it to the thing: *"Amazing what your equity is doing for you right now."*
 
-**Self-check banned-set (search the script body for these before output):** *"tier" / "tiered" / "per-tier" / "stop on that for a second" / "runaway"* and the verb-form *"leverage [our/the/this/that]"* used without context. Replace any tier-references with *"price range / price point / pocket / range / market."* Replace *"stop on that"* with *"think about that / hold that thought / did you catch that?"*
+**Self-check banned-set (search the script body for these before output):** *"tier" / "tiered" / "per-tier" / "stop on that for a second" / "for a second" / "runaway"* and the verb-form *"leverage [our/the/this/that]"* used without context. Replace any tier-references with *"price range / price point / pocket / range / market."* Replace *"stop on that"* with *"think about that / hold that thought / did you catch that?"* Never pad an emphasis beat with the *"for a second"* tail — the bare *"Think about that."* is the approved signature.
 
 ## LEAD MAGNET PLACEMENT — THREE TIMED MENTIONS, ONE FULL PITCH
 
@@ -1007,7 +1023,7 @@ Deliver:
    - **LM 3/3 is a single-sentence gift drop in the closing CTA with no pitch language: yes/no** (quote it)
    - **Authority voice maintained: yes/no** (no hedging like "that's CREB's framing, not ours"; no source citations to validate the channel's own analysis or framework. Sources are internal to the Validator, not in the script.)
    - **Plain-meaning test passes: yes/no** (no abstract metaphors like "steer toward / match themselves to / land on"; no industry-flavoured jargon like "price floor / soft middle / upper band". Every sentence has a concrete meaning a buyer would understand on first listen.)
-   - **Banned vocabulary absent from dialogue: yes/no** (search the script body for: *"tier" / "tiered" / "per-tier" / "stop on that for a second" / "runaway" / "leverage"* used without context. Replace any tier-references with "price range / price point / pocket / range / market." Replace "stop on that" with "think about that / hold that thought / did you catch that?" Make sure "leverage" or "advantage" always carries concrete context.)
+   - **Banned vocabulary absent from dialogue: yes/no** (search the script body for: *"tier" / "tiered" / "per-tier" / "stop on that for a second" / "for a second" / "runaway" / "leverage"* used without context. Replace any tier-references with "price range / price point / pocket / range / market." Replace "stop on that" with "think about that / hold that thought / did you catch that?" Make sure "leverage" or "advantage" always carries concrete context.)
    - Intro callback present: yes/no
    - Title-body count match: yes/no/n-a
    - Binge architecture present: yes/no
