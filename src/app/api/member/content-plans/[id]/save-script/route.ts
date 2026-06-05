@@ -41,7 +41,10 @@ import { getFeatureFlags } from "@/lib/feature-flags";
 import { logUsage } from "@/lib/ai-tool-cost";
 import { validateScript } from "@/lib/script-content-rules";
 import { isBingeTargetUsable } from "@/lib/binge-target";
-import { loadMarketConfigSummary } from "@/lib/content-engine-context";
+import {
+  loadMarketConfigSummary,
+  credentialsAnchorText,
+} from "@/lib/content-engine-context";
 
 export const runtime = "nodejs";
 
@@ -195,6 +198,7 @@ export async function POST(
     neighbourhoods: marketConfig?.neighbourhoods ?? [],
     currentMemberName: memberFullName ?? undefined,
     forbiddenIdentities,
+    credentialsText: marketConfig ? credentialsAnchorText(marketConfig) : [],
     bingeTargetConfigured,
     bingeTargetTitle: bingeTargetTitle ?? undefined,
   });

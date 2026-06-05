@@ -60,7 +60,18 @@ export type ScriptViolationRule =
   | "binge_target_match"
   /** Script states a "%-failed-to-sell" figure, misreading the offMarket/sold
    *  failure_rate ratio as a share of all listings. */
-  | "failure_rate_framing";
+  | "failure_rate_framing"
+  /** A quantitative claim leaked a malformed/placeholder number ("the 0K
+   *  range", "$500,000-to-the 600K", "a meaningful amount", a dangling
+   *  value verb like "average sitting.") instead of a clean traceable value. */
+  | "placeholder_number"
+  /** The CLOSING is a backward recap or a closing sales pitch instead of a
+   *  counter-intuitive forward/binge hook to the next video. */
+  | "recap_close"
+  /** The opening's Expertise Bridge invented a specific credibility cadence
+   *  ("a family every 53 hours") whose number isn't backed by the member's
+   *  profile/credentials. */
+  | "fabricated_credibility_stat";
 
 export interface ScriptViolation {
   rule: ScriptViolationRule;
@@ -1540,9 +1551,9 @@ function checkBingeTargetMatch(
             message:
               "This plan has no binge target configured, so the script must " +
               'NOT reference a "next video" / "watch this next". Remove the ' +
-              "next-video tease and close on the recap + a generic CTA " +
-              "(e.g. message me on Instagram, or grab the guide in the " +
-              "description).",
+              "next-video tease and close on a single forward-looking line " +
+              "(what to watch for next in the market — NOT a backward recap) " +
+              "with the half-sentence lead-magnet reminder (LM 3/3) riding it.",
             snippet: snippetAround(line, m),
             line: dialogueLineMap[li],
           });
@@ -1592,6 +1603,287 @@ function checkBingeTargetMatch(
 }
 
 /* ────────────────────────────────────────────────────────────────────── */
+/*  Rule — placeholder_number (ERROR severity).                            */
+/*                                                                        */
+/*  A quantitative claim must be a clean, traceable value or be omitted    */
+/*  entirely — never a malformed range ("$500,000-to-the 600K"), a zero-   */
+/*  filled stand-in ("the 0K range"), filler ("a meaningful amount"), or a */
+/*  dangling value verb with no number ("Days on market average sitting.").*/
+/*  These leak when the model reaches for a value it doesn't cleanly have. */
+/*  Patterns are deliberately tight to keep the false-positive rate low —  */
+/*  e.g. "sitting close to 49.4%" (value present) must NOT trip, only      */
+/*  "sitting." with nothing after it.                                     */
+/* ────────────────────────────────────────────────────────────────────── */
+
+const PLACEHOLDER_NUMBER_PATTERNS: readonly RegExp[] = [
+  // Zero-filled placeholder: "the 0K range", "$0K". `\b0K\b` can't match the
+  // "0K" inside real values like "$10K"/"$100K" (no word boundary before 0).
+  /\b0K\b/gi,
+  // Jammed range token from "$500,000-to-the 600K" / "range-to-the". Real
+  // dialogue always writes "to the" with a space, never the hyphenated jam.
+  /\bto-the\b/gi,
+  // Filler quantity standing in for a number ("pricing runs a meaningful
+  // amount."). Excludes the legitimate "a significant amount OF <noun>".
+  /\ba\s+(?:meaningful|significant|substantial|sizm?eable|sizable|sizeable)\s+amount\b(?!\s+of)/gi,
+  // Dangling value verb with no number after it ("average sitting." /
+  // "pricing averaging."). Only fires when the verb runs straight into
+  // sentence-end punctuation — "sitting close to X%" / "averaging $5/sqft"
+  // (a value follows) are left alone.
+  /\b(?:sitting|hovering|averaging)\s*[.?!]/gi,
+];
+
+export function checkPlaceholderNumber(script: string): ScriptViolation[] {
+  const { dialogue, dialogueLineMap } = stripToDialogue(script);
+  const violations: ScriptViolation[] = [];
+  const lines = dialogue.split("\n");
+  const seen = new Set<string>();
+  for (let li = 0; li < lines.length; li++) {
+    const line = lines[li];
+    for (const re of PLACEHOLDER_NUMBER_PATTERNS) {
+      re.lastIndex = 0;
+      let m: RegExpExecArray | null;
+      while ((m = re.exec(line)) !== null) {
+        const key = `${li}:${m.index}:${m[0].toLowerCase()}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        violations.push({
+          rule: "placeholder_number",
+          severity: "error",
+          message:
+            `Placeholder / filler number detected: "${m[0].trim()}". Every ` +
+            `quantitative claim must be a clean, traceable fact value (e.g. ` +
+            `"$612,000", "49.4%", "3.2 months of inventory") OR be omitted ` +
+            `entirely. Never ship a malformed range ("$500,000-to-the 600K"), ` +
+            `a zero-filled stand-in ("the 0K range"), filler like "a ` +
+            `meaningful amount", or a dangling value verb with no number ` +
+            `("average sitting."). Replace it with the real cited value or cut ` +
+            `the claim.`,
+          snippet: snippetAround(line, m),
+          line: dialogueLineMap[li],
+        });
+      }
+    }
+  }
+  return violations;
+}
+
+/* ────────────────────────────────────────────────────────────────────── */
+/*  Rule — recap_close (ERROR severity).                                   */
+/*                                                                        */
+/*  The close must be a counter-intuitive forward/binge hook to the next  */
+/*  video, never a backward recap or a closing sales pitch. We flag the    */
+/*  PRESENCE of recap-opener or push-CTA language in the closing region    */
+/*  (a missing forward hook is NOT flagged here — that would false-positive*/
+/*  on clean scripts with no binge target). Scoped to the last stretch of  */
+/*  dialogue so a mid-body "the takeaway is…" doesn't trip it.            */
+/* ────────────────────────────────────────────────────────────────────── */
+
+/**
+ * Fallback close-region size when no structural close marker is present:
+ * how many trailing dialogue characters count as the "close".
+ */
+const RECAP_CLOSE_WINDOW_CHARS = 900;
+
+/**
+ * Structural markers (in the RAW script, before dialogue stripping) that mark
+ * the start of the closing beat: the CLOSING section heading, the once-only
+ * `[CALLBACK]` beat, or the final `[LEAD MAGNET 3/3]` (which rides the hook).
+ * When any of these is found, the close region starts at the EARLIEST of them
+ * — so recap/push-CTA language anywhere in a long close is caught, not just in
+ * the trailing 900 chars.
+ */
+const CLOSE_BOUNDARY_LINE_RE =
+  /^\s*(?:#{1,6}|\*{2,})\s*clos(?:e|ing)\b|\[\s*callback\s*\]|\[\s*lead\s+magnet\s+3\s*\/\s*3\s*\]/i;
+
+const RECAP_CLOSE_PATTERNS: readonly RegExp[] = [
+  // Backward-summary openers.
+  /\bto\s+recap\b/gi,
+  /\blet'?s\s+recap\b/gi,
+  /\bto\s+sum\s+up\b/gi,
+  /\bto\s+summari[sz]e\b/gi,
+  /\bin\s+summary\b/gi,
+  /\bin\s+conclusion\b/gi,
+  /\bto\s+wrap\s+(?:this\s+)?up\b/gi,
+  /\blet'?s\s+review\b/gi,
+  /\bthe\s+(?:big\s+)?takeaway\s+(?:here\s+)?is\b/gi,
+  /\bif\s+you\s+(?:remember|take)\s+(?:just\s+)?one\s+thing\b/gi,
+  /\bthe\s+bottom\s+line\s+is\b/gi,
+  // Closing push / sales-CTA language.
+  /\bbook\s+a\s+call\b/gi,
+  /\bschedule\s+a\s+(?:call|consultation|strategy\s+session)\b/gi,
+  /\bmake\s+an\s+offer\b/gi,
+  /\bthis\s+is\s+the\s+one\b/gi,
+  /\b(?:let'?s\s+)?pull\s+the\s+trigger\b/gi,
+  /\breach\s+out\s+today\b/gi,
+  /\bgive\s+me\s+a\s+call\b/gi,
+];
+
+export function checkRecapClose(script: string): ScriptViolation[] {
+  const { dialogue, dialogueLineMap } = stripToDialogue(script);
+
+  // The close region is the UNION of two heuristics (whichever starts earlier),
+  // so recap/push-CTA language anywhere in the close is caught:
+  //   (a) trailing-char fallback — the last RECAP_CLOSE_WINDOW_CHARS chars;
+  //   (b) structural — from the EARLIEST close marker in the raw script
+  //       (CLOSING heading / [CALLBACK] / [LEAD MAGNET 3/3]) onward.
+  const charWindowStart = Math.max(
+    0,
+    dialogue.length - RECAP_CLOSE_WINDOW_CHARS,
+  );
+  let closeStart = charWindowStart;
+  // (b): find the earliest raw line that is a structural close marker, then
+  // translate it to a char offset in the stripped dialogue via dialogueLineMap.
+  const rawLines = script.split(/\r?\n/);
+  let boundaryRawLine = Infinity;
+  for (let i = 0; i < rawLines.length; i++) {
+    if (CLOSE_BOUNDARY_LINE_RE.test(rawLines[i])) {
+      boundaryRawLine = i + 1; // dialogueLineMap is 1-indexed
+      break;
+    }
+  }
+  if (boundaryRawLine !== Infinity) {
+    const dialogueLines = dialogue.split("\n");
+    let charOffset = 0;
+    for (let li = 0; li < dialogueLines.length; li++) {
+      if (dialogueLineMap[li] >= boundaryRawLine) {
+        closeStart = Math.min(closeStart, charOffset);
+        break;
+      }
+      charOffset += dialogueLines[li].length + 1; // +1 for the "\n" join
+    }
+  }
+
+  const violations: ScriptViolation[] = [];
+  const seen = new Set<string>();
+  for (const re of RECAP_CLOSE_PATTERNS) {
+    for (const m of dialogue.matchAll(re)) {
+      if (m.index === undefined || m.index < closeStart) continue;
+      const key = m[0].toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const before = dialogue.slice(0, m.index);
+      const dialogueLi = before.split("\n").length - 1;
+      violations.push({
+        rule: "recap_close",
+        severity: "error",
+        message:
+          `Recap / pitch close detected: "${m[0].trim()}". The close must be a ` +
+          `counter-intuitive forward/binge hook to the NEXT video (a Stakes ` +
+          `pattern — what's at risk if they don't watch it), NOT a backward ` +
+          `recap and NOT a closing sales pitch. Remove this and end on the ` +
+          `forward hook, with only the half-sentence lead-magnet reminder ` +
+          `(LM 3/3) riding it.`,
+        snippet: dialogue
+          .slice(Math.max(0, m.index - 30), m.index + m[0].length + 30)
+          .replace(/\s+/g, " ")
+          .trim(),
+        line: dialogueLineMap[dialogueLi],
+      });
+    }
+  }
+  return violations;
+}
+
+/* ────────────────────────────────────────────────────────────────────── */
+/*  Rule — fabricated_credibility_stat (ERROR severity).                   */
+/*                                                                        */
+/*  The Expertise Bridge may drop a real credibility cadence ("our team    */
+/*  helps a family move every 57 hours") only when that number is on the   */
+/*  member's profile/credentials. An invented cadence (the earlier draft's */
+/*  "every 53 hours") must be blocked. We flag an "every N hours/days"     */
+/*  cadence whose number doesn't appear in any provided anchor (profile    */
+/*  text, cited facts, source-of-truth). Non-numeric fallbacks ("every few */
+/*  days") carry no number and never trip.                                */
+/* ────────────────────────────────────────────────────────────────────── */
+
+const CREDIBILITY_CADENCE_RE = /\bevery\s+(\d{1,4})\s+(?:hours?|days?)\b/gi;
+
+/**
+ * A first-person / team subject — the cadence rule only fires when the
+ * "every N hours/days" claim is the MEMBER's own throughput. This keeps the
+ * rule off market statistics ("homes are selling every 12 days"), which have
+ * an inanimate subject (homes/properties/listings) and no first-person cue.
+ */
+const CREDIBILITY_SUBJECT_RE = /\b(?:we|we'?re|we'?ve|our|us|i|i'?ve|my)\b/i;
+/** A "help people" cue that, with a first-person subject, marks a personal cadence claim. */
+const CREDIBILITY_ACTION_RE =
+  /\b(?:help(?:s|ing|ed)?|move(?:s|d)?|moving|serve(?:s|d)?|serving|close(?:s|d)?|closing|sell(?:s|ing)?|sold|famil(?:y|ies)|client(?:s)?|buyer(?:s)?|seller(?:s)?|deal(?:s)?)\b/i;
+
+export function checkFabricatedCredibilityStat(
+  script: string,
+  opts: ValidateScriptOptions,
+): ScriptViolation[] {
+  const { dialogue, dialogueLineMap } = stripToDialogue(script);
+  // Build the set of numbers the member can legitimately claim as a PERSONAL
+  // credibility cadence. This anchors ONLY on the member's dedicated
+  // credentials prose (team-credibility figures + notes) — NOT on profileText
+  // (neighbourhood/market prose), cited facts, or source-of-truth, all of
+  // which are market statistics. A market number (e.g. 53 months of inventory,
+  // or a "53" buried in neighbourhood context) must never legitimise an
+  // invented personal cadence like "we help a family every 53 hours".
+  const anchors: string[] = [];
+  for (const c of opts.credentialsText ?? []) anchors.push(c);
+  const anchorText = anchors.join(" \u0001 ");
+  const violations: ScriptViolation[] = [];
+  const seen = new Set<string>();
+  let m: RegExpExecArray | null;
+  CREDIBILITY_CADENCE_RE.lastIndex = 0;
+  while ((m = CREDIBILITY_CADENCE_RE.exec(dialogue)) !== null) {
+    const num = m[1];
+    // Anchored if the exact integer appears as a standalone token anywhere in
+    // the member's profile / credentials prose.
+    const anchored = new RegExp(`(?<![\\d.])${num}(?![\\d.])`).test(anchorText);
+    if (anchored) continue;
+    // Scope to a PERSONAL credibility claim: the cadence must sit in a sentence
+    // with a first-person/team subject AND a "help people" cue. This keeps the
+    // rule off market statistics ("homes are selling every 12 days"), which
+    // have an inanimate subject and no first-person cue.
+    const before = dialogue.slice(0, m.index);
+    const sentenceStart = Math.max(
+      before.lastIndexOf("."),
+      before.lastIndexOf("!"),
+      before.lastIndexOf("?"),
+      before.lastIndexOf("\n"),
+    );
+    // Evaluate the FULL containing sentence — both sides of the cadence token —
+    // so cadence-first phrasing ("Every 53 hours, our team helps a family...")
+    // is scoped the same as cadence-last phrasing.
+    const after = dialogue.slice(m.index + m[0].length);
+    const afterEndRel = after.search(/[.!?\n]/);
+    const afterEnd = afterEndRel === -1 ? after.length : afterEndRel;
+    const sentence =
+      before.slice(sentenceStart + 1) + m[0] + after.slice(0, afterEnd);
+    if (
+      !CREDIBILITY_SUBJECT_RE.test(sentence) ||
+      !CREDIBILITY_ACTION_RE.test(sentence)
+    ) {
+      continue;
+    }
+    const key = m[0].toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const dialogueLi = before.split("\n").length - 1;
+    violations.push({
+      rule: "fabricated_credibility_stat",
+      severity: "error",
+      message:
+        `Fabricated credibility cadence: "${m[0].trim()}". The Expertise ` +
+        `Bridge may only state a "a family every X hours/days" figure when ` +
+        `that exact number is on the member's credentials profile. This ` +
+        `number isn't — never invent a cadence. Use the member's REAL ` +
+        `credential (years in business, families helped, deals closed) or a ` +
+        `non-numeric fallback ("every few days"), or omit the cadence entirely.`,
+      snippet: dialogue
+        .slice(Math.max(0, m.index - 30), m.index + m[0].length + 30)
+        .replace(/\s+/g, " ")
+        .trim(),
+      line: dialogueLineMap[dialogueLi],
+    });
+  }
+  return violations;
+}
+
+/* ────────────────────────────────────────────────────────────────────── */
 /*  Umbrella validator.                                                   */
 /* ────────────────────────────────────────────────────────────────────── */
 
@@ -1622,6 +1914,17 @@ export interface ValidateScriptOptions extends HyperLocalOptions {
    * pre-follow-up behaviour (SoT + cited facts only).
    */
   profileText?: string[];
+  /**
+   * Fix 1 — the member's PERSONAL credibility prose ONLY (team-credibility
+   * figures: years in business, families helped, homes/year, team size, and
+   * any free-text credibility notes). This is the dedicated anchor set for
+   * `fabricated_credibility_stat`: a spoken "every N hours/days" cadence is
+   * legal only when N appears here. Deliberately separate from `profileText`
+   * (which carries neighbourhood/market prose) so a coincidental MARKET number
+   * can never legitimise an invented PERSONAL cadence. Empty/unset ⇒ any
+   * numeric cadence is treated as fabricated (real-stat-or-omit).
+   */
+  credentialsText?: string[];
   /**
    * B1 — the resolved member's own full name (presenter identity). Used by
    * `no_other_member_identity` to know which name is legitimately allowed.
@@ -1704,6 +2007,12 @@ export function validateScript(
   violations.push(...checkBingeTargetMatch(script, opts));
   // failure_rate honesty — no "%-failed-to-sell" misreading of the ratio.
   violations.push(...checkFailureRateFraming(script));
+  // Fix 4 — no malformed/placeholder/filler numbers.
+  violations.push(...checkPlaceholderNumber(script));
+  // Fix 3 — close must be a forward/binge hook, not a recap or sales pitch.
+  violations.push(...checkRecapClose(script));
+  // Fix 1 — Expertise Bridge cadence must trace to the member's real profile.
+  violations.push(...checkFabricatedCredibilityStat(script, opts));
 
   const ok = !violations.some((v) => v.severity === "error");
   return { ok, violations, metrics: hyperLocal.metrics };
@@ -2024,7 +2333,9 @@ function softenRulesForToken(
       const band = Math.round(v / 50_000) * 50;
       return `the ${band}K range`;
     }
-    return "a meaningful amount";
+    // Sub-$1k: a clean directional phrase that the placeholder_number rule
+    // accepts (never the banned filler "a meaningful amount").
+    return "the few-hundred-dollar range";
   };
   // Wave 12.5 — bucket-based directional language for percentages,
   // tuned for the SP/LP "over list" / "under list" framing that's by

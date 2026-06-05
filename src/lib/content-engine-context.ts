@@ -192,6 +192,33 @@ export interface MarketConfigSummary {
 }
 
 /**
+ * Fix 1 — the member's PERSONAL credibility prose, the ONLY legal anchor for
+ * an Expertise-Bridge "every N hours/days" cadence. Built strictly from the
+ * member's team-credibility figures + notes — deliberately NOT neighbourhood
+ * or market prose, so a coincidental market number can't legitimise an
+ * invented personal cadence. Shared by the generation path (`buildScript`) and
+ * the save-script re-validation so the `fabricated_credibility_stat` gate
+ * behaves identically in both.
+ */
+export function credentialsAnchorText(
+  marketConfig: Pick<MarketConfigSummary, "teamCredibility">,
+): string[] {
+  const cred = marketConfig.teamCredibility;
+  if (!cred) return [];
+  const out: string[] = [];
+  if (cred.yearsInBusiness != null)
+    out.push(`Years in business: ${cred.yearsInBusiness}`);
+  if (cred.familiesHelped != null)
+    out.push(`Families helped: ${cred.familiesHelped}`);
+  if (cred.annualTransactionCount != null)
+    out.push(`Homes sold per year: ${cred.annualTransactionCount}`);
+  if (cred.teamSize != null) out.push(`Team size: ${cred.teamSize}`);
+  if (cred.notes != null && cred.notes.trim().length > 0)
+    out.push(cred.notes.trim());
+  return out;
+}
+
+/**
  * Member's MarketConfig flattened to the bits the Content Engine actually
  * uses. Returns null when the member hasn't configured a market yet — the
  * route layers above turn that into a "configure your market first" error.

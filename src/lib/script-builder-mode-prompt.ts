@@ -279,15 +279,19 @@ Every video opens with ARC: **Attention**, **Revelation**. (No Connection beat. 
 
 **Title-body contract — the first 30 seconds must pay off \`title_promise\`. HARD GATE.** If the title says "These 5 Calgary Neighbourhoods Are Selling Fastest," the opening must show you're about to deliver 5 specific neighbourhoods with the data behind them — not a calculator, not a strategy framework, not avatar empathy. The audience clicked because of an implicit contract; pay it off immediately.
 
-**Revelation** (~20-30 seconds): a payoff that previews what the viewer will get AND drops credibility SIDEWAYS. Sideways = woven into the explanation, never announced, never the first sentence, never a self-introduction.
+**Revelation** (~20-30 seconds): a payoff that previews what the viewer will get AND carries the **Expertise Bridge** — a distinct beat that comes right after the hook and transitions INTO the first insight, dropping credibility SIDEWAYS. Sideways = woven into the explanation, never announced, never the first sentence, never a self-introduction.
 
-**HARD RULE — the Revelation beat must include EXACTLY ONE sideways credibility drop, chosen from this approved list:**
-- *"Our team helps a family move every [X] hours."* — Use the real number from \`MarketConfig.teamCredentials\` if available. Otherwise use *"every few days"* or *"every couple of days"* — never invent a specific hour count.
+**THE EXPERTISE BRIDGE (distinct beat — hook → bridge → first insight).** This is not a standalone brag and not a separate "credibility section." It is the bridge sentence that links the creator's real authority to the specific insight about to land. For data-heavy videos, the **data scope IS the bridge** ("we ran every sale across these five neighbourhoods this month, and the first thing that jumps out is…").
+
+**HARD RULE — the Expertise Bridge must include EXACTLY ONE sideways credibility drop, chosen from this approved list:**
+- *"Our team helps a family move every [X] hours."* — **Use ONLY the real number from the member's credentials profile (\`MarketConfig.teamCredentials\` / avatar credentials).** If the member has no such cadence on file, use the non-numeric fallback *"every few days"* / *"every couple of days"* — **NEVER invent a specific hour count.** A fabricated cadence (e.g. the earlier draft's *"every 53 hours"* when no such figure exists on the profile) is a HARD server-side failure.
 - *"Weekly since June 2020, every video, every Monday, no skips."*
 - *"What I've learned in helping thousands of families through this market is..."*
-- *"After helping [X] families move through this exact pattern, here's what I know..."* — Use a real or directional number; never invent.
+- *"After helping [X] families move through this exact pattern, here's what I know..."* — Use a real number from the member's profile, or a non-numeric/directional phrasing; never invent a precise figure.
 
-The drop is part of an explaining sentence, not its own announcement. *"Our team helps a family move every 25 hours, and what we're seeing across the city right now is..."* is correct. *"Hi, I'm Jared, our team helps families every 25 hours."* is not — that's an announcement with a credibility tag.
+**REAL-STAT-OR-OMIT.** Every number in the Expertise Bridge must trace to the member's credentials profile. If you cannot ground the figure, drop the number and use a qualitative bridge ("after years of running this analysis for families across the city…"). Inventing a precise cadence, deal count, or year span to sound authoritative is banned. Server-side validator \`fabricated_credibility_stat\` enforces this — an "every N hours/days" cadence whose number isn't on the profile triggers a regenerate.
+
+The drop is part of an explaining sentence, not its own announcement. *"Our team helps a family move every 25 hours, and what we're seeing across the city right now is..."* is correct **only when 25 is the member's real figure**. *"Hi, I'm Jared, our team helps families every 25 hours."* is not — that's an announcement with a credibility tag.
 
 **BANNED in the opening (announced credibility / self-introduction):**
 - *"Hi, my name is Jared Chamberlain and I've been a top agent for 22 years."*
@@ -837,40 +841,35 @@ Tag with [VISUAL: …]. Options:
 
 Avoid heavy production — do not call for music cues every 10-15 seconds.
 
-## CLOSING: RECAP + CTA + DONE
+## CLOSING: FORWARD / BINGE HOOK (no recap, no pitch)
 
-Three beats. Total ~30 seconds. No trailing off.
+The close is a **counter-intuitive forward hook to the next video in rotation** — a Stakes pattern that makes the viewer feel what's at risk if they don't watch the next one. Total ~30 seconds. No trailing off. **The close is NOT a recap and NOT a closing sales pitch.**
 
-**1. One-sentence recap.** The single takeaway the viewer carries away. A PATTERN, not a number. Actionable in their next decision. Plain language. Examples:
-- *"If you remember one thing: anything above 4.0 months of inventory tilts leverage to buyers. Use it."*
-- *"The takeaway here is simple, high failure rates mean sellers are testing prices, not committed to them. Patience pays."*
+**Two beats only:**
 
-**2. One-sentence CTA** (lead magnet final mention). Casual, anchored to content. NOT a re-pitch:
-- *"If you want to run this for your specific neighbourhood, the calculator's in the description."*
-- *"Grab the guide if you want the full breakdown."*
+**1. The forward/binge hook.** Use one of the four intro patterns (Contradiction / Confirmation / Empathy / **Stakes — preferred**) to point at the NEXT video. It should feel counter-intuitive — open a loop the current video doesn't close. Connect to what they just learned, then card to the next video. The viewer should feel the conversation continuing into the next video, not the video ending.
 
-**3. Next-video hook** with one of the four intro patterns (Contradiction / Confirmation / Empathy / Stakes). Connect to what they just learned. Card to the next video.
+**2. LM 3/3 — a half-sentence reminder that RIDES the hook.** The only lead-magnet reference in the close is mention #3: a half-sentence, not a standalone pitch, folded into the forward hook (e.g. *"…and the calculator's in the description if you want to run it for your own place before you watch."*). NO pitch structure, NO bank contrast.
 
-**Production examples (next-video hooks using a full intro pattern):**
+**Production examples (forward hooks using a full intro pattern):**
 - **Contradiction:** *"Now, most Calgary buyers obsess over interest rates and wait for the 'perfect' moment. But the ones who regret their purchase weren't wrong about the market, they were wrong about something way more important. That's exactly what I break down in this next video right here."*
 - **Stakes:** *"Now one thing I should mention, if you've been thinking about going new build instead of resale, please don't make that decision before you watch this next video. I walk through exactly which Calgary new-build communities are sitting on 4+ months of inventory, where the builder has the holding cost, and how a buyer can use that data to negotiate or walk away."*
 - **Empathy:** *"If you've watched this whole video and you're still thinking 'okay, but where do I actually start?' I made this next one for you."*
 
-**Banned in closing:**
-- Recap paragraphs that re-state per-section verdicts. The one-sentence recap is a PATTERN, not a per-tier rundown.
-- Multi-CTA stacking (recap + lead magnet + binge + "see you next time").
-- Re-stating credentials. Credentials only landed once, in the Revelation beat.
+**BANNED in the closing:**
+- **Any backward recap.** No *"to recap,"* *"in summary,"* *"the takeaway is,"* *"if you remember one thing,"* *"the bottom line is"* — do not re-state per-section verdicts or hand the viewer a summary. The forward hook replaces the recap entirely. Server-side validator \`recap_close\` flags recap-opener language in the close and triggers a regenerate.
+- **Any closing sales pitch / push-CTA:** *"book a call,"* *"schedule a consultation,"* *"make an offer,"* *"this is the one,"* *"pull the trigger,"* *"reach out today,"* *"give me a call."* Information without push. The same validator flags push-CTA language in the close.
+- A standalone lead-magnet pitch — the close carries only the half-sentence LM 3/3 riding the hook.
+- Re-stating credentials. Credentials only landed once, in the Expertise Bridge.
 - Generic binge phrases: *"Stay tuned"* / *"Coming soon"* / *"Watch my next video"* / *"I made a video about X"* without an intro pattern setting it up.
 - Future-tense binge (*"Next week I'll cover..."*) — the linked video must EXIST now.
 - Trailing off without a card.
 
-The viewer should feel the conversation continuing into the next video, not the video ending.
-
 **The video pointed to MUST exist NOW.** The closing next-video hook is governed entirely by the BINGE TARGET GATE below — never invent a target, and never tease a "next video" when no BINGE TARGET title is configured. Generic binge phrases ("stay tuned" / "watch my next video" without a real configured target) are a hard fail.
 
-**BINGE TARGET GATE — the \`## ASSIGNED ASSETS\` block's \`BINGE TARGET:\` line is the single source of truth for beat 3, and overrides everything above about the next-video hook:**
-- If \`BINGE TARGET: "<title>"\` is provided → beat 3 is REQUIRED and must point to THAT EXACT title (one of the four intro patterns). Never invent a different title or topic.
-- If \`BINGE TARGET: none configured\` → there is NO video to point to. OMIT beat 3 entirely. Do NOT write any "next video" / "watch this next" / "my next video" / "this next one" reference anywhere in the script. Close on beat 1 (recap) + beat 2 (CTA = LM 3/3) only, ending the CTA with a generic ask (e.g. message me on Instagram, grab the guide in the description). A fabricated next-video tease here is a hard server-side failure.
+**BINGE TARGET GATE — the \`## ASSIGNED ASSETS\` block's \`BINGE TARGET:\` line is the single source of truth for the forward/binge hook, and overrides everything above about the next-video hook:**
+- If \`BINGE TARGET: "<title>"\` is provided → the forward/binge hook (beat 1) is REQUIRED and must point to THAT EXACT title (one of the four intro patterns, Stakes preferred). Never invent a different title or topic.
+- If \`BINGE TARGET: none configured\` → there is NO video to point to. Do NOT write any "next video" / "watch this next" / "my next video" / "this next one" reference anywhere in the script. Close instead on a single counter-intuitive **forward-looking line** — what to watch for next in the market (NOT a backward recap, NOT a pitch) — with the half-sentence LM 3/3 riding it, ending on a generic ask (e.g. message me on Instagram, grab the guide in the description). A fabricated next-video tease here is a hard server-side failure.
 
 ## SOURCES FOOTNOTE — APPEND AFTER THE CLOSE (required)
 
@@ -953,16 +952,16 @@ Pacing: place LM 2/3 at a natural transition point near the middle of the script
 
 NOT FOMO (*"grab it before the video's done"* → banned).
 
-**LM 3/3 — gift drop in the CLOSING CTA beat. ONE sentence.**
+**LM 3/3 — half-sentence reminder RIDING the forward/binge hook. ONE half-sentence.**
 
-This IS the closing CTA. Same gift register as LM 1/3, anchored to the closing takeaway:
-- *"Grab the calculator in the description if you want to run this for your specific situation."*
-- *"Link's in the description if you want to take this further."*
-- *"The calculator's free in the description, useful if you want to do this analysis for where YOU'RE actually looking."*
+This is NOT a standalone pitch and NOT a closing CTA — the close is a forward/binge hook, and LM 3/3 is folded INTO it as a half-sentence. Same gift register as LM 1/3:
+- *"…and the calculator's in the description if you want to run it for your own place before you watch."*
+- *"Link's in the description if you want to take this further — but first, here's why the next one matters…"*
+- *"…the calculator's free in the description for your own numbers."*
 
-No pitch language. No bank contrast. Just the link.
+No pitch language. No bank contrast. No standalone CTA. Just the half-sentence link riding the hook.
 
-**The three placements must NOT cluster.** LM 1/3 inside the FIRST body insight (gift drop, after the opening lands), LM 2/3 at ~45% body (deep pitch with topic-anchored structure), LM 3/3 at ~80% / in the CLOSING as the one-sentence CTA beat (the closing CTA IS the LM 3/3 placement — no additional LM mention). The OPENING is LM-FREE. Do not stack mentions next to each other. Do not add a fourth mention.
+**The three placements must NOT cluster.** LM 1/3 inside the FIRST body insight (gift drop, after the opening lands), LM 2/3 at ~40-45% body (deep pitch with topic-anchored structure), LM 3/3 at the very end as a half-sentence riding the forward/binge hook (no standalone closing pitch — the hook is the close). The OPENING is LM-FREE. Do not stack mentions next to each other. Do not add a fourth mention.
 
 **Use "people like us" sparingly — ONCE per script maximum, OUTSIDE any LM pitch.** It's a strong identity move; overusing it inside conversion contexts dilutes it. Server-side validator \`people_like_us_in_lm\` enforces the outside-LM rule — any occurrence within 100 characters of a \`[LEAD MAGNET …]\` tag (in either direction) triggers a regenerate. Move it to a content beat (data peak, clarity moment) instead.
 
@@ -972,12 +971,14 @@ No pitch language. No bank contrast. Just the link.
 
 The self-check now includes:
 
-13. **Binge architecture matches BINGE TARGET** — IF a BINGE TARGET title is configured, the closing next-video hook points to THAT exact title with a clear reason to watch; IF BINGE TARGET is "none configured", there is NO next-video reference anywhere in the script — yes/no
-14. **Lead magnet mentioned 3 times** — inside FIRST body insight (gift framing), ~45% body (deep pitch), CLOSING CTA beat at ~80% (= LM 3/3) — yes/no
+13. **Binge architecture matches BINGE TARGET** — IF a BINGE TARGET title is configured, the closing forward/binge hook points to THAT exact title with a clear reason to watch; IF BINGE TARGET is "none configured", there is NO next-video reference anywhere in the script — yes/no
+14. **Lead magnet mentioned 3 times** — inside FIRST body insight (gift framing), ~40-45% body (deep pitch), and at the very end as a half-sentence riding the forward/binge hook (= LM 3/3) — yes/no
 15. **Opening is LM-FREE** — no \`[LEAD MAGNET …]\` tag and no lead-magnet language in Attention or Revelation beats — yes/no
 16. **Script body ≥ 2,200 dialogue words** — yes/no (state actual)
-17. **Revelation includes one approved sideways credibility drop** — yes/no (quote the sentence)
+17. **Expertise Bridge includes one approved sideways credibility drop, and every number in it traces to the member's real credentials profile (no invented cadence)** — yes/no (quote the sentence)
 18. **"people like us" appears 0 times inside or within 100 chars of any \`[LEAD MAGNET …]\` tag** — yes/no
+19. **Close is a forward/binge hook, NOT a recap or a sales pitch** — no "to recap / in summary / the takeaway is / bottom line" and no push-CTA ("book a call / make an offer / pull the trigger / this is the one") in the close — yes/no
+20. **No placeholder / filler numbers** — every quantitative claim is a clean traceable value; no "the 0K range", "$500,000-to-the 600K", "a meaningful amount", or dangling "average sitting." — yes/no
 
 ## OUTPUT FORMAT
 
@@ -1006,9 +1007,9 @@ Deliver:
    - Avg sentence length ≤18 words: yes/no (state actual)
    - Hyper-local anchors per 100 words: count
    - Opening length: in seconds (must be ≤12% of runtime)
-   - Number of lead magnet mentions: count (target: 3 — LM 1/3 INSIDE first body insight as a gift, LM 2/3 deep pitch at ~45%, LM 3/3 at ~80% / in CLOSING CTA beat)
-   - Lead magnet DEEP pitch (LM 2/3, at ~45%) follows the 4-part structure (topic-anchored opener → tool → topic-specific benefit → link drop) and reads as topic-relevant, NOT generic boilerplate: yes/no
-   - Closing follows RECAP + CTA + DONE structure (one-sentence pattern recap, one-sentence CTA = LM 3/3, and a next-video hook ONLY if a BINGE TARGET title is configured — omitted entirely when BINGE TARGET is "none configured"): yes/no
+   - Number of lead magnet mentions: count (target: 3 — LM 1/3 INSIDE first body insight as a gift, LM 2/3 deep pitch at ~40-45%, LM 3/3 as a half-sentence riding the forward/binge hook at the very end)
+   - Lead magnet DEEP pitch (LM 2/3, at ~40-45%) follows the 4-part structure (topic-anchored opener → tool → topic-specific benefit → link drop) and reads as topic-relevant, NOT generic boilerplate: yes/no
+   - Closing is a counter-intuitive FORWARD/BINGE hook — NOT a backward recap and NOT a closing sales pitch, no push-CTA; it points to the BINGE TARGET title if one is configured (omitted entirely when BINGE TARGET is "none configured", replaced by a single forward-looking line), with LM 3/3 as a half-sentence riding it: yes/no
    - Section openers are short and conversational, not marketing-y headlines: yes/no
    - At least 6-8 distinct editorial-reaction or signature-phrase moments across the script: yes/no (count actual)
    - Voicing-the-viewer's-questions pattern deployed 2-4 times: yes/no
@@ -1020,7 +1021,7 @@ Deliver:
    - **All 5 neighbourhood sections include the same 8 data points in the same order (MOI → median price → per-sqft → DOM → SP/LP plain-language → failure rate → demographic context → buyer-advice payoff): yes/no**
    - **LM 1/3 is a ONE-or-TWO sentence gift drop with NO bank-contrast framing, NO pitch structure: yes/no** (quote it)
    - **LM 2/3 is topic-anchored to THIS video (not generic boilerplate), follows the 4-part structure (topic-anchored opener → tool → topic-specific benefit → link): yes/no** (quote the topic-anchored opener)
-   - **LM 3/3 is a single-sentence gift drop in the closing CTA with no pitch language: yes/no** (quote it)
+   - **LM 3/3 is a half-sentence gift drop riding the forward/binge hook (not a standalone CTA) with no pitch language: yes/no** (quote it)
    - **Authority voice maintained: yes/no** (no hedging like "that's CREB's framing, not ours"; no source citations to validate the channel's own analysis or framework. Sources are internal to the Validator, not in the script.)
    - **Plain-meaning test passes: yes/no** (no abstract metaphors like "steer toward / match themselves to / land on"; no industry-flavoured jargon like "price floor / soft middle / upper band". Every sentence has a concrete meaning a buyer would understand on first listen.)
    - **Banned vocabulary absent from dialogue: yes/no** (search the script body for: *"tier" / "tiered" / "per-tier" / "stop on that for a second" / "for a second" / "runaway" / "leverage"* used without context. Replace any tier-references with "price range / price point / pocket / range / market." Replace "stop on that" with "think about that / hold that thought / did you catch that?" Make sure "leverage" or "advantage" always carries concrete context.)

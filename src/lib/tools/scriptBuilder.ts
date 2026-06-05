@@ -31,7 +31,10 @@ import {
   renderSourceOfTruthBlockWithLock,
   type SourceOfTruthMetric,
 } from "@/lib/aggregated-metrics";
-import { type MarketConfigSummary } from "@/lib/content-engine-context";
+import {
+  type MarketConfigSummary,
+  credentialsAnchorText,
+} from "@/lib/content-engine-context";
 import {
   ROTATION_SLOT_LABELS,
   type RotationSlotKey,
@@ -530,7 +533,7 @@ function buildInitialUserMessage(args: {
     lines.push("- propertyType lock per neighbourhood");
     lines.push("- ARC opening structure (Attention + Revelation)");
     lines.push(
-      "- LM placement (LM 1/3 inside first body insight, LM 2/3 at ~45%, LM 3/3 in closing CTA)",
+      "- LM placement (LM 1/3 inside first body insight, LM 2/3 at ~40-45%, LM 3/3 as a half-sentence riding the forward/binge hook at the close)",
     );
     lines.push(
       "- Stat anchoring against AggregatedMetric + citedFacts + profile text",
@@ -586,7 +589,7 @@ function buildInitialUserMessage(args: {
     const url =
       assignedCampaign.leadMagnetUrl ?? assignedCampaign.destinationUrl;
     lines.push(
-      "**Lead magnet** — this is the SPECIFIC asset the member assigned to this video. The script has THREE lead-magnet placements: `[LEAD MAGNET 1/3]` (INSIDE the first body insight — one casual sentence with GIFT framing, NOT in the opening), `[LEAD MAGNET 2/3]` (at ~45% — the DEEP pitch using the fields below), `[LEAD MAGNET 3/3]` (in the CLOSING CTA beat at ~80% — this IS the LM 3/3 placement, no additional LM mention; one casual sentence anchored to what the video just delivered). The `pitchOneLiner` and `description` fields below are the source material for the DEEP pitch at LM 2/3. For LM 1/3 and LM 3/3, write short casual references to the asset by name — do NOT replay the full pitch. Do NOT invent a generic budget-calculator, report, or guide pitch from the name alone — the fields below tell you what this asset actually is and how the member pitches it.",
+      "**Lead magnet** — this is the SPECIFIC asset the member assigned to this video. The script has THREE lead-magnet placements: `[LEAD MAGNET 1/3]` (INSIDE the first body insight — one casual sentence with GIFT framing, NOT in the opening), `[LEAD MAGNET 2/3]` (at ~40-45% — the DEEP pitch using the fields below), `[LEAD MAGNET 3/3]` (a HALF-SENTENCE riding the forward/binge hook at the very end — this IS the LM 3/3 placement, no additional LM mention; one casual half-sentence anchored to what the video just delivered, NOT a standalone closing CTA). The `pitchOneLiner` and `description` fields below are the source material for the DEEP pitch at LM 2/3. For LM 1/3 and LM 3/3, write short casual references to the asset by name — do NOT replay the full pitch. Do NOT invent a generic budget-calculator, report, or guide pitch from the name alone — the fields below tell you what this asset actually is and how the member pitches it.",
     );
     lines.push("");
     lines.push(`- **Name:** ${assignedCampaign.name}`);
@@ -605,7 +608,7 @@ function buildInitialUserMessage(args: {
     lines.push("");
     if (assignedCampaign.pitchOneLiner) {
       lines.push(
-        "The **one-line pitch** above is the member's calibrated pitch language for THIS asset. Use it verbatim (or with minimal rewording) as the spine of the DEEP pitch at `[LEAD MAGNET 2/3]` (~45% through). For the casual mentions at `[LEAD MAGNET 1/3]` (INSIDE the first body insight, with GIFT framing — NOT in the opening) and `[LEAD MAGNET 3/3]` (in the CLOSING CTA beat at ~80% — this is the only LM placement in the closing, no additional LM mention), reference the asset by name in one sentence anchored to the surrounding content — do NOT replay the full pitch. Do NOT substitute generic pitch language about budget calculators, reports, or guides based on the name.",
+        "The **one-line pitch** above is the member's calibrated pitch language for THIS asset. Use it verbatim (or with minimal rewording) as the spine of the DEEP pitch at `[LEAD MAGNET 2/3]` (~40-45% through). For the casual mentions at `[LEAD MAGNET 1/3]` (INSIDE the first body insight, with GIFT framing — NOT in the opening) and `[LEAD MAGNET 3/3]` (a HALF-SENTENCE riding the forward/binge hook at the very end — this is the only LM placement in the closing, no additional LM mention, NOT a standalone closing CTA), reference the asset by name in one sentence anchored to the surrounding content — do NOT replay the full pitch. Do NOT substitute generic pitch language about budget calculators, reports, or guides based on the name.",
       );
     } else if (assignedCampaign.description) {
       lines.push(
@@ -637,14 +640,14 @@ function buildInitialUserMessage(args: {
     }
     lines.push("");
     lines.push(
-      "HARD RULE — BINGE TARGET: Reference this EXACT title in your closing next-video hook (the `[CALLBACK]` beat, alongside the LM 3/3 CTA). Do NOT invent a different title or topic, and do NOT tease any other \"next video\". This is the ONLY video your close may point to, and it exists now.",
+      "HARD RULE — BINGE TARGET: Reference this EXACT title in your closing forward/binge hook (the `[CALLBACK]` beat — a counter-intuitive Stakes hook, NOT a recap or pitch — with LM 3/3 as a half-sentence riding it). Do NOT invent a different title or topic, and do NOT tease any other \"next video\". This is the ONLY video your close may point to, and it exists now.",
     );
     lines.push("");
   } else {
     lines.push("**BINGE TARGET: none configured**");
     lines.push("");
     lines.push(
-      "HARD RULE — BINGE TARGET: There is NO next video to point to. Do NOT reference a \"next video\", \"watch this next\", \"my next video\", \"this next one\", or any specific upcoming video ANYWHERE in the script — inventing one is a hard server-side failure. OMIT the closing next-video hook entirely: close on the one-sentence recap + the LM 3/3 CTA only. For that final CTA use a generic call to action instead — e.g. invite the viewer to message you on Instagram, or grab the guide in the description.",
+      "HARD RULE — BINGE TARGET: There is NO next video to point to. Do NOT reference a \"next video\", \"watch this next\", \"my next video\", \"this next one\", or any specific upcoming video ANYWHERE in the script — inventing one is a hard server-side failure. OMIT the next-video hook entirely. Close instead on a single counter-intuitive FORWARD-LOOKING line — what to watch for next in the market — NOT a backward recap and NOT a sales pitch, with LM 3/3 as a half-sentence riding it, ending on a generic ask (e.g. message you on Instagram, grab the guide in the description).",
     );
     lines.push("");
   }
@@ -676,7 +679,7 @@ function buildInitialUserMessage(args: {
   lines.push("## OUTPUT");
   lines.push("");
   lines.push(
-    "Produce the FULL talking-head script in the format the system prompt specifies (ARC opening: Attention + Revelation only — NO Connection beat, NO lead magnet in opening, ONE sideways credibility drop from the approved list inside Revelation, then DATA → PSYCHOLOGY → CLARITY body with `[LEAD MAGNET 1/3]` inside the FIRST body insight as a gift, `[LEAD MAGNET 2/3]` deep pitch at ~45%, `[LEAD MAGNET 3/3]` at ~80% / in the CLOSING CTA beat, then next-video hook), with `[VISUAL: ...]` tags throughout. Body must be ≥ 2,200 dialogue words. Cite every fact from the JSON above by weaving the metric value into dialogue at least once. Title-body contract: the first ~30 seconds (~150 words) must pay off the **Title promise** verbatim or near-verbatim.",
+    "Produce the FULL talking-head script in the format the system prompt specifies (ARC opening: Attention + Revelation only — NO Connection beat, NO lead magnet in opening; the Revelation carries the EXPERTISE BRIDGE with ONE sideways credibility drop from the approved list, and every number in it MUST trace to the member's real credentials profile — never invent a cadence like \"every 53 hours\". Then DATA → PSYCHOLOGY → CLARITY body with `[LEAD MAGNET 1/3]` inside the FIRST body insight as a gift, `[LEAD MAGNET 2/3]` deep pitch at ~40-45%, and a CLOSING that is a counter-intuitive FORWARD/BINGE hook to the next video — NOT a recap, NOT a sales pitch, no push-CTA — with `[LEAD MAGNET 3/3]` as a half-sentence riding that hook), with `[VISUAL: ...]` tags throughout. Every quantitative claim must be a clean traceable value — no placeholder/filler numbers (\"the 0K range\", \"$500,000-to-the 600K\", \"a meaningful amount\", dangling \"average sitting.\"). Body must be ≥ 2,200 dialogue words. Cite every fact from the JSON above by weaving the metric value into dialogue at least once. Title-body contract: the first ~30 seconds (~150 words) must pay off the **Title promise** verbatim or near-verbatim.",
   );
   lines.push("");
   lines.push(
@@ -798,6 +801,41 @@ function suggestRetryFix(v: ScriptViolation): string {
       "peak, clarity moment) at least 100 characters away from any",
       "`[LEAD MAGNET …]` tag, or (b) remove it from the script. Use it",
       "AT MOST once per script, never inside or adjacent to an LM tag.",
+    ].join(" ");
+  }
+  if (v.rule === "placeholder_number") {
+    // Fix 4 — malformed / filler number leaked into a quantitative claim.
+    return [
+      "this is a placeholder/filler number, not a real value. Replace it",
+      "with the exact figure from the Source-of-truth metrics or cited-facts",
+      'block (e.g. "$612,000", "49.4%", "3.2 months of inventory"), or cut',
+      "the claim entirely if you can't ground it. Never ship a malformed",
+      'range ("$500,000-to-the 600K"), a zero-filled stand-in ("the 0K',
+      'range"), filler like "a meaningful amount", or a dangling value verb',
+      'with no number ("average sitting."). Do NOT invent a replacement.',
+    ].join(" ");
+  }
+  if (v.rule === "recap_close") {
+    // Fix 3 — close is a recap or a sales pitch instead of a forward hook.
+    return [
+      "the close must be a counter-intuitive FORWARD/BINGE hook to the next",
+      "video (a Stakes pattern — what's at risk if they don't watch it), NOT",
+      "a backward recap and NOT a closing sales pitch. Remove this recap/",
+      'push-CTA language ("to recap", "the takeaway is", "book a call",',
+      '"make an offer", "this is the one", "pull the trigger") and rewrite',
+      "the ending as a forward hook. The only lead-magnet reference in the",
+      "close is the half-sentence LM 3/3 riding that hook.",
+    ].join(" ");
+  }
+  if (v.rule === "fabricated_credibility_stat") {
+    // Fix 1 — Expertise Bridge invented a cadence not on the profile.
+    return [
+      "this credibility cadence isn't on the member's credentials profile —",
+      "you invented it. Use ONLY the real number from the profile, or drop",
+      'the number for a non-numeric fallback ("every few days", "every',
+      'couple of days"), or use a qualitative bridge ("after years of',
+      'running this analysis for families across the city..."). Never invent',
+      "a precise cadence, deal count, or year span to sound authoritative.",
     ].join(" ");
   }
   return v.message;
@@ -1244,6 +1282,7 @@ export async function buildScript(
 
   const anchors = citedFactAnchors(citedFacts);
   const profileText = profileAnchors(neighbourhoodContext, marketConfig);
+  const credentialsText = credentialsAnchorText(marketConfig);
 
   let totalInputTokens = 0;
   let totalOutputTokens = 0;
@@ -1449,6 +1488,7 @@ export async function buildScript(
       sourceOfTruth: sourceOfTruthMetrics,
       citedFacts: anchors,
       profileText,
+      credentialsText,
       bingeTargetConfigured,
       bingeTargetTitle: bingeTargetTitle ?? undefined,
     });

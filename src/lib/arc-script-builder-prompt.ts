@@ -96,6 +96,8 @@ These come right after the intro pattern and transition INTO the first insight. 
 **Revelation Bridge:** "What most [experts] won't tell you — and I can say this after [credibility proof] — is..."
 **Pattern Bridge:** "I've seen this play out [X times], and here's what happens every time..."
 
+**REAL-STAT-OR-OMIT (hard rule):** Every number in the expertise bridge — a cadence ("a family every X hours"), a deal count, a year span — must come from the member's REAL credentials profile. NEVER invent a figure to sound authoritative (e.g. an invented "every 53 hours" when no such number exists). If the member has no figure on file, drop the number and use a qualitative bridge ("after years of running this analysis for families across the city…").
+
 === LEAD MAGNET PLACEMENT ===
 
 Mentioned exactly 3 times, in these fixed positions:
@@ -119,6 +121,7 @@ Every completed script must pass these checks:
 - Expertise bridge comes right after the intro pattern (for data-heavy videos, data scope IS the bridge)
 - Lead magnet mentioned 3 times (one sentence in the first talking point, full pitch at ~40%, half-sentence at the outro riding the binge hook — never in the opening)
 - Close is a forward/binge hook to the next video — NOT a recap and NOT a sales pitch; contains no push-CTA language
+- No placeholder/filler numbers — every quantitative claim is a clean traceable value, not "the 0K range", "$500,000-to-the 600K", "a meaningful amount", or a dangling "average sitting."
 - Each talking point follows the right loop: Value Loop (What/Why/When/Proof Point/Meaning) or Data Tour Loop (Name/Number/Interpret/Connect/Opinion/Bridge)
 - For data-heavy videos: Throughline Lesson identified and Connect It beats distributed across every Data Tour Loop point (not clustered at the start or in a standalone section)
 - No "how to implement" (save that for consultation/lead magnet)
@@ -165,7 +168,7 @@ Write each option word-for-word as ~20-25 second scripts. Make them specific to 
 Do NOT place the lead magnet in the opening — its first mention comes later, woven into the first insight (Section 4).
 
 **SECTION 3 — CREDIBILITY**
-Draft a credibility line using credentials from the avatar profile. Note what you pulled in (years in business, deals closed, client results, etc.). Write it as an actual script line that weaves in naturally — not boastful.
+Draft a credibility line using credentials from the avatar profile. Note what you pulled in (years in business, deals closed, client results, etc.). Write it as an actual script line that weaves in naturally — not boastful. REAL-STAT-OR-OMIT: every number here must come from the member's actual profile — never invent a figure (e.g. an invented "every 53 hours"). If nothing is on file, write a qualitative credibility line with no fabricated numbers.
 
 **SECTION 4 — INSIGHTS (HYBRID LOOPS)**
 Generate the insights using the right loop type per talking point:
@@ -187,6 +190,7 @@ Assemble the complete script from approved sections. Then run the 11-item checkl
 3. Credibility woven in naturally
 4. Lead magnet mentioned 3 times (one sentence in the first insight, full pitch at ~40%, half-sentence at the outro riding the binge hook — never in the opening)
 4b. Close is a forward/binge hook to the next video — NOT a recap and NOT a sales pitch; contains no push-CTA language
+4c. No placeholder/filler numbers — every quantitative claim is a clean traceable value, not "the 0K range", "$500,000-to-the 600K", "a meaningful amount", or a dangling "average sitting."
 5. Each insight follows the correct loop (Value Loop or Data Tour Loop with Connect It)
 6. No "how to implement" (keep them wanting more)
 6b. For data-heavy videos: Throughline Lesson identified and Connect It beats distributed across every Data Tour Loop point
