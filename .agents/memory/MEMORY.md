@@ -38,4 +38,5 @@
 - [Neighbourhood area codes vs names](neighbourhood-area-codes.md) — numeric "neighbourhoods" in vocab/auto-populate = MLS area-code column (no name col), NOT a mapping bug; auto-populate honors the mapping; no code→name table exists.
 - [Offline validator runner](offline-validator-runner.md) — run long jobs as a pid1 console workflow (nohup/setsid get reaped by the bash tool); stop `next dev` first or concurrent 64K streams OOM-kill the run silently.
 - [Thumbnail pipeline reproducible from dev](thumbnail-pipeline-reproducible-from-dev.md) — dev shares prod's bucket+Drive+DB, so reproduce per-plan upload failures live; pristine row + healthy pipeline = client/stale-bundle, not a server fix.
+- [Status codes vs full-word CSV labels](market-status-fullword-vs-codes.md) — short statusCodes (A/S/P…) vs full-word CSV labels → all rows unknown → 0 sold → every fact rejected; needs canonical-word + token fallback. Also get_facts 4-state honesty.
 - [Jarvis proposal lifecycle CAS](jarvis-proposal-cas.md) — every proposalState write (save + reopen/decline) must be a guarded compare-and-swap or a stale transition clobbers created/savedScriptId and dupes the draft.

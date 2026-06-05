@@ -197,14 +197,18 @@ async function runTool(ctx: {
         metric: typeof input.metric === "string" ? input.metric : undefined,
       });
       for (const f of res.facts) onFact(f);
+      const tier =
+        res.state === "texture_only" ? " (texture-only)" : "";
       record(
         "ok",
         res.facts.length > 0
-          ? `Found ${res.facts.length} fact${res.facts.length === 1 ? "" : "s"}${res.monthYear ? ` (${res.monthYear})` : ""}.`
+          ? `Found ${res.facts.length} fact${res.facts.length === 1 ? "" : "s"}${tier}${res.monthYear ? ` (${res.monthYear})` : ""}.`
           : res.note ?? "No matching facts.",
       );
       const payload = {
         monthYear: res.monthYear,
+        state: res.state,
+        textureOnly: res.textureOnly ?? false,
         note: res.note,
         facts: res.facts.map((f) => ({
           id: f.id,
@@ -212,6 +216,7 @@ async function runTool(ctx: {
           metric: f.label,
           value: f.value,
           monthYear: f.monthYear,
+          ...(f.caveat ? { caveat: f.caveat } : {}),
         })),
       };
       return result(JSON.stringify(payload));

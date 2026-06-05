@@ -110,6 +110,64 @@ export async function loadHeadlineSafeFacts(
   }));
 }
 
+/**
+ * Texture-only facts for an upload — rows the validator graded
+ * `supporting_texture_only` (real, member-owned numbers, but NOT durable enough
+ * to headline a video: thin samples, off-market sub-buckets, etc). Same compact
+ * shape as loadHeadlineSafeFacts so callers can treat both uniformly; the
+ * caller is responsible for flagging to the consumer that these carry a "use as
+ * background colour, not a headline claim" caveat. Used by Jarvis get_facts as
+ * a transparent fallback when an upload validated but yielded zero
+ * headline-safe facts (or none match the requested filter).
+ */
+export async function loadTextureOnlyFacts(
+  uploadId: string,
+  monthYear: string,
+  opts: { limit?: number; orderByNeighbourhoodFirst?: boolean } = {},
+): Promise<CompactFact[]> {
+  const limit = opts.limit ?? 200;
+  const orderBy = opts.orderByNeighbourhoodFirst
+    ? [{ neighbourhood: "asc" as const }, { metricFamily: "asc" as const }]
+    : [{ metricFamily: "asc" as const }, { neighbourhood: "asc" as const }];
+  const rows = await prisma.marketFact.findMany({
+    where: {
+      uploadId,
+      usageClass: "supporting_texture_only",
+      ...EXCLUDE_LEGACY_FAILURE_RATE,
+    },
+    orderBy,
+    take: limit,
+    select: {
+      id: true,
+      neighbourhood: true,
+      propertyType: true,
+      priceTier: true,
+      metricName: true,
+      metricFamily: true,
+      metricValue: true,
+      metricValueString: true,
+      marketType: true,
+      trajectory: true,
+      viewerCaveat: true,
+    },
+  });
+  return rows.map((r) => ({
+    id: r.id,
+    neighbourhood: r.neighbourhood,
+    propertyType: r.propertyType,
+    priceTier: r.priceTier,
+    metricName: r.metricName,
+    metricFamily: r.metricFamily,
+    value:
+      r.metricValueString ??
+      (r.metricValue !== null ? String(r.metricValue) : ""),
+    marketType: r.marketType,
+    trajectory: r.trajectory,
+    monthYear,
+    ...(r.viewerCaveat ? { caveat: r.viewerCaveat } : {}),
+  }));
+}
+
 export interface MarketConfigSummary {
   marketName: string;
   neighbourhoods: string[];

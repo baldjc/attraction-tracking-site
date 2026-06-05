@@ -27,6 +27,12 @@ export interface LedgerFact {
   value: string;
   monthYear: string;
   source: string;
+  /**
+   * Present only on texture-only fallback facts (usageClass
+   * `supporting_texture_only`): a "use as background colour, not a headline
+   * claim" warning. Headline-safe facts omit it.
+   */
+  caveat?: string;
 }
 
 /** Lifecycle of a script-save proposal. */

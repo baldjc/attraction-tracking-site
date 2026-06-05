@@ -8,6 +8,7 @@ import { EXCLUDE_LEGACY_FAILURE_RATE } from "@/lib/market-status-buckets";
 import {
   loadLatestValidatedUpload,
   loadHeadlineSafeFacts,
+  loadTextureOnlyFacts,
   loadMarketConfigSummary,
 } from "@/lib/content-engine-context";
 import { getSourceOfTruthMetrics } from "@/lib/aggregated-metrics";
@@ -120,17 +121,75 @@ export interface GetFactsArgs {
   metric?: string;
 }
 
+/**
+ * Which fact tier executeGetFacts ended up serving:
+ *  - "headline_safe": durable facts safe to headline a video / cite directly.
+ *  - "texture_only":  no headline-safe facts matched, so we fell back to
+ *    `supporting_texture_only` rows — real numbers, but background colour only.
+ *  - "none":          the member has facts/an upload but nothing matched (or
+ *    the upload validated with zero usable facts).
+ *  - "no_upload":     no validated upload exists yet.
+ */
+export type GetFactsState =
+  | "headline_safe"
+  | "texture_only"
+  | "none"
+  | "no_upload";
+
 export interface GetFactsResult {
   facts: LedgerFact[];
   monthYear: string | null;
+  /** Honest machine-readable tier of what `facts` actually contains. */
+  state: GetFactsState;
+  /**
+   * True only when `facts` are texture-only fallbacks. The orchestrator must
+   * not present these as headline claims — use them as supporting colour, with
+   * the caveat surfaced to the member.
+   */
+  textureOnly?: boolean;
   note?: string;
 }
 
+const TEXTURE_CAVEAT =
+  "Supporting texture only — thin sample / not durable enough to headline. " +
+  "Use as background colour, not as a standalone market claim.";
+
+function toLedger(
+  rows: { id: string; metricName: string; neighbourhood: string; value: string; monthYear: string; caveat?: string }[],
+  source: string,
+  withCaveat: boolean,
+): LedgerFact[] {
+  return rows.slice(0, 60).map((f) => ({
+    id: f.id,
+    label: METRIC_NAME_LABELS[f.metricName] ?? f.metricName,
+    neighbourhood: f.neighbourhood,
+    value: f.value,
+    monthYear: f.monthYear,
+    source,
+    ...(withCaveat ? { caveat: f.caveat ?? TEXTURE_CAVEAT } : {}),
+  }));
+}
+
 /**
- * Load the member's latest validated upload's headline-safe facts, optionally
- * filtered by neighbourhood / metric label substring. Each fact carries its id
- * and a human source label so the orchestrator can both cite it and ground on
- * it. Capped to keep the tool result compact.
+ * Load the member's latest validated upload's facts, optionally filtered by
+ * neighbourhood / metric label substring, and report HONESTLY which of three
+ * fact states applies:
+ *
+ *   1. No validated upload at all          → state "no_upload".
+ *   2. Headline-safe facts match the query → state "headline_safe".
+ *   3. No headline-safe matches but
+ *      texture-only facts exist            → state "texture_only" (fallback,
+ *                                            flagged textureOnly + caveat).
+ *   …and if nothing at all matches         → state "none".
+ *
+ * This replaces the old behaviour where a validated-but-zero-headline-safe
+ * upload (e.g. the status-bucketing bug) returned a bare empty list that the
+ * orchestrator surfaced as a flat "No matching facts" — indistinguishable from
+ * "you haven't uploaded anything". Each fact still carries its id + source so
+ * the orchestrator can cite and ground on it. Grounding (groundAssistantText)
+ * is intentionally untouched — texture facts are real numbers, so they stay
+ * citable; the textureOnly flag governs HOW the assistant may use them, not
+ * whether their digits are allowed.
  */
 export async function executeGetFacts(
   userId: string,
@@ -141,20 +200,16 @@ export async function executeGetFacts(
     return {
       facts: [],
       monthYear: null,
+      state: "no_upload",
       note: "No validated market-data upload yet — upload market data first.",
     };
   }
-
-  const compact = await loadHeadlineSafeFacts(upload.id, upload.monthYear, {
-    limit: 400,
-    orderByNeighbourhoodFirst: true,
-  });
 
   const hood = args.neighbourhood?.trim().toLowerCase();
   const metric = args.metric?.trim().toLowerCase();
   const source = `Market data — ${upload.monthYear}`;
 
-  const filtered = compact.filter((f) => {
+  const matches = (f: { neighbourhood: string; metricName: string }) => {
     if (hood && f.neighbourhood.toLowerCase() !== hood) return false;
     if (metric) {
       const label = (METRIC_NAME_LABELS[f.metricName] ?? f.metricName).toLowerCase();
@@ -163,18 +218,57 @@ export async function executeGetFacts(
       }
     }
     return true;
+  };
+
+  // State 2: headline-safe facts.
+  const headline = await loadHeadlineSafeFacts(upload.id, upload.monthYear, {
+    limit: 400,
+    orderByNeighbourhoodFirst: true,
   });
+  const headlineMatched = headline.filter(matches);
+  if (headlineMatched.length > 0) {
+    return {
+      facts: toLedger(headlineMatched, source, false),
+      monthYear: upload.monthYear,
+      state: "headline_safe",
+    };
+  }
 
-  const facts: LedgerFact[] = filtered.slice(0, 60).map((f) => ({
-    id: f.id,
-    label: METRIC_NAME_LABELS[f.metricName] ?? f.metricName,
-    neighbourhood: f.neighbourhood,
-    value: f.value,
-    monthYear: f.monthYear,
-    source,
-  }));
+  // State 3: no headline-safe match → fall back to texture-only facts.
+  const texture = await loadTextureOnlyFacts(upload.id, upload.monthYear, {
+    limit: 400,
+    orderByNeighbourhoodFirst: true,
+  });
+  const textureMatched = texture.filter(matches);
+  if (textureMatched.length > 0) {
+    const filterNote =
+      hood || metric
+        ? "No headline-safe facts match that filter. "
+        : "This upload validated, but none of its facts are durable enough to headline. ";
+    return {
+      facts: toLedger(textureMatched, source, true),
+      monthYear: upload.monthYear,
+      state: "texture_only",
+      textureOnly: true,
+      note:
+        filterNote +
+        "Returning supporting texture-only facts instead — use these as " +
+        "background colour, not as standalone market claims, and tell the " +
+        "member they're softer numbers.",
+    };
+  }
 
-  return { facts, monthYear: upload.monthYear };
+  // Nothing matched at all.
+  const hasAnyFacts = headline.length > 0 || texture.length > 0;
+  const note = hasAnyFacts
+    ? "No facts match that filter — try a broader query (drop the neighbourhood or metric)."
+    : "This upload validated but produced no usable facts. The member may need to re-upload or have the data re-validated.";
+  return {
+    facts: [],
+    monthYear: upload.monthYear,
+    state: "none",
+    note,
+  };
 }
 
 // ── build_script executor ───────────────────────────────────────────────────

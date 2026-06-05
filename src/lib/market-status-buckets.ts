@@ -117,7 +117,15 @@ function mappingFromStatusCodes(
     const label = code.label.trim();
     if (!label) continue;
     const bucket = canonicalToBucket(code.canonical);
-    if (bucket) out[bucket].push(label);
+    if (bucket) {
+      out[bucket].push(label);
+      // Also register the canonical word itself (sold/active/pending/expired/
+      // terminated/withdrawn) so a market whose configured labels are
+      // abbreviations (e.g. "S"/"X") still recognizes full-word MLS exports
+      // ("SOLD"/"EXPIRED"). Additive only — exact-match precedence (and the
+      // first-write-wins index) is unchanged; the configured label still wins.
+      if (code.canonical !== "other") out[bucket].push(code.canonical);
+    }
   }
   return isNonEmptyMapping(out) ? out : null;
 }
@@ -153,6 +161,42 @@ function normalizeLabel(s: string): string {
   return s.trim().toLowerCase();
 }
 
+/**
+ * Exact-then-token lookup against a precomputed index.
+ *
+ * 1. Exact normalized match (the only path for single-word labels — preserves
+ *    the original "unmapped word -> caller's fallback" behavior, e.g. a bare
+ *    "Foreclosure" stays unknown and an admin override that omits a label does
+ *    not leak canonical words).
+ * 2. On an exact MISS for a COMPOSITE label (>1 token), match each
+ *    whitespace/punctuation-delimited token against the SAME index and return
+ *    the highest-precedence hit. This rescues MLS exports that glue a code to a
+ *    word, e.g. "X - EXPIRED" (tokens "x" / "expired"). Because it only fires
+ *    after an exact miss, it can never override an explicit single-label match.
+ */
+function lookupWithTokenFallback<T>(
+  key: string,
+  index: Map<string, T>,
+  precedence: readonly T[],
+): T | null {
+  const exact = index.get(key);
+  if (exact !== undefined) return exact;
+  const tokens = key.split(/[^a-z0-9]+/).filter(Boolean);
+  if (tokens.length < 2) return null;
+  let best: T | null = null;
+  let bestRank = Infinity;
+  for (const tok of tokens) {
+    const hit = index.get(tok);
+    if (hit === undefined) continue;
+    const rank = precedence.indexOf(hit);
+    if (rank >= 0 && rank < bestRank) {
+      best = hit;
+      bestRank = rank;
+    }
+  }
+  return best;
+}
+
 // Precompute a normalized lookup so bucketStatus is O(1) per row, not O(labels).
 const MAPPING_INDEX_CACHE = new WeakMap<StatusMapping, Map<string, StatusBucket>>();
 
@@ -176,6 +220,17 @@ function indexFor(mapping: StatusMapping): Map<string, StatusBucket> {
  * Returns "unknown" for empty/unmapped strings — callers MUST surface unknowns
  * (see countByBucket) rather than silently dropping them.
  */
+// Token-fallback precedence for composite labels: a row mentioning "sold" is
+// sold; off-market signals dominate; "pending" beats a bare "active" (so
+// "active pending"/"active under contract" reads as pending); plain "active" is
+// the weakest default.
+const BUCKET_TOKEN_PRECEDENCE: readonly StatusBucket[] = [
+  "sold",
+  "offMarket",
+  "pending",
+  "active",
+];
+
 export function bucketStatus(
   rawStatus: string | null | undefined,
   mapping: StatusMapping,
@@ -183,7 +238,10 @@ export function bucketStatus(
   if (rawStatus == null) return "unknown";
   const key = normalizeLabel(String(rawStatus));
   if (!key) return "unknown";
-  return indexFor(mapping).get(key) ?? "unknown";
+  return (
+    lookupWithTokenFallback(key, indexFor(mapping), BUCKET_TOKEN_PRECEDENCE) ??
+    "unknown"
+  );
 }
 
 export interface BucketCounts {
@@ -325,6 +383,10 @@ function subMappingFromStatusCodes(
     const sub = canonicalToSub(code.canonical);
     if (sub) {
       out[sub].push(label);
+      // Register the canonical sub-word too (expired/terminated/withdrawn) so
+      // abbreviation-configured markets still classify full-word exports. See
+      // mappingFromStatusCodes for the rationale.
+      out[sub].push(sub);
       any = true;
     }
   }
@@ -369,6 +431,13 @@ function subIndexFor(
   return idx;
 }
 
+// Sub-bucket precedence mirrors the order off-market sub-types are tallied.
+const SUB_TOKEN_PRECEDENCE: readonly OffMarketSubBucket[] = [
+  "expired",
+  "terminated",
+  "withdrawn",
+];
+
 /** Classify a raw off-market status into its sub-bucket, or null if unmapped. */
 export function classifyOffMarketSub(
   rawStatus: string | null | undefined,
@@ -377,7 +446,7 @@ export function classifyOffMarketSub(
   if (rawStatus == null) return null;
   const key = normalizeLabel(String(rawStatus));
   if (!key) return null;
-  return subIndexFor(mapping).get(key) ?? null;
+  return lookupWithTokenFallback(key, subIndexFor(mapping), SUB_TOKEN_PRECEDENCE);
 }
 
 export interface OffMarketSubCounts {

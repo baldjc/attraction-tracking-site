@@ -18,6 +18,8 @@ import {
   validateStatusMapping,
   bucketStatus,
   countByBucket,
+  resolveOffMarketSubMapping,
+  classifyOffMarketSub,
   failureRate,
   saleShare,
   absorptionRate,
@@ -101,6 +103,53 @@ test("NTREIS statusCodes: Closed->sold, Canceled/Withdrawn-Conditional/Temporari
   assert.equal(bucketStatus("Temporarily Off Market", m), "offMarket");
   assert.equal(bucketStatus("Active Kick Out", m), "active");
   assert.equal(bucketStatus("Pending Continue to Show", m), "pending");
+});
+
+test("statusCodes abbreviations still match full-word MLS exports (canonical enrichment)", () => {
+  // A market configured with single-letter codes (A/S/P/X/T/W) whose CSV uses
+  // full words must still bucket correctly — the original failure mode.
+  const m = resolveStatusMapping({
+    statusMapping: null,
+    statusCodes: [
+      sc("A", "active"),
+      sc("S", "sold"),
+      sc("P", "pending"),
+      sc("X", "expired"),
+      sc("T", "terminated"),
+      sc("W", "withdrawn"),
+    ],
+    mlsSource: null,
+  });
+  // The configured abbreviation still works…
+  assert.equal(bucketStatus("S", m), "sold");
+  assert.equal(bucketStatus("A", m), "active");
+  // …and so do the full canonical words.
+  assert.equal(bucketStatus("SOLD", m), "sold");
+  assert.equal(bucketStatus("ACTIVE", m), "active");
+  assert.equal(bucketStatus("PENDING", m), "pending");
+  assert.equal(bucketStatus("TERMINATED", m), "offMarket");
+  assert.equal(bucketStatus("WITHDRAWN", m), "offMarket");
+  // Composite "code - word" label resolves via the token fallback.
+  assert.equal(bucketStatus("X - EXPIRED", m), "offMarket");
+  // Off-market sub-classification handles the composite too.
+  const sub = resolveOffMarketSubMapping({
+    statusMapping: null,
+    statusCodes: [sc("X", "expired"), sc("T", "terminated"), sc("W", "withdrawn")],
+    mlsSource: null,
+  });
+  assert.equal(classifyOffMarketSub("X - EXPIRED", sub), "expired");
+  assert.equal(classifyOffMarketSub("TERMINATED", sub), "terminated");
+});
+
+test("token fallback fires only on composite labels; bare unmapped words stay unknown", () => {
+  // Override (no canonical enrichment) — a bare canonical word must NOT leak.
+  const override = resolveStatusMapping({
+    statusMapping: { sold: ["CLOSED!"], offMarket: ["DEAD"], active: ["LIVE"], pending: ["UC"] },
+  });
+  assert.equal(bucketStatus("Sold", override), "unknown");
+  assert.equal(bucketStatus("Foreclosure", override), "unknown");
+  // A composite whose tokens are all unmapped is still unknown.
+  assert.equal(bucketStatus("Coming Soon", override), "unknown");
 });
 
 // ── validateStatusMapping ───────────────────────────────────────────────────
