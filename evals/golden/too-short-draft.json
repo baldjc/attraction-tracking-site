@@ -1,0 +1,25 @@
+{
+  "name": "too-short-draft",
+  "description": "A draft far below the minimum dialogue-word floor should never pass the validator; after exhausting retries buildScript returns a terminal validator_max_retries error.",
+  "neighbourhood": "Saddle Ridge",
+  "citedFacts": [
+    {
+      "id": "f1",
+      "neighbourhood": "Saddle Ridge",
+      "metricName": "median_price",
+      "metricLabel": "Median Sale Price",
+      "metricValueString": "$612,000",
+      "monthYear": "2026-04",
+      "marketType": "balanced",
+      "trajectory": "stable",
+      "caveat": null
+    }
+  ],
+  "scriptTitle": "Too Short",
+  "scriptParagraph": "Saddle Ridge sits around $612,000 today.",
+  "scriptRepeat": 1,
+  "expect": {
+    "ok": false,
+    "errorCategory": "validator_max_retries"
+  }
+}

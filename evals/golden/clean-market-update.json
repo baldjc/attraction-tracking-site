@@ -1,0 +1,36 @@
+{
+  "name": "clean-market-update",
+  "description": "A validation-clean Saddle Ridge market-update draft built only from the two cited facts should pass and surface those facts.",
+  "neighbourhood": "Saddle Ridge",
+  "citedFacts": [
+    {
+      "id": "f1",
+      "neighbourhood": "Saddle Ridge",
+      "metricName": "median_price",
+      "metricLabel": "Median Sale Price",
+      "metricValueString": "$612,000",
+      "monthYear": "2026-04",
+      "marketType": "balanced",
+      "trajectory": "stable",
+      "caveat": null
+    },
+    {
+      "id": "f2",
+      "neighbourhood": "Saddle Ridge",
+      "metricName": "sale_share",
+      "metricLabel": "Sale Share",
+      "metricValueString": "49.4%",
+      "monthYear": "2026-04",
+      "marketType": "balanced",
+      "trajectory": "stable",
+      "caveat": null
+    }
+  ],
+  "scriptTitle": "The Saddle Ridge Market Read",
+  "scriptParagraph": "In Saddle Ridge the typical detached home is trading around $612,000 right now, and the share of active listings that ultimately find a buyer is sitting close to 49.4%. That pairing of a $612,000 price level against a 49.4% absorption read is the single clearest signal of how balanced this corner of the market has become through the season, and it is the kind of grounded read that helps a household plan the next move with real confidence.",
+  "scriptRepeat": 40,
+  "expect": {
+    "ok": true,
+    "contains": ["$612,000", "49.4%"]
+  }
+}
