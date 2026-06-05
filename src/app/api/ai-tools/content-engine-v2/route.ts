@@ -16,7 +16,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import { getFeatureFlags } from "@/lib/feature-flags";
-import { getCostCapStatus, logUsage } from "@/lib/ai-tool-cost";
+import { getCostCapStatus, isHardCapExempt, logUsage } from "@/lib/ai-tool-cost";
 import {
   loadLatestValidatedUpload,
   loadHeadlineSafeFacts,
@@ -80,8 +80,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Not enabled" }, { status: 404 });
   }
 
+  // Admin impersonating a member is exempt from the HARD block (tokens still
+  // logged); real, non-impersonated members stay fully capped.
   const cap = await getCostCapStatus(userId);
-  if (cap.hardBlocked) {
+  if (cap.hardBlocked && !isHardCapExempt(resolved)) {
     return NextResponse.json(
       {
         error: "monthly_cost_cap_reached",

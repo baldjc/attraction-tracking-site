@@ -18,7 +18,7 @@
 import { type NextRequest } from "next/server";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import { getFeatureFlags } from "@/lib/feature-flags";
-import { getCostCapStatus, logUsage } from "@/lib/ai-tool-cost";
+import { getCostCapStatus, isHardCapExempt, logUsage } from "@/lib/ai-tool-cost";
 import { loadMarketConfigSummary } from "@/lib/content-engine-context";
 import prisma from "@/lib/prisma";
 import type { Prisma } from "@/generated/prisma/client";
@@ -48,8 +48,10 @@ export async function POST(req: NextRequest) {
   const flags = await getFeatureFlags({ userId, userRole: resolved.role });
   if (!flags.tool_jarvis) return jsonError(404, "not_enabled");
 
+  // Admin impersonating a member is exempt from the HARD block (tokens still
+  // logged); real, non-impersonated members stay fully capped.
   const cap = await getCostCapStatus(userId);
-  if (cap.hardBlocked) {
+  if (cap.hardBlocked && !isHardCapExempt(resolved)) {
     const pct =
       cap.capUsd > 0 ? Math.min(100, Math.round((cap.monthSpendUsd / cap.capUsd) * 100)) : 100;
     return jsonError(

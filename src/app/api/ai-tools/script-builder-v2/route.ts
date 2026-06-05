@@ -57,7 +57,7 @@ import { type NextRequest } from "next/server";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import { EXCLUDE_LEGACY_FAILURE_RATE } from "@/lib/market-status-buckets";
 import { getFeatureFlags } from "@/lib/feature-flags";
-import { getCostCapStatus, logUsage } from "@/lib/ai-tool-cost";
+import { getCostCapStatus, isHardCapExempt, logUsage } from "@/lib/ai-tool-cost";
 import prisma from "@/lib/prisma";
 import {
   EARLY_PLAN_STATUSES,
@@ -123,8 +123,10 @@ export async function POST(req: NextRequest) {
   if (!flags.tool_script_builder_v2) return jsonError(404, "Not enabled");
 
   // ── Cost cap (hard block before any Claude work) ─────────────────────
+  // Admin impersonating a member is exempt from the HARD block (tokens are
+  // still logged below); real, non-impersonated members stay fully capped.
   const cap = await getCostCapStatus(userId);
-  if (cap.hardBlocked) {
+  if (cap.hardBlocked && !isHardCapExempt(resolved)) {
     return jsonError(
       402,
       "monthly_cost_cap_reached",

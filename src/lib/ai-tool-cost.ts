@@ -216,3 +216,38 @@ export async function logUsage(
     data: { userId, toolType, inputTokens, outputTokens, costUsd: costUsd.toString(), conversationId },
   });
 }
+
+/**
+ * Admin-impersonation hard-cap exemption.
+ *
+ * When a real admin is impersonating a member (the "Working for: …" mode), the
+ * cost cap is evaluated against the MEMBER's id, so the admin's test generations
+ * would otherwise hit the member's monthly hard cap. We exempt ONLY the hard
+ * block in that case — tokens are still logged via `logUsage()`, the member's
+ * spend still accrues, and real (non-impersonated) members stay fully capped.
+ * Editors are intentionally NOT exempted (only `role === "admin"` actors, which
+ * is what `ResolvedUser.isAdmin` reflects).
+ *
+ * Apply at every interactive AI-generation callsite as:
+ *   if (cap.hardBlocked && !isHardCapExempt(resolved)) { …402… }
+ * Keep the policy here (one predicate) so it never drifts across callsites.
+ */
+export function isHardCapExempt(
+  actor: { isAdmin?: boolean; isImpersonating?: boolean } | null | undefined,
+): boolean {
+  return !!(actor && actor.isAdmin && actor.isImpersonating);
+}
+
+/**
+ * Delete a member's `AIToolUsage` rows for the current calendar-month billing
+ * period — the exact window `getCostCapStatus()` sums. Returns the number of
+ * rows removed. Backs the admin "Reset AI usage (this period)" action so a
+ * cost-capped pilot member can keep testing without waiting for the monthly
+ * reset. Scoped to one user + the current period only.
+ */
+export async function resetCurrentPeriodUsage(userId: string): Promise<number> {
+  const result = await prisma.aIToolUsage.deleteMany({
+    where: { userId, createdAt: { gte: startOfMonth() } },
+  });
+  return result.count;
+}

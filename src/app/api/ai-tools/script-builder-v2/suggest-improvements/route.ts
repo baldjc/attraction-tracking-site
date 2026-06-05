@@ -38,7 +38,7 @@ import prisma from "@/lib/prisma";
 import { EXCLUDE_LEGACY_FAILURE_RATE } from "@/lib/market-status-buckets";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import { getFeatureFlags } from "@/lib/feature-flags";
-import { getCostCapStatus } from "@/lib/ai-tool-cost";
+import { getCostCapStatus, isHardCapExempt } from "@/lib/ai-tool-cost";
 import { loadMarketConfigSummary } from "@/lib/content-engine-context";
 import { getNeighbourhoodContext } from "@/lib/get-neighbourhood-context";
 
@@ -104,8 +104,10 @@ export async function POST(req: NextRequest) {
   if (!flags.tool_script_builder_v2) return jsonError(404, "not_enabled");
 
   // ── Cost cap (hard block before any Claude work) ─────────────────────
+  // Admin impersonating a member is exempt from the HARD block; real,
+  // non-impersonated members stay fully capped.
   const cap = await getCostCapStatus(userId);
-  if (cap.hardBlocked) {
+  if (cap.hardBlocked && !isHardCapExempt(resolved)) {
     return jsonError(
       402,
       "monthly_cost_cap_reached",

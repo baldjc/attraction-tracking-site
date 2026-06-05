@@ -215,6 +215,7 @@ export default function MemberDetailPage() {
   const [toolsUsage, setToolsUsage] = useState<{
     scriptsCount: number; analysesCount: number; lastActivity: string | null;
   } | null>(null);
+  const [resettingAiUsage, setResettingAiUsage] = useState(false);
 
   const [academyProgress, setAcademyProgress] = useState<any>(null);
 
@@ -343,6 +344,32 @@ export default function MemberDetailPage() {
       toast.error("Failed to save avatar.");
     } finally {
       setAvatarSaving(false);
+    }
+  }
+
+  async function handleResetAiUsage() {
+    if (!member?.id) return;
+    if (!window.confirm(
+      "Reset this member's AI usage for the current billing period? This clears their monthly spend so they're no longer cost-capped until next month.",
+    )) return;
+    setResettingAiUsage(true);
+    try {
+      const res = await fetch(`/api/admin/members/${id}/reset-ai-usage`, { method: "POST" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || "Reset failed");
+      const before = Number(data?.before?.monthSpendUsd ?? 0);
+      const after = Number(data?.after?.monthSpendUsd ?? 0);
+      toast.success(
+        `AI usage reset — cleared ${data.deleted} record${data.deleted === 1 ? "" : "s"} ($${before.toFixed(2)} → $${after.toFixed(2)}).`,
+      );
+      fetch(`/api/admin/member-tools-usage/${member.id}`)
+        .then((r) => r.json())
+        .then((d) => setToolsUsage(d))
+        .catch(() => {});
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to reset AI usage.");
+    } finally {
+      setResettingAiUsage(false);
     }
   }
 
@@ -1461,6 +1488,16 @@ export default function MemberDetailPage() {
                 )}
                 {!member?.avatarName && !toolsUsage?.scriptsCount && (
                   <p className="text-xs text-[var(--abv-text)]/30 italic pt-1">No AI tool activity yet</p>
+                )}
+                {!isEditorRole && (
+                  <button
+                    type="button"
+                    onClick={handleResetAiUsage}
+                    disabled={resettingAiUsage}
+                    className="mt-3 w-full rounded-md border border-gray-200 px-3 py-1.5 text-xs font-semibold text-[var(--abv-text)]/70 hover:bg-gray-50 disabled:opacity-50"
+                  >
+                    {resettingAiUsage ? "Resetting…" : "Reset AI usage (this period)"}
+                  </button>
                 )}
               </div>
             </div>
