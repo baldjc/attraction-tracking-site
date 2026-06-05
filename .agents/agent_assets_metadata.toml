@@ -54,3 +54,21 @@ id = "7THAky0Vd0ELVMqeOSqYc"
 uri = "file://docs/METRICS_SPEC.md"
 type = "text"
 title = "METRICS_SPEC.md — Canonical Derived-Metric Specification"
+
+[[outputs]]
+id = "XVNcnmBar5qtwaHko1FqO"
+uri = "file://exports/2026-05 - 05-2026 Part A Monthly Market Report.csv"
+type = "table"
+title = "May 2026 (2026-05) — 7,575 rows"
+
+[[outputs]]
+id = "_fBRN35KxRDou_GSKWcGz"
+uri = "file://exports/2026-04 - 04-2026 Monthly Market Report.csv"
+type = "table"
+title = "April 2026 (2026-04) — 2,881 rows"
+
+[[outputs]]
+id = "xFBXQul4g2RCnowN_L0ai"
+uri = "file://exports/2026-03 - 03-2026 Monthly Market Report.csv"
+type = "table"
+title = "March 2026 (2026-03) — 2,812 rows"
