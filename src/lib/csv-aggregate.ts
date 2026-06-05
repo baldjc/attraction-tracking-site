@@ -20,8 +20,8 @@
 //   • Composition shift:      |Δmedian sqft| > 5% in SAME direction as Δmedian
 //                             price → flag (group-level flag, consumed by validator)
 
-import { parse } from "csv-parse/sync";
 import prisma from "@/lib/prisma";
+import { parseCsvRecords } from "@/lib/csv-parse-options";
 import {
   type ColumnMapping,
   type MarketConfigShape,
@@ -303,13 +303,9 @@ function parseAllRows(
   buf: Buffer,
 ): { headers: string[]; rows: Record<string, string>[] } {
   const text = buf.toString("utf8").replace(/^\uFEFF/, "");
-  const records = parse(text, {
-    bom: true,
+  const records = parseCsvRecords<Record<string, string>>(text, {
     columns: true,
-    relax_column_count: true,
-    skip_empty_lines: true,
-    trim: true,
-  }) as Record<string, string>[];
+  });
   const headers = records.length > 0 ? Object.keys(records[0]) : [];
   return { headers, rows: records };
 }

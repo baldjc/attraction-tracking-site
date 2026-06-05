@@ -1,4 +1,3 @@
-import { parse } from "csv-parse/sync";
 import Anthropic from "@anthropic-ai/sdk";
 import { Client as ObjectStorageClient } from "@replit/object-storage";
 import {
@@ -8,6 +7,7 @@ import {
   type ColumnMapping,
   type AnyMappedField,
 } from "@/lib/market-config";
+import { parseCsvRecords } from "@/lib/csv-parse-options";
 
 // ─── Persistent CSV storage (Replit Object Storage) ──────────────────────────
 // Previously CSVs were written to /tmp/uploads which is ephemeral — container
@@ -158,12 +158,7 @@ export interface ParsedCsvPreview {
  */
 export function parseCsvPreview(buf: Buffer): ParsedCsvPreview {
   const text = buf.toString("utf8").replace(/^\uFEFF/, "");
-  const records = parse(text, {
-    bom: true,
-    relax_column_count: true,
-    skip_empty_lines: true,
-    trim: true,
-  }) as string[][];
+  const records = parseCsvRecords<string[]>(text);
 
   if (records.length === 0) {
     return { headers: [], sampleRows: [], rowCount: 0 };
