@@ -127,7 +127,8 @@ const memberLinks = [
   { href: "/member/hire",            label: "Hire a Human",    icon: UserGroupIcon,            featureKey: null,        colour: "var(--abv-hire)",    tierRequired: null,                                 featureColour: "var(--abv-hire)" },
 
   // WORKSPACE
-  { href: "/member/my-work",         label: "My Work",         icon: FolderIcon,               featureKey: "ai_tools",  colour: "var(--abv-ai-tools)", tierRequired: null,           section: "WORKSPACE" },
+  { href: "/member/jarvis",          label: "AI Content Manager", icon: SparklesIcon,          featureKey: "tool_jarvis", colour: "var(--abv-ai-tools)", tierRequired: null,           section: "WORKSPACE" },
+  { href: "/member/my-work",         label: "My Work",         icon: FolderIcon,               featureKey: "ai_tools",  colour: "var(--abv-ai-tools)", tierRequired: null },
   { href: "/member/client-hub",      label: "Client Hub",      icon: Squares2X2Icon,           featureKey: null,        colour: "var(--abv-azure)",   tierRequired: PRODUCTION_TIERS },
   { href: "/member/settings",        label: "Settings",        icon: Cog6ToothIcon,            featureKey: null,        colour: "var(--abv-azure)",   tierRequired: null },
 ];

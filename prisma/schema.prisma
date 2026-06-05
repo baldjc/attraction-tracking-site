@@ -220,6 +220,9 @@ model User {
   neighbourhoodProfiles        NeighbourhoodProfile[]
   neighbourhoodResearchUploads NeighbourhoodResearchUpload[]
 
+  // Jarvis (AI Content Manager) — additive relation only
+  contentManagerThreads        ContentManagerThread[]
+
   // Team access (delegated account access)
   teamMembershipsOwned   TeamMember[]      @relation("TeamMemberPrimary")
   teamMembershipsGranted TeamMember[]      @relation("TeamMemberTeamUser")
@@ -473,6 +476,40 @@ model AppSetting {
   updatedAt DateTime @updatedAt
 
   @@map("app_settings")
+}
+
+/// Jarvis (AI Content Manager) — one streaming chat thread per member.
+/// `title` is a short human label derived from the first member message.
+model ContentManagerThread {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String   @default("New chat")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  messages  ContentManagerMessage[]
+
+  @@index([userId])
+  @@map("content_manager_threads")
+}
+
+/// One turn in a Jarvis thread. `role` is "user" | "assistant" | "tool".
+/// `content` holds the message payload (text and/or structured data);
+/// `toolCalls` records tool-status events; `proposalState` carries the
+/// script-proposal lifecycle (proposed → confirming → created | declined).
+model ContentManagerMessage {
+  id            String               @id @default(uuid())
+  threadId      String
+  thread        ContentManagerThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  role          String
+  content       Json
+  toolCalls     Json?
+  proposalState Json?
+  createdAt     DateTime             @default(now())
+
+  @@index([threadId])
+  @@map("content_manager_messages")
 }
 
 model SavedScript {

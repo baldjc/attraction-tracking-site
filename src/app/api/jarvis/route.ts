@@ -1,0 +1,255 @@
+/**
+ * POST /api/jarvis
+ *
+ * Jarvis (AI Content Manager) orchestrator turn. Streams Server-Sent Events:
+ *   event: assistant_token   data: { text }      // live chat prose
+ *   event: tool              data: { name, status, summary }
+ *   event: script_start      data: {}
+ *   event: script_token      data: { text }      // live draft script
+ *   event: script_done       data: {}
+ *   event: script_error      data: { message }
+ *   event: assistant_final   data: { messageId, text, proposal }
+ *   event: error             data: { message }
+ *
+ * Gated behind the `tool_jarvis` feature flag (object-form allowlist) and the
+ * member's monthly cost cap. Persists the member turn, the assistant turn, and
+ * a tool record of any facts surfaced (so later turns rebuild the ledger).
+ */
+import { type NextRequest } from "next/server";
+import { resolveUserFromSession } from "@/lib/session-utils";
+import { getFeatureFlags } from "@/lib/feature-flags";
+import { getCostCapStatus, logUsage } from "@/lib/ai-tool-cost";
+import { loadMarketConfigSummary } from "@/lib/content-engine-context";
+import prisma from "@/lib/prisma";
+import type { Prisma } from "@/generated/prisma/client";
+import { runJarvisTurn, type JarvisHistoryTurn } from "@/lib/jarvis/orchestrator";
+import {
+  JARVIS_TOOL_TYPE,
+  type FactsToolContent,
+  type LedgerFact,
+  type MessageContent,
+} from "@/lib/jarvis/types";
+
+export const runtime = "nodejs";
+export const maxDuration = 300;
+
+function jsonError(status: number, error: string, message?: string): Response {
+  return new Response(JSON.stringify(message ? { error, message } : { error }), {
+    status,
+    headers: { "content-type": "application/json" },
+  });
+}
+
+export async function POST(req: NextRequest) {
+  const resolved = await resolveUserFromSession();
+  if (!resolved) return jsonError(401, "Unauthorized");
+  const userId = resolved.id;
+
+  const flags = await getFeatureFlags({ userId, userRole: resolved.role });
+  if (!flags.tool_jarvis) return jsonError(404, "not_enabled");
+
+  const cap = await getCostCapStatus(userId);
+  if (cap.hardBlocked) {
+    return jsonError(
+      402,
+      "monthly_cost_cap_reached",
+      `You've hit your $${cap.capUsd.toFixed(2)} monthly AI budget. It resets on the 1st of next month.`,
+    );
+  }
+
+  let body: { threadId?: string; message?: string };
+  try {
+    body = await req.json();
+  } catch {
+    return jsonError(400, "invalid_json");
+  }
+  const message = (body.message ?? "").trim();
+  if (!message) return jsonError(400, "empty_message");
+
+  // ── Resolve / create the thread (ownership-filtered) ──────────────────────
+  let threadId = body.threadId;
+  if (threadId) {
+    const owned = await prisma.contentManagerThread.findFirst({
+      where: { id: threadId, userId },
+      select: { id: true },
+    });
+    if (!owned) return jsonError(404, "thread_not_found");
+  } else {
+    const created = await prisma.contentManagerThread.create({
+      data: { userId, title: message.slice(0, 60) },
+      select: { id: true },
+    });
+    threadId = created.id;
+  }
+
+  // ── Persist the member turn ───────────────────────────────────────────────
+  await prisma.contentManagerMessage.create({
+    data: { threadId, role: "user", content: { kind: "text", text: message } },
+  });
+  await prisma.contentManagerThread.update({
+    where: { id: threadId },
+    data: { updatedAt: new Date() },
+  });
+
+  // ── Rebuild conversation history + fact ledger from the thread ────────────
+  const rows = await prisma.contentManagerMessage.findMany({
+    where: { threadId },
+    orderBy: { createdAt: "asc" },
+    select: { role: true, content: true },
+  });
+  const history: JarvisHistoryTurn[] = [];
+  const priorLedger: LedgerFact[] = [];
+  const seenFactIds = new Set<string>();
+  for (const r of rows) {
+    const c = r.content as unknown as MessageContent;
+    if (r.role === "tool") {
+      if (c && (c as FactsToolContent).kind === "facts") {
+        for (const f of (c as FactsToolContent).facts) {
+          if (!seenFactIds.has(f.id)) {
+            seenFactIds.add(f.id);
+            priorLedger.push(f);
+          }
+        }
+      }
+      continue;
+    }
+    if ((r.role === "user" || r.role === "assistant") && c && c.kind === "text") {
+      history.push({ role: r.role, text: c.text });
+    }
+  }
+
+  const [memberRecord, marketConfig] = await Promise.all([
+    prisma.user.findUnique({ where: { id: userId }, select: { fullName: true } }),
+    loadMarketConfigSummary(userId),
+  ]);
+  const memberFullName = memberRecord?.fullName?.trim() || null;
+
+  // ── Open the SSE stream ───────────────────────────────────────────────────
+  const encoder = new TextEncoder();
+  const clientSignal = req.signal;
+  const internalAbort = new AbortController();
+  const onClientAbort = () => internalAbort.abort();
+  clientSignal.addEventListener("abort", onClientAbort);
+
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      let heartbeat: ReturnType<typeof setInterval> | null = setInterval(() => {
+        if (clientSignal.aborted) return;
+        try {
+          controller.enqueue(encoder.encode(`: hb ${Date.now()}\n\n`));
+        } catch {
+          /* closed */
+        }
+      }, 2000);
+      const stopHeartbeat = () => {
+        if (heartbeat) {
+          clearInterval(heartbeat);
+          heartbeat = null;
+        }
+      };
+      const emit = (event: string, data: unknown) => {
+        if (clientSignal.aborted) return;
+        try {
+          controller.enqueue(
+            encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`),
+          );
+        } catch {
+          /* closed */
+        }
+      };
+
+      emit("thread", { threadId });
+
+      // Mutated in place by the orchestrator so we can bill usage even if the
+      // turn throws partway through the tool loop.
+      const usage = { inputTokens: 0, outputTokens: 0 };
+
+      try {
+        const turn = await runJarvisTurn({
+          userId,
+          threadId: threadId!,
+          history,
+          priorLedger,
+          memberFullName,
+          marketConfig,
+          emit,
+          signal: internalAbort.signal,
+          usage,
+        });
+
+        // Persist any facts surfaced this turn (rebuilds the ledger later).
+        if (turn.newLedgerFacts.length > 0) {
+          await prisma.contentManagerMessage.create({
+            data: {
+              threadId: threadId!,
+              role: "tool",
+              content: {
+              kind: "facts",
+              query: {},
+              facts: turn.newLedgerFacts,
+            } as unknown as Prisma.InputJsonValue,
+            },
+          });
+        }
+
+        // Persist the assistant turn (with toolCalls + any proposal).
+        const assistantMsg = await prisma.contentManagerMessage.create({
+          data: {
+            threadId: threadId!,
+            role: "assistant",
+            content: { kind: "text", text: turn.assistantText },
+            toolCalls:
+              turn.toolCalls.length > 0
+                ? (turn.toolCalls as unknown as Prisma.InputJsonValue)
+                : undefined,
+            proposalState: turn.proposal
+              ? (turn.proposal as unknown as Prisma.InputJsonValue)
+              : undefined,
+          },
+          select: { id: true },
+        });
+
+        emit("assistant_final", {
+          messageId: assistantMsg.id,
+          text: turn.assistantText,
+          proposal: turn.proposal
+            ? { ...turn.proposal, messageId: assistantMsg.id }
+            : null,
+        });
+      } catch (err) {
+        const msg = (err as { message?: string })?.message ?? String(err);
+        console.error("[jarvis] turn failed:", msg);
+        emit("error", { message: "Something went wrong drafting that. Try again." });
+      } finally {
+        // Bill whatever tokens accrued, even on a partial/failed turn.
+        if (usage.inputTokens || usage.outputTokens) {
+          try {
+            await logUsage(userId, JARVIS_TOOL_TYPE, usage.inputTokens, usage.outputTokens);
+          } catch (e) {
+            console.error("[jarvis] logUsage failed:", (e as Error)?.message ?? e);
+          }
+        }
+        stopHeartbeat();
+        clientSignal.removeEventListener("abort", onClientAbort);
+        try {
+          controller.close();
+        } catch {
+          /* already closed */
+        }
+      }
+    },
+    cancel() {
+      internalAbort.abort();
+    },
+  });
+
+  return new Response(stream, {
+    status: 200,
+    headers: {
+      "content-type": "text/event-stream; charset=utf-8",
+      "cache-control": "no-cache, no-transform",
+      "x-accel-buffering": "no",
+      connection: "keep-alive",
+    },
+  });
+}

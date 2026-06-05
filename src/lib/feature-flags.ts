@@ -37,6 +37,9 @@ export interface FeatureFlags {
   // tier members (and Jared's test account) see the upload UI inside
   // SetupForm while Foundations members never see the section at all.
   tool_member_voice_guide: boolean;
+  // Jarvis (AI Content Manager) — closed by default, gated per-user via the
+  // object form `{ enabled, allowedUserIds }` to the wave's two pilot members.
+  tool_jarvis: boolean;
   nav_v2_hub: boolean;
   // Task #52 — durable job queue rollout. Object form `{ enabled,
   // allowedUserIds }` supported so the queue can be turned on per-member (or an
@@ -84,6 +87,7 @@ export const DEFAULT_FLAGS: FeatureFlags = {
   tool_home_tour_mode: false,
   tool_neighbourhood_knowledge: false,
   tool_member_voice_guide: false,
+  tool_jarvis: false,
   nav_v2_hub: false,
   durable_job_queue: false,
 };
