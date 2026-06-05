@@ -73,7 +73,21 @@ export async function runJarvisTurn(args: {
   const ledger = () => [...priorLedger, ...newLedgerFacts];
   const seenFactIds = new Set(priorLedger.map((f) => f.id));
 
-  const messages: Anthropic.MessageParam[] = history.map((t) => ({
+  // System holds ONLY the static behavioural prefix so it stays prompt-cacheable
+  // across every member and turn. Per-member dynamic context (name, market, fact
+  // ledger) is injected on the USER side below — never in the cached system block.
+  const system: Anthropic.TextBlockParam[] = [
+    {
+      type: "text",
+      text: JARVIS_SYSTEM_PREFIX,
+      cache_control: { type: "ephemeral" },
+    },
+  ];
+
+  // Real conversation turns + accumulated tool exchanges. The dynamic context is
+  // prepended fresh each iteration (so the ledger stays current) but lives here
+  // on the user side, not in the system prompt.
+  const convo: Anthropic.MessageParam[] = history.map((t) => ({
     role: t.role,
     content: t.text,
   }));
@@ -81,16 +95,13 @@ export async function runJarvisTurn(args: {
   for (let iter = 0; iter < MAX_ITERS; iter++) {
     if (signal?.aborted) break;
 
-    const system: Anthropic.TextBlockParam[] = [
+    const messages: Anthropic.MessageParam[] = [
       {
-        type: "text",
-        text: JARVIS_SYSTEM_PREFIX,
-        cache_control: { type: "ephemeral" },
+        role: "user",
+        content: buildJarvisDynamicContext({ memberFullName, marketConfig, ledger: ledger() }),
       },
-      {
-        type: "text",
-        text: buildJarvisDynamicContext({ memberFullName, marketConfig, ledger: ledger() }),
-      },
+      { role: "assistant", content: "Understood — I'll use only these facts and my tools." },
+      ...convo,
     ];
 
     const stream = client().messages.stream(
@@ -111,12 +122,12 @@ export async function runJarvisTurn(args: {
       (b): b is Anthropic.ToolUseBlock => b.type === "tool_use",
     );
     if (final.stop_reason !== "tool_use" || toolUses.length === 0) {
-      messages.push({ role: "assistant", content: final.content });
+      convo.push({ role: "assistant", content: final.content });
       break;
     }
 
     // Execute each requested tool and collect tool_result blocks.
-    messages.push({ role: "assistant", content: final.content });
+    convo.push({ role: "assistant", content: final.content });
     const toolResults: Anthropic.ToolResultBlockParam[] = [];
 
     for (const tu of toolUses) {
@@ -140,7 +151,7 @@ export async function runJarvisTurn(args: {
       toolResults.push(resultBlock);
     }
 
-    messages.push({ role: "user", content: toolResults });
+    convo.push({ role: "user", content: toolResults });
   }
 
   const groundedText = groundAssistantText(assistantText, ledger());

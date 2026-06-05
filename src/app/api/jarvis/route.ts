@@ -50,10 +50,12 @@ export async function POST(req: NextRequest) {
 
   const cap = await getCostCapStatus(userId);
   if (cap.hardBlocked) {
+    const pct =
+      cap.capUsd > 0 ? Math.min(100, Math.round((cap.monthSpendUsd / cap.capUsd) * 100)) : 100;
     return jsonError(
       402,
       "monthly_cost_cap_reached",
-      `You've hit your $${cap.capUsd.toFixed(2)} monthly AI budget. It resets on the 1st of next month.`,
+      `You've used ${pct}% of your monthly AI allowance, so I can't run another draft right now. It refreshes on the 1st of next month — any drafts you've already saved stay safe in My Work.`,
     );
   }
 

@@ -33,7 +33,9 @@ SAVING (gated — never bypass)
 
 /**
  * Per-turn dynamic context: who the member is, their market, and the running
- * fact ledger so the model can reuse fact ids across turns.
+ * fact ledger so the model can reuse fact ids across turns. This is injected on
+ * the USER side of the conversation (not the cached system prefix) so the system
+ * block stays static and prompt-cacheable across every member and turn.
  */
 export function buildJarvisDynamicContext(args: {
   memberFullName: string | null;
