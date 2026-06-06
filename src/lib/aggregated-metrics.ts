@@ -323,7 +323,7 @@ export async function getSourceOfTruthMetrics(args: {
  * (MEDIAN/PSF) gets `$` and thousands separators; ratios/rates get `%`;
  * MOI gets "months"; DOM gets "days"; everything else is bare numeric.
  */
-function formatValue(family: MetricFamily, value: number): string {
+export function formatValue(family: MetricFamily, value: number): string {
   switch (family) {
     case "MEDIAN":
     case "AVG":
@@ -353,6 +353,37 @@ function formatValue(family: MetricFamily, value: number): string {
     default:
       return value.toString();
   }
+}
+
+/**
+ * Rounding-tolerant equality for source-of-truth comparisons: values agree when
+ * their absolute difference is ≤ 0.05 OR their relative difference is ≤ 0.5%.
+ * Mirrors the script validator's `no_sot_disagreement` tolerance so Jarvis chat
+ * and the validator never disagree about what counts as "the same number".
+ */
+export function sotValuesWithinRounding(a: number, b: number): boolean {
+  const diff = Math.abs(a - b);
+  if (diff <= 0.05) return true;
+  const rel = diff / Math.max(Math.abs(a), Math.abs(b), 1e-9);
+  return rel <= 0.005;
+}
+
+/**
+ * Resolve the UNAMBIGUOUS canonical value for a set of source-of-truth values
+ * that share one (neighbourhood, metric family). A family carries multiple
+ * metric-key variants (e.g. MOI = moiStrict / moiInclusive / rolling3) and
+ * multiple property types; a ledger fact only tells us its family, not which
+ * variant/type it is. So we only return a canonical value when EVERY supplied
+ * value agrees within rounding — otherwise the canonical is ambiguous and the
+ * caller must leave the raw value untouched rather than risk overriding it with
+ * the wrong variant. Returns `null` for an empty set or any disagreement.
+ */
+export function resolveUnambiguousSotValue(
+  values: readonly number[],
+): number | null {
+  if (values.length === 0) return null;
+  const first = values[0];
+  return values.every((v) => sotValuesWithinRounding(v, first)) ? first : null;
 }
 
 function formatDelta(value: number | null): string {

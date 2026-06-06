@@ -71,7 +71,17 @@ export type ScriptViolationRule =
   /** The opening's Expertise Bridge invented a specific credibility cadence
    *  ("a family every 53 hours") whose number isn't backed by the member's
    *  profile/credentials. */
-  | "fabricated_credibility_stat";
+  | "fabricated_credibility_stat"
+  /** A SPECIFIC factual claim — demographic figure (median income/age,
+   *  population), or a dated event ("opened in 2019") — that doesn't trace to a
+   *  cited fact, the source-of-truth, or the member's Knowledge Base
+   *  neighbourhood profile. Grounding extends past pure market stats to any
+   *  asserted specific. */
+  | "unsourced_factual_claim"
+  /** A spoken number agrees with a per-fact cited value but DISAGREES (beyond
+   *  rounding) with the canonical aggregated source-of-truth for the same
+   *  metric. Canonical = source-of-truth, so the per-fact number must yield. */
+  | "no_sot_disagreement";
 
 export interface ScriptViolation {
   rule: ScriptViolationRule;
@@ -396,6 +406,54 @@ export function checkNoForASecondTail(script: string): ScriptViolation[] {
 }
 
 /* ────────────────────────────────────────────────────────────────────── */
+/*  Rule 2c — no "wait a second, let me back up" self-interruption filler. */
+/* ────────────────────────────────────────────────────────────────────── */
+
+/**
+ * Voice watch list (extension): the "wait a second, let me back up" tic — and
+ * its close variants — is a verbal stall that breaks the confident, forward
+ * cadence the channel runs on. We ban the self-interruption family anywhere in
+ * spoken dialogue. The full phrase ("wait a second, let me back up") is the
+ * canonical example; the variants below catch the same move expressed as
+ * "hold on, let me rewind", "let me back up for a second", "let me start over",
+ * etc. Reported under `no_avatar_pander` (the existing filler bucket) so the
+ * re-prompt loop + Script Review treat it like the other padded-filler bans.
+ */
+const BACKUP_FILLER_PATTERNS: readonly { pattern: RegExp; label: string }[] = [
+  { pattern: /\bwait a (?:second|sec|minute|moment)\b/i, label: "wait a second" },
+  { pattern: /\bhold on a (?:second|sec|minute|moment)\b/i, label: "hold on a second" },
+  { pattern: /\bhold on,?\s+let me\b/i, label: "hold on, let me…" },
+  { pattern: /\blet me back up\b/i, label: "let me back up" },
+  { pattern: /\bback up for a (?:second|sec|minute|moment)\b/i, label: "back up for a second" },
+  { pattern: /\blet me rewind\b/i, label: "let me rewind" },
+  { pattern: /\blet me start (?:over|again)\b/i, label: "let me start over" },
+];
+
+export function checkNoBackupFiller(script: string): ScriptViolation[] {
+  const { dialogue, dialogueLineMap } = stripToDialogue(script);
+  const violations: ScriptViolation[] = [];
+  const lines = dialogue.split("\n");
+  for (let li = 0; li < lines.length; li++) {
+    const line = normalizeApostrophes(lines[li]);
+    for (const { pattern, label } of BACKUP_FILLER_PATTERNS) {
+      const m = pattern.exec(line);
+      if (!m) continue;
+      violations.push({
+        rule: "no_avatar_pander",
+        severity: "error",
+        message:
+          `Found the self-interruption filler "${label}". Cut it — the line ` +
+          `lands harder without the verbal stall. Restructure so the point ` +
+          `arrives directly instead of backing up to it.`,
+        snippet: snippetAround(lines[li], m),
+        line: dialogueLineMap[li],
+      });
+    }
+  }
+  return violations;
+}
+
+/* ────────────────────────────────────────────────────────────────────── */
 /*  Rule 3 — no banned dialogue abbreviations.                            */
 /* ────────────────────────────────────────────────────────────────────── */
 
@@ -615,6 +673,15 @@ export function checkHyperLocalFloor(
 export interface SourceOfTruthValue {
   metricFamily: string;
   metricValue: number;
+  /**
+   * Neighbourhood the value belongs to. Optional for backward compatibility,
+   * but when supplied (the v2 route + scriptBuilder pass the full
+   * `SourceOfTruthMetric` rows, which carry it) `no_sot_disagreement` scopes
+   * its canonical-value comparison to the neighbourhood the spoken stat is
+   * actually about — so a wrong figure for one neighbourhood can't be excused
+   * by a coincidentally-matching value from a DIFFERENT neighbourhood.
+   */
+  neighbourhood?: string;
 }
 
 /**
@@ -1066,6 +1133,362 @@ export function checkNoMisattributedStats(
         `Re-attribute to your own market analysis (e.g. "from the data we ran this month") ` +
         `so the channel's edge isn't given away to an outside source.`,
       snippet: dialogue.slice(Math.max(0, tok.offset - 60), tok.offset + tok.raw.length + 20).trim(),
+    });
+  }
+  return violations;
+}
+
+/* ────────────────────────────────────────────────────────────────────── */
+/*  no_sot_disagreement — canonical = Source-of-Truth (ERROR).            */
+/*                                                                        */
+/*  Extends grounding past "is this number real anywhere?" to "does this  */
+/*  number agree with the CANONICAL aggregate?". The failure mode this    */
+/*  catches: a per-fact cited value disagrees with the aggregated         */
+/*  source-of-truth for the same metric, and the script followed the      */
+/*  per-fact value. Real case: Westmount MOI — SoT 3.8, a cited fact      */
+/*  said 4.29, and the script wrote 4.3. unanchored_stat PASSES that      */
+/*  (4.3 is within 2% of the cited 4.29), so we need a second gate:       */
+/*  when a token matches a cited fact of its unit but disagrees with the  */
+/*  SoT of that same unit beyond rounding, the SoT wins — flag it.        */
+/* ────────────────────────────────────────────────────────────────────── */
+
+/**
+ * Tight "rounding-only" agreement: two values are the same number once you
+ * account for display rounding. Absolute 0.05 covers 1-decimal metrics
+ * (MOI/percent: 3.80 vs 3.82), and 0.5% relative covers rounded currency
+ * ($611,500 → "$612,000"). Deliberately MUCH tighter than the 2% used for
+ * "does this trace to a fact at all" — here we're asking "is it the SAME
+ * canonical number", not "is it in the ballpark of a real number".
+ */
+function withinRounding(a: number, b: number): boolean {
+  const diff = Math.abs(a - b);
+  const denom = Math.max(Math.abs(a), Math.abs(b));
+  return diff <= Math.max(0.05, 0.005 * denom);
+}
+
+export function checkNoSotDisagreement(
+  script: string,
+  sourceOfTruth: SourceOfTruthValue[] | undefined,
+  citedFacts: CitedFactValue[] | undefined = undefined,
+  neighbourhoods: readonly string[] | undefined = undefined,
+): ScriptViolation[] {
+  const hasSot = sourceOfTruth && sourceOfTruth.length > 0;
+  const hasCited = citedFacts && citedFacts.length > 0;
+  // The rule is only meaningful when BOTH a canonical SoT and per-fact cited
+  // values exist — it arbitrates a disagreement BETWEEN them. With only one
+  // source there's nothing to reconcile.
+  if (!hasSot || !hasCited) return [];
+
+  const sotComparable: Array<{
+    family: string;
+    unit: StatUnit;
+    value: number;
+    neighbourhood?: string;
+  }> = [];
+  for (const sot of sourceOfTruth!) {
+    const unit = unitForFamily(sot.metricFamily);
+    if (!unit) continue;
+    const hood = sot.neighbourhood?.trim().toLowerCase();
+    for (const v of normalizeForCompare(sot.metricFamily, sot.metricValue)) {
+      sotComparable.push({ family: sot.metricFamily, unit, value: v, neighbourhood: hood });
+    }
+  }
+  if (sotComparable.length === 0) return [];
+
+  // For neighbourhood scoping: locate the neighbourhood name nearest BEFORE a
+  // given offset so a spoken stat is compared only against its own
+  // neighbourhood's canonical values (+ the "All Neighbourhoods" rollup).
+  const neighbourhoodRe = neighbourhoods
+    ? buildNeighbourhoodRegex(neighbourhoods)
+    : null;
+  const ALL_HOODS = "all neighbourhoods";
+  const nearestHoodBefore = (text: string, offset: number): string | null => {
+    if (!neighbourhoodRe) return null;
+    neighbourhoodRe.lastIndex = 0;
+    let last: string | null = null;
+    let m: RegExpExecArray | null;
+    while ((m = neighbourhoodRe.exec(text)) !== null) {
+      if (m.index >= offset) break;
+      last = m[0].toLowerCase();
+      if (m.index === neighbourhoodRe.lastIndex) neighbourhoodRe.lastIndex++;
+    }
+    return last;
+  };
+
+  const citedComparable: Array<{ unit: StatUnit; value: number }> = [];
+  for (const c of citedFacts!) {
+    if (!c.raw) continue;
+    for (const t of extractStatTokens(c.raw)) {
+      citedComparable.push({ unit: t.unit, value: t.value });
+    }
+  }
+  if (citedComparable.length === 0) return [];
+
+  const { dialogue } = stripToDialogue(script);
+  const tokens = extractStatTokens(dialogue);
+  if (tokens.length === 0) return [];
+
+  const violations: ScriptViolation[] = [];
+  const seen = new Set<string>();
+  for (const tok of tokens) {
+    // Skip narrative time spans ("18 months to show up") — same guard the
+    // misattribution rule uses; they aren't market stats.
+    if (
+      (tok.unit === "months" || tok.unit === "days") &&
+      TIME_REFERENCE_PATTERN.test(tok.raw) &&
+      !isMarketTimeAnchored(dialogue, tok.offset)
+    ) {
+      continue;
+    }
+
+    const sotOfUnit = sotComparable.filter((s) => s.unit === tok.unit);
+    if (sotOfUnit.length === 0) continue;
+
+    // The contested case only: the token follows a per-fact cited value
+    // (within the loose 2% trace tolerance) ...
+    const citedMatch = citedComparable.some(
+      (c) => c.unit === tok.unit && withinTolerance(c.value, tok.value),
+    );
+    if (!citedMatch) continue;
+
+    // Scope the canonical pool to the neighbourhood the spoken stat is about.
+    // Use the neighbourhood named nearest BEFORE the token, restricting to that
+    // neighbourhood's rows plus the "All Neighbourhoods" rollup. This stops a
+    // wrong figure for one neighbourhood from being excused by a coincidentally
+    // identical value belonging to a DIFFERENT neighbourhood. We only narrow
+    // when the scoped pool is non-empty; otherwise (no hood context, or SoT
+    // rows carry no neighbourhood tag) we fall back to the full unit pool so
+    // coverage is never lost.
+    const tokHood = nearestHoodBefore(dialogue, tok.offset);
+    let sotScoped = sotOfUnit;
+    if (tokHood) {
+      const narrowed = sotOfUnit.filter(
+        (s) => s.neighbourhood === tokHood || s.neighbourhood === ALL_HOODS,
+      );
+      if (narrowed.length > 0) sotScoped = narrowed;
+    }
+
+    // ... but does NOT agree with ANY canonical SoT value of that unit once
+    // rounding is accounted for. If it agrees with some SoT value, it's fine
+    // (the cited fact and SoT happen to match, or the script picked the SoT).
+    const sotAgrees = sotScoped.some((s) => withinRounding(s.value, tok.value));
+    if (sotAgrees) continue;
+
+    // Report the nearest SoT value (from the neighbourhood-scoped pool) so the
+    // re-prompt knows the canonical figure to swap in.
+    const nearestSot = sotScoped.reduce((best, s) =>
+      Math.abs(s.value - tok.value) < Math.abs(best.value - tok.value) ? s : best,
+    );
+    const dedupeKey = `${tok.raw}|${nearestSot.family}`;
+    if (seen.has(dedupeKey)) continue;
+    seen.add(dedupeKey);
+
+    violations.push({
+      rule: "no_sot_disagreement",
+      severity: "error",
+      message:
+        `Stat "${tok.raw}" matches a per-fact cited value but disagrees with your ` +
+        `canonical source-of-truth ${nearestSot.family} (${nearestSot.value}) beyond ` +
+        `rounding. The aggregated source-of-truth is canonical — use ${nearestSot.value} ` +
+        `(rounded), or drop the number. Never let a per-fact figure override the SoT.`,
+      snippet: dialogue
+        .slice(Math.max(0, tok.offset - 60), tok.offset + tok.raw.length + 20)
+        .trim(),
+    });
+  }
+  return violations;
+}
+
+/* ────────────────────────────────────────────────────────────────────── */
+/*  unsourced_factual_claim — ground SPECIFIC claims, not just stats.     */
+/*                                                                        */
+/*  Grounding historically covered market-stat units (currency, percent,  */
+/*  MOI, DOM). But a script can still fabricate SPECIFIC non-market       */
+/*  facts: demographics ("median household income is $95,000", "median    */
+/*  age of 34"), population counts, or dated events ("the school opened   */
+/*  in 2019"). These must trace to a real source too — a cited fact, the  */
+/*  source-of-truth, or the member's Knowledge Base neighbourhood profile */
+/*  text. If the asserted number isn't in any of those, it's invented and */
+/*  must not be stated as fact.                                           */
+/*                                                                        */
+/*  Deterministic scope: NUMERIC claims sitting in an unambiguous factual */
+/*  frame (demographic keyword, population, event-verb + year). Purely    */
+/*  qualitative prose claims ("this is the most walkable area") are not    */
+/*  regex-detectable without heavy false positives — those are enforced   */
+/*  via the prompt + Script Review, not here.                             */
+/* ────────────────────────────────────────────────────────────────────── */
+
+type FactualClaim = {
+  /** The numeric value asserted. */
+  value: number;
+  /** Normalized digit string ($/comma/% stripped) for verbatim matching. */
+  normalized: string;
+  /** Raw matched fragment for the snippet/message. */
+  raw: string;
+  /** 0-indexed offset of the number in the dialogue. */
+  offset: number;
+  /**
+   * "year" claims (dated events) must match a source verbatim — a 2% band
+   * around 2019 spans four decades, which is meaningless. "demographic"
+   * claims may match within the normal 2% trace tolerance.
+   */
+  kind: "year" | "demographic";
+};
+
+/** Demographic frame keywords — a number near one of these reads as a stated
+ *  demographic fact about the place, not a narrative aside. */
+const DEMOGRAPHIC_KEYWORD_RE =
+  /\b(?:median|average|avg\.?)\s+(?:household\s+)?(?:income|age|home\s+values?|household\s+size|net\s+worth)\b|\bpopulation\s+of\b|\b(?:residents|inhabitants)\b/i;
+
+/** event-verb + 4-digit year, e.g. "opened in 2019", "built back in 1998". */
+const DATED_EVENT_RE =
+  /\b(?:opened|built|established|founded|completed|renovated|expanded|constructed|developed|launched)\s+(?:in\s+|back\s+in\s+)?((?:19|20)\d{2})\b/gi;
+
+/** A currency/number token sitting within a demographic frame. */
+const DEMOGRAPHIC_NUMBER_RE =
+  /(\$?\s*\d[\d,]*(?:\.\d+)?\s*[KM]?)\s*(%)?/gi;
+
+function collectFactualClaims(dialogue: string): FactualClaim[] {
+  const claims: FactualClaim[] = [];
+
+  // Dated events — the year must be sourced verbatim.
+  DATED_EVENT_RE.lastIndex = 0;
+  let dm: RegExpExecArray | null;
+  while ((dm = DATED_EVENT_RE.exec(dialogue)) !== null) {
+    const year = dm[1];
+    const value = Number(year);
+    if (!Number.isFinite(value)) continue;
+    claims.push({
+      value,
+      normalized: year,
+      raw: dm[0],
+      offset: dm.index,
+      kind: "year",
+    });
+  }
+
+  // Demographic figures — scan each demographic-framed window for a number.
+  // We walk the dialogue keyword-by-keyword so we only pull numbers that sit
+  // inside an explicit demographic frame (keeps false positives off generic
+  // numbers elsewhere in the script).
+  const kw = new RegExp(DEMOGRAPHIC_KEYWORD_RE.source, "gi");
+  let km: RegExpExecArray | null;
+  while ((km = kw.exec(dialogue)) !== null) {
+    // Look in a window starting a little before the keyword (covers "the
+    // median income here, $95,000, ...") through ~12 words after it.
+    const start = Math.max(0, km.index - 40);
+    const windowText = dialogue.slice(start, km.index + km[0].length + 90);
+    const numRe = new RegExp(DEMOGRAPHIC_NUMBER_RE.source, "gi");
+    let nm: RegExpExecArray | null;
+    while ((nm = numRe.exec(windowText)) !== null) {
+      const rawNum = nm[1];
+      const isPercent = Boolean(nm[2]);
+      const cleaned = rawNum.replace(/[,$\s]/g, "");
+      let value = Number(cleaned.replace(/[KM]$/i, ""));
+      if (!Number.isFinite(value)) continue;
+      if (/K$/i.test(cleaned)) value *= 1_000;
+      else if (/M$/i.test(cleaned)) value *= 1_000_000;
+      // Skip the year-like bare integers already covered as dated events, and
+      // skip trivially-small ordinals (1, 2) that are almost never demographic
+      // facts and inflate false positives.
+      if (!isPercent && !/[$.,KM]/i.test(rawNum) && value >= 1 && value <= 4) {
+        continue;
+      }
+      const absOffset = start + nm.index;
+      claims.push({
+        value,
+        normalized: cleaned.replace(/[KM]$/i, ""),
+        raw: rawNum.trim() + (isPercent ? "%" : ""),
+        offset: absOffset,
+        kind: "demographic",
+      });
+    }
+  }
+
+  return claims;
+}
+
+export function checkUnsourcedFactualClaim(
+  script: string,
+  sourceOfTruth: SourceOfTruthValue[] | undefined,
+  citedFacts: CitedFactValue[] | undefined = undefined,
+  profileText: string[] = [],
+): ScriptViolation[] {
+  const hasSot = sourceOfTruth && sourceOfTruth.length > 0;
+  const hasCited = citedFacts && citedFacts.length > 0;
+  const hasProfile = profileText.some((t) => t && t.trim().length > 0);
+  // Need at least one legitimate anchor source to judge against. With no
+  // sources at all we can't tell sourced from invented — stay silent (matches
+  // the defensive posture of the other grounding rules).
+  if (!hasSot && !hasCited && !hasProfile) return [];
+
+  // Build the anchor set: verbatim normalized digit strings + numeric values.
+  const verbatim = new Set<string>();
+  const numbers: number[] = [];
+  const addNumber = (n: number, norm: string) => {
+    if (Number.isFinite(n)) {
+      numbers.push(n);
+      verbatim.add(norm);
+    }
+  };
+  for (const t of profileText) {
+    for (const p of extractProfileNumbers(t)) addNumber(p.value, p.normalized);
+  }
+  if (hasCited) {
+    for (const c of citedFacts!) {
+      if (!c.raw) continue;
+      for (const t of extractStatTokens(c.raw)) {
+        addNumber(t.value, String(t.value));
+      }
+      // Also keep the raw cited digits verbatim (covers bare integers the
+      // stat extractor skips, e.g. a population count in a cited fact).
+      for (const m of c.raw.matchAll(/\d[\d,]*(?:\.\d+)?/g)) {
+        const norm = m[0].replace(/,/g, "");
+        addNumber(Number(norm), norm);
+      }
+    }
+  }
+  if (hasSot) {
+    for (const sot of sourceOfTruth!) {
+      for (const v of normalizeForCompare(sot.metricFamily, sot.metricValue)) {
+        addNumber(v, String(v));
+      }
+    }
+  }
+
+  const { dialogue } = stripToDialogue(script);
+  const claims = collectFactualClaims(dialogue);
+  if (claims.length === 0) return [];
+
+  const violations: ScriptViolation[] = [];
+  const seen = new Set<string>();
+  for (const claim of claims) {
+    const anchored =
+      verbatim.has(claim.normalized) ||
+      (claim.kind === "demographic" &&
+        numbers.some((n) => withinTolerance(n, claim.value)));
+    if (anchored) continue;
+
+    const dedupeKey = `${claim.kind}|${claim.normalized}`;
+    if (seen.has(dedupeKey)) continue;
+    seen.add(dedupeKey);
+
+    const what =
+      claim.kind === "year"
+        ? `Dated claim "${claim.raw}"`
+        : `Demographic figure "${claim.raw}"`;
+    violations.push({
+      rule: "unsourced_factual_claim",
+      severity: "error",
+      message:
+        `${what} isn't backed by any cited fact, your source-of-truth, or your ` +
+        `Knowledge Base neighbourhood profile. Specific claims — demographics, ` +
+        `dates, named-institution attributes — must trace to a real source, the ` +
+        `same as market stats. Either ground it in your profile/data or cut the ` +
+        `specific (keep it general).`,
+      snippet: dialogue
+        .slice(Math.max(0, claim.offset - 60), claim.offset + claim.raw.length + 20)
+        .trim(),
     });
   }
   return violations;
@@ -1979,6 +2402,8 @@ export function validateScript(
   violations.push(...checkNoWhy(script));
   violations.push(...checkNoAvatarPander(script));
   violations.push(...checkNoForASecondTail(script));
+  // Voice watch list — "wait a second, let me back up" self-interruption filler.
+  violations.push(...checkNoBackupFiller(script));
   violations.push(...checkNoAbbrevInDialogue(script));
   violations.push(...checkNumerals(script));
   const hyperLocal = checkHyperLocalFloor(script, opts);
@@ -1989,6 +2414,26 @@ export function validateScript(
   // so the re-prompt loop can safely fire on what's left.
   violations.push(
     ...checkNoMisattributedStats(
+      script,
+      opts.sourceOfTruth,
+      opts.citedFacts,
+      opts.profileText,
+    ),
+  );
+  // Canonical = Source-of-Truth: a per-fact number that disagrees with the
+  // aggregated SoT (beyond rounding) is rejected so the SoT always wins.
+  violations.push(
+    ...checkNoSotDisagreement(
+      script,
+      opts.sourceOfTruth,
+      opts.citedFacts,
+      opts.neighbourhoods,
+    ),
+  );
+  // Ground SPECIFIC claims (demographics, dates) — not just market stats —
+  // against cited facts / SoT / Knowledge Base neighbourhood profile text.
+  violations.push(
+    ...checkUnsourcedFactualClaim(
       script,
       opts.sourceOfTruth,
       opts.citedFacts,

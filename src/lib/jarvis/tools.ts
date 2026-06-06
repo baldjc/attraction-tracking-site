@@ -11,7 +11,14 @@ import {
   loadTextureOnlyFacts,
   loadMarketConfigSummary,
 } from "@/lib/content-engine-context";
-import { getSourceOfTruthMetrics } from "@/lib/aggregated-metrics";
+import {
+  getSourceOfTruthMetrics,
+  formatValue,
+  sotValuesWithinRounding,
+  resolveUnambiguousSotValue,
+  type MetricFamily,
+} from "@/lib/aggregated-metrics";
+import { detectMetricFamily } from "@/lib/story-lead-fact-resolver";
 import { getNeighbourhoodContext } from "@/lib/get-neighbourhood-context";
 import {
   METRIC_NAME_LABELS,
@@ -170,6 +177,107 @@ function toLedger(
   }));
 }
 
+const SOT_RECONCILED_CAVEAT =
+  "Reconciled to the Source-of-Truth aggregate (the canonical value the " +
+  "script writer uses). The raw per-fact value differed; cite this one so the " +
+  "chat and the script agree.";
+
+// Extract the first signed decimal number from a formatted value string
+// ("6.71 months" → 6.71, "$615,000" → 615000, "96.7%" → 96.7). Returns null
+// when the string carries no number (so non-numeric facts are skipped).
+function parseLeadingNumber(value: string): number | null {
+  const m = value.replace(/,/g, "").match(/-?\d+(?:\.\d+)?/);
+  return m ? Number.parseFloat(m[0]) : null;
+}
+
+// Rounding-tolerant equality used to decide whether a per-fact value really
+// disagrees with its Source-of-Truth aggregate. Shared with the script
+// validator via `aggregated-metrics` so chat and the validator never disagree
+// about what counts as "the same number".
+const sotWithinRounding = sotValuesWithinRounding;
+
+/**
+ * Fix 3 — Jarvis chat must read the SAME value from the SAME source the script
+ * uses. The script's canonical numbers come from the Source-of-Truth aggregate
+ * (`getSourceOfTruthMetrics`), but the per-fact ledger can carry a slightly
+ * different per-property-type value (repro: chat said Downtown 6.71 while the
+ * script/SoT used 8.8). For each matched ledger fact whose (neighbourhood,
+ * metric family) maps to an UNAMBIGUOUS SoT value, if the per-fact value
+ * disagrees beyond rounding we override the displayed value with the SoT value
+ * (formatted the same way the script renders it) and attach a caveat. We only
+ * reconcile when the SoT value is unambiguous for that (hood, family) — a
+ * single distinct value across property types, or an explicit "All" rollup —
+ * so we never force a detached number onto an apartment fact.
+ */
+async function reconcileLedgerToSourceOfTruth(
+  userId: string,
+  uploadId: string,
+  facts: LedgerFact[],
+): Promise<LedgerFact[]> {
+  const neighbourhoods = Array.from(new Set(facts.map((f) => f.neighbourhood)));
+  if (neighbourhoods.length === 0) return facts;
+
+  let sotRows: Awaited<ReturnType<typeof getSourceOfTruthMetrics>>;
+  try {
+    sotRows = await getSourceOfTruthMetrics({
+      userId,
+      uploadIds: [uploadId],
+      neighbourhoods,
+    });
+  } catch {
+    // Never let reconciliation break fact retrieval — fall back to raw values.
+    return facts;
+  }
+  if (sotRows.length === 0) return facts;
+
+  // Group SoT rows by `${hoodLower}|${family}` so we can decide whether the
+  // canonical value for that pair is unambiguous.
+  const groups = new Map<string, typeof sotRows>();
+  for (const r of sotRows) {
+    const key = `${r.neighbourhood.toLowerCase()}|${r.metricFamily}`;
+    const list = groups.get(key);
+    if (list) list.push(r);
+    else groups.set(key, [r]);
+  }
+
+  // A (neighbourhood, family) pair is only canonical when EVERY SoT row for it
+  // agrees on one value within rounding. SoT carries multiple metric-key
+  // variants per family (e.g. MOI = moiStrict / moiInclusive / rolling3) and
+  // multiple property types — and the ledger fact only tells us its family, not
+  // which variant or property type it is. So if the variants/types disagree we
+  // cannot know which one this fact represents; forcing any single value would
+  // risk overriding the fact with the WRONG canonical. In that ambiguous case
+  // we leave the raw value untouched. We only override when the family resolves
+  // to a single unambiguous value.
+  const canonicalFor = (
+    hood: string,
+    family: string,
+  ): { value: number; family: MetricFamily } | null => {
+    const list = groups.get(`${hood.toLowerCase()}|${family}`);
+    if (!list || list.length === 0) return null;
+    const value = resolveUnambiguousSotValue(list.map((r) => r.metricValue));
+    if (value === null) return null;
+    return { value, family: list[0].metricFamily };
+  };
+
+  return facts.map((f) => {
+    const family = detectMetricFamily(f.label);
+    if (family === "OTHER") return f;
+    const canonical = canonicalFor(f.neighbourhood, family);
+    if (!canonical) return f;
+    const sotStr = formatValue(canonical.family, canonical.value);
+    const sotNum = parseLeadingNumber(sotStr);
+    const factNum = parseLeadingNumber(f.value);
+    if (sotNum === null || factNum === null) return f;
+    if (sotWithinRounding(factNum, sotNum)) return f;
+    return {
+      ...f,
+      value: sotStr,
+      caveat: f.caveat ? `${f.caveat} ${SOT_RECONCILED_CAVEAT}` : SOT_RECONCILED_CAVEAT,
+    };
+  });
+}
+
 /**
  * Load the member's latest validated upload's facts, optionally filtered by
  * neighbourhood / metric label substring, and report HONESTLY which of three
@@ -228,7 +336,11 @@ export async function executeGetFacts(
   const headlineMatched = headline.filter(matches);
   if (headlineMatched.length > 0) {
     return {
-      facts: toLedger(headlineMatched, source, false),
+      facts: await reconcileLedgerToSourceOfTruth(
+        userId,
+        upload.id,
+        toLedger(headlineMatched, source, false),
+      ),
       monthYear: upload.monthYear,
       state: "headline_safe",
     };
@@ -246,7 +358,11 @@ export async function executeGetFacts(
         ? "No headline-safe facts match that filter. "
         : "This upload validated, but none of its facts are durable enough to headline. ";
     return {
-      facts: toLedger(textureMatched, source, true),
+      facts: await reconcileLedgerToSourceOfTruth(
+        userId,
+        upload.id,
+        toLedger(textureMatched, source, true),
+      ),
       monthYear: upload.monthYear,
       state: "texture_only",
       textureOnly: true,

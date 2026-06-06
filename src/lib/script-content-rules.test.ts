@@ -193,6 +193,168 @@ test("false positive guard — literal 'for a second home' is NOT flagged", () =
   assert.equal(n, 0, "the literal 'a second <noun>' sense must survive");
 });
 
+/* ── voice watch list — "wait a second, let me back up" self-interruption ── */
+
+function backupFillerHits(script: string): number {
+  const { violations } = validateScript(script);
+  return violations.filter(
+    (v) =>
+      v.rule === "no_avatar_pander" &&
+      /(wait a (?:second|sec)|let me back up|rewind|start over|hold on)/i.test(
+        v.snippet ?? "",
+      ),
+  ).length;
+}
+
+test("voice — 'wait a second, let me back up' filler is caught", () => {
+  const n = backupFillerHits(
+    "So the data is clear. Wait a second, let me back up and explain why.",
+  );
+  assert.ok(n >= 1, "the self-interruption filler must be flagged");
+});
+
+test("voice — close variants (rewind / start over) are caught", () => {
+  assert.ok(
+    backupFillerHits("Here's the thing. Let me rewind to the beginning.") >= 1,
+    "'let me rewind' must trip",
+  );
+  assert.ok(
+    backupFillerHits("Actually, let me start over on that point.") >= 1,
+    "'let me start over' must trip",
+  );
+});
+
+/* ── no_sot_disagreement — canonical source-of-truth wins over per-fact ──── */
+
+function sotDisagreementHits(
+  script: string,
+  opts: Parameters<typeof validateScript>[1],
+): number {
+  const { violations } = validateScript(script, opts);
+  return violations.filter((v) => v.rule === "no_sot_disagreement").length;
+}
+
+test("no_sot_disagreement — a number disagreeing with its SoT is rejected", () => {
+  // Real case: Westmount MOI — SoT says 3.8, a per-fact cited value said 4.29,
+  // and the script wrote 4.3. unanchored_stat passes (4.3 ≈ cited 4.29), so the
+  // canonical-SoT gate must catch the disagreement.
+  const n = sotDisagreementHits(
+    "Westmount inventory is sitting at 4.3 months of inventory right now.",
+    {
+      sourceOfTruth: [{ metricFamily: "MOI", metricValue: 3.8 }],
+      citedFacts: [{ raw: "4.29 months" }],
+    },
+  );
+  assert.ok(n >= 1, "a number disagreeing with its SoT beyond rounding must be rejected");
+});
+
+test("no_sot_disagreement — a number that matches the SoT is not flagged", () => {
+  const n = sotDisagreementHits(
+    "Westmount inventory is sitting at 3.8 months of inventory right now.",
+    {
+      sourceOfTruth: [{ metricFamily: "MOI", metricValue: 3.8 }],
+      citedFacts: [{ raw: "4.29 months" }],
+    },
+  );
+  assert.equal(n, 0, "a number agreeing with the canonical SoT must pass");
+});
+
+test("no_sot_disagreement — neighbourhood-scoped: a wrong figure isn't excused by another hood's matching value", () => {
+  // Westmount's canonical MOI is 3.8, but the script writes 4.3 about Westmount.
+  // 4.3 happens to equal Downtown's MOI. Without neighbourhood scoping the flat
+  // SoT pool would see "some SoT MOI == 4.3" and wrongly pass. With the
+  // neighbourhood list supplied, the comparison is scoped to Westmount, so the
+  // disagreement is still caught.
+  const n = sotDisagreementHits(
+    "Westmount inventory is sitting at 4.3 months of inventory right now.",
+    {
+      neighbourhoods: ["Westmount", "Downtown"],
+      sourceOfTruth: [
+        { metricFamily: "MOI", metricValue: 3.8, neighbourhood: "Westmount" },
+        { metricFamily: "MOI", metricValue: 4.3, neighbourhood: "Downtown" },
+      ],
+      citedFacts: [{ raw: "4.29 months" }],
+    },
+  );
+  assert.ok(
+    n >= 1,
+    "a wrong neighbourhood figure must be flagged even when another hood shares that value",
+  );
+});
+
+test("no_sot_disagreement — neighbourhood-scoped: the correct hood's value still passes", () => {
+  // Same SoT pool, but now the script states Downtown's real MOI (4.3) about
+  // Downtown — scoping must let it through.
+  const n = sotDisagreementHits(
+    "Downtown inventory is sitting at 4.3 months of inventory right now.",
+    {
+      neighbourhoods: ["Westmount", "Downtown"],
+      sourceOfTruth: [
+        { metricFamily: "MOI", metricValue: 3.8, neighbourhood: "Westmount" },
+        { metricFamily: "MOI", metricValue: 4.3, neighbourhood: "Downtown" },
+      ],
+      citedFacts: [{ raw: "4.29 months" }],
+    },
+  );
+  assert.equal(n, 0, "the right neighbourhood's canonical value must pass");
+});
+
+/* ── unsourced_factual_claim — ground specific claims, not just stats ────── */
+
+function unsourcedClaimHits(
+  script: string,
+  opts: Parameters<typeof validateScript>[1],
+): number {
+  const { violations } = validateScript(script, opts);
+  return violations.filter((v) => v.rule === "unsourced_factual_claim").length;
+}
+
+test("unsourced_factual_claim — an invented demographic figure is rejected", () => {
+  // The KB profile mentions a $72,000 income; the script asserts a fabricated
+  // $95,000 median household income that traces to no source.
+  const n = unsourcedClaimHits(
+    "Families here earn well — the median household income is $95,000 a year.",
+    {
+      profileText: [
+        "Oliver is an affluent neighbourhood with a median household income of $72,000.",
+      ],
+    },
+  );
+  assert.ok(n >= 1, "an unsourced demographic claim must be rejected");
+});
+
+test("unsourced_factual_claim — a demographic figure backed by the profile passes", () => {
+  const n = unsourcedClaimHits(
+    "Families here earn well — the median household income is $72,000 a year.",
+    {
+      profileText: [
+        "Oliver is an affluent neighbourhood with a median household income of $72,000.",
+      ],
+    },
+  );
+  assert.equal(n, 0, "a demographic figure that traces to the profile must pass");
+});
+
+test("unsourced_factual_claim — an invented dated event (year) is rejected", () => {
+  const n = unsourcedClaimHits(
+    "The community rec centre opened in 2019 and changed everything here.",
+    {
+      profileText: [
+        "Oliver has a rec centre and a library that anchor the core.",
+      ],
+    },
+  );
+  assert.ok(n >= 1, "an unsourced dated-event year must be rejected");
+});
+
+test("unsourced_factual_claim — silent when no anchor sources are provided", () => {
+  const n = unsourcedClaimHits(
+    "The median household income is $95,000 and the centre opened in 2019.",
+    {},
+  );
+  assert.equal(n, 0, "with no anchors the rule cannot judge and stays silent");
+});
+
 /* ── Sources-footnote dialogue scoping (must not over-exclude) ───────────── */
 
 test("strip scope — exact '## Sources' footnote is excluded from dialogue", () => {

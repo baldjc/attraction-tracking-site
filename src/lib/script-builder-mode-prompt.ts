@@ -805,6 +805,8 @@ The user message contains a section titled **"SOURCE-OF-TRUTH METRICS (determini
 
 1. **Every numeric stat you write in the script body must come from either:** (a) the Cited facts block, or (b) the SOURCE-OF-TRUTH METRICS block. Do NOT invent values, do NOT round aggressively (e.g. "$625K" when the SoT row says $623,400 is fine; "$650K" is not — that's a fabrication). The server-side \`no_misattributed_stats\` validator will flag any number that doesn't match a SoT value within 2% tolerance.
 
+   **CANONICAL = SOURCE-OF-TRUTH. When a per-fact cited value disagrees with the SOURCE-OF-TRUTH row for the SAME metric and neighbourhood, the SOURCE-OF-TRUTH value wins — always.** A cited fact may carry a slightly different number than the aggregate (e.g. a per-fact "4.29 months" when the SoT row says 3.8 months of inventory). In that case write the SoT value (rounded sensibly — 3.8), NOT the per-fact value, or drop the number entirely. Never let a per-fact figure override the aggregate. The server-side \`no_sot_disagreement\` validator rejects any spoken number that matches a per-fact value but disagrees with its SoT beyond rounding.
+
 2. **Attribute every stat to the member's own market analysis** — phrases like "what our team's seeing in the data," "from the [Calgary] data we ran this month," "our numbers show," "we pulled this from MLS." DO NOT attribute these numbers to CREB, CMHC, the Calgary Real Estate Board, BoC, or any outside body. The validator will flag any SoT-matching number attributed to an outside source.
 
 3. **If the script needs to compare to a CREB-published figure** (rare; only when the cited fact's \`crebDeltaEstimate\` or \`viewerCaveat\` calls it out), name the CREB number explicitly with its source and clearly separate it from the member's own deterministic stat. Never blur the two.
@@ -814,6 +816,8 @@ The user message contains a section titled **"SOURCE-OF-TRUTH METRICS (determini
 5. **Composition-shift flag** (\`⚠ composition-shift\`) on a row means the median price moved but the sqft composition also shifted in the same direction — i.e. the price move is partly mix-effect, not pure appreciation. When citing a flagged median, add ONE sentence of context (e.g. "though some of that's because we saw more larger homes trade this month"). The validator does NOT enforce this — it's editorial trust.
 
 This is the most important rule in the prompt. A script that violates rules 1 or 2 fails the channel's whole positioning, even if every other rule passes.
+
+6. **GROUND SPECIFIC CLAIMS, NOT JUST NUMBERS.** The grounding rule extends past market stats to EVERY specific, verifiable factual claim you assert as true about the area. That includes: demographic figures (median household income, median age, population counts), named institutions and their attributes (a named school, hospital, transit line, employer — and any claim about when it opened, how big it is, what it's known for), dates and years ("opened in 2019," "built in the 1980s"), dollar figures of any kind, and flat "this neighbourhood IS X" assertions (e.g. "the most walkable area in the city," "a young-professional hub"). Each such specific claim must trace to one of two sources: (a) a cited fact / SOURCE-OF-TRUTH row, or (b) the member's **Knowledge Base neighbourhood profile** text provided in the user message. If a specific is NOT in either source, DO NOT assert it as fact — either cut it or keep it general ("a family neighbourhood" instead of inventing "median age of 34" or "a school that opened in 2019"). General statements of experience and opinion are fine; invented specifics are not. The server-side \`unsourced_factual_claim\` validator rejects invented demographic figures and dated events and triggers a regenerate.
 
 **Property type lock — per neighbourhood (NEW HARD RULE).**
 
@@ -882,10 +886,12 @@ In the footnote, list EVERY distinct market number that appears in the script bo
 - Take \`<id>\` from the \`id\` field of the matching entry in the \`## Cited facts\` block, or from the matching \`## SOURCE-OF-TRUTH METRICS\` row.
 - Every quantitative market claim in the body MUST appear here. A number you cannot map to a provided fact id must NOT appear in the script at all — remove it.
 - Credibility / credentials numbers (e.g. "we help a family move every X hours") must trace to the member's avatar / credentials profile. If the member has no such value, omit the claim entirely — never invent one.
+- **Qualitative specifics too.** Any specific NON-numeric factual claim you assert about the area — a named institution and its attribute (school, hospital, transit line, employer), a demographic descriptor, a dated event, a "this neighbourhood IS X" characterization — must ALSO appear here, mapped to where it came from: \`- <claim> — (KB profile: <neighbourhood>)\` when it's grounded in the Knowledge Base neighbourhood profile, or \`(fact: <id>)\` when it traces to a cited fact. If a specific claim has no source to list here, it does not belong in the script — cut it or keep it general.
 
 Example (the final lines of the output):
 - $615,000 — Downtown median sale price (fact: mf_8a31c2)
 - 4.1 months — Downtown months of inventory (fact: mf_77be90)
+- "anchored by the LRT line and the university" — Downtown characterization (KB profile: Downtown)
 
 ## BANNED VOCABULARY (do not use in dialogue)
 
