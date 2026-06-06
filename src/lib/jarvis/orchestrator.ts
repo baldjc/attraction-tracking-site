@@ -17,6 +17,7 @@ import {
 } from "@/lib/jarvis/system-prompt";
 import { saveConfirmedScript } from "@/lib/jarvis/save";
 import { applyConfirmedMerge } from "@/lib/jarvis/merge";
+import { extractSourcesFootnote, countCitedSources } from "@/lib/script-content-rules";
 import {
   JARVIS_MODEL,
   type LedgerFact,
@@ -156,7 +157,20 @@ export async function runJarvisTurn(args: {
     convo.push({ role: "user", content: toolResults });
   }
 
-  const groundedText = groundAssistantText(assistantText, ledger());
+  // Ground the conversational prose against the ledger AND the numbers the
+  // script proposal cites in its "## Sources" footnote. The script step resolves
+  // source-of-truth aggregates (median, sale-to-list, …) that never enter the
+  // get_facts ledger; without this the summary/hooks would redact the very
+  // metrics the script grounds and cites.
+  // Cast breaks TS's null-narrowing of `proposal` (it's assigned via the
+  // onProposal callback, which control-flow analysis can't see). We allow ONLY
+  // the cited "## Sources" footnote numbers — not the whole script — so a
+  // malformed/missing footnote can never implicitly whitelist body numbers.
+  const builtProposal = proposal as ProposalState | null;
+  const proposalSourceText = builtProposal
+    ? extractSourcesFootnote(builtProposal.script)
+    : "";
+  const groundedText = groundAssistantText(assistantText, ledger(), proposalSourceText);
   return {
     assistantText: groundedText,
     proposal,
@@ -263,6 +277,7 @@ async function runTool(ctx: {
         script: built.result.script,
         rotationSlot: built.rotationSlot,
         linkedFactIds: built.linkedFactIds,
+        citedSourceCount: countCitedSources(built.result.script),
         metrics: built.result.metrics ?? undefined,
       };
       onProposal(proposalState);

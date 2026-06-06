@@ -213,6 +213,26 @@ export function extractSourcesFootnote(script: string): string {
   return lines.slice(idx + 1).join("\n");
 }
 
+/**
+ * Count the distinct cited entries (facts + source-of-truth metrics) listed as
+ * bullets in the script's "## Sources" footnote. The Jarvis proposal card
+ * surfaces this so "N sources cited" matches the audit footnote the script
+ * actually carries — not just `linkedFactIds.length`, which omits the SoT-derived
+ * citations the script also grounds on. Distinct = deduped on normalised bullet
+ * text, so a value repeated verbatim is counted once.
+ */
+export function countCitedSources(script: string): number {
+  const footnote = extractSourcesFootnote(script);
+  if (!footnote) return 0;
+  const seen = new Set<string>();
+  for (const raw of footnote.split(/\r?\n/)) {
+    const line = raw.trim();
+    if (!/^[-*•]\s+/.test(line)) continue;
+    seen.add(line.replace(/\s+/g, " ").toLowerCase());
+  }
+  return seen.size;
+}
+
 /** Trim a snippet to ≤120 chars with a couple of words of left/right context. */
 function snippetAround(line: string, match: RegExpExecArray): string {
   const start = Math.max(0, match.index - 40);

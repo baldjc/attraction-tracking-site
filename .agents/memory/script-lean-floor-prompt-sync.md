@@ -18,7 +18,7 @@ expectation is encoded in THREE independent places, not one:
 
 **Rule:** all three must be conditioned on `hasProfile` in lockstep.
 
-**Why:** members with NO KB neighbourhood profile (e.g. Phil Martin) were
+**Why:** members with NO KB neighbourhood profile were
 hard-failing `validator_max_retries`. Relaxing only the validator floor (1)
 was not enough — surfaces (2) and (3) kept telling the model to pad toward
 2,200 "using the full neighbourhood profile" that doesn't exist, so it

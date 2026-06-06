@@ -690,29 +690,53 @@ export async function runBuildScript(args: {
 // ── Fact ledger + grounding ─────────────────────────────────────────────────
 
 /**
+ * Every digit-run inside a value/source string, normalised to a comparable key
+ * (commas stripped, decimals kept): e.g. "$615,000" → "615000", "98.2%" →
+ * "98.2", "4.14 MOI" → "4.14". Used to build the set of numbers the assistant
+ * is allowed to state.
+ */
+export function extractNumberKeys(text: string): string[] {
+  const matches = text.match(/\d[\d,]*(?:\.\d+)?/g) ?? [];
+  return matches.map((m) => m.replace(/,/g, ""));
+}
+
+/**
  * Numeric anchors the assistant is allowed to state: every digit-run inside a
  * ledger fact's value string (e.g. "4.14", "98.2", "615000" from "$615,000").
  */
 function ledgerNumberSet(ledger: LedgerFact[]): Set<string> {
   const set = new Set<string>();
-  for (const f of ledger) {
-    const matches = f.value.match(/\d[\d,]*(?:\.\d+)?/g) ?? [];
-    for (const m of matches) set.add(m.replace(/,/g, ""));
-  }
+  for (const f of ledger) for (const k of extractNumberKeys(f.value)) set.add(k);
   return set;
 }
 
 /**
- * Redact ungrounded stats from assistant prose. We only police the high-risk
+ * Ground ungrounded stats out of assistant prose. We only police the high-risk
  * tokens a model invents as fake market stats — currency ($…), percentages
  * (…%), and bare decimals (e.g. 4.14) — leaving ordinary integers (years,
- * counts, list numbers) alone. Any such token whose digits aren't present in
- * the fact ledger is replaced with "[unverified]".
+ * counts, list numbers) alone.
+ *
+ * Allowed numbers come from the thread's fact ledger AND `groundedSourceText` —
+ * the cited values from a script proposal's "## Sources" footnote. The script
+ * step resolves and cites source-of-truth aggregates (median sale price,
+ * sale-to-list, …) that never enter the get_facts ledger; passing its sources
+ * here keeps the conversational summary/hooks in agreement with the script
+ * instead of redacting the very metrics the script grounds and cites.
+ *
+ * A token we cannot trace is OMITTED (removed), never replaced with a visible
+ * placeholder — members must never see a literal "[unverified]" token. On
+ * removal we tidy the leftover spacing/punctuation so the prose stays readable.
  */
-export function groundAssistantText(text: string, ledger: LedgerFact[]): string {
+export function groundAssistantText(
+  text: string,
+  ledger: LedgerFact[],
+  groundedSourceText = "",
+): string {
   const allowed = ledgerNumberSet(ledger);
+  for (const k of extractNumberKeys(groundedSourceText)) allowed.add(k);
   const norm = (s: string) => s.replace(/[^\d.]/g, "").replace(/\.$/, "");
-  return text.replace(
+  let removed = false;
+  const out = text.replace(
     /\$\s?\d[\d,]*(?:\.\d+)?[kKmM]?|\d[\d,]*(?:\.\d+)?\s?%|\b\d[\d,]*\.\d+\b/g,
     (token) => {
       const digits = norm(token);
@@ -722,9 +746,18 @@ export function groundAssistantText(text: string, ledger: LedgerFact[]): string 
       // "$615,000" → "615000" vs a ledger "615000").
       const compact = digits.replace(/\./g, "");
       if (allowed.has(compact)) return token;
-      return "[unverified]";
+      removed = true;
+      return "";
     },
   );
+  if (!removed) return out;
+  // Tidy the holes left by removed tokens: drop now-empty parens, collapse
+  // INTERNAL double spaces (the `(?=\S)` lookahead leaves end-of-line trailing
+  // spaces alone so Markdown hard breaks survive), and pull punctuation back.
+  return out
+    .replace(/\(\s*\)/g, "")
+    .replace(/ {2,}(?=\S)/g, " ")
+    .replace(/[ \t]+([.,;:!?])/g, "$1");
 }
 
 function toMonthYearUtc(d: Date | null | undefined): string {

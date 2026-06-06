@@ -510,6 +510,10 @@ function ProposalCard({
 }) {
   const isPending = (action: string) => pendingAction === `${messageId}:${action}`;
   const anyPending = pendingAction?.startsWith(`${messageId}:`) ?? false;
+  // Prefer the count of distinct facts/SoT entries cited in the script's
+  // "## Sources" footnote; fall back to linked-fact ids for proposals persisted
+  // before citedSourceCount existed (or if the footnote parser returned 0).
+  const sourceCount = proposal.citedSourceCount || proposal.linkedFactIds.length;
 
   if (proposal.status === "created") {
     return (
@@ -540,8 +544,8 @@ function ProposalCard({
       </span>
       <p className="mt-2 text-sm font-medium text-abv-text">“{proposal.title}”</p>
       <p className="mt-0.5 text-xs text-abv-text-secondary">
-        {labelForSlot(proposal.rotationSlot)} · {proposal.linkedFactIds.length} fact
-        {proposal.linkedFactIds.length === 1 ? "" : "s"} linked
+        {labelForSlot(proposal.rotationSlot)} · {sourceCount} source
+        {sourceCount === 1 ? "" : "s"} cited
       </p>
 
       {proposal.status === "proposed" && (

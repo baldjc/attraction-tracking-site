@@ -48,6 +48,14 @@ export interface ProposalState {
   script: string;
   rotationSlot: RotationSlotKey;
   linkedFactIds: string[];
+  /**
+   * Distinct facts + source-of-truth metrics cited in the script's "## Sources"
+   * footnote. The proposal card shows this so the count agrees with what the
+   * script actually cites; `linkedFactIds` undercounts (it omits SoT-derived
+   * citations). Optional for backward compatibility with proposals persisted
+   * before this field existed.
+   */
+  citedSourceCount?: number;
   metrics?: unknown;
   savedScriptId?: string;
 }
