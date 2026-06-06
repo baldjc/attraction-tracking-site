@@ -63,7 +63,14 @@ import {
   EARLY_PLAN_STATUSES,
   PUBLISHED_PLAN_STATUSES,
 } from "@/lib/binge-target";
-import { getSourceOfTruthMetrics } from "@/lib/aggregated-metrics";
+import {
+  getSourceOfTruthMetrics,
+  pooled90dToSourceOfTruth,
+} from "@/lib/aggregated-metrics";
+import {
+  aggregatePooled90dFromDb,
+  shiftMonthYear,
+} from "@/lib/csv-aggregate";
 import { loadMarketConfigSummary } from "@/lib/content-engine-context";
 import { getNeighbourhoodContext } from "@/lib/get-neighbourhood-context";
 import { enrichPlanWithRelatedFacts } from "@/lib/script-plan-enrichment";
@@ -505,6 +512,85 @@ export async function POST(req: NextRequest) {
   console.log(
     `[sb-v2:sot] uploadIds=${uploadIdsForSot.length} metrics=${sourceOfTruthMetrics.length}`,
   );
+
+  // ── Wave 1b: real, data-gated TREND context (YoY endpoints + 90-day) ──
+  // Appended onto the SAME `sourceOfTruthMetrics` array so trend numbers are
+  // simultaneously RENDERED for the writer AND become validator anchors (no
+  // schema / script-content-rules change). Everything here is on-demand and
+  // strictly gated: a period contributes rows only when its data actually
+  // exists, so the writer can never reference a period we didn't supply.
+
+  // The anchor is the latest cited upload (max calendar monthYear). It defines
+  // both the YoY "now" endpoint and the 90-day window's leading month.
+  const citedUploadMonths = factRows
+    .map((f) => ({ uploadId: f.uploadId, monthYear: f.upload?.monthYear ?? "" }))
+    .filter((u) => u.uploadId && /^\d{4}-\d{2}$/.test(u.monthYear));
+  const anchorUpload = citedUploadMonths.reduce<
+    { uploadId: string; monthYear: string } | null
+  >((best, u) => (!best || u.monthYear > best.monthYear ? u : best), null);
+
+  // ── Year-ago ENDPOINTS (shift -12 of each cited month) ──
+  // We surface the year-ago upload's OWN persisted metrics under their own
+  // YYYY-MM month header. Both endpoints (year-ago + now) are then present as
+  // citable SoT rows, so a "$X a year ago → $Y now" line is fully grounded.
+  // Only validated uploads that genuinely exist contribute — no endpoint, no
+  // claim.
+  const citedMonths = Array.from(
+    new Set(citedUploadMonths.map((u) => u.monthYear)),
+  );
+  const yearAgoMonths = Array.from(
+    new Set(
+      citedMonths
+        .map((m) => shiftMonthYear(m, -12))
+        .filter((m): m is string => !!m),
+    ),
+  );
+  if (yearAgoMonths.length > 0) {
+    const yearAgoUploads = await prisma.marketDataUpload.findMany({
+      where: {
+        userId,
+        status: "validated",
+        monthYear: { in: yearAgoMonths },
+      },
+      select: { id: true },
+    });
+    const yearAgoUploadIds = yearAgoUploads.map((u) => u.id);
+    if (yearAgoUploadIds.length > 0) {
+      const yearAgoMetrics = await getSourceOfTruthMetrics({
+        userId,
+        uploadIds: yearAgoUploadIds,
+        neighbourhoods: neighbourhoodsInScript,
+      });
+      sourceOfTruthMetrics.push(...yearAgoMetrics);
+      console.log(
+        `[sb-v2:sot] yearAgo months=${yearAgoMonths.join(",")} uploads=${yearAgoUploadIds.length} metrics=${yearAgoMetrics.length}`,
+      );
+    }
+  }
+
+  // ── TRUE pooled trailing-90-day re-aggregation ──
+  // Bounded + best-effort: any failure (missing prior months, storage stall,
+  // config gap) simply omits the 90-day rows — the script falls back to the
+  // monthly + year-ago context with no error surfaced to the member.
+  if (anchorUpload) {
+    try {
+      const pooled = await aggregatePooled90dFromDb(anchorUpload.uploadId);
+      const pooledRows = pooled90dToSourceOfTruth(
+        pooled,
+        neighbourhoodsInScript,
+      );
+      sourceOfTruthMetrics.push(...pooledRows);
+      console.log(
+        `[sb-v2:sot] 90d complete=${pooled.complete} window=${pooled.windowMonths.join(",")} metrics=${pooledRows.length}`,
+      );
+    } catch (err) {
+      console.warn(
+        `[sb-v2:sot] 90d pooled aggregation failed (omitting): ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
+    }
+  }
 
   // ── Wave 4 (propertyType lock) — build per-neighbourhood lock map ─────
   // Per spec: prevent Script Builder v2 scope drift where Claude pivots

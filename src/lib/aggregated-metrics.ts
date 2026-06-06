@@ -18,7 +18,11 @@
 // do not exist on the real type).
 
 import prisma from "@/lib/prisma";
-import type { AggregatedGroup, AggregatedTable } from "@/lib/csv-aggregate";
+import type {
+  AggregatedGroup,
+  AggregatedTable,
+  Pooled90dResult,
+} from "@/lib/csv-aggregate";
 
 export type MetricFamily =
   | "MOI"
@@ -439,6 +443,80 @@ export function resolveCanonicalSotValue(
   return resolveUnambiguousSotValue(rows.map((r) => r.metricValue));
 }
 
+/**
+ * Convert a TRUE pooled trailing-90-day re-aggregation into period-labelled
+ * `SourceOfTruthMetric` rows. These are appended to the same array that feeds
+ * BOTH the rendered SoT block and `validateScript({ sourceOfTruth })`, so every
+ * 90-day number is simultaneously shown to the writer AND becomes a validator
+ * anchor (no script-content-rules change needed).
+ *
+ * - Only propertyType-rollup groups (priceTier === null) are emitted — the
+ *   script cites neighbourhood × type, never price tier.
+ * - MOI is pinned to the inclusive variant (metricKey `moiInclusive` =
+ *   CANONICAL_METRIC_KEY.MOI) so the 90-day MOI is directly comparable to the
+ *   monthly canonical (never the strict/inclusive mismatch).
+ * - SAMPLE_THRESHOLDS are applied (median/SP-LP/DOM/MOI on the pooled Sold N,
+ *   failure-rate on Sold+offMarket N).
+ * - `neighbourhoods` (the cited hoods) scopes output; "All Neighbourhoods" is
+ *   always allowed through so citywide trailing context is available.
+ *
+ * Returns `[]` when the window is incomplete (caller then omits 90-day context).
+ */
+export function pooled90dToSourceOfTruth(
+  result: Pooled90dResult,
+  neighbourhoods?: string[],
+): SourceOfTruthMetric[] {
+  if (!result.complete || result.groups.length === 0) return [];
+
+  // windowMonths is anchor-first descending; show oldest→newest as a range.
+  const sorted = [...result.windowMonths].sort();
+  const periodLabel =
+    sorted.length >= 2
+      ? `90-day pooled (${sorted[0]}–${sorted[sorted.length - 1]})`
+      : "90-day pooled";
+
+  const hoodFilter =
+    neighbourhoods && neighbourhoods.length > 0
+      ? new Set([...neighbourhoods, "All Neighbourhoods"])
+      : null;
+
+  const out: SourceOfTruthMetric[] = [];
+  for (const g of result.groups) {
+    if (g.priceTier !== null) continue;
+    if (hoodFilter && !hoodFilter.has(g.neighbourhood)) continue;
+    const propertyType = g.propertyType ?? "All";
+
+    const push = (
+      family: MetricFamily,
+      metricKey: string,
+      value: number | null,
+      sampleSize: number,
+    ): void => {
+      if (value == null || !Number.isFinite(value)) return;
+      if (sampleSize < SAMPLE_THRESHOLDS[family]) return;
+      out.push({
+        neighbourhood: g.neighbourhood,
+        propertyType,
+        metricFamily: family,
+        metricKey,
+        metricValue: value,
+        sampleSize,
+        monthYear: periodLabel,
+        yoyDelta: null,
+        rolling90dValue: null,
+        compositionShiftFlag: false,
+      });
+    };
+
+    push("MEDIAN", "medianPrice", g.medianPrice, g.sampleSize);
+    push("SP_LP", "spLpRatio", g.spLpRatio, g.sampleSize);
+    push("DOM", "domMedian", g.domMedian, g.sampleSize);
+    push("MOI", CANONICAL_METRIC_KEY.MOI ?? "moiInclusive", g.moiInclusive, g.sampleSize);
+    push("FAILURE_RATE", "failureRate", g.failureRate, g.failN);
+  }
+  return out;
+}
+
 function formatDelta(value: number | null): string {
   // `yoyDelta` is persisted as a percentage already (csv-aggregate's
   // `pctDelta()` returns `(curr - prev) / prev * 100`), so a stored
@@ -474,8 +552,14 @@ export function renderSourceOfTruthBlock(
   const lines: string[] = [];
   for (const [key, group] of byKey) {
     const [neighbourhood, propertyType, monthYear] = key.split("||");
+    // A calendar month renders as "(month: 2026-05)"; a derived window (e.g.
+    // "90-day pooled (2026-03–2026-05)") renders as "(period: …)" so the writer
+    // never mistakes a pooled trailing window for a single month.
+    const isCalendarMonth = /^\d{4}-\d{2}$/.test(monthYear);
     lines.push(
-      `### ${neighbourhood} | ${propertyType} (month: ${monthYear})`,
+      `### ${neighbourhood} | ${propertyType} (${
+        isCalendarMonth ? "month" : "period"
+      }: ${monthYear})`,
     );
     for (const m of group) {
       // Fix 1 — flag the canonical variant so the writer (and the reviewer)
@@ -490,11 +574,13 @@ export function renderSourceOfTruthBlock(
       ];
       const yoy = formatDelta(m.yoyDelta);
       if (yoy) parts.push(`YoY ${yoy}`);
-      if (m.rolling90dValue != null && Number.isFinite(m.rolling90dValue)) {
-        parts.push(
-          `90d ${formatValue(m.metricFamily, m.rolling90dValue)}`,
-        );
-      }
+      // NOTE: the old inline "90d {rolling90dValue}" annotation was removed on
+      // the script path. rolling90dValue is a weighted MEAN of three monthly
+      // medians (statistically wrong as a trailing-window figure). The true
+      // pooled trailing-90-day numbers are now injected as their own
+      // period-labelled SoT rows (see pooled90dToSourceOfTruth) so they are
+      // both rendered AND validator-anchored. The legacy field still feeds the
+      // separate upload-time fact-validator prompt, so it is left on the type.
       if (m.compositionShiftFlag) parts.push("⚠ composition-shift");
       lines.push(parts.join(" | "));
     }

@@ -501,7 +501,7 @@ function metricsFromAccumulator(
 // Cross-period: YoY + 90-day rolling
 // ─────────────────────────────────────────────────────────────────────────────
 
-function shiftMonthYear(monthYear: string, deltaMonths: number): string | null {
+export function shiftMonthYear(monthYear: string, deltaMonths: number): string | null {
   const m = monthYear.match(/^(\d{4})-(\d{2})$/);
   if (!m) return null;
   const year = Number(m[1]);
@@ -541,15 +541,32 @@ export interface AggregateOptions {
   canonicalize?: (raw: string) => string;
 }
 
+interface BucketingResult {
+  buckets: Map<string, RowAccumulator>;
+  normalizedCount: number;
+  totalSold: number;
+  emptyZoneCount: number;
+  unknownStatusCount: number;
+  unknownStatusLabels: Map<string, number>;
+  dateMin: Date | null;
+  dateMax: Date | null;
+}
+
 /**
- * Aggregate one upload's CSV into ~150-400 group rows. Looks up the prior
- * 12-month upload + the prior 2 uploads (this user) to compute YoY deltas
- * and 90-day rolling values inline. Pure compute — no Claude call, no DB writes.
+ * Parse + normalize + status-bucket one CSV buffer into per-group
+ * RowAccumulators. This is the SINGLE normalization path shared by the
+ * monthly aggregation (`aggregateUpload`) and the trailing-90-day pooled
+ * re-aggregation (`pool90d` / `aggregatePooled90dFromDb`), guaranteeing the
+ * pooled window is built from byte-identical row interpretation as the
+ * monthly numbers it is compared against. `logContext` is optional request
+ * provenance for the UNKNOWN_STATUS warning (omitted on the pooled path).
  */
-export async function aggregateUpload(
-  opts: AggregateOptions,
-): Promise<AggregatedTable> {
-  const { uploadId, userId, monthYear, csvFileName, csvBuffer, config, canonicalize } = opts;
+function buildBuckets(
+  csvBuffer: Buffer,
+  config: MarketConfigShape,
+  canonicalize?: (raw: string) => string,
+  logContext?: { uploadId: string; userId: string; monthYear: string },
+): BucketingResult {
   const mapping: ColumnMapping = config.columnMapping ?? {};
   const tiers = config.priceTiers ?? [];
 
@@ -661,11 +678,11 @@ export async function aggregateUpload(
     console.warn(
       "[market-status][UNKNOWN_STATUS] CSV rows fell through status bucketing",
       JSON.stringify({
-        uploadId,
-        userId,
+        uploadId: logContext?.uploadId,
+        userId: logContext?.userId,
         marketName: config.marketName,
         mlsSource: config.mlsSource || null,
-        monthYear,
+        monthYear: logContext?.monthYear,
         unknownStatusCount,
         totalRowsParsed: normalized.length,
         topUnknownLabels: topLabels,
@@ -703,6 +720,37 @@ export async function aggregateUpload(
       tallyRow(ensure(groupKey(n, pt, tier)), row, isDuplexMerge);
     }
   }
+
+  return {
+    buckets,
+    normalizedCount: normalized.length,
+    totalSold,
+    emptyZoneCount,
+    unknownStatusCount,
+    unknownStatusLabels,
+    dateMin,
+    dateMax,
+  };
+}
+
+/**
+ * Aggregate one upload's CSV into ~150-400 group rows. Looks up the prior
+ * 12-month upload + the prior 2 uploads (this user) to compute YoY deltas
+ * and 90-day rolling values inline. Pure compute — no Claude call, no DB writes.
+ */
+export async function aggregateUpload(
+  opts: AggregateOptions,
+): Promise<AggregatedTable> {
+  const { uploadId, userId, monthYear, csvFileName, csvBuffer, config, canonicalize } = opts;
+  const {
+    buckets,
+    normalizedCount,
+    totalSold,
+    emptyZoneCount,
+    unknownStatusCount,
+    dateMin,
+    dateMax,
+  } = buildBuckets(csvBuffer, config, canonicalize, { uploadId, userId, monthYear });
 
   // Pull prior uploads we'll need for YoY + 90-day rolling.
   const yoyMonthYear = shiftMonthYear(monthYear, -12);
@@ -900,7 +948,7 @@ export async function aggregateUpload(
       marketName: config.marketName,
       mlsSource: config.mlsSource || null,
       csvFileName,
-      totalRowsParsed: normalized.length,
+      totalRowsParsed: normalizedCount,
       totalSold,
       emptyZoneCount,
       unknownStatusCount,
@@ -957,4 +1005,200 @@ export async function aggregateUploadFromDb(
     canonicalize: (raw) => resolver.resolve(raw),
   });
   return { table, userId: upload.userId, configSnapshot: config };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Trailing-90-day TRUE pooled re-aggregation (on-demand, script path)
+//
+// The legacy `weightedRolling` above produces a sample-weighted MEAN of three
+// monthly medians — statistically wrong (a mean of medians is not the pooled
+// median). For market-update SCRIPTS we instead pool the raw Sold rows from the
+// anchor month + the two prior months into ONE accumulator per group and compute
+// the median / SP-LP / DOM / failure-rate over that COMBINED population. MOI uses
+// the inclusive rolling-3 definition: the anchor month's standing inventory
+// (Active + Pending) ÷ trailing average Sold-per-month (pooledSold ÷ months).
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface Pooled90dGroup {
+  neighbourhood: string;
+  propertyType: string | null;
+  priceTier: string | null;
+  medianPrice: number | null;
+  spLpRatio: number | null;
+  domMedian: number | null;
+  /** offMarket / sold, stored ×100 (matches the monthly FAILURE_RATE convention). */
+  failureRate: number | null;
+  /** inclusive rolling-3 MOI: (anchor Active + Pending) ÷ (pooledSold ÷ months). */
+  moiInclusive: number | null;
+  /** pooled Sold count across the window (the median's real N). */
+  sampleSize: number;
+  /** pooled Sold + offMarket (failure-rate N). */
+  failN: number;
+  monthsInWindow: number;
+}
+
+export interface Pooled90dResult {
+  /** true ONLY when the anchor + both prior months are present with CSVs. */
+  complete: boolean;
+  anchorMonthYear: string;
+  /** descending, e.g. ["2026-05","2026-04","2026-03"] (anchor first). */
+  windowMonths: string[];
+  groups: Pooled90dGroup[];
+}
+
+function mergeAccumulators(target: RowAccumulator, src: RowAccumulator): void {
+  target.soldPrices.push(...src.soldPrices);
+  target.soldSqfts.push(...src.soldSqfts);
+  target.soldPsfs.push(...src.soldPsfs);
+  target.soldDoms.push(...src.soldDoms);
+  target.soldSpLpRatios.push(...src.soldSpLpRatios);
+  target.active += src.active;
+  target.pending += src.pending;
+  target.sold += src.sold;
+  target.offMarket += src.offMarket;
+  target.expired += src.expired;
+  target.terminated += src.terminated;
+  target.withdrawn += src.withdrawn;
+  for (const n of src.rollupNotes) target.rollupNotes.add(n);
+}
+
+/**
+ * Pure pooled-90-day computation. The anchor month defines the group universe
+ * (the current month is the script's spine — a group absent now gets no pooled
+ * row). Sold rows from the anchor + each prior month are merged per group, then
+ * median / SP-LP / DOM / failure-rate are read from the COMBINED accumulator
+ * (true pooling). MOI uses the anchor month's Active+Pending snapshot over the
+ * trailing average Sold-per-month.
+ *
+ * Exported for unit testing.
+ */
+export function pool90d(
+  anchorBuckets: Map<string, RowAccumulator>,
+  priorBucketsList: Array<Map<string, RowAccumulator>>,
+): Pooled90dGroup[] {
+  const monthsInWindow = 1 + priorBucketsList.length;
+  const out: Pooled90dGroup[] = [];
+  for (const [k, anchorAcc] of anchorBuckets.entries()) {
+    const pooled = emptyAccumulator();
+    mergeAccumulators(pooled, anchorAcc);
+    for (const prior of priorBucketsList) {
+      const pa = prior.get(k);
+      if (pa) mergeAccumulators(pooled, pa);
+    }
+    const m = metricsFromAccumulator(pooled);
+    const [neighbourhood, propertyTypeRaw, priceTierRaw] = k.split("||");
+    const avgMonthlySold = monthsInWindow > 0 ? pooled.sold / monthsInWindow : 0;
+    const inclusiveNumerator = anchorAcc.active + anchorAcc.pending;
+    const moiInclusive =
+      avgMonthlySold > 0 ? inclusiveNumerator / avgMonthlySold : null;
+    out.push({
+      neighbourhood,
+      propertyType: propertyTypeRaw || null,
+      priceTier: priceTierRaw || null,
+      medianPrice: m.medianPrice,
+      spLpRatio: m.spLpRatio,
+      domMedian: m.domMedian,
+      failureRate: m.failureRate,
+      moiInclusive,
+      sampleSize: pooled.sold,
+      failN: pooled.sold + pooled.offMarket,
+      monthsInWindow,
+    });
+  }
+  return out;
+}
+
+// Validated months are immutable, so a pooled window keyed on its three upload
+// IDs never changes — cache it process-wide (Dallas-scale: ~13k rows × 3 months
+// parsed per miss).
+const pooled90dCache = new Map<string, Pooled90dResult>();
+
+function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
+  return Promise.race([
+    p,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`pooled-90d read timeout (${label})`)), ms),
+    ),
+  ]);
+}
+
+/**
+ * Load the anchor upload + its two prior VALIDATED months, re-aggregate the
+ * pooled trailing-90-day window on demand, and return period-scoped groups.
+ * `complete` is false (with an empty `groups`) whenever the full 3-month window
+ * isn't available — the caller then simply omits the 90-day context (graceful
+ * unchanged behaviour). Object-storage reads are individually bounded because
+ * `@replit/object-storage` has no built-in timeout.
+ */
+export async function aggregatePooled90dFromDb(
+  anchorUploadId: string,
+): Promise<Pooled90dResult> {
+  const anchor = await prisma.marketDataUpload.findUnique({
+    where: { id: anchorUploadId },
+    select: { id: true, userId: true, monthYear: true, csvStorageUrl: true },
+  });
+  const empty = (windowMonths: string[]): Pooled90dResult => ({
+    complete: false,
+    anchorMonthYear: anchor?.monthYear ?? "",
+    windowMonths,
+    groups: [],
+  });
+  if (!anchor || !anchor.csvStorageUrl) return empty([]);
+
+  const priorMonths = [
+    shiftMonthYear(anchor.monthYear, -1),
+    shiftMonthYear(anchor.monthYear, -2),
+  ].filter((m): m is string => !!m);
+  if (priorMonths.length < 2) return empty([anchor.monthYear]);
+
+  const priorUploads = await prisma.marketDataUpload.findMany({
+    where: {
+      userId: anchor.userId,
+      status: "validated",
+      monthYear: { in: priorMonths },
+      id: { not: anchor.id },
+    },
+    select: { id: true, monthYear: true, csvStorageUrl: true },
+    orderBy: { uploadedAt: "desc" },
+  });
+  const byMonth = new Map<string, { id: string; csvStorageUrl: string | null }>();
+  for (const u of priorUploads) if (!byMonth.has(u.monthYear)) byMonth.set(u.monthYear, u);
+  const prior1 = byMonth.get(priorMonths[0]);
+  const prior2 = byMonth.get(priorMonths[1]);
+  if (!prior1?.csvStorageUrl || !prior2?.csvStorageUrl) {
+    return empty([anchor.monthYear]);
+  }
+
+  const cacheKey = [anchor.id, prior1.id, prior2.id].sort().join("|");
+  const cached = pooled90dCache.get(cacheKey);
+  if (cached) return cached;
+
+  const { getMarketConfigForUser } = await import("@/lib/market-config-server");
+  const config = await getMarketConfigForUser(anchor.userId);
+  if (!config) return empty([anchor.monthYear]);
+
+  const { loadCanonicalResolver } = await import("@/lib/kb-merge/canonical");
+  const resolver = await loadCanonicalResolver(anchor.userId);
+  const canonicalize = (raw: string) => resolver.resolve(raw);
+
+  const { readUploadFile } = await import("@/lib/market-csv");
+  const READ_TIMEOUT_MS = 12_000;
+  const [anchorCsv, prior1Csv, prior2Csv] = await Promise.all([
+    withTimeout(readUploadFile(anchor.csvStorageUrl), READ_TIMEOUT_MS, "anchor"),
+    withTimeout(readUploadFile(prior1.csvStorageUrl), READ_TIMEOUT_MS, "prior-1"),
+    withTimeout(readUploadFile(prior2.csvStorageUrl), READ_TIMEOUT_MS, "prior-2"),
+  ]);
+
+  const anchorBuckets = buildBuckets(anchorCsv, config, canonicalize).buckets;
+  const prior1Buckets = buildBuckets(prior1Csv, config, canonicalize).buckets;
+  const prior2Buckets = buildBuckets(prior2Csv, config, canonicalize).buckets;
+
+  const result: Pooled90dResult = {
+    complete: true,
+    anchorMonthYear: anchor.monthYear,
+    windowMonths: [anchor.monthYear, priorMonths[0], priorMonths[1]],
+    groups: pool90d(anchorBuckets, [prior1Buckets, prior2Buckets]),
+  };
+  pooled90dCache.set(cacheKey, result);
+  return result;
 }

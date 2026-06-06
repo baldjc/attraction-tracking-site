@@ -419,6 +419,34 @@ function buildInitialUserMessage(args: {
     lines.push(
       "Every numeric stat you write in the script body must match one of these values within 2% tolerance, and must be attributed to the member's own market analysis (NOT to CREB, CMHC, or any outside body). These are the deterministic aggregations from the member's uploaded MLS data — they are the channel's edge.",
     );
+    const hasPeriodRows = sourceOfTruthMetrics.some(
+      (m) => !/^\d{4}-\d{2}$/.test(m.monthYear),
+    );
+    const hasYearAgoRows = (() => {
+      const months = sourceOfTruthMetrics
+        .map((m) => m.monthYear)
+        .filter((my) => /^\d{4}-\d{2}$/.test(my))
+        .sort();
+      if (months.length < 2) return false;
+      // A ~12-month gap between the earliest and latest cited month means
+      // year-ago endpoints are present (we inject them under their own header).
+      const first = months[0];
+      const last = months[months.length - 1];
+      return first.slice(0, 4) !== last.slice(0, 4);
+    })();
+    if (hasPeriodRows || hasYearAgoRows) {
+      lines.push("");
+      lines.push(
+        "**TREND ROWS PRESENT.** The most recent `(month: …)` rows are your spine. " +
+          (hasYearAgoRows
+            ? "Year-ago rows appear under their own earlier `(month: …)` header — when an endpoint pair exists, state BOTH values and name each period. "
+            : "") +
+          (hasPeriodRows
+            ? "`(period: 90-day pooled …)` rows are a TRUE trailing-quarter pooled figure — reference them as \"over the last 90 days,\" never as a single month. "
+            : "") +
+          "Only reference a period whose row is actually shown; if a period is absent, do not mention it. Cite every trend number in `## Sources`, scoped to its period.",
+      );
+    }
     if (lockedHoods.length > 0) {
       lines.push("");
       lines.push(
