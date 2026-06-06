@@ -13,11 +13,13 @@ import {
 } from "@/lib/content-engine-context";
 import {
   getSourceOfTruthMetrics,
+  pooled90dToSourceOfTruth,
   formatValue,
   sotValuesWithinRounding,
   resolveCanonicalSotValue,
   type MetricFamily,
 } from "@/lib/aggregated-metrics";
+import { aggregatePooled90dFromDb } from "@/lib/csv-aggregate";
 import { detectMetricFamily } from "@/lib/story-lead-fact-resolver";
 import { getNeighbourhoodContext } from "@/lib/get-neighbourhood-context";
 import {
@@ -630,6 +632,51 @@ export async function runBuildScript(args: {
     uploadIds: uploadIdsForSot,
     neighbourhoods: neighbourhoodsInScript,
   });
+
+  // ── TRUE pooled trailing-90-day re-aggregation (parity with the
+  // script-builder-v2 route) ──────────────────────────────────────────────
+  // The Jarvis script tool is the path members actually use for market-update
+  // scripts, so the trend feature has to be wired here too — otherwise the
+  // 90-day numbers are computed elsewhere but never reach this generator's
+  // context, and the draft cites only the current month. Appended onto the
+  // SAME `sourceOfTruthMetrics` array so the pooled rows are simultaneously
+  // RENDERED for the writer AND become validator anchors (no schema /
+  // script-content-rules change). The anchor is the latest cited upload (max
+  // calendar monthYear); it defines the 90-day window's leading month.
+  //
+  // Scope note: ONLY the 90-day read is injected here — year-ago endpoints are
+  // intentionally NOT added, so a "$X a year ago" claim can never appear
+  // without an explicit, separately-reviewed change. Bounded + best-effort:
+  // any failure (missing prior months, storage stall, config gap) simply omits
+  // the 90-day rows; the script falls back to the monthly context with no error
+  // surfaced to the member.
+  const anchorUpload = factRows
+    .map((f) => ({ uploadId: f.uploadId, monthYear: f.upload?.monthYear ?? "" }))
+    .filter((u) => u.uploadId && /^\d{4}-\d{2}$/.test(u.monthYear))
+    .reduce<{ uploadId: string; monthYear: string } | null>(
+      (best, u) => (!best || u.monthYear > best.monthYear ? u : best),
+      null,
+    );
+  if (anchorUpload) {
+    try {
+      const pooled = await aggregatePooled90dFromDb(anchorUpload.uploadId);
+      const pooledRows = pooled90dToSourceOfTruth(
+        pooled,
+        neighbourhoodsInScript,
+      );
+      sourceOfTruthMetrics.push(...pooledRows);
+      console.log(
+        `[jarvis:sot] 90d complete=${pooled.complete} window=${pooled.windowMonths.join(",")} metrics=${pooledRows.length}`,
+      );
+    } catch (err) {
+      console.warn(
+        `[jarvis:sot] 90d pooled aggregation failed (omitting): ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
+    }
+  }
+
   const propertyTypeByHood = buildPropertyTypeLock(citedFacts, null);
 
   const memberRecord = await prisma.user.findUnique({
