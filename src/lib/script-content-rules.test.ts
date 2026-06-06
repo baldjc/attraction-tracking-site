@@ -220,6 +220,135 @@ test("unanchored_stat — an unsourced industry-norm RANGE ('15-20%') is caught 
   assert.ok(n >= 1, "both endpoints of an unsourced range must be grounded");
 });
 
+/* ── historical + macro/cycle numbers held to the current-market bar ──
+      A specific historical ("in 2021 failure rates ran 20-25%") or macro/
+      timeline ("18 months past the rate peak") figure may appear ONLY if it
+      traces to a fact/source; otherwise it must be dropped or reframed as
+      qualitative. Qualitative cycle/era framing must still flow, and the
+      current-month grounding behaviour must be unchanged. ── */
+
+test("unanchored_stat — an invented HISTORICAL stat ('in 2021 failure rates ran 20-25%') is rejected", () => {
+  const n = unanchoredHits(
+    "In a true sellers market like we had in 2021, failure rates ran closer to 20-25% across the board.",
+    { sourceOfTruth: [{ metricFamily: "MOI", metricValue: 4.5 }] },
+  );
+  assert.ok(n >= 1, "an unsourced historical figure must be held to the current-market bar");
+});
+
+test("unanchored_stat — a QUALITATIVE failure-rate comparison (no number) PASSES", () => {
+  const n = unanchoredHits(
+    "Right now failure rates are higher than a red-hot market would show, so pricing matters more than ever.",
+    { sourceOfTruth: [{ metricFamily: "MOI", metricValue: 4.5 }] },
+  );
+  assert.equal(n, 0, "qualitative cycle/era framing with no specific figure must flow");
+});
+
+test("unanchored_stat — an invented MACRO/TIMELINE stat ('18 months past the rate peak') is rejected", () => {
+  // Before the macro-cycle fix this slipped: the time-reference filter dropped
+  // the "18 months" token because it isn't a market-time metric (MOI/DOM). A
+  // duration pinned to a cycle milestone ("the rate peak") is a sourceable
+  // claim, not a free narrative span, and must now be flagged.
+  const n = unanchoredHits(
+    "We're 18 months past the rate peak now, and the market is finally settling down.",
+    { sourceOfTruth: [{ metricFamily: "MOI", metricValue: 4.5 }] },
+  );
+  assert.ok(n >= 1, "an unsourced macro/cycle duration must be flagged like any other stat");
+});
+
+test("unanchored_stat — invented macro durations near 'normalization' / 'price discovery' are rejected", () => {
+  const a = unanchoredHits(
+    "We're 12 months into inventory normalization at this point in the cycle.",
+    { sourceOfTruth: [{ metricFamily: "MOI", metricValue: 4.5 }] },
+  );
+  const b = unanchoredHits(
+    "We're still 6-12 months away from true price discovery in this market.",
+    { sourceOfTruth: [{ metricFamily: "MOI", metricValue: 4.5 }] },
+  );
+  assert.ok(a >= 1, "'12 months into normalization' must be flagged");
+  assert.ok(b >= 1, "'6-12 months away from price discovery' must be flagged");
+});
+
+test("unanchored_stat — QUALITATIVE cycle/era framing (no figures) PASSES", () => {
+  const n = unanchoredHits(
+    "We're well past the rate peak now, the market's been normalizing for a while, and true price discovery is still ahead of us.",
+    { sourceOfTruth: [{ metricFamily: "MOI", metricValue: 4.5 }] },
+  );
+  assert.equal(n, 0, "cycle/era framing without invented numbers must still flow");
+});
+
+test("unanchored_stat — a GENUINE narrative time span ('over the next 90 days') still passes", () => {
+  // The macro-cycle exception must NOT over-block: a duration with no cycle
+  // milestone nearby is still a droppable narrative span, not a market stat.
+  const n = unanchoredHits(
+    "Over the next 90 days we'll see how buyers respond to the new listings coming up.",
+    { sourceOfTruth: [{ metricFamily: "MOI", metricValue: 4.5 }] },
+  );
+  assert.equal(n, 0, "a plain narrative time span must not be treated as a market number");
+});
+
+test("unanchored_stat — macro detection is construction-based, not topic-word based (no false positives)", () => {
+  // Each of these contains a cycle TOPIC word but NO milestone construction
+  // (no connector positioning the duration relative to the milestone), so the
+  // duration is a genuine narrative span and must NOT be flagged.
+  const sot = { sourceOfTruth: [{ metricFamily: "MOI", metricValue: 4.5 }] };
+  const a = unanchoredHits(
+    "Over the next 12 months, year-over-year comparisons should get cleaner.",
+    sot,
+  );
+  const b = unanchoredHits(
+    "It can take 18 months to show up in the year-over-year trend.",
+    sot,
+  );
+  const c = unanchoredHits(
+    "In a correction, over the next 90 days buyers usually pause before acting.",
+    sot,
+  );
+  assert.equal(a, 0, "'over the next 12 months ... year-over-year' is narrative, not macro");
+  assert.equal(b, 0, "'18 months to show up in the trend' is narrative, not macro");
+  assert.equal(c, 0, "'over the next 90 days' near 'a correction' is still a narrative span");
+});
+
+test("unanchored_stat — the 'from <milestone>' construction is also caught", () => {
+  const a = unanchoredHits(
+    "We're 18 months from the rate peak now, and things are settling.",
+    { sourceOfTruth: [{ metricFamily: "MOI", metricValue: 4.5 }] },
+  );
+  const b = unanchoredHits(
+    "Prices won't settle until we're 6-12 months from true price discovery.",
+    { sourceOfTruth: [{ metricFamily: "MOI", metricValue: 4.5 }] },
+  );
+  assert.ok(a >= 1, "'18 months from the rate peak' must be flagged");
+  assert.ok(b >= 1, "'6-12 months from price discovery' must be flagged");
+});
+
+test("no_sot_disagreement — a macro/cycle duration is NOT compared against months-of-inventory", () => {
+  // A cited "12 months" macro timing phrase must not raise a bogus canonical
+  // conflict against an MOI of 4.5 — that rule is about per-family value
+  // disagreement, not narrative/macro timing.
+  const { violations } = validateScript(
+    "We're 12 months past the rate peak now, well into the new normal.",
+    {
+      sourceOfTruth: [{ metricFamily: "MOI", metricValue: 4.5 }],
+      citedFacts: [{ raw: "12 months" }],
+    },
+  );
+  const sotConflicts = violations.filter((v) => v.rule === "no_sot_disagreement");
+  assert.equal(sotConflicts.length, 0, "macro durations must not trip canonical-value conflict");
+});
+
+test("unanchored_stat — current-month grounding is UNCHANGED (sourced number passes, unsourced rejected)", () => {
+  const sourced = unanchoredHits(
+    "Homes are taking about 32 days on market this month across the area.",
+    { sourceOfTruth: [{ metricFamily: "DOM", metricValue: 32 }] },
+  );
+  const unsourced = unanchoredHits(
+    "Homes are taking about 55 days on market this month across the area.",
+    { sourceOfTruth: [{ metricFamily: "DOM", metricValue: 32 }] },
+  );
+  assert.equal(sourced, 0, "a current-month number matching the SoT must still pass");
+  assert.ok(unsourced >= 1, "a current-month number with no matching SoT must still be rejected");
+});
+
 /* ── no "...for a second" filler tail (approved "Think about that." stays) ── */
 
 function forASecondHits(script: string): number {

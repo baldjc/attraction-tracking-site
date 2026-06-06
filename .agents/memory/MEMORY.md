@@ -48,3 +48,4 @@
 - [Footnote/heading cutoff dialogue scope](footnote-cutoff-dialogue-scope.md) — validator "stop scanning here" heading regexes must be full-line anchored or a same-prefix content heading truncates dialogue scanning and silently bypasses grounding.
 - [Status codes vs full-word CSV labels](market-status-fullword-vs-codes.md) — short statusCodes (A/S/P…) vs full-word CSV labels → all rows unknown → 0 sold → every fact rejected; needs canonical-word + token fallback. Also get_facts 4-state honesty.
 - [Jarvis proposal lifecycle CAS](jarvis-proposal-cas.md) — every proposalState write (save + reopen/decline) must be a guarded compare-and-swap or a stale transition clobbers created/savedScriptId and dupes the draft.
+- [Grounding macro-duration split](script-grounding-timeref-split.md) — macro durations ground via unanchored_stat but stay dropped in no_sot_disagreement; detect by connector+anchor, not bare topic words.

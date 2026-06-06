@@ -770,6 +770,79 @@ function isMarketTimeAnchored(dialogue: string, offset: number): boolean {
   return MARKET_TIME_ANCHORS.some((re) => re.test(window));
 }
 
+/**
+ * Macro / market-cycle milestone language. A duration figure ("18 months",
+ * "6-12 months") pinned to one of these milestones is NOT a free narrative
+ * span — it's a specific, falsifiable claim about WHERE the market sits in the
+ * rate/inventory cycle that the member cannot source from their current-month
+ * facts ("18 months past the rate peak", "12 months into inventory
+ * normalization", "6-12 months away from true price discovery", "6 months into
+ * the recovery"). Such figures must trace to a fact/cited source or be reframed
+ * as qualitative — same bar as a current-market number.
+ *
+ * Detection requires BOTH a relational connector AND a specific cycle anchor in
+ * the window — deliberately construction-based, not topic-word based. A bare
+ * topic word ("correction", "recovery", "year-over-year") is too common and
+ * over-blocks genuine narrative spans, so a duration only counts as macro when
+ * it is *positioned relative to* a milestone ("past the rate peak", "into
+ * normalization", "away from price discovery"). A duration with no such
+ * construction ("over the next 90 days", "18 months to show up in the trend",
+ * "in a correction, over the next 90 days") stays a droppable narrative span.
+ */
+const MACRO_CYCLE_CONNECTOR =
+  /\b(?:past|since|after|before|into|through|out\s+of|away\s+from|from|off|toward|towards|ahead\s+of|ago)\b/i;
+
+const MACRO_CYCLE_ANCHOR =
+  /(?:rate[-\s]*(?:peak|hike|cut|increase|drop|rise|pause)|interest[-\s]+rates?|\bthe\s+peak\b|\brates?\s+(?:peaked|rose|fell|dropped|climbed)\b|normaliz(?:e|ed|ing|ation)|price\s+discovery|post[-\s]?pandemic|post[-\s]?covid|\bthe\s+(?:correction|recovery|rebound|downturn|cycle|bottom)\b|soft\s+landing)/i;
+
+/**
+ * Whether a duration token sits next to macro/cycle milestone language. Uses a
+ * wider window (8 words each side) than the market-time check because the
+ * milestone phrase typically trails the number ("18 months past the rate peak").
+ */
+function isMacroCycleAnchored(dialogue: string, offset: number): boolean {
+  const window = windowAround(dialogue, offset, 8);
+  return MACRO_CYCLE_CONNECTOR.test(window) && MACRO_CYCLE_ANCHOR.test(window);
+}
+
+/**
+ * A months/days duration that is NOT a real market-time metric (months of
+ * inventory, days on market). This is the original Wave-5 narrative-span skip:
+ * it drops ALL such durations, including macro/cycle ones. Used by the
+ * canonical-value rules (`checkNoSotDisagreement`) that compare a token against
+ * a same-unit SoT row — a macro duration like "12 months past the rate peak"
+ * must NOT be force-compared against months-of-inventory there (that would
+ * raise a bogus canonical-value conflict). Macro grounding is handled by the
+ * unanchored_stat path instead (see `isDroppableNarrativeTimeRef`).
+ */
+function isNonMarketTimeRef(
+  dialogue: string,
+  tok: ExtractedStatToken,
+): boolean {
+  if (tok.unit !== "months" && tok.unit !== "days") return false;
+  if (!TIME_REFERENCE_PATTERN.test(tok.raw)) return false;
+  return !isMarketTimeAnchored(dialogue, tok.offset);
+}
+
+/**
+ * Whether a stat token is a DROPPABLE narrative time span — a non-market
+ * duration that is ALSO not pinned to a macro/cycle milestone. Used by the
+ * GROUNDING rules (unanchored_stat, unlisted_market_stat, autoSoften): macro
+ * durations fall through to grounding so they must trace to a fact or be
+ * reframed qualitative, while genuine spans ("over the next 90 days") are
+ * still skipped.
+ *
+ * Centralised so the grounding call sites all apply the SAME skip decision —
+ * they previously inlined identical guards and could drift.
+ */
+function isDroppableNarrativeTimeRef(
+  dialogue: string,
+  tok: ExtractedStatToken,
+): boolean {
+  if (!isNonMarketTimeRef(dialogue, tok)) return false;
+  return !isMacroCycleAnchored(dialogue, tok.offset);
+}
+
 /** Outside-source attribution markers — case-insensitive whole-word match. */
 const OUTSIDE_SOURCE_PATTERNS = [
   /\bCREB\b/i,
@@ -1152,12 +1225,10 @@ export function checkNoMisattributedStats(
     // Wave 5 — drop narrative time references ("18 months to show up
     // clearly", "over the next 90 days") that look like stat tokens but
     // aren't. Only applies to month/day units; currency + percent are
-    // unaffected. See `TIME_REFERENCE_PATTERN` for full rationale.
-    if (
-      (tok.unit === "months" || tok.unit === "days") &&
-      TIME_REFERENCE_PATTERN.test(tok.raw) &&
-      !isMarketTimeAnchored(dialogue, tok.offset)
-    ) {
+    // unaffected. EXCEPTION: a duration pinned to a macro/cycle milestone
+    // ("18 months past the rate peak") is a sourceable claim, NOT a free
+    // span — `isDroppableNarrativeTimeRef` keeps it in play so it grounds.
+    if (isDroppableNarrativeTimeRef(dialogue, tok)) {
       continue;
     }
 
@@ -1222,10 +1293,15 @@ export function checkNoMisattributedStats(
           `metrics or the cited-facts block (within 2% tolerance). This holds ` +
           `for EVERY number family and shape — comparison/temporal stats ` +
           `("40% longer than 2024"), %, $, months, days, ranges ("15-20%"), ` +
-          `sale-to-list ("100%/99%"), industry-norm figures. Either re-anchor ` +
-          `"${tok.raw}" to a real number from the data AND list it in ` +
-          `"## Sources", or remove it / reframe it as general with no specific ` +
-          `figure — the channel's edge is precision, not vibes.`,
+          `sale-to-list ("100%/99%"), industry-norm figures, AND historical or ` +
+          `macro/cycle figures you cannot source ("in 2021 failure rates ran ` +
+          `20-25%", "18 months past the rate peak", "12 months into ` +
+          `normalization", "6-12 months from price discovery"). You only have ` +
+          `CURRENT-MONTH data. Either re-anchor "${tok.raw}" to a real number ` +
+          `from the data AND list it in "## Sources", or remove it / reframe it ` +
+          `as qualitative with no specific figure ("well past the rate peak", ` +
+          `"failure rates higher than a red-hot market would show") — the ` +
+          `channel's edge is precision, not vibes.`,
         snippet: dialogue
           .slice(Math.max(0, tok.offset - 60), tok.offset + tok.raw.length + 20)
           .trim(),
@@ -1337,12 +1413,9 @@ export function checkUnlistedMarketStat(
   const seen = new Set<string>();
   for (const tok of tokens) {
     // Skip narrative time references ("over the next 90 days") — same filter
-    // unanchored_stat applies so we never treat a non-stat as a market number.
-    if (
-      (tok.unit === "months" || tok.unit === "days") &&
-      TIME_REFERENCE_PATTERN.test(tok.raw) &&
-      !isMarketTimeAnchored(dialogue, tok.offset)
-    ) {
+    // unanchored_stat applies (macro/cycle durations stay in play so a "real"
+    // macro number is still pushed into the ## Sources footnote, not skipped).
+    if (isDroppableNarrativeTimeRef(dialogue, tok)) {
       continue;
     }
 
@@ -1481,13 +1554,12 @@ export function checkNoSotDisagreement(
   const violations: ScriptViolation[] = [];
   const seen = new Set<string>();
   for (const tok of tokens) {
-    // Skip narrative time spans ("18 months to show up") — same guard the
-    // misattribution rule uses; they aren't market stats.
-    if (
-      (tok.unit === "months" || tok.unit === "days") &&
-      TIME_REFERENCE_PATTERN.test(tok.raw) &&
-      !isMarketTimeAnchored(dialogue, tok.offset)
-    ) {
+    // Skip ALL non-market durations here ("18 months to show up", "12 months
+    // past the rate peak") — this is a canonical-VALUE conflict rule, not a
+    // grounding rule, so a macro/cycle duration must NOT be force-compared
+    // against months-of-inventory (that would raise a bogus disagreement). Its
+    // grounding is enforced by the unanchored_stat path instead.
+    if (isNonMarketTimeRef(dialogue, tok)) {
       continue;
     }
 
@@ -3740,13 +3812,10 @@ export function autoSoftenUnanchoredStats(
       changed = false;
       const tokens = extractStatTokens(dialogue);
       for (const tok of tokens) {
-        // Mirror validator: skip narrative time references unless
-        // anchored to a market-time phrase.
-        if (
-          (tok.unit === "months" || tok.unit === "days") &&
-          TIME_REFERENCE_PATTERN.test(tok.raw) &&
-          !isMarketTimeAnchored(dialogue, tok.offset)
-        ) {
+        // Mirror validator: skip narrative time references unless anchored to
+        // a market-time phrase OR a macro/cycle milestone (the latter are
+        // softened to directional language alongside other unanchored stats).
+        if (isDroppableNarrativeTimeRef(dialogue, tok)) {
           continue;
         }
 
