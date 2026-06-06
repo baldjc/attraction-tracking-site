@@ -20,6 +20,8 @@ import {
   type MetricFamily,
 } from "@/lib/aggregated-metrics";
 import { aggregatePooled90dFromDb } from "@/lib/csv-aggregate";
+import { canonicalVariantKeys } from "@/lib/market-config";
+import { loadMemberMetricSettings } from "@/lib/member-metric-settings-server";
 import { detectMetricFamily } from "@/lib/story-lead-fact-resolver";
 import { getNeighbourhoodContext } from "@/lib/get-neighbourhood-context";
 import {
@@ -660,13 +662,29 @@ export async function runBuildScript(args: {
   if (anchorUpload) {
     try {
       const pooled = await aggregatePooled90dFromDb(anchorUpload.uploadId);
+      // Pin the 90-day MOI to the member's monthly MOI variant so the two
+      // periods are comparable. "Default" defers to the board-canonical variant
+      // (e.g. NTREIS → strict), so a hardcoded inclusive 90-day MOI would
+      // mismatch a strict current-month MOI.
+      const [memberSettings, mlsRow] = await Promise.all([
+        loadMemberMetricSettings(userId),
+        prisma.marketConfig.findUnique({
+          where: { userId },
+          select: { mlsSource: true },
+        }),
+      ]);
+      const moiVariantKey = canonicalVariantKeys(
+        mlsRow?.mlsSource ?? null,
+        memberSettings,
+      ).moiMetricKey;
       const pooledRows = pooled90dToSourceOfTruth(
         pooled,
         neighbourhoodsInScript,
+        moiVariantKey,
       );
       sourceOfTruthMetrics.push(...pooledRows);
       console.log(
-        `[jarvis:sot] 90d complete=${pooled.complete} window=${pooled.windowMonths.join(",")} metrics=${pooledRows.length}`,
+        `[jarvis:sot] 90d complete=${pooled.complete} window=${pooled.windowMonths.join(",")} moiVariant=${moiVariantKey} metrics=${pooledRows.length}`,
       );
     } catch (err) {
       console.warn(

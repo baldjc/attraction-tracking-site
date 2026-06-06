@@ -23,9 +23,19 @@ script cite it. No schema change, no script-content-rules.ts change.
   csv-aggregate ONLY for the separate upload-time fact-validator prompt. The wrong
   inline "90d {rolling90dValue}" annotation was removed from `renderSourceOfTruthBlock`
   (script path only).
-- 90-day MOI must pin the inclusive canonical variant (`moiInclusive`,
-  `CANONICAL_METRIC_KEY.MOI`) = (anchor active+pending) / (pooledSold/months), so it
-  is comparable to the monthly MOI row.
+- 90-day MOI must follow the MEMBER'S monthly MOI variant, NOT a hardcoded one.
+  Resolve it per-member via `canonicalVariantKeys(mlsSource, loadMemberMetricSettings(userId)).moiMetricKey`
+  and pass it as the 3rd arg to `pooled90dToSourceOfTruth`. "Default" methodology
+  (no memberMetricSettings row) DEFERS to the board-canonical variant (e.g. NTREIS
+  → strict), so hardcoding `moiInclusive` silently mismatched strict members
+  (current-month strict vs 90-day inclusive — e.g. Phil 1.35 vs 2.20). `pool90d`
+  emits BOTH `moiStrict` (anchor active ÷ avgMonthlySold) and `moiInclusive`
+  ((active+pending) ÷ same denom); the SoT fn selects by variant and labels the row
+  with `metricKey = moiVariantKey` (`moiInclusiveRolling3` reuses the inclusive value
+  since the pooled window is already trailing-3). `mlsSource` lives on `MarketConfig`
+  (userId @unique → `findUnique`), NOT on `MarketConfigSummary`. Wire in BOTH
+  generators (see below). Note: `CANONICAL_METRIC_KEY.MOI` stays static `moiInclusive`
+  for the isCanonical display tag — harmless because period rows sit in their own group.
 - Year-ago endpoints are just the persisted `AggregatedMetric` rows of the upload at
   `shiftMonthYear(-12)` (validated only); they render under their own YYYY-MM header
   → citable "then" endpoint. YoY must state BOTH endpoints.

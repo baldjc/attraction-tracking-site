@@ -88,6 +88,23 @@ test("pool90d — MOI is inclusive rolling-3: (anchor active+pending) ÷ (pooled
   assert.ok(Math.abs((g.moiInclusive as number) - 3) < 1e-9);
 });
 
+test("pool90d — strict MOI drops Pending from the numerator (anchor active ÷ avg sold)", () => {
+  // anchor active=8, pending=2; pooledSold=10 over 3 months → avg 3.333/mo.
+  const anchor = new Map([
+    [KEY, acc({ soldPrices: [100], active: 8, pending: 2 })],
+  ]);
+  const prior1 = new Map([
+    [KEY, acc({ soldPrices: [200, 200, 200, 200, 200] })],
+  ]);
+  const prior2 = new Map([[KEY, acc({ soldPrices: [300, 300, 300, 300] })]]);
+
+  const [g] = pool90d(anchor, [prior1, prior2]);
+  // strict = 8 / (10 / 3) = 2.4; inclusive = 10 / (10 / 3) = 3.0. They differ.
+  assert.ok(g.moiStrict != null);
+  assert.ok(Math.abs((g.moiStrict as number) - 2.4) < 1e-9);
+  assert.notEqual(g.moiStrict, g.moiInclusive);
+});
+
 test("pool90d — anchor defines the group universe (a prior-only group yields no row)", () => {
   const anchor = new Map([[KEY, acc({ soldPrices: [100, 100] })]]);
   const prior1 = new Map([
@@ -143,13 +160,55 @@ test("pooled90dToSourceOfTruth — incomplete window emits NO rows (no data → 
   assert.deepEqual(pooled90dToSourceOfTruth(incomplete), []);
 });
 
-test("pooled90dToSourceOfTruth — MOI row pins the inclusive canonical variant", () => {
+test("pooled90dToSourceOfTruth — MOI defaults to the inclusive variant", () => {
   const rows = pooled90dToSourceOfTruth(completeResult());
   const moi = rows.find((r) => r.metricFamily === "MOI");
   assert.ok(moi, "expected an MOI row");
   assert.equal(moi!.metricKey, "moiInclusive");
   // period label, not a calendar month
   assert.ok(/^90-day pooled \(/.test(moi!.monthYear));
+});
+
+test("pooled90dToSourceOfTruth — MOI follows the member's variant (strict)", () => {
+  // completeResult: anchor active=10, pending=2; pooledSold=8+6+5=19 over 3 mo
+  // → avg 6.333/mo. inclusive = 12/6.333; strict = 10/6.333. They differ.
+  const inclusive = pooled90dToSourceOfTruth(
+    completeResult(),
+    undefined,
+    "moiInclusive",
+  ).find((r) => r.metricFamily === "MOI");
+  const strict = pooled90dToSourceOfTruth(
+    completeResult(),
+    undefined,
+    "moiStrict",
+  ).find((r) => r.metricFamily === "MOI");
+  assert.ok(inclusive && strict, "expected MOI rows for both variants");
+  // The emitted metricKey labels the variant so it is explicit in the block.
+  assert.equal(strict!.metricKey, "moiStrict");
+  assert.equal(inclusive!.metricKey, "moiInclusive");
+  // strict numerator drops Pending → strictly smaller MOI here.
+  assert.ok((strict!.metricValue as number) < (inclusive!.metricValue as number));
+  const avgSold = 19 / 3;
+  assert.ok(Math.abs((strict!.metricValue as number) - 10 / avgSold) < 1e-9);
+});
+
+test("pooled90dToSourceOfTruth — inclusive-rolling3 variant uses the inclusive value", () => {
+  // The board may canonicalize to moiInclusiveRolling3; the pooled window is
+  // already trailing-3, so it shares the inclusive (Active + Pending) numerator
+  // but must be LABELLED with the member's variant key for comparability.
+  const row = pooled90dToSourceOfTruth(
+    completeResult(),
+    undefined,
+    "moiInclusiveRolling3",
+  ).find((r) => r.metricFamily === "MOI");
+  const inclusive = pooled90dToSourceOfTruth(
+    completeResult(),
+    undefined,
+    "moiInclusive",
+  ).find((r) => r.metricFamily === "MOI");
+  assert.ok(row && inclusive);
+  assert.equal(row!.metricKey, "moiInclusiveRolling3");
+  assert.equal(row!.metricValue, inclusive!.metricValue);
 });
 
 test("pooled90dToSourceOfTruth — period label spans oldest→newest of the window", () => {

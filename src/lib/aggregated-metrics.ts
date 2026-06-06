@@ -452,9 +452,13 @@ export function resolveCanonicalSotValue(
  *
  * - Only propertyType-rollup groups (priceTier === null) are emitted — the
  *   script cites neighbourhood × type, never price tier.
- * - MOI is pinned to the inclusive variant (metricKey `moiInclusive` =
- *   CANONICAL_METRIC_KEY.MOI) so the 90-day MOI is directly comparable to the
- *   monthly canonical (never the strict/inclusive mismatch).
+ * - MOI matches the MEMBER'S monthly MOI variant (`moiVariantKey`, resolved by
+ *   the caller via `canonicalVariantKeys(mlsSource, settings)`), so the 90-day
+ *   MOI is directly comparable to the current-month MOI the member actually
+ *   cites — strict for a strict member, inclusive for an inclusive one. Both
+ *   share the trailing-average-sold denominator; only the numerator differs
+ *   (strict = Active; inclusive / inclusive-rolling3 = Active + Pending). The
+ *   row is labelled with its resolved metricKey so the variant is explicit.
  * - SAMPLE_THRESHOLDS are applied (median/SP-LP/DOM/MOI on the pooled Sold N,
  *   failure-rate on Sold+offMarket N).
  * - `neighbourhoods` (the cited hoods) scopes output; "All Neighbourhoods" is
@@ -465,6 +469,10 @@ export function resolveCanonicalSotValue(
 export function pooled90dToSourceOfTruth(
   result: Pooled90dResult,
   neighbourhoods?: string[],
+  moiVariantKey:
+    | "moiInclusive"
+    | "moiStrict"
+    | "moiInclusiveRolling3" = "moiInclusive",
 ): SourceOfTruthMetric[] {
   if (!result.complete || result.groups.length === 0) return [];
 
@@ -511,7 +519,13 @@ export function pooled90dToSourceOfTruth(
     push("MEDIAN", "medianPrice", g.medianPrice, g.sampleSize);
     push("SP_LP", "spLpRatio", g.spLpRatio, g.sampleSize);
     push("DOM", "domMedian", g.domMedian, g.sampleSize);
-    push("MOI", CANONICAL_METRIC_KEY.MOI ?? "moiInclusive", g.moiInclusive, g.sampleSize);
+    // MOI: emit the member's monthly variant so the 90-day MOI is comparable.
+    // moiStrict drops Pending from the numerator; moiInclusive and the
+    // inclusive-rolling3 variant share the same (Active + Pending) numerator the
+    // pooled aggregation already computes (both are inherently trailing-3).
+    const moiValue =
+      moiVariantKey === "moiStrict" ? g.moiStrict : g.moiInclusive;
+    push("MOI", moiVariantKey, moiValue, g.sampleSize);
     push("FAILURE_RATE", "failureRate", g.failureRate, g.failN);
   }
   return out;

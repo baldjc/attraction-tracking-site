@@ -72,6 +72,8 @@ import {
   shiftMonthYear,
 } from "@/lib/csv-aggregate";
 import { loadMarketConfigSummary } from "@/lib/content-engine-context";
+import { canonicalVariantKeys } from "@/lib/market-config";
+import { loadMemberMetricSettings } from "@/lib/member-metric-settings-server";
 import { getNeighbourhoodContext } from "@/lib/get-neighbourhood-context";
 import { enrichPlanWithRelatedFacts } from "@/lib/script-plan-enrichment";
 import {
@@ -575,13 +577,29 @@ export async function POST(req: NextRequest) {
   if (anchorUpload) {
     try {
       const pooled = await aggregatePooled90dFromDb(anchorUpload.uploadId);
+      // Pin the 90-day MOI to the member's monthly MOI variant (see
+      // pooled90dToSourceOfTruth) so the trailing-quarter MOI is comparable to
+      // the current-month MOI the member cites. "Default" defers to the
+      // board-canonical variant (e.g. NTREIS → strict).
+      const [memberSettings, mlsRow] = await Promise.all([
+        loadMemberMetricSettings(userId),
+        prisma.marketConfig.findUnique({
+          where: { userId },
+          select: { mlsSource: true },
+        }),
+      ]);
+      const moiVariantKey = canonicalVariantKeys(
+        mlsRow?.mlsSource ?? null,
+        memberSettings,
+      ).moiMetricKey;
       const pooledRows = pooled90dToSourceOfTruth(
         pooled,
         neighbourhoodsInScript,
+        moiVariantKey,
       );
       sourceOfTruthMetrics.push(...pooledRows);
       console.log(
-        `[sb-v2:sot] 90d complete=${pooled.complete} window=${pooled.windowMonths.join(",")} metrics=${pooledRows.length}`,
+        `[sb-v2:sot] 90d complete=${pooled.complete} window=${pooled.windowMonths.join(",")} moiVariant=${moiVariantKey} metrics=${pooledRows.length}`,
       );
     } catch (err) {
       console.warn(

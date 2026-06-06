@@ -1030,6 +1030,10 @@ export interface Pooled90dGroup {
   failureRate: number | null;
   /** inclusive rolling-3 MOI: (anchor Active + Pending) ÷ (pooledSold ÷ months). */
   moiInclusive: number | null;
+  /** strict rolling-3 MOI: (anchor Active) ÷ (pooledSold ÷ months). Same window
+   *  + denominator as moiInclusive; numerator drops Pending. Emitted so the
+   *  90-day MOI can match whichever variant the member's monthly MOI uses. */
+  moiStrict: number | null;
   /** pooled Sold count across the window (the median's real N). */
   sampleSize: number;
   /** pooled Sold + offMarket (failure-rate N). */
@@ -1091,6 +1095,11 @@ export function pool90d(
     const inclusiveNumerator = anchorAcc.active + anchorAcc.pending;
     const moiInclusive =
       avgMonthlySold > 0 ? inclusiveNumerator / avgMonthlySold : null;
+    // Strict MOI shares the trailing-average-sold denominator; only the standing
+    // inventory numerator differs (Active, no Pending). Emitted alongside the
+    // inclusive value so the caller can pick the member's monthly MOI variant.
+    const moiStrict =
+      avgMonthlySold > 0 ? anchorAcc.active / avgMonthlySold : null;
     out.push({
       neighbourhood,
       propertyType: propertyTypeRaw || null,
@@ -1100,6 +1109,7 @@ export function pool90d(
       domMedian: m.domMedian,
       failureRate: m.failureRate,
       moiInclusive,
+      moiStrict,
       sampleSize: pooled.sold,
       failN: pooled.sold + pooled.offMarket,
       monthsInWindow,
