@@ -849,6 +849,11 @@ function extractStatTokens(dialogue: string): ExtractedStatToken[] {
     // pass can rewrite unanchored MOI fabrications to directional
     // language alongside bare "X months" tokens.
     { re: /\b(\d+(?:\.\d+)?)\s*MOI\b/g, unit: "months" },
+    // "15-20%" / "15 to 20%" / "15–20%" ranges — the trailing "20%" is caught
+    // by the percent pattern above, but the LEADING endpoint ("15") has no "%"
+    // of its own. Capture it too so an unsourced industry-norm range ("failure
+    // rates run 15-20%", "selling 5-10% below asking") is grounded on BOTH ends.
+    { re: /\b(\d+(?:\.\d+)?)\s*(?:-|–|—|\bto\b)\s*\d+(?:\.\d+)?\s*%/gi, unit: "percent" },
   ];
   for (const { re, unit } of patterns) {
     let m: RegExpExecArray | null;
@@ -866,6 +871,95 @@ function extractStatTokens(dialogue: string): ExtractedStatToken[] {
     }
   }
   return tokens;
+}
+
+/* ─────────────────────────────────────────────────────────────────────── */
+/*  Framework / definitional number exemptions (family-agnostic grounding) */
+/*                                                                         */
+/*  The grounding rules treat EVERY market-shaped number in the body as a  */
+/*  claim about the member's market that must trace to a fact. A small set  */
+/*  of numbers are NOT member data, though — they're the channel's own      */
+/*  definitional FRAMEWORK constants and must stay ALLOWED unsourced, or    */
+/*  the validator over-blocks legitimate framework language ("anything      */
+/*  below 2.5 months of inventory is a sellers market"; "100% of asking     */
+/*  means full price"). Structural numbers (lead-magnet 1/3, timestamps,    */
+/*  title numbers, section counts) are bare integers with no currency /     */
+/*  percent / duration unit, so extractStatTokens never surfaces them — no  */
+/*  exemption needed for those.                                            */
+/* ─────────────────────────────────────────────────────────────────────── */
+
+/**
+ * Months-of-inventory market-state band cutoffs from the channel's own
+ * framework (below 2.5 = sellers, 2.5–4.0 = balanced, above 4.0 = buyers,
+ * plus the 5–6 high-end balanced exception). Only these canonical band
+ * values are candidates — an arbitrary "4.44 months" is real data, not a
+ * band cutoff, and stays subject to grounding.
+ */
+const MOI_BAND_VALUES = new Set([2, 2.5, 3, 4, 4.5, 5, 6]);
+
+/** Market-state language signalling a band DEFINITION (not a data claim). */
+const MOI_BAND_MARKET_CONTEXT =
+  /(seller'?s?\s+market|buyer'?s?\s+market|balanced|market\s+type|threshold)/i;
+
+/**
+ * Comparator / range framing a band cutoff is stated with ("below 2.5",
+ * "above 4.0", "2.5 to 4.0", "between", "anything above"). Requiring a
+ * comparator AND market context together is what separates a framework band
+ * ("below 2.5 months is a sellers market") from a market DATA claim ("we're
+ * sitting at 2.5 months here") — the latter carries the band value but no
+ * band framing, so it stays flagged and must be sourced.
+ */
+const MOI_BAND_COMPARATOR =
+  /(below|under|above|over|less\s+than|more\s+than|between|up\s+to|at\s+least|anything\s+(?:below|above|under|over)|\bto\b)/i;
+
+/**
+ * First-person CURRENT-STATE inventory phrasing ("we're at 2.5", "we are
+ * below 2.5", "sitting at 2.5 right now"). When a band value is framed this
+ * way it's a DATA claim about the member's OWN market — not the framework
+ * definition — so it must NOT be exempted even though the band value +
+ * comparator + market-type words happen to co-occur in the window. (The
+ * definitional form "anything below 2.5 months is a sellers market" carries
+ * none of these subjects, so it stays exempt.)
+ */
+const MOI_DATA_CLAIM_OVERRIDE =
+  /\b(?:we'?re|we\s+are)\s+(?:currently\s+|now\s+|sitting\s+)?(?:at|below|under|above|over|around)\b|\bsitting\s+at\b/i;
+
+/**
+ * Whether a numeric stat token is a FRAMEWORK constant / definitional number
+ * (allowed unsourced) rather than a specific member-market data claim. Covers
+ * the MOI market-state bands and the "100% of asking means full price"
+ * definition. Everything else — comparison/temporal stats, %, $, months,
+ * days, ranges, "in [year]" figures — is a data claim and must trace to a
+ * fact and appear in "## Sources".
+ */
+function isFrameworkOrDefinitionalNumber(
+  dialogue: string,
+  tok: ExtractedStatToken,
+): boolean {
+  const window = windowAround(dialogue, tok.offset, 7);
+  // MOI band cutoff: a canonical band value stated with comparator + market
+  // context ("anything below 2.5 months of inventory is a sellers market").
+  if (
+    tok.unit === "months" &&
+    MOI_BAND_VALUES.has(tok.value) &&
+    MOI_BAND_MARKET_CONTEXT.test(window) &&
+    MOI_BAND_COMPARATOR.test(window) &&
+    !MOI_DATA_CLAIM_OVERRIDE.test(window)
+  ) {
+    return true;
+  }
+  // Definitional "100% of asking/list = full price" — NOT a sale-to-list data
+  // claim. A bare "selling at 100%" / "99% of list" without the "of asking …
+  // full price" definition stays a data claim and must be sourced.
+  if (
+    tok.unit === "percent" &&
+    tok.value === 100 &&
+    /100\s*%\s+of\s+(?:the\s+)?(?:asking|list)/i.test(window) &&
+    /(full\s+price|means|equals|=|that'?s|is\s+full)/i.test(window)
+  ) {
+    return true;
+  }
+  return false;
 }
 
 /**
@@ -1067,6 +1161,11 @@ export function checkNoMisattributedStats(
       continue;
     }
 
+    // Framework constant / definitional number ("anything below 2.5 months
+    // of inventory is a sellers market", "100% of asking means full price")
+    // — allowed unsourced; it's the channel's own framework, not member data.
+    if (isFrameworkOrDefinitionalNumber(dialogue, tok)) continue;
+
     // Only compare against SoT entries whose family produces the same
     // spoken unit as the token. This is what stops "5%" colliding with
     // a "$5K" SoT row or "30 days" colliding with "30 months" inventory.
@@ -1074,17 +1173,19 @@ export function checkNoMisattributedStats(
       (s) => s.unit === tok.unit && withinTolerance(s.value, tok.value),
     );
 
-    // Path A — unmatched stat (fabrication suspect). Token's unit has
-    // matchable SoT/cited-fact entries (i.e. we have anchors to compare
-    // against in that unit), but no anchor matches within 2%. Surfaced
-    // as a WARNING (advisory, never blocks save) so the member sees a
-    // "this number isn't in your data" cue without the re-prompt loop
-    // firing on false positives. If we have zero anchors of this unit,
-    // we skip — that means the rule can't speak to fabrication here.
+    // Path A — untraceable stat (fabrication / unsourced market claim).
+    // FAMILY-AGNOSTIC: every market-shaped number is a claim about the
+    // member's market and must trace to a fact, REGARDLESS of whether the
+    // data set happens to carry that metric family. Previously this path
+    // only fired when an anchor of the SAME unit already existed (the
+    // `haveAnchorsOfUnit` gate), so an invented number in a unit with no
+    // matching family — "buyers are taking 40% longer to make an offer than
+    // 2024" when there's no SP/LP or failure-rate fact — slipped through
+    // both this rule and unlisted_market_stat. That gate is removed:
+    // framework/definitional numbers are exempted above, profile numbers
+    // below, and everything else must resolve to a real fact or it's an
+    // ERROR that drives the re-prompt loop (same as an unsourced MOI).
     if (!match) {
-      const haveAnchorsOfUnit = sotComparable.some((s) => s.unit === tok.unit);
-      if (!haveAnchorsOfUnit) continue;
-
       // Wave 5 follow-up — profile-sourced whitelist. Before flagging
       // this token as fabricated, check whether its raw form appears
       // verbatim in the neighbourhood/avatar profile text OR whether
@@ -1116,10 +1217,15 @@ export function checkNoMisattributedStats(
         // sources (narrative time spans + inverse-ratio percentages).
         severity: "error",
         message:
-          `Stat "${tok.raw}" doesn't match any value in your deterministic ` +
-          `source-of-truth metrics or the cited-facts block (within 2% tolerance). ` +
-          `Either re-anchor to a real number from the data, or remove the stat — ` +
-          `the channel's edge is precision, not vibes.`,
+          `Stat "${tok.raw}" is presented as a fact about this market but ` +
+          `doesn't match any value in your deterministic source-of-truth ` +
+          `metrics or the cited-facts block (within 2% tolerance). This holds ` +
+          `for EVERY number family and shape — comparison/temporal stats ` +
+          `("40% longer than 2024"), %, $, months, days, ranges ("15-20%"), ` +
+          `sale-to-list ("100%/99%"), industry-norm figures. Either re-anchor ` +
+          `"${tok.raw}" to a real number from the data AND list it in ` +
+          `"## Sources", or remove it / reframe it as general with no specific ` +
+          `figure — the channel's edge is precision, not vibes.`,
         snippet: dialogue
           .slice(Math.max(0, tok.offset - 60), tok.offset + tok.raw.length + 20)
           .trim(),
@@ -1239,6 +1345,10 @@ export function checkUnlistedMarketStat(
     ) {
       continue;
     }
+
+    // Framework / definitional numbers (MOI bands, "100% of asking means
+    // full price") are allowed unsourced — never force them into the footnote.
+    if (isFrameworkOrDefinitionalNumber(dialogue, tok)) continue;
 
     const matched = anchors.filter(
       (a) => a.unit === tok.unit && withinTolerance(a.value, tok.value),
@@ -3304,6 +3414,12 @@ export function autoSoftenUnanchoredStats(
         ) {
           continue;
         }
+
+        // Framework / definitional numbers (MOI bands, "100% of asking
+        // means full price") are allowed — never soften them, or legitimate
+        // framework language ("below 2.5 months is a sellers market") would
+        // be rewritten into mush.
+        if (isFrameworkOrDefinitionalNumber(dialogue, tok)) continue;
 
         // Same unit must have at least one anchor; otherwise the
         // validator can't speak to fabrication here, so we don't either.

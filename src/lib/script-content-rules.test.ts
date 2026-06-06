@@ -164,6 +164,62 @@ test("unanchored_stat — a number that traces to a provided fact passes", () =>
   assert.equal(n, 0, "a number that traces to a fact must not be flagged");
 });
 
+/* ── family-agnostic grounding: EVERY number shape must trace, framework
+      constants stay allowed (metric-family-agnostic validator) ── */
+
+test("unanchored_stat — a comparison/temporal stat in an UNREPRESENTED family ('40% longer than 2024') trips", () => {
+  // The only anchor is a currency fact — there is NO percent / SP-LP / DOM
+  // family in the data at all. Before the family-agnostic fix the per-unit
+  // `haveAnchorsOfUnit` gate let this slip (no percent anchor ⇒ rule stayed
+  // silent). It must now be caught and re-prompted like an unsourced MOI.
+  const n = unanchoredHits(
+    "Buyers in this market are taking 40% longer to make an offer than they were back in early 2024.",
+    { citedFacts: [{ raw: "$615,000" }] },
+  );
+  assert.ok(n >= 1, "an unsourced comparison stat in any family must be rejected");
+});
+
+test("framework threshold — 'anything below 2.5 months is a sellers market' passes even with an MOI anchor", () => {
+  // 8.8 is the member's real MOI anchor; 2.5 is a FRAMEWORK band cutoff, not a
+  // market data claim. The per-unit gate is gone, so without the framework
+  // exemption the 2.5 (months anchor present, no 2% match) would be flagged.
+  const n = unanchoredHits(
+    "Here's the rule of thumb: anything below 2.5 months of inventory is a sellers market.",
+    { sourceOfTruth: [{ metricFamily: "MOI", metricValue: 8.8 }] },
+  );
+  assert.equal(n, 0, "framework band cutoffs are definitional, never data claims");
+});
+
+test("framework exemption — a CURRENT-STATE data claim ('we are below 2.5 months here') is NOT exempted", () => {
+  // A band value framed as the member's OWN current inventory ("we are below
+  // 2.5 ... here") is a market DATA claim, not the framework definition. With
+  // the real MOI at 8.8, "below 2.5" doesn't match and must be flagged — the
+  // exemption only covers definitional phrasing, not first-person state.
+  const n = unanchoredHits(
+    "We are below 2.5 months of inventory here right now in this sellers market.",
+    { sourceOfTruth: [{ metricFamily: "MOI", metricValue: 8.8 }] },
+  );
+  assert.ok(n >= 1, "a current-state band claim is data, not framework, and must be sourced");
+});
+
+test("framework definition — '100% of asking means full price' is allowed unsourced", () => {
+  const n = unanchoredHits(
+    "When a home sells at 100% of asking, that just means it sold at full price.",
+    { sourceOfTruth: [{ metricFamily: "SP_LP", metricValue: 0.99 }] },
+  );
+  assert.equal(n, 0, "the 100%-of-asking definition is framework, not a SP/LP data claim");
+});
+
+test("unanchored_stat — an unsourced industry-norm RANGE ('15-20%') is caught on the leading endpoint", () => {
+  // Range extraction must surface the leading "15" (the trailing "20%" already
+  // is). Neither maps to a fact ⇒ an industry-norm stat stated as market fact.
+  const n = unanchoredHits(
+    "Across this market, listing failure rates run somewhere between 15-20% every year.",
+    { sourceOfTruth: [{ metricFamily: "MOI", metricValue: 8.8 }] },
+  );
+  assert.ok(n >= 1, "both endpoints of an unsourced range must be grounded");
+});
+
 /* ── no "...for a second" filler tail (approved "Think about that." stays) ── */
 
 function forASecondHits(script: string): number {
