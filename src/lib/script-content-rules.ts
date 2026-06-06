@@ -2045,19 +2045,41 @@ export function checkUnsourcedFactualClaim(
 
 export const MIN_DIALOGUE_WORDS = 2200;
 
-export function checkMinDialogueLength(script: string): ScriptViolation[] {
+/**
+ * Lean floor applied when NO neighbourhood profile is loaded for the script.
+ * The full 2,200-word floor assumes the model has FULL profile prose
+ * (demographics, housing stock, lifestyle) to expand into. Without a profile,
+ * demanding 2,200 words forces the model to invent demographic colour and
+ * round-number stats — which the grounding gates (unsourced_factual_claim,
+ * unanchored_stat) then reject, looping the script into a hard-fail. A lean,
+ * fully-data-grounded market update is legitimately shorter, so we hold it to
+ * a lower floor that's reachable from cited facts + the source-of-truth block
+ * alone.
+ */
+export const LEAN_DIALOGUE_WORDS = 1200;
+
+export function checkMinDialogueLength(
+  script: string,
+  hasProfile = true,
+): ScriptViolation[] {
   const { dialogue } = stripToDialogue(script);
   const wordCount = dialogue.split(/\s+/).filter(Boolean).length;
-  if (wordCount >= MIN_DIALOGUE_WORDS) return [];
+  const floor = hasProfile ? MIN_DIALOGUE_WORDS : LEAN_DIALOGUE_WORDS;
+  if (wordCount >= floor) return [];
   return [
     {
       rule: "min_dialogue_length",
       severity: "error",
-      message:
-        `Script body is ${wordCount} dialogue words, below the ${MIN_DIALOGUE_WORDS}-word floor. ` +
-        `Expand using the FULL neighbourhood profile content already in your system prompt — ` +
-        `add named anchors, specific data points, editorial reactions, and back-half synthesis. ` +
-        `DO NOT pad with filler, restated thesis, or generic framing.`,
+      message: hasProfile
+        ? `Script body is ${wordCount} dialogue words, below the ${floor}-word floor. ` +
+          `Expand using the FULL neighbourhood profile content already in your system prompt — ` +
+          `add named anchors, specific data points, editorial reactions, and back-half synthesis. ` +
+          `DO NOT pad with filler, restated thesis, or generic framing.`
+        : `Script body is ${wordCount} dialogue words, below the ${floor}-word lean floor. ` +
+          `No neighbourhood profile is loaded for this script, so reach the floor using your cited ` +
+          `facts and the SOURCE-OF-TRUTH METRICS block — segment by property type, compare ` +
+          `neighbourhoods, and add genuine analysis of the numbers. ` +
+          `DO NOT invent demographic colour, named amenities, or numbers to pad.`,
     },
   ];
 }
@@ -2976,6 +2998,23 @@ export interface ValidateScriptOptions extends HyperLocalOptions {
    * target.
    */
   bingeTargetTitle?: string;
+  /**
+   * Floor-only signal for `min_dialogue_length`. When `false`, the lean
+   * word floor (`LEAN_DIALOGUE_WORDS`) applies instead of the full 2,200
+   * floor — for scripts whose neighbourhoods have NO Knowledge Base profile,
+   * where demanding 2,200 words forces invented colour the grounding gates
+   * then reject.
+   *
+   * This is deliberately SEPARATE from `profileText`: the save-script route
+   * can pass `hasNeighbourhoodProfile` to relax the floor WITHOUT passing
+   * `profileText`, so it doesn't accidentally re-activate the qualitative /
+   * stat grounding checks (which gate on `profileText` presence) at save and
+   * regress scripts the streaming route already cleared.
+   *
+   * `undefined` ⇒ derive from `profileText` (preserves the streaming route's
+   * existing behaviour, which always passes `profileText`).
+   */
+  hasNeighbourhoodProfile?: boolean;
 }
 
 /**
@@ -3043,7 +3082,13 @@ export function validateScript(
   );
   // Wave 8 Fix 2 / Fix 3 / Fix 4 — ERROR severity, all gated through the
   // existing re-prompt loop.
-  violations.push(...checkMinDialogueLength(script));
+  // Floor-only: explicit `hasNeighbourhoodProfile` wins (save route uses it
+  // WITHOUT passing profileText); otherwise derive from profileText, so the
+  // streaming route's existing behaviour is unchanged.
+  const hasProfileForFloor =
+    opts.hasNeighbourhoodProfile ??
+    (opts.profileText ?? []).some((t) => !!t && t.trim().length > 0);
+  violations.push(...checkMinDialogueLength(script, hasProfileForFloor));
   violations.push(...checkNoAnnouncedCredibility(script));
   violations.push(...checkPeopleLikeUsInLm(script));
   // B1 — presenter-identity guardrails (cross-member leak + unfilled placeholder).

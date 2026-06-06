@@ -45,6 +45,7 @@ import {
   loadMarketConfigSummary,
   credentialsAnchorText,
 } from "@/lib/content-engine-context";
+import { getNeighbourhoodContext } from "@/lib/get-neighbourhood-context";
 
 export const runtime = "nodejs";
 
@@ -194,6 +195,31 @@ export async function POST(
     }
   }
 
+  // Floor-only profile signal — mirror the streaming route's lean word floor
+  // so a lean, fully-data-grounded draft (no KB profile) is savable instead of
+  // 422'ing on the 2,200-word floor. We load profiles for the member's vocab
+  // and keep only those whose neighbourhood is actually named in the script, so
+  // the floor matches what the streaming route applied. Passed as a dedicated
+  // flag (NOT profileText) so the qualitative/stat grounding checks stay off at
+  // save and we don't regress scripts the streaming route already cleared.
+  const vocab = marketConfig?.neighbourhoods ?? [];
+  let hasNeighbourhoodProfile = false;
+  if (vocab.length > 0) {
+    const profileMap = await getNeighbourhoodContext(userId, vocab);
+    // Case-insensitive name match: scripts capitalize neighbourhood names in
+    // prose ("in Kerrisdale…") while vocab casing can differ, so a
+    // case-sensitive substring would false-negative and wrongly relax the
+    // floor for a profile-backed script.
+    const scriptLower = script.toLowerCase();
+    hasNeighbourhoodProfile = Object.entries(profileMap).some(
+      ([name, text]) =>
+        !!name &&
+        scriptLower.includes(name.toLowerCase()) &&
+        !!text &&
+        text.trim().length > 0,
+    );
+  }
+
   const validation = validateScript(script, {
     neighbourhoods: marketConfig?.neighbourhoods ?? [],
     currentMemberName: memberFullName ?? undefined,
@@ -201,6 +227,7 @@ export async function POST(
     credentialsText: marketConfig ? credentialsAnchorText(marketConfig) : [],
     bingeTargetConfigured,
     bingeTargetTitle: bingeTargetTitle ?? undefined,
+    hasNeighbourhoodProfile,
   });
   if (!validation.ok) {
     return NextResponse.json(

@@ -63,6 +63,13 @@ export interface Step5CompletePayload {
   script: string;
   attempt: number;
   warnings: ScriptViolation[];
+  /**
+   * STEP 3 graceful degrade — `true` when retries were exhausted but the
+   * cleanest grounded draft was shipped (instead of a hard-fail). The
+   * `warnings` array then carries the residual flagged issues as advisory
+   * notes, and the panel labels them "shipped with N issue(s) flagged".
+   */
+  degraded?: boolean;
   metrics: ScriptMetrics;
   monthSpendUsd: number;
   capUsd: number;
@@ -818,7 +825,9 @@ function DoneView({
       {done.warnings.length > 0 && (
         <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 dark:border-amber-700 dark:bg-amber-950/30">
           <p className="text-xs font-semibold uppercase tracking-wide text-amber-900 dark:text-amber-200">
-            Soft warnings ({done.warnings.length})
+            {done.degraded
+              ? `Shipped with ${done.warnings.length} issue(s) flagged — review before publishing`
+              : `Soft warnings (${done.warnings.length})`}
           </p>
           <ul className="mt-2 list-inside list-disc space-y-1 text-xs text-amber-900 dark:text-amber-100">
             {done.warnings.map((w, i) => (

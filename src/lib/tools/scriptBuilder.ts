@@ -240,6 +240,11 @@ function buildInitialUserMessage(args: {
     regenerationBrief,
   } = args;
   const lines: string[] = [];
+  // LEAN GROUNDED MODE — when no neighbourhood profile prose is loaded, the
+  // 2,200-word floor (which assumes a profile to expand from) does not apply;
+  // the output instruction below must ask for a lean, fully-grounded draft
+  // instead of telling the model to pad toward 2,200 with colour it can't source.
+  const hasProfile = Object.keys(neighbourhoodContext).length > 0;
 
   // ── PRIOR ATTEMPT — REVISION NOTES ──────────────────────────────────
   // Wave 3.5: when the client sends a regenerationBrief, prepend a
@@ -576,6 +581,23 @@ function buildInitialUserMessage(args: {
       lines.push(neighbourhoodContext[name]);
       lines.push("");
     }
+  } else {
+    // No KB profile for any neighbourhood in this script. Make the absence
+    // EXPLICIT so the model engages LEAN GROUNDED MODE (system prompt) on
+    // attempt 1 instead of inventing demographic/lifestyle colour to fill a
+    // word target — which the data-integrity gate would reject into a hard-fail.
+    lines.push("## Neighbourhood context: NONE LOADED");
+    lines.push("");
+    lines.push(
+      "No Knowledge Base profile exists for the neighbourhoods in this script. " +
+        "You are in LEAN GROUNDED MODE (see the system prompt): write a fully " +
+        "data-grounded script from your cited facts and the SOURCE-OF-TRUTH " +
+        "METRICS block ONLY. Do NOT write any demographic, build-era, income, " +
+        "housing-style, school, or named-amenity colour, and do NOT invent any " +
+        "price range, threshold, cadence, or number. A lean grounded script is " +
+        "legitimately shorter — never pad with invented colour.",
+    );
+    lines.push("");
   }
 
   // ── ASSIGNED ASSETS ──────────────────────────────────────────────────
@@ -679,7 +701,11 @@ function buildInitialUserMessage(args: {
   lines.push("## OUTPUT");
   lines.push("");
   lines.push(
-    "Produce the FULL talking-head script in the format the system prompt specifies (ARC opening: Attention + Revelation only — NO Connection beat, NO lead magnet in opening; the Revelation carries the EXPERTISE BRIDGE with ONE sideways credibility drop from the approved list, and every number in it MUST trace to the member's real credentials profile — never invent a cadence like \"every 53 hours\". Then DATA → PSYCHOLOGY → CLARITY body with `[LEAD MAGNET 1/3]` inside the FIRST body insight as a gift, `[LEAD MAGNET 2/3]` deep pitch at ~40-45%, and a CLOSING that is a counter-intuitive FORWARD/BINGE hook to the next video — NOT a recap, NOT a sales pitch, no push-CTA — with `[LEAD MAGNET 3/3]` as a half-sentence riding that hook), with `[VISUAL: ...]` tags throughout. Every quantitative claim must be a clean traceable value — no placeholder/filler numbers (\"the 0K range\", \"$500,000-to-the 600K\", \"a meaningful amount\", dangling \"average sitting.\"). Body must be ≥ 2,200 dialogue words. Cite every fact from the JSON above by weaving the metric value into dialogue at least once. Title-body contract: the first ~30 seconds (~150 words) must pay off the **Title promise** verbatim or near-verbatim.",
+    "Produce the FULL talking-head script in the format the system prompt specifies (ARC opening: Attention + Revelation only — NO Connection beat, NO lead magnet in opening; the Revelation carries the EXPERTISE BRIDGE with ONE sideways credibility drop from the approved list, and every number in it MUST trace to the member's real credentials profile — never invent a cadence like \"every 53 hours\". Then DATA → PSYCHOLOGY → CLARITY body with `[LEAD MAGNET 1/3]` inside the FIRST body insight as a gift, `[LEAD MAGNET 2/3]` deep pitch at ~40-45%, and a CLOSING that is a counter-intuitive FORWARD/BINGE hook to the next video — NOT a recap, NOT a sales pitch, no push-CTA — with `[LEAD MAGNET 3/3]` as a half-sentence riding that hook), with `[VISUAL: ...]` tags throughout. Every quantitative claim must be a clean traceable value — no placeholder/filler numbers (\"the 0K range\", \"$500,000-to-the 600K\", \"a meaningful amount\", dangling \"average sitting.\"). " +
+      (hasProfile
+        ? "Body must be ≥ 2,200 dialogue words. "
+        : "There is NO neighbourhood profile loaded, so a lean, fully-grounded body is correct — do NOT pad toward any word target with invented demographic/build-era/income/amenity colour or unsourced numbers; cover every cited fact thoroughly and stop. ") +
+      "Cite every fact from the JSON above by weaving the metric value into dialogue at least once. Title-body contract: the first ~30 seconds (~150 words) must pay off the **Title promise** verbatim or near-verbatim.",
   );
   lines.push("");
   lines.push(
@@ -695,7 +721,7 @@ function buildInitialUserMessage(args: {
  * rewrite anchored to the actual offending snippet so Claude can edit in
  * place instead of re-deriving the rule.
  */
-function suggestRetryFix(v: ScriptViolation): string {
+function suggestRetryFix(v: ScriptViolation, hasProfile = true): string {
   if (v.rule === "unanchored_stat") {
     // Wave 5 — fabricated stat. Tell the model exactly what its three
     // legal options are (mirrors the system-prompt rule). Replacement
@@ -765,8 +791,21 @@ function suggestRetryFix(v: ScriptViolation): string {
     );
   }
   if (v.rule === "min_dialogue_length") {
-    // Wave 8 Fix 2 — body fell below the 2,200-word floor. Force expansion
-    // using real profile content, not filler.
+    // Wave 8 Fix 2 — body fell below the word floor. With a profile, force
+    // expansion using real profile content. LEAN GROUNDED MODE: with NO profile
+    // there is nothing legitimate to expand from, so do NOT push toward 2,200 or
+    // invent colour — just cover every cited fact and source-of-truth metric
+    // thoroughly (the lean floor is 1,200) and stop.
+    if (!hasProfile) {
+      return [
+        "the body is too thin. There is NO neighbourhood profile loaded, so do",
+        "NOT pad toward any word target and do NOT invent demographic,",
+        "build-era, income, amenity, or any unsourced colour. Instead, work",
+        "EVERY cited fact and Source-of-truth metric in fully — add the data",
+        "interpretation, viewer implication, and a back-half synthesis grounded",
+        "ONLY in those numbers. A lean, fully-grounded script is correct.",
+      ].join(" ");
+    }
     return [
       "expand the body to clear 2,200 dialogue words using the FULL",
       "neighbourhood profile content already in your system prompt — add",
@@ -862,8 +901,21 @@ function buildRetryUserMessage(args: {
    * stats) while it fixes the flagged violations.
    */
   previousDialogueWordCount?: number | null;
+  /**
+   * Whether a KB neighbourhood profile is loaded for this script. When
+   * false (LEAN GROUNDED MODE), the retry message must NOT ask the model
+   * to "expand using profile content" — there's none — or it loops straight
+   * back into inventing colour. A lean grounded draft is legitimately shorter.
+   */
+  hasProfile?: boolean;
 }): string {
-  const { plan, previousDraft, violations, previousDialogueWordCount } = args;
+  const {
+    plan,
+    previousDraft,
+    violations,
+    previousDialogueWordCount,
+    hasProfile = true,
+  } = args;
   const lines: string[] = [];
 
   // Wave 5 — distinguish data-integrity violations (the gate that just
@@ -873,7 +925,10 @@ function buildRetryUserMessage(args: {
   const statViolations = violations.filter(
     (v) => v.rule === "unanchored_stat" || v.rule === "no_misattributed_stats",
   );
+  // Only nudge length expansion when a profile exists to expand INTO. With no
+  // profile the floor is the lean floor and shorter is correct, so suppress.
   const shortOfTarget =
+    hasProfile &&
     typeof previousDialogueWordCount === "number" &&
     previousDialogueWordCount < 2500;
 
@@ -978,7 +1033,7 @@ function buildRetryUserMessage(args: {
     lines.push("");
     lines.push(`Offending text: \`${snip}\``);
     lines.push("");
-    const fix = suggestRetryFix(v);
+    const fix = suggestRetryFix(v, hasProfile);
     lines.push(`Fix: ${fix}`);
     lines.push("");
   }
@@ -1222,6 +1277,18 @@ export interface BuildScriptResult {
   error: ScriptError | null;
   /** Extra fields the route merges into its SSE `error` frame. */
   errorExtra?: Record<string, unknown>;
+  /**
+   * STEP 3 graceful degrade. `true` when retries/budget were exhausted but the
+   * cleanest attempt was still grounded (non-empty + anchored), so instead of a
+   * hard-fail we ship that draft with its remaining issues FLAGGED. `ok` is
+   * `true` in this case (route emits `complete`, not `error`), and `flagged`
+   * carries the residual error-severity violations as advisory notes the member
+   * can review before publishing. Hard-fail is reserved for a draft that grounds
+   * nothing (genuine no-validated-facts).
+   */
+  degraded?: boolean;
+  /** Residual error-severity violations on a degraded ship (advisory only). */
+  flagged?: ScriptViolation[];
 }
 
 /** Cited-fact value strings are the validator's member-attributable anchors. */
@@ -1287,6 +1354,11 @@ export async function buildScript(
   const anchors = citedFactAnchors(citedFacts);
   const profileText = profileAnchors(neighbourhoodContext, marketConfig);
   const credentialsText = credentialsAnchorText(marketConfig);
+  // Whether a KB neighbourhood profile is loaded for this script. Drives both
+  // the lean word floor (validator) and the LEAN GROUNDED MODE steering so a
+  // no-profile member (e.g. one who hasn't populated their KB) ships a lean,
+  // fully-data-grounded draft instead of being pushed to invent colour.
+  const hasProfile = Object.keys(neighbourhoodContext).length > 0;
 
   let totalInputTokens = 0;
   let totalOutputTokens = 0;
@@ -1301,28 +1373,73 @@ export async function buildScript(
   let lastErrors: ScriptViolation[] = [];
   let lastDraftMetrics: ScriptValidationResult["metrics"] | null = null;
 
+  // STEP 3 graceful degrade — track the CLEANEST attempt seen (fewest
+  // error-severity violations). On budget/retry exhaustion we ship this rather
+  // than hard-failing, so a member always gets a usable draft to review.
+  let bestDraft = "";
+  let bestErrors: ScriptViolation[] = [];
+  let bestMetrics: ScriptValidationResult["metrics"] | null = null;
+  let bestErrorCount = Number.POSITIVE_INFINITY;
+
+  /**
+   * Build the terminal result when retries/budget are exhausted. If the
+   * cleanest attempt is non-empty AND grounded (anchored at least one detail),
+   * ship it DEGRADED (ok: true) with the residual issues flagged. Otherwise the
+   * draft grounds nothing (genuine no-validated-facts) → hard-fail.
+   */
+  const finishExhausted = (
+    attempt: number,
+    reason: "budget" | "max_retries",
+  ): BuildScriptResult => {
+    const grounded =
+      bestDraft.trim().length > 0 && (bestMetrics?.anchoredDetailCount ?? 0) > 0;
+    if (grounded) {
+      console.log(
+        `[sb-v2] graceful degrade (${reason}): shipping cleanest attempt with ${bestErrors.length} flagged issue(s)`,
+      );
+      return {
+        ok: true,
+        degraded: true,
+        script: bestDraft,
+        attempt,
+        warnings: [],
+        flagged: bestErrors,
+        violations: [],
+        metrics: bestMetrics,
+        inputTokens: totalInputTokens,
+        outputTokens: totalOutputTokens,
+        aborted: false,
+        error: null,
+      };
+    }
+    const message =
+      reason === "budget"
+        ? `We couldn't finish a clean script in the time available. ${bestErrors.length} content-rule issue(s) remained — link more facts or adjust your script mode and try again.`
+        : `We couldn't write a script that passes your content rules after ${maxReprompts + 1} attempts. ${bestErrors.length} content-rule issue(s) remained — link more facts or adjust your script mode and try again.`;
+    return {
+      ok: false,
+      script: bestDraft || lastDraft,
+      attempt,
+      warnings: [],
+      violations: bestErrors.length ? bestErrors : lastErrors,
+      metrics: bestMetrics ?? lastDraftMetrics,
+      inputTokens: totalInputTokens,
+      outputTokens: totalOutputTokens,
+      aborted: false,
+      error: makeScriptError("validator_max_retries", message, {
+        violations: bestErrors.length ? bestErrors : lastErrors,
+      }),
+      errorExtra: { attempt, draft: bestDraft || lastDraft },
+    };
+  };
+
   for (let attempt = 0; attempt <= maxReprompts; attempt++) {
     if (isAborted()) break;
 
     // Budget guard — never START a retry we can't finish inside the wall.
+    // STEP 3: ship the cleanest grounded attempt flagged instead of hard-fail.
     if (attempt > 0 && ms() + attemptTimeReserveMs > generationBudgetMs) {
-      return {
-        ok: false,
-        script: lastDraft,
-        attempt,
-        warnings: [],
-        violations: lastErrors,
-        metrics: lastDraftMetrics,
-        inputTokens: totalInputTokens,
-        outputTokens: totalOutputTokens,
-        aborted: false,
-        error: makeScriptError(
-          "validator_max_retries",
-          `We couldn't finish a clean script in the time available. ${lastErrors.length} content-rule issue(s) remained — link more facts or adjust your script mode and try again.`,
-          { violations: lastErrors },
-        ),
-        errorExtra: { attempt, draft: lastDraft },
-      };
+      return finishExhausted(attempt, "budget");
     }
 
     if (attempt === 0) {
@@ -1355,6 +1472,7 @@ export async function buildScript(
             violations: lastErrors,
             previousDialogueWordCount:
               lastDraftMetrics?.dialogueWordCount ?? null,
+            hasProfile,
           });
 
     // Mid-stream phase hints, fired on timers like the route did.
@@ -1508,29 +1626,18 @@ export async function buildScript(
     lastDraftMetrics = validation.metrics;
     lastErrors = validation.violations.filter((v) => v.severity === "error");
 
+    // STEP 3: remember the cleanest grounded attempt so budget/retry
+    // exhaustion can ship it flagged instead of hard-failing. Tie-break keeps
+    // the earliest (fewest-error) draft.
+    if (lastErrors.length < bestErrorCount) {
+      bestErrorCount = lastErrors.length;
+      bestDraft = draft;
+      bestErrors = lastErrors;
+      bestMetrics = validation.metrics;
+    }
+
     if (attempt === maxReprompts) {
-      return {
-        ok: false,
-        script: draft,
-        attempt,
-        warnings: [],
-        violations: lastErrors,
-        metrics: validation.metrics,
-        inputTokens: totalInputTokens,
-        outputTokens: totalOutputTokens,
-        aborted: false,
-        error: makeScriptError(
-          "validator_max_retries",
-          `We couldn't write a script that passes your content rules after ${maxReprompts + 1} attempts. ${lastErrors.length} content-rule issue(s) remained — link more facts or adjust your script mode and try again.`,
-          { violations: lastErrors },
-        ),
-        errorExtra: {
-          violations: validation.violations,
-          metrics: validation.metrics,
-          attempt,
-          draft,
-        },
-      };
+      return finishExhausted(attempt, "max_retries");
     }
 
     onViolation({ attempt, violations: lastErrors, willRetry: true });

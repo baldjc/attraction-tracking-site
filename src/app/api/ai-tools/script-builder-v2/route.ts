@@ -708,12 +708,23 @@ export async function POST(req: NextRequest) {
             totalOutputTokens,
           );
           const capAfter = await getCostCapStatus(userId);
-          console.log(`[sb-v2 telemetry] +${ms()}ms TERMINAL event=complete`);
+          console.log(
+            `[sb-v2 telemetry] +${ms()}ms TERMINAL event=complete${
+              result.degraded ? " (degraded)" : ""
+            }`,
+          );
+          // STEP 3 graceful degrade — when the core shipped the cleanest
+          // attempt instead of hard-failing, surface its residual issues as
+          // non-blocking warnings (the save route's floor is profile-aware, so
+          // a lean grounded draft still saves) and flag the degraded state so
+          // the client can label it "shipped with N issue(s) flagged".
           emit("complete", {
             script: result.script,
             attempt: result.attempt,
-            // Only warnings reach the client here — errors blocked save.
-            warnings: result.warnings,
+            // Only warnings reach the client here — errors blocked save. On a
+            // degraded ship, the flagged issues ride along as advisory warnings.
+            warnings: [...result.warnings, ...(result.flagged ?? [])],
+            degraded: result.degraded ?? false,
             metrics: result.metrics,
             monthSpendUsd: capAfter.monthSpendUsd,
             capUsd: capAfter.capUsd,

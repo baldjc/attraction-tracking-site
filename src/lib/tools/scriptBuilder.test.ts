@@ -78,7 +78,10 @@ function makeCleanScript(): string {
     `clearest signal of how balanced this corner of the market has become through the season, ` +
     `and it is the kind of grounded read that helps a household plan the next move with real confidence.`;
   const body = Array.from({ length: 40 }, () => paragraph).join("\n\n");
-  return `# Title: The Saddle Ridge Market Read\n\n[VISUAL: opening drone shot]\n\n${body}\n`;
+  return (
+    `# Title: The Saddle Ridge Market Read\n\n[VISUAL: opening drone shot]\n\n${body}\n\n` +
+    `## Sources\n- Median Sale Price — ${PRICE} (fact f1)\n- Sale Share — ${SALE_SHARE} (fact f2)\n`
+  );
 }
 
 function baseParams(streamer: ScriptLlmStreamer): BuildScriptParams {
@@ -168,6 +171,103 @@ test("buildScript returns a non-empty script containing the cited facts (headles
   assert.ok(phases.includes("load"));
   assert.ok(phases.includes("validate"));
   assert.ok(streamedText.includes(PRICE));
+});
+
+/**
+ * A lean, fully-grounded body for the NO-profile path. Reuses the clean
+ * paragraph (every $/% token is a cited fact) but with far fewer repeats so the
+ * dialogue lands between the lean floor (1,200) and the full floor (2,200).
+ * Append an optional invented-stat paragraph to force a persistent
+ * `unanchored_stat` error while keeping the draft grounded.
+ */
+function makeLeanScript(opts: { withPersistentError?: boolean } = {}): string {
+  const paragraph =
+    `In Saddle Ridge the typical detached home is trading around ${PRICE} right now, ` +
+    `and the share of active listings that ultimately find a buyer is sitting close to ${SALE_SHARE}. ` +
+    `That pairing of a ${PRICE} price level against a ${SALE_SHARE} absorption read is the single ` +
+    `clearest signal of how balanced this corner of the market has become through the season, ` +
+    `and it is the kind of grounded read that helps a household plan the next move with real confidence.`;
+  const body = Array.from({ length: 17 }, () => paragraph).join("\n\n");
+  // A banned avatar-pander phrase ("leverage") trips `no_avatar_pander` (error)
+  // on every attempt. Unlike an invented stat, it is NOT auto-softened by the
+  // builder, so it persists through every retry — while the draft stays grounded
+  // in the cited facts (anchoredDetailCount > 0), forcing the graceful-degrade
+  // path instead of a hard-fail.
+  const pander = opts.withPersistentError
+    ? `\n\nYou can leverage this balanced read to plan your next move.`
+    : "";
+  // A proper Sources footnote lists the two cited facts so they don't trip
+  // unlisted_market_stat.
+  const sources = `\n\n## Sources\n- Median Sale Price — ${PRICE} (fact f1)\n- Sale Share — ${SALE_SHARE} (fact f2)\n`;
+  return `# Title: The Saddle Ridge Market Read\n\n[VISUAL: opening drone shot]\n\n${body}${pander}${sources}`;
+}
+
+/** baseParams with the neighbourhood profile context removed (no-profile path). */
+function noProfileParams(streamer: ScriptLlmStreamer): BuildScriptParams {
+  return { ...baseParams(streamer), neighbourhoodContext: {} };
+}
+
+test("buildScript ships a lean grounded draft (no profile) as a clean, non-degraded success", async () => {
+  const script = makeLeanScript();
+  const fake: ScriptLlmStreamer = {
+    async *stream() {
+      yield { type: "message_start", inputTokens: 1200, outputTokens: 0 };
+      const size = 800;
+      for (let i = 0; i < script.length; i += size) {
+        yield { type: "text_delta", text: script.slice(i, i + size) };
+      }
+      yield { type: "message_delta", outputTokens: 1800 };
+    },
+  };
+
+  const result = await buildScript(noProfileParams(fake));
+
+  // Lean floor (1,200) — not the 2,200 profile floor — so a grounded lean draft
+  // passes cleanly on the first attempt with no graceful-degrade flagging.
+  assert.equal(
+    result.ok,
+    true,
+    `expected ok; remaining violations: ${JSON.stringify(result.violations)}`,
+  );
+  assert.notEqual(result.degraded, true, "clean lean draft must NOT be degraded");
+  assert.equal(result.error, null);
+  assert.equal(result.attempt, 0);
+  assert.ok(result.script.includes(PRICE));
+  assert.ok((result.flagged ?? []).length === 0);
+});
+
+test("buildScript degrades (ships flagged) instead of hard-failing when a grounded draft keeps tripping a rule", async () => {
+  // Grounded (cites real facts) but always carries a banned "leverage" pander
+  // phrase, so `no_avatar_pander` fires on every attempt (and unlike an invented
+  // stat it is NOT auto-softened). The loop exhausts retries but the draft is
+  // anchored, so it ships DEGRADED rather than hard-failing.
+  const script = makeLeanScript({ withPersistentError: true });
+  const fake: ScriptLlmStreamer = {
+    async *stream() {
+      yield { type: "message_start", inputTokens: 1200, outputTokens: 0 };
+      const size = 800;
+      for (let i = 0; i < script.length; i += size) {
+        yield { type: "text_delta", text: script.slice(i, i + size) };
+      }
+      yield { type: "message_delta", outputTokens: 1800 };
+    },
+  };
+
+  const result = await buildScript(noProfileParams(fake));
+
+  assert.equal(result.ok, true, "degraded ship must report ok:true");
+  assert.equal(result.degraded, true, "expected a degraded ship");
+  assert.equal(result.error, null, "degraded ship must not carry a terminal error");
+  assert.ok(
+    (result.flagged ?? []).length > 0,
+    "degraded ship must flag the residual violations",
+  );
+  assert.ok(
+    (result.flagged ?? []).some((v) => v.rule === "no_avatar_pander"),
+    "the persistent no_avatar_pander error should be among the flagged issues",
+  );
+  assert.ok(result.script.includes(PRICE), "shipped draft stays grounded");
+  assert.equal(result.violations.length, 0, "degraded ship clears blocking violations");
 });
 
 test("buildScript surfaces a terminal error when the draft fails validation", async () => {

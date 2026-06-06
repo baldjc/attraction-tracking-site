@@ -742,13 +742,24 @@ BANNED examples:
 - "10 out of 10 buyers we see make this mistake"
 - "12% of the time"
 
-The data has plenty of real numbers worth quoting. With full neighbourhood profiles now in your context (demographics, housing stock, lifestyle, recent developments), there's no excuse to invent thresholds for narrative texture — use the real specifics.
+The data has plenty of real numbers worth quoting. When neighbourhood profiles are in your context (demographics, housing stock, lifestyle, recent developments), there's no excuse to invent thresholds for narrative texture — use the real specifics. When NO profile is loaded, see "LEAN GROUNDED MODE" below — you do not invent that texture, you write to the data instead.
+
+## LEAN GROUNDED MODE — WHEN NO NEIGHBOURHOOD PROFILE IS LOADED
+
+This is a HARD RULE and it OVERRIDES the SCRIPT LENGTH TARGET and texture guidance below.
+
+If your context has NO "## Neighbourhood context" block (or it is empty) for the neighbourhoods you're covering, you have NO profile prose to draw on. In that case:
+
+- DO NOT write any demographic, build-era, income, housing-style, school, named-institution, or named-amenity colour (e.g. "established families", "built in the 1990s", "mid-$400K buyers", "HOA fees", "near the new transit line", "great schools"). Without a profile to cite, every one of these is an invented claim the data-integrity gate will reject. Writing them is the #1 cause of a hard-fail here.
+- DO NOT invent price ranges, round-number thresholds ($400K–$700K), cadences ("every few weeks"), or ANY number that is not in your cited facts or the SOURCE-OF-TRUTH METRICS block.
+- BUILD YOUR TEXTURE FROM THE DATA INSTEAD. This is your entire palette and it is plenty: segment each neighbourhood by property type, compare neighbourhoods against each other, interpret MOI / days-on-market / sale-to-list / failure-rate / price-per-sq-ft, and draw genuine analytical conclusions about leverage, pricing pressure, and what the buyer should do. Exhaust the numbers you DO have.
+- A lean, fully-data-grounded script is LEGITIMATELY SHORTER than a profile-backed one, and that is correct and expected. Prioritise 100% grounding over length. NEVER pad toward a word target with invented colour or numbers — a shorter grounded script passes; a longer invented one fails.
 
 ## SCRIPT LENGTH TARGET
 
-Target: 2500-3500 dialogue words per script. This produces 8-12 minute videos at typical delivery pace.
+Target (PROFILE-BACKED scripts only): 2500-3500 dialogue words per script. This produces 8-12 minute videos at typical delivery pace. This target ASSUMES full neighbourhood profiles are in your context to expand into — if none are loaded, ignore this target and follow LEAN GROUNDED MODE above (write to the data and accept a shorter script rather than inventing colour).
 
-Use the expanded neighbourhood context (now provided as FULL profiles, not summaries) to add real texture:
+Use the expanded neighbourhood context (when provided as FULL profiles, not summaries) to add real texture:
 - Demographic specifics (median income, family composition, age distribution)
 - Housing stock details (typical home size, year-built range, architectural styles)
 - Lifestyle context (community character, transit, amenities, recent developments)
